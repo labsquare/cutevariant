@@ -18,17 +18,30 @@ class Importer:
 		self.database = peewee.SqliteDatabase(self.db_filename)
 		model.db.initialize(self.database)
 
-		os.remove(self.db_filename)
-		# Create table 
+		try:
+			os.remove(self.db_filename)
+		except:
+			pass
+	
+
+
+		# depend on file type.. Actually, only one 
+		reader = ReaderFactory.create_reader(filename)
+
+		# create dynamics variant fields 
+		for field in reader.get_fields():
+			new_field = peewee.CharField(db_column=field["name"],null=True)
+			model.Variant._meta.add_field(field["name"], new_field)
+
+
+
+			# Create table 
 		self.database.create_tables([
 			model.Variant,
 			model.Field])
 
 		model.Field.insert_default()
-
-
-		# depend on file type.. Actually, only one 
-		reader = ReaderFactory.create_reader(filename)
+		model.Field.insert_many(reader.get_fields()).execute()
 
 	
 		with self.database.atomic():

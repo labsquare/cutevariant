@@ -24,5 +24,21 @@ class VcfReader(AbstractReader):
 		fields = []
 
 		vcf_reader = vcf.Reader(open(self.filename, 'r'))
-		return vcf_reader
+		for key,info in vcf_reader.infos.items():
+			yield {
+			"name":"info_"+key,
+			"category": "info",
+			"description":info.desc,
+			"field_type": info.type
+			}
+
+		for sample in vcf_reader.samples:
+			for key, val in vcf_reader.formats.items():
+				yield {
+				"name":sample+"_"+key,
+				"category":"sample",
+				"description":val.desc,
+				"field_type": val.type
+				}
+
 
