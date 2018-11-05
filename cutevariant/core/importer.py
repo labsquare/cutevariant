@@ -30,8 +30,9 @@ class Importer:
 
 		# create dynamics variant fields 
 		for field in reader.get_fields():
-			new_field = peewee.CharField(db_column=field["name"],null=True)
-			model.Variant._meta.add_field(field["name"], new_field)
+			column_name = field["category"]+"_"+field["name"]
+			new_field = peewee.CharField(db_column=column_name,null=True)
+			model.Variant._meta.add_field(column_name, new_field)
 
 
 

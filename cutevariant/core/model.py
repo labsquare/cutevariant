@@ -24,6 +24,7 @@ class Field(Model):
 	field_type  = CharField()
 
 
+
 	@staticmethod
 	def insert_default():
 		Field(name = "chr", category="variant", description="truc", field_type="TEXT").save()
