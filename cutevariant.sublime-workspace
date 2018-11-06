@@ -1,0 +1,1501 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"setva",
+				"setValue\tmodule"
+			],
+			[
+				"impo",
+				"import_button\tstatement"
+			],
+			[
+				"mode",
+				"model\tmodule"
+			],
+			[
+				"setRa",
+				"setRange\tPyQt Functions"
+			],
+			[
+				"glob",
+				"globalInstance\tmodule"
+			],
+			[
+				"QThread",
+				"QThreadPool\tPyQt Classes"
+			],
+			[
+				"Impor",
+				"ImportTask\tclass"
+			],
+			[
+				"Imp",
+				"ImportTask\tclass"
+			],
+			[
+				"setContext",
+				"setContextProperty\tPyQt Functions"
+			],
+			[
+				"setFrameS",
+				"setFrameShape\tmodule"
+			],
+			[
+				"setFra",
+				"setFrame\tPyQt Functions"
+			],
+			[
+				"tabw",
+				"tabwidget\tstatement"
+			],
+			[
+				"impor",
+				"import_layout\tstatement"
+			],
+			[
+				"get",
+				"getOpenFileName\tmodule"
+			],
+			[
+				"QWizard",
+				"QWizardPage\tclass"
+			],
+			[
+				"connec",
+				"connect\tPyQt Functions"
+			],
+			[
+				"butt",
+				"butt\tstatement"
+			],
+			[
+				"init",
+				"init\tPyQt Functions"
+			],
+			[
+				"PyQt",
+				"PyQt5.Qt\tPyQt import"
+			],
+			[
+				"QAbstractItem",
+				"QAbstractItemModel\tPyQt Classes"
+			],
+			[
+				"info",
+				"info\tPyQt Functions"
+			],
+			[
+				"categor",
+				"category\tPyQt Functions"
+			],
+			[
+				"set",
+				"setattr\tfunction"
+			],
+			[
+				"items",
+				"items\tPyQt Functions"
+			],
+			[
+				"inf",
+				"infos\tstatement"
+			],
+			[
+				"chun",
+				"chunk\tstatement"
+			],
+			[
+				"chunk",
+				"chunk_size\tstatement"
+			],
+			[
+				"insert",
+				"insert_many\tfunction"
+			],
+			[
+				"chu",
+				"chunk_size\tstatement"
+			],
+			[
+				"crea",
+				"create_default\tfunction"
+			],
+			[
+				"create",
+				"create_tables\tfunction"
+			],
+			[
+				"mod",
+				"model\tmodule"
+			],
+			[
+				"fil",
+				"filename\tstatement"
+			],
+			[
+				"abs",
+				"abstractclassmethod\tclass"
+			],
+			[
+				"Vc",
+				"VcfReader\tclass"
+			],
+			[
+				"Vcf",
+				"vcfreader\tmodule"
+			],
+			[
+				"Backg",
+				"BackgroundColorRole\tinstance"
+			],
+			[
+				"Pyqt",
+				"PyQt5.Qt\tPyQt import"
+			],
+			[
+				"QApp",
+				"QApplication\tclass"
+			],
+			[
+				"ba",
+				"background-color\tproperty"
+			],
+			[
+				"paren",
+				"parent\tPyQt Functions"
+			],
+			[
+				"coding",
+				"coding_start\tstatement"
+			],
+			[
+				"obo",
+				"obograph\tstatement"
+			],
+			[
+				"dump",
+				"dump\tstatement"
+			],
+			[
+				"norma",
+				"normalize\tPyQt Functions"
+			],
+			[
+				"scat",
+				"scatter_kws\tparam"
+			],
+			[
+				"norm",
+				"normalize\tPyQt Functions"
+			],
+			[
+				"colum",
+				"columns\tstatement"
+			],
+			[
+				"prep",
+				"preprocessing\tmodule"
+			],
+			[
+				"to",
+				"to_csv\tfunction"
+			],
+			[
+				"Base",
+				"baseName\tPyQt Functions"
+			],
+			[
+				"f",
+				"filename\tstatement"
+			],
+			[
+				"ampl",
+				"amplicons\tstatement"
+			],
+			[
+				"coverage",
+				"coverage_file\tstatement"
+			],
+			[
+				"cover",
+				"coverage_file\tstatement"
+			],
+			[
+				"bam",
+				"bamfile\tparam"
+			],
+			[
+				"Argu",
+				"ArgumentParser\tclass"
+			],
+			[
+				"click",
+				"clicked\tPyQt Functions"
+			],
+			[
+				"QTreeWidg",
+				"QTreeWidgetItem\tPyQt Classes"
+			],
+			[
+				"addMe",
+				"addMenu\tPyQt Functions"
+			],
+			[
+				"setPix",
+				"setPixmap\tPyQt Functions"
+			],
+			[
+				"QDialog",
+				"QDialogButtonBox\tPyQt Classes"
+			],
+			[
+				"setVa",
+				"setValue\tPyQt Functions"
+			],
+			[
+				"cds_",
+				"cds_end"
+			],
+			[
+				"propert",
+				"property\tPyQt Functions"
+			],
+			[
+				"meta",
+				"metaObject\tPyQt Functions"
+			],
+			[
+				"resu",
+				"results\tPyQt Functions"
+			],
+			[
+				"QITem",
+				"QItemEditorFactory\tPyQt Classes"
+			],
+			[
+				"QItemEditor",
+				"QItemEditorFactory\tPyQt Classes"
+			],
+			[
+				"QDialo",
+				"QDialogButtonBox\tPyQt Classes"
+			],
+			[
+				"prin",
+				"println\tprintln!(…)"
+			],
+			[
+				"cou",
+				"country"
+			],
+			[
+				"c",
+				"country"
+			],
+			[
+				"jso",
+				"json_data"
+			],
+			[
+				"imp",
+				"import_MandO"
+			],
+			[
+				"csv",
+				"csvfile"
+			],
+			[
+				"th",
+				"threads"
+			]
+		]
+	},
+	"buffers":
+	[
+		{
+			"file": "main.py",
+			"settings":
+			{
+				"buffer_size": 371,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "cutevariant/gui/importwizard.py",
+			"settings":
+			{
+				"buffer_size": 1986,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "cutevariant.sublime-project",
+			"settings":
+			{
+				"buffer_size": 679,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "cutevariant/core/importer.py",
+			"settings":
+			{
+				"buffer_size": 1418,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "tests/test_import.py",
+			"settings":
+			{
+				"buffer_size": 204,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "cutevariant/core/readerfactory.py",
+			"settings":
+			{
+				"buffer_size": 306,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "cutevariant/core/reader/vcfreader.py",
+			"settings":
+			{
+				"buffer_size": 1839,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "cutevariant/core/reader/abstractreader.py",
+			"settings":
+			{
+				"buffer_size": 313,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		}
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+		[
+			[
+				[
+					"Packages/Python/Python.sublime-build",
+					""
+				],
+				[
+					"Packages/Python/Python.sublime-build",
+					"Syntax Check"
+				]
+			],
+			[
+				"Packages/Python/Python.sublime-build",
+				""
+			]
+		],
+		[
+			[
+				[
+					"Packages/Python/Python.sublime-build",
+					""
+				],
+				[
+					"Packages/Python/Python.sublime-build",
+					"Syntax Check"
+				],
+				[
+					"Packages/Virtualenv/Python + Virtualenv.sublime-build",
+					""
+				]
+			],
+			[
+				"Packages/Virtualenv/Python + Virtualenv.sublime-build",
+				""
+			]
+		],
+		[
+			[
+				[
+					"Packages/Rust/Cargo.sublime-build",
+					""
+				],
+				[
+					"Packages/Rust/Cargo.sublime-build",
+					"Run"
+				],
+				[
+					"Packages/Rust/Cargo.sublime-build",
+					"Test"
+				],
+				[
+					"Packages/Rust/Cargo.sublime-build",
+					"Bench"
+				],
+				[
+					"Packages/Rust/Cargo.sublime-build",
+					"Clean"
+				],
+				[
+					"Packages/Rust/Rust.sublime-build",
+					""
+				],
+				[
+					"Packages/Rust/Rust.sublime-build",
+					"Run"
+				]
+			],
+			[
+				"Packages/Rust/Cargo.sublime-build",
+				"Run"
+			]
+		],
+		[
+			[
+				[
+					"Packages/Rust/Cargo.sublime-build",
+					""
+				],
+				[
+					"Packages/Rust/Cargo.sublime-build",
+					"Run"
+				],
+				[
+					"Packages/Rust/Cargo.sublime-build",
+					"Test"
+				],
+				[
+					"Packages/Rust/Cargo.sublime-build",
+					"Bench"
+				],
+				[
+					"Packages/Rust/Cargo.sublime-build",
+					"Clean"
+				],
+				[
+					"Packages/Rust/Rust.sublime-build",
+					""
+				],
+				[
+					"Packages/Rust/Rust.sublime-build",
+					"Run"
+				],
+				[
+					"Packages/Rust Enhanced/Cargo.sublime-build",
+					""
+				],
+				[
+					"Packages/Rust Enhanced/Cargo.sublime-build",
+					"Run"
+				],
+				[
+					"Packages/Rust Enhanced/Cargo.sublime-build",
+					"Run Release"
+				],
+				[
+					"Packages/Rust Enhanced/Cargo.sublime-build",
+					"Test"
+				],
+				[
+					"Packages/Rust Enhanced/Cargo.sublime-build",
+					"Bench"
+				],
+				[
+					"Packages/Rust Enhanced/Cargo.sublime-build",
+					"Clean"
+				],
+				[
+					"Packages/Rust Enhanced/Cargo.sublime-build",
+					"Release"
+				],
+				[
+					"Packages/Rust Enhanced/Cargo.sublime-build",
+					"Document"
+				],
+				[
+					"Packages/Rust Enhanced/Cargo.sublime-build",
+					"Clippy"
+				],
+				[
+					"Packages/Rust Enhanced/Cargo.sublime-build",
+					"Script"
+				],
+				[
+					"Packages/Rust Enhanced/RustEnhanced.sublime-build",
+					""
+				],
+				[
+					"Packages/Rust Enhanced/RustEnhanced.sublime-build",
+					"Run"
+				]
+			],
+			[
+				"Packages/Rust/Rust.sublime-build",
+				""
+			]
+		]
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 244.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"install",
+				"Package Control: Install Package"
+			],
+			[
+				"qml",
+				"Set Syntax: QML"
+			],
+			[
+				"conda",
+				"Conda: Activate Environment"
+			],
+			[
+				"list",
+				"Package Control: List Packages"
+			],
+			[
+				"activate",
+				"Conda: Activate Environment"
+			],
+			[
+				"package",
+				"Package Control: List Packages"
+			],
+			[
+				"conda ",
+				"Conda: Activate Environment"
+			],
+			[
+				"remove rep",
+				"Package Control: Remove Repository"
+			],
+			[
+				"install ",
+				"Package Control: Install Package"
+			],
+			[
+				"Package Control: ",
+				"Package Control: Add Repository"
+			],
+			[
+				"python",
+				"Set Syntax: Python"
+			],
+			[
+				"modi",
+				"Pelican: Update Modified Date"
+			],
+			[
+				"link",
+				"Snippet: Markdown Hyperlink"
+			],
+			[
+				"mark s",
+				"Set Syntax: Markdown"
+			],
+			[
+				"new pel",
+				"Pelican: New Article (Markdown)"
+			],
+			[
+				"prolo",
+				"Set Syntax: SWI-Prolog"
+			],
+			[
+				"tabi",
+				"Tabify"
+			],
+			[
+				"pep8",
+				"AutoPEP8: Format Code"
+			],
+			[
+				"autopep",
+				"AutoPEP8: Preview Changes"
+			],
+			[
+				"auto",
+				"Anaconda: Autoformat PEP8 Errors"
+			],
+			[
+				"ever",
+				"Evernote: New empty note"
+			],
+			[
+				"xpath",
+				"Browser Integration: Select elements by XPath"
+			],
+			[
+				"modif",
+				"Pelican: Update Modified Date"
+			],
+			[
+				"pelica",
+				"Pelican: New Article (Markdown)"
+			],
+			[
+				"upda",
+				"Pelican: Update Modified Date"
+			],
+			[
+				"update",
+				"Pelican: Update Modified Date"
+			],
+			[
+				"evernote",
+				"Evernote: Update Evernote Note"
+			],
+			[
+				"sent",
+				"Evernote: Send to Evernote as new note"
+			],
+			[
+				"evernote save",
+				"Evernote: Send to Evernote as new note"
+			],
+			[
+				"new note",
+				"Evernote: New empty note"
+			],
+			[
+				"evero",
+				"Evernote: List recent notes"
+			],
+			[
+				"evernote reco",
+				"Evernote Settings: Reconfigure Authorization"
+			],
+			[
+				"instal",
+				"Package Control: Install Package"
+			],
+			[
+				"markdown ima",
+				"MarkdownEditing: New Image"
+			],
+			[
+				"PELICAN",
+				"Pelican: New Article (Markdown)"
+			],
+			[
+				"tab",
+				"Tabify"
+			],
+			[
+				"herm",
+				"Hermes: List Kernels"
+			],
+			[
+				"hermec",
+				"Hermes: Execute Block"
+			],
+			[
+				"herme",
+				"Hermes: Start Kernel"
+			],
+			[
+				"sftp",
+				"SFTP: Browse Remote…"
+			],
+			[
+				"yaml",
+				"Set Syntax: YAML"
+			],
+			[
+				"sfp",
+				"SFTP: Browse Server…"
+			],
+			[
+				"virtua",
+				"Virtualenv: New"
+			],
+			[
+				"virtu",
+				"Virtualenv: Add directory"
+			],
+			[
+				"",
+				"Browser Integration: Launch Browser"
+			],
+			[
+				"browser",
+				"Browser Integration: Launch Browser"
+			],
+			[
+				"syntax js",
+				"Set Syntax: JavaScript"
+			],
+			[
+				"awk",
+				"Set Syntax: AWK"
+			],
+			[
+				"pelican",
+				"Pelican: New Article (Markdown)"
+			],
+			[
+				"virt",
+				"Virtualenv: Activate"
+			],
+			[
+				"vi",
+				"Virtualenv: Activate"
+			],
+			[
+				"virtual",
+				"Virtualenv: Activate"
+			],
+			[
+				"link\t",
+				"Snippet: Markdown Hyperlink"
+			],
+			[
+				"insta",
+				"Package Control: Install Package"
+			],
+			[
+				"LINK",
+				"Snippet: Markdown Hyperlink"
+			],
+			[
+				"snipp",
+				"Snippet: test"
+			],
+			[
+				"Snippet: ",
+				"Snippet: test"
+			],
+			[
+				"upp",
+				"Convert Case: Upper Case"
+			],
+			[
+				"upper",
+				"Convert Case: Upper Case"
+			],
+			[
+				"remove ",
+				"Package Control: Remove Package"
+			],
+			[
+				"markdow",
+				"Set Syntax: MultiMarkdown"
+			],
+			[
+				"markdow\t\t\t",
+				"Set Syntax: Markdown Extended"
+			],
+			[
+				"remove",
+				"Package Control: Remove Package"
+			],
+			[
+				"syntax mark",
+				"Set Syntax: MultiMarkdown"
+			],
+			[
+				"markd",
+				"Set Syntax: Markdown"
+			],
+			[
+				"markdo",
+				"Set Syntax: MultiMarkdown"
+			],
+			[
+				"INSTALL",
+				"Package Control: Install Package"
+			],
+			[
+				"INTAL",
+				"Indentation: Reindent Lines"
+			],
+			[
+				"syntax py",
+				"Set Syntax: Python"
+			],
+			[
+				"rust ",
+				"Build With: Rust - Run"
+			],
+			[
+				"syntax ru",
+				"Set Syntax: Rust"
+			]
+		],
+		"width": 569.0
+	},
+	"console":
+	{
+		"height": 333.0,
+		"history":
+		[
+			"os.environ[\"PYTHONPATH\"]",
+			"os.environ",
+			"import os",
+			"sys.e",
+			"import sys",
+			"print(\"saluit\")"
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"file_history":
+	[
+		"/home/sacha/Dev/flo/test.py",
+		"/home/sacha/Dev/flo/demo.qml",
+		"/home/sacha/Dev/CuteVariant-python/cutevariant/gui/Test.py",
+		"/home/sacha/Dev/CuteVariant-python/cutevariant/gui/__init__.py",
+		"/home/sacha/Dev/CuteVariant-python/main.py",
+		"/home/sacha/Dev/CuteVariant-python/cutevariant/gui/widgets.py",
+		"/home/sacha/Dev/CuteVariant-python/cutevariant/gui/importwizard.py",
+		"/home/sacha/Dev/CuteVariant-python/cutevariant/gui/mainwindow.py",
+		"/home/sacha/Dev/CuteVariant-python/cutevariant/core/reader/vcfreader.py",
+		"/home/sacha/Dev/CuteVariant-python/cutevariant.sublime-project",
+		"/home/sacha/Dev/CuteVariant-python/cutevariant/core/reader/abstractreader.py",
+		"/home/sacha/Dev/CuteVariant-python/cutevariant/core/reader/__init__.py",
+		"/home/sacha/Dev/CuteVariant-python/cutevariant/core/readerfactory.py",
+		"/home/sacha/Dev/CuteVariant-python/cutevariant/core/importer.py",
+		"/home/sacha/Dev/CuteVariant-python/cutevariant/core/model.py",
+		"/home/sacha/Dev/CuteVariant-python/cutevariant/cutevariant.py",
+		"/home/sacha/Dev/CuteVariant-python/cutevariant/core/reader/AbstractReader.py",
+		"/home/sacha/Dev/CuteVariant-python/cutevariant/core/ReaderFactory.py",
+		"/home/sacha/Dev/grafana/main.py",
+		"/home/sacha/Dev/qtpython/test.py",
+		"/home/sacha/Dev/enseignement/DFGSM2/cours1.md",
+		"/home/sacha/Dev/tp_snakemake/Snakefile.correction",
+		"/home/sacha/test.txt",
+		"/home/sacha/Dev/blog/content/gradient_descendant.md",
+		"/home/sacha/message.txt",
+		"/home/sacha/Dev/tp_snakemake/Snakefile",
+		"/home/sacha/Dev/blog/content/post21.md",
+		"/home/sacha/Dev/blog/content/rusty_lake.md",
+		"/home/sacha/Dev/blog/content/post7.md",
+		"/home/sacha/test.prolog",
+		"/home/sacha/Dev/biostar/test.py",
+		"/home/sacha/Dev/biostar/test.fa",
+		"/home/sacha/report.html",
+		"/data/Downloads/test.html",
+		"/home/sacha/test/test.lrxml",
+		"/home/sacha/test/test.qtrp",
+		"/home/sacha/orm.cpp",
+		"/data/test/prometheus-2.4.0.linux-amd64/prometheus.yml",
+		"/data/test/prometheus-2.4.0.linux-amd64/mytest.yml",
+		"/home/sacha/.plotly/.credentials",
+		"/home/sacha/dash_scc.md",
+		"/home/sacha/test.md",
+		"/home/sacha/kevin_idea.txt",
+		"/home/sacha/Dev/hpo2sqlite/model.py",
+		"/home/sacha/sacha.cpp",
+		"/home/sacha/Dev/udacity/ud120-projects/naive_bayes/nb_author_id.py",
+		"/home/sacha/.zshrc",
+		"/home/sacha/Dev/hpo2sqlite/import_hpo_obo.py",
+		"/tmp/transcript.txt",
+		"/home/sacha/twist_onco_fer.v1.bed",
+		"/home/sacha/Dev/twist/twist_onco_fer.v2.bed",
+		"/home/sacha/Dev/twist/twist_onco_fer.v5.bed",
+		"/home/sacha/Dev/iscard/iscard/core.py",
+		"/data/Bioinfo/projects/snp_exome/data/sign.sh",
+		"/home/sacha/Dev/iscard/iscard/__main__.py",
+		"/home/sacha/Dev/iscard/iscard/model.py",
+		"/home/sacha/big1/test.py",
+		"/data/Bioinfo/projects/snp_exome/data/snps.bed",
+		"/data/Bioinfo/projects/snp_exome/data/snps2.bed",
+		"/data/Bioinfo/data/louise/region.bed",
+		"/data/Bioinfo/data/louise/term.hpo",
+		"/data/Bioinfo/projects/snp_exome/data/test.bed",
+		"/tmp/bit/test.cpp",
+		"/home/sacha/Dev/iscard/iscard/learn.py",
+		"/data/Bioinfo/projects/suselect/3151331/3151331_Covered.bed",
+		"/data/Bioinfo/projects/suselect/refgene_to_bed.py",
+		"/data/Downloads/3151331_Covered.bed",
+		"/home/sacha/Dev/iscard/corr_amplicon.txt",
+		"/home/sacha/Dev/iscard/colon.design.gene.sort.bed",
+		"/home/sacha/Dev/fastQt/FastQt.pro",
+		"/home/sacha/Dev/fastQt/.appveyor.yml",
+		"/home/sacha/Dev/fastQt/.travis.yml",
+		"/home/sacha/Dev/CuteVariant/.travis.yml",
+		"/home/sacha/Dev/blog/content/theoreme_bayes.md",
+		"/home/sacha/Dev/iscard/setup.py",
+		"/home/sacha/UMD/APC.tmp",
+		"/home/sacha/test.py",
+		"/home/sacha/UMD/APC.txt",
+		"/home/sacha/Dev/mucovirome/config.yml",
+		"/home/sacha/Dev/BEAR/scripts/generate_reads.py",
+		"/home/sacha/Dev/mucovirome/Snakefile",
+		"/home/sacha/Dev/blog/content/tad.md",
+		"/home/sacha/Dev/mucobiome/Snakefile",
+		"/home/sacha/Dev/test.cpp",
+		"/home/sacha/Dev/blog/content/distribution-ki2.md",
+		"/home/sacha/test.bed",
+		"/home/sacha/Dev/singutest/mytest.recip",
+		"/data/Bioinfo/projects/snp_exome/cmd",
+		"/data/Bioinfo/projects/gscdb/result.bed",
+		"/home/sacha/Dev/iscard/diff.csv",
+		"/home/sacha/or",
+		"/home/sacha/oracle.py",
+		"/home/sacha/test.cpp",
+		"/data/Bioinfo/projects/mucobiome/rscript/analyse_biom.r",
+		"/home/sacha/risque.py",
+		"/data/Bioinfo/projects/mucobiome/rscript/create_report.R",
+		"/data/Bioinfo/projects/mucobiome/rscript/vegan.r",
+		"/home/sacha/Dev/blog/content/hpo2sqlite.md",
+		"/home/sacha/Dev/blog/content/samtools-flags.md",
+		"/home/sacha/Dev/blog/content/post31.md",
+		"/home/sacha/Dev/blog/content/post29.md",
+		"/home/sacha/Dev/blog/content/post28.md",
+		"/home/sacha/Dev/blog/content/post27.md",
+		"/home/sacha/Dev/blog/content/post26.md",
+		"/home/sacha/Dev/blog/content/post25.md",
+		"/home/sacha/Dev/blog/content/post22.md",
+		"/home/sacha/Dev/iscard/main.py",
+		"/home/sacha/Evernote: BRCA.enmd",
+		"/home/sacha/test.vep.vcf",
+		"/home/sacha/example.varscan.snpeff.vcf",
+		"/home/sacha/vep.vcf",
+		"/home/sacha/.config/sublime-text-3/Packages/User/Evernote.sublime-settings",
+		"/home/sacha/blog",
+		"/data/Documents/scc/tuto_houda.md",
+		"/data/cozmo/test.py",
+		"/data/Bioinfo/projects/brca/mutations/brca2.json",
+		"/data/Bioinfo/projects/brca/mutations/brca2.bed",
+		"/usr/share/applications/sublime_text.desktop",
+		"/home/sacha/Dev/hpo2sqlite/createHPO.py",
+		"/data/Bioinfo/projects/brca/mutations/test.json",
+		"/data/Downloads/somatic.identifier (1).bed",
+		"/media/sacha/DATA/recherche/identifiler.py",
+		"/media/sacha/DATA/recherche/somatic/17-29506-A-14-00_mutations_diag.csv",
+		"/media/sacha/DATA/recherche/somatic.identifier.small.bed",
+		"/home/sacha/Dev/iscard/iscard/__init__.py",
+		"/data/Bioinfo/projects/iscard/scripts/plot_gc_coverage.py",
+		"/data/Bioinfo/projects/iscard/scripts/plot_correlation_matrix.py",
+		"/data/Bioinfo/projects/iscard/scripts/create_coverage_matrix.py"
+	],
+	"find":
+	{
+		"height": 35.0
+	},
+	"find_in_files":
+	{
+		"height": 0.0,
+		"where_history":
+		[
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": true,
+		"find_history":
+		[
+			"vcf",
+			"zip",
+			"return {",
+			"print",
+			"print ",
+			"plugins",
+			"tree",
+			",",
+			"NM",
+			"\\n",
+			"^[A-Z0-9]+",
+			"\\n",
+			"^\\d+",
+			"[A-Z]+",
+			"\\n",
+			"rs",
+			"\\n",
+			"'''",
+			".+LOC102723566",
+			"AMPL7155794292",
+			"AMPL7153385322",
+			"\\.0",
+			"\nnan.+",
+			"nan.+",
+			"la distribution",
+			"par chance",
+			"graph",
+			"|",
+			"\\d+",
+			"[",
+			"http://qt.io/.+\\/",
+			"chr17   \\d+    [A,C,T,G]>[A,C,T,G]",
+			"[A,C,T,G]>[A,C,T,G]",
+			"g.",
+			"()\n"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": true,
+		"replace_history":
+		[
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"selected": 1,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "main.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 371,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								188,
+								188
+							]
+						],
+						"settings":
+						{
+							"auto_complete_triggers":
+							[
+								{
+									"characters": ".",
+									"selector": "source.python - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								}
+							],
+							"incomplete_sync": null,
+							"remote_loading": false,
+							"synced": false,
+							"syntax": "Packages/Python/Python.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "cutevariant/gui/importwizard.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1986,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								1621,
+								1621
+							]
+						],
+						"settings":
+						{
+							"auto_complete_triggers":
+							[
+								{
+									"characters": ".",
+									"selector": "source.python - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								}
+							],
+							"incomplete_sync": null,
+							"remote_loading": false,
+							"synced": false,
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 960.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "cutevariant.sublime-project",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 679,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								662,
+								662
+							]
+						],
+						"settings":
+						{
+							"incomplete_sync": null,
+							"remote_loading": false,
+							"synced": false,
+							"syntax": "Packages/JavaScript/JSON.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 3,
+					"type": "text"
+				}
+			]
+		},
+		{
+			"selected": 0,
+			"sheets":
+			[
+				{
+					"buffer": 3,
+					"file": "cutevariant/core/importer.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1418,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								244,
+								244
+							]
+						],
+						"settings":
+						{
+							"auto_complete_triggers":
+							[
+								{
+									"characters": ".",
+									"selector": "source.python - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								}
+							],
+							"incomplete_sync": null,
+							"remote_loading": false,
+							"synced": false,
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 60.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "tests/test_import.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 204,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								204,
+								204
+							]
+						],
+						"settings":
+						{
+							"auto_complete_triggers":
+							[
+								{
+									"characters": ".",
+									"selector": "source.python - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								}
+							],
+							"incomplete_sync": null,
+							"syntax": "Packages/Python/Python.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 4,
+					"type": "text"
+				},
+				{
+					"buffer": 5,
+					"file": "cutevariant/core/readerfactory.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 306,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								293,
+								293
+							]
+						],
+						"settings":
+						{
+							"incomplete_sync": null,
+							"remote_loading": false,
+							"synced": false,
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 6,
+					"type": "text"
+				},
+				{
+					"buffer": 6,
+					"file": "cutevariant/core/reader/vcfreader.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1839,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								1154,
+								1154
+							]
+						],
+						"settings":
+						{
+							"auto_complete_triggers":
+							[
+								{
+									"characters": ".",
+									"selector": "source.python - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								}
+							],
+							"incomplete_sync": null,
+							"remote_loading": false,
+							"synced": false,
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 1260.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 5,
+					"type": "text"
+				},
+				{
+					"buffer": 7,
+					"file": "cutevariant/core/reader/abstractreader.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 313,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								160,
+								160
+							]
+						],
+						"settings":
+						{
+							"auto_complete_triggers":
+							[
+								{
+									"characters": ".",
+									"selector": "source.python - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								}
+							],
+							"incomplete_sync": null,
+							"remote_loading": false,
+							"synced": false,
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 7,
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 35.0
+	},
+	"input":
+	{
+		"height": 114.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			],
+			[
+				1,
+				0,
+				2,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			0.468229166667,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.autopep8":
+	{
+		"height": 0.0
+	},
+	"output.exec":
+	{
+		"height": 302.0
+	},
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"output.sftp":
+	{
+		"height": 198.0
+	},
+	"pinned_build_system": "Packages/Conda/Conda.sublime-build",
+	"project": "cutevariant.sublime-project",
+	"replace":
+	{
+		"height": 66.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": false,
+	"side_bar_width": 150.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}
