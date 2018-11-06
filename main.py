@@ -1,36 +1,26 @@
-from cutevariant.core.importer import Importer
+from cutevariant.core.importer import ImportTask
 
 import peewee
 import sys 
-from cutevariant.gui import * 
+from cutevariant.gui import *
+from cutevariant.gui.Test import VariantModel
 
 
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 
+
+
 app = QApplication(sys.argv)
 
+bar = QProgressBar()
+bar.show()
+bar.setRange(0,0)
 
-w = MainWindow()
+task = ImportTask("/home/sacha/test2.vcf", "test.db")
 
-w.show()
+QThreadPool.globalInstance().start(task)
+
+print("done")
 
 app.exec()
-
-
-
-
-
-#test = Importer("test.db")
-#test.import_file("/home/sacha/test2.vcf")
-
-# model = VariantModel()
-
-
-# view = QListView()
-
-# view.setModel(model)
-
-# model.load("test.db")
-
-# view.show()

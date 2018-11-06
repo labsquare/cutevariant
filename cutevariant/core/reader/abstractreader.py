@@ -1,9 +1,9 @@
 from abc import ABC, abstractclassmethod
 
 class AbstractReader(ABC):
-	def __init__(self, filename):
+	def __init__(self, device):
 		super(AbstractReader,self).__init__()
-		self.filename = filename
+		self.device = device
 
 
 	@abstractclassmethod

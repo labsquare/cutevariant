@@ -11,6 +11,6 @@ class ReaderFactory(object):
 	def create_reader(filename):
 		
 		# create a reader depending file type .. actually, only one 
-		return VcfReader(filename)
+		return VcfReader(open(filename,"r+"))
 		pass 
 

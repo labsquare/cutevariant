@@ -6,12 +6,14 @@ import vcf
 
 
 class VcfReader(AbstractReader):
-	def __init__(self,filename):
-		super(VcfReader,self).__init__(filename)
+	def __init__(self,device):
+		super(VcfReader,self).__init__(device)
 		print("create vcf reader")
 
 	def get_variants(self):
-		vcf_reader = vcf.Reader(open(self.filename, 'r'))
+
+		vcf_reader = vcf.Reader(self.device)
+
 		for record in vcf_reader:
 
 			for index, alt in enumerate(record.ALT):
@@ -46,13 +48,13 @@ class VcfReader(AbstractReader):
 
 
 					# PARSE GENOTYPE / SAMPLE 
-					if category == "sample":
-						for sample in record.samples:
-							sname = name.split("_")[0]
+					# if category == "sample":
+					# 	for sample in record.samples:
+					# 		sname = name.split("_")[0]
 
-							for key, value in sample.data._asdict().items():
-								colname = "sample_"+sname +"_"+key
-								variant[colname] = value
+					# 		for key, value in sample.data._asdict().items():
+					# 			colname = "sample_"+sname +"_"+key
+					# 			variant[colname] = value
 
 							
 
@@ -65,7 +67,7 @@ class VcfReader(AbstractReader):
 	def get_fields(self):
 		fields = []
 
-		vcf_reader = vcf.Reader(open(self.filename, 'r'))
+		vcf_reader = vcf.Reader(self.device)
 		for key,info in vcf_reader.infos.items():
 			yield {
 			"name":key,
