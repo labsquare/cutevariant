@@ -47,14 +47,14 @@ class VcfReader(AbstractReader):
 							variant[colname] = value
 
 
-					# PARSE GENOTYPE / SAMPLE 
-					# if category == "sample":
-					# 	for sample in record.samples:
-					# 		sname = name.split("_")[0]
+					#PARSE GENOTYPE / SAMPLE 
+					if category == "sample":
+						for sample in record.samples:
+							sname = name.split("_")[0]
 
-					# 		for key, value in sample.data._asdict().items():
-					# 			colname = "sample_"+sname +"_"+key
-					# 			variant[colname] = value
+							for key, value in sample.data._asdict().items():
+								colname = "sample_"+sname +"_"+key
+								variant[colname] = value
 
 							
 

@@ -13,6 +13,9 @@ class ImportTask(QRunnable):
 		self.filename = filename
 		self.db_filename = db_filename
 
+	def async_run(self):
+		QThreadPool.globalInstance().run(self)
+
 
 	def run(self):
 		# Init database
@@ -62,10 +65,11 @@ class ImportTask(QRunnable):
 					model.Variant.insert_many(chunk).execute()
 					chunk.clear()
 
+			print(chunk)
 			model.Variant.insert_many(chunk).execute()
 
 
-
+		print("done")
 
 
 
