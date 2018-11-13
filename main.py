@@ -7,12 +7,11 @@ from cutevariant.gui.Test import VariantModel
 from cutevariant.core import model
 
 
-from PyQt5.QtWidgets import *
-from PyQt5.QtCore import *
+from PySide2.QtWidgets import *
+from PySide2.QtCore import *
 
 
-database = peewee.SqliteDatabase("test.db")
-model.db.initialize(database)
 
-for v in model.Variant.select():
-	print(v.chrom)
+task = ImportTask("exemples/test2.vcf","test.db")
+
+task.run()

@@ -1,6 +1,6 @@
-from PyQt5.QtWidgets import * 
-from PyQt5.QtCore import * 
-from PyQt5.Qt import Qt
+from PySide2.QtWidgets import * 
+from PySide2.QtCore import * 
+
 
 from cutevariant.core.model import * 
 import peewee

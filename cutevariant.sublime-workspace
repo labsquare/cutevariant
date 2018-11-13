@@ -319,7 +319,7 @@
 			"file": "main.py",
 			"settings":
 			{
-				"buffer_size": 371,
+				"buffer_size": 327,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
@@ -328,7 +328,42 @@
 			"file": "cutevariant/gui/importwizard.py",
 			"settings":
 			{
-				"buffer_size": 1986,
+				"buffer_size": 1990,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "cutevariant/gui/__init__.py",
+			"settings":
+			{
+				"buffer_size": 26,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "cutevariant/gui/mainwindow.py",
+			"settings":
+			{
+				"buffer_size": 213,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "cutevariant/gui/Test.py",
+			"settings":
+			{
+				"buffer_size": 600,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "cutevariant/gui/widgets.py",
+			"settings":
+			{
+				"buffer_size": 697,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
@@ -337,7 +372,7 @@
 			"file": "cutevariant.sublime-project",
 			"settings":
 			{
-				"buffer_size": 679,
+				"buffer_size": 249,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
@@ -346,8 +381,16 @@
 			"file": "cutevariant/core/importer.py",
 			"settings":
 			{
-				"buffer_size": 1418,
+				"buffer_size": 1420,
 				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "cutevariant/core/model.py",
+			"settings":
+			{
+				"buffer_size": 763,
 				"line_ending": "Unix"
 			}
 		},
@@ -355,7 +398,7 @@
 			"file": "tests/test_import.py",
 			"settings":
 			{
-				"buffer_size": 204,
+				"buffer_size": 206,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
@@ -556,6 +599,10 @@
 		"selected_items":
 		[
 			[
+				"virtu",
+				"Virtualenv: Activate"
+			],
+			[
 				"install",
 				"Package Control: Install Package"
 			],
@@ -726,10 +773,6 @@
 			[
 				"virtua",
 				"Virtualenv: New"
-			],
-			[
-				"virtu",
-				"Virtualenv: Add directory"
 			],
 			[
 				"",
@@ -1001,9 +1044,10 @@
 	},
 	"find_in_files":
 	{
-		"height": 0.0,
+		"height": 101.0,
 		"where_history":
 		[
+			""
 		]
 	},
 	"find_state":
@@ -1011,6 +1055,7 @@
 		"case_sensitive": true,
 		"find_history":
 		[
+			"PyQt5",
 			"vcf",
 			"zip",
 			"return {",
@@ -1053,6 +1098,7 @@
 		"regex": true,
 		"replace_history":
 		[
+			"PySide2"
 		],
 		"reverse": false,
 		"show_context": true,
@@ -1063,7 +1109,7 @@
 	"groups":
 	[
 		{
-			"selected": 1,
+			"selected": 0,
 			"sheets":
 			[
 				{
@@ -1072,15 +1118,15 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 371,
+						"buffer_size": 327,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								188,
-								188
+								263,
+								263
 							]
 						],
 						"settings":
@@ -1094,12 +1140,176 @@
 								{
 									"characters": ".",
 									"selector": "source.python - string - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python"
 								}
 							],
 							"incomplete_sync": null,
+							"lsp_language":
+							{
+								"pyls": "python"
+							},
+							"remote_loading": false,
+							"show_definitions": false,
+							"synced": false,
+							"syntax": "Packages/Python/Python.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "cutevariant/gui/importwizard.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1990,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								1625,
+								1625
+							]
+						],
+						"settings":
+						{
+							"auto_complete_triggers":
+							[
+								{
+									"characters": ".",
+									"selector": "source.python - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								}
+							],
+							"incomplete_sync": null,
+							"lsp_language":
+							{
+								"pyls": "python"
+							},
+							"remote_loading": false,
+							"synced": false,
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 6,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "cutevariant/gui/__init__.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 26,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"lsp_language":
+							{
+								"pyls": "python"
+							},
 							"remote_loading": false,
 							"synced": false,
 							"syntax": "Packages/Python/Python.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 5,
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "cutevariant/gui/mainwindow.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 213,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"lsp_language":
+							{
+								"pyls": "python"
+							},
+							"remote_loading": false,
+							"synced": false,
+							"syntax": "Packages/Python/Python.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 4,
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "cutevariant/gui/Test.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 600,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								63,
+								63
+							]
+						],
+						"settings":
+						{
+							"incomplete_sync": null,
+							"lsp_language":
+							{
+								"pyls": "python"
+							},
+							"remote_loading": false,
+							"synced": false,
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
 						"translation.y": 0.0,
@@ -1109,67 +1319,56 @@
 					"type": "text"
 				},
 				{
-					"buffer": 1,
-					"file": "cutevariant/gui/importwizard.py",
+					"buffer": 5,
+					"file": "cutevariant/gui/widgets.py",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 1986,
+						"buffer_size": 697,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								1621,
-								1621
+								0,
+								0
 							]
 						],
 						"settings":
 						{
-							"auto_complete_triggers":
-							[
-								{
-									"characters": ".",
-									"selector": "source.python - string - comment - constant.numeric"
-								},
-								{
-									"characters": ".",
-									"selector": "source.python - string - constant.numeric"
-								},
-								{
-									"characters": ".",
-									"selector": "source.python - string - constant.numeric"
-								}
-							],
 							"incomplete_sync": null,
+							"lsp_language":
+							{
+								"pyls": "python"
+							},
 							"remote_loading": false,
 							"synced": false,
 							"syntax": "Packages/Python/Python.sublime-syntax",
 							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 960.0,
+						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 0,
+					"stack_index": 3,
 					"type": "text"
 				},
 				{
-					"buffer": 2,
+					"buffer": 6,
 					"file": "cutevariant.sublime-project",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 679,
+						"buffer_size": 249,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								662,
-								662
+								171,
+								171
 							]
 						],
 						"settings":
@@ -1184,7 +1383,7 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 3,
+					"stack_index": 1,
 					"type": "text"
 				}
 			]
@@ -1194,20 +1393,20 @@
 			"sheets":
 			[
 				{
-					"buffer": 3,
+					"buffer": 7,
 					"file": "cutevariant/core/importer.py",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 1418,
+						"buffer_size": 1420,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								244,
-								244
+								246,
+								246
 							]
 						],
 						"settings":
@@ -1224,33 +1423,72 @@
 								}
 							],
 							"incomplete_sync": null,
+							"lsp_language":
+							{
+								"pyls": "python"
+							},
 							"remote_loading": false,
 							"synced": false,
 							"syntax": "Packages/Python/Python.sublime-syntax",
 							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 60.0,
+						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 1,
+					"stack_index": 7,
 					"type": "text"
 				},
 				{
-					"buffer": 4,
-					"file": "tests/test_import.py",
+					"buffer": 8,
+					"file": "cutevariant/core/model.py",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 204,
+						"buffer_size": 763,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								204,
-								204
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"lsp_language":
+							{
+								"pyls": "python"
+							},
+							"remote_loading": false,
+							"synced": false,
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 11,
+					"type": "text"
+				},
+				{
+					"buffer": 9,
+					"file": "tests/test_import.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 206,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								172,
+								172
 							]
 						],
 						"settings":
@@ -1267,17 +1505,23 @@
 								}
 							],
 							"incomplete_sync": null,
+							"lsp_language":
+							{
+								"pyls": "python"
+							},
+							"remote_loading": false,
+							"synced": false,
 							"syntax": "Packages/Python/Python.sublime-syntax"
 						},
 						"translation.x": 0.0,
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 4,
+					"stack_index": 12,
 					"type": "text"
 				},
 				{
-					"buffer": 5,
+					"buffer": 10,
 					"file": "cutevariant/core/readerfactory.py",
 					"semi_transient": false,
 					"settings":
@@ -1296,6 +1540,10 @@
 						"settings":
 						{
 							"incomplete_sync": null,
+							"lsp_language":
+							{
+								"pyls": "python"
+							},
 							"remote_loading": false,
 							"synced": false,
 							"syntax": "Packages/Python/Python.sublime-syntax",
@@ -1305,11 +1553,11 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 6,
+					"stack_index": 10,
 					"type": "text"
 				},
 				{
-					"buffer": 6,
+					"buffer": 11,
 					"file": "cutevariant/core/reader/vcfreader.py",
 					"semi_transient": false,
 					"settings":
@@ -1339,20 +1587,24 @@
 								}
 							],
 							"incomplete_sync": null,
+							"lsp_language":
+							{
+								"pyls": "python"
+							},
 							"remote_loading": false,
 							"synced": false,
 							"syntax": "Packages/Python/Python.sublime-syntax",
 							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 1260.0,
+						"translation.y": 757.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 5,
+					"stack_index": 8,
 					"type": "text"
 				},
 				{
-					"buffer": 7,
+					"buffer": 12,
 					"file": "cutevariant/core/reader/abstractreader.py",
 					"semi_transient": false,
 					"settings":
@@ -1382,6 +1634,10 @@
 								}
 							],
 							"incomplete_sync": null,
+							"lsp_language":
+							{
+								"pyls": "python"
+							},
 							"remote_loading": false,
 							"synced": false,
 							"syntax": "Packages/Python/Python.sublime-syntax",
@@ -1391,7 +1647,7 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 7,
+					"stack_index": 9,
 					"type": "text"
 				}
 			]
@@ -1425,7 +1681,7 @@
 		"cols":
 		[
 			0.0,
-			0.468229166667,
+			0.527604166667,
 			1.0
 		],
 		"rows":
@@ -1436,6 +1692,10 @@
 	},
 	"menu_visible": true,
 	"output.autopep8":
+	{
+		"height": 0.0
+	},
+	"output.diagnostics":
 	{
 		"height": 0.0
 	},
@@ -1451,7 +1711,7 @@
 	{
 		"height": 198.0
 	},
-	"pinned_build_system": "Packages/Conda/Conda.sublime-build",
+	"pinned_build_system": "Packages/Virtualenv/Python + Virtualenv.sublime-build",
 	"project": "cutevariant.sublime-project",
 	"replace":
 	{

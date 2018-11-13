@@ -5,24 +5,9 @@
 			"file_regex": "^[ ]*File \"(...*?)\", line ([0-9]*)",
 			"name": "Anaconda Python Builder",
 			"selector": "source.python",
-			"shell_cmd": "\"/home/sacha/miniconda3/envs/bioinfo/bin/python\" -u \"$file\""
+			"shell_cmd": "python -u \"$file\""
 		}
 	],
-	"conda_environment": "/home/sacha/miniconda3/envs/bioinfo",
-	"settings":
-	{
-		"anaconda_linting": false,
-		"anaconda_linting_behaviour": "always",
-		"pep257": false,
-		"python_interpreter": "/home/sacha/miniconda3/envs/bioinfo/bin/python",
-		"test_command": "python -m unittest discover",
-		"use_pylint": false,
-		"validate_imports": true,
-		"env": {
-			"Linux":{
-				"PYTHONPATH": "/home/sacha/Dev/CuteVariant-python"
-			}
-		}
-
-	}
+	
+	"virtualenv": "/home/sacha/Dev/biseau/venv"
 }
