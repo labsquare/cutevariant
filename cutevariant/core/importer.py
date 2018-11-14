@@ -20,7 +20,7 @@ def import_file(filename, db_filename):
 
 	# create dynamics variant fields 
 	for field in reader.get_fields():
-		column_name = field["category"]+"_"+field["name"]
+		column_name = f"{field['category']}_{field['name']}"
 		new_field = peewee.CharField(column_name=column_name,null=True)
 		model.Variant._meta.add_field(column_name, new_field)
 
