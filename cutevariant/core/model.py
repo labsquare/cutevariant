@@ -51,10 +51,49 @@ class Variant(Model):
 	def __getitem__(self, key):
 		return getattr(self, key, None)
 
+	@staticmethod
+	def create_meta_fields():
+		for field in Field.select():
+			Variant.create_meta_field(field)
+
+	@staticmethod
 	def create_meta_field(field: Field):
 		Variant._meta.add_field(field.name, field.to_meta_field())
 
+	@classmethod
+	def create_view(cls,name, where_clause):
+		sql = Variant.select().where(where_clause).sql()
 
+		# refactor 
+		raw    = sql[0]
+		params = sql[1] 
+
+		for param in params:
+			param = f"'{param}'"
+			raw = raw.replace("?", param, 1) 
+
+		Variant._meta.database.obj.execute_sql(f"CREATE VIEW {name} AS {raw}")
+		# Create a class dynamically
+		class VariantView(cls):
+			class Meta:
+				db_table = name
+
+		return VariantView
+
+
+
+
+
+
+class View(Model):
+	name = CharField()
+	sql  = CharField()
+	description = CharField()
+	count = IntegerField()
+
+
+	class Meta:
+		database = db 
 
 
 
@@ -69,21 +108,22 @@ if __name__ == "__main__":
 	except:
 		pass 
 
-	database = SqliteDatabase("/tmp/test.db")
+	database = SqliteDatabase("/tmp/test2.db")
 	db.initialize(database)
-	Field.create_table()
-
-	Field.default_field("chr").save()
-	Field.default_field("pos").save()
-	Field.default_field("ref").save()
-	Field.default_field("alt").save()
-
-	for field in Field.select():
-		Variant.create_meta_field(field)
 
 
+	Variant.create_meta_fields()
 
-	Variant.create_table()
+	print(Variant.select().count())
+
+	SubView = Variant.create_view("test7", Variant.ref == 'A')
+
+	print(SubView.select().count())
+
+
+
+
+
 
 
 

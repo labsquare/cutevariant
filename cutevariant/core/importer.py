@@ -23,10 +23,7 @@ def import_file(filename, db_filename):
 	# Create fields
 	model.Field.insert_many(reader.get_fields()).execute()
 		
-	# Create dynamic variant fields 
-	for field in model.Field.select():
-		model.Variant.create_meta_field(field)
-
+	model.Variant.create_meta_fields()
 	model.Variant.create_table()
 	
 	with database.atomic():
