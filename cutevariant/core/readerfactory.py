@@ -1,4 +1,5 @@
-from .reader.vcfreader import VcfReader
+from .reader import *
+import os 
 
 class ReaderFactory(object):
 	'''
@@ -9,8 +10,18 @@ class ReaderFactory(object):
 
 	@staticmethod
 	def create_reader(filename):
-		
-		# create a reader depending file type .. actually, only one 
-		return VcfReader(open(filename,"r+"))
-		pass 
 
+		if not os.path.isfile(filename):
+			raise FileExistsError()
+		
+		extension = os.path.splitext(filename)[1]
+
+		if extension == ".csv":
+			print("create csv reader")
+			return CsvReader(open(filename,"r"))
+
+		if extension == ".vcf":
+			print("create vcf reader")
+			return VcfReader(open(filename,"r"))
+
+		return None

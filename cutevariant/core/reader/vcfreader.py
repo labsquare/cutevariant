@@ -6,11 +6,23 @@ import vcf
 
 
 class VcfReader(AbstractReader):
+
+	type_mapping = {
+		"Float": "Float",
+		"Integer": "Integer",
+		"Flag": "Boolean",
+		"String": "Char"
+		}
+
 	def __init__(self,device):
 		super(VcfReader,self).__init__(device)
 		print("create vcf reader")
 
+	
+
 	def get_variants(self):
+		fields = list(self.get_fields())
+		self.device.seek(0)
 
 		vcf_reader = vcf.Reader(self.device)
 
@@ -18,19 +30,18 @@ class VcfReader(AbstractReader):
 
 			for index, alt in enumerate(record.ALT):
 				variant = {
-				"chrom":record.CHROM,
+				"chr":record.CHROM,
 				"pos": record.POS,
 				"ref":record.REF,
 				"alt":alt
 				}
 
 				# Read annotations 
-				# print(record.INFO)
-				for field  in self.get_fields():
+				for field  in fields:
 					category = field["category"]
 					name     = field["name"]
-					ftype    = field["field_type"]
-					colname  = category+"_"+name
+					ftype    = field["value_type"]
+					colname  = name
 					value    = None
 		
 					# PARSE INFO
@@ -53,7 +64,7 @@ class VcfReader(AbstractReader):
 							sname = name.split("_")[0]
 
 							for key, value in sample.data._asdict().items():
-								colname = "sample_"+sname +"_"+key
+								colname = sname +"_"+key
 								variant[colname] = value
 
 							
@@ -65,15 +76,20 @@ class VcfReader(AbstractReader):
 
 
 	def get_fields(self):
-		fields = []
 
+		yield Field.default_field("chr")
+		yield Field.default_field("pos")
+		yield Field.default_field("ref")
+		yield Field.default_field("alt") 
+
+		self.device.seek(0)
 		vcf_reader = vcf.Reader(self.device)
 		for key,info in vcf_reader.infos.items():
 			yield {
 			"name":key,
 			"category": "info",
 			"description":info.desc,
-			"field_type": info.type
+			"value_type": VcfReader.type_mapping.get(info.type,"Char")
 			}
 
 		for sample in vcf_reader.samples:
@@ -82,7 +98,8 @@ class VcfReader(AbstractReader):
 				"name":sample+"_"+key,
 				"category":"sample",
 				"description":val.desc,
-				"field_type": val.type
+				"value_type": VcfReader.type_mapping.get(info.type,"Char")
 				}
+
 
 

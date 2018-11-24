@@ -8,9 +8,17 @@
 			"shell_cmd": "python -u \"$file\""
 		}
 	],
+	"folders":
+	[
+		{
+			"path": "cutevariant/core"
+		},
+		{
+			"path": "cutevariant/gui"
+		}
+	],
 	"settings":
 	{
-		
 		"python_interpreter": "/home/schutz/Dev/CuteVariant-python/venv/bin/python",
 		"python_package_paths":
 		[
