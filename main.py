@@ -1,17 +1,8 @@
-from cutevariant.core.importer import ImportTask
+from PySide2.QtWidgets import * 
+from PySide2.QtCore import * 
+import sys
 
-import peewee
-import sys 
-from cutevariant.gui import *
-from cutevariant.gui.Test import VariantModel
-from cutevariant.core import model
+import cutevariant.gui
 
 
-from PySide2.QtWidgets import *
-from PySide2.QtCore import *
-
-
-
-task = ImportTask("exemples/test2.vcf","test.db")
-
-task.run()
+print("hello")

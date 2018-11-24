@@ -8,6 +8,15 @@
 			"shell_cmd": "python -u \"$file\""
 		}
 	],
-	
-	"virtualenv": "/home/sacha/Dev/biseau/venv"
+	"settings":
+	{
+		
+		"python_interpreter": "/home/schutz/Dev/CuteVariant-python/venv/bin/python",
+		"python_package_paths":
+		[
+			"$project_path/cutevariant"
+		],
+		"python_virtualenv": "/home/schutz/Dev/CuteVariant-python/venv"
+	},
+	"virtualenv": "/home/schutz/Dev/CuteVariant-python/venv"
 }
