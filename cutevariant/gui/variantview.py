@@ -1,20 +1,69 @@
 from PySide2.QtWidgets import * 
 from PySide2.QtCore import * 
+from PySide2.QtGui import *
+from cutevariant.core.model import * 
+
+
+
+class VariantDelegate(QItemDelegate):
+
+    def __init__(self, parent = None):
+        super(VariantDelegate,self).__init__()
+
+    def sizeHint(self,option,index):
+        print("size hint")
+        return  QSize(0,30)
+
+
+
+
+
+class VariantModel(QStandardItemModel):
+    def __init__(self, parent=None):
+        super(VariantModel,self).__init__()
+
+    def load(self):
+        self.clear()
+
+        labels = []
+        for field in Field.select():
+            labels.append(field.name)
+
+        self.setColumnCount(len(labels))
+        self.setHorizontalHeaderLabels(labels)
+
+        count = 0
+        for variant in Variant.select():
+            items = []
+            for key in labels:
+                item = QStandardItem(variant[key])
+                items.append(item)
+
+            self.appendRow(items)
+
+            count+= 1 
+
+            if count > 100:
+                return
+
+
 
 
 class VariantView(QWidget):
     def __init__(self, parent = None):
         super(VariantView,self).__init__()
 
-        self.test = QFileSystemModel()
-        self.test.setRootPath("/home/sacha")
+        self.model = VariantModel()
+        self.delegate = VariantDelegate()
+
         
         self.topbar = QToolBar()
         self.bottombar = QToolBar()
         self.view = QTreeView()
 
         self.view.setFrameStyle(QFrame.NoFrame)
-        self.view.setModel(self.test)
+        self.view.setModel(self.model)
+        self.view.setItemDelegate(self.delegate)
 
         main_layout = QVBoxLayout()
         main_layout.addWidget(self.topbar)
@@ -54,10 +103,9 @@ class VariantView(QWidget):
 
 
 
+if __name__ == "__main__":
 
-
-
-app= QApplication()
-v = VariantView()
-v.show()
-app.exec_()
+    app= QApplication()
+    v = VariantView()
+    v.show()
+    app.exec_()

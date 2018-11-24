@@ -48,6 +48,9 @@ class Variant(Model):
 	class Meta:
 		database = db 
 
+	def __getitem__(self, key):
+		return getattr(self, key, None)
+
 	def create_meta_field(field: Field):
 		Variant._meta.add_field(field.name, field.to_meta_field())
 
