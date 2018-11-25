@@ -55,7 +55,7 @@ class VariantView(QWidget):
 
         self.view.setFrameStyle(QFrame.NoFrame)
         self.view.setModel(self.model)
-        #self.view.setItemDelegate(self.delegate)
+        # self.view.setItemDelegate(self.delegate)
 
         main_layout = QVBoxLayout()
         main_layout.addWidget(self.topbar)
