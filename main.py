@@ -36,4 +36,10 @@ if __name__ == "__main__":
     # child = Variant.subtract(SubView)   , intersect etc ... 
 
 
-  
+    app = QApplication(sys.argv)
+    w = VariantView()
+    w.load()
+
+    w.show()
+
+    app.exec_()

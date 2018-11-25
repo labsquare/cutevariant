@@ -31,7 +31,7 @@ class VariantModel(QStandardItemModel):
         for variant in Variant.select():
             items = []
             for key in labels:
-                item = QStandardItem(variant[key])
+                item = QStandardItem(str(variant[key]))
                 items.append(item)
 
             self.appendRow(items)
@@ -55,7 +55,7 @@ class VariantView(QWidget):
 
         self.view.setFrameStyle(QFrame.NoFrame)
         self.view.setModel(self.model)
-        self.view.setItemDelegate(self.delegate)
+        #self.view.setItemDelegate(self.delegate)
 
         main_layout = QVBoxLayout()
         main_layout.addWidget(self.topbar)
@@ -84,6 +84,9 @@ class VariantView(QWidget):
         self.bottombar.setContentsMargins(0, 0, 0, 0)
 
         self.setLayout(main_layout)
+
+    def load(self):
+        self.model.load()
 
 
 if __name__ == "__main__":
