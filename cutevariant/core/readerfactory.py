@@ -1,27 +1,29 @@
 from .reader import *
-import os 
+import os
+
 
 class ReaderFactory(object):
-	'''
+    """
 	Create reader depending file type 
-	'''
-	def __init__(self):
-		pass 
+	"""
 
-	@staticmethod
-	def create_reader(filename):
+    def __init__(self):
+        pass
 
-		if not os.path.isfile(filename):
-			raise FileExistsError()
-		
-		extension = os.path.splitext(filename)[1]
+    @staticmethod
+    def create_reader(filename):
 
-		if extension == ".csv":
-			print("create csv reader")
-			return CsvReader(open(filename,"r"))
+        if not os.path.isfile(filename):
+            raise FileExistsError()
 
-		if extension == ".vcf":
-			print("create vcf reader")
-			return VcfReader(open(filename,"r"))
+        extension = os.path.splitext(filename)[1]
 
-		return None
+        if extension == ".csv":
+            print("create csv reader")
+            return CsvReader(open(filename, "r"))
+
+        if extension == ".vcf":
+            print("create vcf reader")
+            return VcfReader(open(filename, "r"))
+
+        return None

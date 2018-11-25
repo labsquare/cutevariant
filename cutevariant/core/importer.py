@@ -6,44 +6,37 @@ from PySide2.QtCore import *
 
 
 def import_file(filename, db_filename):
-	
-	database = peewee.SqliteDatabase(db_filename)
-	model.db.initialize(database)
 
-	try:
-		os.remove(db_filename)
-	except:
-		pass
+    database = peewee.SqliteDatabase(db_filename)
+    model.db.initialize(database)
 
-	reader = ReaderFactory.create_reader(filename)
+    try:
+        os.remove(db_filename)
+    except:
+        pass
 
-	# create field table 
-	model.Field.create_table()
-	
-	# Create fields
-	model.Field.insert_many(reader.get_fields()).execute()
-		
-	model.Variant.create_meta_fields()
-	model.Variant.create_table()
-	
-	with database.atomic():
-		chunk_size = 100
-		chunk = []
-		for i in reader.get_variants():
+    reader = ReaderFactory.create_reader(filename)
 
-			chunk.append(i)
+    # create field table
+    model.Field.create_table()
 
-			if len(chunk)  == chunk_size:
-				model.Variant.insert_many(chunk).execute()
-				chunk.clear()
+    #  Create fields
+    model.Field.insert_many(reader.get_fields()).execute()
 
-		model.Variant.insert_many(chunk).execute()
+    model.Variant.create_meta_fields()
+    model.Variant.create_table()
 
+    with database.atomic():
+        chunk_size = 100
+        chunk = []
+        for i in reader.get_variants():
 
-	print("done")
+            chunk.append(i)
 
+            if len(chunk) == chunk_size:
+                model.Variant.insert_many(chunk).execute()
+                chunk.clear()
 
+        model.Variant.insert_many(chunk).execute()
 
-
-
-	
+    print("done")
