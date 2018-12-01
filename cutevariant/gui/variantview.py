@@ -90,8 +90,4 @@ class VariantView(QWidget):
 
 
 if __name__ == "__main__":
-
-    app = QApplication()
-    v = VariantView()
-    v.show()
-    app.exec_()
+    pass

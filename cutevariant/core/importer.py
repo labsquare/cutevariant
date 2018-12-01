@@ -1,42 +1,38 @@
-import peewee
 from .readerfactory import ReaderFactory
-from . import model
+from .model import Field,Variant,View
 import os
-from PySide2.QtCore import *
+from sqlalchemy import create_engine, MetaData
+from sqlalchemy.orm import sessionmaker
 
 
 def import_file(filename, db_filename):
-
-    database = peewee.SqliteDatabase(db_filename)
-    model.db.initialize(database)
-
+    
     try:
         os.remove(db_filename)
     except:
         pass
 
+    engine = create_engine(f"sqlite:///{db_filename}", echo=False)
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    Field.__table__.create(engine)
+
     reader = ReaderFactory.create_reader(filename)
 
-    # create field table
-    model.Field.create_table()
+    for data in reader.get_fields():
+        session.add(Field(**data))
+        Variant.create_column_from_field(Field(**data))
 
-    #  Create fields
-    model.Field.insert_many(reader.get_fields()).execute()
 
-    model.Variant.create_meta_fields()
-    model.Variant.create_table()
+    session.commit()
 
-    with database.atomic():
-        chunk_size = 100
-        chunk = []
-        for i in reader.get_variants():
+    
+    Variant.__table__.create(engine)
 
-            chunk.append(i)
+ 
+    for i, data in enumerate(reader.get_variants()):
+        variant = Variant(**data)
+        session.add(variant)
+    session.commit()
 
-            if len(chunk) == chunk_size:
-                model.Variant.insert_many(chunk).execute()
-                chunk.clear()
-
-        model.Variant.insert_many(chunk).execute()
-
-    print("done")

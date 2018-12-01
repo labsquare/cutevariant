@@ -11,7 +11,7 @@ class VcfReader(AbstractReader):
         "Float": "Float",
         "Integer": "Integer",
         "Flag": "Boolean",
-        "String": "Char",
+        "String": "String",
     }
 
     def __init__(self, device):
@@ -31,10 +31,10 @@ class VcfReader(AbstractReader):
                     "chr": record.CHROM,
                     "pos": record.POS,
                     "ref": record.REF,
-                    "alt": alt,
+                    "alt": str(alt),
                 }
 
-                #  Read annotations
+                # Read annotations
                 for field in fields:
                     category = field["category"]
                     name = field["name"]
@@ -55,23 +55,23 @@ class VcfReader(AbstractReader):
                                     value = record.INFO[name]
                             variant[colname] = value
 
-                            # PARSE GENOTYPE / SAMPLE
+                    #         # PARSE GENOTYPE / SAMPLE
                     if category == "sample":
                         for sample in record.samples:
                             sname = name.split("_")[0]
 
                             for key, value in sample.data._asdict().items():
                                 colname = sname + "_" + key
-                                variant[colname] = value
+                                variant[colname] = str(value)
 
             yield variant
 
     def get_fields(self):
 
-        yield Field.default_field("chr")
-        yield Field.default_field("pos")
-        yield Field.default_field("ref")
-        yield Field.default_field("alt")
+        yield {"name":"chr", "category":"variant", "description":"chromosom","value_type":"String"}
+        yield {"name":"pos", "category":"variant", "description":"chromosom","value_type":"Integer"}
+        yield {"name":"ref", "category":"variant", "description":"chromosom","value_type":"String"}
+        yield {"name":"alt", "category":"variant", "description":"chromosom","value_type":"String"}
 
         self.device.seek(0)
         vcf_reader = vcf.Reader(self.device)
@@ -80,7 +80,7 @@ class VcfReader(AbstractReader):
                 "name": key,
                 "category": "info",
                 "description": info.desc,
-                "value_type": VcfReader.type_mapping.get(info.type, "Char"),
+                "value_type": VcfReader.type_mapping.get(info.type, "String"),
             }
 
         for sample in vcf_reader.samples:
@@ -89,5 +89,5 @@ class VcfReader(AbstractReader):
                     "name": sample + "_" + key,
                     "category": "sample",
                     "description": val.desc,
-                    "value_type": VcfReader.type_mapping.get(info.type, "Char"),
+                    "value_type": VcfReader.type_mapping.get(info.type, "String"),
                 }

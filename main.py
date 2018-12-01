@@ -18,28 +18,33 @@ if __name__ == "__main__":
     # except:
     #     pass
 
-    database = SqliteDatabase("/tmp/test2.db")
-    db.initialize(database)
     import_file("exemples/test2.vcf", "/tmp/test2.db")
 
 
-    # check Variant count from Variant Table
-    print(Variant.select().count())
 
-    # Create a sql View 
-    SubView = Variant.create_view("sub", Variant.ref == 'A')
+    # # check Variant count from Variant Table
+    # print(Variant.select().count())
 
-    # show the view 
-    print(SubView.select().count())
+    # # Create a sql View 
+    # A = Variant.create_view("A", Variant.ref == 'A')
 
-    # TODO 
-    # child = Variant.subtract(SubView)   , intersect etc ... 
+    # # show the view 
+    # print(A.select().count())
+
+    # B = A.create_view("B", Variant.alt == 'C')
 
 
-    app = QApplication(sys.argv)
-    w = VariantView()
-    w.load()
+    # print(B.select().sql())
 
-    w.show()
 
-    app.exec_()
+    # # TODO 
+    # # child = Variant.subtract(SubView)   , intersect etc ... 
+
+
+    # app = QApplication(sys.argv)
+    # w = VariantView()
+    # w.load()
+
+    # w.show()
+
+    # app.exec_()
