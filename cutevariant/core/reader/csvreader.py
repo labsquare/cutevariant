@@ -8,13 +8,17 @@ class CsvReader(AbstractReader):
         super(CsvReader, self).__init__(device)
 
     def get_fields(self):
-        yield Field.default_field("chr")
-        yield Field.default_field("pos")
-        yield Field.default_field("ref")
-        yield Field.default_field("alt")
+        csvreader = csv.reader(self.device, delimiter="\t")
+        rows = next(csvreader)
+        for row in rows:
+            row = row.replace("#","")
+            yield {"name":row,"value_type":"String"}
+
+
 
     def get_variants(self):
         csvreader = csv.reader(self.device, delimiter="\t")
+        next(csvreader)
         for row in csvreader:
             variant = {}
             variant["chr"] = row[0]

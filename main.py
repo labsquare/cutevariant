@@ -18,7 +18,7 @@ if __name__ == "__main__":
     # except:
     #     pass
 
-    import_file("exemples/test2.vcf", "/tmp/test2.db")
+    import_file("exemples/test2.csv", "/tmp/test2.db")
 
 
 
