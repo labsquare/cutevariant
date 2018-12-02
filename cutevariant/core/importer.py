@@ -1,16 +1,15 @@
+from sqlalchemy import create_engine
+import os
+import csv
+
 from .readerfactory import ReaderFactory
 from .model import *
-import os
 
 
-def import_file(filename, db_filename):
-    
-    try:
-        os.remove(db_filename)
-    except:
-        pass
+def import_file(filename,engine):
 
-    engine,session = create_connection(db_filename)
+
+    session = create_session(engine)
 
     Field.__table__.create(engine)
     VariantView.__table__.create(engine)
@@ -32,4 +31,14 @@ def import_file(filename, db_filename):
         variant = Variant(**data)
         session.add(variant)
     session.commit()
+
+
+
+def import_bed(filename, db_filename):
+    engine,session = create_connection(db_filename)
+
+    with open(filename,"r") as file:
+        for line in csv.reader(file, sep="\t"):
+            print(line)
+
 
