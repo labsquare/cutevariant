@@ -1,7 +1,5 @@
 from .abstractreader import AbstractReader
 from ..model import Variant, Field
-
-import peewee
 import vcf
 
 
