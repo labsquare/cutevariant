@@ -17,30 +17,20 @@ class VariantModel(QStandardItemModel):
     def __init__(self, parent=None):
         super(VariantModel, self).__init__()
 
-    def load(self):
+    def load(self, engine):
         self.clear()
+        session = create_session(engine)
 
-        labels = []
-        for field in Field.select():
-            labels.append(field.name)
-
-        self.setColumnCount(len(labels))
-        self.setHorizontalHeaderLabels(labels)
-
-        count = 0
-        for variant in Variant.select():
+        for row in select_variant("variants",None, engine):
             items = []
-            for key in labels:
-                item = QStandardItem(str(variant[key]))
-                items.append(item)
+            for i in row :
+               items.append(QStandardItem(str(i)))
 
             self.appendRow(items)
 
-            count += 1
 
-            if count > 100:
-                return
 
+    
 
 class VariantView(QWidget):
     def __init__(self, parent=None):
@@ -85,8 +75,8 @@ class VariantView(QWidget):
 
         self.setLayout(main_layout)
 
-    def load(self):
-        self.model.load()
+    def load(self,engine):
+        self.model.load(engine)
 
 
 if __name__ == "__main__":

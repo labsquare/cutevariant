@@ -93,9 +93,10 @@ def drop_view(mapper, connect, target):
     connect.execute(f"Drop VIEW {target.name}")
 
 
-def create_variant_table(tablename, engine):
+def select_variant(tablename, condition, engine):
     table = Table(tablename, Base.metadata, autoload=True, autoload_with=engine)
-    return table
+    for variant in engine.execute(table.select(condition)):
+        yield variant
 
 
 def create_session(engine):
