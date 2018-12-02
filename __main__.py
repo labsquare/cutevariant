@@ -22,13 +22,13 @@ if __name__ == "__main__":
 
     import_file("exemples/test.csv", engine)
 
-    import_bed("exemples/gene.bed", engine)
+    # import_bed("exemples/gene.bed", engine)
 
 
-    # app = QApplication(sys.argv)
-    # w = VariantView()
-    # w.load(engine)
+    app = QApplication(sys.argv)
+    w = VariantView()
+    w.load(engine)
 
-    # w.show()
+    w.show()
 
-    # app.exec_()
+    app.exec_()
