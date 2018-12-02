@@ -29,9 +29,13 @@ def import_file(filename, engine):
     session.commit()
 
 
-def import_bed(filename, db_filename):
-    engine, session = create_connection(db_filename)
+def import_bed(filename, engine):
 
     with open(filename, "r") as file:
-        for line in csv.reader(file, sep="\t"):
-            print(line)
+
+        Region.__table__.create(engine)
+        session = create_session(engine)
+        for line in csv.reader(file, delimiter="\t"):
+            region = Region(chr=line[0], start = line[1], end = line[2], name = line[3])
+            session.add(region)
+        session.commit()

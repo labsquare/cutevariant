@@ -24,7 +24,8 @@ class Region(Base):
     id = Column(Integer, primary_key=True)
     bin = Column(Integer)
     chr = Column(String)
-    pos = Column(Integer)
+    start = Column(Integer)
+    end  = Column(Integer)
     name = Column(String)
 
 
@@ -70,6 +71,9 @@ class VariantView(Base):
         view = VariantView()
         view.sql = f"{self.sql} EXCEPT {other.sql}"
         return view
+
+    def in_region(self):
+        pass
 
     def __add__(self, other):
         return self.union(other)
