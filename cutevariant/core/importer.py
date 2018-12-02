@@ -1,8 +1,6 @@
 from .readerfactory import ReaderFactory
-from .model import Field,Variant,View
+from .model import *
 import os
-from sqlalchemy import create_engine, MetaData
-from sqlalchemy.orm import sessionmaker
 
 
 def import_file(filename, db_filename):
@@ -12,11 +10,10 @@ def import_file(filename, db_filename):
     except:
         pass
 
-    engine = create_engine(f"sqlite:///{db_filename}", echo=False)
-    Session = sessionmaker(bind=engine)
-    session = Session()
+    engine,session = create_connection(db_filename)
 
     Field.__table__.create(engine)
+    VariantView.__table__.create(engine)
 
     reader = ReaderFactory.create_reader(filename)
 

@@ -1,5 +1,8 @@
 from sqlalchemy import Column,Integer,String,Float,Boolean
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import create_engine, MetaData
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import event
 import os 
 
 Base = declarative_base()
@@ -33,11 +36,66 @@ class Variant(Base):
         Variant.create_column(field.name, Column(column_type))
 
     
-class View(Base):
-    __tablename__="views"
+class VariantView(Base):
+    __tablename__="variantviews"
     id = Column(Integer,primary_key=True)
     name = Column(String)
     description = Column(String)
+    sql = Column(String)
+
+
+    def union(self, other):
+        view = VariantView()
+        view.sql = f'{self.sql} UNION {other.sql}'
+        return view
+
+    def intersection(self, other):
+        view = VariantView()
+        view.sql = f'{self.sql} INTERSECT {other.sql}'
+        return view
+
+    def difference(self, other):
+        view = VariantView()
+        view.sql = f'{self.sql} EXCEPT {other.sql}'
+        return view
+
+
+    def __add__(self, other):
+        return self.union(other)
+
+    def __sub__(self,other):
+        return self.difference(other)
+
+    def __and__(self,other):
+        return self.intersection(other)
+
+
+
+
+
+
+
+
+@event.listens_for(VariantView, 'before_insert')
+def create_view(mapper, connect, target):
+    print("before insert ",target)
+    connect.execute(f"CREATE view {target.name} AS {target.sql}")
+
+@event.listens_for(VariantView, 'before_delete')
+def drop_view(mapper, connect, target):
+    print("before remove ",target)
+    connect.execute(f"Drop view {target.name}")
+
+
+
+
+
+def create_connection(db_filename):
+    engine = create_engine(f"sqlite:///{db_filename}", echo=False)
+    Session = sessionmaker(bind=engine)
+    session = Session()
+    return (engine,session)
+
 
 
 

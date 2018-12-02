@@ -8,7 +8,8 @@ from cutevariant.core.reader import *
 from cutevariant.core.readerfactory import ReaderFactory
 from cutevariant.core.importer import import_file
 
-from cutevariant.gui.variantview import *
+from sqlalchemy_views import CreateView, DropView
+
 
 
 if __name__ == "__main__":
@@ -19,6 +20,35 @@ if __name__ == "__main__":
     #     pass
 
     import_file("exemples/test2.csv", "/tmp/test2.db")
+
+
+    engine,session = create_connection("/tmp/test2.db")
+
+    a = VariantView()
+    a.name = "test"
+    a.sql = "SELECT * FROM variants WHERE chr == 'chr7'"
+
+    b = VariantView()
+    b.name = "test2"
+    b.sql = "SELECT * FROM variants WHERE chr == 'chr5'"
+
+
+    session.add(a)
+    session.add(b)
+
+    c = a + b 
+    c.name = "test3"
+    session.add(c)
+
+    session.commit()
+
+
+    #print(session.query(Variant).filter(Variant.ref == "A"))
+
+
+
+
+
 
 
 
