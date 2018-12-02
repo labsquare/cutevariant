@@ -1,8 +1,10 @@
-from sqlalchemy import Column,Integer,String,Float,Boolean
+from sqlalchemy import Column,Integer,String,Float,Boolean, Table
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine, MetaData
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import event
+from sqlalchemy_views import CreateView, DropView
+
 import os 
 
 Base = declarative_base()
@@ -16,9 +18,22 @@ class Field(Base):
     description = Column(String)
     value_type = Column(String)
 
+
+class Region(Base):
+    __tablename__ = "regions"
+    id  = Column(Integer,primary_key=True)
+    bin = Column(Integer)
+    chr = Column(String)
+    pos = Column(Integer)
+    name = Column(String)
+
+
+
+
 class Variant(Base):
     __tablename__="variants"
-    id = Column(Integer,primary_key=True)
+    id =  Column(Integer,primary_key=True)
+    bin = Column(Integer)
 
     def __getitem__(self, index):
         return getattr(self, index)
@@ -71,11 +86,6 @@ class VariantView(Base):
 
 
 
-
-
-
-
-
 @event.listens_for(VariantView, 'before_insert')
 def create_view(mapper, connect, target):
     print("before insert ",target)
@@ -87,14 +97,16 @@ def drop_view(mapper, connect, target):
     connect.execute(f"Drop view {target.name}")
 
 
+def create_variant_table(tablename, engine):
+    table = Table(tablename,Base.metadata, autoload=True, autoload_with=engine)
+    return table
 
 
 
-def create_connection(db_filename):
-    engine = create_engine(f"sqlite:///{db_filename}", echo=False)
+def create_session(engine):
     Session = sessionmaker(bind=engine)
     session = Session()
-    return (engine,session)
+    return session
 
 
 
