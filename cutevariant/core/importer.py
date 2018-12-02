@@ -11,7 +11,8 @@ def import_file(filename, engine):
     session = create_session(engine)
 
     Field.__table__.create(engine)
-    VariantView.__table__.create(engine)
+    View.__table__.create(engine)
+    VariantSet.__table__.create(engine)
 
     reader = ReaderFactory.create_reader(filename)
 
