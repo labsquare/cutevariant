@@ -10,33 +10,34 @@ def import_file(filename, engine):
 
     session = create_session(engine)
 
+    # Create tables 
     Field.__table__.create(engine)
-    View.__table__.create(engine)
-    VariantSet.__table__.create(engine)
+    Selection.__table__.create(engine)
+    selection_has_variant_table.create(engine)
 
+    # get reader 
     reader = ReaderFactory.create_reader(filename)
 
+    # extract fields and create Variant table 
     for data in reader.get_fields():
         session.add(Field(**data))
         Variant.create_column_from_field(Field(**data))
 
-    session.commit()
-
+    # Create table 
     Variant.__table__.create(engine)
 
+    session.commit()
+
+    # load variant 
+    variant_count = 0
     for i, data in enumerate(reader.get_variants()):
         variant = Variant(**data)
         session.add(variant)
+        variant_count += 1
     session.commit()
 
-
-def import_bed(filename, engine):
-
-    with open(filename, "r") as file:
-
-        Region.__table__.create(engine)
-        session = create_session(engine)
-        for line in csv.reader(file, delimiter="\t"):
-            region = Region(chr=line[0], start = line[1], end = line[2], name = line[3])
-            session.add(region)
-        session.commit()
+    # Create default selection 
+    session.add(Selection(name="all", description="all variant", count = variant_count))
+    session.add(Selection(name="favoris", description="favoris", count = 0))
+    
+    session.commit()

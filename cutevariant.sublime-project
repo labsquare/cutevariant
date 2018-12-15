@@ -5,26 +5,30 @@
 			"file_regex": "^[ ]*File \"(...*?)\", line ([0-9]*)",
 			"name": "Anaconda Python Builder",
 			"selector": "source.python",
-			"shell_cmd": "python -u \"$file\""
+			"shell_cmd": "\"/home/sacha/Dev/CuteVariantPython/venv/bin/python\" -u \"$file\""
 		}
 	],
 	"folders":
 	[
 		{
-			"path": "cutevariant/core"
+			"path": "cutevariant",
+			"file_include_patterns":"*.py",
+			"folder_exclude_patterns": [".*","_*"]
+
 		},
+
 		{
-			"path": "cutevariant/gui"
-		}
+			"path": "tests",
+			"file_include_patterns":"*.py",
+			"folder_exclude_patterns": [".*","_*"]
+
+
+		},
+
+
 	],
 	"settings":
 	{
-		"python_interpreter": "/home/schutz/Dev/CuteVariant-python/venv/bin/python",
-		"python_package_paths":
-		[
-			"$project_path/cutevariant"
-		],
-		"python_virtualenv": "/home/schutz/Dev/CuteVariant-python/venv"
-	},
-	"virtualenv": "/home/schutz/Dev/CuteVariant-python/venv"
+		"python_interpreter": "/home/sacha/Dev/CuteVariantPython/venv/bin/python"
+	}
 }
