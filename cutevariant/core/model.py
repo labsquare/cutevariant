@@ -1,9 +1,8 @@
 from sqlalchemy import Column, Integer, String, Float, Boolean, Table
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine, MetaData
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import event, ForeignKey
-from sqlalchemy_views import CreateView, DropView
+from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy import event, ForeignKey, PrimaryKeyConstraint
 
 import os
 
@@ -11,6 +10,8 @@ Base = declarative_base()
 
 
 class Field(Base):
+    """ store annotation definition """
+
     __tablename__ = "fields"
     id = Column(Integer, primary_key=True)
     name = Column(String)
@@ -20,19 +21,38 @@ class Field(Base):
 
 
 class Region(Base):
+    """ store interval region in genom """
+
     __tablename__ = "regions"
     id = Column(Integer, primary_key=True)
     bin = Column(Integer)
     chr = Column(String)
     start = Column(Integer)
-    end  = Column(Integer)
+    end = Column(Integer)
     name = Column(String)
 
 
+selection_has_variant_table = Table('selection_has_variants', Base.metadata,
+    Column('variant_id', Integer, ForeignKey('variants.id'),nullable=False),
+    Column('selection_id', Integer, ForeignKey('selections.id'),nullable=False),
+    PrimaryKeyConstraint('variant_id', 'selection_id')
+
+)
+
 class Variant(Base):
+    """
+     store variant 
+     Columns are dynamically set by fields 
+    """
+
     __tablename__ = "variants"
     id = Column(Integer, primary_key=True)
     bin = Column(Integer)
+    selections = relationship("Selection",secondary=selection_has_variant_table, backref="selection_variants")
+
+
+    def __repr__(self):
+        return f'{self.chr} {self.pos} {self.ref} {self.alt}'
 
     def __getitem__(self, index):
         return getattr(self, index)
@@ -50,24 +70,22 @@ class Variant(Base):
         Variant.create_column(field.name, Column(column_type))
 
 
-class View(Base):
-    __tablename__ = "views"
+
+
+class Selection(Base):
+    __tablename__ = "selections"
     id = Column(Integer, primary_key=True)
     name = Column(String)
     description = Column(String)
-    sql = Column(String)
-
-class VariantSet(Base):
-    __tablename__ = "view_has_variants"
-    variant_id = Column(Integer, ForeignKey('variants.id'), primary_key=True)
-    view_id = Column(Integer, ForeignKey('views.id'), primary_key=True)
+    count = Column(Integer)
+    variants = relationship("Variant",secondary=selection_has_variant_table,  backref="variant_selections")
 
 
 
-@event.listens_for(View, "before_insert")
-def create_view(mapper, connect, target):
-    print("before insert ", target)
-    #connect.execute(f"CREATE VIEW {target.name} AS {target.sql}")
+# @event.listens_for(View, "before_insert")
+# def create_view(mapper, connect, target):
+#     print("before insert ", target)
+# connect.execute(f"CREATE VIEW {target.name} AS {target.sql}")
 
 
 # @event.listens_for(VariantView, "before_delete")
@@ -76,10 +94,10 @@ def create_view(mapper, connect, target):
 #     connect.execute(f"Drop VIEW {target.name}")
 
 
-def select_variant(tablename, condition, engine):
-    table = Table(tablename, Base.metadata, autoload=True, autoload_with=engine)
-    for variant in engine.execute(table.select(condition)):
-        yield variant
+# def select_variant(tablename, condition, engine):
+#     table = Table(tablename, Base.metadata, autoload=True, autoload_with=engine)
+#     for variant in engine.execute(table.select(condition)):
+#         yield variant
 
 
 def create_session(engine):
