@@ -4,7 +4,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import load_only
 
 
-class VariantQuery:
+class QueryBuilder:
 	''' 
 	This class is intended to build sqlAlchemy query according parameters 
 	self.fields : columns from variant table 
