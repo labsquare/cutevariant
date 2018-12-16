@@ -4,7 +4,14 @@ from sqlalchemy import text
 from sqlalchemy.orm import load_only
 
 
-class QueryBuilder:
+class VariantQuery:
+	''' 
+	This class is intended to build sqlAlchemy query according parameters 
+	self.fields : columns from variant table 
+	self.conditions : where condition as raw text 
+	self.selection_name : name of the variant set. Use "all" to select all variants 
+	''' 
+
 	def __init__(self, engine):
 		self.engine = engine
 		self.fields = []
@@ -20,7 +27,7 @@ class QueryBuilder:
 			query = self.session.query(Variant)
 
 		else:
-			query = self.session.query(Variant).join(Selection, Variant.selections).filter(Selection.name == "sacha")
+			query = self.session.query(Variant).join(Selection, Variant.selections).filter(Selection.name == self.selection_name)
 
 		if self.condition:
 			query = query.filter(text(self.condition))
@@ -30,14 +37,15 @@ class QueryBuilder:
 
 		return query
 
-	def __iter__(self):
-		''' iter over variant ''' 
-		return iter(self.query())
+
+	def to_list(self):
+		for variant in self.query():
+			yield tuple([variant[field] for field in self.fields])
 
 	def create_selection(self, name, description = None):
 		''' create selection with the current query ''' 
 		selection = Selection(name=name, description= description, count = 0)
-		for variant in self:
+		for variant in self.query():
 			selection.variants.append(variant)
 			selection.count+=1
 	
@@ -45,6 +53,16 @@ class QueryBuilder:
 		self.session.commit() 
 
 		return selection
+
+
+	def __repr__(self):
+		return f"""
+		fields : {self.fields} 
+		condition: {self.condition} 
+		selection: {self.selection_name}
+		limit: 
+		"""
+
 
 
 
