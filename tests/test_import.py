@@ -5,7 +5,7 @@ import sqlalchemy
 
 from cutevariant.core.importer import import_file
 from cutevariant.core.model import create_session, Variant,Field,Selection
-from cutevariant.core.query import QueryBuilder
+from cutevariant.core.query import VariantQuery
 
 '''
 connect to database 
@@ -28,35 +28,43 @@ def test_import_csv():
 
 
 def test_query():
-    q = QueryBuilder(engine)
-    q.fields = ["chr","pos"]
-    q.condition = "variants.id > 0"
-    for i in q:
+    builder = VariantQuery(engine)
+    builder.fields = ["chr","pos","ref"]
+    builder.condition = "variants.id > 3"
+
+    print(builder)
+
+    for i in builder.query():
+        print(i)
+
+    print("list")
+    for i in builder.to_list():
         print(i)
 
 
+
 def test_query_selection():
-    q = QueryBuilder(engine)
-    q.fields = ["chr","pos"]
+    builder = VariantQuery(engine)
+    builder.fields = ["chr","pos"]
 
-    A = q.query()
+    A = builder.query()
 
 
-    q.condition = "variants.id > 3"
-    q.create_selection("sacha")
+    builder.condition = "variants.id > 3"
+    builder.create_selection("sacha")
 
     session = create_session(engine)
 
 
-    q.selection_name = "sacha"
-    q.condition = "variants.chr == 'chr8'"
+    builder.selection_name = "sacha"
+    builder.condition = "variants.chr == 'chr8'"
 
 
     print("selection A")
     for i in A:
         print(i)
 
-    B  = q.query()
+    B  = builder.query()
 
     print("selection B")
     for i in B:
@@ -70,10 +78,10 @@ def test_query_selection():
     for i in C:
         print(i)
 
-    # print("selection")
-    # query = session.query(Variant).join(Selection, Variant.selections).filter(Selection.name == "sacha")
-    # for i in query.filter(sqlalchemy.text("variants.id > 0")):
-    #     print(i)
+    print("selection")
+    query = session.query(Variant).join(Selection, Variant.selections).filter(Selection.name == "sacha")
+    for i in query.filter(sqlalchemy.text("variants.id > 0")):
+        print(i)
     
 
 

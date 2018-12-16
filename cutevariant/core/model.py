@@ -19,6 +19,9 @@ class Field(Base):
     description = Column(String)
     value_type = Column(String)
 
+    def __repr__(self):
+        return f"{self.name} {self.value_type}"
+
 
 class Region(Base):
     """ store interval region in genom """

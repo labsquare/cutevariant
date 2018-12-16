@@ -2,6 +2,7 @@ from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 from PySide2.QtGui import *
 from cutevariant.core.model import *
+from cutevariant.core.query import QueryBuilder
 
 
 class VariantDelegate(QItemDelegate):
@@ -17,15 +18,12 @@ class VariantModel(QStandardItemModel):
     def __init__(self, parent=None):
         super(VariantModel, self).__init__()
 
-    def load(self, engine):
+    def load(self, query):
         self.clear()
-        session = create_session(engine)
-
-        for row in select_variant("variants",None, engine):
+        for row in query:
             items = []
-            for i in row :
-               items.append(QStandardItem(str(i)))
-
+            for i in row: 
+                items.append(QStandardItem(str(i)))
             self.appendRow(items)
 
 
@@ -75,8 +73,8 @@ class VariantView(QWidget):
 
         self.setLayout(main_layout)
 
-    def load(self,engine):
-        self.model.load(engine)
+    def load(self,query):
+        self.model.load(query)
 
 
 if __name__ == "__main__":

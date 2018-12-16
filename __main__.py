@@ -5,44 +5,36 @@ import os
 
 import sqlalchemy
 from sqlalchemy import text
-from cutevariant.core.importer import import_file, import_bed
-from cutevariant.core.model import create_session, Variant, select_variant
+from cutevariant.core.importer import import_file
+from cutevariant.core.model import create_session, Variant
+from cutevariant.core.query import QueryBuilder
 from cutevariant.gui.variantview import *
 
 
 if __name__ == "__main__":
 
+    path = "/tmp/cutevariant.db"
+    if os.path.exists(path):
+        os.remove(path)
+
+    engine = sqlalchemy.create_engine(f"sqlite:///{path}", echo=True)
+    import_file("exemples/test.csv", engine)
 
 
-    # path = "/tmp/cutevariant.db"
-    # if os.path.exists(path):
-    #     os.remove(path)
+    builder = QueryBuilder(engine)
 
-    # engine = sqlalchemy.create_engine(f"sqlite:///{path}", echo=False)
 
-    # import_file("exemples/test.csv", engine)
+    app = QApplication(sys.argv)
+    w = VariantView()
+    builder.fields = ["chr","pos","ref","alt"]
 
-    # session = create_session(engine)
+    w.load(builder.to_list())
 
-    # q = (
-    #     session.query(Variant)
-    #     .join(VariantSet)
-    #     .join(View)
-    #     .filter(text("views.name = 'test'"))
-    # )
 
-    # for i in q:
-    #     print(i.pos)
 
-    # # for i in session.query(Variant).filter(sqlalchemy.text("id > 4")):
-    # #     print(i.pos)
 
-    # # import_bed("exemples/gene.bed", engine)
+    #w.load(engine)
 
-    # app = QApplication(sys.argv)
-    # w = VariantView()
-    # w.load(engine)
+    w.show()
 
-    # w.show()
-
-    # app.exec_()
+    app.exec_()
