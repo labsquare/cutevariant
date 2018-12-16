@@ -5,7 +5,7 @@ import sqlalchemy
 
 from cutevariant.core.importer import import_file
 from cutevariant.core.model import create_session, Variant,Field,Selection
-from cutevariant.core.query import VariantQuery
+from cutevariant.core.query import QueryBuilder
 
 '''
 connect to database 
@@ -28,7 +28,7 @@ def test_import_csv():
 
 
 def test_query():
-    builder = VariantQuery(engine)
+    builder = QueryBuilder(engine)
     builder.fields = ["chr","pos","ref"]
     builder.condition = "variants.id > 3"
 
@@ -44,7 +44,7 @@ def test_query():
 
 
 def test_query_selection():
-    builder = VariantQuery(engine)
+    builder = QueryBuilder(engine)
     builder.fields = ["chr","pos"]
 
     A = builder.query()
