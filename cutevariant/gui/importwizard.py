@@ -1,8 +1,6 @@
 from PySide2.QtWidgets import *
 from PySide2.QtWidgets import *
 import sys
-import widgets
-
 from cutevariant.core.importer import ImportTask
 
 
