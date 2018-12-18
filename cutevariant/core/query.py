@@ -1,5 +1,4 @@
 
-from .model import Variant, create_session, Selection
 from sqlalchemy import text
 from sqlalchemy.orm import load_only
 
