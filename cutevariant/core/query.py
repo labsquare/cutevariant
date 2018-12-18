@@ -1,5 +1,5 @@
 
-from sqlalchemy import text
+from sqlalchemy import *
 from sqlalchemy.orm import load_only
 
 
@@ -16,42 +16,22 @@ class QueryBuilder:
 		self.fields = []
 		self.condition = str()
 		self.selection_name = "all"
-		self.session = create_session(self.engine)
+		self.metadata = MetaData(bind=engine)
+		self.variant_table = Table('variants', self.metadata, autoload=True)
+
 
 
 	def query(self):
 		''' build query depending class parameter ''' 
 
-		if self.selection_name == "all":
-			query = self.session.query(Variant)
-
-		else:
-			query = self.session.query(Variant).join(Selection, Variant.selections).filter(Selection.name == self.selection_name)
-
-		if self.condition:
-			query = query.filter(text(self.condition))
-
-		if self.fields:
-			query = query.options(load_only(*self.fields))
-
-		return query
+		return self.engine.execute(self.variant_table.select())
 
 
-	def to_list(self):
-		for variant in self.query():
-			yield tuple([variant[field] for field in self.fields])
+  #   for i in engine.execute(user.select()):
+  #       print(i)
 
-	def create_selection(self, name, description = None):
-		''' create selection with the current query ''' 
-		selection = Selection(name=name, description= description, count = 0)
-		for variant in self.query():
-			selection.variants.append(variant)
-			selection.count+=1
-	
-		self.session.add(selection)
-		self.session.commit() 
 
-		return selection
+
 
 
 	def __repr__(self):
