@@ -1,9 +1,8 @@
-from sqlalchemy import *
-from sqlalchemy.ext.automap import automap_base
 import os
 import csv
+import sqlite3
 from .readerfactory import ReaderFactory
-
+from .model import Selection, Field, Variant
 
 def import_file(filename, dbpath):
 
@@ -12,30 +11,29 @@ def import_file(filename, dbpath):
     except:
         pass
 
-    engine = create_engine(f"sqlite:///{dbpath}", echo=True)
-    metadata = MetaData(bind=engine)
-    # # get reader 
+    conn   = sqlite3.connect(dbpath)
+    c      = conn.cursor()
     reader = ReaderFactory.create_reader(filename)
 
-    # # extract fields for variants table 
-    columns = [Column(field["name"], eval(field["value_type"])) for field in reader.get_fields()]
 
-    print(columns)
+    # Create table fields 
+    Field(conn).create()
 
-    variant_table = Table("variants", metadata,Column('id', Integer, primary_key=True), *columns)
-    fields_table  = Table("fields", metadata,Column('id', Integer, primary_key=True) )
+    # Create variants tables 
+    Variant(conn).create(reader.get_fields())
+    
+    # Create selection 
+    Selection(conn).create()
+    Selection(conn).insert({"name": "all" , "count": "0"})
 
 
-    metadata.create_all()
 
 
-    insert = variant_table.insert()
+    # Insert fields 
+    Field(conn).insert_many(reader.get_fields())
+    Variant(conn).insert_many(reader.get_variants())
 
-    cache = []
-    for variant in reader.get_variants():
-        cache.append(variant)
-
-    engine.execute(insert, cache) 
+   
 
 
 
