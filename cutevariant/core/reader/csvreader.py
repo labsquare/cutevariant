@@ -6,16 +6,20 @@ class CsvReader(AbstractReader):
     def __init__(self, device):
         super(CsvReader, self).__init__(device)
 
+    def __del__(self):
+        del(self.device)
+
     def get_fields(self):
+        self.device.seek(0)
         csvreader = csv.reader(self.device, delimiter="\t")
         rows = next(csvreader)
         for row in rows:
             row = row.replace("#","")
-            yield {"name":row,"value_type":"String"}
-
+            yield {"name":row,"type":"text", "category":None, "description":None}
 
 
     def get_variants(self):
+        self.device.seek(0)
         csvreader = csv.reader(self.device, delimiter="\t")
         next(csvreader)
         for row in csvreader:
