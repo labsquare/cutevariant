@@ -27,9 +27,6 @@ class VariantModel(QStandardItemModel):
             self.appendRow(items)
 
 
-
-    
-
 class VariantView(QWidget):
     def __init__(self, parent=None):
         super(VariantView, self).__init__()
