@@ -2,14 +2,11 @@ from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 import sys
 import os
-
-import sqlalchemy
-from sqlalchemy import text
 from cutevariant.core.importer import import_file
-from cutevariant.core.model import create_session, Variant
+from cutevariant.gui.variantview import VariantView
 from cutevariant.core.query import QueryBuilder
-from cutevariant.gui.variantview import *
-
+from cutevariant.core.model import Selection, Variant
+import sqlite3
 
 if __name__ == "__main__":
 
@@ -17,24 +14,27 @@ if __name__ == "__main__":
     if os.path.exists(path):
         os.remove(path)
 
-    engine = sqlalchemy.create_engine(f"sqlite:///{path}", echo=True)
-    import_file("exemples/test.csv", engine)
+    import_file("exemples/test.csv", path)
 
+    conn   = sqlite3.connect(path)
 
-    builder = QueryBuilder(engine)
-
+    query = QueryBuilder(conn)
 
     app = QApplication(sys.argv)
-    w = VariantView()
-    builder.fields = ["chr","pos","ref","alt"]
 
-    w.load(builder.to_list())
-
-
-
-
-    #w.load(engine)
-
-    w.show()
+    view = VariantView()
+    view.load(query)
+    view.show()
 
     app.exec_()
+
+
+
+
+
+
+
+ 
+
+
+

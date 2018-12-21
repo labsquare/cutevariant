@@ -20,15 +20,12 @@ class VariantModel(QStandardItemModel):
 
     def load(self, query):
         self.clear()
-        for row in query:
+        for row in query.query():
             items = []
             for i in row: 
                 items.append(QStandardItem(str(i)))
             self.appendRow(items)
 
-
-
-    
 
 class VariantView(QWidget):
     def __init__(self, parent=None):
