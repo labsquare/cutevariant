@@ -1,7 +1,7 @@
 
 class QueryBuilder:
 	''' 
-	This class is intended to build sqlAlchemy query according parameters 
+	This class is intended to build sql query according parameters 
 	self.fields : columns from variant table 
 	self.conditions : where condition as raw text 
 	self.selection_name : name of the variant set. Use "all" to select all variants 
