@@ -4,11 +4,7 @@ import os
 import sqlite3
 import warnings
 from cutevariant.core.importer import import_file
-
-def table_exists(name, conn):
-    c = conn.cursor()
-    c.execute(f"SELECT name FROM sqlite_master WHERE name = '{name}'")
-    return c.fetchone() != None
+from .utils import table_exists
 
 def test_import_database():
     db_path = "/tmp/test_cutevaiant.db"
@@ -24,7 +20,7 @@ def test_import_database():
     assert table_exists("selection_has_variant", conn), "selection_has_variants table doesn't exists"
 
 
-
+    conn.close()
 
 
 
