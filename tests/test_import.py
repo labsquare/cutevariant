@@ -1,88 +1,28 @@
 import pytest
 import sys
 import os
-import sqlalchemy
-
+import sqlite3
+import warnings
 from cutevariant.core.importer import import_file
-from cutevariant.core.model import create_session, Variant,Field,Selection
-from cutevariant.core.query import QueryBuilder
 
-'''
-connect to database 
-'''
-path = "/tmp/cutevariant.db"
-if os.path.exists(path):
-    os.remove(path)
+def table_exists(name, conn):
+    c = conn.cursor()
+    c.execute(f"SELECT name FROM sqlite_master WHERE name = '{name}'")
+    return c.fetchone() != None
 
-engine = sqlalchemy.create_engine(f"sqlite:///{path}", echo=False)
-
-
-def test_import_csv():
-    # import file 
-    import_file("exemples/test.csv", engine)
-
-    # test data 
-    session = create_session(engine)
-    assert session.query(Variant).count() == 5
-    assert session.query(Field).count() == 4
-
-
-def test_query():
-    builder = QueryBuilder(engine)
-    builder.fields = ["chr","pos","ref"]
-    builder.condition = "variants.id > 3"
-
-    print(builder)
-
-    for i in builder.query():
-        print(i)
-
-    print("list")
-    for i in builder.to_list():
-        print(i)
-
-
-
-def test_query_selection():
-    builder = QueryBuilder(engine)
-    builder.fields = ["chr","pos"]
-
-    A = builder.query()
-
-
-    builder.condition = "variants.id > 3"
-    builder.create_selection("sacha")
-
-    session = create_session(engine)
-
-
-    builder.selection_name = "sacha"
-    builder.condition = "variants.chr == 'chr8'"
-
-
-    print("selection A")
-    for i in A:
-        print(i)
-
-    B  = builder.query()
-
-    print("selection B")
-    for i in B:
-        print(i)
-
-
-    print("selection C")
-
-    C = A.except_(B)
-
-    for i in C:
-        print(i)
-
-    print("selection")
-    query = session.query(Variant).join(Selection, Variant.selections).filter(Selection.name == "sacha")
-    for i in query.filter(sqlalchemy.text("variants.id > 0")):
-        print(i)
+def test_import_database():
+    db_path = "/tmp/test_cutevaiant.db"
+    import_file("exemples/test.csv", db_path)
     
+    assert os.path.isfile(db_path) == True, "database doesn't exists"
+
+    conn = sqlite3.connect(db_path)
+
+    assert table_exists("fields", conn), "fields table doesn't exists"
+    assert table_exists("variants", conn), "variant table doesn't exists"
+    assert table_exists("selections", conn), "selections table doesn't exists"
+    assert table_exists("selection_has_variant", conn), "selection_has_variants table doesn't exists"
+
 
 
 

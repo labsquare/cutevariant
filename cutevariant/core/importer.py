@@ -26,25 +26,11 @@ def import_file(filename, dbpath):
     Selection(conn).create()
     Selection(conn).insert({"name": "all" , "count": "0"})
 
-
-
-
     # Insert fields 
     Field(conn).insert_many(reader.get_fields())
     Variant(conn).insert_many(reader.get_variants())
 
    
-
-
-
-def open_db(dbpath):
-    engine = create_engine(f"sqlite:///{dbpath}", echo=True)
-    Base = automap_base()
-    Base.prepare(engine, reflect=True)
-    Variants  = Base.classes.variants
-    
-
-
 
 
 
