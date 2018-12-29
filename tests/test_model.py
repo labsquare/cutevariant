@@ -1,7 +1,7 @@
 import pytest
 import sqlite3
 import os
-from cutevariant.core.model import Selection, Field, Variant 
+from cutevariant.core.model import Selection, Field, Variant , Sample
 from cutevariant.core.importer import import_file
 from .utils import table_exists, table_count
 
@@ -43,3 +43,17 @@ def test_field(conn):
     assert table_exists("fields",conn), "table fields cannot be create"
 
     conn.close()
+
+
+
+def test_sample(conn):
+    Sample(conn).create()
+    assert table_exists("samples",conn), "table samples cannot be create"
+
+    Sample(conn).insert({"name":"sacha", "phenotype":"normal"})
+
+    record = Sample(conn).list()[0]
+
+    assert record[1] == "sacha"
+    assert record[2] == "normal"
+

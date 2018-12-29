@@ -33,6 +33,7 @@ class Selection(object):
 
 
 
+
 class Field(object):
     def __init__(self, conn : sqlite3.Connection):
         self.conn = conn
@@ -80,9 +81,62 @@ class Variant(object):
         # INSERT INTO variants (qcols) VALUES (qplace)
         q_cols  = ','.join(cols) 
         q_place = ','.join([f':{place}' for place in cols])
+
+        # create dictionnary sampleName: rowId
+        samples = dict([(record[1], record[0]) for record in self.conn.execute('''SELECT rowid, name FROM samples''')])
         
-        self.cursor.executemany(f'''INSERT INTO variants ({q_cols}) VALUES ({q_place})''', data)
+        for row in data:
+            self.cursor.execute(f'''INSERT INTO variants ({q_cols}) VALUES ({q_place})''', row)
+
+            # if row contains sample data, insert ...
+            if "samples" in row:
+                for sample in row["samples"]:
+                    name = sample["name"]
+                    gt   = sample["gt"]
+                    if name in samples.keys():
+                        sample_id  = samples[name]
+                        variant_id = self.cursor.lastrowid
+                        self.cursor.execute(f'''INSERT INTO sample_has_variant VALUES (?,?)''', [sample_id, variant_id])
+
+                      
         self.conn.commit()
+
+
 
     def columns(self):
         return [i[0] for i in self.conn.execute("SELECT * FROM variants LIMIT 1").description]
+
+
+
+class Sample(object):
+    def __init__(self, conn : sqlite3.Connection):
+        self.conn = conn
+        self.cursor = self.conn.cursor()
+
+    def create(self):
+        self.cursor.execute('''
+        CREATE TABLE samples
+        (name text, phenotype text NULL)
+        ''')
+
+        self.cursor.execute('''
+        CREATE TABLE sample_has_variant
+         (sample_id integer, variant_id integer)
+         ''')
+
+        self.conn.commit()
+
+    def insert(self, data : dict):
+
+        data.setdefault("name", "no_name")
+        data.setdefault("pheontype", "")
+
+        self.cursor.execute('''
+            INSERT INTO samples VALUES (:name,:phenotype)
+            ''', data)
+        self.conn.commit()
+
+
+    def list(self):
+        return [record for record in self.cursor.execute('''SELECT rowid, name, phenotype FROM samples''')]
+
