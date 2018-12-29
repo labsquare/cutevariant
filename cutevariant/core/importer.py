@@ -2,7 +2,7 @@ import os
 import csv
 import sqlite3
 from .readerfactory import ReaderFactory
-from .model import Selection, Field, Variant
+from .model import Selection, Field, Variant, Sample
 
 def import_file(filename, dbpath):
 
@@ -19,6 +19,9 @@ def import_file(filename, dbpath):
     # Create table fields 
     Field(conn).create()
 
+    # Create table samples
+    Sample(conn).create()
+
     # Create variants tables 
     Variant(conn).create(reader.get_fields())
     
@@ -26,9 +29,14 @@ def import_file(filename, dbpath):
     Selection(conn).create()
     Selection(conn).insert({"name": "all" , "count": "0"})
 
+    # insert samples 
+    for sample in reader.get_samples():
+        Sample(conn).insert({"name":sample, "phenotype":""})
+
     # Insert fields 
     Field(conn).insert_many(reader.get_fields())
     Variant(conn).insert_many(reader.get_variants())
+
 
    
 

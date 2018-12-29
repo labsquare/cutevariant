@@ -9,6 +9,10 @@ class CsvReader(AbstractReader):
     def __del__(self):
         del(self.device)
 
+
+    def get_samples(self):
+        return ["boby","sacha","olivier"]
+
     def get_fields(self):
         self.device.seek(0)
         csvreader = csv.reader(self.device, delimiter="\t")
@@ -28,6 +32,12 @@ class CsvReader(AbstractReader):
             variant["pos"] = row[1]
             variant["ref"] = row[2]
             variant["alt"] = row[3]
+
+            # testing purpose 
+            variant["samples"]=[
+            {"name": "boby", "gt": 0},
+            {"name": "sacha", "gt": 1},
+            {"name": "olivier", "gt": 2}]
 
             yield variant
 

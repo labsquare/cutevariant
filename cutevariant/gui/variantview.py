@@ -20,7 +20,7 @@ class VariantModel(QStandardItemModel):
 
     def load(self, query):
         self.clear()
-        for row in query.query():
+        for row in query.rows():
             items = []
             for i in row: 
                 items.append(QStandardItem(str(i)))

@@ -17,7 +17,11 @@ def test_import_database():
     # test line number 
     num_lines = sum(1 for line in open("exemples/test.csv"))
 
-    assert len(list(builder.query())) == num_lines - 1 , "wrong record numbers"
+    assert len(list(builder.rows())) == num_lines - 1 , "wrong record numbers"
+
+    builder.where = "chr == 'chr5'"
+    assert len(list(builder.rows())) == 1 , "wrong record numbers"
+
 
     
     conn.close()

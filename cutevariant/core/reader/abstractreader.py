@@ -13,3 +13,6 @@ class AbstractReader(ABC):
     @abstractclassmethod
     def get_fields(self):
         raise NotImplemented()
+
+    def get_samples(self):
+    	return []

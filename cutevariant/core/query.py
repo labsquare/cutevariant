@@ -2,53 +2,83 @@
 class QueryBuilder:
 	''' 
 	This class is intended to build sql query according parameters 
-	self.fields : columns from variant table 
-	self.conditions : where condition as raw text 
-	self.selection_name : name of the variant set. Use "all" to select all variants 
+	self.columns : columns from variant table 
+	self.where : where where as raw text 
+	self.table : name of the variant set. Use "all" to select all variants 
 	''' 
 	def __init__(self, conn):
 		self.conn = conn
-		self.fields = []
-		self.condition = str()
-		self.selection_name = "all"
+		self.columns = []
+		self.where = str()
+		self.table = "variants"
 
 	def query(self):
 		''' build query depending class parameter ''' 
-		if self.fields:
-			cursor = self.conn.execute(f"SELECT {','.join(self.fields)} FROM variants")
+		query = ""
+		if self.columns:
+			query = f"SELECT {','.join(self.columns)}"
 		else:
-			cursor = self.conn.execute(f"SELECT * FROM variants")
-
-		for row in cursor:
-			yield row
+			query = f"SELECT * "
 
 
+		if self.table == "variants":
+			query += f"FROM variants"
+		else:
+			# manage jointure with selection 
+			pass 
+
+		if self.where:
+			query += " WHERE " + self.where
+
+		return query 
+
+	def rows(self):
+		yield from self.conn.execute(self.query())
 
 
-  #   for i in engine.execute(user.select()):
-  #       print(i)
-
-
-
+	def create_selection(self, name):
+		pass 
 
 
 	def __repr__(self):
 		return f"""
-		fields : {self.fields} 
-		condition: {self.condition} 
-		selection: {self.selection_name}
+		columns : {self.columns} 
+		where: {self.where} 
+		selection: {self.table}
 		limit: 
 		"""
 
 
 
+def intersect(query1, query2, by = "site"):
 
-		# self.engine.execute(f"INSERT INTO `selection_has_variants` (variant_id, selection_id) {")
+	if by == "site":
+		link = "q1.chr = q2.chr AND q1.pos = q2.pos"
+
+	if by == "variant":
+		link = "q1.chr = q2.chr AND q1.pos = q2.pos AND q1.ref = q2.ref AND q1.alt = q2.alt"
+
+	query = f'''
+	SELECT * FROM {query1} q1
+	INNER JOIN {query2} q2 
+	ON {link}
+	'''
+
+	return query 
 
 
+def union(query1, query2, by = "site"):
 
+	if by == "site":
+		link = "q1.chr = q2.chr AND q1.pos = q2.pos"
 
+	if by == "variant":
+		link = "q1.chr = q2.chr AND q1.pos = q2.pos AND q1.ref = q2.ref AND q1.alt = q2.alt"
 
-    # # for i in s
-    # #     print(i.pos)
+	query = f'''
+	SELECT * FROM {query1} q1
+	INNER JOIN {query2} q2 
+	ON {link}
+	'''
 
+	return query 
