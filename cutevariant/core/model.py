@@ -87,6 +87,7 @@ class Variant(object):
         
         for row in data:
             self.cursor.execute(f'''INSERT INTO variants ({q_cols}) VALUES ({q_place})''', row)
+            variant_id = self.cursor.lastrowid
 
             # if row contains sample data, insert ...
             if "samples" in row:
@@ -95,8 +96,7 @@ class Variant(object):
                     gt   = sample["gt"]
                     if name in samples.keys():
                         sample_id  = samples[name]
-                        variant_id = self.cursor.lastrowid
-                        self.cursor.execute(f'''INSERT INTO sample_has_variant VALUES (?,?)''', [sample_id, variant_id])
+                        self.cursor.execute(f'''INSERT INTO sample_has_variant VALUES (?,?,?)''', [sample_id, variant_id,gt])
 
                       
         self.conn.commit()
@@ -121,7 +121,7 @@ class Sample(object):
 
         self.cursor.execute('''
         CREATE TABLE sample_has_variant
-         (sample_id integer, variant_id integer)
+         (sample_id integer, variant_id integer, genotype integer)
          ''')
 
         self.conn.commit()

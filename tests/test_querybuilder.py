@@ -21,14 +21,23 @@ def test_import_database():
 
     builder.where = "chr == 'chr5'"
     assert len(list(builder.rows())) == 1 , "wrong record numbers"
-
-
-    
+ 
     conn.close()
 
 
+def test_sample_query():
+    db_path = "/tmp/test_cutevaiant.db"
+    import_file("exemples/test.csv", db_path)
 
+    conn = sqlite3.connect(db_path)
 
+    builder = QueryBuilder(conn)
+
+    builder.samples = ["sacha","olivier"]
+
+    print("test",builder.query())
+
+   
 
 
 

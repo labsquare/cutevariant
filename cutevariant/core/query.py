@@ -11,6 +11,7 @@ class QueryBuilder:
 		self.columns = []
 		self.where = str()
 		self.table = "variants"
+		self.samples = []
 
 	def query(self):
 		''' build query depending class parameter ''' 
@@ -26,6 +27,17 @@ class QueryBuilder:
 		else:
 			# manage jointure with selection 
 			pass 
+
+
+		# Join samples 
+		if len(self.samples):
+
+			sample_ids = dict(self.conn.execute(f"SELECT name, rowid FROM samples").fetchall())
+
+			for i,sample in enumerate(self.samples):
+				sample_id = sample_ids[sample]
+				query +=f" LEFT JOIN sample_has_variant sv{i} ON sv{i}.variant_id = variants.rowid AND sv{i}.sample_id = {sample_id} "
+
 
 		if self.where:
 			query += " WHERE " + self.where
