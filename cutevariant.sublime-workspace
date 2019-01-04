@@ -4,6 +4,14 @@
 		"selected_items":
 		[
 			[
+				"samp",
+				"sample_id\tstatement"
+			],
+			[
+				"exe",
+				"execute\tPyQt Functions"
+			],
+			[
 				"quer",
 				"query\tPyQt Functions"
 			],
@@ -30,10 +38,6 @@
 			[
 				"var",
 				"variant_columns\tstatement"
-			],
-			[
-				"exe",
-				"executemany\tfunction"
 			],
 			[
 				"com",
@@ -471,101 +475,6 @@
 	},
 	"buffers":
 	[
-		{
-			"file": "cutevariant/core/importer.py",
-			"settings":
-			{
-				"buffer_size": 948,
-				"encoding": "UTF-8",
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "cutevariant/core/model.py",
-			"settings":
-			{
-				"buffer_size": 2600,
-				"encoding": "UTF-8",
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "cutevariant/core/query.py",
-			"settings":
-			{
-				"buffer_size": 1606,
-				"encoding": "UTF-8",
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "cutevariant/core/readerfactory.py",
-			"settings":
-			{
-				"buffer_size": 598,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "cutevariant/core/reader/csvreader.py",
-			"settings":
-			{
-				"buffer_size": 925,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "__main__.py",
-			"settings":
-			{
-				"buffer_size": 668,
-				"encoding": "UTF-8",
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "cutevariant/gui/variantview.py",
-			"settings":
-			{
-				"buffer_size": 2270,
-				"encoding": "UTF-8",
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"contents": "variants \n\nsamples \n\nsamples_has_variants\n\nsacha VID homozygote \n\nfields()\nvariants()\nsamples()\n\nchr pos  transcripts sample genotype\nch3 242  transcripts sacha  SDfSF\n\n\n[hash] = id \nchr pos ref alt \n\n\nvariants(\"boby\")\n\n\nvariants ",
-			"settings":
-			{
-				"buffer_size": 230,
-				"line_ending": "Unix",
-				"name": "variants"
-			}
-		},
-		{
-			"contents": "\n\n-----p--------------------------\n\n\n-----p--------------------------\n\n\n-----p-----------------m---------\n\n\n-----------------------m--------\n\n\n\n-------------------------------\n\n\n-----p-----------------m---------\n\n\n\n4/6 \n3/6\n\n\n\n",
-			"settings":
-			{
-				"buffer_size": 227,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "tests/test_import.py",
-			"settings":
-			{
-				"buffer_size": 737,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "tests/test_querybuilder.py",
-			"settings":
-			{
-				"buffer_size": 661,
-				"encoding": "UTF-8",
-				"line_ending": "Unix"
-			}
-		}
 	],
 	"build_system": "Packages/Makefile/Make.sublime-build",
 	"build_system_choices":
@@ -751,6 +660,10 @@
 		"selected_items":
 		[
 			[
+				"install",
+				"Package Control: Install Package"
+			],
+			[
 				"ana",
 				"Anaconda: Run Project Tests"
 			],
@@ -781,10 +694,6 @@
 			[
 				"anaonda run test",
 				"Anaconda: Run Last Test"
-			],
-			[
-				"install",
-				"Package Control: Install Package"
 			],
 			[
 				"anaconda disab",
@@ -1141,11 +1050,27 @@
 	},
 	"expanded_folders":
 	[
-		"/home/schutz/Dev/CuteVariant-python/cutevariant",
-		"/home/schutz/Dev/CuteVariant-python/cutevariant/gui"
 	],
 	"file_history":
 	[
+		"/DATA/Dev/haploview/__main__.py",
+		"/DATA/Dev/CuteVariant-python/cutevariant.sublime-project",
+		"/DATA/Dev/CuteVariant-python/cutevariant/core/importer.py",
+		"/DATA/Dev/CuteVariant-python/cutevariant/core/model.py",
+		"/DATA/Dev/CuteVariant-python/tests/test_model.py",
+		"/DATA/Dev/CuteVariant-python/cutevariant/core/query.py",
+		"/DATA/Dev/CuteVariant-python/cutevariant/core/readerfactory.py",
+		"/DATA/Dev/CuteVariant-python/cutevariant/core/reader/csvreader.py",
+		"/DATA/Dev/CuteVariant-python/cutevariant/core/reader/abstractreader.py",
+		"/DATA/Dev/CuteVariant-python/__main__.py",
+		"/DATA/Dev/CuteVariant-python/cutevariant/gui/mainwindow.py",
+		"/DATA/Dev/CuteVariant-python/cutevariant/gui/variantview.py",
+		"/DATA/Dev/CuteVariant-python/tests/test_import.py",
+		"/DATA/Dev/CuteVariant-python/tests/test_reader.py",
+		"/DATA/Dev/CuteVariant-python/exemples/test.csv",
+		"/DATA/Dev/CuteVariant-python/exemples/test.cvf",
+		"/DATA/Dev/CuteVariant-python/Makefile",
+		"/DATA/Dev/CuteVariant-python/tests/test_querybuilder.py",
 		"/DATA/Dev/CuteVariant-python/main.py",
 		"/DATA/Dev/CuteVariant-python/requirements.txt",
 		"/home/schutz/Dev/CuteVariant-python/cutevariant/core/query.py",
@@ -1189,7 +1114,6 @@
 		"/DATA/Dev/CuteVariant-python/exemples/test2.csv",
 		"/home/schutz/Dev/CuteVariant-python/cutevariant/temp.py",
 		"/home/schutz/Dev/CuteVariant-python/cutevariant/__init__.py",
-		"/DATA/Dev/CuteVariant-python/Makefile",
 		"/home/schutz/Dev/CuteVariant-python/main.py",
 		"/home/schutz/Dev/CuteVariant-python/test.py",
 		"/DATA/Dev/lncRNA/test.fa",
@@ -1256,24 +1180,7 @@
 		"/home/sacha/.zshrc",
 		"/home/sacha/Dev/hpo2sqlite/import_hpo_obo.py",
 		"/tmp/transcript.txt",
-		"/home/sacha/twist_onco_fer.v1.bed",
-		"/home/sacha/Dev/twist/twist_onco_fer.v2.bed",
-		"/home/sacha/Dev/twist/twist_onco_fer.v5.bed",
-		"/home/sacha/Dev/iscard/iscard/core.py",
-		"/data/Bioinfo/projects/snp_exome/data/sign.sh",
-		"/home/sacha/Dev/iscard/iscard/__main__.py",
-		"/home/sacha/Dev/iscard/iscard/model.py",
-		"/home/sacha/big1/test.py",
-		"/data/Bioinfo/projects/snp_exome/data/snps.bed",
-		"/data/Bioinfo/projects/snp_exome/data/snps2.bed",
-		"/data/Bioinfo/data/louise/region.bed",
-		"/data/Bioinfo/data/louise/term.hpo",
-		"/data/Bioinfo/projects/snp_exome/data/test.bed",
-		"/tmp/bit/test.cpp",
-		"/home/sacha/Dev/iscard/iscard/learn.py",
-		"/data/Bioinfo/projects/suselect/3151331/3151331_Covered.bed",
-		"/data/Bioinfo/projects/suselect/refgene_to_bed.py",
-		"/data/Downloads/3151331_Covered.bed"
+		"/home/sacha/twist_onco_fer.v1.bed"
 	],
 	"find":
 	{
@@ -1367,439 +1274,8 @@
 	"groups":
 	[
 		{
-			"selected": 8,
 			"sheets":
 			[
-				{
-					"buffer": 0,
-					"file": "cutevariant/core/importer.py",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 948,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								193,
-								193
-							]
-						],
-						"settings":
-						{
-							"auto_complete_triggers":
-							[
-								{
-									"characters": ".",
-									"selector": "source.python - string - comment - constant.numeric"
-								},
-								{
-									"characters": ".",
-									"selector": "source.python - string - constant.numeric"
-								}
-							],
-							"complete_all_parameters": false,
-							"complete_parameters": false,
-							"git_gutter_is_enabled": true,
-							"syntax": "Packages/Python/Python.sublime-syntax",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 79.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 6,
-					"type": "text"
-				},
-				{
-					"buffer": 1,
-					"file": "cutevariant/core/model.py",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 2600,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								1036,
-								1036
-							]
-						],
-						"settings":
-						{
-							"git_gutter_is_enabled": true,
-							"syntax": "Packages/Python/Python.sublime-syntax",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 5,
-					"type": "text"
-				},
-				{
-					"buffer": 2,
-					"file": "cutevariant/core/query.py",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 1606,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								1366,
-								1366
-							]
-						],
-						"settings":
-						{
-							"auto_complete_triggers":
-							[
-								{
-									"characters": ".",
-									"selector": "source.python - string - comment - constant.numeric"
-								},
-								{
-									"characters": ".",
-									"selector": "source.python - string - constant.numeric"
-								},
-								{
-									"characters": ".",
-									"selector": "source.python - string - constant.numeric"
-								}
-							],
-							"git_gutter_is_enabled": true,
-							"syntax": "Packages/Python/Python.sublime-syntax",
-							"translate_tabs_to_spaces": false
-						},
-						"translation.x": 0.0,
-						"translation.y": 1087.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 9,
-					"type": "text"
-				},
-				{
-					"buffer": 3,
-					"file": "cutevariant/core/readerfactory.py",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 598,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								21,
-								21
-							]
-						],
-						"settings":
-						{
-							"auto_complete_triggers":
-							[
-								{
-									"characters": ".",
-									"selector": "source.python - string - comment - constant.numeric"
-								},
-								{
-									"characters": ".",
-									"selector": "source.python - string - constant.numeric"
-								}
-							],
-							"git_gutter_is_enabled": true,
-							"syntax": "Packages/Python/Python.sublime-syntax",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 8,
-					"type": "text"
-				},
-				{
-					"buffer": 4,
-					"file": "cutevariant/core/reader/csvreader.py",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 925,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								510,
-								510
-							]
-						],
-						"settings":
-						{
-							"auto_complete_triggers":
-							[
-								{
-									"characters": ".",
-									"selector": "source.python - string - comment - constant.numeric"
-								},
-								{
-									"characters": ".",
-									"selector": "source.python - string - constant.numeric"
-								}
-							],
-							"git_gutter_is_enabled": true,
-							"syntax": "Packages/Python/Python.sublime-syntax",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 7,
-					"type": "text"
-				},
-				{
-					"buffer": 5,
-					"file": "__main__.py",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 668,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								60,
-								60
-							]
-						],
-						"settings":
-						{
-							"auto_complete_triggers":
-							[
-								{
-									"characters": ".",
-									"selector": "source.python - string - comment - constant.numeric"
-								},
-								{
-									"characters": ".",
-									"selector": "source.python - string - constant.numeric"
-								}
-							],
-							"git_gutter_is_enabled": true,
-							"syntax": "Packages/Python/Python.sublime-syntax",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 24.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 3,
-					"type": "text"
-				},
-				{
-					"buffer": 6,
-					"file": "cutevariant/gui/variantview.py",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 2270,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								596,
-								596
-							]
-						],
-						"settings":
-						{
-							"auto_complete_triggers":
-							[
-								{
-									"characters": ".",
-									"selector": "source.python - string - comment - constant.numeric"
-								},
-								{
-									"characters": ".",
-									"selector": "source.python - string - constant.numeric"
-								}
-							],
-							"git_gutter_is_enabled": true,
-							"syntax": "Packages/Python/Python.sublime-syntax",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 288.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 2,
-					"type": "text"
-				},
-				{
-					"buffer": 7,
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 230,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								230,
-								230
-							]
-						],
-						"settings":
-						{
-							"auto_name": "variants",
-							"default_dir": "/home/schutz/Dev/CuteVariant-python/cutevariant/gui",
-							"git_gutter_is_enabled": false,
-							"syntax": "Packages/Text/Plain text.tmLanguage"
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 1,
-					"type": "text"
-				},
-				{
-					"buffer": 8,
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 227,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								223,
-								223
-							]
-						],
-						"settings":
-						{
-							"auto_name": "",
-							"git_gutter_is_enabled": false,
-							"syntax": "Packages/Text/Plain text.tmLanguage"
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 0,
-					"type": "text"
-				},
-				{
-					"buffer": 9,
-					"file": "tests/test_import.py",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 737,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								338,
-								338
-							]
-						],
-						"settings":
-						{
-							"auto_complete_triggers":
-							[
-								{
-									"characters": ".",
-									"selector": "source.python - string - comment - constant.numeric"
-								},
-								{
-									"characters": ".",
-									"selector": "source.python - string - constant.numeric"
-								}
-							],
-							"git_gutter_is_enabled": true,
-							"syntax": "Packages/Python/Python.sublime-syntax",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 144.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 10,
-					"type": "text"
-				},
-				{
-					"buffer": 10,
-					"file": "tests/test_querybuilder.py",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 661,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								621,
-								621
-							]
-						],
-						"settings":
-						{
-							"auto_complete_triggers":
-							[
-								{
-									"characters": ".",
-									"selector": "source.python - string - comment - constant.numeric"
-								},
-								{
-									"characters": ".",
-									"selector": "source.python - string - constant.numeric"
-								}
-							],
-							"git_gutter_is_enabled": true,
-							"syntax": "Packages/Python/Python.sublime-syntax",
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 55.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 4,
-					"type": "text"
-				}
 			]
 		}
 	],
@@ -1876,6 +1352,38 @@
 				"tests/test_querybuilder.py"
 			],
 			[
+				"q",
+				"cutevariant/core/query.py"
+			],
+			[
+				"mo",
+				"cutevariant/core/model.py"
+			],
+			[
+				"mode",
+				"cutevariant/core/model.py"
+			],
+			[
+				"ma",
+				"/DATA/Dev/CuteVariant-python/__main__.py"
+			],
+			[
+				"model",
+				"cutevariant/core/model.py"
+			],
+			[
+				"m",
+				"cutevariant/core/model.py"
+			],
+			[
+				"rea",
+				"cutevariant/core/readerfactory.py"
+			],
+			[
+				"im",
+				"cutevariant/core/importer.py"
+			],
+			[
 				"qu",
 				"cutevariant/core/query.py"
 			],
@@ -1888,32 +1396,12 @@
 				"cutevariant/core/query.py"
 			],
 			[
-				"model",
-				"cutevariant/core/model.py"
-			],
-			[
 				"quer",
 				"cutevariant/core/query.py"
 			],
 			[
 				"",
 				"tests/test_import.py"
-			],
-			[
-				"m",
-				"~/Dev/CuteVariant-python/__main__.py"
-			],
-			[
-				"mo",
-				"cutevariant/core/model.py"
-			],
-			[
-				"ma",
-				"~/Dev/CuteVariant-python/__main__.py"
-			],
-			[
-				"im",
-				"cutevariant/core/importer.py"
 			],
 			[
 				"imp",
