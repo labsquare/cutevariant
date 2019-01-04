@@ -5,7 +5,7 @@ import sqlite3
 import warnings
 import json
 from cutevariant.core.importer import import_file
-from cutevariant.core.query import QueryBuilder 
+from cutevariant.core.query import Query 
 
 @pytest.fixture
 def conn():
@@ -17,7 +17,7 @@ def conn():
 
 def test_results(conn):
 
-    builder = QueryBuilder(conn)
+    builder = Query(conn)
     real_row_number = sum(1 for line in open("exemples/test.csv"))
 
     # test query output as row by record 
@@ -31,12 +31,12 @@ def test_results(conn):
 
   
 
-    print(builder.query())
+    print(builder.sql())
     # assert len(list(builder.rows())) == 1 , "wrong record numbers"
 
     # Test sample jointure 
 
-    print(builder.query())
+    print(builder.sql())
     builder.columns  = ["chr","pos","ref", "alt", "genotype(\"sacha\").gt"]
 
 
@@ -44,7 +44,7 @@ def test_results(conn):
 
 
 def test_detect_samples(conn):
-    builder = QueryBuilder(conn)
+    builder = Query(conn)
 
     # test regular expression in columns 
     builder.columns  = ["chr","pos","ref", "alt", "genotype(\"sacha\").gt"]
@@ -72,7 +72,7 @@ def test_detect_samples(conn):
 
 
 def test_where_parser(conn):
-    builder = QueryBuilder(conn)
+    builder = Query(conn)
 
     raw = '''{"AND" : [{"field":"chr", "operator":"==", "value":"chr7"} ]}'''
 
