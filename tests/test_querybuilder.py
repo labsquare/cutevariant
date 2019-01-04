@@ -26,7 +26,12 @@ def test_results(conn):
     assert len(list(builder.items())) == real_row_number - 1 , "wrong record numbers " 
 
     # test where clause
-    builder.where = {"and": {"chr", "==", "chr5"}}
+    builder.where = json.loads('''{"AND" : [{"field":"chr", "operator":"==", "value":"chr7"} ]}''')
+    assert list(builder.items())[0]["chr"] == "chr7", "where condition failed"
+
+  
+
+    print(builder.query())
     # assert len(list(builder.rows())) == 1 , "wrong record numbers"
 
     # Test sample jointure 
@@ -54,6 +59,8 @@ def test_detect_samples(conn):
 
     # test where clause 
     builder.columns  = ["chr","pos","ref", "alt"]
+
+
     #builder.where = "genotype(\"sacha\").gt = 1"
     #assert "sacha" in builder.detect_samples().keys(), "cannot detect sacha sample in query where clause"
 
@@ -67,6 +74,10 @@ def test_detect_samples(conn):
 def test_where_parser(conn):
     builder = QueryBuilder(conn)
 
+    raw = '''{"AND" : [{"field":"chr", "operator":"==", "value":"chr7"} ]}'''
+
+    assert builder.where_to_str(json.loads(raw)) == "(chr=='chr7')"
+
     raw = '''
         {
       "AND": [
@@ -78,7 +89,7 @@ def test_where_parser(conn):
     }
     '''
 
-    assert builder.parse_where_dict(json.loads(raw)) == "(chr==3 AND chr>4)"
+    assert builder.where_to_str(json.loads(raw)) == "(chr==3 AND chr>4)"
 
     raw = '''
     {
@@ -97,7 +108,7 @@ def test_where_parser(conn):
     }
     '''
 
-    assert builder.parse_where_dict(json.loads(raw)) == "(chr==3 AND chr>4 AND (chr==3 OR pos>322))"
+    assert builder.where_to_str(json.loads(raw)) == "(chr==3 AND chr>4 AND (chr==3 OR pos>322))"
 
 
 

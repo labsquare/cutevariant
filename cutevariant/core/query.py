@@ -64,8 +64,9 @@ class QueryBuilder:
 				query +=f" LEFT JOIN sample_has_variant sv{i} ON sv{i}.variant_id = variants.rowid AND sv{i}.sample_id = {sample_id} "
 
 		# add where clause 
-		# if self.where:
-		# 	query += " WHERE " + self.where
+		if self.where:
+			query += " WHERE " + self.where_to_str(self.where)
+			
 
 		# add limit and offset 
 		if self.limit is not None:
@@ -86,21 +87,28 @@ class QueryBuilder:
 			yield item
 
 
-	def parse_where_dict(self, node):
+	def where_to_str(self, node : dict) -> str:
 
 		def is_field(node):
 			return True if len(node) == 3 else False
 
 		if is_field(node) :
-			return str(node["field"]) + str(node["operator"]) + str(node["value"])
+			if type(node["value"]) == str : # Add quote for string .. Need to change in the future and use sqlite binding value
+				value = "'" + str(node["value"]) + "'"
+			else:
+				value = str(node["value"])
+
+			return str(node["field"]) + str(node["operator"]) + value
 
 		else:
 			logic = list(node.keys())[0]
 			out = []
 			for child in node[logic]:
-				out.append(self.parse_where_dict(child))
+				out.append(self.where_to_str(child))
 
 			return "("+f' {logic} '.join(out)+")"
+
+
 
 
 	def samples(self):
@@ -119,9 +127,6 @@ class QueryBuilder:
 		limit: 
 		"""
 
-
-	def create_where_clause(self):
-		pass
 
 
 def intersect(query1, query2, by = "site"):
