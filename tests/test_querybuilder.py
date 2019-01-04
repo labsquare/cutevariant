@@ -3,6 +3,7 @@ import sys
 import os
 import sqlite3
 import warnings
+import json
 from cutevariant.core.importer import import_file
 from cutevariant.core.query import QueryBuilder 
 
@@ -24,14 +25,14 @@ def test_results(conn):
   # test query output as row by record 
     assert len(list(builder.items())) == real_row_number - 1 , "wrong record numbers " 
 
-
-
     # test where clause
-    builder.where = "chr == 'chr5'"
-    assert len(list(builder.rows())) == 1 , "wrong record numbers"
+    builder.where = {"and": {"chr", "==", "chr5"}}
+    # assert len(list(builder.rows())) == 1 , "wrong record numbers"
 
     # Test sample jointure 
+
     print(builder.query())
+    builder.columns  = ["chr","pos","ref", "alt", "genotype(\"sacha\").gt"]
 
 
     conn.close()
@@ -53,12 +54,54 @@ def test_detect_samples(conn):
 
     # test where clause 
     builder.columns  = ["chr","pos","ref", "alt"]
-    builder.where = "genotype(\"sacha\").gt = 1"
-    assert "sacha" in builder.detect_samples().keys(), "cannot detect sacha sample in query where clause"
+    #builder.where = "genotype(\"sacha\").gt = 1"
+    #assert "sacha" in builder.detect_samples().keys(), "cannot detect sacha sample in query where clause"
 
     # test if builder return good samples count 
     builder.columns  = ["chr","pos","ref", "alt", "genotype(\'sacha\').gt", "genotype(\"olivier\").gt"]
     len(set(builder.samples()).intersection(set(["sacha","olivier"]))) == 2  
+
+
+
+
+def test_where_parser(conn):
+    builder = QueryBuilder(conn)
+
+    raw = '''
+        {
+      "AND": [
+        
+        {"field":"chr", "operator": "==", "value": 3},
+        {"field":"chr", "operator": ">", "value": 4}
+    ]
+
+    }
+    '''
+
+    assert builder.parse_where_dict(json.loads(raw)) == "(chr==3 AND chr>4)"
+
+    raw = '''
+    {
+      "AND": [
+        
+        {"field":"chr", "operator": "==", "value": 3},
+        {"field":"chr", "operator": ">", "value": 4},
+        {
+          "OR": [
+                {"field":"chr", "operator": "==", "value": 3},
+                {"field":"pos", "operator": ">", "value": 322}
+
+            ]
+        }
+        ]
+    }
+    '''
+
+    assert builder.parse_where_dict(json.loads(raw)) == "(chr==3 AND chr>4 AND (chr==3 OR pos>322))"
+
+
+
+
 
 
 # def test_sample_query():

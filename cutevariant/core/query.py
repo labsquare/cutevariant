@@ -10,7 +10,7 @@ class QueryBuilder:
 	def __init__(self, conn):
 		self.conn = conn
 		self.columns = []
-		self.where = str()
+		self.where = {}
 		self.table = "variants"
 		self.limit = 10 
 		self.offset = 0
@@ -22,7 +22,7 @@ class QueryBuilder:
 		# extract sample name from select and where clause 
 		expression = r'genotype\([\"\'](.*)[\"\']\).gt'
 		samples_detected = []
-		combine_clause = self.columns + self.where.split(" ")
+		combine_clause = self.columns 
 
 		for col in combine_clause:
 			match = re.search(expression, col)
@@ -32,6 +32,9 @@ class QueryBuilder:
 		# Look in DB if sample exists and returns {sample:id} dictionnary
 		in_clause = ",".join([ f"'{sample}'" for sample in samples_detected])
 		return dict(self.conn.execute(f"SELECT name, rowid FROM samples WHERE name IN ({in_clause})").fetchall())
+
+
+
 
 
 
@@ -61,8 +64,8 @@ class QueryBuilder:
 				query +=f" LEFT JOIN sample_has_variant sv{i} ON sv{i}.variant_id = variants.rowid AND sv{i}.sample_id = {sample_id} "
 
 		# add where clause 
-		if self.where:
-			query += " WHERE " + self.where
+		# if self.where:
+		# 	query += " WHERE " + self.where
 
 		# add limit and offset 
 		if self.limit is not None:
@@ -83,6 +86,22 @@ class QueryBuilder:
 			yield item
 
 
+	def parse_where_dict(self, node):
+
+		def is_field(node):
+			return True if len(node) == 3 else False
+
+		if is_field(node) :
+			return str(node["field"]) + str(node["operator"]) + str(node["value"])
+
+		else:
+			logic = list(node.keys())[0]
+			out = []
+			for child in node[logic]:
+				out.append(self.parse_where_dict(child))
+
+			return "("+f' {logic} '.join(out)+")"
+
 
 	def samples(self):
 		return self.detect_samples().keys()
@@ -100,6 +119,9 @@ class QueryBuilder:
 		limit: 
 		"""
 
+
+	def create_where_clause(self):
+		pass
 
 
 def intersect(query1, query2, by = "site"):
