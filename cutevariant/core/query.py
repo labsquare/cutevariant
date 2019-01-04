@@ -1,6 +1,6 @@
 import re 
 
-class QueryBuilder:
+class Query:
 	''' 
 	This class is intended to build sql query according parameters 
 	self.columns : columns from variant table 
@@ -12,9 +12,6 @@ class QueryBuilder:
 		self.columns = []
 		self.where = {}
 		self.table = "variants"
-		self.limit = 10 
-		self.offset = 0
-
 
 	def detect_samples(self):
 		''' detect if query need sample join by looking genotype expression : genotype("boby").gt and return samples '''
@@ -38,7 +35,7 @@ class QueryBuilder:
 
 
 
-	def query(self):
+	def sql(self, limit = 50, offset = 0):
 		''' build query depending class parameter ''' 
 
 		if len(self.columns) == 0:
@@ -67,20 +64,18 @@ class QueryBuilder:
 		if self.where:
 			query += " WHERE " + self.where_to_str(self.where)
 			
-
 		# add limit and offset 
-		if self.limit is not None:
-			query += f" LIMIT {self.limit} OFFSET {self.offset}"
+			query += f" LIMIT {limit} OFFSET {offset}"
 
 		return query 
 
 	def rows(self):
 		''' return query results as list by record ''' 
-		yield from self.conn.execute(self.query())
+		yield from self.conn.execute(self.sql())
 
 	def items(self):
 		''' return query results as dict by record ''' 
-		for value in self.conn.execute(self.query()):
+		for value in self.conn.execute(self.sql()):
 			item = {}
 			for index, col in enumerate(self.columns):
 				item[col] = value[index]
