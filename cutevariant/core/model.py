@@ -64,6 +64,17 @@ class Field(object):
         VALUES (:name,:category,:type, :description)''', data)
         self.conn.commit()
 
+    def items(self):
+        for row in self.cursor.execute('''SELECT * FROM fields '''):
+            record = dict()
+            record["name"] = row[0]
+            record["category"] = row[1]
+            record["type"] = row[2]
+            record["description"] = row[3]
+            yield record
+
+
+
 
 class Variant(object):
     def __init__(self, conn : sqlite3.Connection):

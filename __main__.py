@@ -9,6 +9,8 @@ from cutevariant.gui import MainWindow
 
 from cutevariant.gui.viewquerywidget import ViewQueryWidget
 from cutevariant.gui.queryrouter import QueryRouter
+from cutevariant.gui.columnquerywidget import ColumnQueryWidget
+
 
 
 import sqlite3
@@ -31,9 +33,7 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
 
 
-    w = ViewQueryWidget()
-
-    w.setQuery(query)
+    w = MainWindow()
 
     w.show()
 
