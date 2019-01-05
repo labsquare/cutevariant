@@ -90,8 +90,8 @@ class Query:
 
 	def filter_to_sql(self, node : dict) -> str:
 
-		def is_field(node):
-			return True if len(node) == 3 else False
+		# function to detect if node is a Condition node (AND/OR) OR a field node {name,operator, value}
+		is_field = lambda x: True if len(x) == 3 else False
 
 		if is_field(node) :
 			if type(node["value"]) == str : # Add quote for string .. Need to change in the future and use sqlite binding value

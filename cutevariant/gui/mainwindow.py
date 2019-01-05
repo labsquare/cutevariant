@@ -1,9 +1,11 @@
 from PySide2.QtCore import *
 from PySide2.QtWidgets import *
 import sqlite3
+import json
 
 from cutevariant.gui.viewquerywidget import ViewQueryWidget
 from cutevariant.gui.columnquerywidget import ColumnQueryWidget
+from cutevariant.gui.filterquerywidget import FilterQueryWidget
 from cutevariant.gui.queryrouter import QueryRouter
 
 from cutevariant.core.importer import import_file
@@ -17,16 +19,17 @@ class MainWindow(QMainWindow):
         self.conn   = None
         self.view_widget   = ViewQueryWidget()
         self.column_widget = ColumnQueryWidget()
+        self.filter_widget = FilterQueryWidget()
         
         # Init router 
         self.router = QueryRouter()
         self.router.addWidget(self.view_widget)
         self.router.addWidget(self.column_widget)
+        self.router.addWidget(self.filter_widget)
 
         # Init panel 
         self.addPanel(self.column_widget)
-
-
+        self.addPanel(self.filter_widget)
         self.setCentralWidget(self.view_widget)
 
 
@@ -36,7 +39,12 @@ class MainWindow(QMainWindow):
 
         import_file("exemples/test.csv", filename)
         self.conn = sqlite3.connect(filename)
-        self.router.setQuery(Query(self.conn))
+
+        query = Query(self.conn)
+        query.filter = json.loads('''{"AND" : [{"field":"pos", "operator":">", "value":"322424"} ]}''')
+
+
+        self.router.setQuery(query)
         
 
 
