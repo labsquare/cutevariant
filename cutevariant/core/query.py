@@ -4,21 +4,21 @@ class Query:
 	''' 
 	This class is intended to build sql query according parameters 
 	self.columns : columns from variant table 
-	self.where : where where as raw text 
+	self.filter : filter filter as raw text 
 	self.table : name of the variant set. Use "all" to select all variants 
 	''' 
-	def __init__(self, conn):
+	def __init__(self, conn, columns = ["chr","pos","ref","alt"], filter = None, table = "variants"):
 		self.conn = conn
-		self.columns = []
-		self.where = {}
-		self.table = "variants"
+		self.columns = columns
+		self.filter = filter
+		self.table = table
 
 	##-----------------------------------------------------------------------------------------------------------
 
 	def detect_samples(self):
 		''' detect if query need sample join by looking genotype expression : genotype("boby").gt and return samples '''
 
-		# extract sample name from select and where clause 
+		# extract sample name from select and filter clause 
 		expression = r'genotype\([\"\'](.*)[\"\']\).gt'
 		samples_detected = []
 		combine_clause = self.columns 
@@ -60,9 +60,9 @@ class Query:
 				sample_id = sample_ids[sample]
 				query +=f" LEFT JOIN sample_has_variant sv{i} ON sv{i}.variant_id = variants.rowid AND sv{i}.sample_id = {sample_id} "
 
-		# add where clause 
-		if self.where:
-			query += " WHERE " + self.where_to_str(self.where)
+		# add filter clause 
+		if self.filter:
+			query += " WHERE " + self.filter_to_sql(self.filter)
 			
 		# add limit and offset 
 		if limit > 0:
@@ -88,7 +88,7 @@ class Query:
 
 	##-----------------------------------------------------------------------------------------------------------
 
-	def where_to_str(self, node : dict) -> str:
+	def filter_to_sql(self, node : dict) -> str:
 
 		def is_field(node):
 			return True if len(node) == 3 else False
@@ -105,7 +105,7 @@ class Query:
 			logic = list(node.keys())[0]
 			out = []
 			for child in node[logic]:
-				out.append(self.where_to_str(child))
+				out.append(self.filter_to_sql(child))
 
 			return "("+f' {logic} '.join(out)+")"
 
@@ -132,7 +132,7 @@ class Query:
 	def __repr__(self):
 		return f"""
 		columns : {self.columns} 
-		where: {self.where} 
+		filter: {self.filter} 
 		selection: {self.table}
 		limit: 
 		"""
