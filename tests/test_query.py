@@ -26,7 +26,7 @@ def test_results(conn):
     assert len(list(builder.items())) == real_row_number - 1 , "wrong record numbers " 
 
     # test where clause
-    builder.where = json.loads('''{"AND" : [{"field":"chr", "operator":"==", "value":"chr7"} ]}''')
+    builder.filter = json.loads('''{"AND" : [{"field":"chr", "operator":"==", "value":"chr7"} ]}''')
     assert list(builder.items())[0]["chr"] == "chr7", "where condition failed"
 
   
@@ -71,12 +71,12 @@ def test_detect_samples(conn):
 
 
 
-def test_where_parser(conn):
+def test_filter_parser(conn):
     builder = Query(conn)
 
     raw = '''{"AND" : [{"field":"chr", "operator":"==", "value":"chr7"} ]}'''
 
-    assert builder.where_to_str(json.loads(raw)) == "(chr=='chr7')"
+    assert builder.filter_to_sql(json.loads(raw)) == "(chr=='chr7')"
 
     raw = '''
         {
@@ -89,7 +89,7 @@ def test_where_parser(conn):
     }
     '''
 
-    assert builder.where_to_str(json.loads(raw)) == "(chr==3 AND chr>4)"
+    assert builder.filter_to_sql(json.loads(raw)) == "(chr==3 AND chr>4)"
 
     raw = '''
     {
@@ -108,7 +108,7 @@ def test_where_parser(conn):
     }
     '''
 
-    assert builder.where_to_str(json.loads(raw)) == "(chr==3 AND chr>4 AND (chr==3 OR pos>322))"
+    assert builder.filter_to_sql(json.loads(raw)) == "(chr==3 AND chr>4 AND (chr==3 OR pos>322))"
 
 
 
