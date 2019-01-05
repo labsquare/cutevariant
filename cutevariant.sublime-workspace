@@ -4,6 +4,10 @@
 		"selected_items":
 		[
 			[
+				"Qtw",
+				"QWidget"
+			],
+			[
 				"samp",
 				"sample_id\tstatement"
 			],
@@ -475,6 +479,50 @@
 	},
 	"buffers":
 	[
+		{
+			"file": "cutevariant/gui/abstractquerywidget.py",
+			"settings":
+			{
+				"buffer_size": 357,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "cutevariant/gui/viewquerywidget.py",
+			"settings":
+			{
+				"buffer_size": 2181,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "cutevariant.sublime-project",
+			"settings":
+			{
+				"buffer_size": 912,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "cutevariant/core/importer.py",
+			"settings":
+			{
+				"buffer_size": 1135,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "cutevariant/gui/variantview.py",
+			"settings":
+			{
+				"buffer_size": 2263,
+				"line_ending": "Unix"
+			}
+		}
 	],
 	"build_system": "Packages/Makefile/Make.sublime-build",
 	"build_system_choices":
@@ -660,16 +708,24 @@
 		"selected_items":
 		[
 			[
-				"install",
-				"Package Control: Install Package"
+				"remove",
+				"Package Control: Remove Package"
 			],
 			[
-				"ana",
-				"Anaconda: Run Project Tests"
+				"remo",
+				"Package Control: Remove Package"
 			],
 			[
 				"test",
 				"Anaconda: Run Project Tests"
+			],
+			[
+				"ana",
+				"Build With: Anaconda Python Builder"
+			],
+			[
+				"install",
+				"Package Control: Install Package"
 			],
 			[
 				"te",
@@ -686,10 +742,6 @@
 			[
 				"anaconda: test",
 				"Anaconda: Run Project Tests"
-			],
-			[
-				"remove",
-				"Package Control: Remove Package"
 			],
 			[
 				"anaonda run test",
@@ -1053,6 +1105,8 @@
 	],
 	"file_history":
 	[
+		"/home/sacha/Dev/CuteVariant-python/cutevariant.sublime-project",
+		"/home/sacha/Dev/CuteVariant-python/tests/test_qt_queryrouter.py",
 		"/DATA/Dev/haploview/__main__.py",
 		"/DATA/Dev/CuteVariant-python/cutevariant.sublime-project",
 		"/DATA/Dev/CuteVariant-python/cutevariant/core/importer.py",
@@ -1140,7 +1194,6 @@
 		"/home/sacha/Dev/CuteVariant-python/cutevariant/gui/importwizard.py",
 		"/home/sacha/Dev/CuteVariant-python/cutevariant/gui/mainwindow.py",
 		"/home/sacha/Dev/CuteVariant-python/cutevariant/core/reader/vcfreader.py",
-		"/home/sacha/Dev/CuteVariant-python/cutevariant.sublime-project",
 		"/home/sacha/Dev/CuteVariant-python/cutevariant/core/reader/abstractreader.py",
 		"/home/sacha/Dev/CuteVariant-python/cutevariant/core/reader/__init__.py",
 		"/home/sacha/Dev/CuteVariant-python/cutevariant/core/readerfactory.py",
@@ -1179,8 +1232,7 @@
 		"/home/sacha/Dev/udacity/ud120-projects/naive_bayes/nb_author_id.py",
 		"/home/sacha/.zshrc",
 		"/home/sacha/Dev/hpo2sqlite/import_hpo_obo.py",
-		"/tmp/transcript.txt",
-		"/home/sacha/twist_onco_fer.v1.bed"
+		"/tmp/transcript.txt"
 	],
 	"find":
 	{
@@ -1274,8 +1326,203 @@
 	"groups":
 	[
 		{
+			"selected": 1,
 			"sheets":
 			[
+				{
+					"buffer": 0,
+					"file": "cutevariant/gui/abstractquerywidget.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 357,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								236,
+								236
+							]
+						],
+						"settings":
+						{
+							"incomplete_sync": null,
+							"remote_loading": false,
+							"synced": false,
+							"syntax": "Packages/Python/Python.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "cutevariant/gui/viewquerywidget.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 2181,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								456,
+								456
+							]
+						],
+						"settings":
+						{
+							"auto_complete_triggers":
+							[
+								{
+									"characters": ".>:",
+									"selector": "source.c++ - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".>:",
+									"selector": "source.c - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".>: ",
+									"selector": "source.objc++ - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".>: ",
+									"selector": "source.objc - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".>: ",
+									"selector": "source.cuda-c++ - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								}
+							],
+							"auto_name": "",
+							"incomplete_sync": null,
+							"remote_loading": false,
+							"synced": false,
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "cutevariant.sublime-project",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 912,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								564,
+								564
+							]
+						],
+						"settings":
+						{
+							"incomplete_sync": null,
+							"remote_loading": false,
+							"synced": false,
+							"syntax": "Packages/JavaScript/JSON.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 240.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "cutevariant/core/importer.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1135,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"incomplete_sync": null,
+							"remote_loading": false,
+							"synced": false,
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 3,
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "cutevariant/gui/variantview.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 2263,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								729,
+								729
+							]
+						],
+						"settings":
+						{
+							"incomplete_sync": null,
+							"remote_loading": false,
+							"synced": false,
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 4,
+					"type": "text"
+				}
 			]
 		}
 	],
@@ -1320,7 +1567,7 @@
 	},
 	"output.exec":
 	{
-		"height": 315.0
+		"height": 195.0
 	},
 	"output.find_results":
 	{

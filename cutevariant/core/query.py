@@ -13,6 +13,8 @@ class Query:
 		self.where = {}
 		self.table = "variants"
 
+	##-----------------------------------------------------------------------------------------------------------
+
 	def detect_samples(self):
 		''' detect if query need sample join by looking genotype expression : genotype("boby").gt and return samples '''
 
@@ -31,11 +33,9 @@ class Query:
 		return dict(self.conn.execute(f"SELECT name, rowid FROM samples WHERE name IN ({in_clause})").fetchall())
 
 
+	##-----------------------------------------------------------------------------------------------------------
 
-
-
-
-	def sql(self, limit = 50, offset = 0):
+	def sql(self, limit = 0, offset = 0):
 		''' build query depending class parameter ''' 
 
 		if len(self.columns) == 0:
@@ -65,22 +65,28 @@ class Query:
 			query += " WHERE " + self.where_to_str(self.where)
 			
 		# add limit and offset 
+		if limit > 0:
 			query += f" LIMIT {limit} OFFSET {offset}"
 
 		return query 
 
-	def rows(self):
+	##-----------------------------------------------------------------------------------------------------------
+	
+	def rows(self, limit = 0, offset = 0):
 		''' return query results as list by record ''' 
-		yield from self.conn.execute(self.sql())
+		yield from self.conn.execute(self.sql(limit,offset))
+	
+	##-----------------------------------------------------------------------------------------------------------
 
-	def items(self):
+	def items(self, limit = 0, offset = 0):
 		''' return query results as dict by record ''' 
-		for value in self.conn.execute(self.sql()):
+		for value in self.conn.execute(self.sql(limit,offset)):
 			item = {}
 			for index, col in enumerate(self.columns):
 				item[col] = value[index]
 			yield item
 
+	##-----------------------------------------------------------------------------------------------------------
 
 	def where_to_str(self, node : dict) -> str:
 
@@ -103,16 +109,25 @@ class Query:
 
 			return "("+f' {logic} '.join(out)+")"
 
-
-
+	##-----------------------------------------------------------------------------------------------------------
 
 	def samples(self):
 		return self.detect_samples().keys()
 
+	##-----------------------------------------------------------------------------------------------------------
 
 	def create_selection(self, name):
 		pass 
 
+	##-----------------------------------------------------------------------------------------------------------
+
+	def count(self):
+		''' return total row number ''' 
+		# TODO : need to cache this method because it can take time to compute with large dataset 
+		return self.conn.execute(f"SELECT COUNT(*) as count FROM ({self.sql()})").fetchone()[0]
+
+	
+	##-----------------------------------------------------------------------------------------------------------
 
 	def __repr__(self):
 		return f"""
@@ -122,6 +137,7 @@ class Query:
 		limit: 
 		"""
 
+	##-----------------------------------------------------------------------------------------------------------
 
 
 def intersect(query1, query2, by = "site"):
