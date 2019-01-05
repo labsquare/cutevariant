@@ -12,7 +12,7 @@ from cutevariant.core import Query
 class QueryModel(QStandardItemModel):
     def __init__(self, parent=None):
         super().__init__()
-        self.limit = 2
+        self.limit = 20
         self.page = 0
         self.total = 0
         self.query = None
