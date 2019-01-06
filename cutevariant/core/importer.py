@@ -4,6 +4,7 @@ import sqlite3
 from .readerfactory import ReaderFactory
 from .model import Selection, Field, Variant, Sample
 
+
 def import_file(filename, dbpath):
 
     try:
@@ -11,40 +12,33 @@ def import_file(filename, dbpath):
     except:
         pass
 
-    conn   = sqlite3.connect(dbpath)
-    c      = conn.cursor()
+    conn = sqlite3.connect(dbpath)
+    c = conn.cursor()
     reader = ReaderFactory.create_reader(filename)
 
-
-    # Create table fields 
+    #  Create table fields
     Field(conn).create()
 
     # Create table samples
     Sample(conn).create()
 
-    # Create variants tables 
+    #  Create variants tables
     Variant(conn).create(reader.get_fields())
-    
-    # Create selection 
+
+    #  Create selection
     Selection(conn).create()
-    Selection(conn).insert({"name": "all" , "count": "0"})
+    Selection(conn).insert({"name": "all", "count": "0"})
 
-    # insert samples 
+    #  insert samples
     for sample in reader.get_samples():
-        Sample(conn).insert({"name":sample, "phenotype":""})
+        Sample(conn).insert({"name": sample, "phenotype": ""})
 
-    # Insert fields 
+    # Insert fields
     Field(conn).insert_many(reader.get_fields())
     Variant(conn).insert_many(reader.get_variants())
 
-
-   
-
-
-
-
-    # # Create default selection 
+    # # Create default selection
     # session.add(Selection(name="all", description="all variant", count = variant_count))
     # session.add(Selection(name="favoris", description="favoris", count = 0))
-    
+
     # session.commit()
