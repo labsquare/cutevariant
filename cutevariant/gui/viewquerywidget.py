@@ -104,7 +104,6 @@ class ViewQueryWidget(AbstractQueryWidget):
         return self.model.query
 
     def updateInfo(self):
-        print("changed")
 
         self.page_info.setText(f"{self.model.total} variant(s)")
         self.page_box.setText(f"{self.model.page}")
