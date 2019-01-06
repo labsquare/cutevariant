@@ -14,5 +14,5 @@ class AbstractQueryWidget(QWidget):
 	def setQuery(self,query: Query):
 		raise NotImplemented()
 
-	def updateQuery(self,query: Query):
+	def getQuery(self):
 		raise NotImplemented()

@@ -26,9 +26,9 @@ class FilterQueryModel(QStandardItemModel):
         self.clear()
         self.appendRow(self.toItem(self.query.filter))
 
-    def updateQuery(self, query: Query):
-        query.filter = self.fromItem(self.item(0))
-        return query
+    def getQuery(self) -> Query:
+        self.query.filter = self.fromItem(self.item(0))
+        return self.query
 
 
     def toItem(self, data : dict ) -> QStandardItem:
@@ -130,8 +130,8 @@ class FilterQueryWidget(AbstractQueryWidget):
         self.model.setQuery(query)
 
 
-    def updateQuery(self, query: Query):
-        return self.model.updateQuery(query) 
+    def getQuery(self) -> Query:
+        return self.model.getQuery() 
 
     def edit(self, index):
         dialog = FilterEditDialog(self.model.itemFromIndex(index))

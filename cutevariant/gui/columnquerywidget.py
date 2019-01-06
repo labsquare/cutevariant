@@ -18,14 +18,17 @@ class ColumnQueryModel(QStandardItemModel):
 		self.query = query
 		self.load() 
 
-	def updateQuery(self, query: Query) -> Query:
+	def getQuery(self):
+		print("ET HO", self.query)
 		selected_columns = []
 		for i in range(self.rowCount()):
 			if self.item(i).checkState() == Qt.Checked:
 				selected_columns.append(self.item(i).text())
 
-		query.columns = selected_columns
-		return query
+
+		self.query.columns = selected_columns
+
+		return self.query
 
 
 
@@ -67,9 +70,8 @@ class ColumnQueryWidget(AbstractQueryWidget):
 
 	def setQuery(self,query: Query):
 		self.model.setQuery(query) 
-		self.model.updateQuery(query)
 
-	def updateQuery(self,query: Query):
-		return self.model.updateQuery(query) 
+	def getQuery(self):
+		return self.model.getQuery() 
 
 

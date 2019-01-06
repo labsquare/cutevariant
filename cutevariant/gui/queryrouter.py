@@ -30,7 +30,7 @@ class QueryRouter(QObject):
 
 		if sender_widget is not None:
 			# update query from sender widget 
-			self.query = sender_widget.updateQuery(self.query)
+			self.query = sender_widget.getQuery()
 
 			# change query for all widget except sender 
 			for widget in self.widgets:
