@@ -104,11 +104,10 @@ class ViewQueryWidget(AbstractQueryWidget):
 
     def setQuery(self,query: Query):
         self.model.setQuery(query) 
-        #self.page_box.setText(str(self.model.total))
 
 
-    def updateQuery(self,query: Query):
-        pass 
+    def getQuery(self):
+        return self.model.query
 
 
     def updateInfo(self):
