@@ -16,28 +16,27 @@ class MainWindow(QMainWindow):
     def __init__(self, parent=None):
         super(MainWindow, self).__init__()
         self.toolbar = self.addToolBar("test")
-        self.conn   = None
-        self.view_widget   = ViewQueryWidget()
+        self.conn = None
+        self.view_widget = ViewQueryWidget()
         self.column_widget = ColumnQueryWidget()
         self.filter_widget = FilterQueryWidget()
-        
-        # Init router 
+
+        # Init router
         self.router = QueryRouter()
         self.router.addWidget(self.view_widget)
         self.router.addWidget(self.column_widget)
         self.router.addWidget(self.filter_widget)
 
-        # Init panel 
+        #  Init panel
         self.addPanel(self.column_widget)
         self.addPanel(self.filter_widget)
         self.setCentralWidget(self.view_widget)
 
-
-        # Setup Actions 
+        # Setup Actions
         self.setupActions()
 
-        # window geometry 
-        self.resize(600,400)
+        #  window geometry
+        self.resize(600, 400)
 
         self.open("/tmp/qt_cutevariant.db")
 
@@ -47,25 +46,19 @@ class MainWindow(QMainWindow):
         self.conn = sqlite3.connect(filename)
 
         query = Query(self.conn)
-        query.filter = json.loads('''{"AND" : [{"field":"pos", "operator":">", "value":"322424"} ]}''')
-
+        query.filter = json.loads(
+            """{"AND" : [{"field":"pos", "operator":">", "value":"322424"} ]}"""
+        )
 
         self.router.setQuery(query)
-        
 
-
-    def addPanel(self, widget, area = Qt.LeftDockWidgetArea):
+    def addPanel(self, widget, area=Qt.LeftDockWidgetArea):
         dock = QDockWidget()
         dock.setWindowTitle(widget.windowTitle())
         dock.setWidget(widget)
         self.addDockWidget(area, dock)
 
-
     def setupActions(self):
         fileMenu = self.menuBar().addMenu("&File")
         fileMenu.addAction("&New ...")
         fileMenu.addAction("&Open")
-
-
-
-

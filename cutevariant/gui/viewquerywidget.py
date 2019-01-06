@@ -3,10 +3,8 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 
 
-from .abstractquerywidget import AbstractQueryWidget 
+from .abstractquerywidget import AbstractQueryWidget
 from cutevariant.core import Query
-
-
 
 
 class QueryModel(QStandardItemModel):
@@ -17,7 +15,7 @@ class QueryModel(QStandardItemModel):
         self.total = 0
         self.query = None
 
-    def setQuery(self,query: Query):
+    def setQuery(self, query: Query):
         self.query = query
         self.total = query.count()
         self.load()
@@ -26,7 +24,7 @@ class QueryModel(QStandardItemModel):
         self.clear()
         self.setColumnCount(len(self.query.columns))
         self.setHorizontalHeaderLabels(self.query.columns)
-        
+
         for row in self.query.rows(self.limit, self.page * self.limit):
             items = []
             for item in row:
@@ -34,7 +32,7 @@ class QueryModel(QStandardItemModel):
             self.appendRow(items)
 
     def hasPage(self, page):
-        return page >= 0 and  page * self.limit < self.total  
+        return page >= 0 and page * self.limit < self.total
 
     def setPage(self, page):
         if self.hasPage(page):
@@ -46,16 +44,15 @@ class QueryModel(QStandardItemModel):
             self.setPage(self.page + 1)
 
     def previousPage(self):
-        if self.hasPage(self.page -1):
-            self.setPage(self.page - 1 )
-
+        if self.hasPage(self.page - 1):
+            self.setPage(self.page - 1)
 
 
 class ViewQueryWidget(AbstractQueryWidget):
     def __init__(self):
         super().__init__()
         self.model = QueryModel()
-        #self.delegate = VariantDelegate()
+        # self.delegate = VariantDelegate()
 
         self.topbar = QToolBar()
         self.bottombar = QToolBar()
@@ -96,23 +93,18 @@ class ViewQueryWidget(AbstractQueryWidget):
 
         self.setLayout(main_layout)
 
-
         self.model.modelReset.connect(self.updateInfo)
 
-
-
-
-    def setQuery(self,query: Query):
-        self.model.setQuery(query) 
-
+    def setQuery(self, query: Query):
+        """ Method override from AbstractQueryWidget"""
+        self.model.setQuery(query)
 
     def getQuery(self):
+        """ Method override from AbstractQueryWidget"""
         return self.model.query
-
 
     def updateInfo(self):
         print("changed")
 
-
-        self.page_info.setText(f'{self.model.total} variant(s)')
-        self.page_box.setText(f'{self.model.page}')
+        self.page_info.setText(f"{self.model.total} variant(s)")
+        self.page_box.setText(f"{self.model.page}")

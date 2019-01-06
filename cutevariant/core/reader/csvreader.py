@@ -7,20 +7,18 @@ class CsvReader(AbstractReader):
         super(CsvReader, self).__init__(device)
 
     def __del__(self):
-        del(self.device)
-
+        del (self.device)
 
     def get_samples(self):
-        return ["boby","sacha","olivier"]
+        return ["boby", "sacha", "olivier"]
 
     def get_fields(self):
         self.device.seek(0)
         csvreader = csv.reader(self.device, delimiter="\t")
         rows = next(csvreader)
         for row in rows:
-            row = row.replace("#","")
-            yield {"name":row,"type":"text", "category":None, "description":None}
-
+            row = row.replace("#", "")
+            yield {"name": row, "type": "text", "category": None, "description": None}
 
     def get_variants(self):
         self.device.seek(0)
@@ -33,11 +31,12 @@ class CsvReader(AbstractReader):
             variant["ref"] = row[2]
             variant["alt"] = row[3]
 
-            # testing purpose 
-            variant["samples"]=[
-            {"name": "boby", "gt": 0},
-            {"name": "sacha", "gt": 1},
-            {"name": "olivier", "gt": 2}]
+            # testing purpose
+            variant["samples"] = [
+                {"name": "boby", "gt": 0},
+                {"name": "sacha", "gt": 1},
+                {"name": "olivier", "gt": 2},
+            ]
 
             yield variant
 

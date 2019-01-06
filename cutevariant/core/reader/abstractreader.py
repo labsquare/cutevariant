@@ -15,4 +15,4 @@ class AbstractReader(ABC):
         raise NotImplemented()
 
     def get_samples(self):
-    	return []
+        return []

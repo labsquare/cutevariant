@@ -2,7 +2,6 @@ from .abstractreader import AbstractReader
 import vcf
 
 
-
 class VcfReader(AbstractReader):
 
     type_mapping = {
@@ -66,10 +65,30 @@ class VcfReader(AbstractReader):
 
     def get_fields(self):
 
-        yield {"name":"chr", "category":"variant", "description":"chromosom","value_type":"String"}
-        yield {"name":"pos", "category":"variant", "description":"chromosom","value_type":"Integer"}
-        yield {"name":"ref", "category":"variant", "description":"chromosom","value_type":"String"}
-        yield {"name":"alt", "category":"variant", "description":"chromosom","value_type":"String"}
+        yield {
+            "name": "chr",
+            "category": "variant",
+            "description": "chromosom",
+            "value_type": "String",
+        }
+        yield {
+            "name": "pos",
+            "category": "variant",
+            "description": "chromosom",
+            "value_type": "Integer",
+        }
+        yield {
+            "name": "ref",
+            "category": "variant",
+            "description": "chromosom",
+            "value_type": "String",
+        }
+        yield {
+            "name": "alt",
+            "category": "variant",
+            "description": "chromosom",
+            "value_type": "String",
+        }
 
         self.device.seek(0)
         vcf_reader = vcf.Reader(self.device)

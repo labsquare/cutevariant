@@ -3,23 +3,21 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 
 
-from .abstractquerywidget import AbstractQueryWidget 
+from .abstractquerywidget import AbstractQueryWidget
 from cutevariant.core import Query
 from cutevariant.core.model import Field
-
 
 
 class FilterQueryModel(QStandardItemModel):
 
     FieldRole = Qt.UserRole + 1
-    OperatorRole = Qt.UserRole + 2 
-    ValueRole = Qt.UserRole + 3 
+    OperatorRole = Qt.UserRole + 2
+    ValueRole = Qt.UserRole + 3
     TypeRole = Qt.UserRole + 4
 
     def __init__(self):
-            super().__init__()
-            self.query = None
-
+        super().__init__()
+        self.query = None
 
     def setQuery(self, query: Query):
         self.query = query
@@ -30,9 +28,10 @@ class FilterQueryModel(QStandardItemModel):
         self.query.filter = self.fromItem(self.item(0))
         return self.query
 
-
-    def toItem(self, data : dict ) -> QStandardItem:
-        if len(data) == 1: # je ne sais pas comment on fait en python pour vérifier le type d'une variable
+    def toItem(self, data: dict) -> QStandardItem:
+        if (
+            len(data) == 1
+        ):  # je ne sais pas comment on fait en python pour vérifier le type d'une variable
             operator = list(data.keys())[0]
             item = QStandardItem(operator)
             item.setData("logic", FilterQueryModel.TypeRole)
@@ -41,7 +40,9 @@ class FilterQueryModel(QStandardItemModel):
                 item.appendRow(self.toItem(k))
             return item
         else:
-            item = QStandardItem(str(data["field"]) + str(data["operator"]) + str(data["value"]))
+            item = QStandardItem(
+                str(data["field"]) + str(data["operator"]) + str(data["value"])
+            )
             item.setData("field", FilterQueryModel.TypeRole)
             item.setData(data["field"], FilterQueryModel.FieldRole)
             item.setData(data["operator"], FilterQueryModel.OperatorRole)
@@ -49,15 +50,14 @@ class FilterQueryModel(QStandardItemModel):
             item.setEditable(False)
             return item
 
-
-    def fromItem(self, item : QStandardItem) -> dict:
+    def fromItem(self, item: QStandardItem) -> dict:
         if item.data(FilterQueryModel.TypeRole) == "logic":
             op = item.text()
-            data = {op : []}
+            data = {op: []}
 
             for i in range(item.rowCount()):
                 data[op].append(self.fromItem(item.child(i)))
-            return data 
+            return data
 
         else:
             data = {}
@@ -82,7 +82,7 @@ class FilterEditDialog(QDialog):
         form_layout.addRow("value", self.value)
 
         layout = QVBoxLayout()
-        buttonBox = QDialogButtonBox(QDialogButtonBox.Save|QDialogButtonBox.Cancel)
+        buttonBox = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
         buttonBox.accepted.connect(self.save)
         buttonBox.rejected.connect(self.close)
 
@@ -100,11 +100,9 @@ class FilterEditDialog(QDialog):
     def save(self):
         self.item.setText(self.field.text() + self.operator.text() + self.value.text())
         self.item.setData("field", FilterQueryModel.TypeRole)
-        self.item.setData(self.field.text(),FilterQueryModel.FieldRole)
+        self.item.setData(self.field.text(), FilterQueryModel.FieldRole)
         self.item.setData(self.operator.text(), FilterQueryModel.OperatorRole)
         self.item.setData(self.value.text(), FilterQueryModel.ValueRole)
-        
-
 
 
 class FilterQueryWidget(AbstractQueryWidget):
@@ -122,19 +120,14 @@ class FilterQueryWidget(AbstractQueryWidget):
         self.model.itemChanged.connect(self.changed)
         self.view.doubleClicked.connect(self.edit)
 
-
-
-
-
     def setQuery(self, query: Query):
         self.model.setQuery(query)
 
-
     def getQuery(self) -> Query:
-        return self.model.getQuery() 
+        return self.model.getQuery()
 
     def edit(self, index):
         dialog = FilterEditDialog(self.model.itemFromIndex(index))
-        
+
         if dialog.exec_():
             dialog.save()
