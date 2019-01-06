@@ -33,6 +33,12 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.view_widget)
 
 
+        # Setup Actions 
+        self.setupActions()
+
+        # window geometry 
+        self.resize(600,400)
+
         self.open("/tmp/qt_cutevariant.db")
 
     def open(self, filename):
@@ -53,6 +59,12 @@ class MainWindow(QMainWindow):
         dock.setWindowTitle(widget.windowTitle())
         dock.setWidget(widget)
         self.addDockWidget(area, dock)
+
+
+    def setupActions(self):
+        fileMenu = self.menuBar().addMenu("&File")
+        fileMenu.addAction("&New ...")
+        fileMenu.addAction("&Open")
 
 
 
