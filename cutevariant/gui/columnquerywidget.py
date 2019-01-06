@@ -19,7 +19,6 @@ class ColumnQueryModel(QStandardItemModel):
         self.load()
 
     def getQuery(self):
-        print("ET HO", self.query)
         selected_columns = []
         for i in range(self.rowCount()):
             if self.item(i).checkState() == Qt.Checked:
