@@ -35,7 +35,7 @@ class VcfReader(AbstractReader):
                 for field in fields:
                     category = field["category"]
                     name = field["name"]
-                    ftype = field["value_type"]
+                    ftype = field["type"]
                     colname = name
                     value = None
 
@@ -54,12 +54,17 @@ class VcfReader(AbstractReader):
 
                     #         # PARSE GENOTYPE / SAMPLE
                     if category == "sample":
+                        variant["samples"] = list()
                         for sample in record.samples:
-                            sname = name.split("_")[0]
+                            gt = -1
+                            if sample["GT"] == "0/1":
+                                gt=1 
+                            if sample["GT"] == "0/0":
+                                gt=0 
+                            if sample["GT"] == "1/1":
+                                gt=2 
 
-                            for key, value in sample.data._asdict().items():
-                                colname = sname + "_" + key
-                                variant[colname] = str(value)
+                            variant["samples"].append({"name": sample.sample, "gt": gt})
 
             yield variant
 
@@ -69,25 +74,25 @@ class VcfReader(AbstractReader):
             "name": "chr",
             "category": "variant",
             "description": "chromosom",
-            "value_type": "String",
+            "type": "text",
         }
         yield {
             "name": "pos",
             "category": "variant",
             "description": "chromosom",
-            "value_type": "Integer",
+            "type": "text",
         }
         yield {
             "name": "ref",
             "category": "variant",
             "description": "chromosom",
-            "value_type": "String",
+            "type": "text",
         }
         yield {
             "name": "alt",
             "category": "variant",
             "description": "chromosom",
-            "value_type": "String",
+            "type": "text",
         }
 
         self.device.seek(0)
@@ -97,14 +102,18 @@ class VcfReader(AbstractReader):
                 "name": key,
                 "category": "info",
                 "description": info.desc,
-                "value_type": VcfReader.type_mapping.get(info.type, "String"),
+                "type": VcfReader.type_mapping.get(info.type, "String"),
             }
 
         for sample in vcf_reader.samples:
-            for key, val in vcf_reader.formats.items():
-                yield {
-                    "name": sample + "_" + key,
-                    "category": "sample",
-                    "description": val.desc,
-                    "value_type": VcfReader.type_mapping.get(info.type, "String"),
-                }
+            yield {
+                "name": f'gt("{sample}")',
+                "category": "sample",
+                "description": "sample genotype",
+                "type": "text"
+            }
+
+    def get_samples(self):
+        self.device.seek(0)
+        vcf_reader = vcf.Reader(self.device)
+        return vcf_reader.samples

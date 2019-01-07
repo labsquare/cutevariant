@@ -93,7 +93,7 @@ class Variant(object):
     def create(self, fields):
         #  Create variants tables
         variant_shema = ",".join(
-            [f'{field["name"]} {field["type"]} NULL' for field in fields]
+            [f'{field["name"]} {field["type"]} NULL' for field in fields if field["category"] != "sample"]
         )
         self.cursor.execute(f"""CREATE TABLE variants ({variant_shema})""")
         self.conn.commit()
@@ -123,6 +123,7 @@ class Variant(object):
                 for sample in row["samples"]:
                     name = sample["name"]
                     gt = sample["gt"]
+
                     if name in samples.keys():
                         sample_id = samples[name]
                         self.cursor.execute(
@@ -155,7 +156,7 @@ class Sample(object):
         self.cursor.execute(
             """
         CREATE TABLE sample_has_variant
-         (sample_id integer, variant_id integer, genotype integer)
+         (sample_id integer, variant_id integer, gt integer)
          """
         )
 

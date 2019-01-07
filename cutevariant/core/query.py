@@ -3,11 +3,11 @@ import re
 
 class Query:
     """ 
-	This class is intended to build sql query according parameters 
-	self.columns : columns from variant table 
-	self.filter : filter filter as raw text 
-	self.table : name of the variant set. Use "all" to select all variants 
-	"""
+    This class is intended to build sql query according parameters 
+    self.columns : columns from variant table 
+    self.filter : filter filter as raw text 
+    self.table : name of the variant set. Use "all" to select all variants 
+    """
 
     def __init__(
         self, conn, columns=["chr", "pos", "ref", "alt"], filter=None, table="variants"
@@ -19,18 +19,28 @@ class Query:
 
         ##-----------------------------------------------------------------------------------------------------------
 
+
+    def sample_from_expression(self, expression):
+        # extract <sample> from <gt("sample")>
+        regexp = r"gt\([\"\'](.*)[\"\']\)"
+        match = re.search(regexp, expression)
+        if match:
+            return match.group(1)
+        else:
+            return None
+
+        ##-----------------------------------------------------------------------------------------------------------
+
     def detect_samples(self):
         """ detect if query need sample join by looking genotype expression : genotype("boby").gt and return samples """
-
         # extract sample name from select and filter clause
-        expression = r"genotype\([\"\'](.*)[\"\']\).gt"
         samples_detected = []
         combine_clause = self.columns
 
         for col in combine_clause:
-            match = re.search(expression, col)
-            if match:
-                samples_detected.append(match.group(1))
+            sample = self.sample_from_expression(col)
+            if sample is not None:
+                samples_detected.append(sample)
 
                 # Look in DB if sample exists and returns {sample:id} dictionnary
         in_clause = ",".join([f"'{sample}'" for sample in samples_detected])
@@ -45,10 +55,27 @@ class Query:
     def sql(self, limit=0, offset=0):
         """ build query depending class parameter """
 
+        # Detect if join sample is required ... 
+        sample_ids = self.detect_samples()
+
+
         if len(self.columns) == 0:
             self.columns = ["chr", "pos", "ref", "alt"]
 
-        query = f"SELECT {','.join(self.columns)} "
+
+        # Replace columns gt(sacha) by sv4.gt ( where 4 is the sample id for outer join)
+        sql_columns = []
+        for col in self.columns:
+            sample = self.sample_from_expression(col)
+            if sample is not None:
+                sv = sample_ids[sample]
+                sql_columns.append(f'sv{sv}.gt')
+            else:
+                sql_columns.append(col)
+
+
+
+        query = f"SELECT {','.join(sql_columns)} "
 
         # Add Select clause
 
@@ -58,12 +85,10 @@ class Query:
             #  manage jointure with selection
             pass
 
-            # Join samples
-        sample_ids = self.detect_samples()
+
         if len(sample_ids):
-            for i, sample in enumerate(self.samples):
-                sample_id = sample_ids[sample]
-                query += f" LEFT JOIN sample_has_variant sv{i} ON sv{i}.variant_id = variants.rowid AND sv{i}.sample_id = {sample_id} "
+            for _, i in sample_ids.items():
+                query += f" LEFT JOIN sample_has_variant sv{i} ON sv{i}.variant_id = variants.rowid AND sv{i}.sample_id = {i} "
 
                 # add filter clause
         if self.filter:
@@ -94,6 +119,9 @@ class Query:
         ##-----------------------------------------------------------------------------------------------------------
 
     def filter_to_sql(self, node: dict) -> str:
+
+        if dict is None:
+            return str()
 
         # function to detect if node is a Condition node (AND/OR) OR a field node {name,operator, value}
         is_field = lambda x: True if len(x) == 3 else False
@@ -139,29 +167,28 @@ class Query:
 
     def __repr__(self):
         return f"""
-		columns : {self.columns} 
-		filter: {self.filter} 
-		selection: {self.table}
-		limit: 
-		"""
+        columns : {self.columns} 
+        filter: {self.filter} 
+        selection: {self.table}
+        """
 
         ##-----------------------------------------------------------------------------------------------------------
 
     def from_vql(self,raw : str):
-    	# TODO @aluriak
-    	pass 
+        # TODO @aluriak
+        pass 
 
         ##-----------------------------------------------------------------------------------------------------------
 
     def to_vql(self) -> str:
-		# TODO @aluriak
-    	pass 
+        # TODO @aluriak
+        pass 
 
         ##-----------------------------------------------------------------------------------------------------------
 
     def check(self):
-    	''' Return True if query is valid ''' 
-    	return True 
+        ''' Return True if query is valid ''' 
+        return True 
 
 
 
@@ -174,10 +201,10 @@ def intersect(query1, query2, by="site"):
         link = "q1.chr = q2.chr AND q1.pos = q2.pos AND q1.ref = q2.ref AND q1.alt = q2.alt"
 
     query = f"""
-	SELECT * FROM {query1} q1
-	INNER JOIN {query2} q2 
-	ON {link}
-	"""
+    SELECT * FROM {query1} q1
+    INNER JOIN {query2} q2 
+    ON {link}
+    """
 
     return query
 
@@ -191,9 +218,9 @@ def union(query1, query2, by="site"):
         link = "q1.chr = q2.chr AND q1.pos = q2.pos AND q1.ref = q2.ref AND q1.alt = q2.alt"
 
     query = f"""
-	SELECT * FROM {query1} q1
-	INNER JOIN {query2} q2 
-	ON {link}
-	"""
+    SELECT * FROM {query1} q1
+    INNER JOIN {query2} q2 
+    ON {link}
+    """
 
     return query

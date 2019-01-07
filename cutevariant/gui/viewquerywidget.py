@@ -10,7 +10,7 @@ from cutevariant.core import Query
 class QueryModel(QStandardItemModel):
     def __init__(self, parent=None):
         super().__init__()
-        self.limit = 20
+        self.limit = 50
         self.page = 0
         self.total = 0
         self.query = None
@@ -28,7 +28,7 @@ class QueryModel(QStandardItemModel):
         for row in self.query.rows(self.limit, self.page * self.limit):
             items = []
             for item in row:
-                items.append(QStandardItem(item))
+                items.append(QStandardItem(str(item)))
             self.appendRow(items)
 
     def hasPage(self, page):
