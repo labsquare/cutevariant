@@ -37,7 +37,7 @@ def test_results(conn):
     # Test sample jointure 
 
     print(builder.sql())
-    builder.columns  = ["chr","pos","ref", "alt", "genotype(\"sacha\").gt"]
+    builder.columns  = ["chr","pos","ref", "alt", "gt(\"sacha\")"]
 
 
     conn.close()
@@ -47,13 +47,13 @@ def test_detect_samples(conn):
     builder = Query(conn)
 
     # test regular expression in columns 
-    builder.columns  = ["chr","pos","ref", "alt", "genotype(\"sacha\").gt"]
+    builder.columns  = ["chr","pos","ref", "alt", "gt(\'sacha\')"]
     assert "sacha" in builder.detect_samples().keys(), "cannot detect sacha sample in query columns"
 
-    builder.columns  = ["chr","pos","ref", "alt", "genotype(\'sacha\').gt"]
+    builder.columns  = ["chr","pos","ref", "alt", "gt(\'sacha\')"]
     assert "sacha" in builder.detect_samples().keys(), "cannot detect sacha sample in query columns"
 
-    builder.columns  = ["chr","pos","ref", "alt", "genotype(\'sacha\').gt", "genotype(\"olivier\").gt"]
+    builder.columns  = ["chr","pos","ref", "alt", "gt(\'sacha\')", "gt(\"olivier\")"]
     assert "sacha" in builder.detect_samples().keys(), "cannot detect sacha "
     assert "olivier" in builder.detect_samples().keys(), "cannot detect olivier "
 
@@ -65,7 +65,7 @@ def test_detect_samples(conn):
     #assert "sacha" in builder.detect_samples().keys(), "cannot detect sacha sample in query where clause"
 
     # test if builder return good samples count 
-    builder.columns  = ["chr","pos","ref", "alt", "genotype(\'sacha\').gt", "genotype(\"olivier\").gt"]
+    builder.columns  = ["chr","pos","ref", "alt", "gt(\'sacha\')", "gt(\"olivier\")"]
     len(set(builder.samples()).intersection(set(["sacha","olivier"]))) == 2  
 
 

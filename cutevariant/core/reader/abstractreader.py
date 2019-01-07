@@ -8,10 +8,19 @@ class AbstractReader(ABC):
 
     @abstractclassmethod
     def get_variants(self):
+        """
+        Must return list of variant items . 
+        exemple: {"chr": "chr3", "pos": 234 ....}
+        """
         raise NotImplemented()
 
     @abstractclassmethod
     def get_fields(self):
+        """
+        must return list of field item with name, sqlite type, category and description 
+        exemple: {"name": "chr", "type": "text", "category": None, "description": None} 
+        """
+
         raise NotImplemented()
 
     def get_samples(self):
