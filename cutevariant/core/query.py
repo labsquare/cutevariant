@@ -22,7 +22,7 @@ class Query:
 
     def sample_from_expression(self, expression):
         # extract <sample> from <gt("sample")>
-        regexp = r"gt\([\"\'](.*)[\"\']\)"
+        regexp = r"gt(.*).gt"
         match = re.search(regexp, expression)
         if match:
             return match.group(1)
@@ -68,8 +68,7 @@ class Query:
         for col in self.columns:
             sample = self.sample_from_expression(col)
             if sample is not None:
-                sv = sample_ids[sample]
-                sql_columns.append(f'sv{sv}.gt')
+                sql_columns.append(f'gt{sample}.gt')
             else:
                 sql_columns.append(col)
 
@@ -87,8 +86,8 @@ class Query:
 
 
         if len(sample_ids):
-            for _, i in sample_ids.items():
-                query += f" LEFT JOIN sample_has_variant sv{i} ON sv{i}.variant_id = variants.rowid AND sv{i}.sample_id = {i} "
+            for sample,i in sample_ids.items():
+                query += f" LEFT JOIN sample_has_variant gt{sample} ON gt{sample}.variant_id = variants.rowid AND gt{sample}.sample_id = {i} "
 
                 # add filter clause
         if self.filter:
@@ -98,6 +97,7 @@ class Query:
         if limit > 0:
             query += f" LIMIT {limit} OFFSET {offset}"
 
+        print(query)
         return query
 
         ##-----------------------------------------------------------------------------------------------------------
@@ -127,14 +127,23 @@ class Query:
         is_field = lambda x: True if len(x) == 3 else False
 
         if is_field(node):
-            if (
-                type(node["value"]) == str
-            ):  # Add quote for string .. Need to change in the future and use sqlite binding value
-                value = "'" + str(node["value"]) + "'"
-            else:
-                value = str(node["value"])
+            # change value 
+            value    = node["value"]
+            operator = node["operator"]
+            field    = node["field"]
 
-            return str(node["field"]) + str(node["operator"]) + value
+            if type(value) == str:  # Add quote for string .. Need to change in the future and use sqlite binding value
+                value = "'" + str(value) + "'"
+            else:
+                value = str(value)
+
+            # change columns name for sample join 
+            sample = self.sample_from_expression(field)
+            if sample: 
+                field = f'gt{sample}.gt'
+
+
+            return field + operator + value
 
         else:
             logic = list(node.keys())[0]
