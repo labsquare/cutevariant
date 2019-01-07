@@ -133,6 +133,9 @@ class Variant(object):
 
         self.conn.commit()
 
+        self.cursor.execute(f"""CREATE UNIQUE INDEX idx_sample_has_variant ON sample_has_variant (sample_id,variant_id)""")
+
+
     def columns(self):
         return [
             i[0]
