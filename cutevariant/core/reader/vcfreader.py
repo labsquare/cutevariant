@@ -97,17 +97,19 @@ class VcfReader(AbstractReader):
 
         self.device.seek(0)
         vcf_reader = vcf.Reader(self.device)
-        for key, info in vcf_reader.infos.items():
-            yield {
-                "name": key,
-                "category": "info",
-                "description": info.desc,
-                "type": VcfReader.type_mapping.get(info.type, "String"),
-            }
+        
+        # Annotation ... TODO   
+        # for key, info in vcf_reader.infos.items():
+        #     yield {
+        #         "name": key,
+        #         "category": "info",
+        #         "description": info.desc,
+        #         "type": VcfReader.type_mapping.get(info.type, "String"),
+        #     }
 
         for sample in vcf_reader.samples:
             yield {
-                "name": f'gt("{sample}")',
+                "name": f'gt{sample}.gt',
                 "category": "sample",
                 "description": "sample genotype",
                 "type": "text"
