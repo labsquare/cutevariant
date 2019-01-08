@@ -5,7 +5,6 @@ from PySide2.QtGui import *
 
 from .abstractquerywidget import AbstractQueryWidget
 from cutevariant.core import Query
-from cutevariant.core.model import Field
 
 
 class FilterQueryModel(QStandardItemModel):

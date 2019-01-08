@@ -13,7 +13,6 @@ class VcfReader(AbstractReader):
 
     def __init__(self, device):
         super(VcfReader, self).__init__(device)
-        print("create vcf reader")
 
     def get_variants(self):
         fields = list(self.get_fields())

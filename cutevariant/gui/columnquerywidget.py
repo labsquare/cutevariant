@@ -5,7 +5,7 @@ from PySide2.QtGui import *
 
 from .abstractquerywidget import AbstractQueryWidget
 from cutevariant.core import Query
-from cutevariant.core.model import Field
+from cutevariant.core import sql
 
 
 class ColumnQueryModel(QStandardItemModel):
@@ -30,7 +30,7 @@ class ColumnQueryModel(QStandardItemModel):
 
     def load(self):
         self.clear()
-        for record in Field(self.query.conn).items():
+        for record in sql.get_fields(self.query.conn):
             item = QStandardItem(record["name"])
             item.setCheckable(True)
             self.appendRow(item)
