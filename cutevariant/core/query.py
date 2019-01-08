@@ -200,36 +200,3 @@ class Query:
         return True 
 
 
-
-def intersect(query1, query2, by="site"):
-
-    if by == "site":
-        link = "q1.chr = q2.chr AND q1.pos = q2.pos"
-
-    if by == "variant":
-        link = "q1.chr = q2.chr AND q1.pos = q2.pos AND q1.ref = q2.ref AND q1.alt = q2.alt"
-
-    query = f"""
-    SELECT * FROM {query1} q1
-    INNER JOIN {query2} q2 
-    ON {link}
-    """
-
-    return query
-
-
-def union(query1, query2, by="site"):
-
-    if by == "site":
-        link = "q1.chr = q2.chr AND q1.pos = q2.pos"
-
-    if by == "variant":
-        link = "q1.chr = q2.chr AND q1.pos = q2.pos AND q1.ref = q2.ref AND q1.alt = q2.alt"
-
-    query = f"""
-    SELECT * FROM {query1} q1
-    INNER JOIN {query2} q2 
-    ON {link}
-    """
-
-    return query

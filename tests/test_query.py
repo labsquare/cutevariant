@@ -15,7 +15,13 @@ def conn():
 
 
 
+def test_set_operation(conn):
 
+    query = Query(conn)
+
+    query.filter = {"AND" : [{"field":"ref", "operator":"==", "value":"A"} ]}
+
+    print(query)
 
 # def test_detect_samples(conn):
 #     builder = Query(conn)

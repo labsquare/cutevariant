@@ -100,3 +100,50 @@ def test_variants(conn):
     for i, record in enumerate(cursor.execute("SELECT * FROM variants")):
         assert(record == tuple(variants[i].values()))
 
+
+def test_intersection(conn):
+    pass   
+    # from cutevariant.core.importer import import_file
+    # path = "exemples/test.vcf"
+    # import_file(conn,path)
+    
+    # q1 = "SELECT * FROM variants WHERE ref='A'"
+    # q2 = "SELECT * FROM variants WHERE alt = 'G'"
+
+    # cursor = conn.cursor()
+
+    # q1_count = len(list(cursor.execute(q1)))
+    # q2_count = len(list(cursor.execute(q2)))
+
+    # print(q1_count)
+    # print(q2_count)
+
+    # for record in cursor.execute(sql.intersect(q1,q2)).fetchall():
+    #     ref = record[2]
+    #     alt = record[3]
+
+    #     assert ref == "A" and alt == "G"
+        
+
+def test_intersection(conn):
+    pass
+    # from cutevariant.core.importer import import_file
+    # path = "exemples/test.vcf"
+    # import_file(conn,path)
+    
+    # q1 = "SELECT * FROM variants WHERE ref='A'"
+    # q2 = "SELECT * FROM variants WHERE alt = 'G'"
+
+    # cursor = conn.cursor()
+
+    # q1_count = len(list(cursor.execute(q1)))
+    # q2_count = len(list(cursor.execute(q2)))
+
+    # print(q1_count)
+    # print(q2_count)
+
+    # for record in cursor.execute(sql.union(q1,q2)).fetchall():
+    #     ref = record[2]
+    #     alt = record[3]
+
+    #     assert ref == "A" and alt == "G"
