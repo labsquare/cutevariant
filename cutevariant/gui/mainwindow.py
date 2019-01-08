@@ -42,7 +42,7 @@ class MainWindow(QMainWindow):
 
     def open(self, filename):
 
-        import_file("exemples/test.vcf", filename)
+        import_file("/home/sacha/TRIO1.family.vcf", filename)
         self.conn = sqlite3.connect(filename)
 
         query = Query(self.conn)
