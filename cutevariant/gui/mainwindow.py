@@ -2,6 +2,7 @@ from PySide2.QtCore import *
 from PySide2.QtWidgets import *
 import sqlite3
 import json
+import os
 
 from cutevariant.gui.viewquerywidget import ViewQueryWidget
 from cutevariant.gui.columnquerywidget import ColumnQueryWidget
@@ -38,13 +39,26 @@ class MainWindow(QMainWindow):
         #  window geometry
         self.resize(600, 400)
 
+        self.import_vcf("exemples/test.vcf")
         self.open("/tmp/qt_cutevariant.db")
 
-    def open(self, filename):
 
-        import_file("/home/sacha/TRIO1.family.vcf", filename)
-        self.conn = sqlite3.connect(filename)
+    def import_vcf(self, filename): # Temporary .. will be removed 
+        db_filename = filename + ".db"
 
+        if os.path.exists(db_filename):
+            os.remove(db_filename)
+
+        self.conn = sqlite3.connect(db_filename)
+        import_file(self.conn, filename)
+        self.conn.close()
+        self.open(db_filename)
+
+
+
+    def open(self, db_filename):
+
+        self.conn = sqlite3.connect(db_filename)
         query = Query(self.conn)
         query.filter = json.loads(
             """{"AND" : [{"field":"pos", "operator":">", "value":"322424"} ]}"""

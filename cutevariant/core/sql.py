@@ -2,6 +2,16 @@ import sqlite3
 
 
 
+
+def drop_table(conn, table_name):
+    c = conn.cursor()
+    c.execute(f"DROP TABLE IF EXISTS {table_name}")
+
+
+
+
+
+
 ## ================ SELECTION functions =============================
 
 def create_table_selections(conn):
@@ -28,8 +38,6 @@ def insert_selection(conn, name = "no_name", count=0, query=str()):
         {"name": name, "count": count, "query": query}
         )
     conn.commit()
-
-
 
 
 ## ================ Fields functions =============================
