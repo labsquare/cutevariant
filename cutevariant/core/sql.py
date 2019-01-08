@@ -256,3 +256,49 @@ def get_samples(conn):
         record["name"] = row[0]
         yield record
 
+
+def intersect(query1, query2, by="site"):
+
+    if by == "site":
+        col = "chr,pos"
+
+    if by == "variant":
+        col = "chr,pos,ref,alt"
+
+
+    query = f"""
+    SELECT {col} FROM ({query1}) q1
+    INTERSECT 
+    SELECT {col} FROM ({query2}) q1
+    """
+
+    return query
+
+
+def union(query1, query2, by="site"):
+    if by == "site":
+        col = "chr,pos"
+
+    if by == "variant":
+        col = "chr,pos,ref,alt"
+
+
+    query = f"""
+    SELECT {col} FROM ({query1}) q1
+    UNION
+    SELECT {col} FROM ({query2}) q1
+    """
+
+def subtract(query1, query2, by="site"):
+    if by == "site":
+        col = "chr,pos"
+
+    if by == "variant":
+        col = "chr,pos,ref,alt"
+
+
+    query = f"""
+    SELECT {col} FROM ({query1}) q1
+    EXCEPT
+    SELECT {col} FROM ({query2}) q1
+    """
