@@ -4,16 +4,17 @@ import sqlite3
 
 ## ================ SELECTION functions =============================
 
-def create_selection_table(conn):
+def create_table_selections(conn):
     """ 
     create selection table and selection_has_variant 
 
     :param conn: sqlite3.connect
     """ 
-   cursor = conn.cursor()
-   cursor.execute("""CREATE TABLE selections (name text, count text NULL, query text NULL )""")
-   cursor.execute("""CREATE TABLE selection_has_variant (variant_id integer, selection_id integer)""")
-   commit()
+
+    cursor = conn.cursor()
+    cursor.execute("""CREATE TABLE selections (name text, count text NULL, query text NULL )""")
+    cursor.execute("""CREATE TABLE selection_has_variant (variant_id integer, selection_id integer)""")
+    conn.commit()
 
 def insert_selection(conn, name = "no_name", count=0, query=str()):
     """ 
@@ -33,7 +34,7 @@ def insert_selection(conn, name = "no_name", count=0, query=str()):
 
 ## ================ Fields functions =============================
 
-def create_field_table(conn):
+def create_table_fields(conn):
     """ 
     create field table 
 
@@ -61,13 +62,13 @@ def insert_field(conn, name = "no_name", category ="variants", type = "text", de
     cursor = conn.cursor()
     cursor.execute(
         """
-        INSERT INTO selections VALUES (:name,:count,:query)
+        INSERT INTO fields VALUES (:name,:category, :type, :description)
         """,
-        {"name": name, "category": category, "type": type, description = description})
-        conn.commit()
+        {"name": name, "category": category, "type": type, "description" : description})
+    conn.commit()
 
 
-def insert_many_field(conn, data: list):
+def insert_many_fields(conn, data: list):
     """ 
     insert many fields using one commit 
 
@@ -116,7 +117,7 @@ def get_fields(conn):
 ## ================ Fields functions =============================
 
 
-def create_variant_table(conn, fields):
+def create_table_variants(conn, fields):
     """
     Create variant table which contains dynamics fields 
 
@@ -136,12 +137,14 @@ def create_variant_table(conn, fields):
     variant_shema = ",".join(
         [f'{field["name"]} {field["type"]} NULL' for field in fields if field["category"] != "sample"]
     )
-    self.cursor.execute(f"""CREATE TABLE variants ({variant_shema})""")
-    self.conn.commit()
+    cursor.execute(f"""CREATE TABLE variants ({variant_shema})""")
+    cursor.execute(f"""CREATE TABLE sample_has_variant (sample_id INTEGER, variant_id, gt INTEGER DEFAULT -1 )""")
+    
+    conn.commit()
 
 
 
-def insert_many_variant(conn, data):
+def insert_many_variants(conn, data):
     """
     Insert many variant from data into variant table.columns
 
@@ -172,19 +175,19 @@ def insert_many_variant(conn, data):
     samples = dict(
         [
             (record[1], record[0])
-            for record in self.conn.execute("""SELECT rowid, name FROM samples""")
+            for record in conn.execute("""SELECT rowid, name FROM samples""")
         ]
     )
 
     # Loop over variants 
     for variant in data:
         # Insert current variant 
-        self.cursor.execute(
-            f"""INSERT INTO variants ({q_cols}) VALUES ({q_place})""", row
+        cursor.execute(
+            f"""INSERT INTO variants ({q_cols}) VALUES ({q_place})""", variant
         )
 
         # get variant rowid 
-        variant_id = self.cursor.lastrowid
+        variant_id = cursor.lastrowid
 
         # if variant has sample data, insert record into sample_has_variant 
         if "samples" in variant:
@@ -194,20 +197,20 @@ def insert_many_variant(conn, data):
 
                 if name in samples.keys():
                     sample_id = samples[name]
-                    self.cursor.execute(
+                    cursor.execute(
                         f"""INSERT INTO sample_has_variant VALUES (?,?,?)""",
                         [sample_id, variant_id, gt],
                     )
 
-    self.conn.commit()
+    conn.commit()
 
     # create index to make sample query faster 
-    self.cursor.execute(f"""CREATE UNIQUE INDEX idx_sample_has_variant ON sample_has_variant (sample_id,variant_id)""")
+    cursor.execute(f"""CREATE UNIQUE INDEX idx_sample_has_variant ON sample_has_variant (sample_id,variant_id)""")
 
 
 ## ================ Fields functions =============================
 
-def create_sample_table(conn):
+def create_table_samples(conn):
     """
     Create sample table 
 
@@ -215,11 +218,11 @@ def create_sample_table(conn):
 
     """
     cursor = conn.cursor()
-    cursor.execute("""CREATE TABLE samples (name text, phenotype text NULL)""")
+    cursor.execute("""CREATE TABLE samples (name text)""")
     conn.commit()
 
 
-def insert_sample(self, name = "no_name"):
+def insert_sample(conn, name = "no_name"):
     """
     Insert one sample in sample table 
 
@@ -227,11 +230,7 @@ def insert_sample(self, name = "no_name"):
 
     """
     cursor = conn.cursor()
-    cursor.execute(
-            """
-            INSERT INTO samples VALUES (:name,:phenotype)
-            """,
-            {"name": name, "phenotype": "None"})
+    cursor.execute(""" INSERT INTO samples VALUES (:name) """, {"name": name})
     
     conn.commit()
 
@@ -244,4 +243,8 @@ def get_samples(conn):
     :return sample list
     """
     cursor = conn.cursor()
-        return [record for record in self.cursor.execute("""SELECT rowid, name, phenotype FROM samples""")]
+    record = dict()
+    for row in cursor.execute("""SELECT name FROM samples"""):
+        record["name"] = row[0]
+        yield record
+

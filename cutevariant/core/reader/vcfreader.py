@@ -107,6 +107,7 @@ class VcfReader(AbstractReader):
         #         "type": VcfReader.type_mapping.get(info.type, "String"),
         #     }
 
+        # PEUVENT SE METTRE AUTOMATIQUEMENT ... 
         for sample in vcf_reader.samples:
             yield {
                 "name": f'gt{sample}.gt',
