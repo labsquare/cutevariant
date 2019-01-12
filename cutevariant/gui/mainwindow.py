@@ -7,6 +7,8 @@ import os
 from cutevariant.gui.viewquerywidget import ViewQueryWidget
 from cutevariant.gui.columnquerywidget import ColumnQueryWidget
 from cutevariant.gui.filterquerywidget import FilterQueryWidget
+from cutevariant.gui.selectionquerywidget import SelectionQueryWidget
+
 from cutevariant.gui.queryrouter import QueryRouter
 
 from cutevariant.core.importer import import_file
@@ -18,20 +20,24 @@ class MainWindow(QMainWindow):
         super(MainWindow, self).__init__()
         self.toolbar = self.addToolBar("test")
         self.conn = None
-        self.view_widget = ViewQueryWidget()
+        self.view_widgets = []
         self.column_widget = ColumnQueryWidget()
         self.filter_widget = FilterQueryWidget()
+        self.selection_widget = SelectionQueryWidget()
+        self.tab_view = QTabWidget()
 
         # Init router
         self.router = QueryRouter()
-        self.router.addWidget(self.view_widget)
+        #self.router.addWidget(self.view_widget)
         self.router.addWidget(self.column_widget)
         self.router.addWidget(self.filter_widget)
+        self.router.addWidget(self.selection_widget)
 
         #  Init panel
         self.addPanel(self.column_widget)
         self.addPanel(self.filter_widget)
-        self.setCentralWidget(self.view_widget)
+        self.addPanel(self.selection_widget)
+        self.setCentralWidget(self.tab_view)
 
         # Setup Actions
         self.setupActions()
@@ -39,6 +45,7 @@ class MainWindow(QMainWindow):
         #  window geometry
         self.resize(600, 400)
 
+        self.addView()
         self.import_vcf("exemples/test.vcf")
 
 
@@ -50,6 +57,9 @@ class MainWindow(QMainWindow):
 
         self.conn = sqlite3.connect(db_filename)
         import_file(self.conn, filename)
+
+
+
         self.conn.close()
         self.open(db_filename)
 
@@ -64,8 +74,12 @@ class MainWindow(QMainWindow):
         self.conn = sqlite3.connect(db_filename)
         query = Query(self.conn)
         query.filter = json.loads(
-            """{"AND" : [{"field":"pos", "operator":">", "value":"322424"} ]}"""
+            """{"AND" : [{"field":"pos", "operator":">", "value":"880000"} ]}"""
         )
+
+        query.create_selection("mytest")
+        query.filter = None
+
 
         self.router.setQuery(query)
 
@@ -79,3 +93,17 @@ class MainWindow(QMainWindow):
         fileMenu = self.menuBar().addMenu("&File")
         fileMenu.addAction("&New ...")
         fileMenu.addAction("&Open")
+
+
+    def addView(self):
+        widget = ViewQueryWidget()
+        self.view_widgets.append(widget)
+        self.tab_view.addTab(widget, widget.windowTitle())
+        self.router.addWidget(widget)
+
+
+    def currentView(self):
+        index = self.tab_view.currentIndex()
+        if index == -1:
+            return None 
+        return self.view_widgets[index] 

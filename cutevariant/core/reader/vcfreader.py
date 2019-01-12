@@ -79,7 +79,7 @@ class VcfReader(AbstractReader):
             "name": "pos",
             "category": "variant",
             "description": "chromosom",
-            "type": "text",
+            "type": "integer",
         }
         yield {
             "name": "ref",

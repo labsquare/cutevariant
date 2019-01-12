@@ -17,13 +17,19 @@ def conn():
 
 
 
-# def test_set_operation(conn):
-#     pass 
-    # query = Query(conn)
+def test_query_selection(conn):
 
-    # query.filter = {"AND" : [{"field":"ref", "operator":"==", "value":"A"} ]}
+    query = Query(conn)
+    query.filter = {"AND" : [{"field":"ref", "operator":"==", "value":"A"} ]}
+    query.create_selection("sacha")
 
-    # print(query.sql())
+    query2 = Query(conn)
+    query2.selection = "sacha"
+
+    for record in query2.items():
+        assert record["ref"] == 'A'
+
+
 
 # def test_detect_samples(conn):
 #     builder = Query(conn)

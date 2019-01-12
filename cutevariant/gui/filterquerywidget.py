@@ -21,10 +21,12 @@ class FilterQueryModel(QStandardItemModel):
     def setQuery(self, query: Query):
         self.query = query
         self.clear()
-        self.appendRow(self.toItem(self.query.filter))
+        if self.query.filter is not None:
+            self.appendRow(self.toItem(self.query.filter))
 
     def getQuery(self) -> Query:
-        self.query.filter = self.fromItem(self.item(0))
+        if self.rowCount() != 0:
+            self.query.filter = self.fromItem(self.item(0))
         return self.query
 
     def toItem(self, data: dict) -> QStandardItem:
