@@ -1,21 +1,21 @@
 import re
-
+from . import sql
 
 class Query:
     """ 
     This class is intended to build sql query according parameters 
     self.columns : columns from variant table 
     self.filter : filter filter as raw text 
-    self.table : name of the variant set. Use "all" to select all variants 
+    self.selection : name of the variant set. Use "all" to select all variants 
     """
 
     def __init__(
-        self, conn, columns=["chr", "pos", "ref", "alt"], filter=None, table="variants"
+        self, conn, columns=["chr", "pos", "ref", "alt"], filter=None, selection="all"
     ):
         self.conn = conn
         self.columns = columns
         self.filter = filter
-        self.table = table
+        self.selection = selection
 
         ##-----------------------------------------------------------------------------------------------------------
 
@@ -83,11 +83,17 @@ class Query:
 
         # Add Select clause
 
-        if self.table == "variants":
+        if self.selection == "all":
             query += f"FROM variants"
         else:
             #  manage jointure with selection
-            pass
+
+            query+= f"""
+            FROM variants 
+            INNER JOIN selection_has_variant sv ON sv.variant_id = variants.rowid 
+            INNER JOIN selections s ON s.rowid = sv.selection_id AND s.name = '{self.selection}'
+            """
+
 
 
         if len(sample_ids):
@@ -166,7 +172,7 @@ class Query:
         ##-----------------------------------------------------------------------------------------------------------
 
     def create_selection(self, name):
-        pass
+        sql.create_selection_from_sql(self.conn, name, self.sql())
 
         ##-----------------------------------------------------------------------------------------------------------
 
@@ -183,7 +189,7 @@ class Query:
         return f"""
         columns : {self.columns} 
         filter: {self.filter} 
-        selection: {self.table}
+        selection: {self.selection}
         """
 
         ##-----------------------------------------------------------------------------------------------------------

@@ -53,7 +53,7 @@ class ViewQueryWidget(AbstractQueryWidget):
         super().__init__()
         self.model = QueryModel()
         # self.delegate = VariantDelegate()
-
+        self.setWindowTitle("Variants")
         self.topbar = QToolBar()
         self.bottombar = QToolBar()
         self.view = QTreeView()

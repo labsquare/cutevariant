@@ -66,9 +66,12 @@ def create_selection_from_sql(conn, name, query, by="site"):
     cursor.execute(q)
     conn.commit()
 
+    # update selection count 
     cursor.execute(f"""
         UPDATE selections set count = (SELECT COUNT(*) FROM selection_has_variant WHERE selection_id = {selection_id}) WHERE selections.rowid = {selection_id}
         """)
+
+    conn.commit()
 
     
 def get_selections(conn):
