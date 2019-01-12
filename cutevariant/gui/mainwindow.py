@@ -40,7 +40,6 @@ class MainWindow(QMainWindow):
         self.resize(600, 400)
 
         self.import_vcf("exemples/test.vcf")
-        self.open("/tmp/qt_cutevariant.db")
 
 
     def import_vcf(self, filename): # Temporary .. will be removed 
@@ -57,6 +56,10 @@ class MainWindow(QMainWindow):
 
 
     def open(self, db_filename):
+
+        if not os.path.exists(db_filename):
+            QMessageBox.warning(self,"error","file doesn't exists")
+            return 
 
         self.conn = sqlite3.connect(db_filename)
         query = Query(self.conn)

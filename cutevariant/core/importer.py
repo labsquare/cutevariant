@@ -7,6 +7,7 @@ from .sql import *
 
 def import_file(conn,filename):
 
+    print("import file ", filename)
 
     reader = ReaderFactory.create_reader(filename)
 

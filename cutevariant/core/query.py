@@ -42,8 +42,13 @@ class Query:
             if sample is not None:
                 samples_detected.append(sample)
 
+        if len(samples_detected) == 0:
+            return {}
                 # Look in DB if sample exists and returns {sample:id} dictionnary
+            
+            
         in_clause = ",".join([f"'{sample}'" for sample in samples_detected])
+
         return dict(
             self.conn.execute(
                 f"SELECT name, rowid FROM samples WHERE name IN ({in_clause})"
