@@ -21,6 +21,7 @@ class SelectionQueryModel(QStandardItemModel):
             name_item = QStandardItem(record["name"])
             count_item = QStandardItem(str(record["count"]))
 
+
             self.appendRow([name_item, count_item])
 
 
@@ -48,6 +49,8 @@ class SelectionQueryWidget(AbstractQueryWidget):
     def setQuery(self, query: Query):
         """ Method override from AbstractQueryWidget"""
         self.model.setQuery(query)
+        
+        
 
     def getQuery(self):
         """ Method override from AbstractQueryWidget"""
