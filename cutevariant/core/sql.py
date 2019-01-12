@@ -275,6 +275,17 @@ def intersect(query1, query2, by="site"):
     return query
 
 
+# OPERATION SET 
+# TODO 
+
+#  SELECT variants.* FROM variants,
+#  (
+#  SELECT chr, pos FROM (SELECT chr,pos FROM variants WHERE alt='A')
+#  EXCEPT
+#  SELECT chr, pos  FROM (SELECT chr,pos FROM variants WHERE ref='G')
+# ) test
+# ON variants.chr = test.chr AND test.pos = variants.pos
+
 def union(query1, query2, by="site"):
     if by == "site":
         col = "chr,pos"
