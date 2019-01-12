@@ -31,6 +31,32 @@ def test_query_selection(conn):
 
 
 
+def test_query_from_vql(conn):
+    print("TODO: test query_from_vql")
+    # query = Query(conn)
+
+    # # extract columns and selection
+    # query.from_vql("SELECT chr,pos FROM all")
+    # assert query.columns  == ["chr","pos"], "cannot extract columns"
+    # assert query.selection  == "all", "cannot extract selection"
+
+    # #extract where clause as a logic tree 
+    # query.from_vql("SELECT chr,pos,ref FROM all WHERE pos > 3")
+    # where_clause_1 = query.filter_to_sql({"AND":[{"field":"pos", "operator":">", "value":"3"} ]})
+    # where_clause_2 = query.filter_to_sql(query.filter)
+    # assert where_clause_1 == where_clause_1
+
+
+    # # extract genotypes 
+    # query.from_vql("SELECT chr,pos,ref, gt('CGH0157').gt FROM all WHERE pos > 3")
+    # assert gt('CGH0157').gt in query.columns
+
+
+
+
+
+
+
 # def test_detect_samples(conn):
 #     builder = Query(conn)
 
