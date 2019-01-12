@@ -22,7 +22,7 @@ def create_table_selections(conn):
     """ 
 
     cursor = conn.cursor()
-    cursor.execute("""CREATE TABLE selections (name text, count text NULL, query text NULL )""")
+    cursor.execute("""CREATE TABLE selections (name text, count INTEGER NULL, query text NULL )""")
     cursor.execute("""CREATE TABLE selection_has_variant (variant_id integer, selection_id integer)""")
     conn.commit()
 
@@ -38,6 +38,95 @@ def insert_selection(conn, name = "no_name", count=0, query=str()):
         {"name": name, "count": count, "query": query}
         )
     conn.commit()
+    return cursor.lastrowid
+
+
+def create_selection_from_sql(conn, name, query, by="site"):
+
+    # Create selection 
+    selection_id = insert_selection(conn, name = name, count =0, query = query)
+
+    # insert into selection_has_variants 
+    if by == "site":
+        q = f"""
+        INSERT INTO selection_has_variant 
+        SELECT variants.rowid, {selection_id} FROM variants
+        INNER JOIN ({query}) query WHERE variants.chr = query.chr AND variants.pos = query.pos
+        """
+
+    if by == "variant":
+        q = f"""
+        INSERT INTO selection_has_variant 
+        SELECT variants.rowid, {selection_id} FROM variants 
+        INNER JOIN ({query}) as query 
+        WHERE variants.chr = query.chr AND variants.pos = query.pos AND variants.ref = query.ref AND variants.alt = query.alt
+        """
+
+    cursor = conn.cursor()
+    cursor.execute(q)
+    conn.commit()
+
+    cursor.execute(f"""
+        UPDATE selections set count = (SELECT COUNT(*) FROM selection_has_variant WHERE selection_id = {selection_id}) WHERE selections.rowid = {selection_id}
+        """)
+
+    
+def get_selections(conn):
+    cursor = conn.cursor()
+    for row in cursor.execute("""SELECT * FROM selections """):
+        record = dict()
+        record["name"]  = row[0]
+        record["count"] = row[1]
+        record["query"] = row[2]
+        yield record
+
+
+
+
+def intersect_variants(query1, query2, by="site"):
+
+    if by == "site":
+        col = "chr,pos"
+
+    if by == "variant":
+        col = "chr,pos,ref,alt"
+
+
+    return f"""
+    SELECT {col} FROM ({query1})
+    INTERSECT 
+    SELECT {col} FROM ({query2})
+    """
+
+    return query
+
+def union_variants(query1, query2, by="site"):
+    if by == "site":
+        col = "chr,pos"
+
+    if by == "variant":
+        col = "chr,pos,ref,alt"
+
+
+    return f"""
+    SELECT {col} FROM ({query1})
+    UNION
+    SELECT {col} FROM ({query2})
+    """
+
+def subtract_variants(query1, query2, by="site"):
+    if by == "site":
+        col = "chr,pos"
+
+    if by == "variant":
+        col = "chr,pos,ref,alt"
+
+
+    return f"""
+    SELECT {col} FROM ({query1})
+    EXCEPT
+    SELECT {col} FROM ({query2})
+    """
 
 
 ## ================ Fields functions =============================
@@ -74,6 +163,8 @@ def insert_field(conn, name = "no_name", category ="variants", type = "text", de
         """,
         {"name": name, "category": category, "type": type, "description" : description})
     conn.commit()
+    return cursor.lastrowid
+
 
 
 def insert_many_fields(conn, data: list):
@@ -188,6 +279,7 @@ def insert_many_variants(conn, data):
     )
 
     # Loop over variants 
+    count = 0
     for variant in data:
         # Insert current variant 
         cursor.execute(
@@ -196,6 +288,7 @@ def insert_many_variants(conn, data):
 
         # get variant rowid 
         variant_id = cursor.lastrowid
+        count += 1
 
         # if variant has sample data, insert record into sample_has_variant 
         if "samples" in variant:
@@ -214,6 +307,10 @@ def insert_many_variants(conn, data):
 
     # create index to make sample query faster 
     cursor.execute(f"""CREATE UNIQUE INDEX idx_sample_has_variant ON sample_has_variant (sample_id,variant_id)""")
+
+    # create selections 
+    insert_selection(conn, name = "all", count = count)
+
 
 
 ## ================ Fields functions =============================
@@ -241,6 +338,7 @@ def insert_sample(conn, name = "no_name"):
     cursor.execute(""" INSERT INTO samples VALUES (:name) """, {"name": name})
     
     conn.commit()
+    return cursor.lastrowid
 
 
 def get_samples(conn):
@@ -256,60 +354,3 @@ def get_samples(conn):
         record["name"] = row[0]
         yield record
 
-
-def intersect(query1, query2, by="site"):
-
-    if by == "site":
-        col = "chr,pos"
-
-    if by == "variant":
-        col = "chr,pos,ref,alt"
-
-
-    query = f"""
-    SELECT {col} FROM ({query1}) q1
-    INTERSECT 
-    SELECT {col} FROM ({query2}) q1
-    """
-
-    return query
-
-
-# OPERATION SET 
-# TODO 
-
-#  SELECT variants.* FROM variants,
-#  (
-#  SELECT chr, pos FROM (SELECT chr,pos FROM variants WHERE alt='A')
-#  EXCEPT
-#  SELECT chr, pos  FROM (SELECT chr,pos FROM variants WHERE ref='G')
-# ) test
-# ON variants.chr = test.chr AND test.pos = variants.pos
-
-def union(query1, query2, by="site"):
-    if by == "site":
-        col = "chr,pos"
-
-    if by == "variant":
-        col = "chr,pos,ref,alt"
-
-
-    query = f"""
-    SELECT {col} FROM ({query1}) q1
-    UNION
-    SELECT {col} FROM ({query2}) q1
-    """
-
-def subtract(query1, query2, by="site"):
-    if by == "site":
-        col = "chr,pos"
-
-    if by == "variant":
-        col = "chr,pos,ref,alt"
-
-
-    query = f"""
-    SELECT {col} FROM ({query1}) q1
-    EXCEPT
-    SELECT {col} FROM ({query2}) q1
-    """

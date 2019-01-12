@@ -14,8 +14,12 @@ def conn():
 
 
 def test_import_file(conn):
-	path = "exemples/test.vcf"
-	import_file(conn,path)
+    path = "exemples/test.vcf"
+    import_file(conn,path)
+
+
+    record = conn.cursor().execute(f"SELECT * FROM selections WHERE name = 'all'").fetchone()
+    print("record", record)
 
 
     
