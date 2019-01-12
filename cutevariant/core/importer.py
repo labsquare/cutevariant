@@ -23,7 +23,6 @@ def import_file(conn,filename):
 
     #  Create selection
     create_table_selections(conn)
-    insert_selection(conn, name = "all", count = 0)
 
     #  insert samples
     for sample in reader.get_samples():

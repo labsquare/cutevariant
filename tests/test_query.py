@@ -9,19 +9,21 @@ from cutevariant.core import Query
 
 @pytest.fixture
 def conn():
-    conn = sqlite3.connect(":memory:")
+    os.remove("/tmp/test.db")
+    conn = sqlite3.connect("/tmp/test.db")
     import_file(conn,"exemples/test.vcf")
     return conn
 
 
 
-def test_set_operation(conn):
 
-    query = Query(conn)
+# def test_set_operation(conn):
+#     pass 
+    # query = Query(conn)
 
-    query.filter = {"AND" : [{"field":"ref", "operator":"==", "value":"A"} ]}
+    # query.filter = {"AND" : [{"field":"ref", "operator":"==", "value":"A"} ]}
 
-    print(query)
+    # print(query.sql())
 
 # def test_detect_samples(conn):
 #     builder = Query(conn)
