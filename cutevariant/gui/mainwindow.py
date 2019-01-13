@@ -78,7 +78,7 @@ class MainWindow(QMainWindow):
         )
 
         query.create_selection("mytest")
-        query.filter = None
+        #query.filter = None
 
 
         self.router.setQuery(query)
