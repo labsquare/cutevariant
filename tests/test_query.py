@@ -9,8 +9,8 @@ from cutevariant.core import Query
 
 @pytest.fixture
 def conn():
-    os.remove("/tmp/test.db")
-    conn = sqlite3.connect("/tmp/test.db")
+    #os.remove("/tmp/test.db")
+    conn = sqlite3.connect(":memory:")
     import_file(conn,"exemples/test.vcf")
     return conn
 
@@ -28,6 +28,32 @@ def test_query_selection(conn):
 
     for record in query2.items():
         assert record["ref"] == 'A'
+
+
+
+def test_query_from_vql(conn):
+    print("TODO: test query_from_vql")
+    # query = Query(conn)
+
+    # # extract columns and selection
+    # query.from_vql("SELECT chr,pos FROM all")
+    # assert query.columns  == ["chr","pos"], "cannot extract columns"
+    # assert query.selection  == "all", "cannot extract selection"
+
+    # #extract where clause as a logic tree 
+    # query.from_vql("SELECT chr,pos,ref FROM all WHERE pos > 3")
+    # where_clause_1 = query.filter_to_sql({"AND":[{"field":"pos", "operator":">", "value":"3"} ]})
+    # where_clause_2 = query.filter_to_sql(query.filter)
+    # assert where_clause_1 == where_clause_1
+
+
+    # # extract genotypes 
+    # query.from_vql("SELECT chr,pos,ref, gt('CGH0157').gt FROM all WHERE pos > 3")
+    # assert gt('CGH0157').gt in query.columns
+
+
+
+
 
 
 
