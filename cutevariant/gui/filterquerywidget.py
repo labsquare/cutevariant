@@ -1,18 +1,44 @@
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 from PySide2.QtGui import *
-
+from enum import Enum
 
 from .abstractquerywidget import AbstractQueryWidget
 from cutevariant.core import Query
 
 
-class FilterQueryModel(QStandardItemModel):
 
-    FieldRole = Qt.UserRole + 1
-    OperatorRole = Qt.UserRole + 2
-    ValueRole = Qt.UserRole + 3
-    TypeRole = Qt.UserRole + 4
+class FilterType(Enum):
+    LOGIC = 1
+    CONDITION = 2
+
+class FilterItem(QStandardItem): 
+    def __init__(self, type = FilterType.LOGIC):
+        super().__init__()
+        self.type = type
+
+        if self.type == FilterType.LOGIC: 
+            self.name = "AND"
+
+        else:
+            self.name = "pos"
+            self.operator = ">"
+            self.value = 123
+
+
+    def makeText(self):
+        if self.type == FilterType.LOGIC:
+            self.setText(self.name )
+
+        if self.type == FilterType.CONDITION:
+            self.setText(self.name + self.operator + self.value)
+
+
+
+
+
+
+class FilterQueryModel(QStandardItemModel):
 
     def __init__(self):
         super().__init__()
@@ -30,30 +56,27 @@ class FilterQueryModel(QStandardItemModel):
         return self.query
 
     def toItem(self, data: dict) -> QStandardItem:
-        if (
-            len(data) == 1
-        ):  # je ne sais pas comment on fait en python pour vérifier le type d'une variable
+      
+        if ( len(data) == 1 ):  # logic item
             operator = list(data.keys())[0]
-            item = QStandardItem(operator)
-            item.setData("logic", FilterQueryModel.TypeRole)
+            item = FilterItem(FilterType.LOGIC)
+            item.name = operator
             item.setEditable(False)
+            item.makeText()
             for k in data[operator]:
                 item.appendRow(self.toItem(k))
             return item
-        else:
-            item = QStandardItem(
-                str(data["field"]) + str(data["operator"]) + str(data["value"])
-            )
-            item.setData("field", FilterQueryModel.TypeRole)
-            item.setData(data["field"], FilterQueryModel.FieldRole)
-            item.setData(data["operator"], FilterQueryModel.OperatorRole)
-            item.setData(data["value"], FilterQueryModel.ValueRole)
-            item.setEditable(False)
+        else: #condition item
+            item = FilterItem(FilterType.CONDITION)
+            item.name = str(data["field"])
+            item.operator = str(data["operator"])
+            item.value = str(data["value"])
+            item.makeText()
             return item
 
     def fromItem(self, item: QStandardItem) -> dict:
-        if item.data(FilterQueryModel.TypeRole) == "logic":
-            op = item.text()
+        if item.type == FilterType.LOGIC:
+            op = item.name
             data = {op: []}
 
             for i in range(item.rowCount()):
@@ -62,10 +85,14 @@ class FilterQueryModel(QStandardItemModel):
 
         else:
             data = {}
-            data["field"] = item.data(FilterQueryModel.FieldRole)
-            data["operator"] = item.data(FilterQueryModel.OperatorRole)
-            data["value"] = item.data(FilterQueryModel.ValueRole)
+            data["field"] = item.name
+            data["operator"] = item.operator
+            data["value"] = item.value
             return data
+
+
+
+
 
 
 class FilterEditDialog(QDialog):
@@ -132,3 +159,31 @@ class FilterQueryWidget(AbstractQueryWidget):
 
         if dialog.exec_():
             dialog.save()
+
+
+
+    def contextMenuEvent(self,event):
+        ''' override methode ''' 
+
+        menu = QMenu(self)
+
+        pos = self.view.viewport().mapFromGlobal(event.globalPos())
+        index = self.view.indexAt(pos)
+
+        if index.isValid() is False:
+            logic_action = menu.addAction("add logic")
+
+        else:
+            logic_action = menu.addAction("add logic")
+            item_action  = menu.addAction("add condition")
+            menu.addSeparator()
+            rem_action   = menu.addAction("Remove")
+
+
+
+
+        menu.exec_(event.globalPos())
+
+
+
+
