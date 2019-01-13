@@ -33,6 +33,10 @@ class ColumnQueryModel(QStandardItemModel):
         for record in sql.get_fields(self.query.conn):
             item = QStandardItem(record["name"])
             item.setCheckable(True)
+
+            if record["name"] in self.query.columns:
+                item.setCheckState(Qt.Checked)
+
             self.appendRow(item)
 
 
