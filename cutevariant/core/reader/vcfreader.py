@@ -57,11 +57,11 @@ class VcfReader(AbstractReader):
                         for sample in record.samples:
                             gt = -1
                             if sample["GT"] == "0/1":
-                                gt=1 
+                                gt = 1
                             if sample["GT"] == "0/0":
-                                gt=0 
+                                gt = 0
                             if sample["GT"] == "1/1":
-                                gt=2 
+                                gt = 2
 
                             variant["samples"].append({"name": sample.sample, "gt": gt})
 
@@ -96,8 +96,8 @@ class VcfReader(AbstractReader):
 
         self.device.seek(0)
         vcf_reader = vcf.Reader(self.device)
-        
-        # Annotation ... TODO   
+
+        # Annotation ... TODO
         # for key, info in vcf_reader.infos.items():
         #     yield {
         #         "name": key,
@@ -106,13 +106,13 @@ class VcfReader(AbstractReader):
         #         "type": VcfReader.type_mapping.get(info.type, "String"),
         #     }
 
-        # PEUVENT SE METTRE AUTOMATIQUEMENT ... 
+        # PEUVENT SE METTRE AUTOMATIQUEMENT ...
         for sample in vcf_reader.samples:
             yield {
-                "name": f'gt{sample}.gt',
+                "name": f"gt{sample}.gt",
                 "category": "sample",
                 "description": "sample genotype",
-                "type": "text"
+                "type": "text",
             }
 
     def get_samples(self):

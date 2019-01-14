@@ -6,3 +6,6 @@ coverage:
 
 run:
 	python __main__.py
+
+black:
+	black cutevariant

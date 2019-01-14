@@ -28,7 +28,7 @@ class MainWindow(QMainWindow):
 
         # Init router
         self.router = QueryRouter()
-        #self.router.addWidget(self.view_widget)
+        # self.router.addWidget(self.view_widget)
         self.router.addWidget(self.column_widget)
         self.router.addWidget(self.filter_widget)
         self.router.addWidget(self.selection_widget)
@@ -48,8 +48,7 @@ class MainWindow(QMainWindow):
         self.addView()
         self.import_vcf("exemples/test.vcf")
 
-
-    def import_vcf(self, filename): # Temporary .. will be removed 
+    def import_vcf(self, filename):  #  Temporary .. will be removed
         db_filename = filename + ".db"
 
         if os.path.exists(db_filename):
@@ -58,18 +57,14 @@ class MainWindow(QMainWindow):
         self.conn = sqlite3.connect(db_filename)
         import_file(self.conn, filename)
 
-
-
         self.conn.close()
         self.open(db_filename)
-
-
 
     def open(self, db_filename):
 
         if not os.path.exists(db_filename):
-            QMessageBox.warning(self,"error","file doesn't exists")
-            return 
+            QMessageBox.warning(self, "error", "file doesn't exists")
+            return
 
         self.conn = sqlite3.connect(db_filename)
         query = Query(self.conn)
@@ -78,8 +73,7 @@ class MainWindow(QMainWindow):
         )
 
         query.create_selection("mytest")
-        #query.filter = None
-
+        # query.filter = None
 
         self.router.setQuery(query)
 
@@ -94,16 +88,14 @@ class MainWindow(QMainWindow):
         fileMenu.addAction("&New ...")
         fileMenu.addAction("&Open")
 
-
     def addView(self):
         widget = ViewQueryWidget()
         self.view_widgets.append(widget)
         self.tab_view.addTab(widget, widget.windowTitle())
         self.router.addWidget(widget)
 
-
     def currentView(self):
         index = self.tab_view.currentIndex()
         if index == -1:
-            return None 
-        return self.view_widgets[index] 
+            return None
+        return self.view_widgets[index]
