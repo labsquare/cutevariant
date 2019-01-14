@@ -13,18 +13,18 @@ VQL_TO_TREE_CASES = {
     'SELECT chr,pos,ref FROM variants WHERE a=3 AND b=/=5 AND c<3': {
         'select': ('chr', 'pos', 'ref'),
         'from': 'variants',
-        'where': {'AND': ({'field': 'a', 'operator': '=', 'value': 3},
+        'where': {'AND': [{'field': 'a', 'operator': '=', 'value': 3},
                           {'field': 'b', 'operator': '!=', 'value': 5},
-                          {'field': 'c', 'operator': '<', 'value': 3})},
+                          {'field': 'c', 'operator': '<', 'value': 3}]},
     },
     'SELECT chr,pos,ref FROM variants WHERE a=3 AND (b=5 OR c=3)': {
         'select': ('chr', 'pos', 'ref'),
         'from': 'variants',
-        'where': {'AND': ({'field': 'a', 'operator': '=', 'value': 3},
-                          {'OR': ( {'field': 'b', 'operator': '=', 'value': 5},
-                                   {'field': 'c', 'operator': '=', 'value': 3})})},
+        'where': {'AND': [{'field': 'a', 'operator': '=', 'value': 3},
+                          {'OR': [ {'field': 'b', 'operator': '=', 'value': 5},
+                                   {'field': 'c', 'operator': '=', 'value': 3}]}]},
     },
-    'SELECT chr,pos, gt("sacha").gt FROM variants USING file.bed # Next feature': {
+    'SELECT chr,pos, gt("sacha").gt FROM variants USING file.bed # comments are handled': {
         'select': ('chr', 'pos', 'gt("sacha").gt'),
         'from': 'variants',
         'using': ('file.bed',),

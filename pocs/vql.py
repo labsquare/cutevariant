@@ -171,11 +171,11 @@ def dicttree_from_infix_nested_stack(stack:list) -> dict:
                 if last_operator == token:  # let's merge everything
                     assert isinstance(left, dict)
                     assert len(left) == 1
-                    assert isinstance(left[last_operator], (tuple, list))
-                    left[last_operator] = tuple(left[last_operator]) + (right,)
+                    assert isinstance(left[last_operator], list)
+                    left[last_operator].append(right)
                     operandes.append(left)
                 else:
-                    operandes.append({token: (left, right)})
+                    operandes.append({token: [left, right]})
                 last_operator = token
             else:
                 raise VQLSyntaxError(f"Unexpected token: {token}")
