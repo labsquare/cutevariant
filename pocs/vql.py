@@ -4,6 +4,7 @@ See test_vql.py for usage and features.
 
 """
 
+
 import textx
 import operator
 import itertools
@@ -11,43 +12,28 @@ from pprint import pprint
 
 
 CLAUSES = ('select', 'from', 'where', 'using')
-AND = operator.and_
-OR = operator.or_
-EQ = operator.eq
-NE = operator.ne
-LT = operator.lt
-GT = operator.gt
-LE = operator.le
-GE = operator.ge
-XOR = operator.xor
-OPENED = '('
-CLOSED = ')'
-OPERATOR_FROM_LEXEM = {
-    '=': EQ,
-    '==': EQ,
-    '!=': NE,
-    '=/=': NE,
-    '>': GT,
-    '<': LT,
-    '>=': GE,
-    '<=': LE,
-    'OR': OR,
-    'XOR': XOR,
-    'AND': AND,
-}
-OPERATOR_PRECEDENCE = {
-    OR: 1,
-    AND: 2,
-    XOR: 3,
-    EQ: 4,
-    NE: 4,
-    LT: 4,
-    GT: 4,
-    LE: 4,
-    GE: 4,
-}
+OPERATOR_PRECEDENCE = {op: (precedence, subprecedence)
+                       for precedence, ops in enumerate(map(str.split, """
+    ||
+    *    /    %
+    +    -
+    <<   >>   &    |
+    <    <=   >    >=
+    =    ==   !=   <>   IS   IS NOT   IN   LIKE   GLOB   MATCH   REGEXP
+    AND  XOR
+    OR
+""".splitlines())) for subprecedence, op in enumerate(ops)}
 def precedence(one:operator, two:operator) -> operator:
-    return one if OPERATOR_PRECEDENCE[one] <= OPERATOR_PRECEDENCE[two] else two
+    return one if OPERATOR_PRECEDENCE[one] >= OPERATOR_PRECEDENCE[two] else two
+
+OPERATOR_FROM_LEXEM = {
+    '==': '=',
+    '=/=': '!=',
+    'and': 'AND',
+    'or': 'OR',
+    'xor': 'XOR',
+}
+
 
 # classes used to build the raw model
 class RawCondition:
@@ -58,7 +44,7 @@ class RawCondition:
     def value(self):
         return {
             'field': self.id.id,
-            'operator': OPERATOR_FROM_LEXEM[self.op.op],
+            'operator': OPERATOR_FROM_LEXEM.get(self.op.op, self.op.op),
             'value': self.val if isinstance(self.val, int) else self.val.id
         }
 
@@ -69,6 +55,7 @@ class ParenExpr:
     @property
     def value(self):
         return self.expression.value
+
 class BaseExpr:
     def __init__(self, parent, left, operations):
         self.parent = parent
@@ -97,7 +84,8 @@ class BoolOperator:
         self.op = op
     @property
     def value(self):
-        return OPERATOR_FROM_LEXEM[self.op]
+        return OPERATOR_FROM_LEXEM.get(self.op, self.op)
+
 
 METAMODEL = textx.metamodel_from_file('vql.tx', classes=[RawCondition, ParenExpr, BaseExpr, Operation, BoolOperator],
                                       debug=False)
