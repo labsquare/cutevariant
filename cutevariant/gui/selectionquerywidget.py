@@ -14,18 +14,14 @@ class SelectionQueryModel(QStandardItemModel):
         self.setColumnCount(2)
 
     def setQuery(self, query: Query):
-         self.clear()
-         self.query = query
+        self.clear()
+        self.query = query
 
-         for record in sql.get_selections(query.conn):
+        for record in sql.get_selections(query.conn):
             name_item = QStandardItem(record["name"])
             count_item = QStandardItem(str(record["count"]))
 
-
             self.appendRow([name_item, count_item])
-
-
-
 
 
 class SelectionQueryWidget(AbstractQueryWidget):
@@ -44,20 +40,16 @@ class SelectionQueryWidget(AbstractQueryWidget):
 
         self.view.selectionModel().currentRowChanged.connect(self.changed)
 
-
-
     def setQuery(self, query: Query):
         """ Method override from AbstractQueryWidget"""
         self.model.setQuery(query)
-        
-        
 
     def getQuery(self):
         """ Method override from AbstractQueryWidget"""
 
         item = self.model.item(self.view.selectionModel().currentIndex().row())
 
-        query = self.model.query 
+        query = self.model.query
         query.selection = item.text()
 
         return query
