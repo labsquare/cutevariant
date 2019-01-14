@@ -5,7 +5,7 @@ from .readerfactory import ReaderFactory
 from .sql import *
 
 
-def import_file(conn,filename):
+def import_file(conn, filename):
 
     print("import file ", filename)
 
@@ -18,19 +18,18 @@ def import_file(conn,filename):
     create_table_samples(conn)
 
     #  Create variants tables
-    create_table_variants(conn,reader.get_fields())
-
+    create_table_variants(conn, reader.get_fields())
 
     #  Create selection
     create_table_selections(conn)
 
     #  insert samples
     for sample in reader.get_samples():
-        insert_sample(conn,name = sample)
+        insert_sample(conn, name=sample)
 
     # Insert fields
-    insert_many_fields(conn,reader.get_fields())
-    insert_many_variants(conn,reader.get_variants())
+    insert_many_fields(conn, reader.get_fields())
+    insert_many_variants(conn, reader.get_variants())
 
     # # Create default selection
     # session.add(Selection(name="all", description="all variant", count = variant_count))
