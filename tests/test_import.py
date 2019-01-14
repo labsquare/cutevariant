@@ -6,34 +6,17 @@ import warnings
 from cutevariant.core.importer import import_file
 from .utils import table_exists
 
+
 @pytest.fixture
 def conn():
-    return  sqlite3.connect(":memory:")
-
-
+    return sqlite3.connect(":memory:")
 
 
 def test_import_file(conn):
     path = "exemples/test.vcf"
-    import_file(conn,path)
+    import_file(conn, path)
 
-
-    record = conn.cursor().execute(f"SELECT * FROM selections WHERE name = 'all'").fetchone()
+    record = (
+        conn.cursor().execute(f"SELECT * FROM selections WHERE name = 'all'").fetchone()
+    )
     print("record", record)
-
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-

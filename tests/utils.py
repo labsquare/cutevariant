@@ -8,10 +8,11 @@ def table_exists(conn: sqlite3.Connection, name):
 
 
 def table_count(conn: sqlite3.Connection, name):
-	c = conn.cursor()
-	c.execute(f"SELECT COUNT(*) as 'count' FROM {name}")
-	return c.fetchone()[0]
+    c = conn.cursor()
+    c.execute(f"SELECT COUNT(*) as 'count' FROM {name}")
+    return c.fetchone()[0]
+
 
 def table_drop(conn, name):
-	c = conn.cursor()
-	c.execute(f"DROP TABLE IF EXISTS {name}")
+    c = conn.cursor()
+    c.execute(f"DROP TABLE IF EXISTS {name}")

@@ -83,7 +83,7 @@ class Query:
         else:
             #  manage jointure with selection
 
-            query+= f"""
+            query += f"""
             FROM variants
             INNER JOIN selection_has_variant sv ON sv.variant_id = variants.rowid
             INNER JOIN selections s ON s.rowid = sv.selection_id AND s.name = '{self.selection}'
@@ -143,11 +143,10 @@ class Query:
             else:
                 value = str(value)
 
-            # change columns name for sample join
+            #  change columns name for sample join
             sample = self.sample_from_expression(field)
             if sample:
-                field = f'gt{sample}.gt'
-
+                field = f"gt{sample}.gt"
 
             return field + operator + value
 
@@ -189,26 +188,24 @@ class Query:
 
         ##-----------------------------------------------------------------------------------------------------------
 
-    def from_vql(self,raw : str):
+    def from_vql(self, raw: str):
         model = vql.model_from_string(raw)
-        self.columns = model['select']
-        self.selection = model['from']
-        self.filter = model.get('where')  # None if no filter
+        self.columns = model["select"]
+        self.selection = model["from"]
+        self.filter = model.get("where")  # None if no filter
         # TODO: USING clause missing
 
         ##-----------------------------------------------------------------------------------------------------------
 
     def to_vql(self) -> str:
         base = f"SELECT {','.join(self.columns)} FROM {','.join(self.selection)}"
-        where = ''
+        where = ""
         if self.filter:
-            where = f' WHERE {self.filter_to_sql(self.filter)}'
-        return base + where + ';'
+            where = f" WHERE {self.filter_to_sql(self.filter)}"
+        return base + where + ";"
 
         ##-----------------------------------------------------------------------------------------------------------
 
     def check(self):
-        ''' Return True if query is valid '''
+        """ Return True if query is valid """
         return True
-
-
