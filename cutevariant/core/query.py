@@ -2,11 +2,11 @@ import re
 from . import sql
 
 class Query:
-    """ 
-    This class is intended to build sql query according parameters 
-    self.columns : columns from variant table 
-    self.filter : filter filter as raw text 
-    self.selection : name of the variant set. Use "all" to select all variants 
+    """
+    This class is intended to build sql query according parameters
+    self.columns : columns from variant table
+    self.filter : filter filter as raw text
+    self.selection : name of the variant set. Use "all" to select all variants
     """
 
     def __init__(
@@ -45,8 +45,8 @@ class Query:
         if len(samples_detected) == 0:
             return {}
                 # Look in DB if sample exists and returns {sample:id} dictionnary
-            
-            
+
+
         in_clause = ",".join([f"'{sample}'" for sample in samples_detected])
 
         return dict(
@@ -60,7 +60,7 @@ class Query:
     def sql(self, limit=0, offset=0):
         """ build query depending class parameter """
 
-        # Detect if join sample is required ... 
+        # Detect if join sample is required ...
         sample_ids = self.detect_samples()
 
 
@@ -89,8 +89,8 @@ class Query:
             #  manage jointure with selection
 
             query+= f"""
-            FROM variants 
-            INNER JOIN selection_has_variant sv ON sv.variant_id = variants.rowid 
+            FROM variants
+            INNER JOIN selection_has_variant sv ON sv.variant_id = variants.rowid
             INNER JOIN selections s ON s.rowid = sv.selection_id AND s.name = '{self.selection}'
             """
 
@@ -138,7 +138,7 @@ class Query:
         is_field = lambda x: True if len(x) == 3 else False
 
         if is_field(node):
-            # change value 
+            # change value
             value    = node["value"]
             operator = node["operator"]
             field    = node["field"]
@@ -148,9 +148,9 @@ class Query:
             else:
                 value = str(value)
 
-            # change columns name for sample join 
+            # change columns name for sample join
             sample = self.sample_from_expression(field)
-            if sample: 
+            if sample:
                 field = f'gt{sample}.gt'
 
 
@@ -187,8 +187,8 @@ class Query:
 
     def __repr__(self):
         return f"""
-        columns : {self.columns} 
-        filter: {self.filter} 
+        columns : {self.columns}
+        filter: {self.filter}
         selection: {self.selection}
         """
 
@@ -196,18 +196,18 @@ class Query:
 
     def from_vql(self,raw : str):
         # TODO @aluriak
-        pass 
+        pass
 
         ##-----------------------------------------------------------------------------------------------------------
 
     def to_vql(self) -> str:
         # TODO @aluriak
-        pass 
+        pass
 
         ##-----------------------------------------------------------------------------------------------------------
 
     def check(self):
-        ''' Return True if query is valid ''' 
-        return True 
+        ''' Return True if query is valid '''
+        return True
 
 
