@@ -7,17 +7,17 @@ from .abstractquerywidget import AbstractQueryWidget
 from cutevariant.core import Query
 
 
-
 class FilterType(Enum):
     LOGIC = 1
     CONDITION = 2
 
-class FilterItem(QStandardItem): 
-    def __init__(self, type = FilterType.LOGIC):
+
+class FilterItem(QStandardItem):
+    def __init__(self, type=FilterType.LOGIC):
         super().__init__()
         self.type = type
 
-        if self.type == FilterType.LOGIC: 
+        if self.type == FilterType.LOGIC:
             self.name = "AND"
 
         else:
@@ -25,21 +25,15 @@ class FilterItem(QStandardItem):
             self.operator = ">"
             self.value = 123
 
-
     def makeText(self):
         if self.type == FilterType.LOGIC:
-            self.setText(self.name )
+            self.setText(self.name)
 
         if self.type == FilterType.CONDITION:
             self.setText(self.name + self.operator + self.value)
 
 
-
-
-
-
 class FilterQueryModel(QStandardItemModel):
-
     def __init__(self):
         super().__init__()
         self.query = None
@@ -56,8 +50,8 @@ class FilterQueryModel(QStandardItemModel):
         return self.query
 
     def toItem(self, data: dict) -> QStandardItem:
-      
-        if ( len(data) == 1 ):  # logic item
+
+        if len(data) == 1:  #  logic item
             operator = list(data.keys())[0]
             item = FilterItem(FilterType.LOGIC)
             item.name = operator
@@ -66,7 +60,7 @@ class FilterQueryModel(QStandardItemModel):
             for k in data[operator]:
                 item.appendRow(self.toItem(k))
             return item
-        else: #condition item
+        else:  # condition item
             item = FilterItem(FilterType.CONDITION)
             item.name = str(data["field"])
             item.operator = str(data["operator"])
@@ -89,10 +83,6 @@ class FilterQueryModel(QStandardItemModel):
             data["operator"] = item.operator
             data["value"] = item.value
             return data
-
-
-
-
 
 
 class FilterEditDialog(QDialog):
@@ -160,10 +150,8 @@ class FilterQueryWidget(AbstractQueryWidget):
         if dialog.exec_():
             dialog.save()
 
-
-
-    def contextMenuEvent(self,event):
-        ''' override methode ''' 
+    def contextMenuEvent(self, event):
+        """ override methode """
 
         menu = QMenu(self)
 
@@ -175,15 +163,8 @@ class FilterQueryWidget(AbstractQueryWidget):
 
         else:
             logic_action = menu.addAction("add logic")
-            item_action  = menu.addAction("add condition")
+            item_action = menu.addAction("add condition")
             menu.addSeparator()
-            rem_action   = menu.addAction("Remove")
-
-
-
+            rem_action = menu.addAction("Remove")
 
         menu.exec_(event.globalPos())
-
-
-
-
