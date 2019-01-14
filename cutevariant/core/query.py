@@ -1,5 +1,6 @@
 import re
 from . import sql
+from . import vql
 
 class Query:
     """
@@ -195,14 +196,20 @@ class Query:
         ##-----------------------------------------------------------------------------------------------------------
 
     def from_vql(self,raw : str):
-        # TODO @aluriak
-        pass
+        model = vql.model_from_string(raw)
+        self.columns = model['select']
+        self.selection = model['from']
+        self.filter = model.get('where')  # None if no filter
+        # TODO: USING clause missing
 
         ##-----------------------------------------------------------------------------------------------------------
 
     def to_vql(self) -> str:
-        # TODO @aluriak
-        pass
+        base = f"SELECT {','.join(self.columns)} FROM {','.join(self.selection)}"
+        where = ''
+        if self.filter:
+            where = f' WHERE {self.filter_to_sql(self.filter)}'
+        return base + where + ';'
 
         ##-----------------------------------------------------------------------------------------------------------
 
