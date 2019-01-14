@@ -35,31 +35,37 @@ OPERATOR_FROM_LEXEM = {
 }
 
 
+def model_class(name:str, bases:tuple, attrs:dict) -> type:
+    """Metaclass to automatically build the __init__ to get the properties,
+    and register the class for metamodel
+    """
+    if '__init__' not in attrs:
+        def __init__(self, *args, **kwargs):
+            for field, value in kwargs.items():
+                setattr(self, field, value)
+        attrs['__init__'] = __init__
+    cls = type(name, bases, attrs)
+    model_class.classes.append(cls)
+    return cls
+model_class.classes = []
+
+
 # classes used to build the raw model
-class RawCondition:
-    def __init__(self, parent, id, op, val):
-        self.parent = parent
-        self.id, self.op, self.val = id, op, val
+class RawCondition(metaclass=model_class):
     @property
     def value(self):
         return {
             'field': self.id.id,
             'operator': OPERATOR_FROM_LEXEM.get(self.op.op, self.op.op),
-            'value': self.val if isinstance(self.val, int) else self.val.id
+            'value': self.val if isinstance(self.val, (str, int)) else self.val.id
         }
 
-class ParenExpr:
-    def __init__(self, parent, expression):
-        self.parent = parent
-        self.expression = expression
+class ParenExpr(metaclass=model_class):
     @property
     def value(self):
         return self.expression.value
 
-class BaseExpr:
-    def __init__(self, parent, left, operations):
-        self.parent = parent
-        self.left, self.operations = left, operations
+class BaseExpr(metaclass=model_class):
     @property
     def value(self):
         # get the infix tree describing the expression
@@ -69,25 +75,23 @@ class BaseExpr:
             stack.extend(operation.value)
         return stack
 
-class Operation:
-    def __init__(self, parent, op, remaining):
-        self.parent = parent
-        self.op, self.remaining = op, remaining
-        print('REMAINING:', type(remaining))
+class Operation(metaclass=model_class):
     @property
     def value(self):
         return (self.op.value, self.remaining.value)
 
-class BoolOperator:
-    def __init__(self, parent, op):
-        self.parent = parent
-        self.op = op
+class BoolOperator(metaclass=model_class):
     @property
     def value(self):
         return OPERATOR_FROM_LEXEM.get(self.op, self.op)
 
+class Tuple(metaclass=model_class):
+    @property
+    def id(self):
+        return '({})'.format(', '.join(item.id for item in self.items))
 
-METAMODEL = textx.metamodel_from_file('vql.tx', classes=[RawCondition, ParenExpr, BaseExpr, Operation, BoolOperator],
+
+METAMODEL = textx.metamodel_from_file('vql.tx', classes=model_class.classes,
                                       debug=False)
 
 

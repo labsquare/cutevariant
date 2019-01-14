@@ -29,6 +29,11 @@ VQL_TO_TREE_CASES = {
         'from': 'variants',
         'using': ('file.bed',),
     },
+    "SELECT chr FROM variants WHERE some_field IN ('one', 'two')": {
+        'select': ('chr',),
+        'from': 'variants',
+        'where': {'field': 'some_field', 'operator': 'IN', 'value': "('one', 'two')"},
+    },
 }
 
 def template_test_case(vql_expr:str, expected:dict) -> callable:
