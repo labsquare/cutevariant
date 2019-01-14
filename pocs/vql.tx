@@ -1,0 +1,40 @@
+Model:
+    select=SelectClause from=FromClause where=WhereClause? using=UsingClause?
+;
+
+
+//################################### CLAUSES ###################################
+SelectClause:
+    'SELECT'? columns*=ColumnIdentifier[',']
+;
+
+FromClause:
+    'FROM' source=Identifier
+;
+
+WhereClause:
+    'WHERE' expression=Expr
+;
+
+UsingClause:
+    'USING' filename=Filename
+;
+
+
+//################################## COMPONENTS #################################
+Expr: ParenExpr | BaseExpr;
+BaseExpr: left=Condition operations*=Operation;
+ParenExpr: '(' expression=Expr ')';
+Operation:  op=BoolOperator remaining=Condition;
+
+Condition: ParenExpr | RawCondition;
+RawCondition: id=Identifier op=MathOperator (val=INT | val=Identifier);
+
+
+//################################## TERMINALS ##################################
+Comment: /\#.*$/;
+ColumnIdentifier:  id=/[a-zA-Z0-9\.\/\~()\[\]\\'"_-]+/;
+Identifier: id=/[a-zA-Z0-9\.\/\~\[\]\\'"_-]+/;
+Filename:   Identifier;
+MathOperator:  op=/>=|<=|!=|=\/=|=|>|</;
+BoolOperator:  op=/AND|OR|XOR|and|or|xor/;
