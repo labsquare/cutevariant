@@ -195,10 +195,13 @@ class Query:
         self.filter = model.get("where")  # None if no filter
         # TODO: USING clause missing
 
+
+        print("from vql", model)
+
         ##-----------------------------------------------------------------------------------------------------------
 
     def to_vql(self) -> str:
-        base = f"SELECT {','.join(self.columns)} FROM {','.join(self.selection)}"
+        base = f"SELECT {','.join(self.columns)} FROM {self.selection}"
         where = ""
         if self.filter:
             where = f" WHERE {self.filter_to_sql(self.filter)}"
