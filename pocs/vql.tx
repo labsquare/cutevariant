@@ -36,5 +36,5 @@ Comment: /\#.*$/;
 ColumnIdentifier:  id=/[a-zA-Z0-9\.\/\~()\[\]\\'"_-]+/;
 Identifier: id=/[a-zA-Z0-9\.\/\~\[\]\\'"_-]+/;
 Filename:   Identifier;
-MathOperator:  op=/>=|<=|!=|=\/=|=|>|</;
+MathOperator:  op=/==|>=|<=|!=|=\/=|=|>|<|\||\*|\/|\%|>>|<<|\&|\||<>|IS|IS NOT|IN|LIKE|GLOB|MATCH|REGEXP/;
 BoolOperator:  op=/AND|OR|XOR|and|or|xor/;

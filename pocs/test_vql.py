@@ -2,7 +2,6 @@
 import pytest
 from pprint import pprint
 from vql import model_from_string, VQLSyntaxError
-from vql import AND, OR, EQ, NE, LT
 
 
 # Test valid VQL cases
@@ -14,16 +13,16 @@ VQL_TO_TREE_CASES = {
     'SELECT chr,pos,ref FROM variants WHERE a=3 AND b=/=5 AND c<3': {
         'select': ('chr', 'pos', 'ref'),
         'from': 'variants',
-        'where': {AND: ({'field': 'a', 'operator': EQ, 'value': 3},
-                        {'field': 'b', 'operator': NE, 'value': 5},
-                        {'field': 'c', 'operator': LT, 'value': 3})},
+        'where': {'AND': ({'field': 'a', 'operator': '=', 'value': 3},
+                          {'field': 'b', 'operator': '!=', 'value': 5},
+                          {'field': 'c', 'operator': '<', 'value': 3})},
     },
     'SELECT chr,pos,ref FROM variants WHERE a=3 AND (b=5 OR c=3)': {
         'select': ('chr', 'pos', 'ref'),
         'from': 'variants',
-        'where': {AND: ({'field': 'a', 'operator': EQ, 'value': 3},
-                        {OR: ( {'field': 'b', 'operator': EQ, 'value': 5},
-                               {'field': 'c', 'operator': EQ, 'value': 3})})},
+        'where': {'AND': ({'field': 'a', 'operator': '=', 'value': 3},
+                          {'OR': ( {'field': 'b', 'operator': '=', 'value': 5},
+                                   {'field': 'c', 'operator': '=', 'value': 3})})},
     },
     'SELECT chr,pos, gt("sacha").gt FROM variants USING file.bed # Next feature': {
         'select': ('chr', 'pos', 'gt("sacha").gt'),
