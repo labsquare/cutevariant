@@ -1,0 +1,41 @@
+Model:
+    select=SelectClause from=FromClause where=WhereClause? using=UsingClause?
+;
+
+
+//################################### CLAUSES ###################################
+SelectClause:
+    'SELECT'? columns*=ColumnIdentifier[',']
+;
+
+FromClause:
+    'FROM' source=Identifier
+;
+
+WhereClause:
+    'WHERE' expression=Expr
+;
+
+UsingClause:
+    'USING' filename=Filename
+;
+
+
+//################################## COMPONENTS #################################
+Expr: ParenExpr | BaseExpr;
+BaseExpr: left=Condition operations*=Operation;
+ParenExpr: '(' expression=Expr ')';
+Operation:  op=BoolOperator remaining=Condition;
+
+Condition: ParenExpr | RawCondition;
+RawCondition: id=Identifier op=MathOperator (val=INT | val=Tuple | val=Identifier);
+
+
+//################################## TERMINALS ##################################
+Comment: /\#.*$/;
+ColumnIdentifier:  id=/[a-zA-Z0-9\.\/\~()\[\]\\'"_-]+/;
+Identifier: id=/[a-zA-Z0-9\.\/\~\[\]\\'"_-]+/;
+Filename:   Identifier;
+MathOperator:  op=/==|>=|<=|!=|=\/=|=|>|<|\||\*|\/|\%|>>|<<|\&|\||<>|IS|IS NOT|IN|LIKE|GLOB|MATCH|REGEXP/;
+BoolOperator:  op=/AND|OR|XOR|and|or|xor/;
+Tuple: '(' items*=Identifier[','] ')';
