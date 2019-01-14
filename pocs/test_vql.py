@@ -57,9 +57,9 @@ for idx, (vql, expected) in enumerate(VQL_TO_TREE_CASES.items(), start=1):
 
 # test exceptions returned by VQL
 MALFORMED_VQL_CASES = {
-    # '': ('no select clause',),
-    # 'SELECT chr,pos,ref FROM': ('empty \'FROM\' clause',),
-    # 'SELECT chr,,ref FROM': ('invalid identifier \'\' in SELECT clause',),
+    '': ('no select clause', -1),
+    'SELECT chr,pos,ref FROM': ('empty \'FROM\' clause', 24),
+    'SELECT chr,,ref FROM': ('invalid identifier \'\' in SELECT clause', 12),
 }
 
 def template_test_malformed_case(vql_expr:str, expected:tuple) -> callable:
@@ -68,7 +68,7 @@ def template_test_malformed_case(vql_expr:str, expected:tuple) -> callable:
     def test_function():
         with pytest.raises(VQLSyntaxError) as excinfo:
             model_from_string(vql_expr)
-        assert excinfo.value == expected
+        assert excinfo.value.args == expected
 
     return test_function
 

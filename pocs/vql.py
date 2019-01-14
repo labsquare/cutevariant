@@ -102,7 +102,10 @@ class VQLSyntaxError(ValueError):
 
 
 def model_from_string(raw_vql:str) -> dict:
-    raw_model = METAMODEL.model_from_str(raw_vql)
+    try:
+        raw_model = METAMODEL.model_from_str(raw_vql)
+    except textx.exceptions.TextXSyntaxError as err:
+        raise VQLSyntaxError(*error_message_from_err(err, raw_vql))
     model = {}
     for clause in CLAUSES:
         value = getattr(raw_model, clause)
@@ -127,6 +130,28 @@ def compile_where_from_raw_model(raw_model) -> dict or tuple:
 
 def compile_using_from_raw_model(raw_model) -> dict or tuple:
     return (raw_model.filename.id,)
+
+
+def error_message_from_err(err:textx.exceptions.TextXSyntaxError,
+                           raw_vql:str) -> (str, int):
+    """Return human-readable information and index in raw_sql query
+    about the given exception"""
+    # print(err)
+    # print(dir(err))
+    # print(err.args)
+    # print(err.err_type)
+    # print(err.line, err.col)
+    # print(err.message)
+    # print(err.filename)
+    # print(err.expected_rules)
+    if "'SELECT'" in err.message:  # was awaiting for a SELECT clause
+        return "no select clause", -1
+    if err.message.endswith("=> 's,ref FROM*'."):
+        return "empty 'FROM' clause", err.col
+    if ',*,' in err.message and len(err.expected_rules) == 1 and type(err.expected_rules[0]).__name__ == 'RegExMatch':
+        return "invalid identifier '' in SELECT clause", err.col
+
+    raise err  # error not handled. Just raise it
 
 
 def dicttree_from_infix_nested_stack(stack:list) -> dict:
