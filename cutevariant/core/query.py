@@ -2,6 +2,7 @@ import re
 from . import sql
 from . import vql
 
+
 class Query:
     """
     This class is intended to build sql query according parameters
@@ -19,7 +20,6 @@ class Query:
         self.selection = selection
 
         ##-----------------------------------------------------------------------------------------------------------
-
 
     def sample_from_expression(self, expression):
         # extract <sample> from <gt("sample")>
@@ -45,9 +45,7 @@ class Query:
 
         if len(samples_detected) == 0:
             return {}
-                # Look in DB if sample exists and returns {sample:id} dictionnary
-
-
+        # Look in DB if sample exists and returns {sample:id} dictionnary
         in_clause = ",".join([f"'{sample}'" for sample in samples_detected])
 
         return dict(
@@ -61,24 +59,20 @@ class Query:
     def sql(self, limit=0, offset=0):
         """ build query depending class parameter """
 
-        # Detect if join sample is required ...
+        #  Detect if join sample is required ...
         sample_ids = self.detect_samples()
-
 
         if len(self.columns) == 0:
             self.columns = ["chr", "pos", "ref", "alt"]
 
-
-        # Replace columns gt(sacha) by sv4.gt ( where 4 is the sample id for outer join)
+        #  Replace columns gt(sacha) by sv4.gt ( where 4 is the sample id for outer join)
         sql_columns = []
         for col in self.columns:
             sample = self.sample_from_expression(col)
             if sample is not None:
-                sql_columns.append(f'gt{sample}.gt')
+                sql_columns.append(f"gt{sample}.gt")
             else:
                 sql_columns.append(col)
-
-
 
         query = f"SELECT {','.join(sql_columns)} "
 
@@ -87,7 +81,7 @@ class Query:
         if self.selection == "all":
             query += f"FROM variants"
         else:
-            #  manage jointure with selection
+            #  manage jointure with selection
 
             query+= f"""
             FROM variants
@@ -95,10 +89,8 @@ class Query:
             INNER JOIN selections s ON s.rowid = sv.selection_id AND s.name = '{self.selection}'
             """
 
-
-
         if len(sample_ids):
-            for sample,i in sample_ids.items():
+            for sample, i in sample_ids.items():
                 query += f" LEFT JOIN sample_has_variant gt{sample} ON gt{sample}.variant_id = variants.rowid AND gt{sample}.sample_id = {i} "
 
                 # add filter clause
@@ -140,11 +132,13 @@ class Query:
 
         if is_field(node):
             # change value
-            value    = node["value"]
+            value = node["value"]
             operator = node["operator"]
-            field    = node["field"]
+            field = node["field"]
 
-            if type(value) == str:  # Add quote for string .. Need to change in the future and use sqlite binding value
+            if (
+                type(value) == str
+            ):  # Add quote for string .. Need to change in the future and use sqlite binding value
                 value = "'" + str(value) + "'"
             else:
                 value = str(value)

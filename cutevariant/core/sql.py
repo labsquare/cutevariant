@@ -1,52 +1,52 @@
 import sqlite3
 
 
-
-
 def drop_table(conn, table_name):
     c = conn.cursor()
     c.execute(f"DROP TABLE IF EXISTS {table_name}")
 
 
-
-
-
-
 ## ================ SELECTION functions =============================
+
 
 def create_table_selections(conn):
     """ 
     create selection table and selection_has_variant 
 
     :param conn: sqlite3.connect
-    """ 
+    """
 
     cursor = conn.cursor()
-    cursor.execute("""CREATE TABLE selections (name text, count INTEGER NULL, query text NULL )""")
-    cursor.execute("""CREATE TABLE selection_has_variant (variant_id integer, selection_id integer)""")
+    cursor.execute(
+        """CREATE TABLE selections (name text, count INTEGER NULL, query text NULL )"""
+    )
+    cursor.execute(
+        """CREATE TABLE selection_has_variant (variant_id integer, selection_id integer)"""
+    )
     conn.commit()
 
-def insert_selection(conn, name = "no_name", count=0, query=str()):
+
+def insert_selection(conn, name="no_name", count=0, query=str()):
     """ 
     insert one selection
 
     :param conn: sqlite3.connect
-     """ 
+     """
     cursor = conn.cursor()
     cursor.execute(
         """INSERT INTO selections VALUES (:name,:count,:query)""",
-        {"name": name, "count": count, "query": query}
-        )
+        {"name": name, "count": count, "query": query},
+    )
     conn.commit()
     return cursor.lastrowid
 
 
 def create_selection_from_sql(conn, name, query, by="site"):
 
-    # Create selection 
-    selection_id = insert_selection(conn, name = name, count =0, query = query)
+    #  Create selection
+    selection_id = insert_selection(conn, name=name, count=0, query=query)
 
-    # insert into selection_has_variants 
+    # insert into selection_has_variants
     if by == "site":
         q = f"""
         INSERT INTO selection_has_variant 
@@ -66,24 +66,24 @@ def create_selection_from_sql(conn, name, query, by="site"):
     cursor.execute(q)
     conn.commit()
 
-    # update selection count 
-    cursor.execute(f"""
+    #  update selection count
+    cursor.execute(
+        f"""
         UPDATE selections set count = (SELECT COUNT(*) FROM selection_has_variant WHERE selection_id = {selection_id}) WHERE selections.rowid = {selection_id}
-        """)
+        """
+    )
 
     conn.commit()
 
-    
+
 def get_selections(conn):
     cursor = conn.cursor()
     for row in cursor.execute("""SELECT * FROM selections """):
         record = dict()
-        record["name"]  = row[0]
+        record["name"] = row[0]
         record["count"] = row[1]
         record["query"] = row[2]
         yield record
-
-
 
 
 def intersect_variants(query1, query2, by="site"):
@@ -94,7 +94,6 @@ def intersect_variants(query1, query2, by="site"):
     if by == "variant":
         col = "chr,pos,ref,alt"
 
-
     return f"""
     SELECT {col} FROM ({query1})
     INTERSECT 
@@ -103,6 +102,7 @@ def intersect_variants(query1, query2, by="site"):
 
     return query
 
+
 def union_variants(query1, query2, by="site"):
     if by == "site":
         col = "chr,pos"
@@ -110,12 +110,12 @@ def union_variants(query1, query2, by="site"):
     if by == "variant":
         col = "chr,pos,ref,alt"
 
-
     return f"""
     SELECT {col} FROM ({query1})
     UNION
     SELECT {col} FROM ({query2})
     """
+
 
 def subtract_variants(query1, query2, by="site"):
     if by == "site":
@@ -123,7 +123,6 @@ def subtract_variants(query1, query2, by="site"):
 
     if by == "variant":
         col = "chr,pos,ref,alt"
-
 
     return f"""
     SELECT {col} FROM ({query1})
@@ -134,13 +133,14 @@ def subtract_variants(query1, query2, by="site"):
 
 ## ================ Fields functions =============================
 
+
 def create_table_fields(conn):
     """ 
     create field table 
 
     :param conn: sqlite3.connect
 
-    """ 
+    """
     cursor = conn.cursor()
     cursor.execute(
         """CREATE TABLE fields
@@ -150,7 +150,9 @@ def create_table_fields(conn):
     conn.commit()
 
 
-def insert_field(conn, name = "no_name", category ="variants", type = "text", description = str()):
+def insert_field(
+    conn, name="no_name", category="variants", type="text", description=str()
+):
     """ 
     insert one field 
 
@@ -158,16 +160,16 @@ def insert_field(conn, name = "no_name", category ="variants", type = "text", de
     :param name: field name
     :param category: category field name. The default is "variants". Don't use sample as category name
     :param type: sqlite type which can be : integer, real, text
-    """ 
+    """
     cursor = conn.cursor()
     cursor.execute(
         """
         INSERT INTO fields VALUES (:name,:category, :type, :description)
         """,
-        {"name": name, "category": category, "type": type, "description" : description})
+        {"name": name, "category": category, "type": type, "description": description},
+    )
     conn.commit()
     return cursor.lastrowid
-
 
 
 def insert_many_fields(conn, data: list):
@@ -205,7 +207,7 @@ def get_fields(conn):
 
     .. seealso:: insert_many_field
 
-    """ 
+    """
     cursor = conn.cursor()
 
     for row in cursor.execute("""SELECT * FROM fields """):
@@ -215,6 +217,7 @@ def get_fields(conn):
         record["type"] = row[2]
         record["description"] = row[3]
         yield record
+
 
 ## ================ Fields functions =============================
 
@@ -237,13 +240,18 @@ def create_table_variants(conn, fields):
     cursor = conn.cursor()
 
     variant_shema = ",".join(
-        [f'{field["name"]} {field["type"]} NULL' for field in fields if field["category"] != "sample"]
+        [
+            f'{field["name"]} {field["type"]} NULL'
+            for field in fields
+            if field["category"] != "sample"
+        ]
     )
     cursor.execute(f"""CREATE TABLE variants ({variant_shema})""")
-    cursor.execute(f"""CREATE TABLE sample_has_variant (sample_id INTEGER, variant_id, gt INTEGER DEFAULT -1 )""")
-    
-    conn.commit()
+    cursor.execute(
+        f"""CREATE TABLE sample_has_variant (sample_id INTEGER, variant_id, gt INTEGER DEFAULT -1 )"""
+    )
 
+    conn.commit()
 
 
 def insert_many_variants(conn, data):
@@ -265,15 +273,15 @@ def insert_many_variants(conn, data):
 
     cursor = conn.cursor()
 
-    # Get columns description from variant table 
-    cols =   [i[0] for i in conn.execute("SELECT * FROM variants LIMIT 1").description ]
+    #  Get columns description from variant table
+    cols = [i[0] for i in conn.execute("SELECT * FROM variants LIMIT 1").description]
 
-    # build dynamic insert query 
+    # build dynamic insert query
     # INSERT INTO variant qcol1, qcol2.... VALUES :qcol1, :qcol2 ....
-    q_cols  = ",".join(cols)
+    q_cols = ",".join(cols)
     q_place = ",".join([f":{place}" for place in cols])
 
-    # get samples with sql rowid 
+    # get samples with sql rowid
     samples = dict(
         [
             (record[1], record[0])
@@ -281,23 +289,23 @@ def insert_many_variants(conn, data):
         ]
     )
 
-    # Loop over variants 
+    # Loop over variants
     count = 0
     for variant in data:
-        # Insert current variant 
+        # Insert current variant
         cursor.execute(
             f"""INSERT INTO variants ({q_cols}) VALUES ({q_place})""", variant
         )
 
-        # get variant rowid 
+        # get variant rowid
         variant_id = cursor.lastrowid
         count += 1
 
-        # if variant has sample data, insert record into sample_has_variant 
+        # if variant has sample data, insert record into sample_has_variant
         if "samples" in variant:
             for sample in variant["samples"]:
                 name = sample["name"]
-                gt   = sample["gt"]
+                gt = sample["gt"]
 
                 if name in samples.keys():
                     sample_id = samples[name]
@@ -308,15 +316,17 @@ def insert_many_variants(conn, data):
 
     conn.commit()
 
-    # create index to make sample query faster 
-    cursor.execute(f"""CREATE UNIQUE INDEX idx_sample_has_variant ON sample_has_variant (sample_id,variant_id)""")
+    #  create index to make sample query faster
+    cursor.execute(
+        f"""CREATE UNIQUE INDEX idx_sample_has_variant ON sample_has_variant (sample_id,variant_id)"""
+    )
 
-    # create selections 
-    insert_selection(conn, name = "all", count = count)
-
+    # create selections
+    insert_selection(conn, name="all", count=count)
 
 
 ## ================ Fields functions =============================
+
 
 def create_table_samples(conn):
     """
@@ -330,7 +340,7 @@ def create_table_samples(conn):
     conn.commit()
 
 
-def insert_sample(conn, name = "no_name"):
+def insert_sample(conn, name="no_name"):
     """
     Insert one sample in sample table 
 
@@ -339,7 +349,7 @@ def insert_sample(conn, name = "no_name"):
     """
     cursor = conn.cursor()
     cursor.execute(""" INSERT INTO samples VALUES (:name) """, {"name": name})
-    
+
     conn.commit()
     return cursor.lastrowid
 
@@ -356,4 +366,3 @@ def get_samples(conn):
     for row in cursor.execute("""SELECT name FROM samples"""):
         record["name"] = row[0]
         yield record
-
