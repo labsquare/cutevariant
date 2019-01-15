@@ -70,9 +70,11 @@ for idx, (vql, expected) in enumerate(VQL_TO_TREE_CASES.items(), start=1):
 
 # test exceptions returned by VQL
 MALFORMED_VQL_CASES = {
-    "": ("no select clause", -1),
+    "": ("no SELECT clause", -1),
     "SELECT chr,pos,ref FROM": ("empty 'FROM' clause", 24),
-    "SELECT chr,,ref FROM": ("invalid identifier '' in SELECT clause", 12),
+    "SELECT chr,,ref FROM": ("invalid empty identifier in SELECT clause", 12),
+    "SELECT c FROM v WHERE a=": ("invalid value in WHERE clause", 25),
+    "SELECT c FROM v WHERE a?=3": ("invalid operator in WHERE clause", 24),
 }
 
 
