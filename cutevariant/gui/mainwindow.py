@@ -8,6 +8,7 @@ from cutevariant.gui.viewquerywidget import ViewQueryWidget
 from cutevariant.gui.columnquerywidget import ColumnQueryWidget
 from cutevariant.gui.filterquerywidget import FilterQueryWidget
 from cutevariant.gui.selectionquerywidget import SelectionQueryWidget
+from cutevariant.gui.vqleditor import VqlEditor
 
 from cutevariant.gui.queryrouter import QueryRouter
 
@@ -25,6 +26,7 @@ class MainWindow(QMainWindow):
         self.filter_widget = FilterQueryWidget()
         self.selection_widget = SelectionQueryWidget()
         self.tab_view = QTabWidget()
+        self.editor = VqlEditor()
 
         # Init router
         self.router = QueryRouter()
@@ -32,12 +34,18 @@ class MainWindow(QMainWindow):
         self.router.addWidget(self.column_widget)
         self.router.addWidget(self.filter_widget)
         self.router.addWidget(self.selection_widget)
+        self.router.addWidget(self.editor)
 
         #  Init panel
         self.addPanel(self.column_widget)
         self.addPanel(self.filter_widget)
         self.addPanel(self.selection_widget)
-        self.setCentralWidget(self.tab_view)
+
+        vsplit = QSplitter(Qt.Vertical)
+        vsplit.addWidget(self.tab_view)
+        vsplit.addWidget(self.editor)
+
+        self.setCentralWidget(vsplit)
 
         # Setup Actions
         self.setupActions()
