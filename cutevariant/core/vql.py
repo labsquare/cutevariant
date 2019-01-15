@@ -162,7 +162,7 @@ def error_message_from_err(
     # print(err.filename)
     # print(err.expected_rules)
     if "'SELECT'" in err.message:  # was awaiting for a SELECT clause
-        return "no select clause", -1
+        return "no SELECT clause", -1
     if err.message.endswith("=> 's,ref FROM*'."):
         return "empty 'FROM' clause", err.col
     if (
@@ -170,7 +170,17 @@ def error_message_from_err(
         and len(err.expected_rules) == 1
         and type(err.expected_rules[0]).__name__ == "RegExMatch"
     ):
-        return "invalid identifier '' in SELECT clause", err.col
+        return "invalid empty identifier in SELECT clause", err.col
+    if (
+        "Expected INT " in err.message
+        and len(err.expected_rules) == 3
+    ):
+        return "invalid value in WHERE clause", err.col
+    if (
+        "Expected '==|>=|<=|!=" in err.message
+        and len(err.expected_rules) == 1
+    ):
+        return "invalid operator in WHERE clause", err.col
 
     raise err  # error not handled. Just raise it
 
