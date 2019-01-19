@@ -4,24 +4,35 @@ import sqlite3
 from .readerfactory import ReaderFactory
 from .sql import *
 
+def async_import_file(conn, filename):
+    """
+    Import filename into sqlite connection
 
-def import_file(conn, filename):
+    :param conn: sqlite connection
+    :param filenaame: variant filename 
 
-    print("import file ", filename)
+    :return: yield progression and message
+
+    """
+
 
     reader = ReaderFactory.create_reader(filename)
 
+    yield 0, "create table shema"
     #  Create table fields
     create_table_fields(conn)
 
     # Create table samples
     create_table_samples(conn)
 
+
     #  Create variants tables
     create_table_variants(conn, reader.get_fields())
 
     #  Create selection
     create_table_selections(conn)
+
+    yield 0, "insert samples"
 
     #  insert samples
     for sample in reader.get_samples():
@@ -36,3 +47,14 @@ def import_file(conn, filename):
     # session.add(Selection(name="favoris", description="favoris", count = 0))
 
     # session.commit()
+
+
+
+
+def import_file(conn, filename):
+    for progress,message in async_import_file(conn, filename):
+        # don't show message 
+        pass 
+        
+
+
