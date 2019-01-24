@@ -11,9 +11,13 @@ import itertools
 from pprint import pprint
 
 
-CLAUSES = ('select', 'from', 'where', 'using')
-OPERATOR_PRECEDENCE = {op: (precedence, subprecedence)
-                       for precedence, ops in enumerate(map(str.split, """
+CLAUSES = ("select", "from", "where", "using")
+OPERATOR_PRECEDENCE = {
+    op: (precedence, subprecedence)
+    for precedence, ops in enumerate(
+        map(
+            str.split,
+            """
     ||
     *    /    %
     +    -
@@ -22,31 +26,36 @@ OPERATOR_PRECEDENCE = {op: (precedence, subprecedence)
     =    ==   !=   <>   IS   IS NOT   IN   LIKE   GLOB   MATCH   REGEXP
     AND  XOR
     OR
-""".splitlines())) for subprecedence, op in enumerate(ops)}
-def precedence(one:operator, two:operator) -> operator:
-    return one if OPERATOR_PRECEDENCE[one] >= OPERATOR_PRECEDENCE[two] else two
-
-OPERATOR_FROM_LEXEM = {
-    '==': '=',
-    '=/=': '!=',
-    'and': 'AND',
-    'or': 'OR',
-    'xor': 'XOR',
+""".splitlines(),
+        )
+    )
+    for subprecedence, op in enumerate(ops)
 }
 
 
-def model_class(name:str, bases:tuple, attrs:dict) -> type:
+def precedence(one: operator, two: operator) -> operator:
+    return one if OPERATOR_PRECEDENCE[one] >= OPERATOR_PRECEDENCE[two] else two
+
+
+OPERATOR_FROM_LEXEM = {"==": "=", "=/=": "!=", "and": "AND", "or": "OR", "xor": "XOR"}
+
+
+def model_class(name: str, bases: tuple, attrs: dict) -> type:
     """Metaclass to automatically build the __init__ to get the properties,
     and register the class for metamodel
     """
-    if '__init__' not in attrs:
+    if "__init__" not in attrs:
+
         def __init__(self, *args, **kwargs):
             for field, value in kwargs.items():
                 setattr(self, field, value)
-        attrs['__init__'] = __init__
+
+        attrs["__init__"] = __init__
     cls = type(name, bases, attrs)
     model_class.classes.append(cls)
     return cls
+
+
 model_class.classes = []
 
 
@@ -55,15 +64,17 @@ class RawCondition(metaclass=model_class):
     @property
     def value(self):
         return {
-            'field': self.id.id,
-            'operator': OPERATOR_FROM_LEXEM.get(self.op.op, self.op.op),
-            'value': self.val if isinstance(self.val, (str, int)) else self.val.id
+            "field": self.id.id,
+            "operator": OPERATOR_FROM_LEXEM.get(self.op.op, self.op.op),
+            "value": self.val if isinstance(self.val, (str, int)) else self.val.id,
         }
+
 
 class ParenExpr(metaclass=model_class):
     @property
     def value(self):
         return self.expression.value
+
 
 class BaseExpr(metaclass=model_class):
     @property
@@ -75,33 +86,35 @@ class BaseExpr(metaclass=model_class):
             stack.extend(operation.value)
         return stack
 
+
 class Operation(metaclass=model_class):
     @property
     def value(self):
         return (self.op.value, self.remaining.value)
+
 
 class BoolOperator(metaclass=model_class):
     @property
     def value(self):
         return OPERATOR_FROM_LEXEM.get(self.op, self.op)
 
+
 class Tuple(metaclass=model_class):
     @property
     def id(self):
-        return '({})'.format(', '.join(item.id for item in self.items))
+        return "({})".format(", ".join(item.id for item in self.items))
 
 
-METAMODEL = textx.metamodel_from_file('vql.tx', classes=model_class.classes,
-                                      debug=False)
+METAMODEL = textx.metamodel_from_file(
+    "vql.tx", classes=model_class.classes, debug=False
+)
 
 
 class VQLSyntaxError(ValueError):
     pass
 
 
-
-
-def model_from_string(raw_vql:str) -> dict:
+def model_from_string(raw_vql: str) -> dict:
     try:
         raw_model = METAMODEL.model_from_str(raw_vql)
     except textx.exceptions.TextXSyntaxError as err:
@@ -110,16 +123,18 @@ def model_from_string(raw_vql:str) -> dict:
     for clause in CLAUSES:
         value = getattr(raw_model, clause)
         if value is not None:
-            model[clause] = globals()[f'compile_{clause}_from_raw_model'](value)
-    print('MODEL:', model)
+            model[clause] = globals()[f"compile_{clause}_from_raw_model"](value)
+    print("MODEL:", model)
     return model
 
 
 def compile_select_from_raw_model(raw_model) -> dict or tuple:
     return tuple(column.id for column in raw_model.columns)
 
+
 def compile_from_from_raw_model(raw_model) -> dict or tuple:
     return raw_model.source.id
+
 
 def compile_where_from_raw_model(raw_model) -> dict or tuple:
     expr = raw_model.expression
@@ -128,12 +143,14 @@ def compile_where_from_raw_model(raw_model) -> dict or tuple:
     # print('TREE:', tree)
     return tree
 
+
 def compile_using_from_raw_model(raw_model) -> dict or tuple:
     return (raw_model.filename.id,)
 
 
-def error_message_from_err(err:textx.exceptions.TextXSyntaxError,
-                           raw_vql:str) -> (str, int):
+def error_message_from_err(
+    err: textx.exceptions.TextXSyntaxError, raw_vql: str
+) -> (str, int):
     """Return human-readable information and index in raw_sql query
     about the given exception"""
     # print(err)
@@ -148,45 +165,54 @@ def error_message_from_err(err:textx.exceptions.TextXSyntaxError,
         return "no select clause", -1
     if err.message.endswith("=> 's,ref FROM*'."):
         return "empty 'FROM' clause", err.col
-    if ',*,' in err.message and len(err.expected_rules) == 1 and type(err.expected_rules[0]).__name__ == 'RegExMatch':
+    if (
+        ",*," in err.message
+        and len(err.expected_rules) == 1
+        and type(err.expected_rules[0]).__name__ == "RegExMatch"
+    ):
         return "invalid identifier '' in SELECT clause", err.col
 
     raise err  # error not handled. Just raise it
 
 
-def dicttree_from_infix_nested_stack(stack:list) -> dict:
+def dicttree_from_infix_nested_stack(stack: list) -> dict:
     "Return the dict tree computed from the infix nested stack yielded by metamodel"
     # Algorithm:
     #   expand nested structure, place parens
     #   build the postfix representation
     #   build tree as dict from postfix
-    def expand(obj:list or tuple or ...) -> list:
+    def expand(obj: list or tuple or ...) -> list:
         if isinstance(obj, (list, tuple)):
-            return ('(', *itertools.chain(*map(expand, obj)), ')')
-        return obj,
+            return ("(", *itertools.chain(*map(expand, obj)), ")")
+        return (obj,)
 
-    def as_postfix(tokens:list) -> iter:
+    def as_postfix(tokens: list) -> iter:
         "Yield the output describing the postfix notation of given list"
         operators = []  # stack of operator
         for token in tokens:
-            print('TOKEN:', type(token), token)
+            print("TOKEN:", type(token), token)
             if isinstance(token, dict):  # it's a condition, like a=3
                 yield token
             elif token in OPERATOR_PRECEDENCE:  # it's an operator
-                while operators and operators[-1] != '(' and precedence(token, operators[-1]):
+                while (
+                    operators
+                    and operators[-1] != "("
+                    and precedence(token, operators[-1])
+                ):
                     yield operators.pop()
                 operators.append(token)
-            elif token == '(':
+            elif token == "(":
                 operators.append(token)
-            elif token == ')':
-                while operators and operators[-1] != '(':
+            elif token == ")":
+                while operators and operators[-1] != "(":
                     yield operators.pop()
-                if operators[-1] == '(':  operators.pop()
+                if operators[-1] == "(":
+                    operators.pop()
             else:
                 raise VQLSyntaxError(f"Unexpected token: {token}")
         yield from operators
 
-    def as_tree(postfix:list) -> dict:
+    def as_tree(postfix: list) -> dict:
         "Return the dict describing the n-ary syntax tree"
         tree = {}
         operandes = []

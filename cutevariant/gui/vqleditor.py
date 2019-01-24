@@ -8,7 +8,6 @@ from cutevariant.core import Query
 from cutevariant.core import sql
 
 
-
 class VqlEditor(AbstractQueryWidget):
     def __init__(self):
         super().__init__()
@@ -21,8 +20,6 @@ class VqlEditor(AbstractQueryWidget):
 
         self.text_edit.textChanged.connect(self.changed)
 
-
-
     def setQuery(self, query: Query):
         """ Method override from AbstractQueryWidget"""
         print("salut")
@@ -32,6 +29,5 @@ class VqlEditor(AbstractQueryWidget):
     def getQuery(self):
         """ Method override from AbstractQueryWidget"""
         query = self.query.from_vql(self.text_edit.toPlainText())
-        
 
         return self.query
