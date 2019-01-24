@@ -261,6 +261,7 @@ def insert_many_variants(conn, data):
     :param conn: sqlite3.connect
     :param data: list of variant dictionnary which contains same number of key than fields numbers. 
 
+
     :Example: 
 
     insert_many_variant(conn, [{chr:"chr1", pos:24234, alt:"A","ref":T }]) 

@@ -195,7 +195,6 @@ class Query:
         self.filter = model.get("where")  # None if no filter
         # TODO: USING clause missing
 
-
         print("from vql", model)
 
         ##-----------------------------------------------------------------------------------------------------------

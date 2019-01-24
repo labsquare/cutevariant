@@ -4,6 +4,50 @@
 		"selected_items":
 		[
 			[
+				"as",
+				"async_import_file\tfunction"
+			],
+			[
+				"fr",
+				"from_vql\tfunction"
+			],
+			[
+				"setPla",
+				"setPlainText\tfunction"
+			],
+			[
+				"ma",
+				"main_layout\tstatement"
+			],
+			[
+				"Fil",
+				"FilterType\tclass"
+			],
+			[
+				"Fi",
+				"FilterType\tclass"
+			],
+			[
+				"Filt",
+				"FilterType\tclass"
+			],
+			[
+				"Filter",
+				"FilterType\tclass"
+			],
+			[
+				"mapFr",
+				"mapFromGlobal\tfunction"
+			],
+			[
+				"add",
+				"addSeparator\tfunction"
+			],
+			[
+				"setChe",
+				"setCheckState\tfunction"
+			],
+			[
 				"view",
 				"view_widgets\tstatement"
 			],
@@ -220,16 +264,8 @@
 				"fromItem\tfunction"
 			],
 			[
-				"Filter",
-				"FilterQueryModel\tclass"
-			],
-			[
 				"setWindowTi",
 				"setWindowTitle\tfunction"
-			],
-			[
-				"Fil",
-				"FilterQueryWidget\tclass"
 			],
 			[
 				"Qu",
@@ -478,42 +514,6 @@
 			[
 				"impor",
 				"import_layout\tstatement"
-			],
-			[
-				"QWizard",
-				"QWizardPage\tclass"
-			],
-			[
-				"connec",
-				"connect\tPyQt Functions"
-			],
-			[
-				"butt",
-				"butt\tstatement"
-			],
-			[
-				"init",
-				"init\tPyQt Functions"
-			],
-			[
-				"PyQt",
-				"PyQt5.Qt\tPyQt import"
-			],
-			[
-				"QAbstractItem",
-				"QAbstractItemModel\tPyQt Classes"
-			],
-			[
-				"info",
-				"info\tPyQt Functions"
-			],
-			[
-				"categor",
-				"category\tPyQt Functions"
-			],
-			[
-				"set",
-				"setattr\tfunction"
 			]
 		]
 	},
@@ -523,16 +523,7 @@
 			"file": "tests/test_query.py",
 			"settings":
 			{
-				"buffer_size": 3110,
-				"encoding": "UTF-8",
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "cutevariant/core/sql.py",
-			"settings":
-			{
-				"buffer_size": 9035,
+				"buffer_size": 3694,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
@@ -541,7 +532,7 @@
 			"file": "tests/test_sql.py",
 			"settings":
 			{
-				"buffer_size": 5161,
+				"buffer_size": 5331,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
@@ -550,7 +541,7 @@
 			"file": "cutevariant/core/query.py",
 			"settings":
 			{
-				"buffer_size": 7214,
+				"buffer_size": 7596,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
@@ -559,7 +550,16 @@
 			"file": "cutevariant/core/importer.py",
 			"settings":
 			{
-				"buffer_size": 935,
+				"buffer_size": 1307,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "cutevariant/core/sql.py",
+			"settings":
+			{
+				"buffer_size": 9100,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
@@ -568,7 +568,7 @@
 			"file": "tests/test_import.py",
 			"settings":
 			{
-				"buffer_size": 452,
+				"buffer_size": 445,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
@@ -577,7 +577,7 @@
 			"file": "tests/test_reader.py",
 			"settings":
 			{
-				"buffer_size": 1559,
+				"buffer_size": 1822,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
@@ -586,7 +586,7 @@
 			"file": "cutevariant/gui/mainwindow.py",
 			"settings":
 			{
-				"buffer_size": 3089,
+				"buffer_size": 3322,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
@@ -615,7 +615,7 @@
 			"file": "cutevariant/core/reader/vcfreader.py",
 			"settings":
 			{
-				"buffer_size": 3742,
+				"buffer_size": 3734,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
@@ -633,8 +633,16 @@
 			"file": "cutevariant/gui/columnquerywidget.py",
 			"settings":
 			{
-				"buffer_size": 1685,
+				"buffer_size": 1787,
 				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "cutevariant/gui/vqleditor.py",
+			"settings":
+			{
+				"buffer_size": 937,
 				"line_ending": "Unix"
 			}
 		},
@@ -648,13 +656,28 @@
 			}
 		},
 		{
-			"contents": "from PySide2.QtWidgets import *\nfrom PySide2.QtCore import *\nfrom PySide2.QtGui import *\n\n\nfrom .abstractquerywidget import AbstractQueryWidget\nfrom cutevariant.core import Query\nfrom cutevariant.core import sql\n\n\nclass SelectionQueryModel(QStandardItemModel):\n    def __init__(self):\n        super().__init__()\n        self.setColumnCount(2)\n\n    def setQuery(self, query: Query):\n         self.clear()\n         self.query = query\n\n         for record in sql.get_selections(query.conn):\n            name_item = QStandardItem(record[\"name\"])\n            count_item = QStandardItem(str(record[\"count\"]))\n\n\n            self.appendRow([name_item, count_item])\n\n\n\n\n\nclass SelectionQueryWidget(AbstractQueryWidget):\n    def __init__(self):\n        super().__init__()\n\n        self.setWindowTitle(\"Selections\")\n        self.view = QTreeView()\n        self.model = SelectionQueryModel()\n        self.view.setModel(self.model)\n\n        layout = QVBoxLayout()\n\n        layout.addWidget(self.view)\n        self.setLayout(layout)\n\n        self.view.selectionModel().currentRowChanged.connect(self.changed)\n\n\n\n    def setQuery(self, query: Query):\n        \"\"\" Method override from AbstractQueryWidget\"\"\"\n        self.model.setQuery(query)\n\n        \n\n\n    def getQuery(self):\n        \"\"\" Method override from AbstractQueryWidget\"\"\"\n\n        item = self.model.item(self.view.selectionModel().currentIndex().row())\n\n        query = self.model.query \n        query.selection = item.text()\n\n        return query\n",
 			"file": "cutevariant/gui/selectionquerywidget.py",
-			"file_size": 1502,
-			"file_write_time": 131917899079812155,
 			"settings":
 			{
-				"buffer_size": 1495,
+				"buffer_size": 1474,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/media/sacha/Linux_data/dev/mucobiome/Snakefile",
+			"settings":
+			{
+				"buffer_size": 6482,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/media/sacha/Linux_data/dev/mucobiome/scripts/make_biom2.py",
+			"settings":
+			{
+				"buffer_size": 1692,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
@@ -663,7 +686,7 @@
 			"file": "cutevariant/gui/filterquerywidget.py",
 			"settings":
 			{
-				"buffer_size": 4434,
+				"buffer_size": 5074,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
@@ -681,7 +704,7 @@
 			"file": "__main__.py",
 			"settings":
 			{
-				"buffer_size": 271,
+				"buffer_size": 254,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
@@ -698,7 +721,7 @@
 			"file": "tests/utils.py",
 			"settings":
 			{
-				"buffer_size": 430,
+				"buffer_size": 447,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
@@ -1290,6 +1313,7 @@
 	],
 	"file_history":
 	[
+		"/home/sacha/Dev/CuteVariant-python/cutevariant/core/sql.py",
 		"/home/sacha/Dev/CuteVariant-python/cutevariant/core/query.py",
 		"/home/sacha/.zshrc",
 		"/home/sacha/Dev/CuteVariant-python/cutevariant/gui/queryrouter.py",
@@ -1416,8 +1440,7 @@
 		"/home/sacha/Dev/blog/content/post21.md",
 		"/home/sacha/Dev/blog/content/rusty_lake.md",
 		"/home/sacha/Dev/blog/content/post7.md",
-		"/home/sacha/test.prolog",
-		"/home/sacha/Dev/biostar/test.py"
+		"/home/sacha/test.prolog"
 	],
 	"find":
 	{
@@ -1436,6 +1459,7 @@
 		"case_sensitive": true,
 		"find_history":
 		[
+			"raw.bio",
 			"self.filter",
 			"selection",
 			"insert_many",
@@ -1531,7 +1555,7 @@
 	"groups":
 	[
 		{
-			"selected": 14,
+			"selected": 3,
 			"sheets":
 			[
 				{
@@ -1540,7 +1564,7 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 3110,
+						"buffer_size": 3694,
 						"regions":
 						{
 						},
@@ -1597,84 +1621,16 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 8,
+					"stack_index": 9,
 					"type": "text"
 				},
 				{
 					"buffer": 1,
-					"file": "cutevariant/core/sql.py",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 9035,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								1847,
-								1847
-							]
-						],
-						"settings":
-						{
-							"auto_complete_triggers":
-							[
-								{
-									"characters": ".>:",
-									"selector": "source.c++ - string - comment - constant.numeric"
-								},
-								{
-									"characters": ".>:",
-									"selector": "source.c - string - comment - constant.numeric"
-								},
-								{
-									"characters": ".>: ",
-									"selector": "source.objc++ - string - comment - constant.numeric"
-								},
-								{
-									"characters": ".>: ",
-									"selector": "source.objc - string - comment - constant.numeric"
-								},
-								{
-									"characters": ".>: ",
-									"selector": "source.cuda-c++ - string - comment - constant.numeric"
-								},
-								{
-									"characters": ".",
-									"selector": "source.python - string - constant.numeric"
-								},
-								{
-									"characters": ".",
-									"selector": "source.python - string - constant.numeric"
-								},
-								{
-									"characters": ".",
-									"selector": "source.python - string - constant.numeric"
-								}
-							],
-							"incomplete_sync": null,
-							"remote_loading": false,
-							"synced": false,
-							"syntax": "Packages/Python/Python.sublime-syntax",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 650.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 10,
-					"type": "text"
-				},
-				{
-					"buffer": 2,
 					"file": "tests/test_sql.py",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 5161,
+						"buffer_size": 5331,
 						"regions":
 						{
 						},
@@ -1733,24 +1689,24 @@
 						"translation.y": 1326.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 9,
+					"stack_index": 15,
 					"type": "text"
 				},
 				{
-					"buffer": 3,
+					"buffer": 2,
 					"file": "cutevariant/core/query.py",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 7214,
+						"buffer_size": 7596,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								6573,
-								6573
+								7248,
+								7248
 							]
 						],
 						"settings":
@@ -1780,6 +1736,10 @@
 								{
 									"characters": ".",
 									"selector": "source.python - string - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
 								}
 							],
 							"incomplete_sync": null,
@@ -1790,27 +1750,27 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 2775.0,
+						"translation.y": 2907.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 3,
+					"stack_index": 4,
 					"type": "text"
 				},
 				{
-					"buffer": 4,
+					"buffer": 3,
 					"file": "cutevariant/core/importer.py",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 935,
+						"buffer_size": 1307,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								479,
-								479
+								307,
+								306
 							]
 						],
 						"settings":
@@ -1844,6 +1804,10 @@
 								{
 									"characters": ".",
 									"selector": "source.python - string - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
 								}
 							],
 							"incomplete_sync": null,
@@ -1854,10 +1818,43 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 2.0,
+						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 11,
+					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "cutevariant/core/sql.py",
+					"semi_transient": true,
+					"settings":
+					{
+						"buffer_size": 9100,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"incomplete_sync": null,
+							"remote_loading": false,
+							"synced": false,
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 2465.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
 					"type": "text"
 				},
 				{
@@ -1866,15 +1863,15 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 452,
+						"buffer_size": 445,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								248,
-								248
+								282,
+								282
 							]
 						],
 						"settings":
@@ -1900,6 +1897,10 @@
 								{
 									"characters": ".>: ",
 									"selector": "source.cuda-c++ - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
 								},
 								{
 									"characters": ".",
@@ -1920,7 +1921,7 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 12,
+					"stack_index": 1,
 					"type": "text"
 				},
 				{
@@ -1929,7 +1930,7 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 1559,
+						"buffer_size": 1822,
 						"regions":
 						{
 						},
@@ -1979,7 +1980,7 @@
 						"translation.y": 459.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 17,
+					"stack_index": 20,
 					"type": "text"
 				},
 				{
@@ -1988,15 +1989,15 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 3089,
+						"buffer_size": 3322,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								2304,
-								2304
+								1288,
+								1288
 							]
 						],
 						"settings":
@@ -2030,6 +2031,10 @@
 								{
 									"characters": ".",
 									"selector": "source.python - string - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
 								}
 							],
 							"complete_parameters": false,
@@ -2041,10 +2046,10 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 867.0,
+						"translation.y": 255.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 2,
+					"stack_index": 5,
 					"type": "text"
 				},
 				{
@@ -2104,7 +2109,7 @@
 						"translation.y": 510.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 7,
+					"stack_index": 14,
 					"type": "text"
 				},
 				{
@@ -2135,7 +2140,7 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 14,
+					"stack_index": 17,
 					"type": "text"
 				},
 				{
@@ -2144,7 +2149,7 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 3742,
+						"buffer_size": 3734,
 						"regions":
 						{
 						},
@@ -2168,7 +2173,7 @@
 						"translation.y": 765.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 4,
+					"stack_index": 13,
 					"type": "text"
 				},
 				{
@@ -2199,7 +2204,7 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 15,
+					"stack_index": 18,
 					"type": "text"
 				},
 				{
@@ -2208,15 +2213,79 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 1685,
+						"buffer_size": 1787,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								1239,
-								1239
+								1787,
+								1787
+							]
+						],
+						"settings":
+						{
+							"auto_complete_triggers":
+							[
+								{
+									"characters": ".>:",
+									"selector": "source.c++ - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".>:",
+									"selector": "source.c - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".>: ",
+									"selector": "source.objc++ - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".>: ",
+									"selector": "source.objc - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".>: ",
+									"selector": "source.cuda-c++ - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								}
+							],
+							"incomplete_sync": null,
+							"remote_loading": false,
+							"synced": false,
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 124.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 6,
+					"type": "text"
+				},
+				{
+					"buffer": 13,
+					"file": "cutevariant/gui/vqleditor.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 937,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								921,
+								921
 							]
 						],
 						"settings":
@@ -2256,14 +2325,14 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 204.0,
+						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 5,
+					"stack_index": 3,
 					"type": "text"
 				},
 				{
-					"buffer": 13,
+					"buffer": 14,
 					"file": "cutevariant/gui/queryrouter.py",
 					"semi_transient": false,
 					"settings":
@@ -2289,19 +2358,19 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 204.0,
+						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 6,
+					"stack_index": 7,
 					"type": "text"
 				},
 				{
-					"buffer": 14,
+					"buffer": 15,
 					"file": "cutevariant/gui/selectionquerywidget.py",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 1495,
+						"buffer_size": 1474,
 						"regions":
 						{
 						},
@@ -2350,24 +2419,80 @@
 						"translation.y": 357.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 0,
+					"stack_index": 12,
 					"type": "text"
 				},
 				{
-					"buffer": 15,
-					"file": "cutevariant/gui/filterquerywidget.py",
+					"buffer": 16,
+					"file": "/media/sacha/Linux_data/dev/mucobiome/Snakefile",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 4434,
+						"buffer_size": 6482,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								759,
-								759
+								2144,
+								2144
+							]
+						],
+						"settings":
+						{
+							"auto_complete_triggers":
+							[
+								{
+									"characters": ".>:",
+									"selector": "source.c++ - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".>:",
+									"selector": "source.c - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".>: ",
+									"selector": "source.objc++ - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".>: ",
+									"selector": "source.objc - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".>: ",
+									"selector": "source.cuda-c++ - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								}
+							],
+							"incomplete_sync": null,
+							"syntax": "Packages/Python/Python.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 1279.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 11,
+					"type": "text"
+				},
+				{
+					"buffer": 17,
+					"file": "/media/sacha/Linux_data/dev/mucobiome/scripts/make_biom2.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1692,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								492,
+								492
 							]
 						],
 						"settings":
@@ -2407,14 +2532,78 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 204.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 1,
+					"stack_index": 10,
 					"type": "text"
 				},
 				{
-					"buffer": 16,
+					"buffer": 18,
+					"file": "cutevariant/gui/filterquerywidget.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 5074,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								4434,
+								4434
+							]
+						],
+						"settings":
+						{
+							"auto_complete_triggers":
+							[
+								{
+									"characters": ".>:",
+									"selector": "source.c++ - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".>:",
+									"selector": "source.c - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".>: ",
+									"selector": "source.objc++ - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".>: ",
+									"selector": "source.objc - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".>: ",
+									"selector": "source.cuda-c++ - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								}
+							],
+							"incomplete_sync": null,
+							"remote_loading": false,
+							"synced": false,
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 2279.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 8,
+					"type": "text"
+				},
+				{
+					"buffer": 19,
 					"file": "cutevariant/core/readerfactory.py",
 					"semi_transient": false,
 					"settings":
@@ -2443,16 +2632,16 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 16,
+					"stack_index": 19,
 					"type": "text"
 				},
 				{
-					"buffer": 17,
+					"buffer": 20,
 					"file": "__main__.py",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 271,
+						"buffer_size": 254,
 						"regions":
 						{
 						},
@@ -2474,11 +2663,11 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 13,
+					"stack_index": 16,
 					"type": "text"
 				},
 				{
-					"buffer": 18,
+					"buffer": 21,
 					"semi_transient": false,
 					"settings":
 					{
@@ -2503,16 +2692,16 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 18,
+					"stack_index": 21,
 					"type": "text"
 				},
 				{
-					"buffer": 19,
+					"buffer": 22,
 					"file": "tests/utils.py",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 430,
+						"buffer_size": 447,
 						"regions":
 						{
 						},
@@ -2561,7 +2750,7 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 19,
+					"stack_index": 22,
 					"type": "text"
 				}
 			]
@@ -2636,6 +2825,14 @@
 		"selected_items":
 		[
 			[
+				"quer",
+				"cutevariant/core/query.py"
+			],
+			[
+				"main",
+				"cutevariant/gui/mainwindow.py"
+			],
+			[
 				"filterw",
 				"cutevariant/gui/filterquerywidget.py"
 			],
@@ -2668,16 +2865,8 @@
 				"cutevariant/core/model.py"
 			],
 			[
-				"main",
-				"cutevariant/gui/mainwindow.py"
-			],
-			[
 				"mai",
 				"cutevariant/gui/mainwindow.py"
-			],
-			[
-				"quer",
-				"cutevariant/gui/queryrouter.py"
 			],
 			[
 				"ab",
