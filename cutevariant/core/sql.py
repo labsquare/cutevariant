@@ -1,5 +1,5 @@
 import sqlite3
-
+import sys
 
 def drop_table(conn, table_name):
     c = conn.cursor()

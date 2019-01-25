@@ -5,6 +5,7 @@ class AbstractReader(ABC):
     def __init__(self, device):
         super(AbstractReader, self).__init__()
         self.device = device
+        self.file_size = 0
 
     @abstractclassmethod
     def get_variants(self):

@@ -42,7 +42,9 @@ def async_import_file(conn, filename):
         insert_many_fields(conn, reader.get_fields())
         yield 100, "insert fields"
         
+        yield 0, "insert variants"
         insert_many_variants(conn, reader.get_variants())
+        yield 100, "insert variants"
 
     # # Create default selection
     # session.add(Selection(name="all", description="all variant", count = variant_count))
