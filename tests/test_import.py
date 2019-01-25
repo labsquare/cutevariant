@@ -12,11 +12,16 @@ def conn():
     return sqlite3.connect(":memory:")
 
 
-def test_import_file(conn):
+def test_import_file_vcf(conn):
     path = "exemples/test.vcf"
     import_file(conn, path)
 
-    record = (
-        conn.cursor().execute(f"SELECT * FROM selections WHERE name = 'all'").fetchone()
-    )
-    print("record", record)
+
+
+def test_import_file_vcf_gz(conn):
+    path = "exemples/test.vcf.gz"
+    import_file(conn, path)
+
+def test_import_file_csv(conn):
+    path = "exemples/test.csv"
+    import_file(conn, path)
