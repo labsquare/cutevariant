@@ -248,8 +248,10 @@ def create_table_variants(conn, fields):
     )
     cursor.execute(f"""CREATE TABLE variants ({variant_shema})""")
     cursor.execute(
-        f"""CREATE TABLE sample_has_variant (sample_id INTEGER, variant_id, gt INTEGER DEFAULT -1 )"""
+        f"""CREATE TABLE sample_has_variant (sample_id INTEGER, variant_id INTEGER, gt INTEGER DEFAULT -1 )"""
     )
+
+    #cursor.execute(f"""CREATE INDEX sample_has_variant_ids ON sample_has_variant (variant_id, sample_id)""")
 
     conn.commit()
 
