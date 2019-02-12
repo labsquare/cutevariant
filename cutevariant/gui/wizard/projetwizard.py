@@ -91,7 +91,6 @@ class ImportPage(QWizardPage):
 		
 		m_layout.addLayout(v_layout)
 		m_layout.addWidget(self.tab_widget)
-
 		self.setLayout(m_layout)
 
 		self.log_edit.appendPlainText(self.field("filename"))
