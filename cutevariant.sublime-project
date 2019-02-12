@@ -34,10 +34,10 @@
 		"anaconda_linting": false,
 		"anaconda_linting_behaviour": "always",
 		"pep257": false,
-		"python_interpreter": "/home/sacha/Dev/CuteVariant-python/venv/bin/python",
+		"python_interpreter": "/home/schutz/Dev/CuteVariant-python/venv/bin/python",
 		"test_command": "python -m pytest tests cutevariant -vv --doctest-module --ignore=venv",
-		"test_root": "/home/sacha/Dev/CuteVariant-python/",
-		"test_virtualenv": "/home/sacha/Dev/CuteVariant-python/venv/",
+		"test_root": "/home/schutz/Dev/CuteVariant-python/",
+		"test_virtualenv": "/home/schutz/Dev/CuteVariant-python/venv/",
 		"use_pylint": false
 	}
 }

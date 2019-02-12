@@ -4,6 +4,14 @@
 		"selected_items":
 		[
 			[
+				"pos",
+				"pos_to_pixel"
+			],
+			[
+				"gri",
+				"grid_size"
+			],
+			[
 				"pr",
 				"projet_id"
 			],
@@ -506,24 +514,25 @@
 			[
 				"propert",
 				"property\tPyQt Functions"
-			],
-			[
-				"resu",
-				"results\tPyQt Functions"
-			],
-			[
-				"QITem",
-				"QItemEditorFactory\tPyQt Classes"
 			]
 		]
 	},
 	"buffers":
 	[
 		{
-			"file": "/home/schutz/Dev/blog/content/entropy.md",
+			"file": "/DATA/Dev/deep/main.py",
 			"settings":
 			{
-				"buffer_size": 8816,
+				"buffer_size": 1592,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/DATA/Dev/blog/content/entropy.md",
+			"settings":
+			{
+				"buffer_size": 11010,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
@@ -532,7 +541,8 @@
 			"file": "/DATA/Dev/blog/Makefile",
 			"settings":
 			{
-				"buffer_size": 2930,
+				"buffer_size": 3019,
+				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
 		}
@@ -723,6 +733,10 @@
 			[
 				"link",
 				"Snippet: Markdown Hyperlink"
+			],
+			[
+				"update",
+				"Pelican: Update Modified Date"
 			],
 			[
 				"markdo",
@@ -957,10 +971,6 @@
 				"Pelican: Update Modified Date"
 			],
 			[
-				"update",
-				"Pelican: Update Modified Date"
-			],
-			[
 				"evernote",
 				"Evernote: Update Evernote Note"
 			],
@@ -1130,6 +1140,9 @@
 	],
 	"file_history":
 	[
+		"/home/schutz/Dev/blog/content/entropy.md",
+		"/DATA/Dev/blog/Makefile",
+		"/DATA/Dev/CuteVariant-python/cutevariant/core/sql.py",
 		"/tmp/sublime-sftp-browse-1549383047/genouest/home/genouest/cnrs_umr6290/sschutz/project/mucobiome/raw/cmd.sh",
 		"/DATA/Dev/CuteVariant-python/cutevariant/core/vql.tx",
 		"/tmp/sublime-sftp-browse-1549386720/genouest/home/genouest/cnrs_umr6290/sschutz/scratch/mucobiome/raw/mucobiome-manifest",
@@ -1138,7 +1151,6 @@
 		"/DATA/Dev/blog/content/gradient_descendant.md",
 		"/DATA/Dev/blog/content/distribution-ki2.md",
 		"/home/schutz/Dev/blog/pelican-themes/pure-single/static/css/pure.css",
-		"/home/schutz/Dev/blog/content/entropy.md",
 		"/home/schutz/Dev/CuteVariant-python/main.py",
 		"/home/schutz/Dev/CuteVariant-python/__main__.py",
 		"/DATA/Dev/CuteVariant-python/cutevariant/gui/mainwindow.py",
@@ -1164,7 +1176,6 @@
 		"/DATA/Dev/CuteVariant-python/cutevariant/gui/viewquerywidget.py",
 		"/DATA/Dev/CuteVariant-python/cutevariant/gui/queryrouter.py",
 		"/DATA/Dev/CuteVariant-python/cutevariant/gui/abstractquerywidget.py",
-		"/DATA/Dev/CuteVariant-python/cutevariant/core/sql.py",
 		"/DATA/Dev/CuteVariant-python/cutevariant/core/importer.py",
 		"/DATA/Dev/CuteVariant-python/__main__.py",
 		"/DATA/Dev/CuteVariant-python/cutevariant/core/readerfactory.py",
@@ -1256,12 +1267,11 @@
 		"/home/schutz/Dev/CuteVariant-python/cutevariant/gui/importwizard.py",
 		"/home/sacha/Dev/flo/test.py",
 		"/home/sacha/Dev/flo/demo.qml",
-		"/home/sacha/Dev/CuteVariant-python/cutevariant/gui/Test.py",
-		"/home/sacha/Dev/CuteVariant-python/cutevariant/gui/__init__.py"
+		"/home/sacha/Dev/CuteVariant-python/cutevariant/gui/Test.py"
 	],
 	"find":
 	{
-		"height": 59.0
+		"height": 51.0
 	},
 	"find_in_files":
 	{
@@ -1368,57 +1378,96 @@
 			[
 				{
 					"buffer": 0,
-					"file": "/home/schutz/Dev/blog/content/entropy.md",
+					"file": "/DATA/Dev/deep/main.py",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 8816,
+						"buffer_size": 1592,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								8704,
-								8704
+								196,
+								196
+							]
+						],
+						"settings":
+						{
+							"auto_complete_triggers":
+							[
+								{
+									"characters": ".",
+									"selector": "source.python - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								}
+							],
+							"git_gutter_is_enabled": false,
+							"incomplete_sync": null,
+							"syntax": "Packages/Python/Python.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 1440.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "/DATA/Dev/blog/content/entropy.md",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 11010,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								117,
+								117
 							]
 						],
 						"settings":
 						{
 							"git_gutter_is_enabled": true,
 							"incomplete_sync": null,
-							"remote_loading": false,
-							"synced": false,
-							"syntax": "Packages/MarkdownEditing/Markdown.sublime-syntax",
-							"translate_tabs_to_spaces": false
+							"syntax": "Packages/MarkdownEditing/Markdown.sublime-syntax"
 						},
 						"translation.x": 0.0,
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 1,
+					"stack_index": 0,
 					"type": "text"
 				},
 				{
-					"buffer": 1,
+					"buffer": 2,
 					"file": "/DATA/Dev/blog/Makefile",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 2930,
+						"buffer_size": 3019,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								12,
-								12
+								272,
+								272
 							]
 						],
 						"settings":
 						{
 							"git_gutter_is_enabled": true,
+							"incomplete_sync": null,
 							"remote_loading": false,
 							"synced": false,
 							"syntax": "Packages/Makefile/Makefile.sublime-syntax",
@@ -1428,7 +1477,7 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 0,
+					"stack_index": 1,
 					"type": "text"
 				}
 			]
