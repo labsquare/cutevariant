@@ -14,14 +14,19 @@ class SelectionQueryModel(QStandardItemModel):
         self.setColumnCount(2)
 
     def setQuery(self, query: Query):
-        self.clear()
         self.query = query
+        self.refresh()
 
-        for record in sql.get_selections(query.conn):
+    def refresh(self):
+        self.clear()
+        for record in sql.get_selections(self.query.conn):
             name_item = QStandardItem(record["name"])
             count_item = QStandardItem(str(record["count"]))
-
             self.appendRow([name_item, count_item])
+
+    def save_current_query(self, name):
+        sql.create_selection_from_sql(self.query.conn,name,self.query.sql())
+        self.refresh()
 
 
 class SelectionQueryWidget(AbstractQueryWidget):
@@ -53,3 +58,11 @@ class SelectionQueryWidget(AbstractQueryWidget):
         query.selection = item.text()
 
         return query
+
+    def save_current_query(self):
+
+        name, success = QInputDialog.getText(self, "type a name for selection","Selection name:", QLineEdit.Normal)
+
+        if success:
+            self.model.save_current_query(name)
+

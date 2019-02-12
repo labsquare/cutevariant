@@ -48,10 +48,26 @@ class QueryModel(QStandardItemModel):
             self.setPage(self.page - 1)
 
 
+class QueryDelegate(QStyledItemDelegate):
+
+
+    def paint(self,painter,option,index):
+        '''overriden'''
+        super().paint(painter,option,index)
+
+    def sizeHint(self,option,index):
+        '''override'''
+        return QSize(0,30)
+
+
 class ViewQueryWidget(AbstractQueryWidget):
+
+    save_clicked = Signal()
+
     def __init__(self):
         super().__init__()
         self.model = QueryModel()
+        self.delegate = QueryDelegate()
         # self.delegate = VariantDelegate()
         self.setWindowTitle("Variants")
         self.topbar = QToolBar()
@@ -60,6 +76,7 @@ class ViewQueryWidget(AbstractQueryWidget):
 
         self.view.setFrameStyle(QFrame.NoFrame)
         self.view.setModel(self.model)
+        self.view.setItemDelegate(self.delegate)
         # self.view.setItemDelegate(self.delegate)
 
         main_layout = QVBoxLayout()
@@ -69,7 +86,7 @@ class ViewQueryWidget(AbstractQueryWidget):
         main_layout.setContentsMargins(0, 0, 0, 0)
 
         # Construct top bar
-        self.topbar.addAction("test")
+        self.topbar.addAction("save")
 
         # Construct bottom bar
         self.page_info = QLabel()
@@ -94,6 +111,7 @@ class ViewQueryWidget(AbstractQueryWidget):
         self.setLayout(main_layout)
 
         self.model.modelReset.connect(self.updateInfo)
+        
 
     def setQuery(self, query: Query):
         """ Method override from AbstractQueryWidget"""
