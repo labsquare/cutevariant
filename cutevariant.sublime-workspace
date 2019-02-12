@@ -4,6 +4,10 @@
 		"selected_items":
 		[
 			[
+				"QWi",
+				"QWizardPage"
+			],
+			[
 				"pos",
 				"pos_to_pixel"
 			],
@@ -510,38 +514,34 @@
 			[
 				"cds_",
 				"cds_end"
-			],
-			[
-				"propert",
-				"property\tPyQt Functions"
 			]
 		]
 	},
 	"buffers":
 	[
 		{
-			"file": "/DATA/Dev/deep/main.py",
+			"file": "__main__.py",
 			"settings":
 			{
-				"buffer_size": 1592,
+				"buffer_size": 255,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
 		},
 		{
-			"file": "/DATA/Dev/blog/content/entropy.md",
+			"file": "cutevariant/gui/mainwindow.py",
 			"settings":
 			{
-				"buffer_size": 11010,
+				"buffer_size": 3376,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
 		},
 		{
-			"file": "/DATA/Dev/blog/Makefile",
+			"file": "cutevariant/gui/wizard/projetwizard.py",
 			"settings":
 			{
-				"buffer_size": 3019,
+				"buffer_size": 317,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
@@ -731,12 +731,20 @@
 		"selected_items":
 		[
 			[
-				"link",
-				"Snippet: Markdown Hyperlink"
+				"python",
+				"Set Syntax: Python"
+			],
+			[
+				"update mo",
+				"Pelican: Update Modified Date"
 			],
 			[
 				"update",
 				"Pelican: Update Modified Date"
+			],
+			[
+				"link",
+				"Snippet: Markdown Hyperlink"
 			],
 			[
 				"markdo",
@@ -917,10 +925,6 @@
 			[
 				"Package Control: ",
 				"Package Control: Add Repository"
-			],
-			[
-				"python",
-				"Set Syntax: Python"
 			],
 			[
 				"modi",
@@ -1134,14 +1138,19 @@
 	"expanded_folders":
 	[
 		"/DATA/Dev/CuteVariant-python/cutevariant",
-		"/DATA/Dev/CuteVariant-python/cutevariant/core",
-		"/DATA/Dev/CuteVariant-python/cutevariant/gui",
-		"/DATA/Dev/CuteVariant-python/tests"
+		"/DATA/Dev/CuteVariant-python/cutevariant/gui"
 	],
 	"file_history":
 	[
-		"/home/schutz/Dev/blog/content/entropy.md",
+		"/DATA/Dev/deep/main.py",
 		"/DATA/Dev/blog/Makefile",
+		"/DATA/Dev/blog/pelican-themes/pure-single/templates/base.html",
+		"/DATA/Dev/blog/publishconf.py",
+		"/DATA/Dev/blog/pelicanconf.py",
+		"/DATA/Dev/CuteVariant-python/cutevariant.sublime-project",
+		"/DATA/Dev/test2/Snakefile",
+		"/DATA/Dev/blog/content/entropy.md",
+		"/home/schutz/Dev/blog/content/entropy.md",
 		"/DATA/Dev/CuteVariant-python/cutevariant/core/sql.py",
 		"/tmp/sublime-sftp-browse-1549383047/genouest/home/genouest/cnrs_umr6290/sschutz/project/mucobiome/raw/cmd.sh",
 		"/DATA/Dev/CuteVariant-python/cutevariant/core/vql.tx",
@@ -1161,7 +1170,6 @@
 		"/DATA/Dev/perrine/mshb/out_final.json",
 		"/DATA/Dev/perrine/mshb/create_db.py",
 		"/home/schutz/Dev/perrine/mshb/mshb/spiders/quotes_spider.py",
-		"/DATA/Dev/blog/content/entropy.md",
 		"/DATA/Dev/perrine/projets.txt",
 		"/DATA/Dev/perrine/sortie.txt",
 		"/DATA/Dev/perrine/mots.txt",
@@ -1199,7 +1207,6 @@
 		"/DATA/Dev/CuteVariant-python/tests/test_grammar.py",
 		"/DATA/Dev/haploview/__main__.py",
 		"/DATA/Dev/CuteVariant-python/cutevariant/core/sqlite.py",
-		"/DATA/Dev/CuteVariant-python/cutevariant.sublime-project",
 		"/DATA/Dev/CuteVariant-python/cutevariant/core/model.py",
 		"/DATA/Dev/CuteVariant-python/tests/test_model.py",
 		"/DATA/Dev/CuteVariant-python/cutevariant/core/reader/csvreader.py",
@@ -1262,16 +1269,11 @@
 		"/home/schutz/.config/sublime-text-3/Packages/SideBarEnhancements/Side Bar.sublime-settings",
 		"/home/schutz/Dev/CuteVariant-python/cutevariant/gui/widgets.py",
 		"/home/schutz/Dev/CuteVariant-python/cutevariant/gui/Test.py",
-		"/home/schutz/Dev/CuteVariant-python/cutevariant/gui/mainwindow.py",
-		"/home/schutz/Dev/CuteVariant-python/cutevariant/gui/__init__.py",
-		"/home/schutz/Dev/CuteVariant-python/cutevariant/gui/importwizard.py",
-		"/home/sacha/Dev/flo/test.py",
-		"/home/sacha/Dev/flo/demo.qml",
-		"/home/sacha/Dev/CuteVariant-python/cutevariant/gui/Test.py"
+		"/home/schutz/Dev/CuteVariant-python/cutevariant/gui/mainwindow.py"
 	],
 	"find":
 	{
-		"height": 51.0
+		"height": 44.0
 	},
 	"find_in_files":
 	{
@@ -1286,6 +1288,9 @@
 		"case_sensitive": true,
 		"find_history":
 		[
+			"sacha",
+			"f",
+			"\\s",
 			"_[12]",
 			"gz",
 			"^",
@@ -1373,24 +1378,56 @@
 	"groups":
 	[
 		{
-			"selected": 1,
+			"selected": 2,
 			"sheets":
 			[
 				{
 					"buffer": 0,
-					"file": "/DATA/Dev/deep/main.py",
+					"file": "__main__.py",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 1592,
+						"buffer_size": 255,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								196,
-								196
+								139,
+								139
+							]
+						],
+						"settings":
+						{
+							"git_gutter_is_enabled": true,
+							"incomplete_sync": null,
+							"remote_loading": false,
+							"synced": false,
+							"syntax": "Packages/Python/Python.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "cutevariant/gui/mainwindow.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 3376,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								1598,
+								1598
 							]
 						],
 						"settings":
@@ -1406,39 +1443,54 @@
 									"selector": "source.python - string - constant.numeric"
 								}
 							],
-							"git_gutter_is_enabled": false,
+							"git_gutter_is_enabled": true,
 							"incomplete_sync": null,
-							"syntax": "Packages/Python/Python.sublime-syntax"
+							"remote_loading": false,
+							"synced": false,
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 1440.0,
+						"translation.y": 414.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 2,
+					"stack_index": 1,
 					"type": "text"
 				},
 				{
-					"buffer": 1,
-					"file": "/DATA/Dev/blog/content/entropy.md",
+					"buffer": 2,
+					"file": "cutevariant/gui/wizard/projetwizard.py",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 11010,
+						"buffer_size": 317,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								117,
-								117
+								162,
+								162
 							]
 						],
 						"settings":
 						{
+							"auto_complete_triggers":
+							[
+								{
+									"characters": ".",
+									"selector": "source.python - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								}
+							],
 							"git_gutter_is_enabled": true,
 							"incomplete_sync": null,
-							"syntax": "Packages/MarkdownEditing/Markdown.sublime-syntax"
+							"syntax": "Packages/Python/Python.sublime-syntax"
 						},
 						"translation.x": 0.0,
 						"translation.y": 0.0,
@@ -1446,46 +1498,13 @@
 					},
 					"stack_index": 0,
 					"type": "text"
-				},
-				{
-					"buffer": 2,
-					"file": "/DATA/Dev/blog/Makefile",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 3019,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								272,
-								272
-							]
-						],
-						"settings":
-						{
-							"git_gutter_is_enabled": true,
-							"incomplete_sync": null,
-							"remote_loading": false,
-							"synced": false,
-							"syntax": "Packages/Makefile/Makefile.sublime-syntax",
-							"translate_tabs_to_spaces": false
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 1,
-					"type": "text"
 				}
 			]
 		}
 	],
 	"incremental_find":
 	{
-		"height": 47.0
+		"height": 41.0
 	},
 	"input":
 	{
@@ -1546,7 +1565,7 @@
 	"project": "cutevariant.sublime-project",
 	"replace":
 	{
-		"height": 90.0
+		"height": 78.0
 	},
 	"save_all_on_build": true,
 	"select_file":

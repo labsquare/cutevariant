@@ -50,11 +50,15 @@ class MainWindow(QMainWindow):
         # Setup Actions
         self.setupActions()
 
+
         #  window geometry
         self.resize(600, 400)
 
         self.addView()
-        self.import_vcf("/home/schutz/test2.vcf.gz")
+        self.import_vcf("/home/schutz/Dev/CuteVariant-python/exemples/test.vcf")
+
+
+
 
     def import_vcf(self, filename):  #  Temporary .. will be removed
         db_filename = filename + ".db"
