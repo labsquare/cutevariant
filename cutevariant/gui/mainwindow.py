@@ -19,7 +19,7 @@ from cutevariant.core import Query
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
         super(MainWindow, self).__init__()
-        self.toolbar = self.addToolBar("test")
+        self.toolbar = self.addToolBar("maintoolbar")
         self.conn = None
         self.view_widgets = []
         self.column_widget = ColumnQueryWidget()
@@ -99,6 +99,14 @@ class MainWindow(QMainWindow):
         fileMenu = self.menuBar().addMenu("&File")
         fileMenu.addAction("&New ...")
         fileMenu.addAction("&Open")
+
+        save_query_action = self.toolbar.addAction("save query")
+        save_query_action.triggered.connect(self.selection_widget.save_current_query)
+
+
+
+
+
 
     def addView(self):
         widget = ViewQueryWidget()
