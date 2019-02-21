@@ -326,9 +326,6 @@ def insert_many_variants(conn, data, variant_count = -1):
 
     conn.commit()
     #  create index to make sample query faster
-    yield 99, f"{count} variant(s) has been inserted"
-    yield 100, f"create variant index"
-
     cursor.execute(
         f"""CREATE UNIQUE INDEX idx_sample_has_variant ON sample_has_variant (sample_id,variant_id)"""
     )
@@ -336,6 +333,7 @@ def insert_many_variants(conn, data, variant_count = -1):
     # create selections
     insert_selection(conn, name="all", count=count)
 
+    yield 100, f"{count} variant(s) has been inserted"
 
 
 ## ================ Fields functions =============================

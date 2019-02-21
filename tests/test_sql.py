@@ -69,7 +69,8 @@ def prepare_base(conn):
     sql.create_table_variants(conn, sql.get_fields(conn))
     assert table_exists(conn, "variants"), "cannot create table variants"
 
-    sql.insert_many_variants(conn, variants)
+    for _ in sql.insert_many_variants(conn, variants):
+        pass
 
 
 def test_fields(conn):
@@ -107,6 +108,7 @@ def test_selection_operation(conn):
 
     all_selection = cursor.execute("SELECT * FROM selections").fetchone()
 
+    print("all", all_selection)
     assert all_selection[0] == "all"
     assert all_selection[1] == len(variants)
 
