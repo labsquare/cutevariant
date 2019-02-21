@@ -13,13 +13,13 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
-    # wizard = ProjetWizard()
+    wizard = ProjetWizard()
 
-    # wizard.show()
+    wizard.show()
 
-    w = MainWindow()
+    # w = MainWindow()
 
-    w.show()
+    # w.show()
 
     app.exec_()
  

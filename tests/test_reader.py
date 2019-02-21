@@ -26,6 +26,8 @@ def test_vcf():
     with open(filename, "r") as file:
         my_reader = VcfReader(file)
 
+
+        assert my_reader.get_variants_count() == 902
         assert my_reader.get_samples() == other_reader.samples
 
         fields = [f["name"] for f in my_reader.get_fields()]

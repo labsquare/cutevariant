@@ -4,6 +4,66 @@
 		"selected_items":
 		[
 			[
+				"QCo",
+				"QtCore\tmodule"
+			],
+			[
+				"sa",
+				"save_query_action"
+			],
+			[
+				"save",
+				"save_query_action\tstatement"
+			],
+			[
+				"Quer",
+				"QueryDelegate\tclass"
+			],
+			[
+				"progre",
+				"progress_changed\tfunction"
+			],
+			[
+				"prog",
+				"progress_changed"
+			],
+			[
+				"appe",
+				"appendPlainText\tfunction"
+			],
+			[
+				"app",
+				"appendPlainText\tfunction"
+			],
+			[
+				"mess",
+				"message_changed\tstatement"
+			],
+			[
+				"is",
+				"isRunning\tfunction"
+			],
+			[
+				"Imp",
+				"ImportThread\tclass"
+			],
+			[
+				"add",
+				"addTab\tfunction"
+			],
+			[
+				"Wi",
+				"ProjetWizard"
+			],
+			[
+				"Pro",
+				"ProjetWizard\tclass"
+			],
+			[
+				"log",
+				"log_edit\tstatement"
+			],
+			[
 				"QWi",
 				"QWizardPage"
 			],
@@ -44,14 +104,6 @@
 				"file_layout"
 			],
 			[
-				"add",
-				"addWidget"
-			],
-			[
-				"Imp",
-				"ImportPage"
-			],
-			[
 				"vcf",
 				"vcf_button"
 			],
@@ -85,10 +137,6 @@
 			],
 			[
 				"Query",
-				"QueryRouter\tclass"
-			],
-			[
-				"Quer",
 				"QueryRouter\tclass"
 			],
 			[
@@ -230,10 +278,6 @@
 			[
 				"setHea",
 				"setHorizontalHeaderLabels\tfunction"
-			],
-			[
-				"appe",
-				"appendRow\tfunction"
 			],
 			[
 				"QStandar",
@@ -470,50 +514,6 @@
 			[
 				"f",
 				"filename\tstatement"
-			],
-			[
-				"ampl",
-				"amplicons\tstatement"
-			],
-			[
-				"coverage",
-				"coverage_file\tstatement"
-			],
-			[
-				"cover",
-				"coverage_file\tstatement"
-			],
-			[
-				"bam",
-				"bamfile\tparam"
-			],
-			[
-				"Argu",
-				"ArgumentParser\tclass"
-			],
-			[
-				"QTreeWidg",
-				"QTreeWidgetItem\tPyQt Classes"
-			],
-			[
-				"addMe",
-				"addMenu\tPyQt Functions"
-			],
-			[
-				"setPix",
-				"setPixmap\tPyQt Functions"
-			],
-			[
-				"QDialog",
-				"QDialogButtonBox\tPyQt Classes"
-			],
-			[
-				"setVa",
-				"setValue\tPyQt Functions"
-			],
-			[
-				"cds_",
-				"cds_end"
 			]
 		]
 	},
@@ -523,7 +523,7 @@
 			"file": "__main__.py",
 			"settings":
 			{
-				"buffer_size": 255,
+				"buffer_size": 368,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
@@ -532,16 +532,112 @@
 			"file": "cutevariant/gui/mainwindow.py",
 			"settings":
 			{
-				"buffer_size": 3376,
+				"buffer_size": 3526,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "cutevariant/gui/selectionquerywidget.py",
+			"settings":
+			{
+				"buffer_size": 1887,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"contents": "  Exon_1_Promoter_1B  GCATTGTAGTCTTCCCACCTCCCA\n  Exon_1_Promoter_1B  TACTTCTGGCCACTGGGCGAGCGT\n  Exon_2_Promoter_1A  CTCCGGCATCTTGTGCTAATCCTT\n  Exon_2_Promoter_1A  CATGTGGCTGTATTGGTGCAGCCC\n  Exon_3_Untranslated_bregion  ACCGCTGCAGATGGCTGATGTGAA\n  Exon_4  TGCAGCTTCATATGATCAGTTGTT\n  Exon_5  GAAGCTATGGCTTCTTCTGGACAG\n  Exon_6  CGGGAAGGATCTGTATCAAGCCGT\n  Exon_7  ATCTTGACAAAGAAGAAAAGGAAA\n  Exon_8  GTTGCGATGGAAGAACAACTAGGT\n  Exon_9  ATTCAGCAAATCGAAAAGGACATA\n  Exon_10 AAGCATGAAACCGGCTCACATGAT\n  Exon_11 GACCATGAAACAGCCAGTGTTTTG\n  Exon_12 GCAGGAAGCTCATGAACCAGGCAT\n  Exon_13 GTGTGTTCTAATGAAACTTTCATT\n  Intron_13 CGGGGCATTTCATCACAGGAGCTA\n  Exon_14 TTGCAGAATTATTGCAAGTGGACT\n  Exon_15 CAGATTTTAGTTGGGCCACAAGTG\n  Exon_16 TGGCGAGCAGATGTAAATAGTAAA\n  Exon_17 GCACTTGCATTTTTGGTTGGCACT\n  Exon_18 TGCTGCAGCTTTAAGGAATCTCAT\n  Exon_18 AGATGAAATAAAACAAAGTGAGCA\n  Exon_18 AGTTCCAATCTTTTCTTTTATTTC\n  Exon_18 AGTCAGCTGCCTGTGTACAAACTT\n  Exon_18 CTATTGAAGGAACTCCTTACTGTT\n  Exon_18 CACTTGATTTGAAAGATATACAGA\n  Exon_18 CAGCAACCATTAAGTAGACCTATA\n  Exon_18 GAGCACAGCAAACATTCATCATCC\n  Exon_18 CAGTGAATAACAACACAAAGAAGC\n",
+			"file": "/tmp/mlpa.txt",
+			"file_size": 1085,
+			"file_write_time": 131945431017401496,
+			"settings":
+			{
+				"buffer_size": 1086,
+				"encoding": "UTF-8",
+				"line_ending": "Unix",
+				"name": "Exon 1"
+			}
+		},
+		{
+			"file": "/tmp/camille/main.py",
+			"settings":
+			{
+				"buffer_size": 499,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"contents": "GCATTGTAGTCTTCCCACCTCCCAb\n>Exon_1_Promoter_1B\nCTCCGGCATCTTGTGCTAATCCTT\n>Exon_2_Promoter_1A\nACCGCTGCAGATGGCTGATGTGAA\n>Exon_4\nGAAGCTATGGCTTCTTCTGGACAG\n>Exon_6\nATCTTGACAAAGAAGAAAAGGAAA\n>Exon_8\nATTCAGCAAATCGAAAAGGACATA\n>Exon_10\nGACCATGAAACAGCCAGTGTTTTG\n>Exon_12\nGTGTGTTCTAATGAAACTTTCATT\n>Intron_13\nTTGCAGAATTATTGCAAGTGGACT\n>Exon_15\nTGGCGAGCAGATGTAAATAGTAAA\n>Exon_17\nTGCTGCAGCTTTAAGGAATCTCAT\n>Exon_18\nAGTTCCAATCTTTTCTTTTATTTC\n>Exon_18\nCTATTGAAGGAACTCCTTACTGTT\n>Exon_18\nCAGCAACCATTAAGTAGACCTATA\n>Exon_18\nCAGTGAATAACAACACAAAGAAGC\n",
+			"file": "/tmp/mlpa.fasta",
+			"file_size": 522,
+			"file_write_time": 131945431587971124,
+			"settings":
+			{
+				"buffer_size": 523,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"contents": "bwa aln tolc.fa primers.FASTA | bwa samse ref.fa - primers.FASTA | samtools view -bu - | samtools sort - > aln_sorted_output.bam && samtools index aln_sorted_output.bam",
+			"settings":
+			{
+				"buffer_size": 168,
+				"line_ending": "Unix",
+				"name": "bwa aln tolc.fa primers.FASTA | bwa samse ref.fa -"
+			}
+		},
+		{
+			"contents": "Exon 1:Promoter 1B\nExon 1:Promoter 1B\nExon 2:Promoter 1A\nExon 2:Promoter 1A\nExon 3:Untranslated region\nExon 4\nExon 5\nExon 6\nExon 7\nExon 8\nExon 9\nExon 10\nExon 11\nExon 12\nExon 13\nIntron 13\nExon 14\nExon 15\nExon 16\nExon 17\nExon 18\nExon 18\nExon 18\nExon 18\nExon 18\nExon 18\nExon 18\nExon 18\nExon 18\n",
+			"settings":
+			{
+				"buffer_size": 291,
+				"line_ending": "Unix",
+				"name": "Exon 1:Promoter 1B"
 			}
 		},
 		{
 			"file": "cutevariant/gui/wizard/projetwizard.py",
 			"settings":
 			{
-				"buffer_size": 317,
+				"buffer_size": 3043,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "cutevariant/gui/viewquerywidget.py",
+			"settings":
+			{
+				"buffer_size": 3732,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "cutevariant/gui/abstractquerywidget.py",
+			"settings":
+			{
+				"buffer_size": 370,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "cutevariant/core/sql.py",
+			"settings":
+			{
+				"buffer_size": 9229,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "cutevariant/core/importer.py",
+			"settings":
+			{
+				"buffer_size": 1512,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
@@ -1273,7 +1369,7 @@
 	],
 	"find":
 	{
-		"height": 44.0
+		"height": 53.0
 	},
 	"find_in_files":
 	{
@@ -1288,6 +1384,19 @@
 		"case_sensitive": true,
 		"find_history":
 		[
+			"Exon",
+			"Ex",
+			"Exin",
+			"\\s{1}",
+			"\\s",
+			":",
+			"Exo",
+			"  ",
+			"-",
+			"E",
+			"^ ",
+			"Exon",
+			"self.title",
 			"sacha",
 			"f",
 			"\\s",
@@ -1378,7 +1487,7 @@
 	"groups":
 	[
 		{
-			"selected": 2,
+			"selected": 4,
 			"sheets":
 			[
 				{
@@ -1387,19 +1496,30 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 255,
+						"buffer_size": 368,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								139,
-								139
+								263,
+								263
 							]
 						],
 						"settings":
 						{
+							"auto_complete_triggers":
+							[
+								{
+									"characters": ".",
+									"selector": "source.python - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								}
+							],
 							"git_gutter_is_enabled": true,
 							"incomplete_sync": null,
 							"remote_loading": false,
@@ -1410,7 +1530,7 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 2,
+					"stack_index": 7,
 					"type": "text"
 				},
 				{
@@ -1419,15 +1539,64 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 3376,
+						"buffer_size": 3526,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								1598,
-								1598
+								3161,
+								3161
+							]
+						],
+						"settings":
+						{
+							"auto_complete_triggers":
+							[
+								{
+									"characters": ".",
+									"selector": "source.python - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								}
+							],
+							"git_gutter_is_enabled": true,
+							"incomplete_sync": null,
+							"remote_loading": false,
+							"synced": false,
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 2496.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 6,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "cutevariant/gui/selectionquerywidget.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1887,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								1203,
+								1203
 							]
 						],
 						"settings":
@@ -1452,27 +1621,244 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 414.0,
+						"translation.y": 1408.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 1,
+					"stack_index": 4,
 					"type": "text"
 				},
 				{
-					"buffer": 2,
-					"file": "cutevariant/gui/wizard/projetwizard.py",
+					"buffer": 3,
+					"file": "/tmp/mlpa.txt",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 317,
+						"buffer_size": 1086,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								162,
-								162
+								1086,
+								1086
+							]
+						],
+						"settings":
+						{
+							"auto_name": "Exon 1",
+							"git_gutter_is_enabled": false,
+							"incomplete_sync": null,
+							"syntax": "Packages/MarkdownEditing/Markdown.sublime-syntax",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 432.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "/tmp/camille/main.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 499,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								172,
+								172
+							]
+						],
+						"settings":
+						{
+							"auto_complete_triggers":
+							[
+								{
+									"characters": ".",
+									"selector": "source.python - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								}
+							],
+							"git_gutter_is_enabled": false,
+							"incomplete_sync": null,
+							"remote_loading": false,
+							"synced": false,
+							"syntax": "Packages/Python/Python.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 205.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 5,
+					"file": "/tmp/mlpa.fasta",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 523,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								293,
+								293
+							]
+						],
+						"settings":
+						{
+							"git_gutter_is_enabled": false,
+							"incomplete_sync": null,
+							"remote_loading": false,
+							"synced": false,
+							"syntax": "Packages/Text/Plain text.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 192.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				},
+				{
+					"buffer": 6,
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 168,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								7,
+								7
+							]
+						],
+						"settings":
+						{
+							"auto_name": "bwa aln tolc.fa primers.FASTA | bwa samse ref.fa -",
+							"default_dir": "/tmp",
+							"git_gutter_is_enabled": false,
+							"incomplete_sync": null,
+							"syntax": "Packages/Text/Plain text.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 3,
+					"type": "text"
+				},
+				{
+					"buffer": 7,
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 291,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								18,
+								18
+							]
+						],
+						"settings":
+						{
+							"auto_name": "Exon 1:Promoter 1B",
+							"default_dir": "/tmp",
+							"git_gutter_is_enabled": false,
+							"incomplete_sync": null,
+							"syntax": "Packages/Text/Plain text.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 5,
+					"type": "text"
+				},
+				{
+					"buffer": 8,
+					"file": "cutevariant/gui/wizard/projetwizard.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 3043,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								716,
+								716
+							]
+						],
+						"settings":
+						{
+							"auto_complete_triggers":
+							[
+								{
+									"characters": ".",
+									"selector": "source.python - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								}
+							],
+							"git_gutter_is_enabled": true,
+							"incomplete_sync": null,
+							"syntax": "Packages/Python/Python.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 768.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 11,
+					"type": "text"
+				},
+				{
+					"buffer": 9,
+					"file": "cutevariant/gui/viewquerywidget.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 3732,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								3343,
+								3343
 							]
 						],
 						"settings":
@@ -1490,13 +1876,117 @@
 							],
 							"git_gutter_is_enabled": true,
 							"incomplete_sync": null,
+							"remote_loading": false,
+							"synced": false,
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 2784.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 10,
+					"type": "text"
+				},
+				{
+					"buffer": 10,
+					"file": "cutevariant/gui/abstractquerywidget.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 370,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								161,
+								161
+							]
+						],
+						"settings":
+						{
+							"git_gutter_is_enabled": true,
+							"incomplete_sync": null,
+							"remote_loading": false,
+							"synced": false,
 							"syntax": "Packages/Python/Python.sublime-syntax"
 						},
 						"translation.x": 0.0,
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 0,
+					"stack_index": 9,
+					"type": "text"
+				},
+				{
+					"buffer": 11,
+					"file": "cutevariant/core/sql.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 9229,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								1036,
+								1036
+							]
+						],
+						"settings":
+						{
+							"git_gutter_is_enabled": true,
+							"incomplete_sync": null,
+							"remote_loading": false,
+							"synced": false,
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 1056.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 8,
+					"type": "text"
+				},
+				{
+					"buffer": 12,
+					"file": "cutevariant/core/importer.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1512,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								118,
+								118
+							]
+						],
+						"settings":
+						{
+							"git_gutter_is_enabled": true,
+							"incomplete_sync": null,
+							"remote_loading": false,
+							"synced": false,
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 96.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 12,
 					"type": "text"
 				}
 			]
@@ -1574,6 +2064,14 @@
 		"last_filter": "",
 		"selected_items":
 		[
+			[
+				"main",
+				"cutevariant/gui/mainwindow.py"
+			],
+			[
+				"__m",
+				"/DATA/Dev/CuteVariant-python/__main__.py"
+			],
 			[
 				"qu",
 				"cutevariant/core/query.py"
@@ -1664,12 +2162,16 @@
 	},
 	"select_symbol":
 	{
-		"height": 0.0,
-		"last_filter": "",
+		"height": 392.0,
+		"last_filter": "set",
 		"selected_items":
 		[
+			[
+				"set",
+				"setupActions"
+			]
 		],
-		"width": 0.0
+		"width": 592.0
 	},
 	"selected_group": 0,
 	"settings":

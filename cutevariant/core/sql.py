@@ -256,13 +256,13 @@ def create_table_variants(conn, fields):
     conn.commit()
 
 
-def insert_many_variants(conn, data):
+def insert_many_variants(conn, data, variant_count = -1):
     """
     Insert many variant from data into variant table.columns
 
     :param conn: sqlite3.connect
     :param data: list of variant dictionnary which contains same number of key than fields numbers. 
-
+    :param variant_count: total variant count, to compute progression
 
     :Example: 
 
@@ -304,6 +304,12 @@ def insert_many_variants(conn, data):
         variant_id = cursor.lastrowid
         count += 1
 
+        if count % 200 == 0:
+            progress = float(count) / variant_count * 100.0
+            yield progress, f"{count} variant inserted"
+            conn.commit()
+
+
         # if variant has sample data, insert record into sample_has_variant
         if "samples" in variant:
             for sample in variant["samples"]:
@@ -317,15 +323,19 @@ def insert_many_variants(conn, data):
                         [sample_id, variant_id, gt],
                     )
 
-    conn.commit()
 
+    conn.commit()
     #  create index to make sample query faster
+    yield 99, f"{count} variant(s) has been inserted"
+    yield 100, f"create variant index"
+
     cursor.execute(
         f"""CREATE UNIQUE INDEX idx_sample_has_variant ON sample_has_variant (sample_id,variant_id)"""
     )
 
     # create selections
     insert_selection(conn, name="all", count=count)
+
 
 
 ## ================ Fields functions =============================

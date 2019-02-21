@@ -15,6 +15,14 @@ class AbstractReader(ABC):
         """
         raise NotImplemented()
 
+    def get_variants_count(self):
+        count = 0
+        for v in self.get_variants():
+            count+=1
+        return count 
+
+
+
     @abstractclassmethod
     def get_fields(self):
         """
