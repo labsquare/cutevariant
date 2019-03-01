@@ -1,0 +1,18 @@
+exclude *.csv
+exclude *.ipynb
+exclude *.py
+exclude *.sublime-*
+exclude *.txt
+exclude *.xmi
+exclude Makefile
+exclude pytest.ini
+include LICENSE
+include README.md
+prune .vscode
+prune exemples
+prune pocs
+prune tests
+recursive-exclude cutevariant *.txt
+recursive-include cutevariant *.png
+recursive-include cutevariant *.py
+recursive-include cutevariant *.tx
