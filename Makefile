@@ -5,7 +5,7 @@ coverage:
 	python -m pytest --cov cutevariant tests
 
 run:
-	python __main__.py
+	python -m cutevariant
 
 black:
 	black cutevariant
