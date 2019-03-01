@@ -25,7 +25,7 @@ class SelectionQueryModel(QStandardItemModel):
             self.appendRow([name_item, count_item])
 
     def save_current_query(self, name):
-        sql.create_selection_from_sql(self.query.conn,name,self.query.sql())
+        sql.create_selection_from_sql(self.query.conn, name, self.query.sql())
         self.refresh()
 
 
@@ -61,8 +61,9 @@ class SelectionQueryWidget(AbstractQueryWidget):
 
     def save_current_query(self):
 
-        name, success = QInputDialog.getText(self, "type a name for selection","Selection name:", QLineEdit.Normal)
+        name, success = QInputDialog.getText(
+            self, "type a name for selection", "Selection name:", QLineEdit.Normal
+        )
 
         if success:
             self.model.save_current_query(name)
-

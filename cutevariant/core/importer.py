@@ -4,6 +4,7 @@ import sqlite3
 from .readerfactory import create_reader
 from .sql import *
 
+
 def async_import_file(conn, filename):
     """
     Import filename into sqlite connection
@@ -24,7 +25,6 @@ def async_import_file(conn, filename):
         # Create table samples
         create_table_samples(conn)
 
-
         #  Create variants tables
         create_table_variants(conn, reader.get_fields())
 
@@ -40,7 +40,7 @@ def async_import_file(conn, filename):
         # Insert fields
         yield 0, "insert fields"
         insert_many_fields(conn, reader.get_fields())
-        
+
         yield 0, "count variants..."
         total_variant = reader.get_variants_count()
         yield from insert_many_variants(conn, reader.get_variants(), total_variant)
@@ -52,12 +52,7 @@ def async_import_file(conn, filename):
     # session.commit()
 
 
-
-
 def import_file(conn, filename):
-    for progress,message in async_import_file(conn, filename):
-        # don't show message 
-        pass 
-        
-
-
+    for progress, message in async_import_file(conn, filename):
+        #  don't show message
+        pass

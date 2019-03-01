@@ -171,15 +171,9 @@ def error_message_from_err(
         and type(err.expected_rules[0]).__name__ == "RegExMatch"
     ):
         return "invalid empty identifier in SELECT clause", err.col
-    if (
-        "Expected INT " in err.message
-        and len(err.expected_rules) == 3
-    ):
+    if "Expected INT " in err.message and len(err.expected_rules) == 3:
         return "invalid value in WHERE clause", err.col
-    if (
-        "Expected '==|>=|<=|!=" in err.message
-        and len(err.expected_rules) == 1
-    ):
+    if "Expected '==|>=|<=|!=" in err.message and len(err.expected_rules) == 1:
         return "invalid operator in WHERE clause", err.col
 
     raise err  # error not handled. Just raise it

@@ -49,15 +49,13 @@ class QueryModel(QStandardItemModel):
 
 
 class QueryDelegate(QStyledItemDelegate):
+    def paint(self, painter, option, index):
+        """overriden"""
+        super().paint(painter, option, index)
 
-
-    def paint(self,painter,option,index):
-        '''overriden'''
-        super().paint(painter,option,index)
-
-    def sizeHint(self,option,index):
-        '''override'''
-        return QSize(0,30)
+    def sizeHint(self, option, index):
+        """override"""
+        return QSize(0, 30)
 
 
 class ViewQueryWidget(AbstractQueryWidget):
@@ -111,7 +109,6 @@ class ViewQueryWidget(AbstractQueryWidget):
         self.setLayout(main_layout)
 
         self.model.modelReset.connect(self.updateInfo)
-        
 
     def setQuery(self, query: Query):
         """ Method override from AbstractQueryWidget"""

@@ -50,15 +50,11 @@ class MainWindow(QMainWindow):
         # Setup Actions
         self.setupActions()
 
-
         #  window geometry
         self.resize(600, 400)
 
         self.addView()
         self.import_vcf("/home/schutz/Dev/CuteVariant-python/exemples/test.vcf")
-
-
-
 
     def import_vcf(self, filename):  #  Temporary .. will be removed
         db_filename = filename + ".db"
@@ -102,11 +98,6 @@ class MainWindow(QMainWindow):
 
         save_query_action = self.toolbar.addAction("save query")
         save_query_action.triggered.connect(self.selection_widget.save_current_query)
-
-
-
-
-
 
     def addView(self):
         widget = ViewQueryWidget()
