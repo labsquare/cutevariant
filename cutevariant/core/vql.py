@@ -9,6 +9,7 @@ import textx
 import operator
 import itertools
 from pprint import pprint
+from pkg_resources import resource_string
 
 
 CLAUSES = ("select", "from", "where", "using")
@@ -105,8 +106,10 @@ class Tuple(metaclass=model_class):
         return "({})".format(", ".join(item.id for item in self.items))
 
 
-METAMODEL = textx.metamodel_from_file(
-    "cutevariant/core/vql.tx", classes=model_class.classes, debug=False
+
+METAMODEL = textx.metamodel_from_str(
+    resource_string(__name__, "vql.tx").decode(),  # grammar extraction from vql.tx
+    classes=model_class.classes, debug=False
 )
 
 
