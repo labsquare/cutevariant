@@ -7,23 +7,25 @@ import pathlib
 
 
 def is_gz_file(filepath):
-    with open(filepath, 'rb') as test_f:
-        return binascii.hexlify(test_f.read(2)) == b'1f8b'
+    with open(filepath, "rb") as test_f:
+        return binascii.hexlify(test_f.read(2)) == b"1f8b"
 
-def getuncompressedsize(filename): 
-    with open(filename, 'rb') as f: 
-        f.seek(-4, 2) 
-        return struct.unpack('I', f.read(4))[0] 
+
+def getuncompressedsize(filename):
+    with open(filename, "rb") as f:
+        f.seek(-4, 2)
+        return struct.unpack("I", f.read(4))[0]
+
 
 @contextmanager
 def create_reader(filename):
 
     path = pathlib.Path(filename)
-    
+
     print("PATH suffix", path.suffixes, is_gz_file(filename))
 
     if ".vcf" in path.suffixes and ".gz" in path.suffixes:
-        device = open(filename,"rb")
+        device = open(filename, "rb")
         reader = VcfReader(device)
         reader.file_size = getuncompressedsize(filename)
         yield reader
@@ -31,7 +33,7 @@ def create_reader(filename):
         return
 
     if ".vcf" in path.suffixes:
-        device = open(filename,"r")
+        device = open(filename, "r")
         reader = VcfReader(device)
         reader.file_size = os.path.getsize(filename)
         yield reader
@@ -39,7 +41,7 @@ def create_reader(filename):
         return
 
     if ".csv" in path.suffixes:
-        device = open(filename,"r")
+        device = open(filename, "r")
         reader = CsvReader(device)
         reader.file_size = os.path.getsize(filename)
         yield reader
@@ -47,12 +49,9 @@ def create_reader(filename):
         return
 
 
-
-
-
 # class ReaderFactory(object):
 #     """
-# 	Create reader depending file type 
+# 	Create reader depending file type
 # 	"""
 
 #     def __init__(self):
@@ -76,10 +75,6 @@ def create_reader(filename):
 
 #         if extension == ".vcf":
 #             print("create vcf reader")
-#             return VcfReader(open(filename, "r"))    
+#             return VcfReader(open(filename, "r"))
 
 #         return None
-
-
-
-

@@ -1,6 +1,7 @@
 import sqlite3
 import sys
 
+
 def drop_table(conn, table_name):
     c = conn.cursor()
     c.execute(f"DROP TABLE IF EXISTS {table_name}")
@@ -251,12 +252,12 @@ def create_table_variants(conn, fields):
         f"""CREATE TABLE sample_has_variant (sample_id INTEGER, variant_id INTEGER, gt INTEGER DEFAULT -1 )"""
     )
 
-    #cursor.execute(f"""CREATE INDEX sample_has_variant_ids ON sample_has_variant (variant_id, sample_id)""")
+    # cursor.execute(f"""CREATE INDEX sample_has_variant_ids ON sample_has_variant (variant_id, sample_id)""")
 
     conn.commit()
 
 
-def insert_many_variants(conn, data, variant_count = -1):
+def insert_many_variants(conn, data, variant_count=-1):
     """
     Insert many variant from data into variant table.columns
 
@@ -309,7 +310,6 @@ def insert_many_variants(conn, data, variant_count = -1):
             yield progress, f"{count} variant inserted"
             conn.commit()
 
-
         # if variant has sample data, insert record into sample_has_variant
         if "samples" in variant:
             for sample in variant["samples"]:
@@ -322,7 +322,6 @@ def insert_many_variants(conn, data, variant_count = -1):
                         f"""INSERT INTO sample_has_variant VALUES (?,?,?)""",
                         [sample_id, variant_id, gt],
                     )
-
 
     conn.commit()
     #  create index to make sample query faster
