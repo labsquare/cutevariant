@@ -1,7 +1,11 @@
 # Cutevariant
 
-#Developement in progress
-## To test
+    pip install cutevariant  # install
+    python -m cutevariant    # run
+
+
+# Developement in progress
+## To get tests running
 
 	git clone git@github.com:labsquare/CuteVariant-python.git
 	cd CuteVariant-python
