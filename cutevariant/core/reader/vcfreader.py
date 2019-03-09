@@ -32,13 +32,6 @@ class AnnotationParser(object):
                 yield SNPEFF_ANNOTATION_DEFAULT_FIELDS[key]
 
 
-    def index_to_fields(index):
-        return dict(self.fields_index)[index]
-
-    def field_to_index(name):
-        return dict([(i[1], i[0]) for i in self.fields_index])[name]
-
-
         
     def parse_variant(self, raw):
 

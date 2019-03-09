@@ -7,13 +7,74 @@ from .abstractquerywidget import AbstractQueryWidget
 from cutevariant.core import Query
 
 
-class QueryModel(QStandardItemModel):
+IMPACT_COLOR = {
+"LOW" : "#71E096",
+"MODERATE":"#F5A26F",
+"HIGH":"#ed6d79",
+"MODIFIER":"#55abe1"
+}
+
+
+
+
+class QueryModel(QAbstractItemModel):
     def __init__(self, parent=None):
         super().__init__()
         self.limit = 50
         self.page = 0
         self.total = 0
         self.query = None
+        self.variants = []
+
+
+    def rowCount(self, parent = QModelIndex()):
+        """override"""
+        if parent == QModelIndex():
+            return len(self.variants)
+        return 0
+
+    def columnCount(self, parent = QModelIndex()):
+        """override """
+        if self.query is None:
+            return 0 
+        else:
+            return len(self.query.columns)
+
+    def index(self,row,column,parent) : 
+        """override"""
+        if not self.hasIndex(row,column, parent):
+            return QModelIndex()
+
+        return self.createIndex(row, column)
+
+    def parent(self,child):
+        """ override """ 
+        if not child.isValid():
+            return QModelIndex()
+
+        return QModelIndex()
+
+
+    def data(self, index, role = Qt.DisplayRole):
+        """ override """
+
+        if not index.isValid() :
+            return None
+
+        if role == Qt.DisplayRole:
+            return str(self.variants[index.row()][index.column()])
+
+        return None
+
+    def headerData(self, section,orientation, role = Qt.DisplayRole):
+        """override"""
+        if orientation == Qt.Horizontal:
+            if role == Qt.DisplayRole:
+                return self.query.columns[section]
+
+        return None
+
+
 
     def setQuery(self, query: Query):
         self.query = query
@@ -21,15 +82,12 @@ class QueryModel(QStandardItemModel):
         self.load()
 
     def load(self):
-        self.clear()
-        self.setColumnCount(len(self.query.columns))
-        self.setHorizontalHeaderLabels(self.query.columns)
+        self.beginResetModel()
+        self.variants.clear()
+        self.variants = list(self.query.rows(self.limit, self.page * self.limit))
+        self.endResetModel()
 
-        for row in self.query.rows(self.limit, self.page * self.limit):
-            items = []
-            for item in row:
-                items.append(QStandardItem(str(item)))
-            self.appendRow(items)
+         
 
     def hasPage(self, page):
         return page >= 0 and page * self.limit < self.total
@@ -48,14 +106,67 @@ class QueryModel(QStandardItemModel):
             self.setPage(self.page - 1)
 
 
+    def sort(self, column: int, order ):
+        """override"""
+        pass
+        if column < len(self.query.columns):
+            colname = self.query.columns[column]
+
+            print("ORDER" , order)
+            self.query.order_by = colname
+            self.query.order_desc = True if order == Qt.DescendingOrder else False
+            self.load()
+
+
+
+
 class QueryDelegate(QStyledItemDelegate):
     def paint(self, painter, option, index):
         """overriden"""
-        super().paint(painter, option, index)
+
+        palette = qApp.palette("QTreeView")
+        colname = index.model().headerData(index.column(), Qt.Horizontal)
+        value   = index.data(Qt.DisplayRole)
+        select  = option.state & QStyle.State_Selected
+
+       
+        # Draw selection background 
+        if select: 
+            bg_brush = palette.brush(QPalette.Highlight)
+        # Draw alternative 
+        else:
+            if index.row() % 2 : 
+                bg_brush = palette.brush(QPalette.Midlight)
+            else:
+                bg_brush =  palette.brush(QPalette.Light)
+
+        painter.setBrush(bg_brush)
+        painter.setPen(Qt.NoPen)
+        painter.drawRect(option.rect)
+
+
+
+        if colname == "impact":
+            painter.setPen(QPen(IMPACT_COLOR.get(value, palette.color(QPalette.Text))))
+            painter.drawText(option.rect, Qt.AlignLeft|Qt.AlignVCenter, index.data())
+            return
+  
+
+
+
+        painter.setPen(QPen(palette.color(QPalette.HighlightedText if select else QPalette.Text)))
+        painter.drawText(option.rect, Qt.AlignLeft|Qt.AlignVCenter, index.data())
+
+
+
+    def draw_biotype(self, value):
+        pass
+
 
     def sizeHint(self, option, index):
         """override"""
         return QSize(0, 30)
+
 
 
 class ViewQueryWidget(AbstractQueryWidget):
@@ -75,6 +186,8 @@ class ViewQueryWidget(AbstractQueryWidget):
         self.view.setFrameStyle(QFrame.NoFrame)
         self.view.setModel(self.model)
         self.view.setItemDelegate(self.delegate)
+        self.view.setAlternatingRowColors(True)
+        self.view.setSortingEnabled(True)
         # self.view.setItemDelegate(self.delegate)
 
         main_layout = QVBoxLayout()

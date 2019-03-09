@@ -58,6 +58,9 @@ class MainWindow(QMainWindow):
 
         self.open("/home/schutz/Dev/CuteVariant-python/exemples/test.snpeff.vcf.db")
 
+
+        self.setGeometry(qApp.desktop().rect().adjusted(100,100,-100,-100))
+
     def import_vcf(self, filename):  #  Temporary .. will be removed
         db_filename = filename + ".db"
 
@@ -78,11 +81,11 @@ class MainWindow(QMainWindow):
 
         self.conn = sqlite3.connect(db_filename)
         query = Query(self.conn)
-        query.filter = json.loads(
-            """{"AND" : [{"field":"pos", "operator":">", "value":"880000"} ]}"""
-        )
+        # query.filter = json.loads(
+        #     """{"AND" : [{"field":"pos", "operator":">", "value":"880000"} ]}"""
+        # )
 
-        query.create_selection("mytest")
+        # query.create_selection("mytest")
         # query.filter = None
 
         self.router.setQuery(query)
