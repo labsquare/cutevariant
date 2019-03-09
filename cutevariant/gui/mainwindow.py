@@ -54,7 +54,9 @@ class MainWindow(QMainWindow):
         self.resize(600, 400)
 
         self.addView()
-        self.import_vcf("/home/schutz/Dev/CuteVariant-python/exemples/test.vcf")
+        #self.import_vcf("/home/schutz/Dev/CuteVariant-python/exemples/test.snp.eff.vcf")
+
+        self.open("/home/schutz/Dev/CuteVariant-python/exemples/test.snpeff.vcf.db")
 
     def import_vcf(self, filename):  #  Temporary .. will be removed
         db_filename = filename + ".db"

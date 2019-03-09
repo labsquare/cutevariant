@@ -2,6 +2,58 @@ from .abstractreader import AbstractReader
 import vcf
 
 
+
+SNPEFF_ANNOTATION_DEFAULT_FIELDS = {
+    
+"annotation": {"name": "consequence", "category":"annotation", "description": "consequence", "type": "text"},
+"annotation_impact": {"name": "impact", "category":"annotation", "description": "impact of variant", "type": "text"},
+"gene_name" : {"name": "gene", "category":"annotation", "description": "gene name", "type": "text"},
+"gene_id" : {"name": "gene_id", "category":"annotation", "description": "gene name", "type": "text"},
+"feature_id": {"name": "transcript", "category":"annotation", "description": "transcript name", "type": "text"},
+"transcript_biotype": {"name": "biotype", "category":"annotation", "description": " biotype", "type": "text"},
+"hgvs.p": {"name": "hgvs_p", "category":"annotation", "description": "protein hgvs", "type": "text"},
+"hgvs.c": {"name": "hgvs_c", "category":"annotation", "description": "coding hgvs", "type": "text"}
+
+}
+
+
+
+class AnnotationParser(object):
+
+
+            
+    def parse_fields(self, raw): 
+        self.fields_index = {}  ## required for parse_variant 
+        for index, field in enumerate(raw.split("|")):
+            key = field.strip().lower()
+
+            if key in SNPEFF_ANNOTATION_DEFAULT_FIELDS.keys():
+                self.fields_index[index] = SNPEFF_ANNOTATION_DEFAULT_FIELDS[key]["name"]
+                yield SNPEFF_ANNOTATION_DEFAULT_FIELDS[key]
+
+
+    def index_to_fields(index):
+        return dict(self.fields_index)[index]
+
+    def field_to_index(name):
+        return dict([(i[1], i[0]) for i in self.fields_index])[name]
+
+
+        
+    def parse_variant(self, raw):
+
+        annotation = {}
+        for index, ann in enumerate(raw.split("|")):
+            if index in self.fields_index:
+                field_name = self.fields_index[index]
+                annotation[field_name] = ann
+
+        return annotation
+
+         
+
+
+
 class VcfReader(AbstractReader):
 
     type_mapping = {
@@ -13,6 +65,7 @@ class VcfReader(AbstractReader):
 
     def __init__(self, device):
         super(VcfReader, self).__init__(device)
+        self.parser = AnnotationParser()
 
     def get_variants(self):
         fields = list(self.get_fields())
@@ -51,7 +104,7 @@ class VcfReader(AbstractReader):
                                     value = record.INFO[name]
                             variant[colname] = value
 
-                    #         # PARSE GENOTYPE / SAMPLE
+                     # PARSE GENOTYPE / SAMPLE
                     if category == "sample":
                         variant["samples"] = list()
                         for sample in record.samples:
@@ -65,7 +118,16 @@ class VcfReader(AbstractReader):
 
                             variant["samples"].append({"name": sample.sample, "gt": gt})
 
-            yield variant
+
+                    # PARSE Annotation 
+                    if category == "annotation":
+                        # each variant can have multiple annotation. Create then many variants
+                        variant["annotation"] = []
+                        annotations = record.INFO["ANN"]
+                        for annotation in annotations:
+                            variant["annotation"].append(self.parser.parse_variant(annotation))
+                         
+                yield variant
 
     def get_fields(self):
 
@@ -96,15 +158,12 @@ class VcfReader(AbstractReader):
 
         self.device.seek(0)
         vcf_reader = vcf.Reader(self.device)
+        # Annotation ... 
+        for key, info in vcf_reader.infos.items():
+            if key == "ANN":
+                yield from self.parser.parse_fields(info.desc)
 
-        # Annotation ... TODO
-        # for key, info in vcf_reader.infos.items():
-        #     yield {
-        #         "name": key,
-        #         "category": "info",
-        #         "description": info.desc,
-        #         "type": VcfReader.type_mapping.get(info.type, "String"),
-        #     }
+        
 
         # PEUVENT SE METTRE AUTOMATIQUEMENT ...
         for sample in vcf_reader.samples:
