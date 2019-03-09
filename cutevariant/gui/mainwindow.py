@@ -1,8 +1,11 @@
 from PySide2.QtCore import *
 from PySide2.QtWidgets import *
+from PySide2.QtGui import *
 import sqlite3
 import json
 import os
+
+from cutevariant.gui.wizard.projetwizard import ProjetWizard
 
 from cutevariant.gui.viewquerywidget import ViewQueryWidget
 from cutevariant.gui.columnquerywidget import ColumnQueryWidget
@@ -98,8 +101,8 @@ class MainWindow(QMainWindow):
 
     def setupActions(self):
         fileMenu = self.menuBar().addMenu("&File")
-        fileMenu.addAction("&New ...")
-        fileMenu.addAction("&Open")
+        fileMenu.addAction("&New project",self, SLOT("new_project()") , QKeySequence.New)
+        fileMenu.addAction("&Open project ...")
 
         save_query_action = self.toolbar.addAction("save query")
         save_query_action.triggered.connect(self.selection_widget.save_current_query)
@@ -115,3 +118,13 @@ class MainWindow(QMainWindow):
         if index == -1:
             return None
         return self.view_widgets[index]
+
+    @Slot()
+    def new_project(self):
+        wizard = ProjetWizard()
+        if wizard.exec_():
+            db_filename = wizard.field("project_path") + QDir.separator() + wizard.field("project_name") + ".db"  
+            self.open(db_filename)
+
+
+

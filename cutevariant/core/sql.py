@@ -7,6 +7,19 @@ def drop_table(conn, table_name):
     c.execute(f"DROP TABLE IF EXISTS {table_name}")
 
 
+
+def create_project(conn, name, reference):
+    cursor = conn.cursor()
+    cursor.execute(
+        """CREATE TABLE projects (name text, reference text NULL)"""
+    )   
+    cursor.execute(
+        """INSERT INTO projects VALUES (:name,:reference)""",
+        {"name": name, "reference": reference}
+    )
+    conn.commit()
+
+
 ## ================ SELECTION functions =============================
 
 
