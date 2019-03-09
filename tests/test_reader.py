@@ -27,7 +27,7 @@ def test_vcf():
         my_reader = VcfReader(file)
 
 
-        assert my_reader.get_variants_count() == 902
+        assert my_reader.get_variants_count() == 911
         assert my_reader.get_samples() == other_reader.samples
 
         fields = [f["name"] for f in my_reader.get_fields()]
@@ -40,21 +40,23 @@ def test_vcf():
         # TODO : test annotation .. Gloups ..
 
         # Take some variants
-        my_variants = []
-        for i, variant in enumerate(my_reader.get_variants()):
-            my_variants.append(variant)
-            if i >= MAX_VARIANTS:
-                break
+      
 
-                # test each variants
-        for i, variant in enumerate(my_variants):
-            assert variant["chr"] == other_variants[i].CHROM
-            assert variant["pos"] == other_variants[i].POS
-            assert variant["ref"] == other_variants[i].REF
 
-            # Test if samples exists
-            if len(other_variants[i].samples) != 0:
-                other_sample = other_variants[i].samples[0].sample
-                other_gt = other_variants[i].samples[0]["GT"]
+def test_parse_snpeff():
+    filename = "exemples/test.snpeff.vcf"
+    print("parse snpeff")
+    with open(filename,"r") as file:
+        my_reader = VcfReader(file)
 
-                assert variant["samples"][0]["gt"] == GENOTYPE.get(other_gt, -1)
+        print(*my_reader.get_fields())
+
+        for variant in my_reader.get_variants():
+            print(variant)
+            return
+
+
+
+
+
+
