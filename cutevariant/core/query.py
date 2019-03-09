@@ -18,6 +18,8 @@ class Query:
         self.columns = columns
         self.filter = filter
         self.selection = selection
+        self.order_by = None
+        self.order_desc = True  
 
         ##-----------------------------------------------------------------------------------------------------------
 
@@ -96,8 +98,12 @@ class Query:
                 # add filter clause
         if self.filter:
             query += " WHERE " + self.filter_to_sql(self.filter)
-
             #  add limit and offset
+
+        if self.order_by is not None:
+            direction = "DESC" if self.order_desc is True else "ASC"
+            query += f" ORDER BY {self.order_by} {direction}"
+
         if limit > 0:
             query += f" LIMIT {limit} OFFSET {offset}"
 
@@ -108,6 +114,7 @@ class Query:
 
     def rows(self, limit=0, offset=0):
         """ return query results as list by record """
+        print(self.sql(limit, offset))
         yield from self.conn.execute(self.sql(limit, offset))
 
         ##-----------------------------------------------------------------------------------------------------------
