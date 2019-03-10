@@ -12,7 +12,7 @@ class CsvReader(AbstractReader):
     def get_samples(self):
         return ["boby", "sacha", "olivier"]
 
-    def get_fields(self):
+    def parse_fields(self):
         self.device.seek(0)
         csvreader = csv.reader(self.device, delimiter="\t")
         rows = next(csvreader)
@@ -20,7 +20,7 @@ class CsvReader(AbstractReader):
             row = row.replace("#", "")
             yield {"name": row, "type": "text", "category": None, "description": None}
 
-    def get_variants(self):
+    def parse_variants(self):
         self.device.seek(0)
         csvreader = csv.reader(self.device, delimiter="\t")
         next(csvreader)
