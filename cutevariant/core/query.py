@@ -19,7 +19,7 @@ class Query:
         self.filter = filter
         self.selection = selection
         self.order_by = None
-        self.order_desc = True  
+        self.order_desc = True
 
         ##-----------------------------------------------------------------------------------------------------------
 

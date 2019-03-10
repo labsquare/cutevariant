@@ -16,20 +16,19 @@ class ProjetPage(QWizardPage):
         self.projet_name_edit = QLineEdit()
         self.projet_path_edit = QLineEdit()
         self.browse_button = QPushButton("Browse")
-        self.reference  = QComboBox()
+        self.reference = QComboBox()
 
         self.reference.addItem("hg19")
         self.registerField("project_name", self.projet_name_edit, "text")
         self.registerField("project_path", self.projet_path_edit, "text")
         self.registerField("reference", self.reference, "currentText")
 
-
         v_layout = QFormLayout()
 
         browse_layout = QHBoxLayout()
         browse_layout.addWidget(self.projet_path_edit)
         browse_layout.addWidget(self.browse_button)
-        browse_layout.setContentsMargins(0,0,0,0)
+        browse_layout.setContentsMargins(0, 0, 0, 0)
 
         v_layout.addRow("Reference genom", self.reference)
         v_layout.addRow("Project Name", self.projet_name_edit)
@@ -41,22 +40,21 @@ class ProjetPage(QWizardPage):
         self.projet_path_edit.textChanged.connect(self.completeChanged)
         self.projet_name_edit.textChanged.connect(self.completeChanged)
 
-
-
     def _browse(self):
-        path = QFileDialog.getExistingDirectory(self,"select path")
+        path = QFileDialog.getExistingDirectory(self, "select path")
         if path:
             self.projet_path_edit.setText(path)
 
-
-
     def isComplete(self):
 
-        if QDir(self.projet_path_edit.text()).exists() and self.projet_path_edit.text() and self.projet_name_edit.text():
-            return True 
+        if (
+            QDir(self.projet_path_edit.text()).exists()
+            and self.projet_path_edit.text()
+            and self.projet_name_edit.text()
+        ):
+            return True
         else:
             return False
-
 
 
 class FilePage(QWizardPage):
@@ -100,7 +98,7 @@ class ImportThread(QThread):
         """override """
         self._stop = False
 
-        if self.db_filename is None: 
+        if self.db_filename is None:
             self.db_filename = self.filename + ".db"
 
         if os.path.exists(self.db_filename):
@@ -165,9 +163,13 @@ class ImportPage(QWizardPage):
             return
 
         else:
-            self.thread.filename    = self.field("filename")
-            self.thread.db_filename = self.field("project_path") + QDir.separator() + self.field("project_name") + ".db"  
-
+            self.thread.filename = self.field("filename")
+            self.thread.db_filename = (
+                self.field("project_path")
+                + QDir.separator()
+                + self.field("project_name")
+                + ".db"
+            )
 
             self.log_edit.appendPlainText("Import " + self.thread.filename)
             self.import_button.setText(self.text_buttons[1])

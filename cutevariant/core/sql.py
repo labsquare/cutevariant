@@ -7,15 +7,12 @@ def drop_table(conn, table_name):
     c.execute(f"DROP TABLE IF EXISTS {table_name}")
 
 
-
 def create_project(conn, name, reference):
     cursor = conn.cursor()
-    cursor.execute(
-        """CREATE TABLE projects (name text, reference text NULL)"""
-    )   
+    cursor.execute("""CREATE TABLE projects (name text, reference text NULL)""")
     cursor.execute(
         """INSERT INTO projects VALUES (:name,:reference)""",
-        {"name": name, "reference": reference}
+        {"name": name, "reference": reference},
     )
     conn.commit()
 
@@ -270,7 +267,7 @@ def create_table_variants(conn, fields):
     conn.commit()
 
 
-def insert_many_variants(conn, data, total_variant_count =-1, commit_every = 200):
+def insert_many_variants(conn, data, total_variant_count=-1, commit_every=200):
     """
     Insert many variant from data into variant table.columns
 
@@ -307,14 +304,16 @@ def insert_many_variants(conn, data, total_variant_count =-1, commit_every = 200
     )
 
     # Loop over variants
-    variant_count = 0   # count variants 
-    insert_count  = 0   # count insertion in sql ( one variant can have multiple insertion depending on annotation)
+    variant_count = 0  # count variants
+    insert_count = (
+        0
+    )  #  count insertion in sql ( one variant can have multiple insertion depending on annotation)
 
     for variant in data:
 
         variant_count += 1
 
-        ## Split variant into multiple variant if there are multiple annotation 
+        ## Split variant into multiple variant if there are multiple annotation
         variants = []
         if "annotation" in variant:
             for annotation in variant["annotation"]:
@@ -325,19 +324,19 @@ def insert_many_variants(conn, data, total_variant_count =-1, commit_every = 200
         else:
             variants.append(variant)
 
-
         for variant_to_insert in variants:
 
             # Insert current variant
             cursor.execute(
-                f"""INSERT INTO variants ({q_cols}) VALUES ({q_place})""", variant_to_insert
+                f"""INSERT INTO variants ({q_cols}) VALUES ({q_place})""",
+                variant_to_insert,
             )
 
             # get variant rowid
             variant_id = cursor.lastrowid
             insert_count += 1
 
-            # every commit_every = 200 insert, start a commit ! This value can be changed 
+            #  every commit_every = 200 insert, start a commit ! This value can be changed
             if insert_count % commit_every == 0:
                 progress = float(variant_count) / total_variant_count * 100.0
                 yield progress, f"{variant_count} variant inserted"
