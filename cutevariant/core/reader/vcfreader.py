@@ -88,8 +88,8 @@ class VcfReader(AbstractReader):
         super(VcfReader, self).__init__(device)
         self.parser = AnnotationParser()
 
-    def get_variants(self):
-        fields = list(self.get_fields())
+    def parse_variants(self):
+        fields = list(self.parse_fields())
         self.device.seek(0)
 
         vcf_reader = vcf.Reader(self.device)
@@ -151,7 +151,7 @@ class VcfReader(AbstractReader):
 
                 yield variant
 
-    def get_fields(self):
+    def parse_fields(self):
 
         yield {
             "name": "chr",

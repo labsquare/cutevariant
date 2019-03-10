@@ -1,6 +1,6 @@
 import sqlite3
 import sys
-
+import collections
 
 def drop_table(conn, table_name):
     c = conn.cursor()
@@ -285,6 +285,8 @@ def insert_many_variants(conn, data, total_variant_count=-1, commit_every=200):
     .. seealso:: abstractreader
     """
 
+
+
     cursor = conn.cursor()
 
     #  Get columns description from variant table
@@ -310,6 +312,10 @@ def insert_many_variants(conn, data, total_variant_count=-1, commit_every=200):
     )  #  count insertion in sql ( one variant can have multiple insertion depending on annotation)
 
     for variant in data:
+
+        # use default dict for missing value 
+        variant = collections.defaultdict(lambda : "", variant)
+
 
         variant_count += 1
 
