@@ -13,9 +13,9 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
-    wizard = ProjetWizard()
+    w = MainWindow()
 
-    wizard.show()
+    w.show()
 
     # w = MainWindow()
 

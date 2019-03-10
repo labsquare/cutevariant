@@ -106,10 +106,10 @@ class Tuple(metaclass=model_class):
         return "({})".format(", ".join(item.id for item in self.items))
 
 
-
 METAMODEL = textx.metamodel_from_str(
     resource_string(__name__, "vql.tx").decode(),  # grammar extraction from vql.tx
-    classes=model_class.classes, debug=False
+    classes=model_class.classes,
+    debug=False,
 )
 
 

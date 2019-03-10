@@ -8,13 +8,11 @@ from cutevariant.core import Query
 
 
 IMPACT_COLOR = {
-"LOW" : "#71E096",
-"MODERATE":"#F5A26F",
-"HIGH":"#ed6d79",
-"MODIFIER":"#55abe1"
+    "LOW": "#71E096",
+    "MODERATE": "#F5A26F",
+    "HIGH": "#ed6d79",
+    "MODIFIER": "#55abe1",
 }
-
-
 
 
 class QueryModel(QAbstractItemModel):
@@ -26,39 +24,37 @@ class QueryModel(QAbstractItemModel):
         self.query = None
         self.variants = []
 
-
-    def rowCount(self, parent = QModelIndex()):
+    def rowCount(self, parent=QModelIndex()):
         """override"""
         if parent == QModelIndex():
             return len(self.variants)
         return 0
 
-    def columnCount(self, parent = QModelIndex()):
+    def columnCount(self, parent=QModelIndex()):
         """override """
         if self.query is None:
-            return 0 
+            return 0
         else:
             return len(self.query.columns)
 
-    def index(self,row,column,parent) : 
+    def index(self, row, column, parent):
         """override"""
-        if not self.hasIndex(row,column, parent):
+        if not self.hasIndex(row, column, parent):
             return QModelIndex()
 
         return self.createIndex(row, column)
 
-    def parent(self,child):
-        """ override """ 
+    def parent(self, child):
+        """ override """
         if not child.isValid():
             return QModelIndex()
 
         return QModelIndex()
 
-
-    def data(self, index, role = Qt.DisplayRole):
+    def data(self, index, role=Qt.DisplayRole):
         """ override """
 
-        if not index.isValid() :
+        if not index.isValid():
             return None
 
         if role == Qt.DisplayRole:
@@ -66,15 +62,13 @@ class QueryModel(QAbstractItemModel):
 
         return None
 
-    def headerData(self, section,orientation, role = Qt.DisplayRole):
+    def headerData(self, section, orientation, role=Qt.DisplayRole):
         """override"""
         if orientation == Qt.Horizontal:
             if role == Qt.DisplayRole:
                 return self.query.columns[section]
 
         return None
-
-
 
     def setQuery(self, query: Query):
         self.query = query
@@ -86,8 +80,6 @@ class QueryModel(QAbstractItemModel):
         self.variants.clear()
         self.variants = list(self.query.rows(self.limit, self.page * self.limit))
         self.endResetModel()
-
-         
 
     def hasPage(self, page):
         return page >= 0 and page * self.limit < self.total
@@ -105,19 +97,16 @@ class QueryModel(QAbstractItemModel):
         if self.hasPage(self.page - 1):
             self.setPage(self.page - 1)
 
-
-    def sort(self, column: int, order ):
+    def sort(self, column: int, order):
         """override"""
         pass
         if column < len(self.query.columns):
             colname = self.query.columns[column]
 
-            print("ORDER" , order)
+            print("ORDER", order)
             self.query.order_by = colname
             self.query.order_desc = True if order == Qt.DescendingOrder else False
             self.load()
-
-
 
 
 class QueryDelegate(QStyledItemDelegate):
@@ -126,47 +115,39 @@ class QueryDelegate(QStyledItemDelegate):
 
         palette = qApp.palette("QTreeView")
         colname = index.model().headerData(index.column(), Qt.Horizontal)
-        value   = index.data(Qt.DisplayRole)
-        select  = option.state & QStyle.State_Selected
+        value = index.data(Qt.DisplayRole)
+        select = option.state & QStyle.State_Selected
 
-       
-        # Draw selection background 
-        if select: 
+        #  Draw selection background
+        if select:
             bg_brush = palette.brush(QPalette.Highlight)
-        # Draw alternative 
+        #  Draw alternative
         else:
-            if index.row() % 2 : 
+            if index.row() % 2:
                 bg_brush = palette.brush(QPalette.Midlight)
             else:
-                bg_brush =  palette.brush(QPalette.Light)
+                bg_brush = palette.brush(QPalette.Light)
 
         painter.setBrush(bg_brush)
         painter.setPen(Qt.NoPen)
         painter.drawRect(option.rect)
 
-
-
         if colname == "impact":
             painter.setPen(QPen(IMPACT_COLOR.get(value, palette.color(QPalette.Text))))
-            painter.drawText(option.rect, Qt.AlignLeft|Qt.AlignVCenter, index.data())
+            painter.drawText(option.rect, Qt.AlignLeft | Qt.AlignVCenter, index.data())
             return
-  
 
-
-
-        painter.setPen(QPen(palette.color(QPalette.HighlightedText if select else QPalette.Text)))
-        painter.drawText(option.rect, Qt.AlignLeft|Qt.AlignVCenter, index.data())
-
-
+        painter.setPen(
+            QPen(palette.color(QPalette.HighlightedText if select else QPalette.Text))
+        )
+        painter.drawText(option.rect, Qt.AlignLeft | Qt.AlignVCenter, index.data())
 
     def draw_biotype(self, value):
         pass
 
-
     def sizeHint(self, option, index):
         """override"""
         return QSize(0, 30)
-
 
 
 class ViewQueryWidget(AbstractQueryWidget):

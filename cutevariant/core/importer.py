@@ -5,7 +5,7 @@ from .readerfactory import create_reader
 from .sql import *
 
 
-def async_import_file(conn, filename , project = {}):
+def async_import_file(conn, filename, project={}):
     """
     Import filename into sqlite connection
 
@@ -18,13 +18,10 @@ def async_import_file(conn, filename , project = {}):
 
     with create_reader(filename) as reader:
 
-
-        # Create projects
-        create_project(conn, 
-            name = project.get("name"),
-            reference = project.get("reference")
-            )
-        
+        #  Create projects
+        create_project(
+            conn, name=project.get("name"), reference=project.get("reference")
+        )
 
         yield 0, "create table shema"
         #  Create table fields
@@ -52,9 +49,6 @@ def async_import_file(conn, filename , project = {}):
         yield 0, "count variants..."
         total_variant = reader.get_variants_count()
         yield from insert_many_variants(conn, reader.get_variants(), total_variant)
-
-      
-
 
     # # Create default selection
     # session.add(Selection(name="all", description="all variant", count = variant_count))

@@ -2,28 +2,61 @@ from .abstractreader import AbstractReader
 import vcf
 
 
-
 SNPEFF_ANNOTATION_DEFAULT_FIELDS = {
-    
-"annotation": {"name": "consequence", "category":"annotation", "description": "consequence", "type": "text"},
-"annotation_impact": {"name": "impact", "category":"annotation", "description": "impact of variant", "type": "text"},
-"gene_name" : {"name": "gene", "category":"annotation", "description": "gene name", "type": "text"},
-"gene_id" : {"name": "gene_id", "category":"annotation", "description": "gene name", "type": "text"},
-"feature_id": {"name": "transcript", "category":"annotation", "description": "transcript name", "type": "text"},
-"transcript_biotype": {"name": "biotype", "category":"annotation", "description": " biotype", "type": "text"},
-"hgvs.p": {"name": "hgvs_p", "category":"annotation", "description": "protein hgvs", "type": "text"},
-"hgvs.c": {"name": "hgvs_c", "category":"annotation", "description": "coding hgvs", "type": "text"}
-
+    "annotation": {
+        "name": "consequence",
+        "category": "annotation",
+        "description": "consequence",
+        "type": "text",
+    },
+    "annotation_impact": {
+        "name": "impact",
+        "category": "annotation",
+        "description": "impact of variant",
+        "type": "text",
+    },
+    "gene_name": {
+        "name": "gene",
+        "category": "annotation",
+        "description": "gene name",
+        "type": "text",
+    },
+    "gene_id": {
+        "name": "gene_id",
+        "category": "annotation",
+        "description": "gene name",
+        "type": "text",
+    },
+    "feature_id": {
+        "name": "transcript",
+        "category": "annotation",
+        "description": "transcript name",
+        "type": "text",
+    },
+    "transcript_biotype": {
+        "name": "biotype",
+        "category": "annotation",
+        "description": " biotype",
+        "type": "text",
+    },
+    "hgvs.p": {
+        "name": "hgvs_p",
+        "category": "annotation",
+        "description": "protein hgvs",
+        "type": "text",
+    },
+    "hgvs.c": {
+        "name": "hgvs_c",
+        "category": "annotation",
+        "description": "coding hgvs",
+        "type": "text",
+    },
 }
 
 
-
 class AnnotationParser(object):
-
-
-            
-    def parse_fields(self, raw): 
-        self.fields_index = {}  ## required for parse_variant 
+    def parse_fields(self, raw):
+        self.fields_index = {}  ## required for parse_variant
         for index, field in enumerate(raw.split("|")):
             key = field.strip().lower()
 
@@ -31,8 +64,6 @@ class AnnotationParser(object):
                 self.fields_index[index] = SNPEFF_ANNOTATION_DEFAULT_FIELDS[key]["name"]
                 yield SNPEFF_ANNOTATION_DEFAULT_FIELDS[key]
 
-
-        
     def parse_variant(self, raw):
 
         annotation = {}
@@ -42,9 +73,6 @@ class AnnotationParser(object):
                 annotation[field_name] = ann
 
         return annotation
-
-         
-
 
 
 class VcfReader(AbstractReader):
@@ -97,7 +125,7 @@ class VcfReader(AbstractReader):
                                     value = record.INFO[name]
                             variant[colname] = value
 
-                     # PARSE GENOTYPE / SAMPLE
+                    # PARSE GENOTYPE / SAMPLE
                     if category == "sample":
                         variant["samples"] = list()
                         for sample in record.samples:
@@ -111,15 +139,16 @@ class VcfReader(AbstractReader):
 
                             variant["samples"].append({"name": sample.sample, "gt": gt})
 
-
-                    # PARSE Annotation 
+                    #  PARSE Annotation
                     if category == "annotation":
                         # each variant can have multiple annotation. Create then many variants
                         variant["annotation"] = []
                         annotations = record.INFO["ANN"]
                         for annotation in annotations:
-                            variant["annotation"].append(self.parser.parse_variant(annotation))
-                         
+                            variant["annotation"].append(
+                                self.parser.parse_variant(annotation)
+                            )
+
                 yield variant
 
     def get_fields(self):
@@ -151,12 +180,10 @@ class VcfReader(AbstractReader):
 
         self.device.seek(0)
         vcf_reader = vcf.Reader(self.device)
-        # Annotation ... 
+        # Annotation ...
         for key, info in vcf_reader.infos.items():
             if key == "ANN":
                 yield from self.parser.parse_fields(info.desc)
-
-        
 
         # PEUVENT SE METTRE AUTOMATIQUEMENT ...
         for sample in vcf_reader.samples:

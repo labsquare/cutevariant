@@ -6,7 +6,7 @@ import json
 import os
 
 from cutevariant.gui.wizard.projetwizard import ProjetWizard
-
+from cutevariant.gui.settings import SettingsWidget
 from cutevariant.gui.viewquerywidget import ViewQueryWidget
 from cutevariant.gui.columnquerywidget import ColumnQueryWidget
 from cutevariant.gui.filterquerywidget import FilterQueryWidget
@@ -31,6 +31,9 @@ class MainWindow(QMainWindow):
         self.tab_view = QTabWidget()
         self.editor = VqlEditor()
 
+        # Setup Actions
+        self.setupActions()
+
         # Init router
         self.router = QueryRouter()
         # self.router.addWidget(self.view_widget)
@@ -39,10 +42,7 @@ class MainWindow(QMainWindow):
         self.router.addWidget(self.selection_widget)
         self.router.addWidget(self.editor)
 
-        #  Init panel
-        self.addPanel(self.column_widget)
-        self.addPanel(self.filter_widget)
-        self.addPanel(self.selection_widget)
+     
 
         vsplit = QSplitter(Qt.Vertical)
         vsplit.addWidget(self.tab_view)
@@ -50,19 +50,23 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(vsplit)
 
-        # Setup Actions
-        self.setupActions()
+
+
+        #  Init panel
+        self.addPanel(self.column_widget)
+        self.addPanel(self.filter_widget)
+        self.addPanel(self.selection_widget)
+
 
         #  window geometry
         self.resize(600, 400)
 
         self.addView()
-        #self.import_vcf("/home/schutz/Dev/CuteVariant-python/exemples/test.snp.eff.vcf")
+        # self.import_vcf("/home/schutz/Dev/CuteVariant-python/exemples/test.snp.eff.vcf")
 
         self.open("/home/schutz/Dev/CuteVariant-python/exemples/test.snpeff.vcf.db")
 
-
-        self.setGeometry(qApp.desktop().rect().adjusted(100,100,-100,-100))
+        self.setGeometry(qApp.desktop().rect().adjusted(100, 100, -100, -100))
 
     def import_vcf(self, filename):  #  Temporary .. will be removed
         db_filename = filename + ".db"
@@ -98,11 +102,23 @@ class MainWindow(QMainWindow):
         dock.setWindowTitle(widget.windowTitle())
         dock.setWidget(widget)
         self.addDockWidget(area, dock)
+        self.view_menu.addAction(dock.toggleViewAction())
+
 
     def setupActions(self):
-        fileMenu = self.menuBar().addMenu("&File")
-        fileMenu.addAction("&New project",self, SLOT("new_project()") , QKeySequence.New)
-        fileMenu.addAction("&Open project ...")
+        # menu bar 
+        self.file_menu = self.menuBar().addMenu("&File")
+        self.file_menu.addAction("&New project", self, SLOT("new_project()"), QKeySequence.New)
+        self.file_menu.addAction("&Open project ...", self, SLOT("open_project()"), QKeySequence.Open)
+        self.file_menu.addSeparator()
+        self.file_menu.addAction("Settings ...", self, SLOT("show_settings()"))
+
+        self.view_menu = self.menuBar().addMenu("&View")
+
+        self.help_menu = self.menuBar().addMenu("Help")
+        self.help_menu.addAction("About Qt", qApp, SLOT("aboutQt()"))
+
+        # Tool bar
 
         save_query_action = self.toolbar.addAction("save query")
         save_query_action.triggered.connect(self.selection_widget.save_current_query)
@@ -123,8 +139,15 @@ class MainWindow(QMainWindow):
     def new_project(self):
         wizard = ProjetWizard()
         if wizard.exec_():
-            db_filename = wizard.field("project_path") + QDir.separator() + wizard.field("project_name") + ".db"  
+            db_filename = (
+                wizard.field("project_path")
+                + QDir.separator()
+                + wizard.field("project_name")
+                + ".db"
+            )
             self.open(db_filename)
 
-
-
+    @Slot()
+    def show_settings(self):
+        widget = SettingsWidget()
+        widget.exec_()

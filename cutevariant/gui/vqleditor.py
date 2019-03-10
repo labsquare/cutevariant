@@ -9,13 +9,13 @@ from cutevariant.core import sql
 
 import re
 
-class VqlSyntaxHighlighter(QSyntaxHighlighter):
 
-    def __init__(self, document = None):
+class VqlSyntaxHighlighter(QSyntaxHighlighter):
+    def __init__(self, document=None):
         super().__init__(document)
 
-    def highlightBlock(self,text):
-        '''override '''
+    def highlightBlock(self, text):
+        """override """
 
         palette = qApp.palette("QTextEdit")
 
@@ -28,10 +28,9 @@ class VqlSyntaxHighlighter(QSyntaxHighlighter):
             while matchIterator.hasNext():
                 match = matchIterator.next()
                 t_format = QTextCharFormat()
-                t_format.setFontWeight(style or QFont.Normal);
-                t_format.setForeground(color or Qt.black);
-                self.setFormat(match.capturedStart(), match.capturedLength(), t_format);
-
+                t_format.setFontWeight(style or QFont.Normal)
+                t_format.setForeground(color or Qt.black)
+                self.setFormat(match.capturedStart(), match.capturedLength(), t_format)
 
 
 class VqlEditor(AbstractQueryWidget):
@@ -42,7 +41,6 @@ class VqlEditor(AbstractQueryWidget):
         self.highlighter = VqlSyntaxHighlighter(self.text_edit.document())
 
         main_layout = QVBoxLayout()
-
 
         main_layout.addWidget(self.text_edit)
         self.setLayout(main_layout)
