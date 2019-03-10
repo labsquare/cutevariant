@@ -125,7 +125,7 @@ class Query:
         """ return query results as dict by record """
         for value in self.conn.execute(self.sql(limit, offset)):
             item = {}
-            for index, col in enumerate(self.columns):
+            for index, col in enumerate(["rowid"] + self.columns):
                 item[col] = value[index]
             yield item
 

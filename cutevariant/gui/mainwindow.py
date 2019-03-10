@@ -14,10 +14,11 @@ from cutevariant.gui.selectionquerywidget import SelectionQueryWidget
 from cutevariant.gui.vqleditor import VqlEditor
 
 from cutevariant.gui.queryrouter import QueryRouter
-from cutevariant.gui.abstractvariantwidget import *
 
 from cutevariant.core.importer import import_file
 from cutevariant.core import Query
+
+from cutevariant.gui.plugins.infovariantplugin import InfoVariantPlugin
 
 
 class MainWindow(QMainWindow):
@@ -54,7 +55,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(vsplit)
 
 
-        self.test = InfoVariantWidget()
+        self.test = InfoVariantPlugin()
 
         #  Init panel
         self.addPanel(self.column_widget)
