@@ -11,6 +11,7 @@ class InfoVariantPlugin(VariantPlugin):
 		self.view = QTreeWidget()
 		self.view.setColumnCount(2)
 		v_layout = QVBoxLayout()
+		v_layout.setContentsMargins(0,0,0,0)
 		v_layout.addWidget(self.view)
 		self.setLayout(v_layout)
 

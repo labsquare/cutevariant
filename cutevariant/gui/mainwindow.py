@@ -11,6 +11,7 @@ from cutevariant.gui.viewquerywidget import ViewQueryWidget
 from cutevariant.gui.columnquerywidget import ColumnQueryWidget
 from cutevariant.gui.filterquerywidget import FilterQueryWidget
 from cutevariant.gui.selectionquerywidget import SelectionQueryWidget
+from cutevariant.gui.hpoquerywidget import HpoQueryWidget
 from cutevariant.gui.vqleditor import VqlEditor
 
 from cutevariant.gui.queryrouter import QueryRouter
@@ -62,6 +63,8 @@ class MainWindow(QMainWindow):
         self.addPanel(self.filter_widget)
         self.addPanel(self.selection_widget)
         self.addPanel(self.test)
+
+        self.addPanel(HpoQueryWidget())
 
         self.addView()
 
