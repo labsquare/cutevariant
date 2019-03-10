@@ -14,6 +14,7 @@ from cutevariant.gui.selectionquerywidget import SelectionQueryWidget
 from cutevariant.gui.vqleditor import VqlEditor
 
 from cutevariant.gui.queryrouter import QueryRouter
+from cutevariant.gui.abstractvariantwidget import *
 
 from cutevariant.core.importer import import_file
 from cutevariant.core import Query
@@ -30,6 +31,8 @@ class MainWindow(QMainWindow):
         self.selection_widget = SelectionQueryWidget()
         self.tab_view = QTabWidget()
         self.editor = VqlEditor()
+
+
 
         # Setup Actions
         self.setupActions()
@@ -51,22 +54,31 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(vsplit)
 
 
+        self.test = InfoVariantWidget()
 
         #  Init panel
         self.addPanel(self.column_widget)
         self.addPanel(self.filter_widget)
         self.addPanel(self.selection_widget)
+        self.addPanel(self.test)
+
+        self.addView()
+
+
+        self.currentView().variant_clicked.connect(self.test.set_variant)
 
 
         #  window geometry
         self.resize(600, 400)
 
-        self.addView()
         # self.import_vcf("/home/schutz/Dev/CuteVariant-python/exemples/test.snp.eff.vcf")
 
         self.open("/home/schutz/Dev/CuteVariant-python/exemples/test.snpeff.vcf.db")
 
         self.setGeometry(qApp.desktop().rect().adjusted(100, 100, -100, -100))
+
+
+
 
     def import_vcf(self, filename):  #  Temporary .. will be removed
         db_filename = filename + ".db"
@@ -128,6 +140,8 @@ class MainWindow(QMainWindow):
         self.view_widgets.append(widget)
         self.tab_view.addTab(widget, widget.windowTitle())
         self.router.addWidget(widget)
+
+
 
     def currentView(self):
         index = self.tab_view.currentIndex()

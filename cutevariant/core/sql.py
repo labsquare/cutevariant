@@ -267,6 +267,21 @@ def create_table_variants(conn, fields):
     conn.commit()
 
 
+def get_one_variant(conn, id : int):
+
+    variant = {"rowid" : id}
+
+    cols = [i[0] for i in conn.execute("SELECT * FROM variants LIMIT 1").description]
+    values = conn.execute(f""" SELECT * FROM variants WHERE rowid = {id}""").fetchone()     
+    variant.update(dict(zip(cols,values)))
+    return variant
+
+    # cursor = conn.cursor()
+    # return cursor.fetchone()
+
+
+
+
 def insert_many_variants(conn, data, total_variant_count=-1, commit_every=200):
     """
     Insert many variant from data into variant table.columns

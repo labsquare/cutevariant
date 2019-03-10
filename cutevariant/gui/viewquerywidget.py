@@ -5,6 +5,7 @@ from PySide2.QtGui import *
 
 from .abstractquerywidget import AbstractQueryWidget
 from cutevariant.core import Query
+from cutevariant.core import sql
 
 
 IMPACT_COLOR = {
@@ -58,7 +59,8 @@ class QueryModel(QAbstractItemModel):
             return None
 
         if role == Qt.DisplayRole:
-            return str(self.variants[index.row()][index.column()])
+            # First row is variant id  don't show 
+            return str(self.variants[index.row()][index.column()+1])
 
         return None
 
@@ -67,6 +69,10 @@ class QueryModel(QAbstractItemModel):
         if orientation == Qt.Horizontal:
             if role == Qt.DisplayRole:
                 return self.query.columns[section]
+
+        if orientation == Qt.Vertical:
+            if role == Qt.DisplayRole:
+                return self.variants[index.row()][0]
 
         return None
 
@@ -100,13 +106,18 @@ class QueryModel(QAbstractItemModel):
     def sort(self, column: int, order):
         """override"""
         pass
-        if column < len(self.query.columns):
+        if column < self.columnCount():
             colname = self.query.columns[column]
 
             print("ORDER", order)
             self.query.order_by = colname
             self.query.order_desc = True if order == Qt.DescendingOrder else False
             self.load()
+
+
+    def get_rowid(self, index):
+        return self.variants[index.row()][0]
+
 
 
 class QueryDelegate(QStyledItemDelegate):
@@ -152,7 +163,7 @@ class QueryDelegate(QStyledItemDelegate):
 
 class ViewQueryWidget(AbstractQueryWidget):
 
-    save_clicked = Signal()
+    variant_clicked = Signal(dict)
 
     def __init__(self):
         super().__init__()
@@ -204,6 +215,10 @@ class ViewQueryWidget(AbstractQueryWidget):
 
         self.model.modelReset.connect(self.updateInfo)
 
+        #emit variant when clicked
+        self.view.clicked.connect(self._variant_clicked)
+    
+
     def setQuery(self, query: Query):
         """ Method override from AbstractQueryWidget"""
         self.model.setQuery(query)
@@ -216,3 +231,10 @@ class ViewQueryWidget(AbstractQueryWidget):
 
         self.page_info.setText(f"{self.model.total} variant(s)")
         self.page_box.setText(f"{self.model.page}")
+
+
+    def _variant_clicked(self, index):
+        print("cicked on ", index)
+        rowid = self.model.get_rowid(index)
+        variant = sql.get_one_variant(self.model.query.conn, rowid)
+        self.variant_clicked.emit(variant)
