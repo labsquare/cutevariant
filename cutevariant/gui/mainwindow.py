@@ -21,7 +21,6 @@ from cutevariant.core import Query
 
 from cutevariant.gui.plugins.infovariantplugin import InfoVariantPlugin
 
-from cutevariant.gui.genombrowser import GenomeView
 
 
 class MainWindow(QMainWindow):
