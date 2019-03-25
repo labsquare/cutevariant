@@ -8,4 +8,5 @@ install:
 
 # command to run tests
 script:
-  - python -m pytest --cov cutevariant tests
+  - pip install -r requirements.txt
+  - python -m pytest cutevariant tests -vv
