@@ -1,11 +1,11 @@
 test:
-	python -m pytest tests cutevariant -vv --doctest-module
+	python setup.py test --addopts "tests cutevariant -vv --doctest-module"
 
 coverage:
-	python -m pytest --cov cutevariant tests
+	python setup.py test --addopts "--cov cutevariant tests"
 
 run:
-	python -m cutevariant
+	cutevariant
 
 black:
 	black cutevariant
@@ -17,4 +17,8 @@ fullrelease:
 install_deps:
 	python -c "import configparser; c = configparser.ConfigParser(); c.read('setup.cfg'); print(c['options']['install_requires'])" | xargs pip install -U
 install:
-	python setup.py install
+	@# Replacement for python setup.py develop which doesn't support extra_require keyword.
+	@# Install a project in editable mode.
+	pip install -e .[dev]
+uninstall:
+	pip cutevariant uninstall
