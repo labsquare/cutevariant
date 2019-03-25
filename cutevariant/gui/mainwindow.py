@@ -21,6 +21,8 @@ from cutevariant.core import Query
 
 from cutevariant.gui.plugins.infovariantplugin import InfoVariantPlugin
 
+from cutevariant.gui.genombrowser import GenomeView
+
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
@@ -56,20 +58,23 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(vsplit)
 
 
-        self.test = InfoVariantPlugin()
+        # self.test = InfoVariantPlugin()
+        # self.test2 = GenomeView()
 
         #  Init panel
         self.addPanel(self.column_widget)
         self.addPanel(self.filter_widget)
         self.addPanel(self.selection_widget)
-        self.addPanel(self.test)
+        # self.addPanel(self.test)
+        # self.addPanel(self.test2)
 
-        self.addPanel(HpoQueryWidget())
+        #self.addPanel(HpoQueryWidget())
 
         self.addView()
 
 
-        self.currentView().variant_clicked.connect(self.test.set_variant)
+        # self.currentView().variant_clicked.connect(self.test.set_variant)
+        # self.currentView().variant_clicked.connect(self.test2.set_variant)
 
 
         #  window geometry
@@ -77,7 +82,7 @@ class MainWindow(QMainWindow):
 
         # self.import_vcf("/home/schutz/Dev/CuteVariant-python/exemples/test.snp.eff.vcf")
 
-        self.open("/home/schutz/Dev/CuteVariant-python/exemples/test.snpeff.vcf.db")
+        #self.open("/home/schutz/Dev/CuteVariant-python/exemples/test.snpeff.vcf.db")
 
         self.setGeometry(qApp.desktop().rect().adjusted(100, 100, -100, -100))
 
@@ -164,6 +169,15 @@ class MainWindow(QMainWindow):
                 + ".db"
             )
             self.open(db_filename)
+
+    @Slot()
+    def open_project(self):
+        filename = QFileDialog.getOpenFileName(self,"Open project", "Cutevariant project (*.db)")[0]
+        if filename is not None:
+            self.open(filename)
+
+
+
 
     @Slot()
     def show_settings(self):
