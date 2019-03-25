@@ -4,6 +4,11 @@ from cutevariant.core import Query
 
 
 class AbstractQueryWidget(QWidget):
+    """
+    This is a base class for all widget which observe a Query
+
+    .. seealso:: queryrooter.py
+    """
 
     #  signals
     changed = Signal()

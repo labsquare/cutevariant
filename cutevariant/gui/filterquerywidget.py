@@ -133,7 +133,7 @@ class FilterQueryWidget(AbstractQueryWidget):
 
         layout = QVBoxLayout()
         layout.addWidget(self.view)
-        layout.setContentsMargins(0,0,0,0)
+        layout.setContentsMargins(0, 0, 0, 0)
 
         self.setLayout(layout)
 

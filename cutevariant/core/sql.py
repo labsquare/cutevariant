@@ -2,6 +2,7 @@ import sqlite3
 import sys
 import collections
 
+
 def drop_table(conn, table_name):
     c = conn.cursor()
     c.execute(f"DROP TABLE IF EXISTS {table_name}")
@@ -267,19 +268,17 @@ def create_table_variants(conn, fields):
     conn.commit()
 
 
-def get_one_variant(conn, id : int):
+def get_one_variant(conn, id: int):
 
-    variant = {"rowid" : id}
+    variant = {"rowid": id}
 
     cols = [i[0] for i in conn.execute("SELECT * FROM variants LIMIT 1").description]
-    values = conn.execute(f""" SELECT * FROM variants WHERE rowid = {id}""").fetchone()     
-    variant.update(dict(zip(cols,values)))
+    values = conn.execute(f""" SELECT * FROM variants WHERE rowid = {id}""").fetchone()
+    variant.update(dict(zip(cols, values)))
     return variant
 
     # cursor = conn.cursor()
     # return cursor.fetchone()
-
-
 
 
 def insert_many_variants(conn, data, total_variant_count=-1, commit_every=200):
@@ -299,8 +298,6 @@ def insert_many_variants(conn, data, total_variant_count=-1, commit_every=200):
     ... todo:: with large dataset, need to cache import   
     .. seealso:: abstractreader
     """
-
-
 
     cursor = conn.cursor()
 
@@ -328,9 +325,8 @@ def insert_many_variants(conn, data, total_variant_count=-1, commit_every=200):
 
     for variant in data:
 
-        # use default dict for missing value 
-        variant = collections.defaultdict(lambda : "", variant)
-
+        # use default dict for missing value
+        variant = collections.defaultdict(lambda: "", variant)
 
         variant_count += 1
 
