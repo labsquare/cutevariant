@@ -67,7 +67,6 @@ class Query:
         if len(self.columns) == 0:
             self.columns = ["chr", "pos", "ref", "alt"]
 
-
         #  Replace columns gt(sacha) by sv4.gt ( where 4 is the sample id for outer join)
         sql_columns = []
         sql_columns.append("variants.rowid")

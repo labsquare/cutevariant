@@ -22,7 +22,6 @@ from cutevariant.core import Query
 from cutevariant.gui.plugins.infovariantplugin import InfoVariantPlugin
 
 
-
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
         super(MainWindow, self).__init__()
@@ -35,8 +34,6 @@ class MainWindow(QMainWindow):
         self.tab_view = QTabWidget()
         self.editor = VqlEditor()
 
-
-
         # Setup Actions
         self.setupActions()
 
@@ -48,14 +45,11 @@ class MainWindow(QMainWindow):
         self.router.addWidget(self.selection_widget)
         self.router.addWidget(self.editor)
 
-     
-
         vsplit = QSplitter(Qt.Vertical)
         vsplit.addWidget(self.tab_view)
         vsplit.addWidget(self.editor)
 
         self.setCentralWidget(vsplit)
-
 
         # self.test = InfoVariantPlugin()
         # self.test2 = GenomeView()
@@ -67,26 +61,21 @@ class MainWindow(QMainWindow):
         # self.addPanel(self.test)
         # self.addPanel(self.test2)
 
-        #self.addPanel(HpoQueryWidget())
+        # self.addPanel(HpoQueryWidget())
 
         self.addView()
 
-
         # self.currentView().variant_clicked.connect(self.test.set_variant)
         # self.currentView().variant_clicked.connect(self.test2.set_variant)
-
 
         #  window geometry
         self.resize(600, 400)
 
         # self.import_vcf("/home/schutz/Dev/CuteVariant-python/exemples/test.snp.eff.vcf")
 
-        #self.open("/home/schutz/Dev/CuteVariant-python/exemples/test.snpeff.vcf.db")
+        # self.open("/home/schutz/Dev/CuteVariant-python/exemples/test.snpeff.vcf.db")
 
         self.setGeometry(qApp.desktop().rect().adjusted(100, 100, -100, -100))
-
-
-
 
     def import_vcf(self, filename):  #  Temporary .. will be removed
         db_filename = filename + ".db"
@@ -124,12 +113,15 @@ class MainWindow(QMainWindow):
         self.addDockWidget(area, dock)
         self.view_menu.addAction(dock.toggleViewAction())
 
-
     def setupActions(self):
-        # menu bar 
+        # menu bar
         self.file_menu = self.menuBar().addMenu("&File")
-        self.file_menu.addAction("&New project", self, SLOT("new_project()"), QKeySequence.New)
-        self.file_menu.addAction("&Open project ...", self, SLOT("open_project()"), QKeySequence.Open)
+        self.file_menu.addAction(
+            "&New project", self, SLOT("new_project()"), QKeySequence.New
+        )
+        self.file_menu.addAction(
+            "&Open project ...", self, SLOT("open_project()"), QKeySequence.Open
+        )
         self.file_menu.addSeparator()
         self.file_menu.addAction("Settings ...", self, SLOT("show_settings()"))
 
@@ -148,8 +140,6 @@ class MainWindow(QMainWindow):
         self.view_widgets.append(widget)
         self.tab_view.addTab(widget, widget.windowTitle())
         self.router.addWidget(widget)
-
-
 
     def currentView(self):
         index = self.tab_view.currentIndex()
@@ -171,12 +161,11 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def open_project(self):
-        filename = QFileDialog.getOpenFileName(self,"Open project", "Cutevariant project (*.db)")[0]
+        filename = QFileDialog.getOpenFileName(
+            self, "Open project", "Cutevariant project (*.db)"
+        )[0]
         if filename is not None:
             self.open(filename)
-
-
-
 
     @Slot()
     def show_settings(self):

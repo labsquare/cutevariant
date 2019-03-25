@@ -59,8 +59,8 @@ class QueryModel(QAbstractItemModel):
             return None
 
         if role == Qt.DisplayRole:
-            # First row is variant id  don't show 
-            return str(self.variants[index.row()][index.column()+1])
+            # First row is variant id  don't show
+            return str(self.variants[index.row()][index.column() + 1])
 
         return None
 
@@ -114,10 +114,8 @@ class QueryModel(QAbstractItemModel):
             self.query.order_desc = True if order == Qt.DescendingOrder else False
             self.load()
 
-
     def get_rowid(self, index):
         return self.variants[index.row()][0]
-
 
 
 class QueryDelegate(QStyledItemDelegate):
@@ -215,9 +213,8 @@ class ViewQueryWidget(AbstractQueryWidget):
 
         self.model.modelReset.connect(self.updateInfo)
 
-        #emit variant when clicked
+        # emit variant when clicked
         self.view.clicked.connect(self._variant_clicked)
-    
 
     def setQuery(self, query: Query):
         """ Method override from AbstractQueryWidget"""
@@ -231,7 +228,6 @@ class ViewQueryWidget(AbstractQueryWidget):
 
         self.page_info.setText(f"{self.model.total} variant(s)")
         self.page_box.setText(f"{self.model.page}")
-
 
     def _variant_clicked(self, index):
         print("cicked on ", index)
