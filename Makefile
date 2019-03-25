@@ -1,8 +1,8 @@
 test:
-	python -m pytest tests cutevariant -vv --doctest-module
+	python setup.py test --addopts "tests cutevariant -vv --doctest-module"
 
 coverage:
-	python -m pytest --cov cutevariant tests
+	python setup.py test --addopts "--cov cutevariant tests"
 
 run:
 	cutevariant
