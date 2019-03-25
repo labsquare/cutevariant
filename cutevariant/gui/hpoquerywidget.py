@@ -184,7 +184,7 @@ class HpoQueryWidget(AbstractQueryWidget):
        
         self.setWindowTitle("HPO")
         
-        conn =  sqlite3.connect("/home/schutz/Dev/hpo2sqlite/hpo.db")
+        #conn =  sqlite3.connect("/home/schutz/Dev/hpo2sqlite/hpo.db")
         self.view = QTreeView()
         self.model = HpoModel(conn)
         self.model.setRoot(Node(1))
