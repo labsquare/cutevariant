@@ -17,6 +17,8 @@ fullrelease:
 install_deps:
 	python -c "import configparser; c = configparser.ConfigParser(); c.read('setup.cfg'); print(c['options']['install_requires'])" | xargs pip install -U
 install:
-	python setup.py develop
+	@# Replacement for python setup.py develop which doesn't support extra_require keyword.
+	@# Install a project in editable mode.
+	pip install -e .[dev]
 uninstall:
 	pip cutevariant uninstall
