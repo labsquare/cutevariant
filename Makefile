@@ -5,7 +5,7 @@ coverage:
 	python -m pytest --cov cutevariant tests
 
 run:
-	python -m cutevariant
+	cutevariant
 
 black:
 	black cutevariant
@@ -17,4 +17,6 @@ fullrelease:
 install_deps:
 	python -c "import configparser; c = configparser.ConfigParser(); c.read('setup.cfg'); print(c['options']['install_requires'])" | xargs pip install -U
 install:
-	python setup.py install
+	python setup.py develop
+uninstall:
+	pip cutevariant uninstall
