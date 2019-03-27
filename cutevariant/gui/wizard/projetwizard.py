@@ -92,6 +92,7 @@ class FilePage(QWizardPage):
 class ImportThread(QThread):
 
     progress_changed = Signal(int, str)
+    finished_status = Signal(bool)
 
     def __init__(self):
         super().__init__()
@@ -121,6 +122,8 @@ class ImportThread(QThread):
                 break
             # Send progression
             self.progress_changed.emit(value, message)
+        # Send status (True when there is no error)
+        self.finished_status.emit(not self._stop)
 
     def stop(self):
         self._stop = True
@@ -134,6 +137,7 @@ class ImportPage(QWizardPage):
         self.setSubTitle("Please click on Import/Stop to start or stop the process.")
         self.text_buttons = ["Import", "Stop"]
 
+        self.thread_finished = False
         self.thread = ImportThread()
         self.progress = QProgressBar()
         self.import_button = QPushButton(self.text_buttons[0])
@@ -159,19 +163,35 @@ class ImportPage(QWizardPage):
         self.import_button.clicked.connect(self.run)
 
         self.thread.progress_changed.connect(self.progress_changed)
+        self.thread.finished.connect(self.import_thread_finished)
+        self.thread.finished_status.connect(self.import_thread_finished_status)
 
     def progress_changed(self, value, message):
         self.progress.setValue(value)
         self.log_edit.appendPlainText(message)
+
+    def import_thread_finished(self):
+        """Force the activation of the finish button after a successful import"""
+        self.completeChanged.emit()
+
+    def import_thread_finished_status(self, status):
+        """Set the finished status of import thread
+
+        .. note:: Called at the end of run()
+        """
+        self.thread_finished = status
+
+        if status:
+            self.import_button.setDisabled(True)
 
     def run(self):
         if self.thread.isRunning():
             print("stop thread")
             self.import_button.setDisabled(True)
             self.thread.stop()
+            self.progress.setValue(0)
             self.import_button.setDisabled(False)
             self.import_button.setText(self.text_buttons[0])
-            return
 
         else:
             self.thread.filename = self.field("filename")
@@ -185,6 +205,10 @@ class ImportPage(QWizardPage):
             self.log_edit.appendPlainText("Import " + self.thread.filename)
             self.import_button.setText(self.text_buttons[1])
             self.thread.start()
+
+    def isComplete(self):
+        """Conditions to unlock next button"""
+        return self.thread_finished
 
 
 class ProjetWizard(QWizard):
