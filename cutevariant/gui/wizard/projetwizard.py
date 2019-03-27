@@ -11,7 +11,7 @@ class ProjetPage(QWizardPage):
         super().__init__()
 
         self.setTitle("Project creation")
-        self.setSubTitle("This wizard will guide you to create a cutevariant project")
+        self.setSubTitle("This wizard will guide you to create a cutevariant project.")
 
         self.projet_name_edit = QLineEdit()
         self.projet_path_edit = QLineEdit()
@@ -41,7 +41,7 @@ class ProjetPage(QWizardPage):
         self.projet_name_edit.textChanged.connect(self.completeChanged)
 
     def _browse(self):
-        path = QFileDialog.getExistingDirectory(self, "select path")
+        path = QFileDialog.getExistingDirectory(self, "Select a path for the project")
         if path:
             self.projet_path_edit.setText(path)
 
@@ -62,7 +62,7 @@ class FilePage(QWizardPage):
         super().__init__()
 
         self.setTitle("Select a file")
-        self.setSubTitle("supported file are vcf and vcf.gz")
+        self.setSubTitle("Supported file are vcf and vcf.gz.")
 
         self.text_edit = QLineEdit()
         self.button = QPushButton("Browse")
@@ -78,7 +78,7 @@ class FilePage(QWizardPage):
 
     def _browse(self):
         filename = QFileDialog.getOpenFileName(
-            self, "open file", QDir.homePath(), "VCF file (*.vcf, *.vcf.gz)"
+            self, "Open a file", QDir.homePath(), "VCF file (*.vcf, *.vcf.gz)"
         )
         if filename:
             self.text_edit.setText(filename[0])
@@ -120,7 +120,7 @@ class ImportPage(QWizardPage):
         super().__init__()
 
         self.setTitle("Import file")
-        self.setSubTitle("Press import to create sqlite database")
+        self.setSubTitle("Please click on Import/Stop to start or stop the process.")
         self.text_buttons = ["Import", "Stop"]
 
         self.thread = ImportThread()
@@ -179,6 +179,7 @@ class ImportPage(QWizardPage):
 class ProjetWizard(QWizard):
     def __init__(self):
         super().__init__()
+        self.setWindowTitle("Cutevariant - Project creation wizard")
 
         self.addPage(ProjetPage())
         self.addPage(FilePage())
