@@ -15,6 +15,7 @@ class ProjetPage(QWizardPage):
 
         self.projet_name_edit = QLineEdit()
         self.projet_path_edit = QLineEdit()
+        self.projet_path_edit.setText(os.getcwd())
         self.browse_button = QPushButton("Browse")
         self.reference = QComboBox()
 
@@ -46,15 +47,12 @@ class ProjetPage(QWizardPage):
             self.projet_path_edit.setText(path)
 
     def isComplete(self):
-
-        if (
+        """Conditions to unlock next button"""
+        return True if (
             QDir(self.projet_path_edit.text()).exists()
             and self.projet_path_edit.text()
             and self.projet_name_edit.text()
-        ):
-            return True
-        else:
-            return False
+        ) else False
 
 
 class FilePage(QWizardPage):
@@ -64,24 +62,31 @@ class FilePage(QWizardPage):
         self.setTitle("Select a file")
         self.setSubTitle("Supported file are vcf and vcf.gz.")
 
-        self.text_edit = QLineEdit()
+        self.file_path_edit = QLineEdit()
         self.button = QPushButton("Browse")
         v_layout = QHBoxLayout()
 
-        v_layout.addWidget(self.text_edit)
+        v_layout.addWidget(self.file_path_edit)
         v_layout.addWidget(self.button)
         self.setLayout(v_layout)
 
         self.button.clicked.connect(self._browse)
+        self.file_path_edit.textChanged.connect(self.completeChanged)
 
-        self.registerField("filename", self.text_edit, "text")
+        self.registerField("filename", self.file_path_edit, "text")
 
     def _browse(self):
         filename = QFileDialog.getOpenFileName(
             self, "Open a file", QDir.homePath(), "VCF file (*.vcf, *.vcf.gz)"
         )
         if filename:
-            self.text_edit.setText(filename[0])
+            self.file_path_edit.setText(filename[0])
+
+    def isComplete(self):
+        """Conditions to unlock next button"""
+        return True if (
+            self.file_path_edit.text() and QFile(self.file_path_edit.text()).exists()
+        ) else False
 
 
 class ImportThread(QThread):
