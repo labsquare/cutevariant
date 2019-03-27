@@ -100,7 +100,12 @@ class ImportThread(QThread):
         self.db_filename = None
 
     def run(self):
-        """override """
+        """Overrided QThread method
+
+        .. warning:: This method is the only one to be executed in the thread.
+            SQLite objects created in a thread can only be used in that same
+            thread; so no use of self.conn is allowed elsewhere.
+        """
         self._stop = False
 
         if self.db_filename is None:
@@ -112,12 +117,13 @@ class ImportThread(QThread):
 
         for value, message in async_import_file(self.conn, self.filename):
             if self._stop == True:
+                self.conn.close()
                 break
+            # Send progression
             self.progress_changed.emit(value, message)
 
     def stop(self):
         self._stop = True
-        self.conn.close()
 
 
 class ImportPage(QWizardPage):
