@@ -5,7 +5,7 @@ from .readerfactory import create_reader
 from .sql import *
 
 
-def async_import_file(conn, filename):
+def async_import_file(conn, filename, project={}):
     """
     Import filename into sqlite connection
 
@@ -17,6 +17,11 @@ def async_import_file(conn, filename):
     """
 
     with create_reader(filename) as reader:
+
+        #  Create projects
+        create_project(
+            conn, name=project.get("name"), reference=project.get("reference")
+        )
 
         yield 0, "create table shema"
         #  Create table fields

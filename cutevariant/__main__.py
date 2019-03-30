@@ -1,24 +1,18 @@
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 import sys
-import os
 from cutevariant.gui import MainWindow
-from cutevariant.gui.wizard.projetwizard import ProjetWizard
 
 
-import sqlite3
+def main():
+    """The main routine."""
+
+    app = QApplication(sys.argv)
+    w = MainWindow()
+    w.show()
+    app.exec_()
 
 
 if __name__ == "__main__":
 
-    app = QApplication(sys.argv)
-
-    wizard = ProjetWizard()
-
-    wizard.show()
-
-    # w = MainWindow()
-
-    # w.show()
-
-    app.exec_()
+    main()

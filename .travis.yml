@@ -4,7 +4,9 @@ python:
 
 # command to install dependencies
 install:
-  - pip install -r requirements.txt
+  - make install_deps
+
 # command to run tests
 script:
-  - make test 
+  - pip install -r requirements.txt
+  - python -m pytest cutevariant tests -vv

@@ -4,16 +4,316 @@
 		"selected_items":
 		[
 			[
+				"Hpo",
+				"HpoQueryWidget\tclass"
+			],
+			[
+				"hpo",
+				"hpoquerywidget\tmodule"
+			],
+			[
+				"endI",
+				"endInsertRows\tfunction"
+			],
+			[
+				"load",
+				"load_child\tfunction"
+			],
+			[
+				"beginIns",
+				"beginInsertRows\tfunction"
+			],
+			[
+				"child",
+				"child_count"
+			],
+			[
+				"node",
+				"node_from_index"
+			],
+			[
+				"root",
+				"root_node\tstatement"
+			],
+			[
+				"chi",
+				"childs\tstatement"
+			],
+			[
+				"parent",
+				"parent_node\tstatement"
+			],
+			[
+				"has",
+				"hasIndex\tfunction"
+			],
+			[
+				"node_",
+				"node_from_index\tfunction"
+			],
+			[
+				"inter",
+				"internalPointer\tfunction"
+			],
+			[
+				"exe",
+				"execute"
+			],
+			[
+				"ItemIsE",
+				"ItemIsEnabled\tinstance"
+			],
+			[
+				"val",
+				"val_item\tstatement"
+			],
+			[
+				"ke",
+				"key_item\tstatement"
+			],
+			[
+				"QTreeWi",
+				"QTreeWidgetItem\tclass"
+			],
+			[
+				"Varia",
+				"VariantInfoPlugin\tclass"
+			],
+			[
+				"varia",
+				"variant_info_plugin\tmodule"
+			],
+			[
+				"get",
+				"get_rowid\tfunction"
+			],
+			[
+				"col",
+				"columns\tstatement"
+			],
+			[
+				"column",
+				"columnCount\tfunction"
+			],
+			[
+				"abst",
+				"abstractvariantwidget\tmodule"
+			],
+			[
+				"def",
+				"defaultdict\tclass"
+			],
+			[
+				"pars",
+				"parse_variants\tfunction"
+			],
+			[
+				"menu",
+				"menuBar\tfunction"
+			],
+			[
+				"cutev",
+				"cutevariant"
+			],
+			[
+				"Hig",
+				"HighlightedText\tinstance"
+			],
+			[
+				"view",
+				"view_menu\tstatement"
+			],
+			[
+				"file",
+				"fileMenu\tstatement"
+			],
+			[
+				"QKey",
+				"QKeySequence\tclass"
+			],
+			[
+				"loa",
+				"load_all\tfunction"
+			],
+			[
+				"save",
+				"save_all\tfunction"
+			],
+			[
+				"Base",
+				"BaseWidget\tclass"
+			],
+			[
+				"setFix",
+				"setFixedWidth\tfunction"
+			],
+			[
+				"Save",
+				"SaveAll\tinstance"
+			],
+			[
+				"QDialog",
+				"QDialogButtonBox\tclass"
+			],
+			[
+				"Gene",
+				"GeneralSettingsWidget\tclass"
+			],
+			[
+				"add",
+				"addWidget\tfunction"
+			],
+			[
+				"db",
+				"db_filename\tstatement"
+			],
+			[
+				"gen",
+				"genom_box"
+			],
+			[
+				"text",
+				"textChanged\tinstance"
+			],
+			[
+				"br",
+				"browse_button\tstatement"
+			],
+			[
+				"QFielD",
+				"QFileDialog\tclass"
+			],
+			[
+				"proj",
+				"projet_path_edit\tstatement"
+			],
+			[
+				"Porj",
+				"ProjetPage\tclass"
+			],
+			[
+				"geno",
+				"genom_box\tstatement"
+			],
+			[
+				"order",
+				"order_desc\tstatement"
+			],
+			[
+				"QPa",
+				"QPalette\tclass"
+			],
+			[
+				"inser",
+				"insert_many_fields\tfunction"
+			],
+			[
+				"ins",
+				"intersect_variants\tfunction"
+			],
+			[
+				"im",
+				"insert_many_fields\tfunction"
+			],
+			[
+				"read",
+				"reader\tmodule"
+			],
+			[
+				"fie",
+				"field_name\tstatement"
+			],
+			[
+				"index",
+				"index_to_fields"
+			],
+			[
+				"fi",
+				"fields_index"
+			],
+			[
+				"value",
+				"values\tfunction"
+			],
+			[
+				"desc",
+				"description"
+			],
+			[
+				"Anno",
+				"AnnotationParser\tclass"
+			],
+			[
+				"mat",
+				"matchIterator\tstatement"
+			],
+			[
+				"code",
+				"codeeditor\tmodule"
+			],
+			[
+				"QStandar",
+				"QStandardItem\tclass"
+			],
+			[
+				"setStyl",
+				"setStyleHint\tfunction"
+			],
+			[
+				"seq",
+				"seq_item\tstatement"
+			],
+			[
+				"lig",
+				"lightness\tfunction"
+			],
+			[
+				"light",
+				"lightgray"
+			],
+			[
+				"motif",
+				"motif_item\tstatement"
+			],
+			[
+				"setA",
+				"setAlphaF\tfunction"
+			],
+			[
+				"mot",
+				"motif_has_changed\tfunction"
+			],
+			[
+				"moti",
+				"motif_item\tstatement"
+			],
+			[
+				"selectio",
+				"selection_item\tstatement"
+			],
+			[
+				"ani",
+				"anim_selec\tstatement"
+			],
+			[
+				"selec",
+				"selection_item\tstatement"
+			],
+			[
+				"addT",
+				"addToolBar\tfunction"
+			],
+			[
+				"varian",
+				"variant_count\tparam"
+			],
+			[
 				"QCo",
 				"QtCore\tmodule"
 			],
 			[
 				"sa",
 				"save_query_action"
-			],
-			[
-				"save",
-				"save_query_action\tstatement"
 			],
 			[
 				"Quer",
@@ -46,10 +346,6 @@
 			[
 				"Imp",
 				"ImportThread\tclass"
-			],
-			[
-				"add",
-				"addTab\tfunction"
 			],
 			[
 				"Wi",
@@ -160,10 +456,6 @@
 				"limit"
 			],
 			[
-				"exe",
-				"execute\tPyQt Functions"
-			],
-			[
 				"quer",
 				"query\tPyQt Functions"
 			],
@@ -178,10 +470,6 @@
 			[
 				"tabl",
 				"table_count\tfunction"
-			],
-			[
-				"varia",
-				"variant_columns\tstatement"
 			],
 			[
 				"vari",
@@ -212,10 +500,6 @@
 				"metadata\tstatement"
 			],
 			[
-				"file",
-				"filename\tstatement"
-			],
-			[
 				"addI",
 				"addItems\tfunction"
 			],
@@ -230,418 +514,11 @@
 			[
 				"crea",
 				"create_column_from_field\tfunction"
-			],
-			[
-				"class",
-				"classmethod\tclass"
-			],
-			[
-				"bin",
-				"bind\tparam"
-			],
-			[
-				"cre",
-				"create_engine\tfunction"
-			],
-			[
-				"creat",
-				"create_table\tfunction"
-			],
-			[
-				"Variant",
-				"VariantView\tclass"
-			],
-			[
-				"Varia",
-				"VariantView\tclass"
-			],
-			[
-				"im",
-				"importer\tmodule"
-			],
-			[
-				"Varian",
-				"VariantView"
-			],
-			[
-				"Char",
-				"CharField"
-			],
-			[
-				"Cha",
-				"CharField"
-			],
-			[
-				"appen",
-				"appendRow\tfunction"
-			],
-			[
-				"setHea",
-				"setHorizontalHeaderLabels\tfunction"
-			],
-			[
-				"QStandar",
-				"QStandardItem\tclass"
-			],
-			[
-				"QStandardIt",
-				"QStandardItemModel\tclass"
-			],
-			[
-				"Vriant",
-				"VariantModel\tclass"
-			],
-			[
-				"ha",
-				"hasIndex\tfunction"
-			],
-			[
-				"import",
-				"import_file\tfunction"
-			],
-			[
-				"filen",
-				"filename\tparam"
-			],
-			[
-				"read",
-				"readerfactory\tmodule"
-			],
-			[
-				"cuteva",
-				"cutevariant\tmodule"
-			],
-			[
-				"Transp",
-				"transparent\tinstance"
-			],
-			[
-				"No",
-				"NoFrame"
-			],
-			[
-				"setMaxi",
-				"setMaximumWidth\tfunction"
-			],
-			[
-				"setva",
-				"setValue\tmodule"
-			],
-			[
-				"impo",
-				"import_button\tstatement"
-			],
-			[
-				"mode",
-				"model\tmodule"
-			],
-			[
-				"setRa",
-				"setRange\tPyQt Functions"
-			],
-			[
-				"glob",
-				"globalInstance\tmodule"
-			],
-			[
-				"QThread",
-				"QThreadPool\tPyQt Classes"
-			],
-			[
-				"Impor",
-				"ImportTask\tclass"
-			],
-			[
-				"setContext",
-				"setContextProperty\tPyQt Functions"
-			],
-			[
-				"setFrameS",
-				"setFrameShape\tmodule"
-			],
-			[
-				"setFra",
-				"setFrame\tPyQt Functions"
-			],
-			[
-				"tabw",
-				"tabwidget\tstatement"
-			],
-			[
-				"impor",
-				"import_layout\tstatement"
-			],
-			[
-				"get",
-				"getOpenFileName\tmodule"
-			],
-			[
-				"QWizard",
-				"QWizardPage\tclass"
-			],
-			[
-				"connec",
-				"connect\tPyQt Functions"
-			],
-			[
-				"butt",
-				"butt\tstatement"
-			],
-			[
-				"init",
-				"init\tPyQt Functions"
-			],
-			[
-				"PyQt",
-				"PyQt5.Qt\tPyQt import"
-			],
-			[
-				"QAbstractItem",
-				"QAbstractItemModel\tPyQt Classes"
-			],
-			[
-				"info",
-				"info\tPyQt Functions"
-			],
-			[
-				"categor",
-				"category\tPyQt Functions"
-			],
-			[
-				"set",
-				"setattr\tfunction"
-			],
-			[
-				"items",
-				"items\tPyQt Functions"
-			],
-			[
-				"inf",
-				"infos\tstatement"
-			],
-			[
-				"chun",
-				"chunk\tstatement"
-			],
-			[
-				"chunk",
-				"chunk_size\tstatement"
-			],
-			[
-				"insert",
-				"insert_many\tfunction"
-			],
-			[
-				"chu",
-				"chunk_size\tstatement"
-			],
-			[
-				"mod",
-				"model\tmodule"
-			],
-			[
-				"abs",
-				"abstractclassmethod\tclass"
-			],
-			[
-				"Vc",
-				"VcfReader\tclass"
-			],
-			[
-				"Vcf",
-				"vcfreader\tmodule"
-			],
-			[
-				"Backg",
-				"BackgroundColorRole\tinstance"
-			],
-			[
-				"Pyqt",
-				"PyQt5.Qt\tPyQt import"
-			],
-			[
-				"QApp",
-				"QApplication\tclass"
-			],
-			[
-				"ba",
-				"background-color\tproperty"
-			],
-			[
-				"paren",
-				"parent\tPyQt Functions"
-			],
-			[
-				"coding",
-				"coding_start\tstatement"
-			],
-			[
-				"obo",
-				"obograph\tstatement"
-			],
-			[
-				"dump",
-				"dump\tstatement"
-			],
-			[
-				"norma",
-				"normalize\tPyQt Functions"
-			],
-			[
-				"scat",
-				"scatter_kws\tparam"
-			],
-			[
-				"norm",
-				"normalize\tPyQt Functions"
-			],
-			[
-				"colum",
-				"columns\tstatement"
-			],
-			[
-				"prep",
-				"preprocessing\tmodule"
-			],
-			[
-				"to",
-				"to_csv\tfunction"
-			],
-			[
-				"Base",
-				"baseName\tPyQt Functions"
-			],
-			[
-				"f",
-				"filename\tstatement"
 			]
 		]
 	},
 	"buffers":
 	[
-		{
-			"file": "__main__.py",
-			"settings":
-			{
-				"buffer_size": 368,
-				"encoding": "UTF-8",
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "cutevariant/gui/mainwindow.py",
-			"settings":
-			{
-				"buffer_size": 3526,
-				"encoding": "UTF-8",
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "cutevariant/gui/selectionquerywidget.py",
-			"settings":
-			{
-				"buffer_size": 1887,
-				"encoding": "UTF-8",
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"contents": "  Exon_1_Promoter_1B  GCATTGTAGTCTTCCCACCTCCCA\n  Exon_1_Promoter_1B  TACTTCTGGCCACTGGGCGAGCGT\n  Exon_2_Promoter_1A  CTCCGGCATCTTGTGCTAATCCTT\n  Exon_2_Promoter_1A  CATGTGGCTGTATTGGTGCAGCCC\n  Exon_3_Untranslated_bregion  ACCGCTGCAGATGGCTGATGTGAA\n  Exon_4  TGCAGCTTCATATGATCAGTTGTT\n  Exon_5  GAAGCTATGGCTTCTTCTGGACAG\n  Exon_6  CGGGAAGGATCTGTATCAAGCCGT\n  Exon_7  ATCTTGACAAAGAAGAAAAGGAAA\n  Exon_8  GTTGCGATGGAAGAACAACTAGGT\n  Exon_9  ATTCAGCAAATCGAAAAGGACATA\n  Exon_10 AAGCATGAAACCGGCTCACATGAT\n  Exon_11 GACCATGAAACAGCCAGTGTTTTG\n  Exon_12 GCAGGAAGCTCATGAACCAGGCAT\n  Exon_13 GTGTGTTCTAATGAAACTTTCATT\n  Intron_13 CGGGGCATTTCATCACAGGAGCTA\n  Exon_14 TTGCAGAATTATTGCAAGTGGACT\n  Exon_15 CAGATTTTAGTTGGGCCACAAGTG\n  Exon_16 TGGCGAGCAGATGTAAATAGTAAA\n  Exon_17 GCACTTGCATTTTTGGTTGGCACT\n  Exon_18 TGCTGCAGCTTTAAGGAATCTCAT\n  Exon_18 AGATGAAATAAAACAAAGTGAGCA\n  Exon_18 AGTTCCAATCTTTTCTTTTATTTC\n  Exon_18 AGTCAGCTGCCTGTGTACAAACTT\n  Exon_18 CTATTGAAGGAACTCCTTACTGTT\n  Exon_18 CACTTGATTTGAAAGATATACAGA\n  Exon_18 CAGCAACCATTAAGTAGACCTATA\n  Exon_18 GAGCACAGCAAACATTCATCATCC\n  Exon_18 CAGTGAATAACAACACAAAGAAGC\n",
-			"file": "/tmp/mlpa.txt",
-			"file_size": 1085,
-			"file_write_time": 131945431017401496,
-			"settings":
-			{
-				"buffer_size": 1086,
-				"encoding": "UTF-8",
-				"line_ending": "Unix",
-				"name": "Exon 1"
-			}
-		},
-		{
-			"file": "/tmp/camille/main.py",
-			"settings":
-			{
-				"buffer_size": 499,
-				"encoding": "UTF-8",
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"contents": "GCATTGTAGTCTTCCCACCTCCCAb\n>Exon_1_Promoter_1B\nCTCCGGCATCTTGTGCTAATCCTT\n>Exon_2_Promoter_1A\nACCGCTGCAGATGGCTGATGTGAA\n>Exon_4\nGAAGCTATGGCTTCTTCTGGACAG\n>Exon_6\nATCTTGACAAAGAAGAAAAGGAAA\n>Exon_8\nATTCAGCAAATCGAAAAGGACATA\n>Exon_10\nGACCATGAAACAGCCAGTGTTTTG\n>Exon_12\nGTGTGTTCTAATGAAACTTTCATT\n>Intron_13\nTTGCAGAATTATTGCAAGTGGACT\n>Exon_15\nTGGCGAGCAGATGTAAATAGTAAA\n>Exon_17\nTGCTGCAGCTTTAAGGAATCTCAT\n>Exon_18\nAGTTCCAATCTTTTCTTTTATTTC\n>Exon_18\nCTATTGAAGGAACTCCTTACTGTT\n>Exon_18\nCAGCAACCATTAAGTAGACCTATA\n>Exon_18\nCAGTGAATAACAACACAAAGAAGC\n",
-			"file": "/tmp/mlpa.fasta",
-			"file_size": 522,
-			"file_write_time": 131945431587971124,
-			"settings":
-			{
-				"buffer_size": 523,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"contents": "bwa aln tolc.fa primers.FASTA | bwa samse ref.fa - primers.FASTA | samtools view -bu - | samtools sort - > aln_sorted_output.bam && samtools index aln_sorted_output.bam",
-			"settings":
-			{
-				"buffer_size": 168,
-				"line_ending": "Unix",
-				"name": "bwa aln tolc.fa primers.FASTA | bwa samse ref.fa -"
-			}
-		},
-		{
-			"contents": "Exon 1:Promoter 1B\nExon 1:Promoter 1B\nExon 2:Promoter 1A\nExon 2:Promoter 1A\nExon 3:Untranslated region\nExon 4\nExon 5\nExon 6\nExon 7\nExon 8\nExon 9\nExon 10\nExon 11\nExon 12\nExon 13\nIntron 13\nExon 14\nExon 15\nExon 16\nExon 17\nExon 18\nExon 18\nExon 18\nExon 18\nExon 18\nExon 18\nExon 18\nExon 18\nExon 18\n",
-			"settings":
-			{
-				"buffer_size": 291,
-				"line_ending": "Unix",
-				"name": "Exon 1:Promoter 1B"
-			}
-		},
-		{
-			"file": "cutevariant/gui/wizard/projetwizard.py",
-			"settings":
-			{
-				"buffer_size": 3043,
-				"encoding": "UTF-8",
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "cutevariant/gui/viewquerywidget.py",
-			"settings":
-			{
-				"buffer_size": 3732,
-				"encoding": "UTF-8",
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "cutevariant/gui/abstractquerywidget.py",
-			"settings":
-			{
-				"buffer_size": 370,
-				"encoding": "UTF-8",
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "cutevariant/core/sql.py",
-			"settings":
-			{
-				"buffer_size": 9229,
-				"encoding": "UTF-8",
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "cutevariant/core/importer.py",
-			"settings":
-			{
-				"buffer_size": 1512,
-				"encoding": "UTF-8",
-				"line_ending": "Unix"
-			}
-		}
 	],
 	"build_system": "Packages/Makefile/Make.sublime-build",
 	"build_system_choices":
@@ -827,6 +704,30 @@
 		"selected_items":
 		[
 			[
+				"uni",
+				"Permute Lines: Unique"
+			],
+			[
+				"sftp",
+				"SFTP: Browse Server…"
+			],
+			[
+				"Boo",
+				"Bookmarks: Toggle"
+			],
+			[
+				"nucl",
+				"Set Syntax: clustal"
+			],
+			[
+				"fasta",
+				"Set Syntax: fasta-nt"
+			],
+			[
+				"install",
+				"Package Control: Install Package"
+			],
+			[
 				"python",
 				"Set Syntax: Python"
 			],
@@ -847,10 +748,6 @@
 				"Set Syntax: Markdown GFM"
 			],
 			[
-				"install",
-				"Package Control: Install Package"
-			],
-			[
 				"markdow",
 				"Set Syntax: Markdown"
 			],
@@ -865,10 +762,6 @@
 			[
 				"markd",
 				"Set Syntax: MultiMarkdown"
-			],
-			[
-				"sftp",
-				"SFTP: Browse Server…"
 			],
 			[
 				"pelica",
@@ -1234,10 +1127,78 @@
 	"expanded_folders":
 	[
 		"/DATA/Dev/CuteVariant-python/cutevariant",
-		"/DATA/Dev/CuteVariant-python/cutevariant/gui"
+		"/DATA/Dev/CuteVariant-python/cutevariant/core",
+		"/DATA/Dev/CuteVariant-python/cutevariant/core/reader",
+		"/DATA/Dev/CuteVariant-python/cutevariant/gui",
+		"/DATA/Dev/CuteVariant-python/cutevariant/gui/plugins",
+		"/DATA/Dev/CuteVariant-python/cutevariant/gui/wizard",
+		"/DATA/Dev/CuteVariant-python/tests"
 	],
 	"file_history":
 	[
+		"/home/schutz/Bioinfo/projects/pacbio/Snakefile",
+		"/DATA/Dev/CuteVariant-python/cutevariant/gui/genombrowser.py",
+		"/tmp/sublime-sftp-browse-1552644848/genouest/home/genouest/cnrs_umr6290/sschutz/project/pacbio/Snakefile",
+		"/home/schutz/.config/sublime-text-3/Packages/SFTP/SFTP.sublime-settings",
+		"/DATA/Dev/CuteVariant-python/cutevariant/core/reader/vcfreader.py",
+		"/DATA/Dev/CuteVariant-python/cutevariant/gui/columnquerywidget.py",
+		"/DATA/Dev/CuteVariant-python/cutevariant/core/reader/csvreader.py",
+		"/DATA/Dev/CuteVariant-python/cutevariant/core/sql.py",
+		"/DATA/Dev/CuteVariant-python/cutevariant/gui/viewquerywidget.py",
+		"/DATA/Dev/CuteVariant-python/cutevariant/gui/wizard/projetwizard.py",
+		"/DATA/Dev/CuteVariant-python/cutevariant/gui/mainwindow.py",
+		"/DATA/Dev/CuteVariant-python/cutevariant/core/query.py",
+		"/DATA/Dev/CuteVariant-python/cutevariant/gui/plugins/infovariantplugin.py",
+		"/DATA/Dev/CuteVariant-python/cutevariant/gui/variantplugin.py",
+		"/DATA/Dev/CuteVariant-python/cutevariant/gui/hpoquerywidget.py",
+		"/DATA/Dev/CuteVariant-python/cutevariant/gui/selectionquerywidget.py",
+		"/DATA/Dev/CuteVariant-python/cutevariant/gui/filterquerywidget.py",
+		"/DATA/Dev/CuteVariant-python/__main__.py",
+		"/tmp/test/index.html",
+		"/DATA/Dev/CuteVariant-python/cutevariant/__main__.py",
+		"/DATA/Dev/CuteVariant-python/cutevariant/gui/abstractvariantwidget.py",
+		"/DATA/Dev/CuteVariant-python/cutevariant/core/reader/abstractreader.py",
+		"/DATA/Dev/CuteVariant-python/main.py",
+		"/DATA/Dev/CuteVariant-python/tests/test_reader.py",
+		"/DATA/Dev/CuteVariant-python/cutevariant/core/importer.py",
+		"/DATA/Dev/CuteVariant-python/tests/test_sql.py",
+		"/DATA/Dev/CuteVariant-python/cutevariant/gui/settings.py",
+		"/home/schutz/Dev/CuteVariant-python/cutevariant/gui/widgets.py",
+		"/home/schutz/Dev/CuteVariant-python/cutevariant/gui/__init__.py",
+		"/home/schutz/Dev/biseau-gui/codeeditor.py",
+		"/home/schutz/Dev/CuteVariant-python/cutevariant/gui/vqleditor.py",
+		"/home/schutz/Dev/CuteVariant-python/cutevariant/gui/viewquerywidget.py",
+		"/home/schutz/Dev/CuteVariant-python/cutevariant/gui/columnquerywidget.py",
+		"/DATA/Dev/CuteVariant-python/cutevariant/gui/query/queryrouter.py",
+		"/home/schutz/Dev/CuteVariant-python/cutevariant/gui/fieldsview.py",
+		"/DATA/Dev/biseau-gui/codeeditor.py",
+		"/DATA/Dev/biseau-gui/stackwidget.py",
+		"/DATA/Dev/biseau-gui/mainwindow.py",
+		"/DATA/Dev/biseau-gui/dotviewer.py",
+		"/DATA/Dev/biseau-gui/imageviewer.py",
+		"/DATA/Dev/biseau-gui/logwidget.py",
+		"/DATA/Dev/biseau-gui/__main__.py",
+		"/DATA/Dev/biseau-gui/test.fa",
+		"/tmp/sublime-sftp-browse-1551739714/genouest/home/genouest/cnrs_umr6290/sschutz/project/10x/181123_MN00591_0076_A000H2KMNC/Alignment_1/20181124_084915/SampleSheetUsed2.csv",
+		"/tmp/sublime-sftp-browse-1551740077/genouest/home/genouest/cnrs_umr6290/sschutz/project/10x/run.sh",
+		"/DATA/Dev/blog/content/entropy.md",
+		"/DATA/Dev/notebook/convolution/anim.py",
+		"/DATA/Bioinfo/data/gjb2.fa",
+		"/DATA/Dev/blog/content/convolution.md",
+		"/DATA/Dev/biszau/biseau/examples/scripts/render_interactions.json",
+		"/DATA/Dev/biszau/biseau/examples/scripts/raw_data.lp",
+		"/DATA/Dev/biszau/biseau/examples/scripts/compute_score.py",
+		"/DATA/Dev/biszau/biseau/scripts/build_concepts.py",
+		"/DATA/Dev/biszau/biseau/examples/api_basics.py",
+		"/DATA/Dev/biszau/biseau/biseau/module_loader.py",
+		"/DATA/Dev/biseau-gui/requirements.txt",
+		"/DATA/Dev/CuteVariant-python/cutevariant/core/vql.tx",
+		"/DATA/Dev/CuteVariant-python/cutevariant/core/vql.py",
+		"/home/schutz/rapport_activité.md",
+		"/DATA/Dev/CuteVariant-python/cutevariant/gui/abstractquerywidget.py",
+		"/tmp/mlpa.fasta",
+		"/tmp/mlpa.txt",
+		"/tmp/camille/main.py",
 		"/DATA/Dev/deep/main.py",
 		"/DATA/Dev/blog/Makefile",
 		"/DATA/Dev/blog/pelican-themes/pure-single/templates/base.html",
@@ -1245,11 +1206,8 @@
 		"/DATA/Dev/blog/pelicanconf.py",
 		"/DATA/Dev/CuteVariant-python/cutevariant.sublime-project",
 		"/DATA/Dev/test2/Snakefile",
-		"/DATA/Dev/blog/content/entropy.md",
 		"/home/schutz/Dev/blog/content/entropy.md",
-		"/DATA/Dev/CuteVariant-python/cutevariant/core/sql.py",
 		"/tmp/sublime-sftp-browse-1549383047/genouest/home/genouest/cnrs_umr6290/sschutz/project/mucobiome/raw/cmd.sh",
-		"/DATA/Dev/CuteVariant-python/cutevariant/core/vql.tx",
 		"/tmp/sublime-sftp-browse-1549386720/genouest/home/genouest/cnrs_umr6290/sschutz/scratch/mucobiome/raw/mucobiome-manifest",
 		"/tmp/sublime-sftp-browse-1549382053/genouest/home/genouest/cnrs_umr6290/sschutz/project/mucobiome/raw/Snakefile",
 		"/home/schutz/.config/sublime-text-3/Packages/User/sftp_servers/genouest",
@@ -1258,7 +1216,6 @@
 		"/home/schutz/Dev/blog/pelican-themes/pure-single/static/css/pure.css",
 		"/home/schutz/Dev/CuteVariant-python/main.py",
 		"/home/schutz/Dev/CuteVariant-python/__main__.py",
-		"/DATA/Dev/CuteVariant-python/cutevariant/gui/mainwindow.py",
 		"/home/schutz/Dev/perrine/mshb/mshb.json",
 		"/DATA/Dev/perrine/mshb/out.json",
 		"/DATA/Dev/perrine/msgb.py",
@@ -1274,20 +1231,11 @@
 		"/home/schutz/.tmux.conf",
 		"/home/schutz/.config/sublime-text-3/Local/genouest",
 		"/home/schutz/.config/sublime-text-3/Packages/User/SFTP.sublime-settings",
-		"/home/schutz/.config/sublime-text-3/Packages/SFTP/SFTP.sublime-settings",
-		"/DATA/Dev/CuteVariant-python/cutevariant/gui/filterquerywidget.py",
-		"/DATA/Dev/CuteVariant-python/cutevariant/gui/columnquerywidget.py",
-		"/DATA/Dev/CuteVariant-python/cutevariant/gui/viewquerywidget.py",
 		"/DATA/Dev/CuteVariant-python/cutevariant/gui/queryrouter.py",
-		"/DATA/Dev/CuteVariant-python/cutevariant/gui/abstractquerywidget.py",
-		"/DATA/Dev/CuteVariant-python/cutevariant/core/importer.py",
-		"/DATA/Dev/CuteVariant-python/__main__.py",
 		"/DATA/Dev/CuteVariant-python/cutevariant/core/readerfactory.py",
 		"/DATA/Dev/CuteVariant-python/cutevariant/gui/importwizard.py",
-		"/DATA/Dev/CuteVariant-python/cutevariant/core/query.py",
 		"/DATA/Dev/CuteVariant-python/tests/test_query.py",
 		"/DATA/Dev/CuteVariant-python/tests/test_qt_queryrouter.py",
-		"/DATA/Dev/CuteVariant-python/tests/test_reader.py",
 		"/DATA/Dev/CuteVariant-python/cutevariant/gui/variantview.py",
 		"/DATA/Dev/CuteVariant-python/cutevariant/core/__init__.py",
 		"/DATA/Dev/testplug/plugins/catwidget.py",
@@ -1305,71 +1253,21 @@
 		"/DATA/Dev/CuteVariant-python/cutevariant/core/sqlite.py",
 		"/DATA/Dev/CuteVariant-python/cutevariant/core/model.py",
 		"/DATA/Dev/CuteVariant-python/tests/test_model.py",
-		"/DATA/Dev/CuteVariant-python/cutevariant/core/reader/csvreader.py",
-		"/DATA/Dev/CuteVariant-python/cutevariant/core/reader/abstractreader.py",
 		"/DATA/Dev/CuteVariant-python/tests/test_import.py",
 		"/DATA/Dev/CuteVariant-python/exemples/test.csv",
 		"/DATA/Dev/CuteVariant-python/exemples/test.cvf",
 		"/DATA/Dev/CuteVariant-python/Makefile",
-		"/DATA/Dev/CuteVariant-python/main.py",
 		"/home/schutz/Dev/CuteVariant-python/cutevariant/core/query.py",
 		"/home/schutz/Dev/CuteVariant-python/cutevariant/core/model.py",
 		"/home/schutz/Dev/CuteVariant-python/tests/test_model.py",
 		"/home/schutz/Dev/CuteVariant-python/Makefile",
 		"/home/schutz/Dev/CuteVariant-python/tests/utils.py",
 		"/home/schutz/.config/sublime-text-3/Packages/SublimeOnSaveBuild/SublimeOnSaveBuild.sublime-settings",
-		"/home/schutz/.config/sublime-text-3/Packages/SublimeOnSaveBuild/README.md",
-		"/home/schutz/Dev/CuteVariant-python/cutevariant.sublime-project",
-		"/home/schutz/Dev/tatabox/tatabox/connector.py",
-		"/home/schutz/Dev/tatabox/__main__.py",
-		"/home/schutz/Dev/tatabox/tatabox/model.py",
-		"/home/schutz/Dev/CuteVariant-python/cutevariant/core/reader/vcfreader.py",
-		"/DATA/Dev/tatabox/__main__.py",
-		"/DATA/Dev/tatabox/tatabox/model.py",
-		"/DATA/Dev/tatabox/tests/__main__.py",
-		"/home/schutz/Dev/CuteVariant-python/cutevariant/core/importer.py",
-		"/home/schutz/Dev/CuteVariant-python/cutevariant/core/reader/csvreader.py",
-		"/home/schutz/.config/sublime-text-3/Packages/Anaconda/Anaconda.sublime-settings",
-		"/home/schutz/.config/sublime-text-3/Packages/User/Anaconda.sublime-settings",
-		"/home/schutz/clara/mai",
-		"/home/schutz/clara/main.my",
-		"/DATA/Dev/tatabox/requirements.txt",
-		"/home/schutz/clara/main.py",
-		"/home/schutz/genom",
-		"/DATA/Dev/tatabox/tatabox/connector.py",
-		"/home/schutz/.zshrc",
-		"/home/schutz/Dev/sigma/clara.html",
-		"/home/schutz/clara/test.py",
-		"/home/schutz/.config/sublime-text-3/Packages/BrowserIntegration/BrowserIntegration.sublime-settings",
-		"/home/schutz/Dev/CuteVariant-python/cutevariant/core/reader/__init__.py",
-		"/home/schutz/Dev/CuteVariant-python/tests/test_import.py",
-		"/home/schutz/Dev/CuteVariant-python/cutevariant/gui/variantview.py",
-		"/home/schutz/Dev/CuteVariant-python/README.md",
-		"/home/schutz/Dev/CuteVariant-python/cutevariant/gui/fieldsview.py",
-		"/home/schutz/Dev/CuteVariant-python/exemples/gene.bed",
-		"/home/schutz/Dev/CuteVariant-python/exemples/test.csv",
-		"/home/schutz/.plotly/.credentials",
-		"/DATA/Dev/CuteVariant-python/exemples/test2.csv",
-		"/home/schutz/Dev/CuteVariant-python/cutevariant/temp.py",
-		"/home/schutz/Dev/CuteVariant-python/cutevariant/__init__.py",
-		"/home/schutz/Dev/CuteVariant-python/test.py",
-		"/DATA/Dev/lncRNA/test.fa",
-		"/DATA/Dev/lncRNA/test/Snakefile",
-		"/tmp/test.py",
-		"/home/schutz/Dev/CuteVariant/src/app/resultsview/resultdelegate.cpp",
-		"/home/schutz/Dev/CuteVariant/src/app/resultsview/resulttreemodel.cpp",
-		"/home/schutz/test.py",
-		"/home/schutz/Dev/CuteVariant-python/cutevariant/core/reader/abstractreader.py",
-		"/home/schutz/Dev/CuteVariant-python/cutevariant/core/readerfactory.py",
-		"/home/schutz/Dev/CuteVariant-python/test.txt",
-		"/home/schutz/.config/sublime-text-3/Packages/SideBarEnhancements/Side Bar.sublime-settings",
-		"/home/schutz/Dev/CuteVariant-python/cutevariant/gui/widgets.py",
-		"/home/schutz/Dev/CuteVariant-python/cutevariant/gui/Test.py",
-		"/home/schutz/Dev/CuteVariant-python/cutevariant/gui/mainwindow.py"
+		"/home/schutz/.config/sublime-text-3/Packages/SublimeOnSaveBuild/README.md"
 	],
 	"find":
 	{
-		"height": 53.0
+		"height": 41.0
 	},
 	"find_in_files":
 	{
@@ -1384,6 +1282,32 @@
 		"case_sensitive": true,
 		"find_history":
 		[
+			"merge",
+			"\\n",
+			"lbc\\d+",
+			"open_pro",
+			"print",
+			"print(",
+			"insert_many",
+			"fileMenu",
+			"lpad",
+			"write",
+			"read",
+			"self.genom_box",
+			"order",
+			",",
+			"test_",
+			"close",
+			"print",
+			"\\t",
+			"^",
+			"1,[ACGT]+",
+			"MUC\\d+,",
+			"TTTCTTTTCTTCT",
+			"ACGTATATCACGTATATCACGTATATCACGTATATCACGCATATT",
+			"self.size",
+			"build_scr",
+			"génétiq",
 			"Exon",
 			"Ex",
 			"Exin",
@@ -1487,514 +1411,14 @@
 	"groups":
 	[
 		{
-			"selected": 4,
 			"sheets":
 			[
-				{
-					"buffer": 0,
-					"file": "__main__.py",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 368,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								263,
-								263
-							]
-						],
-						"settings":
-						{
-							"auto_complete_triggers":
-							[
-								{
-									"characters": ".",
-									"selector": "source.python - string - comment - constant.numeric"
-								},
-								{
-									"characters": ".",
-									"selector": "source.python - string - constant.numeric"
-								}
-							],
-							"git_gutter_is_enabled": true,
-							"incomplete_sync": null,
-							"remote_loading": false,
-							"synced": false,
-							"syntax": "Packages/Python/Python.sublime-syntax"
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 7,
-					"type": "text"
-				},
-				{
-					"buffer": 1,
-					"file": "cutevariant/gui/mainwindow.py",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 3526,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								3161,
-								3161
-							]
-						],
-						"settings":
-						{
-							"auto_complete_triggers":
-							[
-								{
-									"characters": ".",
-									"selector": "source.python - string - comment - constant.numeric"
-								},
-								{
-									"characters": ".",
-									"selector": "source.python - string - constant.numeric"
-								},
-								{
-									"characters": ".",
-									"selector": "source.python - string - constant.numeric"
-								}
-							],
-							"git_gutter_is_enabled": true,
-							"incomplete_sync": null,
-							"remote_loading": false,
-							"synced": false,
-							"syntax": "Packages/Python/Python.sublime-syntax",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 2496.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 6,
-					"type": "text"
-				},
-				{
-					"buffer": 2,
-					"file": "cutevariant/gui/selectionquerywidget.py",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 1887,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								1203,
-								1203
-							]
-						],
-						"settings":
-						{
-							"auto_complete_triggers":
-							[
-								{
-									"characters": ".",
-									"selector": "source.python - string - comment - constant.numeric"
-								},
-								{
-									"characters": ".",
-									"selector": "source.python - string - constant.numeric"
-								}
-							],
-							"git_gutter_is_enabled": true,
-							"incomplete_sync": null,
-							"remote_loading": false,
-							"synced": false,
-							"syntax": "Packages/Python/Python.sublime-syntax",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 1408.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 4,
-					"type": "text"
-				},
-				{
-					"buffer": 3,
-					"file": "/tmp/mlpa.txt",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 1086,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								1086,
-								1086
-							]
-						],
-						"settings":
-						{
-							"auto_name": "Exon 1",
-							"git_gutter_is_enabled": false,
-							"incomplete_sync": null,
-							"syntax": "Packages/MarkdownEditing/Markdown.sublime-syntax",
-							"tab_size": 2,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 432.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 1,
-					"type": "text"
-				},
-				{
-					"buffer": 4,
-					"file": "/tmp/camille/main.py",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 499,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								172,
-								172
-							]
-						],
-						"settings":
-						{
-							"auto_complete_triggers":
-							[
-								{
-									"characters": ".",
-									"selector": "source.python - string - comment - constant.numeric"
-								},
-								{
-									"characters": ".",
-									"selector": "source.python - string - constant.numeric"
-								}
-							],
-							"git_gutter_is_enabled": false,
-							"incomplete_sync": null,
-							"remote_loading": false,
-							"synced": false,
-							"syntax": "Packages/Python/Python.sublime-syntax"
-						},
-						"translation.x": 0.0,
-						"translation.y": 205.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 0,
-					"type": "text"
-				},
-				{
-					"buffer": 5,
-					"file": "/tmp/mlpa.fasta",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 523,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								293,
-								293
-							]
-						],
-						"settings":
-						{
-							"git_gutter_is_enabled": false,
-							"incomplete_sync": null,
-							"remote_loading": false,
-							"synced": false,
-							"syntax": "Packages/Text/Plain text.tmLanguage"
-						},
-						"translation.x": 0.0,
-						"translation.y": 192.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 2,
-					"type": "text"
-				},
-				{
-					"buffer": 6,
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 168,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								7,
-								7
-							]
-						],
-						"settings":
-						{
-							"auto_name": "bwa aln tolc.fa primers.FASTA | bwa samse ref.fa -",
-							"default_dir": "/tmp",
-							"git_gutter_is_enabled": false,
-							"incomplete_sync": null,
-							"syntax": "Packages/Text/Plain text.tmLanguage"
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 3,
-					"type": "text"
-				},
-				{
-					"buffer": 7,
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 291,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								18,
-								18
-							]
-						],
-						"settings":
-						{
-							"auto_name": "Exon 1:Promoter 1B",
-							"default_dir": "/tmp",
-							"git_gutter_is_enabled": false,
-							"incomplete_sync": null,
-							"syntax": "Packages/Text/Plain text.tmLanguage",
-							"tab_size": 2,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 5,
-					"type": "text"
-				},
-				{
-					"buffer": 8,
-					"file": "cutevariant/gui/wizard/projetwizard.py",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 3043,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								716,
-								716
-							]
-						],
-						"settings":
-						{
-							"auto_complete_triggers":
-							[
-								{
-									"characters": ".",
-									"selector": "source.python - string - comment - constant.numeric"
-								},
-								{
-									"characters": ".",
-									"selector": "source.python - string - constant.numeric"
-								},
-								{
-									"characters": ".",
-									"selector": "source.python - string - constant.numeric"
-								}
-							],
-							"git_gutter_is_enabled": true,
-							"incomplete_sync": null,
-							"syntax": "Packages/Python/Python.sublime-syntax"
-						},
-						"translation.x": 0.0,
-						"translation.y": 768.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 11,
-					"type": "text"
-				},
-				{
-					"buffer": 9,
-					"file": "cutevariant/gui/viewquerywidget.py",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 3732,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								3343,
-								3343
-							]
-						],
-						"settings":
-						{
-							"auto_complete_triggers":
-							[
-								{
-									"characters": ".",
-									"selector": "source.python - string - comment - constant.numeric"
-								},
-								{
-									"characters": ".",
-									"selector": "source.python - string - constant.numeric"
-								}
-							],
-							"git_gutter_is_enabled": true,
-							"incomplete_sync": null,
-							"remote_loading": false,
-							"synced": false,
-							"syntax": "Packages/Python/Python.sublime-syntax",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 2784.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 10,
-					"type": "text"
-				},
-				{
-					"buffer": 10,
-					"file": "cutevariant/gui/abstractquerywidget.py",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 370,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								161,
-								161
-							]
-						],
-						"settings":
-						{
-							"git_gutter_is_enabled": true,
-							"incomplete_sync": null,
-							"remote_loading": false,
-							"synced": false,
-							"syntax": "Packages/Python/Python.sublime-syntax"
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 9,
-					"type": "text"
-				},
-				{
-					"buffer": 11,
-					"file": "cutevariant/core/sql.py",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 9229,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								1036,
-								1036
-							]
-						],
-						"settings":
-						{
-							"git_gutter_is_enabled": true,
-							"incomplete_sync": null,
-							"remote_loading": false,
-							"synced": false,
-							"syntax": "Packages/Python/Python.sublime-syntax",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 1056.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 8,
-					"type": "text"
-				},
-				{
-					"buffer": 12,
-					"file": "cutevariant/core/importer.py",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 1512,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								118,
-								118
-							]
-						],
-						"settings":
-						{
-							"git_gutter_is_enabled": true,
-							"incomplete_sync": null,
-							"remote_loading": false,
-							"synced": false,
-							"syntax": "Packages/Python/Python.sublime-syntax",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 96.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 12,
-					"type": "text"
-				}
 			]
 		}
 	],
 	"incremental_find":
 	{
-		"height": 41.0
+		"height": 24.0
 	},
 	"input":
 	{
@@ -2033,7 +1457,7 @@
 	},
 	"output.exec":
 	{
-		"height": 315.0
+		"height": 316.0
 	},
 	"output.find_results":
 	{
@@ -2055,7 +1479,7 @@
 	"project": "cutevariant.sublime-project",
 	"replace":
 	{
-		"height": 78.0
+		"height": 44.0
 	},
 	"save_all_on_build": true,
 	"select_file":
@@ -2065,23 +1489,51 @@
 		"selected_items":
 		[
 			[
-				"main",
+				"mai",
 				"cutevariant/gui/mainwindow.py"
 			],
 			[
-				"__m",
+				"",
 				"/DATA/Dev/CuteVariant-python/__main__.py"
+			],
+			[
+				"main",
+				"cutevariant/__main__.py"
+			],
+			[
+				"m",
+				"cutevariant/gui/mainwindow.py"
+			],
+			[
+				"ma",
+				"cutevariant/gui/mainwindow.py"
+			],
+			[
+				"hpo",
+				"cutevariant/gui/hpoquerywidget.py"
 			],
 			[
 				"qu",
 				"cutevariant/core/query.py"
 			],
 			[
-				"ma",
-				"/DATA/Dev/CuteVariant-python/__main__.py"
+				"view",
+				"cutevariant/gui/viewquerywidget.py"
 			],
 			[
-				"mai",
+				"imp",
+				"cutevariant/core/importer.py"
+			],
+			[
+				"_ma",
+				"/DATA/Dev/biseau-gui/__main__.py"
+			],
+			[
+				"_m",
+				"/DATA/Dev/biseau-gui/__main__.py"
+			],
+			[
+				"__m",
 				"/DATA/Dev/CuteVariant-python/__main__.py"
 			],
 			[
@@ -2113,10 +1565,6 @@
 				"cutevariant/core/model.py"
 			],
 			[
-				"m",
-				"cutevariant/core/model.py"
-			],
-			[
 				"rea",
 				"cutevariant/core/readerfactory.py"
 			],
@@ -2137,14 +1585,6 @@
 				"cutevariant/core/query.py"
 			],
 			[
-				"",
-				"tests/test_import.py"
-			],
-			[
-				"imp",
-				"cutevariant/core/importer.py"
-			],
-			[
 				"__main",
 				"~/Dev/CuteVariant-python/__main__.py"
 			]
@@ -2163,9 +1603,57 @@
 	"select_symbol":
 	{
 		"height": 392.0,
-		"last_filter": "set",
+		"last_filter": "get",
 		"selected_items":
 		[
+			[
+				"get",
+				"get_one_variant"
+			],
+			[
+				"geto",
+				"get_one_variant"
+			],
+			[
+				"",
+				"ColumnQueryModel"
+			],
+			[
+				"creae",
+				"create_table_variants"
+			],
+			[
+				"many",
+				"insert_many_variants"
+			],
+			[
+				"addp",
+				"addPanel"
+			],
+			[
+				"addP",
+				"addPanel"
+			],
+			[
+				"sort",
+				"sort"
+			],
+			[
+				"selection",
+				"test_selections"
+			],
+			[
+				"inser",
+				"insert_many_variants"
+			],
+			[
+				"variant",
+				"insert_many_variants"
+			],
+			[
+				"drop",
+				"drop_table"
+			],
 			[
 				"set",
 				"setupActions"

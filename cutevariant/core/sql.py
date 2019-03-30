@@ -1,10 +1,21 @@
 import sqlite3
 import sys
+import collections
 
 
 def drop_table(conn, table_name):
     c = conn.cursor()
     c.execute(f"DROP TABLE IF EXISTS {table_name}")
+
+
+def create_project(conn, name, reference):
+    cursor = conn.cursor()
+    cursor.execute("""CREATE TABLE projects (name text, reference text NULL)""")
+    cursor.execute(
+        """INSERT INTO projects VALUES (:name,:reference)""",
+        {"name": name, "reference": reference},
+    )
+    conn.commit()
 
 
 ## ================ SELECTION functions =============================
@@ -257,7 +268,20 @@ def create_table_variants(conn, fields):
     conn.commit()
 
 
-def insert_many_variants(conn, data, variant_count=-1):
+def get_one_variant(conn, id: int):
+
+    variant = {"rowid": id}
+
+    cols = [i[0] for i in conn.execute("SELECT * FROM variants LIMIT 1").description]
+    values = conn.execute(f""" SELECT * FROM variants WHERE rowid = {id}""").fetchone()
+    variant.update(dict(zip(cols, values)))
+    return variant
+
+    # cursor = conn.cursor()
+    # return cursor.fetchone()
+
+
+def insert_many_variants(conn, data, total_variant_count=-1, commit_every=200):
     """
     Insert many variant from data into variant table.columns
 
@@ -294,34 +318,59 @@ def insert_many_variants(conn, data, variant_count=-1):
     )
 
     # Loop over variants
-    count = 0
+    variant_count = 0  # count variants
+    insert_count = (
+        0
+    )  #  count insertion in sql ( one variant can have multiple insertion depending on annotation)
+
     for variant in data:
-        # Insert current variant
-        cursor.execute(
-            f"""INSERT INTO variants ({q_cols}) VALUES ({q_place})""", variant
-        )
 
-        # get variant rowid
-        variant_id = cursor.lastrowid
-        count += 1
+        # use default dict for missing value
+        variant = collections.defaultdict(lambda: "", variant)
 
-        if count % 200 == 0:
-            progress = float(count) / variant_count * 100.0
-            yield progress, f"{count} variant inserted"
-            conn.commit()
+        variant_count += 1
 
-        # if variant has sample data, insert record into sample_has_variant
-        if "samples" in variant:
-            for sample in variant["samples"]:
-                name = sample["name"]
-                gt = sample["gt"]
+        ## Split variant into multiple variant if there are multiple annotation
+        variants = []
+        if "annotation" in variant:
+            for annotation in variant["annotation"]:
+                new_variant = dict(variant)
+                new_variant.update(annotation)
+                del new_variant["annotation"]
+                variants.append(new_variant)
+        else:
+            variants.append(variant)
 
-                if name in samples.keys():
-                    sample_id = samples[name]
-                    cursor.execute(
-                        f"""INSERT INTO sample_has_variant VALUES (?,?,?)""",
-                        [sample_id, variant_id, gt],
-                    )
+        for variant_to_insert in variants:
+
+            # Insert current variant
+            cursor.execute(
+                f"""INSERT INTO variants ({q_cols}) VALUES ({q_place})""",
+                variant_to_insert,
+            )
+
+            # get variant rowid
+            variant_id = cursor.lastrowid
+            insert_count += 1
+
+            #  every commit_every = 200 insert, start a commit ! This value can be changed
+            if insert_count % commit_every == 0:
+                progress = float(variant_count) / total_variant_count * 100.0
+                yield progress, f"{variant_count} variant inserted"
+                conn.commit()
+
+            # if variant has sample data, insert record into sample_has_variant
+            if "samples" in variant:
+                for sample in variant["samples"]:
+                    name = sample["name"]
+                    gt = sample["gt"]
+
+                    if name in samples.keys():
+                        sample_id = samples[name]
+                        cursor.execute(
+                            f"""INSERT INTO sample_has_variant VALUES (?,?,?)""",
+                            [sample_id, variant_id, gt],
+                        )
 
     conn.commit()
     #  create index to make sample query faster
@@ -330,9 +379,9 @@ def insert_many_variants(conn, data, variant_count=-1):
     )
 
     # create selections
-    insert_selection(conn, name="all", count=count)
+    insert_selection(conn, name="all", count=variant_count)
 
-    yield 100, f"{count} variant(s) has been inserted"
+    yield 100, f"{variant_count} variant(s) has been inserted"
 
 
 ## ================ Fields functions =============================
