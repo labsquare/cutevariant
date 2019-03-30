@@ -53,7 +53,6 @@
 ##INFO=<ID=STBP,Number=A,Type=Float,Description="Pval of Strand bias in variant relative to reference.">
 ##INFO=<ID=TYPE,Number=A,Type=String,Description="The type of allele, either snp, mnp, ins, del, or complex.">
 ##INFO=<ID=VARB,Number=A,Type=Float,Description="Variant Hypothesis bias in prediction.">
-##LeftAlignVariants="analysis_type=LeftAlignVariants bypassFlowAlign=true kmer_len=19 min_var_count=5 short_suffix_match=5 min_indel_size=4 max_hp_length=8 min_var_freq=0.15 min_var_score=10.0 relative_strand_bias=0.8 output_mnv=0 sse_hp_size=0 sse_report_file= target_size=1.0 pref_kmer_max=3 pref_kmer_min=0 pref_delta_max=2 pref_delta_min=0 suff_kmer_max=3 suff_kmer_min=0 suff_delta_max=2 suff_delta_min=0 motif_min_ppv=0.2 generate_flow_position=0 analyze_missmatches=0 sse_rate=0.07 input_file=[] read_buffer_size=null phone_home=STANDARD gatk_key=null read_filter=[] intervals=null excludeIntervals=null interval_set_rule=UNION interval_merging=ALL reference_sequence=/results/referenceLibrary/tmap-f3/hg19/hg19.fasta rodBind=[] nonDeterministicRandomSeed=false downsampling_type=BY_SAMPLE downsample_to_fraction=null downsample_to_coverage=1000 baq=OFF baqGapOpenPenalty=40.0 performanceLog=null useOriginalQualities=false BQSR=null defaultBaseQualities=-1 validation_strictness=SILENT unsafe=null num_threads=1 combined_sample_name= num_cpu_threads=null num_io_threads=null num_bam_file_handles=null read_group_black_list=null pedigree=[] pedigreeString=[] pedigreeValidationType=STRICT allow_intervals_with_unindexed_bam=false logging_level=INFO log_to_file=null help=false variant=(RodBinding name=variant source=/results/analysis/output/Home/Auto_user_GRO-63-20150622_CGH_Exome_serie1_129_210/plugin_out/variantCaller_out.918/IonXpress_002/small_variants.sorted.vcf) out=org.broadinstitute.sting.gatk.io.stubs.VCFWriterStub NO_HEADER=org.broadinstitute.sting.gatk.io.stubs.VCFWriterStub sites_only=org.broadinstitute.sting.gatk.io.stubs.VCFWriterStub filter_mismatching_base_and_quals=false"
 ##basecallerVersion="4.4-11/b4969eb"
 ##contig=<ID=chr1,length=249250621,assembly=hg19>
 ##contig=<ID=chr10,length=135534747,assembly=hg19>
@@ -83,7 +82,7 @@
 ##fileDate=20150629
 ##fileUTCtime=2015-06-29T15:00:31
 ##parametersDetails="TS version: 4.4"
-##parametersName="Panel-optimized - Exome Panel - 7/10/2013"
+##parametersName="Panel-optimized"
 ##phasing=none
 ##reference=/results/referenceLibrary/tmap-f3/hg19/hg19.fasta
 ##reference=file:///results/referenceLibrary/tmap-f3/hg19/hg19.fasta
