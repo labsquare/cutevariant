@@ -1,5 +1,10 @@
 # Cutevariant
 
+cutevariant is a light standalone viewer of genetic variation written in Python for Qt. It allows you to view and filter VCF and other format files.
+
+![Cutevariant example](https://raw.githubusercontent.com/labsquare/CuteVariant-cpp/master/screencast.gif)
+
+
     pip install cutevariant # install
     cutevariant             # run
 
