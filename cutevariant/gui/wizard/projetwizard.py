@@ -1,10 +1,14 @@
+# Standard imports
+import os
+import sqlite3
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 
-import os
-import sqlite3
+# Custom imports
 from cutevariant.core.importer import async_import_file
+import cutevariant.commons as cm
 
+LOGGER = cm.logger()
 
 class ProjetPage(QWizardPage):
     def __init__(self):
@@ -186,7 +190,7 @@ class ImportPage(QWizardPage):
 
     def run(self):
         if self.thread.isRunning():
-            print("stop thread")
+            LOGGER.debug("ImportPage:run: stop thread")
             self.import_button.setDisabled(True)
             self.thread.stop()
             self.progress.setValue(0)
