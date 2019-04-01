@@ -1,9 +1,15 @@
-from .reader import *
+# Standard imports
 import os
 import struct
 from contextlib import contextmanager
 import binascii
 import pathlib
+
+# Custom imports
+from .reader import *
+import cutevariant.commons as cm
+
+LOGGER = cm.logger()
 
 
 def is_gz_file(filepath):
@@ -22,7 +28,8 @@ def create_reader(filename):
 
     path = pathlib.Path(filename)
 
-    print("PATH suffix", path.suffixes, is_gz_file(filename))
+    LOGGER.debug("create_reader: PATH suffix %s, is_gz_file: %s",
+                 path.suffixes, is_gz_file(filename))
 
     if ".vcf" in path.suffixes and ".gz" in path.suffixes:
         device = open(filename, "rb")
