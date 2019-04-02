@@ -5,6 +5,7 @@ from PySide2.QtCore import *
 
 # Custom imports
 from cutevariant.gui import MainWindow
+import cutevariant.commons as cm
 
 def main():
     """The main routine."""
@@ -18,9 +19,33 @@ def main():
     QCoreApplication.setApplicationName("cutevariant")
 
     app = QApplication(sys.argv)
+
+    # Translations
+    load_translations(app)
+
+    # Display
     w = MainWindow()
     w.show()
     app.exec_()
+
+
+def load_translations(app):
+    """Load translations
+
+    .. note:: Init ui/locale setting
+    """
+
+    # Load locale setting if exists
+    # English is the default language
+    app_settings = QSettings()
+    locale_name = app_settings.value("ui/locale", "en")
+    app_translator = QTranslator(app)
+
+    if app_translator.load(locale_name, directory=cm.DIR_TRANSLATIONS):
+        app.installTranslator(app_translator)
+    else:
+        # Init setting
+        app_settings.setValue("ui/locale", "en")
 
 
 if __name__ == "__main__":

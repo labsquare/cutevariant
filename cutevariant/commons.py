@@ -3,11 +3,15 @@ from logging.handlers import RotatingFileHandler
 import logging
 import datetime as dt
 import tempfile
-from pkg_resources import get_distribution
+from pkg_resources import get_distribution, resource_filename
 
 
 # Paths
 DIR_LOGS = tempfile.gettempdir() + '/'
+DIR_TRANSLATIONS = resource_filename(
+    __name__, # current package name
+    "gui/i18n/"
+)
 
 # Logging
 LOGGER_NAME = get_distribution('cutevariant').project_name
