@@ -14,8 +14,10 @@ class ProjetPage(QWizardPage):
     def __init__(self):
         super().__init__()
 
-        self.setTitle("Project creation")
-        self.setSubTitle("This wizard will guide you to create a cutevariant project.")
+        self.setTitle(self.tr("Project creation"))
+        self.setSubTitle(self.tr(
+            "This wizard will guide you to create a cutevariant project."
+        ))
 
         self.projet_name_edit = QLineEdit()
         self.projet_path_edit = QLineEdit()
@@ -35,9 +37,9 @@ class ProjetPage(QWizardPage):
         browse_layout.addWidget(self.browse_button)
         browse_layout.setContentsMargins(0, 0, 0, 0)
 
-        v_layout.addRow("Reference genom", self.reference)
-        v_layout.addRow("Project Name", self.projet_name_edit)
-        v_layout.addRow("Create in", browse_layout)
+        v_layout.addRow(self.tr("Reference genom"), self.reference)
+        v_layout.addRow(self.tr("Project Name"), self.projet_name_edit)
+        v_layout.addRow(self.tr("Create in"), browse_layout)
 
         self.setLayout(v_layout)
 
@@ -46,7 +48,7 @@ class ProjetPage(QWizardPage):
         self.projet_name_edit.textChanged.connect(self.completeChanged)
 
     def _browse(self):
-        path = QFileDialog.getExistingDirectory(self, "Select a path for the project")
+        path = QFileDialog.getExistingDirectory(self, self.tr("Select a path for the project"))
         if path:
             self.projet_path_edit.setText(path)
 
@@ -63,11 +65,11 @@ class FilePage(QWizardPage):
     def __init__(self):
         super().__init__()
 
-        self.setTitle("Select a file")
-        self.setSubTitle("Supported file are vcf and vcf.gz.")
+        self.setTitle(self.tr("Select a file"))
+        self.setSubTitle(self.tr("Supported file are vcf and vcf.gz."))
 
         self.file_path_edit = QLineEdit()
-        self.button = QPushButton("Browse")
+        self.button = QPushButton(self.tr("Browse"))
         v_layout = QHBoxLayout()
 
         v_layout.addWidget(self.file_path_edit)
@@ -86,7 +88,8 @@ class FilePage(QWizardPage):
         last_directory = app_settings.value("last_directory", QDir.homePath())
 
         filepath, filetype = QFileDialog.getOpenFileName(
-            self, "Open a file", last_directory, "VCF file (*.vcf, *.vcf.gz)"
+            self, self.tr("Open a file"), last_directory,
+            self.tr("VCF file (*.vcf, *.vcf.gz)")
         )
         if filepath:
             # Display and save directory
@@ -145,9 +148,9 @@ class ImportPage(QWizardPage):
     def __init__(self):
         super().__init__()
 
-        self.setTitle("Import file")
-        self.setSubTitle("Please click on Import/Stop to start or stop the process.")
-        self.text_buttons = ["Import", "Stop"]
+        self.setTitle(self.tr("Import file"))
+        self.setSubTitle(self.tr("Please click on Import/Stop to start or stop the process."))
+        self.text_buttons = [self.tr("Import"), self.tr("Stop")]
 
         self.thread_finished = False
         self.thread = ImportThread()
@@ -214,7 +217,7 @@ class ImportPage(QWizardPage):
                 + ".db"
             )
 
-            self.log_edit.appendPlainText("Import " + self.thread.filename)
+            self.log_edit.appendPlainText(self.tr("Import ") + self.thread.filename)
             self.import_button.setText(self.text_buttons[1])
             self.thread.start()
 
@@ -226,7 +229,7 @@ class ImportPage(QWizardPage):
 class ProjetWizard(QWizard):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Cutevariant - Project creation wizard")
+        self.setWindowTitle(self.tr("Cutevariant - Project creation wizard"))
 
         self.addPage(ProjetPage())
         self.addPage(FilePage())

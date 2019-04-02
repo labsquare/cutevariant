@@ -22,7 +22,7 @@ class BaseWidget(QTabWidget):
 class GeneralSettingsWidget(BaseWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("General")
+        self.setWindowTitle(self.tr("General"))
 
     def save(self):
         pass
@@ -87,7 +87,7 @@ class GeneralSettingsWidget(BaseWidget):
 class PluginsSettingsWidget(BaseWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Plugins")
+        self.setWindowTitle(self.tr("Plugins"))
 
     def save(self):
         pass
@@ -99,7 +99,7 @@ class PluginsSettingsWidget(BaseWidget):
 class SettingsWidget(QDialog):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Cutevariant - Settings")
+        self.setWindowTitle(self.tr("Cutevariant - Settings"))
         self.widgets = []
 
         self.list_widget = QListWidget()

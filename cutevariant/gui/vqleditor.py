@@ -36,7 +36,7 @@ class VqlSyntaxHighlighter(QSyntaxHighlighter):
 class VqlEditor(AbstractQueryWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Columns")
+        self.setWindowTitle(self.tr("Columns"))
         self.text_edit = QTextEdit()
         self.highlighter = VqlSyntaxHighlighter(self.text_edit.document())
 

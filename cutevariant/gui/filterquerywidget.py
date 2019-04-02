@@ -126,7 +126,7 @@ class FilterEditDialog(QDialog):
 class FilterQueryWidget(AbstractQueryWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Filter")
+        self.setWindowTitle(self.tr("Filter"))
         self.view = QTreeView()
         self.model = FilterQueryModel()
         self.view.setModel(self.model)
@@ -161,12 +161,12 @@ class FilterQueryWidget(AbstractQueryWidget):
         index = self.view.indexAt(pos)
 
         if index.isValid() is False:
-            logic_action = menu.addAction("add logic")
+            logic_action = menu.addAction(self.tr("add logic"))
 
         else:
-            logic_action = menu.addAction("add logic")
-            item_action = menu.addAction("add condition")
+            logic_action = menu.addAction(self.tr("add logic"))
+            item_action = menu.addAction(self.tr("add condition"))
             menu.addSeparator()
-            rem_action = menu.addAction("Remove")
+            rem_action = menu.addAction(self.tr("Remove"))
 
         menu.exec_(event.globalPos())

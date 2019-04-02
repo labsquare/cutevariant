@@ -33,7 +33,7 @@ class SelectionQueryWidget(AbstractQueryWidget):
     def __init__(self):
         super().__init__()
 
-        self.setWindowTitle("Selections")
+        self.setWindowTitle(self.tr("Selections"))
         self.view = QTreeView()
         self.model = SelectionQueryModel()
         self.view.setModel(self.model)

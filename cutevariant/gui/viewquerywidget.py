@@ -168,7 +168,7 @@ class ViewQueryWidget(AbstractQueryWidget):
         self.model = QueryModel()
         self.delegate = QueryDelegate()
         # self.delegate = VariantDelegate()
-        self.setWindowTitle("Variants")
+        self.setWindowTitle(self.tr("Variants"))
         self.topbar = QToolBar()
         self.bottombar = QToolBar()
         self.view = QTreeView()
@@ -187,7 +187,7 @@ class ViewQueryWidget(AbstractQueryWidget):
         main_layout.setContentsMargins(0, 0, 0, 0)
 
         # Construct top bar
-        self.topbar.addAction("save")
+        self.topbar.addAction(self.tr("save"))
 
         # Construct bottom bar
         self.page_info = QLabel()
