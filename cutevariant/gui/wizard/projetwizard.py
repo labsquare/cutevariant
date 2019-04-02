@@ -80,11 +80,19 @@ class FilePage(QWizardPage):
         self.registerField("filename", self.file_path_edit, "text")
 
     def _browse(self):
-        filename = QFileDialog.getOpenFileName(
-            self, "Open a file", QDir.homePath(), "VCF file (*.vcf, *.vcf.gz)"
+
+        # Reload last directory used
+        app_settings = QSettings()
+        last_directory = app_settings.value("last_directory", QDir.homePath())
+
+        filepath, filetype = QFileDialog.getOpenFileName(
+            self, "Open a file", last_directory, "VCF file (*.vcf, *.vcf.gz)"
         )
-        if filename:
-            self.file_path_edit.setText(filename[0])
+        if filepath:
+            # Display and save directory
+            self.file_path_edit.setText(filepath)
+            app_settings.setValue("last_directory", os.path.dirname(filepath))
+
 
     def isComplete(self):
         """Conditions to unlock next button"""
