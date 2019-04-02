@@ -3,6 +3,7 @@ from PySide2.QtCore import *
 
 
 class BaseWidget(QTabWidget):
+    """Abstract class for settings widgets"""
     def __init__(self):
         super().__init__()
 
@@ -22,7 +23,7 @@ class GeneralSettingsWidget(BaseWidget):
         pass
 
     def load(self):
-        pass
+        self.settings = QSettings()
 
 
 class PluginsSettingsWidget(BaseWidget):
