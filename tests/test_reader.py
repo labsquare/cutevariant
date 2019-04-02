@@ -57,6 +57,12 @@ def test_parse_snpeff():
 
 
 
+def test_reader():
 
+    filename = "examples/test.vcf"
+    with open(filename,"r") as file:
+        my_reader = VcfReader(file)
 
+        print(list(my_reader.get_fields()))
 
+        
