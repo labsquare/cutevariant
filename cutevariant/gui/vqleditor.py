@@ -11,25 +11,78 @@ import re
 
 
 class VqlSyntaxHighlighter(QSyntaxHighlighter):
+    """SQL Syntax highlighter rules"""
+
     def __init__(self, document=None):
         super().__init__(document)
 
-    def highlightBlock(self, text):
-        """override """
-
         palette = qApp.palette("QTextEdit")
 
-        REGEXES = {
-            "SELECT|FROM|WHERE": (QFont.Bold, palette.color(QPalette.HighlightedText))
-        }
-        for regex, (style, color) in REGEXES.items():
-            rule = QRegularExpression(regex)
-            matchIterator = rule.globalMatch(text)
+        # SQL Syntax highlighter rules
+        # dict: pattern, font, color, minimal (not greedy)
+        self.highlighting_patterns = [
+            {
+                # Keywords
+                'pattern': 'SELECT|FROM|WHERE',
+                'font': QFont.Bold,
+                'color': palette.color(QPalette.Highlight), # default: Qt.darkBlue
+            },
+            {
+                # Strings simple quotes '...'
+                'pattern': "\'.*\'",
+                'color': Qt.red,
+                'minimal': True, # Need to stop match as soon as possible
+            },
+            {
+                # Strings double quotes: "..."
+                'pattern': '\".*\"',
+                'color': Qt.red,
+                'minimal': True, # Need to stop match as soon as possible
+            },
+            {
+                # Numbers
+                'pattern': "\\b[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?\\b",
+                'color': Qt.darkGreen,
+            },
+            {
+                # Comments
+                'pattern': "--[^\n]*",
+                'color': Qt.gray,
+            },
+        ]
+
+        self.highlighting_rules = list()
+
+        for pattern in self.highlighting_patterns:
+
+            t_format = QTextCharFormat()
+            font = pattern.get('font', None)
+            if font:
+                t_format.setFontWeight(font)
+
+            color = pattern.get('color', None)
+            if color:
+                t_format.setForeground(color)
+
+            regex = QRegularExpression(pattern['pattern'])
+            minimal = pattern.get('minimal', False)
+            if minimal:
+                # The greediness of the quantifiers is inverted: *, +, ?, {m,n}, etc.
+                # become lazy, while their lazy versions (*?, +?, ??, {m,n}?, etc.)
+                # become greedy.
+                # https://doc.qt.io/Qt-5/qregularexpression.html#setPatternOptions
+                regex.setPatternOptions(QRegularExpression.InvertedGreedinessOption)
+
+            self.highlighting_rules.append((regex, t_format))
+
+    def highlightBlock(self, text):
+        """override"""
+
+        for regex, t_format in self.highlighting_rules:
+            # Ugly iterator => not iterable in Python...
+            matchIterator = regex.globalMatch(text)
             while matchIterator.hasNext():
                 match = matchIterator.next()
-                t_format = QTextCharFormat()
-                t_format.setFontWeight(style or QFont.Normal)
-                t_format.setForeground(color or Qt.black)
                 self.setFormat(match.capturedStart(), match.capturedLength(), t_format)
 
 
