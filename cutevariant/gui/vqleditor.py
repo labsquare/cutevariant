@@ -7,8 +7,6 @@ from .abstractquerywidget import AbstractQueryWidget
 from cutevariant.core import Query
 from cutevariant.core import sql
 
-import re
-
 
 class VqlSyntaxHighlighter(QSyntaxHighlighter):
     """SQL Syntax highlighter rules"""
@@ -24,7 +22,14 @@ class VqlSyntaxHighlighter(QSyntaxHighlighter):
             {
                 # Keywords
                 # \b allows to perform a "whole words only"
-                'pattern': '\\bSELECT\\b|\\bFROM\\b|\\bWHERE\\b',
+                'pattern': "|".join((f'\\b%s\\b' % keyword for keyword in [
+                    'SELECT', 'FROM', 'WHERE', 'AS',
+                    'AND', 'OR', 'NOT', 'ALL', 'ANY', 'BETWEEN', 'EXISTS', 'IN', 'LIKE', 'SOME',
+                    'ASC', 'DESC', 'LIMIT',
+                    'DISTINCT', 'GROUP BY', 'HAVING', 'ORDER BY',
+                    'IS', 'NOT', 'NULL',
+                    ]
+                )),
                 'font': QFont.Bold,
                 'color': palette.color(QPalette.Highlight), # default: Qt.darkBlue
             },
