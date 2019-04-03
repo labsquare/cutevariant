@@ -156,6 +156,16 @@
         <source>save query</source>
         <translation>Enregistrer la requête</translation>
     </message>
+    <message>
+        <location filename="cutevariant/gui/mainwindow.py" line="171"/>
+        <source>Open project</source>
+        <translation>Ouvrir un fichier de projet</translation>
+    </message>
+    <message>
+        <location filename="cutevariant/gui/mainwindow.py" line="171"/>
+        <source>Cutevariant project (*.db)</source>
+        <translation>Projet Cutevariant (*.db)</translation>
+    </message>
 </context>
 <context>
     <name>PluginsSettingsWidget</name>
@@ -238,7 +248,7 @@
 <context>
     <name>VqlEditor</name>
     <message>
-        <location filename="cutevariant/gui/vqleditor.py" line="39"/>
+        <location filename="cutevariant/gui/vqleditor.py" line="90"/>
         <source>Columns</source>
         <translation>Colonnes</translation>
     </message>
