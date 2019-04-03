@@ -23,7 +23,8 @@ class VqlSyntaxHighlighter(QSyntaxHighlighter):
         self.highlighting_patterns = [
             {
                 # Keywords
-                'pattern': 'SELECT|FROM|WHERE',
+                # \b allows to perform a "whole words only"
+                'pattern': '\\bSELECT\\b|\\bFROM\\b|\\bWHERE\\b',
                 'font': QFont.Bold,
                 'color': palette.color(QPalette.Highlight), # default: Qt.darkBlue
             },
