@@ -11,9 +11,6 @@ filename = "examples/test.vcf"
 try:
 	os.remove("/tmp/test.db")
 except:
-	pass
-
-
 
 with open(filename,"r") as file:
 

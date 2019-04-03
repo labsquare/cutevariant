@@ -7,30 +7,30 @@ import json
 from cutevariant.core.importer import import_file
 from cutevariant.core import Query
 
-
-@pytest.fixture
-def conn():
-    # os.remove("/tmp/test.db")
-    conn = sqlite3.connect(":memory:")
-    import_file(conn, "exemples/test.vcf")
-    return conn
-
-
-def test_query_selection(conn):
-
-    query = Query(conn)
-    query.filter = {"AND": [{"field": "ref", "operator": "==", "value": "A"}]}
-    query.create_selection("sacha")
-
-    query2 = Query(conn)
-    query2.selection = "sacha"
-
-    for record in query2.items():
-        assert record["ref"] == "A"
+ 
+# @pytest.fixture
+# def conn():
+#     # os.remove("/tmp/test.db")
+#     conn = sqlite3.connect(":memory:")
+#     import_file(conn, "exemples/test.vcf")
+#     return conn
 
 
-def test_query_from_vql(conn):
-    print("TODO: test query_from_vql")
+# def test_query_selection(conn):
+
+#     query = Query(conn)
+#     query.filter = {"AND": [{"field": "ref", "operator": "==", "value": "A"}]}
+#     query.create_selection("sacha")
+
+#     query2 = Query(conn)
+#     query2.selection = "sacha"
+
+#     for record in query2.items():
+#         assert record["ref"] == "A"
+
+
+# def test_query_from_vql(conn):
+#     print("TODO: test query_from_vql")
     # query = Query(conn)
 
     # # extract columns and selection

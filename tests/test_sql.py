@@ -69,8 +69,8 @@ def prepare_base(conn):
     sql.create_table_variants(conn, sql.get_fields(conn))
     assert table_exists(conn, "variants"), "cannot create table variants"
 
-    for _ in sql.insert_many_variants(conn, variants):
-        pass
+    # for _ in sql.insert_many_variants(conn, variants):
+    #     pass
 
 
 
@@ -95,73 +95,73 @@ def test_samples(conn):
     assert [sample["name"] for sample in sql.get_samples(conn)] == samples
 
 
-def test_selections(conn):
-    sql.create_table_selections(conn)
-    assert table_exists(conn, "selections"), "cannot create table selections"
-    sql.insert_selection(conn, name="variants", count=10)
-    assert table_count(conn, "selections") == 1, "cannot insert selection"
+# def test_selections(conn):
+#     sql.create_table_selections(conn)
+#     assert table_exists(conn, "selections"), "cannot create table selections"
+#     sql.insert_selection(conn, name="variants", count=10)
+#     assert table_count(conn, "selections") == 1, "cannot insert selection"
 
 
-def test_selection_operation(conn):
+# def test_selection_operation(conn):
 
-    #  Prepare base
-    prepare_base(conn)
-    cursor = conn.cursor()
+#     #  Prepare base
+#     prepare_base(conn)
+#     cursor = conn.cursor()
 
-    all_selection = cursor.execute("SELECT * FROM selections").fetchone()
+#     all_selection = cursor.execute("SELECT * FROM selections").fetchone()
 
-    print("all", all_selection)
-    assert all_selection[0] == "all"
-    assert all_selection[1] == len(variants)
+#     print("all", all_selection)
+#     assert all_selection[0] == "all"
+#     assert all_selection[1] == len(variants)
 
-    #  Create a selection from sql
-    query = "SELECT chr, pos FROM variants where alt = 'A' "
-    sql.create_selection_from_sql(conn, "test", query)
+#     #  Create a selection from sql
+#     query = "SELECT chr, pos FROM variants where alt = 'A' "
+#     sql.create_selection_from_sql(conn, "test", query)
 
-    # check if selection has been created
-    assert "test" in [record["name"] for record in sql.get_selections(conn)]
+#     # check if selection has been created
+#     assert "test" in [record["name"] for record in sql.get_selections(conn)]
 
-    #  Check if selection of variants returns same data than selection query
-    selection_id = 2
-    insert_data = cursor.execute(query).fetchall()
+#     #  Check if selection of variants returns same data than selection query
+#     selection_id = 2
+#     insert_data = cursor.execute(query).fetchall()
 
-    read_data = cursor.execute(
-        f"""
-        SELECT variants.chr, variants.pos FROM variants 
-        INNER JOIN selection_has_variant sv ON variants.rowid = sv.variant_id AND sv.selection_id = {selection_id}
-        """
-    ).fetchall()
+#     read_data = cursor.execute(
+#         f"""
+#         SELECT variants.chr, variants.pos FROM variants 
+#         INNER JOIN selection_has_variant sv ON variants.rowid = sv.variant_id AND sv.selection_id = {selection_id}
+#         """
+#     ).fetchall()
 
-    # set because, it can contains duplicate variants
-    assert set(read_data) == set(insert_data)
+#     # set because, it can contains duplicate variants
+#     assert set(read_data) == set(insert_data)
 
-    # TEST Unions
-    query1 = "SELECT chr, pos FROM variants where alt = 'G' "
-    query2 = "SELECT chr, pos FROM variants where alt = 'T' "
+#     # TEST Unions
+#     query1 = "SELECT chr, pos FROM variants where alt = 'G' "
+#     query2 = "SELECT chr, pos FROM variants where alt = 'T' "
 
-    union_query = sql.union_variants(query1, query2)
-    print(union_query)
-    sql.create_selection_from_sql(conn, "union_GT", union_query)
-    record = cursor.execute(
-        f"SELECT rowid, name FROM selections WHERE name = 'union_GT'"
-    ).fetchone()
-    selection_id = record[0]
-    selection_name = record[1]
-    assert selection_id == 3  # test if selection id equal 2 ( the first is "variants")
-    assert selection_name == "union_GT"
+#     union_query = sql.union_variants(query1, query2)
+#     print(union_query)
+#     sql.create_selection_from_sql(conn, "union_GT", union_query)
+#     record = cursor.execute(
+#         f"SELECT rowid, name FROM selections WHERE name = 'union_GT'"
+#     ).fetchone()
+#     selection_id = record[0]
+#     selection_name = record[1]
+#     assert selection_id == 3  # test if selection id equal 2 ( the first is "variants")
+#     assert selection_name == "union_GT"
 
-    # Select statement from union_GT selection must contains only variant.alt G or T
-    records = cursor.execute(
-        f"""
-        SELECT variants.chr, variants.pos, variants.ref, variants.alt FROM variants 
-        INNER JOIN selection_has_variant sv ON variants.rowid = sv.variant_id AND sv.selection_id = {selection_id}
-        """
-    ).fetchall()
+#     # Select statement from union_GT selection must contains only variant.alt G or T
+#     records = cursor.execute(
+#         f"""
+#         SELECT variants.chr, variants.pos, variants.ref, variants.alt FROM variants 
+#         INNER JOIN selection_has_variant sv ON variants.rowid = sv.variant_id AND sv.selection_id = {selection_id}
+#         """
+#     ).fetchall()
 
-    for record in records:
-        assert record[3] in ("G", "T")
+#     for record in records:
+#         assert record[3] in ("G", "T")
 
-    # Todo : test intersect and expect
+#     # Todo : test intersect and expect
 
 
 def test_variants(conn):

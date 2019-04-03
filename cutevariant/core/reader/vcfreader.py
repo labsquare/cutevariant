@@ -89,6 +89,14 @@ class VcfReader(AbstractReader):
         super(VcfReader, self).__init__(device)
         self.parser = AnnotationParser()
 
+
+    def get_fields(self):
+        yield from self.parse_fields() 
+
+
+    def get_variants(self):
+        yield from self.parse_variants()
+
     def parse_variants(self):
         """ Extract Variants from VCF file """ 
 
@@ -223,7 +231,4 @@ class VcfReader(AbstractReader):
             "type": VCF_TYPE_MAPPING[info.type]
             }
 
-    def get_samples(self):
-        self.device.seek(0)
-        vcf_reader = vcf.Reader(self.device)
-        return vcf_reader.samples
+
