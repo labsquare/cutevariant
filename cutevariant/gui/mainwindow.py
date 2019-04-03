@@ -93,7 +93,6 @@ class MainWindow(QMainWindow):
     def open(self, db_filename):
 
         if not os.path.exists(db_filename):
-            QMessageBox.warning(self, "error", "file doesn't exists")
             return
 
         self.conn = sqlite3.connect(db_filename)
@@ -165,11 +164,19 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def open_project(self):
-        filename = QFileDialog.getOpenFileName(
-            self, "Open project", "Cutevariant project (*.db)"
-        )[0]
-        if filename is not None:
-            self.open(filename)
+        # Reload last directory used
+        app_settings = QSettings()
+        last_directory = app_settings.value("last_directory", QDir.homePath())
+
+        filepath, _ = QFileDialog.getOpenFileName(
+            self, self.tr("Open project"), last_directory,
+            self.tr("Cutevariant project (*.db)")
+        )
+        if filepath:
+            # Open and save directory
+            app_settings.setValue("last_directory", os.path.dirname(filepath))
+            self.open(filepath)
+
 
     @Slot()
     def show_settings(self):
