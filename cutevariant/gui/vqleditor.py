@@ -20,7 +20,7 @@ class VqlSyntaxHighlighter(QSyntaxHighlighter):
         palette = qApp.palette("QTextEdit")
 
         REGEXES = {
-            "SELECT|FROM|WHERE": (QFont.Bold, palette.color(QPalette.HighlightedText))
+            "SELECT|FROM|WHERE": (QFont.Bold, palette.color(QPalette.Text))
         }
         for regex, (style, color) in REGEXES.items():
             rule = QRegularExpression(regex)
