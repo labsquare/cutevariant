@@ -7,7 +7,7 @@ import sqlite3
 
 READERS = [FakeReader(), VcfReader(open("examples/test.vcf"))]
 
-@pytest.mark.parametrize("reader",READERS)
+@pytest.mark.parametrize("reader",READERS,ids = [str(i.__class__.__name__) for i in READERS])
 def test_fields(reader):
     fields =  list(reader.get_fields())
     field_names = [f["name"] for f in fields]
@@ -22,7 +22,7 @@ def test_fields(reader):
 
 
 
-@pytest.mark.parametrize("reader",READERS)
+@pytest.mark.parametrize("reader",READERS, ids = [str(i.__class__.__name__) for i in READERS])
 def test_variants(reader):
 
     # test if variant field name match name from get_fields
@@ -52,7 +52,7 @@ def test_variants(reader):
             ##assert sorted(reader.get_samples()) == sorted(samples_names)
 
 
-@pytest.mark.parametrize("reader",READERS)
+@pytest.mark.parametrize("reader",READERS,ids = [str(i.__class__.__name__) for i in READERS])
 def test_create_db(reader):
 
     try:
