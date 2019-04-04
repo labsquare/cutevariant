@@ -326,10 +326,8 @@ def async_insert_many_variants(conn, data, total_variant_count=None, commit_ever
 
     # Loop over variants
     variant_count = 0  # count variants
-    insert_count = 0
 
     for variant in data:
-        print(variant)
         # use default dict for missing value
         variant = collections.defaultdict(lambda: "", variant)
 
@@ -354,11 +352,12 @@ def async_insert_many_variants(conn, data, total_variant_count=None, commit_ever
         variant_id = cursor.lastrowid
 
         #  every commit_every = 200 insert, start a commit ! This value can be changed
-        if insert_count % commit_every == 0:
+        if variant_count % commit_every == 0:
             if total_variant_count:
                 progress = float(variant_count) / total_variant_count * 100.0
             else:
                 progress = 0
+
             yield progress, f"{variant_count} variant inserted"
             conn.commit()
 
