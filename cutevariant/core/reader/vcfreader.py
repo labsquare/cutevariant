@@ -62,6 +62,9 @@ SNPEFF_ANNOTATION_DEFAULT_FIELDS = {
 
 
 class AnnotationParser(object):
+
+
+
     def parse_fields(self, raw):
         self.fields_index = {}  ## required for parse_variant
         for index, field in enumerate(raw.split("|")):
@@ -86,12 +89,22 @@ class VcfReader(AbstractReader):
 
 
     def __init__(self, device):
-        super(VcfReader, self).__init__(device)
+        super().__init__(device)
         self.parser = AnnotationParser()
+        
+        vcf_reader = vcf.VCFReader(device)
+        self.samples = vcf_reader.samples
+        
 
 
     def get_fields(self):
-        yield from self.parse_fields() 
+        # Remove duplicate
+        names = [] 
+        for field in self.parse_fields():
+            if field["name"] not in names:
+                names.append(field["name"])
+                yield field
+
 
 
     def get_variants(self):
@@ -102,11 +115,10 @@ class VcfReader(AbstractReader):
 
         # get avaible fields
         fields = list(self.parse_fields())
+
+        #loop over record
         self.device.seek(0)
-
-        vcf_reader = vcf.Reader(self.device)
-
-        # loop over record
+        vcf_reader = vcf.VCFReader(self.device)
         for record in vcf_reader:
             # split row with multiple alt 
             for index, alt in enumerate(record.ALT):
@@ -117,43 +129,50 @@ class VcfReader(AbstractReader):
                     "alt": str(alt)
                 }
 
+
+                #Parse info 
                 for name in record.INFO:
                     if isinstance(record.INFO[name], list):
                         variant[name] =",".join([str(i) for i in record.INFO[name]])
                     else:
                         variant[name] = record.INFO[name]
 
+
+                # parse sample 
                 if record.samples:
                     variant["samples"] = []
-                    sample_data = {}
                     for sample in record.samples:
+                        sample_data = {}
                         sample_data["name"] = sample.sample
+
                         for field in record.FORMAT.split(":"):
+
 
                             if isinstance(sample[field], list):
                                 value = ",".join([str(i) for i in sample[field]])
                             else:
                                 value = sample[field]
 
+                            if field == "GT":
+                                field = "gt"
+                                value = 1
+
                             sample_data[field] = value
 
                         variant["samples"].append(sample_data)
 
-               
-
-                            #variant["sample"].append(sample_dict)
-
-                    #  PARSE Annotation
-                    # if category == "annotation": #=== PARSE Special Annotation ===
-                    #     # each variant can have multiple annotation. Create then many variants
-                    #     variant["annotation"] = []
-                    #     annotations = record.INFO["ANN"]
-                    #     for annotation in annotations:
-                    #         variant["annotation"].append(
-                    #             self.parser.parse_variant(annotation)
-                    #         )
-
                 yield variant
+
+                #     # #PARSE Annotation
+                #     # if category == "annotation": #=== PARSE Special Annotation ===
+                #     #     # each variant can have multiple annotation. Create then many variants
+                #     #     variant["annotation"] = []
+                #     #     annotations = record.INFO["ANN"]
+                #     #     for annotation in annotations:
+                #     #         variant["annotation"].append(
+                #     #             self.parser.parse_variant(annotation)
+                #     #         )
+
 
     def parse_fields(self):
         """ Extract fields informations from VCF fields """ 
@@ -207,7 +226,7 @@ class VcfReader(AbstractReader):
 
         # Reads VCF INFO  
         self.device.seek(0)
-        vcf_reader = vcf.Reader(self.device)
+        vcf_reader = vcf.VCFReader(self.device)
         
         # Reads VCF info 
         for key, info in vcf_reader.infos.items():
@@ -232,3 +251,5 @@ class VcfReader(AbstractReader):
             }
 
 
+    def get_samples(self):
+        return self.samples

@@ -523,7 +523,8 @@
 			"file": "cutevariant.sublime-project",
 			"settings":
 			{
-				"buffer_size": 924,
+				"buffer_size": 913,
+				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
 		},
@@ -531,7 +532,7 @@
 			"file": "tests/test_reader.py",
 			"settings":
 			{
-				"buffer_size": 1621,
+				"buffer_size": 3682,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
@@ -540,16 +541,7 @@
 			"file": "cutereader.py",
 			"settings":
 			{
-				"buffer_size": 308,
-				"encoding": "UTF-8",
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "cutevariant/core/reader/vcfreader.py",
-			"settings":
-			{
-				"buffer_size": 6851,
+				"buffer_size": 741,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
@@ -1172,6 +1164,7 @@
 	],
 	"file_history":
 	[
+		"/home/sacha/Dev/cutevariant/cutevariant/core/reader/vcfreader.py",
 		"/home/schutz/Bioinfo/projects/pacbio/Snakefile",
 		"/DATA/Dev/CuteVariant-python/cutevariant/gui/genombrowser.py",
 		"/tmp/sublime-sftp-browse-1552644848/genouest/home/genouest/cnrs_umr6290/sschutz/project/pacbio/Snakefile",
@@ -1298,12 +1291,11 @@
 		"/home/schutz/Dev/CuteVariant-python/tests/test_model.py",
 		"/home/schutz/Dev/CuteVariant-python/Makefile",
 		"/home/schutz/Dev/CuteVariant-python/tests/utils.py",
-		"/home/schutz/.config/sublime-text-3/Packages/SublimeOnSaveBuild/SublimeOnSaveBuild.sublime-settings",
-		"/home/schutz/.config/sublime-text-3/Packages/SublimeOnSaveBuild/README.md"
+		"/home/schutz/.config/sublime-text-3/Packages/SublimeOnSaveBuild/SublimeOnSaveBuild.sublime-settings"
 	],
 	"find":
 	{
-		"height": 41.0
+		"height": 43.0
 	},
 	"find_in_files":
 	{
@@ -1318,6 +1310,7 @@
 		"case_sensitive": true,
 		"find_history":
 		[
+			"schutz",
 			"merge",
 			"\\n",
 			"lbc\\d+",
@@ -1447,7 +1440,7 @@
 	"groups":
 	[
 		{
-			"selected": 3,
+			"selected": 0,
 			"sheets":
 			[
 				{
@@ -1456,15 +1449,15 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 924,
+						"buffer_size": 913,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								201,
-								201
+								184,
+								184
 							]
 						],
 						"settings":
@@ -1481,7 +1474,7 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 3,
+					"stack_index": 0,
 					"type": "text"
 				},
 				{
@@ -1490,15 +1483,15 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 1621,
+						"buffer_size": 3682,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								46,
-								46
+								0,
+								0
 							]
 						],
 						"settings":
@@ -1536,15 +1529,15 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 308,
+						"buffer_size": 741,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								302,
-								302
+								0,
+								0
 							]
 						],
 						"settings":
@@ -1563,7 +1556,10 @@
 							"function_name_status_row": 15,
 							"git_gutter_is_enabled": true,
 							"incomplete_sync": null,
-							"syntax": "Packages/Python/Python.sublime-syntax"
+							"remote_loading": false,
+							"synced": false,
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
 						"translation.y": 0.0,
@@ -1574,52 +1570,6 @@
 				},
 				{
 					"buffer": 3,
-					"file": "cutevariant/core/reader/vcfreader.py",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 6851,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								6432,
-								6432
-							]
-						],
-						"settings":
-						{
-							"auto_complete_triggers":
-							[
-								{
-									"characters": ".",
-									"selector": "source.python - string - comment - constant.numeric"
-								},
-								{
-									"characters": ".",
-									"selector": "source.python - string - constant.numeric"
-								}
-							],
-							"function_name_status_row": 219,
-							"git_gutter_is_enabled": true,
-							"incomplete_sync": null,
-							"remote_loading": false,
-							"synced": false,
-							"syntax": "Packages/Python/Python.sublime-syntax",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 4172.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 0,
-					"type": "text"
-				},
-				{
-					"buffer": 4,
 					"file": "cutevariant/__main__.py",
 					"semi_transient": false,
 					"settings":
@@ -1648,7 +1598,7 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 4,
+					"stack_index": 3,
 					"type": "text"
 				}
 			]
