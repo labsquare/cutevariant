@@ -25,6 +25,7 @@ from cutevariant.gui.plugins.infovariantplugin import InfoVariantPlugin
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
         super(MainWindow, self).__init__()
+        self.setWindowTitle("Cutevariant")
         self.toolbar = self.addToolBar("maintoolbar")
         self.conn = None
         self.view_widgets = []
@@ -92,7 +93,6 @@ class MainWindow(QMainWindow):
     def open(self, db_filename):
 
         if not os.path.exists(db_filename):
-            QMessageBox.warning(self, "error", "file doesn't exists")
             return
 
         self.conn = sqlite3.connect(db_filename)
@@ -115,24 +115,27 @@ class MainWindow(QMainWindow):
 
     def setupActions(self):
         # menu bar
-        self.file_menu = self.menuBar().addMenu("&File")
+        self.file_menu = self.menuBar().addMenu(self.tr("&File"))
         self.file_menu.addAction(
-            "&New project", self, SLOT("new_project()"), QKeySequence.New
+            self.tr("&New project"), self, SLOT("new_project()"), QKeySequence.New
         )
         self.file_menu.addAction(
-            "&Open project ...", self, SLOT("open_project()"), QKeySequence.Open
+            self.tr("&Open project ..."), self, SLOT("open_project()"), QKeySequence.Open
         )
         self.file_menu.addSeparator()
-        self.file_menu.addAction("Settings ...", self, SLOT("show_settings()"))
+        self.file_menu.addAction(self.tr("Settings ..."), self, SLOT("show_settings()"))
 
-        self.view_menu = self.menuBar().addMenu("&View")
+        self.file_menu.addSeparator()
+        self.file_menu.addAction(self.tr("&Quit"), qApp, SLOT("quit()"), QKeySequence.Quit)
 
-        self.help_menu = self.menuBar().addMenu("Help")
-        self.help_menu.addAction("About Qt", qApp, SLOT("aboutQt()"))
+        self.view_menu = self.menuBar().addMenu(self.tr("&View"))
+
+        self.help_menu = self.menuBar().addMenu(self.tr("Help"))
+        self.help_menu.addAction(self.tr("About Qt"), qApp, SLOT("aboutQt()"))
 
         # Tool bar
 
-        save_query_action = self.toolbar.addAction("save query")
+        save_query_action = self.toolbar.addAction(self.tr("save query"))
         save_query_action.triggered.connect(self.selection_widget.save_current_query)
 
     def addView(self):
@@ -161,11 +164,19 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def open_project(self):
-        filename = QFileDialog.getOpenFileName(
-            self, "Open project", "Cutevariant project (*.db)"
-        )[0]
-        if filename is not None:
-            self.open(filename)
+        # Reload last directory used
+        app_settings = QSettings()
+        last_directory = app_settings.value("last_directory", QDir.homePath())
+
+        filepath, _ = QFileDialog.getOpenFileName(
+            self, self.tr("Open project"), last_directory,
+            self.tr("Cutevariant project (*.db)")
+        )
+        if filepath:
+            # Open and save directory
+            app_settings.setValue("last_directory", os.path.dirname(filepath))
+            self.open(filepath)
+
 
     @Slot()
     def show_settings(self):

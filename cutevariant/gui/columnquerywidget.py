@@ -44,7 +44,7 @@ class ColumnQueryWidget(AbstractQueryWidget):
     def __init__(self):
         super().__init__()
 
-        self.setWindowTitle("Columns")
+        self.setWindowTitle(self.tr("Columns"))
         self.view = QTreeView()
         self.model = ColumnQueryModel()
         self.view.setModel(self.model)
