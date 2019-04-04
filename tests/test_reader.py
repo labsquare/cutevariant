@@ -52,7 +52,7 @@ def test_variants(reader):
             assert isinstance(variant["samples"], list)
             samples_names = [s["name"] for s in variant["samples"]]
             print(reader.get_samples())
-            ##assert sorted(reader.get_samples()) == sorted(samples_names)
+            assert sorted(reader.get_samples()) == sorted(samples_names)
 
 
 @pytest.mark.parametrize(
@@ -69,13 +69,16 @@ def test_create_db(reader):
 
     sql.create_table_fields(conn)
     sql.insert_many_fields(conn, reader.get_fields())
+    assert len(list(sql.get_fields(conn))) == len(list(reader.get_fields()))
 
     sql.create_table_samples(conn)
     sql.insert_many_samples(conn, reader.get_samples())
+    assert len(list(sql.get_samples(conn))) == len(list(reader.get_samples()))
+
 
     sql.create_table_variants(conn, reader.get_fields())
-
     sql.insert_many_variants(conn, reader.get_variants())
+    assert sql.get_variants_count(conn) == len(list(reader.get_variants()))
 
 
 # def test_vcf():

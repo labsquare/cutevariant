@@ -281,6 +281,10 @@ def get_one_variant(conn, id: int):
     # return cursor.fetchone()
 
 
+def get_variants_count(conn):
+    return conn.execute(f""" SELECT COUNT(*) FROM variants """).fetchone()[0]
+
+
 def insert_many_variants(conn, data, total_variant_count=None, commit_every=200):
     """
     Insert many variant from data into variant table.columns
