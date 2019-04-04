@@ -307,21 +307,25 @@ def insert_many_variants(conn, data, total_variant_count=None, commit_every=200)
 
     # # build dynamic insert query
     # # INSERT INTO variant qcol1, qcol2.... VALUES :qcol1, :qcol2 ....
-    q_cols  = ",".join(cols)
+    q_cols = ",".join(cols)
     q_place = ",".join([f":{place}" for place in cols])
 
     # # get samples with sql rowid
-    samples = dict([ (record[1], record[0]) for record in conn.execute("""SELECT rowid, name FROM samples""")])
+    samples = dict(
+        [
+            (record[1], record[0])
+            for record in conn.execute("""SELECT rowid, name FROM samples""")
+        ]
+    )
 
     # Loop over variants
     variant_count = 0  # count variants
-    insert_count  = 0 
+    insert_count = 0
 
     for variant in data:
         print(variant)
         # use default dict for missing value
         variant = collections.defaultdict(lambda: "", variant)
-
 
         variant_count += 1
 
@@ -336,12 +340,10 @@ def insert_many_variants(conn, data, total_variant_count=None, commit_every=200)
         #         variants.append(new_variant)
         # else:
 
-
         # Insert current variant
         cursor.execute(
-                f"""INSERT INTO variants ({q_cols}) VALUES ({q_place})""",
-                variant,
-            )
+            f"""INSERT INTO variants ({q_cols}) VALUES ({q_place})""", variant
+        )
         # get variant rowid
         variant_id = cursor.lastrowid
 
@@ -349,8 +351,8 @@ def insert_many_variants(conn, data, total_variant_count=None, commit_every=200)
         if insert_count % commit_every == 0:
             if total_variant_count:
                 progress = float(variant_count) / total_variant_count * 100.0
-        
-            #yield progress, f"{variant_count} variant inserted"
+
+            # yield progress, f"{variant_count} variant inserted"
             conn.commit()
 
             # if variant has sample data, insert record into sample_has_variant
@@ -373,7 +375,7 @@ def insert_many_variants(conn, data, total_variant_count=None, commit_every=200)
     # )
 
     # create selections
-    #insert_selection(conn, name="all", count=variant_count)
+    # insert_selection(conn, name="all", count=variant_count)
 
     # yield 100, f"{variant_count} variant(s) has been inserted"
 
@@ -407,17 +409,15 @@ def insert_sample(conn, name="no_name"):
     return cursor.lastrowid
 
 
-def insert_many_samples(conn, samples:list):
+def insert_many_samples(conn, samples: list):
     cursor = conn.cursor()
-
-
 
     cursor.executemany(
         """
         INSERT INTO samples (name) 
         VALUES (:name)
         """,
-        [{"name":sample} for sample in samples]
+        [{"name": sample} for sample in samples],
     )
     conn.commit()
 

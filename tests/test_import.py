@@ -11,14 +11,9 @@ from .utils import table_exists
 READERS = [FakeReader()]
 
 
-
-	
-
-
 # def test_import_file_vcf(conn):
 #     path = "exemples/test.vcf"
 #     import_file(conn, path)
-
 
 
 # def test_import_file_vcf_gz(conn):

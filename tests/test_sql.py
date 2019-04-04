@@ -73,8 +73,6 @@ def prepare_base(conn):
     #     pass
 
 
-
-
 def test_fields(conn):
 
     prepare_base(conn)
@@ -127,7 +125,7 @@ def test_samples(conn):
 
 #     read_data = cursor.execute(
 #         f"""
-#         SELECT variants.chr, variants.pos FROM variants 
+#         SELECT variants.chr, variants.pos FROM variants
 #         INNER JOIN selection_has_variant sv ON variants.rowid = sv.variant_id AND sv.selection_id = {selection_id}
 #         """
 #     ).fetchall()
@@ -153,7 +151,7 @@ def test_samples(conn):
 #     # Select statement from union_GT selection must contains only variant.alt G or T
 #     records = cursor.execute(
 #         f"""
-#         SELECT variants.chr, variants.pos, variants.ref, variants.alt FROM variants 
+#         SELECT variants.chr, variants.pos, variants.ref, variants.alt FROM variants
 #         INNER JOIN selection_has_variant sv ON variants.rowid = sv.variant_id AND sv.selection_id = {selection_id}
 #         """
 #     ).fetchall()

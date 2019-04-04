@@ -7,41 +7,44 @@ import sqlite3
 
 READERS = [FakeReader(), VcfReader(open("examples/test.vcf"))]
 
-@pytest.mark.parametrize("reader",READERS,ids = [str(i.__class__.__name__) for i in READERS])
+
+@pytest.mark.parametrize(
+    "reader", READERS, ids=[str(i.__class__.__name__) for i in READERS]
+)
 def test_fields(reader):
-    fields =  list(reader.get_fields())
+    fields = list(reader.get_fields())
     field_names = [f["name"] for f in fields]
     # search if field name are unique
     assert len(set(field_names)) == len(field_names)
 
-    # test mandatory fields name 
-    assert "chr" in field_names 
+    # test mandatory fields name
+    assert "chr" in field_names
     assert "pos" in field_names
-    assert "ref" in field_names 
+    assert "ref" in field_names
     assert "alt" in field_names
 
 
-
-@pytest.mark.parametrize("reader",READERS, ids = [str(i.__class__.__name__) for i in READERS])
+@pytest.mark.parametrize(
+    "reader", READERS, ids=[str(i.__class__.__name__) for i in READERS]
+)
 def test_variants(reader):
 
     # test if variant field name match name from get_fields
     fields = list(reader.get_fields())
-    field_names_from_variant = [] 
-    field_names_from_fields  = [f["name"] for f in fields]
-    field_of_annotations     = [f["name"] for f in fields if f["category"] == "annotations"]
-    field_of_samples         = [f["name"] for f in fields if f["category"] == "samples"]
-   
+    field_names_from_variant = []
+    field_names_from_fields = [f["name"] for f in fields]
+    field_of_annotations = [f["name"] for f in fields if f["category"] == "annotations"]
+    field_of_samples = [f["name"] for f in fields if f["category"] == "samples"]
+
     print(fields)
     print(field_of_annotations)
     print(field_of_samples)
-
 
     for variant in reader.get_variants():
 
         assert isinstance(variant, dict)
 
-        # test extra types 
+        # test extra types
         if "annotations" in variant:
             assert isinstance(variant["annotations"], list)
 
@@ -52,14 +55,16 @@ def test_variants(reader):
             ##assert sorted(reader.get_samples()) == sorted(samples_names)
 
 
-@pytest.mark.parametrize("reader",READERS,ids = [str(i.__class__.__name__) for i in READERS])
+@pytest.mark.parametrize(
+    "reader", READERS, ids=[str(i.__class__.__name__) for i in READERS]
+)
 def test_create_db(reader):
 
     try:
         os.remove("/tmp/test.db")
     except:
-        pass 
-        
+        pass
+
     conn = sqlite3.connect("/tmp/test.db")
 
     sql.create_table_fields(conn)
@@ -71,7 +76,6 @@ def test_create_db(reader):
     sql.create_table_variants(conn, reader.get_fields())
 
     sql.insert_many_variants(conn, reader.get_variants())
-
 
 
 # def test_vcf():
@@ -111,7 +115,6 @@ def test_create_db(reader):
 #         # TODO : test annotation .. Gloups ..
 
 #         # Take some variants
-      
 
 
 # def test_parse_snpeff():
@@ -127,7 +130,6 @@ def test_create_db(reader):
 #             return
 
 
-
 # def test_reader():
 
 #     filename = "examples/test.vcf"
@@ -135,5 +137,3 @@ def test_create_db(reader):
 #         my_reader = VcfReader(file)
 
 #         print(list(my_reader.get_fields()))
-
-        

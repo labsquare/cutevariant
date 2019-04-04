@@ -98,5 +98,3 @@ class AbstractReader(ABC):
     def get_extra_variants(self):
         """decorator for get_fields"""
         yield from self.parse_variants()
-
-

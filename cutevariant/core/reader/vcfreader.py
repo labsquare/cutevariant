@@ -2,12 +2,7 @@ from .abstractreader import AbstractReader
 import vcf
 
 
-VCF_TYPE_MAPPING = {
-        "Float": "float",
-        "Integer": "int",
-        "Flag": "bool",
-        "String": "str",
-    }
+VCF_TYPE_MAPPING = {"Float": "float", "Integer": "int", "Flag": "bool", "String": "str"}
 
 SNPEFF_ANNOTATION_DEFAULT_FIELDS = {
     "annotation": {
@@ -62,9 +57,6 @@ SNPEFF_ANNOTATION_DEFAULT_FIELDS = {
 
 
 class AnnotationParser(object):
-
-
-
     def parse_fields(self, raw):
         self.fields_index = {}  ## required for parse_variant
         for index, field in enumerate(raw.split("|")):
@@ -86,59 +78,51 @@ class AnnotationParser(object):
 
 
 class VcfReader(AbstractReader):
-
-
     def __init__(self, device):
         super().__init__(device)
         self.parser = AnnotationParser()
-        
+
         vcf_reader = vcf.VCFReader(device)
         self.samples = vcf_reader.samples
-        
-
 
     def get_fields(self):
         # Remove duplicate
-        names = [] 
+        names = []
         for field in self.parse_fields():
             if field["name"] not in names:
                 names.append(field["name"])
                 yield field
 
-
-
     def get_variants(self):
         yield from self.parse_variants()
 
     def parse_variants(self):
-        """ Extract Variants from VCF file """ 
+        """ Extract Variants from VCF file """
 
-        # get avaible fields
+        #  get avaible fields
         fields = list(self.parse_fields())
 
-        #loop over record
+        # loop over record
         self.device.seek(0)
         vcf_reader = vcf.VCFReader(self.device)
         for record in vcf_reader:
-            # split row with multiple alt 
+            # split row with multiple alt
             for index, alt in enumerate(record.ALT):
                 variant = {
                     "chr": record.CHROM,
                     "pos": record.POS,
                     "ref": record.REF,
-                    "alt": str(alt)
+                    "alt": str(alt),
                 }
 
-
-                #Parse info 
+                # Parse info
                 for name in record.INFO:
                     if isinstance(record.INFO[name], list):
-                        variant[name] =",".join([str(i) for i in record.INFO[name]])
+                        variant[name] = ",".join([str(i) for i in record.INFO[name]])
                     else:
                         variant[name] = record.INFO[name]
 
-
-                # parse sample 
+                # parse sample
                 if record.samples:
                     variant["samples"] = []
                     for sample in record.samples:
@@ -146,7 +130,6 @@ class VcfReader(AbstractReader):
                         sample_data["name"] = sample.sample
 
                         for field in record.FORMAT.split(":"):
-
 
                             if isinstance(sample[field], list):
                                 value = ",".join([str(i) for i in sample[field]])
@@ -173,62 +156,61 @@ class VcfReader(AbstractReader):
                 #     #             self.parser.parse_variant(annotation)
                 #     #         )
 
-
     def parse_fields(self):
-        """ Extract fields informations from VCF fields """ 
+        """ Extract fields informations from VCF fields """
 
         yield {
             "name": "chr",
             "category": "variant",
             "description": "chromosom",
-            "type": "str"
+            "type": "str",
         }
         yield {
             "name": "pos",
             "category": "variant",
             "description": "position",
-            "type": "int"
+            "type": "int",
         }
 
         yield {
             "name": "rsid",
             "category": "variant",
             "description": "rsid",
-            "type": "str"
+            "type": "str",
         }
 
         yield {
             "name": "ref",
             "category": "variant",
             "description": "reference base",
-            "type": "str"
+            "type": "str",
         }
         yield {
             "name": "alt",
             "category": "variant",
             "description": "alternative base",
-            "type": "str"
+            "type": "str",
         }
 
         yield {
             "name": "qual",
             "category": "variant",
             "description": "quality",
-            "type": "int"
+            "type": "int",
         }
 
         yield {
             "name": "filter",
             "category": "variant",
             "description": "filter",
-            "type": "str"
+            "type": "str",
         }
 
-        # Reads VCF INFO  
+        # Reads VCF INFO
         self.device.seek(0)
         vcf_reader = vcf.VCFReader(self.device)
-        
-        # Reads VCF info 
+
+        #  Reads VCF info
         for key, info in vcf_reader.infos.items():
 
             # if key == "ANN": # Parse special annotation
@@ -238,18 +220,17 @@ class VcfReader(AbstractReader):
                 "name": key,
                 "category": "info",
                 "description": info.desc,
-                "type": VCF_TYPE_MAPPING[info.type]
-                }
-
-        # Reads VCF FORMAT             
-        for key,info in vcf_reader.formats.items():
-            yield {
-            "name": key,
-            "category":"sample",
-            "description": info.desc,
-            "type": VCF_TYPE_MAPPING[info.type]
+                "type": VCF_TYPE_MAPPING[info.type],
             }
 
+        # Reads VCF FORMAT
+        for key, info in vcf_reader.formats.items():
+            yield {
+                "name": key,
+                "category": "sample",
+                "description": info.desc,
+                "type": VCF_TYPE_MAPPING[info.type],
+            }
 
     def get_samples(self):
         return self.samples
