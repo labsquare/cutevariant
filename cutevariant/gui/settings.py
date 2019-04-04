@@ -3,6 +3,7 @@ import os
 import glob
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
+from PySide2.QtGui import * # QIcon
 
 # Custom imports
 import cutevariant.commons as cm
@@ -11,6 +12,7 @@ class BaseWidget(QTabWidget):
     """Abstract class for settings widgets"""
     def __init__(self):
         super().__init__()
+        self.setWindowIcon(QIcon.fromTheme("system-run")) # temporary for now 
 
     def save(self):
         raise NotImplemented()
@@ -128,6 +130,8 @@ class SettingsWidget(QDialog):
         self.button_box.button(QDialogButtonBox.SaveAll).clicked.connect(self.save_all)
         self.button_box.button(QDialogButtonBox.Reset).clicked.connect(self.load_all)
         self.button_box.button(QDialogButtonBox.Cancel).clicked.connect(self.close)
+
+        self.list_widget.currentRowChanged.connect(self.stack_widget.setCurrentIndex)
 
         self.load_all()
 
