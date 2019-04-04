@@ -48,7 +48,7 @@ def async_import_file(conn, filename, project={}):
 
         yield 0, "count variants..."
         total_variant = reader.get_variants_count()
-        yield from insert_many_variants(conn, reader.get_variants(), total_variant)
+        yield from async_insert_many_variants(conn, reader.get_variants(), total_variant)
 
     # # Create default selection
     # session.add(Selection(name="all", description="all variant", count = variant_count))

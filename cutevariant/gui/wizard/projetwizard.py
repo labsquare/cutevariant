@@ -81,7 +81,7 @@ class FilePage(QWizardPage):
 
     def _browse(self):
         filename = QFileDialog.getOpenFileName(
-            self, "Open a file", QDir.homePath(), "VCF file (*.vcf, *.vcf.gz)"
+            self, "Open a file", QDir.homePath(), "VCF file (*.vcf *.vcf.gz)"
         )
         if filename:
             self.file_path_edit.setText(filename[0])

@@ -285,7 +285,9 @@ def get_variants_count(conn):
     return conn.execute(f""" SELECT COUNT(*) FROM variants """).fetchone()[0]
 
 
-def insert_many_variants(conn, data, total_variant_count=None, commit_every=200):
+
+
+def async_insert_many_variants(conn, data, total_variant_count=None, commit_every=200):
     """
     Insert many variant from data into variant table.columns
 
@@ -355,8 +357,9 @@ def insert_many_variants(conn, data, total_variant_count=None, commit_every=200)
         if insert_count % commit_every == 0:
             if total_variant_count:
                 progress = float(variant_count) / total_variant_count * 100.0
-
-            # yield progress, f"{variant_count} variant inserted"
+            else:
+                progress = 0
+            yield progress, f"{variant_count} variant inserted"
             conn.commit()
 
             # if variant has sample data, insert record into sample_has_variant
@@ -381,7 +384,13 @@ def insert_many_variants(conn, data, total_variant_count=None, commit_every=200)
     # create selections
     # insert_selection(conn, name="all", count=variant_count)
 
-    # yield 100, f"{variant_count} variant(s) has been inserted"
+    yield 100, f"{variant_count} variant(s) has been inserted"
+
+
+
+def insert_many_variants(conn, data, total_variant_count=None, commit_every=200):
+    for _,_ in async_insert_many_variants(conn, data, total_variant_count, commit_every):
+        pass
 
 
 ## ================ Fields functions =============================
