@@ -1,7 +1,7 @@
 
 environment:
   matrix:
-    - PYTHON_VERSION: 3.4
+    - PYTHON_VERSION: 3.6
       MINICONDA: C:\Miniconda3
 
 init:
