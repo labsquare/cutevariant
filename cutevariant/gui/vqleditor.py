@@ -16,8 +16,10 @@ class VqlSyntaxHighlighter(QSyntaxHighlighter):
 
         palette = qApp.palette("QTextEdit")
 
+
         # SQL Syntax highlighter rules
         # dict: pattern, font, color, minimal (not greedy)
+        # TODO : What about dark mode ? 
         self.highlighting_patterns = [
             {
                 # Keywords
@@ -87,6 +89,7 @@ class VqlSyntaxHighlighter(QSyntaxHighlighter):
         for regex, t_format in self.highlighting_rules:
             # Ugly iterator => not iterable in Python...
             matchIterator = regex.globalMatch(text)
+
             while matchIterator.hasNext():
                 match = matchIterator.next()
                 self.setFormat(match.capturedStart(), match.capturedLength(), t_format)

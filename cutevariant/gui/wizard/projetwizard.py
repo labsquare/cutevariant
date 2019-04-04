@@ -54,11 +54,15 @@ class ProjetPage(QWizardPage):
 
     def isComplete(self):
         """Conditions to unlock next button"""
-        return True if (
-            QDir(self.projet_path_edit.text()).exists()
-            and self.projet_path_edit.text()
-            and self.projet_name_edit.text()
-        ) else False
+        return (
+            True
+            if (
+                QDir(self.projet_path_edit.text()).exists()
+                and self.projet_path_edit.text()
+                and self.projet_name_edit.text()
+            )
+            else False
+        )
 
 
 class FilePage(QWizardPage):
@@ -89,8 +93,9 @@ class FilePage(QWizardPage):
 
         filepath, filetype = QFileDialog.getOpenFileName(
             self, self.tr("Open a file"), last_directory,
-            self.tr("VCF file (*.vcf, *.vcf.gz)")
-        )
+            self.tr("VCF file (*.vcf *.vcf.gz)"))
+
+        
         if filepath:
             # Display and save directory
             self.file_path_edit.setText(filepath)
@@ -99,9 +104,14 @@ class FilePage(QWizardPage):
 
     def isComplete(self):
         """Conditions to unlock next button"""
-        return True if (
-            self.file_path_edit.text() and QFile(self.file_path_edit.text()).exists()
-        ) else False
+        return (
+            True
+            if (
+                self.file_path_edit.text()
+                and QFile(self.file_path_edit.text()).exists()
+            )
+            else False
+        )
 
 
 class ImportThread(QThread):
