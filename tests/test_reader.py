@@ -5,7 +5,12 @@ import os
 import pytest
 import sqlite3
 
-READERS = [FakeReader(), VcfReader(open("examples/test.vcf"))]
+READERS = [
+FakeReader(),
+VcfReader(open("examples/test.vcf")),
+VcfReader(open("examples/test.vcf"),"vep")
+ 
+ ]
 
 
 @pytest.mark.parametrize(

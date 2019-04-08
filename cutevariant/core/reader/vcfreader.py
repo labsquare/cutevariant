@@ -1,100 +1,145 @@
 from .abstractreader import AbstractReader
 import vcf
+import copy
 
 
 VCF_TYPE_MAPPING = {"Float": "float", "Integer": "int", "Flag": "bool", "String": "str"}
 
-SNPEFF_ANNOTATION_DEFAULT_FIELDS = {
-    "annotation": {
-        "name": "consequence",
-        "category": "annotation",
-        "description": "consequence",
-        "type": "str",
-    },
-    "annotation_impact": {
-        "name": "impact",
-        "category": "annotation",
-        "description": "impact of variant",
-        "type": "str",
-    },
-    "gene_name": {
-        "name": "gene",
-        "category": "annotation",
-        "description": "gene name",
-        "type": "str",
-    },
-    "gene_id": {
-        "name": "gene_id",
-        "category": "annotation",
-        "description": "gene name",
-        "type": "str",
-    },
-    "feature_id": {
-        "name": "transcript",
-        "category": "annotation",
-        "description": "transcript name",
-        "type": "str",
-    },
-    "transcript_biotype": {
-        "name": "biotype",
-        "category": "annotation",
-        "description": " biotype",
-        "type": "str",
-    },
-    "hgvs.p": {
-        "name": "hgvs_p",
-        "category": "annotation",
-        "description": "protein hgvs",
-        "type": "str",
-    },
-    "hgvs.c": {
-        "name": "hgvs_c",
-        "category": "annotation",
-        "description": "coding hgvs",
-        "type": "str",
-    },
-}
+
+class VepParser(object):
+
+    def parse_fields(self,fields):
+        self._raw_fields_name = []
+        for field in fields:
+            if field["name"] == "CSQ":
+                for i in field["description"].split("|")[1:]:
+                    self._raw_fields_name.append(i)
+                    _f = {"name": i, "description": "None", "type":"str", "category":"annotation"}
+                    yield _f
+            else:
+                yield field
+
+    def parse_variants(self, variants):
+
+        if not hasattr(self,"_raw_fields_name"):
+            raise Exception("Cannot parse variant without parsing first fields")
 
 
-class AnnotationParser(object):
-    def parse_fields(self, raw):
-        self.fields_index = {}  ## required for parse_variant
-        for index, field in enumerate(raw.split("|")):
-            key = field.strip().lower()
+        for variant in variants:
+            if "CSQ" in variant:
+                raw = variant.pop("CSQ")
+                variant["annotations"] = []
+                for transcripts in raw.split(","):
+                    new_variant = copy.copy(variant) 
+                    transcript = transcripts.split("|")
+                    annotation = {}
+                    for idx, field_name in enumerate(self._raw_fields_name):
+                        annotation[field_name] = transcript[idx]
+                    variant["annotations"].append(annotation)
+                yield variant
+            else:
+                yield variant 
 
-            if key in SNPEFF_ANNOTATION_DEFAULT_FIELDS.keys():
-                self.fields_index[index] = SNPEFF_ANNOTATION_DEFAULT_FIELDS[key]["name"]
-                yield SNPEFF_ANNOTATION_DEFAULT_FIELDS[key]
 
-    def parse_variant(self, raw):
+# SNPEFF_ANNOTATION_DEFAULT_FIELDS = {
+#     "annotation": {
+#         "name": "consequence",
+#         "category": "annotation",
+#         "description": "consequence",
+#         "type": "str",
+#     },
+#     "annotation_impact": {
+#         "name": "impact",
+#         "category": "annotation",
+#         "description": "impact of variant",
+#         "type": "str",
+#     },
+#     "gene_name": {
+#         "name": "gene",
+#         "category": "annotation",
+#         "description": "gene name",
+#         "type": "str",
+#     },
+#     "gene_id": {
+#         "name": "gene_id",
+#         "category": "annotation",
+#         "description": "gene name",
+#         "type": "str",
+#     },
+#     "feature_id": {
+#         "name": "transcript",
+#         "category": "annotation",
+#         "description": "transcript name",
+#         "type": "str",
+#     },
+#     "transcript_biotype": {
+#         "name": "biotype",
+#         "category": "annotation",
+#         "description": " biotype",
+#         "type": "str",
+#     },
+#     "hgvs.p": {
+#         "name": "hgvs_p",
+#         "category": "annotation",
+#         "description": "protein hgvs",
+#         "type": "str",
+#     },
+#     "hgvs.c": {
+#         "name": "hgvs_c",
+#         "category": "annotation",
+#         "description": "coding hgvs",
+#         "type": "str",
+#     },
+# }
 
-        annotation = {}
-        for index, ann in enumerate(raw.split("|")):
-            if index in self.fields_index:
-                field_name = self.fields_index[index]
-                annotation[field_name] = ann
 
-        return annotation
+# class AnnotationParser(object):
+#     def parse_fields(self, raw):
+#         self.fields_index = {}  ## required for parse_variant
+#         for index, field in enumerate(raw.split("|")):
+#             key = field.strip().lower()
+
+#             if key in SNPEFF_ANNOTATION_DEFAULT_FIELDS.keys():
+#                 self.fields_index[index] = SNPEFF_ANNOTATION_DEFAULT_FIELDS[key]["name"]
+#                 yield SNPEFF_ANNOTATION_DEFAULT_FIELDS[key]
+
+#     def parse_variant(self, raw):
+
+#         annotation = {}
+#         for index, ann in enumerate(raw.split("|")):
+#             if index in self.fields_index:
+#                 field_name = self.fields_index[index]
+#                 annotation[field_name] = ann
+
+#         return annotation
+
+
 
 
 class VcfReader(AbstractReader):
-    def __init__(self, device):
+    def __init__(self, device, annotation_parser:str = None):
         super().__init__(device)
-        self.parser = AnnotationParser()
+        #self.parser = AnnotationParser()
 
         vcf_reader = vcf.VCFReader(device)
         self.samples = vcf_reader.samples
+        self._set_annotation_parser(annotation_parser)
+
 
     def get_fields(self):
         # Remove duplicate
-        names = []
-        for field in self.parse_fields():
-            if field["name"] not in names:
-                names.append(field["name"])
-                yield field
+        fields = self.parse_fields()
+        if self.annotation_parser:
+            yield from self._keep_unique_fields(self.annotation_parser.parse_fields(fields))
+        else:
+            yield from self._keep_unique_fields(fields)
+
 
     def get_variants(self):
-        yield from self.parse_variants()
+        if self.annotation_parser:
+            yield from self.annotation_parser.parse_variants(self.parse_variants())
+        else:
+            yield from self.parse_variants()
 
     def parse_variants(self):
         """ Extract Variants from VCF file """
@@ -234,3 +279,19 @@ class VcfReader(AbstractReader):
 
     def get_samples(self):
         return self.samples
+
+
+    def _keep_unique_fields(self,fields):
+        ''' return fields list with unique field name ''' 
+        names = []
+        for field in fields:
+            if field["name"] not in names:
+                names.append(field["name"])
+                yield field
+
+    def _set_annotation_parser(self, parser: str):
+        self.annotation_parser = None
+        if parser == "vep":
+            self.annotation_parser = VepParser() 
+
+

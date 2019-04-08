@@ -4,6 +4,130 @@
 		"selected_items":
 		[
 			[
+				"open",
+				"open_folder\tfunction"
+			],
+			[
+				"get",
+				"getExistingDirectory\tfunction"
+			],
+			[
+				"QFile",
+				"QFileDialog\tclass"
+			],
+			[
+				"setFo",
+				"setFont\tfunction"
+			],
+			[
+				"read",
+				"readlines\tfunction"
+			],
+			[
+				"fil",
+				"filename\tstatement"
+			],
+			[
+				"curre",
+				"currentIndex\tfunction"
+			],
+			[
+				"file",
+				"filemodel\tstatement"
+			],
+			[
+				"QSystem",
+				"QFileSystemModel\tclass"
+			],
+			[
+				"setMiniw",
+				"setMidLineWidth\tfunction"
+			],
+			[
+				"sampl",
+				"samples_names\tstatement"
+			],
+			[
+				"par",
+				"parse_fields"
+			],
+			[
+				"field",
+				"field_names\tstatement"
+			],
+			[
+				"fiel",
+				"field_types\tstatement"
+			],
+			[
+				"get_",
+				"get_fields\tfunction"
+			],
+			[
+				"class",
+				"classmethod\tclass"
+			],
+			[
+				"pil",
+				"Pipeline\tclass"
+			],
+			[
+				"du",
+				"dumps\tfunction"
+			],
+			[
+				"co",
+				"commit"
+			],
+			[
+				"varia",
+				"variant_to_insert\tstatement"
+			],
+			[
+				"tota",
+				"total_variant_count\tparam"
+			],
+			[
+				"insert",
+				"insert_many_variants\tfunction"
+			],
+			[
+				"create_tab",
+				"create_table_variants\tfunction"
+			],
+			[
+				"create",
+				"create_table_samples\tfunction"
+			],
+			[
+				"cre",
+				"create_table_fields\tfunction"
+			],
+			[
+				"samp",
+				"sample"
+			],
+			[
+				"key",
+				"keys"
+			],
+			[
+				"for",
+				"FORMAT\tstatement"
+			],
+			[
+				"info",
+				"INFO\tstatement"
+			],
+			[
+				"FOR",
+				"formats\tstatement"
+			],
+			[
+				"desc",
+				"desc"
+			],
+			[
 				"sam",
 				"samples"
 			],
@@ -84,14 +208,6 @@
 				"VariantInfoPlugin\tclass"
 			],
 			[
-				"varia",
-				"variant_info_plugin\tmodule"
-			],
-			[
-				"get",
-				"get_rowid\tfunction"
-			],
-			[
 				"col",
 				"columns\tstatement"
 			],
@@ -126,10 +242,6 @@
 			[
 				"view",
 				"view_menu\tstatement"
-			],
-			[
-				"file",
-				"fileMenu\tstatement"
 			],
 			[
 				"QKey",
@@ -220,10 +332,6 @@
 				"insert_many_fields\tfunction"
 			],
 			[
-				"read",
-				"reader\tmodule"
-			],
-			[
 				"fie",
 				"field_name\tstatement"
 			],
@@ -238,10 +346,6 @@
 			[
 				"value",
 				"values\tfunction"
-			],
-			[
-				"desc",
-				"description"
 			],
 			[
 				"Anno",
@@ -380,10 +484,6 @@
 				"projet_id"
 			],
 			[
-				"key",
-				"keywords"
-			],
-			[
 				"Prj",
 				"Project"
 			],
@@ -400,10 +500,6 @@
 				"FilePage"
 			],
 			[
-				"fil",
-				"file_layout"
-			],
-			[
 				"vcf",
 				"vcf_button"
 			],
@@ -418,139 +514,35 @@
 			[
 				"Py",
 				"PySide2\tmodule"
-			],
-			[
-				"plu",
-				"pluginInfo\tstatement"
-			],
-			[
-				"QtCo",
-				"QtCore\tmodule"
-			],
-			[
-				"send",
-				"sender_widget\tstatement"
-			],
-			[
-				"click",
-				"clicked\tinstance"
-			],
-			[
-				"Query",
-				"QueryRouter\tclass"
-			],
-			[
-				"par",
-				"parse_where_dict\tfunction"
-			],
-			[
-				"dete",
-				"samples_detected"
-			],
-			[
-				"samp",
-				"samples_detected\tstatement"
-			],
-			[
-				"clo",
-				"columns\tstatement"
-			],
-			[
-				"li",
-				"limit"
-			],
-			[
-				"quer",
-				"query\tPyQt Functions"
-			],
-			[
-				"que",
-				"query\tPyQt Functions"
-			],
-			[
-				"Vari",
-				"VariantView\tclass"
-			],
-			[
-				"tabl",
-				"table_count\tfunction"
-			],
-			[
-				"vari",
-				"variant_placeholder\tstatement"
-			],
-			[
-				"var",
-				"variant_columns\tstatement"
-			],
-			[
-				"com",
-				"commit\tPyQt Functions"
-			],
-			[
-				"get_",
-				"get_fields\tfunction"
-			],
-			[
-				"exec",
-				"executemany\tfunction"
-			],
-			[
-				"bui",
-				"builder2\tstatement"
-			],
-			[
-				"meta",
-				"metadata\tstatement"
-			],
-			[
-				"addI",
-				"addItems\tfunction"
-			],
-			[
-				"create",
-				"create_session\tfunction"
-			],
-			[
-				"csv",
-				"csvreader\tstatement"
 			]
 		]
 	},
 	"buffers":
 	[
 		{
+			"settings":
+			{
+				"buffer_size": 0,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"contents": "from cutevariant.core import VC",
+			"file": "test.py",
+			"file_size": 39,
+			"file_write_time": 131992107161338511,
+			"settings":
+			{
+				"buffer_size": 31,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
 			"file": "cutevariant.sublime-project",
 			"settings":
 			{
-				"buffer_size": 913,
-				"encoding": "UTF-8",
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "tests/test_reader.py",
-			"settings":
-			{
-				"buffer_size": 3682,
-				"encoding": "UTF-8",
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "cutereader.py",
-			"settings":
-			{
-				"buffer_size": 741,
-				"encoding": "UTF-8",
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "cutevariant/__main__.py",
-			"settings":
-			{
-				"buffer_size": 278,
+				"buffer_size": 916,
 				"line_ending": "Unix"
 			}
 		}
@@ -1164,7 +1156,22 @@
 	],
 	"file_history":
 	[
-		"/home/sacha/Dev/cutevariant/cutevariant/core/reader/vcfreader.py",
+		"/home/schutz/Téléchargements/paul_genotyping(1).html",
+		"/home/schutz/Dev/snpTyper/mainwindow.py",
+		"/home/schutz/Dev/snpTyper/__main__.py",
+		"/home/schutz/Dev/cutevariant/cutevariant/core/reader/abstractreader.py",
+		"/home/schutz/Dev/cutevariant/cutevariant/core/reader/fakereader.py",
+		"/home/schutz/Dev/cutevariant/cutevariant/core/reader/vcfreader.py",
+		"/home/schutz/Dev/cutevariant/cutereader.py",
+		"/home/schutz/Dev/cutevariant/tests/test_query.py",
+		"/home/schutz/Dev/cutevariant/tests/test_sql.py",
+		"/home/schutz/Dev/cutevariant/tests/test_import.py",
+		"/home/schutz/Dev/cutevariant/cutevariant.sublime-project",
+		"/home/schutz/Dev/cutevariant/tests/test_reader.py",
+		"/home/schutz/Dev/cutevariant/cutevariant/__main__.py",
+		"/home/schutz/Dev/cutevariant/cutevariant/core/reader/__init__.py",
+		"/home/schutz/Dev/cutevariant/cutevariant/core/sql.py",
+		"/home/schutz/Dev/cutevariant/tests/test_sql_reader.py",
 		"/home/schutz/Bioinfo/projects/pacbio/Snakefile",
 		"/DATA/Dev/CuteVariant-python/cutevariant/gui/genombrowser.py",
 		"/tmp/sublime-sftp-browse-1552644848/genouest/home/genouest/cnrs_umr6290/sschutz/project/pacbio/Snakefile",
@@ -1276,26 +1283,11 @@
 		"/DATA/Dev/CuteVariant-python/tests/test_querybuilder.py",
 		"/DATA/Dev/CuteVariant-python/tests/test_qt_mainwindow.py",
 		"/DATA/Dev/CuteVariant-python/pytest.ini",
-		"/DATA/Dev/CuteVariant-python/requirements.txt",
-		"/DATA/Dev/CuteVariant-python/tests/test_grammar.py",
-		"/DATA/Dev/haploview/__main__.py",
-		"/DATA/Dev/CuteVariant-python/cutevariant/core/sqlite.py",
-		"/DATA/Dev/CuteVariant-python/cutevariant/core/model.py",
-		"/DATA/Dev/CuteVariant-python/tests/test_model.py",
-		"/DATA/Dev/CuteVariant-python/tests/test_import.py",
-		"/DATA/Dev/CuteVariant-python/exemples/test.csv",
-		"/DATA/Dev/CuteVariant-python/exemples/test.cvf",
-		"/DATA/Dev/CuteVariant-python/Makefile",
-		"/home/schutz/Dev/CuteVariant-python/cutevariant/core/query.py",
-		"/home/schutz/Dev/CuteVariant-python/cutevariant/core/model.py",
-		"/home/schutz/Dev/CuteVariant-python/tests/test_model.py",
-		"/home/schutz/Dev/CuteVariant-python/Makefile",
-		"/home/schutz/Dev/CuteVariant-python/tests/utils.py",
-		"/home/schutz/.config/sublime-text-3/Packages/SublimeOnSaveBuild/SublimeOnSaveBuild.sublime-settings"
+		"/DATA/Dev/CuteVariant-python/requirements.txt"
 	],
 	"find":
 	{
-		"height": 43.0
+		"height": 45.0
 	},
 	"find_in_files":
 	{
@@ -1310,7 +1302,15 @@
 		"case_sensitive": true,
 		"find_history":
 		[
-			"schutz",
+			"sacha",
+			"^",
+			"()",
+			"print",
+			"fields",
+			"charlotte = Person(\"charlotte\")\n",
+			"AF",
+			"GT",
+			"insert_samp",
 			"merge",
 			"\\n",
 			"lbc\\d+",
@@ -1440,24 +1440,99 @@
 	"groups":
 	[
 		{
-			"selected": 0,
+			"selected": 1,
 			"sheets":
 			[
 				{
 					"buffer": 0,
-					"file": "cutevariant.sublime-project",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 913,
+						"buffer_size": 0,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								184,
-								184
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"default_dir": "/home/schutz/Téléchargements",
+							"function_name_status_row": 0,
+							"git_gutter_is_enabled": false,
+							"incomplete_sync": null,
+							"syntax": "Packages/Text/Plain text.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "test.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 31,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								31,
+								31
+							]
+						],
+						"settings":
+						{
+							"auto_complete_triggers":
+							[
+								{
+									"characters": ".",
+									"selector": "source.python - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								}
+							],
+							"function_name_status_row": -1,
+							"git_gutter_is_enabled": true,
+							"incomplete_sync": null,
+							"remote_loading": false,
+							"synced": false,
+							"syntax": "Packages/Python/Python.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "cutevariant.sublime-project",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 916,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								185,
+								185
 							]
 						],
 						"settings":
@@ -1474,131 +1549,7 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 0,
-					"type": "text"
-				},
-				{
-					"buffer": 1,
-					"file": "tests/test_reader.py",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 3682,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								0,
-								0
-							]
-						],
-						"settings":
-						{
-							"auto_complete_triggers":
-							[
-								{
-									"characters": ".",
-									"selector": "source.python - string - comment - constant.numeric"
-								},
-								{
-									"characters": ".",
-									"selector": "source.python - string - constant.numeric"
-								}
-							],
-							"function_name_status_row": 1,
-							"git_gutter_is_enabled": true,
-							"incomplete_sync": null,
-							"remote_loading": false,
-							"synced": false,
-							"syntax": "Packages/Python/Python.sublime-syntax",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 808.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 2,
-					"type": "text"
-				},
-				{
-					"buffer": 2,
-					"file": "cutereader.py",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 741,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								0,
-								0
-							]
-						],
-						"settings":
-						{
-							"auto_complete_triggers":
-							[
-								{
-									"characters": ".",
-									"selector": "source.python - string - comment - constant.numeric"
-								},
-								{
-									"characters": ".",
-									"selector": "source.python - string - constant.numeric"
-								}
-							],
-							"function_name_status_row": 15,
-							"git_gutter_is_enabled": true,
-							"incomplete_sync": null,
-							"remote_loading": false,
-							"synced": false,
-							"syntax": "Packages/Python/Python.sublime-syntax",
-							"translate_tabs_to_spaces": false
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
 					"stack_index": 1,
-					"type": "text"
-				},
-				{
-					"buffer": 3,
-					"file": "cutevariant/__main__.py",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 278,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								72,
-								72
-							]
-						],
-						"settings":
-						{
-							"function_name_status_row": 3,
-							"git_gutter_is_enabled": true,
-							"incomplete_sync": null,
-							"remote_loading": false,
-							"synced": false,
-							"syntax": "Packages/Python/Python.sublime-syntax"
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 3,
 					"type": "text"
 				}
 			]
@@ -1606,7 +1557,7 @@
 	],
 	"incremental_find":
 	{
-		"height": 43.0
+		"height": 41.0
 	},
 	"input":
 	{
@@ -1667,7 +1618,7 @@
 	"project": "cutevariant.sublime-project",
 	"replace":
 	{
-		"height": 58.0
+		"height": 78.0
 	},
 	"save_all_on_build": true,
 	"select_file":
@@ -1677,12 +1628,20 @@
 		"selected_items":
 		[
 			[
-				"mai",
-				"cutevariant/gui/mainwindow.py"
+				"abs",
+				"cutevariant/core/reader/abstractreader.py"
+			],
+			[
+				"sql",
+				"cutevariant/core/sql.py"
 			],
 			[
 				"",
-				"/DATA/Dev/CuteVariant-python/__main__.py"
+				"~/Dev/cutevariant/cutereader.py"
+			],
+			[
+				"mai",
+				"cutevariant/gui/mainwindow.py"
 			],
 			[
 				"main",
@@ -1723,10 +1682,6 @@
 			[
 				"__m",
 				"/DATA/Dev/CuteVariant-python/__main__.py"
-			],
-			[
-				"abs",
-				"cutevariant/gui/abstractquerywidget.py"
 			],
 			[
 				"rou",

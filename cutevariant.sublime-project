@@ -5,7 +5,7 @@
 			"file_regex": "^[ ]*File \"(...*?)\", line ([0-9]*)",
 			"name": "Anaconda Python Builder",
 			"selector": "source.python",
-			"shell_cmd": "\"/home/sacha/Dev/cutevariant/venv/bin/python\" -u \"$file\""
+			"shell_cmd": "\"/home/schutz/Dev/cutevariant/venv/bin/python\" -u \"$file\""
 		}
 	],
 	"folders":
@@ -34,10 +34,10 @@
 		"anaconda_linting": false,
 		"anaconda_linting_behaviour": "always",
 		"pep257": false,
-		"python_interpreter": "/home/sacha/Dev/cutevariant/venv/bin/python",
+		"python_interpreter": "/home/schutz/Dev/cutevariant/venv/bin/python",
 		"test_command": "python -m pytest tests cutevariant -vv --doctest-module --ignore=venv",
-		"test_root": "/home/sacha/Dev/cutevariant/",
-		"test_virtualenv": "/home/sacha/Dev/cutevariant/venv/",
+		"test_root": "/home/schutz/Dev/cutevariant/",
+		"test_virtualenv": "/home/schutz/Dev/cutevariant/venv/",
 		"use_pylint": false
 	}
 }

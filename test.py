@@ -1,19 +1,21 @@
-import sqlalchemy as db
-from sqlalchemy_views import CreateView, DropView
-from sqlalchemy.sql import text
+from cutevariant.core.reader import VcfReader 
+import json
+import copy
 
 
-engine = db.create_engine("sqlite:////tmp/test2.db", echo=True)
-
-conn = engine.connect()
-
-metadata = db.MetaData()
 
 
-field = db.Table("field", metadata, autoload=True, autoload_with=engine)
+
+			
+
+with open("examples/test.vep.vcf") as file:
+
+	reader = VcfReader(file, "vep")
 
 
-view = db.Table("my_view", metadata)
-create_view = CreateView(view, text("SELECT * FROM field"))
+	
 
-print(create_view.compile())
+	#print(list(reader.get_fields()))
+
+	json.dumps(list(reader.get_fields()))
+	print(json.dumps(list(reader.get_variants())))
