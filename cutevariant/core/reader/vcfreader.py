@@ -41,6 +41,41 @@ class VepParser(object):
                 yield variant 
 
 
+
+class SnpEffParser(object):
+
+    def parse_fields(self,fields):
+        self._raw_fields_name = []
+        for field in fields:
+            if field["name"] == "ANN":
+                for i in field["description"].split("|")[1:]:
+                    self._raw_fields_name.append(i)
+                    _f = {"name": i, "description": "None", "type":"str", "category":"annotation"}
+                    yield _f
+            else:
+                yield field
+
+    def parse_variants(self, variants):
+
+        if not hasattr(self,"_raw_fields_name"):
+            raise Exception("Cannot parse variant without parsing first fields")
+
+        for variant in variants:
+            if "ANN" in variant:
+                raw = variant.pop("ANN")
+                variant["annotations"] = []
+                for transcripts in raw.split(","):
+                    new_variant = copy.copy(variant) 
+                    transcript = transcripts.split("|")
+                    annotation = {}
+                    for idx, field_name in enumerate(self._raw_fields_name):
+                        annotation[field_name] = transcript[idx]
+                    variant["annotations"].append(annotation)
+                yield variant
+            else:
+                yield variant 
+
+
 # SNPEFF_ANNOTATION_DEFAULT_FIELDS = {
 #     "annotation": {
 #         "name": "consequence",
@@ -293,5 +328,8 @@ class VcfReader(AbstractReader):
         self.annotation_parser = None
         if parser == "vep":
             self.annotation_parser = VepParser() 
+
+        if parser == "snpeff":
+            self.annotation_parser = SnpEffParser()
 
 

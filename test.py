@@ -8,9 +8,9 @@ import copy
 
 			
 
-with open("examples/test.vep.vcf") as file:
+with open("examples/test.snpeff.vcf") as file:
 
-	reader = VcfReader(file, "vep")
+	reader = VcfReader(file,"snpeff")
 
 
 	
