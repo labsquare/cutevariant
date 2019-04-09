@@ -5,17 +5,15 @@ import copy
 
 
 
+ann = "vep"		
 
-			
+with open(f"examples/test.{ann}.vcf") as file:
 
-with open("examples/test.snpeff.vcf") as file:
-
-	reader = VcfReader(file,"snpeff")
+	reader = VcfReader(file,ann)
 
 
-	
 
-	#print(list(reader.get_fields()))
+	#print(json.dumps(list(reader.get_fields())))
 
 	json.dumps(list(reader.get_fields()))
 	print(json.dumps(list(reader.get_variants())))

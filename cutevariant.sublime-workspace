@@ -4,12 +4,36 @@
 		"selected_items":
 		[
 			[
-				"open",
-				"open_folder\tfunction"
+				"parse",
+				"parse_variants\tfunction"
+			],
+			[
+				"anno",
+				"annotation_parser\tstatement"
+			],
+			[
+				"ann",
+				"annotation"
 			],
 			[
 				"get",
-				"getExistingDirectory\tfunction"
+				"get_fields\tfunction"
+			],
+			[
+				"par",
+				"parse_fields\tfunction"
+			],
+			[
+				"Annota",
+				"AnnotationParser\tclass"
+			],
+			[
+				"get_",
+				"get_samples\tfunction"
+			],
+			[
+				"open",
+				"open_folder\tfunction"
 			],
 			[
 				"QFile",
@@ -48,20 +72,12 @@
 				"samples_names\tstatement"
 			],
 			[
-				"par",
-				"parse_fields"
-			],
-			[
 				"field",
 				"field_names\tstatement"
 			],
 			[
 				"fiel",
 				"field_types\tstatement"
-			],
-			[
-				"get_",
-				"get_fields\tfunction"
 			],
 			[
 				"class",
@@ -498,54 +514,11 @@
 			[
 				"Fi",
 				"FilePage"
-			],
-			[
-				"vcf",
-				"vcf_button"
-			],
-			[
-				"where",
-				"where_clause_1"
-			],
-			[
-				"whre",
-				"where_clause_1"
-			],
-			[
-				"Py",
-				"PySide2\tmodule"
 			]
 		]
 	},
 	"buffers":
 	[
-		{
-			"settings":
-			{
-				"buffer_size": 0,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"contents": "from cutevariant.core import VC",
-			"file": "test.py",
-			"file_size": 39,
-			"file_write_time": 131992107161338511,
-			"settings":
-			{
-				"buffer_size": 31,
-				"encoding": "UTF-8",
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "cutevariant.sublime-project",
-			"settings":
-			{
-				"buffer_size": 916,
-				"line_ending": "Unix"
-			}
-		}
 	],
 	"build_system": "Packages/Makefile/Make.sublime-build",
 	"build_system_choices":
@@ -1153,21 +1126,26 @@
 	},
 	"expanded_folders":
 	[
+		"/home/schutz/Dev/cutevariant/cutevariant",
+		"/home/schutz/Dev/cutevariant/cutevariant/core",
+		"/home/schutz/Dev/cutevariant/cutevariant/core/reader",
+		"/home/schutz/Dev/cutevariant/tests"
 	],
 	"file_history":
 	[
+		"/home/schutz/Dev/cutevariant/cutevariant.sublime-project",
+		"/home/schutz/Dev/cutevariant/cutevariant/core/reader/vcfreader.py",
+		"/home/schutz/Dev/cutevariant/tests/test_reader.py",
+		"/home/schutz/Dev/cutevariant/test.py",
 		"/home/schutz/Téléchargements/paul_genotyping(1).html",
 		"/home/schutz/Dev/snpTyper/mainwindow.py",
 		"/home/schutz/Dev/snpTyper/__main__.py",
 		"/home/schutz/Dev/cutevariant/cutevariant/core/reader/abstractreader.py",
 		"/home/schutz/Dev/cutevariant/cutevariant/core/reader/fakereader.py",
-		"/home/schutz/Dev/cutevariant/cutevariant/core/reader/vcfreader.py",
 		"/home/schutz/Dev/cutevariant/cutereader.py",
 		"/home/schutz/Dev/cutevariant/tests/test_query.py",
 		"/home/schutz/Dev/cutevariant/tests/test_sql.py",
 		"/home/schutz/Dev/cutevariant/tests/test_import.py",
-		"/home/schutz/Dev/cutevariant/cutevariant.sublime-project",
-		"/home/schutz/Dev/cutevariant/tests/test_reader.py",
 		"/home/schutz/Dev/cutevariant/cutevariant/__main__.py",
 		"/home/schutz/Dev/cutevariant/cutevariant/core/reader/__init__.py",
 		"/home/schutz/Dev/cutevariant/cutevariant/core/sql.py",
@@ -1282,12 +1260,11 @@
 		"/DATA/Dev/testplug/plugins/CatWidget.py",
 		"/DATA/Dev/CuteVariant-python/tests/test_querybuilder.py",
 		"/DATA/Dev/CuteVariant-python/tests/test_qt_mainwindow.py",
-		"/DATA/Dev/CuteVariant-python/pytest.ini",
-		"/DATA/Dev/CuteVariant-python/requirements.txt"
+		"/DATA/Dev/CuteVariant-python/pytest.ini"
 	],
 	"find":
 	{
-		"height": 45.0
+		"height": 33.0
 	},
 	"find_in_files":
 	{
@@ -1302,6 +1279,7 @@
 		"case_sensitive": true,
 		"find_history":
 		[
+			"()))))",
 			"sacha",
 			"^",
 			"()",
@@ -1440,124 +1418,14 @@
 	"groups":
 	[
 		{
-			"selected": 1,
 			"sheets":
 			[
-				{
-					"buffer": 0,
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 0,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								0,
-								0
-							]
-						],
-						"settings":
-						{
-							"default_dir": "/home/schutz/Téléchargements",
-							"function_name_status_row": 0,
-							"git_gutter_is_enabled": false,
-							"incomplete_sync": null,
-							"syntax": "Packages/Text/Plain text.tmLanguage"
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 2,
-					"type": "text"
-				},
-				{
-					"buffer": 1,
-					"file": "test.py",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 31,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								31,
-								31
-							]
-						],
-						"settings":
-						{
-							"auto_complete_triggers":
-							[
-								{
-									"characters": ".",
-									"selector": "source.python - string - comment - constant.numeric"
-								},
-								{
-									"characters": ".",
-									"selector": "source.python - string - constant.numeric"
-								}
-							],
-							"function_name_status_row": -1,
-							"git_gutter_is_enabled": true,
-							"incomplete_sync": null,
-							"remote_loading": false,
-							"synced": false,
-							"syntax": "Packages/Python/Python.sublime-syntax"
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 0,
-					"type": "text"
-				},
-				{
-					"buffer": 2,
-					"file": "cutevariant.sublime-project",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 916,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								185,
-								185
-							]
-						],
-						"settings":
-						{
-							"function_name_status_row": 7,
-							"git_gutter_is_enabled": true,
-							"incomplete_sync": null,
-							"remote_loading": false,
-							"synced": false,
-							"syntax": "Packages/JavaScript/JSON.sublime-syntax",
-							"translate_tabs_to_spaces": false
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 1,
-					"type": "text"
-				}
 			]
 		}
 	],
 	"incremental_find":
 	{
-		"height": 41.0
+		"height": 33.0
 	},
 	"input":
 	{
@@ -1618,7 +1486,7 @@
 	"project": "cutevariant.sublime-project",
 	"replace":
 	{
-		"height": 78.0
+		"height": 62.0
 	},
 	"save_all_on_build": true,
 	"select_file":
