@@ -155,7 +155,7 @@ class VepParser(object):
     def parse_fields(self,fields):
         self.annotation_field_name = []
         for field in fields:
-            if field["name"] == "CSQ":
+            if field["name"] == "csq":
                 description =  field["description"] 
                  # Assume description looks like this : 
                  # ##INFO=<ID=CSQ,Number=.,Type=String,Description="Consequence annotations from Ensembl VEP. Format: Allele|Consequence|IMPACT|SYMBOL|Gene|Feature_type|Featur.."
@@ -179,8 +179,8 @@ class VepParser(object):
         if not hasattr(self,"annotation_field_name"):
             raise Exception("Cannot parse variant without parsing first fields")
         for variant in variants:
-            if "CSQ" in variant:
-                raw = variant.pop("CSQ")
+            if "csq" in variant:
+                raw = variant.pop("csq")
                 variant["annotations"] = []
                 for transcripts in raw.split(","):
                     new_variant = copy.copy(variant) 
@@ -200,7 +200,7 @@ class SnpEffParser(object):
     def parse_fields(self,fields):
         self.annotation_field_name = []
         for field in fields:
-            if field["name"] == "ANN":
+            if field["name"] == "ann":
                 description = field["description"]
                 # Assume description looks like this : 
                 # INFO=<ID=ANN,Number=.,Type=String,Description="Functional annotations: 'Allele | Annotation | Annotation_Impact | Gene_Name | Gene_ID | Feature_Type | Feature_ID | Transcript_BioType | Rank | HGVS.c | HGVS.p | cDNA.pos / cDNA.length |CDS.pos / CDS.length | AA.pos / AA.length | Distance | ERRORS / WARNINGS / INFO' ">
@@ -227,8 +227,8 @@ class SnpEffParser(object):
             raise Exception("Cannot parse variant without parsing first fields")
 
         for variant in variants:
-            if "ANN" in variant:
-                raw = variant.pop("ANN")
+            if "ann" in variant:
+                raw = variant.pop("ann")
                 variant["annotations"] = []
                 for transcripts in raw.split(","):
                     new_variant = copy.copy(variant) 

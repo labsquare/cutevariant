@@ -8,9 +8,9 @@ import sqlite3
 READERS = [
 FakeReader(),
 VcfReader(open("examples/test.vcf")),
-VcfReader(open("examples/test.vcf"),"vep")
- 
- ]
+VcfReader(open("examples/test.vep.vcf"),"vep"),
+VcfReader(open("examples/test.snpeff.vcf"),"snpeff"),
+]
 
 
 @pytest.mark.parametrize(
@@ -82,7 +82,17 @@ def test_create_db(reader):
 
     sql.create_table_variants(conn, reader.get_fields())
     sql.insert_many_variants(conn, reader.get_variants())
-    assert sql.get_variants_count(conn) == len(list(reader.get_variants()))
+
+
+    # count variant with annotation 
+    variant_count = 0
+    for variant in reader.get_variants():
+        if "annotations" in variant:
+            variant_count += len(variant["annotations"])
+        else:
+            variant_count+=1
+
+    assert sql.get_variants_count(conn) == variant_count
 
 
 # def test_vcf():

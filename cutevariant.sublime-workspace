@@ -4,6 +4,14 @@
 		"selected_items":
 		[
 			[
+				"imp",
+				"importer"
+			],
+			[
+				"vep",
+				"vepparser\tmodule"
+			],
+			[
 				"parse",
 				"parse_variants\tfunction"
 			],
@@ -506,19 +514,74 @@
 			[
 				"in",
 				"insert_many"
-			],
-			[
-				"mail",
-				"mails"
-			],
-			[
-				"Fi",
-				"FilePage"
 			]
 		]
 	},
 	"buffers":
 	[
+		{
+			"contents": "Package Control Messages\n========================\n\nGitGutter\n---------\n\n  1.10.2:\n  \n    DOC:\n     - Update settings and troubleshooting for ST3.2+\n  \n    Fix:\n     - line height is increased by annotations (#523)\n  \n  \n  💛 Git Gutter? Want to support development?\n  \n  I've teamed up with Wes Bos to offer the following discounts:\n  \n  +------------------------------------------------+\n  |                                                |\n  |   Use the coupon code GITGUTTER for $10 off    |\n  |                                                |\n  +------------------------------------------------+\n  \n  🏅 ⭐ ES6 ⭐\n  \n  👉 ES6.io/friend/GITGUTTER\n  \n  🏅 ⭐ Sublime Text Book ⭐\n  \n  👉 SublimeTextBook.com/friend/GITGUTTER\n  \n  🏅 ⭐ React For Beginners ⭐\n  \n  👉 ReactForBeginners.com/friend/GITGUTTER\n  \n  \n  Join 15,000 other developers already learning with Wes Bos.\n  \n  These are fantastic resources - 100% money back guarantee! 🌟\n\n\nsublack\n-------\n\n    _____ __ __  ____   _       ____    __  __  _ \n   / ___/|  T  T|    \\ | T     /    T  /  ]|  l/ ]\n  (   \\_ |  |  ||  o  )| |    Y  o  | /  / |  ' / \n   \\__  T|  |  ||     T| l___ |     |/  /  |    \\ \n   /  \\ ||  :  ||  O  ||     T|  _  /   \\_ |     Y\n   \\    |l     ||     ||     ||  |  \\     ||  .  |\n    \\___j \\__,_jl_____jl_____jl__j__j\\____jl__j\\_j\n                                                  \n                                                                          \n  \n  \n  Installation\n  -------------\n  \n  Install Black. Minimal version : 19.2b\n     \n  \t  pip install black # Requires python 3.6\n  \t  and\n  \t  pip install aiohttp # for blackd support\n  \n  \n  \n  ##  NEW 2.2.2 needs black 19.2b ######\n  \n  \n  Changelog\n  -----------\n  \n  2.3.0:\n  \tremove skeep numeric normlization\n  \tfix a test\n  \tadd target_version flag\n  \tfix black_on_save_fast\n  \n  2.2.1:\n  \tdisable black_on_save for excluded file in pyproject\n  \tfix pyproject search in parent folder\n  \n  2.2.0:\n      use python-toml dependency\n      add option confirm_format_all\n  2.1.2:\n  \tfix popen/Path issue on OSX #35\n  \tfix checker start/load_ressource #34 thanks to martinj peters.\n  \n  2.1.1:\n  \tfix python find for checker start\n  2.1.0:\n  \tadd a cache system to bypass black check for already formatted file.\n  \tremove include/exclude : useless\n  \tadd pre-commit support\n  \tadd get_python3_executable to launch checker fix #35\n  2.0:\n  \tadd command Black_format_all to format project\n  \tadd blackd support\n  \tadd blackd run/stop from sublime\n  \tadd checker to auto-stop blackd at sublime exit\n  \tadd option include/exclude\n  \tadd option py36\n  \tadd option black_skip_numeric_underscore_normalization\n  \tadd logging\n  \tpyproject.toml now overrides other settings\n  \trefactor code\n  \tfix scroll after \"black_file\"\n  \tfix various tests\n  \tquick check black_on_save\n  \n  1.12.0:\n  \tcode cleanup (Thanks to Herr Kaste)\n  \tadd visible for blackcommand (Thanks to Herr Kaste)\n  \tadd ToggleBlackOnSave par view command (thanks to Herr Kaste)\n  1.11.1:\n  \t- fix broken pyproject\n  1.11.0:\n  \t- add pyproject support\n  \t- add \"black_autouse_pyproject\" option.\n  \t- add SublimeLinter-addon-black-for-flake to readme\n  1.10.0:\n  \t- add .pyi support (Thanks to Herr Kaste)\n  1.9.0:\n  \t- Settings rewrite\n  \t- add authors section in readme\n  \t- add contributing section in readme\n  1.8.2:\n  \t- set syntax diff for black_diff\n  \t- fix messages\n  1.8.0:\n  \t- fix on_presave (`#14 <https://github.com/jgirardet/sublack/pull/14>`_, thanks to `Jacobi Petrucciani  <https://github.com/jpetrucciani >`_)\n  \t- add --skip-string-normalization\n  1.7.0:\n  \t- black minimal version : 18.6.b1\n  \t- show black error in statusbar\n  \t- fix new_line char on windows\n  1.6.0:\n  \t- Change keymaps from `f` to `b` (like black oO) due to conflict with Anaconda.\n  \t- Change installation instruction to use Packagecontrol.\n  1.5.0:\n  \t- All settings are now prefixed with `black_`\n  \t- use on_pre_save_async\n  \t- and various fix (`#7061 <https://github.com/wbond/package_control_channel/pull/7061>`_, thanks to `Thom1729  <https://github.com/Thom1729 >`_)\n  1.4.1:\n  \t- add tests\n  \t- Improve Settings menu entry and add Key Bindings menu entry(`#9 <https://github.com/jgirardet/sublack/pull/9>`_, thanks to `catch22 <https://github.com/catch22>`_)\n  1.4.0:\n  \t- add black_diff command\n  \t- add black_diff keymap\n  \t- add fast setting\n  \t- refactor code\n  \t- do nothing if already formated and show \"already formated\" in statusbar\n  1.3.4:\n  \t- Format sublack with Black (`#8 <https://github.com/jgirardet/sublack/pull/8>`_, thanks to `mschneiderwind <https://github.com/mschneiderwind>`_)\n  1.3.3:\n  \t- Fix encoding if not given by SublimeText.\n  1.3.2:\n  \t- BugFix : Click library Bug with locale under OSX\n  1.3.1:\n  \t- update README\n  1.3.0:\n  \t- use '-' argument to format inline document wihout saving it\n  \t- consequently post-save became pre-save\n  \t- line_length typo in settings\n  \t- add log\n  1.2.0:\n  \t- add error handling (thanks to `nicokist <https://github.com/nicokist>`_)\n  1.1.0:\n  \t- add line_length option\n  1.0.0:\n  \t- make plugin\n  \t- add on_save option\n\n\nsublack\n-------\n\n    _____ __ __  ____   _       ____    __  __  _ \n   / ___/|  T  T|    \\ | T     /    T  /  ]|  l/ ]\n  (   \\_ |  |  ||  o  )| |    Y  o  | /  / |  ' / \n   \\__  T|  |  ||     T| l___ |     |/  /  |    \\ \n   /  \\ ||  :  ||  O  ||     T|  _  /   \\_ |     Y\n   \\    |l     ||     ||     ||  |  \\     ||  .  |\n    \\___j \\__,_jl_____jl_____jl__j__j\\____jl__j\\_j\n                                                  \n                                                                          \n  \n  \n  Installation\n  -------------\n  \n  Install Black. Minimal version : 19.3b\n     \n  \t  pip install black # Requires python 3.6\n  \t  and\n  \t  pip install black[d] # for blackd support\n  \n  \n  \n  ##  NEW 2.3.0 needs black 19.3b ######\n  \n  \n  Changelog\n  -----------\n  \n  2.3.1:\n  \tFix target version for black and blackd\n  2.3.0:\n  \tremove skeep numeric normlization\n  \tfix a test\n  \tadd target_version flag\n  \tfix black_on_save_fast\n  \n  2.2.1:\n  \tdisable black_on_save for excluded file in pyproject\n  \tfix pyproject search in parent folder\n  \n  2.2.0:\n      use python-toml dependency\n      add option confirm_format_all\n  2.1.2:\n  \tfix popen/Path issue on OSX #35\n  \tfix checker start/load_ressource #34 thanks to martinj peters.\n  \n  2.1.1:\n  \tfix python find for checker start\n  2.1.0:\n  \tadd a cache system to bypass black check for already formatted file.\n  \tremove include/exclude : useless\n  \tadd pre-commit support\n  \tadd get_python3_executable to launch checker fix #35\n  2.0:\n  \tadd command Black_format_all to format project\n  \tadd blackd support\n  \tadd blackd run/stop from sublime\n  \tadd checker to auto-stop blackd at sublime exit\n  \tadd option include/exclude\n  \tadd option py36\n  \tadd option black_skip_numeric_underscore_normalization\n  \tadd logging\n  \tpyproject.toml now overrides other settings\n  \trefactor code\n  \tfix scroll after \"black_file\"\n  \tfix various tests\n  \tquick check black_on_save\n  \n  1.12.0:\n  \tcode cleanup (Thanks to Herr Kaste)\n  \tadd visible for blackcommand (Thanks to Herr Kaste)\n  \tadd ToggleBlackOnSave par view command (thanks to Herr Kaste)\n  1.11.1:\n  \t- fix broken pyproject\n  1.11.0:\n  \t- add pyproject support\n  \t- add \"black_autouse_pyproject\" option.\n  \t- add SublimeLinter-addon-black-for-flake to readme\n  1.10.0:\n  \t- add .pyi support (Thanks to Herr Kaste)\n  1.9.0:\n  \t- Settings rewrite\n  \t- add authors section in readme\n  \t- add contributing section in readme\n  1.8.2:\n  \t- set syntax diff for black_diff\n  \t- fix messages\n  1.8.0:\n  \t- fix on_presave (`#14 <https://github.com/jgirardet/sublack/pull/14>`_, thanks to `Jacobi Petrucciani  <https://github.com/jpetrucciani >`_)\n  \t- add --skip-string-normalization\n  1.7.0:\n  \t- black minimal version : 18.6.b1\n  \t- show black error in statusbar\n  \t- fix new_line char on windows\n  1.6.0:\n  \t- Change keymaps from `f` to `b` (like black oO) due to conflict with Anaconda.\n  \t- Change installation instruction to use Packagecontrol.\n  1.5.0:\n  \t- All settings are now prefixed with `black_`\n  \t- use on_pre_save_async\n  \t- and various fix (`#7061 <https://github.com/wbond/package_control_channel/pull/7061>`_, thanks to `Thom1729  <https://github.com/Thom1729 >`_)\n  1.4.1:\n  \t- add tests\n  \t- Improve Settings menu entry and add Key Bindings menu entry(`#9 <https://github.com/jgirardet/sublack/pull/9>`_, thanks to `catch22 <https://github.com/catch22>`_)\n  1.4.0:\n  \t- add black_diff command\n  \t- add black_diff keymap\n  \t- add fast setting\n  \t- refactor code\n  \t- do nothing if already formated and show \"already formated\" in statusbar\n  1.3.4:\n  \t- Format sublack with Black (`#8 <https://github.com/jgirardet/sublack/pull/8>`_, thanks to `mschneiderwind <https://github.com/mschneiderwind>`_)\n  1.3.3:\n  \t- Fix encoding if not given by SublimeText.\n  1.3.2:\n  \t- BugFix : Click library Bug with locale under OSX\n  1.3.1:\n  \t- update README\n  1.3.0:\n  \t- use '-' argument to format inline document wihout saving it\n  \t- consequently post-save became pre-save\n  \t- line_length typo in settings\n  \t- add log\n  1.2.0:\n  \t- add error handling (thanks to `nicokist <https://github.com/nicokist>`_)\n  1.1.0:\n  \t- add line_length option\n  1.0.0:\n  \t- make plugin\n  \t- add on_save option\n",
+			"settings":
+			{
+				"buffer_size": 9279,
+				"line_ending": "Unix",
+				"name": "Package Control Messages",
+				"read_only": true,
+				"scratch": true
+			}
+		},
+		{
+			"file": "cutevariant/core/reader/vcfreader.py",
+			"settings":
+			{
+				"buffer_size": 5886,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "cutevariant/core/reader/annotationparser.py",
+			"settings":
+			{
+				"buffer_size": 7423,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "test.py",
+			"settings":
+			{
+				"buffer_size": 391,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/usr/share/X11/xorg.conf.d/20-intel.conf",
+			"settings":
+			{
+				"buffer_size": 0,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "cutevariant/core/importer.py",
+			"settings":
+			{
+				"buffer_size": 1658,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "cutevariant/core/readerfactory.py",
+			"settings":
+			{
+				"buffer_size": 2091,
+				"line_ending": "Unix"
+			}
+		}
 	],
 	"build_system": "Packages/Makefile/Make.sublime-build",
 	"build_system_choices":
@@ -704,6 +767,14 @@
 		"selected_items":
 		[
 			[
+				"link",
+				"Snippet: Markdown Hyperlink"
+			],
+			[
+				"update",
+				"Pelican: Update Modified Date"
+			],
+			[
 				"test",
 				"Anaconda: Run Project Tests"
 			],
@@ -738,14 +809,6 @@
 			[
 				"update mo",
 				"Pelican: Update Modified Date"
-			],
-			[
-				"update",
-				"Pelican: Update Modified Date"
-			],
-			[
-				"link",
-				"Snippet: Markdown Hyperlink"
 			],
 			[
 				"markdo",
@@ -1133,6 +1196,8 @@
 	],
 	"file_history":
 	[
+		"/home/schutz/Dev/cutevariant/cutevariant/core/reader/snpeffparser.py",
+		"/home/schutz/Dev/blog/content/test_genetique.md",
 		"/home/schutz/Dev/cutevariant/cutevariant.sublime-project",
 		"/home/schutz/Dev/cutevariant/cutevariant/core/reader/vcfreader.py",
 		"/home/schutz/Dev/cutevariant/tests/test_reader.py",
@@ -1258,13 +1323,11 @@
 		"/DATA/Dev/testplug/categories.py",
 		"/DATA/Dev/testplug/plugins/CatWidget.yapsy-plugin",
 		"/DATA/Dev/testplug/plugins/CatWidget.py",
-		"/DATA/Dev/CuteVariant-python/tests/test_querybuilder.py",
-		"/DATA/Dev/CuteVariant-python/tests/test_qt_mainwindow.py",
-		"/DATA/Dev/CuteVariant-python/pytest.ini"
+		"/DATA/Dev/CuteVariant-python/tests/test_querybuilder.py"
 	],
 	"find":
 	{
-		"height": 33.0
+		"height": 54.0
 	},
 	"find_in_files":
 	{
@@ -1279,6 +1342,8 @@
 		"case_sensitive": true,
 		"find_history":
 		[
+			"_raw_fields_name",
+			"puce à",
 			"()))))",
 			"sacha",
 			"^",
@@ -1418,6 +1483,291 @@
 	"groups":
 	[
 		{
+			"selected": 4,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 9279,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								9279,
+								9279
+							]
+						],
+						"settings":
+						{
+							"auto_indent": false,
+							"default_dir": "/home/schutz/Dev/cutevariant/cutevariant",
+							"function_name_status_row": 311,
+							"git_gutter_is_enabled": false,
+							"incomplete_sync": null,
+							"syntax": "Packages/Text/Plain text.tmLanguage",
+							"tab_width": 2,
+							"word_wrap": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 3390.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 6,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "cutevariant/core/reader/vcfreader.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 5886,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								294,
+								294
+							]
+						],
+						"settings":
+						{
+							"auto_complete_triggers":
+							[
+								{
+									"characters": ".",
+									"selector": "source.python - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								}
+							],
+							"function_name_status_row": 10,
+							"git_gutter_is_enabled": true,
+							"incomplete_sync": null,
+							"remote_loading": false,
+							"synced": false,
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 5,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "cutevariant/core/reader/annotationparser.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 7423,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								4145,
+								4145
+							]
+						],
+						"settings":
+						{
+							"auto_complete_triggers":
+							[
+								{
+									"characters": ".",
+									"selector": "source.python - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								}
+							],
+							"function_name_status_row": 164,
+							"git_gutter_is_enabled": true,
+							"incomplete_sync": null,
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 2346.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 4,
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "test.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 391,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								225,
+								225
+							]
+						],
+						"settings":
+						{
+							"auto_complete_triggers":
+							[
+								{
+									"characters": ".",
+									"selector": "source.python - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								}
+							],
+							"function_name_status_row": 13,
+							"git_gutter_is_enabled": true,
+							"incomplete_sync": null,
+							"remote_loading": false,
+							"synced": false,
+							"syntax": "Packages/Python/Python.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "/usr/share/X11/xorg.conf.d/20-intel.conf",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 0,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"function_name_status_row": 0,
+							"git_gutter_is_enabled": false,
+							"incomplete_sync": null,
+							"syntax": "Packages/Text/Plain text.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 5,
+					"file": "cutevariant/core/importer.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1658,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								119,
+								119
+							]
+						],
+						"settings":
+						{
+							"auto_complete_triggers":
+							[
+								{
+									"characters": ".",
+									"selector": "source.python - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								}
+							],
+							"function_name_status_row": 7,
+							"git_gutter_is_enabled": true,
+							"incomplete_sync": null,
+							"remote_loading": false,
+							"synced": false,
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 99.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				},
+				{
+					"buffer": 6,
+					"file": "cutevariant/core/readerfactory.py",
+					"semi_transient": true,
+					"settings":
+					{
+						"buffer_size": 2091,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"function_name_status_row": 0,
+							"git_gutter_is_enabled": true,
+							"incomplete_sync": null,
+							"remote_loading": false,
+							"synced": false,
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 495.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 3,
+					"type": "text"
+				}
+			]
+		},
+		{
 			"sheets":
 			[
 			]
@@ -1425,7 +1775,7 @@
 	],
 	"incremental_find":
 	{
-		"height": 33.0
+		"height": 42.0
 	},
 	"input":
 	{
@@ -1440,11 +1790,18 @@
 				0,
 				1,
 				1
+			],
+			[
+				1,
+				0,
+				2,
+				1
 			]
 		],
 		"cols":
 		[
 			0.0,
+			0.777394764459,
 			1.0
 		],
 		"rows":
@@ -1486,7 +1843,7 @@
 	"project": "cutevariant.sublime-project",
 	"replace":
 	{
-		"height": 62.0
+		"height": 80.0
 	},
 	"save_all_on_build": true,
 	"select_file":

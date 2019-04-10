@@ -49,14 +49,17 @@ class VcfReader(AbstractReader):
                     "pos": record.POS,
                     "ref": record.REF,
                     "alt": str(alt),
+                    "rsid": record.ID,
+                    "qual": record.QUAL,
+                    "filter":"" # TODO ? 
                 }
 
                 # Parse info
                 for name in record.INFO:
                     if isinstance(record.INFO[name], list):
-                        variant[name] = ",".join([str(i) for i in record.INFO[name]])
+                        variant[name.lower()] = ",".join([str(i) for i in record.INFO[name]])
                     else:
-                        variant[name] = record.INFO[name]
+                        variant[name.lower()] = record.INFO[name]
 
                 # parse sample
                 if record.samples:
@@ -153,7 +156,7 @@ class VcfReader(AbstractReader):
             #     yield from self.parser.parse_fields(info.desc)
             # else:
             yield {
-                "name": key,
+                "name": key.lower(),
                 "category": "info",
                 "description": info.desc,
                 "type": VCF_TYPE_MAPPING[info.type],
@@ -162,7 +165,7 @@ class VcfReader(AbstractReader):
         # Reads VCF FORMAT
         for key, info in vcf_reader.formats.items():
             yield {
-                "name": key,
+                "name": key.lower(),
                 "category": "sample",
                 "description": info.desc,
                 "type": VCF_TYPE_MAPPING[info.type],
@@ -179,6 +182,10 @@ class VcfReader(AbstractReader):
             if field["name"] not in names:
                 names.append(field["name"])
                 yield field
+            # else:
+            #     # Rename duplicate fields : field_1, field_2 etc ...
+            #     field["name"]  = field["name"] +"_"+ str(names.count(field["name"])+1)
+            #     yield field
 
     def _set_annotation_parser(self, parser: str):
         self.annotation_parser = None
@@ -187,5 +194,4 @@ class VcfReader(AbstractReader):
 
         if parser == "snpeff":
             self.annotation_parser = SnpEffParser()
-
 

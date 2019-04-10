@@ -316,6 +316,8 @@ def async_insert_many_variants(conn, data, total_variant_count=None, commit_ever
     q_cols = ",".join(cols)
     q_place = ",".join([f":{place}" for place in cols])
 
+
+
     # # get samples with sql rowid
     samples = dict(
         [
@@ -334,36 +336,42 @@ def async_insert_many_variants(conn, data, total_variant_count=None, commit_ever
         variant_count += 1
 
         ## Split variant into multiple variant if there are multiple annotation
-        variants = []
+        # If one variant has 3 annotations, then create 3 annotations
 
-        # if "variant" in variant or "info" in variant:
-        #     for annotation in variant["annotation"]:
-        #         new_variant = dict(variant)
-        #         new_variant.update(annotation)
-        #         del new_variant["annotation"]
-        #         variants.append(new_variant)
-        # else:
+        sub_variants = []
+        if "annotations" in variant:
+            for annotation in variant["annotations"]:
+                new_variant = dict(variant)
+                new_variant.update(annotation)
+                del new_variant["annotations"]
+                sub_variants.append(new_variant)
+        else:
+            sub_variants.append(variant)
+
+        for sub_variant in sub_variants:
 
         # Insert current variant
-        cursor.execute(
-            f"""INSERT INTO variants ({q_cols}) VALUES ({q_place})""", variant
-        )
-        # get variant rowid
-        variant_id = cursor.lastrowid
+            cursor.execute( 
+                f"""INSERT INTO variants ({q_cols}) VALUES ({q_place})""", 
+                collections.defaultdict(str,sub_variant))
+            # get variant rowid
+            variant_id = cursor.lastrowid
 
-        #  every commit_every = 200 insert, start a commit ! This value can be changed
-        if variant_count % commit_every == 0:
-            if total_variant_count:
-                progress = float(variant_count) / total_variant_count * 100.0
-            else:
-                progress = 0
 
-            yield progress, f"{variant_count} variant inserted"
-            conn.commit()
+
+            #  every commit_every = 200 insert, start a commit ! This value can be changed
+            if variant_count % commit_every == 0:
+                if total_variant_count:
+                    progress = float(variant_count) / total_variant_count * 100.0
+                else:
+                    progress = 0
+
+                yield progress, f"{variant_count} variant inserted"
+                conn.commit()
 
             # if variant has sample data, insert record into sample_has_variant
-            if "samples" in variant:
-                for sample in variant["samples"]:
+            if "samples" in sub_variant:
+                for sample in sub_variant["samples"]:
                     name = sample["name"]
                     gt = sample["gt"]
 
