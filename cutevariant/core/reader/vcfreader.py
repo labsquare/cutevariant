@@ -10,10 +10,10 @@ VCF_TYPE_MAPPING = {"Float": "float", "Integer": "int", "Flag": "bool", "String"
 class VcfReader(AbstractReader):
     def __init__(self, device, annotation_parser:str = None):
         super().__init__(device)
-        #self.parser = AnnotationParser()
 
         vcf_reader = vcf.VCFReader(device)
         self.samples = vcf_reader.samples
+        self.annotation_parser = None
         self._set_annotation_parser(annotation_parser)
 
 
@@ -188,10 +188,11 @@ class VcfReader(AbstractReader):
             #     yield field
 
     def _set_annotation_parser(self, parser: str):
-        self.annotation_parser = None
         if parser == "vep":
             self.annotation_parser = VepParser() 
 
         if parser == "snpeff":
             self.annotation_parser = SnpEffParser()
 
+    def __repr__(self):
+        return f"VCF Parser using {type(self.annotation_parser).__name__}"

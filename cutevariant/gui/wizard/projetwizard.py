@@ -7,6 +7,7 @@ from PySide2.QtCore import *
 # Custom imports
 from cutevariant.core.importer import async_import_file
 import cutevariant.commons as cm
+from cutevariant.core.readerfactory import detect_vcf_annotation
 
 LOGGER = cm.logger()
 
@@ -73,17 +74,25 @@ class FilePage(QWizardPage):
         self.setSubTitle(self.tr("Supported file are vcf and vcf.gz."))
 
         self.file_path_edit = QLineEdit()
+        self.anotation_detect_label = QLabel()
         self.button = QPushButton(self.tr("Browse"))
-        v_layout = QHBoxLayout()
+        h_layout = QHBoxLayout()
 
-        v_layout.addWidget(self.file_path_edit)
-        v_layout.addWidget(self.button)
-        self.setLayout(v_layout)
+        h_layout.addWidget(self.file_path_edit)
+        h_layout.addWidget(self.button)
+
+        self.v_layout = QVBoxLayout()
+        self.v_layout.addWidget(self.anotation_detect_label)
+        self.v_layout.addLayout(h_layout)
+        self.setLayout(self.v_layout)
+
 
         self.button.clicked.connect(self._browse)
         self.file_path_edit.textChanged.connect(self.completeChanged)
 
         self.registerField("filename", self.file_path_edit, "text")
+        # annotation ? should be an option or not ? 
+        self.registerField("annotation", self.anotation_detect_label, "text")
 
     def _browse(self):
 
@@ -94,12 +103,13 @@ class FilePage(QWizardPage):
         filepath, filetype = QFileDialog.getOpenFileName(
             self, self.tr("Open a file"), last_directory,
             self.tr("VCF file (*.vcf *.vcf.gz)"))
-
-        
+ 
         if filepath:
             # Display and save directory
             self.file_path_edit.setText(filepath)
             app_settings.setValue("last_directory", os.path.dirname(filepath))
+            annotation = detect_vcf_annotation(filepath)
+            self.anotation_detect_label.setText(f"<b>{annotation} annotation detected </b>")
 
 
     def isComplete(self):

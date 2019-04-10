@@ -8,6 +8,7 @@ import pathlib
 # Custom imports
 from .reader import *
 import cutevariant.commons as cm
+import vcf
 
 LOGGER = cm.logger()
 
@@ -23,6 +24,19 @@ def getuncompressedsize(filename):
         return struct.unpack("I", f.read(4))[0]
 
 
+def detect_vcf_annotation(filename):
+    with open(filename, "r") as file:
+        std_reader = vcf.VCFReader(file)
+        #print(std_reader.metadata)
+        if "VEP" in std_reader.metadata:
+            if "CSQ" in std_reader.infos:
+                return "vep"
+
+        if "SnpEffVersion" in std_reader.metadata:
+            if "ANN" in std_reader.infos:
+                return "snpeff"
+
+
 @contextmanager
 def create_reader(filename):
 
@@ -32,16 +46,18 @@ def create_reader(filename):
                  path.suffixes, is_gz_file(filename))
 
     if ".vcf" in path.suffixes and ".gz" in path.suffixes:
+        annotation_detected = detect_vcf_annotation(filename)
         device = open(filename, "rb")
-        reader = VcfReader(device)
+        reader = VcfReader(device, annotation_detected)
         reader.file_size = getuncompressedsize(filename)
         yield reader
         device.close()
         return
 
     if ".vcf" in path.suffixes:
+        annotation_detected = detect_vcf_annotation(filename)
         device = open(filename, "r")
-        reader = VcfReader(device)
+        reader = VcfReader(device,annotation_detected)
         reader.file_size = os.path.getsize(filename)
         yield reader
         device.close()

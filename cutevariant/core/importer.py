@@ -18,6 +18,9 @@ def async_import_reader(conn, reader: AbstractReader, **args):
 
     """
     # Create projects
+
+    yield 0, f"Import data with {reader}"
+
     create_project(conn, name="test", reference="test")
 
     yield 0, "create table shema"
