@@ -38,7 +38,7 @@ formatter    = logging.Formatter(
 )
 file_handler = RotatingFileHandler(
     DIR_LOGS + LOGGER_NAME + '_' + \
-    dt.datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + '.log',
+    dt.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + '.log',
     'a', 100000000, 1
 )
 file_handler.setLevel(LOG_LEVEL)
