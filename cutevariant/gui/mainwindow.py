@@ -75,7 +75,7 @@ class MainWindow(QMainWindow):
 
         # self.import_vcf("/home/schutz/Dev/CuteVariant-python/exemples/test.snp.eff.vcf")
 
-        # self.open("/home/schutz/Dev/CuteVariant-python/exemples/test.snpeff.vcf.db")
+        self.open("/home/sacha/Dev/cutevariant/examples/test.db")
 
         self.setGeometry(qApp.desktop().rect().adjusted(100, 100, -100, -100))
 
