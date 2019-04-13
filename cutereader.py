@@ -5,29 +5,44 @@ import json
 import sqlite3
 import os
 
-
-filename = "examples/test.vcf"
-
-try:
-	os.remove("/tmp/test.db")
-except:
-
-with open(filename,"r") as file:
-
-	reader = FakeReader(file)
-	conn = sqlite3.connect("/tmp/test.db")
-
-	sql.create_table_fields(conn)
-	sql.insert_many_fields(conn, reader.get_fields())
-
-	sql.create_table_samples(conn)
-	sql.insert_many_samples(conn, reader.get_samples())
-
-	sql.create_table_variants(conn, reader.get_fields())
-
-	sql.insert_many_variants(conn, reader.get_variants())
+from PySide2.QtWidgets import * 
+from PySide2.QtCore import * 
+from PySide2.QtGui import * 
 
 
+from cutevariant.gui.ficon import FIcon, FIconEngine
+
+
+app = QApplication(sys.argv)
+FIcon.setFontPath("cutevariant/assets/fonts/materialdesignicons-webfont.ttf")
+
+
+
+
+button1 = QPushButton("sacha")
+button2 = QPushButton("sacha")
+button3 = QPushButton("sacha")
+
+button1.setIcon(FIcon(0xf759))
+button2.setIcon(FIcon(0xf759))
+button3.setIcon(FIcon(0xf759))
+
+button2.setDisabled(True)
+
+
+layout = QVBoxLayout()
+layout.addWidget(button1)
+layout.addWidget(button2)
+layout.addWidget(button3)
+
+w = QWidget()
+w.setLayout(layout)
+
+w.show()
+
+
+
+app.exec_()
 
 
 

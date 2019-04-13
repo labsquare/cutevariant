@@ -18,6 +18,7 @@ from cutevariant.gui.queryrouter import QueryRouter
 
 from cutevariant.core.importer import import_file
 from cutevariant.core import Query
+from cutevariant.gui.ficon import FIcon
 
 from cutevariant.gui.plugins.infovariantplugin import InfoVariantPlugin
 
@@ -76,7 +77,7 @@ class MainWindow(QMainWindow):
 
         # self.import_vcf("/home/schutz/Dev/CuteVariant-python/exemples/test.snp.eff.vcf")
 
-        # self.open("/home/schutz/Dev/CuteVariant-python/exemples/test.snpeff.vcf.db")
+        self.open("/home/sacha/Dev/cutevariant/examples/test.db")
 
         self.setGeometry(qApp.desktop().rect().adjusted(100, 100, -100, -100))
 
@@ -193,7 +194,7 @@ class MainWindow(QMainWindow):
         # Menu bar
         ## File Menu
         self.file_menu = self.menuBar().addMenu(self.tr("&File"))
-        self.file_menu.addAction(
+        self.file_menu.addAction(FIcon(0xf214),
             self.tr("&New project"), self, SLOT("new_project()"), QKeySequence.New
         )
         self.file_menu.addAction(
@@ -222,7 +223,7 @@ class MainWindow(QMainWindow):
         )
 
         self.file_menu.addSeparator()
-        self.file_menu.addAction(self.tr("Settings ..."), self, SLOT("show_settings()"))
+        self.file_menu.addAction(FIcon(0xf493), self.tr("Settings ..."), self, SLOT("show_settings()"))
 
         self.file_menu.addSeparator()
         self.file_menu.addAction(self.tr("&Quit"), qApp, SLOT("quit()"), QKeySequence.Quit)

@@ -99,7 +99,13 @@ class VqlEditor(AbstractQueryWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Columns"))
+
+        completer = QCompleter()
+        cmodel = QStringListModel()
+        cmodel.setStringList(["sacha","boby"])
+        completer.setModel(cmodel)
         self.text_edit = QTextEdit()
+        #self.text_edit.setCompleter(completer)
         self.highlighter = VqlSyntaxHighlighter(self.text_edit.document())
 
         main_layout = QVBoxLayout()
@@ -119,3 +125,51 @@ class VqlEditor(AbstractQueryWidget):
         query = self.query.from_vql(self.text_edit.toPlainText())
 
         return self.query
+
+
+
+class VqlEdit(QTextEdit):
+    def __init__(self, parent = None):
+        super().__init__(parent)
+
+
+    def setCompleter(self, completer: QCompleter):
+        self.completer = completer
+        self.completer.setWidget(self)
+        self.completer.setCompletionMode(QCompleter.PopupCompletion)
+        self.completer.setCaseSensitivity(Qt.CaseInsensitive)
+        self.completer.activated.connect(self.insertCompletion)
+
+
+
+    def keyPressEvent(self, event):
+        '''override'''
+
+        print("complete", self.textUnderCursor())
+        #self.completer.setCompletionPrefix("sa")
+        #self.completer.complete(self.cursorRect())
+        self.completer.popup().show()
+        super().keyPressEvent(event)
+
+    def focusInEvent(event):
+        '''override'''
+        if hasattr(self, "completer"):
+            self.completer.setWidget(self) 
+        
+        super().focusInEvent(event)
+
+    def insertCompletion(self, completion:str):
+        if self.completer.widget() != self:
+            return
+
+        tc = self.textCursor()
+        extra = len(completion) - len(self.completer.completionPrefix())
+        tc.movePosition(QTextCursor.Left)
+        tc.movePosition(QTextCursor.EndOfWord)
+        tc.insertText(completion)
+
+
+    def textUnderCursor(self):
+        tc = self.textCursor()
+        tc.select(QTextCursor.WordUnderCursor)
+        return tc.selectedText()

@@ -64,6 +64,8 @@ class Query:
         #  Detect if join sample is required ...
         sample_ids = self.detect_samples()
 
+        print("SAMPLE IDS SQL ", sample_ids)
+
         if len(self.columns) == 0:
             self.columns = ["chr", "pos", "ref", "alt"]
 
