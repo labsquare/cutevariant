@@ -133,9 +133,9 @@ class MainWindow(QMainWindow):
         :type filepath: <str>
         """
 
-        # Reload & set last projects opened
-        app_settings = QSettings()
-        recent_projects = app_settings.value("recent_projects", list())
+        # Get recent projects list
+        recent_projects = self.get_recent_projects()
+
         try:
             recent_projects.remove(filepath)
         except ValueError:
@@ -146,6 +146,9 @@ class MainWindow(QMainWindow):
         recent_projects = \
             recent_projects if len(recent_projects) <= MAX_RECENT_PROJECTS \
             else recent_projects[:-1]
+
+        # Save in settings
+        app_settings = QSettings()
         app_settings.setValue("recent_projects", recent_projects)
 
         # Display
@@ -158,9 +161,8 @@ class MainWindow(QMainWindow):
             of the software.
         """
 
-        # Reload last projects opened
-        app_settings = QSettings()
-        recent_projects = app_settings.value("recent_projects", list())
+        # Get recent projects list
+        recent_projects = self.get_recent_projects()
 
         index = -1
         for index, filepath in enumerate(recent_projects, 0):
@@ -182,6 +184,22 @@ class MainWindow(QMainWindow):
         index = 0 if index < 0 else index + 1
         for i in range(index, MAX_RECENT_PROJECTS):
             self.recentFileActions[i].setVisible(False)
+
+    def get_recent_projects(self):
+        """Return the list of recent projects stored in settings
+
+        :return: List of recent projects.
+        :type: <list>
+        """
+        # Reload last projects opened
+        app_settings = QSettings()
+        recent_projects = app_settings.value("recent_projects", list())
+
+        # Check if recent_projects is a list() (as expected)
+        if isinstance(recent_projects, str):
+            recent_projects = [recent_projects]
+
+        return recent_projects
 
     def addPanel(self, widget, area=Qt.LeftDockWidgetArea):
         dock = QDockWidget()
