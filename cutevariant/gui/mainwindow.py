@@ -13,6 +13,7 @@ from cutevariant.gui.filterquerywidget import FilterQueryWidget
 from cutevariant.gui.selectionquerywidget import SelectionQueryWidget
 from cutevariant.gui.hpoquerywidget import HpoQueryWidget
 from cutevariant.gui.vqleditor import VqlEditor
+from cutevariant.gui.omnibar import OmniBar
 
 from cutevariant.gui.queryrouter import QueryRouter
 
@@ -41,6 +42,15 @@ class MainWindow(QMainWindow):
         # Setup Actions
         self.setupActions()
 
+
+        # add omnibar
+        self.omnibar = OmniBar()
+        self.toolbar.addSeparator()
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.toolbar.addWidget(spacer)
+        self.toolbar.addWidget(self.omnibar) 
+
         # Init router
         self.router = QueryRouter()
         # self.router.addWidget(self.view_widget)
@@ -48,6 +58,9 @@ class MainWindow(QMainWindow):
         self.router.addWidget(self.filter_widget)
         self.router.addWidget(self.selection_widget)
         self.router.addWidget(self.editor)
+        self.router.addWidget(self.omnibar)
+
+
 
         vsplit = QSplitter(Qt.Vertical)
         vsplit.addWidget(self.tab_view)
@@ -68,6 +81,8 @@ class MainWindow(QMainWindow):
         # self.addPanel(HpoQueryWidget())
 
         self.addView()
+
+
 
         # self.currentView().variant_clicked.connect(self.test.set_variant)
         # self.currentView().variant_clicked.connect(self.test2.set_variant)
