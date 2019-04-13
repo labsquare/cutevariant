@@ -25,7 +25,7 @@ def main():
     FIcon.setFontPath("cutevariant/assets/fonts/materialdesignicons-webfont.ttf")
 
     # Translations
-    load_translations(app)
+    #load_translations(app)
 
     # Display
     w = MainWindow()
