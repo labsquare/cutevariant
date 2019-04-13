@@ -106,6 +106,61 @@ class MainWindow(QMainWindow):
 
         self.router.setQuery(query)
 
+        # Refresh recent opened projects
+        self.adjust_recent_projects(filepath)
+
+    def adjust_recent_projects(self, filepath):
+        """Adjust the number of of recent projects to display
+
+        .. note:: Called after a successful file opening.
+
+        :param filepath: Path of project file.
+        :type filepath: <str>
+        """
+
+        # Reload & set last projects opened
+        app_settings = QSettings()
+        recent_projects = app_settings.value("recent_projects", list())
+        try:
+            recent_projects.remove(filepath)
+        except ValueError:
+            # New file is not already in the list
+            pass
+        # Prepend new file
+        recent_projects = [filepath] + recent_projects
+        recent_projects = \
+            recent_projects if len(recent_projects) <= 5 else recent_projects[:-1]
+        app_settings.setValue("recent_projects", recent_projects)
+
+        # Display
+        self.update_recent_projects_actions()
+
+    def update_recent_projects_actions(self):
+        """Display recent projects in the menu
+
+        .. note:: Called after a successful file opening and during the launch
+            of the software.
+        """
+
+        # Reload last projects opened
+        app_settings = QSettings()
+        recent_projects = app_settings.value("recent_projects", list())
+
+        index = -1
+        for index, filepath in enumerate(recent_projects, 0):
+            action = self.recentFileActions[index]
+            # Get filename
+            # TODO: get project name ?
+            action.setText(os.path.basename(filepath))
+            action.setData(filepath)
+            action.setVisible(True)
+
+        # Switch off useless actions
+        # index = -1 if there is no recent_projects
+        index = 0 if index < 0 else index + 1
+        for i in range(index, 5):
+            self.recentFileActions[i].setVisible(False)
+
     def addPanel(self, widget, area=Qt.LeftDockWidgetArea):
         dock = QDockWidget()
         dock.setWindowTitle(widget.windowTitle())
@@ -114,7 +169,8 @@ class MainWindow(QMainWindow):
         self.view_menu.addAction(dock.toggleViewAction())
 
     def setupActions(self):
-        # menu bar
+        # Menu bar
+        ## File Menu
         self.file_menu = self.menuBar().addMenu(self.tr("&File"))
         self.file_menu.addAction(
             self.tr("&New project"), self, SLOT("new_project()"), QKeySequence.New
@@ -122,19 +178,42 @@ class MainWindow(QMainWindow):
         self.file_menu.addAction(
             self.tr("&Open project ..."), self, SLOT("open_project()"), QKeySequence.Open
         )
+        ### Recent projects
+        self.recent_files_menu = self.file_menu.addMenu(
+            self.tr("Open recent")
+        )
+
+        self.recentFileActions = list()
+        for i in range(5):
+            new_action = QAction()
+            new_action.setVisible(False)
+            # Keep actions in memory for their display to be managed later
+            self.recentFileActions.append(new_action)
+            self.recent_files_menu.addAction(new_action)
+            new_action.triggered.connect(self.open_recent)
+
+        # Init previous files
+        self.update_recent_projects_actions()
+
+        self.recent_files_menu.addSeparator()
+        self.recent_files_menu.addAction(
+            self.tr("Clear"), self, SLOT("clear_recent_projects()")
+        )
+
         self.file_menu.addSeparator()
         self.file_menu.addAction(self.tr("Settings ..."), self, SLOT("show_settings()"))
 
         self.file_menu.addSeparator()
         self.file_menu.addAction(self.tr("&Quit"), qApp, SLOT("quit()"), QKeySequence.Quit)
 
+        ## View
         self.view_menu = self.menuBar().addMenu(self.tr("&View"))
 
+        ## Help
         self.help_menu = self.menuBar().addMenu(self.tr("Help"))
         self.help_menu.addAction(self.tr("About Qt"), qApp, SLOT("aboutQt()"))
 
         # Tool bar
-
         save_query_action = self.toolbar.addAction(self.tr("save query"))
         save_query_action.triggered.connect(self.selection_widget.save_current_query)
 
@@ -177,6 +256,18 @@ class MainWindow(QMainWindow):
             app_settings.setValue("last_directory", os.path.dirname(filepath))
             self.open(filepath)
 
+    @Slot()
+    def open_recent(self):
+        """Load a recent project"""
+        action = self.sender()
+        self.open(action.data())
+
+    @Slot()
+    def clear_recent_projects(self):
+        """Clear the list of recent projects"""
+        app_settings = QSettings()
+        app_settings.remove("recent_projects")
+        self.update_recent_projects_actions()
 
     @Slot()
     def show_settings(self):
