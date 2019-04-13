@@ -207,6 +207,7 @@ class ViewQueryWidget(AbstractQueryWidget):
         self.bottombar.addAction(FIcon(0xf141), "<", self.model.previousPage)
         self.bottombar.addWidget(self.page_box)
         self.bottombar.addAction(FIcon(0xf142),">", self.model.nextPage)
+        self.bottombar.setIconSize(QSize(20,20))
 
         self.bottombar.setContentsMargins(0, 0, 0, 0)
 

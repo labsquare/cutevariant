@@ -3,7 +3,7 @@ import sys
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 from PySide2.QtGui import *
-
+import os
 # Custom imports
 from cutevariant.gui import MainWindow, FIcon
 import cutevariant.commons as cm
@@ -22,7 +22,8 @@ def main():
 
     app = QApplication(sys.argv)
     # Set icons set 
-    FIcon.setFontPath("cutevariant/assets/fonts/materialdesignicons-webfont.ttf")
+    path = os.path.dirname(__file__)
+    FIcon.setFontPath(path+"/assets/fonts/materialdesignicons-webfont.ttf")
 
     # Translations
     #load_translations(app)
