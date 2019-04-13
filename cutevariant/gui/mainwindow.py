@@ -18,6 +18,7 @@ from cutevariant.gui.queryrouter import QueryRouter
 
 from cutevariant.core.importer import import_file
 from cutevariant.core import Query
+from cutevariant.gui.ficon import FIcon
 
 from cutevariant.gui.plugins.infovariantplugin import InfoVariantPlugin
 
@@ -116,7 +117,7 @@ class MainWindow(QMainWindow):
     def setupActions(self):
         # menu bar
         self.file_menu = self.menuBar().addMenu(self.tr("&File"))
-        self.file_menu.addAction(
+        self.file_menu.addAction(FIcon(0xf214),
             self.tr("&New project"), self, SLOT("new_project()"), QKeySequence.New
         )
         self.file_menu.addAction(

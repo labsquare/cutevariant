@@ -2,10 +2,12 @@
 import sys
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
+from PySide2.QtGui import *
 
 # Custom imports
-from cutevariant.gui import MainWindow
+from cutevariant.gui import MainWindow, FIcon
 import cutevariant.commons as cm
+
 
 def main():
     """The main routine."""
@@ -19,6 +21,8 @@ def main():
     QCoreApplication.setApplicationName("cutevariant")
 
     app = QApplication(sys.argv)
+    # Set icons set 
+    FIcon.setFontPath("cutevariant/assets/fonts/materialdesignicons-webfont.ttf")
 
     # Translations
     load_translations(app)

@@ -27,9 +27,10 @@ class FIconEngine(QIconEngine):
         else:
             painter.setPen(QPen(self.color))
         
+        font.setPixelSize(rect.size().width())
 
         painter.setFont(font)
-        painter.setRenderHint(QPainter.HighQualityAntialiasing, True)
+        #painter.setRenderHint(QPainter.HighQualityAntialiasing, True)
         painter.drawText(rect, Qt.AlignCenter|Qt.AlignVCenter, str(chr(self.hex_character)))
         painter.restore()
 
@@ -60,9 +61,11 @@ class FIconEngine(QIconEngine):
 
 
 class FIcon(QIcon):
-    def __init__(self, hex_character : int):
+    def __init__(self, hex_character : int, color = None):
         self.engine = FIconEngine()
         self.engine.setCharacter(hex_character)
+        if color is not None:
+            self.engine.setColor(color)
         super().__init__(self.engine)
 
 
