@@ -124,7 +124,7 @@ class MainWindow(QMainWindow):
             self.tr("&Open project ..."), self, SLOT("open_project()"), QKeySequence.Open
         )
         self.file_menu.addSeparator()
-        self.file_menu.addAction(self.tr("Settings ..."), self, SLOT("show_settings()"))
+        self.file_menu.addAction(FIcon(0xf493), self.tr("Settings ..."), self, SLOT("show_settings()"))
 
         self.file_menu.addSeparator()
         self.file_menu.addAction(self.tr("&Quit"), qApp, SLOT("quit()"), QKeySequence.Quit)
