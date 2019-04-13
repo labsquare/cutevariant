@@ -5,32 +5,49 @@ from enum import Enum
 
 from .abstractquerywidget import AbstractQueryWidget
 from cutevariant.core import Query
-
+from cutevariant.gui.ficon import FIcon
 
 class FilterType(Enum):
     LOGIC = 1
     CONDITION = 2
 
 
-class FilterItem(QStandardItem):
-    def __init__(self, type=FilterType.LOGIC):
+
+
+class LogicItem(QStandardItem):
+
+    _LOGIC_ICONS = {"AND" : 0xf8e0, "OR": 0xf8e4}
+    def __init__(self, logic_type = "AND"):
+        '''
+        Create a logic Item : OR / AND  
+        '''
         super().__init__()
-        self.type = type
+        self.logic_type = logic_type
+        self.setEditable(False)
+        self.set(logic_type)
+     
 
-        if self.type == FilterType.LOGIC:
-            self.name = "AND"
+    def set(self, logic_type):
+        self.setIcon(FIcon(LogicItem._LOGIC_ICONS[self.logic_type]))
+        self.setText(logic_type)
 
-        else:
-            self.name = "pos"
-            self.operator = ">"
-            self.value = 123
 
-    def makeText(self):
-        if self.type == FilterType.LOGIC:
-            self.setText(self.name)
 
-        if self.type == FilterType.CONDITION:
-            self.setText(self.name + self.operator + self.value)
+
+class FieldItem(QStandardItem):
+    def __init__(self, name, operator, value):
+        super().__init__()
+        self.setEditable(False)
+        self.set(name, operator, value)
+
+
+    def set(self, name, operator, value):
+        self.name = name 
+        self.operator = operator
+        self.value = value
+        self.setText(f'{self.name}  {self.operator}  {self.value}')  
+
+
 
 
 class FilterQueryModel(QStandardItemModel):
@@ -50,27 +67,21 @@ class FilterQueryModel(QStandardItemModel):
         return self.query
 
     def toItem(self, data: dict) -> QStandardItem:
-
+        ''' recursive function to load item in tree from data '''
         if len(data) == 1:  #  logic item
             operator = list(data.keys())[0]
-            item = FilterItem(FilterType.LOGIC)
-            item.name = operator
-            item.setEditable(False)
-            item.makeText()
+            item = LogicItem(operator)
             for k in data[operator]:
                 item.appendRow(self.toItem(k))
             return item
         else:  # condition item
-            item = FilterItem(FilterType.CONDITION)
-            item.name = str(data["field"])
-            item.operator = str(data["operator"])
-            item.value = str(data["value"])
-            item.makeText()
+            item = FieldItem(data["field"], data["operator"], data["value"])
             return item
 
     def fromItem(self, item: QStandardItem) -> dict:
-        if item.type == FilterType.LOGIC:
-            op = item.name
+        ''' recursive fonction to get items from tree '''
+        if type(item) == LogicItem:
+            op = item.logic_type
             data = {op: []}
 
             for i in range(item.rowCount()):
