@@ -6,6 +6,8 @@ import tempfile
 from pkg_resources import resource_filename
 
 
+MAX_RECENT_PROJECTS = 5
+
 # Paths
 DIR_LOGS = tempfile.gettempdir() + '/'
 DIR_TRANSLATIONS = resource_filename(
@@ -38,7 +40,7 @@ formatter    = logging.Formatter(
 )
 file_handler = RotatingFileHandler(
     DIR_LOGS + LOGGER_NAME + '_' + \
-    dt.datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + '.log',
+    dt.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + '.log',
     'a', 100000000, 1
 )
 file_handler.setLevel(LOG_LEVEL)
