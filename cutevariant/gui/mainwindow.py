@@ -90,12 +90,24 @@ class MainWindow(QMainWindow):
         self.conn.close()
         self.open(db_filename)
 
-    def open(self, db_filename):
+    def open(self, filepath):
+        """Open the given db/project file
 
-        if not os.path.exists(db_filename):
+        .. note:: Called at the end of a project creation by the Wizard,
+            and by Open/Open recent projects slots.
+
+        :param filepath: Path of project file.
+        :type filepath: <str>
+        """
+
+        if not os.path.exists(filepath):
             return
 
-        self.conn = sqlite3.connect(db_filename)
+        # Save directory
+        app_settings = QSettings()
+        app_settings.setValue("last_directory", os.path.dirname(filepath))
+
+        self.conn = sqlite3.connect(filepath)
         query = Query(self.conn)
         # query.filter = json.loads(
         #     """{"AND" : [{"field":"pos", "operator":">", "value":"880000"} ]}"""
@@ -231,6 +243,7 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def new_project(self):
+        """Create a project with the Wizard"""
         wizard = ProjetWizard()
         if wizard.exec_():
             db_filename = (
@@ -243,6 +256,7 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def open_project(self):
+        """Open a project"""
         # Reload last directory used
         app_settings = QSettings()
         last_directory = app_settings.value("last_directory", QDir.homePath())
@@ -252,8 +266,6 @@ class MainWindow(QMainWindow):
             self.tr("Cutevariant project (*.db)")
         )
         if filepath:
-            # Open and save directory
-            app_settings.setValue("last_directory", os.path.dirname(filepath))
             self.open(filepath)
 
     @Slot()
