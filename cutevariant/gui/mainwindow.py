@@ -21,6 +21,8 @@ from cutevariant.core import Query
 
 from cutevariant.gui.plugins.infovariantplugin import InfoVariantPlugin
 
+from cutevariant.commons import MAX_RECENT_PROJECTS
+
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
@@ -141,7 +143,8 @@ class MainWindow(QMainWindow):
         # Prepend new file
         recent_projects = [filepath] + recent_projects
         recent_projects = \
-            recent_projects if len(recent_projects) <= 5 else recent_projects[:-1]
+            recent_projects if len(recent_projects) <= MAX_RECENT_PROJECTS \
+            else recent_projects[:-1]
         app_settings.setValue("recent_projects", recent_projects)
 
         # Display
@@ -167,10 +170,16 @@ class MainWindow(QMainWindow):
             action.setData(filepath)
             action.setVisible(True)
 
+        # Display the action
+        if index == -1:
+            self.recent_files_menu.setEnabled(False)
+        else:
+            self.recent_files_menu.setEnabled(True)
+
         # Switch off useless actions
         # index = -1 if there is no recent_projects
         index = 0 if index < 0 else index + 1
-        for i in range(index, 5):
+        for i in range(index, MAX_RECENT_PROJECTS):
             self.recentFileActions[i].setVisible(False)
 
     def addPanel(self, widget, area=Qt.LeftDockWidgetArea):
@@ -196,7 +205,7 @@ class MainWindow(QMainWindow):
         )
 
         self.recentFileActions = list()
-        for i in range(5):
+        for i in range(MAX_RECENT_PROJECTS):
             new_action = QAction()
             new_action.setVisible(False)
             # Keep actions in memory for their display to be managed later
