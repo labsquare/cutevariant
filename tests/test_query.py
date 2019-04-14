@@ -8,45 +8,45 @@ from cutevariant.core.importer import import_file
 from cutevariant.core import Query
 
 
-@pytest.fixture
-def conn():
-    # os.remove("/tmp/test.db")
-    conn = sqlite3.connect(":memory:")
-    import_file(conn, "exemples/test.vcf")
-    return conn
+# @pytest.fixture
+# def conn():
+#     # os.remove("/tmp/test.db")
+#     conn = sqlite3.connect(":memory:")
+#     import_file(conn, "exemples/test.vcf")
+#     return conn
 
 
-def test_query_selection(conn):
+# def test_query_selection(conn):
 
-    query = Query(conn)
-    query.filter = {"AND": [{"field": "ref", "operator": "==", "value": "A"}]}
-    query.create_selection("sacha")
+#     query = Query(conn)
+#     query.filter = {"AND": [{"field": "ref", "operator": "==", "value": "A"}]}
+#     query.create_selection("sacha")
 
-    query2 = Query(conn)
-    query2.selection = "sacha"
+#     query2 = Query(conn)
+#     query2.selection = "sacha"
 
-    for record in query2.items():
-        assert record["ref"] == "A"
+#     for record in query2.items():
+#         assert record["ref"] == "A"
 
 
-def test_query_from_vql(conn):
-    print("TODO: test query_from_vql")
-    # query = Query(conn)
+# def test_query_from_vql(conn):
+#     print("TODO: test query_from_vql")
+# query = Query(conn)
 
-    # # extract columns and selection
-    # query.from_vql("SELECT chr,pos FROM all")
-    # assert query.columns  == ["chr","pos"], "cannot extract columns"
-    # assert query.selection  == "all", "cannot extract selection"
+# # extract columns and selection
+# query.from_vql("SELECT chr,pos FROM all")
+# assert query.columns  == ["chr","pos"], "cannot extract columns"
+# assert query.selection  == "all", "cannot extract selection"
 
-    # #extract where clause as a logic tree
-    # query.from_vql("SELECT chr,pos,ref FROM all WHERE pos > 3")
-    # where_clause_1 = query.filter_to_sql({"AND":[{"field":"pos", "operator":">", "value":"3"} ]})
-    # where_clause_2 = query.filter_to_sql(query.filter)
-    # assert where_clause_1 == where_clause_1
+# #extract where clause as a logic tree
+# query.from_vql("SELECT chr,pos,ref FROM all WHERE pos > 3")
+# where_clause_1 = query.filter_to_sql({"AND":[{"field":"pos", "operator":">", "value":"3"} ]})
+# where_clause_2 = query.filter_to_sql(query.filter)
+# assert where_clause_1 == where_clause_1
 
-    # # extract genotypes
-    # query.from_vql("SELECT chr,pos,ref, gt('CGH0157').gt FROM all WHERE pos > 3")
-    # assert gt('CGH0157').gt in query.columns
+# # extract genotypes
+# query.from_vql("SELECT chr,pos,ref, gt('CGH0157').gt FROM all WHERE pos > 3")
+# assert gt('CGH0157').gt in query.columns
 
 
 # def test_detect_samples(conn):

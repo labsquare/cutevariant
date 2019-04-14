@@ -1,19 +1,43 @@
-import sqlalchemy as db
-from sqlalchemy_views import CreateView, DropView
-from sqlalchemy.sql import text
+from cutevariant.core.reader import VcfReader, FakeReader
+from cutevariant.core.importer import async_import_reader
+import json
+import copy
+import sqlite3
+import os
+
+from cutevariant.core.readerfactory import detect_vcf_annotation
 
 
-engine = db.create_engine("sqlite:////tmp/test2.db", echo=True)
-
-conn = engine.connect()
-
-metadata = db.MetaData()
-
-
-field = db.Table("field", metadata, autoload=True, autoload_with=engine)
+try:
+	os.remove("/tmp/test.db")
+except: 
+	pass
 
 
-view = db.Table("my_view", metadata)
-create_view = CreateView(view, text("SELECT * FROM field"))
+print(detect_vcf_annotation("examples/test.vep.vcf"))
 
-print(create_view.compile())
+# reader  = FakeReader()
+# print(json.dumps(list(reader.get_fields())))
+
+# conn = sqlite3.connect("/tmp/test.db")
+
+# for progression, message in async_import(conn, reader):
+# 	print(progression, message)
+
+
+# ann = "snpeff"		
+
+# with open(f"examples/test.{ann}.vcf") as file:
+
+# 	reader = VcfReader(file,ann)
+
+# 	conn = sqlite3.connect("/tmp/test.db")
+# 	for progression, message in async_import_reader(conn, reader):
+# 		print(progression, message)
+
+
+	#print(json.dumps(list(reader.get_fields())))
+
+	# json.dumps(list(reader.get_fields()))
+	# print(json.dumps(list(reader.get_variants())))
+

@@ -1,9 +1,10 @@
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 from PySide2.QtGui import *
+from cutevariant.gui.ficon import FIcon
 
 
-from .abstractquerywidget import AbstractQueryWidget
+from .plugin import QueryPluginWidget
 from cutevariant.core import Query
 from cutevariant.core import sql
 
@@ -159,7 +160,7 @@ class QueryDelegate(QStyledItemDelegate):
         return QSize(0, 30)
 
 
-class ViewQueryWidget(AbstractQueryWidget):
+class ViewQueryWidget(QueryPluginWidget):
 
     variant_clicked = Signal(dict)
 
@@ -168,7 +169,7 @@ class ViewQueryWidget(AbstractQueryWidget):
         self.model = QueryModel()
         self.delegate = QueryDelegate()
         # self.delegate = VariantDelegate()
-        self.setWindowTitle("Variants")
+        self.setWindowTitle(self.tr("Variants"))
         self.topbar = QToolBar()
         self.bottombar = QToolBar()
         self.view = QTreeView()
@@ -187,7 +188,7 @@ class ViewQueryWidget(AbstractQueryWidget):
         main_layout.setContentsMargins(0, 0, 0, 0)
 
         # Construct top bar
-        self.topbar.addAction("save")
+        self.topbar.addAction(self.tr("save"))
 
         # Construct bottom bar
         self.page_info = QLabel()
@@ -200,12 +201,13 @@ class ViewQueryWidget(AbstractQueryWidget):
         self.page_box.setText("0")
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        self.bottombar.addAction("sql")
+        self.bottombar.addAction(FIcon(0xf865),"sql", self.show_sql)
         self.bottombar.addWidget(self.page_info)
         self.bottombar.addWidget(spacer)
-        self.bottombar.addAction("<", self.model.previousPage)
+        self.bottombar.addAction(FIcon(0xf141), "<", self.model.previousPage)
         self.bottombar.addWidget(self.page_box)
-        self.bottombar.addAction(">", self.model.nextPage)
+        self.bottombar.addAction(FIcon(0xf142),">", self.model.nextPage)
+        self.bottombar.setIconSize(QSize(20,20))
 
         self.bottombar.setContentsMargins(0, 0, 0, 0)
 
@@ -234,3 +236,8 @@ class ViewQueryWidget(AbstractQueryWidget):
         rowid = self.model.get_rowid(index)
         variant = sql.get_one_variant(self.model.query.conn, rowid)
         self.variant_clicked.emit(variant)
+
+    def show_sql(self):
+        box = QMessageBox()
+        box.setInformativeText(self.model.query.sql())
+        box.exec_()

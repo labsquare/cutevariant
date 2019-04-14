@@ -14,7 +14,7 @@ class AbstractReader(ABC):
         self.file_size = 0
 
     @abstractclassmethod
-    def parse_variants(self):
+    def get_variants(self):
         """
         This abstract method must return variants as a list of dictionnary. 
         
@@ -47,7 +47,7 @@ class AbstractReader(ABC):
         raise NotImplemented()
 
     @abstractclassmethod
-    def parse_fields(self):
+    def get_fields(self):
         """
         This abstract methods must return fields description defined from parse_variant output.
         You must define sqlite type for each field (text, integer, bool)
@@ -78,7 +78,7 @@ class AbstractReader(ABC):
     def get_samples(self):
         return []
 
-    def get_fields(self):
+    def get_extra_fields(self):
         """decorator for get_fields"""
         yield from self.parse_fields()
         yield {
@@ -95,6 +95,6 @@ class AbstractReader(ABC):
             "default": False,
         }
 
-    def get_variants(self):
+    def get_extra_variants(self):
         """decorator for get_fields"""
         yield from self.parse_variants()

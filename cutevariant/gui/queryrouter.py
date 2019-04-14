@@ -2,7 +2,7 @@ from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 from PySide2.QtGui import *
 
-from cutevariant.gui.abstractquerywidget import AbstractQueryWidget
+from .plugin import QueryPluginWidget
 from cutevariant.core import Query
 
 
@@ -17,7 +17,7 @@ class QueryRouter(QObject):
         self.widgets = []
         self.query = None
 
-    def addWidget(self, widget: AbstractQueryWidget):
+    def addWidget(self, widget: QueryPluginWidget):
         """
         Add a widget into the router 
 
@@ -52,9 +52,14 @@ class QueryRouter(QObject):
 
         if sender_widget is not None:
             #  update query from sender widget
-            self.query = sender_widget.getQuery()
+            query = sender_widget.getQuery()
+            print(query)
 
-            print(self.query)
+            if not query:
+                return
+
+            self.query = query
+
             print(self.query.sql())
 
             #  change query for all widget except sender

@@ -1,200 +1,198 @@
 from .abstractreader import AbstractReader
+from .annotationparser import VepParser, SnpEffParser
 import vcf
+import copy
 
 
-SNPEFF_ANNOTATION_DEFAULT_FIELDS = {
-    "annotation": {
-        "name": "consequence",
-        "category": "annotation",
-        "description": "consequence",
-        "type": "text",
-    },
-    "annotation_impact": {
-        "name": "impact",
-        "category": "annotation",
-        "description": "impact of variant",
-        "type": "text",
-    },
-    "gene_name": {
-        "name": "gene",
-        "category": "annotation",
-        "description": "gene name",
-        "type": "text",
-    },
-    "gene_id": {
-        "name": "gene_id",
-        "category": "annotation",
-        "description": "gene name",
-        "type": "text",
-    },
-    "feature_id": {
-        "name": "transcript",
-        "category": "annotation",
-        "description": "transcript name",
-        "type": "text",
-    },
-    "transcript_biotype": {
-        "name": "biotype",
-        "category": "annotation",
-        "description": " biotype",
-        "type": "text",
-    },
-    "hgvs.p": {
-        "name": "hgvs_p",
-        "category": "annotation",
-        "description": "protein hgvs",
-        "type": "text",
-    },
-    "hgvs.c": {
-        "name": "hgvs_c",
-        "category": "annotation",
-        "description": "coding hgvs",
-        "type": "text",
-    },
-}
-
-
-class AnnotationParser(object):
-    def parse_fields(self, raw):
-        self.fields_index = {}  ## required for parse_variant
-        for index, field in enumerate(raw.split("|")):
-            key = field.strip().lower()
-
-            if key in SNPEFF_ANNOTATION_DEFAULT_FIELDS.keys():
-                self.fields_index[index] = SNPEFF_ANNOTATION_DEFAULT_FIELDS[key]["name"]
-                yield SNPEFF_ANNOTATION_DEFAULT_FIELDS[key]
-
-    def parse_variant(self, raw):
-
-        annotation = {}
-        for index, ann in enumerate(raw.split("|")):
-            if index in self.fields_index:
-                field_name = self.fields_index[index]
-                annotation[field_name] = ann
-
-        return annotation
+VCF_TYPE_MAPPING = {"Float": "float", "Integer": "int", "Flag": "bool", "String": "str"}
 
 
 class VcfReader(AbstractReader):
+    def __init__(self, device, annotation_parser:str = None):
+        super().__init__(device)
 
-    type_mapping = {
-        "Float": "Float",
-        "Integer": "Integer",
-        "Flag": "Boolean",
-        "String": "String",
-    }
+        vcf_reader = vcf.VCFReader(device)
+        self.samples = vcf_reader.samples
+        self.annotation_parser = None
+        self._set_annotation_parser(annotation_parser)
 
-    def __init__(self, device):
-        super(VcfReader, self).__init__(device)
-        self.parser = AnnotationParser()
+
+    def get_fields(self):
+        # Remove duplicate
+        fields = self.parse_fields()
+        if self.annotation_parser:
+            yield from self._keep_unique_fields(self.annotation_parser.parse_fields(fields))
+        else:
+            yield from self._keep_unique_fields(fields)
+
+
+    def get_variants(self):
+        if self.annotation_parser:
+            yield from self.annotation_parser.parse_variants(self.parse_variants())
+        else:
+            yield from self.parse_variants()
 
     def parse_variants(self):
+        """ Extract Variants from VCF file """
+
+        #  get avaible fields
         fields = list(self.parse_fields())
+
+        # loop over record
         self.device.seek(0)
-
-        vcf_reader = vcf.Reader(self.device)
-
+        vcf_reader = vcf.VCFReader(self.device)
         for record in vcf_reader:
-
+            # split row with multiple alt
             for index, alt in enumerate(record.ALT):
                 variant = {
                     "chr": record.CHROM,
                     "pos": record.POS,
                     "ref": record.REF,
                     "alt": str(alt),
+                    "rsid": record.ID,
+                    "qual": record.QUAL,
+                    "filter":"" # TODO ? 
                 }
 
-                # Read annotations
-                for field in fields:
-                    category = field["category"]
-                    name = field["name"]
-                    ftype = field["type"]
-                    colname = name
-                    value = None
+                # Parse info
+                for name in record.INFO:
+                    if isinstance(record.INFO[name], list):
+                        variant[name.lower()] = ",".join([str(i) for i in record.INFO[name]])
+                    else:
+                        variant[name.lower()] = record.INFO[name]
 
-                    # PARSE INFO
-                    if category == "info":
-                        # Test flags
-                        if ftype == "Flag":
-                            variant[colname] = True if name in record.INFO else False
-                        else:
-                            if name in record.INFO:
-                                if isinstance(record.INFO[name], list):
-                                    value = record.INFO[name][0]
-                                else:
-                                    value = record.INFO[name]
-                            variant[colname] = value
+                # parse sample
+                if record.samples:
+                    variant["samples"] = []
+                    for sample in record.samples:
+                        sample_data = {}
+                        sample_data["name"] = sample.sample
 
-                    # PARSE GENOTYPE / SAMPLE
-                    if category == "sample":
-                        variant["samples"] = list()
-                        for sample in record.samples:
-                            gt = -1
-                            if sample["GT"] == "0/1":
-                                gt = 1
-                            if sample["GT"] == "0/0":
-                                gt = 0
-                            if sample["GT"] == "1/1":
-                                gt = 2
+                        for field in record.FORMAT.split(":"):
 
-                            variant["samples"].append({"name": sample.sample, "gt": gt})
+                            if isinstance(sample[field], list):
+                                value = ",".join([str(i) for i in sample[field]])
+                            else:
+                                value = sample[field]
 
-                    #  PARSE Annotation
-                    if category == "annotation":
-                        # each variant can have multiple annotation. Create then many variants
-                        variant["annotation"] = []
-                        annotations = record.INFO["ANN"]
-                        for annotation in annotations:
-                            variant["annotation"].append(
-                                self.parser.parse_variant(annotation)
-                            )
+                            if field == "GT":
+                                field = "gt"
+                                value = 1
+
+                            sample_data[field] = value
+
+                        variant["samples"].append(sample_data)
 
                 yield variant
 
+                #     # #PARSE Annotation
+                #     # if category == "annotation": #=== PARSE Special Annotation ===
+                #     #     # each variant can have multiple annotation. Create then many variants
+                #     #     variant["annotation"] = []
+                #     #     annotations = record.INFO["ANN"]
+                #     #     for annotation in annotations:
+                #     #         variant["annotation"].append(
+                #     #             self.parser.parse_variant(annotation)
+                #     #         )
+
     def parse_fields(self):
+        """ Extract fields informations from VCF fields """
 
         yield {
             "name": "chr",
             "category": "variant",
             "description": "chromosom",
-            "type": "text",
+            "type": "str",
         }
         yield {
             "name": "pos",
             "category": "variant",
-            "description": "chromosom",
-            "type": "integer",
+            "description": "position",
+            "type": "int",
         }
+
+        yield {
+            "name": "rsid",
+            "category": "variant",
+            "description": "rsid",
+            "type": "str",
+        }
+
         yield {
             "name": "ref",
             "category": "variant",
-            "description": "chromosom",
-            "type": "text",
+            "description": "reference base",
+            "type": "str",
         }
         yield {
             "name": "alt",
             "category": "variant",
-            "description": "chromosom",
-            "type": "text",
+            "description": "alternative base",
+            "type": "str",
         }
 
-        self.device.seek(0)
-        vcf_reader = vcf.Reader(self.device)
-        # Annotation ...
-        for key, info in vcf_reader.infos.items():
-            if key == "ANN":
-                yield from self.parser.parse_fields(info.desc)
+        yield {
+            "name": "qual",
+            "category": "variant",
+            "description": "quality",
+            "type": "int",
+        }
 
-        # PEUVENT SE METTRE AUTOMATIQUEMENT ...
-        for sample in vcf_reader.samples:
+        yield {
+            "name": "filter",
+            "category": "variant",
+            "description": "filter",
+            "type": "str",
+        }
+
+        # Reads VCF INFO
+        self.device.seek(0)
+        vcf_reader = vcf.VCFReader(self.device)
+
+        #  Reads VCF info
+        for key, info in vcf_reader.infos.items():
+
+            # if key == "ANN": # Parse special annotation
+            #     yield from self.parser.parse_fields(info.desc)
+            # else:
             yield {
-                "name": f"gt{sample}.gt",
+                "name": key.lower(),
+                "category": "info",
+                "description": info.desc,
+                "type": VCF_TYPE_MAPPING[info.type],
+            }
+
+        # Reads VCF FORMAT
+        for key, info in vcf_reader.formats.items():
+            yield {
+                "name": key.lower(),
                 "category": "sample",
-                "description": "sample genotype",
-                "type": "text",
+                "description": info.desc,
+                "type": VCF_TYPE_MAPPING[info.type],
             }
 
     def get_samples(self):
-        self.device.seek(0)
-        vcf_reader = vcf.Reader(self.device)
-        return vcf_reader.samples
+        return self.samples
+
+
+    def _keep_unique_fields(self,fields):
+        ''' return fields list with unique field name ''' 
+        names = []
+        for field in fields:
+            if field["name"] not in names:
+                names.append(field["name"])
+                yield field
+            # else:
+            #     # Rename duplicate fields : field_1, field_2 etc ...
+            #     field["name"]  = field["name"] +"_"+ str(names.count(field["name"])+1)
+            #     yield field
+
+    def _set_annotation_parser(self, parser: str):
+        if parser == "vep":
+            self.annotation_parser = VepParser() 
+
+        if parser == "snpeff":
+            self.annotation_parser = SnpEffParser()
+
+    def __repr__(self):
+        return f"VCF Parser using {type(self.annotation_parser).__name__}"
