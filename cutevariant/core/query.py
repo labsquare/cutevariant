@@ -154,10 +154,14 @@ class Query:
             operator = node["operator"]
             field = node["field"]
 
-            if (
-                type(value) == str
-            ):  # Add quote for string .. Need to change in the future and use sqlite binding value
+            # TODO ... c'est degeulasse .... 
+
+            if type(value) == str:  # Add quote for string .. Need to change in the future and use sqlite binding value
                 value = "'" + str(value) + "'"
+
+            elif type(value) == list:
+                value = "(" + ",".join(value) +")"
+     
             else:
                 value = str(value)
 
