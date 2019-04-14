@@ -7,6 +7,7 @@ from pkg_resources import resource_filename
 
 
 MAX_RECENT_PROJECTS = 5
+MIN_COMPLETION_LETTERS = 3
 
 # Paths
 DIR_LOGS = tempfile.gettempdir() + '/'
