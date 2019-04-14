@@ -17,6 +17,7 @@ from cutevariant.gui.vqleditor import VqlEditor
 from cutevariant.gui.omnibar import OmniBar
 from cutevariant.gui.queryrouter import QueryRouter
 from cutevariant.gui.infovariantwidget import InfoVariantWidget
+from cutevariant.gui.aboutcutevariant import AboutCutevariant
 
 from cutevariant.core.importer import import_file
 from cutevariant.core import Query
@@ -273,6 +274,7 @@ class MainWindow(QMainWindow):
         ## Help
         self.help_menu = self.menuBar().addMenu(self.tr("Help"))
         self.help_menu.addAction(self.tr("About Qt"), qApp, SLOT("aboutQt()"))
+        self.help_menu.addAction(self.tr("About Cutevariant"), self, SLOT("aboutCutevariant()"))
 
         # Tool bar
         save_query_action = self.toolbar.addAction(self.tr("save query"))
@@ -333,4 +335,9 @@ class MainWindow(QMainWindow):
     @Slot()
     def show_settings(self):
         widget = SettingsWidget()
-        widget.exec_()
+        widget.exec()
+
+    @Slot()
+    def aboutCutevariant(self):
+        dialog_window = AboutCutevariant()
+        dialog_window.exec()

@@ -11,17 +11,14 @@ MIN_COMPLETION_LETTERS = 1
 
 # Paths
 DIR_LOGS = tempfile.gettempdir() + '/'
-DIR_TRANSLATIONS = resource_filename(
+
+DIR_ASSETS = resource_filename(
     __name__, # current package name
-    "assets/i18n/"
+    "assets/"
 )
-
-DIR_FONTS = resource_filename(
-    __name__,
-    "/assets/fonts/"
-    )
-
-
+DIR_TRANSLATIONS = DIR_ASSETS + "i18n/"
+DIR_FONTS = DIR_ASSETS + "fonts/"
+DIR_ICONS = DIR_ASSETS + "icons/"
 
 # Logging
 LOGGER_NAME = "cutevariant"
