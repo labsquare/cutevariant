@@ -8,6 +8,9 @@ class InfoVariantWidget(VariantPluginWidget):
     def __init__(self):
         super().__init__()
 
+        self.setWindowTitle(self.tr("Info variants"))
+        self.setObjectName("info_variants")  # For window saveState
+
         self.view = QTreeWidget()
         self.view.setColumnCount(2)
         v_layout = QVBoxLayout()

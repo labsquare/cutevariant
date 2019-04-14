@@ -1,11 +1,16 @@
-from PySide2.QtCore import *
-from PySide2.QtWidgets import *
-from PySide2.QtGui import *
+# Standard imports
 import sqlite3
 import json
 import os
-import glob 
-import importlib 
+import glob
+import importlib
+
+# Qt imports
+from PySide2.QtCore import *
+from PySide2.QtWidgets import *
+from PySide2.QtGui import *
+
+# Custom imports
 from cutevariant.gui.wizard.projetwizard import ProjetWizard
 from cutevariant.gui.settings import SettingsWidget
 from cutevariant.gui.viewquerywidget import ViewQueryWidget
@@ -26,8 +31,10 @@ from cutevariant.gui.plugin import VariantPluginWidget, QueryPluginWidget
 
 #from cutevariant.gui.plugins.infovariantplugin import InfoVariantPlugin
 
+from cutevariant import commons as cm
 from cutevariant.commons import MAX_RECENT_PROJECTS
 
+LOGGER = cm.logger()
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
@@ -35,8 +42,9 @@ class MainWindow(QMainWindow):
         super(MainWindow, self).__init__()
         self.setWindowTitle("Cutevariant")
         self.toolbar = self.addToolBar("maintoolbar")
-        
-        # keep sqlite connection 
+        self.toolbar.setObjectName("maintoolbar")  # For window saveState
+
+        # keep sqlite connection
         self.conn = None
         # list of central view 
 
@@ -227,9 +235,17 @@ class MainWindow(QMainWindow):
         return recent_projects
 
     def addPanel(self, widget, area=Qt.LeftDockWidgetArea):
+
         dock = QDockWidget()
         dock.setWindowTitle(widget.windowTitle())
         dock.setWidget(widget)
+        # Set the objectName for a correct restoration after saveState
+        dock.setObjectName(widget.objectName())
+        if not widget.objectName():
+            LOGGER.debug(
+                "MainWindow:addPanel:: widget '%s' has no objectName attribute"
+                "and will not be saved/restored", widget.windowTitle()
+            )
         self.addDockWidget(area, dock)
         self.view_menu.addAction(dock.toggleViewAction())
 
@@ -344,3 +360,20 @@ class MainWindow(QMainWindow):
     def aboutCutevariant(self):
         dialog_window = AboutCutevariant()
         dialog_window.exec()
+
+    def closeEvent(self, event):
+        """Saves the current state of this mainwindow's toolbars and dockwidgets
+
+        .. warning:: Make sure that the property objectName is unique for each
+            QToolBar and QDockWidget added to the QMainWindow.
+        """
+        app_settings = QSettings()
+        app_settings.setValue("geometry", self.saveGeometry())
+        app_settings.setValue("windowState", self.saveState())
+        super().closeEvent(event)
+
+    def read_settings(self):
+        """Restores the state of this mainwindow's toolbars and dockwidgets"""
+        app_settings = QSettings()
+        self.restoreGeometry(QByteArray(app_settings.value("geometry")))
+        self.restoreState(QByteArray(app_settings.value("windowState")))
