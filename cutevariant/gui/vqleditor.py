@@ -130,10 +130,12 @@ class VqlEditor(AbstractQueryWidget):
 
     def getQuery(self):
         """ Method override from AbstractQueryWidget"""
-        query = self.query.from_vql(self.text_edit.toPlainText())
-
-        return self.query
-
+        try:
+            self.query.from_vql(self.text_edit.toPlainText())
+            return self.query
+        except AttributeError:
+            LOGGER.debug("VqlEditor:getQuery:: no query attribute")
+            return None
 
 
 class VqlEdit(QTextEdit):
