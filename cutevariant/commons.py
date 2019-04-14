@@ -13,7 +13,7 @@ MIN_COMPLETION_LETTERS = 1
 DIR_LOGS = tempfile.gettempdir() + '/'
 DIR_TRANSLATIONS = resource_filename(
     __name__, # current package name
-    "gui/i18n/"
+    "assets/i18n/"
 )
 
 # Logging

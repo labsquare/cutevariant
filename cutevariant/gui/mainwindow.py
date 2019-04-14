@@ -4,7 +4,8 @@ from PySide2.QtGui import *
 import sqlite3
 import json
 import os
-
+import glob 
+import importlib 
 from cutevariant.gui.wizard.projetwizard import ProjetWizard
 from cutevariant.gui.settings import SettingsWidget
 from cutevariant.gui.viewquerywidget import ViewQueryWidget
@@ -14,12 +15,13 @@ from cutevariant.gui.selectionquerywidget import SelectionQueryWidget
 from cutevariant.gui.hpoquerywidget import HpoQueryWidget
 from cutevariant.gui.vqleditor import VqlEditor
 from cutevariant.gui.omnibar import OmniBar
-
 from cutevariant.gui.queryrouter import QueryRouter
+from cutevariant.gui.infovariantwidget import InfoVariantWidget
 
 from cutevariant.core.importer import import_file
 from cutevariant.core import Query
 from cutevariant.gui.ficon import FIcon
+from cutevariant.gui.plugin import VariantPluginWidget, QueryPluginWidget
 
 #from cutevariant.gui.plugins.infovariantplugin import InfoVariantPlugin
 
@@ -28,73 +30,77 @@ from cutevariant.commons import MAX_RECENT_PROJECTS
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
+
         super(MainWindow, self).__init__()
         self.setWindowTitle("Cutevariant")
         self.toolbar = self.addToolBar("maintoolbar")
+        
+        # keep sqlite connection 
         self.conn = None
-        self.view_widgets = []
-        self.column_widget = ColumnQueryWidget()
-        self.filter_widget = FilterQueryWidget()
-        self.selection_widget = SelectionQueryWidget()
-        self.tab_view = QTabWidget()
-        self.editor = VqlEditor()
+        # list of central view 
 
+        # Keep list of plugins 
+        self.variant_plugins = []
+
+        # mandatory query plugins 
+        self.column_widget    = ColumnQueryWidget()
+        self.filter_widget    = FilterQueryWidget()
+        self.selection_widget = SelectionQueryWidget()
+        self.editor           = VqlEditor()
+        self.info_widget      = InfoVariantWidget()
+        # Init router to dispatch query between queryPlugins
+        self.router = QueryRouter()
         # Setup Actions
         self.setupActions()
-
-
-        # add omnibar
-        self.omnibar = OmniBar()
-        self.toolbar.addSeparator()
-        spacer = QWidget()
-        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        self.toolbar.addWidget(spacer)
-        self.toolbar.addWidget(self.omnibar) 
-
-        # Init router
-        self.router = QueryRouter()
-        # self.router.addWidget(self.view_widget)
-        self.router.addWidget(self.column_widget)
-        self.router.addWidget(self.filter_widget)
-        self.router.addWidget(self.selection_widget)
-        self.router.addWidget(self.editor)
-        self.router.addWidget(self.omnibar)
-
-
-
+        # Build central view 
+        self.tab_view = QTabWidget()
         vsplit = QSplitter(Qt.Vertical)
         vsplit.addWidget(self.tab_view)
         vsplit.addWidget(self.editor)
-
         self.setCentralWidget(vsplit)
-
-        # self.test = InfoVariantPlugin()
-        # self.test2 = GenomeView()
-
-        #  Init panel
-        self.addPanel(self.column_widget)
-        self.addPanel(self.filter_widget)
-        self.addPanel(self.selection_widget)
-        # self.addPanel(self.test)
-        # self.addPanel(self.test2)
-
-        # self.addPanel(HpoQueryWidget())
-
+        self.router.addWidget(self.editor)
         self.addView()
 
+        # add mandatory query plugin
+        self.add_query_plugin(self.column_widget)
+        self.add_query_plugin(self.filter_widget)
+        self.add_query_plugin(self.selection_widget)
 
+        # Add mandatory variant plugin 
+        self.add_variant_plugin(self.info_widget)
+
+        # # add omnibar
+        # self.omnibar = OmniBar()
+        # self.toolbar.addSeparator()
+        # spacer = QWidget()
+        # spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        # self.toolbar.addWidget(spacer)
+        # self.toolbar.addWidget(self.omnibar) 
 
         # self.currentView().variant_clicked.connect(self.test.set_variant)
         # self.currentView().variant_clicked.connect(self.test2.set_variant)
 
         #  window geometry
         self.resize(600, 400)
-
-        # self.import_vcf("/home/schutz/Dev/CuteVariant-python/exemples/test.snp.eff.vcf")
-
         self.open("/home/sacha/Dev/cutevariant/examples/test.db")
-
         self.setGeometry(qApp.desktop().rect().adjusted(100, 100, -100, -100))
+
+        self.load_plugins()
+
+
+    def add_variant_plugin(self, plugin: VariantPluginWidget):
+        self.currentView().variant_clicked.connect(plugin.set_variant)
+        self.addPanel(plugin)
+ 
+    def add_query_plugin(self, plugin: QueryPluginWidget):
+        self.router.addWidget(plugin)
+        self.addPanel(plugin)
+
+    def load_plugins(self, folder_path = None):
+        # TODO ... Load plugins from path. 
+        # What is a plugin ? A file or a module folder ? 
+        pass 
+
 
     def import_vcf(self, filename):  #  Temporary .. will be removed
         db_filename = filename + ".db"
@@ -273,8 +279,8 @@ class MainWindow(QMainWindow):
         save_query_action.triggered.connect(self.selection_widget.save_current_query)
 
     def addView(self):
+        # TODO : manage multiple view 
         widget = ViewQueryWidget()
-        self.view_widgets.append(widget)
         self.tab_view.addTab(widget, widget.windowTitle())
         self.router.addWidget(widget)
 
@@ -282,7 +288,7 @@ class MainWindow(QMainWindow):
         index = self.tab_view.currentIndex()
         if index == -1:
             return None
-        return self.view_widgets[index]
+        return self.tab_view.currentWidget()
 
     @Slot()
     def new_project(self):
