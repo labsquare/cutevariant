@@ -42,24 +42,24 @@ class VqlSyntaxHighlighter(QSyntaxHighlighter):
             },
             {
                 # Strings simple quotes '...'
-                'pattern': "\'.*\'",
+                'pattern': r"\'.*\'",
                 'color': Qt.red,
                 'minimal': True, # Need to stop match as soon as possible
             },
             {
                 # Strings double quotes: "..."
-                'pattern': '\".*\"',
+                'pattern': r'\".*\"',
                 'color': Qt.red,
                 'minimal': True, # Need to stop match as soon as possible
             },
             {
                 # Numbers
-                'pattern': "\\b[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?\\b",
+                'pattern': r"\\b[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?\\b",
                 'color': Qt.darkGreen,
             },
             {
                 # Comments
-                'pattern': "--[^\n]*",
+                'pattern': r"--[^\n]*",
                 'color': Qt.gray,
             },
         ]
@@ -105,28 +105,21 @@ class VqlEditor(AbstractQueryWidget):
         super().__init__()
         self.setWindowTitle(self.tr("Columns"))
 
-        # Build completer for autocompletion
-        completer = QCompleter()
-        cmodel = QStringListModel()
-        # TODO: add column names, etc. to the model
-        cmodel.setStringList(VqlSyntaxHighlighter.sql_keywords)
-        completer.setModel(cmodel)
-        # Setup TextEdit
         self.text_edit = VqlEdit()
-        self.text_edit.setCompleter(completer)
         self.highlighter = VqlSyntaxHighlighter(self.text_edit.document())
-
         main_layout = QVBoxLayout()
-
         main_layout.addWidget(self.text_edit)
         self.setLayout(main_layout)
-
         self.text_edit.textChanged.connect(self.changed)
 
     def setQuery(self, query: Query):
         """ Method override from AbstractQueryWidget"""
         self.query = query
         self.text_edit.setPlainText(self.query.to_vql())
+
+        if self.text_edit.completer is None:
+            self.text_edit.setCompleter(self.create_completer())
+
 
     def getQuery(self):
         """ Method override from AbstractQueryWidget"""
@@ -138,15 +131,31 @@ class VqlEditor(AbstractQueryWidget):
             return None
 
 
+    def create_completer(self):
+        """ Create Completer with his model """ 
+        model = QStringListModel()
+        completer = QCompleter()
+        keywords = list(VqlSyntaxHighlighter.sql_keywords) 
+        fields = [i["name"] for i in sql.get_fields(self.query.conn)]
+        keywords.extend(fields)
+        model.setStringList(keywords)
+        completer.setModel(model)
+        return completer
+
+
+
+
+
+
 class VqlEdit(QTextEdit):
     def __init__(self, parent = None):
         super().__init__(parent)
+        self.completer = None
 
     def setCompleter(self, completer: QCompleter):
 
-        if hasattr(self, 'completer'):
+        if self.completer is not None:
             self.completer.activated.disconnect()
-
         self.completer = completer
         self.completer.setWidget(self)
         self.completer.setCompletionMode(QCompleter.PopupCompletion)
