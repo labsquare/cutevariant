@@ -238,8 +238,9 @@ class VqlEdit(QTextEdit):
         # => avoid word duplication when the cursor is not moved (nb_extra = 0)
         if nb_extra == 0:
             return
-        tc.movePosition(QTextCursor.Left)
-        tc.movePosition(QTextCursor.EndOfWord)
+
+        tc.movePosition(QTextCursor.Left) # left one character.
+        tc.movePosition(QTextCursor.EndOfWord) # end of the current word.
         # Get a substring that contains the nb_extra rightmost characters
         # of the string; and insert the extra characters to complete the word.
         tc.insertText(completion[-nb_extra:])
