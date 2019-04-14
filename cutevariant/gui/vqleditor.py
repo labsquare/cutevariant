@@ -7,9 +7,20 @@ from .abstractquerywidget import AbstractQueryWidget
 from cutevariant.core import Query
 from cutevariant.core import sql
 
+from cutevariant.commons import MIN_COMPLETION_LETTERS, logger
+
+LOGGER = logger()
 
 class VqlSyntaxHighlighter(QSyntaxHighlighter):
     """SQL Syntax highlighter rules"""
+
+    sql_keywords = (
+        'SELECT', 'FROM', 'WHERE', 'AS',
+        'AND', 'OR', 'NOT', 'ALL', 'ANY', 'BETWEEN', 'EXISTS', 'IN', 'LIKE', 'SOME',
+        'ASC', 'DESC', 'LIMIT',
+        'DISTINCT', 'GROUP BY', 'HAVING', 'ORDER BY',
+        'IS', 'NOT', 'NULL',
+    )
 
     def __init__(self, document=None):
         super().__init__(document)
@@ -24,13 +35,7 @@ class VqlSyntaxHighlighter(QSyntaxHighlighter):
             {
                 # Keywords
                 # \b allows to perform a "whole words only"
-                'pattern': "|".join((f'\\b%s\\b' % keyword for keyword in [
-                    'SELECT', 'FROM', 'WHERE', 'AS',
-                    'AND', 'OR', 'NOT', 'ALL', 'ANY', 'BETWEEN', 'EXISTS', 'IN', 'LIKE', 'SOME',
-                    'ASC', 'DESC', 'LIMIT',
-                    'DISTINCT', 'GROUP BY', 'HAVING', 'ORDER BY',
-                    'IS', 'NOT', 'NULL',
-                    ]
+                'pattern': "|".join((f'\\b%s\\b' % keyword for keyword in VqlSyntaxHighlighter.sql_keywords
                 )),
                 'font': QFont.Bold,
                 'color': palette.color(QPalette.Highlight), # default: Qt.darkBlue
@@ -100,12 +105,15 @@ class VqlEditor(AbstractQueryWidget):
         super().__init__()
         self.setWindowTitle(self.tr("Columns"))
 
+        # Build completer for autocompletion
         completer = QCompleter()
         cmodel = QStringListModel()
-        cmodel.setStringList(["sacha","boby"])
+        # TODO: add column names, etc. to the model
+        cmodel.setStringList(VqlSyntaxHighlighter.sql_keywords)
         completer.setModel(cmodel)
-        self.text_edit = QTextEdit()
-        #self.text_edit.setCompleter(completer)
+        # Setup TextEdit
+        self.text_edit = VqlEdit()
+        self.text_edit.setCompleter(completer)
         self.highlighter = VqlSyntaxHighlighter(self.text_edit.document())
 
         main_layout = QVBoxLayout()
@@ -122,54 +130,129 @@ class VqlEditor(AbstractQueryWidget):
 
     def getQuery(self):
         """ Method override from AbstractQueryWidget"""
-        query = self.query.from_vql(self.text_edit.toPlainText())
-
-        return self.query
-
+        try:
+            self.query.from_vql(self.text_edit.toPlainText())
+            return self.query
+        except AttributeError:
+            LOGGER.debug("VqlEditor:getQuery:: no query attribute")
+            return None
 
 
 class VqlEdit(QTextEdit):
     def __init__(self, parent = None):
         super().__init__(parent)
 
-
     def setCompleter(self, completer: QCompleter):
+
+        if hasattr(self, 'completer'):
+            self.completer.activated.disconnect()
+
         self.completer = completer
         self.completer.setWidget(self)
         self.completer.setCompletionMode(QCompleter.PopupCompletion)
         self.completer.setCaseSensitivity(Qt.CaseInsensitive)
         self.completer.activated.connect(self.insertCompletion)
 
-
-
     def keyPressEvent(self, event):
-        '''override'''
+        """Overrided"""
 
-        print("complete", self.textUnderCursor())
-        #self.completer.setCompletionPrefix("sa")
-        #self.completer.complete(self.cursorRect())
-        self.completer.popup().show()
+        # Ignore some key events so the completer can handle them.
+        if hasattr(self, 'completer') and self.completer.popup().isVisible():
+            if event.key() in (Qt.Key_Enter, Qt.Key_Return, Qt.Key_Escape,
+            Qt.Key_Tab, Qt.Key_Backtab):
+                event.ignore()
+                # Let the completer do default behavior
+                return
+
+        # Accept other key events
         super().keyPressEvent(event)
 
-    def focusInEvent(event):
-        '''override'''
-        if hasattr(self, "completer"):
-            self.completer.setWidget(self) 
-        
+        # Ignore modifiers
+        found_ignored_modifier = event.modifiers() in \
+            (Qt.ControlModifier, Qt.ShiftModifier, Qt.AltModifier)
+
+        LOGGER.debug("keyPressEvent:: event text: %s", event.text())
+
+        # Dismiss ingored modifiers without text
+        if not hasattr(self, 'completer') or \
+            (found_ignored_modifier and not event.text()):
+            LOGGER.debug("keyPressEvent:: ignored modifier")
+            return
+
+        has_modifier = event.modifiers() != Qt.NoModifier and \
+            not found_ignored_modifier
+
+        end_of_word = "~!@#$%^&*()_+{}|:\"<>?,./;'[]\\-="
+        completion_prefix = self.textUnderCursor()
+        completer = self.completer
+
+        LOGGER.debug("keyPressEvent:: has_modifier: %s", has_modifier)
+        LOGGER.debug("keyPressEvent:: completion_prefix: %s", completion_prefix)
+
+        # Hide on alone modifier, empty text, short text, end of word
+        if has_modifier or not event.text() or \
+            len(completion_prefix) < MIN_COMPLETION_LETTERS or \
+            event.text()[-1] in end_of_word:
+            completer.popup().hide()
+            LOGGER.debug("keyPressEvent:: Hide completer popup")
+            return
+
+        # Select proposed word
+        if completion_prefix != completer.completionPrefix():
+            completer.setCompletionPrefix(completion_prefix)
+            completer.popup().setCurrentIndex(completer.completionModel().index(0, 0))
+
+        # Show popup
+        cursor_rect = self.cursorRect()
+        cursor_rect.setWidth(
+            completer.popup().sizeHintForColumn(0) +
+            completer.popup().verticalScrollBar().sizeHint().width()
+        )
+        completer.complete(cursor_rect)
+
+    def focusInEvent(self, event):
+        """Overrided: Event handler used to receive keyboard focus events for the widget"""
+        if hasattr(self, 'completer'):
+            self.completer.setWidget(self)
+
         super().focusInEvent(event)
 
     def insertCompletion(self, completion:str):
+        """Complete the word using the given completion string
+
+        .. note:: Called after user validation in the popup
+
+        :param completion: Word proposed by the autocompletion.
+        :type completion: <str>
+        """
+
+        # Ensure that the completer's widget is the current one
         if self.completer.widget() != self:
             return
 
         tc = self.textCursor()
-        extra = len(completion) - len(self.completer.completionPrefix())
-        tc.movePosition(QTextCursor.Left)
-        tc.movePosition(QTextCursor.EndOfWord)
-        tc.insertText(completion)
+        # Get number of characters that must be inserted
+        # The last nb_extra characters from the right will be inserted by tc
+        nb_extra = len(completion) - len(self.completer.completionPrefix())
+        # Do not replace anything if the word is already completed
+        # => avoid word duplication when the cursor is not moved (nb_extra = 0)
+        if nb_extra == 0:
+            return
 
+        tc.movePosition(QTextCursor.Left) # left one character.
+        tc.movePosition(QTextCursor.EndOfWord) # end of the current word.
+        # Get a substring that contains the nb_extra rightmost characters
+        # of the string; and insert the extra characters to complete the word.
+        tc.insertText(completion[-nb_extra:])
+        self.setTextCursor(tc)
 
     def textUnderCursor(self):
+        """Select a word under the cursor and return it
+
+        :return: The text/fragment of word under the cursor.
+        :rtype: <QTextCursor>
+        """
+
         tc = self.textCursor()
         tc.select(QTextCursor.WordUnderCursor)
         return tc.selectedText()
