@@ -48,6 +48,8 @@ class AboutCutevariant(QDialog):
         githubButton.clicked.connect(self.openGithub)
         twitterButton.clicked.connect(self.openTwitter)
 
+        self.resize(600, 400)
+
     def addTab(self, filename):
         """Read the given text file and load it in a new tab"""
 
@@ -58,8 +60,17 @@ class AboutCutevariant(QDialog):
         text_edit.setFrameShape(QFrame.NoFrame)
         text_edit.setReadOnly(True)
 
+        text = ""
+        if filename == "LICENSE":
+            # Add license header
+            text = self.tr(
+                "Copyright (C) 2018-2019  labsquare.org\n\n"
+                "This program is distributed under the terms of the GNU "
+                "General Public License v3.\n\n"
+            )
+
         with open(filepath, "r") as f_d:
-            text_edit.setPlainText(f_d.read())
+            text_edit.setPlainText(text + f_d.read())
             self.tab_widget.addTab(text_edit, filename)
 
     def drawHeader(self):
@@ -67,7 +78,7 @@ class AboutCutevariant(QDialog):
 
         pHeight = 90
         pMargin = 15
-        icon_path = cm.DIR_ICONS + "/app.png"
+        icon_path = cm.DIR_ICONS + "app.png"
 
         self.header_lbl.setMinimumHeight(pHeight)
         self.header_lbl.setFrameShape(QFrame.StyledPanel)
