@@ -135,10 +135,9 @@ class VqlEditor(QueryPluginWidget):
         """ Create Completer with his model """ 
         model = QStringListModel()
         completer = QCompleter()
-        keywords = list(VqlSyntaxHighlighter.sql_keywords) 
         fields = [i["name"] for i in sql.get_fields(self.query.conn)]
-        keywords.extend(fields)
-        model.setStringList(keywords)
+        fields.extend(VqlSyntaxHighlighter.sql_keywords)
+        model.setStringList(fields)
         completer.setModel(model)
         return completer
 
@@ -154,8 +153,9 @@ class VqlEdit(QTextEdit):
 
     def setCompleter(self, completer: QCompleter):
 
-        if self.completer is not None:
+        if self.completer:
             self.completer.activated.disconnect()
+
         self.completer = completer
         self.completer.setWidget(self)
         self.completer.setCompletionMode(QCompleter.PopupCompletion)
@@ -166,7 +166,7 @@ class VqlEdit(QTextEdit):
         """Overrided"""
 
         # Ignore some key events so the completer can handle them.
-        if hasattr(self, 'completer') and self.completer.popup().isVisible():
+        if self.completer and self.completer.popup().isVisible():
             if event.key() in (Qt.Key_Enter, Qt.Key_Return, Qt.Key_Escape,
             Qt.Key_Tab, Qt.Key_Backtab):
                 event.ignore()
@@ -183,7 +183,7 @@ class VqlEdit(QTextEdit):
         LOGGER.debug("keyPressEvent:: event text: %s", event.text())
 
         # Dismiss ingored modifiers without text
-        if not hasattr(self, 'completer') or \
+        if not self.completer or \
             (found_ignored_modifier and not event.text()):
             LOGGER.debug("keyPressEvent:: ignored modifier")
             return
@@ -221,7 +221,7 @@ class VqlEdit(QTextEdit):
 
     def focusInEvent(self, event):
         """Overrided: Event handler used to receive keyboard focus events for the widget"""
-        if hasattr(self, 'completer'):
+        if self.completer:
             self.completer.setWidget(self)
 
         super().focusInEvent(event)
