@@ -3,7 +3,7 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 
 
-from .abstractquerywidget import AbstractQueryWidget
+from .plugin import QueryPluginWidget
 from cutevariant.core import Query
 from cutevariant.core import sql
 from cutevariant.gui.ficon import FIcon
@@ -70,7 +70,7 @@ class ColumnQueryModel(QStandardItemModel):
             categories_items["sample"].appendRow(sample_item)
 
 
-class ColumnQueryWidget(AbstractQueryWidget):
+class ColumnQueryWidget(QueryPluginWidget):
     def __init__(self):
         super().__init__()
 

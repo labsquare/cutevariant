@@ -4,7 +4,7 @@ from PySide2.QtGui import *
 from cutevariant.gui.ficon import FIcon
 
 
-from .abstractquerywidget import AbstractQueryWidget
+from .plugin import QueryPluginWidget
 from cutevariant.core import Query
 from cutevariant.core import sql
 
@@ -160,7 +160,7 @@ class QueryDelegate(QStyledItemDelegate):
         return QSize(0, 30)
 
 
-class ViewQueryWidget(AbstractQueryWidget):
+class ViewQueryWidget(QueryPluginWidget):
 
     variant_clicked = Signal(dict)
 

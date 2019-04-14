@@ -3,7 +3,7 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 from enum import Enum
 
-from .abstractquerywidget import AbstractQueryWidget
+from .plugin import QueryPluginWidget
 from cutevariant.core import Query
 from cutevariant.gui.ficon import FIcon
 
@@ -134,7 +134,7 @@ class FilterEditDialog(QDialog):
         self.item.setData(self.value.text(), FilterQueryModel.ValueRole)
 
 
-class FilterQueryWidget(AbstractQueryWidget):
+class FilterQueryWidget(QueryPluginWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Filter"))

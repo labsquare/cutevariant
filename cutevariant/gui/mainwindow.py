@@ -21,7 +21,7 @@ from cutevariant.core.importer import import_file
 from cutevariant.core import Query
 from cutevariant.gui.ficon import FIcon
 
-from cutevariant.gui.plugins.infovariantplugin import InfoVariantPlugin
+#from cutevariant.gui.plugins.infovariantplugin import InfoVariantPlugin
 
 from cutevariant.commons import MAX_RECENT_PROJECTS
 

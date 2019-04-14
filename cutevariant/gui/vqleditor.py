@@ -3,7 +3,7 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 
 
-from .abstractquerywidget import AbstractQueryWidget
+from .plugin import QueryPluginWidget
 from cutevariant.core import Query
 from cutevariant.core import sql
 
@@ -100,7 +100,7 @@ class VqlSyntaxHighlighter(QSyntaxHighlighter):
                 self.setFormat(match.capturedStart(), match.capturedLength(), t_format)
 
 
-class VqlEditor(AbstractQueryWidget):
+class VqlEditor(QueryPluginWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Columns"))
