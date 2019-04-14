@@ -128,6 +128,9 @@ class MainWindow(QMainWindow):
         if not os.path.exists(filepath):
             return
 
+        # Show the project name in title
+        self.setWindowTitle(f"Cutevariant - %s" % os.path.basename(filepath))
+
         # Save directory
         app_settings = QSettings()
         app_settings.setValue("last_directory", os.path.dirname(filepath))
