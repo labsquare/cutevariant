@@ -77,8 +77,53 @@ class QueryModel(QAbstractItemModel):
 
         return None
 
+    def hasChildren(self, parent: QModelIndex) -> bool:
+        """ override """
+        # if invisible root node, always return True
+        if parent == QModelIndex():
+            return True 
+
+        if parent.parent() == QModelIndex():
+            return self._child_count(parent) > 1
+
+    def canFetchMore(self, parent: QModelIndex) -> bool:
+        """ override """
+        return self.hasChildren(parent)
+
+
+    def fetchMore(self,parent : QModelIndex): 
+        """override """
+        if parent == QModelIndex():
+            return
+
+        count     = self._child_count(parent)
+        child_ids = self._child_ids(parent)
+
+        print("fetch more ", count, child_ids)
+        
+        
+
+
+
+
+
+
+    def _child_count(self, index: QModelIndex):
+        """ return child count for the index variant """
+        if self.query.group_by is None:
+            return 0 
+        return self.variants[index.row()][-2]
+
+    def _child_ids(self, index: QModelIndex):
+        """ return childs sql ids for the index variant """
+        if self.query.group_by is None:
+            return 0 
+        return self.variants[index.row()][-1].split(",")    
+
+
     def setQuery(self, query: Query):
         self.query = query
+        self.query.group_by=("chr","pos","ref","alt")
         self.total = query.count()
         self.load()
 
@@ -86,6 +131,8 @@ class QueryModel(QAbstractItemModel):
         self.beginResetModel()
         self.variants.clear()
         self.variants = list(self.query.rows(self.limit, self.page * self.limit))
+
+        print(self.variants)
         self.endResetModel()
 
     def hasPage(self, page):
@@ -232,7 +279,7 @@ class ViewQueryWidget(QueryPluginWidget):
         self.page_box.setText(f"{self.model.page}")
 
     def _variant_clicked(self, index):
-        print("cicked on ", index)
+        #print("cicked on ", index)
         rowid = self.model.get_rowid(index)
         variant = sql.get_one_variant(self.model.query.conn, rowid)
         self.variant_clicked.emit(variant)

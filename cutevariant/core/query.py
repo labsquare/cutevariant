@@ -20,6 +20,7 @@ class Query:
         self.selection = selection
         self.order_by = None
         self.order_desc = True
+        self.group_by = None
 
         ##-----------------------------------------------------------------------------------------------------------
 
@@ -64,10 +65,9 @@ class Query:
         #  Detect if join sample is required ...
         sample_ids = self.detect_samples()
 
-        print("SAMPLE IDS SQL ", sample_ids)
-
         if len(self.columns) == 0:
             self.columns = ["chr", "pos", "ref", "alt"]
+
 
         #  Replace columns gt(sacha) by sv4.gt ( where 4 is the sample id for outer join)
         sql_columns = []
@@ -78,6 +78,11 @@ class Query:
                 sql_columns.append(f"gt{sample}.gt")
             else:
                 sql_columns.append(col)
+
+
+        # if group by , add extra columns ( child count and child ids )
+        if self.group_by:
+            sql_columns.extend(["COUNT(rowid) as 'count'","group_concat(rowid) as 'childs'"])
 
         query = f"SELECT {','.join(sql_columns)} "
 
@@ -102,6 +107,9 @@ class Query:
         if self.filter:
             query += " WHERE " + self.filter_to_sql(self.filter)
             #  add limit and offset
+
+        if self.group_by:
+            query += " GROUP BY chr,pos,ref,alt"
 
         if self.order_by is not None:
             direction = "DESC" if self.order_desc is True else "ASC"

@@ -89,6 +89,7 @@ class MainWindow(QMainWindow):
 
 
     def add_variant_plugin(self, plugin: VariantPluginWidget):
+        # TODO : self current view must send signal only for visable widget 
         self.currentView().variant_clicked.connect(plugin.set_variant)
         self.addPanel(plugin)
  
@@ -100,19 +101,6 @@ class MainWindow(QMainWindow):
         # TODO ... Load plugins from path. 
         # What is a plugin ? A file or a module folder ? 
         pass 
-
-
-    def import_vcf(self, filename):  #  Temporary .. will be removed
-        db_filename = filename + ".db"
-
-        if os.path.exists(db_filename):
-            os.remove(db_filename)
-
-        self.conn = sqlite3.connect(db_filename)
-        import_file(self.conn, filename)
-
-        self.conn.close()
-        self.open(db_filename)
 
     def open(self, filepath):
         """Open the given db/project file
