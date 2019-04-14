@@ -16,6 +16,13 @@ DIR_TRANSLATIONS = resource_filename(
     "assets/i18n/"
 )
 
+DIR_FONTS = resource_filename(
+    __name__,
+    "/assets/fonts/"
+    )
+
+
+
 # Logging
 LOGGER_NAME = "cutevariant"
 LOG_LEVEL   = 'DEBUG'
