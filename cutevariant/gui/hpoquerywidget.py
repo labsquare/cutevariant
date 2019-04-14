@@ -3,8 +3,7 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 import sqlite3
 
-
-from .plugin import QueryPluginWidget
+from .abstractquerywidget import AbstractQueryWidget
 from cutevariant.core import sql, Query
 
 
@@ -165,7 +164,7 @@ class HpoModel(QAbstractItemModel):
         self.endResetModel()
 
 
-class HpoQueryWidget(QueryPluginWidget):
+class HpoQueryWidget(AbstractQueryWidget):
     def __init__(self):
         super().__init__()
 

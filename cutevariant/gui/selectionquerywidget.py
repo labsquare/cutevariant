@@ -3,7 +3,7 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 
 
-from .plugin import QueryPluginWidget
+from .abstractquerywidget import AbstractQueryWidget
 from cutevariant.core import Query
 from cutevariant.core import sql
 
@@ -29,11 +29,11 @@ class SelectionQueryModel(QStandardItemModel):
         self.refresh()
 
 
-class SelectionQueryWidget(QueryPluginWidget):
+class SelectionQueryWidget(AbstractQueryWidget):
     def __init__(self):
         super().__init__()
 
-        self.setWindowTitle(self.tr("Selections"))
+        self.setWindowTitle("Selections")
         self.view = QTreeView()
         self.model = SelectionQueryModel()
         self.view.setModel(self.model)

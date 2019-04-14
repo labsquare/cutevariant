@@ -1,24 +1,17 @@
-# Standard imports
-import os
-import sqlite3
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 
-# Custom imports
+import os
+import sqlite3
 from cutevariant.core.importer import async_import_file
-import cutevariant.commons as cm
-from cutevariant.core.readerfactory import detect_vcf_annotation
 
-LOGGER = cm.logger()
 
 class ProjetPage(QWizardPage):
     def __init__(self):
         super().__init__()
 
-        self.setTitle(self.tr("Project creation"))
-        self.setSubTitle(self.tr(
-            "This wizard will guide you to create a cutevariant project."
-        ))
+        self.setTitle("Project creation")
+        self.setSubTitle("This wizard will guide you to create a cutevariant project.")
 
         self.projet_name_edit = QLineEdit()
         self.projet_path_edit = QLineEdit()
@@ -38,9 +31,9 @@ class ProjetPage(QWizardPage):
         browse_layout.addWidget(self.browse_button)
         browse_layout.setContentsMargins(0, 0, 0, 0)
 
-        v_layout.addRow(self.tr("Reference genom"), self.reference)
-        v_layout.addRow(self.tr("Project Name"), self.projet_name_edit)
-        v_layout.addRow(self.tr("Create in"), browse_layout)
+        v_layout.addRow("Reference genom", self.reference)
+        v_layout.addRow("Project Name", self.projet_name_edit)
+        v_layout.addRow("Create in", browse_layout)
 
         self.setLayout(v_layout)
 
@@ -49,79 +42,51 @@ class ProjetPage(QWizardPage):
         self.projet_name_edit.textChanged.connect(self.completeChanged)
 
     def _browse(self):
-        path = QFileDialog.getExistingDirectory(self, self.tr("Select a path for the project"))
+        path = QFileDialog.getExistingDirectory(self, "Select a path for the project")
         if path:
             self.projet_path_edit.setText(path)
 
     def isComplete(self):
         """Conditions to unlock next button"""
-        return (
-            True
-            if (
-                QDir(self.projet_path_edit.text()).exists()
-                and self.projet_path_edit.text()
-                and self.projet_name_edit.text()
-            )
-            else False
-        )
+        return True if (
+            QDir(self.projet_path_edit.text()).exists()
+            and self.projet_path_edit.text()
+            and self.projet_name_edit.text()
+        ) else False
 
 
 class FilePage(QWizardPage):
     def __init__(self):
         super().__init__()
 
-        self.setTitle(self.tr("Select a file"))
-        self.setSubTitle(self.tr("Supported file are vcf and vcf.gz."))
+        self.setTitle("Select a file")
+        self.setSubTitle("Supported file are vcf and vcf.gz.")
 
         self.file_path_edit = QLineEdit()
-        self.anotation_detect_label = QLabel()
-        self.button = QPushButton(self.tr("Browse"))
-        h_layout = QHBoxLayout()
+        self.button = QPushButton("Browse")
+        v_layout = QHBoxLayout()
 
-        h_layout.addWidget(self.file_path_edit)
-        h_layout.addWidget(self.button)
-
-        self.v_layout = QVBoxLayout()
-        self.v_layout.addWidget(self.anotation_detect_label)
-        self.v_layout.addLayout(h_layout)
-        self.setLayout(self.v_layout)
-
+        v_layout.addWidget(self.file_path_edit)
+        v_layout.addWidget(self.button)
+        self.setLayout(v_layout)
 
         self.button.clicked.connect(self._browse)
         self.file_path_edit.textChanged.connect(self.completeChanged)
 
         self.registerField("filename", self.file_path_edit, "text")
-        # annotation ? should be an option or not ? 
-        self.registerField("annotation", self.anotation_detect_label, "text")
 
     def _browse(self):
-
-        # Reload last directory used
-        app_settings = QSettings()
-        last_directory = app_settings.value("last_directory", QDir.homePath())
-
-        filepath, filetype = QFileDialog.getOpenFileName(
-            self, self.tr("Open a file"), last_directory,
-            self.tr("VCF file (*.vcf *.vcf.gz)"))
- 
-        if filepath:
-            # Display and save directory
-            self.file_path_edit.setText(filepath)
-            app_settings.setValue("last_directory", os.path.dirname(filepath))
-            annotation = detect_vcf_annotation(filepath)
-            self.anotation_detect_label.setText(f"<b>{annotation} annotation detected </b>")
-
+        filename = QFileDialog.getOpenFileName(
+            self, "Open a file", QDir.homePath(), "VCF file (*.vcf, *.vcf.gz)"
+        )
+        if filename:
+            self.file_path_edit.setText(filename[0])
 
     def isComplete(self):
         """Conditions to unlock next button"""
-        return (
-            True
-            if (
-                self.file_path_edit.text()
-                and QFile(self.file_path_edit.text()).exists()
-            )
-            else False
-        )
+        return True if (
+            self.file_path_edit.text() and QFile(self.file_path_edit.text()).exists()
+        ) else False
 
 
 class ImportThread(QThread):
@@ -168,9 +133,9 @@ class ImportPage(QWizardPage):
     def __init__(self):
         super().__init__()
 
-        self.setTitle(self.tr("Import file"))
-        self.setSubTitle(self.tr("Please click on Import/Stop to start or stop the process."))
-        self.text_buttons = [self.tr("Import"), self.tr("Stop")]
+        self.setTitle("Import file")
+        self.setSubTitle("Please click on Import/Stop to start or stop the process.")
+        self.text_buttons = ["Import", "Stop"]
 
         self.thread_finished = False
         self.thread = ImportThread()
@@ -221,7 +186,7 @@ class ImportPage(QWizardPage):
 
     def run(self):
         if self.thread.isRunning():
-            LOGGER.debug("ImportPage:run: stop thread")
+            print("stop thread")
             self.import_button.setDisabled(True)
             self.thread.stop()
             self.progress.setValue(0)
@@ -237,7 +202,7 @@ class ImportPage(QWizardPage):
                 + ".db"
             )
 
-            self.log_edit.appendPlainText(self.tr("Import ") + self.thread.filename)
+            self.log_edit.appendPlainText("Import " + self.thread.filename)
             self.import_button.setText(self.text_buttons[1])
             self.thread.start()
 
@@ -249,7 +214,7 @@ class ImportPage(QWizardPage):
 class ProjetWizard(QWizard):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle(self.tr("Cutevariant - Project creation wizard"))
+        self.setWindowTitle("Cutevariant - Project creation wizard")
 
         self.addPage(ProjetPage())
         self.addPage(FilePage())

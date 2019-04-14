@@ -281,13 +281,7 @@ def get_one_variant(conn, id: int):
     # return cursor.fetchone()
 
 
-def get_variants_count(conn):
-    return conn.execute(f""" SELECT COUNT(*) FROM variants """).fetchone()[0]
-
-
-
-
-def async_insert_many_variants(conn, data, total_variant_count=None, commit_every=200):
+def insert_many_variants(conn, data, total_variant_count=-1, commit_every=200):
     """
     Insert many variant from data into variant table.columns
 
@@ -307,18 +301,15 @@ def async_insert_many_variants(conn, data, total_variant_count=None, commit_ever
 
     cursor = conn.cursor()
 
-    variant_shema = list(conn.execute("pragma table_info('variants')"))
     #  Get columns description from variant table
-    cols = [c[1] for c in variant_shema]
+    cols = [i[0] for i in conn.execute("SELECT * FROM variants LIMIT 1").description]
 
-    # # build dynamic insert query
-    # # INSERT INTO variant qcol1, qcol2.... VALUES :qcol1, :qcol2 ....
+    # build dynamic insert query
+    # INSERT INTO variant qcol1, qcol2.... VALUES :qcol1, :qcol2 ....
     q_cols = ",".join(cols)
     q_place = ",".join([f":{place}" for place in cols])
 
-
-
-    # # get samples with sql rowid
+    # get samples with sql rowid
     samples = dict(
         [
             (record[1], record[0])
@@ -328,50 +319,49 @@ def async_insert_many_variants(conn, data, total_variant_count=None, commit_ever
 
     # Loop over variants
     variant_count = 0  # count variants
+    insert_count = (
+        0
+    )  #  count insertion in sql ( one variant can have multiple insertion depending on annotation)
 
     for variant in data:
+
         # use default dict for missing value
         variant = collections.defaultdict(lambda: "", variant)
 
         variant_count += 1
 
         ## Split variant into multiple variant if there are multiple annotation
-        # If one variant has 3 annotations, then create 3 annotations
-
-        sub_variants = []
-        if "annotations" in variant:
-            for annotation in variant["annotations"]:
+        variants = []
+        if "annotation" in variant:
+            for annotation in variant["annotation"]:
                 new_variant = dict(variant)
                 new_variant.update(annotation)
-                del new_variant["annotations"]
-                sub_variants.append(new_variant)
+                del new_variant["annotation"]
+                variants.append(new_variant)
         else:
-            sub_variants.append(variant)
+            variants.append(variant)
 
-        for sub_variant in sub_variants:
+        for variant_to_insert in variants:
 
-        # Insert current variant
-            cursor.execute( 
-                f"""INSERT INTO variants ({q_cols}) VALUES ({q_place})""", 
-                collections.defaultdict(str,sub_variant))
+            # Insert current variant
+            cursor.execute(
+                f"""INSERT INTO variants ({q_cols}) VALUES ({q_place})""",
+                variant_to_insert,
+            )
+
             # get variant rowid
             variant_id = cursor.lastrowid
-
-
+            insert_count += 1
 
             #  every commit_every = 200 insert, start a commit ! This value can be changed
-            if variant_count % commit_every == 0:
-                if total_variant_count:
-                    progress = float(variant_count) / total_variant_count * 100.0
-                else:
-                    progress = 0
-
+            if insert_count % commit_every == 0:
+                progress = float(variant_count) / total_variant_count * 100.0
                 yield progress, f"{variant_count} variant inserted"
                 conn.commit()
 
             # if variant has sample data, insert record into sample_has_variant
-            if "samples" in sub_variant:
-                for sample in sub_variant["samples"]:
+            if "samples" in variant:
+                for sample in variant["samples"]:
                     name = sample["name"]
                     gt = sample["gt"]
 
@@ -383,21 +373,15 @@ def async_insert_many_variants(conn, data, total_variant_count=None, commit_ever
                         )
 
     conn.commit()
-    # #  create index to make sample query faster
-    # cursor.execute(
-    #     f"""CREATE UNIQUE INDEX idx_sample_has_variant ON sample_has_variant (sample_id,variant_id)"""
-    # )
+    #  create index to make sample query faster
+    cursor.execute(
+        f"""CREATE UNIQUE INDEX idx_sample_has_variant ON sample_has_variant (sample_id,variant_id)"""
+    )
 
     # create selections
-    # insert_selection(conn, name="all", count=variant_count)
+    insert_selection(conn, name="all", count=variant_count)
 
     yield 100, f"{variant_count} variant(s) has been inserted"
-
-
-
-def insert_many_variants(conn, data, total_variant_count=None, commit_every=200):
-    for _,_ in async_insert_many_variants(conn, data, total_variant_count, commit_every):
-        pass
 
 
 ## ================ Fields functions =============================
@@ -429,19 +413,6 @@ def insert_sample(conn, name="no_name"):
     return cursor.lastrowid
 
 
-def insert_many_samples(conn, samples: list):
-    cursor = conn.cursor()
-
-    cursor.executemany(
-        """
-        INSERT INTO samples (name) 
-        VALUES (:name)
-        """,
-        [{"name": sample} for sample in samples],
-    )
-    conn.commit()
-
-
 def get_samples(conn):
     """"
     Get samples from sample table 
@@ -454,5 +425,3 @@ def get_samples(conn):
     for row in cursor.execute("""SELECT name FROM samples"""):
         record["name"] = row[0]
         yield record
-
-

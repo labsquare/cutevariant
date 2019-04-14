@@ -16,4 +16,3 @@ recursive-exclude cutevariant *.txt
 recursive-include cutevariant *.png
 recursive-include cutevariant *.py
 recursive-include cutevariant *.tx
-include cutevariant/gui/i18n/*.qm
