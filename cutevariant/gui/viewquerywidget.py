@@ -239,5 +239,10 @@ class ViewQueryWidget(QueryPluginWidget):
 
     def show_sql(self):
         box = QMessageBox()
-        box.setInformativeText(self.model.query.sql())
+        try:
+            text = self.model.query.sql()
+        except AttributeError:
+            text = self.tr("No query to show")
+
+        box.setInformativeText(text)
         box.exec_()
