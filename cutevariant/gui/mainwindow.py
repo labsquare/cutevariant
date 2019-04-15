@@ -294,6 +294,13 @@ class MainWindow(QMainWindow):
             self.tr("&Quit"), qApp, SLOT("quit()"), QKeySequence.Quit
         )
 
+        ## Edit 
+        self.edit_menu = self.menuBar().addMenu(self.tr("&Edit"))
+        self.edit_menu.addAction(FIcon(0xf18f),"&Copy", self, SLOT("copy()"), QKeySequence.Copy)
+        self.edit_menu.addAction(FIcon(0xf192),"&Paste", self, SLOT("paste()"), QKeySequence.Paste)
+        self.edit_menu.addSeparator()
+        self.edit_menu.addAction(FIcon(0xf486), "Select all", self, SLOT("selectAll()"), QKeySequence.SelectAll)
+
         ## View
         self.view_menu = self.menuBar().addMenu(self.tr("&View"))
         self.view_menu.addAction(
