@@ -95,7 +95,8 @@ class MainWindow(QMainWindow):
         self.setGeometry(qApp.desktop().rect().adjusted(100, 100, -100, -100))
 
         self.load_plugins()
-
+        # Restores the state of this mainwindow's toolbars and dockwidgets
+        self.read_settings()
 
     def add_variant_plugin(self, plugin: VariantPluginWidget):
         self.currentView().variant_clicked.connect(plugin.set_variant)
@@ -289,6 +290,8 @@ class MainWindow(QMainWindow):
 
         ## View
         self.view_menu = self.menuBar().addMenu(self.tr("&View"))
+        self.view_menu.addAction(self.tr("Reset widgets positions"), self, SLOT("reset_ui()"))
+        self.view_menu.addSeparator()
 
         ## Help
         self.help_menu = self.menuBar().addMenu(self.tr("Help"))
@@ -361,19 +364,51 @@ class MainWindow(QMainWindow):
         dialog_window = AboutCutevariant()
         dialog_window.exec()
 
+    @Slot()
+    def reset_ui(self):
+        """Reset the position of docks to the state of the previous launch"""
+        # Set reset ui boolean (used by closeEvent)
+        self.requested_reset_ui = True
+
+        # Restore docks
+        app_settings = QSettings()
+        self.restoreState(QByteArray(app_settings.value("windowState")))
+
     def closeEvent(self, event):
-        """Saves the current state of this mainwindow's toolbars and dockwidgets
+        """Save the current state of this mainwindow's toolbars and dockwidgets
 
         .. warning:: Make sure that the property objectName is unique for each
             QToolBar and QDockWidget added to the QMainWindow.
+
+        .. note:: Reset windowState if asked.
         """
         app_settings = QSettings()
-        app_settings.setValue("geometry", self.saveGeometry())
-        app_settings.setValue("windowState", self.saveState())
+
+        if self.requested_reset_ui:
+            # Delete window state setting
+            app_settings.remove("windowState")
+        else:
+            app_settings.setValue("geometry", self.saveGeometry())
+            #  TODO: handle UI changes by passing UI_VERSION to saveState()
+            app_settings.setValue("windowState", self.saveState())
+
         super().closeEvent(event)
 
     def read_settings(self):
-        """Restores the state of this mainwindow's toolbars and dockwidgets"""
+        """Restore the state of this mainwindow's toolbars and dockwidgets
+
+        .. note:: If windowState is not stored, current state is written.
+        """
+        # Init reset ui boolean
+        self.requested_reset_ui = False
+
         app_settings = QSettings()
         self.restoreGeometry(QByteArray(app_settings.value("geometry")))
-        self.restoreState(QByteArray(app_settings.value("windowState")))
+        #  TODO: handle UI changes by passing UI_VERSION to saveState()
+        window_state = app_settings.value("windowState")
+        if window_state:
+            self.restoreState(QByteArray(window_state))
+        else:
+            # Setting has been deleted: set the current default state
+            #  TODO: handle UI changes by passing UI_VERSION to saveState()
+            app_settings.setValue("windowState", self.saveState())
