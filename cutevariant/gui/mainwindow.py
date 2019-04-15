@@ -32,7 +32,7 @@ from cutevariant.gui.plugin import VariantPluginWidget, QueryPluginWidget
 # from cutevariant.gui.plugins.infovariantplugin import InfoVariantPlugin
 
 from cutevariant import commons as cm
-from cutevariant.commons import MAX_RECENT_PROJECTS
+from cutevariant.commons import MAX_RECENT_PROJECTS, DIR_ICONS
 
 LOGGER = cm.logger()
 
@@ -44,6 +44,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Cutevariant")
         self.toolbar = self.addToolBar("maintoolbar")
         self.toolbar.setObjectName("maintoolbar")  # For window saveState
+        self.setWindowIcon(QIcon(DIR_ICONS + "app.png"))
 
         # keep sqlite connection
         self.conn = None
