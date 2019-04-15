@@ -112,6 +112,7 @@ class VqlEditor(QueryPluginWidget):
         self.highlighter = VqlSyntaxHighlighter(self.text_edit.document())
         main_layout = QVBoxLayout()
         main_layout.addWidget(self.text_edit)
+        main_layout.setContentsMargins(0,0,0,0)
         self.setLayout(main_layout)
         self.text_edit.textChanged.connect(self.changed)
 

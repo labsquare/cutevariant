@@ -82,6 +82,11 @@ class MainWindow(QMainWindow):
         # Add mandatory variant plugin
         self.add_variant_plugin(self.info_widget)
 
+
+        # Status Bar
+        self.status_bar = QStatusBar()
+        self.setStatusBar(self.status_bar)
+
         # # add omnibar
         # self.omnibar = OmniBar()
         # self.toolbar.addSeparator()
@@ -150,6 +155,9 @@ class MainWindow(QMainWindow):
 
         # Refresh recent opened projects
         self.adjust_recent_projects(filepath)
+
+        self.setWindowTitle(filepath)
+        self.status_bar.showMessage(f"{filepath} opened")
 
     def adjust_recent_projects(self, filepath):
         """Adjust the number of of recent projects to display
