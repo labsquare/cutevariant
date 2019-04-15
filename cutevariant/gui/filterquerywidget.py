@@ -138,6 +138,7 @@ class FilterQueryWidget(QueryPluginWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Filter"))
+        self.setObjectName("filter")  # For window saveState
         self.view = QTreeView()
         self.model = FilterQueryModel()
         self.view.setModel(self.model)
