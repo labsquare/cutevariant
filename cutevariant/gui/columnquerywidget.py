@@ -33,8 +33,13 @@ class ColumnQueryModel(QStandardItemModel):
         self.items = [] # Store QStandardItem as a list to detect easily which one is checked
         categories = set()
         samples = [i["name"] for i in sql.get_samples(self.query.conn)]
-        # map value type to color 
-        colors = {"str": "#27A4DD", "bool" : "#F1646C", "float": "#9DD5C0", "int":"#FAC174" }
+        # map value type to color
+        colors = {
+            "str": "#27A4DD",  # blue
+            "bool" : "#F1646C",  # red
+            "float": "#9DD5C0",  # light blue
+            "int":"#FAC174",  # light yellow
+        }
         categories_items = {}
 
         for record in sql.get_fields(self.query.conn):
