@@ -9,7 +9,7 @@ from PySide2.QtGui import *
 # Custom imports
 from cutevariant.gui.ficon import FIcon
 from cutevariant import commons as cm
-
+from cutevariant import __version__
 
 class AboutCutevariant(QDialog):
     def __init__(self, parent=None):
@@ -64,7 +64,7 @@ class AboutCutevariant(QDialog):
         if filename == "LICENSE":
             # Add license header
             text = self.tr(
-                "Copyright (C) 2018-2019  labsquare.org\n\n"
+                "Copyright (C) 2018-2019  Labsquare.org\n\n"
                 "This program is distributed under the terms of the GNU "
                 "General Public License v3.\n\n"
             )
@@ -121,8 +121,8 @@ class AboutCutevariant(QDialog):
         painter.drawText(
             titleRect,
             Qt.AlignTop,
-            f"Version %s\nGPL3 Copyright (C) 2019\nLabsquare.org"
-            % qApp.applicationVersion(),
+            f"Version %s\nGPL3 Copyright (C) 2018-2019\nLabsquare.org"
+            % __version__,
         )
 
         self.header_lbl.setPixmap(pixmap)
