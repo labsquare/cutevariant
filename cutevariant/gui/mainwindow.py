@@ -250,14 +250,15 @@ class MainWindow(QMainWindow):
         # Menu bar
         ## File Menu
         self.file_menu = self.menuBar().addMenu(self.tr("&File"))
-        self.file_menu.addAction(
-            FIcon(0xF214),
+        new_prj_action = self.file_menu.addAction(
+            FIcon(0xf415),
             self.tr("&New project"),
             self,
             SLOT("new_project()"),
             QKeySequence.New,
         )
-        self.file_menu.addAction(
+        open_prj_action = self.file_menu.addAction(
+            FIcon(0xf76f),
             self.tr("&Open project ..."),
             self,
             SLOT("open_project()"),
@@ -308,7 +309,12 @@ class MainWindow(QMainWindow):
         )
 
         # Tool bar
-        save_query_action = self.toolbar.addAction(self.tr("save query"))
+        self.toolbar.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
+        self.toolbar.addAction(new_prj_action)
+        self.toolbar.addAction(open_prj_action)
+        self.toolbar.addSeparator()
+    
+        save_query_action = self.toolbar.addAction(FIcon(0xf412),self.tr("save query"))
         save_query_action.triggered.connect(self.selection_widget.save_current_query)
 
     def addView(self):
