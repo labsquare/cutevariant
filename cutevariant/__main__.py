@@ -42,8 +42,8 @@ def main():
     QCoreApplication.setApplicationName("cutevariant")
 
     app = QApplication(sys.argv)
-    # Set icons set 
-    FIcon.setFontPath(os.path.join(cm.DIR_FONTS,"materialdesignicons-webfont.ttf"))
+    # Set icons set
+    FIcon.setFontPath(os.path.join(cm.DIR_FONTS, "materialdesignicons-webfont.ttf"))
 
     # Translations
     load_translations(app)
