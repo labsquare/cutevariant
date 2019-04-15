@@ -19,11 +19,15 @@ from cutevariant.gui.filterquerywidget import FilterQueryWidget
 from cutevariant.gui.selectionquerywidget import SelectionQueryWidget
 from cutevariant.gui.hpoquerywidget import HpoQueryWidget
 from cutevariant.gui.vqleditor import VqlEditor
-from cutevariant.gui.chartquerywidget import ChartQueryWidget
 from cutevariant.gui.omnibar import OmniBar
 from cutevariant.gui.queryrouter import QueryRouter
 from cutevariant.gui.infovariantwidget import InfoVariantWidget
 from cutevariant.gui.aboutcutevariant import AboutCutevariant
+
+
+# testing
+from cutevariant.gui.chartquerywidget import ChartQueryWidget
+from cutevariant.gui.webglquerywidget import WebGLQueryWidget
 
 from cutevariant.core.importer import import_file
 from cutevariant.core import Query
@@ -77,7 +81,10 @@ class MainWindow(QMainWindow):
         self.add_query_plugin(self.column_widget)
         self.add_query_plugin(self.filter_widget)
         self.add_query_plugin(self.selection_widget)
+
+        #testing
         self.add_query_plugin(ChartQueryWidget())
+        self.add_query_plugin(WebGLQueryWidget())
 
         # Add mandatory variant plugin
         self.add_variant_plugin(self.info_widget)
@@ -307,7 +314,7 @@ class MainWindow(QMainWindow):
         self.edit_menu.addAction(FIcon(0xf18f),"&Copy", self, SLOT("copy()"), QKeySequence.Copy)
         self.edit_menu.addAction(FIcon(0xf192),"&Paste", self, SLOT("paste()"), QKeySequence.Paste)
         self.edit_menu.addSeparator()
-        self.edit_menu.addAction(FIcon(0xf486), "Select all", self, SLOT("selectAll()"), QKeySequence.SelectAll)
+        self.edit_menu.addAction(FIcon(0xf486), "Select all", self, SLOT("select_all()"), QKeySequence.SelectAll)
 
         ## View
         self.view_menu = self.menuBar().addMenu(self.tr("&View"))
@@ -405,6 +412,19 @@ class MainWindow(QMainWindow):
         # Restore docks
         app_settings = QSettings()
         self.restoreState(QByteArray(app_settings.value("windowState")))
+
+
+    @Slot()
+    def copy(self):
+        pass
+
+    @Slot()
+    def paste(self):
+        pass
+
+    @Slot()
+    def select_all(self):
+        pass
 
     def closeEvent(self, event):
         """Save the current state of this mainwindow's toolbars and dockwidgets
