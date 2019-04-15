@@ -19,6 +19,7 @@ from cutevariant.gui.filterquerywidget import FilterQueryWidget
 from cutevariant.gui.selectionquerywidget import SelectionQueryWidget
 from cutevariant.gui.hpoquerywidget import HpoQueryWidget
 from cutevariant.gui.vqleditor import VqlEditor
+from cutevariant.gui.chartquerywidget import ChartQueryWidget
 from cutevariant.gui.omnibar import OmniBar
 from cutevariant.gui.queryrouter import QueryRouter
 from cutevariant.gui.infovariantwidget import InfoVariantWidget
@@ -76,6 +77,7 @@ class MainWindow(QMainWindow):
         self.add_query_plugin(self.column_widget)
         self.add_query_plugin(self.filter_widget)
         self.add_query_plugin(self.selection_widget)
+        self.add_query_plugin(ChartQueryWidget())
 
         # Add mandatory variant plugin
         self.add_variant_plugin(self.info_widget)
