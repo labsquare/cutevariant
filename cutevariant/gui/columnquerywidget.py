@@ -80,7 +80,6 @@ class ColumnQueryWidget(QueryPluginWidget):
         super().__init__()
 
         self.setWindowTitle(self.tr("Columns"))
-        self.setObjectName("columns")  # For window saveState
         self.view = QTreeView()
         self.model = ColumnQueryModel()
         self.view.setModel(self.model)

@@ -81,7 +81,7 @@ class FilterQueryModel(QStandardItemModel):
 
     def fromItem(self, item: QStandardItem) -> dict:
         ''' recursive fonction to get items from tree '''
-        if type(item) == LogicItem:
+        if isinstance(item, LogicItem):
             # Return dict with operator as key and item as value
             operator_data = \
                 [self.fromItem(item.child(i)) for i in range(item.rowCount())]
@@ -139,7 +139,6 @@ class FilterQueryWidget(QueryPluginWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Filter"))
-        self.setObjectName("filter")  # For window saveState
         self.view = QTreeView()
         self.model = FilterQueryModel()
         self.view.setModel(self.model)
@@ -175,7 +174,7 @@ class FilterQueryWidget(QueryPluginWidget):
         pos = self.view.viewport().mapFromGlobal(event.globalPos())
         index = self.view.indexAt(pos)
 
-        if index.isValid() is False:
+        if not index.isValid():
             logic_action = menu.addAction(self.tr("add logic"))
 
         else:

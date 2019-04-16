@@ -40,7 +40,6 @@ class SelectionQueryWidget(QueryPluginWidget):
         super().__init__()
 
         self.setWindowTitle(self.tr("Selections"))
-        self.setObjectName("selections")  # For window saveState
         self.view = QTreeView()
         self.model = SelectionQueryModel()
         self.view.setModel(self.model)
