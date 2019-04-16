@@ -455,10 +455,12 @@ def async_insert_many_variants(conn, data, total_variant_count=None, commit_ever
                     )
 
     conn.commit()
-    # #  create index to make sample query faster
-    # cursor.execute(
-    #     f"""CREATE UNIQUE INDEX idx_sample_has_variant ON sample_has_variant (sample_id,variant_id)"""
-    # )
+
+    # #  create index 
+    yield 90, f"Create index"
+
+    cursor.execute( f"""CREATE UNIQUE INDEX idx_sample_has_variant ON sample_has_variant (sample_id,variant_id)""")
+    cursor.execute( f"""CREATE UNIQUE INDEX idx_annotations ON annotations (variant_id)""")
 
     # create selections
     # insert_selection(conn, name="all", count=variant_count)
