@@ -118,6 +118,12 @@ class VQLSyntaxError(ValueError):
 
 
 def model_from_string(raw_vql: str) -> dict:
+    """TODO
+
+    :return: Dictionary ??
+        .. example:: {'select': ('chr', 'pos', 'ref', 'alt'), 'from': 'all'}
+    :rtype: <dict <str>:<tuple>>
+    """
     try:
         raw_model = METAMODEL.model_from_str(raw_vql)
     except textx.exceptions.TextXSyntaxError as err:

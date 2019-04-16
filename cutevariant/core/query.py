@@ -211,10 +211,11 @@ class Query:
         ##-----------------------------------------------------------------------------------------------------------
 
     def from_vql(self, raw: str):
+        """Build sql query based on VQL model"""
         model = vql.model_from_string(raw)
-        self.columns = model["select"]
-        self.selection = model["from"]
-        self.filter = model.get("where")  # None if no filter
+        self.columns = list(model["select"])  # columns from variant table
+        self.selection = model["from"]  # name of the variant set
+        self.filter = model.get("where")  # filter as raw text; None if no filter
         # TODO: USING clause missing
 
         print("from vql", model)
