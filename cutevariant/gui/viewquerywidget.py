@@ -34,10 +34,9 @@ class QueryModel(QAbstractItemModel):
 
     def columnCount(self, parent=QModelIndex()):
         """override """
-        if self._query is None:
+        if not self._query:
             return 0
-        else:
-            return len(self._query.columns)
+        return len(self._query.columns)
 
     def index(self, row, column, parent):
         """override"""
@@ -110,13 +109,13 @@ class QueryModel(QAbstractItemModel):
 
     def _child_count(self, index: QModelIndex):
         """ return child count for the index variant """
-        if self._query.group_by is None:
+        if not self._query.group_by:
             return 0
         return self.variants[index.row()][-2]
 
     def _child_ids(self, index: QModelIndex):
         """ return childs sql ids for the index variant """
-        if self._query.group_by is None:
+        if not self._query.group_by:
             return 0
         return self.variants[index.row()][-1].split(",")
 
@@ -163,7 +162,7 @@ class QueryModel(QAbstractItemModel):
 
             print("ORDER", order)
             self._query.order_by = colname
-            self._query.order_desc = True if order == Qt.DescendingOrder else False
+            self._query.order_desc = (order == Qt.DescendingOrder)
             self.load()
 
     def get_rowid(self, index):

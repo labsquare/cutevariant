@@ -64,7 +64,7 @@ class FIcon(QIcon):
     def __init__(self, hex_character : int, color = None):
         self.engine = FIconEngine()
         self.engine.setCharacter(hex_character)
-        if color is not None:
+        if color:
             self.engine.setColor(color)
         super().__init__(self.engine)
 

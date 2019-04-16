@@ -52,7 +52,7 @@ class QueryRouter(QObject):
         #  Get the wiget which send the signal changed
         sender_widget = self.sender()
 
-        if sender_widget is not None:
+        if sender_widget:
             #  update query from sender widget
             query = sender_widget.query
             print(query)

@@ -16,13 +16,11 @@ class ColumnQueryModel(QStandardItemModel):
 
     @property
     def query(self):
-        selected_columns = []
-        for item in self.items:
-            if item.checkState() == Qt.Checked:
-                selected_columns.append(item.data()["name"])
+        selected_columns = \
+            [item.data()["name"] for item in self.items
+             if item.checkState() == Qt.Checked]
 
         self._query.columns = selected_columns
-
         return self._query
 
     @query.setter

@@ -65,7 +65,7 @@ class FilterQueryModel(QStandardItemModel):
     def query(self, query: Query):
         self._query = query
         self.clear()
-        if self._query.filter is not None:
+        if self._query.filter:
             self.appendRow(self.toItem(self._query.filter))
 
     def toItem(self, data: dict) -> QStandardItem:
@@ -73,8 +73,7 @@ class FilterQueryModel(QStandardItemModel):
         if len(data) == 1:  #  logic item
             operator = list(data.keys())[0]
             item = LogicItem(operator)
-            for k in data[operator]:
-                item.appendRow(self.toItem(k))
+            [item.appendRow(self.toItem(k)) for k in data[operator]]
             return item
         else:  # condition item
             item = FieldItem(data["field"], data["operator"], data["value"])
@@ -83,19 +82,19 @@ class FilterQueryModel(QStandardItemModel):
     def fromItem(self, item: QStandardItem) -> dict:
         ''' recursive fonction to get items from tree '''
         if type(item) == LogicItem:
-            op = item.logic_type
-            data = {op: []}
-
-            for i in range(item.rowCount()):
-                data[op].append(self.fromItem(item.child(i)))
-            return data
-
+            # Return dict with operator as key and item as value
+            operator_data = \
+                [self.fromItem(item.child(i)) for i in range(item.rowCount())]
+            return {
+                item.logic_type: operator_data
+            }
         else:
-            data = {}
-            data["field"] = item.name
-            data["operator"] = item.operator
-            data["value"] = item.value
-            return data
+            return {
+                "field": item.name,
+                "operator": item.operator,
+                "value": item.value,
+            }
+
 
 
 class FilterEditDialog(QDialog):

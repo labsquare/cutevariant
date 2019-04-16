@@ -133,7 +133,7 @@ class VqlEditor(QueryPluginWidget):
         self._query = query
         self.text_edit.setPlainText(self._query.to_vql())
 
-        if self.text_edit.completer is None:
+        if not self.text_edit.completer:
             self.text_edit.setCompleter(self.create_completer())
 
     def create_completer(self):
