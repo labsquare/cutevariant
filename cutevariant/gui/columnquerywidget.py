@@ -12,27 +12,27 @@ class ColumnQueryModel(QStandardItemModel):
     def __init__(self):
         super().__init__()
         self.setColumnCount(2)
-        self.query = None
+        self._query = None
 
-    def setQuery(self, query: Query):
-        self.query = query
+    @property
+    def query(self):
+        selected_columns = \
+            [item.data()["name"] for item in self.items
+             if item.checkState() == Qt.Checked]
+
+        self._query.columns = selected_columns
+        return self._query
+
+    @query.setter
+    def query(self, query: Query):
+        self._query = query
         self.load()
-
-    def getQuery(self):
-        selected_columns = []
-        for item in self.items:
-            if item.checkState() == Qt.Checked:
-                selected_columns.append(item.data()["name"])
-
-        self.query.columns = selected_columns
-
-        return self.query
 
     def load(self):
         self.clear()
         self.items = [] # Store QStandardItem as a list to detect easily which one is checked
         categories = set()
-        samples = [i["name"] for i in sql.get_samples(self.query.conn)]
+        samples = [i["name"] for i in sql.get_samples(self._query.conn)]
         # map value type to color
         colors = {
             "str": "#27A4DD",  # blue
@@ -42,7 +42,7 @@ class ColumnQueryModel(QStandardItemModel):
         }
         categories_items = {}
 
-        for record in sql.get_fields(self.query.conn):
+        for record in sql.get_fields(self._query.conn):
             item = QStandardItem(record["name"])
             item.setEditable(False)
             item.setToolTip(record["description"])
@@ -50,7 +50,7 @@ class ColumnQueryModel(QStandardItemModel):
             item.setCheckable(True)
             item.setData(record)
 
-            if record["name"] in self.query.columns:
+            if record["name"] in self._query.columns:
                 item.setCheckState(Qt.Checked)
 
             self.items.append(item)
@@ -80,7 +80,6 @@ class ColumnQueryWidget(QueryPluginWidget):
         super().__init__()
 
         self.setWindowTitle(self.tr("Columns"))
-        self.setObjectName("columns")  # For window saveState
         self.view = QTreeView()
         self.model = ColumnQueryModel()
         self.view.setModel(self.model)
@@ -93,10 +92,12 @@ class ColumnQueryWidget(QueryPluginWidget):
         self.setLayout(layout)
         self.model.itemChanged.connect(self.changed)
 
-    def setQuery(self, query: Query):
+    @property
+    def query(self):
         """ Method override from AbstractQueryWidget"""
-        self.model.setQuery(query)
+        return self.model.query
 
-    def getQuery(self):
+    @query.setter
+    def query(self, query: Query):
         """ Method override from AbstractQueryWidget"""
-        return self.model.getQuery()
+        self.model.query = query

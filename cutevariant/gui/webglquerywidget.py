@@ -26,10 +26,10 @@ class WebGLQueryWidget(QueryPluginWidget):
             <html lang="en">
             <head>
               <meta charset="utf-8">
-             <script src="https://cdn.rawgit.com/arose/ngl/v2.0.0-dev.31/dist/ngl.js"></script> 
+             <script src="https://cdn.rawgit.com/arose/ngl/v2.0.0-dev.31/dist/ngl.js"></script>
             </head>
             <body>
-              
+
             <style type="text/css">
             * { margin: 0; padding: 0; }
             html, body { width: 100%; height: 100%; overflow: hidden; }
@@ -67,20 +67,16 @@ class WebGLQueryWidget(QueryPluginWidget):
         layout.addWidget(self.view)
 
         self.setLayout(layout)
+        self._query = None
 
+    @property
+    def query(self):
+        return self._query  # Useless , this widget is query read only
+
+    @query.setter
+    def query(self, query: Query):
+        self._query = query
 
     def loaded(self):
         print("FINISHED!!!!!!!!!!!!!!!!!!!")
-
-
-    def setQuery(self, query: Query):
-
-        self.query = query 
-
-       
-
-
-
-    def getQuery(self):
-        return self.query  # Useless , this widget is query read only 
 

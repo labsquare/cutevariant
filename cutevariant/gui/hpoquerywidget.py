@@ -6,7 +6,9 @@ import sqlite3
 
 from .plugin import QueryPluginWidget
 from cutevariant.core import sql, Query
+from cutevariant import commons as cm
 
+LOGGER = cm.logger()
 
 class Node(object):
     def __init__(self, node_id, parent=None):
@@ -183,10 +185,13 @@ class HpoQueryWidget(QueryPluginWidget):
 
         self.setLayout(v_layout)
 
-    def setQuery(self, query: Query):
-        """ Method override from AbstractQueryWidget"""
-        pass
-
-    def getQuery(self):
+    @property
+    def query(self):
         """ Method override from AbstractQueryWidget"""
         return self.model.query
+
+    @query.setter
+    def query(self, query: Query):
+        """ Method override from AbstractQueryWidget"""
+        LOGGER.debug("HpoQueryWidget:query:: setter not used")
+        pass

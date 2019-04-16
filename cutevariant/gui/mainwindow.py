@@ -25,7 +25,7 @@ from cutevariant.gui.infovariantwidget import InfoVariantWidget
 from cutevariant.gui.aboutcutevariant import AboutCutevariant
 
 
-# testing
+#  testing
 from cutevariant.gui.chartquerywidget import ChartQueryWidget
 from cutevariant.gui.webglquerywidget import WebGLQueryWidget
 
@@ -82,15 +82,14 @@ class MainWindow(QMainWindow):
         self.add_query_plugin(self.filter_widget)
         self.add_query_plugin(self.selection_widget)
 
-        #testing
+        # testing
         self.add_query_plugin(ChartQueryWidget())
         self.add_query_plugin(WebGLQueryWidget())
 
         # Add mandatory variant plugin
         self.add_variant_plugin(self.info_widget)
 
-
-        # Status Bar
+        #  Status Bar
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
 
@@ -115,7 +114,7 @@ class MainWindow(QMainWindow):
         self.read_settings()
 
     def add_variant_plugin(self, plugin: VariantPluginWidget):
-        # TODO : self current view must send signal only for visable widget 
+        # TODO : self current view must send signal only for visable widget
         self.currentView().variant_clicked.connect(plugin.set_variant)
         self.addPanel(plugin)
 
@@ -123,11 +122,10 @@ class MainWindow(QMainWindow):
         self.router.addWidget(plugin)
         self.addPanel(plugin)
 
-    def load_plugins(self, folder_path = None):
-        # TODO ... Load plugins from path. 
-        # What is a plugin ? A file or a module folder ? 
-        pass 
-
+    def load_plugins(self, folder_path=None):
+        #  TODO ... Load plugins from path.
+        # What is a plugin ? A file or a module folder ?
+        pass
 
     def open(self, filepath):
         """Open the given db/project file
@@ -158,7 +156,7 @@ class MainWindow(QMainWindow):
         # query.create_selection("mytest")
         # query.filter = None
 
-        self.router.setQuery(query)
+        self.router.query = query
 
         # Refresh recent opened projects
         self.adjust_recent_projects(filepath)
@@ -266,14 +264,14 @@ class MainWindow(QMainWindow):
         ## File Menu
         self.file_menu = self.menuBar().addMenu(self.tr("&File"))
         new_prj_action = self.file_menu.addAction(
-            FIcon(0xf415),
+            FIcon(0xF415),
             self.tr("&New project"),
             self,
             SLOT("new_project()"),
             QKeySequence.New,
         )
         open_prj_action = self.file_menu.addAction(
-            FIcon(0xf76f),
+            FIcon(0xF76F),
             self.tr("&Open project ..."),
             self,
             SLOT("open_project()"),
@@ -309,12 +307,22 @@ class MainWindow(QMainWindow):
             self.tr("&Quit"), qApp, SLOT("quit()"), QKeySequence.Quit
         )
 
-        ## Edit 
+        ## Edit
         self.edit_menu = self.menuBar().addMenu(self.tr("&Edit"))
-        self.edit_menu.addAction(FIcon(0xf18f),"&Copy", self, SLOT("copy()"), QKeySequence.Copy)
-        self.edit_menu.addAction(FIcon(0xf192),"&Paste", self, SLOT("paste()"), QKeySequence.Paste)
+        self.edit_menu.addAction(
+            FIcon(0xF18F), "&Copy", self, SLOT("copy()"), QKeySequence.Copy
+        )
+        self.edit_menu.addAction(
+            FIcon(0xF192), "&Paste", self, SLOT("paste()"), QKeySequence.Paste
+        )
         self.edit_menu.addSeparator()
-        self.edit_menu.addAction(FIcon(0xf486), "Select all", self, SLOT("select_all()"), QKeySequence.SelectAll)
+        self.edit_menu.addAction(
+            FIcon(0xF486),
+            "Select all",
+            self,
+            SLOT("select_all()"),
+            QKeySequence.SelectAll,
+        )
 
         ## View
         self.view_menu = self.menuBar().addMenu(self.tr("&View"))
@@ -335,8 +343,8 @@ class MainWindow(QMainWindow):
         self.toolbar.addAction(new_prj_action)
         self.toolbar.addAction(open_prj_action)
         self.toolbar.addSeparator()
-    
-        save_query_action = self.toolbar.addAction(FIcon(0xf412),self.tr("save query"))
+
+        save_query_action = self.toolbar.addAction(FIcon(0xF412), self.tr("save query"))
         save_query_action.triggered.connect(self.selection_widget.save_current_query)
 
     def addView(self):
@@ -412,7 +420,6 @@ class MainWindow(QMainWindow):
         # Restore docks
         app_settings = QSettings()
         self.restoreState(QByteArray(app_settings.value("windowState")))
-
 
     @Slot()
     def copy(self):

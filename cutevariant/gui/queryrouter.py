@@ -15,7 +15,7 @@ class QueryRouter(QObject):
     def __init__(self):
         super().__init__()
         self.widgets = []
-        self.query = None
+        self._query = None
 
     def addWidget(self, widget: QueryPluginWidget):
         """
@@ -26,21 +26,23 @@ class QueryRouter(QObject):
         self.widgets.append(widget)
         widget.changed.connect(self.widgetChanged)
 
-    def setQuery(self, query: Query):
+    @property
+    def query(self):
         """
-        Update query for all widgets 
+        :return: Return current query
+        """
+        return self._query
 
-        :param query: a Query object 
+    @query.setter
+    def query(self, query: Query):
         """
-        self.query = query
+        Update query for all widgets
+
+        :param query: a Query object
+        """
+        self._query = query
         for widget in self.widgets:
-            widget.setQuery(self.query)
-
-    def getQuery(self):
-        """
-        :return: Return current query 
-        """
-        return self.query
+            widget.query = query
 
     def widgetChanged(self):
         """ 
@@ -50,19 +52,19 @@ class QueryRouter(QObject):
         #  Get the wiget which send the signal changed
         sender_widget = self.sender()
 
-        if sender_widget is not None:
+        if sender_widget:
             #  update query from sender widget
-            query = sender_widget.getQuery()
+            query = sender_widget.query
             print(query)
 
             if not query:
                 return
 
-            self.query = query
+            self._query = query
 
             print(self.query.sql())
 
             #  change query for all widget except sender
             for widget in self.widgets:
                 if widget != sender_widget:
-                    widget.setQuery(self.query)
+                    widget.query = query

@@ -115,29 +115,32 @@ class VqlEditor(QueryPluginWidget):
         main_layout.setContentsMargins(0,0,0,0)
         self.setLayout(main_layout)
         self.text_edit.textChanged.connect(self.changed)
+        self._query = None
 
-    def setQuery(self, query: Query):
-        """Method override from AbstractQueryWidget"""
-        self.query = query
-        self.text_edit.setPlainText(self.query.to_vql())
-
-        if self.text_edit.completer is None:
-            self.text_edit.setCompleter(self.create_completer())
-
-    def getQuery(self):
+    @property
+    def query(self):
         """Method override from AbstractQueryWidget"""
         try:
-            self.query.from_vql(self.text_edit.toPlainText())
-            return self.query
+            self._query.from_vql(self.text_edit.toPlainText())
+            return self._query
         except AttributeError:
-            LOGGER.debug("VqlEditor:getQuery:: no query attribute")
+            LOGGER.debug("VqlEditor:query:: no query attribute")
             return None
+
+    @query.setter
+    def query(self, query: Query):
+        """Method override from AbstractQueryWidget"""
+        self._query = query
+        self.text_edit.setPlainText(self._query.to_vql())
+
+        if not self.text_edit.completer:
+            self.text_edit.setCompleter(self.create_completer())
 
     def create_completer(self):
         """Create Completer with his model"""
         model = QStringListModel()
         completer = QCompleter()
-        fields = [i["name"] for i in sql.get_fields(self.query.conn)]
+        fields = [i["name"] for i in sql.get_fields(self._query.conn)]
         fields.extend(VqlSyntaxHighlighter.sql_keywords)
         model.setStringList(fields)
         completer.setModel(model)
