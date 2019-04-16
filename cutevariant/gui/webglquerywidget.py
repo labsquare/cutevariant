@@ -21,8 +21,45 @@ class WebGLQueryWidget(QueryPluginWidget):
 
 
         self.view = QWebEngineView()
-        self.view.setUrl("https://www.rcsb.org/3d-view/1A3N/1")
-        print(self.view.page().runJavaScript("document.getElementById('ngl-ui')"))
+        self.view.setHtml("""
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+              <meta charset="utf-8">
+             <script src="https://cdn.rawgit.com/arose/ngl/v2.0.0-dev.31/dist/ngl.js"></script>
+            </head>
+            <body>
+
+            <style type="text/css">
+            * { margin: 0; padding: 0; }
+            html, body { width: 100%; height: 100%; overflow: hidden; }
+            </style>
+
+            <div id="viewport" style="width:100%; height:100%;"></div>
+
+            <script>
+              // Create NGL Stage object
+            var stage = new NGL.Stage( "viewport" );
+
+            // Handle window resizing
+            window.addEventListener( "resize", function( event ){
+                stage.handleResize();
+            }, false );
+
+
+            // Load PDB entry 1CRN
+            stage.loadFile( "rcsb://1crn", { defaultRepresentation: true } );
+            </script>
+
+
+
+            </body>
+            </html>
+
+            """)
+
+        #self.view.loadFinished.connect(self.loaded)
+
 
 
         layout = QVBoxLayout()
@@ -40,6 +77,6 @@ class WebGLQueryWidget(QueryPluginWidget):
     def query(self, query: Query):
         self._query = query
 
-
-
+    def loaded(self):
+        print("FINISHED!!!!!!!!!!!!!!!!!!!")
 
