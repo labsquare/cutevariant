@@ -53,18 +53,20 @@ class FieldItem(QStandardItem):
 class FilterQueryModel(QStandardItemModel):
     def __init__(self):
         super().__init__()
-        self.query = None
+        self._query = None
 
-    def setQuery(self, query: Query):
-        self.query = query
-        self.clear()
-        if self.query.filter is not None:
-            self.appendRow(self.toItem(self.query.filter))
-
-    def getQuery(self) -> Query:
+    @property
+    def query(self) -> Query:
         if self.rowCount() != 0:
-            self.query.filter = self.fromItem(self.item(0))
-        return self.query
+            self._query.filter = self.fromItem(self.item(0))
+        return self._query
+
+    @query.setter
+    def query(self, query: Query):
+        self._query = query
+        self.clear()
+        if self._query.filter is not None:
+            self.appendRow(self.toItem(self._query.filter))
 
     def toItem(self, data: dict) -> QStandardItem:
         ''' recursive function to load item in tree from data '''
@@ -152,11 +154,13 @@ class FilterQueryWidget(QueryPluginWidget):
         self.model.itemChanged.connect(self.changed)
         self.view.doubleClicked.connect(self.edit)
 
-    def setQuery(self, query: Query):
-        self.model.setQuery(query)
+    @property
+    def query(self) -> Query:
+        return self.model.query
 
-    def getQuery(self) -> Query:
-        return self.model.getQuery()
+    @query.setter
+    def query(self, query: Query):
+        self.model.query = query
 
     def edit(self, index):
         dialog = FilterEditDialog(self.model.itemFromIndex(index))

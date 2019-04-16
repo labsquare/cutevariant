@@ -30,16 +30,16 @@ class WebGLQueryWidget(QueryPluginWidget):
         layout.addWidget(self.view)
 
         self.setLayout(layout)
+        self._query = None
+
+    @property
+    def query(self):
+        return self._query  # Useless , this widget is query read only
+
+    @query.setter
+    def query(self, query: Query):
+        self._query = query
 
 
-    def setQuery(self, query: Query):
 
-        self.query = query 
-
-       
-
-
-
-    def getQuery(self):
-        return self.query  # Useless , this widget is query read only 
 

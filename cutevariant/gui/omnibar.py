@@ -8,42 +8,42 @@ import re
 
 class OmniBar(QLineEdit):
 
-	changed = Signal()
+    changed = Signal()
 
-	def __init__(self):
-		super().__init__()
-		self.setMaximumWidth(400)
-		self.setPlaceholderText(qApp.tr("chr3:100-100000"))
-		self.action = self.addAction(FIcon(0xf349,"black"), QLineEdit.TrailingPosition)
+    def __init__(self):
+        super().__init__()
+        self.setMaximumWidth(400)
+        self.setPlaceholderText(qApp.tr("chr3:100-100000"))
+        self.action = self.addAction(FIcon(0xf349,"black"), QLineEdit.TrailingPosition)
 
-		self.returnPressed.connect(self.changed)
-
-
-	def to_coordinate(self):
-
-		match = re.search(r'(chr\d\d?):(\d+)-(\d+)', self.text())
-		
-		if match:
-			return (match[1], int(match[2]), int(match[3]))	
-		else:
-			return None	
-
-	def setQuery(self, query: Query):
-		self.query = query 
+        self.returnPressed.connect(self.changed)
+        self._query = None
 
 
-	def getQuery(self):
+    def to_coordinate(self):
 
-		coord = self.to_coordinate()
-		if coord: 
-			self.query.filter = {'AND': 
-			[
-			{'field': 'chr', 'operator': '=', 'value': coord[0]}, 
-			{'field': 'pos', 'operator': '>', 'value': coord[1]}, 
-			{'field': 'pos', 'operator': '<', 'value': coord[2]}
-			]}
+        match = re.search(r'(chr\d\d?):(\d+)-(\d+)', self.text())
 
-		return self.query
+        if match:
+            return (match[1], int(match[2]), int(match[3]))
+        else:
+            return None
 
+    @property
+    def query(self):
 
+        coord = self.to_coordinate()
+        if coord:
+            self._query.filter = {'AND':
+            [
+            {'field': 'chr', 'operator': '=', 'value': coord[0]},
+            {'field': 'pos', 'operator': '>', 'value': coord[1]},
+            {'field': 'pos', 'operator': '<', 'value': coord[2]}
+            ]}
+
+        return self._query
+
+    @query.setter
+    def query(self, query: Query):
+        self._query = query
 

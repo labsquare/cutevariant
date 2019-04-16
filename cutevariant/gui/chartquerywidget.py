@@ -24,11 +24,16 @@ class ChartQueryWidget(QueryPluginWidget):
         layout.addWidget(self.view)
 
         self.setLayout(layout)
+        self._query = None
 
+    @property
+    def query(self):
+        return self._query  # Useless , this widget is query read only
 
-    def setQuery(self, query: Query):
+    @query.setter
+    def query(self, query: Query):
 
-        self.query = query 
+        self._query = query
 
         # TODO : not optimal, this is running many time when other queryWidget changed
         # Iterate over ALL variants ... ( can be slow.. Do I need asynchrone . )
@@ -37,7 +42,7 @@ class ChartQueryWidget(QueryPluginWidget):
         counter = Counter()
         # TODO Compute transition / transversion 
 
-        for i in self.query.items() :
+        for i in self._query.items() :
             counter[i["chr"]] += 1
 
 
@@ -57,12 +62,3 @@ class ChartQueryWidget(QueryPluginWidget):
 
         self.view.setChart(chart)
         self.view.setRenderHint(QPainter.Antialiasing)
-
-
-
-
-
-
-    def getQuery(self):
-        return self.query  # Useless , this widget is query read only 
-

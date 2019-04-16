@@ -158,7 +158,7 @@ class MainWindow(QMainWindow):
         # query.create_selection("mytest")
         # query.filter = None
 
-        self.router.setQuery(query)
+        self.router.query = query
 
         # Refresh recent opened projects
         self.adjust_recent_projects(filepath)

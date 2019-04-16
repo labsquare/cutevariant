@@ -23,7 +23,7 @@ class QueryModel(QAbstractItemModel):
         self.limit = 50
         self.page = 0
         self.total = 0
-        self.query = None
+        self._query = None
         self.variants = []
 
     def rowCount(self, parent=QModelIndex()):
@@ -34,10 +34,10 @@ class QueryModel(QAbstractItemModel):
 
     def columnCount(self, parent=QModelIndex()):
         """override """
-        if self.query is None:
+        if self._query is None:
             return 0
         else:
-            return len(self.query.columns)
+            return len(self._query.columns)
 
     def index(self, row, column, parent):
         """override"""
@@ -69,7 +69,7 @@ class QueryModel(QAbstractItemModel):
         """override"""
         if orientation == Qt.Horizontal:
             if role == Qt.DisplayRole:
-                return self.query.columns[section]
+                return self._query.columns[section]
 
         if orientation == Qt.Vertical:
             if role == Qt.DisplayRole:
@@ -110,27 +110,31 @@ class QueryModel(QAbstractItemModel):
 
     def _child_count(self, index: QModelIndex):
         """ return child count for the index variant """
-        if self.query.group_by is None:
-            return 0 
+        if self._query.group_by is None:
+            return 0
         return self.variants[index.row()][-2]
 
     def _child_ids(self, index: QModelIndex):
         """ return childs sql ids for the index variant """
-        if self.query.group_by is None:
-            return 0 
-        return self.variants[index.row()][-1].split(",")    
+        if self._query.group_by is None:
+            return 0
+        return self.variants[index.row()][-1].split(",")
 
+    @property
+    def query(self):
+        return self._query
 
-    def setQuery(self, query: Query):
-        self.query = query
-        self.query.group_by=("chr","pos","ref","alt")
+    @query.setter
+    def query(self, query: Query):
+        self._query = query
+        self._query.group_by=("chr","pos","ref","alt")
         self.total = query.count()
         self.load()
 
     def load(self):
         self.beginResetModel()
         self.variants.clear()
-        self.variants = list(self.query.rows(self.limit, self.page * self.limit))
+        self.variants = list(self._query.rows(self.limit, self.page * self.limit))
 
         print(self.variants)
         self.endResetModel()
@@ -155,11 +159,11 @@ class QueryModel(QAbstractItemModel):
         """override"""
         pass
         if column < self.columnCount():
-            colname = self.query.columns[column]
+            colname = self._query.columns[column]
 
             print("ORDER", order)
-            self.query.order_by = colname
-            self.query.order_desc = True if order == Qt.DescendingOrder else False
+            self._query.order_by = colname
+            self._query.order_desc = True if order == Qt.DescendingOrder else False
             self.load()
 
     def get_rowid(self, index):
@@ -265,13 +269,15 @@ class ViewQueryWidget(QueryPluginWidget):
         # emit variant when clicked
         self.view.clicked.connect(self._variant_clicked)
 
-    def setQuery(self, query: Query):
-        """ Method override from AbstractQueryWidget"""
-        self.model.setQuery(query)
-
-    def getQuery(self):
+    @property
+    def query(self):
         """ Method override from AbstractQueryWidget"""
         return self.model.query
+
+    @query.setter
+    def query(self, query: Query):
+        """ Method override from AbstractQueryWidget"""
+        self.model.query = query
 
     def updateInfo(self):
 

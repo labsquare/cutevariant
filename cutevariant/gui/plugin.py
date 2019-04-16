@@ -17,10 +17,12 @@ class QueryPluginWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-    def setQuery(self, query: Query):
+    @property
+    def query(self):
         raise NotImplemented()
 
-    def getQuery(self):
+    @query.setter
+    def query(self, query: Query):
         raise NotImplemented()
 
 
