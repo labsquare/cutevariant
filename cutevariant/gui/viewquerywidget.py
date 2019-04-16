@@ -158,7 +158,7 @@ class QueryModel(QAbstractItemModel):
 
     def setQuery(self, query: Query):
         self.query = query
-        self.query.group_by=("chr","pos","ref","alt")
+        #self.query.group_by=("chr","pos","ref","alt")
         self.total = query.count()
         self.load()
 

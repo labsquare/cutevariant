@@ -89,7 +89,7 @@ class Query:
         # Add Select clause
 
         if self.selection == "all":
-            query += f"FROM variants"
+            query += f"FROM variants LEFT JOIN annotations ON annotations.variant_id = variants.rowid"
         else:
             #  manage jointure with selection
 

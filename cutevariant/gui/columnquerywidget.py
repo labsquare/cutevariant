@@ -67,7 +67,7 @@ class ColumnQueryModel(QStandardItemModel):
             sample_item = QStandardItem(sample)
             sample_item.setCheckable(True)
             sample_item.setIcon(FIcon(0xf2e6))
-            categories_items["sample"].appendRow(sample_item)
+            categories_items["samples"].appendRow(sample_item)
 
 
 class ColumnQueryWidget(QueryPluginWidget):
