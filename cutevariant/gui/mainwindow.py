@@ -140,8 +140,9 @@ class MainWindow(QMainWindow):
         if not os.path.exists(filepath):
             return
 
-        # Show the project name in title
+        # Show the project name in title and in status bar
         self.setWindowTitle(f"Cutevariant - %s" % os.path.basename(filepath))
+        self.status_bar.showMessage(self.tr(f"{filepath} opened"))
 
         # Save directory
         app_settings = QSettings()
@@ -160,9 +161,6 @@ class MainWindow(QMainWindow):
 
         # Refresh recent opened projects
         self.adjust_recent_projects(filepath)
-
-        self.setWindowTitle(filepath)
-        self.status_bar.showMessage(f"{filepath} opened")
 
     def adjust_recent_projects(self, filepath):
         """Adjust the number of of recent projects to display
