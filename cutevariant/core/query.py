@@ -89,7 +89,7 @@ class Query:
         # Add Select clause
 
         if self.selection == "all":
-            query += f"FROM variants"
+            query += f"FROM variants LEFT JOIN annotations ON annotations.variant_id = variants.rowid"
         else:
             #  manage jointure with selection
 
@@ -154,10 +154,14 @@ class Query:
             operator = node["operator"]
             field = node["field"]
 
-            if (
-                type(value) == str
-            ):  # Add quote for string .. Need to change in the future and use sqlite binding value
+            # TODO ... c'est degeulasse .... 
+
+            if type(value) == str:  # Add quote for string .. Need to change in the future and use sqlite binding value
                 value = "'" + str(value) + "'"
+
+            elif type(value) == list:
+                value = "(" + ",".join(value) +")"
+     
             else:
                 value = str(value)
 

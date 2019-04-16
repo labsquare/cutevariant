@@ -4,74 +4,74 @@ import re
 SNPEFF_ANNOTATION_DEFAULT_FIELDS = {
     "annotation": {
         "name": "consequence",
-        "category": "annotation",
+        "category": "annotations",
         "description": "consequence",
         "type": "str",
     },
     "annotation_impact": {
         "name": "impact",
-        "category": "annotation",
+        "category": "annotations",
         "description": "impact of variant",
         "type": "str",
     },
     "gene_name": {
         "name": "gene",
-        "category": "annotation",
+        "category": "annotations",
         "description": "gene name",
         "type": "str",
     },
     "gene_id": {
         "name": "gene_id",
-        "category": "annotation",
+        "category": "annotations",
         "description": "gene name",
         "type": "str",
     },
     "feature_id": {
         "name": "transcript",
-        "category": "annotation",
+        "category": "annotations",
         "description": "transcript name",
         "type": "str",
     },
     "transcript_biotype": {
         "name": "biotype",
-        "category": "annotation",
+        "category": "annotations",
         "description": " biotype",
         "type": "str",
     },
     "hgvs.p": {
         "name": "hgvs_p",
-        "category": "annotation",
+        "category": "annotations",
         "description": "protein hgvs",
         "type": "str",
     },
     "hgvs.c": {
         "name": "hgvs_c",
-        "category": "annotation",
+        "category": "annotations",
         "description": "coding hgvs",
         "type": "str",
     },
 
     "cdna.pos / cdna.length" : {
         "name": "cdna_pos",
-        "category": "annotation",
+        "category": "annotations",
         "description": "cdna pos",
         "type": "str",
     },
     "cds.pos / cds.length": {
         "name": "cds_pos",
-        "category": "annotation",
+        "category": "annotations",
         "description": "cds pos",
         "type": "str",
     },
     "aa.pos / aa.length" :{
         "name": "aa_pos",
-        "category": "annotation",
+        "category": "annotations",
         "description": "amino acid pos",
         "type": "str",
     },
     "errors / warnings / info" :{
         "name": "log",
-        "category": "annotation",
+        "category": "annotations",
         "description": "amino acid pos",
         "type": "str",
     }
@@ -80,69 +80,69 @@ SNPEFF_ANNOTATION_DEFAULT_FIELDS = {
 
 VEP_ANNOTATION_DEFAULT_FIELDS = {
     "allele": {
-        "name": "consequence",
-        "category": "annotation",
-        "description": "consequence",
+        "name": "allele",
+        "category": "annotations",
+        "description": "allele",
         "type": "str",
     },
     "consequence": {
         "name": "consequence",
-        "category": "annotation",
+        "category": "annotations",
         "description": "impact of variant",
         "type": "str",
     },
     "symbol": {
         "name": "gene",
-        "category": "annotation",
+        "category": "annotations",
         "description": "gene name",
         "type": "str",
     },
     "gene": {
         "name": "gene_id",
-        "category": "annotation",
+        "category": "annotations",
         "description": "gene name",
         "type": "str",
     },
     "feature": {
         "name": "transcript",
-        "category": "annotation",
+        "category": "annotations",
         "description": "transcript name",
         "type": "str",
     },
     "biotype": {
         "name": "biotype",
-        "category": "annotation",
+        "category": "annotations",
         "description": " biotype",
         "type": "str",
     },
     "hgvsp": {
         "name": "hgvs_p",
-        "category": "annotation",
+        "category": "annotations",
         "description": "protein hgvs",
         "type": "str",
     },
     "hgvsc": {
         "name": "hgvs_c",
-        "category": "annotation",
+        "category": "annotations",
         "description": "coding hgvs",
         "type": "str",
     },
 
     "cdna_position" : {
         "name": "cdna_pos",
-        "category": "annotation",
+        "category": "annotations",
         "description": "cdna pos",
         "type": "str",
     },
     "cds_position": {
         "name": "cds_pos",
-        "category": "annotation",
+        "category": "annotations",
         "description": "cds pos",
         "type": "str",
     },
     "protein_position" :{
         "name": "aa_pos",
-        "category": "annotation",
+        "category": "annotations",
         "description": "amino acid pos",
         "type": "str",
     }
@@ -168,7 +168,7 @@ class VepParser(object):
                     if i in VEP_ANNOTATION_DEFAULT_FIELDS:
                         _f = VEP_ANNOTATION_DEFAULT_FIELDS[i]
                     else:
-                        _f = {"name": i, "description": "None", "type":"str", "category":"annotation"}
+                        _f = {"name": i, "description": "None", "type":"str", "category":"annotations"}
 
                     self.annotation_field_name.append(_f["name"])
                     yield _f
@@ -214,7 +214,7 @@ class SnpEffParser(object):
                     if i in SNPEFF_ANNOTATION_DEFAULT_FIELDS:
                         _f = SNPEFF_ANNOTATION_DEFAULT_FIELDS[i]
                     else:
-                        _f = {"name": i, "description": "None", "type":"str", "category":"annotation"}
+                        _f = {"name": i, "description": "None", "type":"str", "category":"annotations"}
 
                     self.annotation_field_name.append(_f["name"])
                     yield _f

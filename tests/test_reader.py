@@ -7,9 +7,9 @@ import sqlite3
 
 READERS = [
 FakeReader(),
-VcfReader(open("examples/test.vcf")),
-VcfReader(open("examples/test.vep.vcf"),"vep"),
-VcfReader(open("examples/test.snpeff.vcf"),"snpeff"),
+#VcfReader(open("examples/test.vcf")),
+#VcfReader(open("examples/test.vep.vcf"),"vep"),
+#VcfReader(open("examples/test.snpeff.vcf"),"snpeff"),
 ]
 
 
@@ -80,17 +80,16 @@ def test_create_db(reader):
     sql.insert_many_samples(conn, reader.get_samples())
     assert len(list(sql.get_samples(conn))) == len(list(reader.get_samples()))
 
-    sql.create_table_variants(conn, reader.get_fields())
+    sql.create_table_annotations(conn, reader.get_fields_by_category("annotations"))
+
+    sql.create_table_variants(conn, reader.get_fields_by_category("variants"))
     sql.insert_many_variants(conn, reader.get_variants())
 
 
     # count variant with annotation 
     variant_count = 0
     for variant in reader.get_variants():
-        if "annotations" in variant:
-            variant_count += len(variant["annotations"])
-        else:
-            variant_count+=1
+        variant_count+=1
 
     assert sql.get_variants_count(conn) == variant_count
 

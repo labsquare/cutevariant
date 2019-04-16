@@ -10,40 +10,37 @@ from PySide2.QtCore import *
 from PySide2.QtGui import * 
 
 
-from cutevariant.gui.ficon import FIcon, FIconEngine
+
+try:
+	os.remove("/tmp/demo.db")
+except:
+	pass 
+
+conn = sqlite3.connect("/tmp/demo.db")
 
 
-app = QApplication(sys.argv)
-FIcon.setFontPath("cutevariant/assets/fonts/materialdesignicons-webfont.ttf")
+with open("examples/test.vep.vcf") as file:
+
+	reader = VcfReader(file, "vep")
 
 
+	#print(json.dumps(list(reader.get_fields_by_category("variants"))))
 
 
-button1 = QPushButton("sacha")
-button2 = QPushButton("sacha")
-button3 = QPushButton("sacha")
+	sql.create_table_samples(conn)
+	sql.insert_many_samples(conn,reader.get_samples())
 
-button1.setIcon(FIcon(0xf759))
-button2.setIcon(FIcon(0xf759))
-button3.setIcon(FIcon(0xf759))
+	sql.create_table_fields(conn)
+	sql.insert_many_fields(conn, reader.get_fields())
 
-button2.setDisabled(True)
+	for ann in reader.get_fields_by_category("annotations"):
+		print(ann)
 
+	sql.create_table_annotations(conn, reader.get_fields_by_category("annotations"))
+	# sql.create_table_variants(conn, reader.get_fields_by_category("variant"))
 
-layout = QVBoxLayout()
-layout.addWidget(button1)
-layout.addWidget(button2)
-layout.addWidget(button3)
-
-w = QWidget()
-w.setLayout(layout)
-
-w.show()
-
-
-
-app.exec_()
-
+	# for _,_ in sql.async_insert_many_variants(conn, reader.get_variants()):
+	# 	print("insert")
 
 
 

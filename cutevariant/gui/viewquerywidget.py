@@ -1,3 +1,5 @@
+import copy 
+
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 from PySide2.QtGui import *
@@ -25,11 +27,16 @@ class QueryModel(QAbstractItemModel):
         self.total = 0
         self._query = None
         self.variants = []
+        self.childs = {}
 
     def rowCount(self, parent=QModelIndex()):
         """override"""
         if parent == QModelIndex():
             return len(self.variants)
+
+        if parent.parent() == QModelIndex():
+            return len(self.childs[parent.row()])
+
         return 0
 
     def columnCount(self, parent=QModelIndex()):
@@ -43,14 +50,26 @@ class QueryModel(QAbstractItemModel):
         if not self.hasIndex(row, column, parent):
             return QModelIndex()
 
-        return self.createIndex(row, column)
+        if parent == QModelIndex():
+            return self.createIndex(row, column, 999999)   # HUGLY Hack.. TODO : how to manage pointer ??
+
+        else:
+            return self.createIndex(row, column, parent.row())
+
 
     def parent(self, child):
         """ override """
         if not child.isValid():
             return QModelIndex()
+    
+        parent_rowid = child.internalId()
 
-        return QModelIndex()
+        if parent_rowid == 99999999:  # HUGLY ... see upper
+            return QModelIndex()
+
+        else:
+            return self.index(parent_rowid,0,QModelIndex())
+
 
     def data(self, index, role=Qt.DisplayRole):
         """ override """
@@ -59,8 +78,15 @@ class QueryModel(QAbstractItemModel):
             return None
 
         if role == Qt.DisplayRole:
-            # First row is variant id  don't show
-            return str(self.variants[index.row()][index.column() + 1])
+
+            if index.parent() == QModelIndex():  # First level 
+                return str(self.variants[index.row()][index.column() + 1])
+
+
+            if index.parent().parent() == QModelIndex():
+                return str(self.childs[index.parent().row()][index.row()][index.column() + 1])
+            
+
 
         return None
 
@@ -97,12 +123,21 @@ class QueryModel(QAbstractItemModel):
 
         count     = self._child_count(parent)
         child_ids = self._child_ids(parent)
+        child_query = copy.copy(self.query)
+        # Create a copy query to load childs 
+        child_query.filter = {'AND':[]}
+        child_query.group_by = None
+        child_query.filter["AND"].append({'field': 'rowid', 'operator': ' IN ', 'value':child_ids})
 
-        print("fetch more ", count, child_ids)
-        
-        
+        self.beginInsertRows(parent,0, count-1);
 
+        self.childs[parent.row()] = []
+        self.childs[parent.row()] = list(child_query.rows())
 
+        print(self.childs[parent.row()])
+
+        self.endInsertRows()
+           
 
 
 
@@ -126,7 +161,8 @@ class QueryModel(QAbstractItemModel):
     @query.setter
     def query(self, query: Query):
         self._query = query
-        self._query.group_by=("chr","pos","ref","alt")
+        #self._query.group_by=("chr","pos","ref","alt")
+
         self.total = query.count()
         self.load()
 

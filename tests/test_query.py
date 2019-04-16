@@ -17,30 +17,30 @@ def conn():
 
 
 
-def test_query_fields(conn):
-    query = Query(conn)
-    query.columns = ["chr","pos","ref","alt"]
-    assert query.sql() == "SELECT variants.rowid,chr,pos,ref,alt FROM variants"
-    conn.execute(query.sql())
+# def test_query_fields(conn):
+#     query = Query(conn)
+#     query.columns = ["chr","pos","ref","alt"]
+#     assert query.sql() == "SELECT variants.rowid,chr,pos,ref,alt FROM variants"
+#     conn.execute(query.sql())
 
-def test_query_filter(conn):
-    query = Query(conn)
-    query.columns = ["chr","pos","ref","alt"]
-    query.filter = {'AND': 
-            [
-            {'field': 'chr', 'operator': '=', 'value': "chr1"}, 
-            {'field': 'pos', 'operator': '>', 'value': 10}, 
-            {'field': 'pos', 'operator': '<', 'value': 1000}
-            ]}
-    assert query.sql() == "SELECT variants.rowid,chr,pos,ref,alt FROM variants WHERE (chr='chr1' AND pos>10 AND pos<1000)"
-    conn.execute(query.sql())
+# def test_query_filter(conn):
+#     query = Query(conn)
+#     query.columns = ["chr","pos","ref","alt"]
+#     query.filter = {'AND': 
+#             [
+#             {'field': 'chr', 'operator': '=', 'value': "chr1"}, 
+#             {'field': 'pos', 'operator': '>', 'value': 10}, 
+#             {'field': 'pos', 'operator': '<', 'value': 1000}
+#             ]}
+#     assert query.sql() == "SELECT variants.rowid,chr,pos,ref,alt FROM variants WHERE (chr='chr1' AND pos>10 AND pos<1000)"
+#     conn.execute(query.sql())
 
-def test_query_group_by(conn):
-    query = Query(conn)
-    query.columns = ["chr","pos","ref","alt"]
-    query.group_by = ("chr","pos","ref","alt")
+# def test_query_group_by(conn):
+#     query = Query(conn)
+#     query.columns = ["chr","pos","ref","alt"]
+#     query.group_by = ("chr","pos","ref","alt")
 
-    conn.execute(query.sql())
+#     conn.execute(query.sql())
 
 
 

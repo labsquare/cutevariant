@@ -1,6 +1,9 @@
 import sqlite3
 import sys
 import collections
+import cutevariant.commons as cm
+
+LOGGER = cm.logger()
 
 
 def drop_table(conn, table_name):
@@ -16,6 +19,8 @@ def create_project(conn, name, reference):
         {"name": name, "reference": reference},
     )
     conn.commit()
+
+
 
 
 ## ================ SELECTION functions =============================
@@ -249,6 +254,39 @@ def get_fields(conn):
         yield record
 
 
+
+## ================ ANNOTATIONS tables ==============================
+
+def create_table_annotations(conn, fields):
+    """ 
+    Create annotation table which contains dynamics fields 
+
+    """
+    fields  = list(fields)
+
+    if len(fields) == 0:
+        LOGGER.debug("no annotation fields")
+        return
+
+    cursor = conn.cursor()
+
+    variant_shema = ",".join(
+        [
+            f'{field["name"]} {field["type"]} NULL'
+            for field in fields
+        ]
+    )
+
+    print("ICI",variant_shema)
+
+    cursor.execute(f"""CREATE TABLE annotations (variant_id INTEGER, {variant_shema})""")
+
+    # cursor.execute(f"""CREATE INDEX sample_has_variant_ids ON sample_has_variant (variant_id, sample_id)""")
+
+    conn.commit()
+    
+
+
 ## ================ Fields functions =============================
 
 
@@ -273,10 +311,12 @@ def create_table_variants(conn, fields):
         [
             f'{field["name"]} {field["type"]} NULL'
             for field in fields
-            if field["category"] != "sample"
         ]
     )
-    cursor.execute(f"""CREATE TABLE variants ({variant_shema})""")
+
+    LOGGER.debug(variant_shema)
+
+    cursor.execute(f"""CREATE TABLE variants ({variant_shema}, PRIMARY KEY (chr,pos,ref,alt))""")
     cursor.execute(
         f"""CREATE TABLE sample_has_variant (sample_id INTEGER, variant_id INTEGER, gt INTEGER DEFAULT -1 )"""
     )
@@ -284,6 +324,8 @@ def create_table_variants(conn, fields):
     # cursor.execute(f"""CREATE INDEX sample_has_variant_ids ON sample_has_variant (variant_id, sample_id)""")
 
     conn.commit()
+
+
 
 
 def get_one_variant(conn, id: int):
@@ -356,49 +398,61 @@ def async_insert_many_variants(conn, data, total_variant_count=None, commit_ever
         ## Split variant into multiple variant if there are multiple annotation
         # If one variant has 3 annotations, then create 3 annotations
 
-        sub_variants = []
-        if "annotations" in variant:
-            for annotation in variant["annotations"]:
-                new_variant = dict(variant)
-                new_variant.update(annotation)
-                del new_variant["annotations"]
-                sub_variants.append(new_variant)
-        else:
-            sub_variants.append(variant)
+        # sub_variants = []
+        # if "annotations" in variant:
+        #     for annotation in variant["annotations"]:
+        #         new_variant = dict(variant)
+        #         new_variant.update(annotation)
+        #         del new_variant["annotations"]
+        #         sub_variants.append(new_variant)
+        # else:
+        #     sub_variants.append(variant)
 
-        for sub_variant in sub_variants:
+        # for sub_variant in sub_variants:
 
         # Insert current variant
-            cursor.execute( 
-                f"""INSERT INTO variants ({q_cols}) VALUES ({q_place})""", 
-                collections.defaultdict(str,sub_variant))
-            # get variant rowid
-            variant_id = cursor.lastrowid
+
+        cursor.execute( 
+            f"""INSERT OR IGNORE INTO variants ({q_cols}) VALUES ({q_place})""", 
+            collections.defaultdict(str,variant))
+        # get variant rowid
+        variant_id = cursor.lastrowid
 
 
 
-            #  every commit_every = 200 insert, start a commit ! This value can be changed
-            if variant_count % commit_every == 0:
-                if total_variant_count:
-                    progress = float(variant_count) / total_variant_count * 100.0
-                else:
-                    progress = 0
+        #  every commit_every = 200 insert, start a commit ! This value can be changed
+        if variant_count % commit_every == 0:
+            if total_variant_count:
+                progress = float(variant_count) / total_variant_count * 100.0
+            else:
+                progress = 0
 
-                yield progress, f"{variant_count} variant inserted"
-                conn.commit()
+            yield progress, f"{variant_count} variant inserted"
+            conn.commit()
 
-            # if variant has sample data, insert record into sample_has_variant
-            if "samples" in sub_variant:
-                for sample in sub_variant["samples"]:
-                    name = sample["name"]
-                    gt = sample["gt"]
 
-                    if name in samples.keys():
-                        sample_id = samples[name]
-                        cursor.execute(
-                            f"""INSERT INTO sample_has_variant VALUES (?,?,?)""",
-                            [sample_id, variant_id, gt],
-                        )
+        # if variant has annotation data, insert record into annotation 
+        if "annotations" in variant:
+            for annotation in variant["annotations"]:
+                annotation["variant_id"] = variant_id 
+                ann_cols  = ",".join([f"{key}" for key in annotation])
+                ann_place = ",".join([f":{key}" for key in annotation])
+                
+                cursor.execute(f""" INSERT INTO annotations ({ann_cols}) VALUES ({ann_place})""", annotation)
+
+
+        # if variant has sample data, insert record into sample_has_variant
+        if "samples" in variant:
+            for sample in variant["samples"]:
+                name = sample["name"]
+                gt = sample["gt"]
+
+                if name in samples.keys():
+                    sample_id = samples[name]
+                    cursor.execute(
+                        f"""INSERT INTO sample_has_variant VALUES (?,?,?)""",
+                        [sample_id, variant_id, gt],
+                    )
 
     conn.commit()
     # #  create index to make sample query faster
