@@ -31,7 +31,7 @@ class SelectionQueryModel(QStandardItemModel):
             self.appendRow([name_item, count_item])
 
     def save_current_query(self, name):
-        sql.create_selection_from_sql(self._query.conn, name, self._query.sql())
+        self.query.create_selection(name)
         self.refresh()
 
 

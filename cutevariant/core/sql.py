@@ -38,11 +38,16 @@ def create_table_selections(conn):
     conn.commit()
 
 
-def insert_selection(conn, name="no_name", count=0, query=str()):
+def insert_selection(conn, query=str(), name="no_name", count=0):
     """ 
-    insert one selection
+    insert one selection record
 
     :param conn: sqlite3.connect
+    :param name: name of the selection 
+    :param count: precompute variant count 
+    :param query: Sql variant query selection 
+
+    .. seealso:: create_selection_from_sql
      """
     cursor = conn.cursor()
     cursor.execute(
@@ -53,12 +58,26 @@ def insert_selection(conn, name="no_name", count=0, query=str()):
     return cursor.lastrowid
 
 
-def create_selection_from_sql(conn, name, query, by="site"):
+def create_selection_from_sql(conn,query, name, by="site", count = None):
+    """ 
+    Create a selection record from sql variant query 
+
+    :param name : name of the selection
+    :param query: sql variant query 
+    :param by: can be : 'site' for (chr,pos)  or 'variant' for (chr,pos,ref,alt)
+    """
+
+    cursor = conn.cursor()
+
+    # Compute query count 
+    # TODO : this can take a while .... need to compute only one from elsewhere
+    if count is None:
+        count = cursor.execute(f"SELECT COUNT(*) FROM ({query})").fetchone()[0]
 
     #  Create selection
-    selection_id = insert_selection(conn, name=name, count=0, query=query)
+    selection_id = insert_selection(conn, name=name, count=count, query=query)
 
-    # insert into selection_has_variants
+    # insert into selection_has_variants table
     if by == "site":
         q = f"""
         INSERT INTO selection_has_variant 
@@ -74,16 +93,15 @@ def create_selection_from_sql(conn, name, query, by="site"):
         WHERE variants.chr = query.chr AND variants.pos = query.pos AND variants.ref = query.ref AND variants.alt = query.alt
         """
 
-    cursor = conn.cursor()
     cursor.execute(q)
     conn.commit()
 
-    #  update selection count
-    cursor.execute(
-        f"""
-        UPDATE selections set count = (SELECT COUNT(*) FROM selection_has_variant WHERE selection_id = {selection_id}) WHERE selections.rowid = {selection_id}
-        """
-    )
+
+    # )    # cursor.execute(
+    #     f"""
+    #     UPDATE selections set count = (SELECT COUNT(*) FROM selection_has_variant WHERE selection_id = {selection_id}) WHERE selections.rowid = {selection_id}
+    #     """
+    # )
 
     conn.commit()
 

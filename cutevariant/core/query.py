@@ -184,7 +184,7 @@ class Query:
         ##-----------------------------------------------------------------------------------------------------------
 
     def create_selection(self, name):
-        sql.create_selection_from_sql(self.conn, name, self.sql())
+        sql.create_selection_from_sql(self.conn, self.sql(), name=name, by="site")
 
         ##-----------------------------------------------------------------------------------------------------------
 
