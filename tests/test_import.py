@@ -11,8 +11,8 @@ from .utils import table_exists
 READERS = [
 FakeReader(),
 VcfReader(open("examples/test.vcf")),
-VcfReader(open("examples/test.vep.vcf"),"vep"),
 VcfReader(open("examples/test.snpeff.vcf"),"snpeff"),
+VcfReader(open("examples/test.vep.vcf"),"vep"),
 ]
 
 
