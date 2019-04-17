@@ -18,3 +18,6 @@ install:
   
 build: off
 
+test_script:
+  - python -m pytest -vs tests
+
