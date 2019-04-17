@@ -6,22 +6,13 @@ from PySide2.QtGui import *
 # Custom imports
 from .plugin import VariantPluginWidget
 from cutevariant.gui.ficon import FIcon
+from cutevariant.gui.style import TYPE_COLORS
 from cutevariant.commons import logger
 
 LOGGER = logger()
 
 
 class InfoVariantWidget(VariantPluginWidget):
-
-    #  TODO: make these settings common with ColumnQueryModel
-    # map value type to color
-    colors = {
-        "str": "#27A4DD",  # blue
-        "bool": "#F1646C",  # red
-        "float": "#9DD5C0",  # light blue
-        "int": "#FAC174",  # light yellow
-        "NoneType": "#FFFFFF",  # white
-    }
 
     def __init__(self):
         super().__init__()
@@ -64,8 +55,9 @@ class InfoVariantWidget(VariantPluginWidget):
             item.setText(0, str(key))
             item.setText(1, str(val))
             # item.setFlags(Qt.ItemIsSelectable|Qt.ItemIsEnabled)
+            # map value type to color
             item.setIcon(
-                0, FIcon(0xF70A, InfoVariantWidget.colors[val.__class__.__name__])
+                0, FIcon(0xF70A, TYPE_COLORS[val.__class__.__name__])
             )
 
             self.view.addTopLevelItem(item)

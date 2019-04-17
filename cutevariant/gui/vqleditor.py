@@ -120,6 +120,7 @@ class VqlEditor(QueryPluginWidget):
         self.setLayout(main_layout)
         self.text_edit.textChanged.connect(self.changed)
         self._query = None
+        # Boolean to detect a SQL error
         self.query_error = False
 
     @property

@@ -359,9 +359,8 @@ class MainWindow(QMainWindow):
             return None
         return self.tab_view.currentWidget()
 
-    @Slot()
     def handle_plugin_message(self, message):
-        """Display message from plugin in the status bar"""
+        """Slot to display message from plugin in the status bar"""
         self.status_bar.showMessage(message)
 
     @Slot()
@@ -393,9 +392,8 @@ class MainWindow(QMainWindow):
         if filepath:
             self.open(filepath)
 
-    @Slot()
     def open_recent(self):
-        """Load a recent project"""
+        """Slot to load a recent project"""
         action = self.sender()
         self.open(action.data())
 
