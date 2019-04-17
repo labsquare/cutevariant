@@ -7,7 +7,7 @@ from PySide2.QtGui import *
 from .plugin import VariantPluginWidget
 from cutevariant.gui.ficon import FIcon
 from cutevariant.gui.style import TYPE_COLORS
-from cutevariant.commons import logger
+from cutevariant.commons import logger, WEBSITES_URLS
 
 LOGGER = logger()
 
@@ -22,7 +22,7 @@ class InfoVariantWidget(VariantPluginWidget):
         self.view = QTreeWidget()
         self.view.setColumnCount(2)
         self.view.setHeaderLabels([self.tr("Attributes"), self.tr("Values")])
-        self._variant_ref = ""
+        self._variant = dict()
 
         v_layout = QVBoxLayout()
         v_layout.setContentsMargins(0, 0, 0, 0)
@@ -42,13 +42,13 @@ class InfoVariantWidget(VariantPluginWidget):
 
         self.view.customContextMenuRequested.connect(self.show_menu)
 
-    def populate(self, variant: dict):
+    def populate(self):
         """Show the current variant attributes on the TreeWidget"""
         # Reset
         self.view.clear()
 
         # Filter None values
-        g = ((key, val) for key, val in variant.items() if val)
+        g = ((key, val) for key, val in self._variant.items() if val)
 
         for key, val in g:
             item = QTreeWidgetItem()
@@ -64,20 +64,15 @@ class InfoVariantWidget(VariantPluginWidget):
 
     def set_variant(self, variant: dict):
         """Register and show the given variant"""
-        self.populate(variant)
-        self.build_variant_ref(variant)
+        self._variant = variant
+        self.populate()
         # The menu is available only when almost 1 variant is displayed
         self.menu_setup()
 
-    def build_variant_ref(self, variant: dict):
+    def build_variant_url(self, website='varsome'):
         """Build variant standard reference"""
 
-        self._variant_ref = f"%s-%s-%s-%s" % (
-            variant["chr"],
-            variant["pos"],
-            variant["ref"],
-            variant["alt"],
-        )
+        return WEBSITES_URLS.get(website, "").format(**self._variant)
 
     @Slot()
     def search_on_varsome(self):
@@ -85,13 +80,11 @@ class InfoVariantWidget(VariantPluginWidget):
 
         .. note:: URL ex: https://varsome.com/variant/hg19/chr17-7578406-C-A
         """
+        url = self.build_variant_url("varsome")
         LOGGER.info(
-            "InfoVariantWidget:search_on_varsome:: Open <https://varsome.com/variant/hg19/%s>"
-            % self._variant_ref
+            "InfoVariantWidget:search_on_varsome:: Open <%s>" % url
         )
-        QDesktopServices.openUrl(
-            QUrl("https://varsome.com/variant/hg19/" + self._variant_ref)
-        )
+        QDesktopServices.openUrl(QUrl(url))
 
     def show_menu(self, pos: QPoint):
         """Show menu"""
