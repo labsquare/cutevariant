@@ -144,7 +144,7 @@ class MainWindow(QMainWindow):
 
         # Show the project name in title and in status bar
         self.setWindowTitle(f"Cutevariant - %s" % os.path.basename(filepath))
-        self.status_bar.showMessage(self.tr(f"{filepath} opened"))
+        self.status_bar.showMessage(f"{filepath} " + self.tr("opened"))
 
         # Save directory
         app_settings = QSettings()
