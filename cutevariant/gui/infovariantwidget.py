@@ -37,6 +37,11 @@ class InfoVariantWidget(VariantPluginWidget):
         self.view.setContextMenuPolicy(Qt.CustomContextMenu)
         self.menu = QMenu(self)
         self.menu.addAction(
+            self.tr("Copy variant to clipboard"), self, SLOT("to_clipboard()")
+        )
+
+        self.menu.addSeparator()
+        self.menu.addAction(
             self.tr("Search the variant on Varsome"), self, SLOT("search_on_varsome()")
         )
 
@@ -85,6 +90,13 @@ class InfoVariantWidget(VariantPluginWidget):
             "InfoVariantWidget:search_on_varsome:: Open <%s>" % url
         )
         QDesktopServices.openUrl(QUrl(url))
+
+    @Slot()
+    def to_clipboard(self):
+        """Copy the current variant reference to the clipboard"""
+        QApplication.clipboard().setText(
+            "{chr}-{pos}-{ref}-{alt}".format(**self._variant)
+        )
 
     def show_menu(self, pos: QPoint):
         """Show menu"""
