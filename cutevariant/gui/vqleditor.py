@@ -1,15 +1,19 @@
-from PySide2.QtWidgets import *
+# Standard imports
+from textx.exceptions import TextXSyntaxError
+
+# Qt imports
 from PySide2.QtCore import *
+from PySide2.QtWidgets import *
 from PySide2.QtGui import *
 
-
+# Custom imports
 from .plugin import QueryPluginWidget
 from cutevariant.core import Query
 from cutevariant.core import sql
-
 from cutevariant.commons import MIN_COMPLETION_LETTERS, logger
 
 LOGGER = logger()
+
 
 class VqlSyntaxHighlighter(QSyntaxHighlighter):
     """SQL Syntax highlighter rules"""
@@ -112,20 +116,28 @@ class VqlEditor(QueryPluginWidget):
         self.highlighter = VqlSyntaxHighlighter(self.text_edit.document())
         main_layout = QVBoxLayout()
         main_layout.addWidget(self.text_edit)
-        main_layout.setContentsMargins(0,0,0,0)
+        main_layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(main_layout)
         self.text_edit.textChanged.connect(self.changed)
         self._query = None
+        self.query_error = False
 
     @property
     def query(self):
         """Method override from AbstractQueryWidget"""
         try:
             self._query.from_vql(self.text_edit.toPlainText())
+            if self.query_error:
+                self.message.emit("")
             return self._query
         except AttributeError:
             LOGGER.debug("VqlEditor:query:: no query attribute")
             return None
+        except TextXSyntaxError as e:
+            # Available attributes: e.message, e.line, e.col
+            LOGGER.error("VqlEditor:query:: %s, col: %d", e.message, e.col)
+            self.message.emit(e.message)
+            self.query_error = True
 
     @query.setter
     def query(self, query: Query):

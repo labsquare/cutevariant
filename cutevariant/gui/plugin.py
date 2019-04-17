@@ -28,6 +28,7 @@ class QueryPluginWidget(PluginWidget):
 
     #  signals
     changed = Signal()
+    message = Signal(str)
 
     @property
     def query(self):

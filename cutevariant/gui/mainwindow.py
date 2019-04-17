@@ -113,6 +113,8 @@ class MainWindow(QMainWindow):
         # Restores the state of this mainwindow's toolbars and dockwidgets
         self.read_settings()
 
+        self.editor.message.connect(self.handle_plugin_message)
+
     def add_variant_plugin(self, plugin: VariantPluginWidget):
         # TODO : self current view must send signal only for visable widget
         self.currentView().variant_clicked.connect(plugin.set_variant)
@@ -356,6 +358,11 @@ class MainWindow(QMainWindow):
         if index == -1:
             return None
         return self.tab_view.currentWidget()
+
+    @Slot()
+    def handle_plugin_message(self, message):
+        """Display message from plugin in the status bar"""
+        self.status_bar.showMessage(message)
 
     @Slot()
     def new_project(self):
