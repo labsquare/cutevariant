@@ -174,6 +174,8 @@ class VqlEdit(QTextEdit):
         self.completer.setCompletionMode(QCompleter.PopupCompletion)
         self.completer.setCaseSensitivity(Qt.CaseInsensitive)
         self.completer.activated.connect(self.insertCompletion)
+        # Character that triggers the full autocompletion list
+        self.completer_joker = "!"
 
     def keyPressEvent(self, event):
         """Overrided"""
@@ -210,7 +212,7 @@ class VqlEdit(QTextEdit):
 
         has_modifier = event.modifiers() != Qt.NoModifier and not found_ignored_modifier
 
-        end_of_word = "~!@#$%^&*()_+{}|:\"<>?,./;'[]\\-="
+        end_of_word = "~@#$%^&*()_+{}|:\"<>?,./;'[]\\-="
         completion_prefix = self.textUnderCursor()
         completer = self.completer
 
@@ -218,7 +220,7 @@ class VqlEdit(QTextEdit):
         LOGGER.debug("keyPressEvent:: completion_prefix: %s", completion_prefix)
 
         # Hide on alone modifier, empty text, short text, end of word
-        if (
+        if self.completer_joker not in event.text() and (
             has_modifier
             or not event.text()
             or len(completion_prefix) < MIN_COMPLETION_LETTERS
@@ -230,7 +232,11 @@ class VqlEdit(QTextEdit):
 
         # Select proposed word
         if completion_prefix != completer.completionPrefix():
-            completer.setCompletionPrefix(completion_prefix)
+            if self.completer_joker in event.text():
+                # Joker is found: display the full list
+                completer.setCompletionPrefix("")
+            else:
+                completer.setCompletionPrefix(completion_prefix)
             completer.popup().setCurrentIndex(completer.completionModel().index(0, 0))
 
         # Show popup
@@ -275,6 +281,13 @@ class VqlEdit(QTextEdit):
         # Get a substring that contains the nb_extra rightmost characters
         # of the string; and insert the extra characters to complete the word.
         tc.insertText(completion[-nb_extra:])
+
+        # Erase the joker
+        tc.movePosition(QTextCursor.StartOfWord)
+        currentChar = self.toPlainText()[tc.position() - 1]
+        if currentChar == self.completer_joker:
+            tc.deletePreviousChar()
+
         self.setTextCursor(tc)
 
     def textUnderCursor(self):
