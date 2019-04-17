@@ -280,6 +280,7 @@ def create_table_annotations(conn, fields):
     print("ICI",variant_shema)
 
     cursor.execute(f"""CREATE TABLE annotations (variant_id INTEGER, {variant_shema})""")
+    cursor.execute( f"""CREATE INDEX idx_annotations ON annotations (variant_id)""")
 
     # cursor.execute(f"""CREATE INDEX sample_has_variant_ids ON sample_has_variant (variant_id, sample_id)""")
 
@@ -317,9 +318,9 @@ def create_table_variants(conn, fields):
     LOGGER.debug(variant_shema)
 
     cursor.execute(f"""CREATE TABLE variants ({variant_shema}, PRIMARY KEY (chr,pos,ref,alt))""")
-    cursor.execute(
-        f"""CREATE TABLE sample_has_variant (sample_id INTEGER, variant_id INTEGER, gt INTEGER DEFAULT -1 )"""
-    )
+    cursor.execute(f"""CREATE TABLE sample_has_variant (sample_id INTEGER, variant_id INTEGER, gt INTEGER DEFAULT -1 )""")
+    cursor.execute( f"""CREATE UNIQUE INDEX idx_sample_has_variant ON sample_has_variant (sample_id,variant_id)""")
+
 
     # cursor.execute(f"""CREATE INDEX sample_has_variant_ids ON sample_has_variant (variant_id, sample_id)""")
 
@@ -459,8 +460,7 @@ def async_insert_many_variants(conn, data, total_variant_count=None, commit_ever
     # #  create index 
     yield 90, f"Create index"
 
-    cursor.execute( f"""CREATE UNIQUE INDEX idx_sample_has_variant ON sample_has_variant (sample_id,variant_id)""")
-    cursor.execute( f"""CREATE UNIQUE INDEX idx_annotations ON annotations (variant_id)""")
+    
 
     # create selections
     # insert_selection(conn, name="all", count=variant_count)
