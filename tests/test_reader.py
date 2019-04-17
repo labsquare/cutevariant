@@ -65,12 +65,7 @@ def test_variants(reader):
 )
 def test_create_db(reader):
 
-    try:
-        os.remove("/tmp/test.db")
-    except:
-        pass
-
-    conn = sqlite3.connect("/tmp/test.db")
+    conn = sqlite3.connect(":memory:")
 
     sql.create_table_fields(conn)
     sql.insert_many_fields(conn, reader.get_fields())
