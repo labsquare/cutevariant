@@ -26,8 +26,11 @@ class QueryPluginWidget(PluginWidget):
     .. seealso:: queryrooter.py
     """
 
-    #  signals
+    # Signals
+    # When the widget is modified
     changed = Signal()
+    # When the widget emits a message to be displayed in the status bar
+    message = Signal(str)
 
     @property
     def query(self):

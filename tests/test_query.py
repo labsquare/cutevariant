@@ -10,7 +10,6 @@ from cutevariant.core import Query
 
 @pytest.fixture
 def conn():
-    # os.remove("/tmp/test.db")
     conn = sqlite3.connect(":memory:")
     import_file(conn, "examples/test.vcf")
     return conn

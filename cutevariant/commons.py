@@ -20,6 +20,12 @@ DIR_TRANSLATIONS = DIR_ASSETS + "i18n/"
 DIR_FONTS = DIR_ASSETS + "fonts/"
 DIR_ICONS = DIR_ASSETS + "icons/"
 
+# Websites and variant query
+WEBSITES_URLS = {
+    "varsome": "https://varsome.com/variant/hg19/{chr}-{pos}-{ref}-{alt}",
+}
+
+
 # Logging
 LOGGER_NAME = "cutevariant"
 LOG_LEVEL   = 'DEBUG'

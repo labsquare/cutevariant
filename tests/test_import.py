@@ -21,15 +21,9 @@ VcfReader(open("examples/test.vep.vcf"),"vep"),
     "reader", READERS, ids=[str(i.__class__.__name__) for i in READERS]
 )
 def test_import(reader):
-    try:
-        os.remove("/tmp/test.db")
-    except:
-        pass
-    
-    conn = sqlite3.connect("/tmp/test.db")
-
+    conn = sqlite3.connect(":memory:")
     import_reader(conn, reader)
-        
+
 
 
 

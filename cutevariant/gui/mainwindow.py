@@ -113,6 +113,8 @@ class MainWindow(QMainWindow):
         # Restores the state of this mainwindow's toolbars and dockwidgets
         self.read_settings()
 
+        self.editor.message.connect(self.handle_plugin_message)
+
     def add_variant_plugin(self, plugin: VariantPluginWidget):
         # TODO : self current view must send signal only for visable widget
         self.currentView().variant_clicked.connect(plugin.set_variant)
@@ -140,8 +142,9 @@ class MainWindow(QMainWindow):
         if not os.path.exists(filepath):
             return
 
-        # Show the project name in title
+        # Show the project name in title and in status bar
         self.setWindowTitle(f"Cutevariant - %s" % os.path.basename(filepath))
+        self.status_bar.showMessage(f"{filepath} " + self.tr("opened"))
 
         # Save directory
         app_settings = QSettings()
@@ -160,9 +163,6 @@ class MainWindow(QMainWindow):
 
         # Refresh recent opened projects
         self.adjust_recent_projects(filepath)
-
-        self.setWindowTitle(filepath)
-        self.status_bar.showMessage(f"{filepath} opened")
 
     def adjust_recent_projects(self, filepath):
         """Adjust the number of of recent projects to display
@@ -359,6 +359,10 @@ class MainWindow(QMainWindow):
             return None
         return self.tab_view.currentWidget()
 
+    def handle_plugin_message(self, message):
+        """Slot to display message from plugin in the status bar"""
+        self.status_bar.showMessage(message)
+
     @Slot()
     def new_project(self):
         """Create a project with the Wizard"""
@@ -388,9 +392,8 @@ class MainWindow(QMainWindow):
         if filepath:
             self.open(filepath)
 
-    @Slot()
     def open_recent(self):
-        """Load a recent project"""
+        """Slot to load a recent project"""
         action = self.sender()
         self.open(action.data())
 

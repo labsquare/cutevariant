@@ -6,6 +6,7 @@ from PySide2.QtGui import *
 from .plugin import QueryPluginWidget
 from cutevariant.core import Query
 from cutevariant.core import sql
+from cutevariant.gui.style import TYPE_COLORS
 from cutevariant.gui.ficon import FIcon
 
 class ColumnQueryModel(QStandardItemModel):
@@ -33,20 +34,14 @@ class ColumnQueryModel(QStandardItemModel):
         self.items = [] # Store QStandardItem as a list to detect easily which one is checked
         categories = set()
         samples = [i["name"] for i in sql.get_samples(self._query.conn)]
-        # map value type to color
-        colors = {
-            "str": "#27A4DD",  # blue
-            "bool" : "#F1646C",  # red
-            "float": "#9DD5C0",  # light blue
-            "int":"#FAC174",  # light yellow
-        }
         categories_items = {}
 
         for record in sql.get_fields(self._query.conn):
             item = QStandardItem(record["name"])
             item.setEditable(False)
             item.setToolTip(record["description"])
-            item.setIcon(FIcon(0xf70a, colors[record["type"]]))
+            # map value type to color
+            item.setIcon(FIcon(0xf70a, TYPE_COLORS[record["type"]]))
             item.setCheckable(True)
             item.setData(record)
 
