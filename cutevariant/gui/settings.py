@@ -165,8 +165,9 @@ class VariantSettingsWidget(BaseWidget):
 
         self.setLayout(main_layout)
 
+        self.add_button.clicked.connect(self.add_url)
 
-        self.add_item("varsome", "https://varsome.com/variant/hg19/{chr}-{pos}-{ref}-{alt}")
+        #self.add_item("varsome", "https://varsome.com/variant/hg19/{chr}-{pos}-{ref}-{alt}")
 
 
 
@@ -178,11 +179,31 @@ class VariantSettingsWidget(BaseWidget):
         # TODO : loads links from settings 
         pass
 
-    def add_item(self, name: str, url : str):
+    def add_url(self):
+        dialog = QDialog()
+        name = QLineEdit()
+        url  = QLineEdit()
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons.accepted.connect(dialog.accept)
+        buttons.rejected.connect(dialog.reject)
+        layout = QFormLayout()
+        layout.addRow("name", name)
+        layout.addRow("url", url)
+        layout.addWidget(buttons)
+
+        dialog.setLayout(layout)
+
+        if dialog.exec_() == QDialog.Accepted:
+            item = QListWidgetItem(name.text())
+            item.setData(Qt.UserRole, url.text)
+            self.view.addItem(item)
+
         # TODO 
-        item = QListWidgetItem(name)
-        item.setData(Qt.UserRole, url)
-        self.view.addItem(item)
+        # item = QListWidgetItem(name)
+        # item.setData(Qt.UserRole, url)
+        # self.view.addItem(item)
+
+
 
 
 
