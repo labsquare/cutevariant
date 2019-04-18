@@ -1,15 +1,19 @@
-from PySide2.QtWidgets import *
+# Standard imports
+from textx.exceptions import TextXSyntaxError
+
+# Qt imports
 from PySide2.QtCore import *
+from PySide2.QtWidgets import *
 from PySide2.QtGui import *
 
-
-from .abstractquerywidget import AbstractQueryWidget
+# Custom imports
+from .plugin import QueryPluginWidget
 from cutevariant.core import Query
 from cutevariant.core import sql
-
 from cutevariant.commons import MIN_COMPLETION_LETTERS, logger
 
 LOGGER = logger()
+
 
 class VqlSyntaxHighlighter(QSyntaxHighlighter):
     """SQL Syntax highlighter rules"""
@@ -27,40 +31,43 @@ class VqlSyntaxHighlighter(QSyntaxHighlighter):
 
         palette = qApp.palette("QTextEdit")
 
-
         # SQL Syntax highlighter rules
         # dict: pattern, font, color, minimal (not greedy)
-        # TODO : What about dark mode ? 
+        #  TODO : What about dark mode ?
         self.highlighting_patterns = [
             {
                 # Keywords
                 # \b allows to perform a "whole words only"
-                'pattern': "|".join((f'\\b%s\\b' % keyword for keyword in VqlSyntaxHighlighter.sql_keywords
-                )),
-                'font': QFont.Bold,
-                'color': palette.color(QPalette.Highlight), # default: Qt.darkBlue
+                "pattern": "|".join(
+                    (
+                        f"\\b%s\\b" % keyword
+                        for keyword in VqlSyntaxHighlighter.sql_keywords
+                    )
+                ),
+                "font": QFont.Bold,
+                "color": palette.color(QPalette.Highlight),  # default: Qt.darkBlue
             },
             {
                 # Strings simple quotes '...'
-                'pattern': "\'.*\'",
-                'color': Qt.red,
-                'minimal': True, # Need to stop match as soon as possible
+                "pattern": r"\'.*\'",
+                "color": Qt.red,
+                "minimal": True,  # Need to stop match as soon as possible
             },
             {
                 # Strings double quotes: "..."
-                'pattern': '\".*\"',
-                'color': Qt.red,
-                'minimal': True, # Need to stop match as soon as possible
+                "pattern": r"\".*\"",
+                "color": Qt.red,
+                "minimal": True,  # Need to stop match as soon as possible
             },
             {
                 # Numbers
-                'pattern': "\\b[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?\\b",
-                'color': Qt.darkGreen,
+                "pattern": r"\\b[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?\\b",
+                "color": Qt.darkGreen,
             },
             {
                 # Comments
-                'pattern': "--[^\n]*",
-                'color': Qt.gray,
+                "pattern": r"--[^\n]*",
+                "color": Qt.gray,
             },
         ]
 
@@ -69,16 +76,16 @@ class VqlSyntaxHighlighter(QSyntaxHighlighter):
         for pattern in self.highlighting_patterns:
 
             t_format = QTextCharFormat()
-            font = pattern.get('font', None)
+            font = pattern.get("font", None)
             if font:
                 t_format.setFontWeight(font)
 
-            color = pattern.get('color', None)
+            color = pattern.get("color", None)
             if color:
                 t_format.setForeground(color)
 
-            regex = QRegularExpression(pattern['pattern'])
-            minimal = pattern.get('minimal', False)
+            regex = QRegularExpression(pattern["pattern"])
+            minimal = pattern.get("minimal", False)
             if minimal:
                 # The greediness of the quantifiers is inverted: *, +, ?, {m,n}, etc.
                 # become lazy, while their lazy versions (*?, +?, ??, {m,n}?, etc.)
@@ -100,51 +107,67 @@ class VqlSyntaxHighlighter(QSyntaxHighlighter):
                 self.setFormat(match.capturedStart(), match.capturedLength(), t_format)
 
 
-class VqlEditor(AbstractQueryWidget):
+class VqlEditor(QueryPluginWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Columns"))
 
-        # Build completer for autocompletion
-        completer = QCompleter()
-        cmodel = QStringListModel()
-        # TODO: add column names, etc. to the model
-        cmodel.setStringList(VqlSyntaxHighlighter.sql_keywords)
-        completer.setModel(cmodel)
-        # Setup TextEdit
         self.text_edit = VqlEdit()
-        self.text_edit.setCompleter(completer)
         self.highlighter = VqlSyntaxHighlighter(self.text_edit.document())
-
         main_layout = QVBoxLayout()
-
         main_layout.addWidget(self.text_edit)
+        main_layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(main_layout)
-
         self.text_edit.textChanged.connect(self.changed)
+        self._query = None
+        # Boolean to detect a SQL error
+        self.query_error = False
 
-    def setQuery(self, query: Query):
-        """ Method override from AbstractQueryWidget"""
-        self.query = query
-        self.text_edit.setPlainText(self.query.to_vql())
-
-    def getQuery(self):
-        """ Method override from AbstractQueryWidget"""
+    @property
+    def query(self):
+        """Method override from AbstractQueryWidget"""
         try:
-            self.query.from_vql(self.text_edit.toPlainText())
-            return self.query
+            self._query.from_vql(self.text_edit.toPlainText())
+            if self.query_error:
+                self.message.emit("")
+            return self._query
         except AttributeError:
-            LOGGER.debug("VqlEditor:getQuery:: no query attribute")
+            LOGGER.debug("VqlEditor:query:: no query attribute")
             return None
+        except TextXSyntaxError as e:
+            # Available attributes: e.message, e.line, e.col
+            LOGGER.error("VqlEditor:query:: %s, col: %d", e.message, e.col)
+            self.message.emit(e.message)
+            self.query_error = True
+
+    @query.setter
+    def query(self, query: Query):
+        """Method override from AbstractQueryWidget"""
+        self._query = query
+        self.text_edit.setPlainText(self._query.to_vql())
+
+        if not self.text_edit.completer:
+            self.text_edit.setCompleter(self.create_completer())
+
+    def create_completer(self):
+        """Create Completer with his model"""
+        model = QStringListModel()
+        completer = QCompleter()
+        fields = [i["name"] for i in sql.get_fields(self._query.conn)]
+        fields.extend(VqlSyntaxHighlighter.sql_keywords)
+        model.setStringList(fields)
+        completer.setModel(model)
+        return completer
 
 
 class VqlEdit(QTextEdit):
-    def __init__(self, parent = None):
+    def __init__(self, parent=None):
         super().__init__(parent)
+        self.completer = None
 
     def setCompleter(self, completer: QCompleter):
 
-        if hasattr(self, 'completer'):
+        if self.completer:
             self.completer.activated.disconnect()
 
         self.completer = completer
@@ -152,14 +175,21 @@ class VqlEdit(QTextEdit):
         self.completer.setCompletionMode(QCompleter.PopupCompletion)
         self.completer.setCaseSensitivity(Qt.CaseInsensitive)
         self.completer.activated.connect(self.insertCompletion)
+        # Character that triggers the full autocompletion list
+        self.completer_joker = "!"
 
     def keyPressEvent(self, event):
         """Overrided"""
 
         # Ignore some key events so the completer can handle them.
-        if hasattr(self, 'completer') and self.completer.popup().isVisible():
-            if event.key() in (Qt.Key_Enter, Qt.Key_Return, Qt.Key_Escape,
-            Qt.Key_Tab, Qt.Key_Backtab):
+        if self.completer and self.completer.popup().isVisible():
+            if event.key() in (
+                Qt.Key_Enter,
+                Qt.Key_Return,
+                Qt.Key_Escape,
+                Qt.Key_Tab,
+                Qt.Key_Backtab,
+            ):
                 event.ignore()
                 # Let the completer do default behavior
                 return
@@ -168,21 +198,22 @@ class VqlEdit(QTextEdit):
         super().keyPressEvent(event)
 
         # Ignore modifiers
-        found_ignored_modifier = event.modifiers() in \
-            (Qt.ControlModifier, Qt.ShiftModifier, Qt.AltModifier)
+        found_ignored_modifier = event.modifiers() in (
+            Qt.ControlModifier,
+            Qt.ShiftModifier,
+            Qt.AltModifier,
+        )
 
         LOGGER.debug("keyPressEvent:: event text: %s", event.text())
 
         # Dismiss ingored modifiers without text
-        if not hasattr(self, 'completer') or \
-            (found_ignored_modifier and not event.text()):
+        if not self.completer or (found_ignored_modifier and not event.text()):
             LOGGER.debug("keyPressEvent:: ignored modifier")
             return
 
-        has_modifier = event.modifiers() != Qt.NoModifier and \
-            not found_ignored_modifier
+        has_modifier = event.modifiers() != Qt.NoModifier and not found_ignored_modifier
 
-        end_of_word = "~!@#$%^&*()_+{}|:\"<>?,./;'[]\\-="
+        end_of_word = "~@#$%^&*()_+{}|:\"<>?,./;'[]\\-="
         completion_prefix = self.textUnderCursor()
         completer = self.completer
 
@@ -190,34 +221,41 @@ class VqlEdit(QTextEdit):
         LOGGER.debug("keyPressEvent:: completion_prefix: %s", completion_prefix)
 
         # Hide on alone modifier, empty text, short text, end of word
-        if has_modifier or not event.text() or \
-            len(completion_prefix) < MIN_COMPLETION_LETTERS or \
-            event.text()[-1] in end_of_word:
+        if self.completer_joker not in event.text() and (
+            has_modifier
+            or not event.text()
+            or len(completion_prefix) < MIN_COMPLETION_LETTERS
+            or event.text()[-1] in end_of_word
+        ):
             completer.popup().hide()
             LOGGER.debug("keyPressEvent:: Hide completer popup")
             return
 
         # Select proposed word
         if completion_prefix != completer.completionPrefix():
-            completer.setCompletionPrefix(completion_prefix)
+            if self.completer_joker in event.text():
+                # Joker is found: display the full list
+                completer.setCompletionPrefix("")
+            else:
+                completer.setCompletionPrefix(completion_prefix)
             completer.popup().setCurrentIndex(completer.completionModel().index(0, 0))
 
         # Show popup
         cursor_rect = self.cursorRect()
         cursor_rect.setWidth(
-            completer.popup().sizeHintForColumn(0) +
-            completer.popup().verticalScrollBar().sizeHint().width()
+            completer.popup().sizeHintForColumn(0)
+            + completer.popup().verticalScrollBar().sizeHint().width()
         )
         completer.complete(cursor_rect)
 
     def focusInEvent(self, event):
         """Overrided: Event handler used to receive keyboard focus events for the widget"""
-        if hasattr(self, 'completer'):
+        if self.completer:
             self.completer.setWidget(self)
 
         super().focusInEvent(event)
 
-    def insertCompletion(self, completion:str):
+    def insertCompletion(self, completion: str):
         """Complete the word using the given completion string
 
         .. note:: Called after user validation in the popup
@@ -239,11 +277,18 @@ class VqlEdit(QTextEdit):
         if nb_extra == 0:
             return
 
-        tc.movePosition(QTextCursor.Left) # left one character.
-        tc.movePosition(QTextCursor.EndOfWord) # end of the current word.
+        tc.movePosition(QTextCursor.Left)  # left one character.
+        tc.movePosition(QTextCursor.EndOfWord)  # end of the current word.
         # Get a substring that contains the nb_extra rightmost characters
         # of the string; and insert the extra characters to complete the word.
         tc.insertText(completion[-nb_extra:])
+
+        # Erase the joker
+        tc.movePosition(QTextCursor.StartOfWord)
+        currentChar = self.toPlainText()[tc.position() - 1]
+        if currentChar == self.completer_joker:
+            tc.deletePreviousChar()
+
         self.setTextCursor(tc)
 
     def textUnderCursor(self):

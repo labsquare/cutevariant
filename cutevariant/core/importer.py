@@ -30,8 +30,11 @@ def async_import_reader(conn, reader: AbstractReader, **args):
     # # Create table samples
     create_table_samples(conn)
 
+    # Create annotations tables 
+    create_table_annotations(conn, reader.get_fields_by_category("annotations"))
+
     #cCreate variants tables
-    create_table_variants(conn, reader.get_fields())
+    create_table_variants(conn, reader.get_fields_by_category("variants"))
 
     # Create selection
     create_table_selections(conn)
@@ -39,8 +42,7 @@ def async_import_reader(conn, reader: AbstractReader, **args):
     yield 0, "insert samples"
 
     #  insert samples
-    for sample in reader.get_samples():
-        insert_sample(conn, name=sample)
+    insert_many_samples(conn, reader.get_samples())
 
     # Insert fields
     yield 0, "insert fields"

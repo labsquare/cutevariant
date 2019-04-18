@@ -3,7 +3,7 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 from enum import Enum
 
-from .abstractquerywidget import AbstractQueryWidget
+from .plugin import QueryPluginWidget
 from cutevariant.core import Query
 from cutevariant.gui.ficon import FIcon
 
@@ -53,26 +53,27 @@ class FieldItem(QStandardItem):
 class FilterQueryModel(QStandardItemModel):
     def __init__(self):
         super().__init__()
-        self.query = None
+        self._query = None
 
-    def setQuery(self, query: Query):
-        self.query = query
-        self.clear()
-        if self.query.filter is not None:
-            self.appendRow(self.toItem(self.query.filter))
-
-    def getQuery(self) -> Query:
+    @property
+    def query(self) -> Query:
         if self.rowCount() != 0:
-            self.query.filter = self.fromItem(self.item(0))
-        return self.query
+            self._query.filter = self.fromItem(self.item(0))
+        return self._query
+
+    @query.setter
+    def query(self, query: Query):
+        self._query = query
+        self.clear()
+        if self._query.filter:
+            self.appendRow(self.toItem(self._query.filter))
 
     def toItem(self, data: dict) -> QStandardItem:
         ''' recursive function to load item in tree from data '''
         if len(data) == 1:  #  logic item
             operator = list(data.keys())[0]
             item = LogicItem(operator)
-            for k in data[operator]:
-                item.appendRow(self.toItem(k))
+            [item.appendRow(self.toItem(k)) for k in data[operator]]
             return item
         else:  # condition item
             item = FieldItem(data["field"], data["operator"], data["value"])
@@ -80,20 +81,20 @@ class FilterQueryModel(QStandardItemModel):
 
     def fromItem(self, item: QStandardItem) -> dict:
         ''' recursive fonction to get items from tree '''
-        if type(item) == LogicItem:
-            op = item.logic_type
-            data = {op: []}
-
-            for i in range(item.rowCount()):
-                data[op].append(self.fromItem(item.child(i)))
-            return data
-
+        if isinstance(item, LogicItem):
+            # Return dict with operator as key and item as value
+            operator_data = \
+                [self.fromItem(item.child(i)) for i in range(item.rowCount())]
+            return {
+                item.logic_type: operator_data
+            }
         else:
-            data = {}
-            data["field"] = item.name
-            data["operator"] = item.operator
-            data["value"] = item.value
-            return data
+            return {
+                "field": item.name,
+                "operator": item.operator,
+                "value": item.value,
+            }
+
 
 
 class FilterEditDialog(QDialog):
@@ -134,7 +135,7 @@ class FilterEditDialog(QDialog):
         self.item.setData(self.value.text(), FilterQueryModel.ValueRole)
 
 
-class FilterQueryWidget(AbstractQueryWidget):
+class FilterQueryWidget(QueryPluginWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Filter"))
@@ -151,11 +152,13 @@ class FilterQueryWidget(AbstractQueryWidget):
         self.model.itemChanged.connect(self.changed)
         self.view.doubleClicked.connect(self.edit)
 
-    def setQuery(self, query: Query):
-        self.model.setQuery(query)
+    @property
+    def query(self) -> Query:
+        return self.model.query
 
-    def getQuery(self) -> Query:
-        return self.model.getQuery()
+    @query.setter
+    def query(self, query: Query):
+        self.model.query = query
 
     def edit(self, index):
         dialog = FilterEditDialog(self.model.itemFromIndex(index))
@@ -171,7 +174,7 @@ class FilterQueryWidget(AbstractQueryWidget):
         pos = self.view.viewport().mapFromGlobal(event.globalPos())
         index = self.view.indexAt(pos)
 
-        if index.isValid() is False:
+        if not index.isValid():
             logic_action = menu.addAction(self.tr("add logic"))
 
         else:

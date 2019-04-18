@@ -45,7 +45,7 @@
           <UML:Parameter value="" isSpecification="false" visibility="private" name="widget" xmi.id="uMA0vy3dTgeTb" type="uxUXuGexulk8b"/>
          </UML:BehavioralFeature.parameter>
         </UML:Operation>
-        <UML:Operation isRoot="false" isInline="false" isSpecification="false" isOverride="false" visibility="public" name="setQuery" isQuery="false" isAbstract="false" isLeaf="false" xmi.id="u626dRF3q25Vo" isVirtual="false">
+        <UML:Operation isRoot="false" isInline="false" isSpecification="false" isOverride="false" visibility="public" name="query" isQuery="false" isAbstract="false" isLeaf="false" xmi.id="u626dRF3q25Vo" isVirtual="false">
          <UML:BehavioralFeature.parameter>
           <UML:Parameter value="" isSpecification="false" visibility="private" name="query" xmi.id="uUBjifnfCAsjU" type="ucHFWIxMWdFuD"/>
          </UML:BehavioralFeature.parameter>
@@ -76,7 +76,7 @@
       </UML:Class>
       <UML:Class isRoot="false" isSpecification="false" visibility="public" name="AbstractQueryWidget" isAbstract="true" isLeaf="false" namespace="Logical_View" xmi.id="uxUXuGexulk8b">
        <UML:Classifier.feature>
-        <UML:Operation isRoot="false" isInline="false" isSpecification="false" isOverride="false" visibility="public" name="setQuery" isQuery="false" isAbstract="false" isLeaf="false" xmi.id="uZHSagOiF8b2X" isVirtual="false">
+        <UML:Operation isRoot="false" isInline="false" isSpecification="false" isOverride="false" visibility="public" name="query" isQuery="false" isAbstract="false" isLeaf="false" xmi.id="uZHSagOiF8b2X" isVirtual="false">
          <UML:BehavioralFeature.parameter>
           <UML:Parameter value="" isSpecification="false" visibility="private" name="query" xmi.id="uXrXOZBt81rWD" type="ucHFWIxMWdFuD"/>
          </UML:BehavioralFeature.parameter>

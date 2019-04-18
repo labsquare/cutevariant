@@ -1,10 +1,12 @@
+import copy 
+
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 from PySide2.QtGui import *
 from cutevariant.gui.ficon import FIcon
 
 
-from .abstractquerywidget import AbstractQueryWidget
+from .plugin import QueryPluginWidget
 from cutevariant.core import Query
 from cutevariant.core import sql
 
@@ -23,35 +25,51 @@ class QueryModel(QAbstractItemModel):
         self.limit = 50
         self.page = 0
         self.total = 0
-        self.query = None
+        self._query = None
         self.variants = []
+        self.childs = {}
 
     def rowCount(self, parent=QModelIndex()):
         """override"""
         if parent == QModelIndex():
             return len(self.variants)
+
+        if parent.parent() == QModelIndex():
+            return len(self.childs[parent.row()])
+
         return 0
 
     def columnCount(self, parent=QModelIndex()):
         """override """
-        if self.query is None:
+        if not self._query:
             return 0
-        else:
-            return len(self.query.columns)
+        return len(self._query.columns)
 
     def index(self, row, column, parent):
         """override"""
         if not self.hasIndex(row, column, parent):
             return QModelIndex()
 
-        return self.createIndex(row, column)
+        if parent == QModelIndex():
+            return self.createIndex(row, column, 999999)   # HUGLY Hack.. TODO : how to manage pointer ??
+
+        else:
+            return self.createIndex(row, column, parent.row())
+
 
     def parent(self, child):
         """ override """
         if not child.isValid():
             return QModelIndex()
+    
+        parent_rowid = child.internalId()
 
-        return QModelIndex()
+        if parent_rowid == 99999999:  # HUGLY ... see upper
+            return QModelIndex()
+
+        else:
+            return self.index(parent_rowid,0,QModelIndex())
+
 
     def data(self, index, role=Qt.DisplayRole):
         """ override """
@@ -60,8 +78,15 @@ class QueryModel(QAbstractItemModel):
             return None
 
         if role == Qt.DisplayRole:
-            # First row is variant id  don't show
-            return str(self.variants[index.row()][index.column() + 1])
+
+            if index.parent() == QModelIndex():  # First level 
+                return str(self.variants[index.row()][index.column() + 1])
+
+
+            if index.parent().parent() == QModelIndex():
+                return str(self.childs[index.parent().row()][index.row()][index.column() + 1])
+            
+
 
         return None
 
@@ -69,7 +94,7 @@ class QueryModel(QAbstractItemModel):
         """override"""
         if orientation == Qt.Horizontal:
             if role == Qt.DisplayRole:
-                return self.query.columns[section]
+                return self._query.columns[section]
 
         if orientation == Qt.Vertical:
             if role == Qt.DisplayRole:
@@ -77,15 +102,76 @@ class QueryModel(QAbstractItemModel):
 
         return None
 
-    def setQuery(self, query: Query):
-        self.query = query
+    def hasChildren(self, parent: QModelIndex) -> bool:
+        """ override """
+        # if invisible root node, always return True
+        if parent == QModelIndex():
+            return True 
+
+        if parent.parent() == QModelIndex():
+            return self._child_count(parent) > 1
+
+    def canFetchMore(self, parent: QModelIndex) -> bool:
+        """ override """
+        return self.hasChildren(parent)
+
+
+    def fetchMore(self,parent : QModelIndex): 
+        """override """
+        if parent == QModelIndex():
+            return
+
+        count     = self._child_count(parent)
+        child_ids = self._child_ids(parent)
+        child_query = copy.copy(self.query)
+        # Create a copy query to load childs 
+        child_query.filter = {'AND':[]}
+        child_query.group_by = None
+        child_query.filter["AND"].append({'field': 'rowid', 'operator': ' IN ', 'value':child_ids})
+
+        self.beginInsertRows(parent,0, count-1);
+
+        self.childs[parent.row()] = []
+        self.childs[parent.row()] = list(child_query.rows())
+
+        print(self.childs[parent.row()])
+
+        self.endInsertRows()
+           
+
+
+
+
+    def _child_count(self, index: QModelIndex):
+        """ return child count for the index variant """
+        if not self._query.group_by:
+            return 0
+        return self.variants[index.row()][-2]
+
+    def _child_ids(self, index: QModelIndex):
+        """ return childs sql ids for the index variant """
+        if not self._query.group_by:
+            return 0
+        return self.variants[index.row()][-1].split(",")
+
+    @property
+    def query(self):
+        return self._query
+
+    @query.setter
+    def query(self, query: Query):
+        self._query = query
+        #self._query.group_by=("chr","pos","ref","alt")
+
         self.total = query.count()
         self.load()
 
     def load(self):
         self.beginResetModel()
         self.variants.clear()
-        self.variants = list(self.query.rows(self.limit, self.page * self.limit))
+        self.variants = list(self._query.rows(self.limit, self.page * self.limit))
+
+        print(self.variants)
         self.endResetModel()
 
     def hasPage(self, page):
@@ -108,11 +194,11 @@ class QueryModel(QAbstractItemModel):
         """override"""
         pass
         if column < self.columnCount():
-            colname = self.query.columns[column]
+            colname = self._query.columns[column]
 
             print("ORDER", order)
-            self.query.order_by = colname
-            self.query.order_desc = True if order == Qt.DescendingOrder else False
+            self._query.order_by = colname
+            self._query.order_desc = (order == Qt.DescendingOrder)
             self.load()
 
     def get_rowid(self, index):
@@ -160,7 +246,7 @@ class QueryDelegate(QStyledItemDelegate):
         return QSize(0, 30)
 
 
-class ViewQueryWidget(AbstractQueryWidget):
+class ViewQueryWidget(QueryPluginWidget):
 
     variant_clicked = Signal(dict)
 
@@ -218,13 +304,15 @@ class ViewQueryWidget(AbstractQueryWidget):
         # emit variant when clicked
         self.view.clicked.connect(self._variant_clicked)
 
-    def setQuery(self, query: Query):
-        """ Method override from AbstractQueryWidget"""
-        self.model.setQuery(query)
-
-    def getQuery(self):
+    @property
+    def query(self):
         """ Method override from AbstractQueryWidget"""
         return self.model.query
+
+    @query.setter
+    def query(self, query: Query):
+        """ Method override from AbstractQueryWidget"""
+        self.model.query = query
 
     def updateInfo(self):
 
@@ -232,12 +320,17 @@ class ViewQueryWidget(AbstractQueryWidget):
         self.page_box.setText(f"{self.model.page}")
 
     def _variant_clicked(self, index):
-        print("cicked on ", index)
+        #print("cicked on ", index)
         rowid = self.model.get_rowid(index)
         variant = sql.get_one_variant(self.model.query.conn, rowid)
         self.variant_clicked.emit(variant)
 
     def show_sql(self):
         box = QMessageBox()
-        box.setInformativeText(self.model.query.sql())
+        try:
+            text = self.model.query.sql()
+        except AttributeError:
+            text = self.tr("No query to show")
+
+        box.setInformativeText(text)
         box.exec_()

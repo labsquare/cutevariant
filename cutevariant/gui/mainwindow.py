@@ -1,10 +1,16 @@
-from PySide2.QtCore import *
-from PySide2.QtWidgets import *
-from PySide2.QtGui import *
+# Standard imports
 import sqlite3
 import json
 import os
+import glob
+import importlib
 
+# Qt imports
+from PySide2.QtCore import *
+from PySide2.QtWidgets import *
+from PySide2.QtGui import *
+
+# Custom imports
 from cutevariant.gui.wizard.projetwizard import ProjetWizard
 from cutevariant.gui.settings import SettingsWidget
 from cutevariant.gui.viewquerywidget import ViewQueryWidget
@@ -14,99 +20,114 @@ from cutevariant.gui.selectionquerywidget import SelectionQueryWidget
 from cutevariant.gui.hpoquerywidget import HpoQueryWidget
 from cutevariant.gui.vqleditor import VqlEditor
 from cutevariant.gui.omnibar import OmniBar
-
 from cutevariant.gui.queryrouter import QueryRouter
+from cutevariant.gui.infovariantwidget import InfoVariantWidget
+from cutevariant.gui.aboutcutevariant import AboutCutevariant
+
+
+#  testing
+from cutevariant.gui.chartquerywidget import ChartQueryWidget
+from cutevariant.gui.webglquerywidget import WebGLQueryWidget
 
 from cutevariant.core.importer import import_file
 from cutevariant.core import Query
 from cutevariant.gui.ficon import FIcon
+from cutevariant.gui.plugin import VariantPluginWidget, QueryPluginWidget
 
-from cutevariant.gui.plugins.infovariantplugin import InfoVariantPlugin
+# from cutevariant.gui.plugins.infovariantplugin import InfoVariantPlugin
 
-from cutevariant.commons import MAX_RECENT_PROJECTS
+from cutevariant import commons as cm
+from cutevariant.commons import MAX_RECENT_PROJECTS, DIR_ICONS
+
+LOGGER = cm.logger()
 
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
+
         super(MainWindow, self).__init__()
         self.setWindowTitle("Cutevariant")
         self.toolbar = self.addToolBar("maintoolbar")
+        self.toolbar.setObjectName("maintoolbar")  # For window saveState
+        self.setWindowIcon(QIcon(DIR_ICONS + "app.png"))
+
+        # keep sqlite connection
         self.conn = None
-        self.view_widgets = []
+        # list of central view
+
+        # Keep list of plugins
+        self.variant_plugins = []
+
+        # mandatory query plugins
         self.column_widget = ColumnQueryWidget()
         self.filter_widget = FilterQueryWidget()
         self.selection_widget = SelectionQueryWidget()
-        self.tab_view = QTabWidget()
         self.editor = VqlEditor()
-
+        self.info_widget = InfoVariantWidget()
+        # Init router to dispatch query between queryPlugins
+        self.router = QueryRouter()
         # Setup Actions
         self.setupActions()
-
-
-        # add omnibar
-        self.omnibar = OmniBar()
-        self.toolbar.addSeparator()
-        spacer = QWidget()
-        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        self.toolbar.addWidget(spacer)
-        self.toolbar.addWidget(self.omnibar) 
-
-        # Init router
-        self.router = QueryRouter()
-        # self.router.addWidget(self.view_widget)
-        self.router.addWidget(self.column_widget)
-        self.router.addWidget(self.filter_widget)
-        self.router.addWidget(self.selection_widget)
-        self.router.addWidget(self.editor)
-        self.router.addWidget(self.omnibar)
-
-
-
+        # Build central view
+        self.tab_view = QTabWidget()
         vsplit = QSplitter(Qt.Vertical)
         vsplit.addWidget(self.tab_view)
         vsplit.addWidget(self.editor)
-
         self.setCentralWidget(vsplit)
-
-        # self.test = InfoVariantPlugin()
-        # self.test2 = GenomeView()
-
-        #  Init panel
-        self.addPanel(self.column_widget)
-        self.addPanel(self.filter_widget)
-        self.addPanel(self.selection_widget)
-        # self.addPanel(self.test)
-        # self.addPanel(self.test2)
-
-        # self.addPanel(HpoQueryWidget())
-
+        self.router.addWidget(self.editor)
         self.addView()
 
+        # add mandatory query plugin
+        self.add_query_plugin(self.column_widget)
+        self.add_query_plugin(self.filter_widget)
+        self.add_query_plugin(self.selection_widget)
 
+        # testing
+        self.add_query_plugin(ChartQueryWidget())
+        self.add_query_plugin(WebGLQueryWidget())
+
+        # Add mandatory variant plugin
+        self.add_variant_plugin(self.info_widget)
+
+        #  Status Bar
+        self.status_bar = QStatusBar()
+        self.setStatusBar(self.status_bar)
+
+        # # add omnibar
+        # self.omnibar = OmniBar()
+        # self.toolbar.addSeparator()
+        # spacer = QWidget()
+        # spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        # self.toolbar.addWidget(spacer)
+        # self.toolbar.addWidget(self.omnibar)
 
         # self.currentView().variant_clicked.connect(self.test.set_variant)
         # self.currentView().variant_clicked.connect(self.test2.set_variant)
 
         #  window geometry
         self.resize(600, 400)
-
-        # self.import_vcf("/home/schutz/Dev/CuteVariant-python/exemples/test.snp.eff.vcf")
-
         self.open("/home/sacha/Dev/cutevariant/examples/test.db")
-
         self.setGeometry(qApp.desktop().rect().adjusted(100, 100, -100, -100))
 
-    def import_vcf(self, filename):  #  Temporary .. will be removed
-        db_filename = filename + ".db"
+        self.load_plugins()
+        # Restores the state of this mainwindow's toolbars and dockwidgets
+        self.read_settings()
 
-        if os.path.exists(db_filename):
-            os.remove(db_filename)
+        self.editor.message.connect(self.handle_plugin_message)
 
-        self.conn = sqlite3.connect(db_filename)
-        import_file(self.conn, filename)
+    def add_variant_plugin(self, plugin: VariantPluginWidget):
+        # TODO : self current view must send signal only for visable widget
+        self.currentView().variant_clicked.connect(plugin.set_variant)
+        self.addPanel(plugin)
 
-        self.conn.close()
-        self.open(db_filename)
+    def add_query_plugin(self, plugin: QueryPluginWidget):
+        self.router.addWidget(plugin)
+        self.addPanel(plugin)
+
+    def load_plugins(self, folder_path=None):
+        #  TODO ... Load plugins from path.
+        # What is a plugin ? A file or a module folder ?
+        pass
 
     def open(self, filepath):
         """Open the given db/project file
@@ -121,6 +142,10 @@ class MainWindow(QMainWindow):
         if not os.path.exists(filepath):
             return
 
+        # Show the project name in title and in status bar
+        self.setWindowTitle(f"Cutevariant - %s" % os.path.basename(filepath))
+        self.status_bar.showMessage(f"{filepath} " + self.tr("opened"))
+
         # Save directory
         app_settings = QSettings()
         app_settings.setValue("last_directory", os.path.dirname(filepath))
@@ -134,7 +159,7 @@ class MainWindow(QMainWindow):
         # query.create_selection("mytest")
         # query.filter = None
 
-        self.router.setQuery(query)
+        self.router.query = query
 
         # Refresh recent opened projects
         self.adjust_recent_projects(filepath)
@@ -158,9 +183,11 @@ class MainWindow(QMainWindow):
             pass
         # Prepend new file
         recent_projects = [filepath] + recent_projects
-        recent_projects = \
-            recent_projects if len(recent_projects) <= MAX_RECENT_PROJECTS \
+        recent_projects = (
+            recent_projects
+            if len(recent_projects) <= MAX_RECENT_PROJECTS
             else recent_projects[:-1]
+        )
 
         # Save in settings
         app_settings = QSettings()
@@ -217,9 +244,18 @@ class MainWindow(QMainWindow):
         return recent_projects
 
     def addPanel(self, widget, area=Qt.LeftDockWidgetArea):
+
         dock = QDockWidget()
         dock.setWindowTitle(widget.windowTitle())
         dock.setWidget(widget)
+        # Set the objectName for a correct restoration after saveState
+        dock.setObjectName(widget.objectName())
+        if not widget.objectName():
+            LOGGER.debug(
+                "MainWindow:addPanel:: widget '%s' has no objectName attribute"
+                "and will not be saved/restored",
+                widget.windowTitle(),
+            )
         self.addDockWidget(area, dock)
         self.view_menu.addAction(dock.toggleViewAction())
 
@@ -227,16 +263,22 @@ class MainWindow(QMainWindow):
         # Menu bar
         ## File Menu
         self.file_menu = self.menuBar().addMenu(self.tr("&File"))
-        self.file_menu.addAction(FIcon(0xf214),
-            self.tr("&New project"), self, SLOT("new_project()"), QKeySequence.New
+        new_prj_action = self.file_menu.addAction(
+            FIcon(0xF415),
+            self.tr("&New project"),
+            self,
+            SLOT("new_project()"),
+            QKeySequence.New,
         )
-        self.file_menu.addAction(
-            self.tr("&Open project ..."), self, SLOT("open_project()"), QKeySequence.Open
+        open_prj_action = self.file_menu.addAction(
+            FIcon(0xF76F),
+            self.tr("&Open project ..."),
+            self,
+            SLOT("open_project()"),
+            QKeySequence.Open,
         )
         ### Recent projects
-        self.recent_files_menu = self.file_menu.addMenu(
-            self.tr("Open recent")
-        )
+        self.recent_files_menu = self.file_menu.addMenu(self.tr("Open recent"))
 
         self.recentFileActions = list()
         for i in range(MAX_RECENT_PROJECTS):
@@ -256,25 +298,58 @@ class MainWindow(QMainWindow):
         )
 
         self.file_menu.addSeparator()
-        self.file_menu.addAction(FIcon(0xf493), self.tr("Settings ..."), self, SLOT("show_settings()"))
+        self.file_menu.addAction(
+            FIcon(0xF493), self.tr("Settings ..."), self, SLOT("show_settings()")
+        )
 
         self.file_menu.addSeparator()
-        self.file_menu.addAction(self.tr("&Quit"), qApp, SLOT("quit()"), QKeySequence.Quit)
+        self.file_menu.addAction(
+            self.tr("&Quit"), qApp, SLOT("quit()"), QKeySequence.Quit
+        )
+
+        ## Edit
+        self.edit_menu = self.menuBar().addMenu(self.tr("&Edit"))
+        self.edit_menu.addAction(
+            FIcon(0xF18F), "&Copy", self, SLOT("copy()"), QKeySequence.Copy
+        )
+        self.edit_menu.addAction(
+            FIcon(0xF192), "&Paste", self, SLOT("paste()"), QKeySequence.Paste
+        )
+        self.edit_menu.addSeparator()
+        self.edit_menu.addAction(
+            FIcon(0xF486),
+            "Select all",
+            self,
+            SLOT("select_all()"),
+            QKeySequence.SelectAll,
+        )
 
         ## View
         self.view_menu = self.menuBar().addMenu(self.tr("&View"))
+        self.view_menu.addAction(
+            self.tr("Reset widgets positions"), self, SLOT("reset_ui()")
+        )
+        self.view_menu.addSeparator()
 
         ## Help
         self.help_menu = self.menuBar().addMenu(self.tr("Help"))
         self.help_menu.addAction(self.tr("About Qt"), qApp, SLOT("aboutQt()"))
+        self.help_menu.addAction(
+            self.tr("About Cutevariant"), self, SLOT("aboutCutevariant()")
+        )
 
         # Tool bar
-        save_query_action = self.toolbar.addAction(self.tr("save query"))
+        self.toolbar.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
+        self.toolbar.addAction(new_prj_action)
+        self.toolbar.addAction(open_prj_action)
+        self.toolbar.addSeparator()
+
+        save_query_action = self.toolbar.addAction(FIcon(0xF412), self.tr("save query"))
         save_query_action.triggered.connect(self.selection_widget.save_current_query)
 
     def addView(self):
+        #  TODO : manage multiple view
         widget = ViewQueryWidget()
-        self.view_widgets.append(widget)
         self.tab_view.addTab(widget, widget.windowTitle())
         self.router.addWidget(widget)
 
@@ -282,7 +357,11 @@ class MainWindow(QMainWindow):
         index = self.tab_view.currentIndex()
         if index == -1:
             return None
-        return self.view_widgets[index]
+        return self.tab_view.currentWidget()
+
+    def handle_plugin_message(self, message):
+        """Slot to display message from plugin in the status bar"""
+        self.status_bar.showMessage(message)
 
     @Slot()
     def new_project(self):
@@ -305,15 +384,16 @@ class MainWindow(QMainWindow):
         last_directory = app_settings.value("last_directory", QDir.homePath())
 
         filepath, _ = QFileDialog.getOpenFileName(
-            self, self.tr("Open project"), last_directory,
-            self.tr("Cutevariant project (*.db)")
+            self,
+            self.tr("Open project"),
+            last_directory,
+            self.tr("Cutevariant project (*.db)"),
         )
         if filepath:
             self.open(filepath)
 
-    @Slot()
     def open_recent(self):
-        """Load a recent project"""
+        """Slot to load a recent project"""
         action = self.sender()
         self.open(action.data())
 
@@ -327,4 +407,70 @@ class MainWindow(QMainWindow):
     @Slot()
     def show_settings(self):
         widget = SettingsWidget()
-        widget.exec_()
+        widget.exec()
+
+    @Slot()
+    def aboutCutevariant(self):
+        dialog_window = AboutCutevariant()
+        dialog_window.exec()
+
+    @Slot()
+    def reset_ui(self):
+        """Reset the position of docks to the state of the previous launch"""
+        # Set reset ui boolean (used by closeEvent)
+        self.requested_reset_ui = True
+
+        # Restore docks
+        app_settings = QSettings()
+        self.restoreState(QByteArray(app_settings.value("windowState")))
+
+    @Slot()
+    def copy(self):
+        pass
+
+    @Slot()
+    def paste(self):
+        pass
+
+    @Slot()
+    def select_all(self):
+        pass
+
+    def closeEvent(self, event):
+        """Save the current state of this mainwindow's toolbars and dockwidgets
+
+        .. warning:: Make sure that the property objectName is unique for each
+            QToolBar and QDockWidget added to the QMainWindow.
+
+        .. note:: Reset windowState if asked.
+        """
+        app_settings = QSettings()
+
+        if self.requested_reset_ui:
+            # Delete window state setting
+            app_settings.remove("windowState")
+        else:
+            app_settings.setValue("geometry", self.saveGeometry())
+            #  TODO: handle UI changes by passing UI_VERSION to saveState()
+            app_settings.setValue("windowState", self.saveState())
+
+        super().closeEvent(event)
+
+    def read_settings(self):
+        """Restore the state of this mainwindow's toolbars and dockwidgets
+
+        .. note:: If windowState is not stored, current state is written.
+        """
+        # Init reset ui boolean
+        self.requested_reset_ui = False
+
+        app_settings = QSettings()
+        self.restoreGeometry(QByteArray(app_settings.value("geometry")))
+        #  TODO: handle UI changes by passing UI_VERSION to saveState()
+        window_state = app_settings.value("windowState")
+        if window_state:
+            self.restoreState(QByteArray(window_state))
+        else:
+            # Setting has been deleted: set the current default state
+            #  TODO: handle UI changes by passing UI_VERSION to saveState()
+            app_settings.setValue("windowState", self.saveState())

@@ -1,6 +1,9 @@
 import sqlite3
 import sys
 import collections
+import cutevariant.commons as cm
+
+LOGGER = cm.logger()
 
 
 def drop_table(conn, table_name):
@@ -16,6 +19,8 @@ def create_project(conn, name, reference):
         {"name": name, "reference": reference},
     )
     conn.commit()
+
+
 
 
 ## ================ SELECTION functions =============================
@@ -38,11 +43,16 @@ def create_table_selections(conn):
     conn.commit()
 
 
-def insert_selection(conn, name="no_name", count=0, query=str()):
+def insert_selection(conn, query=str(), name="no_name", count=0):
     """ 
-    insert one selection
+    insert one selection record
 
     :param conn: sqlite3.connect
+    :param name: name of the selection 
+    :param count: precompute variant count 
+    :param query: Sql variant query selection 
+
+    .. seealso:: create_selection_from_sql
      """
     cursor = conn.cursor()
     cursor.execute(
@@ -53,12 +63,26 @@ def insert_selection(conn, name="no_name", count=0, query=str()):
     return cursor.lastrowid
 
 
-def create_selection_from_sql(conn, name, query, by="site"):
+def create_selection_from_sql(conn,query, name, by="site", count = None):
+    """ 
+    Create a selection record from sql variant query 
+
+    :param name : name of the selection
+    :param query: sql variant query 
+    :param by: can be : 'site' for (chr,pos)  or 'variant' for (chr,pos,ref,alt)
+    """
+
+    cursor = conn.cursor()
+
+    # Compute query count 
+    # TODO : this can take a while .... need to compute only one from elsewhere
+    if count is None:
+        count = cursor.execute(f"SELECT COUNT(*) FROM ({query})").fetchone()[0]
 
     #  Create selection
-    selection_id = insert_selection(conn, name=name, count=0, query=query)
+    selection_id = insert_selection(conn, name=name, count=count, query=query)
 
-    # insert into selection_has_variants
+    # insert into selection_has_variants table
     if by == "site":
         q = f"""
         INSERT INTO selection_has_variant 
@@ -74,16 +98,15 @@ def create_selection_from_sql(conn, name, query, by="site"):
         WHERE variants.chr = query.chr AND variants.pos = query.pos AND variants.ref = query.ref AND variants.alt = query.alt
         """
 
-    cursor = conn.cursor()
     cursor.execute(q)
     conn.commit()
 
-    #  update selection count
-    cursor.execute(
-        f"""
-        UPDATE selections set count = (SELECT COUNT(*) FROM selection_has_variant WHERE selection_id = {selection_id}) WHERE selections.rowid = {selection_id}
-        """
-    )
+
+    # )    # cursor.execute(
+    #     f"""
+    #     UPDATE selections set count = (SELECT COUNT(*) FROM selection_has_variant WHERE selection_id = {selection_id}) WHERE selections.rowid = {selection_id}
+    #     """
+    # )
 
     conn.commit()
 
@@ -231,6 +254,40 @@ def get_fields(conn):
         yield record
 
 
+
+## ================ ANNOTATIONS tables ==============================
+
+def create_table_annotations(conn, fields):
+    """ 
+    Create annotation table which contains dynamics fields 
+
+    """
+    fields  = list(fields)
+
+    if len(fields) == 0:
+        LOGGER.debug("no annotation fields")
+        return
+
+    cursor = conn.cursor()
+
+    variant_shema = ",".join(
+        [
+            f'{field["name"]} {field["type"]} NULL'
+            for field in fields
+        ]
+    )
+
+    print("ICI",variant_shema)
+
+    cursor.execute(f"""CREATE TABLE annotations (variant_id INTEGER, {variant_shema})""")
+    cursor.execute( f"""CREATE INDEX idx_annotations ON annotations (variant_id)""")
+
+    # cursor.execute(f"""CREATE INDEX sample_has_variant_ids ON sample_has_variant (variant_id, sample_id)""")
+
+    conn.commit()
+    
+
+
 ## ================ Fields functions =============================
 
 
@@ -255,17 +312,21 @@ def create_table_variants(conn, fields):
         [
             f'{field["name"]} {field["type"]} NULL'
             for field in fields
-            if field["category"] != "sample"
         ]
     )
-    cursor.execute(f"""CREATE TABLE variants ({variant_shema})""")
-    cursor.execute(
-        f"""CREATE TABLE sample_has_variant (sample_id INTEGER, variant_id INTEGER, gt INTEGER DEFAULT -1 )"""
-    )
+
+    LOGGER.debug(variant_shema)
+
+    cursor.execute(f"""CREATE TABLE variants ({variant_shema}, PRIMARY KEY (chr,pos,ref,alt))""")
+    cursor.execute(f"""CREATE TABLE sample_has_variant (sample_id INTEGER, variant_id INTEGER, gt INTEGER DEFAULT -1 )""")
+    cursor.execute( f"""CREATE UNIQUE INDEX idx_sample_has_variant ON sample_has_variant (sample_id,variant_id)""")
+
 
     # cursor.execute(f"""CREATE INDEX sample_has_variant_ids ON sample_has_variant (variant_id, sample_id)""")
 
     conn.commit()
+
+
 
 
 def get_one_variant(conn, id: int):
@@ -338,55 +399,68 @@ def async_insert_many_variants(conn, data, total_variant_count=None, commit_ever
         ## Split variant into multiple variant if there are multiple annotation
         # If one variant has 3 annotations, then create 3 annotations
 
-        sub_variants = []
-        if "annotations" in variant:
-            for annotation in variant["annotations"]:
-                new_variant = dict(variant)
-                new_variant.update(annotation)
-                del new_variant["annotations"]
-                sub_variants.append(new_variant)
-        else:
-            sub_variants.append(variant)
+        # sub_variants = []
+        # if "annotations" in variant:
+        #     for annotation in variant["annotations"]:
+        #         new_variant = dict(variant)
+        #         new_variant.update(annotation)
+        #         del new_variant["annotations"]
+        #         sub_variants.append(new_variant)
+        # else:
+        #     sub_variants.append(variant)
 
-        for sub_variant in sub_variants:
+        # for sub_variant in sub_variants:
 
         # Insert current variant
-            cursor.execute( 
-                f"""INSERT INTO variants ({q_cols}) VALUES ({q_place})""", 
-                collections.defaultdict(str,sub_variant))
-            # get variant rowid
-            variant_id = cursor.lastrowid
+
+        cursor.execute( 
+            f"""INSERT OR IGNORE INTO variants ({q_cols}) VALUES ({q_place})""", 
+            collections.defaultdict(str,variant))
+        # get variant rowid
+        variant_id = cursor.lastrowid
 
 
 
-            #  every commit_every = 200 insert, start a commit ! This value can be changed
-            if variant_count % commit_every == 0:
-                if total_variant_count:
-                    progress = float(variant_count) / total_variant_count * 100.0
-                else:
-                    progress = 0
+        #  every commit_every = 200 insert, start a commit ! This value can be changed
+        if variant_count % commit_every == 0:
+            if total_variant_count:
+                progress = float(variant_count) / total_variant_count * 100.0
+            else:
+                progress = 0
 
-                yield progress, f"{variant_count} variant inserted"
-                conn.commit()
+            yield progress, f"{variant_count} variant inserted"
+            conn.commit()
 
-            # if variant has sample data, insert record into sample_has_variant
-            if "samples" in sub_variant:
-                for sample in sub_variant["samples"]:
-                    name = sample["name"]
-                    gt = sample["gt"]
 
-                    if name in samples.keys():
-                        sample_id = samples[name]
-                        cursor.execute(
-                            f"""INSERT INTO sample_has_variant VALUES (?,?,?)""",
-                            [sample_id, variant_id, gt],
-                        )
+        # if variant has annotation data, insert record into annotation 
+        if "annotations" in variant:
+            for annotation in variant["annotations"]:
+                annotation["variant_id"] = variant_id 
+                ann_cols  = ",".join([f"{key}" for key in annotation])
+                ann_place = ",".join([f":{key}" for key in annotation])
+                
+                cursor.execute(f""" INSERT INTO annotations ({ann_cols}) VALUES ({ann_place})""", annotation)
+
+
+        # if variant has sample data, insert record into sample_has_variant
+        if "samples" in variant:
+            for sample in variant["samples"]:
+                name = sample["name"]
+                gt = sample["gt"]
+
+                if name in samples.keys():
+                    sample_id = samples[name]
+                    cursor.execute(
+                        f"""INSERT INTO sample_has_variant VALUES (?,?,?)""",
+                        [sample_id, variant_id, gt],
+                    )
 
     conn.commit()
-    # #  create index to make sample query faster
-    # cursor.execute(
-    #     f"""CREATE UNIQUE INDEX idx_sample_has_variant ON sample_has_variant (sample_id,variant_id)"""
-    # )
+
+    # #  create index 
+    yield 90, f"Create index"
+
+    
 
     # create selections
     # insert_selection(conn, name="all", count=variant_count)
@@ -454,3 +528,5 @@ def get_samples(conn):
     for row in cursor.execute("""SELECT name FROM samples"""):
         record["name"] = row[0]
         yield record
+
+

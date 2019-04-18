@@ -3,9 +3,12 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 import sqlite3
 
-from .abstractquerywidget import AbstractQueryWidget
-from cutevariant.core import sql, Query
 
+from .plugin import QueryPluginWidget
+from cutevariant.core import sql, Query
+from cutevariant import commons as cm
+
+LOGGER = cm.logger()
 
 class Node(object):
     def __init__(self, node_id, parent=None):
@@ -164,7 +167,7 @@ class HpoModel(QAbstractItemModel):
         self.endResetModel()
 
 
-class HpoQueryWidget(AbstractQueryWidget):
+class HpoQueryWidget(QueryPluginWidget):
     def __init__(self):
         super().__init__()
 
@@ -182,10 +185,13 @@ class HpoQueryWidget(AbstractQueryWidget):
 
         self.setLayout(v_layout)
 
-    def setQuery(self, query: Query):
-        """ Method override from AbstractQueryWidget"""
-        pass
-
-    def getQuery(self):
+    @property
+    def query(self):
         """ Method override from AbstractQueryWidget"""
         return self.model.query
+
+    @query.setter
+    def query(self, query: Query):
+        """ Method override from AbstractQueryWidget"""
+        LOGGER.debug("HpoQueryWidget:query:: setter not used")
+        pass

@@ -3,7 +3,7 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 
 
-from .abstractquerywidget import AbstractQueryWidget
+from .plugin import QueryPluginWidget
 from cutevariant.core import Query
 from cutevariant.core import sql
 
@@ -12,24 +12,30 @@ class SelectionQueryModel(QStandardItemModel):
     def __init__(self):
         super().__init__()
         self.setColumnCount(2)
+        self._query = None
 
-    def setQuery(self, query: Query):
-        self.query = query
+    @property
+    def query(self):
+        return self._query
+
+    @query.setter
+    def query(self, query: Query):
+        self._query = query
         self.refresh()
 
     def refresh(self):
         self.clear()
-        for record in sql.get_selections(self.query.conn):
+        for record in sql.get_selections(self._query.conn):
             name_item = QStandardItem(record["name"])
             count_item = QStandardItem(str(record["count"]))
             self.appendRow([name_item, count_item])
 
     def save_current_query(self, name):
-        sql.create_selection_from_sql(self.query.conn, name, self.query.sql())
+        self.query.create_selection(name)
         self.refresh()
 
 
-class SelectionQueryWidget(AbstractQueryWidget):
+class SelectionQueryWidget(QueryPluginWidget):
     def __init__(self):
         super().__init__()
 
@@ -46,11 +52,8 @@ class SelectionQueryWidget(AbstractQueryWidget):
 
         self.view.selectionModel().currentRowChanged.connect(self.changed)
 
-    def setQuery(self, query: Query):
-        """ Method override from AbstractQueryWidget"""
-        self.model.setQuery(query)
-
-    def getQuery(self):
+    @property
+    def query(self):
         """ Method override from AbstractQueryWidget"""
 
         item = self.model.item(self.view.selectionModel().currentIndex().row())
@@ -59,6 +62,11 @@ class SelectionQueryWidget(AbstractQueryWidget):
         query.selection = item.text()
 
         return query
+
+    @query.setter
+    def query(self, query: Query):
+        """ Method override from AbstractQueryWidget"""
+        self.model.query = query
 
     def save_current_query(self):
 

@@ -11,8 +11,8 @@ from .utils import table_exists
 READERS = [
 FakeReader(),
 VcfReader(open("examples/test.vcf")),
-VcfReader(open("examples/test.vep.vcf"),"vep"),
 VcfReader(open("examples/test.snpeff.vcf"),"snpeff"),
+VcfReader(open("examples/test.vep.vcf"),"vep"),
 ]
 
 
@@ -21,15 +21,9 @@ VcfReader(open("examples/test.snpeff.vcf"),"snpeff"),
     "reader", READERS, ids=[str(i.__class__.__name__) for i in READERS]
 )
 def test_import(reader):
-    try:
-        os.remove("/tmp/test.db")
-    except:
-        pass
-    
-    conn = sqlite3.connect("/tmp/test.db")
-
+    conn = sqlite3.connect(":memory:")
     import_reader(conn, reader)
-        
+
 
 
 

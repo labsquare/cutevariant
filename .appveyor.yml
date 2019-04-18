@@ -15,7 +15,9 @@ install:
   - "conda create -q -n test-environment python=%PYTHON_VERSION%"
   - activate test-environment
   - pip install -r requirements.txt
-
+  
+build: off
 
 test_script:
-  - nosetests
+  - python -m pytest -vs tests
+

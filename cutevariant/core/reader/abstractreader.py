@@ -66,6 +66,22 @@ class AbstractReader(ABC):
        """
         raise NotImplemented()
 
+
+    def get_fields_by_category(self, category:str):
+        """ 
+        get fields according category 
+
+        :param category can be usually variants, samples, annotations, infos  
+
+        """ 
+        for field in self.get_fields():
+            if field["category"] == category:
+                yield field
+
+
+
+
+
     def get_variants_count(self):
         """ 
         Return variant count. You can overload this method to make it faster

@@ -1,9 +1,30 @@
+# Cutevariant is a light standalone viewer of genetic variation written
+# in Python for Qt. It allows to view and filter VCF and other format files.
+# Copyright (C) 2018-2019  Labsquare.org
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# Please send bugreports with examples or suggestions to
+# https://github.com/labsquare/cutevariant/issues
+
 # Standard imports
 import sys
+import os
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 from PySide2.QtGui import *
-import os
+
 # Custom imports
 from cutevariant.gui import MainWindow, FIcon
 import cutevariant.commons as cm
@@ -21,12 +42,11 @@ def main():
     QCoreApplication.setApplicationName("cutevariant")
 
     app = QApplication(sys.argv)
-    # Set icons set 
-    path = os.path.dirname(__file__)
-    FIcon.setFontPath(path+"/assets/fonts/materialdesignicons-webfont.ttf")
+    # Set icons set
+    FIcon.setFontPath(os.path.join(cm.DIR_FONTS, "materialdesignicons-webfont.ttf"))
 
     # Translations
-    #load_translations(app)
+    load_translations(app)
 
     # Display
     w = MainWindow()

@@ -7,14 +7,24 @@ from pkg_resources import resource_filename
 
 
 MAX_RECENT_PROJECTS = 5
-MIN_COMPLETION_LETTERS = 3
+MIN_COMPLETION_LETTERS = 1
 
 # Paths
 DIR_LOGS = tempfile.gettempdir() + '/'
-DIR_TRANSLATIONS = resource_filename(
+
+DIR_ASSETS = resource_filename(
     __name__, # current package name
-    "gui/i18n/"
+    "assets/"
 )
+DIR_TRANSLATIONS = DIR_ASSETS + "i18n/"
+DIR_FONTS = DIR_ASSETS + "fonts/"
+DIR_ICONS = DIR_ASSETS + "icons/"
+
+# Websites and variant query
+WEBSITES_URLS = {
+    "varsome": "https://varsome.com/variant/hg19/{chr}-{pos}-{ref}-{alt}",
+}
+
 
 # Logging
 LOGGER_NAME = "cutevariant"

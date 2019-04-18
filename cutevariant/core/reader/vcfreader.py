@@ -4,6 +4,7 @@ import vcf
 import copy
 
 
+
 VCF_TYPE_MAPPING = {"Float": "float", "Integer": "int", "Flag": "bool", "String": "str"}
 
 
@@ -21,9 +22,9 @@ class VcfReader(AbstractReader):
         # Remove duplicate
         fields = self.parse_fields()
         if self.annotation_parser:
-            yield from self._keep_unique_fields(self.annotation_parser.parse_fields(fields))
+            return self.annotation_parser.parse_fields(fields)
         else:
-            yield from self._keep_unique_fields(fields)
+            return fields
 
 
     def get_variants(self):
@@ -100,47 +101,47 @@ class VcfReader(AbstractReader):
 
         yield {
             "name": "chr",
-            "category": "variant",
+            "category": "variants",
             "description": "chromosom",
             "type": "str",
         }
         yield {
             "name": "pos",
-            "category": "variant",
+            "category": "variants",
             "description": "position",
             "type": "int",
         }
 
         yield {
             "name": "rsid",
-            "category": "variant",
+            "category": "variants",
             "description": "rsid",
             "type": "str",
         }
 
         yield {
             "name": "ref",
-            "category": "variant",
+            "category": "variants",
             "description": "reference base",
             "type": "str",
         }
         yield {
             "name": "alt",
-            "category": "variant",
+            "category": "variants",
             "description": "alternative base",
             "type": "str",
         }
 
         yield {
             "name": "qual",
-            "category": "variant",
+            "category": "variants",
             "description": "quality",
             "type": "int",
         }
 
         yield {
             "name": "filter",
-            "category": "variant",
+            "category": "variants",
             "description": "filter",
             "type": "str",
         }
@@ -157,7 +158,7 @@ class VcfReader(AbstractReader):
             # else:
             yield {
                 "name": key.lower(),
-                "category": "info",
+                "category": "variants",
                 "description": info.desc,
                 "type": VCF_TYPE_MAPPING[info.type],
             }
@@ -166,7 +167,7 @@ class VcfReader(AbstractReader):
         for key, info in vcf_reader.formats.items():
             yield {
                 "name": key.lower(),
-                "category": "sample",
+                "category": "samples",
                 "description": info.desc,
                 "type": VCF_TYPE_MAPPING[info.type],
             }
