@@ -7,12 +7,12 @@ from PySide2.QtGui import * # QIcon
 
 # Custom imports
 import cutevariant.commons as cm
+from cutevariant.gui.ficon import FIcon
 
-class BaseWidget(QTabWidget):
+class BaseWidget(QWidget):
     """Abstract class for settings widgets"""
     def __init__(self):
         super().__init__()
-        self.setWindowIcon(QIcon.fromTheme("system-run")) # temporary for now 
 
     def save(self):
         raise NotImplemented()
@@ -21,27 +21,60 @@ class BaseWidget(QTabWidget):
         raise NotImplemented()
 
 
-class GeneralSettingsWidget(BaseWidget):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle(self.tr("General"))
+class GroupWidget(QTabWidget):
+    def add_settings_widget(self, widget: BaseWidget):
+        self.addTab(widget, widget.windowIcon(), widget.windowTitle())
 
     def save(self):
-        pass
+        for index in range(self.count()):
+            widget = self.widget(index)
+            widget.save()
+
+    def load(self):
+        for index in range(self.count()):
+            widget = self.widget(index)
+            widget.load() 
+
+
+
+
+class TranslationSettingsWidget(BaseWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle(self.tr("Translation"))
+        self.setWindowIcon(FIcon(0xf5ca))
+        self.locales_combobox = QComboBox()
+        mainLayout = QFormLayout()
+        mainLayout.addRow(self.tr("&Choose a locale:"), self.locales_combobox)
+
+        self.setLayout(mainLayout)
+        #self.locales_combobox.currentTextChanged.connect(self.switchTranslator)
+
+    def save(self):
+        """Switch qApp translator with the selected one and save it into config
+
+        .. todo:: Handle the propagation the LanguageChange event
+            https://doc.qt.io/Qt-5/qcoreapplication.html#installTranslator
+            https://wiki.qt.io/How_to_create_a_multi_language_application
+
+        """
+
+        # Remove the old translator
+        #qApp.removeTranslator(translator)
+
+        # Load the new translator
+
+        # Save locale setting
+        locale_name = self.locales_combobox.currentText()
+        locale_name = self.settings.setValue("ui/locale", locale_name)
+        app_translator = QTranslator(qApp)
+        if app_translator.load(locale_name, cm.DIR_TRANSLATIONS):
+            qApp.installTranslator(app_translator)
 
     def load(self):
         """Setup widgets in General settings"""
+        self.locales_combobox.clear()
         self.settings = QSettings()
-        self.setup_ui_tab()
-
-    def setup_ui_tab(self):
-        """Setup widgets in General/Interface tab"""
-
-        page = QWidget()
-        mainLayout = QFormLayout()
-
-        # Locales combobox
-        self.locales_combobox = QComboBox()
         # Get names of locales based on available files
         available_translations = {
             os.path.basename(os.path.splitext(file)[0]): file
@@ -55,47 +88,103 @@ class GeneralSettingsWidget(BaseWidget):
         locale_name = self.settings.value("ui/locale", "en")
         self.locales_combobox.setCurrentIndex(available_locales.index(locale_name))
 
-        mainLayout.addRow(self.tr("&Choose a locale:"), self.locales_combobox)
 
-        page.setLayout(mainLayout)
-        self.addTab(page, "Interface")
-
-        self.locales_combobox.currentTextChanged.connect(self.switchTranslator)
-
-    def switchTranslator(self, locale_name):
-        """Switch qApp translator with the selected one and save it into config
-
-        .. todo:: Handle the propagation the LanguageChange event
-            https://doc.qt.io/Qt-5/qcoreapplication.html#installTranslator
-            https://wiki.qt.io/How_to_create_a_multi_language_application
-
-        :param locale_name: Locale identifier. Ex: 'en_US', 'en'.
-        :type locale_name: <str>
-        """
-
-        # Remove the old translator
-        #qApp.removeTranslator(translator)
-
-        # Load the new translator
-        app_translator = QTranslator(qApp)
-
-        if app_translator.load(locale_name, cm.DIR_TRANSLATIONS):
-            qApp.installTranslator(app_translator)
-
-        # Save locale setting
-        locale_name = self.settings.setValue("ui/locale", locale_name)
-
-
-class PluginsSettingsWidget(BaseWidget):
+        
+class ProxySettingsWidget(BaseWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle(self.tr("Plugins"))
+        self.setWindowTitle(self.tr("Proxy"))
+        self.setWindowIcon(FIcon(0Xf484))
 
     def save(self):
         pass
 
     def load(self):
         pass
+
+
+class StyleSettingsWidget(BaseWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle(self.tr("Styles"))
+        self.setWindowIcon(FIcon(0Xf3d8))
+
+    def save(self):
+        pass
+
+    def load(self):
+        pass
+
+
+class PluginsSettingsWidget(BaseWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle(self.tr("Plugins"))
+        self.setWindowIcon(FIcon(0XF3d4))
+
+    def save(self):
+        pass
+
+    def load(self):
+        pass
+
+
+class DatabaseSettingsWidget(BaseWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle(self.tr("database"))
+        self.setWindowIcon(FIcon(0xf1b8))
+
+    def save(self):
+        pass
+
+    def load(self):
+        pass
+
+
+class VariantSettingsWidget(BaseWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle(self.tr("Variant"))
+        self.setWindowIcon(FIcon(0Xf683))
+
+        self.view = QListWidget()
+        self.add_button  = QPushButton("Add")
+        self.edit_button = QPushButton("Edit")
+        self.rem_button  = QPushButton("Remove")
+
+        v_layout = QVBoxLayout()
+        v_layout.addWidget(self.add_button)
+        v_layout.addWidget(self.edit_button)
+        v_layout.addStretch()
+        v_layout.addWidget(self.rem_button)
+
+        main_layout = QHBoxLayout()
+        main_layout.addWidget(self.view)
+        main_layout.addLayout(v_layout)
+
+        self.setLayout(main_layout)
+
+
+        self.add_item("varsome", "https://varsome.com/variant/hg19/{chr}-{pos}-{ref}-{alt}")
+
+
+
+    def save(self):
+        # TODO : save links from settings
+        pass
+
+    def load(self):
+        # TODO : loads links from settings 
+        pass
+
+    def add_item(self, name: str, url : str):
+        # TODO 
+        item = QListWidgetItem(name)
+        item.setData(Qt.UserRole, url)
+        self.view.addItem(item)
+
+
 
 
 class SettingsWidget(QDialog):
@@ -122,8 +211,20 @@ class SettingsWidget(QDialog):
         v_layout.addWidget(self.button_box)
         self.setLayout(v_layout)
 
-        self.addPanel(GeneralSettingsWidget())
+
+        general_settings = GroupWidget()
+        general_settings.setWindowTitle(self.tr("General"))
+        general_settings.setWindowIcon(FIcon(0XF493))
+
+        general_settings.add_settings_widget(TranslationSettingsWidget())
+        general_settings.add_settings_widget(ProxySettingsWidget())
+        general_settings.add_settings_widget(StyleSettingsWidget())
+
+
+        self.addPanel(general_settings)
         self.addPanel(PluginsSettingsWidget())
+        self.addPanel(VariantSettingsWidget())
+        self.addPanel(DatabaseSettingsWidget())
 
         self.resize(800, 400)
 

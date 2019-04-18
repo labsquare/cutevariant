@@ -28,6 +28,7 @@ from PySide2.QtGui import *
 # Custom imports
 from cutevariant.gui import MainWindow, FIcon
 import cutevariant.commons as cm
+from cutevariant.gui.settings import *
 
 
 def main():
@@ -48,10 +49,15 @@ def main():
     # Translations
     load_translations(app)
 
+    # debug settings 
+    # w = SettingsWidget()
+    # w.show()
+
     # Display
     w = MainWindow()
     w.show()
     app.exec_()
+
 
 
 def load_translations(app):
