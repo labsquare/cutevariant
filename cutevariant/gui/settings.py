@@ -3,16 +3,19 @@ import os
 import glob
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
-from PySide2.QtGui import * # QIcon
+from PySide2.QtGui import *  # QIcon
 
 # Custom imports
 import cutevariant.commons as cm
 from cutevariant.gui.ficon import FIcon
 
+
 class BaseWidget(QWidget):
     """Abstract class for settings widgets"""
+
     def __init__(self):
         super().__init__()
+        self.settings = QSettings()
 
     def save(self):
         raise NotImplemented()
@@ -33,22 +36,20 @@ class GroupWidget(QTabWidget):
     def load(self):
         for index in range(self.count()):
             widget = self.widget(index)
-            widget.load() 
-
-
+            widget.load()
 
 
 class TranslationSettingsWidget(BaseWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Translation"))
-        self.setWindowIcon(FIcon(0xf5ca))
+        self.setWindowIcon(FIcon(0xF5CA))
         self.locales_combobox = QComboBox()
         mainLayout = QFormLayout()
         mainLayout.addRow(self.tr("&Choose a locale:"), self.locales_combobox)
 
         self.setLayout(mainLayout)
-        #self.locales_combobox.currentTextChanged.connect(self.switchTranslator)
+        # self.locales_combobox.currentTextChanged.connect(self.switchTranslator)
 
     def save(self):
         """Switch qApp translator with the selected one and save it into config
@@ -60,13 +61,13 @@ class TranslationSettingsWidget(BaseWidget):
         """
 
         # Remove the old translator
-        #qApp.removeTranslator(translator)
+        # qApp.removeTranslator(translator)
 
         # Load the new translator
 
         # Save locale setting
         locale_name = self.locales_combobox.currentText()
-        locale_name = self.settings.setValue("ui/locale", locale_name)
+        self.settings.setValue("ui/locale", locale_name)
         app_translator = QTranslator(qApp)
         if app_translator.load(locale_name, cm.DIR_TRANSLATIONS):
             qApp.installTranslator(app_translator)
@@ -74,11 +75,10 @@ class TranslationSettingsWidget(BaseWidget):
     def load(self):
         """Setup widgets in General settings"""
         self.locales_combobox.clear()
-        self.settings = QSettings()
         # Get names of locales based on available files
         available_translations = {
             os.path.basename(os.path.splitext(file)[0]): file
-            for file in glob.glob(cm.DIR_TRANSLATIONS + '*.qm')
+            for file in glob.glob(cm.DIR_TRANSLATIONS + "*.qm")
         }
         # English is the default language
         available_locales = list(available_translations.keys()) + ["en"]
@@ -89,12 +89,11 @@ class TranslationSettingsWidget(BaseWidget):
         self.locales_combobox.setCurrentIndex(available_locales.index(locale_name))
 
 
-        
 class ProxySettingsWidget(BaseWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Proxy"))
-        self.setWindowIcon(FIcon(0Xf484))
+        self.setWindowIcon(FIcon(0xF484))
 
     def save(self):
         pass
@@ -107,7 +106,7 @@ class StyleSettingsWidget(BaseWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Styles"))
-        self.setWindowIcon(FIcon(0Xf3d8))
+        self.setWindowIcon(FIcon(0xF3D8))
 
     def save(self):
         pass
@@ -120,7 +119,7 @@ class PluginsSettingsWidget(BaseWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Plugins"))
-        self.setWindowIcon(FIcon(0XF3d4))
+        self.setWindowIcon(FIcon(0xF3D4))
 
     def save(self):
         pass
@@ -133,7 +132,7 @@ class DatabaseSettingsWidget(BaseWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("database"))
-        self.setWindowIcon(FIcon(0xf1b8))
+        self.setWindowIcon(FIcon(0xF1B8))
 
     def save(self):
         pass
@@ -146,18 +145,18 @@ class VariantSettingsWidget(BaseWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Variant"))
-        self.setWindowIcon(FIcon(0Xf683))
+        self.setWindowIcon(FIcon(0xF683))
 
         self.view = QListWidget()
-        self.add_button  = QPushButton("Add")
-        self.edit_button = QPushButton("Edit")
-        self.rem_button  = QPushButton("Remove")
+        self.add_button = QPushButton(self.tr("Add"))
+        self.edit_button = QPushButton(self.tr("Edit"))
+        self.remove_button = QPushButton(self.tr("Remove"))
 
         v_layout = QVBoxLayout()
         v_layout.addWidget(self.add_button)
         v_layout.addWidget(self.edit_button)
         v_layout.addStretch()
-        v_layout.addWidget(self.rem_button)
+        v_layout.addWidget(self.remove_button)
 
         main_layout = QHBoxLayout()
         main_layout.addWidget(self.view)
@@ -165,47 +164,105 @@ class VariantSettingsWidget(BaseWidget):
 
         self.setLayout(main_layout)
 
+        # Settings key
+        self.settings_key = "databases_urls/"
+
+        # Signals
         self.add_button.clicked.connect(self.add_url)
+        self.edit_button.clicked.connect(self.edit_item)
+        self.view.itemDoubleClicked.connect(self.add_url)
+        self.remove_button.clicked.connect(self.remove_item)
 
-        #self.add_item("varsome", "https://varsome.com/variant/hg19/{chr}-{pos}-{ref}-{alt}")
-
-
+        # Load built-in databases first
+        [self.add_list_widget_item(*db_name_url)
+         for db_name_url in cm.WEBSITES_URLS.items()]
 
     def save(self):
         # TODO : save links from settings
         pass
 
     def load(self):
-        # TODO : loads links from settings 
-        pass
+        """Load databases URLs from settings"""
+        # Get all child keys of the group databases_urls
+        self.settings.beginGroup(self.settings_key)
 
-    def add_url(self):
+        for db_name in self.settings.childKeys():
+            # Add the item to the list
+            self.add_list_widget_item(db_name, self.settings.value(db_name))
+
+        self.settings.endGroup()
+
+    def add_list_widget_item(self, db_name: str, url: str):
+        """Add an item to the QListWidget of the current view"""
+        # Key is the name of the database, value is its url
+        item = QListWidgetItem(db_name)
+        item.setData(Qt.UserRole, url)
+        self.view.addItem(item)
+
+    def edit_list_widget_item(self, item: QListWidgetItem, db_name: str, url: str):
+        """Modify the given item"""
+        item.setText(db_name)
+        item.setData(Qt.UserRole, url)
+
+    def add_url(self, item=None):
+        """Allow the user to insert and save custom database URL"""
+        # Display dialog box to let the user enter it's own url
         dialog = QDialog()
         name = QLineEdit()
-        url  = QLineEdit()
+        url = QLineEdit()
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         buttons.accepted.connect(dialog.accept)
         buttons.rejected.connect(dialog.reject)
         layout = QFormLayout()
-        layout.addRow("name", name)
-        layout.addRow("url", url)
+        layout.addRow(self.tr("Name"), name)
+        layout.addRow(self.tr("Url"), url)
         layout.addWidget(buttons)
 
         dialog.setLayout(layout)
 
-        if dialog.exec_() == QDialog.Accepted:
-            item = QListWidgetItem(name.text())
-            item.setData(Qt.UserRole, url.text)
-            self.view.addItem(item)
+        if item:
+            # Called by itemDoubleClicked or edit_item
+            # Fill forms with item data
+            name.setText(item.text())
+            url.setText(item.data(Qt.UserRole))
 
-        # TODO 
-        # item = QListWidgetItem(name)
-        # item.setData(Qt.UserRole, url)
-        # self.view.addItem(item)
+        # Also do a minimal check on the data inserted
+        if dialog.exec_() == QDialog.Accepted and name.text() and url.text():
 
+            if item:
+                # Edit the current item in the list
+                self.edit_list_widget_item(item, name.text(), url.text())
+            else:
+                # Add the item to the list
+                self.add_list_widget_item(name.text(), url.text())
 
+            # Save the item in settings
+            # (Here to limit the friction with Save all button)
+            self.settings.setValue(self.settings_key + name.text(), url.text())
 
+    def edit_item(self):
+        """Edit the selected item
 
+        .. note:: This function uses add_url to display the edit window
+        """
+        # Get selected item
+        # Always use the first selected item returned
+        self.add_url(self.view.selectedItems()[0])
+
+    def remove_item(self):
+        """Remove the selected item
+
+        .. todo:: removeItemWidget() is not functional?
+        """
+        # Get selected item
+        item = self.view.selectedItems()[0]
+
+        # Delete key in settings
+        self.settings.remove(self.settings_key + item.text())
+
+        # Delete the item
+        self.view.takeItem(self.view.row(item))
+        del item  # Is it mandatory in Python ?
 
 
 class SettingsWidget(QDialog):
@@ -232,15 +289,13 @@ class SettingsWidget(QDialog):
         v_layout.addWidget(self.button_box)
         self.setLayout(v_layout)
 
-
         general_settings = GroupWidget()
         general_settings.setWindowTitle(self.tr("General"))
-        general_settings.setWindowIcon(FIcon(0XF493))
+        general_settings.setWindowIcon(FIcon(0xF493))
 
         general_settings.add_settings_widget(TranslationSettingsWidget())
         general_settings.add_settings_widget(ProxySettingsWidget())
         general_settings.add_settings_widget(StyleSettingsWidget())
-
 
         self.addPanel(general_settings)
         self.addPanel(PluginsSettingsWidget())

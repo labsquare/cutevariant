@@ -1,22 +1,21 @@
-import copy 
+# Standard imports
+import copy
+import csv
 
+# Qt imports
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 from PySide2.QtGui import *
+
+# Custom imports
 from cutevariant.gui.ficon import FIcon
-
-
 from .plugin import QueryPluginWidget
 from cutevariant.core import Query
 from cutevariant.core import sql
+from cutevariant.gui.style import IMPACT_COLOR
+from cutevariant.commons import logger
 
-
-IMPACT_COLOR = {
-    "LOW": "#71E096",
-    "MODERATE": "#F5A26F",
-    "HIGH": "#ed6d79",
-    "MODIFIER": "#55abe1",
-}
+LOGGER = logger()
 
 
 class QueryModel(QAbstractItemModel):
@@ -51,25 +50,25 @@ class QueryModel(QAbstractItemModel):
             return QModelIndex()
 
         if parent == QModelIndex():
-            return self.createIndex(row, column, 999999)   # HUGLY Hack.. TODO : how to manage pointer ??
+            return self.createIndex(
+                row, column, 999999
+            )  #  HUGLY Hack.. TODO : how to manage pointer ??
 
         else:
             return self.createIndex(row, column, parent.row())
-
 
     def parent(self, child):
         """ override """
         if not child.isValid():
             return QModelIndex()
-    
+
         parent_rowid = child.internalId()
 
         if parent_rowid == 99999999:  # HUGLY ... see upper
             return QModelIndex()
 
         else:
-            return self.index(parent_rowid,0,QModelIndex())
-
+            return self.index(parent_rowid, 0, QModelIndex())
 
     def data(self, index, role=Qt.DisplayRole):
         """ override """
@@ -79,14 +78,13 @@ class QueryModel(QAbstractItemModel):
 
         if role == Qt.DisplayRole:
 
-            if index.parent() == QModelIndex():  # First level 
+            if index.parent() == QModelIndex():  # First level
                 return str(self.variants[index.row()][index.column() + 1])
 
-
             if index.parent().parent() == QModelIndex():
-                return str(self.childs[index.parent().row()][index.row()][index.column() + 1])
-            
-
+                return str(
+                    self.childs[index.parent().row()][index.row()][index.column() + 1]
+                )
 
         return None
 
@@ -106,7 +104,7 @@ class QueryModel(QAbstractItemModel):
         """ override """
         # if invisible root node, always return True
         if parent == QModelIndex():
-            return True 
+            return True
 
         if parent.parent() == QModelIndex():
             return self._child_count(parent) > 1
@@ -115,21 +113,22 @@ class QueryModel(QAbstractItemModel):
         """ override """
         return self.hasChildren(parent)
 
-
-    def fetchMore(self,parent : QModelIndex): 
+    def fetchMore(self, parent: QModelIndex):
         """override """
         if parent == QModelIndex():
             return
 
-        count     = self._child_count(parent)
+        count = self._child_count(parent)
         child_ids = self._child_ids(parent)
         child_query = copy.copy(self.query)
-        # Create a copy query to load childs 
-        child_query.filter = {'AND':[]}
+        # Create a copy query to load childs
+        child_query.filter = {"AND": []}
         child_query.group_by = None
-        child_query.filter["AND"].append({'field': 'rowid', 'operator': ' IN ', 'value':child_ids})
+        child_query.filter["AND"].append(
+            {"field": "rowid", "operator": " IN ", "value": child_ids}
+        )
 
-        self.beginInsertRows(parent,0, count-1);
+        self.beginInsertRows(parent, 0, count - 1)
 
         self.childs[parent.row()] = []
         self.childs[parent.row()] = list(child_query.rows())
@@ -137,10 +136,6 @@ class QueryModel(QAbstractItemModel):
         print(self.childs[parent.row()])
 
         self.endInsertRows()
-           
-
-
-
 
     def _child_count(self, index: QModelIndex):
         """ return child count for the index variant """
@@ -161,17 +156,15 @@ class QueryModel(QAbstractItemModel):
     @query.setter
     def query(self, query: Query):
         self._query = query
-        #self._query.group_by=("chr","pos","ref","alt")
+        # self._query.group_by=("chr","pos","ref","alt")
 
         self.total = query.count()
         self.load()
 
     def load(self):
         self.beginResetModel()
-        self.variants.clear()
-        self.variants = list(self._query.rows(self.limit, self.page * self.limit))
-
-        print(self.variants)
+        self.variants = tuple(self._query.rows(self.limit, self.page * self.limit))
+        LOGGER.debug("QueryModel:load:: variants queried\n%s", self.variants)
         self.endResetModel()
 
     def hasPage(self, page):
@@ -182,23 +175,41 @@ class QueryModel(QAbstractItemModel):
             self.page = page
             self.load()
 
+    def displayed(self):
+        """Get ids of first, last displayed variants on the total number
+
+        :return: Tuple with (first_id, last_id, self.total).
+        :rtype: <tuple <int>,<int>,<int>>
+        """
+        first_id = self.limit * self.page
+
+        if self.hasPage(self.page + 1):
+            # Remainder : self.total - (self.limit * (self.page + 1)))
+            last_id = self.limit * (self.page + 1)
+        else:
+            # Remainder : self.total - (self.limit * self.page)
+            last_id = self.total
+
+        return (first_id, last_id, self.total)
+
     def nextPage(self):
+        """Display the next page of data if it exists"""
         if self.hasPage(self.page + 1):
             self.setPage(self.page + 1)
 
     def previousPage(self):
+        """Display the previous page of data if it exists"""
         if self.hasPage(self.page - 1):
             self.setPage(self.page - 1)
 
     def sort(self, column: int, order):
         """override"""
-        pass
         if column < self.columnCount():
             colname = self._query.columns[column]
 
             print("ORDER", order)
             self._query.order_by = colname
-            self._query.order_desc = (order == Qt.DescendingOrder)
+            self._query.order_desc = order == Qt.DescendingOrder
             self.load()
 
     def get_rowid(self, index):
@@ -274,26 +285,37 @@ class ViewQueryWidget(QueryPluginWidget):
         main_layout.setContentsMargins(0, 0, 0, 0)
 
         # Construct top bar
-        self.topbar.addAction(self.tr("save"))
+        # These actions should be disabled until a query is made (see query setter)
+        self.save_query_action = self.topbar.addAction(self.tr("save"))
+        self.save_query_action.setEnabled(False)
+        self.export_csv_action = self.topbar.addAction(
+            self.tr("Export variants"), self.export_csv
+        )
+        self.export_csv_action.setEnabled(False)
 
         # Construct bottom bar
+        # These actions should be disabled until a query is made (see query setter)
         self.page_info = QLabel()
         self.page_box = QLineEdit()
         self.page_box.setReadOnly(True)
         self.page_box.setFrame(QFrame.NoFrame)
-        self.page_box.setMaximumWidth(50)
+        self.page_box.setFixedWidth(20)
         self.page_box.setAlignment(Qt.AlignHCenter)
         self.page_box.setStyleSheet("QWidget{background-color: transparent;}")
         self.page_box.setText("0")
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        self.bottombar.addAction(FIcon(0xf865),"sql", self.show_sql)
+        # Setup actions
+        self.show_sql_action = self.bottombar.addAction(
+            FIcon(0xF865), self.tr("See SQL query"), self.show_sql
+        )
+        self.show_sql_action.setEnabled(False)
         self.bottombar.addWidget(self.page_info)
         self.bottombar.addWidget(spacer)
-        self.bottombar.addAction(FIcon(0xf141), "<", self.model.previousPage)
+        self.bottombar.addAction(FIcon(0xF141), "<", self.model.previousPage)
         self.bottombar.addWidget(self.page_box)
-        self.bottombar.addAction(FIcon(0xf142),">", self.model.nextPage)
-        self.bottombar.setIconSize(QSize(20,20))
+        self.bottombar.addAction(FIcon(0xF142), ">", self.model.nextPage)
+        self.bottombar.setIconSize(QSize(20, 20))
 
         self.bottombar.setContentsMargins(0, 0, 0, 0)
 
@@ -314,16 +336,49 @@ class ViewQueryWidget(QueryPluginWidget):
         """ Method override from AbstractQueryWidget"""
         self.model.query = query
 
-    def updateInfo(self):
+        # Enable initially disabled actions
+        self.save_query_action.setEnabled(True)
+        self.export_csv_action.setEnabled(True)
+        self.show_sql_action.setEnabled(True)
 
+    def updateInfo(self):
+        """Update metrics for the current query
+
+        .. note:: Update page_info and page_box.
+        """
+
+        # Set text
         self.page_info.setText(f"{self.model.total} variant(s)")
-        self.page_box.setText(f"{self.model.page}")
+        page_box_text = self.tr("{}-{} of {}").format(*self.model.displayed())
+        self.page_box.setText(page_box_text)
+
+        # Adjust page_èbox size to content
+        fm = self.page_box.fontMetrics()
+        self.page_box.setFixedWidth(fm.boundingRect(page_box_text).width() + 5)
 
     def _variant_clicked(self, index):
-        #print("cicked on ", index)
+        # print("cicked on ", index)
         rowid = self.model.get_rowid(index)
         variant = sql.get_one_variant(self.model.query.conn, rowid)
         self.variant_clicked.emit(variant)
+
+    def export_csv(self):
+        """Export variants displayed in the current view to a CSV file"""
+        filepath, filter = QFileDialog.getSaveFileName(
+            self,
+            self.tr("Export variants of the current view"),
+            "view.csv",
+            self.tr("CSV (Comma-separated values) (*.csv)"),
+        )
+
+        if filepath:
+            with open(filepath, "w") as f_d:
+                writer = csv.writer(f_d, delimiter=",")
+                # Write headers (columns in the query) + variants from the model
+                writer.writerow(self.model.query.columns)
+                # Remove the sqlite rowid col
+                g = (variant[1:] for variant in self.model.variants)
+                writer.writerows(g)
 
     def show_sql(self):
         box = QMessageBox()
