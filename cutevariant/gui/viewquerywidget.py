@@ -1,22 +1,17 @@
-import copy 
+# Standard imports
+import copy
 
+# Qt imports
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 from PySide2.QtGui import *
+
+# Custom imports
 from cutevariant.gui.ficon import FIcon
-
-
 from .plugin import QueryPluginWidget
 from cutevariant.core import Query
 from cutevariant.core import sql
-
-
-IMPACT_COLOR = {
-    "LOW": "#71E096",
-    "MODERATE": "#F5A26F",
-    "HIGH": "#ed6d79",
-    "MODIFIER": "#55abe1",
-}
+from cutevariant.gui.style import IMPACT_COLOR
 
 
 class QueryModel(QAbstractItemModel):

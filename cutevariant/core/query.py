@@ -1,7 +1,12 @@
+# Standard imports
 import re
+
+# Custom imports
 from . import sql
 from . import vql
+from cutevariant.commons import logger
 
+LOGGER = logger()
 
 class Query:
     """
@@ -118,7 +123,7 @@ class Query:
         if limit > 0:
             query += f" LIMIT {limit} OFFSET {offset}"
 
-        print(query)
+        LOGGER.debug("Query:sql:: query: %s", query)
         return query
 
         ##-----------------------------------------------------------------------------------------------------------
