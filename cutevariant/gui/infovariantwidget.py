@@ -45,13 +45,14 @@ class InfoVariantWidget(VariantPluginWidget):
             #     self.tr(f"Search the variant on {site}"), self, SLOT(f"open_{site}_url()")
             # )
 
-            action = self.menu.addAction(
-                self.tr("Search the variant on {}").format(site)
-            )
             # Method to set the slot as a instance method
             # (if we want to use it elsewhere)
             # self.__dict__[f"open_{site}_url"] = partial(self.open_url, url_template)
-            action.triggered.connect(partial(self.open_url, url_template))
+
+            self.menu.addAction(
+                self.tr("Search the variant on {}").format(site),
+                partial(self.open_url, url_template)
+            )
 
         self.view.setContextMenuPolicy(Qt.CustomContextMenu)
         self.menu = QMenu(self)
