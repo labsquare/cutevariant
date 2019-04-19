@@ -57,7 +57,8 @@ class InfoVariantWidget(VariantPluginWidget):
         self.view.setContextMenuPolicy(Qt.CustomContextMenu)
         self.menu = QMenu(self)
         self.menu.addAction(
-            self.tr("Copy variant to clipboard"), self, SLOT("to_clipboard()")
+            self.tr("Copy variant to clipboard"),
+            self.to_clipboard
         )
 
         self.menu.addSeparator()

@@ -175,17 +175,35 @@ class QueryModel(QAbstractItemModel):
             self.page = page
             self.load()
 
+    def displayed(self):
+        """Get ids of first, last displayed variants on the total number
+
+        :return: Tuple with (first_id, last_id, self.total).
+        :rtype: <tuple <int>,<int>,<int>>
+        """
+        first_id = self.limit * self.page
+
+        if self.hasPage(self.page + 1):
+            # Remainder : self.total - (self.limit * (self.page + 1)))
+            last_id = self.limit * (self.page + 1)
+        else:
+            # Remainder : self.total - (self.limit * self.page)
+            last_id = self.total
+
+        return (first_id, last_id, self.total)
+
     def nextPage(self):
+        """Display the next page of data if it exists"""
         if self.hasPage(self.page + 1):
             self.setPage(self.page + 1)
 
     def previousPage(self):
+        """Display the previous page of data if it exists"""
         if self.hasPage(self.page - 1):
             self.setPage(self.page - 1)
 
     def sort(self, column: int, order):
         """override"""
-        pass
         if column < self.columnCount():
             colname = self._query.columns[column]
 
@@ -323,7 +341,9 @@ class ViewQueryWidget(QueryPluginWidget):
 
     def updateInfo(self):
 
-        self.page_info.setText(f"{self.model.total} variant(s)")
+        self.page_info.setText(
+            self.tr("{}-{} of {} variant(s)").format(*self.model.displayed())
+        )
         self.page_box.setText(f"{self.model.page}")
 
     def _variant_clicked(self, index):
