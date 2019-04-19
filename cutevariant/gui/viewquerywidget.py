@@ -285,26 +285,27 @@ class ViewQueryWidget(QueryPluginWidget):
         main_layout.setContentsMargins(0, 0, 0, 0)
 
         # Construct top bar
-        self.topbar.addAction(self.tr("save"))
+        # These actions should be disabled until a query is made (see query setter)
+        self.save_query_action = self.topbar.addAction(self.tr("save"))
+        self.save_query_action.setEnabled(False)
+        self.export_csv_action = self.topbar.addAction(
+            self.tr("Export variants"), self.export_csv
+        )
+        self.export_csv_action.setEnabled(False)
 
         # Construct bottom bar
+        # These actions should be disabled until a query is made (see query setter)
         self.page_info = QLabel()
         self.page_box = QLineEdit()
         self.page_box.setReadOnly(True)
         self.page_box.setFrame(QFrame.NoFrame)
-        self.page_box.setMaximumWidth(50)
+        self.page_box.setFixedWidth(20)
         self.page_box.setAlignment(Qt.AlignHCenter)
         self.page_box.setStyleSheet("QWidget{background-color: transparent;}")
         self.page_box.setText("0")
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-
         # Setup actions
-        # These actions should be disabled until a query is made (see query setter)
-        self.export_csv_action = self.bottombar.addAction(
-            self.tr("Export variants"), self.export_csv
-        )
-        self.export_csv_action.setEnabled(False)
         self.show_sql_action = self.bottombar.addAction(
             FIcon(0xF865), self.tr("See SQL query"), self.show_sql
         )
@@ -336,15 +337,24 @@ class ViewQueryWidget(QueryPluginWidget):
         self.model.query = query
 
         # Enable initially disabled actions
+        self.save_query_action.setEnabled(True)
         self.export_csv_action.setEnabled(True)
         self.show_sql_action.setEnabled(True)
 
     def updateInfo(self):
+        """Update metrics for the current query
 
-        self.page_info.setText(
-            self.tr("{}-{} of {} variant(s)").format(*self.model.displayed())
-        )
-        self.page_box.setText(f"{self.model.page}")
+        .. note:: Update page_info and page_box.
+        """
+
+        # Set text
+        self.page_info.setText(f"{self.model.total} variant(s)")
+        page_box_text = self.tr("{}-{} of {}").format(*self.model.displayed())
+        self.page_box.setText(page_box_text)
+
+        # Adjust page_èbox size to content
+        fm = self.page_box.fontMetrics()
+        self.page_box.setFixedWidth(fm.boundingRect(page_box_text).width() + 5)
 
     def _variant_clicked(self, index):
         # print("cicked on ", index)
