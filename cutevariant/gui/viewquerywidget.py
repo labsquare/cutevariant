@@ -163,7 +163,6 @@ class QueryModel(QAbstractItemModel):
 
     def load(self):
         self.beginResetModel()
-        self.variants.clear()
         self.variants = tuple(self._query.rows(self.limit, self.page * self.limit))
         LOGGER.debug("QueryModel:load:: variants queried\n%s", self.variants)
         self.endResetModel()
