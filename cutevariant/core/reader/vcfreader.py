@@ -9,7 +9,22 @@ VCF_TYPE_MAPPING = {"Float": "float", "Integer": "int", "Flag": "bool", "String"
 
 
 class VcfReader(AbstractReader):
+    """
+    VCF parser to extract data from vcf file. See Abstract Reader for more information
+
+    Attributes:
+        annotation_parser (object): Support "VepParser()" and "SnpeffParser()"    
+
+    ..seealso: AbstractReader 
+
+    """
     def __init__(self, device, annotation_parser:str = None):
+        """
+        Construct a VCF Reader 
+
+        :param device: file device returned by open 
+        :param annotation_parser (str): "vep" or "snpeff" 
+        """
         super().__init__(device)
 
         vcf_reader = vcf.VCFReader(device)
@@ -19,7 +34,7 @@ class VcfReader(AbstractReader):
 
 
     def get_fields(self):
-        # Remove duplicate
+        """ override methode """
         fields = self.parse_fields()
         if self.annotation_parser:
             return self.annotation_parser.parse_fields(fields)
@@ -28,13 +43,14 @@ class VcfReader(AbstractReader):
 
 
     def get_variants(self):
+        """ override methode """
         if self.annotation_parser:
             yield from self.annotation_parser.parse_variants(self.parse_variants())
         else:
             yield from self.parse_variants()
 
     def parse_variants(self):
-        """ Extract Variants from VCF file """
+        """ Read file and parse variants  """
 
         #  get avaible fields
         fields = list(self.parse_fields())
@@ -177,7 +193,10 @@ class VcfReader(AbstractReader):
 
 
     def _keep_unique_fields(self,fields):
-        ''' return fields list with unique field name ''' 
+        """
+        return fields list with unique field name 
+        """
+
         names = []
         for field in fields:
             if field["name"] not in names:

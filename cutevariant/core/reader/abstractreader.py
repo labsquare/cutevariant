@@ -114,7 +114,7 @@ class AbstractReader(ABC):
         Mandatory fields to add automatically
 
         ..todo: Move this methods somewhere else .. 
-        ..warning: deprectated
+        ..warning: DEPRECTATED
 
         """
         yield from self.parse_fields()
@@ -136,7 +136,7 @@ class AbstractReader(ABC):
         """
         decorator for get_fields
 
-        ..warning: deprectated
+        ..warning: DEPRECTATED
         """
 
         yield from self.parse_variants()
