@@ -1,5 +1,6 @@
 # Standard imports
 import copy
+import csv
 
 # Qt imports
 from PySide2.QtWidgets import *
@@ -12,7 +13,9 @@ from .plugin import QueryPluginWidget
 from cutevariant.core import Query
 from cutevariant.core import sql
 from cutevariant.gui.style import IMPACT_COLOR
+from cutevariant.commons import logger
 
+LOGGER = logger()
 
 class QueryModel(QAbstractItemModel):
     def __init__(self, parent=None):
@@ -158,15 +161,15 @@ class QueryModel(QAbstractItemModel):
         self._query = query
         #self._query.group_by=("chr","pos","ref","alt")
 
+
         self.total = query.count()
         self.load()
 
     def load(self):
         self.beginResetModel()
         self.variants.clear()
-        self.variants = list(self._query.rows(self.limit, self.page * self.limit))
-
-        print(self.variants)
+        self.variants = tuple(self._query.rows(self.limit, self.page * self.limit))
+        LOGGER.debug("QueryModel:load:: variants queried\n%s", self.variants)
         self.endResetModel()
 
     def hasPage(self, page):
@@ -282,7 +285,13 @@ class ViewQueryWidget(QueryPluginWidget):
         self.page_box.setText("0")
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        self.bottombar.addAction(FIcon(0xf865),"sql", self.show_sql)
+
+        # Setup actions
+        # These actions should be disabled until a query is made (see query setter)
+        self.export_csv_action = self.bottombar.addAction(self.tr("Export variants"), self.export_csv)
+        self.export_csv_action.setEnabled(False)
+        self.show_sql_action = self.bottombar.addAction(FIcon(0xf865), self.tr("See SQL query"), self.show_sql)
+        self.show_sql_action.setEnabled(False)
         self.bottombar.addWidget(self.page_info)
         self.bottombar.addWidget(spacer)
         self.bottombar.addAction(FIcon(0xf141), "<", self.model.previousPage)
@@ -309,6 +318,10 @@ class ViewQueryWidget(QueryPluginWidget):
         """ Method override from AbstractQueryWidget"""
         self.model.query = query
 
+        # Enable initially disabled actions
+        self.export_csv_action.setEnabled(True)
+        self.show_sql_action.setEnabled(True)
+
     def updateInfo(self):
 
         self.page_info.setText(f"{self.model.total} variant(s)")
@@ -319,6 +332,23 @@ class ViewQueryWidget(QueryPluginWidget):
         rowid = self.model.get_rowid(index)
         variant = sql.get_one_variant(self.model.query.conn, rowid)
         self.variant_clicked.emit(variant)
+
+    def export_csv(self):
+        """Export variants displayed in the current view to a CSV file"""
+        filepath, filter = QFileDialog.getSaveFileName(
+            self, self.tr("Export variants of the current view"),
+            "view.csv",
+            self.tr("CSV (Comma-separated values) (*.csv)")
+        )
+
+        if filepath:
+            with open(filepath, 'w') as f_d:
+                writer = csv.writer(f_d, delimiter=',')
+                # Write headers (columns in the query) + variants from the model
+                writer.writerow(self.model.query.columns)
+                # Remove the sqlite rowid col
+                g = (variant[1:] for variant in self.model.variants)
+                writer.writerows(g)
 
     def show_sql(self):
         box = QMessageBox()
