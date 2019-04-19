@@ -3,14 +3,16 @@ import os
 import glob
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
-from PySide2.QtGui import * # QIcon
+from PySide2.QtGui import *  # QIcon
 
 # Custom imports
 import cutevariant.commons as cm
 from cutevariant.gui.ficon import FIcon
 
+
 class BaseWidget(QWidget):
     """Abstract class for settings widgets"""
+
     def __init__(self):
         super().__init__()
         self.settings = QSettings()
@@ -34,22 +36,20 @@ class GroupWidget(QTabWidget):
     def load(self):
         for index in range(self.count()):
             widget = self.widget(index)
-            widget.load() 
-
-
+            widget.load()
 
 
 class TranslationSettingsWidget(BaseWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Translation"))
-        self.setWindowIcon(FIcon(0xf5ca))
+        self.setWindowIcon(FIcon(0xF5CA))
         self.locales_combobox = QComboBox()
         mainLayout = QFormLayout()
         mainLayout.addRow(self.tr("&Choose a locale:"), self.locales_combobox)
 
         self.setLayout(mainLayout)
-        #self.locales_combobox.currentTextChanged.connect(self.switchTranslator)
+        # self.locales_combobox.currentTextChanged.connect(self.switchTranslator)
 
     def save(self):
         """Switch qApp translator with the selected one and save it into config
@@ -61,13 +61,13 @@ class TranslationSettingsWidget(BaseWidget):
         """
 
         # Remove the old translator
-        #qApp.removeTranslator(translator)
+        # qApp.removeTranslator(translator)
 
         # Load the new translator
 
         # Save locale setting
         locale_name = self.locales_combobox.currentText()
-        locale_name = self.settings.setValue("ui/locale", locale_name)
+        self.settings.setValue("ui/locale", locale_name)
         app_translator = QTranslator(qApp)
         if app_translator.load(locale_name, cm.DIR_TRANSLATIONS):
             qApp.installTranslator(app_translator)
@@ -78,7 +78,7 @@ class TranslationSettingsWidget(BaseWidget):
         # Get names of locales based on available files
         available_translations = {
             os.path.basename(os.path.splitext(file)[0]): file
-            for file in glob.glob(cm.DIR_TRANSLATIONS + '*.qm')
+            for file in glob.glob(cm.DIR_TRANSLATIONS + "*.qm")
         }
         # English is the default language
         available_locales = list(available_translations.keys()) + ["en"]
@@ -89,12 +89,11 @@ class TranslationSettingsWidget(BaseWidget):
         self.locales_combobox.setCurrentIndex(available_locales.index(locale_name))
 
 
-
 class ProxySettingsWidget(BaseWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Proxy"))
-        self.setWindowIcon(FIcon(0Xf484))
+        self.setWindowIcon(FIcon(0xF484))
 
     def save(self):
         pass
@@ -107,7 +106,7 @@ class StyleSettingsWidget(BaseWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Styles"))
-        self.setWindowIcon(FIcon(0Xf3d8))
+        self.setWindowIcon(FIcon(0xF3D8))
 
     def save(self):
         pass
@@ -120,7 +119,7 @@ class PluginsSettingsWidget(BaseWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Plugins"))
-        self.setWindowIcon(FIcon(0XF3d4))
+        self.setWindowIcon(FIcon(0xF3D4))
 
     def save(self):
         pass
@@ -133,7 +132,7 @@ class DatabaseSettingsWidget(BaseWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("database"))
-        self.setWindowIcon(FIcon(0xf1b8))
+        self.setWindowIcon(FIcon(0xF1B8))
 
     def save(self):
         pass
@@ -146,12 +145,12 @@ class VariantSettingsWidget(BaseWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Variant"))
-        self.setWindowIcon(FIcon(0Xf683))
+        self.setWindowIcon(FIcon(0xF683))
 
         self.view = QListWidget()
-        self.add_button  = QPushButton(self.tr("Add"))
+        self.add_button = QPushButton(self.tr("Add"))
         self.edit_button = QPushButton(self.tr("Edit"))
-        self.remove_button  = QPushButton(self.tr("Remove"))
+        self.remove_button = QPushButton(self.tr("Remove"))
 
         v_layout = QVBoxLayout()
         v_layout.addWidget(self.add_button)
@@ -210,7 +209,7 @@ class VariantSettingsWidget(BaseWidget):
         # Display dialog box to let the user enter it's own url
         dialog = QDialog()
         name = QLineEdit()
-        url  = QLineEdit()
+        url = QLineEdit()
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         buttons.accepted.connect(dialog.accept)
         buttons.rejected.connect(dialog.reject)
@@ -228,8 +227,7 @@ class VariantSettingsWidget(BaseWidget):
             url.setText(item.data(Qt.UserRole))
 
         # Also do a minimal check on the data inserted
-        if (dialog.exec_() == QDialog.Accepted
-            and name.text() and url.text()):
+        if dialog.exec_() == QDialog.Accepted and name.text() and url.text():
 
             if item:
                 # Edit the current item in the list
@@ -264,7 +262,7 @@ class VariantSettingsWidget(BaseWidget):
 
         # Delete the item
         self.view.takeItem(self.view.row(item))
-        del item # Is it mandatory in Python ?
+        del item  # Is it mandatory in Python ?
 
 
 class SettingsWidget(QDialog):
@@ -291,15 +289,13 @@ class SettingsWidget(QDialog):
         v_layout.addWidget(self.button_box)
         self.setLayout(v_layout)
 
-
         general_settings = GroupWidget()
         general_settings.setWindowTitle(self.tr("General"))
-        general_settings.setWindowIcon(FIcon(0XF493))
+        general_settings.setWindowIcon(FIcon(0xF493))
 
         general_settings.add_settings_widget(TranslationSettingsWidget())
         general_settings.add_settings_widget(ProxySettingsWidget())
         general_settings.add_settings_widget(StyleSettingsWidget())
-
 
         self.addPanel(general_settings)
         self.addPanel(PluginsSettingsWidget())
