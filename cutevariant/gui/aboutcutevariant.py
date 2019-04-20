@@ -1,3 +1,4 @@
+"""Expose AboutCutevariant class to show information about the project"""
 # Standard imports
 from pkg_resources import resource_filename
 
@@ -12,22 +13,27 @@ from cutevariant import commons as cm
 from cutevariant import __version__
 
 class AboutCutevariant(QDialog):
-    def __init__(self, parent=None):
+    """Display a dialog window with information about the project
 
-        super(AboutCutevariant, self).__init__()
+    The window is mainly about the project license, authors, history of changes.
+    """
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
 
         self.setWindowTitle(self.tr("About Cutevariant"))
+        self.setWindowIcon(QIcon(cm.DIR_ICONS + "app.png"))
 
         self.tab_widget = QTabWidget()
         self.header_lbl = QLabel()
         self.button_box = QDialogButtonBox()
 
-        githubButton = self.button_box.addButton("Github", QDialogButtonBox.HelpRole)
-        twitterButton = self.button_box.addButton("Twitter", QDialogButtonBox.HelpRole)
+        github_button = self.button_box.addButton("GitHub", QDialogButtonBox.HelpRole)
+        twitter_button = self.button_box.addButton("Twitter", QDialogButtonBox.HelpRole)
 
         self.button_box.addButton(QDialogButtonBox.Ok)
-        githubButton.setIcon(FIcon(0xF2A4))
-        twitterButton.setIcon(FIcon(0xF546))
+        github_button.setIcon(FIcon(0xF2A4))
+        twitter_button.setIcon(FIcon(0xF546))
 
         vLayout = QVBoxLayout()
         vLayout.addWidget(self.header_lbl)
@@ -45,14 +51,13 @@ class AboutCutevariant(QDialog):
 
         # Connexions
         self.button_box.button(QDialogButtonBox.Ok).clicked.connect(self.close)
-        githubButton.clicked.connect(self.openGithub)
-        twitterButton.clicked.connect(self.openTwitter)
+        github_button.clicked.connect(self.open_github_page)
+        twitter_button.clicked.connect(self.open_twitter_page)
 
         self.resize(600, 400)
 
     def addTab(self, filename):
         """Read the given text file and load it in a new tab"""
-
         # Get file at the project's root directory
         filepath = resource_filename(__name__, "../../" + filename)
 
@@ -75,7 +80,6 @@ class AboutCutevariant(QDialog):
 
     def drawHeader(self):
         """Draw logo/copyright in the header"""
-
         pHeight = 90
         pMargin = 15
         icon_path = cm.DIR_ICONS + "app.png"
@@ -132,10 +136,10 @@ class AboutCutevariant(QDialog):
         # QPaintDevice: Cannot destroy paint device that is being painted
         painter.end()
 
-    @Slot()
-    def openGithub(self):
+    def open_github_page(self):
+        """Open the project page on GitHub"""
         QDesktopServices.openUrl(QUrl("https://github.com/labsquare/cutevariant"))
 
-    @Slot()
-    def openTwitter(self):
+    def open_twitter_page(self):
+        """Open the labsquare page on Twitter"""
         QDesktopServices.openUrl(QUrl("https://twitter.com/labsquare"))
