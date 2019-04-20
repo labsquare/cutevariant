@@ -6,12 +6,20 @@ import cutevariant.commons as cm
 LOGGER = cm.logger()
 
 
+## ================ Misc functions =============================================
+
 def drop_table(conn, table_name):
+    """Drop the given table"""
     c = conn.cursor()
     c.execute(f"DROP TABLE IF EXISTS {table_name}")
 
 
-def create_project(conn, name, reference):
+def create_project(conn, name: str, reference: str):
+    """Create the table "projects" and insert project name and reference genome
+
+    :param name: Project's name
+    :param reference: Reference genome
+    """
     cursor = conn.cursor()
     cursor.execute("""CREATE TABLE projects (name text, reference text NULL)""")
     cursor.execute(
@@ -21,36 +29,33 @@ def create_project(conn, name, reference):
     conn.commit()
 
 
-
-
-## ================ SELECTION functions =============================
+## ================ SELECTION functions ========================================
 
 
 def create_table_selections(conn):
-    """ 
-    create selection table and selection_has_variant 
+    """Create the table "selections" and association table "selection_has_variant"
+
+    This table stores the queries saved by the user.
 
     :param conn: sqlite3.connect
     """
-
     cursor = conn.cursor()
     cursor.execute(
-        """CREATE TABLE selections (name text, count INTEGER NULL, query text NULL )"""
+        """CREATE TABLE selections (name TEXT, count INTEGER NULL, query TEXT NULL)"""
     )
     cursor.execute(
-        """CREATE TABLE selection_has_variant (variant_id integer, selection_id integer)"""
+        """CREATE TABLE selection_has_variant (variant_id INTEGER, selection_id INTEGER)"""
     )
     conn.commit()
 
 
 def insert_selection(conn, query=str(), name="no_name", count=0):
-    """ 
-    insert one selection record
+    """Insert one selection record (NOT USED)
 
     :param conn: sqlite3.connect
-    :param name: name of the selection 
-    :param count: precompute variant count 
-    :param query: Sql variant query selection 
+    :param name: name of the selection
+    :param count: precompute variant count
+    :param query: Sql variant query selection
 
     .. seealso:: create_selection_from_sql
      """
@@ -63,39 +68,43 @@ def insert_selection(conn, query=str(), name="no_name", count=0):
     return cursor.lastrowid
 
 
-def create_selection_from_sql(conn,query, name, by="site", count = None):
-    """ 
-    Create a selection record from sql variant query 
+def create_selection_from_sql(conn,query, name, by="site", count=None):
+    """Create a selection record from sql variant query
 
     :param name : name of the selection
-    :param query: sql variant query 
+    :param query: sql variant query
     :param by: can be : 'site' for (chr,pos)  or 'variant' for (chr,pos,ref,alt)
     """
 
     cursor = conn.cursor()
 
-    # Compute query count 
+    # Compute query count
     # TODO : this can take a while .... need to compute only one from elsewhere
     if count is None:
         count = cursor.execute(f"SELECT COUNT(*) FROM ({query})").fetchone()[0]
 
-    #  Create selection
+    # Create selection
     selection_id = insert_selection(conn, name=name, count=count, query=query)
 
-    # insert into selection_has_variants table
+    # Insert into selection_has_variant table
     if by == "site":
         q = f"""
-        INSERT INTO selection_has_variant 
+        INSERT INTO selection_has_variant
         SELECT variants.rowid, {selection_id} FROM variants
-        INNER JOIN ({query}) query WHERE variants.chr = query.chr AND variants.pos = query.pos
+        INNER JOIN ({query}) query
+            ON variants.chr = query.chr
+            AND variants.pos = query.pos
         """
 
     if by == "variant":
         q = f"""
-        INSERT INTO selection_has_variant 
-        SELECT variants.rowid, {selection_id} FROM variants 
-        INNER JOIN ({query}) as query 
-        WHERE variants.chr = query.chr AND variants.pos = query.pos AND variants.ref = query.ref AND variants.alt = query.alt
+        INSERT INTO selection_has_variant
+        SELECT variants.rowid, {selection_id} FROM variants
+        INNER JOIN ({query}) as query
+            ON variants.chr = query.chr
+            AND variants.pos = query.pos
+            AND variants.ref = query.ref
+            AND variants.alt = query.alt
         """
 
     cursor.execute(q)
@@ -108,78 +117,85 @@ def create_selection_from_sql(conn,query, name, by="site", count = None):
     #     """
     # )
 
-    conn.commit()
+    # conn.commit()
 
 
 def get_selections(conn):
+    """Get selections in "selections" table
+
+    .. todo:: Should this function retun a dict??
+        Later, the dict is almost useless and it is very repetitive...
+    """
     cursor = conn.cursor()
-    for row in cursor.execute("""SELECT * FROM selections """):
-        record = dict()
-        record["name"] = row[0]
-        record["count"] = row[1]
-        record["query"] = row[2]
-        yield record
+    return ({
+        "name": name,
+        "count": count,
+        "query": query,
+    } for name, count, query in cursor.execute("""SELECT * FROM selections"""))
+
+
+## ================ Operations on sets of variants =============================
+
+
+def get_query_columns(by):
+    """Handy func to get columns to be queried according to the group by argument
+
+    .. note:: Used by intersect_variants, union_variants, subtract_variants
+        in order to avoid code duplication.
+    """
+    if by == "site":
+        return "chr,pos"
+
+    if by == "variant":
+        return "chr,pos,ref,alt"
+
+    raise NotImplementedError
 
 
 def intersect_variants(query1, query2, by="site"):
-
-    if by == "site":
-        col = "chr,pos"
-
-    if by == "variant":
-        col = "chr,pos,ref,alt"
-
+    """Get the variants obtained by the intersection of 2 queries"""
+    columns = get_query_columns(by)
     return f"""
-    SELECT {col} FROM ({query1})
-    INTERSECT 
-    SELECT {col} FROM ({query2})
+    SELECT {columns} FROM ({query1})
+    INTERSECT
+    SELECT {columns} FROM ({query2})
     """
-
-    return query
 
 
 def union_variants(query1, query2, by="site"):
-    if by == "site":
-        col = "chr,pos"
-
-    if by == "variant":
-        col = "chr,pos,ref,alt"
-
+    """Get the variants obtained by the union of 2 queries"""
+    columns = get_query_columns(by)
     return f"""
-    SELECT {col} FROM ({query1})
+    SELECT {columns} FROM ({query1})
     UNION
-    SELECT {col} FROM ({query2})
+    SELECT {columns} FROM ({query2})
     """
 
 
 def subtract_variants(query1, query2, by="site"):
-    if by == "site":
-        col = "chr,pos"
-
-    if by == "variant":
-        col = "chr,pos,ref,alt"
-
+    """Get the variants obtained by the difference of 2 queries"""
+    columns = get_query_columns(by)
     return f"""
-    SELECT {col} FROM ({query1})
+    SELECT {columns} FROM ({query1})
     EXCEPT
-    SELECT {col} FROM ({query2})
+    SELECT {columns} FROM ({query2})
     """
 
 
-## ================ Fields functions =============================
+## ================ Fields functions ===========================================
 
 
 def create_table_fields(conn):
-    """ 
-    create field table 
+    """Create the table "fields"
+
+    .. todo:: What is this table supposed to store?
 
     :param conn: sqlite3.connect
-
     """
     cursor = conn.cursor()
     cursor.execute(
         """CREATE TABLE fields
-        (name text, category text NULL, type text NULL, description text NULL )
+        (name TEXT, category TEXT NULL, type TEXT NULL, description TEXT NULL)
         """
     )
     conn.commit()
@@ -188,18 +204,20 @@ def create_table_fields(conn):
 def insert_field(
     conn, name="no_name", category="variants", type="text", description=str()
 ):
-    """ 
-    insert one field 
+    """Insert one field record (NOT USED)
 
     :param conn: sqlite3.connect
-    :param name: field name
-    :param category: category field name. The default is "variants". Don't use sample as category name
-    :param type: sqlite type which can be : integer, real, text
+    :key name: field name
+    :key category: category field name.
+        .. warning:: The default is "variants". Don't use sample as category name
+    :key type: sqlite type which can be: INTEGER, REAL, TEXT
+        .. todo:: Check this argument...
+    :key description:
     """
     cursor = conn.cursor()
     cursor.execute(
         """
-        INSERT INTO fields VALUES (:name,:category, :type, :description)
+        INSERT INTO fields VALUES (:name, :category, :type, :description)
         """,
         {"name": name, "category": category, "type": type, "description": description},
     )
@@ -208,25 +226,23 @@ def insert_field(
 
 
 def insert_many_fields(conn, data: list):
-    """ 
-    insert many fields using one commit 
+    """Insert multiple fields using one commit
 
     :param conn: sqlite3.connect
     :param data: list of field dictionnary
 
-    :Exemple: 
+    :Examples:
 
-    insert_many_field(conn, [{name:"sacha", category:"variant", count: 0, description="a description"}])
-    insert_many_field(conn, reader.get_fields())
+        insert_many_fields(conn, [{name:"sacha", category:"variant", count: 0, description="a description"}])
+        insert_many_fields(conn, reader.get_fields())
 
     .. seealso:: insert_field, abstractreader
-
     """
     cursor = conn.cursor()
     cursor.executemany(
         """
-        INSERT INTO fields (name,category,type,description) 
-        VALUES (:name,:category,:type, :description)
+        INSERT INTO fields (name,category,type,description)
+        VALUES (:name,:category,:type,:description)
         """,
         data,
     )
@@ -234,26 +250,26 @@ def insert_many_fields(conn, data: list):
 
 
 def get_fields(conn):
-    """ 
-    return fields as list of dictionnary 
+    """Get fields as list of dictionnary
 
     :param conn: sqlite3.connect
-    :return: list of dictionnary 
+    :return: list of dictionnary
 
-    .. seealso:: insert_many_field
-
+    .. seealso:: insert_many_fields
+    .. todo:: Should this function retun a dict??
+        Later, the dict is almost useless and it is very repetitive...
     """
     cursor = conn.cursor()
 
-    for row in cursor.execute("""SELECT * FROM fields """):
-        record = dict()
-        record["name"] = row[0]
-        record["category"] = row[1]
-        record["type"] = row[2]
-        record["description"] = row[3]
-        yield record
+    return ({
+        "name": name,
+        "category": category,
+        "type": type,
+        "description": description,
+    } for name, category, type, description in cursor.execute("""SELECT * FROM fields"""))
 
 
+## ================ ANNOTATIONS tables =========================================
 
 ## ================ ANNOTATIONS tables ==============================
 
