@@ -7,12 +7,12 @@ from .sql import *
 
 
 
-def async_import_reader(conn, reader: AbstractReader, **args):
+def async_import_reader(conn, reader: AbstractReader, **kwargs):
     """
     Import reader into sqlite connection
 
     :param conn: sqlite connection
-    :param reader: must be a AbstractReader base class 
+    :param reader: must be a AbstractReader base class
 
     :return: yield progression and message
 
@@ -21,7 +21,11 @@ def async_import_reader(conn, reader: AbstractReader, **args):
 
     yield 0, f"Import data with {reader}"
 
-    create_project(conn, name="test", reference="test")
+    create_project(
+        conn,
+        name=kwargs.get("project_name", "UKN"),
+        reference=kwargs.get("reference", "UKN")
+    )
 
     yield 0, "create table shema"
     # Create table fields
@@ -66,13 +70,14 @@ def async_import_file(conn, filename, project={}):
     Import filename into sqlite connection
 
     :param conn: sqlite connection
-    :param filenaame: variant filename 
+    :param filenaame: variant filename
 
     :return: yield progression and message
 
     """
+
     with create_reader(filename) as reader:
-        yield from async_import_reader(conn,reader)
+        yield from async_import_reader(conn, reader, **project)
 
 
 def import_file(conn, filename):
