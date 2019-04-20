@@ -3,14 +3,21 @@
 from pkg_resources import resource_filename
 
 # Qt imports
-from PySide2.QtCore import *
-from PySide2.QtWidgets import *
-from PySide2.QtGui import *
+from PySide2.QtCore import Qt, QRect, QUrl
+from PySide2.QtWidgets import (
+    QDialog, QTabWidget, QLabel, QDialogButtonBox, QVBoxLayout, QPlainTextEdit,
+    QFrame
+)
+from PySide2.QtGui import (
+    QIcon, QPixmap, QPainter, QBrush, QFont, QPen, QColor, QFontMetrics,
+    QDesktopServices
+)
 
 # Custom imports
 from cutevariant.gui.ficon import FIcon
 from cutevariant import commons as cm
 from cutevariant import __version__
+
 
 class AboutCutevariant(QDialog):
     """Display a dialog window with information about the project
@@ -125,8 +132,7 @@ class AboutCutevariant(QDialog):
         painter.drawText(
             titleRect,
             Qt.AlignTop,
-            f"Version %s\nGPL3 Copyright (C) 2018-2019\nLabsquare.org"
-            % __version__,
+            f"Version %s\nGPL3 Copyright (C) 2018-2019\nLabsquare.org" % __version__,
         )
 
         self.header_lbl.setPixmap(pixmap)
