@@ -3,6 +3,7 @@ import os
 import sqlite3
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
+from PySide2.QtGui import QIcon
 
 # Custom imports
 from cutevariant.core.importer import async_import_file
@@ -286,6 +287,7 @@ class ProjetWizard(QWizard):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Cutevariant - Project creation wizard"))
+        self.setWindowIcon(QIcon(cm.DIR_ICONS + "app.png"))
 
         self.addPage(ProjetPage())
         self.addPage(FilePage())

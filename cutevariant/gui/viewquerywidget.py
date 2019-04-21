@@ -286,8 +286,6 @@ class ViewQueryWidget(QueryPluginWidget):
 
         # Construct top bar
         # These actions should be disabled until a query is made (see query setter)
-        self.save_query_action = self.topbar.addAction(self.tr("save"))
-        self.save_query_action.setEnabled(False)
         self.export_csv_action = self.topbar.addAction(
             self.tr("Export variants"), self.export_csv
         )
@@ -337,7 +335,6 @@ class ViewQueryWidget(QueryPluginWidget):
         self.model.query = query
 
         # Enable initially disabled actions
-        self.save_query_action.setEnabled(True)
         self.export_csv_action.setEnabled(True)
         self.show_sql_action.setEnabled(True)
 
