@@ -190,22 +190,10 @@ class QueryModel(QAbstractItemModel):
         # self.childs[parent.row()] = []
         # self.childs[parent.row()] = list(child_query.rows())
 
-        print(self.variants)
 
         self.endInsertRows()
 
 
-    def _child_count(self, index: QModelIndex):
-        """ return child count for the index variant """
-        if not self._query.group_by:
-            return 0
-        return self.variants[index.row()][-2]
-
-    def _child_ids(self, index: QModelIndex):
-        """ return childs sql ids for the index variant """
-        if not self._query.group_by:
-            return 0
-        return self.variants[index.row()][-1].split(",")
 
     @property
     def query(self):
@@ -279,9 +267,14 @@ class QueryModel(QAbstractItemModel):
         if self.hasPage(self.page - 1):
             self.setPage(self.page - 1)
 
+    def variant(self, index: QModelIndex):
 
-    def get_rowid(self, index):
-        return self.variants[index.row()][0]
+        if index.parent() == QModelIndex():
+            return self.variants[index.row()][0]
+
+        if index.parent().parent() == QModelIndex():
+            return self.variants[index.parent().row()][index.row()]
+
 
 
 class QueryDelegate(QStyledItemDelegate):
@@ -397,7 +390,7 @@ class ViewQueryWidget(QueryPluginWidget):
         self.model.modelReset.connect(self.updateInfo)
 
         # emit variant when clicked
-        #self.view.clicked.connect(self._variant_clicked)
+        self.view.clicked.connect(self._variant_clicked)
 
     @property
     def query(self):
@@ -430,7 +423,7 @@ class ViewQueryWidget(QueryPluginWidget):
 
     def _variant_clicked(self, index):
         # print("cicked on ", index)
-        rowid = self.model.get_rowid(index)
+        rowid = self.model.variant(index)[0]
         variant = sql.get_one_variant(self.model.query.conn, rowid)
         self.variant_clicked.emit(variant)
 
@@ -461,3 +454,26 @@ class ViewQueryWidget(QueryPluginWidget):
 
         box.setInformativeText(text)
         box.exec_()
+
+
+    def contextMenuEvent(self, event : QContextMenuEvent):
+        """
+        Overrided methods 
+        """
+        current_index = self.view.currentIndex()
+        variant = self.model.variant(current_index)
+
+        menu = QMenu(self)
+
+        # TODO actions : 
+        menu.addAction(FIcon(0XF4CE), self.tr("Add to Favorite"))
+        menu.addAction(FIcon(0XF18F),self.tr("Copy genomic location"))
+
+        openMenu = menu.addMenu(self.tr("Open With"))
+
+        # @ysard read settings
+        openMenu.addAction("Varsome")
+        openMenu.addSeparator()
+        openMenu.addAction("Edit ...")
+
+        menu.exec_(event.globalPos())
