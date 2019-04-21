@@ -124,8 +124,9 @@ class Query:
 
 
         # if group by , add extra columns ( child count and child ids )
+        # Required for viewquerywidget.py
         if self.group_by:
-            sql_columns.extend(["COUNT(rowid) as 'count'","group_concat(rowid) as 'childs'"])
+            sql_columns.extend(["COUNT(annotations.rowid) as 'childs'"])
 
         query = f"SELECT {','.join(sql_columns)} "
 
