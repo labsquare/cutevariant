@@ -139,6 +139,7 @@ class Query:
 
             query += f"""
             FROM variants
+            LEFT JOIN annotations ON annotations.variant_id = variants.rowid 
             INNER JOIN selection_has_variant sv ON sv.variant_id = variants.rowid
             INNER JOIN selections s ON s.rowid = sv.selection_id AND s.name = '{self.selection}'
             """

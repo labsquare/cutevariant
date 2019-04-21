@@ -16,6 +16,7 @@ conn = sqlite3.connect("examples/test.db")
 
 query = Query(conn)
 query.group_by = ("chr","pos")
+query.selection = "truc"
 
 print(query.sql())
 
