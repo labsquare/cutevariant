@@ -83,13 +83,10 @@ class AbstractReader(ABC):
 
 
     def get_variants_count(self):
-        """ 
+        """
         Return variant count. You can overload this method to make it faster
         """
-        count = 0
-        for v in self.get_variants():
-            count += 1
-        return count
+        return len(tuple(self.get_variants()))
 
     def get_samples(self):
         return []

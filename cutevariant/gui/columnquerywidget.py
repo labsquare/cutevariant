@@ -33,7 +33,7 @@ class ColumnQueryModel(QStandardItemModel):
         self.clear()
         self.items = [] # Store QStandardItem as a list to detect easily which one is checked
         categories = set()
-        samples = [i["name"] for i in sql.get_samples(self._query.conn)]
+        samples_names = (sample["name"] for sample in sql.get_samples(self._query.conn))
         categories_items = {}
 
         for record in sql.get_fields(self._query.conn):
@@ -56,15 +56,15 @@ class ColumnQueryModel(QStandardItemModel):
                 self.appendRow(cat_item)
                 categories_items[record["category"]] = cat_item
 
-        # Create child items 
+        # Create child items
         for item in self.items:
             category = item.data()["category"]
             if category != "sample":
                 categories_items[category].appendRow(item)
 
-        # Load samples 
-        for sample in samples:
-            sample_item = QStandardItem(sample)
+        # Load samples
+        for sample_name in samples_names:
+            sample_item = QStandardItem(sample_name)
             sample_item.setCheckable(True)
             sample_item.setIcon(FIcon(0xf2e6))
             categories_items["samples"].appendRow(sample_item)
