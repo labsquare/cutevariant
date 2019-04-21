@@ -343,6 +343,8 @@ class ViewQueryWidget(QueryPluginWidget):
         self.view.setItemDelegate(self.delegate)
         self.view.setAlternatingRowColors(True)
         self.view.setSortingEnabled(True)
+        self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.view.setSelectionMode(QAbstractItemView.ContiguousSelection)
         #self.view.setIndentation(5)
         # self.view.setItemDelegate(self.delegate)
 
@@ -465,8 +467,8 @@ class ViewQueryWidget(QueryPluginWidget):
 
         menu = QMenu(self)
 
-        # TODO actions : 
-        menu.addAction(FIcon(0XF4CE), self.tr("Add to Favorite"))
+        # actions Examples :
+        menu.addAction(FIcon(0XF4CE), self.tr("Add to Favorite")).setCheckable(True)
         menu.addAction(FIcon(0XF18F),self.tr("Copy genomic location"))
 
         openMenu = menu.addMenu(self.tr("Open With"))

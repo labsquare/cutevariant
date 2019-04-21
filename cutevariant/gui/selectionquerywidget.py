@@ -56,12 +56,17 @@ class SelectionQueryWidget(QueryPluginWidget):
     def query(self):
         """ Method override from AbstractQueryWidget"""
 
+        if not self.view.selectionModel():
+            return self.model.query
+
         item = self.model.item(self.view.selectionModel().currentIndex().row())
 
-        query = self.model.query
-        query.selection = item.text()
+        print("item text", item.text())
 
-        return query
+        _query = self.model.query
+        _query.selection = item.text()
+
+        return _query
 
     @query.setter
     def query(self, query: Query):
