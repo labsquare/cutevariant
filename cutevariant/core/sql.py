@@ -543,7 +543,7 @@ def insert_sample(conn, name="no_name"):
     :rtype: <int>
     """
     cursor = conn.cursor()
-    cursor.execute("""INSERT INTO samples VALUES (?)""", name)
+    cursor.execute("""INSERT INTO samples VALUES (?)""", [name])
     conn.commit()
     return cursor.lastrowid
 
