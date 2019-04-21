@@ -34,18 +34,17 @@ def async_import_reader(conn, reader: AbstractReader, **kwargs):
     # # Create table samples
     create_table_samples(conn)
 
-    # Create annotations tables 
+    # Create annotations tables
     create_table_annotations(conn, reader.get_fields_by_category("annotations"))
 
-    #cCreate variants tables
+    # Create variants tables
     create_table_variants(conn, reader.get_fields_by_category("variants"))
 
     # Create selection
     create_table_selections(conn)
 
+    # Insert samples
     yield 0, "insert samples"
-
-    #  insert samples
     insert_many_samples(conn, reader.get_samples())
 
     # Insert fields
@@ -54,7 +53,7 @@ def async_import_reader(conn, reader: AbstractReader, **kwargs):
 
     yield 0, "count variants..."
     # total_variant = reader.get_variants_count()
-    
+
     yield from async_insert_many_variants(conn, reader.get_variants())
 
     # # Create default selection
@@ -88,4 +87,4 @@ def import_file(conn, filename):
 def import_reader(conn, reader):
     for progress, message in async_import_reader(conn, reader):
         #  don't show message
-        pass  
+        pass

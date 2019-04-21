@@ -23,9 +23,9 @@ class QueryRouter(QObject):
 
     def addWidget(self, widget: QueryPluginWidget):
         """
-        Add a widget into the router 
+        Add a widget into the router
 
-        :param widget: a query widget 
+        :param widget: a query widget
         """
         self.widgets.append(widget)
         widget.changed.connect(self.widgetChanged)
@@ -49,8 +49,8 @@ class QueryRouter(QObject):
             widget.query = query
 
     def widgetChanged(self):
-        """ 
-        this method is trigger from one widget 
+        """
+        this method is trigger from one widget
         """
 
         #  Get the wiget which send the signal changed
