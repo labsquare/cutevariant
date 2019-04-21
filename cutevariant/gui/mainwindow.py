@@ -344,8 +344,11 @@ class MainWindow(QMainWindow):
         self.toolbar.addAction(open_prj_action)
         self.toolbar.addSeparator()
 
-        save_query_action = self.toolbar.addAction(FIcon(0xF412), self.tr("save query"))
-        save_query_action.triggered.connect(self.selection_widget.save_current_query)
+        self.toolbar.addAction(
+            FIcon(0xF412), self.tr("save query"),
+            self.selection_widget.save_current_query
+        )
+
 
     def addView(self):
         #  TODO : manage multiple view

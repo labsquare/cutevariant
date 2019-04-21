@@ -314,6 +314,7 @@ class SettingsWidget(QDialog):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Cutevariant - Settings"))
+        self.setWindowIcon(QIcon(cm.DIR_ICONS + "app.png"))
         self.widgets = []
 
         self.list_widget = QListWidget()

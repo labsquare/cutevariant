@@ -95,11 +95,9 @@ class AbstractReader(ABC):
         """ 
         Return variant count from the device . 
         You can overload this method to make it faster
+
         """
-        count = 0
-        for v in self.get_variants():
-            count += 1
-        return count
+        return len(tuple(self.get_variants()))
 
     def get_samples(self) -> str:
         """ 
