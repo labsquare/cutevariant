@@ -27,10 +27,10 @@ class SelectionQueryModel(QStandardItemModel):
     def refresh(self):
         self.clear()
         for record in sql.get_selections(self._query.conn):
-            name_item = QStandardItem(record["name"])
-            count_item = QStandardItem(str(record["count"]))
+            name_item = QStandardItem("{} ({})".format(record["name"],record["count"]))
             name_item.setIcon(FIcon(0xf4f1))
-            self.appendRow([name_item, count_item])
+            name_item.setData(record["name"])
+            self.appendRow([name_item])
 
     def save_current_query(self, name):
         self.query.create_selection(name)
@@ -59,17 +59,17 @@ class SelectionQueryWidget(QueryPluginWidget):
     def query(self):
         """ Method override from AbstractQueryWidget"""
 
-        if not self.view.selectionModel():
-            return self.model.query
+        # if not self.view.selectionModel():
+        #     return self.model.query
 
-        item = self.model.item(self.view.selectionModel().currentIndex().row())
+        #item = self.model.item(self.view.selectionModel().currentIndex().row())
 
-        print("item text", item.text())
+        #print("item text", item.data())
 
-        _query = self.model.query
-        _query.selection = item.text()
+        # _query = self.model.query
+        # _query.selection = str(item.data())
 
-        return _query
+        return self.model.query
 
     @query.setter
     def query(self, query: Query):

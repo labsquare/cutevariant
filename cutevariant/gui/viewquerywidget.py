@@ -122,12 +122,19 @@ class QueryModel(QAbstractItemModel):
         if not index.isValid():
             return None
 
+        # Display Role 
         if role == Qt.DisplayRole:
             if index.parent() == QModelIndex():
                 return str(self.variants[index.row()][0][index.column() + 1]) 
 
             else:
                 return str(self.variants[index.parent().row()][index.row()][index.column() + 1])
+
+        # Icon role : show number of child 
+        if role == Qt.DecorationRole:
+            if index.parent() == QModelIndex() and index.column() == 0 and self.hasChildren(index):
+                return self._draw_child_count_icon(self.variants[index.row()][0][-1])
+
 
         return None
 
@@ -153,6 +160,8 @@ class QueryModel(QAbstractItemModel):
         if parent.parent() == QModelIndex():
             childs_count = self.variants[parent.row()][0][-1]
             return childs_count > 1
+
+        return False
         
 
         # if parent.parent() == QModelIndex():
@@ -275,6 +284,27 @@ class QueryModel(QAbstractItemModel):
         if index.parent().parent() == QModelIndex():
             return self.variants[index.parent().row()][index.row()]
 
+    def _draw_child_count_icon(self, count : int) -> QIcon :
+
+        pix = QPixmap(48,41)
+        pix.fill(Qt.transparent)
+        painter = QPainter()
+        painter.begin(pix)
+        painter.setBrush(QColor("#f1646c"))
+        painter.setPen(Qt.NoPen)
+        painter.drawRoundedRect(pix.rect().adjusted(1,1,-1,-1), 10, 10)
+        font = QFont()
+        font.setBold(True)
+        font.setPixelSize(25)
+        painter.setFont(font)
+        painter.setPen(Qt.white)
+        painter.drawText(pix.rect(), Qt.AlignCenter, str(count))
+
+        painter.end()
+
+
+        return QIcon(pix)
+
 
 
 class QueryDelegate(QStyledItemDelegate):
@@ -291,21 +321,31 @@ class QueryDelegate(QStyledItemDelegate):
         else:
             bg_brush = palette.brush(QPalette.Highlight)
 
-        # #  Draw selection background
-        # if select:
-        #     bg_brush = palette.brush(QPalette.Highlight)
-        # #  Draw alternative
-        # else:
-        #     if index.row() % 2:
-        #         bg_brush = palette.brush(QPalette.AlternateBase)
-        #     else:
-        #         bg_brush = palette.brush(QPalette.Base)
 
         painter.setBrush(bg_brush)
         painter.setPen(Qt.NoPen)
         painter.drawRect(option.rect)
 
         alignement = Qt.AlignLeft|Qt.AlignVCenter
+
+        # Add margin for first columns if index is first level 
+        if index.column() == 0 and index.parent() == QModelIndex():
+
+            expanded = bool(option.state & QStyle.State_Open)
+
+            branch_option = copy.copy(option)
+            branch_option.rect.setWidth(65)
+
+            qApp.style().drawPrimitive(QStyle.PE_IndicatorBranch, branch_option, painter)
+
+            icon = index.data(Qt.DecorationRole)
+            if icon:
+                target = QRect(0,0, option.decorationSize.width(), option.decorationSize.height())
+                target.moveCenter(option.rect.center())
+                painter.drawPixmap(option.rect.x()+5, target.top() ,icon.pixmap(option.decorationSize))
+            
+        if index.column() == 0:    
+            option.rect.adjust(40,0,0,0)
 
 
         if colname == "impact":
@@ -321,7 +361,7 @@ class QueryDelegate(QStyledItemDelegate):
 
     def sizeHint(self, option, index):
         """override"""
-        return QSize(0, 30)
+        return QSize(0, 50)
 
 
 class ViewQueryWidget(QueryPluginWidget):
@@ -332,7 +372,6 @@ class ViewQueryWidget(QueryPluginWidget):
         super().__init__()
         self.model = QueryModel()
         self.delegate = QueryDelegate()
-        # self.delegate = VariantDelegate()
         self.setWindowTitle(self.tr("Variants"))
         self.topbar = QToolBar()
         self.bottombar = QToolBar()
@@ -345,7 +384,9 @@ class ViewQueryWidget(QueryPluginWidget):
         self.view.setSortingEnabled(True)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setSelectionMode(QAbstractItemView.ContiguousSelection)
-        #self.view.setIndentation(5)
+        self.view.setRootIsDecorated(False) # Manage from delegate
+        self.view.setIndentation(0)
+        self.view.setIconSize(QSize(22,22))
         # self.view.setItemDelegate(self.delegate)
 
         main_layout = QVBoxLayout()
