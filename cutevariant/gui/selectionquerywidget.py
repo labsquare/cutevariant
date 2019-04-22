@@ -6,6 +6,7 @@ from PySide2.QtGui import *
 from .plugin import QueryPluginWidget
 from cutevariant.core import Query
 from cutevariant.core import sql
+from cutevariant.gui.ficon import FIcon
 
 
 class SelectionQueryModel(QStandardItemModel):
@@ -28,6 +29,7 @@ class SelectionQueryModel(QStandardItemModel):
         for record in sql.get_selections(self._query.conn):
             name_item = QStandardItem(record["name"])
             count_item = QStandardItem(str(record["count"]))
+            name_item.setIcon(FIcon(0xf4f1))
             self.appendRow([name_item, count_item])
 
     def save_current_query(self, name):
@@ -43,6 +45,7 @@ class SelectionQueryWidget(QueryPluginWidget):
         self.view = QTreeView()
         self.model = SelectionQueryModel()
         self.view.setModel(self.model)
+        self.view.header().hide()
 
         layout = QVBoxLayout()
 
@@ -81,3 +84,20 @@ class SelectionQueryWidget(QueryPluginWidget):
 
         if success:
             self.model.save_current_query(name)
+
+
+    def contextMenuEvent(self, event: QContextMenuEvent):
+        """
+        Overrided
+        """
+
+        current_index = self.view.currentIndex()
+        item = self.model.itemFromIndex(current_index)
+
+        menu = QMenu()
+
+        menu.addAction(FIcon(0xf8ff),"Edit")
+        menu.addSeparator()
+        menu.addAction(FIcon(0xf413),"Remove")
+        
+        menu.exec_(event.globalPos())
