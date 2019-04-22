@@ -51,9 +51,10 @@ def async_import_reader(conn, reader: AbstractReader, **kwargs):
     yield 0, "insert fields"
     insert_many_fields(conn, reader.get_fields())
 
-    yield 0, "count variants..."
+    # yield 0, "count variants..."
     # total_variant = reader.get_variants_count()
 
+    # Insert variants, link them to annotations and samples
     yield from async_insert_many_variants(conn, reader.get_variants())
 
     # # Create default selection
