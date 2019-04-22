@@ -97,19 +97,25 @@ class VcfReader(AbstractReader):
                 #     #         )
 
     def parse_fields(self):
-        """ Extract fields informations from VCF fields """
+        """Extract fields informations from VCF fields
+
+        .. note:: Fields used in PRIMARY KEYS have the constraint NOT NULL.
+            By default, all other fields can have NULL values.
+        """
 
         yield {
             "name": "chr",
             "category": "variants",
             "description": "chromosom",
             "type": "str",
+            "constraint": "NOT NULL",
         }
         yield {
             "name": "pos",
             "category": "variants",
             "description": "position",
             "type": "int",
+            "constraint": "NOT NULL",
         }
 
         yield {
@@ -124,12 +130,14 @@ class VcfReader(AbstractReader):
             "category": "variants",
             "description": "reference base",
             "type": "str",
+            "constraint": "NOT NULL",
         }
         yield {
             "name": "alt",
             "category": "variants",
             "description": "alternative base",
             "type": "str",
+            "constraint": "NOT NULL",
         }
 
         yield {

@@ -1,12 +1,12 @@
 # Standard imports
 import os
-import sqlite3
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 from PySide2.QtGui import QIcon
 
 # Custom imports
 from cutevariant.core.importer import async_import_file
+from cutevariant.core import get_sql_connexion
 import cutevariant.commons as cm
 from cutevariant.core.readerfactory import detect_vcf_annotation
 
@@ -172,7 +172,7 @@ class ImportThread(QThread):
 
         if os.path.exists(self.db_filename):
             os.remove(self.db_filename)
-        self.conn = sqlite3.connect(self.db_filename)
+        self.conn = get_sql_connexion(self.db_filename)
 
         # Import the file
         for value, message in async_import_file(self.conn, self.filename, self.project_settings):

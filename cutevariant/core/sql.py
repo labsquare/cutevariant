@@ -23,6 +23,18 @@ LOGGER = cm.logger()
 
 ## ================ Misc functions =============================================
 
+def get_sql_connexion(filepath):
+    """Open a SQLite database and return the connexion object"""
+    connexion = sqlite3.connect(filepath)
+    # Activate Foreign keys
+    connexion.execute("PRAGMA foreign_keys = ON")
+
+    foreign_keys_status = connexion.execute("PRAGMA foreign_keys").fetchone()[0]
+    LOGGER.debug("get_sql_connexion:: foreign_keys state: %s", foreign_keys_status)
+    assert foreign_keys_status == 1, "Foreign keys can't be activated :("
+    return connexion
+
+
 def drop_table(conn, table_name):
     """Drop the given table"""
     cursor = conn.cursor()
@@ -38,7 +50,7 @@ def create_project(conn, name: str, reference: str):
     :param reference: Reference genome
     """
     cursor = conn.cursor()
-    cursor.execute("""CREATE TABLE projects (name text, reference text NULL)""")
+    cursor.execute("""CREATE TABLE projects (name TEXT, reference TEXT)""")
     cursor.execute(
         """INSERT INTO projects VALUES (?, ?)""",
         (name, reference),
@@ -71,11 +83,24 @@ def create_table_selections(conn):
     :param conn: sqlite3.connect
     """
     cursor = conn.cursor()
+    # selection_id is an alias on internal autoincremented 'rowid'
     cursor.execute(
-        """CREATE TABLE selections (name TEXT, count INTEGER NULL, query TEXT NULL)"""
+        """CREATE TABLE selections (
+        selection_id INTEGER PRIMARY KEY ASC,
+        name TEXT, count INTEGER, query TEXT
+        )"""
     )
+
+    # Association table: do not use useless rowid column
     cursor.execute(
-        """CREATE TABLE selection_has_variant (variant_id INTEGER, selection_id INTEGER)"""
+        """CREATE TABLE selection_has_variant (
+        variant_id INTEGER NOT NULL,
+        selection_id INTEGER NOT NULL,
+        PRIMARY KEY (variant_id, selection_id),
+        FOREIGN KEY (selection_id) REFERENCES selections (selection_id)
+          ON DELETE CASCADE
+          ON UPDATE NO ACTION
+        ) WITHOUT ROWID"""
     )
     conn.commit()
 
@@ -83,20 +108,24 @@ def create_table_selections(conn):
 def insert_selection(conn, query=str(), name="no_name", count=0):
     """Insert one selection record (NOT USED)
 
+    .. warning:: This function does a commit !
+
     :param conn: sqlite3.connect
     :param name: name of the selection
     :param count: precompute variant count
     :param query: Sql variant query selection
-    :return: Last row id
+    :return: rowid of the new selection inserted.
     :rtype: <int>
 
     .. seealso:: create_selection_from_sql
     """
     cursor = conn.cursor()
     cursor.execute(
-        """INSERT INTO selections VALUES (?,?,?)""",
+        """INSERT INTO selections (name, count, query) VALUES (?,?,?)""",
         (name, count, query)
     )
+    # TODO: get cursor as argument, because later insertions may crash
+    # and leave the database not consistent with an orphan selection.
     conn.commit()
     return cursor.lastrowid
 
@@ -121,10 +150,12 @@ def create_selection_from_sql(conn,query, name, by="site", count=None):
     selection_id = insert_selection(conn, name=name, count=count, query=query)
 
     # Insert into selection_has_variant table
+    # PS: We use DISTINCT keyword to statisfy the unicity constraint on
+    # (variant_id, selection_id) of "selection_has_variant" table.
     if by == "site":
         q = f"""
         INSERT INTO selection_has_variant
-        SELECT variants.rowid, {selection_id} FROM variants
+        SELECT DISTINCT variants.rowid, {selection_id} FROM variants
         INNER JOIN ({query}) query
             ON variants.chr = query.chr
             AND variants.pos = query.pos
@@ -133,7 +164,7 @@ def create_selection_from_sql(conn,query, name, by="site", count=None):
     if by == "variant":
         q = f"""
         INSERT INTO selection_has_variant
-        SELECT variants.rowid, {selection_id} FROM variants
+        SELECT DISTINCT variants.rowid, {selection_id} FROM variants
         INNER JOIN ({query}) as query
             ON variants.chr = query.chr
             AND variants.pos = query.pos
@@ -148,8 +179,9 @@ def create_selection_from_sql(conn,query, name, by="site", count=None):
 def get_selections(conn):
     """Get selections in "selections" table
 
-    .. todo:: Should this function retun a dict??
-        Later, the dict is almost useless and it is very repetitive...
+    :return: Dictionnary of all attributes of the table.
+        :Example: {"name": ..., "count": ..., "query": ...}
+    :rtype: <dict>
     """
     conn.row_factory = sqlite3.Row
     return (dict(data) for data in conn.execute("""SELECT * FROM selections"""))
@@ -216,7 +248,7 @@ def create_table_fields(conn):
     cursor = conn.cursor()
     cursor.execute(
         """CREATE TABLE fields
-        (name TEXT, category TEXT NULL, type TEXT NULL, description TEXT NULL)
+        (name TEXT, category TEXT, type TEXT, description TEXT)
         """
     )
     conn.commit()
@@ -310,7 +342,6 @@ def create_table_annotations(conn, fields):
         return
 
     cursor = conn.cursor()
-    # TODO: activate foreign keys
     cursor.execute(f"""CREATE TABLE annotations (variant_id INTEGER, {schema})""")
     # TODO: make indexes after insertions...
     cursor.execute(f"""CREATE INDEX idx_annotations ON annotations (variant_id)""")
@@ -336,20 +367,35 @@ def create_table_variants(conn, fields):
     """
     cursor = conn.cursor()
 
-    # TODO: primary MUST NOT have NULL fields !!
+    # Primary key MUST NOT have NULL fields !
+    # PRIMARY KEY should always imply NOT NULL.
+    # Unfortunately, due to a bug in some early versions, this is not the case in SQLite.
+    # For the purposes of UNIQUE constraints, NULL values are considered distinct
+    # from all other values, including other NULLs.
     schema = ",".join(
         [
-            f'{field["name"]} {field["type"]} NULL'
-            for field in fields
+            f'{field["name"]} {field["type"]} {field.get("constraint", "")}'
+            for field in fields if field["name"]
         ]
     )
 
     LOGGER.debug("create_table_variants:: schema: %s", schema)
-
-    cursor.execute(f"""CREATE TABLE variants ({schema}, PRIMARY KEY (chr,pos,ref,alt))""")
-    # TODO: why default value = -1 here ???? what is this field ?
-    # TODO: activate foreign keys
-    cursor.execute(f"""CREATE TABLE sample_has_variant (sample_id INTEGER, variant_id INTEGER, gt INTEGER DEFAULT -1)""")
+    # Unicity constraint or NOT NULL fields
+    # NOTE: specify the constraint in CREATE TABLE generates a lighter DB than
+    # a separated index... Don't know why.
+    cursor.execute(f"""CREATE TABLE variants ({schema},
+        UNIQUE (chr,pos,ref,alt))""")
+    # cursor.execute(f"""CREATE UNIQUE INDEX idx_variants_unicity ON variants (chr,pos,ref,alt)""")
+    # Association table: do not use useless rowid column
+    cursor.execute(f"""CREATE TABLE sample_has_variant (
+        sample_id INTEGER NOT NULL,
+        variant_id INTEGER NOT NULL,
+        gt INTEGER DEFAULT -1,
+        PRIMARY KEY (sample_id, variant_id),
+        FOREIGN KEY (sample_id) REFERENCES samples (sample_id)
+          ON DELETE CASCADE
+          ON UPDATE NO ACTION
+        ) WITHOUT ROWID""")
     # TODO: make indexes after insertions...
     cursor.execute(f"""CREATE UNIQUE INDEX idx_sample_has_variant ON sample_has_variant (sample_id,variant_id)""")
     conn.commit()
@@ -476,7 +522,6 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
             )
 
         # If variant has sample data, insert record into "sample_has_variant" table
-        # TODO: what is gt field ?
         if "samples" in variant:
             # print("VAR samples:", variant["samples"])
             # [{'name': 'NORMAL', 'gt': 1, 'AD': '64,0', 'AF': 0.0, ...}]
@@ -485,7 +530,7 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
             # TODO: is this test usefull since samples that are in the database
             # have been inserted from the same source file (or it is not the case ?) ?
             # Retrieve the id of the sample to build the association in
-            # "sample_has_variant" table carrying the data "gt"
+            # "sample_has_variant" table carrying the data "gt" (genotype)
             g = ((samples_id_mapping[sample["name"]], sample["gt"])
                  for sample in variant["samples"]
                  if sample["name"] in samples_names)
@@ -531,7 +576,10 @@ def create_table_samples(conn):
     :param conn: sqlite3.connect
     """
     cursor = conn.cursor()
-    cursor.execute("""CREATE TABLE samples (name TEXT)""")
+    # sample_id is an alias on internal autoincremented 'rowid'
+    cursor.execute("""CREATE TABLE samples (
+        sample_id INTEGER PRIMARY KEY ASC,
+        name TEXT)""")
     conn.commit()
 
 

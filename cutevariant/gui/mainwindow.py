@@ -1,5 +1,4 @@
 # Standard imports
-import sqlite3
 import json
 import os
 import glob
@@ -30,7 +29,7 @@ from cutevariant.gui.chartquerywidget import ChartQueryWidget
 from cutevariant.gui.webglquerywidget import WebGLQueryWidget
 
 from cutevariant.core.importer import import_file
-from cutevariant.core import Query
+from cutevariant.core import Query, get_sql_connexion
 from cutevariant.gui.ficon import FIcon
 from cutevariant.gui.plugin import VariantPluginWidget, QueryPluginWidget
 
@@ -150,7 +149,7 @@ class MainWindow(QMainWindow):
         app_settings = QSettings()
         app_settings.setValue("last_directory", os.path.dirname(filepath))
 
-        self.conn = sqlite3.connect(filepath)
+        self.conn = get_sql_connexion(filepath)
         query = Query(self.conn)
         # query.filter = json.loads(
         #     """{"AND" : [{"field":"pos", "operator":">", "value":"880000"} ]}"""
