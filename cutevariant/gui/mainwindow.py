@@ -381,7 +381,11 @@ class MainWindow(QMainWindow):
                 + wizard.field("project_name")
                 + ".db"
             )
-            self.open(db_filename)
+            try:
+                self.open(db_filename)
+            except Exception as e:
+                self.status_bar.showMessage(e.__class__.__name__ + ": " + str(e))
+                raise
 
     @Slot()
     def open_project(self):
@@ -397,7 +401,11 @@ class MainWindow(QMainWindow):
             self.tr("Cutevariant project (*.db)"),
         )
         if filepath:
-            self.open(filepath)
+            try:
+                self.open(filepath)
+            except Exception as e:
+                self.status_bar.showMessage(e.__class__.__name__ + ": " + str(e))
+                raise
 
     def open_recent(self):
         """Slot to load a recent project"""
