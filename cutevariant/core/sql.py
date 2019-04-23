@@ -150,6 +150,7 @@ def create_selection_from_sql(conn,query, name, by="site", count=None):
     assert by in ("site", "variant")
 
     cursor = conn.cursor()
+    print("FOREIGN 2", [list(i) for i in cursor.execute("PRAGMA foreign_keys")])
 
     # Compute query count
     # TODO : this can take a while .... need to compute only one from elsewhere
@@ -183,6 +184,9 @@ def create_selection_from_sql(conn,query, name, by="site", count=None):
         """
 
     cursor.execute(q)
+    conn.commit()
+
+    cursor.execute("DELETE FROM selections WHERE rowid = 1")
     conn.commit()
 
 
@@ -568,6 +572,7 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
                           "duplication of the primary key: (chr,pos,ref,alt). "
                           "Please check your data; this variant and its attached "
                           "data will not be inserted!\n%s", variant)
+            variant_count -= 1
             continue
 
         # Get variant rowid
