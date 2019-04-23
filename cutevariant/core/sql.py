@@ -558,6 +558,7 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
     cursor = conn.cursor()
 
     # Loop over variants
+    errors = 0
     for variant_count, variant in enumerate(data, 1):
 
         # Insert current variant
@@ -572,7 +573,7 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
                           "duplication of the primary key: (chr,pos,ref,alt). "
                           "Please check your data; this variant and its attached "
                           "data will not be inserted!\n%s", variant)
-            variant_count -= 1
+            errors += 1
             continue
 
         # Get variant rowid
@@ -636,7 +637,7 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
     # create selections
     # insert_selection(conn, name="all", count=variant_count)
 
-    yield 98, f"{variant_count} variant(s) has been inserted"
+    yield 98, f"{variant_count - errors} variant(s) has been inserted"
 
 
 def insert_many_variants(conn, data, **kwargs):
