@@ -1,5 +1,4 @@
 # Standard imports
-import sqlite3
 import json
 import os
 import glob
@@ -30,7 +29,7 @@ from cutevariant.gui.chartquerywidget import ChartQueryWidget
 from cutevariant.gui.webglquerywidget import WebGLQueryWidget
 
 from cutevariant.core.importer import import_file
-from cutevariant.core import Query
+from cutevariant.core import Query, get_sql_connexion
 from cutevariant.gui.ficon import FIcon
 from cutevariant.gui.plugin import VariantPluginWidget, QueryPluginWidget
 
@@ -150,7 +149,7 @@ class MainWindow(QMainWindow):
         app_settings = QSettings()
         app_settings.setValue("last_directory", os.path.dirname(filepath))
 
-        self.conn = sqlite3.connect(filepath)
+        self.conn = get_sql_connexion(filepath)
         query = Query(self.conn)
         # query.filter = json.loads(
         #     """{"AND" : [{"field":"pos", "operator":">", "value":"880000"} ]}"""
@@ -382,7 +381,11 @@ class MainWindow(QMainWindow):
                 + wizard.field("project_name")
                 + ".db"
             )
-            self.open(db_filename)
+            try:
+                self.open(db_filename)
+            except Exception as e:
+                self.status_bar.showMessage(e.__class__.__name__ + ": " + str(e))
+                raise
 
     @Slot()
     def open_project(self):
@@ -398,7 +401,11 @@ class MainWindow(QMainWindow):
             self.tr("Cutevariant project (*.db)"),
         )
         if filepath:
-            self.open(filepath)
+            try:
+                self.open(filepath)
+            except Exception as e:
+                self.status_bar.showMessage(e.__class__.__name__ + ": " + str(e))
+                raise
 
     def open_recent(self):
         """Slot to load a recent project"""

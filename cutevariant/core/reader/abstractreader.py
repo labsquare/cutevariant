@@ -89,14 +89,16 @@ class AbstractReader(ABC):
         Yield valid fields after schema cleanup
 
         :fields: generator or list of fields 
-        :category: keep only field within a category
+        :category: keep only field within a category .. should replace get_field_by_category
         """
 
         checker = Schema({
                "name": And(str, Use(str.lower)), 
                "type": lambda x: x in ["str","int","bool","float"],
                "category": lambda x: x in ["variants","annotations","samples"],
-               "description": str
+               "description": str,
+                Optional("constraint", default="NULL"): str
+
               })  
 
         for field in self._get_fields():

@@ -1,6 +1,10 @@
 import copy
 import re
 
+from cutevariant.commons import logger
+
+LOGGER = logger()
+
 SNPEFF_ANNOTATION_DEFAULT_FIELDS = {
     "annotation": {
         "name": "consequence",
@@ -148,95 +152,133 @@ VEP_ANNOTATION_DEFAULT_FIELDS = {
     }
 }
 
+class BaseParser():
+    """Base class that brings together common functions of VepParser and SnpEffParser
+    """
+
+    def handle_descriptions(self, raw_fields):
+        """Construct annotation_field_name with the fields of the file, and
+        yield dictionnaries with the description of fields of the file.
+
+        :Example:
+            If 'protein_position' field is encountered in a VEP file,
+            'self.annotation_field_name' attribute will contain:
+            ['protein_position',] and the followwing dictionnary will be yielded:
+            {
+                "name": "aa_pos",
+                "category": "annotations",
+                "description": "amino acid pos",
+                "type": "str",
+            }
+
+            If a field is not provided, a default dictionary with less
+            information is returned:
+            {
+                "name": <field_name>,
+                "description": "None",
+                "type":"str",
+                "category":"annotations"
+            }
+
+        :rtype: <generator>
+        """
+        for i in raw_fields:
+            i = i.strip().lower()
+
+            # Remap field name
+            if i in self.annotation_default_fields:
+                _f = self.annotation_default_fields[i]
+            else:
+                _f = {"name": i, "description": "None", "type":"str", "category":"annotations"}
+
+            self.annotation_field_name.append(_f["name"])
+            yield _f
+
+    def handle_annotations(self, annotation_key_name, variant):
+        """Remove the given key from the variant dict, add "annotations" key with
+        the list of annotations into the variant dict.
+
+        .. note:: The given variant is modified in place.
+        """
+        raw = variant.pop(annotation_key_name)
+
+        annotations = list()
+        for transcripts in raw.split(","):
+            transcript = transcripts.split("|")
+
+            if len(self.annotation_field_name) != len(transcript):
+                LOGGER.error(
+                    "SnpEffParser:parse_variants:: Field missing in the "
+                    "annotations of the following variant:\n%s\n"
+                    "These annotations will be skipped!",
+                    variant
+                )
+                continue
+
+            annotation = {field_name: transcript[idx] for idx, field_name
+                          in enumerate(self.annotation_field_name)}
+            annotations.append(annotation)
+
+        # Avoid setting empty list to the variant => generates a SQL query issue
+        if annotations:
+            variant["annotations"] = annotations
 
 
-class VepParser(object):
+class VepParser(BaseParser):
+
+    def __init__(self):
+        self.annotation_default_fields = VEP_ANNOTATION_DEFAULT_FIELDS
 
     def parse_fields(self,fields):
-        self.annotation_field_name = []
+        self.annotation_field_name = list()
         for field in fields:
             if field["name"] == "csq":
-                description =  field["description"] 
-                 # Assume description looks like this : 
-                 # ##INFO=<ID=CSQ,Number=.,Type=String,Description="Consequence annotations from Ensembl VEP. Format: Allele|Consequence|IMPACT|SYMBOL|Gene|Feature_type|Featur.."
+                description =  field["description"]
+                # Assume description looks like this :
+                # ##INFO=<ID=CSQ,Number=.,Type=String,Description="Consequence annotations from Ensembl VEP. Format: Allele|Consequence|IMPACT|SYMBOL|Gene|Feature_type|Featur.."
 
                 raw_fields = re.search("Format: (.+)", description)[1].split("|")
 
-                for i in raw_fields:
-                    i = i.strip().lower()
-
-                    if i in VEP_ANNOTATION_DEFAULT_FIELDS:
-                        _f = VEP_ANNOTATION_DEFAULT_FIELDS[i]
-                    else:
-                        _f = {"name": i, "description": "None", "type":"str", "category":"annotations"}
-
-                    self.annotation_field_name.append(_f["name"])
-                    yield _f
+                for field_description in self.handle_descriptions(raw_fields):
+                    yield field_description
             else:
                 yield field
 
     def parse_variants(self, variants):
         if not hasattr(self,"annotation_field_name"):
             raise Exception("Cannot parse variant without parsing first fields")
+
         for variant in variants:
             if "csq" in variant:
-                raw = variant.pop("csq")
-                variant["annotations"] = []
-                for transcripts in raw.split(","):
-                    new_variant = copy.copy(variant) 
-                    transcript = transcripts.split("|")
-                    annotation = {}
-                    for idx, field_name in enumerate(self.annotation_field_name):
-                        annotation[field_name] = transcript[idx]
-                    variant["annotations"].append(annotation)
-                yield variant
-            else:
-                yield variant 
+                self.handle_annotations("csq", variant)
+            yield variant
 
 
+class SnpEffParser(BaseParser):
 
-class SnpEffParser(object):
+    def __init__(self):
+        self.annotation_default_fields = SNPEFF_ANNOTATION_DEFAULT_FIELDS
 
     def parse_fields(self,fields):
-        self.annotation_field_name = []
+        self.annotation_field_name = list()
         for field in fields:
             if field["name"] == "ann":
                 description = field["description"]
-                # Assume description looks like this : 
+                # Assume description looks like this :
                 # INFO=<ID=ANN,Number=.,Type=String,Description="Functional annotations: 'Allele | Annotation | Annotation_Impact | Gene_Name | Gene_ID | Feature_Type | Feature_ID | Transcript_BioType | Rank | HGVS.c | HGVS.p | cDNA.pos / cDNA.length |CDS.pos / CDS.length | AA.pos / AA.length | Distance | ERRORS / WARNINGS / INFO' ">
 
                 raw_fields = re.search("\'(.+)\'", description)[1].split("|")
 
-                for i in raw_fields:
-                    i = i.strip().lower()
-
-                    # Remap field name 
-                    if i in SNPEFF_ANNOTATION_DEFAULT_FIELDS:
-                        _f = SNPEFF_ANNOTATION_DEFAULT_FIELDS[i]
-                    else:
-                        _f = {"name": i, "description": "None", "type":"str", "category":"annotations"}
-
-                    self.annotation_field_name.append(_f["name"])
-                    yield _f
+                for field_description in self.handle_descriptions(raw_fields):
+                    yield field_description
             else:
                 yield field
 
     def parse_variants(self, variants):
-
         if not hasattr(self,"annotation_field_name"):
             raise Exception("Cannot parse variant without parsing first fields")
 
         for variant in variants:
             if "ann" in variant:
-                raw = variant.pop("ann")
-                variant["annotations"] = []
-                for transcripts in raw.split(","):
-                    new_variant = copy.copy(variant) 
-                    transcript = transcripts.split("|")
-                    annotation = {}
-                    for idx, field_name in enumerate(self.annotation_field_name):
-                        annotation[field_name] = transcript[idx]
-                    variant["annotations"].append(annotation)
-                yield variant
-            else:
-                yield variant 
+                self.handle_annotations("ann", variant)
+            yield variant
