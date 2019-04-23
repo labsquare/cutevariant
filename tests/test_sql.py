@@ -212,10 +212,8 @@ def test_selections(conn):
 
 
 def test_variants(conn):
-
+    """Test that we have all inserted variants in the DB"""
     prepare_base(conn)
 
-    cursor = conn.cursor()
-
-    for i, record in enumerate(cursor.execute("SELECT * FROM variants")):
-        assert record == tuple(variants[i].values())
+    for i, record in enumerate(conn.execute("SELECT * FROM variants")):
+        assert tuple(record) == tuple(variants[i].values())
