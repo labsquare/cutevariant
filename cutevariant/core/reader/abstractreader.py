@@ -1,5 +1,5 @@
 from abc import ABC, abstractclassmethod
-
+from schema import Schema, And,Or, Use, Regex, Optional
 
 class AbstractReader(ABC):
     """ 
@@ -14,7 +14,7 @@ class AbstractReader(ABC):
         self.file_size = 0
 
     @abstractclassmethod
-    def get_variants(self):
+    def _get_variants(self):
         """
         This abstract method must return variants as a list of dictionnary. 
         
@@ -47,7 +47,7 @@ class AbstractReader(ABC):
         raise NotImplemented()
 
     @abstractclassmethod
-    def get_fields(self):
+    def _get_fields(self):
         """
         This abstract methods must return fields description defined from parse_variant output.
         You must define sqlite type for each field (text, integer, bool)
@@ -65,6 +65,73 @@ class AbstractReader(ABC):
         ]
        """
         raise NotImplemented()
+
+
+    def _get_samples(self):
+        return []
+
+
+
+    def get_fields(self, **args):
+        """
+        Yield valid fields after schema cleanup
+
+        :fields: generator or list of fields 
+        :category: keep only field within a category
+        """
+
+        checker = Schema({
+               "name": And(str, Use(str.lower)), 
+               "type": lambda x: x in ["str","int","bool","float"],
+               "category": lambda x: x in ["variants","annotations","samples"],
+               "description": str
+              })  
+
+        for field in self._get_fields():
+            valid_field = checker.validate(field)
+            if "category" in args:
+                if args["category"] == field["category"]:
+                    yield valid_field
+            else:
+                yield valid_field
+
+
+    def get_variants(self):
+        """
+        Yield valid fields after schema cleanup
+
+        :variants: generator or list of variants
+        """
+
+        checker = Schema({
+               "chr": And(Use(str.lower),str),
+               "pos": int,
+               "ref":And(Use(str.upper),Regex(r'^[ACGTN]+')), 
+               "alt":And(Use(str.upper),Regex(r'^[ACGTN]+')), 
+                Optional(str): Or(int,str,bool, float, None), 
+                
+                Optional("annotations"): [{
+                "gene":str, 
+                "transcript":str, 
+                Optional(str): Or(int,str,bool,float)
+                }],
+
+                Optional("samples"): [{
+                "name":str, "gt":And(int, lambda x: x in [-1,0,1,2])
+                }]
+  
+              })
+
+
+        for variant in self._get_variants():
+            checker.validate(variant)
+
+            yield variant
+ 
+
+    def get_samples(self):
+
+        return self._get_samples()
 
 
     def get_fields_by_category(self, category:str):
@@ -91,8 +158,6 @@ class AbstractReader(ABC):
             count += 1
         return count
 
-    def get_samples(self):
-        return []
 
     def get_extra_fields(self):
         """decorator for get_fields"""
@@ -114,3 +179,4 @@ class AbstractReader(ABC):
     def get_extra_variants(self):
         """decorator for get_fields"""
         yield from self.parse_variants()
+

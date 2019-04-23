@@ -6,17 +6,17 @@ class FakeReader(AbstractReader):
     def __init__(self):
         super().__init__(None)
 
-    def get_variants(self):
+    def _get_variants(self):
         yield {
             "chr": "11",
             "pos": 125010,
             "ref": "T",
             "alt": "A",
             "annotations": [
-                {"transcripts": "NM_234234", "gene": "CFTR"},
-                {"transcripts": "NM_234235", "gene": "CFTR"},
+                {"transcript": "NM_234234", "gene": "CFTR"},
+                {"transcript": "NM_234235", "gene": "CFTR"},
             ],
-            "samples": [{"name": "sacha", "gt": "1", "af": 0.3}],
+            "samples": [{"name": "sacha", "gt": 1}],
         }
 
         yield {
@@ -25,10 +25,10 @@ class FakeReader(AbstractReader):
             "ref": "T",
             "alt": "A",
             "annotations": [
-                {"transcripts": "NM_234234", "gene": "CFTR"},
-                {"transcripts": "NM_234235", "gene": "CFTR"},
+                {"transcript": "NM_234234", "gene": "CFTR"},
+                {"transcript": "NM_234235", "gene": "CFTR"},
             ],
-            "samples": [{"name": "sacha", "gt": "1", "af": 0.3}],
+            "samples": [{"name": "sacha", "gt": 1}],
         }
 
         yield {
@@ -37,13 +37,13 @@ class FakeReader(AbstractReader):
             "ref": "T",
             "alt": "A",
             "annotations": [
-                {"transcripts": "NM_234234", "gene": "CFTR"},
-                {"transcripts": "NM_234235", "gene": "CFTR"},
+                {"transcript": "NM_234234", "gene": "CFTR"},
+                {"transcript": "NM_234235", "gene": "CFTR"},
             ],
-            "samples": [{"name": "sacha", "gt": "1", "af": 0.3}],
+            "samples": [{"name": "sacha", "gt": 1}],
         }
 
-    def get_fields(self):
+    def _get_fields(self):
         """ Extract fields informations from VCF fields """
 
         yield {
@@ -94,11 +94,11 @@ class FakeReader(AbstractReader):
         }
 
         yield {
-            "name": "transcripts",
+            "name": "transcript",
             "category": "annotations",
             "description": "gene transcripts",
             "type": "str",
         }
 
-    def get_samples(self):
+    def _get_samples(self):
         return ["sacha"]

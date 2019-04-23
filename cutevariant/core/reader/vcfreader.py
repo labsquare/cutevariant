@@ -18,7 +18,7 @@ class VcfReader(AbstractReader):
         self._set_annotation_parser(annotation_parser)
 
 
-    def get_fields(self):
+    def _get_fields(self):
         # Remove duplicate
         fields = self.parse_fields()
         if self.annotation_parser:
@@ -27,7 +27,7 @@ class VcfReader(AbstractReader):
             return fields
 
 
-    def get_variants(self):
+    def _get_variants(self):
         if self.annotation_parser:
             yield from self.annotation_parser.parse_variants(self.parse_variants())
         else:
@@ -68,20 +68,7 @@ class VcfReader(AbstractReader):
                     for sample in record.samples:
                         sample_data = {}
                         sample_data["name"] = sample.sample
-
-                        for field in record.FORMAT.split(":"):
-
-                            if isinstance(sample[field], list):
-                                value = ",".join([str(i) for i in sample[field]])
-                            else:
-                                value = sample[field]
-
-                            if field == "GT":
-                                field = "gt"
-                                value = 1
-
-                            sample_data[field] = value
-
+                        sample_data["gt"]  =  sample.gt_type
                         variant["samples"].append(sample_data)
 
                 yield variant
@@ -172,17 +159,17 @@ class VcfReader(AbstractReader):
                 "type": VCF_TYPE_MAPPING[info.type],
             }
 
-    def get_samples(self):
+    def _get_samples(self):
         return self.samples
 
 
-    def _keep_unique_fields(self,fields):
-        ''' return fields list with unique field name ''' 
-        names = []
-        for field in fields:
-            if field["name"] not in names:
-                names.append(field["name"])
-                yield field
+    # def _keep_unique_fields(self,fields):
+    #     ''' return fields list with unique field name ''' 
+    #     names = []
+    #     for field in fields:
+    #         if field["name"] not in names:
+    #             names.append(field["name"])
+    #             yield field
             # else:
             #     # Rename duplicate fields : field_1, field_2 etc ...
             #     field["name"]  = field["name"] +"_"+ str(names.count(field["name"])+1)
