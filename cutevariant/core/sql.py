@@ -120,7 +120,7 @@ def create_table_selections(conn):
     conn.commit()
 
 
-def insert_selection(conn, query=str(), name="no_name", count=0):
+def insert_selection(conn, query="", name="no_name", count=0):
     """Insert one selection record (NOT USED)
 
     .. warning:: This function does a commit !
@@ -145,7 +145,7 @@ def insert_selection(conn, query=str(), name="no_name", count=0):
     return cursor.lastrowid
 
 
-def create_selection_from_sql(conn,query, name, by="site", count=None):
+def create_selection_from_sql(conn, query, name, count=None, by="site"):
     """Create a selection record from sql variant query
 
     :param name : name of the selection

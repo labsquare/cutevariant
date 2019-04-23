@@ -7,8 +7,7 @@ from .utils import table_exists, table_count, table_drop
 
 @pytest.fixture
 def conn():
-    _conn = sqlite3.connect(":memory:")
-    return _conn
+    return sql.get_sql_connexion(":memory:")
 
 
 fields = [
@@ -61,7 +60,7 @@ def prepare_base(conn):
     assert table_exists(conn, "samples"), "cannot create table samples"
 
     sql.create_table_selections(conn)
-    assert table_exists(conn, "samples"), "cannot create table selections"
+    assert table_exists(conn, "selections"), "cannot create table selections"
 
     sql.insert_many_fields(conn, fields)
     assert table_count(conn, "fields") == len(fields), "cannot insert many fields"
@@ -69,8 +68,8 @@ def prepare_base(conn):
     sql.create_table_variants(conn, sql.get_fields(conn))
     assert table_exists(conn, "variants"), "cannot create table variants"
 
-    # for _ in sql.insert_many_variants(conn, variants):
-    #     pass
+    sql.insert_many_variants(conn, variants)
+
 
 
 def test_fields(conn):
@@ -93,8 +92,58 @@ def test_samples(conn):
     assert [sample["name"] for sample in sql.get_samples(conn)] == samples
 
 
-# def test_selections(conn):
-#     sql.create_table_selections(conn)
+def test_simple_selections(conn):
+    """Test creation and simple insertion of a line in "selections" table"""
+
+    sql.create_table_selections(conn)
+    sql.insert_selection(conn, name="selection_name", count=10)
+    data = conn.execute("SELECT * FROM selections").fetchone()
+
+    expected = (1, 'selection_name', 10, '')
+    assert tuple(data) == expected
+
+
+def test_selections(conn):
+    """Test the creation of a full selection in "selection_has_variant"
+    and "selections" tables"""
+
+    prepare_base(conn)
+    # Create a selection that contains all 8 variants in the DB
+    # (no filter on this list, via annotation table because this table is not
+    # initialized here)
+    query = """SELECT variants.rowid,chr,pos,ref,alt FROM variants"""
+    #    LEFT JOIN annotations
+    #     ON annotations.variant_id = variants.rowid"""
+
+    sql.create_selection_from_sql(conn, query, "selection_name", count=None, by="site")
+
+    # Query the association table (variant_id, selection_id)
+    data = conn.execute("SELECT * FROM selection_has_variant")
+    expected = ((1, 1), (2, 1), (3, 1), (4, 1), (5, 1), (6, 1), (7, 1), (8, 1))
+    record = tuple([tuple(i) for i in data])
+
+    # Is the association table 'selection_has_variant' ok ?
+    assert record == expected
+
+    # Test ON CASCADE deletion
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM selections WHERE rowid = 1")
+
+    assert cursor.rowcount == 1
+
+    # Now the table must be empty
+    data = conn.execute("SELECT * FROM selection_has_variant")
+    expected = tuple()
+    record = tuple([tuple(i) for i in data])
+
+    assert record == expected
+
+    # Extra tests on transactions states
+    assert conn.in_transaction == True
+    conn.commit()
+    assert conn.in_transaction == False
+
+
 #     assert table_exists(conn, "selections"), "cannot create table selections"
 #     sql.insert_selection(conn, name="variants", count=10)
 #     assert table_count(conn, "selections") == 1, "cannot insert selection"
@@ -163,10 +212,8 @@ def test_samples(conn):
 
 
 def test_variants(conn):
-
+    """Test that we have all inserted variants in the DB"""
     prepare_base(conn)
 
-    cursor = conn.cursor()
-
-    for i, record in enumerate(cursor.execute("SELECT * FROM variants")):
-        assert record == tuple(variants[i].values())
+    for i, record in enumerate(conn.execute("SELECT * FROM variants")):
+        assert tuple(record) == tuple(variants[i].values())
