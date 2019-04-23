@@ -369,8 +369,11 @@ def create_table_annotations(conn, fields):
     )
 
     if not schema:
-        LOGGER.debug("create_table_annotations:: No annotation fields")
-        return
+        # Create minimum annotation table... Can be use later for dynamic annotation.
+        # TODO : we may want to fix annotation fields .  
+        schema = "gene TEXT, transcript TEXT"
+        # LOGGER.debug("create_table_annotations:: No annotation fields")
+        # return
 
     cursor = conn.cursor()
     # TODO: no primary key/unique index for this table?
