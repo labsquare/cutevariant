@@ -484,7 +484,7 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
     samples_names = samples_id_mapping.keys()
 
 
-    # Check SQLite version
+    # Check SQLite version and build insertion queries for variants
     # Old version doesn't support ON CONFLICT ..target.. DO ... statements
     # to handle violation of unicity constraint.
     old_sqlite_version = \
@@ -494,32 +494,39 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
         LOGGER.warning("async_insert_many_variants:: Old SQLite version: %s"
                        " - Fallback to ignore errors!",
                        sqlite3.sqlite_version)
+        # /!\ This syntax is SQLite specific
+        # /!\ We mask all errors here !
+        variant_insert_query = \
+            f"""INSERT OR IGNORE INTO variants ({var_cols})
+                VALUES ({var_places})"""
+
+    else:
+        # Handle conflicts on the primary key
+        variant_insert_query = \
+            f"""INSERT INTO variants ({var_cols})
+                VALUES ({var_places})
+                ON CONFLICT (chr,pos,ref,alt) DO NOTHING"""
 
 
-    # Insertion
+    # Insertion - Begin transaction
     cursor = conn.cursor()
 
     # Loop over variants
     for variant_count, variant in enumerate(data, 1):
 
         # Insert current variant
-        # TODO: handle errors here... is the lastrowid updated if duplication ignored ???
-        if old_sqlite_version:
-            # Use default dict to handle missing values
-            # /!\ This syntax is SQLite specific
-            # /!\ We mask all errors here !
-            cursor.execute(
-                f"""INSERT OR IGNORE INTO variants ({var_cols})
-                VALUES ({var_places})""",
-                defaultdict(str,variant))
-        else:
-            # Use default dict to handle missing values
-            # Handle conflicts on the primary key
-            cursor.execute(
-                f"""INSERT INTO variants ({var_cols})
-                VALUES ({var_places})
-                ON CONFLICT (chr,pos,ref,alt) DO NOTHING""",
-                defaultdict(str,variant))
+        # Use default dict to handle missing values
+        cursor.execute(variant_insert_query, defaultdict(str,variant))
+
+        # If the row is not inserted we skip this erroneous variant
+        # and the data that goes with
+        if cursor.rowcount == 0:
+            LOGGER.error("async_insert_many_variants:: The following variant "
+                          "contains erroneous data; most of the time it is a "
+                          "duplication of the primary key: (chr,pos,ref,alt). "
+                          "Please check your data; this variant and its attached "
+                          "data will not be inserted!\n%s", variant)
+            continue
 
         # Get variant rowid
         variant_id = cursor.lastrowid
@@ -576,6 +583,7 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
 
             yield progress, f"{variant_count} variants inserted."
 
+    # Commit the transaction
     conn.commit()
 
     # create selections
