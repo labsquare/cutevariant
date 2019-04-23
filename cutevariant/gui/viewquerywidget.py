@@ -387,6 +387,7 @@ class ViewQueryWidget(QueryPluginWidget):
         self.view.setRootIsDecorated(False) # Manage from delegate
         self.view.setIndentation(0)
         self.view.setIconSize(QSize(22,22))
+        self.view.setAnimated(True)
         # self.view.setItemDelegate(self.delegate)
 
         main_layout = QVBoxLayout()
