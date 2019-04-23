@@ -1,6 +1,10 @@
 import copy
 import re
 
+from cutevariant.commons import logger
+
+LOGGER = logger()
+
 SNPEFF_ANNOTATION_DEFAULT_FIELDS = {
     "annotation": {
         "name": "consequence",
@@ -185,6 +189,16 @@ class VepParser(object):
                 for transcripts in raw.split(","):
                     new_variant = copy.copy(variant) 
                     transcript = transcripts.split("|")
+
+                    if len(self.annotation_field_name) != len(transcript):
+                        LOGGER.error(
+                            "VepParser:parse_variants:: Field missing in the "
+                            "annotations of the following variant:\n%s\n"
+                            "These annotations will be skipped!",
+                            variant
+                        )
+                        continue
+
                     annotation = {}
                     for idx, field_name in enumerate(self.annotation_field_name):
                         annotation[field_name] = transcript[idx]
@@ -233,6 +247,16 @@ class SnpEffParser(object):
                 for transcripts in raw.split(","):
                     new_variant = copy.copy(variant) 
                     transcript = transcripts.split("|")
+
+                    if len(self.annotation_field_name) != len(transcript):
+                        LOGGER.error(
+                            "SnpEffParser:parse_variants:: Field missing in the "
+                            "annotations of the following variant:\n%s\n"
+                            "These annotations will be skipped!",
+                            variant
+                        )
+                        continue
+
                     annotation = {}
                     for idx, field_name in enumerate(self.annotation_field_name):
                         annotation[field_name] = transcript[idx]
