@@ -150,7 +150,6 @@ def create_selection_from_sql(conn,query, name, by="site", count=None):
     assert by in ("site", "variant")
 
     cursor = conn.cursor()
-    print("FOREIGN 2", [list(i) for i in cursor.execute("PRAGMA foreign_keys")])
 
     # Compute query count
     # TODO : this can take a while .... need to compute only one from elsewhere
@@ -184,9 +183,6 @@ def create_selection_from_sql(conn,query, name, by="site", count=None):
         """
 
     cursor.execute(q)
-    conn.commit()
-
-    cursor.execute("DELETE FROM selections WHERE rowid = 1")
     conn.commit()
 
 
@@ -662,14 +658,14 @@ def create_table_samples(conn):
 
 
 def insert_sample(conn, name="no_name"):
-    """Insert one sample in samples table
+    """Insert one sample in samples table (USED in TESTS)
 
     :param conn: sqlite3.connect
     :return: Last row id
     :rtype: <int>
     """
     cursor = conn.cursor()
-    cursor.execute("""INSERT INTO samples VALUES (?)""", [name])
+    cursor.execute("""INSERT INTO samples (name) VALUES (?)""", [name])
     conn.commit()
     return cursor.lastrowid
 
