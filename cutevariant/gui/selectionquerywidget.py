@@ -6,6 +6,7 @@ from PySide2.QtGui import *
 from .plugin import QueryPluginWidget
 from cutevariant.core import Query
 from cutevariant.core import sql
+from cutevariant.gui.ficon import FIcon
 
 
 class SelectionQueryModel(QStandardItemModel):
@@ -26,9 +27,10 @@ class SelectionQueryModel(QStandardItemModel):
     def refresh(self):
         self.clear()
         for record in sql.get_selections(self._query.conn):
-            name_item = QStandardItem(record["name"])
-            count_item = QStandardItem(str(record["count"]))
-            self.appendRow([name_item, count_item])
+            name_item = QStandardItem("{} ({})".format(record["name"],record["count"]))
+            name_item.setIcon(FIcon(0xf4f1))
+            name_item.setData(record["name"])
+            self.appendRow([name_item])
 
     def save_current_query(self, name):
         self.query.create_selection(name)
@@ -43,6 +45,7 @@ class SelectionQueryWidget(QueryPluginWidget):
         self.view = QTreeView()
         self.model = SelectionQueryModel()
         self.view.setModel(self.model)
+        self.view.header().hide()
 
         layout = QVBoxLayout()
 
@@ -56,12 +59,17 @@ class SelectionQueryWidget(QueryPluginWidget):
     def query(self):
         """ Method override from AbstractQueryWidget"""
 
-        item = self.model.item(self.view.selectionModel().currentIndex().row())
+        # if not self.view.selectionModel():
+        #     return self.model.query
 
-        query = self.model.query
-        query.selection = item.text()
+        #item = self.model.item(self.view.selectionModel().currentIndex().row())
 
-        return query
+        #print("item text", item.data())
+
+        # _query = self.model.query
+        # _query.selection = str(item.data())
+
+        return self.model.query
 
     @query.setter
     def query(self, query: Query):
@@ -76,3 +84,20 @@ class SelectionQueryWidget(QueryPluginWidget):
 
         if success:
             self.model.save_current_query(name)
+
+
+    def contextMenuEvent(self, event: QContextMenuEvent):
+        """
+        Overrided
+        """
+
+        current_index = self.view.currentIndex()
+        item = self.model.itemFromIndex(current_index)
+
+        menu = QMenu()
+
+        menu.addAction(FIcon(0xf8ff),"Edit")
+        menu.addSeparator()
+        menu.addAction(FIcon(0xf413),"Remove")
+        
+        menu.exec_(event.globalPos())

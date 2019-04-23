@@ -348,6 +348,11 @@ class MainWindow(QMainWindow):
             self.selection_widget.save_current_query
         )
 
+        self.toolbar.addAction(
+            FIcon(0xf55c), self.tr("Set operation"),
+            self.selection_widget.save_current_query
+        )
+
 
     def addView(self):
         #  TODO : manage multiple view
@@ -436,7 +441,8 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def select_all(self):
-        pass
+        print("select all")
+        self.currentView().view.selectAll()
 
     def closeEvent(self, event):
         """Save the current state of this mainwindow's toolbars and dockwidgets

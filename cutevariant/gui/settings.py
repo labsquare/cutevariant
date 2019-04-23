@@ -4,6 +4,7 @@ import glob
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 from PySide2.QtGui import *  # QIcon
+from PySide2.QtNetwork import *
 
 # Custom imports
 import cutevariant.commons as cm
@@ -90,16 +91,60 @@ class TranslationSettingsWidget(BaseWidget):
 
 
 class ProxySettingsWidget(BaseWidget):
+
+    PROXY_TYPES = {
+    "No Proxy" : QNetworkProxy.NoProxy, 
+    "Default" : QNetworkProxy.DefaultProxy,
+    "Sock5": QNetworkProxy.Socks5Proxy,
+    "Http": QNetworkProxy.HttpProxy
+    }
+
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Proxy"))
         self.setWindowIcon(FIcon(0xF484))
 
-    def save(self):
-        pass
+        self.combo_box = QComboBox()
+        self.host_edit = QLineEdit()
+        self.port_edit = QSpinBox()
+        self.user_edit = QLineEdit()
+        self.pass_edit = QLineEdit() 
+
+        # Load proxy type 
+        for key in self.PROXY_TYPES:
+            self.combo_box.addItem(key, self.PROXY_TYPES[key])
+
+        # edit restriction 
+        self.pass_edit.setEchoMode(QLineEdit.PasswordEchoOnEdit)
+            
+        f_layout = QFormLayout()
+        f_layout.addRow("Type", self.combo_box)
+        f_layout.addRow("Proxy host", self.host_edit)
+        f_layout.addRow("Proxy Port", self.port_edit)
+        f_layout.addRow("Username", self.user_edit)
+        f_layout.addRow("Password", self.pass_edit)
+
+        self.setLayout(f_layout)
+
+    def save(self):       
+        settings = QSettings()
+        settings.beginGroup("proxy")
+        settings.setValue("type", self.combo_box.currentIndex())
+        settings.setValue("host", self.host_edit.text())
+        settings.setValue("port", self.port_edit.value())
+        settings.setValue("username", self.user_edit.text())
+        settings.setValue("password", self.user_edit.text())
+        settings.endGroup()
 
     def load(self):
-        pass
+        settings = QSettings()
+        settings.beginGroup("proxy")
+        self.combo_box.setCurrentIndex(int(settings.value("type", 0)))
+        self.host_edit.setText(settings.value("host"))
+        self.port_edit.setValue(int(settings.value("port", 0)))
+        self.user_edit.setText(settings.value("username"))
+        self.pass_edit.setText(settings.value("password"))
+        settings.endGroup()
 
 
 class StyleSettingsWidget(BaseWidget):
