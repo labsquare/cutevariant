@@ -3,6 +3,7 @@ import os
 import sqlite3
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
+from PySide2.QtGui import QIcon
 
 # Custom imports
 from cutevariant.core.importer import async_import_file
@@ -125,6 +126,10 @@ class FilePage(QWizardPage):
 
 
 class ImportThread(QThread):
+    """Thread used to create a new project by importing a variant file
+
+    .. note:: This thread creates the database.
+    """
 
     progress_changed = Signal(int, str)
     finished_status = Signal(bool)
@@ -132,8 +137,29 @@ class ImportThread(QThread):
     def __init__(self):
         super().__init__()
         self._stop = False
-        self.filename = None
-        self.db_filename = None
+        # File top open
+        self.filename = ""
+        # Project's filepath
+        self.db_filename = ""
+        self.project_settings = dict()
+
+    def set_importer_settings(self, filename, db_filename, project_settings={}):
+        """Init settings of the importer
+
+        :param filename: File to be opened.
+        :param db_filename: Filepath of the new project.
+        :key project_settings: The reference genome and the name of the project.
+            Keys have to be at least "reference" and "project_name".
+        :type filename: <str>
+        :type db_filename: <str>
+        :type project_settings: <dict>
+        """
+        # File top open
+        self.filename = filename
+        # Project's filepath
+        self.db_filename = db_filename
+        # Project settings
+        self.project_settings = project_settings
 
     def run(self):
         """Overrided QThread method
@@ -144,14 +170,12 @@ class ImportThread(QThread):
         """
         self._stop = False
 
-        if self.db_filename is None:
-            self.db_filename = self.filename + ".db"
-
         if os.path.exists(self.db_filename):
             os.remove(self.db_filename)
         self.conn = sqlite3.connect(self.db_filename)
 
-        for value, message in async_import_file(self.conn, self.filename):
+        # Import the file
+        for value, message in async_import_file(self.conn, self.filename, self.project_settings):
             if self._stop == True:
                 self.conn.close()
                 break
@@ -191,6 +215,7 @@ class ImportPage(QWizardPage):
         m_layout.addWidget(self.tab_widget)
         self.setLayout(m_layout)
 
+        # File to open
         self.log_edit.appendPlainText(self.field("filename"))
 
         self.thread.started.connect(lambda: self.log_edit.appendPlainText("Started"))
@@ -220,6 +245,7 @@ class ImportPage(QWizardPage):
             self.import_button.setDisabled(True)
 
     def run(self):
+        """Launch the import in a separate thread"""
         if self.thread.isRunning():
             LOGGER.debug("ImportPage:run: stop thread")
             self.import_button.setDisabled(True)
@@ -229,12 +255,23 @@ class ImportPage(QWizardPage):
             self.import_button.setText(self.text_buttons[0])
 
         else:
-            self.thread.filename = self.field("filename")
-            self.thread.db_filename = (
-                self.field("project_path")
-                + QDir.separator()
-                + self.field("project_name")
-                + ".db"
+            self.thread.set_importer_settings(
+                # File to open
+                self.field("filename"),
+                # Project's filepath
+                (
+                    self.field("project_path")
+                    + QDir.separator()
+                    + self.field("project_name")
+                    + ".db"
+                ),
+                # Project's settings
+                {
+                    # Reference genome
+                    "reference": self.field("reference"),
+                    # Project's name
+                    "project_name": self.field("project_name"),
+                }
             )
 
             self.log_edit.appendPlainText(self.tr("Import ") + self.thread.filename)
@@ -250,6 +287,7 @@ class ProjetWizard(QWizard):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Cutevariant - Project creation wizard"))
+        self.setWindowIcon(QIcon(cm.DIR_ICONS + "app.png"))
 
         self.addPage(ProjetPage())
         self.addPage(FilePage())

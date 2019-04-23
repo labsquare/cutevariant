@@ -6,7 +6,7 @@ from string import ascii_letters
 import time
 
 
-VARIANT_COUNT = 300_000
+VARIANT_COUNT = 3_000_000
 ANNOTATION_COUNT_PER_VARIANT = 4
 
 ANNOTAION_FIELD_COUNT = 10
@@ -70,10 +70,10 @@ for variant in generate_variant(VARIANT_COUNT):
 
 
 
-    # Commit cache
-    if count > cache_size:
-        conn.commit()
-        count = 0
+    # # Commit cache
+    # if count > cache_size:
+    #     conn.commit()
+    #     count = 0
 
 
 conn.commit()

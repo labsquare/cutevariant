@@ -4,8 +4,16 @@ from schema import Schema, And,Or, Use, Regex, Optional
 class AbstractReader(ABC):
     """ 
     This is the base class for all Reader required to import variants into database.
+    Subclass it if you want a new file parser .
 
+    Attributes:
+        device : a file object typically returned by open()
+        file_size: file size in bytes ( todo : for progress bar )
 
+    Example: 
+        with open(filename,"r") as file: 
+            reader = Reader()
+            reader.get_variants()
     """
 
     def __init__(self, device):
@@ -17,6 +25,8 @@ class AbstractReader(ABC):
     def _get_variants(self):
         """
         This abstract method must return variants as a list of dictionnary. 
+
+        :return: a generator of variants 
         
         Minimum output:
         ===============
@@ -51,6 +61,8 @@ class AbstractReader(ABC):
         """
         This abstract methods must return fields description defined from parse_variant output.
         You must define sqlite type for each field (text, integer, bool)
+
+        :return: a generator of fields 
 
         Full output:
         ==============
@@ -136,9 +148,9 @@ class AbstractReader(ABC):
 
     def get_fields_by_category(self, category:str):
         """ 
-        get fields according category 
+        Suggar to get fields according it category
 
-        :param category can be usually variants, samples, annotations, infos  
+        :param category can be usually variants, samples, annotations  
 
         """ 
         for field in self.get_fields():
@@ -146,21 +158,30 @@ class AbstractReader(ABC):
                 yield field
 
 
-
-
-
-    def get_variants_count(self):
+    def get_variants_count(self) -> int:
         """ 
-        Return variant count. You can overload this method to make it faster
+        Return variant count from the device . 
+        You can overload this method to make it faster
+
         """
-        count = 0
-        for v in self.get_variants():
-            count += 1
-        return count
+        return len(tuple(self.get_variants()))
+
+    def get_samples(self) -> str:
+        """ 
+        Return samples list. 
+        Subclass this method to have samples in sqlite database 
+        """
+        return self._get_samples()
 
 
     def get_extra_fields(self):
-        """decorator for get_fields"""
+        """
+        Mandatory fields to add automatically
+
+        ..todo: Move this methods somewhere else .. 
+        ..warning: DEPRECTATED
+
+        """
         yield from self.parse_fields()
         yield {
             "name": "description",
@@ -177,6 +198,11 @@ class AbstractReader(ABC):
         }
 
     def get_extra_variants(self):
-        """decorator for get_fields"""
+        """
+        decorator for get_fields
+
+        ..warning: DEPRECTATED
+        """
+
         yield from self.parse_variants()
 

@@ -1,16 +1,20 @@
+# Qt imports
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 from PySide2.QtGui import *
 
+# Custom imports
 from .plugin import QueryPluginWidget
 from cutevariant.core import Query
+from cutevariant.commons import logger
 
+LOGGER = logger()
 
 class QueryRouter(QObject):
-    """ 
-	This class redirect query between widgets. 
-	If one of the widget emit a 'changed' signal then all belongs widgets change their query except the sender.
-	"""
+    """
+    This class redirect query between widgets.
+    If one of the widget emit a 'changed' signal then all belongs widgets change their query except the sender.
+    """
 
     def __init__(self):
         super().__init__()
@@ -19,9 +23,9 @@ class QueryRouter(QObject):
 
     def addWidget(self, widget: QueryPluginWidget):
         """
-        Add a widget into the router 
+        Add a widget into the router
 
-        :param widget: a query widget 
+        :param widget: a query widget
         """
         self.widgets.append(widget)
         widget.changed.connect(self.widgetChanged)
@@ -45,8 +49,8 @@ class QueryRouter(QObject):
             widget.query = query
 
     def widgetChanged(self):
-        """ 
-        this method is trigger from one widget 
+        """
+        this method is trigger from one widget
         """
 
         #  Get the wiget which send the signal changed
@@ -55,7 +59,7 @@ class QueryRouter(QObject):
         if sender_widget:
             #  update query from sender widget
             query = sender_widget.query
-            print(query)
+            LOGGER.debug("QueryRouter:widgetChanged:: query: %s", query)
 
             if not query:
                 return

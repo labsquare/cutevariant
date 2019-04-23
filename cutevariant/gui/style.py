@@ -7,3 +7,10 @@ TYPE_COLORS = {
     "int": "#FAC174",  # light yellow
     "NoneType": "#FFFFFF",  # white
 }
+
+IMPACT_COLOR = {
+    "LOW": "#71E096",
+    "MODERATE": "#F5A26F",
+    "HIGH": "#ed6d79",
+    "MODIFIER": "#55abe1",
+}
