@@ -93,7 +93,10 @@ def create_indexes(conn):
 def create_table_selections(conn):
     """Create the table "selections" and association table "selection_has_variant"
 
-    This table stores the queries saved by the user.
+    This table stores the queries saved by the user:
+        - name: name of the set of variants
+        - count: number of variants concerned by this set
+        - query: the SQL query which generated the set
 
     :param conn: sqlite3.connect
     """
@@ -396,10 +399,7 @@ def create_annotations_indexes(conn):
 
 
 def create_table_variants(conn, fields):
-    """Create "variants" table which contains dynamics fields
-
-    :param conn: sqlite3.connect
-    :param fields: list of field dictionnary.
+    """Create "variants" and "sample_has_variant" tables which contains dynamics fields
 
     :Example:
 
@@ -408,6 +408,16 @@ def create_table_variants(conn, fields):
 
     .. seealso:: get_fields
 
+    .. note:: "gt" field in "sample_has_variant" = Patient's genotype.
+        - Patient without variant: gt = 0: Wild homozygote
+        - Patient with variant in the heterozygote state: gt = -1: Heterozygote
+        - Patient with variant in the homozygote state: gt = 2: Homozygote
+
+        :Example of VQL query:
+            SELECT chr, pos, genotype("pierre") FROM variants
+
+    :param conn: sqlite3.connect
+    :param fields: list of field dictionnary.
     """
     cursor = conn.cursor()
 
