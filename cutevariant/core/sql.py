@@ -78,8 +78,13 @@ def create_indexes(conn):
     .. note:: This function must be called after batch insertions.
     .. note:: You should use this function instead of individual functions.
     """
-    create_annotations_indexes(conn)
     create_variants_indexes(conn)
+
+    try:
+        create_annotations_indexes(conn)
+    except sqlite3.OperationalError as e:
+        LOGGER.debug("create_indexes:: sqlite3.%s: %s",
+                     e.__class__.__name__, str(e))
 
 
 ## ================ Selections functions =======================================
