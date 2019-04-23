@@ -72,6 +72,16 @@ def get_columns(conn, table_name):
     return [c[1] for c in conn.execute(f"pragma table_info({table_name})")]
 
 
+def create_indexes(conn):
+    """Create extra indexes on tables
+
+    .. note:: This function must be called after batch insertions.
+    .. note:: You should use this function instead of individual functions.
+    """
+    create_annotations_indexes(conn)
+    create_variants_indexes(conn)
+
+
 ## ================ Selections functions =======================================
 
 
@@ -357,9 +367,24 @@ def create_table_annotations(conn, fields):
     cursor = conn.cursor()
     # TODO: no primary key/unique index for this table?
     cursor.execute(f"""CREATE TABLE annotations (variant_id INTEGER NOT NULL, {schema})""")
-    # TODO: make indexes after insertions...
-    cursor.execute(f"""CREATE INDEX idx_annotations ON annotations (variant_id)""")
     conn.commit()
+
+
+def create_annotations_indexes(conn):
+    """Create indexes on the "annotations" table
+
+    .. warning: This function must be called after batch insertions.
+
+    :Example:
+        SELECT *, group_concat(annotations.rowid) FROM variants
+        LEFT JOIN annotations ON variants.rowid = annotations.variant_id
+        WHERE pos = 0
+        GROUP BY chr,pos
+        LIMIT 100
+    """
+
+    # Allow search on variant_id
+    conn.execute(f"""CREATE INDEX idx_annotations ON annotations (variant_id)""")
 
 
 ## ================ Variants functions =========================================
@@ -394,7 +419,7 @@ def create_table_variants(conn, fields):
     )
 
     LOGGER.debug("create_table_variants:: schema: %s", schema)
-    # Unicity constraint or NOT NULL fields
+    # Unicity constraint or NOT NULL fields (Cf VcfReader, FakeReader, etc.)
     # NOTE: specify the constraint in CREATE TABLE generates a lighter DB than
     # a separated index... Don't know why.
     cursor.execute(f"""CREATE TABLE variants ({schema},
@@ -410,9 +435,26 @@ def create_table_variants(conn, fields):
           ON DELETE CASCADE
           ON UPDATE NO ACTION
         ) WITHOUT ROWID""")
-    # TODO: make indexes after insertions...
-    cursor.execute(f"""CREATE UNIQUE INDEX idx_sample_has_variant ON sample_has_variant (sample_id,variant_id)""")
     conn.commit()
+
+
+def create_variants_indexes(conn):
+    """Create indexes on the "variants" table
+
+    .. warning: This function must be called after batch insertions.
+
+    :Example:
+        SELECT *, group_concat(annotations.rowid) FROM variants
+        LEFT JOIN annotations ON variants.rowid = annotations.variant_id
+        WHERE pos = 0
+        GROUP BY chr,pos
+        LIMIT 100
+    """
+
+    # Complementary index of the primary key (sample_id, variant_id)
+    conn.execute(f"""CREATE INDEX idx_sample_has_variant ON sample_has_variant (variant_id)""")
+
+    conn.execute(f"""CREATE INDEX idx_variants_pos ON variants (pos)""")
 
 
 def get_one_variant(conn, id: int):

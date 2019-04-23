@@ -57,12 +57,16 @@ def async_import_reader(conn, reader: AbstractReader, **kwargs):
     # Insert variants, link them to annotations and samples
     yield from async_insert_many_variants(conn, reader.get_variants())
 
+    # Create indexes
+    yield 99, "Create indexes"
+    create_indexes(conn)
+    yield 100, "Indexes created"
+
     # # Create default selection
     # session.add(Selection(name="all", description="all variant", count = variant_count))
     # session.add(Selection(name="favoris", description="favoris", count = 0))
 
     # session.commit()
-
 
 
 def async_import_file(conn, filename, project={}):
