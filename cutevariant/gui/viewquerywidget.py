@@ -323,29 +323,29 @@ class QueryDelegate(QStyledItemDelegate):
 
 
         painter.setBrush(bg_brush)
-        painter.setPen(Qt.NoPen)
-        painter.drawRect(option.rect)
+        #painter.setPen(Qt.NoPen)
+        #painter.drawRect(option.rect)
 
         alignement = Qt.AlignLeft|Qt.AlignVCenter
 
-        # Add margin for first columns if index is first level 
-        if index.column() == 0 and index.parent() == QModelIndex():
+        # # Add margin for first columns if index is first level 
+        # if index.column() == 0 and index.parent() == QModelIndex():
 
-            expanded = bool(option.state & QStyle.State_Open)
+        #     expanded = bool(option.state & QStyle.State_Open)
 
-            branch_option = copy.copy(option)
-            branch_option.rect.setWidth(65)
+        #     branch_option = copy.copy(option)
+        #     branch_option.rect.setWidth(65)
 
-            qApp.style().drawPrimitive(QStyle.PE_IndicatorBranch, branch_option, painter)
+        #     qApp.style().drawPrimitive(QStyle.PE_IndicatorBranch, branch_option, painter)
 
-            icon = index.data(Qt.DecorationRole)
-            if icon:
-                target = QRect(0,0, option.decorationSize.width(), option.decorationSize.height())
-                target.moveCenter(option.rect.center())
-                painter.drawPixmap(option.rect.x()+5, target.top() ,icon.pixmap(option.decorationSize))
+        #     icon = index.data(Qt.DecorationRole)
+        #     if icon:
+        #         target = QRect(0,0, option.decorationSize.width(), option.decorationSize.height())
+        #         target.moveCenter(option.rect.center())
+        #         painter.drawPixmap(option.rect.x()+5, target.top() ,icon.pixmap(option.decorationSize))
             
-        if index.column() == 0:    
-            option.rect.adjust(40,0,0,0)
+        # if index.column() == 0:    
+        #     option.rect.adjust(40,0,0,0)
 
 
         if colname == "impact":
@@ -384,9 +384,10 @@ class ViewQueryWidget(QueryPluginWidget):
         self.view.setSortingEnabled(True)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setSelectionMode(QAbstractItemView.ContiguousSelection)
-        self.view.setRootIsDecorated(False) # Manage from delegate
-        self.view.setIndentation(0)
+        self.view.setRootIsDecorated(True) # Manage from delegate
+        #self.view.setIndentation(0)
         self.view.setIconSize(QSize(22,22))
+        self.view.setAnimated(True)
         self.view.setAnimated(True)
         # self.view.setItemDelegate(self.delegate)
 
