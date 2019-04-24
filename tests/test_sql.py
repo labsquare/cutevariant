@@ -50,6 +50,11 @@ variants = [
     {"chr": "chr1", "pos": 80, "ref": "C", "alt": "G", "extra1": 80, "extra2": 100},
 ]
 
+duplicated_variants = [
+    {"chr": "chr1", "pos": 10, "ref": "G", "alt": "A", "extra1": 10, "extra2": 100},
+    {"chr": "chr1", "pos": 10, "ref": "G", "alt": "A", "extra1": 20, "extra2": 100},
+]
+
 
 def prepare_base(conn):
 
@@ -70,6 +75,29 @@ def prepare_base(conn):
 
     sql.insert_many_variants(conn, variants)
 
+
+def test_duplicated_variants(conn):
+    """Test the respect of the unicity constraint of the primary key
+
+    .. warning:: Annotations attached to variants are still not tested here.
+    """
+
+    prepare_base(conn)
+
+    # Delete all variants inserted by prepare_base()
+    conn.execute("DELETE FROM variants")
+
+    # Try to insert 2 duplicated variants
+    sql.insert_many_variants(conn, duplicated_variants)
+
+    # There must be only 1 variant (the first one)
+    data = conn.execute("SELECT * FROM variants")
+    expected = (("chr1", 10, "G", "A", 10, 100),)
+    record = tuple([tuple(i) for i in data])
+
+    assert len(record) == 1
+
+    assert record == expected
 
 
 def test_fields(conn):
