@@ -63,7 +63,6 @@ class QueryRouter(QObject):
 
             if not query:
                 return
-
             self._query = query
 
             print(self.query.sql())
@@ -71,4 +70,6 @@ class QueryRouter(QObject):
             #  change query for all widget except sender
             for widget in self.widgets:
                 if widget != sender_widget:
+                    widget.changed.disconnect()
                     widget.query = query
+                    widget.changed.connect(self.widgetChanged)
