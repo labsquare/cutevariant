@@ -149,16 +149,12 @@ class FilterQueryWidget(QueryPluginWidget):
 
         self.setLayout(layout)
 
-        self.model.itemChanged.connect(self.changed)
+        #self.model.itemChanged.connect(self.changed)
         self.view.doubleClicked.connect(self.edit)
 
-    @property
-    def query(self) -> Query:
-        return self.model.query
 
-    @query.setter
-    def query(self, query: Query):
-        self.model.query = query
+    def on_query_changed(self):
+        self.model.query = query 
 
     def edit(self, index):
         dialog = FilterEditDialog(self.model.itemFromIndex(index))

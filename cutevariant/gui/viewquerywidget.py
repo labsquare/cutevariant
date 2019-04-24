@@ -437,15 +437,10 @@ class ViewQueryWidget(QueryPluginWidget):
         # emit variant when clicked
         self.view.clicked.connect(self._variant_clicked)
 
-    @property
-    def query(self):
-        """ Method override from AbstractQueryWidget"""
-        return self.model.query
 
-    @query.setter
-    def query(self, query: Query):
+    def on_query_changed(self):
         """ Method override from AbstractQueryWidget"""
-        self.model.query = query
+        self.model.query = self.query
 
         # Enable initially disabled actions
         self.export_csv_action.setEnabled(True)

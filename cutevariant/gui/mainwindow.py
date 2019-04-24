@@ -78,12 +78,13 @@ class MainWindow(QMainWindow):
 
         # add mandatory query plugin
         self.add_query_plugin(self.column_widget)
-        self.add_query_plugin(self.filter_widget)
-        self.add_query_plugin(self.selection_widget)
+        #self.add_query_plugin(self.filter_widget)
+        #self.add_query_plugin(self.selection_widget)
 
         # testing
-        self.add_query_plugin(ChartQueryWidget())
-        self.add_query_plugin(WebGLQueryWidget())
+        #self.add_query_plugin(ChartQueryWidget())
+        #self.add_query_plugin(WebGLQueryWidget())
+        #self.add_query_plugin(HpoQueryWidget())
 
         # Add mandatory variant plugin
         self.add_variant_plugin(self.info_widget)
@@ -105,7 +106,7 @@ class MainWindow(QMainWindow):
 
         #  window geometry
         self.resize(600, 400)
-        self.open("/home/sacha/Dev/cutevariant/examples/test.db")
+        self.open("/home/schutz/Dev/cutevariant/examples/test.db")
         self.setGeometry(qApp.desktop().rect().adjusted(100, 100, -100, -100))
 
         self.load_plugins()
@@ -159,6 +160,7 @@ class MainWindow(QMainWindow):
         # query.filter = None
 
         self.router.query = query
+        
 
         # Refresh recent opened projects
         self.adjust_recent_projects(filepath)

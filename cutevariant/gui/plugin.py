@@ -28,17 +28,28 @@ class QueryPluginWidget(PluginWidget):
 
     # Signals
     # When the widget is modified
-    changed = Signal()
+    query_changed = Signal()
     # When the widget emits a message to be displayed in the status bar
     message = Signal(str)
 
     @property
     def query(self):
-        raise NotImplemented()
+        return self._query
 
     @query.setter
     def query(self, query: Query):
+        self._query = query
+
+    def on_query_changed(self):
         raise NotImplemented()
+
+
+    def dispatch(self):
+        """ Notify other widget that query has been changed """ 
+
+        self.query_changed.emit()
+
+
 
 
 class VariantPluginWidget(PluginWidget):

@@ -28,7 +28,7 @@ class QueryRouter(QObject):
         :param widget: a query widget
         """
         self.widgets.append(widget)
-        widget.changed.connect(self.widgetChanged)
+        widget.query_changed.connect(self.on_query_changed)
 
     @property
     def query(self):
@@ -48,28 +48,13 @@ class QueryRouter(QObject):
         for widget in self.widgets:
             widget.query = query
 
-    def widgetChanged(self):
+        self.on_query_changed()
+
+    def on_query_changed(self):
         """
         this method is trigger from one widget
         """
-
-        #  Get the wiget which send the signal changed
-        sender_widget = self.sender()
-
-        if sender_widget:
-            #  update query from sender widget
-            query = sender_widget.query
-            LOGGER.debug("QueryRouter:widgetChanged:: query: %s", query)
-
-            if not query:
-                return
-            self._query = query
-
-            print(self.query.sql())
-
-            #  change query for all widget except sender
-            for widget in self.widgets:
-                if widget != sender_widget:
-                    widget.changed.disconnect(self.widgetChanged)
-                    widget.query = query
-                    widget.changed.connect(self.widgetChanged)
+        #  call on_query_changed
+        for widget in self.widgets:
+            if widget != self.sender():
+                widget.on_query_changed()

@@ -53,26 +53,29 @@ class SelectionQueryWidget(QueryPluginWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
 
-        self.view.selectionModel().currentRowChanged.connect(self.changed)
+        #self.view.selectionModel().currentRowChanged.connect(self.changed)
 
-    @property
-    def query(self):
-        """ Method override from AbstractQueryWidget"""
 
-        if not self.view.selectionModel():
-            return self.model.query
 
-        item = self.model.item(self.view.selectionModel().currentIndex().row())
 
-        print("item text", item.data())
+    # @property
+    # def query(self):
+    #     """ Method override from AbstractQueryWidget"""
 
-        _query = self.model.query
-        _query.selection = str(item.data())
+    #     if not self.view.selectionModel():
+    #         return self.model.query
 
-        return self.model.query
+    #     item = self.model.item(self.view.selectionModel().currentIndex().row())
 
-    @query.setter
-    def query(self, query: Query):
+    #     print("item text", item.data())
+
+    #     _query = self.model.query
+    #     _query.selection = str(item.data())
+
+    #     return self.model.query
+
+
+    def on_query_changed(self):
         """ Method override from AbstractQueryWidget"""
         self.model.query = query
 

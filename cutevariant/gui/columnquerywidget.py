@@ -16,40 +16,24 @@ class ColumnQueryModel(QStandardItemModel):
     def __init__(self):
         super().__init__()
         self.setColumnCount(2)
-        self._query = None
+        self.query = None
         self.items = []
-        self._silence = False  # Don't emit signal if True
 
-        self.itemChanged.connect(self._emit_changed)
-
-    @property
-    def query(self):
-        selected_columns = \
-            [item.data()["name"] for item in self.items
-             if item.checkState() == Qt.Checked]
-
-        self._query.columns = selected_columns
-        return self._query
-
-    @query.setter
-    def query(self, query: Query):
-        self._query = query
-
-        # Build tree if not 
-        if self.rowCount() == 0:
-            self.load()
-
-        # check column item 
-        self.check_query_columns()
 
     def load(self):
+        """ Load columns into the model """ 
+
+        # Don't load again if already done
+        if self.items:
+            return
+
         self.clear()
         self.items = [] # Store QStandardItem as a list to detect easily which one is checked
         categories = set()
-        samples_names = (sample["name"] for sample in sql.get_samples(self._query.conn))
+        samples_names = (sample["name"] for sample in sql.get_samples(self.query.conn))
         categories_items = {}
 
-        for record in sql.get_fields(self._query.conn):
+        for record in sql.get_fields(self.query.conn):
             item = QStandardItem(record["name"])
             item.setEditable(False)
             item.setToolTip(record["description"])
@@ -92,7 +76,7 @@ class ColumnQueryModel(QStandardItemModel):
         for item in self.items:
             item.setCheckState(Qt.Checked)
             item.setCheckState(Qt.Unchecked)
-            if item.data()["name"] in self._query.columns:
+            if item.data()["name"] in self.query.columns:
                 item.setCheckState(Qt.Checked)
         self._silence = False
 
@@ -117,14 +101,38 @@ class ColumnQueryWidget(QueryPluginWidget):
         layout.addWidget(self.view)
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
-        self.model.changed.connect(self.changed)
+        #self.model.changed.connect(self.changed)
 
-    @property
-    def query(self):
-        """ Method override from AbstractQueryWidget"""
-        return self.model.query
+        self.model.itemChanged.connect(self.update_query)
 
-    @query.setter
-    def query(self, query: Query):
-        """ Method override from AbstractQueryWidget"""
-        self.model.query = query
+
+    def on_query_changed(self):
+        self.model.blockSignals(True)
+        self.model.query = self.query
+        self.model.load()
+        self.model.check_query_columns()
+        self.model.blockSignals(False)
+
+
+
+    def update_query(self):
+
+        selected_columns = \
+            [item.data()["name"] for item in self.model.items
+             if item.checkState() == Qt.Checked]
+
+        self.query.columns = selected_columns
+        self.query_changed.emit()
+
+
+
+
+    # @property
+    # def query(self):
+    #     """ Method override from AbstractQueryWidget"""
+    #     return self.model.query
+
+    # @query.setter
+    # def query(self, query: Query):
+    #     """ Method override from AbstractQueryWidget"""
+    #     self.model.query = query
