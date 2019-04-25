@@ -9,7 +9,7 @@ class CsvReader(AbstractReader):
     def __del__(self):
         del (self.device)
 
-    def get_samples(self):
+    def _get_samples(self):
         return ["boby", "sacha", "olivier"]
 
     def parse_fields(self):
