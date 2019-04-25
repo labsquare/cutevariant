@@ -207,6 +207,19 @@ def get_selections(conn):
     return (dict(data) for data in conn.execute("""SELECT * FROM selections"""))
 
 
+def delete_selection(conn, id):
+    """Delete the selection with the given id in the "selections" table
+
+    :return: Number of rows deleted
+    :rtype: <int>
+    """
+    # ON CASCADE deletion
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM selections WHERE rowid = ?", (id,))
+    conn.commit()
+    return cursor.rowcount
+
+
 ## ================ Operations on sets of variants =============================
 
 
