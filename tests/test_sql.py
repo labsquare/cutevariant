@@ -55,6 +55,13 @@ duplicated_variants = [
     {"chr": "chr1", "pos": 10, "ref": "G", "alt": "A", "extra1": 20, "extra2": 100},
 ]
 
+variants_duplicated_annotations = [
+    {"chr": "chr1", "pos": 10, "ref": "G", "alt": "A", "extra1": 10, "extra2": 100,
+        "annotations": [{"gene": "gene1", "transcript": "transcript1"},]},
+    {"chr": "chr1", "pos": 10, "ref": "C", "alt": "C", "extra1": 20, "extra2": 100,
+        "annotations": [{"gene": "gene1", "transcript": "transcript1"},]},
+]
+
 
 def prepare_base(conn):
 
@@ -79,6 +86,8 @@ def prepare_base(conn):
 def test_duplicated_variants(conn):
     """Test the respect of the unicity constraint of the primary key
 
+    => The second one must not be inserted
+
     .. warning:: Annotations attached to variants are still not tested here.
     """
 
@@ -96,6 +105,36 @@ def test_duplicated_variants(conn):
     record = tuple([tuple(i) for i in data])
 
     assert len(record) == 1
+
+    assert record == expected
+
+
+def test_duplicated_annotations(conn):
+    """Test "annotations" table, by inserting 1 similar annotation to variants.
+
+    => must not raise violation of unicity constraint exception
+
+    .. warning:: This function doesn't test annotations with missing fields.
+    (This has to be done when a file is imported because the annotationparser
+    is called; which is not the case here).
+    """
+
+    # Create default annotations table
+    # By default, these columns are created: "gene TEXT, transcript TEXT"
+    sql.create_table_annotations(conn, [])
+
+    prepare_base(conn)
+    # Delete all variants inserted by prepare_base()
+    conn.execute("DELETE FROM variants")
+
+    # Try to insert 2 variants with the same annotations
+    sql.insert_many_variants(conn, variants_duplicated_annotations)
+
+    # There must be only 1 variant (the first one)
+    data = conn.execute("SELECT * FROM annotations")
+    record = tuple([tuple(i) for i in data])
+    # Same annotation assigned to the 2 variants
+    expected = tuple([(1, 'gene1', 'transcript1'), (2, 'gene1', 'transcript1')])
 
     assert record == expected
 
@@ -133,7 +172,9 @@ def test_simple_selections(conn):
 
 def test_selections(conn):
     """Test the creation of a full selection in "selection_has_variant"
-    and "selections" tables"""
+    and "selections" tables; Test also the ON CASCADE deletion of rows in
+    "selection_has_variant" when a selection is deleted.
+    """
 
     prepare_base(conn)
     # Create a selection that contains all 8 variants in the DB
