@@ -30,6 +30,8 @@ class SelectionQueryModel(QStandardItemModel):
             name_item = QStandardItem("{} ({})".format(record["name"],record["count"]))
             name_item.setIcon(FIcon(0xf4f1))
             name_item.setData(record["name"])
+            # Keep the id of the selection for this deletion/update
+            name_item.setData(record["selection_id"], Qt.UserRole)
             self.appendRow([name_item])
 
     def save_current_query(self, name):
@@ -53,7 +55,20 @@ class SelectionQueryWidget(QueryPluginWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
 
+        self.menu_setup()
+
         self.view.selectionModel().currentRowChanged.connect(self.changed)
+
+    def menu_setup(self):
+        """Setup popup menu"""
+        self.menu = QMenu()
+
+        self.menu.addAction(FIcon(0xf8ff),"Edit")
+        self.menu.addSeparator()
+        self.menu.addAction(
+            FIcon(0xf413), self.tr("Remove"),
+            self.delete_current_selection
+        )
 
     @property
     def query(self):
@@ -62,7 +77,11 @@ class SelectionQueryWidget(QueryPluginWidget):
         if not self.view.selectionModel():
             return self.model.query
 
+        # Test if there is no more selection item
+        # FIXME: if this is the case, the ui is empty and no longer has active query
         item = self.model.item(self.view.selectionModel().currentIndex().row())
+        if not item:
+            return self.model.query
 
         print("item text", item.data())
 
@@ -85,19 +104,15 @@ class SelectionQueryWidget(QueryPluginWidget):
         if success:
             self.model.save_current_query(name)
 
-
-    def contextMenuEvent(self, event: QContextMenuEvent):
-        """
-        Overrided
-        """
-
+    def delete_current_selection(self):
+        """Delete the current selection in database, then if ok in the model"""
         current_index = self.view.currentIndex()
         item = self.model.itemFromIndex(current_index)
+        # Delete in database
+        if (sql.delete_selection(self.query.conn, item.data(Qt.UserRole))):
+            # Delete in model; triggers currentRowChanged signal
+            self.model.removeRow(item.row())
 
-        menu = QMenu()
-
-        menu.addAction(FIcon(0xf8ff),"Edit")
-        menu.addSeparator()
-        menu.addAction(FIcon(0xf413),"Remove")
-        
-        menu.exec_(event.globalPos())
+    def contextMenuEvent(self, event: QContextMenuEvent):
+        """Overrided: Show popup menu"""
+        self.menu.exec_(event.globalPos())
