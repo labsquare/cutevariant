@@ -151,13 +151,17 @@ class VqlEditor(QueryPluginWidget):
     #         self.message.emit(e.message)
     #         self.query_error = True
 
-    def on_query_changed(self):
+
+    def on_init_query(self):
+        """Overrided"""
+        self.text_edit.setCompleter(self.create_completer())
+        self.on_change_query()
+
+
+
+    def on_change_query(self):
         """Overrided"""
         self.text_edit.setPlainText(self.query.to_vql())
-
-        # Init autocompletion if it is not already done
-        if not self.text_edit.completer:
-            self.text_edit.setCompleter(self.create_completer())
 
     def create_completer(self):
         """Create Completer with his model"""
@@ -171,10 +175,11 @@ class VqlEditor(QueryPluginWidget):
         return completer
 
     def check_vql(self):
-        print("check")
 
-        self.query.from_vql(self.text_edit.toPlainText())
-        self.query_changed.emit()
+        if self.query:
+            self.query.from_vql(self.text_edit.toPlainText())
+            print("check vql", self.query)
+            self.query_changed.emit()
 
 
 class VqlEdit(QTextEdit):

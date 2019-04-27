@@ -27,7 +27,7 @@ class QueryPluginWidget(PluginWidget):
     """
 
     # Signals
-    # When the widget is modified
+    # When the query's widget changed 
     query_changed = Signal()
     # When the widget emits a message to be displayed in the status bar
     message = Signal(str)
@@ -39,15 +39,22 @@ class QueryPluginWidget(PluginWidget):
     @query.setter
     def query(self, query: Query):
         self._query = query
+        self.on_init_query()
 
-    def on_query_changed(self):
+
+
+
+
+    def on_change_query(self):
+        """ this method is called by the queryrouter each time a belong widget signal a query_changed """
         raise NotImplemented()
 
 
-    def dispatch(self):
-        """ Notify other widget that query has been changed """ 
+    def on_init_query(self):
+        """ this method is called by the queryrouter when query is set """
+        pass 
 
-        self.query_changed.emit()
+
 
 
 

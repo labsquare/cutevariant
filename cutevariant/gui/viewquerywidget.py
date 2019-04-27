@@ -213,8 +213,6 @@ class QueryModel(QAbstractItemModel):
         self._query = query
         # self._query.group_by=("chr","pos","ref","alt")
 
-        self.total = query.count()
-        self.load()
 
     def load(self):
         """
@@ -224,6 +222,8 @@ class QueryModel(QAbstractItemModel):
         self._query.group_by = ("chr","pos")
         self.beginResetModel()
         self.variants = []
+        self.total = self.query.count()
+
 
         for variant in self._query.rows(self.limit, self.page * self.limit):
             self.variants.append([tuple(variant)])  # Append a list because child can be append after 
@@ -323,8 +323,8 @@ class QueryDelegate(QStyledItemDelegate):
 
 
         painter.setBrush(bg_brush)
-        #painter.setPen(Qt.NoPen)
-        #painter.drawRect(option.rect)
+        painter.setPen(Qt.NoPen)
+        painter.drawRect(option.rect)
 
         alignement = Qt.AlignLeft|Qt.AlignVCenter
 
@@ -438,13 +438,18 @@ class ViewQueryWidget(QueryPluginWidget):
         self.view.clicked.connect(self._variant_clicked)
 
 
-    def on_query_changed(self):
-        """ Method override from AbstractQueryWidget"""
-        self.model.query = self.query
-
-        # Enable initially disabled actions
+    def on_init_query(self):
+        """ Overrided """
         self.export_csv_action.setEnabled(True)
         self.show_sql_action.setEnabled(True)
+        self.model.query = self.query
+        self.model.load()
+
+
+
+    def on_change_query(self):
+        """ Method override from AbstractQueryWidget"""
+        self.model.load()
 
     def updateInfo(self):
         """Update metrics for the current query

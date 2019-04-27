@@ -64,9 +64,12 @@ class FilterQueryModel(QStandardItemModel):
     @query.setter
     def query(self, query: Query):
         self._query = query
+
+
+    def load(self):
         self.clear()
         if self._query.filter:
-            self.appendRow(self.toItem(self._query.filter))
+            self.appendRow(self.toItem(self._query.filter))   
 
     def toItem(self, data: dict) -> QStandardItem:
         ''' recursive function to load item in tree from data '''
@@ -153,8 +156,13 @@ class FilterQueryWidget(QueryPluginWidget):
         self.view.doubleClicked.connect(self.edit)
 
 
-    def on_query_changed(self):
-        self.model.query = query 
+    def on_init_query(self):
+        """ Overrided """ 
+        self.model.query = self.query
+
+    def on_change_query(self):
+        """ override methods """
+        self.model.load()
 
     def edit(self, index):
         dialog = FilterEditDialog(self.model.itemFromIndex(index))

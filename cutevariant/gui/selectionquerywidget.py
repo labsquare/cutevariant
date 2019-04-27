@@ -10,6 +10,10 @@ from cutevariant.gui.ficon import FIcon
 
 
 class SelectionQueryModel(QStandardItemModel):
+    """
+    This model store all selections 
+
+    """
     def __init__(self):
         super().__init__()
         self.setColumnCount(2)
@@ -22,9 +26,9 @@ class SelectionQueryModel(QStandardItemModel):
     @query.setter
     def query(self, query: Query):
         self._query = query
-        self.refresh()
+        self.load()
 
-    def refresh(self):
+    def load(self):
         self.clear()
         for record in sql.get_selections(self._query.conn):
             name_item = QStandardItem("{} ({})".format(record["name"],record["count"]))
@@ -34,7 +38,7 @@ class SelectionQueryModel(QStandardItemModel):
 
     def save_current_query(self, name):
         self.query.create_selection(name)
-        self.refresh()
+        self.load()
 
 
 class SelectionQueryWidget(QueryPluginWidget):
@@ -75,9 +79,13 @@ class SelectionQueryWidget(QueryPluginWidget):
     #     return self.model.query
 
 
-    def on_query_changed(self):
+    def on_change_query(self):
         """ Method override from AbstractQueryWidget"""
-        self.model.query = query
+        self.model.load()
+
+    def on_init_query(self):
+        """ Overrided """
+        self.model.query = self.query
 
     def save_current_query(self):
 

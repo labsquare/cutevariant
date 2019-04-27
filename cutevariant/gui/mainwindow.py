@@ -78,8 +78,8 @@ class MainWindow(QMainWindow):
 
         # add mandatory query plugin
         self.add_query_plugin(self.column_widget)
-        #self.add_query_plugin(self.filter_widget)
-        #self.add_query_plugin(self.selection_widget)
+        self.add_query_plugin(self.filter_widget)
+        self.add_query_plugin(self.selection_widget)
 
         # testing
         #self.add_query_plugin(ChartQueryWidget())
@@ -106,7 +106,7 @@ class MainWindow(QMainWindow):
 
         #  window geometry
         self.resize(600, 400)
-        self.open("/home/schutz/Dev/cutevariant/examples/test.db")
+        self.open("/home/sacha/Dev/cutevariant/examples/test.db")
         self.setGeometry(qApp.desktop().rect().adjusted(100, 100, -100, -100))
 
         self.load_plugins()
