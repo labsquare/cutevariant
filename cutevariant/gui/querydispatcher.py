@@ -10,7 +10,7 @@ from cutevariant.commons import logger
 
 LOGGER = logger()
 
-class QueryRouter(QObject):
+class QueryDispatcher(QObject):
     """
     This class redirect query between widgets.
     If one of the widget emit a 'changed' signal then all belongs widgets change their query except the sender.
@@ -28,7 +28,7 @@ class QueryRouter(QObject):
         :param widget: a query widget
         """
         self.widgets.append(widget)
-        widget.query_changed.connect(self.on_change_query)
+        widget.query_changed.connect(self.update_all_widgets)
 
     @property
     def query(self):
@@ -51,7 +51,7 @@ class QueryRouter(QObject):
 
         #self.on_query_changed()
 
-    def on_change_query(self):
+    def update_all_widgets(self):
         """
         this method is trigger from one widget
         """
@@ -59,4 +59,5 @@ class QueryRouter(QObject):
         #  call on_query_changed
         for widget in self.widgets:
             if widget != self.sender():
+                print("CHANGE WIDGET", widget)
                 widget.on_change_query()

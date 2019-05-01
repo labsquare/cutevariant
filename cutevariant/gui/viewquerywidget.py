@@ -88,7 +88,7 @@ class QueryModel(QAbstractItemModel):
         if not self._query:
             return 0
 
-        return len(self._query.columns)
+        return len(self._query.columns) + 1  # show child count for the first col
 
     def index(self, row, column, parent=QModelIndex()):
         """Overrided: Return index """
@@ -125,10 +125,16 @@ class QueryModel(QAbstractItemModel):
         # Display Role 
         if role == Qt.DisplayRole:
             if index.parent() == QModelIndex():
-                return str(self.variants[index.row()][0][index.column() + 1]) 
+                if index.column() == 0:
+                    return str(self.variants[index.row()][0][-1])
+                else:
+                    return str(self.variants[index.row()][0][index.column()]) 
 
             else:
-                return str(self.variants[index.parent().row()][index.row()][index.column() + 1])
+                if index.column() == 0:
+                    return None
+                else:
+                    return str(self.variants[index.parent().row()][index.row()][index.column() + 1])
 
         # Icon role : show number of child 
         if role == Qt.DecorationRole:
@@ -142,11 +148,14 @@ class QueryModel(QAbstractItemModel):
         """Overrided: Return column name as header data """
         if orientation == Qt.Horizontal:
             if role == Qt.DisplayRole:
-                return self._query.columns[section]
+                if section == 0:
+                    return "childs"
+                else:
+                    return self._query.columns[section-1]
 
         if orientation == Qt.Vertical:
             if role == Qt.DisplayRole:
-                return self.variants[index.row()][0]
+                return self.variants[index.row()][-1]
 
         return None
 
@@ -389,6 +398,7 @@ class ViewQueryWidget(QueryPluginWidget):
         self.view.setIconSize(QSize(22,22))
         self.view.setAnimated(True)
         self.view.setAnimated(True)
+
         # self.view.setItemDelegate(self.delegate)
 
         main_layout = QVBoxLayout()
@@ -443,13 +453,15 @@ class ViewQueryWidget(QueryPluginWidget):
         self.export_csv_action.setEnabled(True)
         self.show_sql_action.setEnabled(True)
         self.model.query = self.query
-        self.model.load()
+        #self.on_change_query()
+
 
 
 
     def on_change_query(self):
         """ Method override from AbstractQueryWidget"""
         self.model.load()
+        self.view.header().setSectionResizeMode(0, QHeaderView.ResizeToContents)
 
     def updateInfo(self):
         """Update metrics for the current query

@@ -52,7 +52,7 @@ class QueryPluginWidget(PluginWidget):
 
     def on_init_query(self):
         """ this method is called by the queryrouter when query is set """
-        pass 
+        raise NotImplemented() 
 
 
 

@@ -19,7 +19,7 @@ from cutevariant.gui.selectionquerywidget import SelectionQueryWidget
 from cutevariant.gui.hpoquerywidget import HpoQueryWidget
 from cutevariant.gui.vqleditor import VqlEditor
 from cutevariant.gui.omnibar import OmniBar
-from cutevariant.gui.queryrouter import QueryRouter
+from cutevariant.gui.querydispatcher import QueryDispatcher
 from cutevariant.gui.infovariantwidget import InfoVariantWidget
 from cutevariant.gui.aboutcutevariant import AboutCutevariant
 
@@ -64,7 +64,7 @@ class MainWindow(QMainWindow):
         self.editor = VqlEditor()
         self.info_widget = InfoVariantWidget()
         # Init router to dispatch query between queryPlugins
-        self.router = QueryRouter()
+        self.query_dispatcher = QueryDispatcher()
         # Setup Actions
         self.setupActions()
         # Build central view
@@ -73,7 +73,7 @@ class MainWindow(QMainWindow):
         vsplit.addWidget(self.tab_view)
         vsplit.addWidget(self.editor)
         self.setCentralWidget(vsplit)
-        self.router.addWidget(self.editor)
+        self.query_dispatcher.addWidget(self.editor)
         self.addView()
 
         # add mandatory query plugin
@@ -121,7 +121,7 @@ class MainWindow(QMainWindow):
         self.addPanel(plugin)
 
     def add_query_plugin(self, plugin: QueryPluginWidget):
-        self.router.addWidget(plugin)
+        self.query_dispatcher.addWidget(plugin)
         self.addPanel(plugin)
 
     def load_plugins(self, folder_path=None):
@@ -150,16 +150,17 @@ class MainWindow(QMainWindow):
         app_settings = QSettings()
         app_settings.setValue("last_directory", os.path.dirname(filepath))
 
+        # Create connection 
         self.conn = get_sql_connexion(filepath)
+        
+        # Create a query 
         query = Query(self.conn)
-        # query.filter = json.loads(
-        #     """{"AND" : [{"field":"pos", "operator":">", "value":"880000"} ]}"""
-        # )
+        
+        # dispatch the query to all widget from the router 
+        self.query_dispatcher.query = query
 
-        # query.create_selection("mytest")
-        # query.filter = None
-
-        self.router.query = query
+        # update all widgets 
+        self.query_dispatcher.update_all_widgets()
         
 
         # Refresh recent opened projects
@@ -360,7 +361,7 @@ class MainWindow(QMainWindow):
         #  TODO : manage multiple view
         widget = ViewQueryWidget()
         self.tab_view.addTab(widget, widget.windowTitle())
-        self.router.addWidget(widget)
+        self.query_dispatcher.addWidget(widget)
 
     def currentView(self):
         index = self.tab_view.currentIndex()

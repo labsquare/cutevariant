@@ -207,6 +207,10 @@ def get_selections(conn):
     return (dict(data) for data in conn.execute("""SELECT * FROM selections"""))
 
 
+def delete_selection(conn, id : int):
+    return conn.execute("DELETE FROM selections FROM id ?", id)
+
+
 ## ================ Operations on sets of variants =============================
 
 
