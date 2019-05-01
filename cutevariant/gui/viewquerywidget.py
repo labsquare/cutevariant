@@ -132,9 +132,9 @@ class QueryModel(QAbstractItemModel):
 
             else:
                 if index.column() == 0:
-                    return None
+                    return 0
                 else:
-                    return str(self.variants[index.parent().row()][index.row()][index.column() + 1])
+                    return str(self.variants[index.parent().row()][index.row()][index.column()])
 
         # Icon role : show number of child 
         if role == Qt.DecorationRole:

@@ -52,11 +52,18 @@ class SelectionQueryModel(QAbstractTableModel):
 
     def headerData(self, section, orientation, role = Qt.DisplayRole):
         """ overloaded from QAbstractTableModel """
+
+        if not self.records:
+            return 
+
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
             if section == 0:
                 return "selection"
             if section == 1:
                 return "count"
+
+        if orientation == Qt.Vertical and role == Qt.DisplayRole and section > 0:
+            return self.records[section]["id"] # For debug purpose . displayed in vertical header
 
 
     def record(self, index: QModelIndex()):
@@ -77,12 +84,16 @@ class SelectionQueryModel(QAbstractTableModel):
                 return idx
         return None
 
-    def remove_record(self, rows = list):
+    def remove_record(self, index: QModelIndex()):
 
-        for row in rows:
-            self.beginRemoveRows(QModelIndex(), row, row)
-
+            self.beginRemoveRows(QModelIndex(), index.row(), index.row())
+            record = self.records.pop(index.row())
+            sql.delete_selection(self.query.conn, record["id"])
             self.endRemoveRows()
+
+    def edit_record(self, index, record : dict):
+        sql.edit_selection(self.query.conn, record)
+        self.dataChanged.emit(index,index)
 
 
     @property
@@ -131,7 +142,7 @@ class SelectionQueryWidget(QueryPluginWidget):
         self.view.horizontalHeader().hide()
         #self.view.horizontalHeader().setStretchLastSection(True)
 
-        self.view.verticalHeader().hide()
+        self.view.verticalHeader().show()
         self.view.verticalHeader().setDefaultSectionSize(26)
         self.view.setShowGrid(False)
         self.view.setAlternatingRowColors(True)
@@ -204,8 +215,60 @@ class SelectionQueryWidget(QueryPluginWidget):
 
         menu = QMenu()
 
-        menu.addAction(FIcon(0xf8ff),"Edit")
+        menu.addAction(FIcon(0xf8ff),"Edit", self.edit_selection)
+
+        menu.addMenu(self._create_set_operation_menu(FIcon(0xf55d),"Intersect with ..."))
+        menu.addMenu(self._create_set_operation_menu(FIcon(0xf55b),"Difference with ..."))
+        menu.addMenu(self._create_set_operation_menu(FIcon(0xf564),"Union with ..."))
+        
+
         menu.addSeparator()
-        menu.addAction(FIcon(0xf413),"Remove")
+        menu.addAction(FIcon(0xf413),"Remove", self.remove_selection)
         
         menu.exec_(event.globalPos())
+
+
+
+
+    def _create_set_operation_menu(self,icon, menu_name):
+        menu = QMenu(menu_name)
+        menu.setIcon(icon)
+
+        current_index = self.view.selectionModel().currentIndex()
+
+        for selection in sql.get_selections(self.query.conn):
+            if self.model.record(current_index)["name"] != selection["name"]:
+                action = menu.addAction(selection["name"])
+
+
+        return menu
+
+
+    def _make_set_operation(self):
+        action = self.sender()
+
+        #current_selection = self.model.record(self.view.selectionModel().currentIndex())[0]
+
+
+
+
+    def remove_selection(self):
+        
+        msg = QMessageBox()
+        msg.setText(self.tr("Are you sure you want to remove this selection ? "))
+        msg.setStandardButtons(QMessageBox.Yes|QMessageBox.No)
+
+        if msg.exec_() == QMessageBox.Yes:
+            for index in self.view.selectionModel().selectedRows():
+                self.model.remove_record(index)
+
+
+    def edit_selection(self):
+
+        current_index = self.view.selectionModel().currentIndex()
+        new_name = QInputDialog.getText(self,"get new name", "name")
+        if new_name[1] and current_index:
+            old_record = self.model.record(current_index)
+            old_record["name"] = new_name[0]
+            print("old record", old_record)
+            self.model.edit_record(current_index,old_record)

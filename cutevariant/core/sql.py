@@ -50,9 +50,9 @@ def create_project(conn, name: str, reference: str):
     :param reference: Reference genome
     """
     cursor = conn.cursor()
-    cursor.execute("""CREATE TABLE projects (name TEXT, reference TEXT)""")
+    cursor.execute("""CREATE TABLE projects (id INTEGER PRIMARY KEY, name TEXT, reference TEXT)""")
     cursor.execute(
-        """INSERT INTO projects VALUES (?, ?)""",
+        """INSERT INTO projects (name, reference) VALUES (?, ?)""",
         (name, reference),
     )
     conn.commit()
@@ -104,7 +104,7 @@ def create_table_selections(conn):
     # selection_id is an alias on internal autoincremented 'rowid'
     cursor.execute(
         """CREATE TABLE selections (
-        selection_id INTEGER PRIMARY KEY ASC,
+        id INTEGER PRIMARY KEY ASC,
         name TEXT, count INTEGER, query TEXT
         )"""
     )
@@ -115,7 +115,7 @@ def create_table_selections(conn):
         variant_id INTEGER NOT NULL,
         selection_id INTEGER NOT NULL,
         PRIMARY KEY (variant_id, selection_id),
-        FOREIGN KEY (selection_id) REFERENCES selections (selection_id)
+        FOREIGN KEY (selection_id) REFERENCES selections (id)
           ON DELETE CASCADE
           ON UPDATE NO ACTION
         ) WITHOUT ROWID"""
@@ -207,8 +207,15 @@ def get_selections(conn):
     return (dict(data) for data in conn.execute("""SELECT * FROM selections"""))
 
 
-def delete_selection(conn, id : int):
-    return conn.execute("DELETE FROM selections FROM id ?", id)
+def delete_selection(conn, selection_id: int):
+    conn.execute(f"DELETE FROM selections WHERE id = {selection_id}")
+    conn.commit()
+
+
+def edit_selection(conn, selection: dict):
+    conn.execute(f"UPDATE selections SET name=:name, count=:count WHERE id = :id", selection)
+    conn.commit()
+
 
 
 ## ================ Operations on sets of variants =============================
@@ -259,6 +266,9 @@ def subtract_variants(query1, query2, by="site"):
     """
 
 
+
+
+
 ## ================ Fields functions ===========================================
 
 
@@ -284,7 +294,7 @@ def create_table_fields(conn):
     cursor = conn.cursor()
     cursor.execute(
         """CREATE TABLE fields
-        (name TEXT, category TEXT, type TEXT, description TEXT)
+        (id INTEGER PRIMARY KEY, name TEXT, category TEXT, type TEXT, description TEXT)
         """
     )
     conn.commit()
@@ -453,7 +463,7 @@ def create_table_variants(conn, fields):
         variant_id INTEGER NOT NULL,
         gt INTEGER DEFAULT -1,
         PRIMARY KEY (sample_id, variant_id),
-        FOREIGN KEY (sample_id) REFERENCES samples (sample_id)
+        FOREIGN KEY (sample_id) REFERENCES samples (id)
           ON DELETE CASCADE
           ON UPDATE NO ACTION
         ) WITHOUT ROWID""")
@@ -674,7 +684,7 @@ def create_table_samples(conn):
     cursor = conn.cursor()
     # sample_id is an alias on internal autoincremented 'rowid'
     cursor.execute("""CREATE TABLE samples (
-        sample_id INTEGER PRIMARY KEY ASC,
+        id INTEGER PRIMARY KEY ASC,
         name TEXT)""")
     conn.commit()
 

@@ -76,7 +76,9 @@ def test_fields(conn):
 
     prepare_base(conn)
     for index, f in enumerate(sql.get_fields(conn)):
+        rowid = f.pop("id")
         assert f == fields[index]
+        assert index+1 == rowid
 
 
 def test_samples(conn):
