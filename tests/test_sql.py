@@ -150,12 +150,16 @@ def test_selections(conn):
 def test_selection_operation(conn):
     prepare_base(conn)
 
+    # Select all
+    query = """SELECT variants.rowid,chr,pos,ref,alt FROM variants"""
+    sql.create_selection_from_sql(conn, query, "all", count=None, by="site")
+
     # Select only ref = G 
-    query = """SELECT variants.rowid,chr,pos,ref,alt FROM variants WHERE ref='G'"""
+    query = """SELECT variants.rowid,chr,pos,ref,alt FROM variants WHERE ref='C'"""
     sql.create_selection_from_sql(conn, query, "setA", count=None, by="site")
 
     # Select only ref=C
-    query = """SELECT variants.rowid,chr,pos,ref,alt FROM variants WHERE ref='C'"""
+    query = """SELECT variants.rowid,chr,pos,ref,alt FROM variants WHERE alt='C'"""
     sql.create_selection_from_sql(conn, query, "setB", count=None, by="site")
 
     selections = [selection["name"] for selection in sql.get_selections(conn)]
@@ -163,7 +167,22 @@ def test_selection_operation(conn):
     assert "setA" in selections 
     assert "setB" in selections 
 
-    #s1 = sql.Selection(conn,"setA")
+    sql.Selection.conn = conn
+
+    All = sql.Selection.from_name("all")
+    A = sql.Selection.from_name("setA")
+    B = sql.Selection.from_name("setB")
+
+    C = All - B&A 
+
+    C.save("newset")
+
+    print(C.query)
+    for i in conn.execute(C.query):
+        print(dict(i))
+
+    selections = [selection["name"] for selection in sql.get_selections(conn)]
+    "newset" in selections
 
 
 

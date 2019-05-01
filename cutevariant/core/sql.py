@@ -732,13 +732,33 @@ def get_samples(conn):
 
 
 class Selection(object):
-    def __init__(self, conn, name):
-        self.conn = conn
-        self.columns = get_query_columns(("chr","pos"))
+    conn = None
+    def __init__(self, query = None):
+        self.query = query 
 
-        self.record = conn.execute("SELECT * FROM selections WHERE name = ?", (name,)).fetchone()
+    def __add__(self, other):
         
-        #self.query = f"""SELECT {self.columns} FROM variants, selections WHERE "
+        new_selection = Selection()        
+        new_selection.query = union_variants(self.query, other.query)
+        return new_selection
+
+    def __and__(self, other):
+        new_selection = Selection()        
+        new_selection.query = intersect_variants(self.query, other.query)
+        return new_selection
+
+    def __sub__(self, other):
+        new_selection = Selection()        
+        new_selection.query = subtract_variants(self.query, other.query)
+        return new_selection
 
 
+    def save(self, name ):
+        create_selection_from_sql(Selection.conn, self.query, name, count=None, by="site")
 
+    @classmethod
+    def from_name(cls, name):
+        select_id = Selection.conn.execute("SELECT id FROM selections WHERE name = ?", (name,)).fetchone()[0]
+        columns = get_query_columns(by="site")
+        q = f"SELECT {columns} FROM variants v, selection_has_variant sv WHERE v.id = sv.variant_id AND sv.selection_id = {select_id}"
+        return Selection(q)

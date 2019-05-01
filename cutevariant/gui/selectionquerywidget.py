@@ -217,9 +217,9 @@ class SelectionQueryWidget(QueryPluginWidget):
 
         menu.addAction(FIcon(0xf8ff),"Edit", self.edit_selection)
 
-        menu.addMenu(self._create_set_operation_menu(FIcon(0xf55d),"Intersect with ..."))
-        menu.addMenu(self._create_set_operation_menu(FIcon(0xf55b),"Difference with ..."))
-        menu.addMenu(self._create_set_operation_menu(FIcon(0xf564),"Union with ..."))
+        menu.addMenu(self._create_set_operation_menu(FIcon(0xf55d),"intersect"))
+        menu.addMenu(self._create_set_operation_menu(FIcon(0xf55b),"difference"))
+        menu.addMenu(self._create_set_operation_menu(FIcon(0xf564),"union"))
         
 
         menu.addSeparator()
@@ -239,6 +239,8 @@ class SelectionQueryWidget(QueryPluginWidget):
         for selection in sql.get_selections(self.query.conn):
             if self.model.record(current_index)["name"] != selection["name"]:
                 action = menu.addAction(selection["name"])
+                action.setData(menu_name)
+                action.triggered.connect(self._make_set_operation)
 
 
         return menu
@@ -247,7 +249,40 @@ class SelectionQueryWidget(QueryPluginWidget):
     def _make_set_operation(self):
         action = self.sender()
 
-        #current_selection = self.model.record(self.view.selectionModel().currentIndex())[0]
+        ## THIS CODE IS UGLY... FOR TESTING PURPOSE ... 
+
+        menu_name = action.data()
+
+        name_1 = self.model.record(self.view.selectionModel().currentIndex())["name"]
+        name_2 = action.text()
+
+        sql.Selection.conn = self.query.conn 
+
+        selection_1 = sql.Selection.from_name(name_1)
+        selection_2 = sql.Selection.from_name(name_2)
+
+        name_3 = QInputDialog.getText(self,"Name of selection", "name:")
+
+        if name_3[1] == True and menu_name:
+
+            if menu_name == "union":
+                print("UNION")
+                selection_3 = selection_1 + selection_2  
+            if menu_name == "difference":
+                print("DIFF")
+                selection_3 = selection_1 - selection_2  
+            if menu_name == "intersect":
+                print("INTERSECT")
+                selection_3 = selection_1 & selection_2  
+
+
+            selection_3.save(name_3[0])
+            self.model.load() 
+
+
+
+        #seection_3.save()
+        
 
 
 
