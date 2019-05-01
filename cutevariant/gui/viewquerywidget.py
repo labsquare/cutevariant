@@ -386,7 +386,7 @@ class ViewQueryWidget(QueryPluginWidget):
         self.bottombar = QToolBar()
         self.view = QTreeView()
 
-        self.view.setFrameStyle(QFrame.NoFrame)
+        #self.view.setFrameStyle(QFrame.NoFrame)
         self.view.setModel(self.model)
         self.view.setItemDelegate(self.delegate)
         self.view.setAlternatingRowColors(True)
@@ -397,7 +397,7 @@ class ViewQueryWidget(QueryPluginWidget):
         #self.view.setIndentation(0)
         self.view.setIconSize(QSize(22,22))
         self.view.setAnimated(True)
-        self.view.setAnimated(True)
+        self.view.setStyleSheet("QAbstractScrollArea {border-left: 20px solid red}")
 
         # self.view.setItemDelegate(self.delegate)
 
@@ -419,7 +419,7 @@ class ViewQueryWidget(QueryPluginWidget):
         self.page_info = QLabel()
         self.page_box = QLineEdit()
         self.page_box.setReadOnly(True)
-        self.page_box.setFrame(QFrame.NoFrame)
+        #self.page_box.setFrame(QFrame.NoFrame)
         self.page_box.setFixedWidth(20)
         self.page_box.setAlignment(Qt.AlignHCenter)
         self.page_box.setStyleSheet("QWidget{background-color: transparent;}")
@@ -436,7 +436,8 @@ class ViewQueryWidget(QueryPluginWidget):
         self.bottombar.addAction(FIcon(0xF141), "<", self.model.previousPage)
         self.bottombar.addWidget(self.page_box)
         self.bottombar.addAction(FIcon(0xF142), ">", self.model.nextPage)
-        self.bottombar.setIconSize(QSize(20, 20))
+        self.bottombar.setIconSize(QSize(16, 16))
+        self.bottombar.setMaximumHeight(30)
 
         self.bottombar.setContentsMargins(0, 0, 0, 0)
 
