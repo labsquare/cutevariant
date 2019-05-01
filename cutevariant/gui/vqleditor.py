@@ -305,8 +305,9 @@ class VqlEdit(QTextEdit):
         # of the string; and insert the extra characters to complete the word.
         tc.insertText(completion[-nb_extra:])
 
+
         # Erase the joker
-        tc.movePosition(QTextCursor.StartOfWord)
+        tc.movePosition(QTextCursor.EndOfWord)
         current_char = self.toPlainText()[tc.position() - 1]
         if current_char == self.completer_joker:
             tc.deletePreviousChar()
