@@ -146,6 +146,27 @@ def test_selections(conn):
     assert conn.in_transaction == False
 
 
+
+def test_selection_operation(conn):
+    prepare_base(conn)
+
+    # Select only ref = G 
+    query = """SELECT variants.rowid,chr,pos,ref,alt FROM variants WHERE ref='G'"""
+    sql.create_selection_from_sql(conn, query, "setA", count=None, by="site")
+
+    # Select only ref=C
+    query = """SELECT variants.rowid,chr,pos,ref,alt FROM variants WHERE ref='C'"""
+    sql.create_selection_from_sql(conn, query, "setB", count=None, by="site")
+
+    selections = [selection["name"] for selection in sql.get_selections(conn)]
+
+    assert "setA" in selections 
+    assert "setB" in selections 
+
+    #s1 = sql.Selection(conn,"setA")
+
+
+
 #     assert table_exists(conn, "selections"), "cannot create table selections"
 #     sql.insert_selection(conn, name="variants", count=10)
 #     assert table_count(conn, "selections") == 1, "cannot insert selection"
@@ -218,4 +239,5 @@ def test_variants(conn):
     prepare_base(conn)
 
     for i, record in enumerate(conn.execute("SELECT * FROM variants")):
-        assert tuple(record) == tuple(variants[i].values())
+        record = list(record) # omit id 
+        assert tuple(record[1:]) == tuple(variants[i].values())

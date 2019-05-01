@@ -69,7 +69,7 @@ def get_columns(conn, table_name):
     """
     # Get columns description from table_info
     # ((0, 'chr', 'str', 0, None, 1), ...
-    return [c[1] for c in conn.execute(f"pragma table_info({table_name})")]
+    return [c[1] for c in conn.execute(f"pragma table_info({table_name})") if c[1] != "id"]
 
 
 def create_indexes(conn):
@@ -173,7 +173,7 @@ def create_selection_from_sql(conn, query, name, count=None, by="site"):
     if by == "site":
         q = f"""
         INSERT INTO selection_has_variant
-        SELECT DISTINCT variants.rowid, {selection_id} FROM variants
+        SELECT DISTINCT variants.id, {selection_id} FROM variants
         INNER JOIN ({query}) query
             ON variants.chr = query.chr
             AND variants.pos = query.pos
@@ -182,7 +182,7 @@ def create_selection_from_sql(conn, query, name, count=None, by="site"):
     if by == "variant":
         q = f"""
         INSERT INTO selection_has_variant
-        SELECT DISTINCT variants.rowid, {selection_id} FROM variants
+        SELECT DISTINCT variants.id, {selection_id} FROM variants
         INNER JOIN ({query}) as query
             ON variants.chr = query.chr
             AND variants.pos = query.pos
@@ -454,7 +454,7 @@ def create_table_variants(conn, fields):
     # Unicity constraint or NOT NULL fields (Cf VcfReader, FakeReader, etc.)
     # NOTE: specify the constraint in CREATE TABLE generates a lighter DB than
     # a separated index... Don't know why.
-    cursor.execute(f"""CREATE TABLE variants ({schema},
+    cursor.execute(f"""CREATE TABLE variants (id INTEGER PRIMARY KEY, {schema},
         UNIQUE (chr,pos,ref,alt))""")
     # cursor.execute(f"""CREATE UNIQUE INDEX idx_variants_unicity ON variants (chr,pos,ref,alt)""")
     # Association table: do not use useless rowid column
@@ -496,7 +496,7 @@ def get_one_variant(conn, id: int):
     conn.row_factory = sqlite3.Row
     # Cast sqlite3.Row object to dict because later, we use items() method.
     return dict(
-        conn.execute(f"""SELECT * FROM variants WHERE rowid = {id}""").fetchone()
+        conn.execute(f"""SELECT * FROM variants WHERE variants.id = {id}""").fetchone()
     )
 
 
@@ -554,7 +554,7 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
     # Get samples with samples names as keys and sqlite rowid as values
     # => used as a mapping for samples ids
     samples_id_mapping = {name: rowid for name, rowid
-               in conn.execute("""SELECT name, rowid FROM samples""")}
+               in conn.execute("""SELECT name, id FROM samples""")}
     samples_names = samples_id_mapping.keys()
 
 
@@ -591,6 +591,8 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
 
         # Insert current variant
         # Use default dict to handle missing values
+        LOGGER.debug(variant_insert_query)
+
         cursor.execute(variant_insert_query, defaultdict(str,variant))
 
         # If the row is not inserted we skip this erroneous variant
@@ -727,3 +729,16 @@ def get_samples(conn):
     """
     conn.row_factory = sqlite3.Row
     return (dict(data) for data in conn.execute("""SELECT name FROM samples"""))
+
+
+class Selection(object):
+    def __init__(self, conn, name):
+        self.conn = conn
+        self.columns = get_query_columns(("chr","pos"))
+
+        self.record = conn.execute("SELECT * FROM selections WHERE name = ?", (name,)).fetchone()
+        
+        #self.query = f"""SELECT {self.columns} FROM variants, selections WHERE "
+
+
+
