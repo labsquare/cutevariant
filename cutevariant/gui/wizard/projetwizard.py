@@ -228,7 +228,8 @@ class ImportPage(QWizardPage):
 
     def progress_changed(self, value, message):
         self.progress.setValue(value)
-        self.log_edit.appendPlainText(message)
+        if message:
+            self.log_edit.appendPlainText(message)
 
     def import_thread_finished(self):
         """Force the activation of the finish button after a successful import"""
