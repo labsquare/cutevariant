@@ -55,7 +55,14 @@ def async_import_reader(conn, reader: AbstractReader, **kwargs):
     # total_variant = reader.get_variants_count()
 
     # Insert variants, link them to annotations and samples
-    yield from async_insert_many_variants(conn, reader.get_variants())
+    yield 0, "insert variants"
+    for  _ in async_insert_many_variants(conn, reader.get_variants()):
+        
+        percent = 0
+        if reader.file_size:
+            percent = reader.read_bytes / reader.file_size * 100.0
+        yield (percent, None)
+
 
     # Create indexes
     yield 99, "Create indexes"

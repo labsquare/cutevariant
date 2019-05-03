@@ -32,6 +32,7 @@ class VcfReader(AbstractReader):
         self.annotation_parser = None
         self._set_annotation_parser(annotation_parser)
 
+      
 
     def _get_fields(self):
         # Remove duplicate
@@ -59,7 +60,14 @@ class VcfReader(AbstractReader):
         # loop over record
         self.device.seek(0)
         vcf_reader = vcf.VCFReader(self.device)
+
+        # TODO : ugly for testing progression .. see #60
+        self.read_bytes = self._init_read_bytes(vcf_reader)
+
         for record in vcf_reader:
+
+            self.read_bytes +=  self._get_record_size(record)
+
             # split row with multiple alt
             for index, alt in enumerate(record.ALT):
                 variant = {
@@ -69,7 +77,7 @@ class VcfReader(AbstractReader):
                     "alt": str(alt),
                     "rsid": record.ID,
                     "qual": record.QUAL,
-                    "filter":"" # TODO ? 
+                    "filter":"" # TODO ?, 
                 }
 
                 # Parse info
@@ -210,3 +218,19 @@ class VcfReader(AbstractReader):
 
     def __repr__(self):
         return f"VCF Parser using {type(self.annotation_parser).__name__}"
+
+
+    def _get_record_size(self, rec):
+        """
+        Approximate record size in bytes 
+        """
+
+        # TODO : ugly .. For testing progression 
+        return  len(str(rec.CHROM) + str(rec.POS) + str(rec.ID) + str(rec.REF) + str(rec.ALT) + str(rec.QUAL) + str(rec.FILTER)+str(rec.INFO)+str(rec.FORMAT)+str(rec.samples))
+
+
+    def _init_read_bytes(self, reader):
+        """
+        Init read bytes : It's the size in bytes of header data file  
+        """
+        return len("".join(reader._column_headers)) + len("".join(reader._header_lines))
