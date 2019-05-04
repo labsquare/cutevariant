@@ -14,3 +14,8 @@ IMPACT_COLOR = {
     "HIGH": "#ed6d79",
     "MODIFIER": "#55abe1",
 }
+
+
+GENE_COLOR = "#F5A26F"
+
+

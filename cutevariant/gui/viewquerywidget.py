@@ -12,7 +12,7 @@ from cutevariant.gui.ficon import FIcon
 from .plugin import QueryPluginWidget
 from cutevariant.core import Query
 from cutevariant.core import sql
-from cutevariant.gui.style import IMPACT_COLOR
+from cutevariant.gui import style
 from cutevariant.commons import logger
 
 LOGGER = logger()
@@ -362,9 +362,17 @@ class QueryDelegate(QStyledItemDelegate):
 
 
         if colname == "impact":
-            painter.setPen(QPen(IMPACT_COLOR.get(value, palette.color(QPalette.Text))))
+            painter.setPen(QPen(style.IMPACT_COLOR.get(value, palette.color(QPalette.Text))))
             painter.drawText(option.rect, alignement, index.data())
             return
+
+
+        if colname == "gene":
+            painter.setPen(QPen(style.GENE_COLOR))
+            painter.drawText(option.rect, alignement, index.data())
+            return 
+
+
 
         painter.setPen(QPen(palette.color(QPalette.HighlightedText if select else QPalette.Text)))
         painter.drawText(option.rect, alignement, index.data())
