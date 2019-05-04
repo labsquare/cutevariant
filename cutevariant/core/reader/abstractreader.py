@@ -8,7 +8,8 @@ class AbstractReader(ABC):
 
     Attributes:
         device : a file object typically returned by open()
-        file_size: file size in bytes ( todo : for progress bar )
+        file_size: file size in bytes 
+        read_bytes: current bytes readed ( progression = read_bytes / file_size) 
 
     Example: 
         with open(filename,"r") as file: 
@@ -20,6 +21,8 @@ class AbstractReader(ABC):
         super(AbstractReader, self).__init__()
         self.device = device
         self.file_size = 0
+        self.read_bytes = 0
+
 
     @abstractclassmethod
     def _get_variants(self):

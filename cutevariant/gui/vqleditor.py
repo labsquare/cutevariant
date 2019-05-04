@@ -127,39 +127,41 @@ class VqlEditor(QueryPluginWidget):
         main_layout.addWidget(self.text_edit)
         main_layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(main_layout)
-        self.text_edit.textChanged.connect(self.changed)
+        self.text_edit.textChanged.connect(self.check_vql)
         self._query = None
         # Boolean to detect a SQL error
         self.query_error = False
 
-    @property
-    def query(self):
-        """Overrided"""
-        try:
-            self._query.from_vql(self.text_edit.toPlainText())
-            if self.query_error:
-                # Erase a previous error shown on the ui
-                self.message.emit("")
-            return self._query
-        except AttributeError:
-            LOGGER.debug("VqlEditor:query:: no query attribute")
-            return None
-        except TextXSyntaxError as e:
-            # Available attributes: e.message, e.line, e.col
-            LOGGER.error("VqlEditor:query:: %s, col: %d", e.message, e.col)
-            # Show the error message on the ui
-            self.message.emit(e.message)
-            self.query_error = True
+    # @property
+    # def query(self):
+    #     """Overrided"""
+    #     try:
+    #         self._query.from_vql(self.text_edit.toPlainText())
+    #         if self.query_error:
+    #             # Erase a previous error shown on the ui
+    #             self.message.emit("")
+    #         return self._query
+    #     except AttributeError:
+    #         LOGGER.debug("VqlEditor:query:: no query attribute")
+    #         return None
+    #     except TextXSyntaxError as e:
+    #         # Available attributes: e.message, e.line, e.col
+    #         LOGGER.error("VqlEditor:query:: %s, col: %d", e.message, e.col)
+    #         # Show the error message on the ui
+    #         self.message.emit(e.message)
+    #         self.query_error = True
 
-    @query.setter
-    def query(self, query: Query):
-        """Overrided"""
-        self._query = query
-        self.text_edit.setPlainText(self._query.to_vql())
 
-        # Init autocompletion if it is not already done
-        if not self.text_edit.completer:
-            self.text_edit.setCompleter(self.create_completer())
+    def on_init_query(self):
+        """Overrided"""
+        self.text_edit.setCompleter(self.create_completer())
+        self.on_change_query()
+
+
+
+    def on_change_query(self):
+        """Overrided"""
+        self.text_edit.setPlainText(self.query.to_vql())
 
     def create_completer(self):
         """Create Completer with his model"""
@@ -171,6 +173,13 @@ class VqlEditor(QueryPluginWidget):
         model.setStringList(fields)
         completer.setModel(model)
         return completer
+
+    def check_vql(self):
+
+        if self.query:
+            self.query.from_vql(self.text_edit.toPlainText())
+            print("check vql", self.query)
+            self.query_changed.emit()
 
 
 class VqlEdit(QTextEdit):
@@ -313,3 +322,5 @@ class VqlEdit(QTextEdit):
         tc = self.textCursor()
         tc.select(QTextCursor.WordUnderCursor)
         return tc.selectedText()
+
+

@@ -50,9 +50,9 @@ def create_project(conn, name: str, reference: str):
     :param reference: Reference genome
     """
     cursor = conn.cursor()
-    cursor.execute("""CREATE TABLE projects (name TEXT, reference TEXT)""")
+    cursor.execute("""CREATE TABLE projects (id INTEGER PRIMARY KEY, name TEXT, reference TEXT)""")
     cursor.execute(
-        """INSERT INTO projects VALUES (?, ?)""",
+        """INSERT INTO projects (name, reference) VALUES (?, ?)""",
         (name, reference),
     )
     conn.commit()
@@ -69,7 +69,7 @@ def get_columns(conn, table_name):
     """
     # Get columns description from table_info
     # ((0, 'chr', 'str', 0, None, 1), ...
-    return [c[1] for c in conn.execute(f"pragma table_info({table_name})")]
+    return [c[1] for c in conn.execute(f"pragma table_info({table_name})") if c[1] != "id"]
 
 
 def create_indexes(conn):
@@ -104,7 +104,7 @@ def create_table_selections(conn):
     # selection_id is an alias on internal autoincremented 'rowid'
     cursor.execute(
         """CREATE TABLE selections (
-        selection_id INTEGER PRIMARY KEY ASC,
+        id INTEGER PRIMARY KEY ASC,
         name TEXT, count INTEGER, query TEXT
         )"""
     )
@@ -115,7 +115,7 @@ def create_table_selections(conn):
         variant_id INTEGER NOT NULL,
         selection_id INTEGER NOT NULL,
         PRIMARY KEY (variant_id, selection_id),
-        FOREIGN KEY (selection_id) REFERENCES selections (selection_id)
+        FOREIGN KEY (selection_id) REFERENCES selections (id)
           ON DELETE CASCADE
           ON UPDATE NO ACTION
         ) WITHOUT ROWID"""
@@ -173,7 +173,7 @@ def create_selection_from_sql(conn, query, name, count=None, by="site"):
     if by == "site":
         q = f"""
         INSERT INTO selection_has_variant
-        SELECT DISTINCT variants.rowid, {selection_id} FROM variants
+        SELECT DISTINCT variants.id, {selection_id} FROM variants
         INNER JOIN ({query}) query
             ON variants.chr = query.chr
             AND variants.pos = query.pos
@@ -182,7 +182,7 @@ def create_selection_from_sql(conn, query, name, count=None, by="site"):
     if by == "variant":
         q = f"""
         INSERT INTO selection_has_variant
-        SELECT DISTINCT variants.rowid, {selection_id} FROM variants
+        SELECT DISTINCT variants.id, {selection_id} FROM variants
         INNER JOIN ({query}) as query
             ON variants.chr = query.chr
             AND variants.pos = query.pos
@@ -207,7 +207,7 @@ def get_selections(conn):
     return (dict(data) for data in conn.execute("""SELECT * FROM selections"""))
 
 
-def delete_selection(conn, id):
+def delete_selection(conn, selection_id: int):
     """Delete the selection with the given id in the "selections" table
 
     :return: Number of rows deleted
@@ -215,9 +215,16 @@ def delete_selection(conn, id):
     """
     # ON CASCADE deletion
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM selections WHERE rowid = ?", (id,))
+    cursor.execute("DELETE FROM selections WHERE rowid = ?", (selection_id,))
     conn.commit()
     return cursor.rowcount
+
+
+def edit_selection(conn, selection: dict):
+    """Update the given selection"""
+    cursor = conn.cursor()
+    conn.execute("UPDATE selections SET name=:name, count=:count WHERE id = :id", selection)
+    conn.commit()
 
 
 ## ================ Operations on sets of variants =============================
@@ -268,6 +275,9 @@ def subtract_variants(query1, query2, by="site"):
     """
 
 
+
+
+
 ## ================ Fields functions ===========================================
 
 
@@ -293,7 +303,7 @@ def create_table_fields(conn):
     cursor = conn.cursor()
     cursor.execute(
         """CREATE TABLE fields
-        (name TEXT, category TEXT, type TEXT, description TEXT)
+        (id INTEGER PRIMARY KEY, name TEXT, category TEXT, type TEXT, description TEXT)
         """
     )
     conn.commit()
@@ -453,16 +463,17 @@ def create_table_variants(conn, fields):
     # Unicity constraint or NOT NULL fields (Cf VcfReader, FakeReader, etc.)
     # NOTE: specify the constraint in CREATE TABLE generates a lighter DB than
     # a separated index... Don't know why.
-    cursor.execute(f"""CREATE TABLE variants ({schema},
+    cursor.execute(f"""CREATE TABLE variants (id INTEGER PRIMARY KEY, {schema},
         UNIQUE (chr,pos,ref,alt))""")
     # cursor.execute(f"""CREATE UNIQUE INDEX idx_variants_unicity ON variants (chr,pos,ref,alt)""")
+
     # Association table: do not use useless rowid column
     cursor.execute(f"""CREATE TABLE sample_has_variant (
         sample_id INTEGER NOT NULL,
         variant_id INTEGER NOT NULL,
         gt INTEGER DEFAULT -1,
         PRIMARY KEY (sample_id, variant_id),
-        FOREIGN KEY (sample_id) REFERENCES samples (sample_id)
+        FOREIGN KEY (sample_id) REFERENCES samples (id)
           ON DELETE CASCADE
           ON UPDATE NO ACTION
         ) WITHOUT ROWID""")
@@ -495,7 +506,7 @@ def get_one_variant(conn, id: int):
     conn.row_factory = sqlite3.Row
     # Cast sqlite3.Row object to dict because later, we use items() method.
     return dict(
-        conn.execute(f"""SELECT * FROM variants WHERE rowid = {id}""").fetchone()
+        conn.execute(f"""SELECT * FROM variants WHERE variants.id = {id}""").fetchone()
     )
 
 
@@ -553,7 +564,7 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
     # Get samples with samples names as keys and sqlite rowid as values
     # => used as a mapping for samples ids
     samples_id_mapping = {name: rowid for name, rowid
-               in conn.execute("""SELECT name, rowid FROM samples""")}
+               in conn.execute("""SELECT name, id FROM samples""")}
     samples_names = samples_id_mapping.keys()
 
 
@@ -590,6 +601,8 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
 
         # Insert current variant
         # Use default dict to handle missing values
+        LOGGER.debug(variant_insert_query)
+
         cursor.execute(variant_insert_query, defaultdict(str,variant))
 
         # If the row is not inserted we skip this erroneous variant
@@ -683,7 +696,7 @@ def create_table_samples(conn):
     cursor = conn.cursor()
     # sample_id is an alias on internal autoincremented 'rowid'
     cursor.execute("""CREATE TABLE samples (
-        sample_id INTEGER PRIMARY KEY ASC,
+        id INTEGER PRIMARY KEY ASC,
         name TEXT)""")
     conn.commit()
 
@@ -726,3 +739,36 @@ def get_samples(conn):
     """
     conn.row_factory = sqlite3.Row
     return (dict(data) for data in conn.execute("""SELECT name FROM samples"""))
+
+
+class Selection(object):
+    conn = None
+    def __init__(self, query = None):
+        self.query = query
+
+    def __add__(self, other):
+
+        new_selection = Selection()
+        new_selection.query = union_variants(self.query, other.query)
+        return new_selection
+
+    def __and__(self, other):
+        new_selection = Selection()
+        new_selection.query = intersect_variants(self.query, other.query)
+        return new_selection
+
+    def __sub__(self, other):
+        new_selection = Selection()
+        new_selection.query = subtract_variants(self.query, other.query)
+        return new_selection
+
+
+    def save(self, name ):
+        create_selection_from_sql(Selection.conn, self.query, name, count=None, by="site")
+
+    @classmethod
+    def from_name(cls, name):
+        select_id = Selection.conn.execute("SELECT id FROM selections WHERE name = ?", (name,)).fetchone()[0]
+        columns = get_query_columns(by="site")
+        q = f"SELECT {columns} FROM variants v, selection_has_variant sv WHERE v.id = sv.variant_id AND sv.selection_id = {select_id}"
+        return Selection(q)

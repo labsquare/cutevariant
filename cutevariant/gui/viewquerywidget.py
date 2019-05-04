@@ -88,7 +88,7 @@ class QueryModel(QAbstractItemModel):
         if not self._query:
             return 0
 
-        return len(self._query.columns)
+        return len(self._query.columns) + 1  # show child count for the first col
 
     def index(self, row, column, parent=QModelIndex()):
         """Overrided: Return index """
@@ -125,10 +125,16 @@ class QueryModel(QAbstractItemModel):
         # Display Role 
         if role == Qt.DisplayRole:
             if index.parent() == QModelIndex():
-                return str(self.variants[index.row()][0][index.column() + 1]) 
+                if index.column() == 0:
+                    return str(self.variants[index.row()][0][-1])
+                else:
+                    return str(self.variants[index.row()][0][index.column()]) 
 
             else:
-                return str(self.variants[index.parent().row()][index.row()][index.column() + 1])
+                if index.column() == 0:
+                    return 0
+                else:
+                    return str(self.variants[index.parent().row()][index.row()][index.column()])
 
         # Icon role : show number of child 
         if role == Qt.DecorationRole:
@@ -142,11 +148,14 @@ class QueryModel(QAbstractItemModel):
         """Overrided: Return column name as header data """
         if orientation == Qt.Horizontal:
             if role == Qt.DisplayRole:
-                return self._query.columns[section]
+                if section == 0:
+                    return "childs"
+                else:
+                    return self._query.columns[section-1]
 
         if orientation == Qt.Vertical:
             if role == Qt.DisplayRole:
-                return self.variants[index.row()][0]
+                return self.variants[index.row()][-1]
 
         return None
 
@@ -213,8 +222,6 @@ class QueryModel(QAbstractItemModel):
         self._query = query
         # self._query.group_by=("chr","pos","ref","alt")
 
-        self.total = query.count()
-        self.load()
 
     def load(self):
         """
@@ -224,6 +231,8 @@ class QueryModel(QAbstractItemModel):
         self._query.group_by = ("chr","pos")
         self.beginResetModel()
         self.variants = []
+        self.total = self.query.count()
+
 
         for variant in self._query.rows(self.limit, self.page * self.limit):
             self.variants.append([tuple(variant)])  # Append a list because child can be append after 
@@ -328,24 +337,24 @@ class QueryDelegate(QStyledItemDelegate):
 
         alignement = Qt.AlignLeft|Qt.AlignVCenter
 
-        # Add margin for first columns if index is first level 
-        if index.column() == 0 and index.parent() == QModelIndex():
+        # # Add margin for first columns if index is first level 
+        # if index.column() == 0 and index.parent() == QModelIndex():
 
-            expanded = bool(option.state & QStyle.State_Open)
+        #     expanded = bool(option.state & QStyle.State_Open)
 
-            branch_option = copy.copy(option)
-            branch_option.rect.setWidth(65)
+        #     branch_option = copy.copy(option)
+        #     branch_option.rect.setWidth(65)
 
-            qApp.style().drawPrimitive(QStyle.PE_IndicatorBranch, branch_option, painter)
+        #     qApp.style().drawPrimitive(QStyle.PE_IndicatorBranch, branch_option, painter)
 
-            icon = index.data(Qt.DecorationRole)
-            if icon:
-                target = QRect(0,0, option.decorationSize.width(), option.decorationSize.height())
-                target.moveCenter(option.rect.center())
-                painter.drawPixmap(option.rect.x()+5, target.top() ,icon.pixmap(option.decorationSize))
+        #     icon = index.data(Qt.DecorationRole)
+        #     if icon:
+        #         target = QRect(0,0, option.decorationSize.width(), option.decorationSize.height())
+        #         target.moveCenter(option.rect.center())
+        #         painter.drawPixmap(option.rect.x()+5, target.top() ,icon.pixmap(option.decorationSize))
             
-        if index.column() == 0:    
-            option.rect.adjust(40,0,0,0)
+        # if index.column() == 0:    
+        #     option.rect.adjust(40,0,0,0)
 
 
         if colname == "impact":
@@ -384,10 +393,12 @@ class ViewQueryWidget(QueryPluginWidget):
         self.view.setSortingEnabled(True)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setSelectionMode(QAbstractItemView.ContiguousSelection)
-        self.view.setRootIsDecorated(False) # Manage from delegate
-        self.view.setIndentation(0)
+        self.view.setRootIsDecorated(True) # Manage from delegate
+        #self.view.setIndentation(0)
         self.view.setIconSize(QSize(22,22))
         self.view.setAnimated(True)
+        self.view.setAnimated(True)
+
         # self.view.setItemDelegate(self.delegate)
 
         main_layout = QVBoxLayout()
@@ -436,19 +447,21 @@ class ViewQueryWidget(QueryPluginWidget):
         # emit variant when clicked
         self.view.clicked.connect(self._variant_clicked)
 
-    @property
-    def query(self):
-        """ Method override from AbstractQueryWidget"""
-        return self.model.query
 
-    @query.setter
-    def query(self, query: Query):
-        """ Method override from AbstractQueryWidget"""
-        self.model.query = query
-
-        # Enable initially disabled actions
+    def on_init_query(self):
+        """ Overrided """
         self.export_csv_action.setEnabled(True)
         self.show_sql_action.setEnabled(True)
+        self.model.query = self.query
+        #self.on_change_query()
+
+
+
+
+    def on_change_query(self):
+        """ Method override from AbstractQueryWidget"""
+        self.model.load()
+        self.view.header().setSectionResizeMode(0, QHeaderView.ResizeToContents)
 
     def updateInfo(self):
         """Update metrics for the current query

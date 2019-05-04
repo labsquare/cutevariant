@@ -101,7 +101,7 @@ def test_duplicated_variants(conn):
 
     # There must be only 1 variant (the first one)
     data = conn.execute("SELECT * FROM variants")
-    expected = (("chr1", 10, "G", "A", 10, 100),)
+    expected = ((1, "chr1", 10, "G", "A", 10, 100),)
     record = tuple([tuple(i) for i in data])
 
     assert len(record) == 1
@@ -143,7 +143,9 @@ def test_fields(conn):
 
     prepare_base(conn)
     for index, f in enumerate(sql.get_fields(conn)):
+        rowid = f.pop("id")
         assert f == fields[index]
+        assert index+1 == rowid
 
 
 def test_samples(conn):
@@ -211,6 +213,46 @@ def test_selections(conn):
     assert conn.in_transaction == True
     conn.commit()
     assert conn.in_transaction == False
+
+
+
+def test_selection_operation(conn):
+    prepare_base(conn)
+
+    # Select all
+    query = """SELECT variants.rowid,chr,pos,ref,alt FROM variants"""
+    sql.create_selection_from_sql(conn, query, "all", count=None, by="site")
+
+    # Select only ref = G 
+    query = """SELECT variants.rowid,chr,pos,ref,alt FROM variants WHERE ref='C'"""
+    sql.create_selection_from_sql(conn, query, "setA", count=None, by="site")
+
+    # Select only ref=C
+    query = """SELECT variants.rowid,chr,pos,ref,alt FROM variants WHERE alt='C'"""
+    sql.create_selection_from_sql(conn, query, "setB", count=None, by="site")
+
+    selections = [selection["name"] for selection in sql.get_selections(conn)]
+
+    assert "setA" in selections 
+    assert "setB" in selections 
+
+    sql.Selection.conn = conn
+
+    All = sql.Selection.from_name("all")
+    A = sql.Selection.from_name("setA")
+    B = sql.Selection.from_name("setB")
+
+    C = All - B&A 
+
+    C.save("newset")
+
+    print(C.query)
+    for i in conn.execute(C.query):
+        print(dict(i))
+
+    selections = [selection["name"] for selection in sql.get_selections(conn)]
+    "newset" in selections
+
 
 
 #     assert table_exists(conn, "selections"), "cannot create table selections"
@@ -285,4 +327,5 @@ def test_variants(conn):
     prepare_base(conn)
 
     for i, record in enumerate(conn.execute("SELECT * FROM variants")):
-        assert tuple(record) == tuple(variants[i].values())
+        record = list(record) # omit id 
+        assert tuple(record[1:]) == tuple(variants[i].values())

@@ -26,15 +26,7 @@ class ChartQueryWidget(QueryPluginWidget):
         self.setLayout(layout)
         self._query = None
 
-    @property
-    def query(self):
-        return self._query  # Useless , this widget is query read only
-
-    @query.setter
-    def query(self, query: Query):
-
-        self._query = query
-
+    def on_query_changed(self):
         # TODO : not optimal, this is running many time when other queryWidget changed
         # Iterate over ALL variants ... ( can be slow.. Do I need asynchrone . )
     

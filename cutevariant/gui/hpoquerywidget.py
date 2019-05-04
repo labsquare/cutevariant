@@ -173,7 +173,7 @@ class HpoQueryWidget(QueryPluginWidget):
 
         self.setWindowTitle("HPO")
 
-        # conn =  sqlite3.connect("/home/schutz/Dev/hpo2sqlite/hpo.db")
+        conn =  sqlite3.connect("/home/schutz/Dev/hpo2sqlite/hpo.db")
         self.view = QTreeView()
         self.model = HpoModel(conn)
         self.model.setRoot(Node(1))
@@ -185,13 +185,6 @@ class HpoQueryWidget(QueryPluginWidget):
 
         self.setLayout(v_layout)
 
-    @property
-    def query(self):
-        """ Method override from AbstractQueryWidget"""
-        return self.model.query
 
-    @query.setter
-    def query(self, query: Query):
-        """ Method override from AbstractQueryWidget"""
-        LOGGER.debug("HpoQueryWidget:query:: setter not used")
+    def on_change_query(self):
         pass
