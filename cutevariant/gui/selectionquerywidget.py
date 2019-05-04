@@ -154,9 +154,6 @@ class SelectionQueryWidget(QueryPluginWidget):
 
         self.setLayout(layout)
 
-        # Menu creation
-        self.menu_setup()
-
         # call on_current_row_changed when item selection changed
         self.view.selectionModel().currentRowChanged.connect(self.on_current_row_changed)
 
@@ -173,7 +170,7 @@ class SelectionQueryWidget(QueryPluginWidget):
         menu.addSeparator()
         menu.addAction(
             FIcon(0xf413), self.tr("Remove"),
-            self.delete_current_selection
+            self.remove_selection
         )
         return menu
 
