@@ -321,14 +321,32 @@ class QueryModel(QAbstractItemModel):
 
 
 class QueryDelegate(QStyledItemDelegate):
+    """ 
+    This class specify the aesthetic of the view 
+
+    styles and color of each variant displayed in the view are setup here
+
+
+    """
     def paint(self, painter, option, index):
-        """overriden"""
+        """
+        overriden
+
+        Draw the view item for index using a painter 
+
+        """
 
         palette = qApp.palette("QTreeView")
+        # get column name of the index 
         colname = index.model().headerData(index.column(), Qt.Horizontal)
+
+        # get value of the index 
         value = index.data(Qt.DisplayRole)
+
+        # get select sate 
         select = option.state & QStyle.State_Selected
 
+        # draw selection if it is 
         if not select:
             bg_brush = option.backgroundBrush
         else:
@@ -361,6 +379,7 @@ class QueryDelegate(QStyledItemDelegate):
         #     option.rect.adjust(40,0,0,0)
 
 
+        # Draw cell depending column name 
         if colname == "impact":
             painter.setPen(QPen(style.IMPACT_COLOR.get(value, palette.color(QPalette.Text))))
             painter.drawText(option.rect, alignement, index.data())
@@ -373,7 +392,6 @@ class QueryDelegate(QStyledItemDelegate):
             return 
 
 
-
         painter.setPen(QPen(palette.color(QPalette.HighlightedText if select else QPalette.Text)))
         painter.drawText(option.rect, alignement, index.data())
 
@@ -381,11 +399,19 @@ class QueryDelegate(QStyledItemDelegate):
         pass
 
     def sizeHint(self, option, index):
-        """override"""
+        """
+        override
+
+        Return row height 
+
+        """
         return QSize(0, 30)
 
 
 class ViewQueryWidget(QueryPluginWidget):
+    """ 
+    This class contains the view of query with several controller
+    """
 
     variant_clicked = Signal(dict)
 
@@ -462,7 +488,7 @@ class ViewQueryWidget(QueryPluginWidget):
 
 
     def on_init_query(self):
-        """ Overrided """
+        """ Method override from AbstractQueryWidget"""
         self.export_csv_action.setEnabled(True)
         self.show_sql_action.setEnabled(True)
         self.model.query = self.query

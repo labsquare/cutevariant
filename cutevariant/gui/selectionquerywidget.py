@@ -36,7 +36,12 @@ class SelectionQueryModel(QAbstractTableModel):
 
 
     def data(self, index: QModelIndex(), role = Qt.DisplayRole):
-        """ overloaded from QAbstractTableModel """
+        """ 
+        overloaded from QAbstractTableModel 
+
+        return data according index (row, column)
+
+        """
 
         if not index.isValid():
             return None
@@ -51,7 +56,13 @@ class SelectionQueryModel(QAbstractTableModel):
         return None
 
     def headerData(self, section, orientation, role = Qt.DisplayRole):
-        """ overloaded from QAbstractTableModel """
+        """
+         overloaded from QAbstractTableModel
+
+         return data to display in the view's header
+
+
+         """
 
         if not self.records:
             return
@@ -68,7 +79,7 @@ class SelectionQueryModel(QAbstractTableModel):
 
     def record(self, index: QModelIndex()):
         """
-        Return Selection records ny index
+        Return Selection records by index
         """
         if not index.isValid():
             return None
