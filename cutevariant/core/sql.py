@@ -208,14 +208,23 @@ def get_selections(conn):
 
 
 def delete_selection(conn, selection_id: int):
-    conn.execute(f"DELETE FROM selections WHERE id = {selection_id}")
+    """Delete the selection with the given id in the "selections" table
+
+    :return: Number of rows deleted
+    :rtype: <int>
+    """
+    # ON CASCADE deletion
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM selections WHERE rowid = ?", (selection_id,))
     conn.commit()
+    return cursor.rowcount
 
 
 def edit_selection(conn, selection: dict):
-    conn.execute(f"UPDATE selections SET name=:name, count=:count WHERE id = :id", selection)
+    """Update the given selection"""
+    cursor = conn.cursor()
+    conn.execute("UPDATE selections SET name=:name, count=:count WHERE id = :id", selection)
     conn.commit()
-
 
 
 ## ================ Operations on sets of variants =============================
@@ -384,9 +393,9 @@ def create_table_annotations(conn, fields):
 
     if not schema:
         # Create minimum annotation table... Can be use later for dynamic annotation.
-        # TODO : we may want to fix annotation fields .  
+        # TODO : we may want to fix annotation fields .
         schema = "gene TEXT, transcript TEXT"
-        # LOGGER.debug("create_table_annotations:: No annotation fields")
+        LOGGER.debug("create_table_annotations:: No annotation fields detected! => Fallback")
         # return
 
     cursor = conn.cursor()
@@ -457,6 +466,7 @@ def create_table_variants(conn, fields):
     cursor.execute(f"""CREATE TABLE variants (id INTEGER PRIMARY KEY, {schema},
         UNIQUE (chr,pos,ref,alt))""")
     # cursor.execute(f"""CREATE UNIQUE INDEX idx_variants_unicity ON variants (chr,pos,ref,alt)""")
+
     # Association table: do not use useless rowid column
     cursor.execute(f"""CREATE TABLE sample_has_variant (
         sample_id INTEGER NOT NULL,
@@ -734,21 +744,21 @@ def get_samples(conn):
 class Selection(object):
     conn = None
     def __init__(self, query = None):
-        self.query = query 
+        self.query = query
 
     def __add__(self, other):
-        
-        new_selection = Selection()        
+
+        new_selection = Selection()
         new_selection.query = union_variants(self.query, other.query)
         return new_selection
 
     def __and__(self, other):
-        new_selection = Selection()        
+        new_selection = Selection()
         new_selection.query = intersect_variants(self.query, other.query)
         return new_selection
 
     def __sub__(self, other):
-        new_selection = Selection()        
+        new_selection = Selection()
         new_selection.query = subtract_variants(self.query, other.query)
         return new_selection
 

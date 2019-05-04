@@ -1,18 +1,18 @@
 from abc import ABC, abstractclassmethod
-from schema import Schema, And,Or, Use, Regex, Optional
+
 
 class AbstractReader(ABC):
-    """ 
-    This is the base class for all Reader required to import variants into database.
+    """Base class for all Readers required to import variants into the database.
     Subclass it if you want a new file parser .
 
     Attributes:
-        device : a file object typically returned by open()
-        file_size: file size in bytes 
-        read_bytes: current bytes readed ( progression = read_bytes / file_size) 
+        device: a file object typically returned by open()
+        file_size: file size in bytes
+        read_bytes: current bytes readed (progression = read_bytes / file_size)
+        samples: list of samples in the file (default: empty)
 
-    Example: 
-        with open(filename,"r") as file: 
+    Example:
+        with open(filename,"r") as file:
             reader = Reader()
             reader.get_variants()
     """
@@ -22,15 +22,12 @@ class AbstractReader(ABC):
         self.device = device
         self.file_size = 0
         self.read_bytes = 0
-
+        self.samples = []
 
     @abstractclassmethod
     def get_variants(self):
-        """
-        This abstract method must return variants as a list of dictionnary. 
+        """Abstract method that must return variants as an iterable of dictionnaries.
 
-        :return: a generator of variants 
-        
         Minimum output:
         ===============
         [
@@ -45,9 +42,9 @@ class AbstractReader(ABC):
         {"chr": "chr3",
         "pos": 3244,
         "ref": "A",
-        "alt":"C", 
+        "alt":"C",
         "field_n": "value_n",
-        "annotations": [ 
+        "annotations": [
             {"gene": "GJB2", "transcripts": "NM_00232.1", "field_n": "value_n"},
             {"gene": "GJB2", "transcripts": "NM_00232.2", "field_n": "value_n"}
             ],
@@ -56,72 +53,61 @@ class AbstractReader(ABC):
             {"name":"kevin", "gt": 1, "field_n":"value_n"}
             ]}
         ]
+
+        :return: A generator of variants
+        :rtype: <generator>
         """
         raise NotImplemented()
 
     @abstractclassmethod
     def get_fields(self):
-        """
-        This abstract methods must return fields description defined from parse_variant output.
+        """Abstract methodthat must return fields description defined from parse_variant output.
+
         You must define sqlite type for each field (text, integer, bool)
 
-        :return: a generator of fields 
-
         Full output:
-        ==============
+        ============
         [
-        {"name": "chr", "type": "text", "category": "variant", "description": "description"}, 
-        {"name": "pos", "type": "text", "category": "variant", "description": "description"}, 
-        {"name": "ref", "type": "text", "category": "variant", "description": "description"}, 
-        {"name": "alt", "type": "text", "category": "variant", "description": "description"}, 
+        {"name": "chr", "type": "text", "category": "variant", "description": "description"},
+        {"name": "pos", "type": "text", "category": "variant", "description": "description"},
+        {"name": "ref", "type": "text", "category": "variant", "description": "description"},
+        {"name": "alt", "type": "text", "category": "variant", "description": "description"},
         {"name": "field_n", "type": "text", "category": "variant", "description": "description"},
         {"name": "name", "type": "text", "category": "annotations", "samples": "description"},
         {"name": "gt", "type": "text", "category": "annotations", "samples": "description"}
         ]
+
+        :return: A generator of fields
+        :rtype: <generator>
        """
         raise NotImplemented()
 
+    def get_fields_by_category(self, category: str):
+        """Syntaxic suggar to get fields according their category
 
-    def get_samples(self):
-        return []
-
-
-
-    def get_fields_by_category(self, category:str):
-        """ 
-        Suggar to get fields according it category
-
-        :param category can be usually variants, samples, annotations  
-
-        """ 
-        for field in self.get_fields():
-            if field["category"] == category:
-                yield field
-
+        :param category can be usually variants, samples, annotations
+        :return: A generator of fields
+        :rtype: <generator>
+        """
+        return (field for field in self.get_fields() if field["category"] == category)
 
     def get_variants_count(self) -> int:
-        """ 
-        Return variant count from the device . 
-        You can overload this method to make it faster
-
+        """Get variant count from the device.
+        Override this method to make it faster
         """
         return len(tuple(self.get_variants()))
 
     def get_samples(self) -> str:
-        """ 
-        Return samples list. 
-        Subclass this method to have samples in sqlite database 
+        """Return list of samples.
+        Override this method to have samples in sqlite database.
         """
-        return self._get_samples()
-
+        return self.samples
 
     def get_extra_fields(self):
-        """
-        Mandatory fields to add automatically
+        """Mandatory fields to add automatically
 
-        ..todo: Move this methods somewhere else .. 
+        ..todo: Move this methods somewhere else ..
         ..warning: DEPRECTATED
-
         """
         yield from self.parse_fields()
         yield {
@@ -137,13 +123,3 @@ class AbstractReader(ABC):
             "description": "is favoris",
             "default": False,
         }
-
-    def get_extra_variants(self):
-        """
-        decorator for get_fields
-
-        ..warning: DEPRECTATED
-        """
-
-        yield from self.parse_variants()
-
