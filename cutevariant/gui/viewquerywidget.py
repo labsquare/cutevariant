@@ -374,7 +374,7 @@ class QueryDelegate(QStyledItemDelegate):
 
     def sizeHint(self, option, index):
         """override"""
-        return QSize(0, 50)
+        return QSize(0, 30)
 
 
 class ViewQueryWidget(QueryPluginWidget):
