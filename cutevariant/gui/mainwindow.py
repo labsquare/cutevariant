@@ -69,6 +69,11 @@ class MainWindow(QMainWindow):
         self.setupActions()
         # Build central view
         self.tab_view = QTabWidget()
+
+   
+
+
+
         vsplit = QSplitter(Qt.Vertical)
         vsplit.addWidget(self.tab_view)
         vsplit.addWidget(self.editor)
