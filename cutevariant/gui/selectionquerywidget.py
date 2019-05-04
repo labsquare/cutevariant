@@ -63,7 +63,7 @@ class SelectionQueryModel(QAbstractTableModel):
                 return "count"
 
         if orientation == Qt.Vertical and role == Qt.DisplayRole and section > 0:
-            return self.records[section]["id"] # For debug purpose . displayed in vertical header
+            return self.records[section].get("id",None) # For debug purpose . displayed in vertical header
 
 
     def record(self, index: QModelIndex()):
