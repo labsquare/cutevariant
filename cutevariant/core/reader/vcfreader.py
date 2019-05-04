@@ -34,7 +34,7 @@ class VcfReader(AbstractReader):
 
       
 
-    def _get_fields(self):
+    def get_fields(self):
         # Remove duplicate
 
         fields = self.parse_fields()
@@ -44,7 +44,7 @@ class VcfReader(AbstractReader):
             return fields
 
 
-    def _get_variants(self):
+    def get_variants(self):
         """ override methode """
         if self.annotation_parser:
             yield from self.annotation_parser.parse_variants(self.parse_variants())
@@ -192,7 +192,7 @@ class VcfReader(AbstractReader):
                 "type": VCF_TYPE_MAPPING[info.type],
             }
 
-    def _get_samples(self):
+    def get_samples(self):
         return self.samples
 
 

@@ -6,7 +6,7 @@ class FakeReader(AbstractReader):
     def __init__(self):
         super().__init__(None)
 
-    def _get_variants(self):
+    def get_variants(self):
         yield {
             "chr": "11",
             "pos": 125010,
@@ -43,7 +43,7 @@ class FakeReader(AbstractReader):
             "samples": [{"name": "sacha", "gt": 1}],
         }
 
-    def _get_fields(self):
+    def get_fields(self):
         """Extract fields informations from VCF fields
 
         .. note:: Fields used in PRIMARY KEYS have the constraint NOT NULL.
@@ -108,5 +108,5 @@ class FakeReader(AbstractReader):
             "type": "str",
         }
 
-    def _get_samples(self):
+    def get_samples(self):
         return ["sacha"]
