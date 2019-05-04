@@ -125,8 +125,12 @@ class QueryModel(QAbstractItemModel):
         # Display Role 
         if role == Qt.DisplayRole:
             if index.parent() == QModelIndex():
+
+
+                childs_count = self.variants[index.row()][0][-1]
+
                 if index.column() == 0:
-                    return str(self.variants[index.row()][0][-1])
+                    return str(childs_count)
                 else:
                     return str(self.variants[index.row()][0][index.column()]) 
 
@@ -200,7 +204,7 @@ class QueryModel(QAbstractItemModel):
         # Clear pevious childs 
         self.variants[parent.row()][1:] = []
 
-        for idx, record in enumerate(records):
+        for idx, record in enumerate(records[1:]): # skip first records 
             #if idx != 0: # Don't add the first one... it's the parent 
             self.variants[parent.row()].append(tuple(record))
             
