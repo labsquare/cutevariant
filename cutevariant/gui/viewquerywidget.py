@@ -382,18 +382,18 @@ class QueryDelegate(QStyledItemDelegate):
         # Draw cell depending column name 
         if colname == "impact":
             painter.setPen(QPen(style.IMPACT_COLOR.get(value, palette.color(QPalette.Text))))
-            painter.drawText(option.rect, alignement, index.data())
+            painter.drawText(option.rect, alignement, str(index.data()))
             return
 
 
         if colname == "gene":
             painter.setPen(QPen(style.GENE_COLOR))
-            painter.drawText(option.rect, alignement, index.data())
+            painter.drawText(option.rect, alignement, str(index.data()))
             return 
 
 
         painter.setPen(QPen(palette.color(QPalette.HighlightedText if select else QPalette.Text)))
-        painter.drawText(option.rect, alignement, index.data())
+        painter.drawText(option.rect, alignement, str(index.data()))
 
     def draw_biotype(self, value):
         pass
