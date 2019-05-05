@@ -34,22 +34,24 @@ class ColumnQueryModel(QStandardItemModel):
         # fields is a dictionnary with (name,type,description,category)
         # Create a category item and add fields as children
         for record in sql.get_fields(self.query.conn):
-            item = QStandardItem(record["name"])
-            item.setEditable(False)
-            item.setToolTip(record["description"])
-            # map value type to color
-            item.setIcon(FIcon(0xf70a, TYPE_COLORS[record["type"]]))
-            item.setCheckable(True)
-            item.setData(record)
-            self.items.append(item)
 
-            # Create category parent items 
-            if record["category"] not in categories.keys():
-                cat_item = QStandardItem(record["category"])
-                cat_item.setEditable(False)
-                cat_item.setIcon(FIcon(0xf645))
-                self.appendRow(cat_item)
-                categories[record["category"]] = cat_item
+            if record["category"] != "samples":
+                item = QStandardItem(record["name"])
+                item.setEditable(False)
+                item.setToolTip(record["description"])
+                # map value type to color
+                item.setIcon(FIcon(0xf70a, TYPE_COLORS[record["type"]]))
+                item.setCheckable(True)
+                item.setData(record)
+                self.items.append(item)
+
+                # Create category parent items 
+                if record["category"] not in categories.keys():
+                    cat_item = QStandardItem(record["category"])
+                    cat_item.setEditable(False)
+                    cat_item.setIcon(FIcon(0xf645))
+                    self.appendRow(cat_item)
+                    categories[record["category"]] = cat_item
 
         # Append child to parent 
         for item in self.items:
@@ -58,11 +60,18 @@ class ColumnQueryModel(QStandardItemModel):
                 categories[category].appendRow(item)
 
         # Append samples
+        sample_cat_item = QStandardItem("samples")
+        sample_cat_item.setEditable(False)
+        sample_cat_item.setIcon(FIcon(0xf645))
+        self.appendRow(sample_cat_item)
+
         for sample_name in samples_names:
             sample_item = QStandardItem(sample_name)
             sample_item.setCheckable(True)
             sample_item.setIcon(FIcon(0xf2e6))
-            categories["samples"].appendRow(sample_item)
+            sample_item.setData({"name":("genotype", sample_name, "GT")})
+            sample_cat_item.appendRow(sample_item)
+            self.items.append(sample_item)
 
 
     def check_query_columns(self):
@@ -123,8 +132,12 @@ class ColumnQueryWidget(QueryPluginWidget):
              if item.checkState() == Qt.Checked]
 
 
+
         # Update query with selected columns 
         self.query.columns = selected_columns
+
+        print(self.query.columns)
+
 
         # Signal other widget that query has changed 
         self.query_changed.emit()

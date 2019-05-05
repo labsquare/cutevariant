@@ -63,6 +63,9 @@ def test_query_functions(conn):
     query._detect_samples_from_filter()
     assert "TUMOR" in query._samples_to_join
 
+    assert "LEFT JOIN sample_has_variant" in query.sql() 
+    assert "gt_TUMOR.GT" in query.sql() 
+        
 
 
 

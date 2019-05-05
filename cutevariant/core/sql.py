@@ -743,7 +743,7 @@ def get_samples(conn):
     :rtype: <generator>
     """
     conn.row_factory = sqlite3.Row
-    return (dict(data) for data in conn.execute("""SELECT name FROM samples"""))
+    return (dict(data) for data in conn.execute("""SELECT * FROM samples"""))
 
 
 class Selection(object):
