@@ -72,7 +72,7 @@ class FilePage(QWizardPage):
         super().__init__()
 
         self.setTitle(self.tr("Select a file"))
-        self.setSubTitle(self.tr("Supported file are vcf and vcf.gz."))
+        self.setSubTitle(self.tr("Supported file are vcf, vcf.gz, vep.txt."))
 
         self.file_path_edit = QLineEdit()
         self.anotation_detect_label = QLabel()
@@ -103,8 +103,8 @@ class FilePage(QWizardPage):
 
         filepath, filetype = QFileDialog.getOpenFileName(
             self, self.tr("Open a file"), last_directory,
-            self.tr("VCF file (*.vcf *.vcf.gz)"))
- 
+            self.tr("VCF file (*.vcf *.vcf.gz);; CSV file (*.csv *.tsv *.txt)"))
+
         if filepath:
             # Display and save directory
             self.file_path_edit.setText(filepath)
