@@ -7,6 +7,9 @@ from cutevariant.commons import logger
 LOGGER = logger()
 
 # Dicts of default fields depending to the type of files
+# Keys are based on fields in files (in lower case),
+# values are the full description of the field; the name is remaped here as
+# it wil be shown in the GUI.
 SNPEFF_ANNOTATION_DEFAULT_FIELDS = {
     "annotation": {
         "name": "consequence",

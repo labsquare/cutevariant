@@ -28,31 +28,35 @@ class AbstractReader(ABC):
     def get_variants(self):
         """Abstract method that must return variants as an iterable of dictionnaries.
 
-        Minimum output:
-        ===============
-        [
-        {"chr": "chr3","pos": 3244,"ref": "A","alt":"C"},
-        {"chr": "chr4","pos": 3244,"ref": "A","alt":"C"},
-        {"chr": "chr5","pos": 3244,"ref": "A","alt":"C"}
-        ]
+        Mandatory fields:
+        =================
+        `chr`, `pos`, `ref`, `alt` are mandatory.
+        :Example:
+            [
+                {"chr": "chr3","pos": 3244,"ref": "A","alt":"C"},
+                {"chr": "chr4","pos": 3244,"ref": "A","alt":"C"},
+                {"chr": "chr5","pos": 3244,"ref": "A","alt":"C"},
+            ]
 
-        Full output:
+        Full fields:
         ============
-        [
-        {"chr": "chr3",
-        "pos": 3244,
-        "ref": "A",
-        "alt":"C",
-        "field_n": "value_n",
-        "annotations": [
-            {"gene": "GJB2", "transcripts": "NM_00232.1", "field_n": "value_n"},
-            {"gene": "GJB2", "transcripts": "NM_00232.2", "field_n": "value_n"}
-            ],
-        "samples": [
-            {"name":"boby", "gt": 1, "field_n":"value_n"},
-            {"name":"kevin", "gt": 1, "field_n":"value_n"}
-            ]}
-        ]
+       `annotations`, `samples` and other fields can be added.
+        :Example:
+            [{
+                "chr": "chr3",
+                "pos": 3244,
+                "ref": "A",
+                "alt":"C",
+                "field_n": "value_n",
+                "annotations": [
+                    {"gene": "GJB2", "transcripts": "NM_00232.1", "field_n": "value_n"},
+                    {"gene": "GJB2", "transcripts": "NM_00232.2", "field_n": "value_n"}
+                ],
+                "samples": [
+                    {"name":"boby", "gt": 1, "field_n":"value_n"},
+                    {"name":"kevin", "gt": 1, "field_n":"value_n"}
+                ]
+            },]
 
         :return: A generator of variants
         :rtype: <generator>
@@ -63,7 +67,11 @@ class AbstractReader(ABC):
     def get_fields(self):
         """Abstract methodthat must return fields description defined from parse_variant output.
 
-        You must define sqlite type for each field (text, integer, bool)
+        You **must** define sqlite type for each field (text, integer, bool).
+
+        This function should set the attribute `fields` because it is called
+        several times during the import and it could be expensive to redo the
+        parsing every time.
 
         Full output:
         ============

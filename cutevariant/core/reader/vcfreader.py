@@ -36,7 +36,7 @@ class VcfReader(AbstractReader):
         self._set_annotation_parser(annotation_parser)
 
     def get_fields(self):
-        """Get fields description defined in parse_variant()
+        """Get full fields descriptions
 
         .. note:: Annotations fields are added here if they exist in the file.
 
@@ -58,10 +58,12 @@ class VcfReader(AbstractReader):
             return fields
 
     def get_variants(self):
-        """Return variants as an iterable of dictionnaries
+        """Get variants as an iterable of dictionnaries
 
         "annotations" key is added here with the list of annotations if
-        they exist in the file
+        they exist in the file.
+
+        .. seealso:: parse_variant()
 
         :return: Generator of full variants with "annotations" key.
         :rtype: <generator <dict>>
@@ -149,7 +151,6 @@ class VcfReader(AbstractReader):
             to be a primary key in the database.
         :rtype: <generator <dict>>
         """
-
         yield {
             "name": "chr",
             "category": "variants",
@@ -164,14 +165,6 @@ class VcfReader(AbstractReader):
             "type": "int",
             "constraint": "NOT NULL",
         }
-
-        yield {
-            "name": "rsid",
-            "category": "variants",
-            "description": "rsid",
-            "type": "str",
-        }
-
         yield {
             "name": "ref",
             "category": "variants",
@@ -186,14 +179,18 @@ class VcfReader(AbstractReader):
             "type": "str",
             "constraint": "NOT NULL",
         }
-
+        yield {
+            "name": "rsid",
+            "category": "variants",
+            "description": "rsid",
+            "type": "str",
+        }
         yield {
             "name": "qual",
             "category": "variants",
             "description": "quality",
             "type": "int",
         }
-
         yield {
             "name": "filter",
             "category": "variants",
