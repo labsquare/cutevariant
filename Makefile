@@ -40,10 +40,9 @@ check_setups:
 	pyroma .
 
 check_code:
-	prospector
+	prospector cutevariant/
 	check-manifest
 
 missing_doc:
 	# Remove D213 antagonist of D212
-	prospector --ignore=D213 --doc-warnings | grep "cutevariant/\|Missing docstring"
-
+	prospector cutevariant/ | grep "cutevariant/\|Line\|Missing docstring"

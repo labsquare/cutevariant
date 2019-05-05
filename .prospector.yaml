@@ -5,3 +5,10 @@ pep257:
     - D213 # Multi-line docstring summary should start at the second line
     - D203 # 1 blank line required before class docstring (found 0)
     - D107 # Missing docstring in __init__
+  enable:
+    - D300
+    - D101
+    - D201
+pyflakes: 
+  disable:
+    - F999
