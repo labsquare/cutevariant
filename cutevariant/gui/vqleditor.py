@@ -309,11 +309,13 @@ class VqlEdit(QTextEdit):
 
 
         # Erase the joker
-        tc.movePosition(QTextCursor.EndOfWord)
+        tc.movePosition(QTextCursor.StartOfWord)
         current_char = self.toPlainText()[tc.position() - 1]
         if current_char == self.completer_joker:
             tc.deletePreviousChar()
 
+        # Move cursor after the word
+        tc.movePosition(QTextCursor.EndOfWord)
         self.setTextCursor(tc)
 
     def textUnderCursor(self):
