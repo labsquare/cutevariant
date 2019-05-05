@@ -257,7 +257,18 @@ class VepParser(BaseParser):
         self.annotation_default_fields = VEP_ANNOTATION_DEFAULT_FIELDS
 
     def parse_fields(self, fields):
+        """Generate fields description
 
+        This function parses special annotation field "csq"/"CSQ",
+        other fields are yielded without being affected.
+
+        .. seealso:: handle_descriptions()
+
+        :param fields: Generator of fields.
+        :type fields: <generator <dict>>
+        :return: Generator of fields descriptions.
+        :rtype: <generator <dict>>
+        """
         self.annotation_field_name = list()
         for field in fields:
             if field["name"] == "csq":
@@ -273,6 +284,18 @@ class VepParser(BaseParser):
                 yield field
 
     def parse_variants(self, variants):
+        """Generate variants data
+
+        This function removes the key "csq" from the variants,
+        and add "annotations" key with the list of annotations.
+
+        .. seelalso:: handle_annotations()
+
+        :param variants: Generator of variants.
+        :type variants: <generator <dict>>
+        :return: Generator of full variants with "annotations" key.
+        :rtype: <generator <dict>>
+        """
         if not hasattr(self, "annotation_field_name"):
             raise Exception("Cannot parse variant without parsing first fields")
 
@@ -337,7 +360,9 @@ class SnpEffParser(BaseParser):
 
         .. note:: Names of fields are changed to lowercase.
 
-        :return: Generator of fields descriptions.
+        :param fields: Generator of fields.
+        :type fields: <generator <dict>>
+        :return: Generator of full fields descriptions.
         :rtype: <generator <dict>>
         """
         self.annotation_field_name = list()
@@ -363,6 +388,11 @@ class SnpEffParser(BaseParser):
         and add "annotations" key with the list of annotations.
 
         .. seelalso:: handle_annotations()
+
+        :param variants: Generator of variants.
+        :type variants: <generator <dict>>
+        :return: Generator of full variants with "annotations" key.
+        :rtype: <generator <dict>>
         """
         if not hasattr(self, "annotation_field_name"):
             raise Exception("Cannot parse variant without parsing first fields")
