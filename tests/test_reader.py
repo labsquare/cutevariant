@@ -1,4 +1,5 @@
 from cutevariant.core.reader import VcfReader, FakeReader
+from cutevariant.core.reader import check_variant_schema, check_field_schema
 from cutevariant.core import sql
 import vcf
 import os
@@ -11,6 +12,7 @@ VcfReader(open("examples/test.vcf")),
 VcfReader(open("examples/test.vep.vcf"),"vep"),
 VcfReader(open("examples/test.snpeff.vcf"),"snpeff"),
 ]
+
 
 
 @pytest.mark.parametrize(
@@ -27,6 +29,10 @@ def test_fields(reader):
     assert "pos" in field_names
     assert "ref" in field_names
     assert "alt" in field_names
+
+    # check field schema 
+    for field in fields:
+        check_field_schema(field)
 
 
 @pytest.mark.parametrize(
@@ -58,6 +64,9 @@ def test_variants(reader):
             samples_names = [s["name"] for s in variant["samples"]]
             print(reader.get_samples())
             assert sorted(reader.get_samples()) == sorted(samples_names)
+
+        # check variant schema 
+        check_variant_schema(variant)
 
 
 @pytest.mark.parametrize(

@@ -55,7 +55,7 @@ class Query:
         self.order_desc = True
         self.group_by = None
 
-        self._samples_to_join = []
+        self._samples_to_join = set()
 
         ##-----------------------------------------------------------------------------------------------------------
 
@@ -97,23 +97,25 @@ class Query:
 
 
     def _detect_samples_from_columns(self):
+        """Detect if columns contains function and keep function args as sample name for sql join with sample tables.
+
+        function are defined as tuple . For exemple genotype("boby").gt will be written as ("genotype","boby","gt")
         """
-        detect if columns contains function and keep function args as sample name for sql join with sample tables
-        """
+
         for col in self.columns:
+            # A function is a tuple with 3 elements. The second element is the sample name
             if type(col) == tuple and len(col) == 3: 
                 fct, arg , field = col 
 
                 if fct == _GENOTYPE_FUNCTION_NAME:
-                    self._samples_to_join.append(arg)
+                    self._samples_to_join.add(arg)
 
 
     def _detect_samples_from_filter(self):
-        """
-        detect if filter contains function and keep function args as sample name for sql join with sample tables
-        """
-        
+        """Detect if filter contains function and keep function args as sample name for sql join with sample tables
 
+        function are defined as tuple . For exemple genotype("boby").gt will be written as ("genotype","boby","gt")
+        """
 
         # Recursive loop over filter to extract field name only 
         def iter(node):
@@ -128,14 +130,12 @@ class Query:
                 for i in node:
                     yield from iter(i)
 
-
-        print("et ho", self.filter)
-
         for col in iter(self.filter):
+        # A function is a tuple with 3 elements. The second element is the sample name
             if type(col) == tuple and len(col) == 3:
                 fct, arg , field = col 
                 if fct == _GENOTYPE_FUNCTION_NAME:
-                    self._samples_to_join.append(arg)
+                    self._samples_to_join.add(arg)
    
 
 
@@ -158,14 +158,17 @@ class Query:
             self.columns = ["chr", "pos", "ref", "alt"]
 
 
-        #  Replace columns gt(sacha) by sv4.gt ( where 4 is the sample id for outer join)
+        # Replace genotype function by name 
+        # Transform ("genotype", "boby","gt") to "`gt_boby`.gy" to perform SQL JOIN 
+
         sql_columns = []
         sql_columns.append("variants.id")
         for col in self.columns:
-        #     sample = self.sample_from_expression(col)
-        #     if sample is not None:
-        #         sql_columns.append(f"gt{sample}.gt")
-        #     else:
+            if type(col) == tuple:
+                fct, arg, field = col
+                if fct == _GENOTYPE_FUNCTION_NAME:
+                    col = f"`gt_{arg}`.{field}" 
+  
             sql_columns.append(col)
 
 
@@ -190,11 +193,17 @@ class Query:
             INNER JOIN selections s ON s.id = sv.selection_id AND s.name = '{self.selection}'
             """
 
-        # if len(sample_ids):
-        #     for sample, i in sample_ids.items():
-        #         query += f" LEFT JOIN sample_has_variant gt{sample} ON gt{sample}.variant_id = variants.rowid AND gt{sample}.sample_id = {i} "
+        # Add Join on sample_has_variant 
+        # This is done if genotype() function has been found in columns or fields. @see _detect_samples
+        self._detect_samples()
+        print("DETECT", self.columns, self._samples_to_join)
+        if self._samples_to_join: 
+            for sample in sql.get_samples(self.conn):
+                if sample["name"] in self._samples_to_join:
+                    sample_id = sample["id"]
+                    sample_name = sample["name"]
+                    query += f" LEFT JOIN sample_has_variant gt_{sample_name} ON gt_{sample_name}.variant_id = variants.id AND gt_{sample_name}.sample_id = {sample_id}"
 
-                # add filter clause
         if self.filter:
             query += " WHERE " + self.filter_to_sql(self.filter)
             #  add limit and offset
@@ -256,7 +265,6 @@ class Query:
                 item[col] = value[index]
             yield item
 
-        ##-----------------------------------------------------------------------------------------------------------
 
     def filter_to_sql(self, node: dict) -> str:
         """ 
@@ -288,11 +296,14 @@ class Query:
 
             elif type(value) == list:
                 value = "(" + ",".join(value) +")"
-     
+
             else:
                 value = str(value)
 
-
+            if type(field) == tuple and len(field) == 3: # Function ? ("genotype","sample","gt")
+                fct, arg, f = field
+                field = f"gt_{arg}.{f}"
+     
 
             return field + operator + value
 
@@ -343,6 +354,8 @@ class Query:
         return variant count from the current query 
         """
         #  TODO : need to cache this method because it can take time to compute with large dataset
+        
+        print(self.sql())
         return self.conn.execute(
             f"SELECT COUNT(*) as count FROM ({self.sql()})"
         ).fetchone()[0]
@@ -389,7 +402,17 @@ class Query:
         Build a VQL query from the current Query
         :return: A VQL query 
         """
-        base = f"SELECT {','.join(self.columns)} FROM {self.selection}"
+
+        #TODO : move all VQL to VQLEDItor 
+        # DEGEU.. pour tester juste
+        _c = [] 
+        for col in self.columns:
+            if type(col) == tuple:
+                fct, arg, field = col
+                col = f"gt_{arg}.{field}"
+            _c.append(col)
+
+        base = f"SELECT {','.join(_c)} FROM {self.selection}"
         where = ""
         if self.filter:
             where = f" WHERE {self.filter_to_sql(self.filter)}"

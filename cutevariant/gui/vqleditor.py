@@ -161,7 +161,9 @@ class VqlEditor(QueryPluginWidget):
 
     def on_change_query(self):
         """Overrided"""
+        self.text_edit.blockSignals(True)
         self.text_edit.setPlainText(self.query.to_vql())
+        self.text_edit.blockSignals(False)
 
     def create_completer(self):
         """Create Completer with his model"""
@@ -307,13 +309,11 @@ class VqlEdit(QTextEdit):
 
 
         # Erase the joker
-        tc.movePosition(QTextCursor.StartOfWord)
+        tc.movePosition(QTextCursor.EndOfWord)
         current_char = self.toPlainText()[tc.position() - 1]
         if current_char == self.completer_joker:
             tc.deletePreviousChar()
 
-        # Move cursor after the word
-        tc.movePosition(QTextCursor.EndOfWord)
         self.setTextCursor(tc)
 
     def textUnderCursor(self):
