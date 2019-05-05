@@ -1,11 +1,12 @@
 # Standard imports
-import copy
 import vcf
 
 # Custom imports
 from .abstractreader import AbstractReader
 from .annotationparser import VepParser, SnpEffParser
+from cutevariant.commons import logger
 
+LOGGER = logger()
 
 VCF_TYPE_MAPPING = {"Float": "float", "Integer": "int", "Flag": "bool", "String": "str"}
 
@@ -40,22 +41,28 @@ class VcfReader(AbstractReader):
 
         .. note:: Annotations fields are added here if they exist in the file.
 
-        :return: Generator of fields.
+        .. seealso:: parse_fields()
+
+        :return: Tuple of fields.
             Each field is a dict with the following keys:
                 name, category, description, type
             Some fields have an additional constraint key when they are destined
             to be a primary key in the database.
             Annotations fields are added here if they exist in the file.
             .. seealso parse_fields() for basic default fields.
-        :rtype: <generator <dict>>
+        :rtype: <tuple <dict>>
         """
-        fields = self.parse_fields()
-        if self.annotation_parser:
-            # If "ANN" is a field in the current VCF:
-            # Remove and parse special annotations
-            return self.annotation_parser.parse_fields(fields)
-        else:
-            return fields
+        LOGGER.debug("CsvReader::get_fields: called")
+        if not self.fields:
+            LOGGER.debug("CsvReader::get_fields: parse")
+            fields = self.parse_fields()
+            if self.annotation_parser:
+                # If "ANN" is a field in the current VCF:
+                # Remove and parse special annotations
+                self.fields = tuple(self.annotation_parser.parse_fields(fields))
+            else:
+                self.fields = tuple(fields)
+        return self.fields
 
     def get_variants(self):
         """Get variants as an iterable of dictionnaries
@@ -82,9 +89,6 @@ class VcfReader(AbstractReader):
         :return: Generator of variants.
         :rtype: <generator <dict>>
         """
-        # get avaible fields
-        fields = list(self.parse_fields())
-
         # loop over record
         self.device.seek(0)
         vcf_reader = vcf.VCFReader(self.device)
@@ -248,9 +252,6 @@ class VcfReader(AbstractReader):
 
         if parser == "snpeff":
             self.annotation_parser = SnpEffParser()
-
-    def __repr__(self):
-        return f"VCF Parser using {type(self.annotation_parser).__name__}"
 
     def _get_record_size(self, rec):
         """Approximate record size in bytes"""

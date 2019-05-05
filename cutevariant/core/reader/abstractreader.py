@@ -23,6 +23,7 @@ class AbstractReader(ABC):
         self.file_size = 0
         self.read_bytes = 0
         self.samples = []
+        self.fields = tuple()
 
     @abstractclassmethod
     def get_variants(self):
@@ -131,3 +132,6 @@ class AbstractReader(ABC):
             "description": "is favoris",
             "default": False,
         }
+
+    def __repr__(self):
+        return f"VCF Parser using {type(self.annotation_parser).__name__}"

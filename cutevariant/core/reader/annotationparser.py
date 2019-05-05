@@ -281,8 +281,8 @@ class VepParser(BaseParser):
 
                 raw_fields = re.search("Format: (.+)", description)[1].split("|")
 
-                for field_description in self.handle_descriptions(raw_fields):
-                    yield field_description
+                # yield full remaped field
+                yield from self.handle_descriptions(raw_fields)
             else:
                 yield field
 
@@ -377,9 +377,8 @@ class SnpEffParser(BaseParser):
 
                 raw_fields = re.search("'(.+)'", description)[1].split("|")
 
-                for field_description in self.handle_descriptions(raw_fields):
-                    # yield full remaped field
-                    yield field_description
+                # yield full remaped field
+                yield from self.handle_descriptions(raw_fields)
             else:
                 # Field is not an annotation: do nothing
                 yield field
