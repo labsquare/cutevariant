@@ -50,18 +50,6 @@ class QueryModel(QAbstractItemModel):
         return index == QModelIndex()
 
 
-    # def row_id(self, index: QModelIndex):
-    #     """
-    #     Return rowid of the variant identified by index 
-
-    #     :return: -1 if not avaible 
-    #     """
-    #     if not self.variants or not self.hasIndex(index):
-    #         return -1 
-
-    #     return int(self.variants[index.row()][0])
-
-
 
     def rowCount(self, parent=QModelIndex()):
         """
@@ -73,7 +61,7 @@ class QueryModel(QAbstractItemModel):
             return len(self.variants)
 
         if parent.parent() == QModelIndex():
-            return len(self.variants[parent.row()])
+            return len(self.variants[parent.row()]) - 1 # Omit first 
 
         # Get parent variant row ID and return child count 
         # if self.row_id(parent) in self.childs:
@@ -96,10 +84,11 @@ class QueryModel(QAbstractItemModel):
         if not self.hasIndex(row, column, parent):
             return QModelIndex()
 
+        # if parent is root 
         if parent == QModelIndex():
-            #row_id = int(self.variants[row][0])
             return self.createIndex(row, column, None)  
 
+        # if parent is first level
         if parent.parent() == QModelIndex():
             return self.createIndex(row, column, parent.row())
 
@@ -122,25 +111,27 @@ class QueryModel(QAbstractItemModel):
         if not index.isValid():
             return None
 
-        # Display Role 
+        # ---- DISPLAY ROLE ----
         if role == Qt.DisplayRole:
+            # Display the first level 
             if index.parent() == QModelIndex():
-
-
-                childs_count = self.variants[index.row()][0][-1]
-
                 if index.column() == 0:
-                    return str(childs_count)
+                    # First column display child count 
+                    return str(self.child_count(index))
                 else:
+                    # Other display variant data 
                     return str(self.variants[index.row()][0][index.column()]) 
 
-            else:
+            # Display the second level ( children )
+            if index.parent().parent() == QModelIndex():
                 if index.column() == 0:
-                    return 0
+                    # No children for the first columns
+                    return ""
                 else:
+                    # Display children data 
                     return str(self.variants[index.parent().row()][index.row()][index.column()])
 
-        # Icon role : show number of child 
+        # ----- ICON ROLE --- 
         if role == Qt.DecorationRole:
             if index.parent() == QModelIndex() and index.column() == 0 and self.hasChildren(index):
                 return self._draw_child_count_icon(self.variants[index.row()][0][-1])
@@ -150,16 +141,14 @@ class QueryModel(QAbstractItemModel):
 
     def headerData(self, section, orientation, role=Qt.DisplayRole):
         """Overrided: Return column name as header data """
+        
+        # Display columns headers 
         if orientation == Qt.Horizontal:
             if role == Qt.DisplayRole:
                 if section == 0:
                     return "childs"
                 else:
                     return self._query.columns[section-1]
-
-        if orientation == Qt.Vertical:
-            if role == Qt.DisplayRole:
-                return self.variants[index.row()][-1]
 
         return None
 
@@ -171,7 +160,7 @@ class QueryModel(QAbstractItemModel):
             return True
 
         if parent.parent() == QModelIndex():
-            childs_count = self.variants[parent.row()][0][-1]
+            childs_count = self.child_count(parent)
             return childs_count > 1
 
         return False
@@ -185,35 +174,48 @@ class QueryModel(QAbstractItemModel):
         return self.hasChildren(parent)
 
     def fetchMore(self, parent: QModelIndex):
-        """Overrided """
+        """
+        Overrided 
+
+        Fetch more annotation when row is expand
+
+        """
         if parent == QModelIndex():
             return
 
+        # get sql variant id 
         variant_id = self.variants[parent.row()][0][0]
         columns = ",".join(self._query.columns)
 
         # TODO : need to put this into QUERY
-        sub_query = (f"""SELECT variants.rowid,{columns} FROM variants 
-        LEFT JOIN annotations ON variants.rowid = annotations.variant_id 
-        WHERE variants.rowid = {variant_id}""")
+        sub_query = (f"""SELECT variants.id,{columns} FROM variants 
+        LEFT JOIN annotations ON variants.id = annotations.variant_id 
+        WHERE variants.id = {variant_id}""")
+
 
         records = list(self._query.conn.cursor().execute(sub_query).fetchall())
 
-        self.beginInsertRows(parent, 0, len(records) - 1)
+        # Insert children
+        self.beginInsertRows(parent, 0, len(records) )
 
         # Clear pevious childs 
         self.variants[parent.row()][1:] = []
 
-        for idx, record in enumerate(records[1:]): # skip first records 
-            #if idx != 0: # Don't add the first one... it's the parent 
+        for idx, record in enumerate(records): # skip first records 
             self.variants[parent.row()].append(tuple(record))
             
 
-        # self.childs[parent.row()] = []
-        # self.childs[parent.row()] = list(child_query.rows())
-
-
         self.endInsertRows()
+
+    def child_count(self, index: QModelIndex):
+        """
+        Return child count from variant
+
+        This one is the last value of sql record output and correspond to the COUNT(annotation)
+        of the GROUP BY
+        """
+        return self.variants[index.row()][0][-1]
+
 
 
 
