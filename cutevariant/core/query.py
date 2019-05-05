@@ -199,7 +199,7 @@ class Query:
         print("DETECT", self.columns, self._samples_to_join)
         if self._samples_to_join: 
             for sample in sql.get_samples(self.conn):
-                #if sample["name"] in self._samples_to_join:
+                if sample["name"] in self._samples_to_join:
                     sample_id = sample["id"]
                     sample_name = sample["name"]
                     query += f" LEFT JOIN sample_has_variant gt_{sample_name} ON gt_{sample_name}.variant_id = variants.id AND gt_{sample_name}.sample_id = {sample_id}"
