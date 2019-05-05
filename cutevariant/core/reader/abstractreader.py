@@ -166,7 +166,7 @@ def check_variant_schema(variant: dict):
 
 
 def check_field_schema(field:dict):
-    """Test of get_field retir,s well formated data
+    """Test if get_field returns well formated data
 
     This method is for testing purpose. It raises an exception if data is corrupted 
 
