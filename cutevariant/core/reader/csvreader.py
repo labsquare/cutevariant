@@ -54,6 +54,9 @@ class CsvReader(AbstractReader):
         self.csv_reader = csv.DictReader(self.device, dialect=csv_dialect)
 
         # hacky hacky...
+        # We use BaseParser here only for its function handle_descriptions()
+        # that generate full description of annotation fields by taking into
+        # account default supported fields set by with VEP_ANNOTATION_DEFAULT_FIELDS
         self.annotation_parser = BaseParser()
         self.annotation_parser.annotation_default_fields = VEP_ANNOTATION_DEFAULT_FIELDS
 
@@ -191,6 +194,10 @@ class CsvReader(AbstractReader):
             chr, pos = self.location_to_chr_pos(row["Location"])
             ref = row["GIVEN_REF"]
             alt = row["Allele"]
+
+            if "USED_REF" in row:
+                # Check consistency
+                assert row["GIVEN_REF"] == row["USED_REF"], "GIVEN_REF != USED_REF"
 
             primary_key = (chr, pos, ref, alt)
             # Get previous variant with same primary key (previous transcript)
