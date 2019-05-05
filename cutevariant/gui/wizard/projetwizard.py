@@ -92,7 +92,7 @@ class FilePage(QWizardPage):
         self.file_path_edit.textChanged.connect(self.completeChanged)
 
         self.registerField("filename", self.file_path_edit, "text")
-        # annotation ? should be an option or not ? 
+        # annotation ? should be an option or not ?
         self.registerField("annotation", self.anotation_detect_label, "text")
 
     def _browse(self):
@@ -174,15 +174,21 @@ class ImportThread(QThread):
             os.remove(self.db_filename)
         self.conn = get_sql_connexion(self.db_filename)
 
-        # Import the file
-        for value, message in async_import_file(self.conn, self.filename, self.project_settings):
-            if self._stop == True:
-                self.conn.close()
-                break
-            # Send progression
-            self.progress_changed.emit(value, message)
-        # Send status (True when there is no error)
-        self.finished_status.emit(not self._stop)
+        try:
+            # Import the file
+            for value, message in async_import_file(self.conn, self.filename, self.project_settings):
+                if self._stop == True:
+                    self.conn.close()
+                    break
+                # Send progression
+                self.progress_changed.emit(value, message)
+        except BaseException as e:
+            self.progress_changed.emit(0, str(e))
+            self._stop = True
+            raise e
+        finally:
+            # Send status (Send True when there is no error)
+            self.finished_status.emit(not self._stop)
 
     def stop(self):
         self._stop = True
@@ -218,10 +224,8 @@ class ImportPage(QWizardPage):
         # File to open
         self.log_edit.appendPlainText(self.field("filename"))
 
-        self.thread.started.connect(lambda: self.log_edit.appendPlainText("Started"))
-        self.thread.finished.connect(lambda: self.log_edit.appendPlainText("Done"))
+        self.thread.started.connect(lambda: self.log_edit.appendPlainText(self.tr("Started")))
         self.import_button.clicked.connect(self.run)
-
         self.thread.progress_changed.connect(self.progress_changed)
         self.thread.finished.connect(self.import_thread_finished)
         self.thread.finished_status.connect(self.import_thread_finished_status)
@@ -241,12 +245,19 @@ class ImportPage(QWizardPage):
         .. note:: Called at the end of run()
         """
         self.thread_finished = status
-
         if status:
+            # Block further import
             self.import_button.setDisabled(True)
+            self.log_edit.appendPlainText(self.tr("Done"))
+        else:
+            # Display import on the button
+            self.import_button.setText(self.text_buttons[0])
+            self.log_edit.appendPlainText(self.tr("Stopped!"))
 
     def run(self):
-        """Launch the import in a separate thread"""
+        """Called when import button is clicked
+        Launch the import in a separate thread
+        """
         if self.thread.isRunning():
             LOGGER.debug("ImportPage:run: stop thread")
             self.import_button.setDisabled(True)
@@ -276,11 +287,12 @@ class ImportPage(QWizardPage):
             )
 
             self.log_edit.appendPlainText(self.tr("Import ") + self.thread.filename)
+            # display stop on the button
             self.import_button.setText(self.text_buttons[1])
             self.thread.start()
 
     def isComplete(self):
-        """Conditions to unlock next button"""
+        """Conditions to unlock finish button"""
         return self.thread_finished
 
 
