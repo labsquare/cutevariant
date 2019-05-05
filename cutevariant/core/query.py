@@ -8,17 +8,24 @@ from cutevariant.commons import logger
 
 LOGGER = logger()
 
+_GENOTYPE_FUNCTION_NAME = "genotype"
+_PHENOTYPE_FUNCTION_NAME = "phenotype"
+
 class Query:
     """
     This is a class for build sql query to select variant record according different attributes 
 
     Attributes:
         conn (sqlite3.Connection) 
-        columns (list of str): fields name from variants and annotations table (Select clause)   
+        columns (list of str and tuple): fields name from variants and annotations table (Select clause)   
         filter (dict): Hierarchical dictionnary to filter variants (Where clause) 
         selection (str): Virtual table of variants (From clause) 
         order_by(str): Order variants by a specific column 
         group_by(tuple of str): Group variants by columns  
+
+    Columns and filter can contains function as tuple. For example : 
+
+    query.columns = ["chr","pos", ("genotype","boby","GT")] 
 
     Example:
         conn = sqlite.connection(":memory")
@@ -48,50 +55,89 @@ class Query:
         self.order_desc = True
         self.group_by = None
 
-        ##-----------------------------------------------------------------------------------------------------------
-
-    def sample_from_expression(self, expression):
-        """
-        ..warning:: WILL BE REMOVE AFTER FIXING #33 
-
-        """
-        # extract <sample> from <gt("sample")>
-        regexp = r"gt(.*).gt"
-        match = re.search(regexp, expression)
-        if match:
-            return match.group(1)
-        else:
-            return None
+        self._samples_to_join = []
 
         ##-----------------------------------------------------------------------------------------------------------
 
-    def detect_samples(self):
+    # def sample_from_expression(self, expression):
+    #     """
+    #     ..warning:: WILL BE REMOVE AFTER FIXING #33 
+
+    #     """
+    #     # extract <sample> from <gt("sample")>
+    #     regexp = r"gt(.*).gt"
+    #     match = re.search(regexp, expression)
+    #     if match:
+    #         return match.group(1)
+    #     else:
+            # return None
+
+        ##-----------------------------------------------------------------------------------------------------------
+
+    def _detect_samples(self):
         """ 
-        detect if query need sample join by looking genotype expression : genotype("boby").gt and return samples 
-    
-        ..warning:: WILL BE REMOVE AFTER FIXING #33 
+        Detect if columns or filter contains function. 
+        Function are tuple . For example , this is a columns list with 2 normal field and 1 genotype function field.
+
+            query.columns = ("chr","pos",("genotype","boby","gt"))
+
+        This columns selection can be writted in VQL as follow : 
+
+            SELECT chr, pos, genotype("boby").gt 
 
         """
 
-        # extract sample name from select and filter clause
-        samples_detected = []
-        combine_clause = self.columns
+        self._samples_to_join.clear()
+        self._detect_samples_from_columns()
+        self._detect_samples_from_filter()
 
-        for col in combine_clause:
-            sample = self.sample_from_expression(col)
-            if sample is not None:
-                samples_detected.append(sample)
 
-        if len(samples_detected) == 0:
-            return {}
-        # Look in DB if sample exists and returns {sample:id} dictionnary
-        in_clause = ",".join([f"'{sample}'" for sample in samples_detected])
+        # Parse filter 
 
-        return dict(
-            self.conn.execute(
-                f"SELECT name, rowid FROM samples WHERE name IN ({in_clause})"
-            ).fetchall()
-        )
+
+
+    def _detect_samples_from_columns(self):
+        """
+        detect if columns contains function and keep function args as sample name for sql join with sample tables
+        """
+        for col in self.columns:
+            if type(col) == tuple and len(col) == 3: 
+                fct, arg , field = col 
+
+                if fct == _GENOTYPE_FUNCTION_NAME:
+                    self._samples_to_join.append(arg)
+
+
+    def _detect_samples_from_filter(self):
+        """
+        detect if filter contains function and keep function args as sample name for sql join with sample tables
+        """
+        
+
+
+        # Recursive loop over filter to extract field name only 
+        def iter(node):
+            if type(node) == dict and len(node) == 3:
+                    yield node["field"]
+
+            if type(node) == dict:
+                for i in node:
+                    yield from iter(node[i])
+
+            if type(node) == list:
+                for i in node:
+                    yield from iter(i)
+
+
+        print("et ho", self.filter)
+
+        for col in iter(self.filter):
+            if type(col) == tuple and len(col) == 3:
+                fct, arg , field = col 
+                if fct == _GENOTYPE_FUNCTION_NAME:
+                    self._samples_to_join.append(arg)
+   
+
 
         ##-----------------------------------------------------------------------------------------------------------
 
@@ -106,7 +152,7 @@ class Query:
         """
 
         #  Detect if join sample is required ...
-        sample_ids = self.detect_samples()
+       # sample_ids = self.detect_samples()
 
         if len(self.columns) == 0:
             self.columns = ["chr", "pos", "ref", "alt"]
@@ -114,39 +160,39 @@ class Query:
 
         #  Replace columns gt(sacha) by sv4.gt ( where 4 is the sample id for outer join)
         sql_columns = []
-        sql_columns.append("variants.rowid")
+        sql_columns.append("variants.id")
         for col in self.columns:
-            sample = self.sample_from_expression(col)
-            if sample is not None:
-                sql_columns.append(f"gt{sample}.gt")
-            else:
-                sql_columns.append(col)
+        #     sample = self.sample_from_expression(col)
+        #     if sample is not None:
+        #         sql_columns.append(f"gt{sample}.gt")
+        #     else:
+            sql_columns.append(col)
 
 
         # if group by , add extra columns ( child count and child ids )
         # Required for viewquerywidget.py
         if self.group_by:
-            sql_columns.extend(["COUNT(annotations.rowid) as 'childs'"])
+            sql_columns.extend(["COUNT(variants.id) as 'childs'"])
 
         query = f"SELECT {','.join(sql_columns)} "
 
         # Add Select clause
 
         if self.selection == "all":
-            query += f"FROM variants LEFT JOIN annotations ON annotations.variant_id = variants.rowid"
+            query += f"FROM variants LEFT JOIN annotations ON annotations.variant_id = variants.id"
         else:
             #  manage jointure with selection
 
             query += f"""
             FROM variants
-            LEFT JOIN annotations ON annotations.variant_id = variants.rowid 
-            INNER JOIN selection_has_variant sv ON sv.variant_id = variants.rowid
-            INNER JOIN selections s ON s.rowid = sv.selection_id AND s.name = '{self.selection}'
+            LEFT JOIN annotations ON annotations.variant_id = variants.id 
+            INNER JOIN selection_has_variant sv ON sv.variant_id = variants.id
+            INNER JOIN selections s ON s.id = sv.selection_id AND s.name = '{self.selection}'
             """
 
-        if len(sample_ids):
-            for sample, i in sample_ids.items():
-                query += f" LEFT JOIN sample_has_variant gt{sample} ON gt{sample}.variant_id = variants.rowid AND gt{sample}.sample_id = {i} "
+        # if len(sample_ids):
+        #     for sample, i in sample_ids.items():
+        #         query += f" LEFT JOIN sample_has_variant gt{sample} ON gt{sample}.variant_id = variants.rowid AND gt{sample}.sample_id = {i} "
 
                 # add filter clause
         if self.filter:
@@ -246,10 +292,7 @@ class Query:
             else:
                 value = str(value)
 
-            #  change columns name for sample join
-            sample = self.sample_from_expression(field)
-            if sample:
-                field = f"gt{sample}.gt"
+
 
             return field + operator + value
 
@@ -261,16 +304,16 @@ class Query:
 
             return "(" + f" {logic} ".join(out) + ")"
 
-        ##-----------------------------------------------------------------------------------------------------------
+    #     ##-----------------------------------------------------------------------------------------------------------
 
-    def samples(self):
-        """
-        Return samples 
+    # def samples(self):
+    #     """
+    #     Return samples 
 
-        ..warning:: WILL BE REMOVE AFTER FIXING #33 
+    #     ..warning:: WILL BE REMOVE AFTER FIXING #33 
 
-        """
-        return self.detect_samples().keys()
+    #     """
+    #     return self.detect_samples().keys()
 
         ##-----------------------------------------------------------------------------------------------------------
 

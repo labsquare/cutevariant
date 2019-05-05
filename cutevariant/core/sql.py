@@ -653,9 +653,14 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
             # have been inserted from the same source file (or it is not the case ?) ?
             # Retrieve the id of the sample to build the association in
             # "sample_has_variant" table carrying the data "gt" (genotype)
+
+
+
             g = ((samples_id_mapping[sample["name"]], sample["gt"])
                  for sample in variant["samples"]
                  if sample["name"] in samples_names)
+
+
             cursor.executemany(
                 f"""INSERT INTO sample_has_variant VALUES (?,{variant_id},?)""",
                 g
