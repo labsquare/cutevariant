@@ -201,7 +201,7 @@ def get_selections(conn):
         in the table.
         Dictionnary of all attributes of the table.
             :Example: {"name": ..., "count": ..., "query": ...}
-    :rtype: <generator>
+    :rtype: <generator <dict>>
     """
     conn.row_factory = sqlite3.Row
     return (dict(data) for data in conn.execute("""SELECT * FROM selections"""))
@@ -367,7 +367,7 @@ def get_fields(conn):
     :param conn: sqlite3.connect
     :return: Generator of dictionnaries with as many keys as there are columns
         in the table.
-    :rtype: <generator>
+    :rtype: <generator <dict>>
     """
     conn.row_factory = sqlite3.Row
     return (dict(data) for data in conn.execute("""SELECT * FROM fields"""))
@@ -733,9 +733,9 @@ def get_samples(conn):
     """"Get samples from sample table
 
     :param con: sqlite3.conn
-    :return: Generator of dictionnaries with as sample names as values.
-        :Example: ({'name': <sample_name>})
-    :rtype: <generator>
+    :return: Generator of dictionnaries with as sample fields as values.
+        :Example: ({'id': <unique_id>, 'name': <sample_name>})
+    :rtype: <generator <dict>>
     """
     conn.row_factory = sqlite3.Row
     return (dict(data) for data in conn.execute("""SELECT * FROM samples"""))
