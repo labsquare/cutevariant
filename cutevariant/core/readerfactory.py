@@ -63,7 +63,7 @@ def create_reader(filename):
         device.close()
         return
 
-    if ".csv" in path.suffixes:
+    if {".tsv", ".csv", ".txt"} & set(path.suffixes):
         device = open(filename, "r")
         reader = CsvReader(device)
         reader.file_size = os.path.getsize(filename)
@@ -71,6 +71,7 @@ def create_reader(filename):
         device.close()
         return
 
+    raise Exception("create_reader:: Could not choose parser for this file.")
 
 # class ReaderFactory(object):
 #     """
