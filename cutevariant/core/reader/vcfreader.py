@@ -272,3 +272,7 @@ class VcfReader(AbstractReader):
     def _init_read_bytes(self, reader):
         """Init read bytes : It's the size in bytes of header data file"""
         return len("".join(reader._column_headers)) + len("".join(reader._header_lines))
+
+        
+    def __repr__(self):
+        return f"VCF Parser using {type(self.annotation_parser).__name__}"

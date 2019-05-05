@@ -133,5 +133,3 @@ class AbstractReader(ABC):
             "default": False,
         }
 
-    def __repr__(self):
-        return f"VCF Parser using {type(self.annotation_parser).__name__}"
