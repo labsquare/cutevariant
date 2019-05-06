@@ -29,7 +29,12 @@ def get_uncompressed_size(filename):
 
 
 def detect_vcf_annotation(filename):
-    """Return the name of the annotation parser to be used on the given file"""
+    """Return the name of the annotation parser to be used on the given file
+    Called: In the importer and in the project wizard to display the detected
+    annotations.
+
+    :return: "vep", "snpeff", None
+    """
     with open(filename, "r") as file:
         std_reader = vcf.VCFReader(file)
         #print(std_reader.metadata)
