@@ -102,12 +102,13 @@ class VcfReader(AbstractReader):
 
             # split row with multiple alt
             for index, alt in enumerate(record.ALT):
+                # Remap some columns
                 variant = {
                     "chr": record.CHROM,
                     "pos": record.POS,
                     "ref": record.REF,
                     "alt": str(alt),
-                    "rsid": record.ID,
+                    "rsid": record.ID,  # Avoid id column duplication in DB
                     "qual": record.QUAL,
                     "filter": "",  # TODO ?,
                 }
@@ -273,6 +274,5 @@ class VcfReader(AbstractReader):
         """Init read bytes : It's the size in bytes of header data file"""
         return len("".join(reader._column_headers)) + len("".join(reader._header_lines))
 
-        
     def __repr__(self):
         return f"VCF Parser using {type(self.annotation_parser).__name__}"

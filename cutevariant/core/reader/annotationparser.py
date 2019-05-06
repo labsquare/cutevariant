@@ -10,17 +10,19 @@ LOGGER = logger()
 # Keys are based on fields in files (in lower case),
 # values are the full description of the field; the name is remaped here as
 # it wil be shown in the GUI.
+# PS: Consequences/annotation_impac/impacts are standardized here:
+# https://www.ensembl.org/info/genome/variation/prediction/predicted_data.html#consequences
 SNPEFF_ANNOTATION_DEFAULT_FIELDS = {
     "annotation": {
         "name": "consequence",
         "category": "annotations",
-        "description": "consequence",
+        "description": "consequence type",
         "type": "str",
     },
     "annotation_impact": {
         "name": "impact",
         "category": "annotations",
-        "description": "impact of variant",
+        "description": "impact rating of variant",
         "type": "str",
     },
     "gene_name": {
@@ -32,7 +34,7 @@ SNPEFF_ANNOTATION_DEFAULT_FIELDS = {
     "gene_id": {
         "name": "gene_id",
         "category": "annotations",
-        "description": "gene name",
+        "description": "Ensembl stable ID of affected gene",
         "type": "str",
     },
     "feature_id": {
@@ -62,13 +64,13 @@ SNPEFF_ANNOTATION_DEFAULT_FIELDS = {
     "cdna.pos / cdna.length": {
         "name": "cdna_pos",
         "category": "annotations",
-        "description": "cdna pos",
+        "description": "relative position of base pair in cDNA sequence",
         "type": "str",
     },
     "cds.pos / cds.length": {
         "name": "cds_pos",
         "category": "annotations",
-        "description": "cds pos",
+        "description": "relative position of base pair in coding sequence",
         "type": "str",
     },
     "aa.pos / aa.length": {
@@ -90,13 +92,19 @@ VEP_ANNOTATION_DEFAULT_FIELDS = {
     "allele": {
         "name": "allele",
         "category": "annotations",
-        "description": "allele",
+        "description": "the variant allele used to calculate the consequence",
         "type": "str",
     },
     "consequence": {
         "name": "consequence",
         "category": "annotations",
-        "description": "impact of variant",
+        "description": "consequence type",
+        "type": "str",
+    },
+    "impact": {
+        "name": "impact",
+        "category": "annotations",
+        "description": "impact rating of the variant",
         "type": "str",
     },
     "symbol": {
@@ -108,13 +116,19 @@ VEP_ANNOTATION_DEFAULT_FIELDS = {
     "gene": {
         "name": "gene_id",
         "category": "annotations",
-        "description": "gene name",
+        "description": "Ensembl stable ID of affected gene",
         "type": "str",
     },
     "feature": {
         "name": "transcript",
         "category": "annotations",
-        "description": "transcript name",
+        "description": "Ensembl stable ID of feature",
+        "type": "str",
+    },
+    "feature_type": {
+        "name": "feature_type",
+        "category": "annotations",
+        "description": "type of feature. Currently one of Transcript, RegulatoryFeature, MotifFeature.",
         "type": "str",
     },
     "biotype": {
@@ -138,19 +152,37 @@ VEP_ANNOTATION_DEFAULT_FIELDS = {
     "cdna_position": {
         "name": "cdna_pos",
         "category": "annotations",
-        "description": "cdna pos",
+        "description": "relative position of base pair in cDNA sequence",
         "type": "str",
     },
     "cds_position": {
         "name": "cds_pos",
         "category": "annotations",
-        "description": "cds pos",
+        "description": "relative position of base pair in coding sequence",
         "type": "str",
     },
     "protein_position": {
         "name": "aa_pos",
         "category": "annotations",
-        "description": "amino acid pos",
+        "description": "relative position of amino acid in protein",
+        "type": "str",
+    },
+    "amino_acids": {
+        "name": "amino_acids",
+        "category": "annotations",
+        "description": "Reference and variant amino acids; only given if the variant affects the protein-coding sequence",
+        "type": "str",
+    },
+    "codons": {
+        "name": "codons",
+        "category": "annotations",
+        "description": "Reference and variant codon sequence",
+        "type": "str",
+    },
+    "existing_variation": {
+        "name": "existing_variation",
+        "category": "annotations",
+        "description": "Identifier(s) of co-located known variants",
         "type": "str",
     },
 }
