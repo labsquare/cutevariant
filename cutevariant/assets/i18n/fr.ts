@@ -91,12 +91,17 @@ Ce programme est distribué selon les termes de la Licence Publique Générale G
     <message>
         <location filename="cutevariant/gui/wizard/projetwizard.py" line="134"/>
         <source>annotations detected!&lt;/b&gt;</source>
-        <translation>annotations détectées!&lt;/b&gt;</translation>
+        <translation type="obsolete">annotations détectées!&lt;/b&gt;</translation>
     </message>
     <message>
         <location filename="cutevariant/gui/wizard/projetwizard.py" line="136"/>
         <source>&lt;b&gt;No annotation data has been detected!&lt;/b&gt;</source>
         <translation>&lt;b&gt;Aucune donnée d&apos;annotation n&apos;a été détectée&lt;/b&gt;</translation>
+    </message>
+    <message>
+        <location filename="cutevariant/gui/wizard/projetwizard.py" line="134"/>
+        <source>&lt;b&gt;%s annotations detected!&lt;/b&gt;</source>
+        <translation>&lt;b&gt;Annotations de type %s détectées!&lt;/b&gt;</translation>
     </message>
 </context>
 <context>
