@@ -226,7 +226,7 @@ class CsvReader(AbstractReader):
             # }
 
             if variant:
-                print("ALREADY found:", primary_key)
+                # Variant already created
                 # Append current annotation to the previous ones
                 add_annotation_to_variant()
                 continue
@@ -256,6 +256,12 @@ class CsvReader(AbstractReader):
     def location_to_chr_pos(self, location: str):
         """Parse VEP `Location` field to extract `chr`, `pos` fields
 
+        2 representations can be encountered in standard coordinate format
+            - chr:start
+            - chr:start-end
+
+        The start position is always returned as `pos` value.
+
         :Example:
             11:10000-10000 => chr, pos => 11, 10000
 
@@ -264,5 +270,5 @@ class CsvReader(AbstractReader):
         :rtype: <tuple <str>, <str>>
         """
         chr, positions = location.split(":")
-        pos = positions.split(":")[-1]
+        pos = positions.split("-")[0]
         return chr, pos
