@@ -1,7 +1,5 @@
 # Qt imports
-from PySide2.QtWidgets import *
-from PySide2.QtCore import *
-from PySide2.QtGui import *
+from PySide2.QtCore import QObject
 
 # Custom imports
 from .plugin import QueryPluginWidget
@@ -10,10 +8,12 @@ from cutevariant.commons import logger
 
 LOGGER = logger()
 
+
 class QueryDispatcher(QObject):
-    """
-    This class redirect query between widgets.
-    If one of the widget emit a 'changed' signal then all belongs widgets change their query except the sender.
+    """Redirect query between widgets
+
+    If one of the widget emits a `changed` signal, then all belonging widgets
+    change their query except the sender.
     """
 
     def __init__(self):
@@ -22,25 +22,24 @@ class QueryDispatcher(QObject):
         self._query = None
 
     def addWidget(self, widget: QueryPluginWidget):
-        """
-        Add a widget into the router
+        """Add a widget into the router
 
-        :param widget: a query widget
+        :param widget: a query widget and connect its `query_changed` event to
+            the slot `update_all_widgets()`.
         """
         self.widgets.append(widget)
         widget.query_changed.connect(self.update_all_widgets)
 
     @property
     def query(self):
-        """
+        """Get current query
         :return: Return current query
         """
         return self._query
 
     @query.setter
     def query(self, query: Query):
-        """
-        Update query for all widgets
+        """Set query and update the query of all widgets
 
         :param query: a Query object
         """
@@ -48,16 +47,14 @@ class QueryDispatcher(QObject):
         for widget in self.widgets:
             widget.query = query
 
-
-        #self.on_query_changed()
-
     def update_all_widgets(self):
+        """Dispatch a `query_changed` triggered from one widget to all widgets
+        except the sender.
         """
-        this method is trigger from one widget
-        """
-
-        #  call on_query_changed
+        # Call on_query_changed of all referenced widgets
         for widget in self.widgets:
             if widget != self.sender():
-                print("CHANGE WIDGET", widget)
+                LOGGER.debug(
+                    "QueryDispatcher:update_all_widgets:: change vent for %s", widget
+                )
                 widget.on_change_query()
