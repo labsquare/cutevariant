@@ -22,6 +22,9 @@ GroupWidget: Handy class to group similar settings widgets in tabs (used by Sett
 # Standard imports
 import os
 import glob
+from abc import abstractmethod
+
+# Qt imports
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 from PySide2.QtGui import *  # QIcon
