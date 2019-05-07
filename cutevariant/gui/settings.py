@@ -1,3 +1,24 @@
+"""List of classes used for settings window
+
+SettingsWidget: Main widget for settings window that instantiate all subwidgets
+
+BaseWidget: Abstract class for settings widgets.
+    Subclasses:
+        - TranslationSettingsWidget: Allow to choose a language for the interface
+        - ProxySettingsWidget: Allow to configure proxy settings for widgets that
+        require internet connection
+        - StyleSettingsWidget
+        - PluginsSettingsWidget
+        - DatabaseSettingsWidget
+        - VariantSettingsWidget: Allow to add personal templates to search a
+        variant in a third-party database
+
+GroupWidget: Handy class to group similar settings widgets in tabs (used by SettingsWidget).
+    Used for:
+        - TranslationSettingsWidget
+        - ProxySettingsWidget
+        - StyleSettingsWidget
+"""
 # Standard imports
 import os
 import glob
@@ -18,14 +39,20 @@ class BaseWidget(QWidget):
         super().__init__()
         self.settings = QSettings()
 
+    @abstractmethod
     def save(self):
+        """Save the current widget settings in QSettings"""
         raise NotImplemented()
 
+    @abstractmethod
     def load(self):
+        """Load settings from QSettings"""
         raise NotImplemented()
 
 
 class GroupWidget(QTabWidget):
+    """Handy class to group similar settings widgets in tabs"""
+
     def add_settings_widget(self, widget: BaseWidget):
         self.addTab(widget, widget.windowIcon(), widget.windowTitle())
 
@@ -40,7 +67,10 @@ class GroupWidget(QTabWidget):
             widget.load()
 
 
+################################################################################
 class TranslationSettingsWidget(BaseWidget):
+    """Allow to choose a language for the interface"""
+
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Translation"))
@@ -55,10 +85,10 @@ class TranslationSettingsWidget(BaseWidget):
     def save(self):
         """Switch qApp translator with the selected one and save it into config
 
+        .. note:: settings are stored in "ui" group
         .. todo:: Handle the propagation the LanguageChange event
             https://doc.qt.io/Qt-5/qcoreapplication.html#installTranslator
             https://wiki.qt.io/How_to_create_a_multi_language_application
-
         """
 
         # Remove the old translator
@@ -91,12 +121,13 @@ class TranslationSettingsWidget(BaseWidget):
 
 
 class ProxySettingsWidget(BaseWidget):
+    """Allow to configure proxy settings for widgets that require internet connection"""
 
     PROXY_TYPES = {
-    "No Proxy" : QNetworkProxy.NoProxy, 
-    "Default" : QNetworkProxy.DefaultProxy,
-    "Sock5": QNetworkProxy.Socks5Proxy,
-    "Http": QNetworkProxy.HttpProxy
+        "No Proxy": QNetworkProxy.NoProxy,
+        "Default": QNetworkProxy.DefaultProxy,
+        "Sock5": QNetworkProxy.Socks5Proxy,
+        "Http": QNetworkProxy.HttpProxy,
     }
 
     def __init__(self):
@@ -108,15 +139,15 @@ class ProxySettingsWidget(BaseWidget):
         self.host_edit = QLineEdit()
         self.port_edit = QSpinBox()
         self.user_edit = QLineEdit()
-        self.pass_edit = QLineEdit() 
+        self.pass_edit = QLineEdit()
 
-        # Load proxy type 
+        # Load proxy type
         for key in self.PROXY_TYPES:
             self.combo_box.addItem(key, self.PROXY_TYPES[key])
 
-        # edit restriction 
+        # edit restriction
         self.pass_edit.setEchoMode(QLineEdit.PasswordEchoOnEdit)
-            
+
         f_layout = QFormLayout()
         f_layout.addRow("Type", self.combo_box)
         f_layout.addRow("Proxy host", self.host_edit)
@@ -126,7 +157,8 @@ class ProxySettingsWidget(BaseWidget):
 
         self.setLayout(f_layout)
 
-    def save(self):       
+    def save(self):
+        """Save settings under "proxy" group"""
         settings = QSettings()
         settings.beginGroup("proxy")
         settings.setValue("type", self.combo_box.currentIndex())
@@ -137,6 +169,7 @@ class ProxySettingsWidget(BaseWidget):
         settings.endGroup()
 
     def load(self):
+        """Load "proxy" group settings"""
         settings = QSettings()
         settings.beginGroup("proxy")
         self.combo_box.setCurrentIndex(int(settings.value("type", 0)))
@@ -187,6 +220,12 @@ class DatabaseSettingsWidget(BaseWidget):
 
 
 class VariantSettingsWidget(BaseWidget):
+    """Allow to add personal templates to search a variant in a third-party database
+
+    .. note:: These templates are used in the right click context menu displayed
+        on InfoVariantWidget and ViewQueryWidget.
+    """
+
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Variant"))
@@ -219,8 +258,10 @@ class VariantSettingsWidget(BaseWidget):
         self.remove_button.clicked.connect(self.remove_item)
 
         # Load built-in databases first
-        [self.add_list_widget_item(*db_name_url)
-         for db_name_url in cm.WEBSITES_URLS.items()]
+        [
+            self.add_list_widget_item(*db_name_url)
+            for db_name_url in cm.WEBSITES_URLS.items()
+        ]
 
     def save(self):
         # TODO : save links from settings
@@ -311,6 +352,12 @@ class VariantSettingsWidget(BaseWidget):
 
 
 class SettingsWidget(QDialog):
+    """Main widget for settings window
+
+    Subwidgets are intantiated on panels; a GroupWidget groups similar widgets
+    in tabs.
+    """
+
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Cutevariant - Settings"))
@@ -335,6 +382,8 @@ class SettingsWidget(QDialog):
         v_layout.addWidget(self.button_box)
         self.setLayout(v_layout)
 
+        # Instantiate subwidgets on panels
+        # Similar widgets for general configuration
         general_settings = GroupWidget()
         general_settings.setWindowTitle(self.tr("General"))
         general_settings.setWindowIcon(FIcon(0xF493))
@@ -343,6 +392,7 @@ class SettingsWidget(QDialog):
         general_settings.add_settings_widget(ProxySettingsWidget())
         general_settings.add_settings_widget(StyleSettingsWidget())
 
+        # Specialized widgets on panels
         self.addPanel(general_settings)
         self.addPanel(PluginsSettingsWidget())
         self.addPanel(VariantSettingsWidget())
@@ -354,21 +404,27 @@ class SettingsWidget(QDialog):
         self.button_box.button(QDialogButtonBox.Reset).clicked.connect(self.load_all)
         self.button_box.button(QDialogButtonBox.Cancel).clicked.connect(self.close)
 
+        # Connection events
         self.list_widget.currentRowChanged.connect(self.stack_widget.setCurrentIndex)
 
+        # Load settings
         self.load_all()
 
     def addPanel(self, widget: BaseWidget):
+        """Add a widget on the widow via a QStackedWidget; keep a reference on it
+        for later connection/activation"""
+        # Used to load/save all widgets on demand
         self.widgets.append(widget)
+        # Used for ui positionning and connection events
         self.list_widget.addItem(
             QListWidgetItem(widget.windowIcon(), widget.windowTitle())
         )
         self.stack_widget.addWidget(widget)
 
     def save_all(self):
-        for widget in self.widgets:
-            widget.save()
+        """Call save() method of all widgets"""
+        [widget.save() for widget in self.widgets]
 
     def load_all(self):
-        for widget in self.widgets:
-            widget.load()
+        """Call load() method of all widgets"""
+        [widget.load() for widget in self.widgets]
