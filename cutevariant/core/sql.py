@@ -154,6 +154,8 @@ def create_selection_from_sql(conn, query, name, count=None, by="site"):
     :param name : name of the selection
     :param query: sql variant query
     :param by: can be : 'site' for (chr,pos)  or 'variant' for (chr,pos,ref,alt)
+    :return: The id of the new selection. None in case of error.
+    :rtype: <int> or None
     """
     assert by in ("site", "variant")
 
@@ -192,6 +194,9 @@ def create_selection_from_sql(conn, query, name, count=None, by="site"):
 
     cursor.execute(q)
     conn.commit()
+    if cursor.rowcount:
+        return cursor.lastrowid
+    return None
 
 
 def get_selections(conn):
@@ -200,7 +205,7 @@ def get_selections(conn):
     :return: Generator of dictionnaries with as many keys as there are columns
         in the table.
         Dictionnary of all attributes of the table.
-            :Example: {"name": ..., "count": ..., "query": ...}
+            :Example: {"id": ..., "name": ..., "count": ..., "query": ...}
     :rtype: <generator <dict>>
     """
     conn.row_factory = sqlite3.Row
@@ -221,10 +226,15 @@ def delete_selection(conn, selection_id: int):
 
 
 def edit_selection(conn, selection: dict):
-    """Update the given selection"""
+    """Update the name and count of a selection with the given id
+
+    :return: Number of rows deleted
+    :rtype: <int>
+    """
     cursor = conn.cursor()
     conn.execute("UPDATE selections SET name=:name, count=:count WHERE id = :id", selection)
     conn.commit()
+    return cursor.rowcount
 
 
 ## ================ Operations on sets of variants =============================
