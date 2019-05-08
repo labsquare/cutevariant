@@ -1,10 +1,11 @@
+"""Plugin to show all characteristics of a selected variant"""
 # Standard imports
 from functools import partial
 
 # Qt imports
-from PySide2.QtCore import *
+from PySide2.QtCore import Qt, Slot, QPoint, QSettings, QUrl
 from PySide2.QtWidgets import *
-from PySide2.QtGui import *
+from PySide2.QtGui import QDesktopServices
 
 # Custom imports
 from .plugin import VariantPluginWidget
@@ -16,22 +17,28 @@ LOGGER = logger()
 
 
 class InfoVariantWidget(VariantPluginWidget):
+    """Plugin to show all characteristics of a selected variant"""
+
     def __init__(self):
         super().__init__()
 
         self.setWindowTitle(self.tr("Info variants"))
 
+        # Set columns of TreeWidget
         self.view = QTreeWidget()
         self.view.setColumnCount(2)
+        # Set title of columns
         self.view.setHeaderLabels([self.tr("Attributes"), self.tr("Values")])
-        self._variant = dict()
 
         v_layout = QVBoxLayout()
         v_layout.setContentsMargins(0, 0, 0, 0)
         v_layout.addWidget(self.view)
         self.setLayout(v_layout)
 
+        # Create menu
         self.menu_setup()
+
+        self._variant = dict()
 
     def menu_setup(self):
         """Setup popup menu"""
@@ -51,15 +58,12 @@ class InfoVariantWidget(VariantPluginWidget):
 
             self.menu.addAction(
                 self.tr("Search the variant on {}").format(site),
-                partial(self.open_url, url_template)
+                partial(self.open_url, url_template),
             )
 
         self.view.setContextMenuPolicy(Qt.CustomContextMenu)
         self.menu = QMenu(self)
-        self.menu.addAction(
-            self.tr("Copy variant to clipboard"),
-            self.to_clipboard
-        )
+        self.menu.addAction(self.tr("Copy variant to clipboard"), self.to_clipboard)
 
         self.menu.addSeparator()
 
@@ -103,14 +107,14 @@ class InfoVariantWidget(VariantPluginWidget):
         self.populate()
 
     def open_url(self, url_template):
-        """Search the current variant on Varsome
+        """Open the url based on the current variant and the given url template
 
         .. note:: URL ex: https://varsome.com/variant/hg19/chr17-7578406-C-A
         """
 
         url = url_template.format(**self._variant)
 
-        LOGGER.info("InfoVariantWidget:search_on_varsome:: Open <%s>" % url)
+        LOGGER.info("InfoVariantWidget:open_url:: Open <%s>" % url)
         QDesktopServices.openUrl(QUrl(url))
 
     @Slot()
