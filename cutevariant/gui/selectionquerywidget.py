@@ -1,18 +1,24 @@
+"""Plugin to view/edit/remove/do set operations on selections in the database
+from the GUI.
+
+SelectionQueryWidget class is seen by the user and uses SelectionQueryModel class
+as a model that handles records from the database.
+"""
+# Qt imports
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 from PySide2.QtGui import *
 
-
+# Custom imports
 from .plugin import QueryPluginWidget
 from cutevariant.core import Query
 from cutevariant.core import sql
 from cutevariant.gui.ficon import FIcon
 
 
-#=================== SELECTION MODEL ===========================
+# =================== SELECTION MODEL ===========================
 class SelectionQueryModel(QAbstractTableModel):
-    """
-    This model store all selection from sqlite table selection .
+    """Model to store all selections from SQLite `selections` table.
 
     Usage:
 
@@ -21,26 +27,32 @@ class SelectionQueryModel(QAbstractTableModel):
         model.load()
 
     """
+
     def __init__(self):
         super().__init__()
         self._query = None
         self.records = []
 
-    def rowCount(self, parent = QModelIndex()):
-        """ overloaded from QAbstractTableModel """
+    def rowCount(self, parent=QModelIndex()):
+        """Overrided from QAbstractTableModel"""
         return len(self.records)
 
-    def columnCount(self, parent = QModelIndex()):
-        """ overloaded from QAbstractTableModel """
-        return 2 # value and count
+    def columnCount(self, parent=QModelIndex()):
+        """Overrided from QAbstractTableModel"""
+        return 2  #  value and count
 
+    def data(self, index: QModelIndex(), role=Qt.DisplayRole):
+        """Return the data stored under the given role for the item referred
+        to by the index (row, col)
 
-    def data(self, index: QModelIndex(), role = Qt.DisplayRole):
-        """ 
-        overloaded from QAbstractTableModel 
+        Overrided from QAbstractTableModel
 
-        return data according index (row, column)
-
+        :param index:
+        :param role:
+        :type index:
+        :type role:
+        :return: None if no valid index
+        :rtype:
         """
 
         if not index.isValid():
@@ -55,15 +67,12 @@ class SelectionQueryModel(QAbstractTableModel):
 
         return None
 
-    def headerData(self, section, orientation, role = Qt.DisplayRole):
+    def headerData(self, section, orientation, role=Qt.DisplayRole):
+        """Return the data for the given role and section in the header with
+        the specified orientation
+
+        Overrided from QAbstractTableModel
         """
-         overloaded from QAbstractTableModel
-
-         return data to display in the view's header
-
-
-         """
-
         if not self.records:
             return
 
@@ -74,20 +83,18 @@ class SelectionQueryModel(QAbstractTableModel):
                 return "count"
 
         if orientation == Qt.Vertical and role == Qt.DisplayRole and section > 0:
-            return self.records[section].get("id",None) # For debug purpose . displayed in vertical header
-
+            return self.records[section].get(
+                "id", None
+            )  # For debug purpose . displayed in vertical header
 
     def record(self, index: QModelIndex()):
-        """
-        Return Selection records by index
-        """
+        """Return Selection records by index"""
         if not index.isValid():
             return None
         return self.records[index.row()]
 
     def find_record(self, name: str):
-        """
-        Find a record by name
+        """Find a record by name
         @see: view.selectionModel()
         """
         for idx, record in enumerate(self.records):
@@ -96,17 +103,27 @@ class SelectionQueryModel(QAbstractTableModel):
         return None
 
     def remove_record(self, index: QModelIndex()):
-        """Delete the selection with the given id in the database"""
-        self.beginRemoveRows(QModelIndex(), index.row(), index.row())
-        record = self.records.pop(index.row())
-        # Delete in database
-        if (sql.delete_selection(self.query.conn, record["id"])):
-            # Delete in model; triggers currentRowChanged signal
-            self.endRemoveRows()
+        """Delete the selection with the given id in the database
 
-    def edit_record(self, index, record : dict):
-        sql.edit_selection(self.query.conn, record)
-        self.dataChanged.emit(index,index)
+        :return: True if the deletion has been made, False otherwise.
+        :rtype: <boolean>
+        """
+        # Get selected record
+        record = self.record(index)
+        # Delete in database
+        if record["id"] and sql.delete_selection(self.query.conn, record["id"]):
+            # Delete in model; triggers currentRowChanged signal
+            self.beginRemoveRows(QModelIndex(), index.row(), index.row())
+            # Delete in records
+            self.records.pop(index.row())
+            self.endRemoveRows()
+            return True
+        return False
+
+    def edit_record(self, index, record: dict):
+        """Edit the given selection in the database and emit `dataChanged` signal"""
+        if sql.edit_selection(self.query.conn, record):
+            self.dataChanged.emit(index, index)
 
     @property
     def query(self):
@@ -117,30 +134,36 @@ class SelectionQueryModel(QAbstractTableModel):
         self._query = query
 
     def load(self):
-        """
-        Load selections into the model
-        """
+        """Load all selections into the model"""
         self.beginResetModel()
         self.records.clear()
-        self.records.append({"name":"all", "count": "   "}) # TODO => Must be inside the selection table
+        # Add default and inamovible selection
+        # TODO => Must be inside the selection table
+        # For now, this record has a None "id" attribute
+        # => this is detected in remove_record to avoid errors
+        self.records.append({"id": None, "name": "all", "count": "   "})
+        # Add all selections from the database
+        # Dictionnary of all attributes of the table.
+        #    :Example: {"name": ..., "count": ..., "query": ...}
         self.records += list(sql.get_selections(self._query.conn))
         self.endResetModel()
 
     def save_current_query(self, name):
-        """
-        Save current query as a new selection and reload the model
-        """
-        self.query.create_selection(name)
-        self.load()
+        """Save current query as a new selection and reload the model"""
+        # TODO: just get the id of the created selection and add a new record
+        # instead of reloading all the model...
+        if self.query.create_selection(name):
+            self.load()
 
-#=================== SELECTION VIEW ===========================
+
+# =================== SELECTION VIEW ===========================
+
 
 class SelectionQueryWidget(QueryPluginWidget):
-    """
-    This widget display the list of avaible selection.
+    """Widget displaying the list of avaible selections.
     User can select one of them to update Query::selection
-
     """
+
     def __init__(self):
         super().__init__()
 
@@ -152,7 +175,7 @@ class SelectionQueryWidget(QueryPluginWidget):
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setSelectionMode(QAbstractItemView.SingleSelection)
         self.view.horizontalHeader().hide()
-        #self.view.horizontalHeader().setStretchLastSection(True)
+        # self.view.horizontalHeader().setStretchLastSection(True)
 
         self.view.verticalHeader().show()
         self.view.verticalHeader().setDefaultSectionSize(26)
@@ -166,33 +189,46 @@ class SelectionQueryWidget(QueryPluginWidget):
         self.setLayout(layout)
 
         # call on_current_row_changed when item selection changed
-        self.view.selectionModel().currentRowChanged.connect(self.on_current_row_changed)
+        self.view.selectionModel().currentRowChanged.connect(
+            self.on_current_row_changed
+        )
 
     def menu_setup(self):
         """Setup popup menu"""
         menu = QMenu()
 
-        menu.addAction(FIcon(0xf8ff),"Edit")
+        menu.addAction(FIcon(0xF8FF), self.tr("Edit"), self.edit_selection)
 
-        menu.addMenu(self._create_set_operation_menu(FIcon(0xf55d),"intersect"))
-        menu.addMenu(self._create_set_operation_menu(FIcon(0xf55b),"difference"))
-        menu.addMenu(self._create_set_operation_menu(FIcon(0xf564),"union"))
+        # Set operations on selections: create mapping and actions
+        set_icons_ids = (0xF55D, 0xF55B, 0xF564)
+        set_texts = (self.tr("intersect"), self.tr("difference"), self.tr("union"))
+        set_internal_ids = ("intersect", "difference", "union")
+        # Map the operations with an internal id not visible from the user
+        # This id is used by _create_set_operation_menu and _make_set_operation
+        # Keys: user text; values: internal ids
+        self.set_operations_mapping = dict(zip(set_texts, set_internal_ids))
+
+        # Create actions
+        [
+            menu.addMenu(self._create_set_operation_menu(FIcon(icon_id), text))
+            for icon_id, text in zip(set_icons_ids, set_texts)
+        ]
 
         menu.addSeparator()
-        menu.addAction(
-            FIcon(0xf413), self.tr("Remove"),
-            self.remove_selection
-        )
+        menu.addAction(FIcon(0xF413), self.tr("Remove"), self.remove_selection)
         return menu
 
     def load(self):
         """Load selection model and update the view"""
+        # Block signals during the insertions
         self.view.selectionModel().blockSignals(True)
         self.model.load()
-        self.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch )
-        self.view.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents )
+        self.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+        self.view.horizontalHeader().setSectionResizeMode(
+            1, QHeaderView.ResizeToContents
+        )
 
-        # Select record according query.selection
+        # Select record according to query.selection
         row = self.model.find_record(self.query.selection)
         if row is not None:
             self.view.selectRow(row)
@@ -200,11 +236,11 @@ class SelectionQueryWidget(QueryPluginWidget):
         self.view.selectionModel().blockSignals(False)
 
     def on_change_query(self):
-        """Method override from AbstractQueryWidget"""
+        """Overrided from AbstractQueryWidget"""
         self.load()
 
     def on_init_query(self):
-        """Method override from AbstractQueryWidget"""
+        """Overrided from AbstractQueryWidget"""
         self.model.query = self.query
 
     def on_current_row_changed(self, index):
@@ -218,28 +254,38 @@ class SelectionQueryWidget(QueryPluginWidget):
     def save_current_query(self):
         """Open a dialog box to save the current query into a selection"""
         name, success = QInputDialog.getText(
-            self, "type a name for selection", "Selection name:", QLineEdit.Normal
+            self,
+            self.tr("Type a name for selection"),
+            self.tr("Selection name:"),
+            QLineEdit.Normal,
         )
         if success:
             self.model.save_current_query(name)
 
     def contextMenuEvent(self, event: QContextMenuEvent):
         """Overrided: Show popup menu at the cursor position"""
+        if not self.model.records:
+            return
         menu = self.menu_setup()
         menu.exec_(event.globalPos())
 
-    def _create_set_operation_menu(self,icon, menu_name):
-        """Dinamically add submenu with the given name to popup menu"""
+    def _create_set_operation_menu(self, icon, menu_name):
+        """Dynamically add submenu with the given name to popup menu"""
         menu = QMenu(menu_name)
         menu.setIcon(icon)
 
-        current_index = self.view.currentIndex()
+        # Get all the names of selections except the current one
+        current_selection_name = self.model.record(self.view.currentIndex())["name"]
+        records_names = set(record["name"] for record in self.model.records)
+        records_names.remove(current_selection_name)
 
-        for selection in sql.get_selections(self.query.conn):
-            if self.model.record(current_index)["name"] != selection["name"]:
-                action = menu.addAction(selection["name"])
-                action.setData(menu_name)
-                action.triggered.connect(self._make_set_operation)
+        # Create an action in the menu for all the remaining elements
+        for record_name in records_names:
+            action = menu.addAction(record_name)
+            # This hidden data is used by _make_set_operation() to detect
+            # which operation to do
+            action.setData(self.set_operations_mapping[menu_name])
+            action.triggered.connect(self._make_set_operation)
 
         return menu
 
@@ -252,7 +298,7 @@ class SelectionQueryWidget(QueryPluginWidget):
 
         ## THIS CODE IS UGLY... FOR TESTING PURPOSE ...
 
-        menu_name = action.data()
+        set_internal_id = action.data()
 
         name_1 = self.model.record(self.view.selectionModel().currentIndex())["name"]
         name_2 = action.text()
@@ -262,42 +308,44 @@ class SelectionQueryWidget(QueryPluginWidget):
         selection_1 = sql.Selection.from_name(name_1)
         selection_2 = sql.Selection.from_name(name_2)
 
-        name_3 = QInputDialog.getText(self,"Name of selection", "name:")
+        name_3 = QInputDialog.getText(self, "Name of selection", "name:")
 
-        if name_3[1] == True and menu_name:
+        if name_3[1] == True and set_internal_id:
 
-            if menu_name == "union":
+            if set_internal_id == "union":
                 print("UNION")
                 selection_3 = selection_1 + selection_2
-            if menu_name == "difference":
+            if set_internal_id == "difference":
                 print("DIFF")
                 selection_3 = selection_1 - selection_2
-            if menu_name == "intersect":
+            if set_internal_id == "intersect":
                 print("INTERSECT")
                 selection_3 = selection_1 & selection_2
-
 
             selection_3.save(name_3[0])
             self.model.load()
 
-        #seection_3.save()
+        # seection_3.save()
 
     def remove_selection(self):
-
+        """Remove a selection from the database"""
         msg = QMessageBox()
-        msg.setText(self.tr("Are you sure you want to remove this selection ? "))
-        msg.setStandardButtons(QMessageBox.Yes|QMessageBox.No)
+        msg.setText(self.tr("Are you sure you want to remove this selection?"))
+        msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
 
         if msg.exec_() == QMessageBox.Yes:
             for index in self.view.selectionModel().selectedRows():
                 self.model.remove_record(index)
 
     def edit_selection(self):
-
+        """Update a selection in the database
+        .. note:: We do not reload all the UI for this
+        """
         current_index = self.view.selectionModel().currentIndex()
-        new_name = QInputDialog.getText(self,"get new name", "name")
+        new_name = QInputDialog.getText(
+            self, self.tr("Type a new name"), self.tr("Selection name:")
+        )
         if new_name[1] and current_index:
             old_record = self.model.record(current_index)
             old_record["name"] = new_name[0]
-            print("old record", old_record)
-            self.model.edit_record(current_index,old_record)
+            self.model.edit_record(current_index, old_record)
