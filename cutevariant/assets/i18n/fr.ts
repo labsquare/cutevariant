@@ -25,7 +25,7 @@ Ce programme est distribué selon les termes de la Licence Publique Générale G
 <context>
     <name>BrowseFileEdit</name>
     <message>
-        <location filename="cutevariant/gui/widgets.py" line="10"/>
+        <location filename="cutevariant/gui/widgets.py" line="9"/>
         <source>Browse</source>
         <translation>Parcourir</translation>
     </message>
@@ -33,7 +33,7 @@ Ce programme est distribué selon les termes de la Licence Publique Générale G
 <context>
     <name>ColumnQueryWidget</name>
     <message>
-        <location filename="cutevariant/gui/columnquerywidget.py" line="94"/>
+        <location filename="cutevariant/gui/columnquerywidget.py" line="96"/>
         <source>Columns</source>
         <translation>Colonnes</translation>
     </message>
@@ -41,7 +41,7 @@ Ce programme est distribué selon les termes de la Licence Publique Générale G
 <context>
     <name>DatabaseSettingsWidget</name>
     <message>
-        <location filename="cutevariant/gui/settings.py" line="179"/>
+        <location filename="cutevariant/gui/settings.py" line="215"/>
         <source>database</source>
         <translation>Base de données</translation>
     </message>
@@ -186,27 +186,27 @@ Ce programme est distribué selon les termes de la Licence Publique Générale G
 <context>
     <name>InfoVariantWidget</name>
     <message>
-        <location filename="cutevariant/gui/infovariantwidget.py" line="22"/>
+        <location filename="cutevariant/gui/infovariantwidget.py" line="25"/>
         <source>Info variants</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/infovariantwidget.py" line="26"/>
+        <location filename="cutevariant/gui/infovariantwidget.py" line="31"/>
         <source>Attributes</source>
         <translation>Attributs</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/infovariantwidget.py" line="26"/>
+        <location filename="cutevariant/gui/infovariantwidget.py" line="31"/>
         <source>Values</source>
         <translation>Valeurs</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/infovariantwidget.py" line="52"/>
+        <location filename="cutevariant/gui/infovariantwidget.py" line="59"/>
         <source>Search the variant on {}</source>
         <translation>Chercher le variant sur {}</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/infovariantwidget.py" line="59"/>
+        <location filename="cutevariant/gui/infovariantwidget.py" line="66"/>
         <source>Copy variant to clipboard</source>
         <translation>Copier le variant dans le presse-papier</translation>
     </message>
@@ -256,7 +256,7 @@ Ce programme est distribué selon les termes de la Licence Publique Générale G
     <message>
         <location filename="cutevariant/gui/mainwindow.py" line="354"/>
         <source>save query</source>
-        <translation>Enregistrer la requête</translation>
+        <translation type="obsolete">Enregistrer la requête</translation>
     </message>
     <message>
         <location filename="cutevariant/gui/mainwindow.py" line="405"/>
@@ -303,11 +303,16 @@ Ce programme est distribué selon les termes de la Licence Publique Générale G
         <source>Set operation</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <location filename="cutevariant/gui/mainwindow.py" line="354"/>
+        <source>Save query</source>
+        <translation>Enregistrer la requête</translation>
+    </message>
 </context>
 <context>
     <name>PluginsSettingsWidget</name>
     <message>
-        <location filename="cutevariant/gui/settings.py" line="166"/>
+        <location filename="cutevariant/gui/settings.py" line="202"/>
         <source>Plugins</source>
         <translation>Plugins</translation>
     </message>
@@ -356,7 +361,7 @@ Ce programme est distribué selon les termes de la Licence Publique Générale G
 <context>
     <name>ProxySettingsWidget</name>
     <message>
-        <location filename="cutevariant/gui/settings.py" line="104"/>
+        <location filename="cutevariant/gui/settings.py" line="138"/>
         <source>Proxy</source>
         <translation>Proxy</translation>
     </message>
@@ -364,30 +369,70 @@ Ce programme est distribué selon les termes de la Licence Publique Générale G
 <context>
     <name>SelectionQueryWidget</name>
     <message>
-        <location filename="cutevariant/gui/selectionquerywidget.py" line="147"/>
+        <location filename="cutevariant/gui/selectionquerywidget.py" line="170"/>
         <source>Selections</source>
         <translation>Sélections</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/selectionquerywidget.py" line="182"/>
+        <location filename="cutevariant/gui/selectionquerywidget.py" line="218"/>
         <source>Remove</source>
         <translation>Supprimer</translation>
     </message>
     <message>
         <location filename="cutevariant/gui/selectionquerywidget.py" line="288"/>
         <source>Are you sure you want to remove this selection ? </source>
+        <translation type="obsolete">Êtes-vous sûr de vouloir supprimer cette sélection ?</translation>
+    </message>
+    <message>
+        <location filename="cutevariant/gui/selectionquerywidget.py" line="200"/>
+        <source>Edit</source>
+        <translation>Éditer</translation>
+    </message>
+    <message>
+        <location filename="cutevariant/gui/selectionquerywidget.py" line="204"/>
+        <source>intersect</source>
+        <translation>Intersection</translation>
+    </message>
+    <message>
+        <location filename="cutevariant/gui/selectionquerywidget.py" line="204"/>
+        <source>difference</source>
+        <translation>Différence</translation>
+    </message>
+    <message>
+        <location filename="cutevariant/gui/selectionquerywidget.py" line="204"/>
+        <source>union</source>
+        <translation>Union</translation>
+    </message>
+    <message>
+        <location filename="cutevariant/gui/selectionquerywidget.py" line="256"/>
+        <source>Type a name for selection</source>
+        <translation>Entrez le nom de la sélection</translation>
+    </message>
+    <message>
+        <location filename="cutevariant/gui/selectionquerywidget.py" line="345"/>
+        <source>Selection name:</source>
+        <translation>Nom :</translation>
+    </message>
+    <message>
+        <location filename="cutevariant/gui/selectionquerywidget.py" line="333"/>
+        <source>Are you sure you want to remove this selection?</source>
         <translation>Êtes-vous sûr de vouloir supprimer cette sélection ?</translation>
+    </message>
+    <message>
+        <location filename="cutevariant/gui/selectionquerywidget.py" line="345"/>
+        <source>Type a new name</source>
+        <translation>Entrez un nouveau nom</translation>
     </message>
 </context>
 <context>
     <name>SettingsWidget</name>
     <message>
-        <location filename="cutevariant/gui/settings.py" line="316"/>
+        <location filename="cutevariant/gui/settings.py" line="366"/>
         <source>Cutevariant - Settings</source>
         <translation>Cutevariant - Settings</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/settings.py" line="339"/>
+        <location filename="cutevariant/gui/settings.py" line="391"/>
         <source>General</source>
         <translation>Général</translation>
     </message>
@@ -395,7 +440,7 @@ Ce programme est distribué selon les termes de la Licence Publique Générale G
 <context>
     <name>StyleSettingsWidget</name>
     <message>
-        <location filename="cutevariant/gui/settings.py" line="153"/>
+        <location filename="cutevariant/gui/settings.py" line="189"/>
         <source>Styles</source>
         <translation>Styles</translation>
     </message>
@@ -403,12 +448,12 @@ Ce programme est distribué selon les termes de la Licence Publique Générale G
 <context>
     <name>TranslationSettingsWidget</name>
     <message>
-        <location filename="cutevariant/gui/settings.py" line="46"/>
+        <location filename="cutevariant/gui/settings.py" line="79"/>
         <source>Translation</source>
         <translation>Langues</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/settings.py" line="50"/>
+        <location filename="cutevariant/gui/settings.py" line="83"/>
         <source>&amp;Choose a locale:</source>
         <translation>&amp;Choisissez une langue:</translation>
     </message>
@@ -416,32 +461,32 @@ Ce programme est distribué selon les termes de la Licence Publique Générale G
 <context>
     <name>VariantSettingsWidget</name>
     <message>
-        <location filename="cutevariant/gui/settings.py" line="192"/>
+        <location filename="cutevariant/gui/settings.py" line="234"/>
         <source>Variant</source>
         <translation>Variant</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/settings.py" line="196"/>
+        <location filename="cutevariant/gui/settings.py" line="238"/>
         <source>Add</source>
         <translation>Ajouter</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/settings.py" line="197"/>
+        <location filename="cutevariant/gui/settings.py" line="239"/>
         <source>Edit</source>
         <translation>Éditer</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/settings.py" line="198"/>
+        <location filename="cutevariant/gui/settings.py" line="240"/>
         <source>Remove</source>
         <translation>Supprimer</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/settings.py" line="262"/>
+        <location filename="cutevariant/gui/settings.py" line="306"/>
         <source>Name</source>
         <translation>Nom</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/settings.py" line="263"/>
+        <location filename="cutevariant/gui/settings.py" line="307"/>
         <source>Url</source>
         <translation>Url</translation>
     </message>
