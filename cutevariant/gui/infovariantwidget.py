@@ -102,7 +102,8 @@ class InfoVariantWidget(VariantPluginWidget):
             self.view.addTopLevelItem(item)
 
     def set_variant(self, variant: dict):
-        """Register and show the given variant"""
+        """Register and show the given variant
+        Called when a user clicks on a vriant on the ViewQueryWidget"""
         self._variant = variant
         self.populate()
 
