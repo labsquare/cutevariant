@@ -345,7 +345,7 @@ class Query:
         >> print(query2.count()) # 10 .. same as before
 
         """
-        sql.create_selection_from_sql(self.conn, self.sql(), name=name, by="site")
+        return sql.create_selection_from_sql(self.conn, self.sql(), name=name, by="site")
 
         ##-----------------------------------------------------------------------------------------------------------
 
