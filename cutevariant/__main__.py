@@ -21,14 +21,19 @@
 # Standard imports
 import sys
 import os
-from PySide2.QtWidgets import *
-from PySide2.QtCore import *
-from PySide2.QtGui import *
+from PySide2.QtCore import (
+    QCoreApplication,
+    QSettings,
+    QTranslator,
+    QCommandLineParser,
+    QCommandLineOption,
+)
+from PySide2.QtWidgets import QApplication
 
 # Custom imports
 from cutevariant.gui import MainWindow, setFontPath
 import cutevariant.commons as cm
-from cutevariant.gui.settings import *
+from cutevariant import __version__
 
 
 def main():
@@ -41,8 +46,12 @@ def main():
     # The default scope is QSettings::UserScope
     QCoreApplication.setOrganizationName("labsquare")
     QCoreApplication.setApplicationName("cutevariant")
+    QCoreApplication.setApplicationVersion(__version__)
 
     app = QApplication(sys.argv)
+    # Process command line arguments
+    process_arguments(app)
+
     # Set icons set
     setFontPath(os.path.join(cm.DIR_FONTS, "materialdesignicons-webfont.ttf"))
 
@@ -50,6 +59,7 @@ def main():
     load_translations(app)
 
     # debug settings
+    # from cutevariant.gui.settings import *
     # w = SettingsWidget()
     # w.show()
 
@@ -57,7 +67,6 @@ def main():
     w = MainWindow()
     w.show()
     app.exec_()
-
 
 
 def load_translations(app):
@@ -77,6 +86,41 @@ def load_translations(app):
     else:
         # Init setting
         app_settings.setValue("ui/locale", "en")
+
+
+def process_arguments(app):
+    """Arguments parser"""
+    parser = QCommandLineParser()
+    # -h, --help, -? (on windows)
+    parser.addHelpOption()
+    # --version
+    show_version = QCommandLineOption(
+        ["version"],
+        QCoreApplication.translate(
+            "main", "display the version of Cutevariant and exit."
+        ),
+    )
+    parser.addOption(show_version)
+    # -v, --verbose
+    modify_verbosity = QCommandLineOption(
+        ["v", "verbose"],
+        QCoreApplication.translate("main", "modify verbosity."),
+        "notset|debug|info|error",  # options available (value name)
+        "notset",  # default value
+    )
+    parser.addOption(modify_verbosity)
+
+    # Process the actual command line arguments given by the user
+    parser.process(app)
+    # args = parser.positionalArguments()
+
+    if parser.isSet(show_version):
+        print("Cutevariant " + __version__)
+        exit()
+
+    if parser.isSet(modify_verbosity):
+        # Set log level
+        cm.log_level(parser.value(modify_verbosity).upper())
 
 
 if __name__ == "__main__":
