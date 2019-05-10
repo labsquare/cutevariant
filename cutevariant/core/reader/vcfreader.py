@@ -275,4 +275,4 @@ class VcfReader(AbstractReader):
         return len("".join(reader._column_headers)) + len("".join(reader._header_lines))
 
     def __repr__(self):
-        return f"VCF Parser using {type(self.annotation_parser).__name__}"
+        return f"VCF Reader using {type(self.annotation_parser).__name__}"

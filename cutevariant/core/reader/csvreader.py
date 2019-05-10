@@ -272,3 +272,6 @@ class CsvReader(AbstractReader):
         chr, positions = location.split(":")
         pos = positions.split("-")[0]
         return chr, pos
+
+    def __repr__(self):
+        return f"VEP Reader using {type(self.annotation_parser).__name__}"
