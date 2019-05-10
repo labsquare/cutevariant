@@ -201,7 +201,7 @@ class SelectionQueryWidget(QueryPluginWidget):
 
         # Set operations on selections: create mapping and actions
         set_icons_ids = (0xF55D, 0xF55B, 0xF564)
-        set_texts = (self.tr("intersect"), self.tr("difference"), self.tr("union"))
+        set_texts = (self.tr("Intersect"), self.tr("Difference"), self.tr("Union"))
         set_internal_ids = ("intersect", "difference", "union")
         # Map the operations with an internal id not visible from the user
         # This id is used by _create_set_operation_menu and _make_set_operation
