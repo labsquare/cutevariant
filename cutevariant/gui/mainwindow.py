@@ -83,14 +83,13 @@ class MainWindow(QMainWindow):
         self.add_query_plugin(self.column_widget)
         self.add_query_plugin(self.filter_widget)
         self.add_query_plugin(self.selection_widget)
+        # Testing
+        self.add_query_plugin(ChartQueryWidget())
+        # self.add_query_plugin(WebGLQueryWidget())
+        # self.add_query_plugin(HpoQueryWidget())
 
         # Setup toolbar (requires selection_widget and some actions of menubar)
         self.setup_toolbar()
-
-        # Testing
-        # self.add_query_plugin(ChartQueryWidget())
-        # self.add_query_plugin(WebGLQueryWidget())
-        # self.add_query_plugin(HpoQueryWidget())
 
         # Add mandatory variant plugin (depends on QTabWidget and menubar)
         self.info_widget = InfoVariantWidget()
