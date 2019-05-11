@@ -227,13 +227,12 @@ class QueryModel(QAbstractItemModel):
         """
         self._query.group_by = ("chr", "pos")
         self.beginResetModel()
-        self.variants = []
-        self.total = self.query.count()
+        # Set total of variants for pagination
+        self.total = self.query.variants_count()
 
-        for variant in self._query.rows(self.limit, self.page * self.limit):
-            self.variants.append(
-                [tuple(variant)]
-            )  #  Append a list because child can be append after
+        # Append a list because child can be append after
+        self.variants = \
+            [[tuple(variant)] for variant in self._query.items(self.limit, self.page * self.limit)]
 
         LOGGER.debug("QueryModel:load:: variants queried\n%s", self.variants)
         self.endResetModel()

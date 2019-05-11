@@ -1,5 +1,7 @@
 # Standard imports
 import re
+import sqlite3
+from functools import lru_cache
 
 # Custom imports
 from . import sql
@@ -223,48 +225,34 @@ class Query:
 
         ##-----------------------------------------------------------------------------------------------------------
 
-    def rows(self, limit=0, offset=0):
-        """ 
-        Execute SQL query and return variants as a list 
-
-        :param limit: SQL LIMIT for pagination 
-        :param offset: SQL OFFSET for pagination
-        :return: list of variants as a generator. Each variant is a list
-
-        :Example:
-
-        >> for row in query.rows():
-            print(row) # [324, "chr2","24234","A","T", ...]
-
-
-        ..seealso:: items()
-        
-        """
-        yield from self.conn.execute(self.sql(limit, offset))
-
-        ##-----------------------------------------------------------------------------------------------------------
     def items(self, limit=0, offset=0):
-        """ 
-        Execute SQL query and return variants as a dictionnary
+        """Execute SQL query and return variants as a list
 
-        :param limit: SQL LIMIT for pagination 
+        .. note:: Used:
+            - as dict of variants in chartquerywidget.py
+            - as tuples of variants in viewquerywidget.py
+
+        :param limit: SQL LIMIT for pagination
         :param offset: SQL OFFSET for pagination
-        :return: list of variants as a generator. Each variant is a dict
+        :return: Generator of variants as sqlite3.Row objects.
+            A Row instance serves as a highly optimized row_factory for
+            Connection objects. It tries to mimic a tuple in most of its features.
+
+            It supports mapping access by column name and index, iteration,
+            representation, equality testing and len().
+        :rtype: <generator <sqlite3.Row>>
 
         :Example:
 
-        >> for variant in query.items():
-            print(variant) # {"rowid":23423, "chr":"chr2","pos":4234,"ref":"A","alt","T",...]
+        >>> for row in query.items():
+        ...     print(tuple(row))
+        (324, "chr2", "24234", "A", "T", ...)
+        ...     print(dict(row))
+        {"rowid":23423, "chr":"chr2", "pos":4234, "ref":"A", "alt": "T", ...}
 
-        ..seealso:: rows()
-                 
         """
-        for value in self.conn.execute(self.sql(limit, offset)):
-            item = {}
-            for index, col in enumerate(["rowid"] + self.columns):
-                item[col] = value[index]
-            yield item
-
+        self.conn.row_factory = sqlite3.Row
+        yield from self.conn.execute(self.sql(limit, offset))
 
     def filter_to_sql(self, node: dict) -> str:
         """ 
@@ -349,16 +337,35 @@ class Query:
 
         ##-----------------------------------------------------------------------------------------------------------
 
-    def count(self)-> int:
-        """ 
-        return variant count from the current query 
+    @lru_cache(maxsize=128)
+    def _cached_variants_count_query(self, sql_query):
+        """Wrapped function with a memoizing callable that saves up to the
+        maxsize most recent calls.
+
+        .. note:: The LRU feature performs best when maxsize is a power-of-two.
+
+        .. note:: The COUNT() aggregation function is expensive on partially
+            indexed tables (because dynamically built) for large dataset
+            and it seems difficult to predict which fields will be requested
+            by the user.
         """
-        #  TODO : need to cache this method because it can take time to compute with large dataset
-        
-        print(self.sql())
+        LOGGER.error("Query:variants_count:: Query NOT cached")
         return self.conn.execute(
-            f"SELECT COUNT(*) as count FROM ({self.sql()})"
+            f"SELECT COUNT(*) as count FROM ({sql_query})"
         ).fetchone()[0]
+
+    def variants_count(self)-> int:
+        """Return variant count from the current query
+
+        .. note:: This function is used in:
+            - viewquerywidget.py in `load()` to keep the total of variants for
+            paging purposes of the interface.
+        """
+        LOGGER.error("Query:variants_count:: %s", self.sql())
+        count = self._cached_variants_count_query(self.sql())
+        LOGGER.debug("Query:variants_count:: Cache report %s",
+                     self._cached_variants_count_query.cache_info())
+        return count
 
         ##-----------------------------------------------------------------------------------------------------------
 
