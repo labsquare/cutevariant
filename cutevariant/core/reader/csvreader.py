@@ -54,6 +54,9 @@ class CsvReader(AbstractReader):
         self.csv_reader = csv.DictReader(self.device, dialect=csv_dialect)
 
         # hacky hacky...
+        # We use BaseParser here only for its function handle_descriptions()
+        # that generate full description of annotation fields by taking into
+        # account default supported fields set by with VEP_ANNOTATION_DEFAULT_FIELDS
         self.annotation_parser = BaseParser()
         self.annotation_parser.annotation_default_fields = VEP_ANNOTATION_DEFAULT_FIELDS
 
@@ -192,6 +195,10 @@ class CsvReader(AbstractReader):
             ref = row["GIVEN_REF"]
             alt = row["Allele"]
 
+            if "USED_REF" in row:
+                # Check consistency
+                assert row["GIVEN_REF"] == row["USED_REF"], "GIVEN_REF != USED_REF"
+
             primary_key = (chr, pos, ref, alt)
             # Get previous variant with same primary key (previous transcript)
             variant = variants.get(primary_key, dict())
@@ -219,7 +226,7 @@ class CsvReader(AbstractReader):
             # }
 
             if variant:
-                print("ALREADY found:", primary_key)
+                # Variant already created
                 # Append current annotation to the previous ones
                 add_annotation_to_variant()
                 continue
@@ -249,6 +256,12 @@ class CsvReader(AbstractReader):
     def location_to_chr_pos(self, location: str):
         """Parse VEP `Location` field to extract `chr`, `pos` fields
 
+        2 representations can be encountered in standard coordinate format
+            - chr:start
+            - chr:start-end
+
+        The start position is always returned as `pos` value.
+
         :Example:
             11:10000-10000 => chr, pos => 11, 10000
 
@@ -257,5 +270,8 @@ class CsvReader(AbstractReader):
         :rtype: <tuple <str>, <str>>
         """
         chr, positions = location.split(":")
-        pos = positions.split(":")[-1]
+        pos = positions.split("-")[0]
         return chr, pos
+
+    def __repr__(self):
+        return f"VEP Reader using {type(self.annotation_parser).__name__}"

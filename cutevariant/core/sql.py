@@ -154,6 +154,8 @@ def create_selection_from_sql(conn, query, name, count=None, by="site"):
     :param name : name of the selection
     :param query: sql variant query
     :param by: can be : 'site' for (chr,pos)  or 'variant' for (chr,pos,ref,alt)
+    :return: The id of the new selection. None in case of error.
+    :rtype: <int> or None
     """
     assert by in ("site", "variant")
 
@@ -192,6 +194,9 @@ def create_selection_from_sql(conn, query, name, count=None, by="site"):
 
     cursor.execute(q)
     conn.commit()
+    if cursor.rowcount:
+        return cursor.lastrowid
+    return None
 
 
 def get_selections(conn):
@@ -200,8 +205,8 @@ def get_selections(conn):
     :return: Generator of dictionnaries with as many keys as there are columns
         in the table.
         Dictionnary of all attributes of the table.
-            :Example: {"name": ..., "count": ..., "query": ...}
-    :rtype: <generator>
+            :Example: {"id": ..., "name": ..., "count": ..., "query": ...}
+    :rtype: <generator <dict>>
     """
     conn.row_factory = sqlite3.Row
     return (dict(data) for data in conn.execute("""SELECT * FROM selections"""))
@@ -221,10 +226,15 @@ def delete_selection(conn, selection_id: int):
 
 
 def edit_selection(conn, selection: dict):
-    """Update the given selection"""
+    """Update the name and count of a selection with the given id
+
+    :return: Number of rows deleted
+    :rtype: <int>
+    """
     cursor = conn.cursor()
     conn.execute("UPDATE selections SET name=:name, count=:count WHERE id = :id", selection)
     conn.commit()
+    return cursor.rowcount
 
 
 ## ================ Operations on sets of variants =============================
@@ -367,7 +377,7 @@ def get_fields(conn):
     :param conn: sqlite3.connect
     :return: Generator of dictionnaries with as many keys as there are columns
         in the table.
-    :rtype: <generator>
+    :rtype: <generator <dict>>
     """
     conn.row_factory = sqlite3.Row
     return (dict(data) for data in conn.execute("""SELECT * FROM fields"""))
@@ -653,14 +663,9 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
             # have been inserted from the same source file (or it is not the case ?) ?
             # Retrieve the id of the sample to build the association in
             # "sample_has_variant" table carrying the data "gt" (genotype)
-
-
-
             g = ((samples_id_mapping[sample["name"]], sample["gt"])
                  for sample in variant["samples"]
                  if sample["name"] in samples_names)
-
-
             cursor.executemany(
                 f"""INSERT INTO sample_has_variant VALUES (?,{variant_id},?)""",
                 g
@@ -738,9 +743,9 @@ def get_samples(conn):
     """"Get samples from sample table
 
     :param con: sqlite3.conn
-    :return: Generator of dictionnaries with as sample names as values.
-        :Example: ({'name': <sample_name>})
-    :rtype: <generator>
+    :return: Generator of dictionnaries with as sample fields as values.
+        :Example: ({'id': <unique_id>, 'name': <sample_name>})
+    :rtype: <generator <dict>>
     """
     conn.row_factory = sqlite3.Row
     return (dict(data) for data in conn.execute("""SELECT * FROM samples"""))

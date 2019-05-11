@@ -1,30 +1,28 @@
+# Standard imports
 import os
 import csv
 import sqlite3
+
+# Custom imports
 from .reader.abstractreader import AbstractReader
 from .readerfactory import create_reader
 from .sql import *
 
 
-
 def async_import_reader(conn, reader: AbstractReader, **kwargs):
-    """
-    Import reader into sqlite connection
+    """Import data via the given reader into a SQLite database via the given connection
 
     :param conn: sqlite connection
     :param reader: must be a AbstractReader base class
-
     :return: yield progression and message
-
+    :rtype: <generator <int>, <str>>
     """
-    # Create projects
-
+    # Create project
     yield 0, f"Import data with {reader}"
-
     create_project(
         conn,
         name=kwargs.get("project_name", "UKN"),
-        reference=kwargs.get("reference", "UKN")
+        reference=kwargs.get("reference", "UKN"),
     )
 
     yield 0, "create table shema"
@@ -56,13 +54,12 @@ def async_import_reader(conn, reader: AbstractReader, **kwargs):
 
     # Insert variants, link them to annotations and samples
     yield 0, "insert variants"
-    for  _ in async_insert_many_variants(conn, reader.get_variants()):
-        
+    for _ in async_insert_many_variants(conn, reader.get_variants()):
+
         percent = 0
         if reader.file_size:
             percent = reader.read_bytes / reader.file_size * 100.0
         yield (percent, None)
-
 
     # Create indexes
     yield 99, "Create indexes"
@@ -73,20 +70,15 @@ def async_import_reader(conn, reader: AbstractReader, **kwargs):
     # session.add(Selection(name="all", description="all variant", count = variant_count))
     # session.add(Selection(name="favoris", description="favoris", count = 0))
 
-    # session.commit()
-
 
 def async_import_file(conn, filename, project={}):
-    """
-    Import filename into sqlite connection
+    """Import filename into SQLite database
 
     :param conn: sqlite connection
     :param filenaame: variant filename
-
     :return: yield progression and message
-
     """
-
+    # Context manager that wraps the given file
     with create_reader(filename) as reader:
         yield from async_import_reader(conn, reader, **project)
 
@@ -95,6 +87,7 @@ def import_file(conn, filename):
     for progress, message in async_import_file(conn, filename):
         #  don't show message
         pass
+
 
 def import_reader(conn, reader):
     for progress, message in async_import_reader(conn, reader):

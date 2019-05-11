@@ -1,3 +1,4 @@
+"""Main window of Cutevariant"""
 # Standard imports
 import json
 import os
@@ -5,11 +6,15 @@ import glob
 import importlib
 
 # Qt imports
-from PySide2.QtCore import *
+from PySide2.QtCore import Qt, QSettings, QByteArray, QDir
 from PySide2.QtWidgets import *
-from PySide2.QtGui import *
+from PySide2.QtGui import QIcon, QKeySequence
 
 # Custom imports
+from cutevariant.core.importer import import_file
+from cutevariant.core import Query, get_sql_connexion
+from cutevariant.gui.ficon import FIcon
+from cutevariant.gui.plugin import VariantPluginWidget, QueryPluginWidget
 from cutevariant.gui.wizard.projetwizard import ProjetWizard
 from cutevariant.gui.settings import SettingsWidget
 from cutevariant.gui.viewquerywidget import ViewQueryWidget
@@ -23,17 +28,9 @@ from cutevariant.gui.querydispatcher import QueryDispatcher
 from cutevariant.gui.infovariantwidget import InfoVariantWidget
 from cutevariant.gui.aboutcutevariant import AboutCutevariant
 
-
-#  testing
+# Proof of concept testing
 from cutevariant.gui.chartquerywidget import ChartQueryWidget
 from cutevariant.gui.webglquerywidget import WebGLQueryWidget
-
-from cutevariant.core.importer import import_file
-from cutevariant.core import Query, get_sql_connexion
-from cutevariant.gui.ficon import FIcon
-from cutevariant.gui.plugin import VariantPluginWidget, QueryPluginWidget
-
-# from cutevariant.gui.plugins.infovariantplugin import InfoVariantPlugin
 
 from cutevariant import commons as cm
 from cutevariant.commons import MAX_RECENT_PROJECTS, DIR_ICONS
@@ -50,55 +47,59 @@ class MainWindow(QMainWindow):
         self.toolbar.setObjectName("maintoolbar")  # For window saveState
         self.setWindowIcon(QIcon(DIR_ICONS + "app.png"))
 
-        # keep sqlite connection
+        # Keep sqlite connection
         self.conn = None
-        # list of central view
 
-        # Keep list of plugins
-        self.variant_plugins = []
+        # Init QueryDispatcher to dispatch current query to:
+        # - QueryPlugins
+        # - VqlEditor
+        self.query_dispatcher = QueryDispatcher()
 
-        # mandatory query plugins
+        # Build central view based on QTabWidget
+        # PS: get current view via current_tab_view()
+        # Central widget encapsulates a QTabWidget and VqlEditor
+        self.editor = VqlEditor()
+        view_query_widget = ViewQueryWidget()
+
+        self.tab_view = QTabWidget()
+        vsplit = QSplitter(Qt.Vertical)
+        vsplit.addWidget(self.tab_view)  # add QTabWidget
+        vsplit.addWidget(self.editor)  # add VqlEditor
+        self.setCentralWidget(vsplit)
+        # Manually add query_dispatcher to VqlEditor
+        self.query_dispatcher.addWidget(self.editor)
+        # Add ViewQueryWidget to the QTabWidget
+        self.add_tab_view(view_query_widget)
+        # TODO: add other tabs here
+
+        # Setup menubar
+        self.setup_menubar()
+
+        # Build mandatory plugins that require QueryDispatcher and menubar
         self.column_widget = ColumnQueryWidget()
         self.filter_widget = FilterQueryWidget()
         self.selection_widget = SelectionQueryWidget()
-        self.editor = VqlEditor()
-        self.info_widget = InfoVariantWidget()
-        # Init router to dispatch query between queryPlugins
-        self.query_dispatcher = QueryDispatcher()
-        # Setup Actions
-        self.setupActions()
-        # Build central view
-        self.tab_view = QTabWidget()
-
-   
-
-
-
-        vsplit = QSplitter(Qt.Vertical)
-        vsplit.addWidget(self.tab_view)
-        vsplit.addWidget(self.editor)
-        self.setCentralWidget(vsplit)
-        self.query_dispatcher.addWidget(self.editor)
-        self.addView()
-
-        # add mandatory query plugin
+        # Add mandatory query plugins to QDockWidgets
         self.add_query_plugin(self.column_widget)
         self.add_query_plugin(self.filter_widget)
         self.add_query_plugin(self.selection_widget)
+        # Testing
+        self.add_query_plugin(ChartQueryWidget())
+        # self.add_query_plugin(WebGLQueryWidget())
+        # self.add_query_plugin(HpoQueryWidget())
 
-        # testing
-        #self.add_query_plugin(ChartQueryWidget())
-        #self.add_query_plugin(WebGLQueryWidget())
-        #self.add_query_plugin(HpoQueryWidget())
+        # Setup toolbar (requires selection_widget and some actions of menubar)
+        self.setup_toolbar()
 
-        # Add mandatory variant plugin
+        # Add mandatory variant plugin (depends on QTabWidget and menubar)
+        self.info_widget = InfoVariantWidget()
         self.add_variant_plugin(self.info_widget)
 
-        #  Status Bar
+        # Status Bar
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
 
-        # # add omnibar
+        # Add omnibar
         # self.omnibar = OmniBar()
         # self.toolbar.addSeparator()
         # spacer = QWidget()
@@ -106,33 +107,159 @@ class MainWindow(QMainWindow):
         # self.toolbar.addWidget(spacer)
         # self.toolbar.addWidget(self.omnibar)
 
-        # self.currentView().variant_clicked.connect(self.test.set_variant)
-        # self.currentView().variant_clicked.connect(self.test2.set_variant)
-
-        #  window geometry
+        # Window geometry
         self.resize(600, 400)
-        self.open("/home/sacha/Dev/cutevariant/examples/test.db")
         self.setGeometry(qApp.desktop().rect().adjusted(100, 100, -100, -100))
 
+        # Load external plugins
         self.load_plugins()
+
         # Restores the state of this mainwindow's toolbars and dockwidgets
         self.read_settings()
 
+        # Display messages from plugins in the status bar
         self.editor.message.connect(self.handle_plugin_message)
 
     def add_variant_plugin(self, plugin: VariantPluginWidget):
-        # TODO : self current view must send signal only for visable widget
-        self.currentView().variant_clicked.connect(plugin.set_variant)
-        self.addPanel(plugin)
+        """Add info variant plugin to QDockWidget
+
+        .. note:: This plugin doesn't require query_dispatcher
+        .. TODO:: current tab view must send signal only for visible widget
+        """
+        # Connect click event on a variant in ViewQueryWidget
+        # => update InfoVariantWidget
+        self.current_tab_view().variant_clicked.connect(plugin.set_variant)
+        self.add_panel(plugin)
 
     def add_query_plugin(self, plugin: QueryPluginWidget):
+        """Add query plugin to QDockWidget and connect it to query_dispatcher"""
         self.query_dispatcher.addWidget(plugin)
-        self.addPanel(plugin)
+        self.add_panel(plugin)
 
     def load_plugins(self, folder_path=None):
-        #  TODO ... Load plugins from path.
-        # What is a plugin ? A file or a module folder ?
+        """TODO ... Load plugins from path.
+        What is a plugin ? A file or a module folder ?
+        """
         pass
+
+    def add_panel(self, widget, area=Qt.LeftDockWidgetArea):
+        """Add given widget to a new QDockWidget and to view menu in menubar"""
+        dock = QDockWidget()
+        dock.setWindowTitle(widget.windowTitle())
+        dock.setWidget(widget)
+
+        # Set the objectName for a correct restoration after saveState
+        dock.setObjectName(widget.objectName())
+        if not widget.objectName():
+            LOGGER.debug(
+                "MainWindow:add_panel:: widget '%s' has no objectName attribute"
+                "and will not be saved/restored",
+                widget.windowTitle(),
+            )
+        self.addDockWidget(area, dock)
+        self.view_menu.addAction(dock.toggleViewAction())
+
+    def setup_menubar(self):
+        """Menu bar setup: items and actions"""
+        ## File Menu
+        self.file_menu = self.menuBar().addMenu(self.tr("&File"))
+        self.new_project_action = self.file_menu.addAction(
+            FIcon(0xF415), self.tr("&New project"), self.new_project, QKeySequence.New
+        )
+        self.open_project_action = self.file_menu.addAction(
+            FIcon(0xF76F),
+            self.tr("&Open project ..."),
+            self.open_project,
+            QKeySequence.Open,
+        )
+        ### Recent projects
+        self.recent_files_menu = self.file_menu.addMenu(self.tr("Open recent"))
+
+        self.recentFileActions = list()
+        for i in range(MAX_RECENT_PROJECTS):
+            new_action = QAction()
+            new_action.setVisible(False)
+            # Keep actions in memory for their display to be managed later
+            self.recentFileActions.append(new_action)
+            self.recent_files_menu.addAction(new_action)
+            new_action.triggered.connect(self.open_recent)
+
+        # Init previous files
+        self.update_recent_projects_actions()
+
+        self.recent_files_menu.addSeparator()
+        self.recent_files_menu.addAction(self.tr("Clear"), self.clear_recent_projects)
+
+        self.file_menu.addSeparator()
+        self.file_menu.addAction(
+            FIcon(0xF493), self.tr("Settings ..."), self.show_settings
+        )
+
+        self.file_menu.addSeparator()
+        self.file_menu.addAction(self.tr("&Quit"), qApp.quit, QKeySequence.Quit)
+
+        ## Edit
+        self.edit_menu = self.menuBar().addMenu(self.tr("&Edit"))
+        self.edit_menu.addAction(FIcon(0xF18F), "&Copy", self.copy, QKeySequence.Copy)
+        self.edit_menu.addAction(
+            FIcon(0xF192), "&Paste", self.paste, QKeySequence.Paste
+        )
+        self.edit_menu.addSeparator()
+        self.edit_menu.addAction(
+            FIcon(0xF486), "Select all", self.select_all, QKeySequence.SelectAll
+        )
+
+        ## View
+        self.view_menu = self.menuBar().addMenu(self.tr("&View"))
+        self.view_menu.addAction(self.tr("Reset widgets positions"), self.reset_ui)
+        self.view_menu.addSeparator()
+
+        ## Help
+        self.help_menu = self.menuBar().addMenu(self.tr("Help"))
+        self.help_menu.addAction(self.tr("About Qt"), qApp.aboutQt)
+        self.help_menu.addAction(self.tr("About Cutevariant"), self.aboutCutevariant)
+
+    def setup_toolbar(self):
+        """Tool bar setup: items and actions
+
+        .. note:: Require selection_widget and some actions of Menubar
+        """
+        # Tool bar
+        self.toolbar.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
+        self.toolbar.addAction(self.new_project_action)
+        self.toolbar.addAction(self.open_project_action)
+        self.toolbar.addSeparator()
+
+        self.toolbar.addAction(
+            FIcon(0xF412),
+            self.tr("Save query"),
+            self.selection_widget.save_current_query,
+        )
+
+        self.toolbar.addAction(
+            FIcon(0xF55C),
+            self.tr("Set operation"),
+            self.selection_widget.save_current_query,
+        )
+
+    def add_tab_view(self, widget):
+        """Add the given widget to the current (QTabWidget),
+        and connect it to the query_dispatcher"""
+        self.tab_view.addTab(widget, widget.windowTitle())
+        self.query_dispatcher.addWidget(widget)
+
+    def current_tab_view(self):
+        """Get the page/tab currently being displayed by the tab dialog
+
+        :return: Return the current tab in the QTabWidget
+        :rtype: <QWidget>
+        """
+        # Get the index position of the current tab page
+        index = self.tab_view.currentIndex()
+        if index == -1:
+            # No tab in the widget
+            return None
+        return self.tab_view.currentWidget()
 
     def open(self, filepath):
         """Open the given db/project file
@@ -143,30 +270,28 @@ class MainWindow(QMainWindow):
         :param filepath: Path of project file.
         :type filepath: <str>
         """
-
         if not os.path.exists(filepath):
             return
 
         # Show the project name in title and in status bar
-        self.setWindowTitle(f"Cutevariant - %s" % os.path.basename(filepath))
+        self.setWindowTitle("Cutevariant - %s" % os.path.basename(filepath))
         self.status_bar.showMessage(f"{filepath} " + self.tr("opened"))
 
         # Save directory
         app_settings = QSettings()
         app_settings.setValue("last_directory", os.path.dirname(filepath))
 
-        # Create connection 
+        # Create connection
         self.conn = get_sql_connexion(filepath)
-        
-        # Create a query 
+
+        # Create a query
         query = Query(self.conn)
-        
-        # dispatch the query to all widget from the router 
+
+        # Dispatch the query to all widget from the router
         self.query_dispatcher.query = query
 
-        # update all widgets 
+        # Update all widgets
         self.query_dispatcher.update_all_widgets()
-        
 
         # Refresh recent opened projects
         self.adjust_recent_projects(filepath)
@@ -179,7 +304,6 @@ class MainWindow(QMainWindow):
         :param filepath: Path of project file.
         :type filepath: <str>
         """
-
         # Get recent projects list
         recent_projects = self.get_recent_projects()
 
@@ -209,7 +333,6 @@ class MainWindow(QMainWindow):
         .. note:: Called after a successful file opening and during the launch
             of the software.
         """
-
         # Get recent projects list
         recent_projects = self.get_recent_projects()
 
@@ -250,137 +373,12 @@ class MainWindow(QMainWindow):
 
         return recent_projects
 
-    def addPanel(self, widget, area=Qt.LeftDockWidgetArea):
-
-        dock = QDockWidget()
-        dock.setWindowTitle(widget.windowTitle())
-        dock.setWidget(widget)
-        # Set the objectName for a correct restoration after saveState
-        dock.setObjectName(widget.objectName())
-        if not widget.objectName():
-            LOGGER.debug(
-                "MainWindow:addPanel:: widget '%s' has no objectName attribute"
-                "and will not be saved/restored",
-                widget.windowTitle(),
-            )
-        self.addDockWidget(area, dock)
-        self.view_menu.addAction(dock.toggleViewAction())
-
-    def setupActions(self):
-        # Menu bar
-        ## File Menu
-        self.file_menu = self.menuBar().addMenu(self.tr("&File"))
-        new_prj_action = self.file_menu.addAction(
-            FIcon(0xF415),
-            self.tr("&New project"),
-            self,
-            SLOT("new_project()"),
-            QKeySequence.New,
-        )
-        open_prj_action = self.file_menu.addAction(
-            FIcon(0xF76F),
-            self.tr("&Open project ..."),
-            self,
-            SLOT("open_project()"),
-            QKeySequence.Open,
-        )
-        ### Recent projects
-        self.recent_files_menu = self.file_menu.addMenu(self.tr("Open recent"))
-
-        self.recentFileActions = list()
-        for i in range(MAX_RECENT_PROJECTS):
-            new_action = QAction()
-            new_action.setVisible(False)
-            # Keep actions in memory for their display to be managed later
-            self.recentFileActions.append(new_action)
-            self.recent_files_menu.addAction(new_action)
-            new_action.triggered.connect(self.open_recent)
-
-        # Init previous files
-        self.update_recent_projects_actions()
-
-        self.recent_files_menu.addSeparator()
-        self.recent_files_menu.addAction(
-            self.tr("Clear"), self, SLOT("clear_recent_projects()")
-        )
-
-        self.file_menu.addSeparator()
-        self.file_menu.addAction(
-            FIcon(0xF493), self.tr("Settings ..."), self, SLOT("show_settings()")
-        )
-
-        self.file_menu.addSeparator()
-        self.file_menu.addAction(
-            self.tr("&Quit"), qApp, SLOT("quit()"), QKeySequence.Quit
-        )
-
-        ## Edit
-        self.edit_menu = self.menuBar().addMenu(self.tr("&Edit"))
-        self.edit_menu.addAction(
-            FIcon(0xF18F), "&Copy", self, SLOT("copy()"), QKeySequence.Copy
-        )
-        self.edit_menu.addAction(
-            FIcon(0xF192), "&Paste", self, SLOT("paste()"), QKeySequence.Paste
-        )
-        self.edit_menu.addSeparator()
-        self.edit_menu.addAction(
-            FIcon(0xF486),
-            "Select all",
-            self,
-            SLOT("select_all()"),
-            QKeySequence.SelectAll,
-        )
-
-        ## View
-        self.view_menu = self.menuBar().addMenu(self.tr("&View"))
-        self.view_menu.addAction(
-            self.tr("Reset widgets positions"), self, SLOT("reset_ui()")
-        )
-        self.view_menu.addSeparator()
-
-        ## Help
-        self.help_menu = self.menuBar().addMenu(self.tr("Help"))
-        self.help_menu.addAction(self.tr("About Qt"), qApp, SLOT("aboutQt()"))
-        self.help_menu.addAction(
-            self.tr("About Cutevariant"), self, SLOT("aboutCutevariant()")
-        )
-
-        # Tool bar
-        self.toolbar.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
-        self.toolbar.addAction(new_prj_action)
-        self.toolbar.addAction(open_prj_action)
-        self.toolbar.addSeparator()
-
-        self.toolbar.addAction(
-            FIcon(0xF412), self.tr("save query"),
-            self.selection_widget.save_current_query
-        )
-
-        self.toolbar.addAction(
-            FIcon(0xf55c), self.tr("Set operation"),
-            self.selection_widget.save_current_query
-        )
-
-
-    def addView(self):
-        #  TODO : manage multiple view
-        widget = ViewQueryWidget()
-        self.tab_view.addTab(widget, widget.windowTitle())
-        self.query_dispatcher.addWidget(widget)
-
-    def currentView(self):
-        index = self.tab_view.currentIndex()
-        if index == -1:
-            return None
-        return self.tab_view.currentWidget()
-
     def handle_plugin_message(self, message):
         """Slot to display message from plugin in the status bar"""
         self.status_bar.showMessage(message)
 
-    @Slot()
     def new_project(self):
-        """Create a project with the Wizard"""
+        """Slot to allow creation of a project with the Wizard"""
         wizard = ProjetWizard()
         if wizard.exec_():
             db_filename = (
@@ -395,9 +393,8 @@ class MainWindow(QMainWindow):
                 self.status_bar.showMessage(e.__class__.__name__ + ": " + str(e))
                 raise
 
-    @Slot()
     def open_project(self):
-        """Open a project"""
+        """Slot to open an already existing project"""
         # Reload last directory used
         app_settings = QSettings()
         last_directory = app_settings.value("last_directory", QDir.homePath())
@@ -420,26 +417,24 @@ class MainWindow(QMainWindow):
         action = self.sender()
         self.open(action.data())
 
-    @Slot()
     def clear_recent_projects(self):
-        """Clear the list of recent projects"""
+        """Slot to clear the list of recent projects"""
         app_settings = QSettings()
         app_settings.remove("recent_projects")
         self.update_recent_projects_actions()
 
-    @Slot()
     def show_settings(self):
+        """Slot to show settings window"""
         widget = SettingsWidget()
         widget.exec()
 
-    @Slot()
     def aboutCutevariant(self):
+        """Slot to show about window"""
         dialog_window = AboutCutevariant()
         dialog_window.exec()
 
-    @Slot()
     def reset_ui(self):
-        """Reset the position of docks to the state of the previous launch"""
+        """Slot to reset the position of docks to the state of the previous launch"""
         # Set reset ui boolean (used by closeEvent)
         self.requested_reset_ui = True
 
@@ -447,18 +442,15 @@ class MainWindow(QMainWindow):
         app_settings = QSettings()
         self.restoreState(QByteArray(app_settings.value("windowState")))
 
-    @Slot()
     def copy(self):
         pass
 
-    @Slot()
     def paste(self):
         pass
 
-    @Slot()
     def select_all(self):
-        print("select all")
-        self.currentView().view.selectAll()
+        """Select all elements in the current tab's view"""
+        self.current_tab_view().view.selectAll()
 
     def closeEvent(self, event):
         """Save the current state of this mainwindow's toolbars and dockwidgets

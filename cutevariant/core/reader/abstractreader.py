@@ -63,7 +63,7 @@ class AbstractReader(ABC):
         :return: A generator of variants
         :rtype: <generator>
         """
-        raise NotImplemented()
+        raise NotImplementedError(self.__class__.__name__)
 
     @abstractclassmethod
     def get_fields(self):
@@ -90,7 +90,7 @@ class AbstractReader(ABC):
         :return: A generator of fields
         :rtype: <generator>
        """
-        raise NotImplemented()
+        raise NotImplementedError(self.__class__.__name__)
 
     def get_fields_by_category(self, category: str):
         """Syntaxic suggar to get fields according their category

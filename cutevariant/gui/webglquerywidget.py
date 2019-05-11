@@ -1,32 +1,32 @@
+"""Proof of concept to display the 3D structure of a protein in a WebGL accelerated widget"""
+# Qt imports
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 from PySide2.QtGui import *
-from PySide2.QtWebEngineWidgets import QWebEngineView, QWebEnginePage
+from PySide2.QtWebEngineWidgets import QWebEngineView
 
-
-from cutevariant.gui.ficon import FIcon
-
-
+# Custom imports
 from .plugin import QueryPluginWidget
 from cutevariant.core import Query
-from cutevariant.core import sql
-from collections import Counter
-
 
 
 class WebGLQueryWidget(QueryPluginWidget):
-    def __init__(self, parent = None):
+    """Display the 3D structure of a protein in a WebGL accelerated widget"""
+
+    def __init__(self, protein_reference="1crn", parent=None):
+        """Display the 3D structure of the given protein"""
         super().__init__(parent)
         self.setWindowTitle("web GL")
 
-
         self.view = QWebEngineView()
-        self.view.setHtml("""
+        # self.view.loadFinished.connect(self.loaded)
+        self.view.setHtml(
+            """
             <!DOCTYPE html>
             <html lang="en">
             <head>
               <meta charset="utf-8">
-             <script src="https://cdn.rawgit.com/arose/ngl/v2.0.0-dev.31/dist/ngl.js"></script>
+              <script src="https://cdn.rawgit.com/arose/ngl/v2.0.0-dev.31/dist/ngl.js"></script>
             </head>
             <body>
 
@@ -39,31 +39,23 @@ class WebGLQueryWidget(QueryPluginWidget):
 
             <script>
               // Create NGL Stage object
-            var stage = new NGL.Stage( "viewport" );
+              var stage = new NGL.Stage( "viewport" );
 
-            // Handle window resizing
-            window.addEventListener( "resize", function( event ){
+              // Handle window resizing
+              window.addEventListener( "resize", function( event ){
                 stage.handleResize();
-            }, false );
+              }, false );
 
-
-            // Load PDB entry 1CRN
-            stage.loadFile( "rcsb://1crn", { defaultRepresentation: true } );
+              // Load PDB entry
+              stage.loadFile( "rcsb://%s", { defaultRepresentation: true } );
             </script>
-
-
-
             </body>
             </html>
-
-            """)
-
-        #self.view.loadFinished.connect(self.loaded)
-
-
+            """ % protein_reference
+        )
 
         layout = QVBoxLayout()
-        layout.setContentsMargins(0,0,0,0)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.view)
 
         self.setLayout(layout)
@@ -79,4 +71,3 @@ class WebGLQueryWidget(QueryPluginWidget):
 
     def loaded(self):
         print("FINISHED!!!!!!!!!!!!!!!!!!!")
-

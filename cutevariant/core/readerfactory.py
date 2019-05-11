@@ -14,17 +14,27 @@ LOGGER = cm.logger()
 
 
 def is_gz_file(filepath):
+    """Return a boolean according to the compression state of the file"""
     with open(filepath, "rb") as test_f:
         return binascii.hexlify(test_f.read(2)) == b"1f8b"
 
 
-def getuncompressedsize(filename):
+def get_uncompressed_size(filename):
+    """Get the size of the given compressed file
+    This size is stored in the last 4 bytes of the file.
+    """
     with open(filename, "rb") as f:
         f.seek(-4, 2)
         return struct.unpack("I", f.read(4))[0]
 
 
 def detect_vcf_annotation(filename):
+    """Return the name of the annotation parser to be used on the given file
+    Called: In the importer and in the project wizard to display the detected
+    annotations.
+
+    :return: "vep", "snpeff", None
+    """
     with open(filename, "r") as file:
         std_reader = vcf.VCFReader(file)
         #print(std_reader.metadata)
@@ -39,6 +49,17 @@ def detect_vcf_annotation(filename):
 
 @contextmanager
 def create_reader(filename):
+    """Context manager that wraps the given file and return an accurate reader
+
+    A detection of the file type is made as well as a detection of the
+    annotations format if required.
+
+    Filetypes and annotations parsers supported:
+
+        - vcf.gz: snpeff, vep
+        - vcf: snpeff, vep
+        - csv, tsv, txt: vep
+    """
 
     path = pathlib.Path(filename)
 
@@ -46,10 +67,11 @@ def create_reader(filename):
                  path.suffixes, is_gz_file(filename))
 
     if ".vcf" in path.suffixes and ".gz" in path.suffixes:
+        # TODO: use is_gz_file() ?
         annotation_detected = detect_vcf_annotation(filename)
         device = open(filename, "rb")
         reader = VcfReader(device, annotation_detected)
-        reader.file_size = getuncompressedsize(filename)
+        reader.file_size = get_uncompressed_size(filename)
         yield reader
         device.close()
         return
@@ -63,7 +85,7 @@ def create_reader(filename):
         device.close()
         return
 
-    if ".csv" in path.suffixes:
+    if {".tsv", ".csv", ".txt"} & set(path.suffixes):
         device = open(filename, "r")
         reader = CsvReader(device)
         reader.file_size = os.path.getsize(filename)
@@ -71,11 +93,12 @@ def create_reader(filename):
         device.close()
         return
 
+    raise Exception("create_reader:: Could not choose parser for this file.")
 
 # class ReaderFactory(object):
 #     """
-# 	Create reader depending file type
-# 	"""
+#   Create reader depending file type
+#   """
 
 #     def __init__(self):
 #         pass
