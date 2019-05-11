@@ -418,6 +418,7 @@ class Query:
         # TODO: USING clause missing
 
         print("from vql", model)
+        print("from vql", self.filter)
 
     def to_vql(self) -> str:
         """Build a VQL query from the current Query
@@ -435,7 +436,8 @@ class Query:
         for col in self.columns:
             if isinstance(col, tuple):
                 fct, arg, field = col
-                col = f"gt_{arg}.{field}"
+                if fct == _GENOTYPE_FUNCTION_NAME:
+                    col = f"genotype(\"{arg}\").{field}"
             _c.append(col)
 
         base = f"SELECT {','.join(_c)} FROM {self.selection}"
