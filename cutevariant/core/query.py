@@ -188,7 +188,7 @@ class Query:
         #  if group by , add extra columns ( child count and child ids )
         # Required for viewquerywidget.py
         if self.group_by:
-            sql_columns.extend(["COUNT(variants.id) as 'childs'"])
+            sql_columns.extend(["COUNT(variants.id) as 'children'"])
 
         query = f"SELECT {','.join(sql_columns)} "
 

@@ -57,9 +57,9 @@ class QueryModel(QAbstractItemModel):
         if parent.parent() == QModelIndex():
             return len(self.variants[parent.row()]) - 1  # Omit first
 
-        # Get parent variant row ID and return child count
-        # if self.row_id(parent) in self.childs:
-        #     return len(self.childs[parent.row()])
+        # Get parent variant row ID and return children count
+        # if self.row_id(parent) in self.children:
+        #     return len(self.children[parent.row()])
         # else:
         # return 0
 
@@ -70,7 +70,7 @@ class QueryModel(QAbstractItemModel):
         if not self._query:
             return 0
 
-        return len(self._query.columns) + 1  #  show child count for the first col
+        return len(self._query.columns) + 1  #  show children count for the first col
 
     def index(self, row, column, parent=QModelIndex()):
         """Overrided: Return index """
@@ -109,8 +109,8 @@ class QueryModel(QAbstractItemModel):
             #  Display the first level
             if index.parent() == QModelIndex():
                 if index.column() == 0:
-                    # First column display child count
-                    return str(self.child_count(index))
+                    # First column display children count
+                    return str(self.children_count(index))
                 else:
                     # Other display variant data
                     return str(self.variants[index.row()][0][index.column()])
@@ -133,7 +133,7 @@ class QueryModel(QAbstractItemModel):
                 and index.column() == 0
                 and self.hasChildren(index)
             ):
-                return self._draw_child_count_icon(self.variants[index.row()][0][-1])
+                return self._draw_children_count_icon(self.variants[index.row()][0][-1])
 
         return None
 
@@ -144,7 +144,7 @@ class QueryModel(QAbstractItemModel):
         if orientation == Qt.Horizontal:
             if role == Qt.DisplayRole:
                 if section == 0:
-                    return "childs"
+                    return "children"
                 else:
                     return self._query.columns[section - 1]
 
@@ -158,13 +158,13 @@ class QueryModel(QAbstractItemModel):
             return True
 
         if parent.parent() == QModelIndex():
-            childs_count = self.child_count(parent)
-            return childs_count > 1
+            children_count = self.children_count(parent)
+            return children_count > 1
 
         return False
 
         # if parent.parent() == QModelIndex():
-        #     return self._child_count(parent) > 1
+        #     return self._children_count(parent) > 1
 
     def canFetchMore(self, parent: QModelIndex) -> bool:
         """ Overrided """
@@ -191,10 +191,10 @@ class QueryModel(QAbstractItemModel):
 
         records = list(self._query.conn.cursor().execute(sub_query).fetchall())
 
-        #  Insert children
+        # Insert children
         self.beginInsertRows(parent, 0, len(records))
 
-        # Clear pevious childs
+        # Clear pevious children
         self.variants[parent.row()][1:] = []
 
         for idx, record in enumerate(records):  # skip first records
@@ -202,9 +202,8 @@ class QueryModel(QAbstractItemModel):
 
         self.endInsertRows()
 
-    def child_count(self, index: QModelIndex):
-        """
-        Return child count from variant
+    def children_count(self, index: QModelIndex):
+        """Return children count from variant
 
         This one is the last value of sql record output and correspond to the COUNT(annotation)
         of the GROUP BY
@@ -290,7 +289,7 @@ class QueryModel(QAbstractItemModel):
         if index.parent().parent() == QModelIndex():
             return self.variants[index.parent().row()][index.row()]
 
-    def _draw_child_count_icon(self, count: int) -> QIcon:
+    def _draw_children_count_icon(self, count: int) -> QIcon:
 
         pix = QPixmap(48, 41)
         pix.fill(Qt.transparent)
