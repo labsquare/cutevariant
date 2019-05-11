@@ -255,7 +255,7 @@ class Query:
 
         :Example:
 
-        >>> for row in query.items():
+            for row in query.items():
         ...     print(tuple(row))
         (324, "chr2", "24234", "A", "T", ...)
         ...     print(dict(row))
@@ -336,14 +336,14 @@ class Query:
 
         :Example:
 
-        >>> query1 = Query(conn)
-        >>> query1.from_vql("SELECT chr, pos FROM variants WHERE chr = 3 ")
-        >>> print(query1.variants_count())
+            query1 = Query(conn)
+            query1.from_vql("SELECT chr, pos FROM variants WHERE chr = 3 ")
+            print(query1.variants_count())
         10
-        >>> query1.create_selection("boby")
-        >>> query2 = Query(conn)
-        >>> query2.from_vql("SELECT chr, pos FROM boby")
-        >>> print(query2.variants_count())
+            query1.create_selection("boby")
+            query2 = Query(conn)
+            query2.from_vql("SELECT chr, pos FROM boby")
+            print(query2.variants_count())
         10 # same as before
 
         :return: The id of the new selection in the database. None in case of error.
@@ -404,9 +404,9 @@ class Query:
 
         :Example:
 
-            >>> query = Query(conn)
-            >>> query.from_vql("SELECT chr, pos FROM variants")
-            >>> query.sql()
+                query = Query(conn)
+                query.from_vql("SELECT chr, pos FROM variants")
+                query.sql()
 
         .. seealso:: to_vql()
         .. todo:: Should be a static method
