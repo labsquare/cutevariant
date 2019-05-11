@@ -60,14 +60,12 @@ class GroupWidget(QTabWidget):
         self.addTab(widget, widget.windowIcon(), widget.windowTitle())
 
     def save(self):
-        for index in range(self.count()):
-            widget = self.widget(index)
-            widget.save()
+        """Call save() method of all widgets in the GroupWidget"""
+        [self.widget(index).save() for index in range(self.count())]
 
     def load(self):
-        for index in range(self.count()):
-            widget = self.widget(index)
-            widget.load()
+        """Call load() method of all widgets in the GroupWidget"""
+        [self.widget(index).load() for index in range(self.count())]
 
 
 ################################################################################

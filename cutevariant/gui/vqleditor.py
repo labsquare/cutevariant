@@ -8,12 +8,11 @@ VqlEditor uses:
 from textx.exceptions import TextXSyntaxError
 
 # Qt imports
-from PySide2.QtCore import Qt, QRegularExpression, QStringListModel
+from PySide2.QtCore import qApp, Qt, QRegularExpression, QStringListModel
 from PySide2.QtWidgets import QTextEdit, QCompleter, QVBoxLayout
 from PySide2.QtGui import QSyntaxHighlighter, QFont, QPalette, QTextCharFormat, QTextCursor
 
 # Custom imports
-from cutevariant.core import Query
 from cutevariant.core import sql
 from cutevariant.commons import MIN_COMPLETION_LETTERS, logger
 from .plugin import QueryPluginWidget
@@ -46,7 +45,7 @@ class VqlSyntaxHighlighter(QSyntaxHighlighter):
                 # \b allows to perform a "whole words only"
                 "pattern": "|".join(
                     (
-                        f"\\b%s\\b" % keyword
+                        "\\b%s\\b" % keyword
                         for keyword in VqlSyntaxHighlighter.sql_keywords
                     )
                 ),
