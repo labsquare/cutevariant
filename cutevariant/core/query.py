@@ -13,21 +13,32 @@ LOGGER = logger()
 _GENOTYPE_FUNCTION_NAME = "genotype"
 _PHENOTYPE_FUNCTION_NAME = "phenotype"
 
+
 class Query:
-    """
-    This is a class for build sql query to select variant record according different attributes 
+    """Class used to build sql query to select variants records
 
-    Attributes:
-        conn (sqlite3.Connection) 
-        columns (list of str and tuple): fields name from variants and annotations table (Select clause)   
-        filter (dict): Hierarchical dictionnary to filter variants (Where clause) 
-        selection (str): Virtual table of variants (From clause) 
-        order_by(str): Order variants by a specific column 
-        group_by(tuple of str): Group variants by columns  
+    Available attributes:
+        conn (sqlite3.Connection)
+        columns (list of str and tuple): Fields names from variants and annotations table (Select clause)
+        filter (dict): Hierarchical dictionnary to filter variants (Where clause)
+        selection (str): Virtual table of variants (From clause)
+        order_by(str): Order variants by a specific column
+        group_by(tuple of str): Group variants by columns
 
-    Columns and filter can contains function as tuple. For example : 
+    About functions:
+        `columns` and `filter` can contains function as tuple.
+        A function is defined by:
+            - function name
+            - arguments (sample name, etc.)
+            - sql field name
 
-    query.columns = ["chr","pos", ("genotype","boby","GT")] 
+        For example :
+
+            query.columns = ["chr","pos", ("genotype","boby","GT")]
+
+        is equivalent to:
+
+            SELECT chr, pos, genotype("boby").gt
 
     Example:
         conn = sqlite.connection(":memory")
@@ -44,11 +55,11 @@ class Query:
                 },}}
 
         conn.execute(conn.sql())
-
-
     """
 
-    def __init__( self, conn, columns=["chr", "pos", "ref", "alt"], filter=None, selection="all"):
+    def __init__(
+        self, conn, columns=["chr", "pos", "ref", "alt"], filter=None, selection="all"
+    ):
         self.conn = conn
         self.columns = columns
         self.filter = filter
@@ -63,7 +74,7 @@ class Query:
 
     # def sample_from_expression(self, expression):
     #     """
-    #     ..warning:: WILL BE REMOVE AFTER FIXING #33 
+    #     ..warning:: WILL BE REMOVE AFTER FIXING #33
 
     #     """
     #     # extract <sample> from <gt("sample")>
@@ -72,96 +83,97 @@ class Query:
     #     if match:
     #         return match.group(1)
     #     else:
-            # return None
+    # return None
 
-        ##-----------------------------------------------------------------------------------------------------------
+    ##-----------------------------------------------------------------------------------------------------------
 
     def _detect_samples(self):
-        """ 
-        Detect if columns or filter contains function. 
-        Function are tuple . For example , this is a columns list with 2 normal field and 1 genotype function field.
+        """Detect if columns or filter contains function.
 
-            query.columns = ("chr","pos",("genotype","boby","gt"))
+        Functions are tuples. For example, this is a columns list with 2 normal
+        field and 1 genotype function field:
 
-        This columns selection can be writted in VQL as follow : 
+            query.columns = ("chr","pos", ("genotype", "boby", "gt"))
 
-            SELECT chr, pos, genotype("boby").gt 
+        This columns selection can be writted in VQL as follow :
 
+            SELECT chr, pos, genotype("boby").gt
         """
-
         self._samples_to_join.clear()
         self._detect_samples_from_columns()
         self._detect_samples_from_filter()
-
-
-        # Parse filter 
-
-
+        #  TODO: Parse filter
 
     def _detect_samples_from_columns(self):
         """Detect if columns contains function and keep function args as sample name for sql join with sample tables.
 
-        function are defined as tuple . For exemple genotype("boby").gt will be written as ("genotype","boby","gt")
+        Functions are defined as tuples. For exemple `genotype("boby").gt` will
+        be written as `("genotype", "boby", "gt")`.
         """
+        # Get function tuples
+        #  A function is a tuple with 3 elements. The second element is the sample name
+        # TODO: is test on length usefull?
+        functions = (
+            col for col in self.columns if isinstance(col, tuple) and len(col) == 3
+        )
+        # TODO: set on intention here
+        for function in functions:
+            function_name, sample_name, field_name = function
 
-        for col in self.columns:
-            # A function is a tuple with 3 elements. The second element is the sample name
-            if type(col) == tuple and len(col) == 3: 
-                fct, arg , field = col 
-
-                if fct == _GENOTYPE_FUNCTION_NAME:
-                    self._samples_to_join.add(arg)
-
+            if function_name == _GENOTYPE_FUNCTION_NAME:
+                self._samples_to_join.add(sample_name)
 
     def _detect_samples_from_filter(self):
         """Detect if filter contains function and keep function args as sample name for sql join with sample tables
 
-        function are defined as tuple . For exemple genotype("boby").gt will be written as ("genotype","boby","gt")
+        Functions are defined as tuples. For exemple `genotype("boby").gt` will
+        be written as `("genotype", "boby", "gt")`.
         """
-
-        # Recursive loop over filter to extract field name only 
+        # Recursive loop over filter to extract field name only
         def iter(node):
-            if type(node) == dict and len(node) == 3:
-                    yield node["field"]
+            if isinstance(node, dict) and len(node) == 3:
+                yield node["field"]
 
-            if type(node) == dict:
+            if isinstance(node, dict):
                 for i in node:
                     yield from iter(node[i])
 
-            if type(node) == list:
+            if isinstance(node, list):
                 for i in node:
                     yield from iter(i)
 
-        for col in iter(self.filter):
-        # A function is a tuple with 3 elements. The second element is the sample name
-            if type(col) == tuple and len(col) == 3:
-                fct, arg , field = col 
-                if fct == _GENOTYPE_FUNCTION_NAME:
-                    self._samples_to_join.add(arg)
-   
+        # Get function tuples
+        #  A function is a tuple with 3 elements. The second element is the sample name
+        # TODO: is test on length usefull?
+        functions = (
+            col for col in iter(self.filter) if isinstance(col, tuple) and len(col) == 3
+        )
+        # TODO: set on intention here
+        for function in functions:
+            function_name, sample_name, field_name = function
 
+            if function_name == _GENOTYPE_FUNCTION_NAME:
+                self._samples_to_join.add(sample_name)
 
         ##-----------------------------------------------------------------------------------------------------------
 
     def sql(self, limit=0, offset=0) -> str:
-        """ 
-        build a sql query according attributes 
+        """Build a sql query according to attributes
 
-        :param limit : SQL LIMIT for pagination 
+        :param limit : SQL LIMIT for pagination
         :param offset: SQL OFFSET for pagination
-        :return: an SQL query 
+        :return: an SQL query
         :rtype: str
         """
 
         #  Detect if join sample is required ...
-       # sample_ids = self.detect_samples()
+        # sample_ids = self.detect_samples()
 
         if len(self.columns) == 0:
             self.columns = ["chr", "pos", "ref", "alt"]
 
-
-        # Replace genotype function by name 
-        # Transform ("genotype", "boby","gt") to "`gt_boby`.gy" to perform SQL JOIN 
+        # Replace genotype function by name
+        #  Transform ("genotype", "boby","gt") to "`gt_boby`.gy" to perform SQL JOIN
 
         sql_columns = []
         sql_columns.append("variants.id")
@@ -169,12 +181,11 @@ class Query:
             if type(col) == tuple:
                 fct, arg, field = col
                 if fct == _GENOTYPE_FUNCTION_NAME:
-                    col = f"`gt_{arg}`.{field}" 
-  
+                    col = f"`gt_{arg}`.{field}"
+
             sql_columns.append(col)
 
-
-        # if group by , add extra columns ( child count and child ids )
+        #  if group by , add extra columns ( child count and child ids )
         # Required for viewquerywidget.py
         if self.group_by:
             sql_columns.extend(["COUNT(variants.id) as 'childs'"])
@@ -190,16 +201,16 @@ class Query:
 
             query += f"""
             FROM variants
-            LEFT JOIN annotations ON annotations.variant_id = variants.id 
+            LEFT JOIN annotations ON annotations.variant_id = variants.id
             INNER JOIN selection_has_variant sv ON sv.variant_id = variants.id
             INNER JOIN selections s ON s.id = sv.selection_id AND s.name = '{self.selection}'
             """
 
-        # Add Join on sample_has_variant 
-        # This is done if genotype() function has been found in columns or fields. @see _detect_samples
+        #  Add Join on sample_has_variant
+        #  This is done if genotype() function has been found in columns or fields. @see _detect_samples
         self._detect_samples()
-        print("DETECT", self.columns, self._samples_to_join)
-        if self._samples_to_join: 
+        #        print("DETECT", self.columns, self._samples_to_join)
+        if self._samples_to_join:
             for sample in sql.get_samples(self.conn):
                 if sample["name"] in self._samples_to_join:
                     sample_id = sample["id"]
@@ -255,13 +266,12 @@ class Query:
         yield from self.conn.execute(self.sql(limit, offset))
 
     def filter_to_sql(self, node: dict) -> str:
-        """ 
-        Recursive function to convert hierarchical dictionnary into a SQL Where clause 
+        """Recursive function to convert hierarchical dictionnary into a SQL Where clause
 
-        :param node: hierachical dictionnary 
+        :param node: hierachical dictionnary
         :return: a SQL WHERE clause
 
-        ..seealso: filter 
+        ..seealso: filter
 
         """
 
@@ -277,21 +287,24 @@ class Query:
             operator = node["operator"]
             field = node["field"]
 
-            # TODO ... c'est degeulasse .... 
+            # TODO ... c'est degeulasse ....
 
-            if type(value) == str:  # Add quote for string .. Need to change in the future and use sqlite binding value
+            if (
+                type(value) == str
+            ):  # Add quote for string .. Need to change in the future and use sqlite binding value
                 value = "'" + str(value) + "'"
 
             elif type(value) == list:
-                value = "(" + ",".join(value) +")"
+                value = "(" + ",".join(value) + ")"
 
             else:
                 value = str(value)
 
-            if type(field) == tuple and len(field) == 3: # Function ? ("genotype","sample","gt")
+            if (
+                type(field) == tuple and len(field) == 3
+            ):  #  Function ? ("genotype","sample","gt")
                 fct, arg, f = field
                 field = f"gt_{arg}.{f}"
-     
 
             return field + operator + value
 
@@ -307,33 +320,38 @@ class Query:
 
     # def samples(self):
     #     """
-    #     Return samples 
+    #     Return samples
 
-    #     ..warning:: WILL BE REMOVE AFTER FIXING #33 
+    #     ..warning:: WILL BE REMOVE AFTER FIXING #33
 
     #     """
     #     return self.detect_samples().keys()
 
-        ##-----------------------------------------------------------------------------------------------------------
+    ##-----------------------------------------------------------------------------------------------------------
 
     def create_selection(self, name):
+        """Store variant set from the current query into `selections` table
+
+        :param name: Name of the selection
+
+        :Example:
+
+        >>> query1 = Query(conn)
+        >>> query1.from_vql("SELECT chr, pos FROM variants WHERE chr = 3 ")
+        >>> print(query1.variants_count())
+        10
+        >>> query1.create_selection("boby")
+        >>> query2 = Query(conn)
+        >>> query2.from_vql("SELECT chr, pos FROM boby")
+        >>> print(query2.variants_count())
+        10 # same as before
+
+        :return: The id of the new selection in the database. None in case of error.
+        :rtype: <int> or None
         """
-        Store variant set from the current query into selection table.
-
-        :param name: Name of the selection 
-
-        :Example: 
-        
-        >> query1 = Query(conn)
-        >> query1.from_vql("SELECT chr, pos FROM variants WHERE chr = 3 ")
-        >> print(query1.count())  # 10 
-        >> query1.create_selection("boby")
-        >> query2 = Query(conn)
-        >> query2.from_vql("SELECT chr, pos FROM boby")
-        >> print(query2.count()) # 10 .. same as before
-
-        """
-        return sql.create_selection_from_sql(self.conn, self.sql(), name=name, by="site")
+        return sql.create_selection_from_sql(
+            self.conn, self.sql(), name=name, by="site"
+        )
 
         ##-----------------------------------------------------------------------------------------------------------
 
@@ -354,7 +372,7 @@ class Query:
             f"SELECT COUNT(*) as count FROM ({sql_query})"
         ).fetchone()[0]
 
-    def variants_count(self)-> int:
+    def variants_count(self) -> int:
         """Return variant count from the current query
 
         .. note:: This function is used in:
@@ -363,8 +381,10 @@ class Query:
         """
         LOGGER.error("Query:variants_count:: %s", self.sql())
         count = self._cached_variants_count_query(self.sql())
-        LOGGER.debug("Query:variants_count:: Cache report %s",
-                     self._cached_variants_count_query.cache_info())
+        LOGGER.debug(
+            "Query:variants_count:: Cache report %s",
+            self._cached_variants_count_query.cache_info(),
+        )
         return count
 
         ##-----------------------------------------------------------------------------------------------------------
@@ -379,20 +399,18 @@ class Query:
         ##-----------------------------------------------------------------------------------------------------------
 
     def from_vql(self, raw: str):
-        """
-        Build a Query from a VQL query 
+        """Build the current Query from a VQL query
 
-        :param raw: VQL query 
+        :param raw: VQL query
 
-        :Example: 
+        :Example:
 
-        query = Query(conn)
-        query.from_vql("SELECT chr, pos FROM variants")
-        query.sql()
+            >>> query = Query(conn)
+            >>> query.from_vql("SELECT chr, pos FROM variants")
+            >>> query.sql()
 
-        ..seealso: to_vql()
-        ..todo: Should be a static methods
-
+        .. seealso:: to_vql()
+        .. todo:: Should be a static method
         """
         model = vql.model_from_string(raw)
         self.columns = list(model["select"])  # columns from variant table
@@ -402,19 +420,21 @@ class Query:
 
         print("from vql", model)
 
-        ##-----------------------------------------------------------------------------------------------------------
-
     def to_vql(self) -> str:
-        """
-        Build a VQL query from the current Query
-        :return: A VQL query 
+        """Build a VQL query from the current Query
+
+        .. seealso:: from_vql()
+        .. todo:: Should be a static method
+
+        :return: A VQL query
+        :rtype: <str>
         """
 
-        #TODO : move all VQL to VQLEDItor 
-        # DEGEU.. pour tester juste
-        _c = [] 
+        # TODO : move all VQL to VQLEDItor
+        #  DEGEU.. pour tester juste
+        _c = []
         for col in self.columns:
-            if type(col) == tuple:
+            if isinstance(col, tuple):
                 fct, arg, field = col
                 col = f"gt_{arg}.{field}"
             _c.append(col)
@@ -428,5 +448,5 @@ class Query:
         ##-----------------------------------------------------------------------------------------------------------
 
     def check(self):
-        """ Return True if query is valid """
-        return True
+        """Return True if query is valid"""
+        raise NotImplemented()
