@@ -367,7 +367,6 @@ class Query:
             and it seems difficult to predict which fields will be requested
             by the user.
         """
-        LOGGER.error("Query:variants_count:: Query NOT cached")
         return self.conn.execute(
             f"SELECT COUNT(*) as count FROM ({sql_query})"
         ).fetchone()[0]
@@ -379,7 +378,7 @@ class Query:
             - viewquerywidget.py in `load()` to keep the total of variants for
             paging purposes of the interface.
         """
-        LOGGER.error("Query:variants_count:: %s", self.sql())
+        LOGGER.debug("Query:variants_count:: %s", self.sql())
         count = self._cached_variants_count_query(self.sql())
         LOGGER.debug(
             "Query:variants_count:: Cache report %s",
