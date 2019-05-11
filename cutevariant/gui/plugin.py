@@ -46,11 +46,11 @@ class QueryPluginWidget(PluginWidget):
         """Called by the queryrouter each time a belong widget send a
         query_changed signal
         """
-        raise NotImplemented()
+        raise NotImplementedError(self.__class__.__name__)
 
     def on_init_query(self):
         """Called by the queryrouter when query is set"""
-        raise NotImplemented()
+        raise NotImplementedError(self.__class__.__name__)
 
 
 class VariantPluginWidget(PluginWidget):
@@ -59,4 +59,4 @@ class VariantPluginWidget(PluginWidget):
     """
 
     def set_variant(self, variant):
-        raise NotImplemented()
+        raise NotImplementedError(self.__class__.__name__)

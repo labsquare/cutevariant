@@ -45,12 +45,12 @@ class BaseWidget(QWidget):
     @abstractmethod
     def save(self):
         """Save the current widget settings in QSettings"""
-        raise NotImplemented()
+        raise NotImplementedError(self.__class__.__name__)
 
     @abstractmethod
     def load(self):
         """Load settings from QSettings"""
-        raise NotImplemented()
+        raise NotImplementedError(self.__class__.__name__)
 
 
 class GroupWidget(QTabWidget):

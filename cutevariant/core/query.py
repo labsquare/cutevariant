@@ -449,4 +449,4 @@ class Query:
 
     def check(self):
         """Return True if query is valid"""
-        raise NotImplemented()
+        raise NotImplementedError
