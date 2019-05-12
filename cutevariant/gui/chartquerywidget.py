@@ -18,7 +18,7 @@ class ChartQueryWidget(QueryPluginWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle(self.tr("Base Changes"))
+        self.setWindowTitle(self.tr("Charts"))
 
         self.view = charts.QChartView()
 
@@ -94,7 +94,7 @@ class ChartQueryWidget(QueryPluginWidget):
         # Init chart, set title, turn on animations
         chart = charts.QChart()
         chart.addSeries(bar_series)
-        chart.setTitle(self.tr("Base Changes"))
+        chart.setTitle(self.tr("SNPs Base Changes"))
         chart.setAnimationOptions(charts.QChart.SeriesAnimations)
 
         # Add categories for x-axis

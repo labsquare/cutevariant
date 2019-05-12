@@ -136,31 +136,31 @@ class AbstractReader(ABC):
 
 
 def check_variant_schema(variant: dict):
-    """Test if get_variant returns well formated nested data. 
+    """Test if get_variant returns well formated nested data.
 
-    This method is for testing purpose. It raises an exception if data is corrupted 
+    This method is for testing purpose. It raises an exception if data is corrupted
 
     :param variant dict returned by AbstractReader.get_variant()
 
-    """ 
+    """
 
     checker = Schema({
            "chr": And(Use(str.lower),str),
            "pos": int,
-           "ref":And(Use(str.upper),Regex(r'^[ACGTN]+')), 
-           "alt":And(Use(str.upper),Regex(r'^[ACGTN]+')), 
-            Optional(str): Or(int,str,bool, float, None), 
+           "ref":And(Use(str.upper),Regex(r'^[ACGTN]+')),
+           "alt":And(Use(str.upper),Regex(r'^[ACGTN]+')),
+            Optional(str): Or(int,str,bool, float, None),
 
             Optional("annotations"): [{
-            "gene":str, 
-            "transcript":str, 
+            "gene":str,
+            "transcript":str,
             Optional(str): Or(int,str,bool,float)
             }],
 
             Optional("samples"): [{
             "name":str, "gt":And(int, lambda x: x in [-1,0,1,2])
             }]
-          }) 
+          })
 
     checker.validate(variant)
 
@@ -168,17 +168,17 @@ def check_variant_schema(variant: dict):
 def check_field_schema(field:dict):
     """Test if get_field returns well formated data
 
-    This method is for testing purpose. It raises an exception if data is corrupted 
+    This method is for testing purpose. It raises an exception if data is corrupted
 
     :param field dict returned by AbstractReader.get_field()
     """
 
     checker = Schema({
-           "name": And(str, Use(str.lower)), 
+           "name": And(str, Use(str.lower)),
            "type": lambda x: x in ["str","int","bool","float"],
            "category": lambda x: x in ["variants","annotations","samples"],
            "description": str,
             Optional("constraint", default="NULL"): str
-          })  
+          })
 
     checker.validate(field)

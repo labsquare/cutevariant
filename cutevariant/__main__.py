@@ -97,14 +97,14 @@ def process_arguments(app):
     show_version = QCommandLineOption(
         ["version"],
         QCoreApplication.translate(
-            "main", "display the version of Cutevariant and exit."
+            "main", "Display the version of Cutevariant and exit."
         ),
     )
     parser.addOption(show_version)
     # -v, --verbose
     modify_verbosity = QCommandLineOption(
         ["v", "verbose"],
-        QCoreApplication.translate("main", "modify verbosity."),
+        QCoreApplication.translate("main", "Modify verbosity."),
         "notset|debug|info|error",  # options available (value name)
         "notset",  # default value
     )
