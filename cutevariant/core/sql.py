@@ -690,7 +690,10 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
 
     yield 97, f"{variant_count - errors} variant(s) has been inserted."
 
-    yield 98, f"{variant_count - errors} variant(s) has been inserted"
+    # Create default selection (we need the number of variants for this)
+    insert_selection(
+        conn, "", name=cm.DEFAULT_SELECTION_NAME, count=variant_count - errors
+    )
 
 
 def insert_many_variants(conn, data, **kwargs):

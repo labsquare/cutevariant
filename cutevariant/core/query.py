@@ -6,7 +6,7 @@ from functools import lru_cache
 # Custom imports
 from . import sql
 from . import vql
-from cutevariant.commons import logger
+from cutevariant.commons import logger, DEFAULT_SELECTION_NAME
 
 LOGGER = logger()
 
@@ -58,7 +58,11 @@ class Query:
     """
 
     def __init__(
-        self, conn, columns=["chr", "pos", "ref", "alt"], filter=dict(), selection="all"
+        self,
+        conn,
+        columns=["chr", "pos", "ref", "alt"],
+        filter=dict(),
+        selection=DEFAULT_SELECTION_NAME,
     ):
         self.conn = conn
         self.columns = columns
@@ -219,7 +223,7 @@ class Query:
             # Explicitly query all variants
             query += "FROM variants"
 
-        elif self.selection == "all":
+        elif self.selection == DEFAULT_SELECTION_NAME:
             query += "FROM variants " + annotations_join
         else:
             # Add jointure with 'selections' table
@@ -415,7 +419,9 @@ class Query:
             by the user.
         """
         # Trick to accelerate UI refresh on basic queries
-        if not self.selection or self.selection == "all" and not self.filter:
+        if (
+            not self.selection or self.selection == DEFAULT_SELECTION_NAME
+        ) and not self.filter:
             return self.conn.execute(
                 "SELECT MAX(variants.id) as count FROM variants"
             ).fetchone()[0]

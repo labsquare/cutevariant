@@ -132,7 +132,7 @@ def model_from_string(raw_vql: str) -> dict:
     """TODO
 
     :return: Dictionary ??
-        .. example:: {'select': ('chr', 'pos', 'ref', 'alt'), 'from': 'all'}
+        .. example:: {'select': ('chr', 'pos', 'ref', 'alt'), 'from': '<selection_name>'}
     :rtype: <dict <str>:<tuple>>
     """
     try:

@@ -12,7 +12,7 @@ from PySide2.QtCharts import QtCharts as charts
 
 # Custom imports
 from .plugin import QueryPluginWidget
-from cutevariant.commons import logger
+from cutevariant.commons import logger, DEFAULT_SELECTION_NAME
 
 LOGGER = logger()
 
@@ -91,7 +91,7 @@ class ChartQueryWidget(QueryPluginWidget):
         query.group_by = None
         query.order_by = None
         query.columns = ["ref", "alt", "COUNT(*)"]
-        if query.selection == "all":
+        if query.selection == DEFAULT_SELECTION_NAME:
             # Explicitly query all variants
             query.selection = None
         # Example of filters:

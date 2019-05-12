@@ -5,9 +5,10 @@ import datetime as dt
 import tempfile
 from pkg_resources import resource_filename
 
-
+# Misc
 MAX_RECENT_PROJECTS = 5
 MIN_COMPLETION_LETTERS = 1
+DEFAULT_SELECTION_NAME = "variants"
 
 # Paths
 DIR_LOGS = tempfile.gettempdir() + '/'
