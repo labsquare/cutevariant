@@ -119,6 +119,7 @@ class MainWindow(QMainWindow):
 
         # Display messages from plugins in the status bar
         self.editor.message.connect(self.handle_plugin_message)
+        view_query_widget.message.connect(self.handle_plugin_message)
 
     def add_variant_plugin(self, plugin: VariantPluginWidget):
         """Add info variant plugin to QDockWidget
@@ -135,6 +136,7 @@ class MainWindow(QMainWindow):
         """Add query plugin to QDockWidget and connect it to query_dispatcher"""
         self.query_dispatcher.addWidget(plugin)
         self.add_panel(plugin)
+        plugin.message.connect(self.handle_plugin_message)
 
     def load_plugins(self, folder_path=None):
         """TODO ... Load plugins from path.
