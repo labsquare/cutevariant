@@ -14,6 +14,7 @@ from cutevariant.core import Query
 from cutevariant.core import sql
 from cutevariant.gui import style
 from cutevariant.commons import logger
+from cutevariant.commons import GENOTYPE_ICONS
 
 LOGGER = logger()
 
@@ -146,7 +147,12 @@ class QueryModel(QAbstractItemModel):
                 if section == 0:
                     return "children"
                 else:
-                    return self._query.columns[section - 1]
+                    col = self._query.columns[section - 1]
+                    if type(col) == tuple and len(col) == 3: # show functions
+                        fct,arg,field = col
+                        return f"{fct}({arg}).{field}"
+                    else:
+                        return self._query.columns[section - 1]
 
         return None
 
@@ -379,6 +385,16 @@ class QueryDelegate(QStyledItemDelegate):
         if colname == "gene":
             painter.setPen(QPen(style.GENE_COLOR))
             painter.drawText(option.rect, alignement, str(index.data()))
+            return
+
+
+        if "genotype" in colname:
+            val =  int(value)
+
+            icon_path = GENOTYPE_ICONS.get(val, -1)
+            icon = QPixmap(icon_path).scaled(16,16)
+            painter.setRenderHint(QPainter.Antialiasing)
+            painter.drawPixmap(option.rect.left(), option.rect.center().y() - 8, icon)
             return
 
         painter.setPen(

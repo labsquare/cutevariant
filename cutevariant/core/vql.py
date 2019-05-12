@@ -105,12 +105,22 @@ class Tuple(metaclass=model_class):
     def id(self):
         return "({})".format(", ".join(item.id for item in self.items))
 
+class Function(metaclass=model_class):
+    @property
+    def id(self):
+        return (self.func, self.arg, self.field)
 
 METAMODEL = textx.metamodel_from_str(
     resource_string(__name__, "vql.tx").decode(),  # grammar extraction from vql.tx
     classes=model_class.classes,
     debug=False,
 )
+
+
+class ColumnIdentifier(metaclass=model_class):
+    @property
+    def val(self):
+        return "test"
 
 
 class VQLSyntaxError(ValueError):

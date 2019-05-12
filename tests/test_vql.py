@@ -6,7 +6,7 @@ from cutevariant.core.vql import model_from_string, VQLSyntaxError
 # Test valid VQL cases
 VQL_TO_TREE_CASES = {
     'SELECT chr,pos,gt("sacha").gt FROM variants': {
-        "select": ("chr", "pos", 'gt("sacha").gt'),
+        "select": ("chr", "pos", ('gt','sacha','gt')),
         "from": "variants",
     },
     "SELECT chr,pos,ref FROM variants WHERE a=3 AND b=/=5 AND c<3": {
@@ -36,7 +36,7 @@ VQL_TO_TREE_CASES = {
         },
     },
     'SELECT chr,pos, gt("sacha").gt FROM variants USING file.bed # comments are handled': {
-        "select": ("chr", "pos", 'gt("sacha").gt'),
+        "select": ("chr", "pos", ('gt','sacha','gt')),
         "from": "variants",
         "using": ("file.bed",),
     },
@@ -52,11 +52,11 @@ def template_test_case(vql_expr: str, expected: dict) -> callable:
     "Return a function that test equivalence between given VQL and expected result"
 
     def test_function():
-        found = model_from_string(vql_expr)
         print("EXPECTED:", ", ".join(sorted(tuple(expected.keys()))))
+        found = model_from_string(vql_expr)
+        print("FOUND:", ", ".join(sorted(tuple(found.keys()))))
         pprint(expected)
         print()
-        print("FOUND:", ", ".join(sorted(tuple(found.keys()))))
         pprint(found)
         assert found == expected
 
@@ -72,9 +72,9 @@ for idx, (vql, expected) in enumerate(VQL_TO_TREE_CASES.items(), start=1):
 MALFORMED_VQL_CASES = {
     "": ("no SELECT clause", -1),
     "SELECT chr,pos,ref FROM": ("empty 'FROM' clause", 24),
-    "SELECT chr,,ref FROM": ("invalid empty identifier in SELECT clause", 12),
-    "SELECT c FROM v WHERE a=": ("invalid value in WHERE clause", 25),
-    "SELECT c FROM v WHERE a?=3": ("invalid operator in WHERE clause", 24),
+    #"SELECT chr,,ref FROM": ("invalid empty identifier in SELECT clause", 12),
+    #"SELECT c FROM v WHERE a=": ("invalid value in WHERE clause", 25),
+    #"SELECT c FROM v WHERE a?=3": ("invalid operator in WHERE clause", 24),
 }
 
 
@@ -82,6 +82,7 @@ def template_test_malformed_case(vql_expr: str, expected: tuple) -> callable:
     "Return a function that test equivalence between given VQL and expected result"
 
     def test_function():
+        print("test function")
         with pytest.raises(VQLSyntaxError) as excinfo:
             model_from_string(vql_expr)
         assert excinfo.value.args == expected

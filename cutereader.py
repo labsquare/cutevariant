@@ -1,28 +1,36 @@
-from cutevariant.core.reader import VcfReader, FakeReader
-from cutevariant.core import sql, Query, importer
 import sys 
 import json
 import sqlite3
 import os
 
-from PySide2.QtWidgets import * 
-from PySide2.QtCore import * 
-from PySide2.QtGui import * 
+
+from cutevariant.core import vql
+
+from textx import metamodel_from_str, get_children_of_type, metamodel_from_file
+
+# print("salut")
+# mm = metamodel_from_file("cutevariant/core/vql.tx")
+
+# model = mm.model_from_str("SELECT sacha FROM variant")
 
 
 
+model = vql.model_from_string("SELECT chr,pos,gt(\"sacha\").gt FROM variants")
 
-try:
-    os.remove("/tmp/test.db")
-except:
-    pass
+print(type(model["select"][2]))
 
-conn = sqlite3.connect("/tmp/test.db")
 
-reader = VcfReader(open("examples/test.snpeff.vcf") , "snpeff")
+# try:
+#     os.remove("/tmp/test.db")
+# except:
+#     pass
 
-print(reader.get_samples())
+# conn = sqlite3.connect("/tmp/test.db")
 
-importer.import_reader(conn, reader)
+# reader = VcfReader(open("examples/test.snpeff.vcf") , "snpeff")
+
+# print(reader.get_samples())
+
+# importer.import_reader(conn, reader)
 
 
