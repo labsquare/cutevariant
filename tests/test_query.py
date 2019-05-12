@@ -27,7 +27,7 @@ def test_query_filter(conn):
     query.columns = ["chr","pos","ref","alt"]
     query.filter = {'AND':
             [
-            {'field': 'chr', 'operator': '=', 'value': "chr1"},
+            {'field': 'chr', 'operator': '=', 'value': "'chr1'"},
             {'field': 'pos', 'operator': '>', 'value': 10},
             {'field': 'pos', 'operator': '<', 'value': 1000},
             {'field': 'ref', 'operator': 'IN', 'value': "('A', 'T')"},
@@ -49,9 +49,9 @@ def test_query_functions(conn):
     query.columns = ["chr","pos","ref","alt", ("genotype","TUMOR","gt")]
     query.filter = {'AND': 
             [
-            {'field': 'chr', 'operator': '=', 'value': "chr1"}, 
-            {'field': 'pos', 'operator': '>', 'value': 10}, 
-            {'field': 'pos', 'operator': '<', 'value': 1000}, 
+            {'field': 'chr', 'operator': '=', 'value': "'chr1'"},
+            {'field': 'pos', 'operator': '>', 'value': 10},
+            {'field': 'pos', 'operator': '<', 'value': 1000},
             {'field': ("genotype","TUMOR","GT"), 'operator': '==', 'value': 1}
             ]}
 
