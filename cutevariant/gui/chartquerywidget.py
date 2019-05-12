@@ -59,9 +59,13 @@ class ChartQueryWidget(QueryPluginWidget):
         # series->append(set0);
 
         # Do not redo the chart on if data is not changed...
-        if (self.previous_filter == self.query.filter
-            and self.previous_selection == self.query.selection):
-            LOGGER.debug("ChartQueryWidget:on_change_query: Query filter didn't change => Do nothing!")
+        if (
+            self.previous_filter == self.query.filter
+            and self.previous_selection == self.query.selection
+        ):
+            LOGGER.debug(
+                "ChartQueryWidget:on_change_query: Query filter didn't change => Do nothing!"
+            )
             return
 
         self.previous_filter = self.query.filter
@@ -103,27 +107,24 @@ class ChartQueryWidget(QueryPluginWidget):
         # - If OR operator is on TOP:
         # We have to encapsulate the whole tree of filter into a AND one;
         # so we add our filters to this new list just after the old OR filter.
-        ATGC_filter = \
-            [{'field': 'ref', 'operator': 'IN', 'value': "('A', 'T', 'G', 'C')"},
-             {'field': 'alt', 'operator': 'IN', 'value': "('A', 'T', 'G', 'C')"}]
+        ATGC_filter = [
+            {"field": "ref", "operator": "IN", "value": "('A', 'T', 'G', 'C')"},
+            {"field": "alt", "operator": "IN", "value": "('A', 'T', 'G', 'C')"},
+        ]
 
         # Avoid touching to original data since we don't do deepcopy (SQLite is not pickable)
         query.filter = dict(query.filter)
         if not query.filter:
             # no filters: new AND filter
-            query.filter['AND'] = ATGC_filter
-        elif 'AND' in query.filter:
+            query.filter["AND"] = ATGC_filter
+        elif "AND" in query.filter:
             # AND operator on TOP: add our filters to it
-            query.filter['AND'].extend(ATGC_filter)
+            query.filter["AND"].extend(ATGC_filter)
         else:
             # OR operator on TOP: encapsulate the old filter into a AND one
             # and add our filters to this new list just after the old OR filter.
-            query.filter = {"AND": [
-                query.filter, # Old OR filter
-            ]}
-            query.filter['AND'].extend(ATGC_filter)
-
-        LOGGER.debug("ChartQueryWidget:on_change_query:: Custom query: %s", query.sql())
+            query.filter = {"AND": [query.filter]}  # Old OR filter
+            query.filter["AND"].extend(ATGC_filter)
 
         ## Data formatting
         # Raw variants:
@@ -132,11 +133,15 @@ class ChartQueryWidget(QueryPluginWidget):
         # {'G': Counter({'T': 3, 'A': 1}), 'C': ...}
 
         data = defaultdict(Counter)
+        LOGGER.debug("ChartQueryWidget:on_change_query:: Custom query built:")
+
         # After the auto-parsing of filters by query.sql(), add manually:
         # - COUNT() function to columns
         # - GROUP BY command to query
         # We use RAW factory as tuples
-        for ref, alt, value in query.conn.execute(query.sql() + " GROUP BY ref, alt"):
+        for ref, alt, value in query.conn.execute(
+            query.sql(do_not_add_default_things=True) + " GROUP BY ref, alt"
+        ):
             data[ref][alt] = value
 
         ## Create QBarSets

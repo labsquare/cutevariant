@@ -179,7 +179,6 @@ class Query:
         # Detect if join sample is required ...
         # sample_ids = self.detect_samples()
 
-
         ## Build columns
         # Set default columns if columns is empty
         # Otherwise, columns are kept unmodified
@@ -210,7 +209,11 @@ class Query:
         query = f"SELECT {','.join(sql_columns)} "
 
         ## Add SELECT clause
-        annotations_join = "" if do_not_add_default_things else "LEFT JOIN annotations ON annotations.variant_id = variants.id"
+        annotations_join = (
+            ""
+            if do_not_add_default_things
+            else "LEFT JOIN annotations ON annotations.variant_id = variants.id"
+        )
 
         if not self.selection:
             # Explicitly query all variants
@@ -290,13 +293,13 @@ class Query:
         yield from self.conn.execute(self.sql(limit, offset))
 
     def filter_to_sql(self, node: dict) -> str:
-        """Recursive function to convert hierarchical dictionnary into a SQL Where clause
+        """Recursive function to convert the self.filter hierarchical dictionnary
+        into a SQL WHERE clause.
 
         :param node: hierachical dictionnary
         :return: a SQL WHERE clause
 
         ..seealso: filter
-
 
         :Example of filter:
         filter: {'AND': [
@@ -335,7 +338,7 @@ class Query:
                 value = str(value)
 
             # Process field
-            if (isinstance(field, tuple) and len(field) == 3):
+            if isinstance(field, tuple) and len(field) == 3:
                 #  Function ? ("genotype","sample","gt")
                 fct, arg, f = field
                 field = f"gt_{arg}.{f}"
@@ -429,10 +432,11 @@ class Query:
             paging purposes of the interface.
         """
         LOGGER.debug("Query:variants_count:: query:")
-        count = self._cached_variants_count_query(self.sql(do_not_add_useless_things=True))
+        count = self._cached_variants_count_query(
+            self.sql(do_not_add_useless_things=True)
+        )
         LOGGER.debug(
-            "Query:variants_count:: %s",
-            self._cached_variants_count_query.cache_info(),
+            "Query:variants_count:: %s", self._cached_variants_count_query.cache_info()
         )
         return count
 
@@ -487,7 +491,7 @@ class Query:
             if isinstance(col, tuple):
                 fct, arg, field = col
                 if fct == _GENOTYPE_FUNCTION_NAME:
-                    col = f"genotype(\"{arg}\").{field}"
+                    col = f'genotype("{arg}").{field}'
             _c.append(col)
 
         base = f"SELECT {','.join(_c)} FROM {self.selection}"
