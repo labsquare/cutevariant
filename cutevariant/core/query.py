@@ -171,13 +171,14 @@ class Query:
 
 
         ## Build columns
-        if len(self.columns) == 0:
+        # Set default columns if columns is empty
+        # Otherwise, columns are kept unmodified
+        if not self.columns:
             self.columns = ["variants.id", "chr", "pos", "ref", "alt"]
-        else:
-            sql_columns = []
 
         # Replace genotype function by name
         # Transform ("genotype", "boby","gt") to "`gt_boby`.gt" to perform SQL JOIN
+        sql_columns = []
         for col in self.columns:
             if isinstance(col, tuple):
                 function_name, arg, field_name = col
@@ -200,7 +201,6 @@ class Query:
             query += "FROM variants"
 
         elif self.selection == "all":
-            # TODO: /!\ DOESN'T return variants without annotations...
             query += "FROM variants LEFT JOIN annotations ON annotations.variant_id = variants.id"
         else:
             # Add jointure with 'selections' table
@@ -413,7 +413,7 @@ class Query:
         LOGGER.debug("Query:variants_count:: %s", self.sql())
         count = self._cached_variants_count_query(self.sql())
         LOGGER.debug(
-            "Query:variants_count:: Cache report %s",
+            "Query:variants_count:: %s",
             self._cached_variants_count_query.cache_info(),
         )
         return count
