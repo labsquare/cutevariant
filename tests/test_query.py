@@ -15,25 +15,27 @@ def conn():
     return conn
 
 
-
 def test_query_columns(conn):
     query = Query(conn)
-    query.columns = ["chr","pos","ref","alt"]
-    assert query.sql() == "SELECT variants.id,chr,pos,ref,alt FROM variants LEFT JOIN annotations ON annotations.variant_id = variants.id"
+    query.columns = ["chr", "pos", "ref", "alt"]
+    assert (
+        query.sql()
+        == "SELECT variants.id,chr,pos,ref,alt FROM variants LEFT JOIN annotations ON annotations.variant_id = variants.id"
+    )
 
 
 def test_query_filter(conn):
     query = Query(conn)
-    query.columns = ["chr","pos","ref","alt"]
-    query.filter = {'AND':
-            [
-            {'field': 'chr', 'operator': '=', 'value': "'chr1'"},
-            {'field': 'pos', 'operator': '>', 'value': 10},
-            {'field': 'pos', 'operator': '<', 'value': 1000},
-            {'field': 'ref', 'operator': 'IN', 'value': "('A', 'T')"},
-            {'field': 'ref', 'operator': 'NOT IN', 'value': "('G', 'C')"},
-            ]}
-
+    query.columns = ["chr", "pos", "ref", "alt"]
+    query.filter = {
+        "AND": [
+            {"field": "chr", "operator": "=", "value": "'chr1'"},
+            {"field": "pos", "operator": ">", "value": 10},
+            {"field": "pos", "operator": "<", "value": 1000},
+            {"field": "ref", "operator": "IN", "value": "('A', 'T')"},
+            {"field": "ref", "operator": "NOT IN", "value": "('G', 'C')"},
+        ]
+    }
 
     # todo : cannot break the lines...
     expected = "SELECT variants.id,chr,pos,ref,alt FROM variants LEFT JOIN annotations ON annotations.variant_id = variants.id WHERE (chr = 'chr1' AND pos > 10 AND pos < 1000 AND ref IN ('A', 'T') AND ref NOT IN ('G', 'C'))"
@@ -42,35 +44,31 @@ def test_query_filter(conn):
     conn.execute(query.sql())
 
 
-
 def test_query_functions(conn):
     query = Query(conn)
 
-    query.columns = ["chr","pos","ref","alt", ("genotype","TUMOR","gt")]
-    query.filter = {'AND': 
-            [
-            {'field': 'chr', 'operator': '=', 'value': "'chr1'"},
-            {'field': 'pos', 'operator': '>', 'value': 10},
-            {'field': 'pos', 'operator': '<', 'value': 1000},
-            {'field': ("genotype","TUMOR","GT"), 'operator': '==', 'value': 1}
-            ]}
+    query.columns = ["chr", "pos", "ref", "alt", ("genotype", "TUMOR", "gt")]
+    query.filter = {
+        "AND": [
+            {"field": "chr", "operator": "=", "value": "'chr1'"},
+            {"field": "pos", "operator": ">", "value": 10},
+            {"field": "pos", "operator": "<", "value": 1000},
+            {"field": ("genotype", "TUMOR", "GT"), "operator": "==", "value": 1},
+        ]
+    }
 
-    #Detect genotype in columns 
+    # Detect genotype in columns
     query._detect_samples_from_columns()
     assert "TUMOR" in query._samples_to_join
 
     query._samples_to_join.clear()
 
-    #Detect genotype in filters 
+    # Detect genotype in filters
     query._detect_samples_from_filter()
     assert "TUMOR" in query._samples_to_join
 
-    assert "LEFT JOIN sample_has_variant" in query.sql() 
-    assert "gt_TUMOR.GT" in query.sql() 
-        
-
-
-
+    assert "LEFT JOIN sample_has_variant" in query.sql()
+    assert "gt_TUMOR.GT" in query.sql()
 
 
 # def test_query_group_by(conn):
@@ -79,8 +77,6 @@ def test_query_functions(conn):
 #     query.group_by = ("chr","pos","ref","alt")
 
 #     conn.execute(query.sql())
-
-
 
 
 # def test_query_selection(conn):
