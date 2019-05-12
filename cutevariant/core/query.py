@@ -58,7 +58,7 @@ class Query:
     """
 
     def __init__(
-        self, conn, columns=["chr", "pos", "ref", "alt"], filter=None, selection="all"
+        self, conn, columns=["chr", "pos", "ref", "alt"], filter=dict(), selection="all"
     ):
         self.conn = conn
         self.columns = columns
@@ -166,39 +166,46 @@ class Query:
         :rtype: str
         """
 
-        #  Detect if join sample is required ...
+        # Detect if join sample is required ...
         # sample_ids = self.detect_samples()
 
+
+        ## Build columns
         if len(self.columns) == 0:
             self.columns = ["chr", "pos", "ref", "alt"]
 
         # Replace genotype function by name
-        #  Transform ("genotype", "boby","gt") to "`gt_boby`.gy" to perform SQL JOIN
+        # Transform ("genotype", "boby","gt") to "`gt_boby`.gt" to perform SQL JOIN
+            sql_columns = ["variants.id"]
+        else:
+            sql_columns = []
 
-        sql_columns = []
-        sql_columns.append("variants.id")
         for col in self.columns:
-            if type(col) == tuple:
-                fct, arg, field = col
-                if fct == _GENOTYPE_FUNCTION_NAME:
-                    col = f"`gt_{arg}`.{field}"
+            if isinstance(col, tuple):
+                function_name, arg, field_name = col
+                if function_name == _GENOTYPE_FUNCTION_NAME:
+                    col = f"`gt_{arg}`.{field_name}"
 
             sql_columns.append(col)
 
-        #  if group by , add extra columns ( child count and child ids )
+        # If 'group by', add extra columns (child count and child ids)
         # Required for viewquerywidget.py
         if self.group_by:
             sql_columns.extend(["COUNT(variants.id) as 'children'"])
+            # TODO: test with count (*)
 
         query = f"SELECT {','.join(sql_columns)} "
 
-        # Add Select clause
+        ## Add SELECT clause
+        if not self.selection:
+            # Explicitly query all variants
+            query += "FROM variants"
 
-        if self.selection == "all":
-            query += f"FROM variants LEFT JOIN annotations ON annotations.variant_id = variants.id"
+        elif self.selection == "all":
+            # TODO: /!\ DOESN'T return variants without annotations...
+            query += "FROM variants LEFT JOIN annotations ON annotations.variant_id = variants.id"
         else:
-            #  manage jointure with selection
-
+            # Add jointure with 'selections' table
             query += f"""
             FROM variants
             LEFT JOIN annotations ON annotations.variant_id = variants.id
@@ -217,17 +224,20 @@ class Query:
                     sample_name = sample["name"]
                     query += f" LEFT JOIN sample_has_variant gt_{sample_name} ON gt_{sample_name}.variant_id = variants.id AND gt_{sample_name}.sample_id = {sample_id}"
 
+        ## Add WHERE filter
         if self.filter:
             query += " WHERE " + self.filter_to_sql(self.filter)
-            #  add limit and offset
 
+        ## Add GROUP BY command
         if self.group_by:
             query += " GROUP BY chr,pos,ref,alt"
 
+        ## Add ORDER BY command
         if self.order_by is not None:
-            direction = "DESC" if self.order_desc is True else "ASC"
+            direction = "DESC" if self.order_desc else "ASC"
             query += f" ORDER BY {self.order_by} {direction}"
 
+        ## Add LIMIT and OFFSET clauses
         if limit > 0:
             query += f" LIMIT {limit} OFFSET {offset}"
 
@@ -273,48 +283,71 @@ class Query:
 
         ..seealso: filter
 
+
+        :Example of filter:
+        filter: {'AND': [
+            {'field': 'ref', 'operator': 'IN', 'value': "('A', 'T', 'G', 'C')"},
+            {'field': 'alt', 'operator': 'IN', 'value': "('A', 'T', 'G', 'C')"}
+        ]}
         """
 
-        if dict is None:
-            return str()
+        if not node:
+            return ""
 
-        # function to detect if node is a Condition node (AND/OR) OR a field node {name,operator, value}
+        # Function to detect IF node is a Condition node (AND/OR)
+        # OR a field node with (name, operator, value) as keys
         is_field = lambda x: True if len(x) == 3 else False
 
         if is_field(node):
-            # change value
+            # print("IS FIELD", node)
+
+            # Process value
             value = node["value"]
             operator = node["operator"]
             field = node["field"]
 
             # TODO ... c'est degeulasse ....
 
-            if (
-                type(value) == str
-            ):  # Add quote for string .. Need to change in the future and use sqlite binding value
-                value = "'" + str(value) + "'"
+            if operator in ("IN", "NOT IN"):
+                # DO NOT enclose value in quotes
+                # node: {'field': 'ref', 'operator': 'IN', 'value': "('A', 'T', 'G', 'C')"}
+                # wanted: ref IN ('A', 'T', 'G', 'C')
+                pass
 
-            elif type(value) == list:
+            elif isinstance(value, str):
+                # Add quote for string ..
+                # TODO: Need to change in the future and use sqlite binding value
+                value = "'" + value + "'"
+
+            elif isinstance(value, list):
                 value = "(" + ",".join(value) + ")"
 
             else:
                 value = str(value)
 
-            if (
-                type(field) == tuple and len(field) == 3
-            ):  #  Function ? ("genotype","sample","gt")
+            if (type(field) == tuple and len(field) == 3):
+                #  Function ? ("genotype","sample","gt")
                 fct, arg, f = field
                 field = f"gt_{arg}.{f}"
 
-            return field + operator + value
+            return "%s %s %s" % (field, operator, value)
 
         else:
-            logic = list(node.keys())[0]
-            out = []
-            for child in node[logic]:
-                out.append(self.filter_to_sql(child))
+            # Not a field: 1 key only: the logical operator
+            logic_op = list(node.keys())[0]
+            # Recursive call for each field in the list associated to the
+            # logical operator.
+            # node:
+            # {'AND': [
+            #   {'field': 'ref', 'operator': 'IN', 'value': "('A', 'T', 'G', 'C')"},
+            #   {'field': 'alt', 'operator': 'IN', 'value': "('A', 'T', 'G', 'C')"}
+            # ]}
+            # Wanted: ref IN ('A', 'T', 'G', 'C') AND alt IN ('A', 'T', 'G', 'C')
+            out = [self.filter_to_sql(child) for child in node[logic_op]]
+            # print("OUT", out, "LOGIC", logic_op)
+            # OUT ["refIN'('A', 'T', 'G', 'C')'", "altIN'('A', 'T', 'G', 'C')'"]
 
-            return "(" + f" {logic} ".join(out) + ")"
+            return "(" + f" {logic_op} ".join(out) + ")"
 
     #     ##-----------------------------------------------------------------------------------------------------------
 
