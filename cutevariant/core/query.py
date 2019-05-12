@@ -312,17 +312,13 @@ class Query:
                 # wanted: ref IN ('A', 'T', 'G', 'C')
                 pass
 
-            elif isinstance(value, str):
-                # Add quote for string ..
-                # TODO: Need to change in the future and use sqlite binding value
-                value = "'" + value + "'"
-
             elif isinstance(value, list):
                 value = "(" + ",".join(value) + ")"
 
             else:
                 value = str(value)
 
+            # Process field
             if (isinstance(field, tuple) and len(field) == 3):
                 #  Function ? ("genotype","sample","gt")
                 fct, arg, f = field
