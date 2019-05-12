@@ -504,9 +504,10 @@ def create_variants_indexes(conn):
     """
 
     # Complementary index of the primary key (sample_id, variant_id)
-    conn.execute(f"""CREATE INDEX idx_sample_has_variant ON sample_has_variant (variant_id)""")
+    conn.execute("""CREATE INDEX idx_sample_has_variant ON sample_has_variant (variant_id)""")
 
-    conn.execute(f"""CREATE INDEX idx_variants_pos ON variants (pos)""")
+    conn.execute("""CREATE INDEX idx_variants_pos ON variants (pos)""")
+    conn.execute("""CREATE INDEX idx_variants_ref_alt ON variants (ref, alt)""")
 
 
 def get_one_variant(conn, id: int):
