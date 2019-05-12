@@ -51,6 +51,7 @@ class VqlSyntaxHighlighter(QSyntaxHighlighter):
                 ),
                 "font": QFont.Bold,
                 "color": palette.color(QPalette.Highlight),  # default: Qt.darkBlue
+                "case_insensitive": True,
             },
             {
                 # Strings simple quotes '...'
@@ -90,13 +91,17 @@ class VqlSyntaxHighlighter(QSyntaxHighlighter):
                 t_format.setForeground(color)
 
             regex = QRegularExpression(pattern["pattern"])
-            minimal = pattern.get("minimal", False)
-            if minimal:
+            if pattern.get("minimal", False):
                 # The greediness of the quantifiers is inverted: *, +, ?, {m,n}, etc.
                 # become lazy, while their lazy versions (*?, +?, ??, {m,n}?, etc.)
                 # become greedy.
                 # https://doc.qt.io/Qt-5/qregularexpression.html#setPatternOptions
                 regex.setPatternOptions(QRegularExpression.InvertedGreedinessOption)
+
+            if pattern.get("case_insensitive", False):
+                # NOTE: Deletes previous pattern options
+                # Not serious in practice, this only concerns the keywords
+                regex.setPatternOptions(QRegularExpression.CaseInsensitiveOption)
 
             self.highlighting_rules.append((regex, t_format))
 
