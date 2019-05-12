@@ -2,6 +2,7 @@
 # Standard imports
 import itertools as it
 from collections import Counter, defaultdict
+from copy import copy
 
 # Qt imports
 from PySide2.QtWidgets import QVBoxLayout
@@ -11,6 +12,9 @@ from PySide2.QtCharts import QtCharts as charts
 
 # Custom imports
 from .plugin import QueryPluginWidget
+from cutevariant.commons import logger
+
+LOGGER = logger()
 
 
 class ChartQueryWidget(QueryPluginWidget):
@@ -28,7 +32,8 @@ class ChartQueryWidget(QueryPluginWidget):
 
         self.setLayout(layout)
         self._query = None
-        self.is_query_changed = False
+        self.previous_filter = ""
+        self.previous_selection = ""
 
     def on_init_query(self):
         """Overrided from AbstractQueryWidget"""
@@ -53,14 +58,86 @@ class ChartQueryWidget(QueryPluginWidget):
         # QBarSeries *series = new QBarSeries();
         # series->append(set0);
 
+        # Do not redo the chart on if data is not changed...
+        if (self.previous_filter == self.query.filter
+            and self.previous_selection == self.query.selection):
+            LOGGER.debug("ChartQueryWidget:on_change_query: Query filter didn't change => Do nothing!")
+            return
+
+        self.previous_filter = self.query.filter
+        self.previous_selection = self.query.selection
+
+        # We don't want:
+        # SELECT chr,pos,ref,alt,COUNT(variants.id) as 'children'
+        # FROM variants
+        # LEFT JOIN annotations ON annotations.variant_id = variants.id
+        # WHERE ref IN ('A', 'T', 'G', C) AND alt IN ('A', 'T', 'G', C)
+        # GROUP BY chr,pos,ref,alt
+
+        # We just want:
+        # SELECT re, alt, COUNT(*) FROM variants
+        # WHERE ref IN ('A', 'T', 'G', C) AND alt IN ('A', 'T', 'G', C)
+        # GROUP by ref, alt
+
+        # AND we HAVE TO take care of current filters and selections;
+        # so we will reset all fields except this ones; filter attribute
+        # will be edited in place to add our new filters.
+
+        query = copy(self.query)
+        query.group_by = None
+        query.order_by = None
+        query.columns = ["ref", "alt", "COUNT(*)"]
+        if query.selection == "all":
+            # Explicitly query all variants
+            query.selection = None
+        # Example of filters:
+        # filter: {'AND': [{'field': 'ref', 'operator': '=', 'value': 'G'},
+        #                  {'field': 'ref', 'operator': 'IN', 'value': "('A', 'T', 'G', C)"}]}
+        # filter: {'AND': [{'field': 'ref', 'operator': 'IN', 'value': "('A', 'T', 'G', 'C')"},
+        #                  {'field': 'alt', 'operator': 'IN', 'value': "('A', 'T', 'G', 'C')"}]}
+        # We want to add our filter in the top of filters:
+        # - If there is no filters:
+        # We add a new AND filter with our filters in its list.
+        # - If AND operator is on TOP:
+        # Just add our filters to the list of this operator.
+        # - If OR operator is on TOP:
+        # We have to encapsulate the whole tree of filter into a AND one;
+        # so we add our filters to this new list just after the old OR filter.
+        ATGC_filter = \
+            [{'field': 'ref', 'operator': 'IN', 'value': "('A', 'T', 'G', 'C')"},
+             {'field': 'alt', 'operator': 'IN', 'value': "('A', 'T', 'G', 'C')"}]
+
+        # Avoid touching to original data since we don't do deepcopy (SQLite is not pickable)
+        query.filter = dict(query.filter)
+        if not query.filter:
+            # no filters: new AND filter
+            query.filter['AND'] = ATGC_filter
+        elif 'AND' in query.filter:
+            # AND operator on TOP: add our filters to it
+            query.filter['AND'].extend(ATGC_filter)
+        else:
+            # OR operator on TOP: encapsulate the old filter into a AND one
+            # and add our filters to this new list just after the old OR filter.
+            query.filter = {"AND": [
+                query.filter, # Old OR filter
+            ]}
+            query.filter['AND'].extend(ATGC_filter)
+
+        LOGGER.debug("ChartQueryWidget:on_change_query:: Custom query: %s", query.sql())
+
         ## Data formatting
         # Raw variants:
-        # {'id': 1, 'chr': 11, 'pos': 10000, 'ref': 'G', 'alt': 'T', 'childs': 1}
+        # {'ref': 'G', 'alt': 'T', 'COUNT(*)': 1}
         # Build  dict like:
         # {'G': Counter({'T': 3, 'A': 1}), 'C': ...}
+
         data = defaultdict(Counter)
-        for variant in self._query.items():
-            data[variant["ref"]][variant["alt"]] += 1
+        # After the auto-parsing of filters by query.sql(), add manually:
+        # - COUNT() function to columns
+        # - GROUP BY command to query
+        # We use RAW factory as tuples
+        for ref, alt, value in query.conn.execute(query.sql() + " GROUP BY ref, alt"):
+            data[ref][alt] = value
 
         ## Create QBarSets
         references = ("A", "T", "G", "C")
