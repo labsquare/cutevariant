@@ -399,6 +399,12 @@ class Query:
             and it seems difficult to predict which fields will be requested
             by the user.
         """
+        # Trick to accelerate UI refresh on basic queries
+        if not self.selection or self.selection == "all" and not self.filter:
+            return self.conn.execute(
+                "SELECT MAX(variants.id) as count FROM variants"
+            ).fetchone()[0]
+
         return self.conn.execute(
             f"SELECT COUNT(*) as count FROM ({sql_query})"
         ).fetchone()[0]
