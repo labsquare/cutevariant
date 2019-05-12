@@ -172,14 +172,12 @@ class Query:
 
         ## Build columns
         if len(self.columns) == 0:
-            self.columns = ["chr", "pos", "ref", "alt"]
-
-        # Replace genotype function by name
-        # Transform ("genotype", "boby","gt") to "`gt_boby`.gt" to perform SQL JOIN
-            sql_columns = ["variants.id"]
+            self.columns = ["variants.id", "chr", "pos", "ref", "alt"]
         else:
             sql_columns = []
 
+        # Replace genotype function by name
+        # Transform ("genotype", "boby","gt") to "`gt_boby`.gt" to perform SQL JOIN
         for col in self.columns:
             if isinstance(col, tuple):
                 function_name, arg, field_name = col
