@@ -323,11 +323,12 @@ class Query:
             else:
                 value = str(value)
 
-            if (type(field) == tuple and len(field) == 3):
+            if (isinstance(field, tuple) and len(field) == 3):
                 #  Function ? ("genotype","sample","gt")
                 fct, arg, f = field
                 field = f"gt_{arg}.{f}"
 
+            # There must be spaces between these strings because of strings operators (IN, etc.)
             return "%s %s %s" % (field, operator, value)
 
         else:

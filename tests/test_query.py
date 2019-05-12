@@ -25,16 +25,18 @@ def test_query_columns(conn):
 def test_query_filter(conn):
     query = Query(conn)
     query.columns = ["chr","pos","ref","alt"]
-    query.filter = {'AND': 
+    query.filter = {'AND':
             [
-            {'field': 'chr', 'operator': '=', 'value': "chr1"}, 
-            {'field': 'pos', 'operator': '>', 'value': 10}, 
-            {'field': 'pos', 'operator': '<', 'value': 1000}
+            {'field': 'chr', 'operator': '=', 'value': "chr1"},
+            {'field': 'pos', 'operator': '>', 'value': 10},
+            {'field': 'pos', 'operator': '<', 'value': 1000},
+            {'field': 'ref', 'operator': 'IN', 'value': "('A', 'T')"},
+            {'field': 'ref', 'operator': 'NOT IN', 'value': "('G', 'C')"},
             ]}
 
 
-    # todo : cannot break the lines... 
-    expected = "SELECT variants.id,chr,pos,ref,alt FROM variants LEFT JOIN annotations ON annotations.variant_id = variants.id WHERE (chr='chr1' AND pos>10 AND pos<1000)"
+    # todo : cannot break the lines...
+    expected = "SELECT variants.id,chr,pos,ref,alt FROM variants LEFT JOIN annotations ON annotations.variant_id = variants.id WHERE (chr = 'chr1' AND pos > 10 AND pos < 1000 AND ref IN ('A', 'T') AND ref NOT IN ('G', 'C'))"
 
     assert query.sql() == expected
     conn.execute(query.sql())
