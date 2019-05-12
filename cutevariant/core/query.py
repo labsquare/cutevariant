@@ -157,13 +157,23 @@ class Query:
 
         ##-----------------------------------------------------------------------------------------------------------
 
-    def sql(self, limit=0, offset=0) -> str:
+    def sql(self, limit=0, offset=0, do_not_add_default_things=False) -> str:
         """Build a sql query according to attributes
+
+        .. note:: Some queries require that this functions doesn't add default
+            columns or joins.
+            In this case the argument do_not_add_default_things must be set to True.
+            - `variants.id` will not be appended to SELECT clause.
+            - A LEFT JOIN on annotations will not be made.
+            Typical query concerned: see ChartQueryWidget:on_change_query()
+
+        .. note:: This function can be called as this, but its main purpose is
+            to be used by self.items().
 
         :param limit : SQL LIMIT for pagination
         :param offset: SQL OFFSET for pagination
-        :return: an SQL query
-        :rtype: str
+        :return: A SQL query ready to be executed.
+        :rtype: <str>
         """
 
         # Detect if join sample is required ...
@@ -174,11 +184,15 @@ class Query:
         # Set default columns if columns is empty
         # Otherwise, columns are kept unmodified
         if not self.columns:
-            self.columns = ["variants.id", "chr", "pos", "ref", "alt"]
+            self.columns = ["chr", "pos", "ref", "alt"]
 
+        if do_not_add_default_things:
+            sql_columns = []
+        else:
+            sql_columns = ["variants.id"]
         # Replace genotype function by name
         # Transform ("genotype", "boby","gt") to "`gt_boby`.gt" to perform SQL JOIN
-        sql_columns = []
+
         for col in self.columns:
             if isinstance(col, tuple):
                 function_name, arg, field_name = col
@@ -190,23 +204,25 @@ class Query:
         # If 'group by', add extra columns (child count and child ids)
         # Required for viewquerywidget.py
         if self.group_by:
-            sql_columns.extend(["COUNT(variants.id) as 'children'"])
+            sql_columns.extend(["COUNT(*) as 'children'"])
             # TODO: test with count (*)
 
         query = f"SELECT {','.join(sql_columns)} "
 
         ## Add SELECT clause
+        annotations_join = "" if do_not_add_default_things else "LEFT JOIN annotations ON annotations.variant_id = variants.id"
+
         if not self.selection:
             # Explicitly query all variants
             query += "FROM variants"
 
         elif self.selection == "all":
-            query += "FROM variants LEFT JOIN annotations ON annotations.variant_id = variants.id"
+            query += "FROM variants " + annotations_join
         else:
             # Add jointure with 'selections' table
             query += f"""
             FROM variants
-            LEFT JOIN annotations ON annotations.variant_id = variants.id
+            {annotations_join}
             INNER JOIN selection_has_variant sv ON sv.variant_id = variants.id
             INNER JOIN selections s ON s.id = sv.selection_id AND s.name = '{self.selection}'
             """
@@ -412,8 +428,8 @@ class Query:
             - viewquerywidget.py in `load()` to keep the total of variants for
             paging purposes of the interface.
         """
-        LOGGER.debug("Query:variants_count:: %s", self.sql())
-        count = self._cached_variants_count_query(self.sql())
+        LOGGER.debug("Query:variants_count:: query:")
+        count = self._cached_variants_count_query(self.sql(do_not_add_useless_things=True))
         LOGGER.debug(
             "Query:variants_count:: %s",
             self._cached_variants_count_query.cache_info(),
