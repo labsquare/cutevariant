@@ -526,12 +526,16 @@ def get_variants_count(conn):
     return conn.execute(f"""SELECT COUNT(*) FROM variants""").fetchone()[0]
 
 
-def async_insert_many_variants(conn, data, total_variant_count=None, yield_every=200):
+def async_insert_many_variants(conn, data, total_variant_count=None, yield_every=30000):
     """Insert many variants from data into variants table
 
     :param conn: sqlite3.connect
     :param data: list of variant dictionnary which contains same number of key than fields numbers.
     :param variant_count: total variant count, to compute progression
+    :return: Yield a tuple with progression and message.
+        Progression is 0 if total_variant_count is not set.
+    :rtype: <generator <tuple <int>, <str>>
+
 
     :Example:
 
@@ -608,6 +612,7 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
 
     # Loop over variants
     errors = 0
+    progress = 0
     for variant_count, variant in enumerate(data, 1):
 
         # Insert current variant
@@ -677,16 +682,13 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
         if variant_count % yield_every == 0:
             if total_variant_count:
                 progress = variant_count / total_variant_count * 100
-            else:
-                progress = 0
 
             yield progress, f"{variant_count} variants inserted."
 
     # Commit the transaction
     conn.commit()
 
-    # create selections
-    # insert_selection(conn, name="all", count=variant_count)
+    yield 97, f"{variant_count - errors} variant(s) has been inserted."
 
     yield 98, f"{variant_count - errors} variant(s) has been inserted"
 
