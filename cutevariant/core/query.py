@@ -445,7 +445,7 @@ class Query:
         model = vql.model_from_string(raw)
         self.columns = list(model["select"])  # columns from variant table
         self.selection = model["from"]  # name of the variant set
-        self.filter = model.get("where")  # filter as raw text; None if no filter
+        self.filter = model.get("where", dict())  # filter as raw text; dict if no filter
         # TODO: USING clause missing
 
         print("from vql", model)
