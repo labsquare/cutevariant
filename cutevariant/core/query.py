@@ -74,64 +74,56 @@ class Query:
 
         self._samples_to_join = set()
 
-        ##-----------------------------------------------------------------------------------------------------------
+    def extract_samples_from_columns_and_filter(self):
+        """Extract samples if columns or filter contains function.
 
-    # def sample_from_expression(self, expression):
-    #     """
-    #     ..warning:: WILL BE REMOVE AFTER FIXING #33
+        The aim is to dynamically add JOINS clauses. `self._samples_to_join`
+        is modified here.
 
-    #     """
-    #     # extract <sample> from <gt("sample")>
-    #     regexp = r"gt(.*).gt"
-    #     match = re.search(regexp, expression)
-    #     if match:
-    #         return match.group(1)
-    #     else:
-    # return None
+        .. note:: About functions:
+            `columns` and `filter` can contains function as tuple.
+            A function is defined by:
+                - function name
+                - arguments (sample name, etc.)
+                - sql field name
 
-    ##-----------------------------------------------------------------------------------------------------------
+            This columns selection can be writted in VQL as follow :
 
-    def _detect_samples(self):
-        """Detect if columns or filter contains function.
+                SELECT chr, pos, genotype("boby").gt
 
-        Functions are tuples. For example, this is a columns list with 2 normal
-        field and 1 genotype function field:
-
-            query.columns = ("chr","pos", ("genotype", "boby", "gt"))
-
-        This columns selection can be writted in VQL as follow :
-
-            SELECT chr, pos, genotype("boby").gt
+            "boby" will be added to `self._samples_to_join`
         """
-        self._samples_to_join.clear()
+        self._samples_to_join = set()
         self._detect_samples_from_columns()
         self._detect_samples_from_filter()
-        #  TODO: Parse filter
 
     def _detect_samples_from_columns(self):
-        """Detect if columns contains function and keep function args as sample name for sql join with sample tables.
+        """Detect if `columns` contains function and keep function args
+        as sample name for sql join with sample tables.
 
         Functions are defined as tuples. For exemple `genotype("boby").gt` will
         be written as `("genotype", "boby", "gt")`.
+        => add "boby" to self._samples_to_join
         """
         # Get function tuples
-        #  A function is a tuple with 3 elements. The second element is the sample name
+        #  A function is a tuple with 3 elements.
+        #  The second element is the sample name.
         # TODO: is test on length usefull?
         functions = (
             col for col in self.columns if isinstance(col, tuple) and len(col) == 3
         )
-        # TODO: set on intention here
-        for function in functions:
-            function_name, sample_name, field_name = function
-
-            if function_name == _GENOTYPE_FUNCTION_NAME:
-                self._samples_to_join.add(sample_name)
+        # Set sample names to join
+        self._samples_to_join.update(
+            self.get_samples_names_from_functions(functions, _GENOTYPE_FUNCTION_NAME)
+        )
 
     def _detect_samples_from_filter(self):
-        """Detect if filter contains function and keep function args as sample name for sql join with sample tables
+        """Detect if `filter` contains function and keep function args
+        as sample name for sql join with sample tables.
 
         Functions are defined as tuples. For exemple `genotype("boby").gt` will
         be written as `("genotype", "boby", "gt")`.
+        => add "boby" to self._samples_to_join
         """
         # Recursive loop over filter to extract field name only
         def iter(node):
@@ -147,19 +139,36 @@ class Query:
                     yield from iter(i)
 
         # Get function tuples
-        #  A function is a tuple with 3 elements. The second element is the sample name
+        #  A function is a tuple with 3 elements.
+        #  The second element is the sample name
         # TODO: is test on length usefull?
         functions = (
             col for col in iter(self.filter) if isinstance(col, tuple) and len(col) == 3
         )
-        # TODO: set on intention here
+        # Set sample names to join
+        self._samples_to_join.update(
+            self.get_samples_names_from_functions(functions, _GENOTYPE_FUNCTION_NAME)
+        )
+
+    def get_samples_names_from_functions(self, functions, function_name):
+        """Get samples names from given functions if their function_name matches
+        to the given one.
+
+        :param functions: Iterable of functions.
+        :param function_name: Function name to be search in functions.
+        :return: Set of arguments (samples names).
+        :rtype: <set>
+        """
+        samples = set()
         for function in functions:
-            function_name, sample_name, field_name = function
+            function_name, function_argument, field_name = function
 
-            if function_name == _GENOTYPE_FUNCTION_NAME:
-                self._samples_to_join.add(sample_name)
+            if function_name == function_name:
+                # function_argument is a sample_name here
+                samples.add(function_argument)
+        return samples
 
-        ##-----------------------------------------------------------------------------------------------------------
+    ##--------------------------------------------------------------------------
 
     def sql(self, limit=0, offset=0, do_not_add_default_things=False) -> str:
         """Build a sql query according to attributes
@@ -179,10 +188,6 @@ class Query:
         :return: A SQL query ready to be executed.
         :rtype: <str>
         """
-
-        # Detect if join sample is required ...
-        # sample_ids = self.detect_samples()
-
         ## Build columns
         # Set default columns if columns is empty
         # Otherwise, columns are kept unmodified
@@ -265,7 +270,7 @@ class Query:
         LOGGER.debug("Query:sql:: query: %s", query)
         return query
 
-        ##-----------------------------------------------------------------------------------------------------------
+    ##--------------------------------------------------------------------------
 
     def items(self, limit=0, offset=0):
         """Execute SQL query and return variants as a list
@@ -367,18 +372,7 @@ class Query:
 
             return "(" + f" {logic_op} ".join(out) + ")"
 
-    #     ##-----------------------------------------------------------------------------------------------------------
-
-    # def samples(self):
-    #     """
-    #     Return samples
-
-    #     ..warning:: WILL BE REMOVE AFTER FIXING #33
-
-    #     """
-    #     return self.detect_samples().keys()
-
-    ##-----------------------------------------------------------------------------------------------------------
+    ##--------------------------------------------------------------------------
 
     def create_selection(self, name):
         """Store variant set from the current query into `selections` table
@@ -404,7 +398,7 @@ class Query:
             self.conn, self.sql(), name=name, by="site"
         )
 
-        ##-----------------------------------------------------------------------------------------------------------
+    ##--------------------------------------------------------------------------
 
     @lru_cache(maxsize=128)
     def _cached_variants_count_query(self, sql_query):
@@ -446,7 +440,7 @@ class Query:
         )
         return count
 
-        ##-----------------------------------------------------------------------------------------------------------
+    ##--------------------------------------------------------------------------
 
     def __repr__(self):
         return f"""
@@ -455,7 +449,7 @@ class Query:
         selection: {self.selection}
         """
 
-        ##-----------------------------------------------------------------------------------------------------------
+    ##--------------------------------------------------------------------------
 
     def from_vql(self, raw: str):
         """Build the current Query from a VQL query
@@ -506,7 +500,7 @@ class Query:
             where = f" WHERE {self.filter_to_sql(self.filter)}"
         return base + where
 
-        ##-----------------------------------------------------------------------------------------------------------
+    ##--------------------------------------------------------------------------
 
     def check(self):
         """Return True if query is valid"""
