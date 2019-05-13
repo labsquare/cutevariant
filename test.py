@@ -25,12 +25,16 @@ class FilterExpression(object):
     @property
     def value(self):
         out = []
+        key = None
         for i in self.op:
             if type(i) == str:
-                out.append(i)
+                if i in ("AND","OR"):
+                    key = i
+                else:
+                    out.append(i)
             else:
                 out.append(i.value)
-        return out
+        return {key: out}
 
     
 class FilterOperand(object):
