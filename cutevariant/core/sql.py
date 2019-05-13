@@ -83,6 +83,7 @@ def create_indexes(conn):
     .. note:: You should use this function instead of individual functions.
     """
     create_variants_indexes(conn)
+    create_selections_indexes(conn)
 
     try:
         create_annotations_indexes(conn)
@@ -124,6 +125,16 @@ def create_table_selections(conn):
         ) WITHOUT ROWID"""
     )
     conn.commit()
+
+
+def create_selections_indexes(conn):
+    """Create indexes on the "selections" table
+
+    .. note:: This function should be called after batch insertions.
+
+    .. note:: This function ensures the unicity of selections names.
+    """
+    conn.execute("""CREATE UNIQUE INDEX idx_selections ON selections (name)""")
 
 
 def insert_selection(conn, query: str, name="no_name", count=0):

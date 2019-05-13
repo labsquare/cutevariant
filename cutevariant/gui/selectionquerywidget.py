@@ -267,17 +267,26 @@ class SelectionQueryWidget(QueryPluginWidget):
         if not success:
             return
 
-        if name != DEFAULT_SELECTION_NAME:
-            self.model.save_current_query(name)
-        else:
+        if name == DEFAULT_SELECTION_NAME:
             LOGGER.error(
-                "SelectionQueryWidget:save_current_query:: '%s' is a reserved name for a selection",
+                "SelectionQueryWidget:save_current_query:: '%s' is a reserved name for a selection.",
                 name,
             )
             self.message.emit(
                 self.tr("'%s' is a reserved name for a selection!")
-                % DEFAULT_SELECTION_NAME
+                % name
             )
+        elif name in {record["name"] for record in self.model.records}:
+            LOGGER.error(
+                "SelectionQueryWidget:save_current_query:: '%s' is a already used.",
+                name,
+            )
+            self.message.emit(
+                self.tr("'%s' is a already used for a selection!")
+                % name,
+            )
+        else:
+            self.model.save_current_query(name)
 
     def contextMenuEvent(self, event: QContextMenuEvent):
         """Overrided: Show popup menu at the cursor position"""
