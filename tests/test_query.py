@@ -45,6 +45,14 @@ def test_query_filter(conn):
 
 
 def test_query_functions(conn):
+    """Test the extraction of samples and the join clause to sample_has_variant
+    Expected query:
+    SELECT variants.id,chr,pos,ref,alt,`gt_TUMOR`.gt FROM variants
+    LEFT JOIN annotations ON annotations.variant_id = variants.id
+    LEFT JOIN sample_has_variant gt_NORMAL ON gt_NORMAL.variant_id = variants.id AND gt_NORMAL.sample_id = 1
+    LEFT JOIN sample_has_variant gt_TUMOR ON gt_TUMOR.variant_id = variants.id AND gt_TUMOR.sample_id = 2
+    WHERE (chr = 'chr1' AND pos > 10 AND pos < 1000 AND gt_NORMAL.GT == 1)
+    """
     query = Query(conn)
 
     query.columns = ["chr", "pos", "ref", "alt", ("genotype", "TUMOR", "gt")]
@@ -53,22 +61,24 @@ def test_query_functions(conn):
             {"field": "chr", "operator": "=", "value": "'chr1'"},
             {"field": "pos", "operator": ">", "value": 10},
             {"field": "pos", "operator": "<", "value": 1000},
-            {"field": ("genotype", "TUMOR", "GT"), "operator": "==", "value": 1},
+            {"field": ("genotype", "NORMAL", "GT"), "operator": "==", "value": 1},
         ]
     }
 
     # Detect genotype in columns
-    query._detect_samples_from_columns()
+    query.extract_samples_from_columns_and_filter()
     assert "TUMOR" in query._samples_to_join
-
-    query._samples_to_join.clear()
 
     # Detect genotype in filters
-    query._detect_samples_from_filter()
-    assert "TUMOR" in query._samples_to_join
+    assert "NORMAL" in query._samples_to_join
 
-    assert "LEFT JOIN sample_has_variant" in query.sql()
-    assert "gt_TUMOR.GT" in query.sql()
+    # Join to sample_has_variant
+    sql_query = query.sql()
+    assert "LEFT JOIN sample_has_variant" in sql_query
+    # Column
+    assert "`gt_TUMOR`.gt" in sql_query
+    # Filter
+    assert "gt_NORMAL.GT" in sql_query
 
 
 # def test_query_group_by(conn):
