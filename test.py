@@ -1,43 +1,9 @@
-from cutevariant.core.reader import VcfReader, FakeReader
-from cutevariant.core.importer import async_import_reader
-import json
-import copy
-import sqlite3
-import os
-
-from cutevariant.core.readerfactory import detect_vcf_annotation
+from textx import metamodel_from_file
 
 
-try:
-	os.remove("/tmp/test.db")
-except: 
-	pass
 
+mm = metamodel_from_file("test.tx")
 
-print(detect_vcf_annotation("examples/test.vep.vcf"))
+model = mm.model_from_file("test.txt")
 
-# reader  = FakeReader()
-# print(json.dumps(list(reader.get_fields())))
-
-# conn = sqlite3.connect("/tmp/test.db")
-
-# for progression, message in async_import(conn, reader):
-# 	print(progression, message)
-
-
-# ann = "snpeff"		
-
-# with open(f"examples/test.{ann}.vcf") as file:
-
-# 	reader = VcfReader(file,ann)
-
-# 	conn = sqlite3.connect("/tmp/test.db")
-# 	for progression, message in async_import_reader(conn, reader):
-# 		print(progression, message)
-
-
-	#print(json.dumps(list(reader.get_fields())))
-
-	# json.dumps(list(reader.get_fields()))
-	# print(json.dumps(list(reader.get_variants())))
-
+print(model)

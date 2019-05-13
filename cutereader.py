@@ -15,9 +15,8 @@ from textx import metamodel_from_str, get_children_of_type, metamodel_from_file
 
 
 
-model = vql.model_from_string("SELECT chr,pos,gt(\"sacha\").gt FROM variants")
 
-print(type(model["select"][2]))
+
 
 
 # try:

@@ -1,0 +1,59 @@
+
+
+Command:
+    SelectCmd|CreateCmd|SetCmd
+;
+
+
+SelectCmd:
+    'SELECT' col+=ColumnIdentifier[","] 'FROM' source=ID ('WHERE' filter=FilterExpression)?
+;
+
+CreateCmd:
+    'CREATE' target=ID 'FROM' source=ID ('WHERE' filter=FilterExpression)?
+;
+
+SetCmd:
+    'CREATE' target=ID '=' filter=SetExpression
+;
+
+
+//################################## Set Operation ###################
+
+SetExpression:
+ op=SetOperand (op=SetOperator op=SetOperand)* 
+;
+
+
+SetOperand:
+op= ID | ('(' op=SetExpression ')')
+;
+
+
+
+//################################## Filter Expression ################
+
+FilterExpression:
+ op=FilterOperand (op=BoolOperator op=FilterOperand)* 
+;
+
+
+FilterOperand:
+op= FilterTerm | ('(' op=FilterExpression ')')
+;
+
+FilterTerm:
+    field=ColumnIdentifier op=MathOperator val=ValueIdentifier
+;
+
+
+//################################## TERMINALS #########################
+
+ColumnIdentifier: Function|ID;
+ValueIdentifier: (NUMBER|STRING|BOOL);
+Function: func=ID '(' arg=STRING ')' ;
+BoolOperator: "AND"|"OR";
+SetOperator: "+"|"-"|"&"|"^";
+MathOperator:  op=/==|>=|<=|!=|=\/=|=|>|<|\||\*|\/|\%|>>|<<|\&|\||<>|IS|IS 
+NOT|IN|LIKE|GLOB|MATCH|REGEXP/;
+
