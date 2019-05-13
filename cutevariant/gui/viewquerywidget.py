@@ -542,7 +542,9 @@ class ViewQueryWidget(QueryPluginWidget):
                 # Write headers (columns in the query) + variants from the model
                 writer.writerow(self.model.query.columns)
                 # Remove the sqlite rowid col
-                g = (variant[1:] for variant in self.model.variants)
+                # Data: first: id in db, last children count
+                # [[(1, 11, 10000, 'G', 'T', 1)], ...]
+                g = (variant[0][1:-1] for variant in self.model.variants)
                 writer.writerows(g)
 
     def show_sql(self):
