@@ -241,7 +241,7 @@ class Query:
 
         #  Add Join on sample_has_variant
         #  This is done if genotype() function has been found in columns or fields. @see _detect_samples
-        self._detect_samples()
+        self.extract_samples_from_columns_and_filter()
         #        print("DETECT", self.columns, self._samples_to_join)
         if self._samples_to_join:
             for sample in sql.get_samples(self.conn):
