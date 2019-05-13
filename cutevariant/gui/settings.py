@@ -229,7 +229,7 @@ class VariantSettingsWidget(BaseWidget):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle(self.tr("Variant"))
+        self.setWindowTitle(self.tr("Variants"))
         self.setWindowIcon(FIcon(0xF683))
 
         self.view = QListWidget()

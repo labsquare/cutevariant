@@ -20,6 +20,7 @@ from .plugin import QueryPluginWidget
 from cutevariant.core import Query
 from cutevariant.core import sql
 from cutevariant.gui import style
+from cutevariant.gui.infovariantwidget import VariantPopupMenu
 from cutevariant.commons import logger
 from cutevariant.commons import GENOTYPE_ICONS
 
@@ -491,6 +492,9 @@ class ViewQueryWidget(QueryPluginWidget):
 
         self.model.modelReset.connect(self.updateInfo)
 
+        # Create menu
+        self.context_menu = VariantPopupMenu()
+
         # emit variant when clicked
         self.view.clicked.connect(self._variant_clicked)
 
@@ -522,10 +526,23 @@ class ViewQueryWidget(QueryPluginWidget):
         self.page_box.setFixedWidth(fm.boundingRect(page_box_text).width() + 5)
 
     def _variant_clicked(self, index):
-        # print("cicked on ", index)
+        """Slot called when the view (QTreeView) is clicked
+
+        .. note:: Emit variant through variant_clicked signal.
+            This signal updates InfoVariantWidget.
+        .. note:: Is also called manually by contextMenuEvent() in order to
+            get the variant and refresh InfoVariantWidget when the
+            ContextMenuEvent is triggered.
+        :return: The variant.
+        :rtype: <dict>
+        """
+        # Get the rowid of the element at the given index
         rowid = self.model.variant(index)[0]
+        # Get data from database
         variant = sql.get_one_variant(self.model.query.conn, rowid)
+        # Emit variant through variant_clicked signal
         self.variant_clicked.emit(variant)
+        return variant
 
     def export_csv(self):
         """Export variants displayed in the current view to a CSV file"""
@@ -558,23 +575,9 @@ class ViewQueryWidget(QueryPluginWidget):
         box.exec_()
 
     def contextMenuEvent(self, event: QContextMenuEvent):
-        """
-        Overrided methods
-        """
+        """Overrided method: Show custom context menu associated to the current variant"""
+        # Get the variant (and refresh InfoVariantWidget)
         current_index = self.view.currentIndex()
-        variant = self.model.variant(current_index)
-
-        menu = QMenu(self)
-
-        # actions Examples :
-        menu.addAction(FIcon(0xF4CE), self.tr("Add to Favorite")).setCheckable(True)
-        menu.addAction(FIcon(0xF18F), self.tr("Copy genomic location"))
-
-        openMenu = menu.addMenu(self.tr("Open With"))
-
-        # @ysard read settings
-        openMenu.addAction("Varsome")
-        openMenu.addSeparator()
-        openMenu.addAction("Edit ...")
-
-        menu.exec_(event.globalPos())
+        variant = self._variant_clicked(current_index)
+        # Show the context menu with the given variant
+        self.context_menu.popup(variant, event.globalPos())
