@@ -795,13 +795,23 @@ class Selection(object):
         new_selection.query = subtract_variants(self.query, other.query)
         return new_selection
 
-
-    def save(self, name ):
-        create_selection_from_sql(Selection.conn, self.query, name, count=None, by="site")
+    def save(self, name):
+        create_selection_from_sql(
+            Selection.conn, self.query, name, count=None, by="site"
+        )
 
     @classmethod
     def from_name(cls, name):
-        select_id = Selection.conn.execute("SELECT id FROM selections WHERE name = ?", (name,)).fetchone()[0]
+
+        select_id = Selection.conn.execute(
+            "SELECT id FROM selections WHERE name = ?", (name,)
+        ).fetchone()[0]
+        # get columns that corresponds to GROUP BY chr,pos
+        # TODO: Why chr, pos ?
         columns = get_query_columns(by="site")
-        q = f"SELECT {columns} FROM variants v, selection_has_variant sv WHERE v.id = sv.variant_id AND sv.selection_id = {select_id}"
+        print("cols", columns)
+        q = f"""SELECT {columns}
+            FROM variants v
+            LEFT JOIN selection_has_variant sv
+             ON v.id = sv.variant_id AND sv.selection_id = {select_id}"""
         return Selection(q)
