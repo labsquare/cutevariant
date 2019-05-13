@@ -33,11 +33,20 @@ class VariantPopupMenu(QMenu):
 
         self._variant = None
 
-        # Create menu
-        self.menu_setup()
+        # Fill menu
+        self.addAction(FIcon(0xF4CE), self.tr("Add to Favorite")).setCheckable(True)
+        self.addAction(
+            FIcon(0xF18F), self.tr("Copy genomic location"), self.to_clipboard
+        )
 
-    def menu_setup(self):
-        """Setup popup menu"""
+        # Create submenu for websites shortcuts
+        self.sub_menu = self.addMenu(self.tr("Open With"))
+
+    def sub_menu_setup(self):
+        """Setup sub menu 'open with'
+        .. note:: This function is called each time a context menu is requested
+            in the aim of viewing new added databases into settings.
+        """
 
         def add_action(site, url_template):
             """Build action, and connect it to a dynamically generated slot"""
@@ -52,15 +61,9 @@ class VariantPopupMenu(QMenu):
             # (if we want to use it elsewhere)
             # self.__dict__[f"open_{site}_url"] = partial(self.open_url, url_template)
 
-            sub_menu.addAction(self.tr(site), partial(self.open_url, url_template))
+            self.sub_menu.addAction(self.tr(site), partial(self.open_url, url_template))
 
-        self.addAction(FIcon(0xF4CE), self.tr("Add to Favorite")).setCheckable(True)
-        self.addAction(
-            FIcon(0xF18F), self.tr("Copy genomic location"), self.to_clipboard
-        )
-
-        # Create submenu for websites shortcuts
-        sub_menu = self.addMenu(self.tr("Open With"))
+        self.sub_menu.clear()
 
         # Built-in urls
         [add_action(*item) for item in WEBSITES_URLS.items()]
@@ -72,8 +75,8 @@ class VariantPopupMenu(QMenu):
         [add_action(site, settings.value(site)) for site in settings.childKeys()]
         settings.endGroup()
 
-        sub_menu.addSeparator()
-        sub_menu.addAction("Edit ...", self.show_settings)
+        self.sub_menu.addSeparator()
+        self.sub_menu.addAction(self.tr("Edit ..."), self.show_settings)
 
     def open_url(self, url_template):
         """Open the url based on the current variant and the given url template
@@ -97,6 +100,7 @@ class VariantPopupMenu(QMenu):
 
         :param variant: Dictionnary that defines a variant (chr, pos, ref, alt).
         """
+        self.sub_menu_setup()
         self._variant = variant
         super().popup(pos)
 
