@@ -126,8 +126,10 @@ def create_table_selections(conn):
     conn.commit()
 
 
-def insert_selection(conn, query="", name="no_name", count=0):
-    """Insert one selection record (NOT USED)
+def insert_selection(conn, query: str, name="no_name", count=0):
+    """Insert one selection record
+
+    TODO: retirer le group by inutile
 
     .. warning:: This function does a commit !
 
@@ -151,7 +153,7 @@ def insert_selection(conn, query="", name="no_name", count=0):
     return cursor.lastrowid
 
 
-def create_selection_from_sql(conn, query, name, count=None, by="site"):
+def create_selection_from_sql(conn, query: str, name: str, count=None, by="site"):
     """Create a selection record from sql variant query
 
     :param name : name of the selection
@@ -170,7 +172,7 @@ def create_selection_from_sql(conn, query, name, count=None, by="site"):
         count = cursor.execute(f"SELECT COUNT(*) FROM ({query})").fetchone()[0]
 
     # Create selection
-    selection_id = insert_selection(conn, name=name, count=count, query=query)
+    selection_id = insert_selection(conn, query, name=name, count=count)
 
     # Insert into selection_has_variant table
     # PS: We use DISTINCT keyword to statisfy the unicity constraint on
