@@ -1,3 +1,10 @@
+"""Widget to display variants from a query in the GUI.
+
+ViewQueryWidget class is added to a QTabWidget and is seen by the user;
+it uses QueryModel class as a model that handles records from the database.
+QueryDelegate class handles the aesthetic of the view.
+"""
+
 # Standard imports
 import copy
 import csv
@@ -148,8 +155,8 @@ class QueryModel(QAbstractItemModel):
                     return "children"
                 else:
                     col = self._query.columns[section - 1]
-                    if type(col) == tuple and len(col) == 3: # show functions
-                        fct,arg,field = col
+                    if type(col) == tuple and len(col) == 3:  #  show functions
+                        fct, arg, field = col
                         return f"{fct}({arg}).{field}"
                     else:
                         return self._query.columns[section - 1]
@@ -236,8 +243,10 @@ class QueryModel(QAbstractItemModel):
         self.total = self.query.variants_count()
 
         # Append a list because child can be append after
-        self.variants = \
-            [[tuple(variant)] for variant in self._query.items(self.limit, self.page * self.limit)]
+        self.variants = [
+            [tuple(variant)]
+            for variant in self._query.items(self.limit, self.page * self.limit)
+        ]
 
         LOGGER.debug("QueryModel:load:: variants queried\n%s", self.variants)
         self.endResetModel()
@@ -387,12 +396,11 @@ class QueryDelegate(QStyledItemDelegate):
             painter.drawText(option.rect, alignement, str(index.data()))
             return
 
-
         if "genotype" in colname:
-            val =  int(value)
+            val = int(value)
 
             icon_path = GENOTYPE_ICONS.get(val, -1)
-            icon = QPixmap(icon_path).scaled(16,16)
+            icon = QPixmap(icon_path).scaled(16, 16)
             painter.setRenderHint(QPainter.Antialiasing)
             painter.drawPixmap(option.rect.left(), option.rect.center().y() - 8, icon)
             return

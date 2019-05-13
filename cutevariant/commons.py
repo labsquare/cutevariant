@@ -11,7 +11,7 @@ MIN_COMPLETION_LETTERS = 1
 DEFAULT_SELECTION_NAME = "variants"
 
 # Paths
-DIR_LOGS = tempfile.gettempdir() + '/'
+DIR_LOGS = tempfile.gettempdir() + "/"
 
 DIR_ASSETS = resource_filename(
     __name__, # current package name
@@ -22,10 +22,10 @@ DIR_FONTS = DIR_ASSETS + "fonts/"
 DIR_ICONS = DIR_ASSETS + "icons/"
 
 GENOTYPE_ICONS = {
-    0 : f"{DIR_ICONS}/gt_homo_wt.png",
-    1 : f"{DIR_ICONS}/gt_hetero.png",
-    2 : f"{DIR_ICONS}/gt_homo_mut.png",
-   -1 : f"{DIR_ICONS}/gt_unknown.png"       
+    0: f"{DIR_ICONS}/gt_homo_wt.png",
+    1: f"{DIR_ICONS}/gt_hetero.png",
+    2: f"{DIR_ICONS}/gt_homo_mut.png",
+    -1: f"{DIR_ICONS}/gt_unknown.png",
 }
 
 # Websites and variant query
@@ -36,12 +36,11 @@ WEBSITES_URLS = {
 
 # Logging
 LOGGER_NAME = "cutevariant"
-LOG_LEVEL   = 'NOTSET'
-LOG_LEVELS  = {'debug': logging.DEBUG,
-               'info': logging.INFO,
-               'error': logging.ERROR}
+LOG_LEVEL = "DEBUG"
+LOG_LEVELS = {"debug": logging.DEBUG, "info": logging.INFO, "error": logging.ERROR}
 
 ################################################################################
+
 
 def logger(name=LOGGER_NAME, logfilename=None):
     """Return logger of given name, without initialize it.
