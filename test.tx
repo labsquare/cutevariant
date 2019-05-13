@@ -54,6 +54,6 @@ ValueIdentifier: (NUMBER|STRING|BOOL);
 Function: func=ID '(' arg=STRING ')' ;
 BoolOperator: "AND"|"OR";
 SetOperator: "+"|"-"|"&"|"^";
-MathOperator:  op=/==|>=|<=|!=|=\/=|=|>|<|\||\*|\/|\%|>>|<<|\&|\||<>|IS|IS 
+MathOperator: /==|>=|<=|!=|=\/=|=|>|<|\||\*|\/|\%|>>|<<|\&|\||<>|IS|IS 
 NOT|IN|LIKE|GLOB|MATCH|REGEXP/;
 
