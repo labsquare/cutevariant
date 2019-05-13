@@ -36,7 +36,7 @@ WEBSITES_URLS = {
 
 # Logging
 LOGGER_NAME = "cutevariant"
-LOG_LEVEL = "DEBUG"
+LOG_LEVEL = "ERROR"
 LOG_LEVELS = {"debug": logging.DEBUG, "info": logging.INFO, "error": logging.ERROR}
 
 ################################################################################
