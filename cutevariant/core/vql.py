@@ -125,7 +125,11 @@ class ColumnIdentifier(metaclass=model_class):
 
 
 class VQLSyntaxError(ValueError):
-    pass
+
+    def __init__(self, message, col=None, *args, **kwargs):
+        super().__init__(message, col, *args, **kwargs)
+        self.message = message
+        self.col = col
 
 
 def model_from_string(raw_vql: str) -> dict:
