@@ -165,7 +165,7 @@ def test_simple_selections(conn):
     """Test creation and simple insertion of a line in "selections" table"""
 
     sql.create_table_selections(conn)
-    sql.insert_selection(conn, name="selection_name", count=10)
+    sql.insert_selection(conn, "", name="selection_name", count=10)
     data = conn.execute("SELECT * FROM selections").fetchone()
 
     expected = (1, 'selection_name', 10, '')
@@ -186,11 +186,13 @@ def test_selections(conn):
     #    LEFT JOIN annotations
     #     ON annotations.variant_id = variants.rowid"""
 
-    sql.create_selection_from_sql(conn, query, "selection_name", count=None, by="site")
+    # Create a new selection (a second one, since there is a default one during DB creation)
+    ret = sql.create_selection_from_sql(conn, query, "selection_name", count=None, by="site")
+    assert ret == 2
 
     # Query the association table (variant_id, selection_id)
     data = conn.execute("SELECT * FROM selection_has_variant")
-    expected = ((1, 1), (2, 1), (3, 1), (4, 1), (5, 1), (6, 1), (7, 1), (8, 1))
+    expected = ((1, ret), (2, ret), (3, ret), (4, ret), (5, ret), (6, ret), (7, ret), (8, ret))
     record = tuple([tuple(i) for i in data])
 
     # Is the association table 'selection_has_variant' ok ?
@@ -198,7 +200,7 @@ def test_selections(conn):
 
     # Test ON CASCADE deletion
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM selections WHERE rowid = 1")
+    cursor.execute("DELETE FROM selections WHERE rowid = ?", str(ret))
 
     assert cursor.rowcount == 1
 
