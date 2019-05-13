@@ -77,8 +77,8 @@ class Query:
     def extract_samples_from_columns_and_filter(self):
         """Extract samples if columns or filter contains function.
 
-        The aim is to dynamically add JOINS clauses. `self._samples_to_join`
-        is modified here.
+        The aim is to dynamically add JOIN clauses on 'samples' table.
+        `self._samples_to_join` is modified here.
 
         .. note:: About functions:
             `columns` and `filter` can contains function as tuple.
@@ -87,46 +87,21 @@ class Query:
                 - arguments (sample name, etc.)
                 - sql field name
 
-            This columns selection can be writted in VQL as follow :
+            This columns selection can be writted in VQL as follow:
 
                 SELECT chr, pos, genotype("boby").gt
 
             "boby" will be added to `self._samples_to_join`
         """
         self._samples_to_join = set()
-        self._detect_samples_from_columns()
-        self._detect_samples_from_filter()
 
-    def _detect_samples_from_columns(self):
-        """Detect if `columns` contains function and keep function args
-        as sample name for sql join with sample tables.
-
-        Functions are defined as tuples. For exemple `genotype("boby").gt` will
-        be written as `("genotype", "boby", "gt")`.
-        => add "boby" to self._samples_to_join
-        """
-        # Get function tuples
-        #  A function is a tuple with 3 elements.
-        #  The second element is the sample name.
-        # TODO: is test on length usefull?
-        functions = (
-            col for col in self.columns if isinstance(col, tuple) and len(col) == 3
-        )
         # Set sample names to join
         self._samples_to_join.update(
-            self.get_samples_names_from_functions(functions, _GENOTYPE_FUNCTION_NAME)
+            self.get_samples_names_from_functions(self.columns, _GENOTYPE_FUNCTION_NAME)
         )
 
-    def _detect_samples_from_filter(self):
-        """Detect if `filter` contains function and keep function args
-        as sample name for sql join with sample tables.
-
-        Functions are defined as tuples. For exemple `genotype("boby").gt` will
-        be written as `("genotype", "boby", "gt")`.
-        => add "boby" to self._samples_to_join
-        """
-        # Recursive loop over filter to extract field name only
         def iter(node):
+            """Recursive loop over filter to extract field name only"""
             if isinstance(node, dict) and len(node) == 3:
                 yield node["field"]
 
@@ -138,28 +113,29 @@ class Query:
                 for i in node:
                     yield from iter(i)
 
-        # Get function tuples
-        #  A function is a tuple with 3 elements.
-        #  The second element is the sample name
-        # TODO: is test on length usefull?
-        functions = (
-            col for col in iter(self.filter) if isinstance(col, tuple) and len(col) == 3
-        )
         # Set sample names to join
         self._samples_to_join.update(
-            self.get_samples_names_from_functions(functions, _GENOTYPE_FUNCTION_NAME)
+            self.get_samples_names_from_functions(iter(self.filter), _GENOTYPE_FUNCTION_NAME)
         )
 
-    def get_samples_names_from_functions(self, functions, function_name):
+    def get_samples_names_from_functions(self, columns, function_name):
         """Get samples names from given functions if their function_name matches
         to the given one.
 
-        :param functions: Iterable of functions.
+        :param columns: Iterable of columns in which functions are searched.
         :param function_name: Function name to be search in functions.
         :return: Set of arguments (samples names).
         :rtype: <set>
         """
         samples = set()
+        # Get function tuples
+        #  A function is a tuple with 3 elements.
+        #  The second element is the sample name
+        # TODO: is test on length usefull?
+        functions = (
+            col for col in columns if isinstance(col, tuple) and len(col) == 3
+        )
+
         for function in functions:
             function_name, function_argument, field_name = function
 
