@@ -138,6 +138,17 @@ def create_selections_indexes(conn):
     conn.execute("""CREATE UNIQUE INDEX idx_selections ON selections (name)""")
 
 
+def create_selection_has_variant_indexes(conn):
+    """Create indexes on "selection_has_variant" table
+
+    .. note:: This function is called by:
+        - create_selections_indexes
+        - insert_selection to rebuild index
+    """
+    # For joints between selections and variants tables
+    conn.execute("""CREATE INDEX idx_selection_has_variant ON selection_has_variant (selection_id)""")
+
+
 def insert_selection(conn, query: str, name="no_name", count=0):
     """Insert one selection record
 
@@ -186,6 +197,10 @@ def create_selection_from_sql(conn, query: str, name: str, count=None, by="site"
     # Create selection
     selection_id = insert_selection(conn, query, name=name, count=count)
 
+    # DROP indexes
+    # For joints between selections and variants tables
+    cursor.execute("""DROP INDEX idx_selection_has_variant""")
+
     # Insert into selection_has_variant table
     # PS: We use DISTINCT keyword to statisfy the unicity constraint on
     # (variant_id, selection_id) of "selection_has_variant" table.
@@ -208,6 +223,10 @@ def create_selection_from_sql(conn, query: str, name: str, count=None, by="site"
             AND variants.ref = query.ref
             AND variants.alt = query.alt
         """
+
+    # REBUILD INDEXES
+    # For joints between selections and variants tables
+    create_selection_has_variant_indexes()
 
     cursor.execute(q)
     conn.commit()
