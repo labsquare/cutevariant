@@ -75,7 +75,12 @@ class Query:
 
         self._samples_to_join = set()
 
-    def extract_samples_from_columns_and_filter(self):
+        # Mapping cols => table
+        # Get columns description from the given table
+        tables = ("variants", "annotations")
+        self.col_table_mapping = {table_name: set(sql.get_columns(self.conn, table_name)) for table_name in tables}
+
+    def extract_samples_from_columns_and_filter(self, filter_only=False):
         """Extract samples if columns or filter contains function.
 
         The aim is to dynamically add JOIN clauses on 'samples' table.
@@ -93,31 +98,30 @@ class Query:
                 SELECT chr, pos, genotype("boby").gt
 
             "boby" will be added to `self._samples_to_join`
+
+        .. note:: `_samples_to_join` is a dict with sample_names as keys
+            and sample_ids as values.
         """
-        self._samples_to_join = set()
+        # Set sample names to join by searching them in columns
+        if not filter_only:
+            columns_in_columns = \
+                self.get_samples_names_from_functions(self.columns, _GENOTYPE_FUNCTION_NAME)
+        else:
+            columns_in_columns = set()
 
-        # Set sample names to join
-        self._samples_to_join.update(
-            self.get_samples_names_from_functions(self.columns, _GENOTYPE_FUNCTION_NAME)
-        )
+        # Set sample names to join by searching them in filter
+        # iter_filter(): Recursive loop over filter to extract field name only
+        columns_in_filter = \
+            self.get_samples_names_from_functions(self.iter_filter(self.filter), _GENOTYPE_FUNCTION_NAME)
 
-        def iter(node):
-            """Recursive loop over filter to extract field name only"""
-            if isinstance(node, dict) and len(node) == 3:
-                yield node["field"]
+        # Get samples required by columns and filter
+        required_samples_names = (columns_in_columns | columns_in_filter)
 
-            if isinstance(node, dict):
-                for i in node:
-                    yield from iter(node[i])
+        self._samples_to_join = \
+            {sample["name"]: sample["id"] for sample in sql.get_samples(self.conn)
+             if sample["name"] in required_samples_names}
 
-            if isinstance(node, list):
-                for i in node:
-                    yield from iter(i)
-
-        # Set sample names to join
-        self._samples_to_join.update(
-            self.get_samples_names_from_functions(iter(self.filter), _GENOTYPE_FUNCTION_NAME)
-        )
+        LOGGER.debug("DETECT %s in %s", self._samples_to_join.keys(), self.columns)
 
     def get_samples_names_from_functions(self, columns, function_name):
         """Get samples names from given functions if their function_name matches
