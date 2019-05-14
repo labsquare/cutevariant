@@ -199,7 +199,10 @@ def create_selection_from_sql(conn, query: str, name: str, count=None, by="site"
 
     # DROP indexes
     # For joints between selections and variants tables
-    cursor.execute("""DROP INDEX idx_selection_has_variant""")
+    try:
+        cursor.execute("""DROP INDEX idx_selection_has_variant""")
+    except sqlite3.OperationalError:
+        pass
 
     # Insert into selection_has_variant table
     # PS: We use DISTINCT keyword to statisfy the unicity constraint on
@@ -224,11 +227,12 @@ def create_selection_from_sql(conn, query: str, name: str, count=None, by="site"
             AND variants.alt = query.alt
         """
 
+    cursor.execute(q)
+
     # REBUILD INDEXES
     # For joints between selections and variants tables
-    create_selection_has_variant_indexes()
+    create_selection_has_variant_indexes(cursor)
 
-    cursor.execute(q)
     conn.commit()
     if cursor.rowcount:
         return cursor.lastrowid

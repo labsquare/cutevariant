@@ -257,11 +257,11 @@ class Query:
         annotations_join = (
             ""
             if do_not_add_default_things and not is_col_in_annotations
-            else "LEFT JOIN annotations ON annotations.variant_id = variants.id"
+            else " LEFT JOIN annotations ON annotations.variant_id = variants.id"
         )
 
         # Explicitly query all variants
-        query += "FROM variants " + annotations_join
+        query += "FROM variants" + annotations_join
 
         if self.selection and self.selection != DEFAULT_SELECTION_NAME:
             # Add jointure with 'selections' table
@@ -337,7 +337,7 @@ class Query:
         annotations_join = (
             ""
             if not is_col_in_annotations
-            else "LEFT JOIN annotations ON annotations.variant_id = variants.id"
+            else " LEFT JOIN annotations ON annotations.variant_id = variants.id"
         )
 
         # => aussi utile ici car certaines requ^etes custom doivent ^etre simplifiées, d'où le do_not_add_default_things
@@ -345,7 +345,7 @@ class Query:
         # la jointure est de toutefaçon obligatoire
 
         # Explicitly query all variants
-        query += "FROM variants " + annotations_join
+        query += "FROM variants" + annotations_join
 
         if self.selection and self.selection != DEFAULT_SELECTION_NAME:
             # Add jointure with 'selections' table
