@@ -213,6 +213,10 @@ class VcfReader(AbstractReader):
             # if key == "ANN": # Parse special annotation
             #     yield from self.parser.parse_fields(info.desc)
             # else:
+
+            # Fix #75 : Avoid dot caracter in fields ... 
+            key = key.replace(".","_")
+
             yield {
                 "name": key.lower(),
                 "category": "variants",

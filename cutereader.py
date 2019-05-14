@@ -5,7 +5,7 @@ import os
 
 from cutevariant.core.reader import VcfReader
 
-from cutevariant.core import vql
+from cutevariant.core import vql, importer
 
 from textx import metamodel_from_str, get_children_of_type, metamodel_from_file
 
@@ -14,14 +14,16 @@ from textx import metamodel_from_str, get_children_of_type, metamodel_from_file
 
 # model = mm.model_from_str("SELECT sacha FROM variant")
 
-with open("/media/schutz/DATA/exome/freebayes/EXCRFER_Fam1.freebayes.indel.filtred.vcf","r") as file:
+filename = "/media/schutz/DATA/exome/freebayes/EXCRFER_Fam1.freebayes.indel.filtred.vcf"
 
-	reader = VcfReader(file)
+try:
+	os.remove("/tmp/mytest.db")
+except:
+	pass
 
-	fields = list(reader.get_fields())
+conn = sqlite3.connect("/tmp/mytest.db")
 
-	for variant in reader.get_variants():
-		print(variant)
+importer.import_file(conn, filename)
 
 
 
