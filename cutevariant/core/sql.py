@@ -86,6 +86,7 @@ def create_indexes(conn):
     create_selections_indexes(conn)
 
     try:
+        # Some databases have not annotations table
         create_annotations_indexes(conn)
     except sqlite3.OperationalError as e:
         LOGGER.debug("create_indexes:: sqlite3.%s: %s", e.__class__.__name__, str(e))
@@ -447,7 +448,7 @@ def create_annotations_indexes(conn):
     """
 
     # Allow search on variant_id
-    conn.execute(f"""CREATE INDEX idx_annotations ON annotations (variant_id)""")
+    conn.execute("""CREATE INDEX idx_annotations ON annotations (variant_id)""")
 
 
 ## ================ Variants functions =========================================
@@ -549,7 +550,7 @@ def get_one_variant(conn, id: int):
 
 def get_variants_count(conn):
     """Get the number of variants in the "variants" table"""
-    return conn.execute(f"""SELECT COUNT(*) FROM variants""").fetchone()[0]
+    return conn.execute("""SELECT COUNT(*) FROM variants""").fetchone()[0]
 
 
 def async_insert_many_variants(conn, data, total_variant_count=None, yield_every=30000):
