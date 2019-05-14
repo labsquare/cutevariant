@@ -3,6 +3,7 @@ import json
 import sqlite3
 import os
 
+from cutevariant.core.reader import VcfReader
 
 from cutevariant.core import vql
 
@@ -13,11 +14,18 @@ from textx import metamodel_from_str, get_children_of_type, metamodel_from_file
 
 # model = mm.model_from_str("SELECT sacha FROM variant")
 
+with open("/media/schutz/DATA/exome/freebayes/EXCRFER_Fam1.freebayes.indel.filtred.vcf","r") as file:
+
+	reader = VcfReader(file)
+
+	fields = list(reader.get_fields())
+
+	for variant in reader.get_variants():
+		print(variant)
 
 
-model = vql.model_from_string("SELECT chr,pos,gt(\"sacha\").gt FROM variants")
 
-print(type(model["select"][2]))
+
 
 
 # try:
