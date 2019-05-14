@@ -28,8 +28,6 @@ importer.import_file(conn, filename)
 
 
 
-
-
 # try:
 #     os.remove("/tmp/test.db")
 # except:

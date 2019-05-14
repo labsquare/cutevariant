@@ -52,13 +52,12 @@ FilterTerm:
 
 
 //################################## TERMINALS #########################
-Comment: /\#.*$/;
+
 ColumnIdentifier: Function|ID;
-ValueIdentifier: (NUMBER|STRING|BOOL|Tuple);
+ValueIdentifier: (NUMBER|STRING|BOOL);
 Function: func=ID '(' arg=STRING ')' ;
 BoolOperator: "AND"|"OR";
 SetOperator: "+"|"-"|"&"|"^";
-MathOperator: /==|>=|<=|!=|=\/=|=|>|<|\||\*|\/|\%|>>|<<|\&|\||<>|IS|IS
+MathOperator: /==|>=|<=|!=|=\/=|=|>|<|\||\*|\/|\%|>>|<<|\&|\||<>|IS|IS 
 NOT|IN|LIKE|GLOB|MATCH|REGEXP/;
-Tuple: '(' items*=ValueIdentifier[','] ')';
 

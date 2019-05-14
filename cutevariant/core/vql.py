@@ -3,43 +3,8 @@
 See test_vql.py for usage and features.
 
 """
-
-
 import textx
-import operator
-import itertools
-from pprint import pprint
 from pkg_resources import resource_string
-
-
-CLAUSES = ("select", "from", "where", "using")
-OPERATOR_PRECEDENCE = {
-    op: (precedence, subprecedence)
-    for precedence, ops in enumerate(
-        map(
-            str.split,
-            """
-    ||
-    *    /    %
-    +    -
-    <<   >>   &    |
-    <    <=   >    >=
-    =    ==   !=   <>   IS   IS NOT   IN   LIKE   GLOB   MATCH   REGEXP
-    AND  XOR
-    OR
-""".splitlines(),
-        )
-    )
-    for subprecedence, op in enumerate(ops)
-}
-
-
-def precedence(one: operator, two: operator) -> operator:
-    return one if OPERATOR_PRECEDENCE[one] >= OPERATOR_PRECEDENCE[two] else two
-
-
-OPERATOR_FROM_LEXEM = {"==": "=", "=/=": "!=", "and": "AND", "or": "OR", "xor": "XOR"}
-
 
 def model_class(name: str, bases: tuple, attrs: dict) -> type:
     """Metaclass to automatically build the __init__ to get the properties,
@@ -51,15 +16,16 @@ def model_class(name: str, bases: tuple, attrs: dict) -> type:
             for field, value in kwargs.items():
                 setattr(self, field, value)
 
+
         attrs["__init__"] = __init__
     cls = type(name, bases, attrs)
     model_class.classes.append(cls)
     return cls
 
-
 model_class.classes = []
 
 
+<<<<<<< HEAD
 # classes used to build the raw model
 class RawCondition(metaclass=model_class):
     @property
@@ -124,6 +90,8 @@ class ColumnIdentifier(metaclass=model_class):
         return "test"
 
 
+=======
+>>>>>>> vql
 class VQLSyntaxError(ValueError):
 
     def __init__(self, message, col=None, *args, **kwargs):
@@ -132,6 +100,7 @@ class VQLSyntaxError(ValueError):
         self.col = col
 
 
+<<<<<<< HEAD
 def model_from_string(raw_vql: str) -> dict:
     """TODO
 
@@ -172,6 +141,10 @@ def compile_using_from_raw_model(raw_model) -> dict or tuple:
     return (raw_model.filename.id,)
 
 
+=======
+# ============ Error handle ==================================
+  
+>>>>>>> vql
 def error_message_from_err(
     err: textx.exceptions.TextXSyntaxError, raw_vql: str
 ) -> (str, int):
@@ -203,71 +176,107 @@ def error_message_from_err(
     raise err  # error not handled. Just raise it
 
 
-def dicttree_from_infix_nested_stack(stack: list) -> dict:
-    "Return the dict tree computed from the infix nested stack yielded by metamodel"
-    # Algorithm:
-    #   expand nested structure, place parens
-    #   build the postfix representation
-    #   build tree as dict from postfix
-    def expand(obj: list or tuple or ...) -> list:
-        if isinstance(obj, (list, tuple)):
-            return ("(", *itertools.chain(*map(expand, obj)), ")")
-        return (obj,)
+# ============ Different class to map with VQL model
 
-    def as_postfix(tokens: list) -> iter:
-        "Yield the output describing the postfix notation of given list"
-        operators = []  # stack of operator
-        for token in tokens:
-            print("TOKEN:", type(token), token)
-            if isinstance(token, dict):  # it's a condition, like a=3
-                yield token
-            elif token in OPERATOR_PRECEDENCE:  # it's an operator
-                while (
-                    operators
-                    and operators[-1] != "("
-                    and precedence(token, operators[-1])
-                ):
-                    yield operators.pop()
-                operators.append(token)
-            elif token == "(":
-                operators.append(token)
-            elif token == ")":
-                while operators and operators[-1] != "(":
-                    yield operators.pop()
-                if operators[-1] == "(":
-                    operators.pop()
-            else:
-                raise VQLSyntaxError(f"Unexpected token: {token}")
-        yield from operators
+class FilterTerm(metaclass=model_class):
+    @property
+    def value(self):
+        field = self.field.value if hasattr(self.field,"value") else self.field
+        val = self.val.value  if hasattr(self.val,"value")  else self.val
 
-    def as_tree(postfix: list) -> dict:
-        "Return the dict describing the n-ary syntax tree"
-        tree = {}
-        operandes = []
-        last_operator = None
-        for token in postfix:
-            if isinstance(token, dict):  # it's a condition, like a=3
-                operandes.append(token)
-            elif token in OPERATOR_PRECEDENCE:  # it's an operator
-                assert len(operandes) >= 2
-                right, left = operandes.pop(), operandes.pop()
-                if last_operator == token:  # let's merge everything
-                    assert isinstance(left, dict)
-                    assert len(left) == 1
-                    assert isinstance(left[last_operator], list)
-                    left[last_operator].append(right)
-                    operandes.append(left)
+        return {"field":field, "operator": self.op, "value": val}
+    
+class FilterExpression(metaclass=model_class):
+    @property
+    def value(self):
+        out = []
+        key = "AND" # By default 
+        for i in self.op:
+            if type(i) == str:
+                if i in ("AND","OR"):
+                    key = i
                 else:
-                    operandes.append({token: [left, right]})
-                last_operator = token
+                    out.append(i)
             else:
-                raise VQLSyntaxError(f"Unexpected token: {token}")
-        assert len(operandes) == 1, operandes
-        return operandes[0]
+                out.append(i.value)
+        return {key: out}
 
-    # print('STACK:', stack)
-    infix = expand(stack)
-    # print('INFIX:', infix)
-    postfix = tuple(as_postfix(infix))
-    # print('POSTFIX:', postfix)
-    return as_tree(postfix)
+    
+class FilterOperand(metaclass=model_class):
+    @property
+    def value(self):
+        return self.op.value
+
+class Function(metaclass=model_class):
+    @property
+    def value(self):
+        return (self.func,self.arg, "gt")
+    
+class Tuple(metaclass=model_class):
+    @property
+    def value(self):
+        return tuple(self.items)
+    
+
+
+class SelectCmd(metaclass=model_class):
+    @property
+    def value(self):
+        output = {
+        "cmd": "select_cmd",
+        "columns": [col.value if hasattr(col,"value") else col for col in self.columns],
+        "source": self.source,
+        }
+
+        if self.filter:
+            output["filter"] = self.filter.value 
+
+        return output
+    
+
+class CreateCmd(metaclass=model_class):
+    @property
+    def value(self):
+        return {
+        "cmd": "create_cmd",
+        "source": self.source,
+        "fitler": self.filter.value if self.filter else None
+        }
+
+# class SetCmd(metaclass=model_class):
+#     @property
+#     def value(self):
+#         return {
+#         "cmd": "set_cmd",
+#         "source": self.source,
+#         "fitler": self.filter.value if self.filter else None
+#         }
+    
+
+METAMODEL = textx.metamodel_from_str(
+     resource_string(__name__, "vql.tx").decode(),   # grammar extraction from vql.tx
+    classes=model_class.classes,
+    debug=False,
+    ignore_case=True
+)
+
+
+def execute_vql(raw_vql: str) -> list: 
+    """ Execute multiline VQL statement separated by ";"
+
+    :return: yield Dictionnary per command
+        .. example :: {'cmd': 'select_cmd', 'columns': ['chr','pos'], 'source':'variants', 'filter': 'None'}
+    """
+
+    try:
+        raw_model = METAMODEL.model_from_str(raw_vql)
+    except textx.exceptions.TextXSyntaxError as err:
+        raise VQLSyntaxError(*error_message_from_err(err, raw_vql))
+        
+    for command in raw_model.commands:
+        yield command.value
+
+
+def model_from_string(raw_vql: str) -> dict:
+    """ Obsolete : retro compatibility """ 
+    return next(execute_vql(raw_vql))
