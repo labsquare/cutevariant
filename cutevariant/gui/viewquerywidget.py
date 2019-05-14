@@ -402,6 +402,9 @@ class QueryDelegate(QStyledItemDelegate):
             return
 
         if "genotype" in colname:
+            # Handle None values
+            if value == "None":
+                return
             val = int(value)
 
             icon_path = GENOTYPE_ICONS.get(val, -1)
