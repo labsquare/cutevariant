@@ -543,7 +543,7 @@ class Query:
         """
         LOGGER.debug("Query:variants_count:: query:")
         count = self._cached_variants_count_query(
-            self.sql(do_not_add_default_things=True)
+            self.sql_count()
         )
         LOGGER.debug(
             "Query:variants_count:: %s", self._cached_variants_count_query.cache_info()
