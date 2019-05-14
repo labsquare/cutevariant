@@ -591,9 +591,9 @@ class Query:
         .. todo:: Should be a static method
         """
         model = vql.model_from_string(raw)
-        self.columns = list(model["select"])  # columns from variant table
-        self.selection = model["from"]  # name of the variant set
-        self.filter = model.get("where", dict())  # filter as raw text; dict if no filter
+        self.columns = list(model["columns"])  # columns from variant table
+        self.selection = model["source"]  # name of the variant set
+        self.filter = model.get("filter", dict())  # filter as raw text; dict if no filter
         # TODO: USING clause missing
 
         print("from vql", model)
@@ -616,7 +616,7 @@ class Query:
             if isinstance(col, tuple):
                 fct, arg, field = col
                 if fct == _GENOTYPE_FUNCTION_NAME:
-                    col = f'genotype("{arg}").{field}'
+                    col = f'genotype("{arg}")'
             _c.append(col)
 
         base = f"SELECT {','.join(_c)} FROM {self.selection}"

@@ -25,73 +25,6 @@ def model_class(name: str, bases: tuple, attrs: dict) -> type:
 model_class.classes = []
 
 
-<<<<<<< HEAD
-# classes used to build the raw model
-class RawCondition(metaclass=model_class):
-    @property
-    def value(self):
-        return {
-            "field": self.id.id,
-            "operator": OPERATOR_FROM_LEXEM.get(self.op.op, self.op.op),
-            "value": self.val if isinstance(self.val, (str, int)) else self.val.id,
-        }
-
-
-class ParenExpr(metaclass=model_class):
-    @property
-    def value(self):
-        return self.expression.value
-
-
-class BaseExpr(metaclass=model_class):
-    @property
-    def value(self):
-        # get the infix tree describing the expression
-        #  NB: expressions are nested instead of parenthesed
-        stack = [self.left.value]
-        for operation in self.operations:
-            stack.extend(operation.value)
-        return stack
-
-
-class Operation(metaclass=model_class):
-    @property
-    def value(self):
-        return (self.op.value, self.remaining.value)
-
-
-class BoolOperator(metaclass=model_class):
-    @property
-    def value(self):
-        return OPERATOR_FROM_LEXEM.get(self.op, self.op)
-
-
-class Tuple(metaclass=model_class):
-    @property
-    def id(self):
-        return "({})".format(", ".join(item.id for item in self.items))
-
-class Function(metaclass=model_class):
-    @property
-    def id(self):
-        return (self.func, self.arg, self.field)
-
-METAMODEL = textx.metamodel_from_str(
-    resource_string(__name__, "vql.tx").decode(),  # grammar extraction from vql.tx
-    classes=model_class.classes,
-    ignore_case=True,
-    debug=False,
-)
-
-
-class ColumnIdentifier(metaclass=model_class):
-    @property
-    def val(self):
-        return "test"
-
-
-=======
->>>>>>> vql
 class VQLSyntaxError(ValueError):
 
     def __init__(self, message, col=None, *args, **kwargs):
@@ -100,51 +33,7 @@ class VQLSyntaxError(ValueError):
         self.col = col
 
 
-<<<<<<< HEAD
-def model_from_string(raw_vql: str) -> dict:
-    """TODO
-
-    :return: Dictionary ??
-        .. example:: {'select': ('chr', 'pos', 'ref', 'alt'), 'from': '<selection_name>'}
-    :rtype: <dict <str>:<tuple>>
-    """
-    try:
-        raw_model = METAMODEL.model_from_str(raw_vql)
-    except textx.exceptions.TextXSyntaxError as err:
-        raise VQLSyntaxError(*error_message_from_err(err, raw_vql))
-    model = {}
-    for clause in CLAUSES:
-        value = getattr(raw_model, clause)
-        if value is not None:
-            model[clause] = globals()[f"compile_{clause}_from_raw_model"](value)
-    print("MODEL:", model)
-    return model
-
-
-def compile_select_from_raw_model(raw_model) -> dict or tuple:
-    return tuple(column.id for column in raw_model.columns)
-
-
-def compile_from_from_raw_model(raw_model) -> dict or tuple:
-    return raw_model.source.id
-
-
-def compile_where_from_raw_model(raw_model) -> dict or tuple:
-    expr = raw_model.expression
-    # print('EXPRESSION:', expr.value)
-    tree = dicttree_from_infix_nested_stack(expr.value)
-    # print('TREE:', tree)
-    return tree
-
-
-def compile_using_from_raw_model(raw_model) -> dict or tuple:
-    return (raw_model.filename.id,)
-
-
-=======
 # ============ Error handle ==================================
-  
->>>>>>> vql
 def error_message_from_err(
     err: textx.exceptions.TextXSyntaxError, raw_vql: str
 ) -> (str, int):
