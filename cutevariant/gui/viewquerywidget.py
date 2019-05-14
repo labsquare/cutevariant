@@ -196,12 +196,16 @@ class QueryModel(QAbstractItemModel):
 
         #  get sql variant id
         variant_id = self.variants[parent.row()][0][0]
-        columns = ",".join(self._query.columns)
+
+        columns = ",".join(self._query.get_columns(do_not_add_default_things=True))
+        joints = self._query.get_joints()
 
         #  TODO : need to put this into QUERY
-        sub_query = f"""SELECT variants.id,{columns} FROM variants
-        LEFT JOIN annotations ON variants.id = annotations.variant_id
-        WHERE variants.id = {variant_id}"""
+        # TODO: add filter into left join annotations ... instead in where
+        sub_query = f"""SELECT variants.id, {columns} FROM variants
+        {joints}
+        WHERE annotations.variant_id = {variant_id}"""
+        print("SUB QUERY", sub_query)
 
         records = list(self._query.conn.cursor().execute(sub_query).fetchall())
 
