@@ -18,15 +18,47 @@ def conn():
 def test_query_columns(conn):
     query = Query(conn)
     query.columns = ["chr", "pos", "ref", "alt"]
+    # Test normal query: children, joint to annotations, group by added
+    assert (
+        query.sql()
+        == "SELECT variants.id,chr,pos,ref,alt,COUNT(*) as 'children' FROM variants LEFT JOIN annotations ON annotations.variant_id = variants.id GROUP BY chr,pos,ref,alt"
+    )
+
+    # Test basic query: no children, no useless annotations joint except if it is needed by cols or filter
+    assert (
+        query.sql(do_not_add_default_things=True)
+        == "SELECT chr,pos,ref,alt FROM variants GROUP BY chr,pos,ref,alt"
+    )
+
+    # Count query => remove everything that is not needed in filter
+    assert (
+        query.sql_count()
+        == "SELECT variants.id FROM variants"
+    )
+
+    # All group by different from chr,pos,ref,alt modifies the nb of variant => added
+    query.group_by = ["chr", "pos"]
+    assert (
+        query.sql_count()
+        == "SELECT variants.id FROM variants GROUP BY chr,pos"
+    )
+
+    # No group by: no children, no group by
+    query.group_by = None
     assert (
         query.sql()
         == "SELECT variants.id,chr,pos,ref,alt FROM variants LEFT JOIN annotations ON annotations.variant_id = variants.id"
     )
 
 
+
+
+
+
 def test_query_filter(conn):
     query = Query(conn)
     query.columns = ["chr", "pos", "ref", "alt"]
+    query.group_by = None
     query.filter = {
         "AND": [
             {"field": "chr", "operator": "=", "value": "'chr1'"},
@@ -79,6 +111,26 @@ def test_query_functions(conn):
     assert "`gt_TUMOR`.gt" in sql_query
     # Filter
     assert "gt_NORMAL.GT" in sql_query
+
+    sql_query = query.sql_count()
+    # No cols in annotation => remove dependency
+    assert "LEFT JOIN annotations" not in sql_query
+    # In column => remove dependency
+    assert "`gt_TUMOR`.gt" not in sql_query
+    # In filter => keep dependency
+    assert "gt_NORMAL.GT" in sql_query
+
+
+    query.columns = ["chr", "pos", "ref", "alt", "transcript"]
+    sql_query = query.sql_count()
+    # col in cols only => remove dependency
+    assert "LEFT JOIN annotations" not in sql_query
+
+
+    query.filter["AND"].append({"field": "transcript", "operator": "=", "value": "test"})
+    sql_query = query.sql_count()
+    # filter transcript in annotations => keep dependency
+    assert "LEFT JOIN annotations" in sql_query
 
 
 # def test_query_group_by(conn):
