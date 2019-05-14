@@ -193,20 +193,27 @@ class Query:
     ##--------------------------------------------------------------------------
 
     def sql(self, limit=0, offset=0, do_not_add_default_things=False) -> str:
-        """Build a sql query according to attributes
+        """Build a sql query according to attributes for raw and display queries
 
-        .. note:: Some queries require that this functions doesn't add default
-            columns or joins.
-            In this case the argument do_not_add_default_things must be set to True.
+        .. note:: Some queries require that this functions doesn't automatically
+            add default columns or joins.
+            In this case the argument 'do_not_add_default_things' must be set to True.
+
             - `variants.id` will not be appended to SELECT clause.
-            - A LEFT JOIN on annotations will not be made.
+            - A LEFT JOIN on annotations will not be made if it is not required
+            by a filter or by columns.
             Typical query concerned: see ChartQueryWidget:on_change_query()
+            In other cases, 'annotations' table is mandatory for display queries
+            which group variants on transcripts for example.
 
         .. note:: This function can be called as this, but its main purpose is
             to be used by self.items().
 
-        :param limit : SQL LIMIT for pagination
+        .. seealso:: sql_count()
+
+        :param limit: SQL LIMIT for pagination
         :param offset: SQL OFFSET for pagination
+        :key do_not_add_default_things: See previous note (default: False)
         :return: A SQL query ready to be executed.
         :rtype: <str>
         """
@@ -217,60 +224,62 @@ class Query:
             self.columns = ["chr", "pos", "ref", "alt"]
 
         if do_not_add_default_things:
+            # Keep columns as they are set in the query
             sql_columns = []
         else:
+            # Some queries must have this field in addition to theirs
             sql_columns = ["variants.id"]
+
         # Replace genotype function by name
         # Transform ("genotype", "boby","gt") to "`gt_boby`.gt" to perform SQL JOIN
-
         for col in self.columns:
             if isinstance(col, tuple):
                 function_name, arg, field_name = col
                 if function_name == _GENOTYPE_FUNCTION_NAME:
+                    # Secure column name
                     col = f"`gt_{arg}`.{field_name}"
 
             sql_columns.append(col)
 
         # If 'group by', add extra columns (child count and child ids)
         # Required for viewquerywidget.py
-        if self.group_by:
+        if not do_not_add_default_things and self.group_by:
             sql_columns.extend(["COUNT(*) as 'children'"])
-            # TODO: test with count (*)
 
         query = f"SELECT {','.join(sql_columns)} "
 
-        ## Add SELECT clause
+        ## Add FROM clause
+        # On filter and columns
+        # Joint on annotations is mandatory for display queries
+        # We do not do joint if it is explicitly forbidden (in this case
+        # a join is automatically decided if it is required by filter or columns)
+        is_col_in_annotations = self.detect_annotations_table_requirement()
         annotations_join = (
             ""
-            if do_not_add_default_things
+            if do_not_add_default_things and not is_col_in_annotations
             else "LEFT JOIN annotations ON annotations.variant_id = variants.id"
         )
 
-        if not self.selection:
-            # Explicitly query all variants
-            query += "FROM variants"
+        # Explicitly query all variants
+        query += "FROM variants " + annotations_join
 
-        elif self.selection == DEFAULT_SELECTION_NAME:
-            query += "FROM variants " + annotations_join
-        else:
+        if self.selection and self.selection != DEFAULT_SELECTION_NAME:
             # Add jointure with 'selections' table
             query += f"""
-            FROM variants
-            {annotations_join}
             INNER JOIN selection_has_variant sv ON sv.variant_id = variants.id
             INNER JOIN selections s ON s.id = sv.selection_id AND s.name = '{self.selection}'
             """
 
         #  Add Join on sample_has_variant
-        #  This is done if genotype() function has been found in columns or fields. @see _detect_samples
+        #  This is done if genotype() function has been found in columns or fields.
+        # _samples_to_join is a dict with sample_names as keys and sample_ids as values
         self.extract_samples_from_columns_and_filter()
-        #        print("DETECT", self.columns, self._samples_to_join)
-        if self._samples_to_join:
-            for sample in sql.get_samples(self.conn):
-                if sample["name"] in self._samples_to_join:
-                    sample_id = sample["id"]
-                    sample_name = sample["name"]
-                    query += f" LEFT JOIN sample_has_variant gt_{sample_name} ON gt_{sample_name}.variant_id = variants.id AND gt_{sample_name}.sample_id = {sample_id}"
+        for sample_name, sample_id in self._samples_to_join.items():
+            query += f"""
+            LEFT JOIN sample_has_variant gt_{sample_name}
+             ON gt_{sample_name}.variant_id = variants.id
+             AND gt_{sample_name}.sample_id = {sample_id}
+            """
 
         ## Add WHERE filter
         if self.filter:
