@@ -1,42 +1,64 @@
+
 Model:
-    select=SelectClause from=FromClause where=WhereClause? using=UsingClause?
+	commands += Command[";"]
 ;
 
 
-//################################### CLAUSES ###################################
-SelectClause:
-    'SELECT'? columns*=ColumnIdentifier[',']
-;
-
-FromClause:
-    'FROM' source=Identifier
-;
-
-WhereClause:
-    'WHERE' expression=Expr
-;
-
-UsingClause:
-    'USING' filename=Filename
+Command:
+    SelectCmd|CreateCmd|SetCmd
 ;
 
 
-//################################## COMPONENTS #################################
-Expr: ParenExpr | BaseExpr;
-BaseExpr: left=Condition operations*=Operation;
-ParenExpr: '(' expression=Expr ')';
-Operation:  op=BoolOperator remaining=Condition;
+SelectCmd:
+    'SELECT' columns+=ColumnIdentifier[","] 'FROM' source=ID ('WHERE' filter=FilterExpression)?
+;
 
-Condition: ParenExpr | RawCondition;
-RawCondition: id=ColumnIdentifier op=MathOperator (val=INT | val=Tuple | val=Identifier);
+CreateCmd:
+    'CREATE' target=ID 'FROM' source=ID ('WHERE' filter=FilterExpression)?
+;
+
+SetCmd:
+    'CREATE' target=ID '=' filter=SetExpression
+;
 
 
-//################################## TERMINALS ##################################
+//################################## Set Operation ###################
+
+SetExpression:
+ op=SetOperand (op=SetOperator op=SetOperand)* 
+;
+
+
+SetOperand:
+op= ID | ('(' op=SetExpression ')')
+;
+
+
+
+//################################## Filter Expression ################
+
+FilterExpression:
+ op=FilterOperand (op=BoolOperator op=FilterOperand)* 
+;
+
+
+FilterOperand:
+op= FilterTerm | ('(' op=FilterExpression ')')
+;
+
+FilterTerm:
+    field=ColumnIdentifier op=MathOperator val=ValueIdentifier
+;
+
+
+//################################## TERMINALS #########################
 Comment: /\#.*$/;
-ColumnIdentifier:  Function|Identifier;
-Identifier: id=/[a-zA-Z0-9\.\/\~\[\]\\'"_-]+/;
-Filename:   Identifier;
-MathOperator:  op=/==|>=|<=|!=|=\/=|=|>|<|\||\*|\/|\%|>>|<<|\&|\||<>|IS|IS NOT|IN|LIKE|GLOB|MATCH|REGEXP/;
-BoolOperator:  op=/AND|OR|XOR|and|or|xor/;
-Tuple: '(' items*=Identifier[','] ')';
-Function: func=ID '(' '"'?- arg=ID '"'?- ').' field=ID;
+ColumnIdentifier: Function|ID;
+ValueIdentifier: (NUMBER|STRING|BOOL|Tuple);
+Function: func=ID '(' arg=STRING ')' ;
+BoolOperator: "AND"|"OR";
+SetOperator: "+"|"-"|"&"|"^";
+MathOperator: /==|>=|<=|!=|=\/=|=|>|<|\||\*|\/|\%|>>|<<|\&|\||<>|IS|IS
+NOT|IN|LIKE|GLOB|MATCH|REGEXP/;
+Tuple: '(' items*=ValueIdentifier[','] ')';
+

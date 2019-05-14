@@ -1,4 +1,8 @@
 
+Model:
+	commands += Command[";"]
+;
+
 
 Command:
     SelectCmd|CreateCmd|SetCmd
@@ -6,7 +10,7 @@ Command:
 
 
 SelectCmd:
-    'SELECT' col+=ColumnIdentifier[","] 'FROM' source=ID ('WHERE' filter=FilterExpression)?
+    'SELECT' columns+=ColumnIdentifier[","] 'FROM' source=ID ('WHERE' filter=FilterExpression)?
 ;
 
 CreateCmd:
