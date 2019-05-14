@@ -301,6 +301,85 @@ class Query:
         LOGGER.debug("Query:sql:: query: %s", query)
         return query
 
+    def sql_count(self):
+        """Build a query for count aggregation queries
+
+        Aim: Build queries with chunks of joints/group by commands that
+        are only required based on the columns and filters used.
+
+        Useful chunks:
+            - Joints:
+                - annotations: Only if a column in filter is stored in that table.
+                We don't care if such a column is used in SELECT clause.
+                It's a time saving and a generator of cleaner queries.
+                => decided by detect_annotations_table_requirement(filter_only=True)
+                - selections: Only if a selection is selected, and if this is not
+                the default one.
+                - samples: Only if a sample function is used in filter clause.
+                We don't care if such a column is used in SELECT clause.
+                It's a time saving and a generator of cleaner queries.
+            - Group by:
+                - (chr, pos, ref, alt) is the primary key so there will be as many
+                groups as variants in the database.
+                => no group by is required in this case.
+                - (chr, pos) is a group by that modifies the number of variants
+                because it modifies the definition of the unicity of a variant.
+                => group by is required to reduce the number of variants.
+
+        .. seealso:: sql()
+        """
+        ## Build columns
+        query = "SELECT variants.id "
+
+        ## Add FROM clause
+        # On filter only
+        is_col_in_annotations = self.detect_annotations_table_requirement(filter_only=True)
+        annotations_join = (
+            ""
+            if not is_col_in_annotations
+            else "LEFT JOIN annotations ON annotations.variant_id = variants.id"
+        )
+
+        # => aussi utile ici car certaines requ^etes custom doivent ^etre simplifiées, d'où le do_not_add_default_things
+        # => pas trop utile de détecter les colonnes dans le select car pour l'affichage
+        # la jointure est de toutefaçon obligatoire
+
+        # Explicitly query all variants
+        query += "FROM variants " + annotations_join
+
+        if self.selection and self.selection != DEFAULT_SELECTION_NAME:
+            # Add jointure with 'selections' table
+            query += f"""
+            INNER JOIN selection_has_variant sv ON sv.variant_id = variants.id
+            INNER JOIN selections s ON s.id = sv.selection_id AND s.name = '{self.selection}'
+            """
+
+        # Add Join on sample_has_variant
+        # This is done if genotype() function has been found in filter.
+        # _samples_to_join is a dict with sample_names as keys and sample_ids as values
+        self.extract_samples_from_columns_and_filter(filter_only=True)
+        for sample_name, sample_id in self._samples_to_join.items():
+            query += f"""
+            LEFT JOIN sample_has_variant gt_{sample_name}
+             ON gt_{sample_name}.variant_id = variants.id
+             AND gt_{sample_name}.sample_id = {sample_id}
+            """
+
+        ## Add WHERE filter
+        if self.filter:
+            query += " WHERE " + self.filter_to_sql(self.filter)
+
+        ## Add GROUP BY command
+        if self.group_by != ["chr", "pos", "ref", "alt"]:
+            # (chr, pos) is a group by that modifies the number of variants
+            # because it modifies the definition of the unicity of a variant.
+            # (chr, pos, ref, alt) is the primary key so there will be as many
+            # groups as variants in the database.
+            query += " GROUP BY " + ",".join(self.group_by)
+
+        LOGGER.debug("Query:sql_count:: query: %s", query)
+        return query
+
     ##--------------------------------------------------------------------------
 
     def items(self, limit=0, offset=0):
