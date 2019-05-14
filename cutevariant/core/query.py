@@ -6,7 +6,7 @@ from functools import lru_cache
 # Custom imports
 from . import sql
 from . import vql
-from cutevariant.commons import logger
+from cutevariant.commons import logger, DEFAULT_SELECTION_NAME
 
 LOGGER = logger()
 
@@ -23,7 +23,7 @@ class Query:
         filter (dict): Hierarchical dictionnary to filter variants (Where clause)
         selection (str): Virtual table of variants (From clause)
         order_by(str): Order variants by a specific column
-        group_by(tuple of str): Group variants by columns
+        group_by(list of str): Group variants by columns
 
     About functions:
         `columns` and `filter` can contains function as tuple.
@@ -58,7 +58,12 @@ class Query:
     """
 
     def __init__(
-        self, conn, columns=["chr", "pos", "ref", "alt"], filter=None, selection="all"
+        self,
+        conn,
+        columns=["chr", "pos", "ref", "alt"],
+        filter=dict(),
+        selection=DEFAULT_SELECTION_NAME,
+        group_by=["chr", "pos", "ref", "alt"],
     ):
         self.conn = conn
         self.columns = columns
@@ -66,175 +71,331 @@ class Query:
         self.selection = selection
         self.order_by = None
         self.order_desc = True
-        self.group_by = None
+        self.group_by = group_by
 
         self._samples_to_join = set()
 
-        ##-----------------------------------------------------------------------------------------------------------
+        # Mapping cols => table
+        # Get columns description from the given table
+        tables = ("variants", "annotations")
+        self.col_table_mapping = {table_name: set(sql.get_columns(self.conn, table_name)) for table_name in tables}
 
-    # def sample_from_expression(self, expression):
-    #     """
-    #     ..warning:: WILL BE REMOVE AFTER FIXING #33
+    def extract_samples_from_columns_and_filter(self, filter_only=False):
+        """Extract samples if columns or filter contains function.
 
-    #     """
-    #     # extract <sample> from <gt("sample")>
-    #     regexp = r"gt(.*).gt"
-    #     match = re.search(regexp, expression)
-    #     if match:
-    #         return match.group(1)
-    #     else:
-    # return None
+        The aim is to dynamically add JOIN clauses on 'samples' table.
+        `self._samples_to_join` is modified here.
 
-    ##-----------------------------------------------------------------------------------------------------------
+        .. note:: About functions:
+            `columns` and `filter` can contains function as tuple.
+            A function is defined by:
+                - function name
+                - arguments (sample name, etc.)
+                - sql field name
 
-    def _detect_samples(self):
-        """Detect if columns or filter contains function.
+            This columns selection can be writted in VQL as follow:
 
-        Functions are tuples. For example, this is a columns list with 2 normal
-        field and 1 genotype function field:
+                SELECT chr, pos, genotype("boby").gt
 
-            query.columns = ("chr","pos", ("genotype", "boby", "gt"))
+            "boby" will be added to `self._samples_to_join`
 
-        This columns selection can be writted in VQL as follow :
-
-            SELECT chr, pos, genotype("boby").gt
+        .. note:: `_samples_to_join` is a dict with sample_names as keys
+            and sample_ids as values.
         """
-        self._samples_to_join.clear()
-        self._detect_samples_from_columns()
-        self._detect_samples_from_filter()
-        #  TODO: Parse filter
+        # Set sample names to join by searching them in columns
+        if not filter_only:
+            columns_in_columns = \
+                self.get_samples_names_from_functions(self.columns, _GENOTYPE_FUNCTION_NAME)
+        else:
+            columns_in_columns = set()
 
-    def _detect_samples_from_columns(self):
-        """Detect if columns contains function and keep function args as sample name for sql join with sample tables.
+        # Set sample names to join by searching them in filter
+        # iter_filter(): Recursive loop over filter to extract field name only
+        columns_in_filter = \
+            self.get_samples_names_from_functions(self.iter_filter(self.filter), _GENOTYPE_FUNCTION_NAME)
 
-        Functions are defined as tuples. For exemple `genotype("boby").gt` will
-        be written as `("genotype", "boby", "gt")`.
+        # Get samples required by columns and filter
+        required_samples_names = (columns_in_columns | columns_in_filter)
+
+        self._samples_to_join = \
+            {sample["name"]: sample["id"] for sample in sql.get_samples(self.conn)
+             if sample["name"] in required_samples_names}
+
+        LOGGER.debug("DETECT %s in %s", self._samples_to_join.keys(), self.columns)
+
+    def get_samples_names_from_functions(self, columns, function_name):
+        """Get samples names from given functions if their function_name matches
+        to the given one.
+
+        :param columns: Iterable of columns in which functions are searched.
+        :param function_name: Function name to be search in functions.
+        :return: Set of arguments (samples names).
+        :rtype: <set>
         """
+        samples = set()
         # Get function tuples
-        #  A function is a tuple with 3 elements. The second element is the sample name
+        #  A function is a tuple with 3 elements.
+        #  The second element is the sample name
         # TODO: is test on length usefull?
         functions = (
-            col for col in self.columns if isinstance(col, tuple) and len(col) == 3
+            col for col in columns if isinstance(col, tuple) and len(col) == 3
         )
-        # TODO: set on intention here
+
         for function in functions:
-            function_name, sample_name, field_name = function
+            function_name, function_argument, field_name = function
 
-            if function_name == _GENOTYPE_FUNCTION_NAME:
-                self._samples_to_join.add(sample_name)
+            if function_name == function_name:
+                # function_argument is a sample_name here
+                samples.add(function_argument)
+        return samples
 
-    def _detect_samples_from_filter(self):
-        """Detect if filter contains function and keep function args as sample name for sql join with sample tables
-
-        Functions are defined as tuples. For exemple `genotype("boby").gt` will
-        be written as `("genotype", "boby", "gt")`.
-        """
-        # Recursive loop over filter to extract field name only
-        def iter(node):
-            if isinstance(node, dict) and len(node) == 3:
-                yield node["field"]
-
-            if isinstance(node, dict):
-                for i in node:
-                    yield from iter(node[i])
-
-            if isinstance(node, list):
-                for i in node:
-                    yield from iter(i)
-
-        # Get function tuples
-        #  A function is a tuple with 3 elements. The second element is the sample name
-        # TODO: is test on length usefull?
-        functions = (
-            col for col in iter(self.filter) if isinstance(col, tuple) and len(col) == 3
-        )
-        # TODO: set on intention here
-        for function in functions:
-            function_name, sample_name, field_name = function
-
-            if function_name == _GENOTYPE_FUNCTION_NAME:
-                self._samples_to_join.add(sample_name)
-
-        ##-----------------------------------------------------------------------------------------------------------
-
-    def sql(self, limit=0, offset=0) -> str:
-        """Build a sql query according to attributes
-
-        :param limit : SQL LIMIT for pagination
-        :param offset: SQL OFFSET for pagination
-        :return: an SQL query
-        :rtype: str
+    def detect_annotations_table_requirement(self, filter_only=False):
         """
 
-        #  Detect if join sample is required ...
-        # sample_ids = self.detect_samples()
+        :key filter_only: If True, the search will be made only in 'self.filter'
+        :type filter_only: <boolean>
+        :rtype: <boolean>
+        """
+        # Get columns in filter
+        cols_in_annotations = {col for col in self.iter_filter(self.filter)} & self.col_table_mapping["annotations"]
+        if cols_in_annotations:
+            print("found annotations col in filter:", cols_in_annotations)
+            return True
 
-        if len(self.columns) == 0:
+        if filter_only:
+            # Stop here, no col has been found in filter => False
+            return False
+
+        # Get columns in columns
+        cols_in_annotations = set(self.columns) & self.col_table_mapping["annotations"]
+        if cols_in_annotations:
+            print("found annotations col in columns:", cols_in_annotations)
+            return True
+        return False
+
+    def iter_filter(self, node):
+        """Recursive loop over filter to extract field name only
+        Recall: {'AND': [{'field': 'ref', 'operator': 'IN', 'value': "('A', 'T', 'G', 'C')"},
+        {'field': 'alt', 'operator': 'IN', 'value': "('A', 'T', 'G', 'C')"}]}
+        Aim: yield columns involved in filter
+        """
+        if isinstance(node, dict) and len(node) == 3:
+            yield node["field"]
+
+        if isinstance(node, dict):
+            for i in node:
+                yield from self.iter_filter(node[i])
+
+        if isinstance(node, list):
+            for i in node:
+                yield from self.iter_filter(i)
+
+    ##--------------------------------------------------------------------------
+
+    def get_columns(self, do_not_add_default_things=False):
+        """Get list of columns ready to be inserted in a query string
+        .. seealso:: sql() or sql_count()
+        :rtype: <list>
+       """
+        # Set default columns if columns is empty
+        # Otherwise, columns are kept unmodified
+        if not self.columns:
             self.columns = ["chr", "pos", "ref", "alt"]
 
-        # Replace genotype function by name
-        #  Transform ("genotype", "boby","gt") to "`gt_boby`.gy" to perform SQL JOIN
+        if do_not_add_default_things:
+            # Keep columns as they are set in the query
+            sql_columns = []
+        else:
+            # Some queries must have this field in addition to theirs
+            sql_columns = ["variants.id"]
 
-        sql_columns = []
-        sql_columns.append("variants.id")
+        # Replace genotype function by name
+        # Transform ("genotype", "boby","gt") to "`gt_boby`.gt" to perform SQL JOIN
         for col in self.columns:
-            if type(col) == tuple:
-                fct, arg, field = col
-                if fct == _GENOTYPE_FUNCTION_NAME:
-                    col = f"`gt_{arg}`.{field}"
+            if isinstance(col, tuple):
+                function_name, arg, field_name = col
+                if function_name == _GENOTYPE_FUNCTION_NAME:
+                    # Secure column name
+                    col = f"`gt_{arg}`.{field_name}"
 
             sql_columns.append(col)
 
-        #  if group by , add extra columns ( child count and child ids )
+        # If 'group by', add extra columns (child count and child ids)
         # Required for viewquerywidget.py
-        if self.group_by:
-            sql_columns.extend(["COUNT(variants.id) as 'childs'"])
+        if not do_not_add_default_things and self.group_by:
+            sql_columns.extend(["COUNT(*) as 'children'"])
 
-        query = f"SELECT {','.join(sql_columns)} "
+        return sql_columns
 
-        # Add Select clause
+    def get_joints(self, do_not_add_default_things=False, filter_only=False):
+        """Get string of joints ready to be appended to a query string
+        .. seealso:: sql() or sql_count()
+        :rtype: <str>
+        """
+        # On filter and columns
+        # Joint on annotations is mandatory for display queries
+        # We do not do joint if it is explicitly forbidden (in this case
+        # a join is automatically decided if it is required by filter or columns)
+        is_col_in_annotations = self.detect_annotations_table_requirement(filter_only=filter_only)
+        query = (
+            ""
+            if do_not_add_default_things and not is_col_in_annotations
+            else " LEFT JOIN annotations ON annotations.variant_id = variants.id"
+        )
 
-        if self.selection == "all":
-            query += f"FROM variants LEFT JOIN annotations ON annotations.variant_id = variants.id"
-        else:
-            #  manage jointure with selection
-
+        if self.selection and self.selection != DEFAULT_SELECTION_NAME:
+            # Add jointure with 'selections' table
             query += f"""
-            FROM variants
-            LEFT JOIN annotations ON annotations.variant_id = variants.id
             INNER JOIN selection_has_variant sv ON sv.variant_id = variants.id
             INNER JOIN selections s ON s.id = sv.selection_id AND s.name = '{self.selection}'
             """
 
         #  Add Join on sample_has_variant
-        #  This is done if genotype() function has been found in columns or fields. @see _detect_samples
-        self._detect_samples()
-        #        print("DETECT", self.columns, self._samples_to_join)
-        if self._samples_to_join:
-            for sample in sql.get_samples(self.conn):
-                if sample["name"] in self._samples_to_join:
-                    sample_id = sample["id"]
-                    sample_name = sample["name"]
-                    query += f" LEFT JOIN sample_has_variant gt_{sample_name} ON gt_{sample_name}.variant_id = variants.id AND gt_{sample_name}.sample_id = {sample_id}"
+        #  This is done if genotype() function has been found in columns or filter,
+        # or filter only if specified.
+        # _samples_to_join is a dict with sample_names as keys and sample_ids as values
+        self.extract_samples_from_columns_and_filter(filter_only=filter_only)
+        for sample_name, sample_id in self._samples_to_join.items():
+            query += f"""
+            LEFT JOIN sample_has_variant gt_{sample_name}
+             ON gt_{sample_name}.variant_id = variants.id
+             AND gt_{sample_name}.sample_id = {sample_id}
+            """
+        return query
 
+    def sql(self, limit=0, offset=0, do_not_add_default_things=False) -> str:
+        """Build a sql query according to attributes for raw and display queries
+
+        .. note:: Some queries require that this functions doesn't automatically
+            add default columns or joins.
+            In this case the argument 'do_not_add_default_things' must be set to True.
+
+            - `variants.id` will not be appended to SELECT clause.
+            - A LEFT JOIN on annotations will not be made if it is not required
+            by a filter or by columns.
+            Typical query concerned: see ChartQueryWidget:on_change_query()
+            In other cases, 'annotations' table is mandatory for display queries
+            which group variants on transcripts for example.
+
+        .. note:: This function can be called as this, but its main purpose is
+            to be used by self.items().
+
+        .. seealso:: sql_count()
+
+        :param limit: SQL LIMIT for pagination
+        :param offset: SQL OFFSET for pagination
+        :key do_not_add_default_things: See previous note (default: False)
+        :return: A SQL query ready to be executed.
+        :rtype: <str>
+        """
+        ## Build columns
+        sql_columns = self.get_columns(do_not_add_default_things)
+        query = f"SELECT {','.join(sql_columns)} "
+
+        ## Add FROM clause
+        # Explicitly query all variants + ...
+        query += "FROM variants" + self.get_joints(do_not_add_default_things)
+
+        ## Add WHERE filter
         if self.filter:
             query += " WHERE " + self.filter_to_sql(self.filter)
-            #  add limit and offset
 
+        ## Add GROUP BY command
         if self.group_by:
-            query += " GROUP BY chr,pos,ref,alt"
+            query += " GROUP BY " + ",".join(self.group_by)
 
+        ## Add ORDER BY command
         if self.order_by is not None:
-            direction = "DESC" if self.order_desc is True else "ASC"
+            direction = "DESC" if self.order_desc else "ASC"
             query += f" ORDER BY {self.order_by} {direction}"
 
+        ## Add LIMIT and OFFSET clauses
         if limit > 0:
             query += f" LIMIT {limit} OFFSET {offset}"
 
         LOGGER.debug("Query:sql:: query: %s", query)
         return query
 
-        ##-----------------------------------------------------------------------------------------------------------
+    def sql_count(self):
+        """Build a query for count aggregation queries
+
+        Aim: Build queries with chunks of joints/group by commands that
+        are only required based on the columns and filters used.
+
+        Useful chunks:
+            - Joints:
+                - annotations: Only if a column in filter is stored in that table.
+                We don't care if such a column is used in SELECT clause.
+                It's a time saving and a generator of cleaner queries.
+                => decided by detect_annotations_table_requirement(filter_only=True)
+                - selections: Only if a selection is selected, and if this is not
+                the default one.
+                - samples: Only if a sample function is used in filter clause.
+                We don't care if such a column is used in SELECT clause.
+                It's a time saving and a generator of cleaner queries.
+            - Group by:
+                - (chr, pos, ref, alt) is the primary key so there will be as many
+                groups as variants in the database.
+                => no group by is required in this case.
+                - (chr, pos) is a group by that modifies the number of variants
+                because it modifies the definition of the unicity of a variant.
+                => group by is required to reduce the number of variants.
+
+        .. seealso:: sql()
+        """
+        ## Build columns
+        query = "SELECT variants.id "
+
+        ## Add FROM clause
+        # On filter only
+        is_col_in_annotations = self.detect_annotations_table_requirement(filter_only=True)
+        annotations_join = (
+            ""
+            if not is_col_in_annotations
+            else " LEFT JOIN annotations ON annotations.variant_id = variants.id"
+        )
+
+        # => aussi utile ici car certaines requ^etes custom doivent ^etre simplifiées, d'où le do_not_add_default_things
+        # => pas trop utile de détecter les colonnes dans le select car pour l'affichage
+        # la jointure est de toutefaçon obligatoire
+
+        # Explicitly query all variants
+        query += "FROM variants" + annotations_join
+
+        if self.selection and self.selection != DEFAULT_SELECTION_NAME:
+            # Add jointure with 'selections' table
+            query += f"""
+            INNER JOIN selection_has_variant sv ON sv.variant_id = variants.id
+            INNER JOIN selections s ON s.id = sv.selection_id AND s.name = '{self.selection}'
+            """
+
+        # Add Join on sample_has_variant
+        # This is done if genotype() function has been found in filter.
+        # _samples_to_join is a dict with sample_names as keys and sample_ids as values
+        self.extract_samples_from_columns_and_filter(filter_only=True)
+        for sample_name, sample_id in self._samples_to_join.items():
+            query += f"""
+            LEFT JOIN sample_has_variant gt_{sample_name}
+             ON gt_{sample_name}.variant_id = variants.id
+             AND gt_{sample_name}.sample_id = {sample_id}
+            """
+
+        ## Add WHERE filter
+        if self.filter:
+            query += " WHERE " + self.filter_to_sql(self.filter)
+
+        ## Add GROUP BY command
+        if self.group_by != ["chr", "pos", "ref", "alt"]:
+            # (chr, pos) is a group by that modifies the number of variants
+            # because it modifies the definition of the unicity of a variant.
+            # (chr, pos, ref, alt) is the primary key so there will be as many
+            # groups as variants in the database.
+            query += " GROUP BY " + ",".join(self.group_by)
+
+        LOGGER.debug("Query:sql_count:: query: %s", query)
+        return query
+
+    ##--------------------------------------------------------------------------
 
     def items(self, limit=0, offset=0):
         """Execute SQL query and return variants as a list
@@ -266,68 +427,77 @@ class Query:
         yield from self.conn.execute(self.sql(limit, offset))
 
     def filter_to_sql(self, node: dict) -> str:
-        """Recursive function to convert hierarchical dictionnary into a SQL Where clause
+        """Recursive function to convert the self.filter hierarchical dictionnary
+        into a SQL WHERE clause.
 
         :param node: hierachical dictionnary
         :return: a SQL WHERE clause
 
         ..seealso: filter
 
+        :Example of filter:
+        filter: {'AND': [
+            {'field': 'ref', 'operator': 'IN', 'value': "('A', 'T', 'G', 'C')"},
+            {'field': 'alt', 'operator': 'IN', 'value': "('A', 'T', 'G', 'C')"}
+        ]}
         """
 
-        if dict is None:
-            return str()
+        if not node:
+            return ""
 
-        # function to detect if node is a Condition node (AND/OR) OR a field node {name,operator, value}
+        # Function to detect IF node is a Condition node (AND/OR)
+        # OR a field node with (name, operator, value) as keys
         is_field = lambda x: True if len(x) == 3 else False
 
         if is_field(node):
-            # change value
+            # print("IS FIELD", node)
+
+            # Process value
             value = node["value"]
             operator = node["operator"]
             field = node["field"]
 
             # TODO ... c'est degeulasse ....
 
-            if (
-                type(value) == str
-            ):  # Add quote for string .. Need to change in the future and use sqlite binding value
-                value = "'" + str(value) + "'"
+            if operator in ("IN", "NOT IN"):
+                # DO NOT enclose value in quotes
+                # node: {'field': 'ref', 'operator': 'IN', 'value': "('A', 'T', 'G', 'C')"}
+                # wanted: ref IN ('A', 'T', 'G', 'C')
+                pass
 
-            elif type(value) == list:
+            elif isinstance(value, list):
                 value = "(" + ",".join(value) + ")"
 
             else:
                 value = str(value)
 
-            if (
-                type(field) == tuple and len(field) == 3
-            ):  #  Function ? ("genotype","sample","gt")
+            # Process field
+            if isinstance(field, tuple) and len(field) == 3:
+                #  Function ? ("genotype","sample","gt")
                 fct, arg, f = field
                 field = f"gt_{arg}.{f}"
 
-            return field + operator + value
+            # There must be spaces between these strings because of strings operators (IN, etc.)
+            return "%s %s %s" % (field, operator, value)
 
         else:
-            logic = list(node.keys())[0]
-            out = []
-            for child in node[logic]:
-                out.append(self.filter_to_sql(child))
+            # Not a field: 1 key only: the logical operator
+            logic_op = list(node.keys())[0]
+            # Recursive call for each field in the list associated to the
+            # logical operator.
+            # node:
+            # {'AND': [
+            #   {'field': 'ref', 'operator': 'IN', 'value': "('A', 'T', 'G', 'C')"},
+            #   {'field': 'alt', 'operator': 'IN', 'value': "('A', 'T', 'G', 'C')"}
+            # ]}
+            # Wanted: ref IN ('A', 'T', 'G', 'C') AND alt IN ('A', 'T', 'G', 'C')
+            out = [self.filter_to_sql(child) for child in node[logic_op]]
+            # print("OUT", out, "LOGIC", logic_op)
+            # OUT ["refIN'('A', 'T', 'G', 'C')'", "altIN'('A', 'T', 'G', 'C')'"]
 
-            return "(" + f" {logic} ".join(out) + ")"
+            return "(" + f" {logic_op} ".join(out) + ")"
 
-    #     ##-----------------------------------------------------------------------------------------------------------
-
-    # def samples(self):
-    #     """
-    #     Return samples
-
-    #     ..warning:: WILL BE REMOVE AFTER FIXING #33
-
-    #     """
-    #     return self.detect_samples().keys()
-
-    ##-----------------------------------------------------------------------------------------------------------
+    ##--------------------------------------------------------------------------
 
     def create_selection(self, name):
         """Store variant set from the current query into `selections` table
@@ -353,7 +523,7 @@ class Query:
             self.conn, self.sql(), name=name, by="site"
         )
 
-        ##-----------------------------------------------------------------------------------------------------------
+    ##--------------------------------------------------------------------------
 
     @lru_cache(maxsize=128)
     def _cached_variants_count_query(self, sql_query):
@@ -367,6 +537,14 @@ class Query:
             and it seems difficult to predict which fields will be requested
             by the user.
         """
+        # Trick to accelerate UI refresh on basic queries
+        if (
+            not self.selection or self.selection == DEFAULT_SELECTION_NAME
+        ) and not self.filter and self.group_by == ["chr", "pos", "ref", "alt"]:
+            return self.conn.execute(
+                "SELECT MAX(variants.id) as count FROM variants"
+            ).fetchone()[0]
+
         return self.conn.execute(
             f"SELECT COUNT(*) as count FROM ({sql_query})"
         ).fetchone()[0]
@@ -378,15 +556,16 @@ class Query:
             - viewquerywidget.py in `load()` to keep the total of variants for
             paging purposes of the interface.
         """
-        LOGGER.debug("Query:variants_count:: %s", self.sql())
-        count = self._cached_variants_count_query(self.sql())
+        LOGGER.debug("Query:variants_count:: query:")
+        count = self._cached_variants_count_query(
+            self.sql_count()
+        )
         LOGGER.debug(
-            "Query:variants_count:: Cache report %s",
-            self._cached_variants_count_query.cache_info(),
+            "Query:variants_count:: %s", self._cached_variants_count_query.cache_info()
         )
         return count
 
-        ##-----------------------------------------------------------------------------------------------------------
+    ##--------------------------------------------------------------------------
 
     def __repr__(self):
         return f"""
@@ -395,7 +574,7 @@ class Query:
         selection: {self.selection}
         """
 
-        ##-----------------------------------------------------------------------------------------------------------
+    ##--------------------------------------------------------------------------
 
     def from_vql(self, raw: str):
         """Build the current Query from a VQL query
@@ -414,7 +593,7 @@ class Query:
         model = vql.model_from_string(raw)
         self.columns = list(model["select"])  # columns from variant table
         self.selection = model["from"]  # name of the variant set
-        self.filter = model.get("where")  # filter as raw text; None if no filter
+        self.filter = model.get("where", dict())  # filter as raw text; dict if no filter
         # TODO: USING clause missing
 
         print("from vql", model)
@@ -437,7 +616,7 @@ class Query:
             if isinstance(col, tuple):
                 fct, arg, field = col
                 if fct == _GENOTYPE_FUNCTION_NAME:
-                    col = f"genotype(\"{arg}\").{field}"
+                    col = f'genotype("{arg}").{field}'
             _c.append(col)
 
         base = f"SELECT {','.join(_c)} FROM {self.selection}"
@@ -446,7 +625,7 @@ class Query:
             where = f" WHERE {self.filter_to_sql(self.filter)}"
         return base + where
 
-        ##-----------------------------------------------------------------------------------------------------------
+    ##--------------------------------------------------------------------------
 
     def check(self):
         """Return True if query is valid"""

@@ -113,6 +113,7 @@ class Function(metaclass=model_class):
 METAMODEL = textx.metamodel_from_str(
     resource_string(__name__, "vql.tx").decode(),  # grammar extraction from vql.tx
     classes=model_class.classes,
+    ignore_case=True,
     debug=False,
 )
 
@@ -124,14 +125,18 @@ class ColumnIdentifier(metaclass=model_class):
 
 
 class VQLSyntaxError(ValueError):
-    pass
+
+    def __init__(self, message, col=None, *args, **kwargs):
+        super().__init__(message, col, *args, **kwargs)
+        self.message = message
+        self.col = col
 
 
 def model_from_string(raw_vql: str) -> dict:
     """TODO
 
     :return: Dictionary ??
-        .. example:: {'select': ('chr', 'pos', 'ref', 'alt'), 'from': 'all'}
+        .. example:: {'select': ('chr', 'pos', 'ref', 'alt'), 'from': '<selection_name>'}
     :rtype: <dict <str>:<tuple>>
     """
     try:

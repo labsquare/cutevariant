@@ -1,3 +1,10 @@
+"""Widget to display variants from a query in the GUI.
+
+ViewQueryWidget class is added to a QTabWidget and is seen by the user;
+it uses QueryModel class as a model that handles records from the database.
+QueryDelegate class handles the aesthetic of the view.
+"""
+
 # Standard imports
 import copy
 import csv
@@ -13,6 +20,7 @@ from .plugin import QueryPluginWidget
 from cutevariant.core import Query
 from cutevariant.core import sql
 from cutevariant.gui import style
+from cutevariant.gui.infovariantwidget import VariantPopupMenu
 from cutevariant.commons import logger
 from cutevariant.commons import GENOTYPE_ICONS
 
@@ -58,9 +66,9 @@ class QueryModel(QAbstractItemModel):
         if parent.parent() == QModelIndex():
             return len(self.variants[parent.row()]) - 1  # Omit first
 
-        # Get parent variant row ID and return child count
-        # if self.row_id(parent) in self.childs:
-        #     return len(self.childs[parent.row()])
+        # Get parent variant row ID and return children count
+        # if self.row_id(parent) in self.children:
+        #     return len(self.children[parent.row()])
         # else:
         # return 0
 
@@ -71,7 +79,7 @@ class QueryModel(QAbstractItemModel):
         if not self._query:
             return 0
 
-        return len(self._query.columns) + 1  #  show child count for the first col
+        return len(self._query.columns) + 1  #  show children count for the first col
 
     def index(self, row, column, parent=QModelIndex()):
         """Overrided: Return index """
@@ -110,8 +118,8 @@ class QueryModel(QAbstractItemModel):
             #  Display the first level
             if index.parent() == QModelIndex():
                 if index.column() == 0:
-                    # First column display child count
-                    return str(self.child_count(index))
+                    # First column display children count
+                    return str(self.children_count(index))
                 else:
                     # Other display variant data
                     return str(self.variants[index.row()][0][index.column()])
@@ -134,7 +142,7 @@ class QueryModel(QAbstractItemModel):
                 and index.column() == 0
                 and self.hasChildren(index)
             ):
-                return self._draw_child_count_icon(self.variants[index.row()][0][-1])
+                return self._draw_children_count_icon(self.variants[index.row()][0][-1])
 
         return None
 
@@ -145,11 +153,11 @@ class QueryModel(QAbstractItemModel):
         if orientation == Qt.Horizontal:
             if role == Qt.DisplayRole:
                 if section == 0:
-                    return "childs"
+                    return "children"
                 else:
                     col = self._query.columns[section - 1]
-                    if type(col) == tuple and len(col) == 3: # show functions
-                        fct,arg,field = col
+                    if type(col) == tuple and len(col) == 3:  #  show functions
+                        fct, arg, field = col
                         return f"{fct}({arg}).{field}"
                     else:
                         return self._query.columns[section - 1]
@@ -164,13 +172,13 @@ class QueryModel(QAbstractItemModel):
             return True
 
         if parent.parent() == QModelIndex():
-            childs_count = self.child_count(parent)
-            return childs_count > 1
+            children_count = self.children_count(parent)
+            return children_count > 1
 
         return False
 
         # if parent.parent() == QModelIndex():
-        #     return self._child_count(parent) > 1
+        #     return self._children_count(parent) > 1
 
     def canFetchMore(self, parent: QModelIndex) -> bool:
         """ Overrided """
@@ -188,19 +196,23 @@ class QueryModel(QAbstractItemModel):
 
         #  get sql variant id
         variant_id = self.variants[parent.row()][0][0]
-        columns = ",".join(self._query.columns)
+
+        columns = ",".join(self._query.get_columns(do_not_add_default_things=True))
+        joints = self._query.get_joints()
 
         #  TODO : need to put this into QUERY
-        sub_query = f"""SELECT variants.id,{columns} FROM variants
-        LEFT JOIN annotations ON variants.id = annotations.variant_id
-        WHERE variants.id = {variant_id}"""
+        # TODO: add filter into left join annotations ... instead in where
+        sub_query = f"""SELECT variants.id, {columns} FROM variants
+        {joints}
+        WHERE annotations.variant_id = {variant_id}"""
+        print("SUB QUERY", sub_query)
 
         records = list(self._query.conn.cursor().execute(sub_query).fetchall())
 
-        #  Insert children
+        # Insert children
         self.beginInsertRows(parent, 0, len(records))
 
-        # Clear pevious childs
+        # Clear pevious children
         self.variants[parent.row()][1:] = []
 
         for idx, record in enumerate(records):  # skip first records
@@ -208,9 +220,8 @@ class QueryModel(QAbstractItemModel):
 
         self.endInsertRows()
 
-    def child_count(self, index: QModelIndex):
-        """
-        Return child count from variant
+    def children_count(self, index: QModelIndex):
+        """Return children count from variant
 
         This one is the last value of sql record output and correspond to the COUNT(annotation)
         of the GROUP BY
@@ -224,6 +235,7 @@ class QueryModel(QAbstractItemModel):
     @query.setter
     def query(self, query: Query):
         self._query = query
+        # TODO: take this from user's settings
         # self._query.group_by=("chr","pos","ref","alt")
 
     def load(self):
@@ -231,14 +243,19 @@ class QueryModel(QAbstractItemModel):
         Load variant data into the model from query attributes
 
         """
-        self._query.group_by = ("chr", "pos")
+        # Set group by rule
+        # TODO: take this from user's settings;
+        # useless: default group_by; see query.sql()
+        # self._query.group_by = ("chr","pos","ref","alt")
         self.beginResetModel()
         # Set total of variants for pagination
         self.total = self.query.variants_count()
 
         # Append a list because child can be append after
-        self.variants = \
-            [[tuple(variant)] for variant in self._query.items(self.limit, self.page * self.limit)]
+        self.variants = [
+            [tuple(variant)]
+            for variant in self._query.items(self.limit, self.page * self.limit)
+        ]
 
         LOGGER.debug("QueryModel:load:: variants queried\n%s", self.variants)
         self.endResetModel()
@@ -296,7 +313,7 @@ class QueryModel(QAbstractItemModel):
         if index.parent().parent() == QModelIndex():
             return self.variants[index.parent().row()][index.row()]
 
-    def _draw_child_count_icon(self, count: int) -> QIcon:
+    def _draw_children_count_icon(self, count: int) -> QIcon:
 
         pix = QPixmap(48, 41)
         pix.fill(Qt.transparent)
@@ -388,12 +405,11 @@ class QueryDelegate(QStyledItemDelegate):
             painter.drawText(option.rect, alignement, str(index.data()))
             return
 
-
         if "genotype" in colname:
-            val =  int(value)
+            val = int(value)
 
             icon_path = GENOTYPE_ICONS.get(val, -1)
-            icon = QPixmap(icon_path).scaled(16,16)
+            icon = QPixmap(icon_path).scaled(16, 16)
             painter.setRenderHint(QPainter.Antialiasing)
             painter.drawPixmap(option.rect.left(), option.rect.center().y() - 8, icon)
             return
@@ -484,6 +500,9 @@ class ViewQueryWidget(QueryPluginWidget):
 
         self.model.modelReset.connect(self.updateInfo)
 
+        # Create menu
+        self.context_menu = VariantPopupMenu()
+
         # emit variant when clicked
         self.view.clicked.connect(self._variant_clicked)
 
@@ -515,10 +534,23 @@ class ViewQueryWidget(QueryPluginWidget):
         self.page_box.setFixedWidth(fm.boundingRect(page_box_text).width() + 5)
 
     def _variant_clicked(self, index):
-        # print("cicked on ", index)
+        """Slot called when the view (QTreeView) is clicked
+
+        .. note:: Emit variant through variant_clicked signal.
+            This signal updates InfoVariantWidget.
+        .. note:: Is also called manually by contextMenuEvent() in order to
+            get the variant and refresh InfoVariantWidget when the
+            ContextMenuEvent is triggered.
+        :return: The variant.
+        :rtype: <dict>
+        """
+        # Get the rowid of the element at the given index
         rowid = self.model.variant(index)[0]
+        # Get data from database
         variant = sql.get_one_variant(self.model.query.conn, rowid)
+        # Emit variant through variant_clicked signal
         self.variant_clicked.emit(variant)
+        return variant
 
     def export_csv(self):
         """Export variants displayed in the current view to a CSV file"""
@@ -535,7 +567,9 @@ class ViewQueryWidget(QueryPluginWidget):
                 # Write headers (columns in the query) + variants from the model
                 writer.writerow(self.model.query.columns)
                 # Remove the sqlite rowid col
-                g = (variant[1:] for variant in self.model.variants)
+                # Data: first: id in db, last children count
+                # [[(1, 11, 10000, 'G', 'T', 1)], ...]
+                g = (variant[0][1:-1] for variant in self.model.variants)
                 writer.writerows(g)
 
     def show_sql(self):
@@ -549,23 +583,9 @@ class ViewQueryWidget(QueryPluginWidget):
         box.exec_()
 
     def contextMenuEvent(self, event: QContextMenuEvent):
-        """
-        Overrided methods
-        """
+        """Overrided method: Show custom context menu associated to the current variant"""
+        # Get the variant (and refresh InfoVariantWidget)
         current_index = self.view.currentIndex()
-        variant = self.model.variant(current_index)
-
-        menu = QMenu(self)
-
-        # actions Examples :
-        menu.addAction(FIcon(0xF4CE), self.tr("Add to Favorite")).setCheckable(True)
-        menu.addAction(FIcon(0xF18F), self.tr("Copy genomic location"))
-
-        openMenu = menu.addMenu(self.tr("Open With"))
-
-        # @ysard read settings
-        openMenu.addAction("Varsome")
-        openMenu.addSeparator()
-        openMenu.addAction("Edit ...")
-
-        menu.exec_(event.globalPos())
+        variant = self._variant_clicked(current_index)
+        # Show the context menu with the given variant
+        self.context_menu.popup(variant, event.globalPos())

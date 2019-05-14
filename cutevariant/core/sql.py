@@ -23,6 +23,7 @@ LOGGER = cm.logger()
 
 ## ================ Misc functions =============================================
 
+
 def get_sql_connexion(filepath):
     """Open a SQLite database and return the connexion object"""
     connexion = sqlite3.connect(filepath)
@@ -50,10 +51,11 @@ def create_project(conn, name: str, reference: str):
     :param reference: Reference genome
     """
     cursor = conn.cursor()
-    cursor.execute("""CREATE TABLE projects (id INTEGER PRIMARY KEY, name TEXT, reference TEXT)""")
     cursor.execute(
-        """INSERT INTO projects (name, reference) VALUES (?, ?)""",
-        (name, reference),
+        """CREATE TABLE projects (id INTEGER PRIMARY KEY, name TEXT, reference TEXT)"""
+    )
+    cursor.execute(
+        """INSERT INTO projects (name, reference) VALUES (?, ?)""", (name, reference)
     )
     conn.commit()
 
@@ -69,7 +71,9 @@ def get_columns(conn, table_name):
     """
     # Get columns description from table_info
     # ((0, 'chr', 'str', 0, None, 1), ...
-    return [c[1] for c in conn.execute(f"pragma table_info({table_name})") if c[1] != "id"]
+    return [
+        c[1] for c in conn.execute(f"pragma table_info({table_name})") if c[1] != "id"
+    ]
 
 
 def create_indexes(conn):
@@ -79,12 +83,13 @@ def create_indexes(conn):
     .. note:: You should use this function instead of individual functions.
     """
     create_variants_indexes(conn)
+    create_selections_indexes(conn)
 
     try:
+        # Some databases have not annotations table
         create_annotations_indexes(conn)
     except sqlite3.OperationalError as e:
-        LOGGER.debug("create_indexes:: sqlite3.%s: %s",
-                     e.__class__.__name__, str(e))
+        LOGGER.debug("create_indexes:: sqlite3.%s: %s", e.__class__.__name__, str(e))
 
 
 ## ================ Selections functions =======================================
@@ -123,8 +128,31 @@ def create_table_selections(conn):
     conn.commit()
 
 
-def insert_selection(conn, query="", name="no_name", count=0):
-    """Insert one selection record (NOT USED)
+def create_selections_indexes(conn):
+    """Create indexes on the "selections" table
+
+    .. note:: This function should be called after batch insertions.
+
+    .. note:: This function ensures the unicity of selections names.
+    """
+    conn.execute("""CREATE UNIQUE INDEX idx_selections ON selections (name)""")
+
+
+def create_selection_has_variant_indexes(conn):
+    """Create indexes on "selection_has_variant" table
+
+    .. note:: This function is called by:
+        - create_selections_indexes
+        - insert_selection to rebuild index
+    """
+    # For joints between selections and variants tables
+    conn.execute("""CREATE INDEX idx_selection_has_variant ON selection_has_variant (selection_id)""")
+
+
+def insert_selection(conn, query: str, name="no_name", count=0):
+    """Insert one selection record
+
+    TODO: retirer le group by inutile
 
     .. warning:: This function does a commit !
 
@@ -140,7 +168,7 @@ def insert_selection(conn, query="", name="no_name", count=0):
     cursor = conn.cursor()
     cursor.execute(
         """INSERT INTO selections (name, count, query) VALUES (?,?,?)""",
-        (name, count, query)
+        (name, count, query),
     )
     # TODO: get cursor as argument, because later insertions may crash
     # and leave the database not consistent with an orphan selection.
@@ -148,7 +176,7 @@ def insert_selection(conn, query="", name="no_name", count=0):
     return cursor.lastrowid
 
 
-def create_selection_from_sql(conn, query, name, count=None, by="site"):
+def create_selection_from_sql(conn, query: str, name: str, count=None, by="site"):
     """Create a selection record from sql variant query
 
     :param name : name of the selection
@@ -162,12 +190,19 @@ def create_selection_from_sql(conn, query, name, count=None, by="site"):
     cursor = conn.cursor()
 
     # Compute query count
-    # TODO : this can take a while .... need to compute only one from elsewhere
+    #  TODO : this can take a while .... need to compute only one from elsewhere
     if not count:
         count = cursor.execute(f"SELECT COUNT(*) FROM ({query})").fetchone()[0]
 
     # Create selection
-    selection_id = insert_selection(conn, name=name, count=count, query=query)
+    selection_id = insert_selection(conn, query, name=name, count=count)
+
+    # DROP indexes
+    # For joints between selections and variants tables
+    try:
+        cursor.execute("""DROP INDEX idx_selection_has_variant""")
+    except sqlite3.OperationalError:
+        pass
 
     # Insert into selection_has_variant table
     # PS: We use DISTINCT keyword to statisfy the unicity constraint on
@@ -193,6 +228,11 @@ def create_selection_from_sql(conn, query, name, count=None, by="site"):
         """
 
     cursor.execute(q)
+
+    # REBUILD INDEXES
+    # For joints between selections and variants tables
+    create_selection_has_variant_indexes(cursor)
+
     conn.commit()
     if cursor.rowcount:
         return cursor.lastrowid
@@ -232,7 +272,9 @@ def edit_selection(conn, selection: dict):
     :rtype: <int>
     """
     cursor = conn.cursor()
-    conn.execute("UPDATE selections SET name=:name, count=:count WHERE id = :id", selection)
+    conn.execute(
+        "UPDATE selections SET name=:name, count=:count WHERE id = :id", selection
+    )
     conn.commit()
     return cursor.rowcount
 
@@ -283,9 +325,6 @@ def subtract_variants(query1, query2, by="site"):
     EXCEPT
     SELECT {columns} FROM ({query2})
     """
-
-
-
 
 
 ## ================ Fields functions ===========================================
@@ -339,7 +378,7 @@ def insert_field(
         """
         INSERT INTO fields VALUES (?, ?, ?, ?)
         """,
-        (name, category, type, description)
+        (name, category, type, description),
     )
     conn.commit()
     return cursor.lastrowid
@@ -402,15 +441,19 @@ def create_table_annotations(conn, fields):
     )
 
     if not schema:
-        # Create minimum annotation table... Can be use later for dynamic annotation.
+        #  Create minimum annotation table... Can be use later for dynamic annotation.
         # TODO : we may want to fix annotation fields .
         schema = "gene TEXT, transcript TEXT"
-        LOGGER.debug("create_table_annotations:: No annotation fields detected! => Fallback")
+        LOGGER.debug(
+            "create_table_annotations:: No annotation fields detected! => Fallback"
+        )
         # return
 
     cursor = conn.cursor()
     # TODO: no primary key/unique index for this table?
-    cursor.execute(f"""CREATE TABLE annotations (variant_id INTEGER NOT NULL, {schema})""")
+    cursor.execute(
+        f"""CREATE TABLE annotations (variant_id INTEGER NOT NULL, {schema})"""
+    )
     conn.commit()
 
 
@@ -428,7 +471,7 @@ def create_annotations_indexes(conn):
     """
 
     # Allow search on variant_id
-    conn.execute(f"""CREATE INDEX idx_annotations ON annotations (variant_id)""")
+    conn.execute("""CREATE INDEX idx_annotations ON annotations (variant_id)""")
 
 
 ## ================ Variants functions =========================================
@@ -464,8 +507,10 @@ def create_table_variants(conn, fields):
     # from all other values, including other NULLs.
     schema = ",".join(
         [
+
             f'`{field["name"]}` {field["type"]} {field.get("constraint", "")}'
-            for field in fields if field["name"]
+            for field in fields
+            if field["name"]
         ]
     )
 
@@ -473,13 +518,16 @@ def create_table_variants(conn, fields):
     # Unicity constraint or NOT NULL fields (Cf VcfReader, FakeReader, etc.)
     # NOTE: specify the constraint in CREATE TABLE generates a lighter DB than
     # a separated index... Don't know why.
-    cursor.execute(f"""CREATE TABLE variants (id INTEGER PRIMARY KEY, {schema},
-        UNIQUE (chr,pos,ref,alt))""")
+    cursor.execute(
+        f"""CREATE TABLE variants (id INTEGER PRIMARY KEY, {schema},
+        UNIQUE (chr,pos,ref,alt))"""
+    )
     # cursor.execute(f"""CREATE UNIQUE INDEX idx_variants_unicity ON variants (chr,pos,ref,alt)""")
 
 
     # Association table: do not use useless rowid column
-    cursor.execute(f"""CREATE TABLE sample_has_variant (
+    cursor.execute(
+        """CREATE TABLE sample_has_variant (
         sample_id INTEGER NOT NULL,
         variant_id INTEGER NOT NULL,
         gt INTEGER DEFAULT -1,
@@ -487,7 +535,8 @@ def create_table_variants(conn, fields):
         FOREIGN KEY (sample_id) REFERENCES samples (id)
           ON DELETE CASCADE
           ON UPDATE NO ACTION
-        ) WITHOUT ROWID""")
+        ) WITHOUT ROWID"""
+    )
     conn.commit()
 
 
@@ -505,9 +554,12 @@ def create_variants_indexes(conn):
     """
 
     # Complementary index of the primary key (sample_id, variant_id)
-    conn.execute(f"""CREATE INDEX idx_sample_has_variant ON sample_has_variant (variant_id)""")
+    conn.execute(
+        """CREATE INDEX idx_sample_has_variant ON sample_has_variant (variant_id)"""
+    )
 
-    conn.execute(f"""CREATE INDEX idx_variants_pos ON variants (pos)""")
+    conn.execute("""CREATE INDEX idx_variants_pos ON variants (pos)""")
+    conn.execute("""CREATE INDEX idx_variants_ref_alt ON variants (ref, alt)""")
 
 
 def get_one_variant(conn, id: int):
@@ -523,15 +575,19 @@ def get_one_variant(conn, id: int):
 
 def get_variants_count(conn):
     """Get the number of variants in the "variants" table"""
-    return conn.execute(f"""SELECT COUNT(*) FROM variants""").fetchone()[0]
+    return conn.execute("""SELECT COUNT(*) FROM variants""").fetchone()[0]
 
 
-def async_insert_many_variants(conn, data, total_variant_count=None, yield_every=200):
+def async_insert_many_variants(conn, data, total_variant_count=None, yield_every=30000):
     """Insert many variants from data into variants table
 
     :param conn: sqlite3.connect
     :param data: list of variant dictionnary which contains same number of key than fields numbers.
     :param variant_count: total variant count, to compute progression
+    :return: Yield a tuple with progression and message.
+        Progression is 0 if total_variant_count is not set.
+    :rtype: <generator <tuple <int>, <str>>
+
 
     :Example:
 
@@ -571,34 +627,32 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
     var_cols, var_places = build_columns_and_placeholders("variants")
     ann_cols, ann_places = build_columns_and_placeholders("annotations")
 
-
     # Get samples with samples names as keys and sqlite rowid as values
     # => used as a mapping for samples ids
-    samples_id_mapping = {name: rowid for name, rowid
-               in conn.execute("""SELECT name, id FROM samples""")}
+    samples_id_mapping = {
+        name: rowid for name, rowid in conn.execute("SELECT name, id FROM samples")
+    }
     samples_names = samples_id_mapping.keys()
-
 
     # Check SQLite version and build insertion queries for variants
     # Old version doesn't support ON CONFLICT ..target.. DO ... statements
     # to handle violation of unicity constraint.
-    old_sqlite_version = \
-        (parse_version(sqlite3.sqlite_version) < parse_version("3.24.0"))
+    old_sqlite_version = parse_version(sqlite3.sqlite_version) < parse_version("3.24.0")
 
     if old_sqlite_version:
-        LOGGER.warning("async_insert_many_variants:: Old SQLite version: %s"
-                       " - Fallback to ignore errors!",
-                       sqlite3.sqlite_version)
+        LOGGER.warning(
+            "async_insert_many_variants:: Old SQLite version: %s"
+            " - Fallback to ignore errors!",
+            sqlite3.sqlite_version,
+        )
         # /!\ This syntax is SQLite specific
         # /!\ We mask all errors here !
-        variant_insert_query = \
-            f"""INSERT OR IGNORE INTO variants ({var_cols})
+        variant_insert_query = f"""INSERT OR IGNORE INTO variants ({var_cols})
                 VALUES ({var_places})"""
 
     else:
         # Handle conflicts on the primary key
-        variant_insert_query = \
-            f"""INSERT INTO variants ({var_cols})
+        variant_insert_query = f"""INSERT INTO variants ({var_cols})
                 VALUES ({var_places})
                 ON CONFLICT (chr,pos,ref,alt) DO NOTHING"""
 
@@ -608,6 +662,7 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
 
     # Loop over variants
     errors = 0
+    progress = 0
     for variant_count, variant in enumerate(data, 1):
 
         # Insert current variant
@@ -615,16 +670,19 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
         LOGGER.debug(variant_insert_query)
         print(variant_insert_query)
 
-        cursor.execute(variant_insert_query, defaultdict(str,variant))
+        cursor.execute(variant_insert_query, defaultdict(str, variant))
 
         # If the row is not inserted we skip this erroneous variant
         # and the data that goes with
         if cursor.rowcount == 0:
-            LOGGER.error("async_insert_many_variants:: The following variant "
-                          "contains erroneous data; most of the time it is a "
-                          "duplication of the primary key: (chr,pos,ref,alt). "
-                          "Please check your data; this variant and its attached "
-                          "data will not be inserted!\n%s", variant)
+            LOGGER.error(
+                "async_insert_many_variants:: The following variant "
+                "contains erroneous data; most of the time it is a "
+                "duplication of the primary key: (chr,pos,ref,alt). "
+                "Please check your data; this variant and its attached "
+                "data will not be inserted!\n%s",
+                variant,
+            )
             errors += 1
             continue
 
@@ -651,7 +709,7 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
             cursor.executemany(
                 f"""INSERT INTO annotations ({ann_cols})
                 VALUES ({variant_id}, {temp_ann_places})""",
-                variant["annotations"]
+                variant["annotations"],
             )
 
         # If variant has sample data, insert record into "sample_has_variant" table
@@ -669,8 +727,7 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
                  for sample in variant["samples"]
                  if sample["name"] in samples_names)
             cursor.executemany(
-                f"""INSERT INTO sample_has_variant VALUES (?,{variant_id},?)""",
-                g
+                f"""INSERT INTO sample_has_variant VALUES (?,{variant_id},?)""", g
             )
 
 
@@ -678,22 +735,22 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
         if variant_count % yield_every == 0:
             if total_variant_count:
                 progress = variant_count / total_variant_count * 100
-            else:
-                progress = 0
 
             yield progress, f"{variant_count} variants inserted."
 
     # Commit the transaction
     conn.commit()
 
-    # create selections
-    # insert_selection(conn, name="all", count=variant_count)
+    yield 97, f"{variant_count - errors} variant(s) has been inserted."
 
-    yield 98, f"{variant_count - errors} variant(s) has been inserted"
+    # Create default selection (we need the number of variants for this)
+    insert_selection(
+        conn, "", name=cm.DEFAULT_SELECTION_NAME, count=variant_count - errors
+    )
 
 
 def insert_many_variants(conn, data, **kwargs):
-    for _,_ in async_insert_many_variants(conn, data, kwargs):
+    for _, _ in async_insert_many_variants(conn, data, kwargs):
         pass
 
 
@@ -707,9 +764,11 @@ def create_table_samples(conn):
     """
     cursor = conn.cursor()
     # sample_id is an alias on internal autoincremented 'rowid'
-    cursor.execute("""CREATE TABLE samples (
+    cursor.execute(
+        """CREATE TABLE samples (
         id INTEGER PRIMARY KEY ASC,
-        name TEXT)""")
+        name TEXT)"""
+    )
     conn.commit()
 
 
@@ -735,8 +794,7 @@ def insert_many_samples(conn, samples: list):
     """
     cursor = conn.cursor()
     cursor.executemany(
-        """INSERT INTO samples (name) VALUES (?)""",
-        ((sample,) for sample in samples)
+        """INSERT INTO samples (name) VALUES (?)""", ((sample,) for sample in samples)
     )
     conn.commit()
 
@@ -755,7 +813,8 @@ def get_samples(conn):
 
 class Selection(object):
     conn = None
-    def __init__(self, query = None):
+
+    def __init__(self, query=None):
         self.query = query
 
     def __add__(self, other):
@@ -774,13 +833,23 @@ class Selection(object):
         new_selection.query = subtract_variants(self.query, other.query)
         return new_selection
 
-
-    def save(self, name ):
-        create_selection_from_sql(Selection.conn, self.query, name, count=None, by="site")
+    def save(self, name):
+        create_selection_from_sql(
+            Selection.conn, self.query, name, count=None, by="site"
+        )
 
     @classmethod
     def from_name(cls, name):
-        select_id = Selection.conn.execute("SELECT id FROM selections WHERE name = ?", (name,)).fetchone()[0]
+
+        select_id = Selection.conn.execute(
+            "SELECT id FROM selections WHERE name = ?", (name,)
+        ).fetchone()[0]
+        # get columns that corresponds to GROUP BY chr,pos
+        # TODO: Why chr, pos ?
         columns = get_query_columns(by="site")
-        q = f"SELECT {columns} FROM variants v, selection_has_variant sv WHERE v.id = sv.variant_id AND sv.selection_id = {select_id}"
+        print("cols", columns)
+        q = f"""SELECT {columns}
+            FROM variants v
+            LEFT JOIN selection_has_variant sv
+             ON v.id = sv.variant_id AND sv.selection_id = {select_id}"""
         return Selection(q)

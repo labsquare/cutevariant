@@ -14,6 +14,7 @@ from PySide2.QtGui import QSyntaxHighlighter, QFont, QPalette, QTextCharFormat, 
 
 # Custom imports
 from cutevariant.core import sql
+from cutevariant.core.vql import VQLSyntaxError
 from cutevariant.commons import MIN_COMPLETION_LETTERS, logger
 from .plugin import QueryPluginWidget
 
@@ -51,6 +52,7 @@ class VqlSyntaxHighlighter(QSyntaxHighlighter):
                 ),
                 "font": QFont.Bold,
                 "color": palette.color(QPalette.Highlight),  # default: Qt.darkBlue
+                "case_insensitive": True,
             },
             {
                 # Strings simple quotes '...'
@@ -90,13 +92,17 @@ class VqlSyntaxHighlighter(QSyntaxHighlighter):
                 t_format.setForeground(color)
 
             regex = QRegularExpression(pattern["pattern"])
-            minimal = pattern.get("minimal", False)
-            if minimal:
+            if pattern.get("minimal", False):
                 # The greediness of the quantifiers is inverted: *, +, ?, {m,n}, etc.
                 # become lazy, while their lazy versions (*?, +?, ??, {m,n}?, etc.)
                 # become greedy.
                 # https://doc.qt.io/Qt-5/qregularexpression.html#setPatternOptions
                 regex.setPatternOptions(QRegularExpression.InvertedGreedinessOption)
+
+            if pattern.get("case_insensitive", False):
+                # NOTE: Deletes previous pattern options
+                # Not serious in practice, this only concerns the keywords
+                regex.setPatternOptions(QRegularExpression.CaseInsensitiveOption)
 
             self.highlighting_rules.append((regex, t_format))
 
@@ -131,32 +137,10 @@ class VqlEditor(QueryPluginWidget):
         # Boolean to detect a SQL error
         self.query_error = False
 
-    # @property
-    # def query(self):
-    #     """Overrided"""
-    #     try:
-    #         self._query.from_vql(self.text_edit.toPlainText())
-    #         if self.query_error:
-    #             # Erase a previous error shown on the ui
-    #             self.message.emit("")
-    #         return self._query
-    #     except AttributeError:
-    #         LOGGER.debug("VqlEditor:query:: no query attribute")
-    #         return None
-    #     except TextXSyntaxError as e:
-    #         # Available attributes: e.message, e.line, e.col
-    #         LOGGER.error("VqlEditor:query:: %s, col: %d", e.message, e.col)
-    #         # Show the error message on the ui
-    #         self.message.emit(e.message)
-    #         self.query_error = True
-
-
     def on_init_query(self):
         """Overrided"""
         self.text_edit.setCompleter(self.create_completer())
         self.on_change_query()
-
-
 
     def on_change_query(self):
         """Overrided"""
@@ -178,9 +162,25 @@ class VqlEditor(QueryPluginWidget):
     def check_vql(self):
 
         if self.query:
-            self.query.from_vql(self.text_edit.toPlainText())
-            print("check vql", self.query)
-            self.query_changed.emit()
+            try:
+                self.query.from_vql(self.text_edit.toPlainText())
+                if self.query_error:
+                    # There was a previous error
+                    # Erase it in the status bar
+                    self.message.emit("")
+
+                print("check vql", self.query)
+                self.query_error = False
+                self.query_changed.emit()
+            except TextXSyntaxError as e:
+                # Available attributes: e.message, e.line, e.col
+                LOGGER.error("TextXSyntaxError: %s, col: %d", e.message, e.col)
+            except VQLSyntaxError as e:
+                # Show the error message on the ui
+                self.message.emit(
+                    self.tr("VQLSyntaxError: '%s' at position %s") % (e.message, e.col)
+                )
+                self.query_error = True
 
 
 class VqlEdit(QTextEdit):

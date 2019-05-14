@@ -18,14 +18,14 @@ def async_import_reader(conn, reader: AbstractReader, **kwargs):
     :rtype: <generator <int>, <str>>
     """
     # Create project
-    yield 0, f"Import data with {reader}"
+    yield 0, f"Importing data with {reader}"
     create_project(
         conn,
         name=kwargs.get("project_name", "UKN"),
         reference=kwargs.get("reference", "UKN"),
     )
 
-    yield 0, "create table shema"
+    yield 0, "Creating table shema..."
     # Create table fields
     create_table_fields(conn)
 
@@ -42,32 +42,35 @@ def async_import_reader(conn, reader: AbstractReader, **kwargs):
     create_table_selections(conn)
 
     # Insert samples
-    yield 0, "insert samples"
+    yield 0, "Inserting samples..."
     insert_many_samples(conn, reader.get_samples())
 
     # Insert fields
-    yield 0, "insert fields"
+    yield 0, "Inserting fields..."
     insert_many_fields(conn, reader.get_fields())
 
     # yield 0, "count variants..."
     # total_variant = reader.get_variants_count()
 
     # Insert variants, link them to annotations and samples
-    yield 0, "insert variants"
-    for _ in async_insert_many_variants(conn, reader.get_variants()):
+    yield 0, "Inserting variants..."
+    percent = 0
+    for value, message in async_insert_many_variants(conn, reader.get_variants()):
 
-        percent = 0
         if reader.file_size:
             percent = reader.read_bytes / reader.file_size * 100.0
-        yield (percent, None)
+        else:
+            # Fallback
+            # TODO: useless for now because we don't give the total of variants
+            # to async_insert_many_variants()
+            percent = value
+        yield percent, message
 
     # Create indexes
-    yield 99, "Create indexes"
+    yield 99, "Creating indexes..."
     create_indexes(conn)
-    yield 100, "Indexes created"
+    yield 100, "Indexes created."
 
-    # # Create default selection
-    # session.add(Selection(name="all", description="all variant", count = variant_count))
     # session.add(Selection(name="favoris", description="favoris", count = 0))
 
 

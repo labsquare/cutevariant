@@ -14,7 +14,10 @@ from .plugin import QueryPluginWidget
 from cutevariant.core import Query
 from cutevariant.core import sql
 from cutevariant.gui.ficon import FIcon
+from cutevariant.commons import logger, DEFAULT_SELECTION_NAME
 
+
+LOGGER = logger()
 
 # =================== SELECTION MODEL ===========================
 class SelectionQueryModel(QAbstractTableModel):
@@ -141,7 +144,9 @@ class SelectionQueryModel(QAbstractTableModel):
         # TODO => Must be inside the selection table
         # For now, this record has a None "id" attribute
         # => this is detected in remove_record to avoid errors
-        self.records.append({"id": None, "name": "all", "count": "   "})
+        self.records.append(
+            {"id": None, "name": DEFAULT_SELECTION_NAME, "count": "   "}
+        )
         # Add all selections from the database
         # Dictionnary of all attributes of the table.
         #    :Example: {"name": ..., "count": ..., "query": ...}
@@ -259,7 +264,28 @@ class SelectionQueryWidget(QueryPluginWidget):
             self.tr("Selection name:"),
             QLineEdit.Normal,
         )
-        if success:
+        if not success:
+            return
+
+        if name == DEFAULT_SELECTION_NAME:
+            LOGGER.error(
+                "SelectionQueryWidget:save_current_query:: '%s' is a reserved name for a selection.",
+                name,
+            )
+            self.message.emit(
+                self.tr("'%s' is a reserved name for a selection!")
+                % name
+            )
+        elif name in {record["name"] for record in self.model.records}:
+            LOGGER.error(
+                "SelectionQueryWidget:save_current_query:: '%s' is a already used.",
+                name,
+            )
+            self.message.emit(
+                self.tr("'%s' is a already used for a selection!")
+                % name,
+            )
+        else:
             self.model.save_current_query(name)
 
     def contextMenuEvent(self, event: QContextMenuEvent):

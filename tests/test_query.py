@@ -15,60 +15,122 @@ def conn():
     return conn
 
 
-
 def test_query_columns(conn):
     query = Query(conn)
-    query.columns = ["chr","pos","ref","alt"]
-    assert query.sql() == "SELECT variants.id,chr,pos,ref,alt FROM variants LEFT JOIN annotations ON annotations.variant_id = variants.id"
+    query.columns = ["chr", "pos", "ref", "alt"]
+    # Test normal query: children, joint to annotations, group by added
+    assert (
+        query.sql()
+        == "SELECT variants.id,chr,pos,ref,alt,COUNT(*) as 'children' FROM variants LEFT JOIN annotations ON annotations.variant_id = variants.id GROUP BY chr,pos,ref,alt"
+    )
+
+    # Test basic query: no children, no useless annotations joint except if it is needed by cols or filter
+    assert (
+        query.sql(do_not_add_default_things=True)
+        == "SELECT chr,pos,ref,alt FROM variants GROUP BY chr,pos,ref,alt"
+    )
+
+    # Count query => remove everything that is not needed in filter
+    assert (
+        query.sql_count()
+        == "SELECT variants.id FROM variants"
+    )
+
+    # All group by different from chr,pos,ref,alt modifies the nb of variant => added
+    query.group_by = ["chr", "pos"]
+    assert (
+        query.sql_count()
+        == "SELECT variants.id FROM variants GROUP BY chr,pos"
+    )
+
+    # No group by: no children, no group by
+    query.group_by = None
+    assert (
+        query.sql()
+        == "SELECT variants.id,chr,pos,ref,alt FROM variants LEFT JOIN annotations ON annotations.variant_id = variants.id"
+    )
+
+
+
+
 
 
 def test_query_filter(conn):
     query = Query(conn)
-    query.columns = ["chr","pos","ref","alt"]
-    query.filter = {'AND': 
-            [
-            {'field': 'chr', 'operator': '=', 'value': "chr1"}, 
-            {'field': 'pos', 'operator': '>', 'value': 10}, 
-            {'field': 'pos', 'operator': '<', 'value': 1000}
-            ]}
+    query.columns = ["chr", "pos", "ref", "alt"]
+    query.group_by = None
+    query.filter = {
+        "AND": [
+            {"field": "chr", "operator": "=", "value": "'chr1'"},
+            {"field": "pos", "operator": ">", "value": 10},
+            {"field": "pos", "operator": "<", "value": 1000},
+            {"field": "ref", "operator": "IN", "value": "('A', 'T')"},
+            {"field": "ref", "operator": "NOT IN", "value": "('G', 'C')"},
+        ]
+    }
 
-
-    # todo : cannot break the lines... 
-    expected = "SELECT variants.id,chr,pos,ref,alt FROM variants LEFT JOIN annotations ON annotations.variant_id = variants.id WHERE (chr='chr1' AND pos>10 AND pos<1000)"
+    # todo : cannot break the lines...
+    expected = "SELECT variants.id,chr,pos,ref,alt FROM variants LEFT JOIN annotations ON annotations.variant_id = variants.id WHERE (chr = 'chr1' AND pos > 10 AND pos < 1000 AND ref IN ('A', 'T') AND ref NOT IN ('G', 'C'))"
 
     assert query.sql() == expected
     conn.execute(query.sql())
 
 
-
 def test_query_functions(conn):
+    """Test the extraction of samples and the join clause to sample_has_variant
+    Expected query:
+    SELECT variants.id,chr,pos,ref,alt,`gt_TUMOR`.gt FROM variants
+    LEFT JOIN annotations ON annotations.variant_id = variants.id
+    LEFT JOIN sample_has_variant gt_NORMAL ON gt_NORMAL.variant_id = variants.id AND gt_NORMAL.sample_id = 1
+    LEFT JOIN sample_has_variant gt_TUMOR ON gt_TUMOR.variant_id = variants.id AND gt_TUMOR.sample_id = 2
+    WHERE (chr = 'chr1' AND pos > 10 AND pos < 1000 AND gt_NORMAL.GT == 1)
+    """
     query = Query(conn)
 
-    query.columns = ["chr","pos","ref","alt", ("genotype","TUMOR","gt")]
-    query.filter = {'AND': 
-            [
-            {'field': 'chr', 'operator': '=', 'value': "chr1"}, 
-            {'field': 'pos', 'operator': '>', 'value': 10}, 
-            {'field': 'pos', 'operator': '<', 'value': 1000}, 
-            {'field': ("genotype","TUMOR","GT"), 'operator': '==', 'value': 1}
-            ]}
+    query.columns = ["chr", "pos", "ref", "alt", ("genotype", "TUMOR", "gt")]
+    query.filter = {
+        "AND": [
+            {"field": "chr", "operator": "=", "value": "'chr1'"},
+            {"field": "pos", "operator": ">", "value": 10},
+            {"field": "pos", "operator": "<", "value": 1000},
+            {"field": ("genotype", "NORMAL", "GT"), "operator": "==", "value": 1},
+        ]
+    }
 
-    #Detect genotype in columns 
-    query._detect_samples_from_columns()
+    # Detect genotype in columns
+    query.extract_samples_from_columns_and_filter()
     assert "TUMOR" in query._samples_to_join
 
-    query._samples_to_join.clear()
+    # Detect genotype in filters
+    assert "NORMAL" in query._samples_to_join
 
-    #Detect genotype in filters 
-    query._detect_samples_from_filter()
-    assert "TUMOR" in query._samples_to_join
+    # Join to sample_has_variant
+    sql_query = query.sql()
+    assert "LEFT JOIN sample_has_variant" in sql_query
+    # Column
+    assert "`gt_TUMOR`.gt" in sql_query
+    # Filter
+    assert "gt_NORMAL.GT" in sql_query
 
-    assert "LEFT JOIN sample_has_variant" in query.sql() 
-    assert "gt_TUMOR.GT" in query.sql() 
-        
+    sql_query = query.sql_count()
+    # No cols in annotation => remove dependency
+    assert "LEFT JOIN annotations" not in sql_query
+    # In column => remove dependency
+    assert "`gt_TUMOR`.gt" not in sql_query
+    # In filter => keep dependency
+    assert "gt_NORMAL.GT" in sql_query
 
 
+    query.columns = ["chr", "pos", "ref", "alt", "transcript"]
+    sql_query = query.sql_count()
+    # col in cols only => remove dependency
+    assert "LEFT JOIN annotations" not in sql_query
 
+
+    query.filter["AND"].append({"field": "transcript", "operator": "=", "value": "test"})
+    sql_query = query.sql_count()
+    # filter transcript in annotations => keep dependency
+    assert "LEFT JOIN annotations" in sql_query
 
 
 # def test_query_group_by(conn):
@@ -77,8 +139,6 @@ def test_query_functions(conn):
 #     query.group_by = ("chr","pos","ref","alt")
 
 #     conn.execute(query.sql())
-
-
 
 
 # def test_query_selection(conn):

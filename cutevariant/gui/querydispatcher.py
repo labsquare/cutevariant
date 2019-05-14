@@ -55,6 +55,7 @@ class QueryDispatcher(QObject):
         for widget in self.widgets:
             if widget != self.sender():
                 LOGGER.debug(
-                    "QueryDispatcher:update_all_widgets:: change vent for %s", widget
+                    "QueryDispatcher:update_all_widgets:: change event for %s",
+                    widget.__class__.__name__
                 )
                 widget.on_change_query()

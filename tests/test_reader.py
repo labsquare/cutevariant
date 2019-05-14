@@ -87,6 +87,9 @@ def test_create_db(reader):
     sql.create_table_annotations(conn, reader.get_fields_by_category("annotations"))
 
     sql.create_table_variants(conn, reader.get_fields_by_category("variants"))
+
+    sql.create_table_selections(conn)
+
     sql.insert_many_variants(conn, reader.get_variants())
 
 
