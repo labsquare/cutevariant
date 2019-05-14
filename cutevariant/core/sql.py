@@ -576,7 +576,7 @@ def get_variants_count(conn):
     return conn.execute("""SELECT COUNT(*) FROM variants""").fetchone()[0]
 
 
-def async_insert_many_variants(conn, data, total_variant_count=None, yield_every=30000):
+def async_insert_many_variants(conn, data, total_variant_count=None, yield_every=3000):
     """Insert many variants from data into variants table
 
     :param conn: sqlite3.connect
