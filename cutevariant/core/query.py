@@ -192,32 +192,11 @@ class Query:
 
     ##--------------------------------------------------------------------------
 
-    def sql(self, limit=0, offset=0, do_not_add_default_things=False) -> str:
-        """Build a sql query according to attributes for raw and display queries
-
-        .. note:: Some queries require that this functions doesn't automatically
-            add default columns or joins.
-            In this case the argument 'do_not_add_default_things' must be set to True.
-
-            - `variants.id` will not be appended to SELECT clause.
-            - A LEFT JOIN on annotations will not be made if it is not required
-            by a filter or by columns.
-            Typical query concerned: see ChartQueryWidget:on_change_query()
-            In other cases, 'annotations' table is mandatory for display queries
-            which group variants on transcripts for example.
-
-        .. note:: This function can be called as this, but its main purpose is
-            to be used by self.items().
-
-        .. seealso:: sql_count()
-
-        :param limit: SQL LIMIT for pagination
-        :param offset: SQL OFFSET for pagination
-        :key do_not_add_default_things: See previous note (default: False)
-        :return: A SQL query ready to be executed.
-        :rtype: <str>
-        """
-        ## Build columns
+    def get_columns(self, do_not_add_default_things=False):
+        """Get list of columns ready to be inserted in a query string
+        .. seealso:: sql() or sql_count()
+        :rtype: <list>
+       """
         # Set default columns if columns is empty
         # Otherwise, columns are kept unmodified
         if not self.columns:
@@ -246,22 +225,23 @@ class Query:
         if not do_not_add_default_things and self.group_by:
             sql_columns.extend(["COUNT(*) as 'children'"])
 
-        query = f"SELECT {','.join(sql_columns)} "
+        return sql_columns
 
-        ## Add FROM clause
+    def get_joints(self, do_not_add_default_things=False, filter_only=False):
+        """Get string of joints ready to be appended to a query string
+        .. seealso:: sql() or sql_count()
+        :rtype: <str>
+        """
         # On filter and columns
         # Joint on annotations is mandatory for display queries
         # We do not do joint if it is explicitly forbidden (in this case
         # a join is automatically decided if it is required by filter or columns)
-        is_col_in_annotations = self.detect_annotations_table_requirement()
-        annotations_join = (
+        is_col_in_annotations = self.detect_annotations_table_requirement(filter_only=filter_only)
+        query = (
             ""
             if do_not_add_default_things and not is_col_in_annotations
             else " LEFT JOIN annotations ON annotations.variant_id = variants.id"
         )
-
-        # Explicitly query all variants
-        query += "FROM variants" + annotations_join
 
         if self.selection and self.selection != DEFAULT_SELECTION_NAME:
             # Add jointure with 'selections' table
@@ -271,15 +251,50 @@ class Query:
             """
 
         #  Add Join on sample_has_variant
-        #  This is done if genotype() function has been found in columns or fields.
+        #  This is done if genotype() function has been found in columns or filter,
+        # or filter only if specified.
         # _samples_to_join is a dict with sample_names as keys and sample_ids as values
-        self.extract_samples_from_columns_and_filter()
+        self.extract_samples_from_columns_and_filter(filter_only=filter_only)
         for sample_name, sample_id in self._samples_to_join.items():
             query += f"""
             LEFT JOIN sample_has_variant gt_{sample_name}
              ON gt_{sample_name}.variant_id = variants.id
              AND gt_{sample_name}.sample_id = {sample_id}
             """
+        return query
+
+    def sql(self, limit=0, offset=0, do_not_add_default_things=False) -> str:
+        """Build a sql query according to attributes for raw and display queries
+
+        .. note:: Some queries require that this functions doesn't automatically
+            add default columns or joins.
+            In this case the argument 'do_not_add_default_things' must be set to True.
+
+            - `variants.id` will not be appended to SELECT clause.
+            - A LEFT JOIN on annotations will not be made if it is not required
+            by a filter or by columns.
+            Typical query concerned: see ChartQueryWidget:on_change_query()
+            In other cases, 'annotations' table is mandatory for display queries
+            which group variants on transcripts for example.
+
+        .. note:: This function can be called as this, but its main purpose is
+            to be used by self.items().
+
+        .. seealso:: sql_count()
+
+        :param limit: SQL LIMIT for pagination
+        :param offset: SQL OFFSET for pagination
+        :key do_not_add_default_things: See previous note (default: False)
+        :return: A SQL query ready to be executed.
+        :rtype: <str>
+        """
+        ## Build columns
+        sql_columns = self.get_columns(do_not_add_default_things)
+        query = f"SELECT {','.join(sql_columns)} "
+
+        ## Add FROM clause
+        # Explicitly query all variants + ...
+        query += "FROM variants" + self.get_joints(do_not_add_default_things)
 
         ## Add WHERE filter
         if self.filter:
