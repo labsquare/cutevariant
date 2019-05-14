@@ -231,6 +231,7 @@ class QueryModel(QAbstractItemModel):
     @query.setter
     def query(self, query: Query):
         self._query = query
+        # TODO: take this from user's settings
         # self._query.group_by=("chr","pos","ref","alt")
 
     def load(self):
@@ -238,7 +239,10 @@ class QueryModel(QAbstractItemModel):
         Load variant data into the model from query attributes
 
         """
-        self._query.group_by = ("chr", "pos")
+        # Set group by rule
+        # TODO: take this from user's settings;
+        # useless: default group_by; see query.sql()
+        # self._query.group_by = ("chr","pos","ref","alt")
         self.beginResetModel()
         # Set total of variants for pagination
         self.total = self.query.variants_count()

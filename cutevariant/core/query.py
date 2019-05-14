@@ -23,7 +23,7 @@ class Query:
         filter (dict): Hierarchical dictionnary to filter variants (Where clause)
         selection (str): Virtual table of variants (From clause)
         order_by(str): Order variants by a specific column
-        group_by(tuple of str): Group variants by columns
+        group_by(list of str): Group variants by columns
 
     About functions:
         `columns` and `filter` can contains function as tuple.
@@ -63,6 +63,7 @@ class Query:
         columns=["chr", "pos", "ref", "alt"],
         filter=dict(),
         selection=DEFAULT_SELECTION_NAME,
+        group_by=["chr", "pos", "ref", "alt"],
     ):
         self.conn = conn
         self.columns = columns
@@ -70,7 +71,7 @@ class Query:
         self.selection = selection
         self.order_by = None
         self.order_desc = True
-        self.group_by = None
+        self.group_by = group_by
 
         self._samples_to_join = set()
 
@@ -232,7 +233,7 @@ class Query:
 
         ## Add GROUP BY command
         if self.group_by:
-            query += " GROUP BY chr,pos,ref,alt"
+            query += " GROUP BY " + ",".join(self.group_by)
 
         ## Add ORDER BY command
         if self.order_by is not None:
@@ -391,7 +392,7 @@ class Query:
         # Trick to accelerate UI refresh on basic queries
         if (
             not self.selection or self.selection == DEFAULT_SELECTION_NAME
-        ) and not self.filter:
+        ) and not self.filter and self.group_by == ["chr", "pos", "ref", "alt"]:
             return self.conn.execute(
                 "SELECT MAX(variants.id) as count FROM variants"
             ).fetchone()[0]

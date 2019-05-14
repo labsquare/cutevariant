@@ -88,7 +88,7 @@ class ChartQueryWidget(QueryPluginWidget):
         # will be edited in place to add our new filters.
 
         query = copy(self.query)
-        query.group_by = None
+        query.group_by = ("ref", "alt")
         query.order_by = None
         query.columns = ["ref", "alt", "COUNT(*)"]
         if query.selection == DEFAULT_SELECTION_NAME:
@@ -140,7 +140,7 @@ class ChartQueryWidget(QueryPluginWidget):
         # - GROUP BY command to query
         # We use RAW factory as tuples
         for ref, alt, value in query.conn.execute(
-            query.sql(do_not_add_default_things=True) + " GROUP BY ref, alt"
+            query.sql(do_not_add_default_things=True)
         ):
             data[ref][alt] = value
 
