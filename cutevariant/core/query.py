@@ -149,6 +149,47 @@ class Query:
                 samples.add(function_argument)
         return samples
 
+    def detect_annotations_table_requirement(self, filter_only=False):
+        """
+
+        :key filter_only: If True, the search will be made only in 'self.filter'
+        :type filter_only: <boolean>
+        :rtype: <boolean>
+        """
+        # Get columns in filter
+        cols_in_annotations = {col for col in self.iter_filter(self.filter)} & self.col_table_mapping["annotations"]
+        if cols_in_annotations:
+            print("found annotations col in filter:", cols_in_annotations)
+            return True
+
+        if filter_only:
+            # Stop here, no col has been found in filter => False
+            return False
+
+        # Get columns in columns
+        cols_in_annotations = set(self.columns) & self.col_table_mapping["annotations"]
+        if cols_in_annotations:
+            print("found annotations col in columns:", cols_in_annotations)
+            return True
+        return False
+
+    def iter_filter(self, node):
+        """Recursive loop over filter to extract field name only
+        Recall: {'AND': [{'field': 'ref', 'operator': 'IN', 'value': "('A', 'T', 'G', 'C')"},
+        {'field': 'alt', 'operator': 'IN', 'value': "('A', 'T', 'G', 'C')"}]}
+        Aim: yield columns involved in filter
+        """
+        if isinstance(node, dict) and len(node) == 3:
+            yield node["field"]
+
+        if isinstance(node, dict):
+            for i in node:
+                yield from self.iter_filter(node[i])
+
+        if isinstance(node, list):
+            for i in node:
+                yield from self.iter_filter(i)
+
     ##--------------------------------------------------------------------------
 
     def sql(self, limit=0, offset=0, do_not_add_default_things=False) -> str:
