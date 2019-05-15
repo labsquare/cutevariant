@@ -166,8 +166,8 @@ def execute_vql(raw_vql: str) -> list:
     except textx.exceptions.TextXSyntaxError as err:
         raise VQLSyntaxError(*error_message_from_err(err, raw_vql))
         
-    for command in raw_model.commands:
-        yield command.value
+    return [command.value for command in raw_model.commands]
+         
 
 
 def model_from_string(raw_vql: str) -> dict:

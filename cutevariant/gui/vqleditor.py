@@ -9,13 +9,17 @@ from textx.exceptions import TextXSyntaxError
 
 # Qt imports
 from PySide2.QtCore import qApp, Qt, QRegularExpression, QStringListModel
-from PySide2.QtWidgets import QTextEdit, QCompleter, QVBoxLayout
-from PySide2.QtGui import QSyntaxHighlighter, QFont, QPalette, QTextCharFormat, QTextCursor
+from PySide2.QtWidgets import QTextEdit, QCompleter, QVBoxLayout, QLabel, QFrame, QToolTip
+from PySide2.QtGui import QSyntaxHighlighter, QFont, QPalette, QTextCharFormat, QTextCursor, QPainter
 
 # Custom imports
 from cutevariant.core import sql
 from cutevariant.core.vql import VQLSyntaxError
+from cutevariant.core import vql
+
 from cutevariant.commons import MIN_COMPLETION_LETTERS, logger
+from cutevariant.gui.ficon import FIcon
+from cutevariant.gui import style
 from .plugin import QueryPluginWidget
 
 LOGGER = logger()
@@ -120,22 +124,34 @@ class VqlSyntaxHighlighter(QSyntaxHighlighter):
 class VqlEditor(QueryPluginWidget):
     """Exposed class to manage VQL/SQL queries from the mainwindow"""
 
+
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Columns"))
 
         # Syntax highlighter and autocompletion
         self.text_edit = VqlEdit()
+        self.log_edit = QLabel()
         self.highlighter = VqlSyntaxHighlighter(self.text_edit.document())
 
+
+        self.log_edit.setMinimumHeight(40)
+        #self.log_edit.setAlignment(Qt.AlignLeft|Qt.AlignVCenter)
+        self.log_edit.setStyleSheet("QWidget{{background-color:'{}'; color:'{}'}}".format(style.WARNING_BACKGROUND_COLOR,style.WARNING_TEXT_COLOR))
+        self.log_edit.hide()
+
+        self.log_edit.setFrameStyle(QFrame.StyledPanel|QFrame.Raised)
         main_layout = QVBoxLayout()
         main_layout.addWidget(self.text_edit)
+        main_layout.addWidget(self.log_edit)
         main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
         self.setLayout(main_layout)
-        self.text_edit.textChanged.connect(self.check_vql)
         self._query = None
         # Boolean to detect a SQL error
         self.query_error = False
+
+        tip = QToolTip()
 
     def on_init_query(self):
         """Overrided"""
@@ -160,27 +176,76 @@ class VqlEditor(QueryPluginWidget):
         return completer
 
     def check_vql(self):
+        try:
+            self.log_edit.hide()
+            vql.execute_vql(self.text_edit.toPlainText())
 
-        if self.query:
-            try:
-                self.query.from_vql(self.text_edit.toPlainText())
-                if self.query_error:
-                    # There was a previous error
-                    # Erase it in the status bar
-                    self.message.emit("")
+        except TextXSyntaxError as e:
+            # Available attributes: e.message, e.line, e.col
+            self.set_message("TextXSyntaxError: %s, col: %d" % (e.message, e.col))
+            return False 
 
-                print("check vql", self.query)
-                self.query_error = False
+        except VQLSyntaxError as e:
+            # Show the error message on the ui
+            self.set_message(self.tr("VQLSyntaxError: '%s' at position %s") % (e.message, e.col))
+            return False
+
+        return True
+            
+
+    def run_vql(self):
+        """ Execute VQL query """ 
+        #self.query_changed.emit()
+
+        if self.check_vql() == False:
+            return 
+
+        for cmd in vql.execute_vql(self.text_edit.toPlainText()):
+
+            # If command is a select kind 
+            if cmd["cmd"] == "select_cmd":
+                self.query.columns = cmd["columns"] # columns from variant table
+                self.query.selection = cmd["source"]  # name of the variant set
+                self.query.filter = cmd.get("filter", dict())  # filter as raw text; dict if no filter
                 self.query_changed.emit()
-            except TextXSyntaxError as e:
-                # Available attributes: e.message, e.line, e.col
-                LOGGER.error("TextXSyntaxError: %s, col: %d", e.message, e.col)
-            except VQLSyntaxError as e:
-                # Show the error message on the ui
-                self.message.emit(
-                    self.tr("VQLSyntaxError: '%s' at position %s") % (e.message, e.col)
-                )
-                self.query_error = True
+
+            if cmd["cmd"] == "create_cmd":
+                # TODO create selection 
+                pass 
+
+
+
+
+
+        
+
+
+
+    # def keyPressEvent(self, event) :
+    #     """ override """
+
+    #     if event.modifiers() == Qt.ControlModifier:
+    #         if event.key() == Qt.Key_R:
+    #             self.run_vql()
+
+
+    #     super().keyPressEvent(event)
+
+
+    def set_message(self, message:str):
+
+        if self.log_edit.isHidden():
+            self.log_edit.show()
+
+        icon_64 = FIcon(0xf5d6, style.WARNING_TEXT_COLOR).to_base64(18,18)
+
+        self.log_edit.setText("""
+            <div height=100%>
+            <img src="data:image/png;base64,{}" align="left"/>
+             <span>  {} </span>
+            </div>""".format(icon_64, message))
+
+
 
 
 class VqlEdit(QTextEdit):
@@ -326,5 +391,3 @@ class VqlEdit(QTextEdit):
         tc = self.textCursor()
         tc.select(QTextCursor.WordUnderCursor)
         return tc.selectedText()
-
-
