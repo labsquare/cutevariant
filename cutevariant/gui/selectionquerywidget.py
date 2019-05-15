@@ -99,10 +99,12 @@ class SelectionQueryModel(QAbstractTableModel):
     def find_record(self, name: str):
         """Find a record by name
         @see: view.selectionModel()
+        :return: Tuple of index in the model, and the record itself.
+        :rtype: <tuple <int>, <str>>
         """
         for idx, record in enumerate(self.records):
             if record["name"] == name:
-                return idx
+                return idx, record
         return None
 
     def remove_record(self, index: QModelIndex()):
@@ -114,7 +116,7 @@ class SelectionQueryModel(QAbstractTableModel):
         # Get selected record
         record = self.record(index)
         # Delete in database
-        if record["id"] and sql.delete_selection(self.query.conn, record["id"]):
+        if sql.delete_selection(self.query.conn, record["id"]):
             # Delete in model; triggers currentRowChanged signal
             self.beginRemoveRows(QModelIndex(), index.row(), index.row())
             # Delete in records
@@ -139,18 +141,10 @@ class SelectionQueryModel(QAbstractTableModel):
     def load(self):
         """Load all selections into the model"""
         self.beginResetModel()
-        self.records.clear()
-        # Add default and inamovible selection
-        # TODO => Must be inside the selection table
-        # For now, this record has a None "id" attribute
-        # => this is detected in remove_record to avoid errors
-        self.records.append(
-            {"id": None, "name": DEFAULT_SELECTION_NAME, "count": "   "}
-        )
         # Add all selections from the database
         # Dictionnary of all attributes of the table.
         #    :Example: {"name": ..., "count": ..., "query": ...}
-        self.records += list(sql.get_selections(self._query.conn))
+        self.records = list(sql.get_selections(self._query.conn))
         self.endResetModel()
 
     def save_current_query(self, name):
@@ -198,11 +192,15 @@ class SelectionQueryWidget(QueryPluginWidget):
             self.on_current_row_changed
         )
 
-    def menu_setup(self):
-        """Setup popup menu"""
+    def menu_setup(self, locked_selection=False):
+        """Setup popup menu
+        :key locked_selection: Allow to mask edit/remove actions (default False)
+        :type locked_selection: <boolean>
+        """
         menu = QMenu()
 
-        menu.addAction(FIcon(0xF8FF), self.tr("Edit"), self.edit_selection)
+        if not locked_selection:
+            menu.addAction(FIcon(0xF8FF), self.tr("Edit"), self.edit_selection)
 
         # Set operations on selections: create mapping and actions
         set_icons_ids = (0xF55D, 0xF55B, 0xF564)
@@ -219,8 +217,9 @@ class SelectionQueryWidget(QueryPluginWidget):
             for icon_id, text in zip(set_icons_ids, set_texts)
         ]
 
-        menu.addSeparator()
-        menu.addAction(FIcon(0xF413), self.tr("Remove"), self.remove_selection)
+        if not locked_selection:
+            menu.addSeparator()
+            menu.addAction(FIcon(0xF413), self.tr("Remove"), self.remove_selection)
         return menu
 
     def load(self):
@@ -234,7 +233,7 @@ class SelectionQueryWidget(QueryPluginWidget):
         )
 
         # Select record according to query.selection
-        row = self.model.find_record(self.query.selection)
+        row, _ = self.model.find_record(self.query.selection)
         if row is not None:
             self.view.selectRow(row)
 
@@ -253,6 +252,8 @@ class SelectionQueryWidget(QueryPluginWidget):
 
         .. note:: Slot called when item selection is changed.
         """
+        # We don't really care of the query that created the selection
+        # The joins are based on the name of the table
         self.query.selection = self.model.record(index)["name"]
         self.query_changed.emit()
 
@@ -292,7 +293,14 @@ class SelectionQueryWidget(QueryPluginWidget):
         """Overrided: Show popup menu at the cursor position"""
         if not self.model.records:
             return
-        menu = self.menu_setup()
+        # Detect locked selection to mask edit/remove actions
+        locked_selection = False
+        current_index = self.view.selectionModel().currentIndex()
+        record = self.model.record(current_index)
+        if record["name"] == DEFAULT_SELECTION_NAME:
+            locked_selection = True
+        # Show the menu
+        menu = self.menu_setup(locked_selection)
         menu.exec_(event.globalPos())
 
     def _create_set_operation_menu(self, icon, menu_name):
