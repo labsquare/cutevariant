@@ -110,7 +110,7 @@ def test_query_functions(conn):
     # Column
     assert "`gt_TUMOR`.gt" in sql_query
     # Filter
-    assert "gt_NORMAL.GT" in sql_query
+    assert "`gt_NORMAL`.GT" in sql_query
 
     sql_query = query.sql_count()
     # No cols in annotation => remove dependency
@@ -118,7 +118,7 @@ def test_query_functions(conn):
     # In column => remove dependency
     assert "`gt_TUMOR`.gt" not in sql_query
     # In filter => keep dependency
-    assert "gt_NORMAL.GT" in sql_query
+    assert "`gt_NORMAL`.GT" in sql_query
 
 
     query.columns = ["chr", "pos", "ref", "alt", "transcript"]

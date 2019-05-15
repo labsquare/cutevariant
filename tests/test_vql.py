@@ -57,7 +57,7 @@ def template_test_case(vql_expr: str, expected: dict) -> callable:
 
     def test_function():
         print("EXPECTED:", ", ".join(sorted(tuple(expected.keys()))))
-        found = next(execute_vql(vql_expr))
+        found = execute_vql(vql_expr)[0]
         print("FOUND:", ", ".join(sorted(tuple(found.keys()))))
         pprint(expected)
         print()
