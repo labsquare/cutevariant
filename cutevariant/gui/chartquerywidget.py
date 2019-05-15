@@ -2,7 +2,7 @@
 # Standard imports
 import itertools as it
 from collections import Counter, defaultdict
-from copy import copy
+from copy import copy, deepcopy
 
 # Qt imports
 from PySide2.QtWidgets import QVBoxLayout
@@ -113,7 +113,7 @@ class ChartQueryWidget(QueryPluginWidget):
         ]
 
         # Avoid touching to original data since we don't do deepcopy (SQLite is not pickable)
-        query.filter = dict(query.filter)
+        query.filter = deepcopy(query.filter)
         if not query.filter:
             # no filters: new AND filter
             query.filter["AND"] = ATGC_filter
