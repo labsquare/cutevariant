@@ -576,30 +576,6 @@ class Query:
         """
 
     ##--------------------------------------------------------------------------
-
-    def from_vql(self, raw: str):
-        """Build the current Query from a VQL query
-
-        :param raw: VQL query
-
-        :Example:
-
-                query = Query(conn)
-                query.from_vql("SELECT chr, pos FROM variants")
-                query.sql()
-
-        .. seealso:: to_vql()
-        .. todo:: Should be a static method
-        """
-        model = vql.model_from_string(raw)
-        self.columns = list(model["columns"])  # columns from variant table
-        self.selection = model["source"]  # name of the variant set
-        self.filter = model.get("filter", dict())  # filter as raw text; dict if no filter
-        # TODO: USING clause missing
-
-        print("from vql", model)
-        print("from vql", self.filter)
-
     def to_vql(self) -> str:
         """Build a VQL query from the current Query
 

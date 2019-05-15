@@ -214,25 +214,8 @@ class VqlEditor(QueryPluginWidget):
                 pass 
 
 
-
-
-
-        
-
-
-
-    # def keyPressEvent(self, event) :
-    #     """ override """
-
-    #     if event.modifiers() == Qt.ControlModifier:
-    #         if event.key() == Qt.Key_R:
-    #             self.run_vql()
-
-
-    #     super().keyPressEvent(event)
-
-
     def set_message(self, message:str):
+        """ show message error at the bottom of the view """ 
 
         if self.log_edit.isHidden():
             self.log_edit.show()
