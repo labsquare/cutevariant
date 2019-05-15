@@ -495,9 +495,8 @@ class Query:
         :return: The id of the new selection in the database. None in case of error.
         :rtype: <int> or None
         """
-        return sql.create_selection_from_sql(
-            self.conn, self.sql(), name=name, by="site"
-        )
+        # TODO: handle by key argument
+        return sql.create_selection_from_sql(self.conn, self.sql(), name=name)
 
     ##--------------------------------------------------------------------------
 
