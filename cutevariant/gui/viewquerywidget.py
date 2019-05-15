@@ -515,6 +515,9 @@ class ViewQueryWidget(QueryPluginWidget):
 
     def on_change_query(self):
         """ Method override from AbstractQueryWidget"""
+
+        # reset current page 
+        self.model.page = 0
         self.model.load()
         self.view.header().setSectionResizeMode(0, QHeaderView.ResizeToContents)
 
