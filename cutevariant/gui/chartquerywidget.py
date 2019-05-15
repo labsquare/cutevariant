@@ -2,7 +2,7 @@
 # Standard imports
 import itertools as it
 from collections import Counter, defaultdict
-from copy import copy
+from copy import copy, deepcopy
 
 # Qt imports
 from PySide2.QtWidgets import QVBoxLayout
@@ -91,6 +91,7 @@ class ChartQueryWidget(QueryPluginWidget):
         query.group_by = ("ref", "alt")
         query.order_by = None
         query.columns = ["ref", "alt", "COUNT(*)"]
+        query.filter = deepcopy(self.query.filter)
         if query.selection == DEFAULT_SELECTION_NAME:
             # Explicitly query all variants
             query.selection = None
