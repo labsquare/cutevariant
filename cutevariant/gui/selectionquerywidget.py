@@ -330,36 +330,42 @@ class SelectionQueryWidget(QueryPluginWidget):
         """
         action = self.sender()
 
-        ## THIS CODE IS UGLY... FOR TESTING PURPOSE ...
-
+        # Get menu id to know which set operation to do
         set_internal_id = action.data()
 
-        name_1 = self.model.record(self.view.selectionModel().currentIndex())["name"]
-        name_2 = action.text()
-
+        # Init class attribute
         sql.Selection.conn = self.query.conn
 
-        selection_1 = sql.Selection.from_name(name_1)
-        selection_2 = sql.Selection.from_name(name_2)
+        # Get the records and extract their database id to build 2 Selections objects
+        record_1 = self.model.record(self.view.selectionModel().currentIndex())
+        _, record_2 = self.model.find_record(action.text())
+        # TODO: handle modes for creation of selections
+        selection_1 = sql.Selection.from_selection_id(record_1["id"])
+        selection_2 = sql.Selection.from_selection_id(record_2["id"])
 
-        name_3 = QInputDialog.getText(self, "Name of selection", "name:")
+        new_selection_name, success = QInputDialog.getText(
+            self,
+            self.tr("Type a name for selection"),
+            self.tr("Selection name:")
+        )
+        if not success:
+            return
 
-        if name_3[1] == True and set_internal_id:
+        # Do set operation and create new selection
+        if set_internal_id == "union":
+            selection_3 = selection_1 + selection_2
+        if set_internal_id == "difference":
+            selection_3 = selection_1 - selection_2
+        if set_internal_id == "intersect":
+            selection_3 = selection_1 & selection_2
 
-            if set_internal_id == "union":
-                print("UNION")
-                selection_3 = selection_1 + selection_2
-            if set_internal_id == "difference":
-                print("DIFF")
-                selection_3 = selection_1 - selection_2
-            if set_internal_id == "intersect":
-                print("INTERSECT")
-                selection_3 = selection_1 & selection_2
+        LOGGER.debug("Query:_make_set_operation:: New selection query:", selection_3.sql_query)
 
-            selection_3.save(name_3[0])
-            self.model.load()
-
-        # seection_3.save()
+        if not selection_3.save(new_selection_name):
+            self.message.emit(self.tr("Fail to create the selection!"))
+            return
+        # Reload the model
+        self.model.load()
 
     def remove_selection(self):
         """Remove a selection from the database"""
