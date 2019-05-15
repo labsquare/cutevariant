@@ -53,7 +53,7 @@ class QueryDispatcher(QObject):
         """
         # Call on_query_changed of all referenced widgets
         for widget in self.widgets:
-            if widget != self.sender():
+            if widget != self.sender() and widget.isVisible():
                 LOGGER.debug(
                     "QueryDispatcher:update_all_widgets:: change event for %s",
                     widget.__class__.__name__
