@@ -257,9 +257,9 @@ class Query:
         self.extract_samples_from_columns_and_filter(filter_only=filter_only)
         for sample_name, sample_id in self._samples_to_join.items():
             query += f"""
-            LEFT JOIN sample_has_variant gt_{sample_name}
-             ON gt_{sample_name}.variant_id = variants.id
-             AND gt_{sample_name}.sample_id = {sample_id}
+            LEFT JOIN sample_has_variant `gt_{sample_name}`
+             ON `gt_{sample_name}`.variant_id = variants.id
+             AND `gt_{sample_name}`.sample_id = {sample_id}
             """
         return query
 
@@ -376,8 +376,8 @@ class Query:
         for sample_name, sample_id in self._samples_to_join.items():
             query += f"""
             LEFT JOIN sample_has_variant gt_{sample_name}
-             ON gt_{sample_name}.variant_id = variants.id
-             AND gt_{sample_name}.sample_id = {sample_id}
+             ON `gt_{sample_name}`.variant_id = variants.id
+             AND `gt_{sample_name}`.sample_id = {sample_id}
             """
 
         ## Add WHERE filter
@@ -475,7 +475,7 @@ class Query:
             if isinstance(field, tuple) and len(field) == 3:
                 #  Function ? ("genotype","sample","gt")
                 fct, arg, f = field
-                field = f"gt_{arg}.{f}"
+                field = f"`gt_{arg}.{f}`"
 
             # There must be spaces between these strings because of strings operators (IN, etc.)
             return "%s %s %s" % (field, operator, value)
