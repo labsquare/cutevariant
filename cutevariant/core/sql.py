@@ -283,7 +283,7 @@ def edit_selection(conn, selection: dict):
 ## ================ Operations on sets of variants =============================
 
 
-def get_query_columns(by):
+def get_query_columns(by="variant"):
     """Handy func to get columns to be queried according to the group by argument
 
     .. note:: Used by intersect_variants, union_variants, subtract_variants
@@ -809,45 +809,80 @@ def get_samples(conn):
     return (dict(data) for data in conn.execute("""SELECT * FROM samples"""))
 
 
-class Selection(object):
+class Selection:
+    """Binding object over selection which allows to do set operations on variants
+    associated to it
+
+    Attributes:
+        - cls.conn: Class attribute for sqlite3 connection.
+        - self.query: SQL query ready to be used in set operations.
+        - self.mode: Define the way variants are compared to each other.
+            - "variant" (default): chr,pos,ref,alt = variant.id
+            - "site": chr,pos
+        ..seealso:: from_selection_id()
+    """
+
+    # Class attribute, shared accross all instances
     conn = None
 
-    def __init__(self, query=None):
-        self.query = query
+    def __init__(self, sql_query=None, mode="variant"):
+        """Create a new selection object"""
+        self.sql_query = sql_query
+        # Define the way variants are compared
+        self.mode = mode
 
     def __add__(self, other):
-
-        new_selection = Selection()
-        new_selection.query = union_variants(self.query, other.query)
-        return new_selection
+        sql_query = union_variants(self.sql_query, other.sql_query, mode=self.mode)
+        return Selection(sql_query, self.mode)
 
     def __and__(self, other):
-        new_selection = Selection()
-        new_selection.query = intersect_variants(self.query, other.query)
-        return new_selection
+        sql_query = intersect_variants(self.sql_query, other.sql_query, mode=self.mode)
+        return Selection(sql_query, self.mode)
 
     def __sub__(self, other):
-        new_selection = Selection()
-        new_selection.query = subtract_variants(self.query, other.query)
-        return new_selection
+        sql_query = subtract_variants(self.sql_query, other.sql_query, mode=self.mode)
+        return Selection(sql_query, self.mode)
+
+    def __repr__(self):
+        return "<Selection>: " + self.sql_query
 
     def save(self, name):
-        create_selection_from_sql(
-            Selection.conn, self.query, name, count=None, by="site"
+        """Create the new selection in the database"""
+        return create_selection_from_sql(
+            Selection.conn, self.sql_query, name, from_selection=True
         )
 
     @classmethod
-    def from_name(cls, name):
+    def from_selection_id(cls, selection_id, mode="variant"):
+        """Get new Selection object based on a sql query that defines it
 
-        select_id = Selection.conn.execute(
-            "SELECT id FROM selections WHERE name = ?", (name,)
-        ).fetchone()[0]
-        # get columns that corresponds to GROUP BY chr,pos
-        # TODO: Why chr, pos ?
-        columns = get_query_columns(by="site")
-        print("cols", columns)
-        q = f"""SELECT {columns}
-            FROM variants v
-            LEFT JOIN selection_has_variant sv
-             ON v.id = sv.variant_id AND sv.selection_id = {select_id}"""
-        return Selection(q)
+        .. note:: Called from the UI. It is here that 'mode' is selected.
+
+        :param selection_id: The id of the selection for which the object will be
+            based.
+        :key mode: Modifies the definition of the unicity of a variant.
+            (optional: "variant" | "site"),(default: "variant").
+            - variant: (chr, pos, ref, alt) is the primary key so we query only
+            'selection_has_variant' for 'variant_id' field.
+            - site: (chr, pos) modifies the default definition of the unicity
+            of a variant.
+            => joint on 'variants' table is mandatory here.
+        :type selection_id: <int>
+        :type mode: <str>
+        :return: A new Selection object.
+        :rtype: <Selection>
+        """
+        if selection_id == 1:
+            # Get ids from the default selection
+            sql_query = """SELECT id as variant_id FROM variants"""
+        else:
+            # A variant is defined as chr,pos,ref,alt
+            # which is the primary key (unique)
+            # So these columns are synonyms of 'variants.id' for the table 'variants'
+            # or 'variant_id' for 'selection_has_variant' table.
+            # No further joints are required here.
+            sql_query = f"""SELECT variant_id
+            FROM selection_has_variant sv
+             WHERE sv.selection_id = {selection_id}"""
+
+        return cls(sql_query, mode=mode)
