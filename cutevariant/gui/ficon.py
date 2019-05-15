@@ -91,6 +91,17 @@ class FIcon(QIcon):
         super().__init__(self.engine)
 
 
+    def to_base64(self, w = 32, h = 32):
+        """ Return icon as base64 to make it work with html """ 
+
+        pixmap = self.pixmap(w,h)
+        data= QByteArray()
+        buff= QBuffer(data)
+        pix.save(buff, "PNG")
+        return data.toBase64()
+
+
+
 def setFontPath(filename):
     """Handy function to load font file
 
