@@ -73,6 +73,10 @@ class FilterTerm(metaclass=model_class):
         field = self.field.value if hasattr(self.field,"value") else self.field
         val = self.val.value  if hasattr(self.val,"value")  else self.val
 
+        # escape if quoted
+        if type(val) == str: 
+            val = f"'{val}'"
+
         return {"field":field, "operator": self.op, "value": val}
     
 class FilterExpression(metaclass=model_class):
