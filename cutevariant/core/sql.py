@@ -181,7 +181,7 @@ def insert_selection(conn, query: str, name="no_name", count=0):
     return cursor.lastrowid
 
 
-def create_selection_from_sql(conn, query: str, name: str, count=None, by="site"):
+def create_selection_from_sql(conn, query: str, name: str, count=None, from_selection=False):
     """Create a selection record from sql variant query
 
     :param name : name of the selection
@@ -190,8 +190,6 @@ def create_selection_from_sql(conn, query: str, name: str, count=None, by="site"
     :return: The id of the new selection. None in case of error.
     :rtype: <int> or None
     """
-    assert by in ("site", "variant")
-
     cursor = conn.cursor()
 
     # Compute query count
@@ -200,7 +198,7 @@ def create_selection_from_sql(conn, query: str, name: str, count=None, by="site"
         count = cursor.execute(f"SELECT COUNT(*) FROM ({query})").fetchone()[0]
 
     # Create selection
-    selection_id = insert_selection(conn, query, name=name, count=count)
+    selection_id = insert_selection(cursor, query, name=name, count=count)
 
     # DROP indexes
     # For joints between selections and variants tables
@@ -212,24 +210,22 @@ def create_selection_from_sql(conn, query: str, name: str, count=None, by="site"
     # Insert into selection_has_variant table
     # PS: We use DISTINCT keyword to statisfy the unicity constraint on
     # (variant_id, selection_id) of "selection_has_variant" table.
-    if by == "site":
+    # TODO: is DISTINCT useful here? How a variant could be associated several
+    # times with an association?
+    if from_selection:
+        # Optimized only for the creation of a selection from set operations
+        # variant_id is the only useful column here
         q = f"""
         INSERT INTO selection_has_variant
-        SELECT DISTINCT variants.id, {selection_id} FROM variants
-        INNER JOIN ({query}) query
-            ON variants.chr = query.chr
-            AND variants.pos = query.pos
+        SELECT DISTINCT variant_id, {selection_id} FROM ({query})
         """
-
-    if by == "variant":
+    else:
+        # Fallback
+        # Used when creating a selection from a VQL query in the UI
+        # Default behavior => a variant is based on chr,pos,ref,alt
         q = f"""
         INSERT INTO selection_has_variant
-        SELECT DISTINCT variants.id, {selection_id} FROM variants
-        INNER JOIN ({query}) as query
-            ON variants.chr = query.chr
-            AND variants.pos = query.pos
-            AND variants.ref = query.ref
-            AND variants.alt = query.alt
+        SELECT DISTINCT id, {selection_id} FROM ({query})
         """
 
     cursor.execute(q)
