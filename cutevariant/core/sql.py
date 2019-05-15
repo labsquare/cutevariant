@@ -156,23 +156,28 @@ def insert_selection(conn, query: str, name="no_name", count=0):
 
     .. warning:: This function does a commit !
 
-    :param conn: sqlite3.connect
+    :param conn: sqlite3 connection OR cursor
+        If connection: commit is made.
+        If cursor: commit is not made.
     :param name: name of the selection
     :param count: precompute variant count
     :param query: Sql variant query selection
+    :type conn: <sqlite3.Connection> or <sqlite3.Cursor>
     :return: rowid of the new selection inserted.
     :rtype: <int>
 
     .. seealso:: create_selection_from_sql
     """
-    cursor = conn.cursor()
+    # conn can be a cursor or a connection here...
+    cursor = conn.cursor() if isinstance(conn, sqlite3.Connection) else conn
+
     cursor.execute(
         """INSERT INTO selections (name, count, query) VALUES (?,?,?)""",
         (name, count, query),
     )
-    # TODO: get cursor as argument, because later insertions may crash
-    # and leave the database not consistent with an orphan selection.
-    conn.commit()
+    if isinstance(conn, sqlite3.Connection):
+        # Commit only if connection is given. => avoid not consistent DB
+        conn.commit()
     return cursor.lastrowid
 
 
