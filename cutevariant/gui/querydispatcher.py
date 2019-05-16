@@ -49,7 +49,7 @@ class QueryDispatcher(QObject):
 
     def update_all_widgets(self):
         """Dispatch a `query_changed` triggered from one widget to all widgets
-        except the sender.
+        except the sender and the invisible widgets.
         """
         # Call on_query_changed of all referenced widgets
         for widget in self.widgets:

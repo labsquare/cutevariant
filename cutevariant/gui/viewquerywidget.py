@@ -559,15 +559,14 @@ class ViewQueryWidget(QueryPluginWidget):
         self.page_box.returnPressed.connect(self._update_page)
 
     def on_init_query(self):
-        """ Method override from AbstractQueryWidget"""
+        """Method override from AbstractQueryWidget"""
         self.export_csv_action.setEnabled(True)
         self.show_sql_action.setEnabled(True)
         self.model.query = self.query
 
     def on_change_query(self):
-        """ Method override from AbstractQueryWidget"""
-
-        # reset current page 
+        """Method override from AbstractQueryWidget"""
+        # reset current page
         self.model.page = 0
         self.model.load()
         self.view.header().setSectionResizeMode(0, QHeaderView.ResizeToContents)
@@ -658,9 +657,8 @@ class ViewQueryWidget(QueryPluginWidget):
         # Show the context menu with the given variant
         self.context_menu.popup(variant, event.globalPos())
 
-
     def _update_page(self):
-        """ set page from page_box edit. When user set a page manually, this method is called """ 
-
+        """Set page from page_box edit. When user set a page manually, this method is called"""
         self.model.setPage(int(self.page_box.text()))
+
         self.page_box.clearFocus()

@@ -43,7 +43,7 @@ class VqlSyntaxHighlighter(QSyntaxHighlighter):
 
         # SQL Syntax highlighter rules
         # dict: pattern, font, color, minimal (not greedy)
-        #  TODO : What about dark mode ?
+        #  TODO : What about dark mode ?
         self.highlighting_patterns = [
             {
                 # Keywords
@@ -124,7 +124,6 @@ class VqlSyntaxHighlighter(QSyntaxHighlighter):
 class VqlEditor(QueryPluginWidget):
     """Exposed class to manage VQL/SQL queries from the mainwindow"""
 
-
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Columns"))
@@ -134,13 +133,16 @@ class VqlEditor(QueryPluginWidget):
         self.log_edit = QLabel()
         self.highlighter = VqlSyntaxHighlighter(self.text_edit.document())
 
-
         self.log_edit.setMinimumHeight(40)
-        #self.log_edit.setAlignment(Qt.AlignLeft|Qt.AlignVCenter)
-        self.log_edit.setStyleSheet("QWidget{{background-color:'{}'; color:'{}'}}".format(style.WARNING_BACKGROUND_COLOR,style.WARNING_TEXT_COLOR))
+        # self.log_edit.setAlignment(Qt.AlignLeft|Qt.AlignVCenter)
+        self.log_edit.setStyleSheet(
+            "QWidget{{background-color:'{}'; color:'{}'}}".format(
+                style.WARNING_BACKGROUND_COLOR, style.WARNING_TEXT_COLOR
+            )
+        )
         self.log_edit.hide()
 
-        self.log_edit.setFrameStyle(QFrame.StyledPanel|QFrame.Raised)
+        self.log_edit.setFrameStyle(QFrame.StyledPanel | QFrame.Raised)
         main_layout = QVBoxLayout()
         main_layout.addWidget(self.text_edit)
         main_layout.addWidget(self.log_edit)
@@ -191,42 +193,43 @@ class VqlEditor(QueryPluginWidget):
 
         except VQLSyntaxError as e:
             # Show the error message on the ui
-            self.set_message(self.tr("VQLSyntaxError: '%s' at position %s") % (e.message, e.col))
+            self.set_message(
+                self.tr("VQLSyntaxError: '%s' at position %s") % (e.message, e.col)
+            )
             return False
 
         return True
 
-
     def run_vql(self):
-        """ Execute VQL query """
-        #self.query_changed.emit()
+        """Execute VQL query"""
+        # self.query_changed.emit()
 
         if self.check_vql() == False:
             return
 
         for cmd in vql.execute_vql(self.text_edit.toPlainText()):
 
-            # If command is a select kind
+            #  If command is a select kind
             if cmd["cmd"] == "select_cmd":
-                self.query.columns = cmd["columns"] # columns from variant table
+                self.query.columns = cmd["columns"]  # columns from variant table
                 self.query.selection = cmd["source"]  # name of the variant set
                 self.query.filter = cmd.get("filter", dict())  # filter as raw text; dict if no filter
                 self.query_changed.emit()
 
             if cmd["cmd"] == "create_cmd":
-                # TODO create selection
+                #  TODO create selection
                 pass
 
-
-    def set_message(self, message:str):
-        """ show message error at the bottom of the view """
+    def set_message(self, message: str):
+        """Show message error at the bottom of the view"""
 
         if self.log_edit.isHidden():
             self.log_edit.show()
 
-        icon_64 = FIcon(0xf5d6, style.WARNING_TEXT_COLOR).to_base64(18,18)
+        icon_64 = FIcon(0xF5D6, style.WARNING_TEXT_COLOR).to_base64(18, 18)
 
-        self.log_edit.setText("""
+        self.log_edit.setText(
+            """
             <div height=100%>
             <img src="data:image/png;base64,{}" align="left"/>
              <span>  {} </span>
