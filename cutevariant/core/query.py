@@ -312,7 +312,9 @@ class Query:
 
         ## Add FROM clause
         # Explicitly query all variants + ...
-        query += "FROM variants" + self.get_joints(do_not_add_default_things)
+        # do_not_add_default_things set to True to avoid groups of variants
+        # when there is no checked column in annotations.
+        query += "FROM variants" + self.get_joints(do_not_add_default_things=True)
 
         ## Add WHERE filter
         if self.filter:
