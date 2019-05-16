@@ -305,6 +305,14 @@ class QueryModel(QAbstractItemModel):
         if self.hasPage(self.page - 1):
             self.setPage(self.page - 1)
 
+
+    def firstPage(self):
+        self.setPage(0)
+
+    def lastPage(self):
+        self.setPage(int(self.total / self.limit) )
+
+
     def variant(self, index: QModelIndex):
 
         if index.parent() == QModelIndex():
@@ -473,12 +481,14 @@ class ViewQueryWidget(QueryPluginWidget):
         # These actions should be disabled until a query is made (see query setter)
         self.page_info = QLabel()
         self.page_box = QLineEdit()
-        self.page_box.setReadOnly(True)
+        self.page_box.setReadOnly(False)
+        self.page_box.setValidator(QIntValidator())
         # self.page_box.setFrame(QFrame.NoFrame)
-        self.page_box.setFixedWidth(20)
+        self.page_box.setFixedWidth(50)
         self.page_box.setAlignment(Qt.AlignHCenter)
         self.page_box.setStyleSheet("QWidget{background-color: transparent;}")
         self.page_box.setText("0")
+        self.page_box.setFrame(QFrame.NoFrame)
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         # Setup actions
@@ -488,9 +498,12 @@ class ViewQueryWidget(QueryPluginWidget):
         self.show_sql_action.setEnabled(False)
         self.bottombar.addWidget(self.page_info)
         self.bottombar.addWidget(spacer)
-        self.bottombar.addAction(FIcon(0xF141), "<", self.model.previousPage)
+        self.bottombar.addAction(FIcon(0xf792), "<<", self.model.firstPage)
+        self.bottombar.addAction(FIcon(0xf04d), "<", self.model.previousPage)
         self.bottombar.addWidget(self.page_box)
-        self.bottombar.addAction(FIcon(0xF142), ">", self.model.nextPage)
+        self.bottombar.addAction(FIcon(0xf054), ">", self.model.nextPage)
+        self.bottombar.addAction(FIcon(0Xf793), ">>", self.model.lastPage)
+
         self.bottombar.setIconSize(QSize(16, 16))
         self.bottombar.setMaximumHeight(30)
 
@@ -505,6 +518,7 @@ class ViewQueryWidget(QueryPluginWidget):
 
         # emit variant when clicked
         self.view.clicked.connect(self._variant_clicked)
+        self.page_box.returnPressed.connect(self._update_page)
 
     def on_init_query(self):
         """ Method override from AbstractQueryWidget"""
@@ -528,13 +542,13 @@ class ViewQueryWidget(QueryPluginWidget):
         """
 
         # Set text
-        self.page_info.setText(f"{self.model.total} variant(s)")
-        page_box_text = self.tr("{}-{} of {}").format(*self.model.displayed())
+        self.page_info.setText("{} variant(s)  {}-{} of {}".format(self.model.total, *self.model.displayed()))
+        page_box_text = self.tr("{}").format(self.model.page)
         self.page_box.setText(page_box_text)
 
         # Adjust page_èbox size to content
         fm = self.page_box.fontMetrics()
-        self.page_box.setFixedWidth(fm.boundingRect(page_box_text).width() + 5)
+        #self.page_box.setFixedWidth(fm.boundingRect(page_box_text).width() + 5)
 
     def _variant_clicked(self, index):
         """Slot called when the view (QTreeView) is clicked
@@ -592,3 +606,10 @@ class ViewQueryWidget(QueryPluginWidget):
         variant = self._variant_clicked(current_index)
         # Show the context menu with the given variant
         self.context_menu.popup(variant, event.globalPos())
+
+
+    def _update_page(self):
+        """ set page from page_box edit. When user set a page manually, this method is called """ 
+
+        self.model.setPage(int(self.page_box.text()))
+        self.page_box.clearFocus()
