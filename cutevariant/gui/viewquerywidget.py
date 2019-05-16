@@ -240,9 +240,8 @@ class QueryModel(QAbstractItemModel):
 
     @query.setter
     def query(self, query: Query):
+        # PS: default group by method: ("chr","pos","ref","alt")
         self._query = query
-        # TODO: take this from user's settings
-        self._query.group_by=("chr","pos") #("chr","pos","ref","alt")
 
     def load(self):
         """Load variant data into the model from query attributes
@@ -271,6 +270,16 @@ class QueryModel(QAbstractItemModel):
 
         LOGGER.debug("QueryModel:load:: variants queried\n%s", self.variants)
         self.endResetModel()
+
+    def group_by_changed(self, group_by_columns):
+        """Slot called when the currentIndex in the combobox changes
+        either through user interaction or programmatically
+
+        It triggers a reload of the model and a change of the group by
+        command of the query.
+        """
+        self._query.group_by = group_by_columns
+        self.load()
 
     def sort(self, column: int, order):
         """Overrided"""
@@ -481,6 +490,23 @@ class ViewQueryWidget(QueryPluginWidget):
         )
         self.export_csv_action.setEnabled(False)
 
+        # Add spacer to push next buttons to the right
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.topbar.addWidget(spacer)
+
+        # Add combobox to choose the grouping method of variants
+        self.topbar.addWidget(QLabel(self.tr("Group by method:")))
+        self.group_by_combobox = QComboBox()
+        combobox_text_data = {
+            "variant (chr, pos, ref, alt)": ("chr", "pos", "ref", "alt"),
+            "site (chr, pos)": ("chr", "pos"),
+        }
+        for text, data in combobox_text_data.items():
+            self.group_by_combobox.addItem(text, data)
+        self.topbar.addWidget(self.group_by_combobox)
+        self.group_by_combobox.currentIndexChanged.connect(self.on_group_by_changed)
+
         # Construct bottom bar
         # These actions should be disabled until a query is made (see query setter)
         self.page_info = QLabel()
@@ -587,6 +613,15 @@ class ViewQueryWidget(QueryPluginWidget):
             query.order_by = None
             # Query the database
             writer.writerows(query.conn.execute(query.sql(do_not_add_default_things=True)))
+
+    def on_group_by_changed(self, index):
+        """Slot called when the currentIndex in the combobox changes
+        either through user interaction or programmatically
+
+        It triggers a reload of the model and a change of the group by
+        command of the query.
+        """
+        self.model.group_by_changed(self.group_by_combobox.currentData())
 
     def show_sql(self):
         box = QMessageBox()
