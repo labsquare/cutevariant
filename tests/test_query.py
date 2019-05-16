@@ -16,12 +16,17 @@ def conn():
 
 
 def test_query_columns(conn):
+    """
+    .. note:: Now when no annotation column is selected, we do not make a join on this table
+        " LEFT JOIN annotations ON annotations.variant_id = variants.id"
+        is not in basic sql() query anymore
+    """
     query = Query(conn)
     query.columns = ["chr", "pos", "ref", "alt"]
     # Test normal query: children, joint to annotations, group by added
     assert (
         query.sql()
-        == "SELECT variants.id,chr,pos,ref,alt,COUNT(*) as 'children' FROM variants LEFT JOIN annotations ON annotations.variant_id = variants.id GROUP BY chr,pos,ref,alt"
+        == "SELECT variants.id,chr,pos,ref,alt,COUNT(*) as 'children' FROM variants GROUP BY chr,pos,ref,alt"
     )
 
     # Test basic query: no children, no useless annotations joint except if it is needed by cols or filter
@@ -47,7 +52,7 @@ def test_query_columns(conn):
     query.group_by = None
     assert (
         query.sql()
-        == "SELECT variants.id,chr,pos,ref,alt FROM variants LEFT JOIN annotations ON annotations.variant_id = variants.id"
+        == "SELECT variants.id,chr,pos,ref,alt FROM variants"
     )
 
 
@@ -56,6 +61,11 @@ def test_query_columns(conn):
 
 
 def test_query_filter(conn):
+    """
+    . note:: Now when no annotation column is selected, we do not make a join on this table
+        " LEFT JOIN annotations ON annotations.variant_id = variants.id"
+        is not in basic sql() query anymore
+    """
     query = Query(conn)
     query.columns = ["chr", "pos", "ref", "alt"]
     query.group_by = None
@@ -70,7 +80,7 @@ def test_query_filter(conn):
     }
 
     # todo : cannot break the lines...
-    expected = "SELECT variants.id,chr,pos,ref,alt FROM variants LEFT JOIN annotations ON annotations.variant_id = variants.id WHERE (chr = 'chr1' AND pos > 10 AND pos < 1000 AND ref IN ('A', 'T') AND ref NOT IN ('G', 'C'))"
+    expected = "SELECT variants.id,chr,pos,ref,alt FROM variants WHERE (chr = 'chr1' AND pos > 10 AND pos < 1000 AND ref IN ('A', 'T') AND ref NOT IN ('G', 'C'))"
 
     assert query.sql() == expected
     conn.execute(query.sql())
