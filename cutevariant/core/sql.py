@@ -300,17 +300,17 @@ def get_query_columns(mode="variant"):
     raise NotImplementedError
 
 
-def intersect_variants(query1, query2):
+def intersect_variants(query1, query2, **kwargs):
     """Get the variants obtained by the intersection of 2 queries"""
     return f"""{query1} INTERSECT {query2}"""
 
 
-def union_variants(query1, query2):
+def union_variants(query1, query2, **kwargs):
     """Get the variants obtained by the union of 2 queries"""
     return f"""{query1} UNION {query2}"""
 
 
-def subtract_variants(query1, query2):
+def subtract_variants(query1, query2, **kwargs):
     """Get the variants obtained by the difference of 2 queries"""
     return f"""{query1} EXCEPT {query2}"""
 
