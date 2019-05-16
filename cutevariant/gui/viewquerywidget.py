@@ -120,14 +120,20 @@ class QueryModel(QAbstractItemModel):
                 if index.column() == 0:
                     # First column display children count
                     return str(self.children_count(index))
+                elif index.column() not in self.indexes_in_group_by:
+                    # Mask columns not concerned by the group by
+                    # These columns have an arbitrary value choosen among all retrieved values
+                    # ..seealso:: load()
+                    return "..."
                 else:
                     # Other display variant data
                     return str(self.variants[index.row()][0][index.column()])
 
             #  Display the second level ( children )
             if index.parent().parent() == QModelIndex():
-                if index.column() == 0:
-                    #  No children for the first columns
+                if index.column() == 0 or index.column() in self.indexes_in_group_by:
+                    # No children for the first columns
+                    # Don't show redondant data for columns that are in the group by
                     return ""
                 else:
                     #  Display children data
@@ -236,20 +242,26 @@ class QueryModel(QAbstractItemModel):
     def query(self, query: Query):
         self._query = query
         # TODO: take this from user's settings
-        # self._query.group_by=("chr","pos","ref","alt")
+        self._query.group_by=("chr","pos") #("chr","pos","ref","alt")
 
     def load(self):
-        """
-        Load variant data into the model from query attributes
+        """Load variant data into the model from query attributes
 
+        Called by:
+            - on_change_query() from the view.
+            - sort() and setPage() by the model.
         """
-        # Set group by rule
-        # TODO: take this from user's settings;
-        # useless: default group_by; see query.sql()
-        # self._query.group_by = ("chr","pos","ref","alt")
         self.beginResetModel()
         # Set total of variants for pagination
         self.total = self.query.variants_count()
+
+        # Get columns not concerned by the group by in order to mask them
+        # These columns have an arbitrary value choosen among all retrieved values
+        # ..seealso:: Masking is made in data()
+        self.indexes_in_group_by = {
+            index for index, col in enumerate(self._query.columns, 1)
+            if col in self._query.group_by
+        }
 
         # Append a list because child can be append after
         self.variants = [
@@ -511,7 +523,6 @@ class ViewQueryWidget(QueryPluginWidget):
         self.export_csv_action.setEnabled(True)
         self.show_sql_action.setEnabled(True)
         self.model.query = self.query
-        # self.on_change_query()
 
     def on_change_query(self):
         """ Method override from AbstractQueryWidget"""
