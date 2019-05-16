@@ -561,16 +561,21 @@ class ViewQueryWidget(QueryPluginWidget):
             self.tr("CSV (Comma-separated values) (*.csv)"),
         )
 
-        if filepath:
-            with open(filepath, "w") as f_d:
-                writer = csv.writer(f_d, delimiter=",")
-                # Write headers (columns in the query) + variants from the model
-                writer.writerow(self.model.query.columns)
-                # Remove the sqlite rowid col
-                # Data: first: id in db, last children count
-                # [[(1, 11, 10000, 'G', 'T', 1)], ...]
-                g = (variant[0][1:-1] for variant in self.model.variants)
-                writer.writerows(g)
+        if not filepath:
+            return
+
+        with open(filepath, "w") as f_d:
+            writer = csv.writer(f_d, delimiter=",")
+            # Write headers (columns in the query) + variants from the model
+            writer.writerow(self.model.query.columns)
+            # Duplicate the current query, but remove automatically added columns
+            # and remove group by/order by commands.
+            # Columns are kept as they are selected in the GUI
+            query = copy.copy(self.model.query)
+            query.group_by = None
+            query.order_by = None
+            # Query the database
+            writer.writerows(query.conn.execute(query.sql(do_not_add_default_things=True)))
 
     def show_sql(self):
         box = QMessageBox()
