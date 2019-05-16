@@ -274,18 +274,14 @@ class SelectionQueryWidget(QueryPluginWidget):
                 name,
             )
             self.message.emit(
-                self.tr("'%s' is a reserved name for a selection!")
-                % name
+                self.tr("'%s' is a reserved name for a selection!") % name
             )
         elif name in {record["name"] for record in self.model.records}:
             LOGGER.error(
                 "SelectionQueryWidget:save_current_query:: '%s' is a already used.",
                 name,
             )
-            self.message.emit(
-                self.tr("'%s' is a already used for a selection!")
-                % name,
-            )
+            self.message.emit(self.tr("'%s' is a already used for a selection!") % name)
         else:
             self.model.save_current_query(name)
 
@@ -344,9 +340,7 @@ class SelectionQueryWidget(QueryPluginWidget):
         selection_2 = sql.Selection.from_selection_id(record_2["id"])
 
         new_selection_name, success = QInputDialog.getText(
-            self,
-            self.tr("Type a name for selection"),
-            self.tr("Selection name:")
+            self, self.tr("Type a name for selection"), self.tr("Selection name:")
         )
         if not success:
             return
@@ -359,7 +353,9 @@ class SelectionQueryWidget(QueryPluginWidget):
         if set_internal_id == "intersect":
             selection_3 = selection_1 & selection_2
 
-        LOGGER.debug("Query:_make_set_operation:: New selection query: %s", selection_3.sql_query)
+        LOGGER.debug(
+            "Query:_make_set_operation:: New selection query: %s", selection_3.sql_query
+        )
 
         if not selection_3.save(new_selection_name):
             self.message.emit(self.tr("Fail to create the selection!"))

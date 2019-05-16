@@ -146,7 +146,9 @@ def create_selection_has_variant_indexes(conn):
         - insert_selection to rebuild index
     """
     # For joints between selections and variants tables
-    conn.execute("""CREATE INDEX idx_selection_has_variant ON selection_has_variant (selection_id)""")
+    conn.execute(
+        """CREATE INDEX idx_selection_has_variant ON selection_has_variant (selection_id)"""
+    )
 
 
 def insert_selection(conn, query: str, name="no_name", count=0):
@@ -181,7 +183,9 @@ def insert_selection(conn, query: str, name="no_name", count=0):
     return cursor.lastrowid
 
 
-def create_selection_from_sql(conn, query: str, name: str, count=None, from_selection=False):
+def create_selection_from_sql(
+    conn, query: str, name: str, count=None, from_selection=False
+):
     """Create a selection record from sql variant query
 
     :param name : name of the selection
