@@ -275,9 +275,9 @@ class Query:
         self.extract_samples_from_columns_and_filter(filter_only=filter_only)
         for sample_name, sample_id in self._samples_to_join.items():
             query += f"""
-            LEFT JOIN sample_has_variant gt_{sample_name}
-             ON gt_{sample_name}.variant_id = variants.id
-             AND gt_{sample_name}.sample_id = {sample_id}
+            LEFT JOIN sample_has_variant `gt_{sample_name}`
+             ON `gt_{sample_name}`.variant_id = variants.id
+             AND `gt_{sample_name}`.sample_id = {sample_id}
             """
         return query
 
@@ -470,7 +470,7 @@ class Query:
             if isinstance(field, tuple) and len(field) == 3:
                 #  Function ? ("genotype","sample","gt")
                 fct, arg, f = field
-                field = f"gt_{arg}.{f}"
+                field = f"`gt_{arg}`.{f}"
 
             # There must be spaces between these strings because of strings operators (IN, etc.)
             return "%s %s %s" % (field, operator, value)
@@ -547,6 +547,7 @@ class Query:
             f"SELECT COUNT(*) as count FROM ({sql_query})"
         ).fetchone()[0]
 
+
     def variants_count(self) -> int:
         """Return variant count from the current query
 
@@ -571,30 +572,6 @@ class Query:
         """
 
     ##--------------------------------------------------------------------------
-
-    def from_vql(self, raw: str):
-        """Build the current Query from a VQL query
-
-        :param raw: VQL query
-
-        :Example:
-
-                query = Query(conn)
-                query.from_vql("SELECT chr, pos FROM variants")
-                query.sql()
-
-        .. seealso:: to_vql()
-        .. todo:: Should be a static method
-        """
-        model = vql.model_from_string(raw)
-        self.columns = list(model["select"])  # columns from variant table
-        self.selection = model["from"]  # name of the variant set
-        self.filter = model.get("where", dict())  # filter as raw text; dict if no filter
-        # TODO: USING clause missing
-
-        print("from vql", model)
-        print("from vql", self.filter)
-
     def to_vql(self) -> str:
         """Build a VQL query from the current Query
 
@@ -612,7 +589,7 @@ class Query:
             if isinstance(col, tuple):
                 fct, arg, field = col
                 if fct == _GENOTYPE_FUNCTION_NAME:
-                    col = f'genotype("{arg}").{field}'
+                    col = f'genotype("{arg}")'
             _c.append(col)
 
         base = f"SELECT {','.join(_c)} FROM {self.selection}"

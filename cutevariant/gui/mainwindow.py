@@ -239,10 +239,10 @@ class MainWindow(QMainWindow):
         )
 
         self.toolbar.addAction(
-            FIcon(0xF55C),
-            self.tr("Set operation"),
-            self.selection_widget.save_current_query,
-        )
+            FIcon(0xF40D),
+            self.tr("Run"),
+            self.editor.run_vql
+        ).setShortcut(Qt.CTRL + Qt.Key_R)
 
     def add_tab_view(self, widget):
         """Add the given widget to the current (QTabWidget),

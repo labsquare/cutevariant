@@ -499,7 +499,8 @@ def create_table_variants(conn, fields):
     # from all other values, including other NULLs.
     schema = ",".join(
         [
-            f'{field["name"]} {field["type"]} {field.get("constraint", "")}'
+
+            f'`{field["name"]}` {field["type"]} {field.get("constraint", "")}'
             for field in fields
             if field["name"]
         ]
@@ -514,6 +515,7 @@ def create_table_variants(conn, fields):
         UNIQUE (chr,pos,ref,alt))"""
     )
     # cursor.execute(f"""CREATE UNIQUE INDEX idx_variants_unicity ON variants (chr,pos,ref,alt)""")
+
 
     # Association table: do not use useless rowid column
     cursor.execute(
@@ -607,7 +609,7 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
         cols = get_columns(conn, table_name)
         # Build dynamic insert query
         # INSERT INTO variant qcol1, qcol2.... VALUES :qcol1, :qcol2 ....
-        tb_cols = ",".join(cols)
+        tb_cols = ",".join([f"`{col}`" for col in cols])
         tb_places = ",".join([f":{place}" for place in cols])
         return tb_cols, tb_places
 
@@ -658,6 +660,7 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
         # Insert current variant
         # Use default dict to handle missing values
         LOGGER.debug(variant_insert_query)
+        print(variant_insert_query)
 
         cursor.execute(variant_insert_query, defaultdict(str, variant))
 
