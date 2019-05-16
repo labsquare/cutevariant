@@ -176,9 +176,13 @@ class VqlEditor(QueryPluginWidget):
         return completer
 
     def check_vql(self):
+        """Check VQL statement; return True if OK, False when an error occurs
+
+        .. note:: This function also sets the error message to the bottom of the view.
+        """
         try:
             self.log_edit.hide()
-            vql.execute_vql(self.text_edit.toPlainText())
+            tuple(vql.execute_vql(self.text_edit.toPlainText()))
 
         except TextXSyntaxError as e:
             # Available attributes: e.message, e.line, e.col

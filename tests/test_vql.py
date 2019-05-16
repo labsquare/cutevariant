@@ -53,11 +53,11 @@ VQL_TO_TREE_CASES = {
 
 
 def template_test_case(vql_expr: str, expected: dict) -> callable:
-    "Return a function that test equivalence between given VQL and expected result"
+    """Return a function that test equivalence between given VQL and expected result"""
 
     def test_function():
         print("EXPECTED:", ", ".join(sorted(tuple(expected.keys()))))
-        found = execute_vql(vql_expr)[0]
+        found = next(execute_vql(vql_expr))
         print("FOUND:", ", ".join(sorted(tuple(found.keys()))))
         pprint(expected)
         print()

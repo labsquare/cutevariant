@@ -157,17 +157,15 @@ METAMODEL = textx.metamodel_from_str(
 def execute_vql(raw_vql: str) -> list: 
     """ Execute multiline VQL statement separated by ";"
 
-    :return: yield Dictionnary per command
+    :return: yield 1 dictionnary per command
         .. example :: {'cmd': 'select_cmd', 'columns': ['chr','pos'], 'source':'variants', 'filter': 'None'}
     """
-
     try:
         raw_model = METAMODEL.model_from_str(raw_vql)
     except textx.exceptions.TextXSyntaxError as err:
         raise VQLSyntaxError(*error_message_from_err(err, raw_vql))
-        
-    return [command.value for command in raw_model.commands]
-         
+
+    yield from (command.value for command in raw_model.commands)
 
 
 def model_from_string(raw_vql: str) -> dict:
