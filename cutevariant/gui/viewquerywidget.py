@@ -433,7 +433,7 @@ class QueryDelegate(QStyledItemDelegate):
             painter.drawText(option.rect, alignement, str(index.data()))
             return
 
-        if "genotype" in colname:
+        if "genotype" in colname and value != "...":
             val = int(value)
 
             icon_path = GENOTYPE_ICONS.get(val, -1)
