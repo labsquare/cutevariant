@@ -181,7 +181,7 @@ class Query:
         cols_in_annotations = set(self.columns) & self.col_table_mapping["annotations"]
         if cols_in_annotations:
             LOGGER.debug(
-                "detect_annotations_table_requirement: found col in columns:",
+                "detect_annotations_table_requirement: found col in columns: %s",
                 cols_in_annotations,
             )
             return True
