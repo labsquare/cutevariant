@@ -278,7 +278,7 @@ class VqlEdit(QTextEdit):
             Qt.AltModifier,
         )
 
-        LOGGER.debug("keyPressEvent:: event text: %s", event.text())
+        # LOGGER.debug("keyPressEvent:: event text: %s", event.text())
 
         # Dismiss ingored modifiers without text
         if not self.completer or (found_ignored_modifier and not event.text()):
@@ -291,8 +291,8 @@ class VqlEdit(QTextEdit):
         completion_prefix = self.textUnderCursor()
         completer = self.completer
 
-        LOGGER.debug("keyPressEvent:: has_modifier: %s", has_modifier)
-        LOGGER.debug("keyPressEvent:: completion_prefix: %s", completion_prefix)
+        # LOGGER.debug("keyPressEvent:: has_modifier: %s", has_modifier)
+        # LOGGER.debug("keyPressEvent:: completion_prefix: %s", completion_prefix)
 
         # Hide on alone modifier, empty text, short text, end of word
         if self.completer_joker not in event.text() and (
@@ -302,7 +302,7 @@ class VqlEdit(QTextEdit):
                 or event.text()[-1] in end_of_word
         ):
             completer.popup().hide()
-            LOGGER.debug("keyPressEvent:: Hide completer popup")
+            # LOGGER.debug("keyPressEvent:: Hide completer popup")
             return
 
         # Select proposed word
