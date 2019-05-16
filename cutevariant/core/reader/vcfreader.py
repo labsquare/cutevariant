@@ -39,6 +39,8 @@ class VcfReader(AbstractReader):
     def get_fields(self):
         """Get full fields descriptions
 
+        This function is called a first time before variants insertion.
+
         .. note:: Annotations fields are added here if they exist in the file.
 
         .. seealso:: parse_fields()

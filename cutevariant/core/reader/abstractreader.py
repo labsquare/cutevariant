@@ -75,6 +75,8 @@ class AbstractReader(ABC):
         several times during the import and it could be expensive to redo the
         parsing every time.
 
+        This function is called a first time before variants insertion.
+
         Full output:
         ============
         [
