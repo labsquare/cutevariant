@@ -182,12 +182,12 @@ def test_selections(conn):
     # Create a selection that contains all 8 variants in the DB
     # (no filter on this list, via annotation table because this table is not
     # initialized here)
-    query = """SELECT variants.rowid,chr,pos,ref,alt FROM variants"""
+    query = """SELECT variants.id,chr,pos,ref,alt FROM variants"""
     #    LEFT JOIN annotations
     #     ON annotations.variant_id = variants.rowid"""
 
     # Create a new selection (a second one, since there is a default one during DB creation)
-    ret = sql.create_selection_from_sql(conn, query, "selection_name", count=None, by="site")
+    ret = sql.create_selection_from_sql(conn, query, "selection_name", count=None)
     assert ret == 2
 
     # Query the association table (variant_id, selection_id)
@@ -222,34 +222,36 @@ def test_selection_operation(conn):
     prepare_base(conn)
 
     # Select all
-    query = """SELECT variants.rowid,chr,pos,ref,alt FROM variants"""
-    sql.create_selection_from_sql(conn, query, "all", count=None, by="site")
+    query = """SELECT variants.id,chr,pos,ref,alt FROM variants"""
+    id_all = sql.create_selection_from_sql(conn, query, "all", count=None)
 
-    # Select only ref = G 
-    query = """SELECT variants.rowid,chr,pos,ref,alt FROM variants WHERE ref='C'"""
-    sql.create_selection_from_sql(conn, query, "setA", count=None, by="site")
+    # Select only ref = G
+    query = """SELECT variants.id,chr,pos,ref,alt FROM variants WHERE ref='C'"""
+    id_A = sql.create_selection_from_sql(conn, query, "setA", count=None,)
 
     # Select only ref=C
-    query = """SELECT variants.rowid,chr,pos,ref,alt FROM variants WHERE alt='C'"""
-    sql.create_selection_from_sql(conn, query, "setB", count=None, by="site")
+    query = """SELECT variants.id,chr,pos,ref,alt FROM variants WHERE alt='C'"""
+    id_B = sql.create_selection_from_sql(conn, query, "setB", count=None)
+
+    assert all((id_all, id_A, id_B))
 
     selections = [selection["name"] for selection in sql.get_selections(conn)]
 
-    assert "setA" in selections 
-    assert "setB" in selections 
+    assert "setA" in selections
+    assert "setB" in selections
 
     sql.Selection.conn = conn
 
-    All = sql.Selection.from_name("all")
-    A = sql.Selection.from_name("setA")
-    B = sql.Selection.from_name("setB")
+    All = sql.Selection.from_selection_id(id_all)
+    A = sql.Selection.from_selection_id(id_A)
+    B = sql.Selection.from_selection_id(id_B)
 
-    C = All - B&A 
+    C = All - B&A
 
     C.save("newset")
 
-    print(C.query)
-    for i in conn.execute(C.query):
+    print(C.sql_query)
+    for i in conn.execute(C.sql_query):
         print(dict(i))
 
     selections = [selection["name"] for selection in sql.get_selections(conn)]
@@ -329,5 +331,5 @@ def test_variants(conn):
     prepare_base(conn)
 
     for i, record in enumerate(conn.execute("SELECT * FROM variants")):
-        record = list(record) # omit id 
+        record = list(record) # omit id
         assert tuple(record[1:]) == tuple(variants[i].values())
