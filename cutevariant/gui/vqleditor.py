@@ -9,8 +9,8 @@ from textx.exceptions import TextXSyntaxError
 
 # Qt imports
 from PySide2.QtCore import qApp, Qt, QRegularExpression, QStringListModel
-from PySide2.QtWidgets import QTextEdit, QCompleter, QVBoxLayout, QLabel, QFrame, QToolTip
-from PySide2.QtGui import QSyntaxHighlighter, QFont, QPalette, QTextCharFormat, QTextCursor, QPainter
+from PySide2.QtWidgets import QTextEdit, QCompleter, QVBoxLayout, QLabel, QFrame
+from PySide2.QtGui import QSyntaxHighlighter, QFont, QPalette, QTextCharFormat, QTextCursor
 
 # Custom imports
 from cutevariant.core import sql
@@ -150,10 +150,6 @@ class VqlEditor(QueryPluginWidget):
         main_layout.setSpacing(0)
         self.setLayout(main_layout)
         self._query = None
-        # Boolean to detect a SQL error
-        self.query_error = False
-
-        tip = QToolTip()
 
     def on_init_query(self):
         """Overrided"""
@@ -204,7 +200,7 @@ class VqlEditor(QueryPluginWidget):
         """Execute VQL query"""
         # self.query_changed.emit()
 
-        if self.check_vql() == False:
+        if not self.check_vql():
             return
 
         for cmd in vql.execute_vql(self.text_edit.toPlainText()):

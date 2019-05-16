@@ -578,8 +578,8 @@ class ViewQueryWidget(QueryPluginWidget):
         """
 
         # Set text
-        self.page_info.setText("{} variant(s)  {}-{} of {}".format(self.model.total, *self.model.displayed()))
-        page_box_text = self.tr("{}").format(self.model.page)
+        self.page_info.setText(self.tr("{} variant(s)  {}-{} of {}").format(self.model.total, *self.model.displayed()))
+        page_box_text = str(self.model.page)
         self.page_box.setText(page_box_text)
 
         # Adjust page_èbox size to content

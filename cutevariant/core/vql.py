@@ -74,7 +74,7 @@ class FilterTerm(metaclass=model_class):
         val = self.val.value  if hasattr(self.val,"value")  else self.val
 
         # escape if quoted
-        if type(val) == str: 
+        if isinstance(val, str):
             val = f"'{val}'"
 
         return {"field":field, "operator": self.op, "value": val}
