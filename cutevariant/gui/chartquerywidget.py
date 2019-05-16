@@ -59,6 +59,11 @@ class ChartQueryWidget(QueryPluginWidget):
         # QBarSeries *series = new QBarSeries();
         # series->append(set0);
 
+        # print("cols", self.query.columns)
+        # print("filter", self.query.filter)
+        # print("groub_by", self.query.group_by)
+        # print("selec", self.query.selection)
+
         # Do not redo the chart on if data is not changed...
         if (
             self.previous_filter == self.query.filter
@@ -136,10 +141,10 @@ class ChartQueryWidget(QueryPluginWidget):
 
         data = defaultdict(Counter)
 
-
         if LOGGER.getEffectiveLevel() == DEBUG:
             LOGGER.debug("ChartQueryWidget:on_change_query:: Custom query built:")
             import time
+
             start = time.time()
 
         # After the auto-parsing of filters by query.sql(), add manually:
@@ -155,7 +160,8 @@ class ChartQueryWidget(QueryPluginWidget):
             end_query = time.time()
             LOGGER.debug(
                 "ChartQueryWidget:on_change_query:: number %s, query time %s",
-                len(data), end_query - start
+                len(data),
+                end_query - start,
             )
 
         ## Create QBarSets
