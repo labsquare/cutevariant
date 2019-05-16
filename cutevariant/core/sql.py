@@ -283,49 +283,36 @@ def edit_selection(conn, selection: dict):
 ## ================ Operations on sets of variants =============================
 
 
-def get_query_columns(by="variant"):
-    """Handy func to get columns to be queried according to the group by argument
+def get_query_columns(mode="variant"):
+    """(DEPRECATED FOR NOW, NOT USED)
+    Handy func to get columns to be queried according to the group by argument
 
     .. note:: Used by intersect_variants, union_variants, subtract_variants
         in order to avoid code duplication.
     """
-    if by == "site":
+    if mode == "site":
         return "chr,pos"
 
-    if by == "variant":
-        return "chr,pos,ref,alt"
+    if mode == "variant":
+        # Not used
+        return "variant_id"
 
     raise NotImplementedError
 
 
-def intersect_variants(query1, query2, by="site"):
+def intersect_variants(query1, query2):
     """Get the variants obtained by the intersection of 2 queries"""
-    columns = get_query_columns(by)
-    return f"""
-    SELECT {columns} FROM ({query1})
-    INTERSECT
-    SELECT {columns} FROM ({query2})
-    """
+    return f"""{query1} INTERSECT {query2}"""
 
 
-def union_variants(query1, query2, by="site"):
+def union_variants(query1, query2):
     """Get the variants obtained by the union of 2 queries"""
-    columns = get_query_columns(by)
-    return f"""
-    SELECT {columns} FROM ({query1})
-    UNION
-    SELECT {columns} FROM ({query2})
-    """
+    return f"""{query1} UNION {query2}"""
 
 
-def subtract_variants(query1, query2, by="site"):
+def subtract_variants(query1, query2):
     """Get the variants obtained by the difference of 2 queries"""
-    columns = get_query_columns(by)
-    return f"""
-    SELECT {columns} FROM ({query1})
-    EXCEPT
-    SELECT {columns} FROM ({query2})
-    """
+    return f"""{query1} EXCEPT {query2}"""
 
 
 ## ================ Fields functions ===========================================
