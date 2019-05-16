@@ -206,7 +206,7 @@ class SelectionQueryWidget(QueryPluginWidget):
         set_icons_ids = (0xF55D, 0xF55B, 0xF564)
         set_texts = (self.tr("Intersect"), self.tr("Difference"), self.tr("Union"))
         set_internal_ids = ("intersect", "difference", "union")
-        # Map the operations with an internal id not visible from the user
+        # Map the operations with an internal id not visible for the user
         # This id is used by _create_set_operation_menu and _make_set_operation
         # Keys: user text; values: internal ids
         self.set_operations_mapping = dict(zip(set_texts, set_internal_ids))
@@ -359,7 +359,7 @@ class SelectionQueryWidget(QueryPluginWidget):
         if set_internal_id == "intersect":
             selection_3 = selection_1 & selection_2
 
-        LOGGER.debug("Query:_make_set_operation:: New selection query:", selection_3.sql_query)
+        LOGGER.debug("Query:_make_set_operation:: New selection query: %s", selection_3.sql_query)
 
         if not selection_3.save(new_selection_name):
             self.message.emit(self.tr("Fail to create the selection!"))
