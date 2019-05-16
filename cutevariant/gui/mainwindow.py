@@ -1,9 +1,6 @@
 """Main window of Cutevariant"""
 # Standard imports
-import json
 import os
-import glob
-import importlib
 
 # Qt imports
 from PySide2.QtCore import Qt, QSettings, QByteArray, QDir
@@ -11,7 +8,6 @@ from PySide2.QtWidgets import *
 from PySide2.QtGui import QIcon, QKeySequence
 
 # Custom imports
-from cutevariant.core.importer import import_file
 from cutevariant.core import Query, get_sql_connexion
 from cutevariant.gui.ficon import FIcon
 from cutevariant.gui.plugin import VariantPluginWidget, QueryPluginWidget
@@ -21,19 +17,19 @@ from cutevariant.gui.viewquerywidget import ViewQueryWidget
 from cutevariant.gui.columnquerywidget import ColumnQueryWidget
 from cutevariant.gui.filterquerywidget import FilterQueryWidget
 from cutevariant.gui.selectionquerywidget import SelectionQueryWidget
-from cutevariant.gui.hpoquerywidget import HpoQueryWidget
 from cutevariant.gui.vqleditor import VqlEditor
-from cutevariant.gui.omnibar import OmniBar
 from cutevariant.gui.querydispatcher import QueryDispatcher
 from cutevariant.gui.infovariantwidget import InfoVariantWidget
 from cutevariant.gui.aboutcutevariant import AboutCutevariant
-
-# Proof of concept testing
 from cutevariant.gui.chartquerywidget import ChartQueryWidget
-from cutevariant.gui.webglquerywidget import WebGLQueryWidget
-
 from cutevariant import commons as cm
 from cutevariant.commons import MAX_RECENT_PROJECTS, DIR_ICONS
+
+# Proof of concept - testing only
+# from cutevariant.gui.webglquerywidget import WebGLQueryWidget
+# from cutevariant.gui.hpoquerywidget import HpoQueryWidget
+# from cutevariant.gui.omnibar import OmniBar
+
 
 LOGGER = cm.logger()
 
