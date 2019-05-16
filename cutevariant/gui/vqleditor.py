@@ -15,10 +15,11 @@ from PySide2.QtGui import QSyntaxHighlighter, QFont, QPalette, QTextCharFormat, 
 # Custom imports
 from cutevariant.core import sql
 from cutevariant.core.vql import VQLSyntaxError
-from cutevariant.commons import MIN_COMPLETION_LETTERS, logger
+from cutevariant.commons import MIN_COMPLETION_LETTERS, logger, LOG_LEVELS
 from .plugin import QueryPluginWidget
 
 LOGGER = logger()
+LOGGER.setLevel(LOG_LEVELS["notset"])
 
 
 class VqlSyntaxHighlighter(QSyntaxHighlighter):
