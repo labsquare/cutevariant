@@ -1,4 +1,5 @@
 import pytest
+import copy
 import sys
 import os
 import sqlite3
@@ -142,6 +143,33 @@ def test_query_functions(conn):
     # filter transcript in annotations => keep dependency
     assert "LEFT JOIN annotations" in sql_query
 
+
+def test_csv_export():
+    """More or less the copy of the code in ViewQueryWidget
+    """
+    # Need file with annotations
+    conn = sqlite3.connect(":memory:")
+    import_file(conn, "examples/test.vep.vcf")
+
+    query = Query(conn)
+    # Two columns: 1 in variants table, 1 in annotations table
+    # The next query should return all variants and their annotations
+    # Many annotations for each variant: so as many rows as annotations number
+    query.columns = ["chr", "transcript"]
+
+    # Duplicate the current query, but remove automatically added columns
+    # and remove group by/order by commands.
+    # Columns are kept as they are selected in the GUI
+    query = copy.copy(query)
+    query.group_by = None
+    query.order_by = None
+    # Query the database
+    ret = [tuple(row) for row in query.conn.execute(query.sql(do_not_add_default_things=True))]
+
+    annotations_count = tuple(*query.conn.execute("SELECT COUNT(*) FROM annotations"))
+    found = len(ret)
+    expected = annotations_count[0] # 71
+    assert expected == found == 71
 
 # def test_query_group_by(conn):
 #     query = Query(conn)
