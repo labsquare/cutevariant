@@ -9,8 +9,8 @@ import sqlite3
 READERS = [
 FakeReader(),
 VcfReader(open("examples/test.vcf")),
-VcfReader(open("examples/test.vep.vcf"),"vep"),
-VcfReader(open("examples/test.snpeff.vcf"),"snpeff"),
+VcfReader(open("examples/test.vep.vcf"), "vep"),
+VcfReader(open("examples/test.snpeff.vcf"), "snpeff"),
 ]
 
 
@@ -19,7 +19,7 @@ VcfReader(open("examples/test.snpeff.vcf"),"snpeff"),
     "reader", READERS, ids=[str(i.__class__.__name__) for i in READERS]
 )
 def test_fields(reader):
-    fields = list(reader.get_fields())
+    fields = tuple(reader.get_fields())
     field_names = [f["name"] for f in fields]
     # # search if field name are unique
     # assert len(set(field_names)) == len(field_names)
@@ -30,9 +30,24 @@ def test_fields(reader):
     assert "ref" in field_names
     assert "alt" in field_names
 
-    # check field schema 
+    # check field schema
     for field in fields:
         check_field_schema(field)
+
+    # Test the removing of duplicated fields (in annotations AND in variants)
+    # annotations fields have to be removed.
+    # Typically, 'af' field in test.vep.vcf
+    # is a good candidate.
+    # PS: we do not care of duplicated fields in samples since we do not use
+    # other field than genotype for now.
+    variants_fields = {field["name"] for field in reader.get_fields_by_category("variants")}
+    print("Variants fields", variants_fields)
+    annotations_fields = {field["name"] for field in reader.get_fields_by_category("annotations")}
+    print("Annotations fields", variants_fields)
+    duplicated_variants = variants_fields & annotations_fields
+    print("DUPLICATED VARIANTS", duplicated_variants)
+
+    assert duplicated_variants == set()
 
 
 @pytest.mark.parametrize(
