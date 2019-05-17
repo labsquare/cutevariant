@@ -1,5 +1,4 @@
 from abc import ABC, abstractclassmethod
-from schema import Schema, And,Or, Use, Optional, Regex
 
 
 class AbstractReader(ABC):
@@ -145,6 +144,13 @@ def check_variant_schema(variant: dict):
     :param variant dict returned by AbstractReader.get_variant()
 
     """
+    try:
+        from schema import Schema, And, Or, Use, Optional, Regex
+    except ImportError as e:
+        print("You should install optional package 'schema' via:")
+        print("\t - pypi: pip install cutevariant[dev]")
+        print("\t - git repo in editable mode: pip -e . [dev]")
+        raise e
 
     checker = Schema({
            "chr": And(Use(str.lower),str),
@@ -174,6 +180,13 @@ def check_field_schema(field:dict):
 
     :param field dict returned by AbstractReader.get_field()
     """
+    try:
+        from schema import Schema, And, Use, Optional
+    except ImportError as e:
+        print("You should install optional package 'schema' via:")
+        print("\t - pypi: pip install cutevariant[dev]")
+        print("\t - git repo in editable mode: pip -e . [dev]")
+        raise e
 
     checker = Schema({
            "name": And(str, Use(str.lower)),
