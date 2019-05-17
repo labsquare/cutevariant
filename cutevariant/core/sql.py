@@ -29,7 +29,7 @@ def get_sql_connexion(filepath):
     connexion = sqlite3.connect(filepath)
     # Activate Foreign keys
     connexion.execute("PRAGMA foreign_keys = ON")
-
+    connexion.row_factory = sqlite3.Row
     foreign_keys_status = connexion.execute("PRAGMA foreign_keys").fetchone()[0]
     LOGGER.debug("get_sql_connexion:: foreign_keys state: %s", foreign_keys_status)
     assert foreign_keys_status == 1, "Foreign keys can't be activated :("
@@ -556,7 +556,6 @@ def create_variants_indexes(conn):
 
 def get_one_variant(conn, id: int):
     """Get the variant with the given id"""
-    print("FACTORY:", conn.row_factory)
     # Use row_factory here
     conn.row_factory = sqlite3.Row
     # Cast sqlite3.Row object to dict because later, we use items() method.
@@ -600,7 +599,6 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
             a NOT NULL constraint.
         => This is not recommended
     """
-    print("FACTORY:", conn.row_factory)
 
     def build_columns_and_placeholders(table_name):
         """Build a tuple of columns and formatted placeholders for INSERT queries
