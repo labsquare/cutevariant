@@ -120,7 +120,7 @@ class QueryModel(QAbstractItemModel):
                 if index.column() == 0:
                     # First column display children count
                     return str(self.children_count(index))
-                elif index.column() not in self.indexes_in_group_by:
+                elif index.column() not in self.parents_indexes:
                     # Mask columns not concerned by the group by
                     # These columns have an arbitrary value choosen among all retrieved values
                     # ..seealso:: load()
@@ -131,7 +131,7 @@ class QueryModel(QAbstractItemModel):
 
             #  Display the second level ( children )
             if index.parent().parent() == QModelIndex():
-                if index.column() == 0 or index.column() in self.indexes_in_group_by:
+                if index.column() == 0 or index.column() in self.parents_indexes:
                     # No children for the first columns
                     # Don't show redondant data for columns that are in the group by
                     return ""
@@ -257,10 +257,12 @@ class QueryModel(QAbstractItemModel):
         # Get columns not concerned by the group by in order to mask them
         # These columns have an arbitrary value choosen among all retrieved values
         # ..seealso:: Masking is made in data()
-        self.indexes_in_group_by = {
+        # parents authorized columns are in group_by command and in variants table only
+        parents_columns = set(self._query.group_by) | self._query.col_table_mapping["variants"]
+        self.parents_indexes = {
             index
             for index, col in enumerate(self._query.columns, 1)
-            if col in self._query.group_by
+            if col in parents_columns
         }
 
         # Append a list because child can be append after
