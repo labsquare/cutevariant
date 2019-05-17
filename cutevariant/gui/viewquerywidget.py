@@ -211,7 +211,10 @@ class QueryModel(QAbstractItemModel):
         sub_query = f"""SELECT variants.id, {columns} FROM variants
         {joints}
         WHERE annotations.variant_id = {variant_id}"""
-        print("SUB QUERY", sub_query)
+        LOGGER.debug(
+            "QueryModel:fetchMore:: Extra children cols sub query %s",
+            sub_query
+        )
 
         records = list(self._query.conn.cursor().execute(sub_query).fetchall())
 
