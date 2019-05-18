@@ -46,3 +46,6 @@ check_code:
 missing_doc:
 	# Remove D213 antagonist of D212
 	prospector cutevariant/ | grep "cutevariant/\|Line\|Missing docstring"
+
+build_windows_blob:
+	python make_a_blob.py build_exe
