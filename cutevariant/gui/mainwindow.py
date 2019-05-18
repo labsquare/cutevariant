@@ -11,7 +11,7 @@ from PySide2.QtGui import QIcon, QKeySequence
 from cutevariant.core import Query, get_sql_connexion
 from cutevariant.gui.ficon import FIcon
 from cutevariant.gui.plugin import VariantPluginWidget, QueryPluginWidget
-from cutevariant.gui.wizard.projetwizard import ProjetWizard
+from cutevariant.gui.wizards import ProjectWizard
 from cutevariant.gui.settings import SettingsWidget
 from cutevariant.gui.viewquerywidget import ViewQueryWidget
 from cutevariant.gui.columnquerywidget import ColumnQueryWidget
@@ -375,7 +375,7 @@ class MainWindow(QMainWindow):
 
     def new_project(self):
         """Slot to allow creation of a project with the Wizard"""
-        wizard = ProjetWizard()
+        wizard = ProjectWizard()
         if wizard.exec_():
             db_filename = (
                 wizard.field("project_path")
