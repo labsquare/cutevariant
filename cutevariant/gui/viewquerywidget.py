@@ -353,6 +353,19 @@ class QueryModel(QAbstractItemModel):
         """ Set model to the last page """ 
         self.setPage(int(self.total / self.limit))
 
+    def sort(self, column: int, order):
+        """Overrided: Sort data by specified column 
+        
+        column (int): column id 
+        order (Qt.SortOrder): Qt.AscendingOrder or Qt.DescendingOrder 
+
+        """
+        if column < self.columnCount():
+            colname = self._query.columns[column - 1]
+
+            self._query.order_by = colname
+            self._query.order_desc = order == Qt.DescendingOrder
+            self.load()
 
     def displayed(self):
         """Get ids of first, last displayed variants on the total number
