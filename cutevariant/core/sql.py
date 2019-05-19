@@ -29,7 +29,7 @@ def get_sql_connexion(filepath):
     connexion = sqlite3.connect(filepath)
     # Activate Foreign keys
     connexion.execute("PRAGMA foreign_keys = ON")
-
+    connexion.row_factory = sqlite3.Row
     foreign_keys_status = connexion.execute("PRAGMA foreign_keys").fetchone()[0]
     LOGGER.debug("get_sql_connexion:: foreign_keys state: %s", foreign_keys_status)
     assert foreign_keys_status == 1, "Foreign keys can't be activated :("
@@ -146,7 +146,9 @@ def create_selection_has_variant_indexes(conn):
         - insert_selection to rebuild index
     """
     # For joints between selections and variants tables
-    conn.execute("""CREATE INDEX idx_selection_has_variant ON selection_has_variant (selection_id)""")
+    conn.execute(
+        """CREATE INDEX idx_selection_has_variant ON selection_has_variant (selection_id)"""
+    )
 
 
 def insert_selection(conn, query: str, name="no_name", count=0):
@@ -156,27 +158,34 @@ def insert_selection(conn, query: str, name="no_name", count=0):
 
     .. warning:: This function does a commit !
 
-    :param conn: sqlite3.connect
+    :param conn: sqlite3 connection OR cursor
+        If connection: commit is made.
+        If cursor: commit is not made.
     :param name: name of the selection
     :param count: precompute variant count
     :param query: Sql variant query selection
+    :type conn: <sqlite3.Connection> or <sqlite3.Cursor>
     :return: rowid of the new selection inserted.
     :rtype: <int>
 
     .. seealso:: create_selection_from_sql
     """
-    cursor = conn.cursor()
+    # conn can be a cursor or a connection here...
+    cursor = conn.cursor() if isinstance(conn, sqlite3.Connection) else conn
+
     cursor.execute(
         """INSERT INTO selections (name, count, query) VALUES (?,?,?)""",
         (name, count, query),
     )
-    # TODO: get cursor as argument, because later insertions may crash
-    # and leave the database not consistent with an orphan selection.
-    conn.commit()
+    if isinstance(conn, sqlite3.Connection):
+        # Commit only if connection is given. => avoid not consistent DB
+        conn.commit()
     return cursor.lastrowid
 
 
-def create_selection_from_sql(conn, query: str, name: str, count=None, by="site"):
+def create_selection_from_sql(
+    conn, query: str, name: str, count=None, from_selection=False
+):
     """Create a selection record from sql variant query
 
     :param name : name of the selection
@@ -185,8 +194,6 @@ def create_selection_from_sql(conn, query: str, name: str, count=None, by="site"
     :return: The id of the new selection. None in case of error.
     :rtype: <int> or None
     """
-    assert by in ("site", "variant")
-
     cursor = conn.cursor()
 
     # Compute query count
@@ -195,7 +202,7 @@ def create_selection_from_sql(conn, query: str, name: str, count=None, by="site"
         count = cursor.execute(f"SELECT COUNT(*) FROM ({query})").fetchone()[0]
 
     # Create selection
-    selection_id = insert_selection(conn, query, name=name, count=count)
+    selection_id = insert_selection(cursor, query, name=name, count=count)
 
     # DROP indexes
     # For joints between selections and variants tables
@@ -207,24 +214,22 @@ def create_selection_from_sql(conn, query: str, name: str, count=None, by="site"
     # Insert into selection_has_variant table
     # PS: We use DISTINCT keyword to statisfy the unicity constraint on
     # (variant_id, selection_id) of "selection_has_variant" table.
-    if by == "site":
+    # TODO: is DISTINCT useful here? How a variant could be associated several
+    # times with an association?
+    if from_selection:
+        # Optimized only for the creation of a selection from set operations
+        # variant_id is the only useful column here
         q = f"""
         INSERT INTO selection_has_variant
-        SELECT DISTINCT variants.id, {selection_id} FROM variants
-        INNER JOIN ({query}) query
-            ON variants.chr = query.chr
-            AND variants.pos = query.pos
+        SELECT DISTINCT variant_id, {selection_id} FROM ({query})
         """
-
-    if by == "variant":
+    else:
+        # Fallback
+        # Used when creating a selection from a VQL query in the UI
+        # Default behavior => a variant is based on chr,pos,ref,alt
         q = f"""
         INSERT INTO selection_has_variant
-        SELECT DISTINCT variants.id, {selection_id} FROM variants
-        INNER JOIN ({query}) as query
-            ON variants.chr = query.chr
-            AND variants.pos = query.pos
-            AND variants.ref = query.ref
-            AND variants.alt = query.alt
+        SELECT DISTINCT id, {selection_id} FROM ({query})
         """
 
     cursor.execute(q)
@@ -282,49 +287,36 @@ def edit_selection(conn, selection: dict):
 ## ================ Operations on sets of variants =============================
 
 
-def get_query_columns(by):
-    """Handy func to get columns to be queried according to the group by argument
+def get_query_columns(mode="variant"):
+    """(DEPRECATED FOR NOW, NOT USED)
+    Handy func to get columns to be queried according to the group by argument
 
     .. note:: Used by intersect_variants, union_variants, subtract_variants
         in order to avoid code duplication.
     """
-    if by == "site":
+    if mode == "site":
         return "chr,pos"
 
-    if by == "variant":
-        return "chr,pos,ref,alt"
+    if mode == "variant":
+        # Not used
+        return "variant_id"
 
     raise NotImplementedError
 
 
-def intersect_variants(query1, query2, by="site"):
+def intersect_variants(query1, query2, **kwargs):
     """Get the variants obtained by the intersection of 2 queries"""
-    columns = get_query_columns(by)
-    return f"""
-    SELECT {columns} FROM ({query1})
-    INTERSECT
-    SELECT {columns} FROM ({query2})
-    """
+    return f"""{query1} INTERSECT {query2}"""
 
 
-def union_variants(query1, query2, by="site"):
+def union_variants(query1, query2, **kwargs):
     """Get the variants obtained by the union of 2 queries"""
-    columns = get_query_columns(by)
-    return f"""
-    SELECT {columns} FROM ({query1})
-    UNION
-    SELECT {columns} FROM ({query2})
-    """
+    return f"""{query1} UNION {query2}"""
 
 
-def subtract_variants(query1, query2, by="site"):
+def subtract_variants(query1, query2, **kwargs):
     """Get the variants obtained by the difference of 2 queries"""
-    columns = get_query_columns(by)
-    return f"""
-    SELECT {columns} FROM ({query1})
-    EXCEPT
-    SELECT {columns} FROM ({query2})
-    """
+    return f"""{query1} EXCEPT {query2}"""
 
 
 ## ================ Fields functions ===========================================
@@ -564,7 +556,6 @@ def create_variants_indexes(conn):
 
 def get_one_variant(conn, id: int):
     """Get the variant with the given id"""
-    print("FACTORY:", conn.row_factory)
     # Use row_factory here
     conn.row_factory = sqlite3.Row
     # Cast sqlite3.Row object to dict because later, we use items() method.
@@ -608,7 +599,6 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
             a NOT NULL constraint.
         => This is not recommended
     """
-    print("FACTORY:", conn.row_factory)
 
     def build_columns_and_placeholders(table_name):
         """Build a tuple of columns and formatted placeholders for INSERT queries
@@ -811,45 +801,80 @@ def get_samples(conn):
     return (dict(data) for data in conn.execute("""SELECT * FROM samples"""))
 
 
-class Selection(object):
+class Selection:
+    """Binding object over selection which allows to do set operations on variants
+    associated to it
+
+    Attributes:
+        - cls.conn: Class attribute for sqlite3 connection.
+        - self.query: SQL query ready to be used in set operations.
+        - self.mode: Define the way variants are compared to each other.
+            - "variant" (default): chr,pos,ref,alt = variant.id
+            - "site": chr,pos
+        ..seealso:: from_selection_id()
+    """
+
+    # Class attribute, shared accross all instances
     conn = None
 
-    def __init__(self, query=None):
-        self.query = query
+    def __init__(self, sql_query=None, mode="variant"):
+        """Create a new selection object"""
+        self.sql_query = sql_query
+        # Define the way variants are compared
+        self.mode = mode
 
     def __add__(self, other):
-
-        new_selection = Selection()
-        new_selection.query = union_variants(self.query, other.query)
-        return new_selection
+        sql_query = union_variants(self.sql_query, other.sql_query, mode=self.mode)
+        return Selection(sql_query, self.mode)
 
     def __and__(self, other):
-        new_selection = Selection()
-        new_selection.query = intersect_variants(self.query, other.query)
-        return new_selection
+        sql_query = intersect_variants(self.sql_query, other.sql_query, mode=self.mode)
+        return Selection(sql_query, self.mode)
 
     def __sub__(self, other):
-        new_selection = Selection()
-        new_selection.query = subtract_variants(self.query, other.query)
-        return new_selection
+        sql_query = subtract_variants(self.sql_query, other.sql_query, mode=self.mode)
+        return Selection(sql_query, self.mode)
+
+    def __repr__(self):
+        return "<Selection>: " + self.sql_query
 
     def save(self, name):
-        create_selection_from_sql(
-            Selection.conn, self.query, name, count=None, by="site"
+        """Create the new selection in the database"""
+        return create_selection_from_sql(
+            Selection.conn, self.sql_query, name, from_selection=True
         )
 
     @classmethod
-    def from_name(cls, name):
+    def from_selection_id(cls, selection_id, mode="variant"):
+        """Get new Selection object based on a sql query that defines it
 
-        select_id = Selection.conn.execute(
-            "SELECT id FROM selections WHERE name = ?", (name,)
-        ).fetchone()[0]
-        # get columns that corresponds to GROUP BY chr,pos
-        # TODO: Why chr, pos ?
-        columns = get_query_columns(by="site")
-        print("cols", columns)
-        q = f"""SELECT {columns}
-            FROM variants v
-            LEFT JOIN selection_has_variant sv
-             ON v.id = sv.variant_id AND sv.selection_id = {select_id}"""
-        return Selection(q)
+        .. note:: Called from the UI. It is here that 'mode' is selected.
+
+        :param selection_id: The id of the selection for which the object will be
+            based.
+        :key mode: Modifies the definition of the unicity of a variant.
+            (optional: "variant" | "site"),(default: "variant").
+            - variant: (chr, pos, ref, alt) is the primary key so we query only
+            'selection_has_variant' for 'variant_id' field.
+            - site: (chr, pos) modifies the default definition of the unicity
+            of a variant.
+            => joint on 'variants' table is mandatory here.
+        :type selection_id: <int>
+        :type mode: <str>
+        :return: A new Selection object.
+        :rtype: <Selection>
+        """
+        if selection_id == 1:
+            # Get ids from the default selection
+            sql_query = """SELECT id as variant_id FROM variants"""
+        else:
+            # A variant is defined as chr,pos,ref,alt
+            # which is the primary key (unique)
+            # So these columns are synonyms of 'variants.id' for the table 'variants'
+            # or 'variant_id' for 'selection_has_variant' table.
+            # No further joints are required here.
+            sql_query = f"""SELECT variant_id
+            FROM selection_has_variant sv
+             WHERE sv.selection_id = {selection_id}"""
+
+        return cls(sql_query, mode=mode)

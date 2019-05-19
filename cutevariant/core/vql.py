@@ -74,18 +74,18 @@ class FilterTerm(metaclass=model_class):
         val = self.val.value  if hasattr(self.val,"value")  else self.val
 
         # escape if quoted
-        if type(val) == str: 
+        if isinstance(val, str):
             val = f"'{val}'"
 
         return {"field":field, "operator": self.op, "value": val}
-    
+
 class FilterExpression(metaclass=model_class):
     @property
     def value(self):
         out = []
-        key = "AND" # By default 
+        key = "AND" # By default
         for i in self.op:
-            if type(i) == str:
+            if isinstance(i, str):
                 if i in ("AND","OR"):
                     key = i
                 else:
@@ -94,7 +94,7 @@ class FilterExpression(metaclass=model_class):
                 out.append(i.value)
         return {key: out}
 
-    
+
 class FilterOperand(metaclass=model_class):
     @property
     def value(self):
@@ -104,12 +104,12 @@ class Function(metaclass=model_class):
     @property
     def value(self):
         return (self.func,self.arg, "gt")
-    
+
 class Tuple(metaclass=model_class):
     @property
     def value(self):
         return tuple(self.items)
-    
+
 
 
 class SelectCmd(metaclass=model_class):
@@ -122,10 +122,10 @@ class SelectCmd(metaclass=model_class):
         }
 
         if self.filter:
-            output["filter"] = self.filter.value 
+            output["filter"] = self.filter.value
 
         return output
-    
+
 
 class CreateCmd(metaclass=model_class):
     @property
@@ -144,7 +144,7 @@ class CreateCmd(metaclass=model_class):
 #         "source": self.source,
 #         "fitler": self.filter.value if self.filter else None
 #         }
-    
+
 
 METAMODEL = textx.metamodel_from_str(
      resource_string(__name__, "vql.tx").decode(),   # grammar extraction from vql.tx
@@ -154,22 +154,20 @@ METAMODEL = textx.metamodel_from_str(
 )
 
 
-def execute_vql(raw_vql: str) -> list: 
-    """ Execute multiline VQL statement separated by ";"
+def execute_vql(raw_vql: str) -> list:
+    """Execute multiline VQL statement separated by ";"
 
-    :return: yield Dictionnary per command
+    :return: yield 1 dictionnary per command
         .. example :: {'cmd': 'select_cmd', 'columns': ['chr','pos'], 'source':'variants', 'filter': 'None'}
     """
-
     try:
         raw_model = METAMODEL.model_from_str(raw_vql)
     except textx.exceptions.TextXSyntaxError as err:
         raise VQLSyntaxError(*error_message_from_err(err, raw_vql))
-        
-    return [command.value for command in raw_model.commands]
-         
+
+    yield from (command.value for command in raw_model.commands)
 
 
 def model_from_string(raw_vql: str) -> dict:
-    """ Obsolete : retro compatibility """ 
+    """Obsolete : retro compatibility"""
     return next(execute_vql(raw_vql))

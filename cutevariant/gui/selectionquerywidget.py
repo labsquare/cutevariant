@@ -99,10 +99,12 @@ class SelectionQueryModel(QAbstractTableModel):
     def find_record(self, name: str):
         """Find a record by name
         @see: view.selectionModel()
+        :return: Tuple of index in the model, and the record itself.
+        :rtype: <tuple <int>, <str>>
         """
         for idx, record in enumerate(self.records):
             if record["name"] == name:
-                return idx
+                return idx, record
         return None
 
     def remove_record(self, index: QModelIndex()):
@@ -114,7 +116,7 @@ class SelectionQueryModel(QAbstractTableModel):
         # Get selected record
         record = self.record(index)
         # Delete in database
-        if record["id"] and sql.delete_selection(self.query.conn, record["id"]):
+        if sql.delete_selection(self.query.conn, record["id"]):
             # Delete in model; triggers currentRowChanged signal
             self.beginRemoveRows(QModelIndex(), index.row(), index.row())
             # Delete in records
@@ -139,18 +141,10 @@ class SelectionQueryModel(QAbstractTableModel):
     def load(self):
         """Load all selections into the model"""
         self.beginResetModel()
-        self.records.clear()
-        # Add default and inamovible selection
-        # TODO => Must be inside the selection table
-        # For now, this record has a None "id" attribute
-        # => this is detected in remove_record to avoid errors
-        self.records.append(
-            {"id": None, "name": DEFAULT_SELECTION_NAME, "count": "   "}
-        )
         # Add all selections from the database
         # Dictionnary of all attributes of the table.
         #    :Example: {"name": ..., "count": ..., "query": ...}
-        self.records += list(sql.get_selections(self._query.conn))
+        self.records = list(sql.get_selections(self._query.conn))
         self.endResetModel()
 
     def save_current_query(self, name):
@@ -198,17 +192,21 @@ class SelectionQueryWidget(QueryPluginWidget):
             self.on_current_row_changed
         )
 
-    def menu_setup(self):
-        """Setup popup menu"""
+    def menu_setup(self, locked_selection=False):
+        """Setup popup menu
+        :key locked_selection: Allow to mask edit/remove actions (default False)
+        :type locked_selection: <boolean>
+        """
         menu = QMenu()
 
-        menu.addAction(FIcon(0xF8FF), self.tr("Edit"), self.edit_selection)
+        if not locked_selection:
+            menu.addAction(FIcon(0xF8FF), self.tr("Edit"), self.edit_selection)
 
         # Set operations on selections: create mapping and actions
         set_icons_ids = (0xF55D, 0xF55B, 0xF564)
         set_texts = (self.tr("Intersect"), self.tr("Difference"), self.tr("Union"))
         set_internal_ids = ("intersect", "difference", "union")
-        # Map the operations with an internal id not visible from the user
+        # Map the operations with an internal id not visible for the user
         # This id is used by _create_set_operation_menu and _make_set_operation
         # Keys: user text; values: internal ids
         self.set_operations_mapping = dict(zip(set_texts, set_internal_ids))
@@ -219,8 +217,9 @@ class SelectionQueryWidget(QueryPluginWidget):
             for icon_id, text in zip(set_icons_ids, set_texts)
         ]
 
-        menu.addSeparator()
-        menu.addAction(FIcon(0xF413), self.tr("Remove"), self.remove_selection)
+        if not locked_selection:
+            menu.addSeparator()
+            menu.addAction(FIcon(0xF413), self.tr("Remove"), self.remove_selection)
         return menu
 
     def load(self):
@@ -234,7 +233,7 @@ class SelectionQueryWidget(QueryPluginWidget):
         )
 
         # Select record according to query.selection
-        row = self.model.find_record(self.query.selection)
+        row, _ = self.model.find_record(self.query.selection)
         if row is not None:
             self.view.selectRow(row)
 
@@ -253,6 +252,8 @@ class SelectionQueryWidget(QueryPluginWidget):
 
         .. note:: Slot called when item selection is changed.
         """
+        # We don't really care of the query that created the selection
+        # The joins are based on the name of the table
         self.query.selection = self.model.record(index)["name"]
         self.query_changed.emit()
 
@@ -273,18 +274,14 @@ class SelectionQueryWidget(QueryPluginWidget):
                 name,
             )
             self.message.emit(
-                self.tr("'%s' is a reserved name for a selection!")
-                % name
+                self.tr("'%s' is a reserved name for a selection!") % name
             )
         elif name in {record["name"] for record in self.model.records}:
             LOGGER.error(
                 "SelectionQueryWidget:save_current_query:: '%s' is a already used.",
                 name,
             )
-            self.message.emit(
-                self.tr("'%s' is a already used for a selection!")
-                % name,
-            )
+            self.message.emit(self.tr("'%s' is a already used for a selection!") % name)
         else:
             self.model.save_current_query(name)
 
@@ -292,7 +289,14 @@ class SelectionQueryWidget(QueryPluginWidget):
         """Overrided: Show popup menu at the cursor position"""
         if not self.model.records:
             return
-        menu = self.menu_setup()
+        # Detect locked selection to mask edit/remove actions
+        locked_selection = False
+        current_index = self.view.selectionModel().currentIndex()
+        record = self.model.record(current_index)
+        if record["name"] == DEFAULT_SELECTION_NAME:
+            locked_selection = True
+        # Show the menu
+        menu = self.menu_setup(locked_selection)
         menu.exec_(event.globalPos())
 
     def _create_set_operation_menu(self, icon, menu_name):
@@ -322,36 +326,42 @@ class SelectionQueryWidget(QueryPluginWidget):
         """
         action = self.sender()
 
-        ## THIS CODE IS UGLY... FOR TESTING PURPOSE ...
-
+        # Get menu id to know which set operation to do
         set_internal_id = action.data()
 
-        name_1 = self.model.record(self.view.selectionModel().currentIndex())["name"]
-        name_2 = action.text()
-
+        # Init class attribute
         sql.Selection.conn = self.query.conn
 
-        selection_1 = sql.Selection.from_name(name_1)
-        selection_2 = sql.Selection.from_name(name_2)
+        # Get the records and extract their database id to build 2 Selections objects
+        record_1 = self.model.record(self.view.selectionModel().currentIndex())
+        _, record_2 = self.model.find_record(action.text())
+        # TODO: handle modes for creation of selections
+        selection_1 = sql.Selection.from_selection_id(record_1["id"])
+        selection_2 = sql.Selection.from_selection_id(record_2["id"])
 
-        name_3 = QInputDialog.getText(self, "Name of selection", "name:")
+        new_selection_name, success = QInputDialog.getText(
+            self, self.tr("Type a name for selection"), self.tr("Selection name:")
+        )
+        if not success:
+            return
 
-        if name_3[1] == True and set_internal_id:
+        # Do set operation and create new selection
+        if set_internal_id == "union":
+            selection_3 = selection_1 + selection_2
+        if set_internal_id == "difference":
+            selection_3 = selection_1 - selection_2
+        if set_internal_id == "intersect":
+            selection_3 = selection_1 & selection_2
 
-            if set_internal_id == "union":
-                print("UNION")
-                selection_3 = selection_1 + selection_2
-            if set_internal_id == "difference":
-                print("DIFF")
-                selection_3 = selection_1 - selection_2
-            if set_internal_id == "intersect":
-                print("INTERSECT")
-                selection_3 = selection_1 & selection_2
+        LOGGER.debug(
+            "Query:_make_set_operation:: New selection query: %s", selection_3.sql_query
+        )
 
-            selection_3.save(name_3[0])
-            self.model.load()
-
-        # seection_3.save()
+        if not selection_3.save(new_selection_name):
+            self.message.emit(self.tr("Fail to create the selection!"))
+            return
+        # Reload the model
+        self.model.load()
 
     def remove_selection(self):
         """Remove a selection from the database"""

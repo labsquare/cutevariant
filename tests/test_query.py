@@ -1,4 +1,5 @@
 import pytest
+import copy
 import sys
 import os
 import sqlite3
@@ -16,12 +17,17 @@ def conn():
 
 
 def test_query_columns(conn):
+    """
+    .. note:: Now when no annotation column is selected, we do not make a join on this table
+        " LEFT JOIN annotations ON annotations.variant_id = variants.id"
+        is not in basic sql() query anymore
+    """
     query = Query(conn)
     query.columns = ["chr", "pos", "ref", "alt"]
     # Test normal query: children, joint to annotations, group by added
     assert (
         query.sql()
-        == "SELECT variants.id,chr,pos,ref,alt,COUNT(*) as 'children' FROM variants LEFT JOIN annotations ON annotations.variant_id = variants.id GROUP BY chr,pos,ref,alt"
+        == "SELECT variants.id,chr,pos,ref,alt,COUNT(*) as 'children' FROM variants GROUP BY chr,pos,ref,alt"
     )
 
     # Test basic query: no children, no useless annotations joint except if it is needed by cols or filter
@@ -47,7 +53,7 @@ def test_query_columns(conn):
     query.group_by = None
     assert (
         query.sql()
-        == "SELECT variants.id,chr,pos,ref,alt FROM variants LEFT JOIN annotations ON annotations.variant_id = variants.id"
+        == "SELECT variants.id,chr,pos,ref,alt FROM variants"
     )
 
 
@@ -56,6 +62,11 @@ def test_query_columns(conn):
 
 
 def test_query_filter(conn):
+    """
+    . note:: Now when no annotation column is selected, we do not make a join on this table
+        " LEFT JOIN annotations ON annotations.variant_id = variants.id"
+        is not in basic sql() query anymore
+    """
     query = Query(conn)
     query.columns = ["chr", "pos", "ref", "alt"]
     query.group_by = None
@@ -70,7 +81,7 @@ def test_query_filter(conn):
     }
 
     # todo : cannot break the lines...
-    expected = "SELECT variants.id,chr,pos,ref,alt FROM variants LEFT JOIN annotations ON annotations.variant_id = variants.id WHERE (chr = 'chr1' AND pos > 10 AND pos < 1000 AND ref IN ('A', 'T') AND ref NOT IN ('G', 'C'))"
+    expected = "SELECT variants.id,chr,pos,ref,alt FROM variants WHERE (chr = 'chr1' AND pos > 10 AND pos < 1000 AND ref IN ('A', 'T') AND ref NOT IN ('G', 'C'))"
 
     assert query.sql() == expected
     conn.execute(query.sql())
@@ -132,6 +143,33 @@ def test_query_functions(conn):
     # filter transcript in annotations => keep dependency
     assert "LEFT JOIN annotations" in sql_query
 
+
+def test_csv_export():
+    """More or less the copy of the code in ViewQueryWidget
+    """
+    # Need file with annotations
+    conn = sqlite3.connect(":memory:")
+    import_file(conn, "examples/test.vep.vcf")
+
+    query = Query(conn)
+    # Two columns: 1 in variants table, 1 in annotations table
+    # The next query should return all variants and their annotations
+    # Many annotations for each variant: so as many rows as annotations number
+    query.columns = ["chr", "transcript"]
+
+    # Duplicate the current query, but remove automatically added columns
+    # and remove group by/order by commands.
+    # Columns are kept as they are selected in the GUI
+    query = copy.copy(query)
+    query.group_by = None
+    query.order_by = None
+    # Query the database
+    ret = [tuple(row) for row in query.conn.execute(query.sql(do_not_add_default_things=True))]
+
+    annotations_count = tuple(*query.conn.execute("SELECT COUNT(*) FROM annotations"))
+    found = len(ret)
+    expected = annotations_count[0] # 71
+    assert expected == found == 71
 
 # def test_query_group_by(conn):
 #     query = Query(conn)

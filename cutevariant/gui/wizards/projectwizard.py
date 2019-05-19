@@ -13,7 +13,7 @@ from cutevariant.core.readerfactory import detect_vcf_annotation
 LOGGER = cm.logger()
 
 
-class ProjetPage(QWizardPage):
+class ProjectPage(QWizardPage):
     """Page: Creation of a new project
     We ask the reference genome, the name and the path of the future project file.
     """
@@ -26,33 +26,33 @@ class ProjetPage(QWizardPage):
             self.tr("This wizard will guide you to create a cutevariant project.")
         )
 
-        self.projet_name_edit = QLineEdit()
-        self.projet_path_edit = QLineEdit()
-        self.projet_path_edit.setText(os.getcwd())
+        self.project_name_edit = QLineEdit()
+        self.project_path_edit = QLineEdit()
+        self.project_path_edit.setText(os.getcwd())
         self.browse_button = QPushButton("Browse")
         self.reference = QComboBox()
 
         self.reference.addItem("hg19")
-        self.registerField("project_name", self.projet_name_edit, "text")
-        self.registerField("project_path", self.projet_path_edit, "text")
+        self.registerField("project_name", self.project_name_edit, "text")
+        self.registerField("project_path", self.project_path_edit, "text")
         self.registerField("reference", self.reference, "currentText")
 
         v_layout = QFormLayout()
 
         browse_layout = QHBoxLayout()
-        browse_layout.addWidget(self.projet_path_edit)
+        browse_layout.addWidget(self.project_path_edit)
         browse_layout.addWidget(self.browse_button)
         browse_layout.setContentsMargins(0, 0, 0, 0)
 
         v_layout.addRow(self.tr("Reference genom"), self.reference)
-        v_layout.addRow(self.tr("Project Name"), self.projet_name_edit)
+        v_layout.addRow(self.tr("Project Name"), self.project_name_edit)
         v_layout.addRow(self.tr("Create in"), browse_layout)
 
         self.setLayout(v_layout)
 
         self.browse_button.clicked.connect(self._browse)
-        self.projet_path_edit.textChanged.connect(self.completeChanged)
-        self.projet_name_edit.textChanged.connect(self.completeChanged)
+        self.project_path_edit.textChanged.connect(self.completeChanged)
+        self.project_name_edit.textChanged.connect(self.completeChanged)
 
     def _browse(self):
         """Open a dialog box to set the directory where the project will be saved"""
@@ -60,16 +60,16 @@ class ProjetPage(QWizardPage):
             self, self.tr("Select a path for the project")
         )
         if path:
-            self.projet_path_edit.setText(path)
+            self.project_path_edit.setText(path)
 
     def isComplete(self):
         """Conditions to unlock next button"""
         return (
             True
             if (
-                QDir(self.projet_path_edit.text()).exists()
-                and self.projet_path_edit.text()
-                and self.projet_name_edit.text()
+                QDir(self.project_path_edit.text()).exists()
+                and self.project_path_edit.text()
+                and self.project_name_edit.text()
             )
             else False
         )
@@ -333,11 +333,11 @@ class ImportPage(QWizardPage):
         return self.thread_finished
 
 
-class ProjetWizard(QWizard):
+class ProjectWizard(QWizard):
     """Main window of the project wizard
 
     3 pages are instantiated here:
-        - ProjetPage: Creation of a new project
+        - ProjectPage: Creation of a new project
         - FilePage: Open the file containing variant data
         - ImportPage: Creation of the database
     """
@@ -347,6 +347,6 @@ class ProjetWizard(QWizard):
         self.setWindowTitle(self.tr("Cutevariant - Project creation wizard"))
         self.setWindowIcon(QIcon(cm.DIR_ICONS + "app.png"))
 
-        self.addPage(ProjetPage())
+        self.addPage(ProjectPage())
         self.addPage(FilePage())
         self.addPage(ImportPage())

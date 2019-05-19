@@ -192,6 +192,20 @@ class BaseParser:
     """Base class that brings together common functions of VepParser and SnpEffParser
     """
 
+    def __init__(self):
+
+        # Receive a dict to map default field names:
+        # external to internal with descriptions
+        # { external_name: { name: internal_name, category: ..., description: ...
+        self.annotation_default_fields = dict()
+
+        # Help to remove duplicated fields in annotations
+        # If an annotation field is found in this set by the annotation parser
+        # BaseParser.handle_descriptions(), it will not be yielded and thus not
+        # used by the program.
+        self.variant_field_names = set()
+
+
     def handle_descriptions(self, raw_fields: list):
         """Construct annotation_field_name with the fields of the file, and
         yield fields (dictionnaries) with the full description of fields of the file.
@@ -220,19 +234,33 @@ class BaseParser:
         :type raw_fields: <list>
         :rtype: <generator <dict>>
         """
-        for i in raw_fields:
-            i = i.strip().lower()
+        for raw_field_name in raw_fields:
+            raw_field_name = raw_field_name.strip().lower()
 
             # Remap field name if it is in default ones
-            if i in self.annotation_default_fields:
-                _f = self.annotation_default_fields[i]
+            if raw_field_name in self.annotation_default_fields:
+                _f = self.annotation_default_fields[raw_field_name]
             else:
                 _f = {
-                    "name": i,
+                    "name": raw_field_name,
                     "description": "None",
                     "type": "str",
                     "category": "annotations",
                 }
+
+
+            if _f["name"] in self.variant_field_names:
+                # This field is already in variants fields
+                # => do not use it!
+                # Append None in place of the name of the field
+                # with the aim to not break handle_annotations() when it splits
+                # the annotation field.
+                self.annotation_field_name.append(None)
+                LOGGER.info(
+                    "handle_descriptions: '%s' field also found in variants; skipped",
+                    _f["name"]
+                )
+                continue
 
             # Append the name of the field
             self.annotation_field_name.append(_f["name"])
@@ -271,6 +299,8 @@ class BaseParser:
             annotation = {
                 field_name: transcript[idx]
                 for idx, field_name in enumerate(self.annotation_field_name)
+                # Remove duplicated fields in variants, see handle_descriptions()
+                if field_name is not None
             }
             annotations.append(annotation)
 
@@ -287,12 +317,16 @@ class VepParser(BaseParser):
     """
 
     def __init__(self):
+        super().__init__()
         # Dict of dicts
         # annotation field name as keys, descriptions (name/value) as values
         self.annotation_default_fields = VEP_ANNOTATION_DEFAULT_FIELDS
 
     def parse_fields(self, fields):
         """Generate fields description
+
+        Called by a reader when its get_fields() method is called and when
+        an annotation parser is set.
 
         This function parses special annotation field "csq"/"CSQ",
         other fields are yielded without being affected.
@@ -305,8 +339,14 @@ class VepParser(BaseParser):
         :rtype: <generator <dict>>
         """
         self.annotation_field_name = list()
+        fields = tuple(fields)
+        # Help to remove duplicated fields from annotations
+        self.variant_field_names = \
+            {field["name"] for field in fields if field["name"] != "csq"}
+
         for field in fields:
             if field["name"] == "csq":
+                # Handle description field and parse annotations in it
                 description = field["description"]
                 # Assume description looks like this :
                 # ##INFO=<ID=CSQ,Number=.,Type=String,Description="Consequence annotations from Ensembl VEP. Format: field1|field2|..."
@@ -348,12 +388,16 @@ class SnpEffParser(BaseParser):
     """
 
     def __init__(self):
+        super().__init__()
         # Dict of dicts
         # annotation field name as keys, descriptions (name/value) as values
         self.annotation_default_fields = SNPEFF_ANNOTATION_DEFAULT_FIELDS
 
     def parse_fields(self, fields):
         """Generate fields description
+
+        Called by a reader when its get_fields() method is called and when
+        an annotation parser is set.
 
         This function parses special annotation field "ann"/"ANN",
         other fields are yielded without being affected.
@@ -401,8 +445,14 @@ class SnpEffParser(BaseParser):
         :rtype: <generator <dict>>
         """
         self.annotation_field_name = list()
+        fields = tuple(fields)
+        # Help to remove duplicated fields from annotations
+        self.variant_field_names = \
+            {field["name"] for field in fields if field["name"] != "ann"}
+
         for field in fields:
             if field["name"] == "ann":
+                # Handle description field and parse annotations in it
                 description = field["description"]
                 # Assume description looks like this :
                 # INFO=<ID=ANN,Number=.,Type=String,Description="Functional annotations: 'field1 | field2 | ...' ">

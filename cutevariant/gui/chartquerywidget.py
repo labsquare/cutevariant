@@ -3,6 +3,7 @@
 import itertools as it
 from collections import Counter, defaultdict
 from copy import copy, deepcopy
+from logging import DEBUG
 
 # Qt imports
 from PySide2.QtWidgets import QVBoxLayout
@@ -57,6 +58,11 @@ class ChartQueryWidget(QueryPluginWidget):
         # *set0 << 1 << 2 << 3 << 4 << 5 << 6;
         # QBarSeries *series = new QBarSeries();
         # series->append(set0);
+
+        # print("cols", self.query.columns)
+        # print("filter", self.query.filter)
+        # print("groub_by", self.query.group_by)
+        # print("selec", self.query.selection)
 
         # Do not redo the chart on if data is not changed...
         if (
@@ -114,7 +120,7 @@ class ChartQueryWidget(QueryPluginWidget):
         ]
 
         # Avoid touching to original data since we don't do deepcopy (SQLite is not pickable)
-        query.filter = dict(query.filter)
+        query.filter = deepcopy(query.filter)
         if not query.filter:
             # no filters: new AND filter
             query.filter["AND"] = ATGC_filter
@@ -134,7 +140,12 @@ class ChartQueryWidget(QueryPluginWidget):
         # {'G': Counter({'T': 3, 'A': 1}), 'C': ...}
 
         data = defaultdict(Counter)
-        LOGGER.debug("ChartQueryWidget:on_change_query:: Custom query built:")
+
+        if LOGGER.getEffectiveLevel() == DEBUG:
+            LOGGER.debug("ChartQueryWidget:on_change_query:: Custom query built:")
+            import time
+
+            start = time.time()
 
         # After the auto-parsing of filters by query.sql(), add manually:
         # - COUNT() function to columns
@@ -144,6 +155,14 @@ class ChartQueryWidget(QueryPluginWidget):
             query.sql(do_not_add_default_things=True)
         ):
             data[ref][alt] = value
+
+        if LOGGER.getEffectiveLevel() == DEBUG:
+            end_query = time.time()
+            LOGGER.debug(
+                "ChartQueryWidget:on_change_query:: number %s, query time %s",
+                len(data),
+                end_query - start,
+            )
 
         ## Create QBarSets
         references = ("A", "T", "G", "C")

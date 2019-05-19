@@ -78,7 +78,10 @@ class Query:
         # Mapping cols => table
         # Get columns description from the given table
         tables = ("variants", "annotations")
-        self.col_table_mapping = {table_name: set(sql.get_columns(self.conn, table_name)) for table_name in tables}
+        self.col_table_mapping = {
+            table_name: set(sql.get_columns(self.conn, table_name))
+            for table_name in tables
+        }
 
     def extract_samples_from_columns_and_filter(self, filter_only=False):
         """Extract samples if columns or filter contains function.
@@ -104,22 +107,26 @@ class Query:
         """
         # Set sample names to join by searching them in columns
         if not filter_only:
-            columns_in_columns = \
-                self.get_samples_names_from_functions(self.columns, _GENOTYPE_FUNCTION_NAME)
+            columns_in_columns = self.get_samples_names_from_functions(
+                self.columns, _GENOTYPE_FUNCTION_NAME
+            )
         else:
             columns_in_columns = set()
 
         # Set sample names to join by searching them in filter
         # iter_filter(): Recursive loop over filter to extract field name only
-        columns_in_filter = \
-            self.get_samples_names_from_functions(self.iter_filter(self.filter), _GENOTYPE_FUNCTION_NAME)
+        columns_in_filter = self.get_samples_names_from_functions(
+            self.iter_filter(self.filter), _GENOTYPE_FUNCTION_NAME
+        )
 
         # Get samples required by columns and filter
-        required_samples_names = (columns_in_columns | columns_in_filter)
+        required_samples_names = columns_in_columns | columns_in_filter
 
-        self._samples_to_join = \
-            {sample["name"]: sample["id"] for sample in sql.get_samples(self.conn)
-             if sample["name"] in required_samples_names}
+        self._samples_to_join = {
+            sample["name"]: sample["id"]
+            for sample in sql.get_samples(self.conn)
+            if sample["name"] in required_samples_names
+        }
 
         LOGGER.debug("DETECT %s in %s", self._samples_to_join.keys(), self.columns)
 
@@ -137,9 +144,7 @@ class Query:
         #  A function is a tuple with 3 elements.
         #  The second element is the sample name
         # TODO: is test on length usefull?
-        functions = (
-            col for col in columns if isinstance(col, tuple) and len(col) == 3
-        )
+        functions = (col for col in columns if isinstance(col, tuple) and len(col) == 3)
 
         for function in functions:
             function_name, function_argument, field_name = function
@@ -150,16 +155,22 @@ class Query:
         return samples
 
     def detect_annotations_table_requirement(self, filter_only=False):
-        """
+        """Return True if annotations table is required after searching in
+        columns and / or filter.
 
         :key filter_only: If True, the search will be made only in 'self.filter'
         :type filter_only: <boolean>
         :rtype: <boolean>
         """
         # Get columns in filter
-        cols_in_annotations = {col for col in self.iter_filter(self.filter)} & self.col_table_mapping["annotations"]
+        cols_in_annotations = {
+            col for col in self.iter_filter(self.filter)
+        } & self.col_table_mapping["annotations"]
         if cols_in_annotations:
-            print("found annotations col in filter:", cols_in_annotations)
+            LOGGER.debug(
+                "detect_annotations_table_requirement: found col in filter: %s",
+                cols_in_annotations,
+            )
             return True
 
         if filter_only:
@@ -169,7 +180,10 @@ class Query:
         # Get columns in columns
         cols_in_annotations = set(self.columns) & self.col_table_mapping["annotations"]
         if cols_in_annotations:
-            print("found annotations col in columns:", cols_in_annotations)
+            LOGGER.debug(
+                "detect_annotations_table_requirement: found col in columns: %s",
+                cols_in_annotations,
+            )
             return True
         return False
 
@@ -230,13 +244,17 @@ class Query:
     def get_joints(self, do_not_add_default_things=False, filter_only=False):
         """Get string of joints ready to be appended to a query string
         .. seealso:: sql() or sql_count()
+        :key filter_only: If True, the search will be made only in 'self.filter'
+        :type filter_only: <boolean>
         :rtype: <str>
         """
         # On filter and columns
         # Joint on annotations is mandatory for display queries
         # We do not do joint if it is explicitly forbidden (in this case
         # a join is automatically decided if it is required by filter or columns)
-        is_col_in_annotations = self.detect_annotations_table_requirement(filter_only=filter_only)
+        is_col_in_annotations = self.detect_annotations_table_requirement(
+            filter_only=filter_only
+        )
         query = (
             ""
             if do_not_add_default_things and not is_col_in_annotations
@@ -294,7 +312,9 @@ class Query:
 
         ## Add FROM clause
         # Explicitly query all variants + ...
-        query += "FROM variants" + self.get_joints(do_not_add_default_things)
+        # do_not_add_default_things set to True to avoid groups of variants
+        # when there is no checked column in annotations.
+        query += "FROM variants" + self.get_joints(do_not_add_default_things=True)
 
         ## Add WHERE filter
         if self.filter:
@@ -347,38 +367,13 @@ class Query:
         query = "SELECT variants.id "
 
         ## Add FROM clause
-        # On filter only
-        is_col_in_annotations = self.detect_annotations_table_requirement(filter_only=True)
-        annotations_join = (
-            ""
-            if not is_col_in_annotations
-            else " LEFT JOIN annotations ON annotations.variant_id = variants.id"
+        # Search annotations need on filter only
+        # Explicitly query all variants + ...
+        # do_not_add_default_things is True to force the removing of annotations
+        # as much as possible
+        query += "FROM variants" + self.get_joints(
+            do_not_add_default_things=True, filter_only=True
         )
-
-        # => aussi utile ici car certaines requ^etes custom doivent ^etre simplifiées, d'où le do_not_add_default_things
-        # => pas trop utile de détecter les colonnes dans le select car pour l'affichage
-        # la jointure est de toutefaçon obligatoire
-
-        # Explicitly query all variants
-        query += "FROM variants" + annotations_join
-
-        if self.selection and self.selection != DEFAULT_SELECTION_NAME:
-            # Add jointure with 'selections' table
-            query += f"""
-            INNER JOIN selection_has_variant sv ON sv.variant_id = variants.id
-            INNER JOIN selections s ON s.id = sv.selection_id AND s.name = '{self.selection}'
-            """
-
-        # Add Join on sample_has_variant
-        # This is done if genotype() function has been found in filter.
-        # _samples_to_join is a dict with sample_names as keys and sample_ids as values
-        self.extract_samples_from_columns_and_filter(filter_only=True)
-        for sample_name, sample_id in self._samples_to_join.items():
-            query += f"""
-            LEFT JOIN sample_has_variant `gt_{sample_name}`
-             ON `gt_{sample_name}`.variant_id = variants.id
-             AND `gt_{sample_name}`.sample_id = {sample_id}
-            """
 
         ## Add WHERE filter
         if self.filter:
@@ -519,9 +514,8 @@ class Query:
         :return: The id of the new selection in the database. None in case of error.
         :rtype: <int> or None
         """
-        return sql.create_selection_from_sql(
-            self.conn, self.sql(), name=name, by="site"
-        )
+        # TODO: handle by key argument
+        return sql.create_selection_from_sql(self.conn, self.sql(), name=name)
 
     ##--------------------------------------------------------------------------
 
@@ -539,12 +533,16 @@ class Query:
         """
         # Trick to accelerate UI refresh on basic queries
         if (
-            not self.selection or self.selection == DEFAULT_SELECTION_NAME
-        ) and not self.filter and self.group_by == ["chr", "pos", "ref", "alt"]:
+            (not self.selection or self.selection == DEFAULT_SELECTION_NAME)
+            and not self.filter
+            and self.group_by == ["chr", "pos", "ref", "alt"]
+        ):
+            LOGGER.debug("SELECT MAX(...")
             return self.conn.execute(
                 "SELECT MAX(variants.id) as count FROM variants"
             ).fetchone()[0]
 
+        LOGGER.debug(sql_query)
         return self.conn.execute(
             f"SELECT COUNT(*) as count FROM ({sql_query})"
         ).fetchone()[0]
@@ -558,9 +556,7 @@ class Query:
             paging purposes of the interface.
         """
         LOGGER.debug("Query:variants_count:: query:")
-        count = self._cached_variants_count_query(
-            self.sql_count()
-        )
+        count = self._cached_variants_count_query(self.sql_count())
         LOGGER.debug(
             "Query:variants_count:: %s", self._cached_variants_count_query.cache_info()
         )
