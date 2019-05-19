@@ -29,14 +29,43 @@ LOGGER = logger()
 
 class QueryModel(QAbstractItemModel):
     """
-    QueryModel is the base class to display variant in the view.
-    It can load paginated data using limit and page attribute.
+    QueryModel is a Qt model class which contains variants datas from sql Query. 
+    It loads paginated data from Query and create an interface for a Qt view.
+    When a variant belong to many transcripts, duplicate variants are grouped by (chr,pos,ref,alt) 
+    and stored as a Tree structure. Variant row can then be expanded to display each transcript annotation. 
+
+    See Qt model/view programming for more information
+    https://doc.qt.io/qt-5/model-view-programming.html
+
+    Variants are stored internally as a list of variants. By default, there is only one transcript per row. 
+    When user expand the row, it will append duplicates variants as children. 
+    For example, this is a tree with 2 variants , each of them refer to many transcripts. 
+
+    self.variants = [ 
+        [(chr1,2434,A,T, transcriptA),(chr1,2434,A,T, transcriptB),(chr1,2434,A,T, transcriptC)],
+        [(chr1,9999,C,T, transcriptA),(chr1,9999,C,T, transcriptB),(chr1,9999,C,T, transcriptC),(chr1,9999,C,T, transcriptD]
+        ]
+    ]
+
+    ├── chr1,2434,A,T, transcriptA  # Cannonical transcripts
+    │   ├── chr1,2434,A,T, transcriptB
+    │   ├── chr1,2434,A,T, transcriptC
+    ├── chr1,9999,C,T, transcriptA # Cannonical transcripts
+    │   ├── chr1,9999,C,T, transcriptB
+    │   ├── chr1,9999,C,T, transcriptC
+    │   ├── chr1,9999,C,T, transcriptD
 
     Attributes:
         limit(int): Variant count to display. See SQL LIMIT
         page(int): current page to display. See SQL OFFSET
         total(int): Total variant count
         variants(list): Internal data to store variants
+
+    Example:
+        model = QueryModel()
+        view = QTreeView()
+        view.setModel(model)
+        model.setQuery(query)
 
     """
 
@@ -49,17 +78,15 @@ class QueryModel(QAbstractItemModel):
         self.variants = []
 
     def is_root(self, index: QModelIndex) -> bool:
-        """
-        Return True if the parent of index is the invisible root index
+        """Return True if the parent of index is the invisible root index
         """
         return index == QModelIndex()
 
     def rowCount(self, parent=QModelIndex()):
+        """Overrided : Return model row count
         """
-        Overrided : Return model row count
-        """
-        #  If parent is root
 
+        #  If parent is root
         if parent == QModelIndex():
             return len(self.variants)
 
@@ -120,18 +147,14 @@ class QueryModel(QAbstractItemModel):
                 if index.column() == 0:
                     # First column display children count
                     return str(self.children_count(index))
-                elif index.column() not in self.parents_indexes:
-                    # Mask columns not concerned by the group by
-                    # These columns have an arbitrary value choosen among all retrieved values
-                    # ..seealso:: load()
-                    return "..."
+
                 else:
                     # Other display variant data
                     return str(self.variants[index.row()][0][index.column()])
 
             #  Display the second level ( children )
             if index.parent().parent() == QModelIndex():
-                if index.column() == 0 or index.column() in self.parents_indexes:
+                if index.column() == 0:
                     # No children for the first columns
                     # Don't show redondant data for columns that are in the group by
                     return ""
@@ -508,16 +531,7 @@ class ViewQueryWidget(QueryPluginWidget):
         self.topbar.addWidget(spacer)
 
         # Add combobox to choose the grouping method of variants
-        self.topbar.addWidget(QLabel(self.tr("Group by method:")))
-        self.group_by_combobox = QComboBox()
-        combobox_text_data = {
-            "variant (chr, pos, ref, alt)": ("chr", "pos", "ref", "alt"),
-            "site (chr, pos)": ("chr", "pos"),
-        }
-        for text, data in combobox_text_data.items():
-            self.group_by_combobox.addItem(text, data)
-        self.topbar.addWidget(self.group_by_combobox)
-        self.group_by_combobox.currentIndexChanged.connect(self.on_group_by_changed)
+       
 
         # Construct bottom bar
         # These actions should be disabled until a query is made (see query setter)
