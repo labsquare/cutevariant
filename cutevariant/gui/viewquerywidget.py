@@ -77,30 +77,34 @@ class QueryModel(QAbstractItemModel):
         self._query = None
         self.variants = []
 
-    def is_root(self, index: QModelIndex) -> bool:
-        """Return True if the parent of index is the invisible root index
+    def level(self, index: QModelIndex) -> bool:
+        """Return level of index. 
+        
+        Returns: 
+            int: 0 if index is the invisible root , 1 if index is a variant, 2 if index is a child  
         """
-        return index == QModelIndex()
+
+        if index == QModelIndex():
+            return 0 
+
+        if index.parent() == QModelIndex():
+            return 1
+
+        if index.parent().parent() == QModelIndex():
+            return 2
+
 
     def rowCount(self, parent=QModelIndex()):
-        """Overrided : Return model row count
-        """
-
+        """Overrided : Return model row count"""
         #  If parent is root
-        if parent == QModelIndex():
+        if self.level(parent) == 0:
             return len(self.variants)
 
-        if parent.parent() == QModelIndex():
+        if self.level(parent) == 1:
             return len(self.variants[parent.row()]) - 1  # Omit first
 
-        # Get parent variant row ID and return children count
-        # if self.row_id(parent) in self.children:
-        #     return len(self.children[parent.row()])
-        # else:
-        # return 0
-
     def columnCount(self, parent=QModelIndex()):
-        """Overrided: Return column count """
+        """Overrided: Return column count  """
 
         # If no query is defined
         if not self._query:
@@ -108,29 +112,34 @@ class QueryModel(QAbstractItemModel):
 
         return len(self._query.columns) + 1  #  show children count for the first col
 
-    def index(self, row, column, parent=QModelIndex()):
-        """Overrided: Return index """
+    def index(self, row, column, parent=QModelIndex()) -> QModelIndex:
+        """Overrided: Create model index """
 
         if not self.hasIndex(row, column, parent):
             return QModelIndex()
 
-        # if parent is root
-        if parent == QModelIndex():
+        # Create index for variant as parent  
+        if self.level(parent) == 0:
+            # createIndex take None as internalId. @see self.parent()
             return self.createIndex(row, column, None)
 
-        # if parent is first level
-        if parent.parent() == QModelIndex():
+        # Create index for variant as child 
+        if self.level(parent) == 1:
+            # createIndex take parent.row() as internalId . @see self.parent()
             return self.createIndex(row, column, parent.row())
 
-    def parent(self, child):
+    def parent(self, child: QModelIndex()) -> QModelIndex:
         """Overrided: Return parent of child """
 
+        # avoid error 
         if not child.isValid():
             return QModelIndex()
 
+        # If internalId is None, child is a variant parent  
         if child.internalId() == None:
             return QModelIndex()
 
+        # Otherwise, child is a variant child at position row=internalid in the parent 
         else:
             return self.index(child.internalId(), 0, QModelIndex())
 
@@ -399,6 +408,27 @@ class QueryDelegate(QStyledItemDelegate):
 
     """
 
+
+    def background_color_index(self, index):
+        """ return background color of index """ 
+
+        base_brush = qApp.palette("QTreeView").brush(QPalette.Base)
+        alternate_brush = qApp.palette("QTreeView").brush(QPalette.AlternateBase)
+        
+
+        if index.parent() == QModelIndex():
+            if index.row() % 2 :
+                return base_brush 
+            else:
+                return alternate_brush 
+
+        if index.parent().parent() == QModelIndex():
+            return self.background_color_index(index.parent())
+
+        return base_brush
+
+
+
     def paint(self, painter, option, index):
         """
         overriden
@@ -417,15 +447,20 @@ class QueryDelegate(QStyledItemDelegate):
         # get select sate
         select = option.state & QStyle.State_Selected
 
+
         #  draw selection if it is
         if not select:
-            bg_brush = option.backgroundBrush
+            bg_brush = self.background_color_index(index)
         else:
             bg_brush = palette.brush(QPalette.Highlight)
 
+        painter.save()
         painter.setBrush(bg_brush)
         painter.setPen(Qt.NoPen)
         painter.drawRect(option.rect)
+        painter.restore()
+
+        #painter.setPen(pen)
 
         alignement = Qt.AlignLeft | Qt.AlignVCenter
 
@@ -483,6 +518,33 @@ class QueryDelegate(QStyledItemDelegate):
         return QSize(0, 30)
 
 
+class QueryTreeView(QTreeView):
+    def __init__(self, parent = None):
+        super().__init__() 
+
+
+    def drawBranches(self, painter, rect, index):
+        """ overrided : Draw Branch decorator with background 
+        
+        Backround is not alternative for children but inherits from parent 
+
+        """
+        painter.save()
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(self.itemDelegate().background_color_index(index))
+        painter.drawRect(rect)
+
+        if index.parent() != QModelIndex():
+            # draw child indicator
+            painter.drawPixmap(rect.center(), FIcon(0XF12F).pixmap(10,10))
+
+        painter.restore()
+
+        super().drawBranches(painter, rect, index)
+
+
+
+
 class ViewQueryWidget(QueryPluginWidget):
     """Contains the view of query with several controller"""
 
@@ -495,12 +557,12 @@ class ViewQueryWidget(QueryPluginWidget):
         self.setWindowTitle(self.tr("Variants"))
         self.topbar = QToolBar()
         self.bottombar = QToolBar()
-        self.view = QTreeView()
+        self.view = QueryTreeView()
 
         # self.view.setFrameStyle(QFrame.NoFrame)
         self.view.setModel(self.model)
         self.view.setItemDelegate(self.delegate)
-        self.view.setAlternatingRowColors(True)
+        #self.view.setAlternatingRowColors(True)
         self.view.setSortingEnabled(True)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setSelectionMode(QAbstractItemView.ContiguousSelection)

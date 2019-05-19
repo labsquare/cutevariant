@@ -117,6 +117,8 @@ class MainWindow(QMainWindow):
         self.editor.message.connect(self.handle_plugin_message)
         view_query_widget.message.connect(self.handle_plugin_message)
 
+        self.open("examples/test2.db")
+
     def add_variant_plugin(self, plugin: VariantPluginWidget):
         """Add info variant plugin to QDockWidget
 
