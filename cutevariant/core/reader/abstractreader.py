@@ -152,28 +152,30 @@ def check_variant_schema(variant: dict):
         print("\t - git repo in editable mode: pip -e . [dev]")
         raise e
 
-    checker = Schema({
-           "chr": And(Use(str.lower),str),
-           "pos": int,
-           "ref":And(Use(str.upper),Regex(r'^[ACGTN]+')),
-           "alt":And(Use(str.upper),Regex(r'^[ACGTN]+')),
-            Optional(str): Or(int,str,bool, float, None),
-
-            Optional("annotations"): [{
-            "gene":str,
-            "transcript":str,
-            Optional(str): Or(int,str,bool,float)
-            }],
-
-            Optional("samples"): [{
-            "name":str, "gt":And(int, lambda x: x in [-1,0,1,2])
-            }]
-          })
+    checker = Schema(
+        {
+            "chr": And(Use(str.lower), str),
+            "pos": int,
+            "ref": And(Use(str.upper), Regex(r"^[ACGTN]+")),
+            "alt": And(Use(str.upper), Regex(r"^[ACGTN]+")),
+            Optional(str): Or(int, str, bool, float, None),
+            Optional("annotations"): [
+                {
+                    "gene": str,
+                    "transcript": str,
+                    Optional(str): Or(int, str, bool, float),
+                }
+            ],
+            Optional("samples"): [
+                {"name": str, "gt": And(int, lambda x: x in [-1, 0, 1, 2])}
+            ],
+        }
+    )
 
     checker.validate(variant)
 
 
-def check_field_schema(field:dict):
+def check_field_schema(field: dict):
     """Test if get_field returns well formated data
 
     This method is for testing purpose. It raises an exception if data is corrupted
@@ -188,12 +190,14 @@ def check_field_schema(field:dict):
         print("\t - git repo in editable mode: pip -e . [dev]")
         raise e
 
-    checker = Schema({
-           "name": And(str, Use(str.lower)),
-           "type": lambda x: x in ["str","int","bool","float"],
-           "category": lambda x: x in ["variants","annotations","samples"],
-           "description": str,
-            Optional("constraint", default="NULL"): str
-          })
+    checker = Schema(
+        {
+            "name": And(str, Use(str.lower)),
+            "type": lambda x: x in ["str", "int", "bool", "float"],
+            "category": lambda x: x in ["variants", "annotations", "samples"],
+            "description": str,
+            Optional("constraint", default="NULL"): str,
+        }
+    )
 
     checker.validate(field)

@@ -547,7 +547,6 @@ class Query:
             f"SELECT COUNT(*) as count FROM ({sql_query})"
         ).fetchone()[0]
 
-
     def variants_count(self) -> int:
         """Return variant count from the current query
 

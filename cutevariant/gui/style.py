@@ -20,14 +20,13 @@ WARNING_BACKGROUND_COLOR = "#FFCCBA"
 WARNING_TEXT_COLOR = "#D73705"
 
 
-# Sequence ontology colors 
+# Sequence ontology colors
 SO_COLOR = {
-    
-    "stop" : "#808080",
-    "utr":"#911EB4",
-    "splice":"#F58231",
-    "intron":"#0082C8",
-    "intergenic":"#3CB44B",
-    "frameshift":"#E6194B",
-    "missense":"#F032E6"
+    "stop": "#808080",
+    "utr": "#911EB4",
+    "splice": "#F58231",
+    "intron": "#0082C8",
+    "intergenic": "#3CB44B",
+    "frameshift": "#E6194B",
+    "missense": "#F032E6",
 }

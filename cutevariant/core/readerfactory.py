@@ -37,7 +37,7 @@ def detect_vcf_annotation(filename):
     """
     with open(filename, "r") as file:
         std_reader = vcf.VCFReader(file)
-        #print(std_reader.metadata)
+        # print(std_reader.metadata)
         if "VEP" in std_reader.metadata:
             if "CSQ" in std_reader.infos:
                 return "vep"
@@ -63,8 +63,11 @@ def create_reader(filename):
 
     path = pathlib.Path(filename)
 
-    LOGGER.debug("create_reader: PATH suffix %s, is_gz_file: %s",
-                 path.suffixes, is_gz_file(filename))
+    LOGGER.debug(
+        "create_reader: PATH suffix %s, is_gz_file: %s",
+        path.suffixes,
+        is_gz_file(filename),
+    )
 
     if ".vcf" in path.suffixes and ".gz" in path.suffixes:
         # TODO: use is_gz_file() ?
@@ -79,7 +82,7 @@ def create_reader(filename):
     if ".vcf" in path.suffixes:
         annotation_detected = detect_vcf_annotation(filename)
         device = open(filename, "r")
-        reader = VcfReader(device,annotation_detected)
+        reader = VcfReader(device, annotation_detected)
         reader.file_size = os.path.getsize(filename)
         yield reader
         device.close()
@@ -94,6 +97,7 @@ def create_reader(filename):
         return
 
     raise Exception("create_reader:: Could not choose parser for this file.")
+
 
 # class ReaderFactory(object):
 #     """

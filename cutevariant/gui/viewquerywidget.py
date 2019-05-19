@@ -88,14 +88,13 @@ class QueryModel(QAbstractItemModel):
         """
 
         if index == QModelIndex():
-            return 0 
+            return 0
 
         if index.parent() == QModelIndex():
             return 1
 
         if index.parent().parent() == QModelIndex():
             return 2
-
 
     def rowCount(self, parent=QModelIndex()):
         """Overrided : Return children count of index 
@@ -117,9 +116,9 @@ class QueryModel(QAbstractItemModel):
         if not self._query:
             return 0
 
-        # return query columns + child count columns
-        # children count - chr - pos ..... 
-        return len(self._query.columns) + 1  
+        #  return query columns + child count columns
+        #  children count - chr - pos .....
+        return len(self._query.columns) + 1
 
     def index(self, row: int, column: int, parent=QModelIndex()) -> QModelIndex:
         """Overrided: Create a new model index from row, column and parent  
@@ -131,16 +130,16 @@ class QueryModel(QAbstractItemModel):
 
         """
 
-        # avoid error 
+        # avoid error
         if not self.hasIndex(row, column, parent):
             return QModelIndex()
 
-        # Create index for variant as parent  
+        # Create index for variant as parent
         if self.level(parent) == 0:
             # createIndex take None as internalId. @see self.parent()
             return self.createIndex(row, column, None)
 
-        # Create index for variant as child 
+        # Create index for variant as child
         if self.level(parent) == 1:
             # createIndex take parent.row() as internalId . @see self.parent()
             return self.createIndex(row, column, parent.row())
@@ -148,15 +147,15 @@ class QueryModel(QAbstractItemModel):
     def parent(self, index: QModelIndex()) -> QModelIndex:
         """Overrided: Return the parent of index """
 
-        # avoid error 
+        #  avoid error
         if not index.isValid():
             return QModelIndex()
 
-        # If internalId is None, index is a variant parent  
+        #  If internalId is None, index is a variant parent
         if index.internalId() == None:
             return QModelIndex()
 
-        # Otherwise, index is a variant child at position row=internalid in the parent 
+        # Otherwise, index is a variant child at position row=internalid in the parent
         else:
             return self.index(index.internalId(), 0, QModelIndex())
 
@@ -173,23 +172,23 @@ class QueryModel(QAbstractItemModel):
             chromosome_value = model.data(index)
         """
 
-        # Avoid error 
+        # Avoid error
         if not index.isValid():
             return None
 
-        # ---- Display Role ----
+        #  ---- Display Role ----
         if role == Qt.DisplayRole:
-            # Return data for the first level 
-            if self.level(index) == 1 :
-                # First column correspond to children count 
+            # Return data for the first level
+            if self.level(index) == 1:
+                # First column correspond to children count
                 if index.column() == 0:
                     return str(self.children_count(index))
                 # Other data come from internal self.variants list
                 else:
                     return str(self.variant(index)[index.column()])
-                    #return str(self.variants[index.row()][0][index.column()])
+                    # return str(self.variants[index.row()][0][index.column()])
 
-            # Return data for the second level 
+            # Return data for the second level
             if self.level(index) == 2:
                 if index.column() == 0:
                     # No children for the first columns
@@ -235,7 +234,7 @@ class QueryModel(QAbstractItemModel):
         if parent == QModelIndex():
             return True
 
-        if self.level(parent) == 1 :
+        if self.level(parent) == 1:
             children_count = self.children_count(parent)
             return children_count >= 1
 
@@ -252,7 +251,7 @@ class QueryModel(QAbstractItemModel):
         """Overrided: Fetch children variant 
         """
 
-        # avoid error 
+        # avoid error
         if parent == QModelIndex():
             return
 
@@ -268,13 +267,12 @@ class QueryModel(QAbstractItemModel):
         {joints}
         WHERE annotations.variant_id = {variant_id}"""
         LOGGER.debug(
-            "QueryModel:fetchMore:: Extra children cols sub query %s",
-            sub_query
+            "QueryModel:fetchMore:: Extra children cols sub query %s", sub_query
         )
 
         records = list(self._query.conn.cursor().execute(sub_query).fetchall())
 
-        # remove last item because it's the same as parent 
+        # remove last item because it's the same as parent
         records.pop()
 
         # Insert children
@@ -326,11 +324,11 @@ class QueryModel(QAbstractItemModel):
         self.endResetModel()
 
     def hasPage(self, page: int) -> bool:
-        """ Return True if <page> exists otherwise return False """ 
+        """ Return True if <page> exists otherwise return False """
         return page >= 0 and page * self.limit < self.total
 
     def setPage(self, page: int):
-        """ set the page of the model """ 
+        """ set the page of the model """
         if self.hasPage(page):
             self.page = page
             self.load()
@@ -350,7 +348,7 @@ class QueryModel(QAbstractItemModel):
         self.setPage(0)
 
     def lastPage(self):
-        """ Set model to the last page """ 
+        """ Set model to the last page """
         self.setPage(int(self.total / self.limit))
 
     def sort(self, column: int, order):
@@ -384,7 +382,6 @@ class QueryModel(QAbstractItemModel):
 
         return (first_id, last_id, self.total)
 
-
     def variant(self, index: QModelIndex):
         """ Return variant data according index 
         
@@ -392,13 +389,15 @@ class QueryModel(QAbstractItemModel):
             variant = model.variant(index)
             print(variant) # ["chr","242","A","T",.....]
 
-        """ 
+        """
 
-        if self.level(index) == 1 :
+        if self.level(index) == 1:
             return self.variants[index.row()][0]
 
         if self.level(index) == 2:
-            return self.variants[index.parent().row()][index.row()+1] # + 1 because the first element is the parent 
+            return self.variants[index.parent().row()][
+                index.row() + 1
+            ]  #  + 1 because the first element is the parent
 
 
 class QueryDelegate(QStyledItemDelegate):
@@ -410,26 +409,22 @@ class QueryDelegate(QStyledItemDelegate):
 
     """
 
-
     def background_color_index(self, index):
-        """ return background color of index """ 
+        """ return background color of index """
 
         base_brush = qApp.palette("QTreeView").brush(QPalette.Base)
         alternate_brush = qApp.palette("QTreeView").brush(QPalette.AlternateBase)
-        
 
         if index.parent() == QModelIndex():
-            if index.row() % 2 :
-                return base_brush 
+            if index.row() % 2:
+                return base_brush
             else:
-                return alternate_brush 
+                return alternate_brush
 
         if index.parent().parent() == QModelIndex():
             return self.background_color_index(index.parent())
 
         return base_brush
-
-
 
     def paint(self, painter, option, index):
         """
@@ -449,7 +444,6 @@ class QueryDelegate(QStyledItemDelegate):
         # get select sate
         select = option.state & QStyle.State_Selected
 
-
         #  draw selection if it is
         if not select:
             bg_brush = self.background_color_index(index)
@@ -462,7 +456,7 @@ class QueryDelegate(QStyledItemDelegate):
         painter.drawRect(option.rect)
         painter.restore()
 
-        #painter.setPen(pen)
+        # painter.setPen(pen)
 
         alignement = Qt.AlignLeft | Qt.AlignVCenter
 
@@ -509,39 +503,36 @@ class QueryDelegate(QStyledItemDelegate):
 
         if "consequence" in colname:
             painter.save()
-            painter.setClipRect(option.rect,Qt.IntersectClip)
+            painter.setClipRect(option.rect, Qt.IntersectClip)
             painter.setRenderHint(QPainter.Antialiasing)
             soTerms = value.split("&")
             rect = QRect()
             font = painter.font()
             font.setPixelSize(10)
-            painter.setFont(font);
+            painter.setFont(font)
             metrics = QFontMetrics(painter.font())
             rect.setX(option.rect.x())
             rect.setY(option.rect.center().y() - 5)
-            
-            # Set background color according so terms 
-            # Can be improve ... Just a copy past from c++ code 
+
+            #  Set background color according so terms
+            #  Can be improve ... Just a copy past from c++ code
             bg = "#6D7981"
             for so in soTerms:
                 for i in style.SO_COLOR.keys():
                     if i in so:
                         bg = style.SO_COLOR[i]
 
-                painter.setPen(Qt.white);
+                painter.setPen(Qt.white)
                 painter.setBrush(QBrush(QColor(bg)))
-                rect.setWidth(metrics.width(so) + 8);
-                rect.setHeight(metrics.height() + 4);
-                painter.drawRoundedRect(rect,3,3);
-                painter.drawText(rect, Qt.AlignCenter, so);
+                rect.setWidth(metrics.width(so) + 8)
+                rect.setHeight(metrics.height() + 4)
+                painter.drawRoundedRect(rect, 3, 3)
+                painter.drawText(rect, Qt.AlignCenter, so)
 
-                rect.translate(rect.width()+4,0);
-        
+                rect.translate(rect.width() + 4, 0)
+
             painter.restore()
             return
-
-
-
 
         painter.setPen(
             QPen(palette.color(QPalette.HighlightedText if select else QPalette.Text))
@@ -557,9 +548,8 @@ class QueryDelegate(QStyledItemDelegate):
 
 
 class QueryTreeView(QTreeView):
-    def __init__(self, parent = None):
-        super().__init__() 
-
+    def __init__(self, parent=None):
+        super().__init__()
 
     def drawBranches(self, painter, rect, index):
         """ overrided : Draw Branch decorator with background 
@@ -573,14 +563,12 @@ class QueryTreeView(QTreeView):
         painter.drawRect(rect)
 
         if index.parent() != QModelIndex():
-            # draw child indicator
-            painter.drawPixmap(rect.center(), FIcon(0XF12F).pixmap(10,10))
+            #  draw child indicator
+            painter.drawPixmap(rect.center(), FIcon(0xF12F).pixmap(10, 10))
 
         painter.restore()
 
         super().drawBranches(painter, rect, index)
-
-
 
 
 class ViewQueryWidget(QueryPluginWidget):
@@ -600,7 +588,7 @@ class ViewQueryWidget(QueryPluginWidget):
         # self.view.setFrameStyle(QFrame.NoFrame)
         self.view.setModel(self.model)
         self.view.setItemDelegate(self.delegate)
-        #self.view.setAlternatingRowColors(True)
+        # self.view.setAlternatingRowColors(True)
         self.view.setSortingEnabled(True)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setSelectionMode(QAbstractItemView.ContiguousSelection)
@@ -631,7 +619,6 @@ class ViewQueryWidget(QueryPluginWidget):
         self.topbar.addWidget(spacer)
 
         # Add combobox to choose the grouping method of variants
-       
 
         # Construct bottom bar
         # These actions should be disabled until a query is made (see query setter)

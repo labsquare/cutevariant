@@ -10,6 +10,7 @@ from cutevariant import commons as cm
 
 LOGGER = cm.logger()
 
+
 class Node(object):
     def __init__(self, node_id, parent=None):
         self.parent = parent
@@ -173,7 +174,7 @@ class HpoQueryWidget(QueryPluginWidget):
 
         self.setWindowTitle("HPO")
 
-        conn =  sqlite3.connect("/home/schutz/Dev/hpo2sqlite/hpo.db")
+        conn = sqlite3.connect("/home/schutz/Dev/hpo2sqlite/hpo.db")
         self.view = QTreeView()
         self.model = HpoModel(conn)
         self.model.setRoot(Node(1))
@@ -184,7 +185,6 @@ class HpoQueryWidget(QueryPluginWidget):
         v_layout.setContentsMargins(0, 0, 0, 0)
 
         self.setLayout(v_layout)
-
 
     def on_change_query(self):
         pass

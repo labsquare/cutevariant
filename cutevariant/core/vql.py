@@ -6,6 +6,7 @@ See test_vql.py for usage and features.
 import textx
 from pkg_resources import resource_string
 
+
 def model_class(name: str, bases: tuple, attrs: dict) -> type:
     """Metaclass to automatically build the __init__ to get the properties,
     and register the class for metamodel
@@ -16,17 +17,16 @@ def model_class(name: str, bases: tuple, attrs: dict) -> type:
             for field, value in kwargs.items():
                 setattr(self, field, value)
 
-
         attrs["__init__"] = __init__
     cls = type(name, bases, attrs)
     model_class.classes.append(cls)
     return cls
 
+
 model_class.classes = []
 
 
 class VQLSyntaxError(ValueError):
-
     def __init__(self, message, col=None, *args, **kwargs):
         super().__init__(message, col, *args, **kwargs)
         self.message = message
@@ -67,26 +67,28 @@ def error_message_from_err(
 
 # ============ Different class to map with VQL model
 
+
 class FilterTerm(metaclass=model_class):
     @property
     def value(self):
-        field = self.field.value if hasattr(self.field,"value") else self.field
-        val = self.val.value  if hasattr(self.val,"value")  else self.val
+        field = self.field.value if hasattr(self.field, "value") else self.field
+        val = self.val.value if hasattr(self.val, "value") else self.val
 
         # escape if quoted
         if isinstance(val, str):
             val = f"'{val}'"
 
-        return {"field":field, "operator": self.op, "value": val}
+        return {"field": field, "operator": self.op, "value": val}
+
 
 class FilterExpression(metaclass=model_class):
     @property
     def value(self):
         out = []
-        key = "AND" # By default
+        key = "AND"  #  By default
         for i in self.op:
             if isinstance(i, str):
-                if i in ("AND","OR"):
+                if i in ("AND", "OR"):
                     key = i
                 else:
                     out.append(i)
@@ -100,10 +102,12 @@ class FilterOperand(metaclass=model_class):
     def value(self):
         return self.op.value
 
+
 class Function(metaclass=model_class):
     @property
     def value(self):
-        return (self.func,self.arg, "gt")
+        return (self.func, self.arg, "gt")
+
 
 class Tuple(metaclass=model_class):
     @property
@@ -111,14 +115,15 @@ class Tuple(metaclass=model_class):
         return tuple(self.items)
 
 
-
 class SelectCmd(metaclass=model_class):
     @property
     def value(self):
         output = {
-        "cmd": "select_cmd",
-        "columns": [col.value if hasattr(col,"value") else col for col in self.columns],
-        "source": self.source,
+            "cmd": "select_cmd",
+            "columns": [
+                col.value if hasattr(col, "value") else col for col in self.columns
+            ],
+            "source": self.source,
         }
 
         if self.filter:
@@ -131,10 +136,11 @@ class CreateCmd(metaclass=model_class):
     @property
     def value(self):
         return {
-        "cmd": "create_cmd",
-        "source": self.source,
-        "fitler": self.filter.value if self.filter else None
+            "cmd": "create_cmd",
+            "source": self.source,
+            "fitler": self.filter.value if self.filter else None,
         }
+
 
 # class SetCmd(metaclass=model_class):
 #     @property
@@ -147,10 +153,10 @@ class CreateCmd(metaclass=model_class):
 
 
 METAMODEL = textx.metamodel_from_str(
-     resource_string(__name__, "vql.tx").decode(),   # grammar extraction from vql.tx
+    resource_string(__name__, "vql.tx").decode(),  # grammar extraction from vql.tx
     classes=model_class.classes,
     debug=False,
-    ignore_case=True
+    ignore_case=True,
 )
 
 

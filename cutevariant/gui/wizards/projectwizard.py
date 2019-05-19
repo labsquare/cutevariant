@@ -131,7 +131,7 @@ class FilePage(QWizardPage):
                 # TODO: detect annotations on other tyes of files...
                 annotation_type = detect_vcf_annotation(filepath)
                 if annotation_type:
-                    text =  self.tr("<b>%s annotations detected!</b>") % annotation_type
+                    text = self.tr("<b>%s annotations detected!</b>") % annotation_type
                 else:
                     text = self.tr("<b>No annotation data has been detected!</b>")
 

@@ -130,7 +130,9 @@ class VcfReader(AbstractReader):
                     for sample in record.samples:
                         sample_data = {}
                         sample_data["name"] = sample.sample
-                        sample_data["gt"] = -1 if sample.gt_type == None else sample.gt_type
+                        sample_data["gt"] = (
+                            -1 if sample.gt_type == None else sample.gt_type
+                        )
                         variant["samples"].append(sample_data)
 
                 yield variant
@@ -216,8 +218,8 @@ class VcfReader(AbstractReader):
             #     yield from self.parser.parse_fields(info.desc)
             # else:
 
-            # Fix #75 : Avoid dot caracter in fields ... 
-            key = key.replace(".","_")
+            # Fix #75 : Avoid dot caracter in fields ...
+            key = key.replace(".", "_")
 
             yield {
                 "name": key.lower(),

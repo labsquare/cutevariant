@@ -7,31 +7,28 @@ from .plugin import QueryPluginWidget
 from cutevariant.core import Query
 from cutevariant.gui.ficon import FIcon
 
+
 class FilterType(Enum):
     LOGIC = 1
     CONDITION = 2
 
 
-
-
 class LogicItem(QStandardItem):
 
-    _LOGIC_ICONS = {"AND" : 0xf8e0, "OR": 0xf8e4}
-    def __init__(self, logic_type = "AND"):
-        '''
+    _LOGIC_ICONS = {"AND": 0xF8E0, "OR": 0xF8E4}
+
+    def __init__(self, logic_type="AND"):
+        """
         Create a logic Item : OR / AND  
-        '''
+        """
         super().__init__()
         self.logic_type = logic_type
         self.setEditable(False)
         self.set(logic_type)
-     
 
     def set(self, logic_type):
         self.setIcon(FIcon(LogicItem._LOGIC_ICONS[self.logic_type]))
         self.setText(logic_type)
-
-
 
 
 class FieldItem(QStandardItem):
@@ -40,14 +37,11 @@ class FieldItem(QStandardItem):
         self.setEditable(False)
         self.set(name, operator, value)
 
-
     def set(self, name, operator, value):
-        self.name = name 
+        self.name = name
         self.operator = operator
         self.value = value
-        self.setText(f'{self.name}  {self.operator}  {self.value}')  
-
-
+        self.setText(f"{self.name}  {self.operator}  {self.value}")
 
 
 class FilterQueryModel(QStandardItemModel):
@@ -65,14 +59,13 @@ class FilterQueryModel(QStandardItemModel):
     def query(self, query: Query):
         self._query = query
 
-
     def load(self):
         self.clear()
         if self._query.filter:
-            self.appendRow(self.toItem(self._query.filter))   
+            self.appendRow(self.toItem(self._query.filter))
 
     def toItem(self, data: dict) -> QStandardItem:
-        ''' recursive function to load item in tree from data '''
+        """ recursive function to load item in tree from data """
         if len(data) == 1:  #  logic item
             operator = list(data.keys())[0]
             item = LogicItem(operator)
@@ -83,21 +76,15 @@ class FilterQueryModel(QStandardItemModel):
             return item
 
     def fromItem(self, item: QStandardItem) -> dict:
-        ''' recursive fonction to get items from tree '''
+        """ recursive fonction to get items from tree """
         if isinstance(item, LogicItem):
             # Return dict with operator as key and item as value
-            operator_data = \
-                [self.fromItem(item.child(i)) for i in range(item.rowCount())]
-            return {
-                item.logic_type: operator_data
-            }
+            operator_data = [
+                self.fromItem(item.child(i)) for i in range(item.rowCount())
+            ]
+            return {item.logic_type: operator_data}
         else:
-            return {
-                "field": item.name,
-                "operator": item.operator,
-                "value": item.value,
-            }
-
+            return {"field": item.name, "operator": item.operator, "value": item.value}
 
 
 class FilterEditDialog(QDialog):
@@ -152,12 +139,11 @@ class FilterQueryWidget(QueryPluginWidget):
 
         self.setLayout(layout)
 
-        #self.model.itemChanged.connect(self.changed)
+        # self.model.itemChanged.connect(self.changed)
         self.view.doubleClicked.connect(self.edit)
 
-
     def on_init_query(self):
-        """ Overrided """ 
+        """ Overrided """
         self.model.query = self.query
 
     def on_change_query(self):
