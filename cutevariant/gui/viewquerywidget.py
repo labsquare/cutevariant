@@ -79,9 +79,12 @@ class QueryModel(QAbstractItemModel):
 
     def level(self, index: QModelIndex) -> bool:
         """Return level of index. 
-        
+
+        Args:
+            index (QModelIndex): The model index
+
         Returns: 
-            int: 0 if index is the invisible root , 1 if index is a variant, 2 if index is a child  
+            int: 0 if index is the invisible root , 1 if index is a variant parent, 2 if index is a variant child  
         """
 
         if index == QModelIndex():
@@ -95,7 +98,8 @@ class QueryModel(QAbstractItemModel):
 
 
     def rowCount(self, parent=QModelIndex()):
-        """Overrided : Return model row count"""
+        """Overrided : Return children count of index 
+        """
         #  If parent is root
         if self.level(parent) == 0:
             return len(self.variants)
@@ -104,17 +108,30 @@ class QueryModel(QAbstractItemModel):
             return len(self.variants[parent.row()]) - 1  # Omit first
 
     def columnCount(self, parent=QModelIndex()):
-        """Overrided: Return column count  """
+        """Overrided: Return column count of parent . 
 
-        # If no query is defined
+        Parent is not used here. 
+        """
+
+        # If no query is defined, return nothing
         if not self._query:
             return 0
 
-        return len(self._query.columns) + 1  #  show children count for the first col
+        # return query columns + child count columns
+        # children count - chr - pos ..... 
+        return len(self._query.columns) + 1  
 
-    def index(self, row, column, parent=QModelIndex()) -> QModelIndex:
-        """Overrided: Create model index """
+    def index(self, row: int, column: int, parent=QModelIndex()) -> QModelIndex:
+        """Overrided: Create a new model index from row, column and parent  
+        
+        Args:
+            row (int): row number
+            column (int): column number
+            parent (QModelIndex): parent index
 
+        """
+
+        # avoid error 
         if not self.hasIndex(row, column, parent):
             return QModelIndex()
 
@@ -128,64 +145,74 @@ class QueryModel(QAbstractItemModel):
             # createIndex take parent.row() as internalId . @see self.parent()
             return self.createIndex(row, column, parent.row())
 
-    def parent(self, child: QModelIndex()) -> QModelIndex:
-        """Overrided: Return parent of child """
+    def parent(self, index: QModelIndex()) -> QModelIndex:
+        """Overrided: Return the parent of index """
 
         # avoid error 
-        if not child.isValid():
+        if not index.isValid():
             return QModelIndex()
 
-        # If internalId is None, child is a variant parent  
-        if child.internalId() == None:
+        # If internalId is None, index is a variant parent  
+        if index.internalId() == None:
             return QModelIndex()
 
-        # Otherwise, child is a variant child at position row=internalid in the parent 
+        # Otherwise, index is a variant child at position row=internalid in the parent 
         else:
-            return self.index(child.internalId(), 0, QModelIndex())
+            return self.index(index.internalId(), 0, QModelIndex())
 
-    def data(self, index, role=Qt.DisplayRole):
-        """ Overrided: return value of index according role  """
+    def data(self, index: QModelIndex(), role=Qt.DisplayRole):
+        """ Overrided: return index data according role.
+        This method is called by the Qt view to get data to display according Qt role. 
+        
+        Params:
+            index (QModelIndex): index from where your want to get data 
+            role (Qt.ItemDataRole): https://doc.qt.io/qt-5/qt.html#ItemDataRole-enum
 
+        Examples:
+            index = model.index(row=10, column = 1)
+            chromosome_value = model.data(index)
+        """
+
+        # Avoid error 
         if not index.isValid():
             return None
 
-        #  ---- DISPLAY ROLE ----
+        # ---- Display Role ----
         if role == Qt.DisplayRole:
-            #  Display the first level
-            if index.parent() == QModelIndex():
+            # Return data for the first level 
+            if self.level(index) == 1 :
+                # First column correspond to children count 
                 if index.column() == 0:
-                    # First column display children count
                     return str(self.children_count(index))
-
+                # Other data come from internal self.variants list
                 else:
-                    # Other display variant data
-                    return str(self.variants[index.row()][0][index.column()])
+                    return str(self.variant(index)[index.column()])
+                    #return str(self.variants[index.row()][0][index.column()])
 
-            #  Display the second level ( children )
-            if index.parent().parent() == QModelIndex():
+            # Return data for the second level 
+            if self.level(index) == 2:
                 if index.column() == 0:
                     # No children for the first columns
-                    # Don't show redondant data for columns that are in the group by
                     return ""
                 else:
                     #  Display children data
-                    return str(
-                        self.variants[index.parent().row()][index.row()][index.column()]
-                    )
-
-        #  ----- ICON ROLE ---
-        if role == Qt.DecorationRole:
-            if (
-                index.parent() == QModelIndex()
-                and index.column() == 0
-                and self.hasChildren(index)
-            ):
-                return self._draw_children_count_icon(self.variants[index.row()][0][-1])
-
+                    return str(self.variant(index)[index.column()])
         return None
 
     def headerData(self, section, orientation, role=Qt.DisplayRole):
-        """Overrided: Return column name as header data """
+        """Overrided: Return column name 
+        This method is called by the Qt view to display vertical or horizontal header data.
+
+        Params:
+            section (int): row or column number depending on orientation
+            orientation (Qt.Orientation): Qt.Vertical or Qt.Horizontal
+            role (Qt.ItemDataRole): https://doc.qt.io/qt-5/qt.html#ItemDataRole-enum
+
+        Examples:
+            # return 4th column name 
+            column_name = model.headerData(4, Qt.Horizontal)
+
+         """
 
         #  Display columns headers
         if orientation == Qt.Horizontal:
@@ -199,19 +226,18 @@ class QueryModel(QAbstractItemModel):
                         return f"{fct}({arg}).{field}"
                     else:
                         return self._query.columns[section - 1]
-
         return None
 
     def hasChildren(self, parent: QModelIndex) -> bool:
-        # return False
-        """Overrided: Return True if parent has children """
+        """Overrided: Return True if parent index has children """
+
         # if invisible root node, always return True
         if parent == QModelIndex():
             return True
 
-        if parent.parent() == QModelIndex():
+        if self.level(parent) == 1 :
             children_count = self.children_count(parent)
-            return children_count > 1
+            return children_count >= 1
 
         return False
 
@@ -219,16 +245,14 @@ class QueryModel(QAbstractItemModel):
         #     return self._children_count(parent) > 1
 
     def canFetchMore(self, parent: QModelIndex) -> bool:
-        """ Overrided """
+        """ Overrided : Return True if children fetching is required """
         return self.hasChildren(parent)
 
     def fetchMore(self, parent: QModelIndex):
+        """Overrided: Fetch children variant 
         """
-        Overrided
 
-        Fetch more annotation when row is expand
-
-        """
+        # avoid error 
         if parent == QModelIndex():
             return
 
@@ -250,6 +274,9 @@ class QueryModel(QAbstractItemModel):
 
         records = list(self._query.conn.cursor().execute(sub_query).fetchall())
 
+        # remove last item because it's the same as parent 
+        records.pop()
+
         # Insert children
         self.beginInsertRows(parent, 0, len(records))
 
@@ -261,13 +288,13 @@ class QueryModel(QAbstractItemModel):
 
         self.endInsertRows()
 
-    def children_count(self, index: QModelIndex):
+    def children_count(self, index: QModelIndex) -> int:
         """Return children count from variant
 
         This one is the last value of sql record output and correspond to the COUNT(annotation)
         of the GROUP BY
         """
-        return self.variants[index.row()][0][-1]
+        return self.variants[index.row()][0][-1] - 1
 
     @property
     def query(self):
@@ -289,17 +316,6 @@ class QueryModel(QAbstractItemModel):
         # Set total of variants for pagination
         self.total = self.query.variants_count()
 
-        # Get columns not concerned by the group by in order to mask them
-        # These columns have an arbitrary value choosen among all retrieved values
-        # ..seealso:: Masking is made in data()
-        # parents authorized columns are in group_by command and in variants table only
-        parents_columns = set(self._query.group_by) | self._query.col_table_mapping["variants"]
-        self.parents_indexes = {
-            index
-            for index, col in enumerate(self._query.columns, 1)
-            if col in parents_columns
-        }
-
         # Append a list because child can be append after
         self.variants = [
             [tuple(variant)]
@@ -309,33 +325,34 @@ class QueryModel(QAbstractItemModel):
         LOGGER.debug("QueryModel:load:: variants queried\n%s", self.variants)
         self.endResetModel()
 
-    def group_by_changed(self, group_by_columns):
-        """Slot called when the currentIndex in the combobox changes
-        either through user interaction or programmatically
-
-        It triggers a reload of the model and a change of the group by
-        command of the query.
-        """
-        self._query.group_by = group_by_columns
-        self.load()
-
-    def sort(self, column: int, order):
-        """Overrided"""
-        if column < self.columnCount():
-            colname = self._query.columns[column]
-
-            print("ORDER", order)
-            self._query.order_by = colname
-            self._query.order_desc = order == Qt.DescendingOrder
-            self.load()
-
-    def hasPage(self, page):
+    def hasPage(self, page: int) -> bool:
+        """ Return True if <page> exists otherwise return False """ 
         return page >= 0 and page * self.limit < self.total
 
-    def setPage(self, page):
+    def setPage(self, page: int):
+        """ set the page of the model """ 
         if self.hasPage(page):
             self.page = page
             self.load()
+
+    def nextPage(self):
+        """ Set model to the next page """
+        if self.hasPage(self.page + 1):
+            self.setPage(self.page + 1)
+
+    def previousPage(self):
+        """ Set model to the previous page """
+        if self.hasPage(self.page - 1):
+            self.setPage(self.page - 1)
+
+    def firstPage(self):
+        """ Set model to the first page """
+        self.setPage(0)
+
+    def lastPage(self):
+        """ Set model to the last page """ 
+        self.setPage(int(self.total / self.limit))
+
 
     def displayed(self):
         """Get ids of first, last displayed variants on the total number
@@ -354,49 +371,21 @@ class QueryModel(QAbstractItemModel):
 
         return (first_id, last_id, self.total)
 
-    def nextPage(self):
-        """Display the next page of data if it exists"""
-        if self.hasPage(self.page + 1):
-            self.setPage(self.page + 1)
-
-    def previousPage(self):
-        """Display the previous page of data if it exists"""
-        if self.hasPage(self.page - 1):
-            self.setPage(self.page - 1)
-
-    def firstPage(self):
-        self.setPage(0)
-
-    def lastPage(self):
-        self.setPage(int(self.total / self.limit))
 
     def variant(self, index: QModelIndex):
+        """ Return variant data according index 
+        
+        Examples:
+            variant = model.variant(index)
+            print(variant) # ["chr","242","A","T",.....]
 
-        if index.parent() == QModelIndex():
+        """ 
+
+        if self.level(index) == 1 :
             return self.variants[index.row()][0]
 
-        if index.parent().parent() == QModelIndex():
-            return self.variants[index.parent().row()][index.row()]
-
-    def _draw_children_count_icon(self, count: int) -> QIcon:
-
-        pix = QPixmap(48, 41)
-        pix.fill(Qt.transparent)
-        painter = QPainter()
-        painter.begin(pix)
-        painter.setBrush(QColor("#f1646c"))
-        painter.setPen(Qt.NoPen)
-        painter.drawRoundedRect(pix.rect().adjusted(1, 1, -1, -1), 10, 10)
-        font = QFont()
-        font.setBold(True)
-        font.setPixelSize(25)
-        painter.setFont(font)
-        painter.setPen(Qt.white)
-        painter.drawText(pix.rect(), Qt.AlignCenter, str(count))
-
-        painter.end()
-
-        return QIcon(pix)
+        if self.level(index) == 2:
+            return self.variants[index.parent().row()][index.row()+1] # + 1 because the first element is the parent 
 
 
 class QueryDelegate(QStyledItemDelegate):
