@@ -18,3 +18,16 @@ IMPACT_COLOR = {
 GENE_COLOR = "#F5A26F"
 WARNING_BACKGROUND_COLOR = "#FFCCBA"
 WARNING_TEXT_COLOR = "#D73705"
+
+
+# Sequence ontology colors 
+SO_COLOR = {
+    
+    "stop" : "#808080",
+    "utr":"#911EB4",
+    "splice":"#F58231",
+    "intron":"#0082C8",
+    "intergenic":"#3CB44B",
+    "frameshift":"#E6194B",
+    "missense":"#F032E6"
+}

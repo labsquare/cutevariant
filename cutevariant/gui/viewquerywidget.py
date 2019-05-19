@@ -485,7 +485,7 @@ class QueryDelegate(QStyledItemDelegate):
             painter.drawText(option.rect, alignement, str(index.data()))
             return
 
-        if "genotype" in colname and value != "...":
+        if "genotype" in colname:
             val = int(value)
 
             icon_path = GENOTYPE_ICONS.get(val, -1)
@@ -493,6 +493,42 @@ class QueryDelegate(QStyledItemDelegate):
             painter.setRenderHint(QPainter.Antialiasing)
             painter.drawPixmap(option.rect.left(), option.rect.center().y() - 8, icon)
             return
+
+        if "consequence" in colname:
+            painter.save()
+            painter.setClipRect(option.rect,Qt.IntersectClip)
+            painter.setRenderHint(QPainter.Antialiasing)
+            soTerms = value.split("&")
+            rect = QRect()
+            font = painter.font()
+            font.setPixelSize(10)
+            painter.setFont(font);
+            metrics = QFontMetrics(painter.font())
+            rect.setX(option.rect.x())
+            rect.setY(option.rect.center().y() - 5)
+            
+            # Set background color according so terms 
+            # Can be improve ... Just a copy past from c++ code 
+            bg = "#6D7981"
+            for so in soTerms:
+                for i in style.SO_COLOR.keys():
+                    if i in so:
+                        bg = style.SO_COLOR[i]
+
+                painter.setPen(Qt.white);
+                painter.setBrush(QBrush(QColor(bg)))
+                rect.setWidth(metrics.width(so) + 8);
+                rect.setHeight(metrics.height() + 4);
+                painter.drawRoundedRect(rect,3,3);
+                painter.drawText(rect, Qt.AlignCenter, so);
+
+                rect.translate(rect.width()+4,0);
+        
+            painter.restore()
+            return
+
+
+
 
         painter.setPen(
             QPen(palette.color(QPalette.HighlightedText if select else QPalette.Text))
