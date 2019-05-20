@@ -205,7 +205,6 @@ class BaseParser:
         # used by the program.
         self.variant_field_names = set()
 
-
     def handle_descriptions(self, raw_fields: list):
         """Construct annotation_field_name with the fields of the file, and
         yield fields (dictionnaries) with the full description of fields of the file.
@@ -248,7 +247,6 @@ class BaseParser:
                     "category": "annotations",
                 }
 
-
             if _f["name"] in self.variant_field_names:
                 # This field is already in variants fields
                 # => do not use it!
@@ -258,7 +256,7 @@ class BaseParser:
                 self.annotation_field_name.append(None)
                 LOGGER.info(
                     "handle_descriptions: '%s' field also found in variants; skipped",
-                    _f["name"]
+                    _f["name"],
                 )
                 continue
 
@@ -341,8 +339,9 @@ class VepParser(BaseParser):
         self.annotation_field_name = list()
         fields = tuple(fields)
         # Help to remove duplicated fields from annotations
-        self.variant_field_names = \
-            {field["name"] for field in fields if field["name"] != "csq"}
+        self.variant_field_names = {
+            field["name"] for field in fields if field["name"] != "csq"
+        }
 
         for field in fields:
             if field["name"] == "csq":
@@ -447,8 +446,9 @@ class SnpEffParser(BaseParser):
         self.annotation_field_name = list()
         fields = tuple(fields)
         # Help to remove duplicated fields from annotations
-        self.variant_field_names = \
-            {field["name"] for field in fields if field["name"] != "ann"}
+        self.variant_field_names = {
+            field["name"] for field in fields if field["name"] != "ann"
+        }
 
         for field in fields:
             if field["name"] == "ann":

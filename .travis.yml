@@ -12,5 +12,4 @@ install:
 
 # command to run tests
 script:
-  - pip install -r requirements.txt
   - python -m pytest cutevariant tests -vv

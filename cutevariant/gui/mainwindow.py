@@ -26,8 +26,8 @@ from cutevariant import commons as cm
 from cutevariant.commons import MAX_RECENT_PROJECTS, DIR_ICONS
 
 # Proof of concept - testing only
-# from cutevariant.gui.webglquerywidget import WebGLQueryWidget
-# from cutevariant.gui.hpoquerywidget import HpoQueryWidget
+from cutevariant.gui.webglquerywidget import WebGLQueryWidget
+from cutevariant.gui.hpoquerywidget import HpoQueryWidget
 # from cutevariant.gui.omnibar import OmniBar
 
 
@@ -80,7 +80,7 @@ class MainWindow(QMainWindow):
         self.add_query_plugin(self.filter_widget)
         self.add_query_plugin(self.selection_widget)
         # Testing
-        self.add_query_plugin(ChartQueryWidget())
+        # self.add_query_plugin(ChartQueryWidget())
         # self.add_query_plugin(WebGLQueryWidget())
         # self.add_query_plugin(HpoQueryWidget())
 
@@ -116,6 +116,8 @@ class MainWindow(QMainWindow):
         # Display messages from plugins in the status bar
         self.editor.message.connect(self.handle_plugin_message)
         view_query_widget.message.connect(self.handle_plugin_message)
+
+        self.open("examples/test2.db")
 
     def add_variant_plugin(self, plugin: VariantPluginWidget):
         """Add info variant plugin to QDockWidget

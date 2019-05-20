@@ -13,10 +13,7 @@ DEFAULT_SELECTION_NAME = "variants"
 # Paths
 DIR_LOGS = tempfile.gettempdir() + "/"
 
-DIR_ASSETS = resource_filename(
-    __name__, # current package name
-    "assets/"
-)
+DIR_ASSETS = resource_filename(__name__, "assets/")  # current package name
 DIR_TRANSLATIONS = DIR_ASSETS + "i18n/"
 DIR_FONTS = DIR_ASSETS + "fonts/"
 DIR_ICONS = DIR_ASSETS + "icons/"
@@ -29,9 +26,7 @@ GENOTYPE_ICONS = {
 }
 
 # Websites and variant query
-WEBSITES_URLS = {
-    "varsome": "https://varsome.com/variant/hg19/{chr}-{pos}-{ref}-{alt}",
-}
+WEBSITES_URLS = {"varsome": "https://varsome.com/variant/hg19/{chr}-{pos}-{ref}-{alt}"}
 
 
 # Logging
@@ -42,7 +37,7 @@ LOG_LEVELS = {
     "info": logging.INFO,
     "warning": logging.WARNING,
     "error": logging.ERROR,
-    "notset": logging.NOTSET
+    "notset": logging.NOTSET,
 }
 
 ################################################################################
@@ -55,17 +50,21 @@ def logger(name=LOGGER_NAME, logfilename=None):
     """
     return logging.getLogger(name)
 
+
 _logger = logging.getLogger(LOGGER_NAME)
 _logger.setLevel(LOG_LEVEL)
 
 # log file
-formatter    = logging.Formatter(
-    '%(asctime)s :: %(levelname)s :: %(message)s'
-)
+formatter = logging.Formatter("%(asctime)s :: %(levelname)s :: %(message)s")
 file_handler = RotatingFileHandler(
-    DIR_LOGS + LOGGER_NAME + '_' + \
-    dt.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + '.log',
-    'a', 100000000, 1
+    DIR_LOGS
+    + LOGGER_NAME
+    + "_"
+    + dt.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    + ".log",
+    "a",
+    100_000_000,
+    1,
 )
 file_handler.setLevel(LOG_LEVEL)
 file_handler.setFormatter(formatter)
@@ -73,10 +72,11 @@ _logger.addHandler(file_handler)
 
 # terminal log
 stream_handler = logging.StreamHandler()
-formatter      = logging.Formatter('%(levelname)s: %(message)s')
+formatter = logging.Formatter("%(levelname)s: %(message)s")
 stream_handler.setFormatter(formatter)
 stream_handler.setLevel(LOG_LEVEL)
 _logger.addHandler(stream_handler)
+
 
 def log_level(level):
     """Set terminal/file log level to given one.
@@ -87,7 +87,9 @@ def log_level(level):
     # Main logger
     _logger.setLevel(level.upper())
     # Handlers
-    [handler.setLevel(level.upper()) for handler in _logger.handlers
-        if handler.__class__ in (logging.StreamHandler,
-                                 logging.handlers.RotatingFileHandler)
+    [
+        handler.setLevel(level.upper())
+        for handler in _logger.handlers
+        if handler.__class__
+        in (logging.StreamHandler, logging.handlers.RotatingFileHandler)
     ]

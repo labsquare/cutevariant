@@ -5,12 +5,24 @@ from pkg_resources import resource_filename
 # Qt imports
 from PySide2.QtCore import Qt, QRect, QUrl
 from PySide2.QtWidgets import (
-    QDialog, QTabWidget, QLabel, QDialogButtonBox, QVBoxLayout, QPlainTextEdit,
-    QFrame
+    QDialog,
+    QTabWidget,
+    QLabel,
+    QDialogButtonBox,
+    QVBoxLayout,
+    QPlainTextEdit,
+    QFrame,
 )
 from PySide2.QtGui import (
-    QIcon, QPixmap, QPainter, QBrush, QFont, QPen, QColor, QFontMetrics,
-    QDesktopServices
+    QIcon,
+    QPixmap,
+    QPainter,
+    QBrush,
+    QFont,
+    QPen,
+    QColor,
+    QFontMetrics,
+    QDesktopServices,
 )
 
 # Custom imports

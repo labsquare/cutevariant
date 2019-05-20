@@ -47,11 +47,12 @@ class WebGLQueryWidget(QueryPluginWidget):
               }, false );
 
               // Load PDB entry
-              stage.loadFile( "rcsb://%s", { defaultRepresentation: true } );
+              stage.loadFile( "rcsb://6J3G", { defaultRepresentation: true } );
             </script>
             </body>
             </html>
-            """ % protein_reference
+            """
+            
         )
 
         layout = QVBoxLayout()

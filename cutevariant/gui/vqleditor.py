@@ -10,7 +10,13 @@ from textx.exceptions import TextXSyntaxError
 # Qt imports
 from PySide2.QtCore import qApp, Qt, QRegularExpression, QStringListModel
 from PySide2.QtWidgets import QTextEdit, QCompleter, QVBoxLayout, QLabel, QFrame
-from PySide2.QtGui import QSyntaxHighlighter, QFont, QPalette, QTextCharFormat, QTextCursor
+from PySide2.QtGui import (
+    QSyntaxHighlighter,
+    QFont,
+    QPalette,
+    QTextCharFormat,
+    QTextCursor,
+)
 
 # Custom imports
 from cutevariant.core import sql
@@ -28,11 +34,30 @@ class VqlSyntaxHighlighter(QSyntaxHighlighter):
     """SQL Syntax highlighter for VqlEditor"""
 
     sql_keywords = (
-        'SELECT', 'FROM', 'WHERE', 'AS',
-        'AND', 'OR', 'NOT', 'ALL', 'ANY', 'BETWEEN', 'EXISTS', 'IN', 'LIKE', 'SOME',
-        'ASC', 'DESC', 'LIMIT',
-        'DISTINCT', 'GROUP BY', 'HAVING', 'ORDER BY',
-        'IS', 'NOT', 'NULL',
+        "SELECT",
+        "FROM",
+        "WHERE",
+        "AS",
+        "AND",
+        "OR",
+        "NOT",
+        "ALL",
+        "ANY",
+        "BETWEEN",
+        "EXISTS",
+        "IN",
+        "LIKE",
+        "SOME",
+        "ASC",
+        "DESC",
+        "LIMIT",
+        "DISTINCT",
+        "GROUP BY",
+        "HAVING",
+        "ORDER BY",
+        "IS",
+        "NOT",
+        "NULL",
     )
 
     def __init__(self, document=None):
@@ -208,7 +233,9 @@ class VqlEditor(QueryPluginWidget):
             if cmd["cmd"] == "select_cmd":
                 self.query.columns = cmd["columns"]  # columns from variant table
                 self.query.selection = cmd["source"]  # name of the variant set
-                self.query.filter = cmd.get("filter", dict())  # filter as raw text; dict if no filter
+                self.query.filter = cmd.get(
+                    "filter", dict()
+                )  # filter as raw text; dict if no filter
                 self.query_changed.emit()
 
             if cmd["cmd"] == "create_cmd":
@@ -228,9 +255,10 @@ class VqlEditor(QueryPluginWidget):
             <div height=100%>
             <img src="data:image/png;base64,{}" align="left"/>
              <span>  {} </span>
-            </div>""".format(icon_64, message))
-
-
+            </div>""".format(
+                icon_64, message
+            )
+        )
 
 
 class VqlEdit(QTextEdit):
@@ -258,11 +286,11 @@ class VqlEdit(QTextEdit):
         # Ignore some key events so the completer can handle them.
         if self.completer and self.completer.popup().isVisible():
             if event.key() in (
-                    Qt.Key_Enter,
-                    Qt.Key_Return,
-                    Qt.Key_Escape,
-                    Qt.Key_Tab,
-                    Qt.Key_Backtab,
+                Qt.Key_Enter,
+                Qt.Key_Return,
+                Qt.Key_Escape,
+                Qt.Key_Tab,
+                Qt.Key_Backtab,
             ):
                 event.ignore()
                 # Let the completer do default behavior
@@ -296,10 +324,10 @@ class VqlEdit(QTextEdit):
 
         # Hide on alone modifier, empty text, short text, end of word
         if self.completer_joker not in event.text() and (
-                has_modifier
-                or not event.text()
-                or len(completion_prefix) < MIN_COMPLETION_LETTERS
-                or event.text()[-1] in end_of_word
+            has_modifier
+            or not event.text()
+            or len(completion_prefix) < MIN_COMPLETION_LETTERS
+            or event.text()[-1] in end_of_word
         ):
             completer.popup().hide()
             # LOGGER.debug("keyPressEvent:: Hide completer popup")
@@ -355,7 +383,6 @@ class VqlEdit(QTextEdit):
         # Get a substring that contains the nb_extra rightmost characters
         # of the string; and insert the extra characters to complete the word.
         tc.insertText(completion[-nb_extra:])
-
 
         # Erase the joker
         tc.movePosition(QTextCursor.StartOfWord)

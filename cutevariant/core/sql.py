@@ -425,12 +425,7 @@ def create_table_annotations(conn, fields):
             ('allele str NULL', 'consequence str NULL', ...)
     :type fields: <generator>
     """
-    schema = ",".join(
-        [
-            f'{field["name"]} {field["type"]}'
-            for field in fields
-        ]
-    )
+    schema = ",".join([f'{field["name"]} {field["type"]}' for field in fields])
 
     if not schema:
         #  Create minimum annotation table... Can be use later for dynamic annotation.
@@ -499,7 +494,6 @@ def create_table_variants(conn, fields):
     # from all other values, including other NULLs.
     schema = ",".join(
         [
-
             f'`{field["name"]}` {field["type"]} {field.get("constraint", "")}'
             for field in fields
             if field["name"]
@@ -515,7 +509,6 @@ def create_table_variants(conn, fields):
         UNIQUE (chr,pos,ref,alt))"""
     )
     # cursor.execute(f"""CREATE UNIQUE INDEX idx_variants_unicity ON variants (chr,pos,ref,alt)""")
-
 
     # Association table: do not use useless rowid column
     cursor.execute(
@@ -646,7 +639,6 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
                 VALUES ({var_places})
                 ON CONFLICT (chr,pos,ref,alt) DO NOTHING"""
 
-
     # Insertion - Begin transaction
     cursor = conn.cursor()
 
@@ -712,13 +704,14 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
             # have been inserted from the same source file (or it is not the case ?) ?
             # Retrieve the id of the sample to build the association in
             # "sample_has_variant" table carrying the data "gt" (genotype)
-            g = ((samples_id_mapping[sample["name"]], sample["gt"])
-                 for sample in variant["samples"]
-                 if sample["name"] in samples_names)
+            g = (
+                (samples_id_mapping[sample["name"]], sample["gt"])
+                for sample in variant["samples"]
+                if sample["name"] in samples_names
+            )
             cursor.executemany(
                 f"""INSERT INTO sample_has_variant VALUES (?,{variant_id},?)""", g
             )
-
 
         # Yield progression
         if variant_count % yield_every == 0:

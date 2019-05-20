@@ -29,14 +29,43 @@ LOGGER = logger()
 
 class QueryModel(QAbstractItemModel):
     """
-    QueryModel is the base class to display variant in the view.
-    It can load paginated data using limit and page attribute.
+    QueryModel is a Qt model class which contains variants datas from sql Query. 
+    It loads paginated data from Query and create an interface for a Qt view.
+    When a variant belong to many transcripts, duplicate variants are grouped by (chr,pos,ref,alt) 
+    and stored as a Tree structure. Variant row can then be expanded to display each transcript annotation. 
+
+    See Qt model/view programming for more information
+    https://doc.qt.io/qt-5/model-view-programming.html
+
+    Variants are stored internally as a list of variants. By default, there is only one transcript per row. 
+    When user expand the row, it will append duplicates variants as children. 
+    For example, this is a tree with 2 variants , each of them refer to many transcripts. 
+
+    self.variants = [ 
+        [(chr1,2434,A,T, transcriptA),(chr1,2434,A,T, transcriptB),(chr1,2434,A,T, transcriptC)],
+        [(chr1,9999,C,T, transcriptA),(chr1,9999,C,T, transcriptB),(chr1,9999,C,T, transcriptC),(chr1,9999,C,T, transcriptD]
+        ]
+    ]
+
+    ├── chr1,2434,A,T, transcriptA  # Cannonical transcripts
+    │   ├── chr1,2434,A,T, transcriptB
+    │   ├── chr1,2434,A,T, transcriptC
+    ├── chr1,9999,C,T, transcriptA # Cannonical transcripts
+    │   ├── chr1,9999,C,T, transcriptB
+    │   ├── chr1,9999,C,T, transcriptC
+    │   ├── chr1,9999,C,T, transcriptD
 
     Attributes:
         limit(int): Variant count to display. See SQL LIMIT
         page(int): current page to display. See SQL OFFSET
         total(int): Total variant count
         variants(list): Internal data to store variants
+
+    Example:
+        model = QueryModel()
+        view = QTreeView()
+        view.setModel(model)
+        model.setQuery(query)
 
     """
 
@@ -48,112 +77,141 @@ class QueryModel(QAbstractItemModel):
         self._query = None
         self.variants = []
 
-    def is_root(self, index: QModelIndex) -> bool:
+    def level(self, index: QModelIndex) -> bool:
+        """Return level of index. 
+
+        Args:
+            index (QModelIndex): The model index
+
+        Returns: 
+            int: 0 if index is the invisible root , 1 if index is a variant parent, 2 if index is a variant child  
         """
-        Return True if the parent of index is the invisible root index
-        """
-        return index == QModelIndex()
+
+        if index == QModelIndex():
+            return 0
+
+        if index.parent() == QModelIndex():
+            return 1
+
+        if index.parent().parent() == QModelIndex():
+            return 2
 
     def rowCount(self, parent=QModelIndex()):
-        """
-        Overrided : Return model row count
+        """Overrided : Return children count of index 
         """
         #  If parent is root
-
-        if parent == QModelIndex():
+        if self.level(parent) == 0:
             return len(self.variants)
 
-        if parent.parent() == QModelIndex():
+        if self.level(parent) == 1:
             return len(self.variants[parent.row()]) - 1  # Omit first
 
-        # Get parent variant row ID and return children count
-        # if self.row_id(parent) in self.children:
-        #     return len(self.children[parent.row()])
-        # else:
-        # return 0
-
     def columnCount(self, parent=QModelIndex()):
-        """Overrided: Return column count """
+        """Overrided: Return column count of parent . 
 
-        # If no query is defined
+        Parent is not used here. 
+        """
+
+        # If no query is defined, return nothing
         if not self._query:
             return 0
 
-        return len(self._query.columns) + 1  #  show children count for the first col
+        #  return query columns + child count columns
+        #  children count - chr - pos .....
+        return len(self._query.columns) + 1
 
-    def index(self, row, column, parent=QModelIndex()):
-        """Overrided: Return index """
+    def index(self, row: int, column: int, parent=QModelIndex()) -> QModelIndex:
+        """Overrided: Create a new model index from row, column and parent  
+        
+        Args:
+            row (int): row number
+            column (int): column number
+            parent (QModelIndex): parent index
 
+        """
+
+        # avoid error
         if not self.hasIndex(row, column, parent):
             return QModelIndex()
 
-        # if parent is root
-        if parent == QModelIndex():
+        # Create index for variant as parent
+        if self.level(parent) == 0:
+            # createIndex take None as internalId. @see self.parent()
             return self.createIndex(row, column, None)
 
-        # if parent is first level
-        if parent.parent() == QModelIndex():
+        # Create index for variant as child
+        if self.level(parent) == 1:
+            # createIndex take parent.row() as internalId . @see self.parent()
             return self.createIndex(row, column, parent.row())
 
-    def parent(self, child):
-        """Overrided: Return parent of child """
+    def parent(self, index: QModelIndex()) -> QModelIndex:
+        """Overrided: Return the parent of index """
 
-        if not child.isValid():
+        #  avoid error
+        if not index.isValid():
             return QModelIndex()
 
-        if child.internalId() == None:
+        #  If internalId is None, index is a variant parent
+        if index.internalId() == None:
             return QModelIndex()
 
+        # Otherwise, index is a variant child at position row=internalid in the parent
         else:
-            return self.index(child.internalId(), 0, QModelIndex())
+            return self.index(index.internalId(), 0, QModelIndex())
 
-    def data(self, index, role=Qt.DisplayRole):
-        """ Overrided: return value of index according role  """
+    def data(self, index: QModelIndex(), role=Qt.DisplayRole):
+        """ Overrided: return index data according role.
+        This method is called by the Qt view to get data to display according Qt role. 
+        
+        Params:
+            index (QModelIndex): index from where your want to get data 
+            role (Qt.ItemDataRole): https://doc.qt.io/qt-5/qt.html#ItemDataRole-enum
 
+        Examples:
+            index = model.index(row=10, column = 1)
+            chromosome_value = model.data(index)
+        """
+
+        # Avoid error
         if not index.isValid():
             return None
 
-        #  ---- DISPLAY ROLE ----
+        #  ---- Display Role ----
         if role == Qt.DisplayRole:
-            #  Display the first level
-            if index.parent() == QModelIndex():
+            # Return data for the first level
+            if self.level(index) == 1:
+                # First column correspond to children count
                 if index.column() == 0:
-                    # First column display children count
                     return str(self.children_count(index))
-                elif index.column() not in self.parents_indexes:
-                    # Mask columns not concerned by the group by
-                    # These columns have an arbitrary value choosen among all retrieved values
-                    # ..seealso:: load()
-                    return "..."
+                # Other data come from internal self.variants list
                 else:
-                    # Other display variant data
-                    return str(self.variants[index.row()][0][index.column()])
+                    return str(self.variant(index)[index.column()])
+                    # return str(self.variants[index.row()][0][index.column()])
 
-            #  Display the second level ( children )
-            if index.parent().parent() == QModelIndex():
-                if index.column() == 0 or index.column() in self.parents_indexes:
+            # Return data for the second level
+            if self.level(index) == 2:
+                if index.column() == 0:
                     # No children for the first columns
-                    # Don't show redondant data for columns that are in the group by
                     return ""
                 else:
                     #  Display children data
-                    return str(
-                        self.variants[index.parent().row()][index.row()][index.column()]
-                    )
-
-        #  ----- ICON ROLE ---
-        if role == Qt.DecorationRole:
-            if (
-                index.parent() == QModelIndex()
-                and index.column() == 0
-                and self.hasChildren(index)
-            ):
-                return self._draw_children_count_icon(self.variants[index.row()][0][-1])
-
+                    return str(self.variant(index)[index.column()])
         return None
 
     def headerData(self, section, orientation, role=Qt.DisplayRole):
-        """Overrided: Return column name as header data """
+        """Overrided: Return column name 
+        This method is called by the Qt view to display vertical or horizontal header data.
+
+        Params:
+            section (int): row or column number depending on orientation
+            orientation (Qt.Orientation): Qt.Vertical or Qt.Horizontal
+            role (Qt.ItemDataRole): https://doc.qt.io/qt-5/qt.html#ItemDataRole-enum
+
+        Examples:
+            # return 4th column name 
+            column_name = model.headerData(4, Qt.Horizontal)
+
+         """
 
         #  Display columns headers
         if orientation == Qt.Horizontal:
@@ -167,19 +225,18 @@ class QueryModel(QAbstractItemModel):
                         return f"{fct}({arg}).{field}"
                     else:
                         return self._query.columns[section - 1]
-
         return None
 
     def hasChildren(self, parent: QModelIndex) -> bool:
-        # return False
-        """Overrided: Return True if parent has children """
+        """Overrided: Return True if parent index has children """
+
         # if invisible root node, always return True
         if parent == QModelIndex():
             return True
 
-        if parent.parent() == QModelIndex():
+        if self.level(parent) == 1:
             children_count = self.children_count(parent)
-            return children_count > 1
+            return children_count >= 1
 
         return False
 
@@ -187,16 +244,14 @@ class QueryModel(QAbstractItemModel):
         #     return self._children_count(parent) > 1
 
     def canFetchMore(self, parent: QModelIndex) -> bool:
-        """ Overrided """
+        """ Overrided : Return True if children fetching is required """
         return self.hasChildren(parent)
 
     def fetchMore(self, parent: QModelIndex):
+        """Overrided: Fetch children variant 
         """
-        Overrided
 
-        Fetch more annotation when row is expand
-
-        """
+        # avoid error
         if parent == QModelIndex():
             return
 
@@ -212,11 +267,13 @@ class QueryModel(QAbstractItemModel):
         {joints}
         WHERE annotations.variant_id = {variant_id}"""
         LOGGER.debug(
-            "QueryModel:fetchMore:: Extra children cols sub query %s",
-            sub_query
+            "QueryModel:fetchMore:: Extra children cols sub query %s", sub_query
         )
 
         records = list(self._query.conn.cursor().execute(sub_query).fetchall())
+
+        # remove last item because it's the same as parent
+        records.pop()
 
         # Insert children
         self.beginInsertRows(parent, 0, len(records))
@@ -229,13 +286,13 @@ class QueryModel(QAbstractItemModel):
 
         self.endInsertRows()
 
-    def children_count(self, index: QModelIndex):
+    def children_count(self, index: QModelIndex) -> int:
         """Return children count from variant
 
         This one is the last value of sql record output and correspond to the COUNT(annotation)
         of the GROUP BY
         """
-        return self.variants[index.row()][0][-1]
+        return self.variants[index.row()][0][-1] - 1
 
     @property
     def query(self):
@@ -257,17 +314,6 @@ class QueryModel(QAbstractItemModel):
         # Set total of variants for pagination
         self.total = self.query.variants_count()
 
-        # Get columns not concerned by the group by in order to mask them
-        # These columns have an arbitrary value choosen among all retrieved values
-        # ..seealso:: Masking is made in data()
-        # parents authorized columns are in group_by command and in variants table only
-        parents_columns = set(self._query.group_by) | self._query.col_table_mapping["variants"]
-        self.parents_indexes = {
-            index
-            for index, col in enumerate(self._query.columns, 1)
-            if col in parents_columns
-        }
-
         # Append a list because child can be append after
         self.variants = [
             [tuple(variant)]
@@ -277,32 +323,46 @@ class QueryModel(QAbstractItemModel):
         LOGGER.debug("QueryModel:load:: variants queried\n%s", self.variants)
         self.endResetModel()
 
-    def group_by_changed(self, group_by_columns):
-        """Slot called when the currentIndex in the combobox changes
-        either through user interaction or programmatically
-
-        It triggers a reload of the model and a change of the group by
-        command of the query.
-        """
-        self._query.group_by = group_by_columns
-        self.load()
-
-    def sort(self, column: int, order):
-        """Overrided"""
-        if column < self.columnCount():
-            colname = self._query.columns[column]
-
-            print("ORDER", order)
-            self._query.order_by = colname
-            self._query.order_desc = order == Qt.DescendingOrder
-            self.load()
-
-    def hasPage(self, page):
+    def hasPage(self, page: int) -> bool:
+        """ Return True if <page> exists otherwise return False """
         return page >= 0 and page * self.limit < self.total
 
-    def setPage(self, page):
+    def setPage(self, page: int):
+        """ set the page of the model """
         if self.hasPage(page):
             self.page = page
+            self.load()
+
+    def nextPage(self):
+        """ Set model to the next page """
+        if self.hasPage(self.page + 1):
+            self.setPage(self.page + 1)
+
+    def previousPage(self):
+        """ Set model to the previous page """
+        if self.hasPage(self.page - 1):
+            self.setPage(self.page - 1)
+
+    def firstPage(self):
+        """ Set model to the first page """
+        self.setPage(0)
+
+    def lastPage(self):
+        """ Set model to the last page """
+        self.setPage(int(self.total / self.limit))
+
+    def sort(self, column: int, order):
+        """Overrided: Sort data by specified column 
+        
+        column (int): column id 
+        order (Qt.SortOrder): Qt.AscendingOrder or Qt.DescendingOrder 
+
+        """
+        if column < self.columnCount():
+            colname = self._query.columns[column - 1]
+
+            self._query.order_by = colname
+            self._query.order_desc = order == Qt.DescendingOrder
             self.load()
 
     def displayed(self):
@@ -322,49 +382,22 @@ class QueryModel(QAbstractItemModel):
 
         return (first_id, last_id, self.total)
 
-    def nextPage(self):
-        """Display the next page of data if it exists"""
-        if self.hasPage(self.page + 1):
-            self.setPage(self.page + 1)
-
-    def previousPage(self):
-        """Display the previous page of data if it exists"""
-        if self.hasPage(self.page - 1):
-            self.setPage(self.page - 1)
-
-    def firstPage(self):
-        self.setPage(0)
-
-    def lastPage(self):
-        self.setPage(int(self.total / self.limit))
-
     def variant(self, index: QModelIndex):
+        """ Return variant data according index 
+        
+        Examples:
+            variant = model.variant(index)
+            print(variant) # ["chr","242","A","T",.....]
 
-        if index.parent() == QModelIndex():
+        """
+
+        if self.level(index) == 1:
             return self.variants[index.row()][0]
 
-        if index.parent().parent() == QModelIndex():
-            return self.variants[index.parent().row()][index.row()]
-
-    def _draw_children_count_icon(self, count: int) -> QIcon:
-
-        pix = QPixmap(48, 41)
-        pix.fill(Qt.transparent)
-        painter = QPainter()
-        painter.begin(pix)
-        painter.setBrush(QColor("#f1646c"))
-        painter.setPen(Qt.NoPen)
-        painter.drawRoundedRect(pix.rect().adjusted(1, 1, -1, -1), 10, 10)
-        font = QFont()
-        font.setBold(True)
-        font.setPixelSize(25)
-        painter.setFont(font)
-        painter.setPen(Qt.white)
-        painter.drawText(pix.rect(), Qt.AlignCenter, str(count))
-
-        painter.end()
-
-        return QIcon(pix)
+        if self.level(index) == 2:
+            return self.variants[index.parent().row()][
+                index.row() + 1
+            ]  #  + 1 because the first element is the parent
 
 
 class QueryDelegate(QStyledItemDelegate):
@@ -375,6 +408,23 @@ class QueryDelegate(QStyledItemDelegate):
 
 
     """
+
+    def background_color_index(self, index):
+        """ return background color of index """
+
+        base_brush = qApp.palette("QTreeView").brush(QPalette.Base)
+        alternate_brush = qApp.palette("QTreeView").brush(QPalette.AlternateBase)
+
+        if index.parent() == QModelIndex():
+            if index.row() % 2:
+                return base_brush
+            else:
+                return alternate_brush
+
+        if index.parent().parent() == QModelIndex():
+            return self.background_color_index(index.parent())
+
+        return base_brush
 
     def paint(self, painter, option, index):
         """
@@ -396,13 +446,17 @@ class QueryDelegate(QStyledItemDelegate):
 
         #  draw selection if it is
         if not select:
-            bg_brush = option.backgroundBrush
+            bg_brush = self.background_color_index(index)
         else:
             bg_brush = palette.brush(QPalette.Highlight)
 
+        painter.save()
         painter.setBrush(bg_brush)
         painter.setPen(Qt.NoPen)
         painter.drawRect(option.rect)
+        painter.restore()
+
+        # painter.setPen(pen)
 
         alignement = Qt.AlignLeft | Qt.AlignVCenter
 
@@ -438,13 +492,46 @@ class QueryDelegate(QStyledItemDelegate):
             painter.drawText(option.rect, alignement, str(index.data()))
             return
 
-        if "genotype" in colname and value != "...":
+        if "genotype" in colname:
             val = int(value)
 
             icon_path = GENOTYPE_ICONS.get(val, -1)
             icon = QPixmap(icon_path).scaled(16, 16)
             painter.setRenderHint(QPainter.Antialiasing)
             painter.drawPixmap(option.rect.left(), option.rect.center().y() - 8, icon)
+            return
+
+        if "consequence" in colname:
+            painter.save()
+            painter.setClipRect(option.rect, Qt.IntersectClip)
+            painter.setRenderHint(QPainter.Antialiasing)
+            soTerms = value.split("&")
+            rect = QRect()
+            font = painter.font()
+            font.setPixelSize(10)
+            painter.setFont(font)
+            metrics = QFontMetrics(painter.font())
+            rect.setX(option.rect.x())
+            rect.setY(option.rect.center().y() - 5)
+
+            #  Set background color according so terms
+            #  Can be improve ... Just a copy past from c++ code
+            bg = "#6D7981"
+            for so in soTerms:
+                for i in style.SO_COLOR.keys():
+                    if i in so:
+                        bg = style.SO_COLOR[i]
+
+                painter.setPen(Qt.white)
+                painter.setBrush(QBrush(QColor(bg)))
+                rect.setWidth(metrics.width(so) + 8)
+                rect.setHeight(metrics.height() + 4)
+                painter.drawRoundedRect(rect, 3, 3)
+                painter.drawText(rect, Qt.AlignCenter, so)
+
+                rect.translate(rect.width() + 4, 0)
+
+            painter.restore()
             return
 
         painter.setPen(
@@ -460,6 +547,30 @@ class QueryDelegate(QStyledItemDelegate):
         return QSize(0, 30)
 
 
+class QueryTreeView(QTreeView):
+    def __init__(self, parent=None):
+        super().__init__()
+
+    def drawBranches(self, painter, rect, index):
+        """ overrided : Draw Branch decorator with background 
+        
+        Backround is not alternative for children but inherits from parent 
+
+        """
+        painter.save()
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(self.itemDelegate().background_color_index(index))
+        painter.drawRect(rect)
+
+        if index.parent() != QModelIndex():
+            #  draw child indicator
+            painter.drawPixmap(rect.center(), FIcon(0xF12F).pixmap(10, 10))
+
+        painter.restore()
+
+        super().drawBranches(painter, rect, index)
+
+
 class ViewQueryWidget(QueryPluginWidget):
     """Contains the view of query with several controller"""
 
@@ -472,12 +583,12 @@ class ViewQueryWidget(QueryPluginWidget):
         self.setWindowTitle(self.tr("Variants"))
         self.topbar = QToolBar()
         self.bottombar = QToolBar()
-        self.view = QTreeView()
+        self.view = QueryTreeView()
 
         # self.view.setFrameStyle(QFrame.NoFrame)
         self.view.setModel(self.model)
         self.view.setItemDelegate(self.delegate)
-        self.view.setAlternatingRowColors(True)
+        # self.view.setAlternatingRowColors(True)
         self.view.setSortingEnabled(True)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setSelectionMode(QAbstractItemView.ContiguousSelection)
@@ -508,16 +619,6 @@ class ViewQueryWidget(QueryPluginWidget):
         self.topbar.addWidget(spacer)
 
         # Add combobox to choose the grouping method of variants
-        self.topbar.addWidget(QLabel(self.tr("Group by method:")))
-        self.group_by_combobox = QComboBox()
-        combobox_text_data = {
-            "variant (chr, pos, ref, alt)": ("chr", "pos", "ref", "alt"),
-            "site (chr, pos)": ("chr", "pos"),
-        }
-        for text, data in combobox_text_data.items():
-            self.group_by_combobox.addItem(text, data)
-        self.topbar.addWidget(self.group_by_combobox)
-        self.group_by_combobox.currentIndexChanged.connect(self.on_group_by_changed)
 
         # Construct bottom bar
         # These actions should be disabled until a query is made (see query setter)
