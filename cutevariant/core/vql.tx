@@ -10,7 +10,7 @@ Command:
 
 
 SelectCmd:
-    'SELECT' columns+=ColumnIdentifier[","] 'FROM' source=ID ('WHERE' filter=FilterExpression)?
+    'SELECT' columns+=ColumnIdentifier[","] ('FROM' source=ID ('WHERE' filter=FilterExpression)?)?
 ;
 
 CreateCmd:
