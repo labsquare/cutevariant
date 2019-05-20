@@ -658,7 +658,6 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
         # Insert current variant
         # Use default dict to handle missing values
         LOGGER.debug(variant_insert_query)
-        print(variant_insert_query)
 
         cursor.execute(variant_insert_query, defaultdict(str, variant))
 
