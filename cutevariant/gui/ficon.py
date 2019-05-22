@@ -88,6 +88,8 @@ class FIcon(QIcon):
         self.engine.setCharacter(hex_character)
         if color:
             self.engine.setColor(color)
+        else:
+            self.engine.setColor(qApp.palette().text().color())
         super().__init__(self.engine)
 
     def to_base64(self, w=32, h=32):

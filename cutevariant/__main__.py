@@ -31,7 +31,7 @@ from PySide2.QtCore import (
 from PySide2.QtWidgets import QApplication
 
 # Custom imports
-from cutevariant.gui import MainWindow, setFontPath
+from cutevariant.gui import MainWindow, setFontPath, style
 import cutevariant.commons as cm
 from cutevariant import __version__
 
@@ -52,6 +52,11 @@ def main():
     # Process command line arguments
     process_arguments(app)
 
+    # apply dark style 
+    style.dark(app)
+
+
+
     # Set icons set
     setFontPath(os.path.join(cm.DIR_FONTS, "materialdesignicons-webfont.ttf"))
 
@@ -65,6 +70,11 @@ def main():
 
     # Display
     w = MainWindow()
+
+    STYLES = cm.DIR_STYLES + "frameless.qss"
+    with open(STYLES,"r") as file:
+        w.setStyleSheet(file.read())
+
     w.show()
     app.exec_()
 

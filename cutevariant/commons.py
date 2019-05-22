@@ -17,6 +17,7 @@ DIR_ASSETS = resource_filename(__name__, "assets/")  # current package name
 DIR_TRANSLATIONS = DIR_ASSETS + "i18n/"
 DIR_FONTS = DIR_ASSETS + "fonts/"
 DIR_ICONS = DIR_ASSETS + "icons/"
+DIR_STYLES= DIR_ASSETS + "styles/"
 
 GENOTYPE_ICONS = {
     0: f"{DIR_ICONS}/gt_homo_wt.png",
