@@ -26,9 +26,9 @@ from PySide2.QtCore import (
     QSettings,
     QTranslator,
     QCommandLineParser,
-    QCommandLineOption,
+    QCommandLineOption
 )
-from PySide2.QtWidgets import QApplication
+from PySide2.QtWidgets import QApplication, QStyleFactory
 
 # Custom imports
 from cutevariant.gui import MainWindow, setFontPath, style
@@ -55,6 +55,9 @@ def main():
     # apply dark style 
     style.dark(app)
 
+    #app.setStyle(QStyleFactory.create("Fusion"))
+
+ 
 
 
     # Set icons set
@@ -76,6 +79,8 @@ def main():
         w.setStyleSheet(file.read())
 
     w.show()
+
+    app.setStyle(QStyleFactory.create("fusion"))
     app.exec_()
 
 

@@ -35,16 +35,24 @@ def detect_vcf_annotation(filename):
 
     :return: "vep", "snpeff", None
     """
-    with open(filename, "r") as file:
-        std_reader = vcf.VCFReader(file)
-        # print(std_reader.metadata)
-        if "VEP" in std_reader.metadata:
-            if "CSQ" in std_reader.infos:
-                return "vep"
+    if is_gz_file(filename):
+        device = open(filename, "rb")
 
-        if "SnpEffVersion" in std_reader.metadata:
-            if "ANN" in std_reader.infos:
-                return "snpeff"
+    else:
+        device = open(filename,"r")
+
+   
+    std_reader = vcf.VCFReader(device)
+    # print(std_reader.metadata)
+    if "VEP" in std_reader.metadata:
+        if "CSQ" in std_reader.infos:
+            device.close()
+            return "vep"
+
+    if "SnpEffVersion" in std_reader.metadata:
+        if "ANN" in std_reader.infos:
+            device.close()
+            return "snpeff"
 
 
 @contextmanager
