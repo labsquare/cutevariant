@@ -17,11 +17,12 @@ Pyside2 is not currently (2019 May) functional on Cygwin, so Cutevariant will no
 - Install like the previous chapter said.
 - Add the path of python scripts executables to your PATH variable; Something like:
 
-    `C:\Users\<username>\AppData\Roaming\Python\Python37\Scripts\`
+``` C:\Users\<username>\AppData\Roaming\Python\Python37\Scripts\ ``` 
 
 Two executables are generated in this directory:
 
     - cutevariant_win_dbg.exe: Open a console in background to see debugging messages.
+    
     Note: Qt libs seems to have a very high loglevel and such a verbosity could make the program unusable.
 
     - cutevariant.exe: Standard executable.
