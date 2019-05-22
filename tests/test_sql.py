@@ -219,17 +219,18 @@ def test_selections(conn):
 
 
 def test_selection_operation(conn):
+    """PS: try to handle precedence of operators"""
     prepare_base(conn)
 
     # Select all
     query = """SELECT variants.id,chr,pos,ref,alt FROM variants"""
     id_all = sql.create_selection_from_sql(conn, query, "all", count=None)
 
-    # Select only ref = G
+    # Select only ref = C (4 variants)
     query = """SELECT variants.id,chr,pos,ref,alt FROM variants WHERE ref='C'"""
     id_A = sql.create_selection_from_sql(conn, query, "setA", count=None,)
 
-    # Select only ref=C
+    # Select only alt = C (2 variants among setA)
     query = """SELECT variants.id,chr,pos,ref,alt FROM variants WHERE alt='C'"""
     id_B = sql.create_selection_from_sql(conn, query, "setB", count=None)
 
@@ -246,16 +247,60 @@ def test_selection_operation(conn):
     A = sql.Selection.from_selection_id(id_A)
     B = sql.Selection.from_selection_id(id_B)
 
-    C = All - B&A
+    # 8 - (4 & 2) = 8 - 2 = 6
+    C = All - (B&A)
+    # Query:
+    # SELECT variant_id
+    #    FROM selection_has_variant sv
+    #     WHERE sv.selection_id = 2 EXCEPT SELECT * FROM (SELECT variant_id
+    #    FROM selection_has_variant sv
+    #     WHERE sv.selection_id = 4 INTERSECT SELECT variant_id
+    #    FROM selection_has_variant sv
+    #     WHERE sv.selection_id = 3)
+
 
     C.save("newset")
 
+    print(A.sql_query)
+    expected_number = 0
+    for expected_number, variant in enumerate(conn.execute(A.sql_query), 1):
+        print(dict(variant))
+
+    assert expected_number == 4
+
+    print(B.sql_query)
+    expected_number = 0
+    for expected_number, variant in enumerate(conn.execute(B.sql_query), 1):
+        print(dict(variant))
+
+    assert expected_number == 2
+
     print(C.sql_query)
-    for i in conn.execute(C.sql_query):
-        print(dict(i))
+    expected_number = 0
+    for expected_number, variant in enumerate(conn.execute(C.sql_query), 1):
+        print(dict(variant))
+
+    assert expected_number == 6
 
     selections = [selection["name"] for selection in sql.get_selections(conn)]
     "newset" in selections
+
+    # (8 - 2) & 4 = 2
+    C = (All - B) & A
+    # Query:
+    # SELECT * FROM (SELECT variant_id
+    #        FROM selection_has_variant sv
+    #         WHERE sv.selection_id = 2 EXCEPT SELECT variant_id
+    #        FROM selection_has_variant sv
+    #         WHERE sv.selection_id = 4 INTERSECT SELECT variant_id
+    #        FROM selection_has_variant sv
+    #         WHERE sv.selection_id = 3)
+    print(C.sql_query)
+    expected_number = 0
+    for expected_number, variant in enumerate(conn.execute(C.sql_query), 1):
+        print(dict(variant))
+
+    assert expected_number == 2
 
 
 

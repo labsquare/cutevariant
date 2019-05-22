@@ -305,8 +305,15 @@ def get_query_columns(mode="variant"):
 
 
 def intersect_variants(query1, query2, **kwargs):
-    """Get the variants obtained by the intersection of 2 queries"""
-    return f"""{query1} INTERSECT {query2}"""
+    """Get the variants obtained by the intersection of 2 queries
+    Try to handl precedence of operators.
+    - The precedence of UNION and EXCEPT are similar, they are processed from
+    left to right.
+    - Both of the operations are fulfilled before INTERSECT operation,
+    i.e. they have precedence over it.
+
+    """
+    return f"""SELECT * FROM ({query1} INTERSECT {query2})"""
 
 
 def union_variants(query1, query2, **kwargs):
