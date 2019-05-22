@@ -20,10 +20,10 @@ DIR_ICONS = DIR_ASSETS + "icons/"
 DIR_STYLES= DIR_ASSETS + "styles/"
 
 GENOTYPE_ICONS = {
-    0: f"{DIR_ICONS}/gt_homo_wt.png",
-    1: f"{DIR_ICONS}/gt_hetero.png",
-    2: f"{DIR_ICONS}/gt_homo_mut.png",
-    -1: f"{DIR_ICONS}/gt_unknown.png",
+    0: 0xf130,
+    1: 0xfaa0,
+    2: 0Xfaa4,
+    -1: 0xf625
 }
 
 # Websites and variant query

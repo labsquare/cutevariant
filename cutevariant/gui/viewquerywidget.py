@@ -495,8 +495,8 @@ class QueryDelegate(QStyledItemDelegate):
         if "genotype" in colname:
             val = int(value)
 
-            icon_path = GENOTYPE_ICONS.get(val, -1)
-            icon = QPixmap(icon_path).scaled(16, 16)
+            icon_code = GENOTYPE_ICONS.get(val, -1)
+            icon = FIcon(icon_code, Qt.white).pixmap(20, 20)
             painter.setRenderHint(QPainter.Antialiasing)
             painter.drawPixmap(option.rect.left(), option.rect.center().y() - 8, icon)
             return
