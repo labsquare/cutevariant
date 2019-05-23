@@ -346,7 +346,7 @@ class ProjectWizard(QWizard):
         super().__init__()
         self.setWindowTitle(self.tr("Cutevariant - Project creation wizard"))
         self.setWindowIcon(QIcon(cm.DIR_ICONS + "app.png"))
-
+        self.setWizardStyle(QWizard.ClassicStyle)
         self.addPage(ProjectPage())
         self.addPage(FilePage())
         self.addPage(ImportPage())
