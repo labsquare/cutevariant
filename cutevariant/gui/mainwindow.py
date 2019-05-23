@@ -80,7 +80,7 @@ class MainWindow(QMainWindow):
         self.add_query_plugin(self.filter_widget)
         self.add_query_plugin(self.selection_widget)
         # Testing
-        # self.add_query_plugin(ChartQueryWidget())
+        self.add_query_plugin(ChartQueryWidget())
         # self.add_query_plugin(WebGLQueryWidget())
         # self.add_query_plugin(HpoQueryWidget())
 
