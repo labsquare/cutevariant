@@ -80,7 +80,7 @@ class MainWindow(QMainWindow):
         self.add_query_plugin(self.filter_widget)
         self.add_query_plugin(self.selection_widget)
         # Testing
-        # self.add_query_plugin(ChartQueryWidget())
+        self.add_query_plugin(ChartQueryWidget())
         # self.add_query_plugin(WebGLQueryWidget())
         # self.add_query_plugin(HpoQueryWidget())
 
@@ -273,7 +273,7 @@ class MainWindow(QMainWindow):
 
         # Show the project name in title and in status bar
         self.setWindowTitle("Cutevariant - %s" % os.path.basename(filepath))
-        self.status_bar.showMessage(self.tr("{filepath} opened"))
+        self.status_bar.showMessage(self.tr("{} opened").format(filepath))
 
         # Save directory
         app_settings = QSettings()
