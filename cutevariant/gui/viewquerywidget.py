@@ -69,6 +69,8 @@ class QueryModel(QAbstractItemModel):
 
     """
 
+    NO_PARENT_INTERNAL_ID = 99999
+
     def __init__(self, parent=None):
         super().__init__()
         self.limit = 50
@@ -136,8 +138,15 @@ class QueryModel(QAbstractItemModel):
 
         # Create index for variant as parent
         if self.level(parent) == 0:
-            # createIndex take None as internalId. @see self.parent()
-            return self.createIndex(row, column, None)
+            # createIndex(row,col,internalId) is a method from QAbstractItemModel to build an index .
+            # In C++, the third parameters is an internal ID which can be a void pointer or an unsigned int. 
+            # This is normally used to get the parent's index in a tree model. See self.parent() method.
+            # Here, I am using this internalId as the row id from self.variants() list. 
+            # When there is no parent, I cannot set the internalId to None, because it must be an unsigned int.
+            # In fact it works with None, except on MacOS which print many overflow error. 
+            # So, I m using here a constant NO_PARENT_INTERNAL_ID = 999999 when no parent is required.
+            # See https://doc.qt.io/qt-5/qtwidgets-itemviews-simpletreemodel-example.html
+            return self.createIndex(row, column, self.NO_PARENT_INTERNAL_ID)
 
         # Create index for variant as child
         if self.level(parent) == 1:
@@ -151,8 +160,9 @@ class QueryModel(QAbstractItemModel):
         if not index.isValid():
             return QModelIndex()
 
-        #  If internalId is None, index is a variant parent
-        if index.internalId() == None:
+        # If internalId is None, index is a variant parent
+        # @see self.index() 
+        if index.internalId() == self.NO_PARENT_INTERNAL_ID:
             return QModelIndex()
 
         # Otherwise, index is a variant child at position row=internalid in the parent
