@@ -14,7 +14,7 @@ import sys
 base = 'Win32GUI' if sys.platform=='win32' else None
 
 executables = [
-    Executable('cutevariant/__main__.py', base=base, targetName='cutevariant.exe')
+    Executable('cutevariant/__main__.py', base=base, targetName='cutevariant.exe', icon ="icon.ico")
 ]
 
 setup(
