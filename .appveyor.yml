@@ -3,11 +3,15 @@ environment:
   matrix:
     - PYTHON_VERSION: 3.6
       MINICONDA: C:\Miniconda3
+    - VS_VERSION: Visual Studio 14
 
 init:
   - "ECHO %PYTHON_VERSION% %MINICONDA%"
 
 install:
+  - wget https://www.sqlite.org/2019/sqlite-dll-win32-x86-3280000.zip
+  - unzip sqlite-dll-win32-x86-3280000.zip
+  - copy sqlite3.dll C:\Miniconda3\envs\test-environment\DLLs\
   - "set PATH=%MINICONDA%;%MINICONDA%\\Scripts;%PATH%"
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
