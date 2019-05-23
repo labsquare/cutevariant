@@ -15,6 +15,7 @@ install:
   - "conda create -q -n test-environment python=%PYTHON_VERSION%"
   - activate test-environment
   - pip install -e .
+  - pip install cx_Freeze
   - python make_a_blob.py build_exe
 
   
