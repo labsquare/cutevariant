@@ -9,7 +9,7 @@ init:
   - "ECHO %PYTHON_VERSION% %MINICONDA%"
 
 install:
-  - wget https://www.sqlite.org/2019/sqlite-dll-win32-x86-3280000.zip
+  - ps: Start-FileDownload 'https://www.sqlite.org/2019/sqlite-dll-win32-x86-3280000.zip'
   - unzip sqlite-dll-win32-x86-3280000.zip
   - copy sqlite3.dll C:\Miniconda3\envs\test-environment\DLLs\
   - "set PATH=%MINICONDA%;%MINICONDA%\\Scripts;%PATH%"
