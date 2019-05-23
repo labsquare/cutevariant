@@ -9,9 +9,6 @@ init:
   - "ECHO %PYTHON_VERSION% %MINICONDA%"
 
 install:
-  - ps: Start-FileDownload 'https://www.sqlite.org/2019/sqlite-dll-win32-x86-3280000.zip'
-  - unzip sqlite-dll-win32-x86-3280000.zip
-  - copy sqlite3.dll C:\Miniconda3\envs\test-environment\DLLs\
   - "set PATH=%MINICONDA%;%MINICONDA%\\Scripts;%PATH%"
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
@@ -20,6 +17,9 @@ install:
   - activate test-environment
   - pip install -e .
   - pip install cx_Freeze
+  - ps: Start-FileDownload 'https://www.sqlite.org/2019/sqlite-dll-win32-x86-3280000.zip'
+  - unzip sqlite-dll-win32-x86-3280000.zip
+  - copy sqlite3.dll C:\Miniconda3\envs\test-environment\DLLs\
   - python make_a_blob.py build_exe
 
   
