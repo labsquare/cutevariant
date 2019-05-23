@@ -80,7 +80,9 @@ def main():
 
     w.show()
 
-    app.setStyle(QStyleFactory.create("fusion"))
+    if sys.platform != "linux":
+        # Don't know why .. this line crash on Linux with virtualenv ..
+        app.setStyle(QStyleFactory.create("fusion"))
     app.exec_()
 
 
