@@ -52,6 +52,7 @@ def main():
     # Process command line arguments
     process_arguments(app)
 
+    app.setStyle("fusion")
     # apply dark style 
     style.dark(app)
 
@@ -79,10 +80,6 @@ def main():
         w.setStyleSheet(file.read())
 
     w.show()
-
-    if sys.platform != "linux":
-        # Don't know why .. this line crash on Linux with virtualenv ..
-        app.setStyle(QStyleFactory.create("fusion"))
     app.exec_()
 
 
