@@ -420,6 +420,41 @@ def get_fields(conn):
     conn.row_factory = sqlite3.Row
     return (dict(data) for data in conn.execute("""SELECT * FROM fields"""))
 
+def get_field_by_name(conn, field_name:str):
+    """ Return field by his name 
+
+    .. seealso:: get_fields 
+
+    :param conn: sqlite3.connect
+    :param field_name (str): field name 
+    :return: field record 
+    :rtype: <dict>
+    """
+    conn.row_factory = sqlite3.Row
+    return dict(conn.execute("""SELECT * FROM fields WHERE name = ? """, (field_name,)).fetchone())
+
+def get_field_range(conn, field_name:str):
+    """ Return (min,max) of field_name records . 
+    
+    :param conn: sqlite3.connect
+    :param field_name (str): field name
+    :return: (min, max) 
+    :rtype: tuple
+    """ 
+    field = get_field_by_name(conn, field_name)
+
+    if field["category"] == "variants":
+        return (tuple(conn.execute(f"""SELECT min({field_name}), max({field_name}) FROM variants""").fetchone()))
+   
+    if field["category"] == "annotations":
+        return (tuple(conn.execute(f"""SELECT min({field_name}), max({field_name}) FROM annotations""").fetchone()))
+    
+    if field["category"] == "samples":
+        return (tuple(conn.execute(f"""SELECT min({field_name}), max({field_name}) FROM samples""").fetchone()))
+    
+    return None
+
+
 
 ## ================ Annotations functions ======================================
 
