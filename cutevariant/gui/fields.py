@@ -5,18 +5,111 @@ import sys
 from cutevariant.gui import style
 # Some fields editors 
 
+from cutevariant.core import sql, get_sql_connexion
 
-class MySlider(QSlider):
-    def __init__(self, parent=None):
+class BaseField(QWidget):
+    """Base class for Field widget """
+    def __init__(self, parent = None):
         super().__init__(parent)
-        self.setOrientation(Qt.Horizontal)
-        self.setStyleSheet("QSlider::sub-page {background:'orange'}")
-        self.setMaximumWidth(100)
-        self.sliderMoved.connect(self.slot_show_tooltip)
 
-    def slot_show_tooltip(self, value):
-        pos = QPoint(value , self.parent().pos().y())
-        QToolTip.showText(self.mapToGlobal(pos), str(self.value()), self)
+    def set_value(self, value):
+        raise NotImplemented()
+
+    def get_value(self):
+        raise NotImplemented()
+
+
+
+class IntegerField(BaseField):
+    """Field with a slider and a spin box to edit integer value """
+    def __init__(self, parent = None):
+        super().__init__(parent)
+        self.stack = QStackedWidget()        
+        self.slider = QSlider(Qt.Horizontal)
+        self.spin_box = QSpinBox()
+
+        self.stack.addWidget(self.slider)
+        self.stack.addWidget(self.spin_box)
+
+        h_layout = QHBoxLayout()
+        h_layout.addWidget(self.stack)
+        self.setLayout(h_layout)
+
+        self.slider.valueChanged.connect(self._show_tooltip)
+        self.slider.setStyleSheet("QSlider::sub-page {background:'orange'}")
+
+    def set_value(self, value: int):
+        self.slider.setValue(value)
+
+    def get_value(self) -> int:
+        return self.slider.setValue(self.slider.value())
+
+    def set_range(self, min_, max_):
+        self.slider.setRange(min_,max_)
+
+    def _show_tooltip(self, value):
+
+        tip = QToolTip()
+        pos = self.mapToGlobal(self.slider.pos() + QPoint(self.slider.width() / 2, 0))
+        tip.showText(pos, str(value))
+
+    def mouseDoubleClickEvent(self, event):
+        self.stack.setCurrentIndex(not self.stack.currentIndex())
+
+
+
+class FloatField(BaseField):
+    """Field with a spin_box and a spin box to edit integer value """
+    def __init__(self, parent = None):
+        super().__init__(parent)
+        self.spin_box = QDoubleSpinBox()
+        h_layout = QHBoxLayout()
+        h_layout.addWidget(self.spin_box)
+        self.setLayout(h_layout)
+
+        self.spin_box.valueChanged.connect(self._show_tooltip)
+
+    def set_value(self, value: int):
+        self.spin_box.setValue(value)
+
+    def get_value(self) -> int:
+        return self.spin_box.setValue(self.spin_box.value())
+
+    def set_range(self, min_, max_):
+        self.spin_box.setRange(min_,max_)
+
+    def _show_tooltip(self, value):
+
+        tip = QToolTip()
+        pos = self.mapToGlobal(self.spin_box.pos() + QPoint(self.spin_box.width() / 2, 0))
+        tip.showText(pos, str(value))
+
+
+class FieldBuilder(QObject):
+
+    def __init__(self, conn):
+        self.conn = conn
+
+    def create(self, sql_field):
+        field = sql.get_field_by_name(self.conn, sql_field)
+        print(field)
+        if field["type"] == 'int':
+            
+            w = IntegerField()
+            w.set_range(*sql.get_field_range(conn,sql_field))
+            return w
+
+        if field["type"] == 'float':
+            w = FloatField()
+            w.set_range(*sql.get_field_range(conn,sql_field))
+            return w
+
+
+
+        return QLineEdit()
+
+
+
 
 
 class MyDelegate(QItemDelegate):
@@ -25,8 +118,10 @@ class MyDelegate(QItemDelegate):
 
     def createEditor(self, parent, option, index):
         if index.column() == 2:
-            box = MySlider(parent)
-            return box
+            w = FieldBuilder(conn).create("pos")
+            w.setParent(parent)
+            return w
+
 
         if index.column() == 1:
             box = QLineEdit(parent)
@@ -46,33 +141,28 @@ class MyDelegate(QItemDelegate):
         
 
 
-model = QStandardItemModel()
-model.setColumnCount(3)
-root = QStandardItem("root")
 
-root.appendRow([QStandardItem("salut"),QStandardItem(">"), QStandardItem("")])
-root.appendRow([QStandardItem("salut"),QStandardItem(">"), QStandardItem("")])
-root.appendRow([QStandardItem("salut"),QStandardItem(">"), QStandardItem("")])
-root.appendRow([QStandardItem("salut"),QStandardItem(">"), QStandardItem("")])
-root.appendRow([QStandardItem("salut"),QStandardItem(">"), QStandardItem("")])
-root.appendRow([QStandardItem("salut"),QStandardItem(">"), QStandardItem("")])
-root.appendRow([QStandardItem("salut"),QStandardItem(">"), QStandardItem("")])
-
-model.appendRow(root)
 app = QApplication(sys.argv)
-
 app.setStyle("fusion")
 
 style.dark(app)
 
+conn = get_sql_connexion("/home/schutz/Dev/cutevariant/examples/test.db")
+
+model = QStandardItemModel()
+model.appendRow([QStandardItem("sacha"),QStandardItem("sacha"),QStandardItem("")])
+model.appendRow([QStandardItem("sacha"),QStandardItem("sacha"),QStandardItem("")])
+model.appendRow([QStandardItem("sacha"),QStandardItem("sacha"),QStandardItem("")])
+
 
 view = QTreeView()
 view.setModel(model)
-view.setEditTriggers(QAbstractItemView.AllEditTriggers)
 view.setItemDelegate(MyDelegate())
+
+
+w = FieldBuilder(conn).create("pos")
+
 view.show()
-
-
 
 app.exec_()
 

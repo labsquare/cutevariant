@@ -125,6 +125,14 @@ class FilterEditDialog(QDialog):
         self.item.setData(self.value.text(), FilterQueryModel.ValueRole)
 
 
+class FilterDelegate(QItemDelegate):
+    def createEditor(self,parent, option, index):
+
+        box = QSpinBox(parent)
+        return box
+
+
+
 class FilterQueryWidget(QueryPluginWidget):
     def __init__(self):
         super().__init__()
