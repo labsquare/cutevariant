@@ -42,7 +42,7 @@ class IntegerField(BaseField):
         self.slider.setValue(value)
 
     def get_value(self) -> int:
-        return self.slider.setValue(self.slider.value())
+        return self.slider.value()
 
     def set_range(self, min_, max_):
         self.slider.setRange(min_,max_)
@@ -73,7 +73,7 @@ class FloatField(BaseField):
         self.spin_box.setValue(value)
 
     def get_value(self) -> int:
-        return self.spin_box.setValue(self.spin_box.value())
+        return self.spin_box.value()
 
     def set_range(self, min_, max_):
         self.spin_box.setRange(min_,max_)
@@ -83,6 +83,43 @@ class FloatField(BaseField):
         tip = QToolTip()
         pos = self.mapToGlobal(self.spin_box.pos() + QPoint(self.spin_box.width() / 2, 0))
         tip.showText(pos, str(value))
+
+
+class StrField(QWidget):
+    """docstring for ClassName"""
+    def __init__(self, parent = None):
+        super().__init__(parent)
+        self.edit = QLineEdit()
+        h_layout = QHBoxLayout()
+        h_layout.addWidget(self.edit)
+        self.setLayout(h_layout)
+
+    def set_value(self, value:str):
+        self.edit.setText(value)  
+
+    def get_value(self) -> str:
+        return self.edit.text()
+
+    def set_completer(self, completer: QCompleter):
+        self.edit.setCompleter(completer)
+
+class BoolField(QWidget):
+    """docstring for ClassName"""
+    def __init__(self, parent = None):
+        super().__init__(parent)
+        self.box = QCheckBox()
+        h_layout = QHBoxLayout()
+        h_layout.addWidget(self.box)
+        self.setLayout(h_layout)
+
+
+    def set_value(self, value:bool):
+        self.box.setValue(value) 
+
+    def get_value(self) -> bool:
+        return self.box.value()
+
+
 
 
 class FieldBuilder(QObject):
@@ -104,12 +141,50 @@ class FieldBuilder(QObject):
             w.set_range(*sql.get_field_range(conn,sql_field))
             return w
 
+        if field["type"] == 'str':
+            w = StrField()
+            unique_values = sql.get_field_unique_values(conn,"gene") # Can be huge ... How to use "like" ??
+            w.set_completer(QCompleter(unique_values))
+            return w
+
+        if field["type"] == 'bool':
+            w = BoolField()
+            return w
 
 
-        return QLineEdit()
+        return StrField()
 
 
 
+class ToggleButton(QWidget):
+    def __init__(self, parent = None):
+        super().__init__(parent)
+
+        tool = QPushButton("AND")
+        tool1 = QPushButton("OR")
+
+        tool1.setCheckable(True)
+        tool.setCheckable(True)
+
+
+        tool.setFlat(True)   
+        tool1.setFlat(True)
+
+        g = QButtonGroup(parent)
+        g.setExclusive(True)
+
+        g.addButton(tool,0)
+        g.addButton(tool1,1)
+
+        h = QHBoxLayout()
+        h.addWidget(tool)
+        h.addWidget(tool1)
+
+        self.setLayout(h)
+        self.setMaximumWidth(100)
+
+        tool.setStyleSheet("QPushButton:checked{background-color:red}")
+        tool1.setStyleSheet("QPushButton:checked{background-color:red}")
 
 
 class MyDelegate(QItemDelegate):
@@ -117,6 +192,12 @@ class MyDelegate(QItemDelegate):
         super().__init__(parent)
 
     def createEditor(self, parent, option, index):
+
+        if index.column() == 0:
+            button = ToggleButton(parent)
+            return button
+
+
         if index.column() == 2:
             w = FieldBuilder(conn).create("pos")
             w.setParent(parent)
@@ -149,10 +230,13 @@ style.dark(app)
 
 conn = get_sql_connexion("/home/schutz/Dev/cutevariant/examples/test.db")
 
+root = QStandardItem()
+root.appendRow([QStandardItem("sacha"),QStandardItem("sacha"),QStandardItem("")])
+root.appendRow([QStandardItem("sacha"),QStandardItem("sacha"),QStandardItem("")])
+root.appendRow([QStandardItem("sacha"),QStandardItem("sacha"),QStandardItem("")])
+
 model = QStandardItemModel()
-model.appendRow([QStandardItem("sacha"),QStandardItem("sacha"),QStandardItem("")])
-model.appendRow([QStandardItem("sacha"),QStandardItem("sacha"),QStandardItem("")])
-model.appendRow([QStandardItem("sacha"),QStandardItem("sacha"),QStandardItem("")])
+model.appendRow(root)
 
 
 view = QTreeView()
@@ -160,7 +244,9 @@ view.setModel(model)
 view.setItemDelegate(MyDelegate())
 
 
-w = FieldBuilder(conn).create("pos")
+print(sql.get_field_unique_values(conn,"gene"))
+
+w = FieldBuilder(conn).create("gene")
 
 view.show()
 

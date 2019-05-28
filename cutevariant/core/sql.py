@@ -442,18 +442,25 @@ def get_field_range(conn, field_name:str):
     :rtype: tuple
     """ 
     field = get_field_by_name(conn, field_name)
-
-    if field["category"] == "variants":
-        return (tuple(conn.execute(f"""SELECT min({field_name}), max({field_name}) FROM variants""").fetchone()))
-   
-    if field["category"] == "annotations":
-        return (tuple(conn.execute(f"""SELECT min({field_name}), max({field_name}) FROM annotations""").fetchone()))
+    table = field["category"] # variants, or annotations or samples
+    query = f"""SELECT min({field_name}), max({field_name}) FROM {table}"""
+    return (tuple(conn.execute(query).fetchone()))
     
-    if field["category"] == "samples":
-        return (tuple(conn.execute(f"""SELECT min({field_name}), max({field_name}) FROM samples""").fetchone()))
-    
-    return None
 
+
+def get_field_unique_values(conn, field_name:str):
+    """ Return unique record value for a field name 
+
+    :param conn: sqlite3.connect 
+    :param field_name (str): field_name
+    :return: list of unique values
+    :rtype: list
+    """ 
+    field = get_field_by_name(conn, field_name)
+    table = field["category"] # variants, or annotations or samples
+    #conn.row_factory = None
+    query = f"""SELECT DISTINCT {field_name} FROM {table}"""
+    return [i[field_name] for i in conn.execute(query)]
 
 
 ## ================ Annotations functions ======================================
