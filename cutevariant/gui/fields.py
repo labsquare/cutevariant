@@ -537,6 +537,7 @@ view.setAlternatingRowColors(True)
 view.setUniformRowHeights(True)
 view.setModel(model)
 
+view.setFirstColumnSpanned(0, QModelIndex(), True)
 
 view.show()
 
