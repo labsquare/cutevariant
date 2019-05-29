@@ -26,39 +26,20 @@ class IntegerField(BaseField):
     """Field with a slider and a spin box to edit integer value """
     def __init__(self, parent = None):
         super().__init__(parent)
-        self.stack = QStackedWidget()        
-        self.slider = QSlider(Qt.Horizontal)
         self.spin_box = QSpinBox()
-
-        self.stack.addWidget(self.slider)
-        self.stack.addWidget(self.spin_box)
-
         h_layout = QHBoxLayout()
-        h_layout.addWidget(self.stack)
+        h_layout.addWidget(self.spin_box)
         h_layout.setContentsMargins(0,0,0,0)
         self.setLayout(h_layout)
 
-        self.slider.valueChanged.connect(self._show_tooltip)
-        self.slider.setStyleSheet("QSlider::sub-page {background:'orange'}")
-
     def set_value(self, value: int):
-        self.slider.setValue(value)
+        self.spin_box.setValue(value)
 
     def get_value(self) -> int:
-        return self.slider.value()
+        return self.spin_box.value()
 
     def set_range(self, min_, max_):
-        self.slider.setRange(min_,max_)
-
-    def _show_tooltip(self, value):
-
-        tip = QToolTip()
-        pos = self.mapToGlobal(self.slider.pos() + QPoint(self.slider.width() / 2, 0))
-        tip.showText(pos, str(value))
-
-    def mouseDoubleClickEvent(self, event):
-        self.stack.setCurrentIndex(not self.stack.currentIndex())
-
+        self.spin_box.setRange(min_,max_)
 
 
 class FloatField(BaseField):
@@ -121,6 +102,60 @@ class BoolField(BaseField):
 
     def get_value(self) -> bool:
         return self.box.value()
+
+
+class OperatorField(BaseField):
+    """docstring for ClassName"""
+
+    SYMBOL = (
+        ("less", "<"),
+        ("less or equal", "<="),
+        ("greater", ">"),
+        ("greater or equal", ">="),
+        ("equal", "=="),
+        ("not equal", "!=")
+        )
+
+    def __init__(self, parent = None):
+        super().__init__(parent)
+
+        h_layout = QHBoxLayout()
+        self.combo_box = QComboBox()
+        h_layout.addWidget(self.combo_box)
+        h_layout.setContentsMargins(0,0,0,0)
+        self.setLayout(h_layout)
+        self.fill()
+
+    def set_value(self, value):
+        pass 
+
+    def get_value(self):
+        pass 
+
+    def fill(self):
+        self.combo_box.clear()
+        for s in self.SYMBOL:
+            self.combo_box.addItem(s[0], s[1])
+
+class ColumnField(BaseField):
+    """docstring for ClassName"""
+    def __init__(self, parent = None):
+        super().__init__(parent)
+        self.combo_box = QComboBox()
+        h_layout = QHBoxLayout()
+        h_layout.addWidget(self.combo_box)
+        h_layout.setContentsMargins(0,0,0,0)
+        self.combo_box.setEditable(True)
+        self.setLayout(h_layout)
+
+    def set_value(self, value):
+        pass 
+
+    def get_value(self):
+        pass 
+
+    def set_columns(self, columns: list):
+        self.combo_box.addItems(columns)
 
 
 
@@ -275,9 +310,10 @@ class FilterModel(QAbstractItemModel):
     """ FilterModel is the class to store FilterItem for the FilterView 
 
     """
-    def __init__(self, parent=None):
+    def __init__(self, conn, parent=None):
         super().__init__(parent)
         self.root_item = FilterItem()
+        self.conn = conn
 
 
     def __del__(self):
@@ -423,9 +459,23 @@ class FilterDelegate(QStyledItemDelegate):
 
         item = index.internalPointer()
 
-        if item.type() == FilterItem.LOGIC_TYPE and index.column() == 0:
-            w = ToggleButton(parent)
-            return w 
+        conn = index.model().conn
+
+        print(conn)
+
+        if index.column() == 0:
+            if item.type() == FilterItem.LOGIC_TYPE:
+                return ToggleButton(parent)
+
+            if item.type() == FilterItem.CONDITION_TYPE:
+                w = ColumnField(parent)
+                columns = [i["name"] for i in sql.get_fields(conn)]
+                w.set_columns(columns)
+                return w
+
+        if index.column() == 1:
+            w =  OperatorField(parent)
+            return w
 
         if index.column() == 2:
             w =  IntegerField(parent)
@@ -456,12 +506,12 @@ app.setStyle("fusion")
 
 style.dark(app)
 
-conn = get_sql_connexion("/home/sacha/Dev/cutevariant/examples/test.db")
+conn = get_sql_connexion("/home/schutz/Dev/cutevariant/examples/test.db")
 
 
 data = {
             "AND": [
-                {"field": "a", "operator": "=", "value": 3},
+                {"field": "chr", "operator": "=", "value": "chr"},
                 {
                     "OR": [
                         {"field": "b", "operator": "=", "value": 5},
@@ -474,7 +524,7 @@ data = {
 print(data)
 
 
-model = FilterModel()
+model = FilterModel(conn)
 model.load(data)
 delegate = FilterDelegate()
 
@@ -486,6 +536,7 @@ view.setItemDelegate(delegate)
 view.setAlternatingRowColors(True)
 view.setUniformRowHeights(True)
 view.setModel(model)
+
 
 view.show()
 
