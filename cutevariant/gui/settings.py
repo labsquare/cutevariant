@@ -26,13 +26,15 @@ from abc import abstractmethod
 
 # Qt imports
 from PySide2.QtWidgets import *
-from PySide2.QtCore import *
-from PySide2.QtGui import *  # QIcon
+from PySide2.QtCore import *  # qApp
+from PySide2.QtGui import *  # QIcon, QPalette
 from PySide2.QtNetwork import *
 
 # Custom imports
 import cutevariant.commons as cm
 from cutevariant.gui.ficon import FIcon
+
+# from cutevariant.gui import style
 
 
 class BaseWidget(QWidget):
@@ -105,7 +107,7 @@ class TranslationSettingsWidget(BaseWidget):
             qApp.installTranslator(app_translator)
 
     def load(self):
-        """Setup widgets in General settings"""
+        """Setup widgets in TranslationSettingsWidget"""
         self.locales_combobox.clear()
         # Get names of locales based on available files
         available_translations = {
@@ -182,16 +184,59 @@ class ProxySettingsWidget(BaseWidget):
 
 
 class StyleSettingsWidget(BaseWidget):
+    """Allow to choose a style for the interface"""
+
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Styles"))
         self.setWindowIcon(FIcon(0xF3D8))
 
+        self.styles_combobox = QComboBox()
+        mainLayout = QFormLayout()
+        mainLayout.addRow(self.tr("&Choose a style:"), self.styles_combobox)
+
+        self.setLayout(mainLayout)
+
+        self.BASIC_STYLE = self.tr("Bright")
+
     def save(self):
-        pass
+        """Save the selected style in config
+        """
+        # Save style setting
+        style_name = self.styles_combobox.currentText()
+        self.settings.setValue("ui/style", style_name)
+
+        # Change the style on the fly
+        # TODO: Find a way to revert properly dark() palette and fill
+        # style.bright() function.
+
+    #        if style_name == self.BASIC_STYLE:
+    #            # Bright version: Reset style
+    #            qApp.setStyleSheet("")
+    #            qApp.setPalette(QApplication.style().standardPalette())
+    #            # qApp.setStyle("fusion")
+    #        else:
+    #            # Apply selected style by calling on the method based on its name
+    #            # equivalent of style.dark(app)
+    #            getattr(style, style_name.lower())(qApp)
 
     def load(self):
-        pass
+        """Setup widgets in StyleSettingsWidget"""
+        self.styles_combobox.clear()
+
+        # Get names of styles based on available files
+        available_styles = {
+            os.path.basename(os.path.splitext(file)[0]).title(): file
+            for file in glob.glob(cm.DIR_STYLES + "*.qss")
+            if "frameless" not in file
+        }
+        # Dark is the default style
+        available_styles = list(available_styles.keys()) + [self.BASIC_STYLE]
+        self.styles_combobox.addItems(available_styles)
+
+        # Display current style
+        style_name = self.settings.value("ui/style", "Dark")
+        self.styles_combobox.setCurrentIndex(available_styles.index(style_name))
 
 
 class PluginsSettingsWidget(BaseWidget):
