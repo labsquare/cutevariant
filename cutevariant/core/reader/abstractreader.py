@@ -17,6 +17,9 @@ class AbstractReader(ABC):
             reader.get_variants()
     """
 
+    # To be updated...
+    BANNED_CHARS = ".-+!="
+
     def __init__(self, device):
         super(AbstractReader, self).__init__()
         self.device = device
@@ -24,6 +27,22 @@ class AbstractReader(ABC):
         self.read_bytes = 0
         self.samples = []
         self.fields = tuple()
+
+    @classmethod
+    def sanitize_field_name(cls, fieldname):
+        """Remove unwanted characters in the given field name for SQL tables
+
+        .. note:: See #75 #88
+
+        .. note:: We always can escape fields in SQL queries, but prepared named
+            queries have no way to escape fields in VALUES statements.
+            => we MUST secure fields here.
+
+        .. todo:: Remove spaces in order to avoid unnecessary escapes later...
+        """
+        for banned_char in cls.BANNED_CHARS:
+            fieldname = fieldname.replace(banned_char, "_")
+        return fieldname
 
     @abstractclassmethod
     def get_variants(self):
