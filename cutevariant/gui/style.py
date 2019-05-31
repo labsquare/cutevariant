@@ -74,16 +74,13 @@ def dark(app):
     darkPalette.setColor(QPalette.ToolTipText, QColor(180, 180, 180))
 
     # disabled
-    darkPalette.setColor(QPalette.Disabled, QPalette.WindowText,
-                         QColor(127, 127, 127))
-    darkPalette.setColor(QPalette.Disabled, QPalette.Text,
-                         QColor(127, 127, 127))
-    darkPalette.setColor(QPalette.Disabled, QPalette.ButtonText,
-                         QColor(127, 127, 127))
-    darkPalette.setColor(QPalette.Disabled, QPalette.Highlight,
-                         QColor(80, 80, 80))
-    darkPalette.setColor(QPalette.Disabled, QPalette.HighlightedText,
-                         QColor(127, 127, 127))
+    darkPalette.setColor(QPalette.Disabled, QPalette.WindowText, QColor(127, 127, 127))
+    darkPalette.setColor(QPalette.Disabled, QPalette.Text, QColor(127, 127, 127))
+    darkPalette.setColor(QPalette.Disabled, QPalette.ButtonText, QColor(127, 127, 127))
+    darkPalette.setColor(QPalette.Disabled, QPalette.Highlight, QColor(80, 80, 80))
+    darkPalette.setColor(
+        QPalette.Disabled, QPalette.HighlightedText, QColor(127, 127, 127)
+    )
 
     app.setPalette(darkPalette)
 
