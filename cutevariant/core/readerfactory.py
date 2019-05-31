@@ -36,12 +36,11 @@ def detect_vcf_annotation(filename):
     :return: "vep", "snpeff", None
     """
     if is_gz_file(filename):
+        # Open .gz files in binary mode (See #84)
         device = open(filename, "rb")
-
     else:
-        device = open(filename,"r")
+        device = open(filename, "r")
 
-   
     std_reader = vcf.VCFReader(device)
     # print(std_reader.metadata)
     if "VEP" in std_reader.metadata:
@@ -78,7 +77,6 @@ def create_reader(filename):
     )
 
     if ".vcf" in path.suffixes and ".gz" in path.suffixes:
-        # TODO: use is_gz_file() ?
         annotation_detected = detect_vcf_annotation(filename)
         device = open(filename, "rb")
         reader = VcfReader(device, annotation_detected)
@@ -105,34 +103,3 @@ def create_reader(filename):
         return
 
     raise Exception("create_reader:: Could not choose parser for this file.")
-
-
-# class ReaderFactory(object):
-#     """
-#   Create reader depending file type
-#   """
-
-#     def __init__(self):
-#         pass
-
-#     @staticmethod
-#     def create_reader(filename):
-
-#         if not os.path.isfile(filename):
-#             raise FileExistsError()
-
-#         extension = os.path.splitext(filename)[1]
-
-#         if extension == ".csv":
-#             print("create csv reader")
-#             return CsvReader(open(filename, "r"))
-
-#         if extension == ".vcf":
-#             print("create vcf reader")
-#             return VcfReader(open(filename, "r"))
-
-#         if extension == ".vcf":
-#             print("create vcf reader")
-#             return VcfReader(open(filename, "r"))
-
-#         return None
