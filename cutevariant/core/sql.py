@@ -188,9 +188,11 @@ def create_selection_from_sql(
 ):
     """Create a selection record from sql variant query
 
+    :param conn: sqlite3 connection
     :param name : name of the selection
     :param query: sql variant query
-    :param by: can be : 'site' for (chr,pos)  or 'variant' for (chr,pos,ref,alt)
+    :param from_selection: Optimized flag only for the creation of a selection
+        from set operations, variant_id is the only useful column in the given query.
     :return: The id of the new selection. None in case of error.
     :rtype: <int> or None
     """
