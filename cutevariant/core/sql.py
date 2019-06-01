@@ -246,6 +246,37 @@ def create_selection_from_sql(
     return None
 
 
+def create_selection_from_bed(conn, name:str, bed_intervals):
+    """Create a new selection based on the given intervals taken from a BED file
+
+    :Example of query string built here:
+        SELECT id as variant_id FROM variants
+        WHERE
+            (chr = 11 AND (pos BETWEEN 10000 AND 15000))
+            OR (chr = 11 AND (pos BETWEEN 119000 AND 123000))
+            OR (chr = 11 AND (pos BETWEEN 123002 AND 123999))
+            OR (chr = 1 AND (pos BETWEEN 0 AND 999999))
+
+    :param conn: sqlite3 connection
+    :param name: Name of the selection
+    :param bed_intervals: Iterable of Interval objects
+        (how pybedtools represents a line in a BED).
+    :return: The id of the new selection. None in case of error.
+    :rtype: <int> or None
+    """
+    # Build query string based on intervals
+    query = "SELECT id as variant_id FROM variants WHERE "
+    for interval in bed_intervals:
+        query += "(chr = '{}' AND (pos BETWEEN '{}' AND '{}')) OR ".format(interval.chrom, interval.start, interval.end)
+    # Remove last 'OR' operator
+    query = query[:-4]
+
+    LOGGER.debug("create_selection_from_bed:: %s", query)
+
+    # Build the selection
+    return create_selection_from_sql(conn, query, name, from_selection=True)
+
+
 def get_selections(conn):
     """Get selections in "selections" table
 
