@@ -232,7 +232,7 @@ class MainWindow(QMainWindow):
 
         self.toolbar.addAction(
             FIcon(0xF412),
-            self.tr("Save query"),
+            self.tr("Save the query"),
             self.selection_widget.save_current_query,
         )
 
