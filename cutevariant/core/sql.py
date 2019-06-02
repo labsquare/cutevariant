@@ -267,7 +267,7 @@ def create_selection_from_bed(conn, name:str, bed_intervals):
     # Build query string based on intervals
     query = "SELECT id as variant_id FROM variants WHERE "
     for interval in bed_intervals:
-        query += "(chr = '{}' AND (pos BETWEEN '{}' AND '{}')) OR ".format(interval.chrom, interval.start, interval.end)
+        query += "(chr = '{}' AND (pos BETWEEN '{}' AND '{}')) OR ".format(interval["chrom"], interval["start"], interval["end"])
     # Remove last 'OR' operator
     query = query[:-4]
 
