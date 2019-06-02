@@ -159,7 +159,7 @@ class BedTool:
             stream, fieldnames=bed_fieldnames, restkey="misc", dialect=csv_dialect
         )
 
-        for line_number, interval in enumerate(csv_reader):
+        for line_number, interval in enumerate(csv_reader, 1):
             print(interval)
             yield interval
 
