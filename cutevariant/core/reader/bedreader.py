@@ -191,12 +191,3 @@ def parse_bed_file(filepath):
         interval["chrom"] = interval["chrom"].replace("chr", "")
 
         yield interval
-
-
-if __name__ == "__main__":
-
-#    parse_bed_file("/media/DATA/Projets/cutevariant/cutevariant/examples/a.bed")
-#    parse_bed_file("/media/DATA/Projets/cutevariant/cutevariant/examples/test_9_columns.bed")
-    g = parse_bed_file("/media/DATA/Projets/cutevariant/cutevariant/examples/test.bed")
-
-    tuple(g)
