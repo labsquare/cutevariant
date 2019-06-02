@@ -1,4 +1,11 @@
+# Standard imports
+import pytest
+import sqlite3
+from collections import OrderedDict
+
+# Custom imports
 from cutevariant.core.reader import VcfReader, FakeReader
+from cutevariant.core.reader.bedreader import BedTool
 from cutevariant.core.reader import check_variant_schema, check_field_schema
 from cutevariant.core import sql
 import vcf
@@ -114,6 +121,172 @@ def test_create_db(reader):
         variant_count+=1
 
     assert sql.get_variants_count(conn) == variant_count
+
+
+def test_bedreader_from_string():
+    """Test bed string"""
+
+    large_string = """
+        chr1 1    10   feature1  0 +
+        chr1 50   60   feature2  0 -
+        chr1 51 59 another_feature 0 +
+    """
+    intervals = tuple(BedTool(large_string))
+    expected = (
+        OrderedDict(
+            [
+                ("chrom", "chr1"),
+                ("start", "1"),
+                ("end", "10"),
+                ("name", "feature1"),
+                ("score", "0"),
+                ("strand", "+"),
+                ("thickStart", None),
+                ("thickEnd", None),
+                ("itemRgb", None),
+                ("blockCount", None),
+                ("blockSizes", None),
+                ("blockStarts", None),
+            ]
+        ),
+        OrderedDict(
+            [
+                ("chrom", "chr1"),
+                ("start", "50"),
+                ("end", "60"),
+                ("name", "feature2"),
+                ("score", "0"),
+                ("strand", "-"),
+                ("thickStart", None),
+                ("thickEnd", None),
+                ("itemRgb", None),
+                ("blockCount", None),
+                ("blockSizes", None),
+                ("blockStarts", None),
+            ]
+        ),
+        OrderedDict(
+            [
+                ("chrom", "chr1"),
+                ("start", "51"),
+                ("end", "59"),
+                ("name", "another_feature"),
+                ("score", "0"),
+                ("strand", "+"),
+                ("thickStart", None),
+                ("thickEnd", None),
+                ("itemRgb", None),
+                ("blockCount", None),
+                ("blockSizes", None),
+                ("blockStarts", None),
+            ]
+        ),
+    )
+    assert intervals == expected
+
+
+def test_bedreader_from_empty_string():
+    """Test bed string with no data at all or just no data after the header"""
+
+    large_string = """
+        browser position chr7:127471196-127495720
+    """
+
+    bedtool = BedTool(large_string)
+    intervals = tuple(bedtool)
+
+    assert intervals == tuple()
+    assert bedtool.count == 0
+
+    large_string = ""
+
+    bedtool = BedTool(large_string)
+    intervals = tuple(bedtool)
+
+    assert intervals == tuple()
+    assert bedtool.count == 0
+
+
+def test_bedreader_from_file():
+    """Test bed data in gz and uncompressed files"""
+
+    bedtool = BedTool("examples/test.bed.gz")
+    intervals = tuple(bedtool)
+    expected = (
+        OrderedDict(
+            [
+                ("chrom", "chr11"),
+                ("start", "10000"),
+                ("end", "15000"),
+                ("name", None),
+                ("score", None),
+                ("strand", None),
+                ("thickStart", None),
+                ("thickEnd", None),
+                ("itemRgb", None),
+                ("blockCount", None),
+                ("blockSizes", None),
+                ("blockStarts", None),
+            ]
+        ),
+        OrderedDict(
+            [
+                ("chrom", "chr11"),
+                ("start", "119000"),
+                ("end", "123000"),
+                ("name", None),
+                ("score", None),
+                ("strand", None),
+                ("thickStart", None),
+                ("thickEnd", None),
+                ("itemRgb", None),
+                ("blockCount", None),
+                ("blockSizes", None),
+                ("blockStarts", None),
+            ]
+        ),
+        OrderedDict(
+            [
+                ("chrom", "chr11"),
+                ("start", "123002"),
+                ("end", "123999"),
+                ("name", None),
+                ("score", None),
+                ("strand", None),
+                ("thickStart", None),
+                ("thickEnd", None),
+                ("itemRgb", None),
+                ("blockCount", None),
+                ("blockSizes", None),
+                ("blockStarts", None),
+            ]
+        ),
+        OrderedDict(
+            [
+                ("chrom", "chr1"),
+                ("start", "0"),
+                ("end", "999999"),
+                ("name", None),
+                ("score", None),
+                ("strand", None),
+                ("thickStart", None),
+                ("thickEnd", None),
+                ("itemRgb", None),
+                ("blockCount", None),
+                ("blockSizes", None),
+                ("blockStarts", None),
+            ]
+        ),
+    )
+
+    assert intervals == expected
+    assert bedtool.count == 4
+
+    bedtool = BedTool("examples/test_with_headers.bed")
+    intervals = tuple(bedtool)
+
+    assert intervals == expected
+    assert bedtool.count == 4
 
 
 # def test_vcf():
