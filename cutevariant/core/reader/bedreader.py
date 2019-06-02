@@ -129,9 +129,11 @@ class BedTool:
         stream.seek(0)
         [next(stream) for line in range(skipped_header_line)]
         try:
+            # If there is no data at all or after the header
             data_line = next(stream)
         except StopIteration:
-            raise ValueError("No interval detected in the given BED file!")
+            LOGGER.debug("No interval detected in the given BED file!")
+            return
 
         csv_dialect = csv.Sniffer().sniff(data_line, delimiters="\t ")
 
