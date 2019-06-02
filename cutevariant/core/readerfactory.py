@@ -2,7 +2,6 @@
 import os
 import struct
 from contextlib import contextmanager
-import binascii
 import pathlib
 
 # Custom imports
@@ -16,7 +15,7 @@ LOGGER = cm.logger()
 def is_gz_file(filepath):
     """Return a boolean according to the compression state of the file"""
     with open(filepath, "rb") as test_f:
-        return binascii.hexlify(test_f.read(2)) == b"1f8b"
+        return test_f.read(3) == b"\x1f\x8b\x08"
 
 
 def get_uncompressed_size(filename):
