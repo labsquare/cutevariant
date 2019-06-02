@@ -8,18 +8,14 @@ from cutevariant.core.reader import VcfReader, FakeReader
 from cutevariant.core.reader.bedreader import BedTool
 from cutevariant.core.reader import check_variant_schema, check_field_schema
 from cutevariant.core import sql
-import vcf
-import os
-import pytest
-import sqlite3
+
 
 READERS = [
-FakeReader(),
-VcfReader(open("examples/test.vcf")),
-VcfReader(open("examples/test.vep.vcf"), "vep"),
-VcfReader(open("examples/test.snpeff.vcf"), "snpeff"),
+    FakeReader(),
+    VcfReader(open("examples/test.vcf")),
+    VcfReader(open("examples/test.vep.vcf"), "vep"),
+    VcfReader(open("examples/test.snpeff.vcf"), "snpeff"),
 ]
-
 
 
 @pytest.mark.parametrize(
@@ -47,9 +43,13 @@ def test_fields(reader):
     # is a good candidate.
     # PS: we do not care of duplicated fields in samples since we do not use
     # other field than genotype for now.
-    variants_fields = {field["name"] for field in reader.get_fields_by_category("variants")}
+    variants_fields = {
+        field["name"] for field in reader.get_fields_by_category("variants")
+    }
     print("Variants fields", variants_fields)
-    annotations_fields = {field["name"] for field in reader.get_fields_by_category("annotations")}
+    annotations_fields = {
+        field["name"] for field in reader.get_fields_by_category("annotations")
+    }
     print("Annotations fields", variants_fields)
     duplicated_variants = variants_fields & annotations_fields
     print("DUPLICATED VARIANTS", duplicated_variants)
@@ -87,7 +87,7 @@ def test_variants(reader):
             print(reader.get_samples())
             assert sorted(reader.get_samples()) == sorted(samples_names)
 
-        # check variant schema 
+        # check variant schema
         check_variant_schema(variant)
 
 
@@ -114,11 +114,10 @@ def test_create_db(reader):
 
     sql.insert_many_variants(conn, reader.get_variants())
 
-
-    # count variant with annotation 
+    #  count variant with annotation
     variant_count = 0
     for variant in reader.get_variants():
-        variant_count+=1
+        variant_count += 1
 
     assert sql.get_variants_count(conn) == variant_count
 
