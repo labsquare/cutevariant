@@ -197,7 +197,7 @@ class StyleSettingsWidget(BaseWidget):
 
         self.setLayout(mainLayout)
 
-        self.BASIC_STYLE = self.tr("Bright")
+        self.BASIC_STYLE = "Bright"
 
     def save(self):
         """Save the selected style in config
