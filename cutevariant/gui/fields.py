@@ -84,7 +84,12 @@ class StrField(BaseField):
         self.edit.setText(str(value))  
 
     def get_value(self) -> str:
-        return self.edit.text()
+        """Return quoted string
+        
+        Returns:
+            str
+        """
+        return "'" + self.edit.text() + "'"
 
     def set_completer(self, completer: QCompleter):
         """ set a completer to autocomplete value """ 
@@ -176,17 +181,18 @@ class FieldFactory(QObject):
 
         if field["type"] == 'int':
             w = IntegerField()
-            w.set_range(*sql.get_field_range(conn,sql_field))
+            w.set_range(*sql.get_field_range(self.conn,sql_field))
             return w
 
         if field["type"] == 'float':
             w = FloatField()
-            w.set_range(*sql.get_field_range(conn,sql_field))
+            w.set_range(*sql.get_field_range(self.conn,sql_field))
             return w
 
         if field["type"] == 'str':
             w = StrField()
-            unique_values = sql.get_field_unique_values(conn,"gene") # Can be huge ... How to use "like" ??
+            print(field)
+            unique_values = sql.get_field_unique_values(self.conn, field["name"]) # Can be huge ... How to use "like" ??
             w.set_completer(QCompleter(unique_values))
             return w
 
@@ -345,6 +351,9 @@ class FilterModel(QAbstractItemModel):
         root_item (FilterItem): RootItem (invisible) to store recursive item
     """
 
+
+    filterChanged = Signal()
+
     def __init__(self, conn, parent=None):
         super().__init__(parent)
         self.root_item = FilterItem()
@@ -390,6 +399,8 @@ class FilterModel(QAbstractItemModel):
 
                 if item.type() == FilterItem.CONDITION_TYPE:
                     item.set_data(value, index.column())
+
+                self.filterChanged.emit()
 
 
         return True
@@ -437,8 +448,8 @@ class FilterModel(QAbstractItemModel):
         """ load data from raw dict """ 
         self.beginResetModel()
         self.clear()
-        
-        self.root_item.append(self.toItem(data))
+        if len(data):
+            self.root_item.append(self.toItem(data))
 
 
         self.endResetModel()
@@ -453,6 +464,21 @@ class FilterModel(QAbstractItemModel):
         else:  # condition item
             item = FilterItem((data["field"], data["operator"], data["value"]))
             return item
+
+    def fromItem(self, item = None ) -> dict:
+        """ return tree as filter dictionnary """ 
+        if item is None:
+            item = self.root_item[0]
+
+        if item.type() == FilterItem.LOGIC_TYPE:
+                # Return dict with operator as key and item as value
+                operator_data = [
+                    self.fromItem(child) for child in item.children
+                ]
+                return {item.get_data(0): operator_data}
+
+        if item.type() == FilterItem.CONDITION_TYPE:
+            return {"field": item.get_data(0), "operator": item.get_data(1), "value": item.get_data(2)}     
 
         
     def rowCount(self, parent: QModelIndex):
@@ -546,50 +572,49 @@ class FilterDelegate(QStyledItemDelegate):
         editor.setGeometry(option.rect)
 
 
+if __name__ == '__main__':
+    
+
+    app = QApplication(sys.argv)
+    app.setStyle("fusion")
+
+    style.dark(app)
+
+    conn = get_sql_connexion("/home/sacha/Dev/cutevariant/examples/test.db")
 
 
+    data = {
+                "AND": [
+                    {"field": "chr", "operator": "=", "value": "chr"},
+                    {
+                        "OR": [
+                            {"field": "gene", "operator": "=", "value": 5},
+                            {"field": "pos", "operator": "=", "value": 3},
+                        ]
+                    },
+                ]
+            }
+
+    model = FilterModel(conn)
+    model.load(data)
+    delegate = FilterDelegate()
 
 
-app = QApplication(sys.argv)
-app.setStyle("fusion")
-
-style.dark(app)
-
-conn = get_sql_connexion("/home/sacha/Dev/cutevariant/examples/test.db")
+    print(model.fromItem(model.root_item[0]))
 
 
-data = {
-            "AND": [
-                {"field": "chr", "operator": "=", "value": "chr"},
-                {
-                    "OR": [
-                        {"field": "gene", "operator": "=", "value": 5},
-                        {"field": "pos", "operator": "=", "value": 3},
-                    ]
-                },
-            ]
-        }
+    view = QTreeView()
+    view.setEditTriggers(QAbstractItemView.DoubleClicked)
+    view.setItemDelegate(delegate)
+    view.setAlternatingRowColors(True)
+    view.setUniformRowHeights(True)
+    view.setModel(model)
 
-print(data)
+    view.setFirstColumnSpanned(0, QModelIndex(), True)
 
+    view.show()
 
-model = FilterModel(conn)
-model.load(data)
-delegate = FilterDelegate()
-
-
-view = QTreeView()
-view.setEditTriggers(QAbstractItemView.DoubleClicked)
-view.setItemDelegate(delegate)
-view.setAlternatingRowColors(True)
-view.setUniformRowHeights(True)
-view.setModel(model)
-
-view.setFirstColumnSpanned(0, QModelIndex(), True)
-
-view.show()
-
-app.exec_()
+    app.exec_()
 
 
 
