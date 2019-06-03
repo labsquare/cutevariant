@@ -80,6 +80,9 @@ class BedTool:
             - blockSizes
             - blockStarts
 
+        Excedent data is put in and additional column 'misc'.
+        Empty columns contain None values.
+
         :return: Generator of Intervals
         :rtype: <generator <OrderectDict>>
         """
