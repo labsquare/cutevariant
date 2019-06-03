@@ -8,9 +8,13 @@ from cutevariant.gui import style
 from cutevariant.core import sql, get_sql_connexion
 
 class BaseField(QFrame):
-    """Base class for Field widget """
+    """Base class for Field widget
+    Inherit from this class if you want a custom field editor 
+    """
     def __init__(self, parent = None):
         super().__init__(parent)
+
+        # style hack : Set background as same as selection in the view 
         self.setAutoFillBackground(True)
         self.setBackgroundRole(QPalette.Highlight)
 
@@ -20,17 +24,24 @@ class BaseField(QFrame):
     def get_value(self):
         raise NotImplemented()
 
+    def set_widget(self, widget):
+        self.widget = widget 
+        h_layout = QHBoxLayout()
+        h_layout.addWidget(widget)
+        h_layout.setContentsMargins(0,0,0,0)
+        self.setLayout(h_layout)
+
 
 
 class IntegerField(BaseField):
-    """Field with a slider and a spin box to edit integer value """
+    """ Editor as a QSpinbox for integer field value 
+
+        ..todo: Create a slider ? 
+    """
     def __init__(self, parent = None):
         super().__init__(parent)
         self.spin_box = QSpinBox()
-        h_layout = QHBoxLayout()
-        h_layout.addWidget(self.spin_box)
-        h_layout.setContentsMargins(0,0,0,0)
-        self.setLayout(h_layout)
+        self.set_widget(self.spin_box)
 
     def set_value(self, value: int):
         self.spin_box.setValue(value)
@@ -39,19 +50,17 @@ class IntegerField(BaseField):
         return self.spin_box.value()
 
     def set_range(self, min_, max_):
+        """ Limit editor with a range of value """ 
         self.spin_box.setRange(min_,max_)
 
 
 class FloatField(BaseField):
-    """Field with a spin_box and a spin box to edit integer value """
+    """ Editor as a QDoubleSpinBoxfor Floating field value """
     def __init__(self, parent = None):
         super().__init__(parent)
         self.spin_box = QDoubleSpinBox()
-        h_layout = QHBoxLayout()
-        h_layout.addWidget(self.spin_box)
-        self.setLayout(h_layout)
+        self.set_widget(self.spin_box)
 
-        self.spin_box.valueChanged.connect(self._show_tooltip)
 
     def set_value(self, value: int):
         self.spin_box.setValue(value)
@@ -62,39 +71,32 @@ class FloatField(BaseField):
     def set_range(self, min_, max_):
         self.spin_box.setRange(min_,max_)
 
-    def _show_tooltip(self, value):
-
-        tip = QToolTip()
-        pos = self.mapToGlobal(self.spin_box.pos() + QPoint(self.spin_box.width() / 2, 0))
-        tip.showText(pos, str(value))
-
 
 class StrField(BaseField):
-    """docstring for ClassName"""
+    """Editor as a QLineEditfor String value """
     def __init__(self, parent = None):
         super().__init__(parent)
         self.edit = QLineEdit()
-        h_layout = QHBoxLayout()
-        h_layout.addWidget(self.edit)
-        self.setLayout(h_layout)
+        self.set_widget(self.edit)
+
 
     def set_value(self, value:str):
-        self.edit.setText(value)  
+        self.edit.setText(str(value))  
 
     def get_value(self) -> str:
         return self.edit.text()
 
     def set_completer(self, completer: QCompleter):
+        """ set a completer to autocomplete value """ 
         self.edit.setCompleter(completer)
 
 class BoolField(BaseField):
-    """docstring for ClassName"""
+    """Editor as a QCheckbox for Boolean value"""
     def __init__(self, parent = None):
         super().__init__(parent)
         self.box = QCheckBox()
-        h_layout = QHBoxLayout()
-        h_layout.addWidget(self.box)
-        self.setLayout(h_layout)
+        self.set_widget(self.box)
+
 
 
     def set_value(self, value:bool):
@@ -105,71 +107,74 @@ class BoolField(BaseField):
 
 
 class OperatorField(BaseField):
-    """docstring for ClassName"""
+    """Operator editor as a QCombobox to select operator value """
 
     SYMBOL = (
         ("less", "<"),
         ("less or equal", "<="),
         ("greater", ">"),
         ("greater or equal", ">="),
-        ("equal", "=="),
+        ("equal", "="),
         ("not equal", "!=")
         )
 
     def __init__(self, parent = None):
         super().__init__(parent)
-
-        h_layout = QHBoxLayout()
         self.combo_box = QComboBox()
-        h_layout.addWidget(self.combo_box)
-        h_layout.setContentsMargins(0,0,0,0)
-        self.setLayout(h_layout)
-        self.fill()
+        self.set_widget(self.combo_box)
+        self._fill()
 
-    def set_value(self, value):
-        pass 
+    def set_value(self, value:str):
+        self.combo_box.setCurrentText(value) 
 
-    def get_value(self):
-        pass 
+    def get_value(self)->str:
+        return self.combo_box.currentData()
 
-    def fill(self):
+    def _fill(self):
+        """ Fill QCombobox with SYMBOL """ 
         self.combo_box.clear()
         for s in self.SYMBOL:
             self.combo_box.addItem(s[0], s[1])
 
 class ColumnField(BaseField):
-    """docstring for ClassName"""
+    """Editor as QCombobox for Columns value aka Field name """
     def __init__(self, parent = None):
         super().__init__(parent)
         self.combo_box = QComboBox()
-        h_layout = QHBoxLayout()
-        h_layout.addWidget(self.combo_box)
-        h_layout.setContentsMargins(0,0,0,0)
         self.combo_box.setEditable(True)
-        self.setLayout(h_layout)
+        self.set_widget(self.combo_box)
 
-    def set_value(self, value):
-        pass 
 
-    def get_value(self):
-        pass 
+
+    def set_value(self, value:str):
+        self.combo_box.setCurrentText(value)
+
+    def get_value(self)->str:
+        return self.combo_box.currentText()
 
     def set_columns(self, columns: list):
+        """ fill combobox with columns values 
+        """
         self.combo_box.addItems(columns)
 
 
 
 
-class FieldBuilder(QObject):
+class FieldFactory(QObject):
+    """FieldFactory is a factory design patern to build fieldEditor according sql Field data 
+    
+    Attributes:
+        conn (sqlite3.connection)
+    
+    """
 
     def __init__(self, conn):
         self.conn = conn
 
     def create(self, sql_field):
         field = sql.get_field_by_name(self.conn, sql_field)
-        print(field)
+
         if field["type"] == 'int':
-            
             w = IntegerField()
             w.set_range(*sql.get_field_range(conn,sql_field))
             return w
@@ -293,7 +298,16 @@ class FilterItem(object):
         return None
 
     def get_data(self, column = 0):
+        """Return data of item according column 
 
+        If item is a CONDITION_TYPE, you can select field (column=1), operator (column=2) or value (column=3)
+        
+        Args:
+            column (int)
+        
+        Returns:
+            Any type: Data
+        """
         if column not in range(0,3):
             return None
 
@@ -306,10 +320,31 @@ class FilterItem(object):
         return None
 
 
-class FilterModel(QAbstractItemModel):
-    """ FilterModel is the class to store FilterItem for the FilterView 
+    def set_data(self, data, column = 0):
+        """Set data of item according column 
+        
+        Args:
+            data (Any type): any data
+            column (int): Column Type
+        """
+        if self.type() == self.LOGIC_TYPE and column == 0:
+            self.data = data
 
+        if self.type() == self.CONDITION_TYPE:
+            tmp = list(self.data)
+            tmp[column] = data 
+            self.data = tuple(tmp) 
+
+
+class FilterModel(QAbstractItemModel):
+
+    """Model to store Filter items
+    
+    Attributes:
+        conn (sqlite3.connection)
+        root_item (FilterItem): RootItem (invisible) to store recursive item
     """
+
     def __init__(self, conn, parent=None):
         super().__init__(parent)
         self.root_item = FilterItem()
@@ -320,15 +355,21 @@ class FilterModel(QAbstractItemModel):
         del self.root_item
 
     def data(self, index: QModelIndex, role):
-        """ overrided : Return data for the Qt view """ 
+        """return data of model for the Tree View
+        
+        Args:
+            index (QModelIndex): index of item
+            role (Qt.Role) 
+        
+        Returns:
+            Any type: Return value  
+        """
         if not index.isValid():
             return None
 
-        if role == Qt.EditRole:
-            print("edit ")
-            return str("sacha")
+   
 
-        if role == Qt.DisplayRole:
+        if role == Qt.DisplayRole or role == Qt.EditRole:
             item = index.internalPointer()
             return item.get_data(index.column())
 
@@ -341,14 +382,16 @@ class FilterModel(QAbstractItemModel):
                 return int(Qt.AlignVCenter)+int(Qt.AlignLeft)
 
 
-
-
-        
-
-
     def setData(self, index, value, role = Qt.EditRole):
 
-    
+        if role == Qt.EditRole:
+            if index.isValid():
+                item = self.item(index)
+
+                if item.type() == FilterItem.CONDITION_TYPE:
+                    item.set_data(value, index.column())
+
+
         return True
 
 
@@ -445,6 +488,9 @@ class FilterModel(QAbstractItemModel):
             
         return Qt.ItemIsSelectable|Qt.ItemIsEditable
 
+    def item(self, index) -> FilterItem:
+        if index.isValid():
+            return index.internalPointer()
 
 
 class FilterDelegate(QStyledItemDelegate):
@@ -453,13 +499,11 @@ class FilterDelegate(QStyledItemDelegate):
 
 
 
-
-
     def createEditor(self, parent, option, index: QModelIndex):
 
         item = index.internalPointer()
-
-        conn = index.model().conn
+        model = index.model()
+        conn = model.conn
 
         print(conn)
 
@@ -478,17 +522,22 @@ class FilterDelegate(QStyledItemDelegate):
             return w
 
         if index.column() == 2:
-            w =  IntegerField(parent)
+
+            sql_field_index = model.index(index.row(),0, index.parent())
+            sql_field = model.data(sql_field_index, Qt.DisplayRole)
+            w = FieldFactory(conn).create(sql_field)
+            w.setParent(parent)
             return w
 
 
         return super().createEditor(parent,option,index)
 
     def setEditorData(self, editor, index):
-        pass 
+        editor.set_value(index.data(Qt.EditRole))
+
 
     def setModelData(self,editor, model, index):
-        pass
+        model.setData(index, editor.get_value())
 
     def sizeHint(self, option, index: QModelIndex):
         return QSize(super().sizeHint(option,index).width(), 30)
@@ -506,7 +555,7 @@ app.setStyle("fusion")
 
 style.dark(app)
 
-conn = get_sql_connexion("/home/schutz/Dev/cutevariant/examples/test.db")
+conn = get_sql_connexion("/home/sacha/Dev/cutevariant/examples/test.db")
 
 
 data = {
@@ -514,8 +563,8 @@ data = {
                 {"field": "chr", "operator": "=", "value": "chr"},
                 {
                     "OR": [
-                        {"field": "b", "operator": "=", "value": 5},
-                        {"field": "c", "operator": "=", "value": 3},
+                        {"field": "gene", "operator": "=", "value": 5},
+                        {"field": "pos", "operator": "=", "value": 3},
                     ]
                 },
             ]
@@ -527,7 +576,6 @@ print(data)
 model = FilterModel(conn)
 model.load(data)
 delegate = FilterDelegate()
-
 
 
 view = QTreeView()
