@@ -20,6 +20,7 @@ class FilterQueryWidget(QueryPluginWidget):
         self.toolbar.setIconSize(QSize(20, 20))
         self.view.setModel(self.model)
         self.view.setItemDelegate(self.delegate)
+        self.view.setIndentation(15)
 
         layout = QVBoxLayout()
         layout.addWidget(self.view)
@@ -62,15 +63,25 @@ class FilterQueryWidget(QueryPluginWidget):
         # self.model.load()
         print(self.query.filter)
         self.model.load(self.query.filter)
+        self._update_view_geometry()
+
 
     def on_filter_changed(self):
 
-        self.query.filter = self.model.fromItem()
+        self.query.filter = self.model.to_dict()
         self.query_changed.emit()
 
     def add_logic(self):
         index = self.view.currentIndex()
         self.model.add_logic_item(parent=index)
+        self.view.setFirstColumnSpanned(0, index.parent() , True)
+
+
+    def _update_view_geometry(self):
+        self.view.expandAll()   
+        for index in self.model.match(self.model.index(0,0), FilterModel.TypeRole, FilterItem.LOGIC_TYPE, -1, Qt.MatchRecursive):
+            self.view.setFirstColumnSpanned(0, index.parent() , True)
+
 
     def add_condition(self):
         index = self.view.currentIndex()

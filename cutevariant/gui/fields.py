@@ -124,6 +124,7 @@ class OperatorField(BaseField):
         ("greater or equal", ">="),
         ("equal", "="),
         ("not equal", "!="),
+        ("like","LIKE")
     )
 
     def __init__(self, parent=None):
@@ -371,6 +372,7 @@ class FilterModel(QAbstractItemModel):
 
     filterChanged = Signal()
     HEADERS = ["field", "operator", "value"]
+    TypeRole = Qt.UserRole + 1
 
     def __init__(self, conn, parent=None):
         super().__init__(parent)
@@ -405,6 +407,16 @@ class FilterModel(QAbstractItemModel):
             if index.column() == 2:
                 return int(Qt.AlignVCenter) + int(Qt.AlignLeft)
 
+        if role == Qt.FontRole:
+            if index.internalPointer().type() == FilterItem.LOGIC_TYPE:
+                font = QFont()
+                font.setBold(True)
+                return font
+
+
+        if role == FilterModel.TypeRole:
+            return index.internalPointer().type()
+
     def setData(self, index, value, role=Qt.EditRole):
 
         if role == Qt.EditRole:
@@ -433,7 +445,7 @@ class FilterModel(QAbstractItemModel):
 
         return None
 
-    def index(self, row, column, parent: QModelIndex):
+    def index(self, row, column, parent = QModelIndex()):
         """ overrided : create index according row, column and parent """
 
         if not self.hasIndex(row, column, parent):
@@ -473,29 +485,33 @@ class FilterModel(QAbstractItemModel):
         self.beginResetModel()
         self.clear()
         if len(data):
-            self.root_item.append(self.toItem(data))
-
+            self.root_item.append(self.to_item(data))
         self.endResetModel()
 
-    def toItem(self, data: dict) -> FilterItem:
+
+    def to_item(self, data: dict) -> FilterItem:
         """ recursive function to load item in tree from data """
         if len(data) == 1:  #  logic item
             operator = list(data.keys())[0]
             item = FilterItem(operator)
-            [item.append(self.toItem(k)) for k in data[operator]]
+            [item.append(self.to_item(k)) for k in data[operator]]
             return item
         else:  # condition item
             item = FilterItem((data["field"], data["operator"], data["value"]))
             return item
 
-    def fromItem(self, item=None) -> dict:
-        """ return tree as filter dictionnary """
+    def to_dict(self, item=None) -> dict:
+        """ recursive function to export model as a dictionnary """
+
+        if len(self.root_item.children) == 0:
+            return {}
+
         if item is None:
             item = self.root_item[0]
 
         if item.type() == FilterItem.LOGIC_TYPE:
             # Return dict with operator as key and item as value
-            operator_data = [self.fromItem(child) for child in item.children]
+            operator_data = [self.to_dict(child) for child in item.children]
             return {item.get_data(0): operator_data}
 
         if item.type() == FilterItem.CONDITION_TYPE:
@@ -520,6 +536,8 @@ class FilterModel(QAbstractItemModel):
         self.beginInsertRows(parent, 0, 0)
         self.item(parent).insert(0, FilterItem(data=value))
         self.endInsertRows()
+        self.filterChanged.emit()
+
 
     def add_condition_item(self, value=("chr", ">", "100"), parent=QModelIndex()):
         """Add condition item 
@@ -536,6 +554,7 @@ class FilterModel(QAbstractItemModel):
         self.beginInsertRows(parent, 0, 0)
         self.item(parent).insert(0, FilterItem(data=value))
         self.endInsertRows()
+        self.filterChanged.emit()
 
     def remove_item(self, index):
         """Remove Item 
@@ -545,6 +564,7 @@ class FilterModel(QAbstractItemModel):
         self.beginRemoveRows(index.parent(), index.row(), index.row())
         self.item(index).parent.remove(index.row())
         self.endRemoveRows()
+        self.filterChanged.emit()
 
     def rowCount(self, parent: QModelIndex):
         """ overrided : return model row count according parent """
@@ -582,6 +602,11 @@ class FilterModel(QAbstractItemModel):
             return index.internalPointer()
         else:
             return self.root_item
+
+
+
+
+
 
 
 class FilterDelegate(QStyledItemDelegate):
@@ -656,7 +681,7 @@ if __name__ == "__main__":
     model.load(data)
     delegate = FilterDelegate()
 
-    print(model.fromItem(model.root_item[0]))
+    print(model.to_dict(model.root_item[0]))
 
     view = QTreeView()
     view.setEditTriggers(QAbstractItemView.DoubleClicked)
