@@ -36,8 +36,8 @@ class FilterQueryWidget(QueryPluginWidget):
         self.add_button = QToolButton()
         self.add_button.setIcon(FIcon(0xF703))
         self.add_button.setPopupMode(QToolButton.InstantPopup)
-        self.add_menu.addAction(FIcon(0xF8E0), "Add Logic", self.add_logic)
-        self.add_menu.addAction(FIcon(0xF70A), "Add Condition", self.add_condition)
+        self.add_menu.addAction(FIcon(0xF8E0), "Add Logic", self.on_add_logic)
+        self.add_menu.addAction(FIcon(0xF70A), "Add Condition", self.on_add_condition)
         self.add_button.setMenu(self.add_menu)
 
         self.toolbar.addWidget(self.add_button)
@@ -65,30 +65,45 @@ class FilterQueryWidget(QueryPluginWidget):
         self.model.load(self.query.filter)
         self._update_view_geometry()
 
-
     def on_filter_changed(self):
-
+        """ 
+        This slot is called when the model changed and signal the change to other queryWidget
+        """
         self.query.filter = self.model.to_dict()
         self.query_changed.emit()
 
-    def add_logic(self):
+    def on_add_logic(self):
+        """Add logic item to the current selected index
+        """
         index = self.view.currentIndex()
-        self.model.add_logic_item(parent=index)
-        self.view.setFirstColumnSpanned(0, index.parent() , True)
-
+        if index:
+            self.model.add_logic_item(parent=index)
+            self.view.setFirstColumnSpanned(0, index.parent(), True)
 
     def _update_view_geometry(self):
-        self.view.expandAll()   
-        for index in self.model.match(self.model.index(0,0), FilterModel.TypeRole, FilterItem.LOGIC_TYPE, -1, Qt.MatchRecursive):
-            self.view.setFirstColumnSpanned(0, index.parent() , True)
+        """Set column Spanned to True for all Logic Item 
+        This allows Logic Item Editor to take all the space inside the row 
+        """
+        self.view.expandAll()
+        for index in self.model.match(
+            self.model.index(0, 0),
+            FilterModel.TypeRole,
+            FilterItem.LOGIC_TYPE,
+            -1,
+            Qt.MatchRecursive,
+        ):
+            self.view.setFirstColumnSpanned(0, index.parent(), True)
 
-
-    def add_condition(self):
+    def on_add_condition(self):
+        """Add condition item to the current selected index 
+        """
         index = self.view.currentIndex()
-        self.model.add_condition_item(parent=index)
+        if index:
+            self.model.add_condition_item(parent=index)
 
     def on_delete_item(self):
-
+        """Delete current item 
+        """
         ret = QMessageBox.question(
             self,
             "remove row",

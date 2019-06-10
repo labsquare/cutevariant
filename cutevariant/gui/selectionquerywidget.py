@@ -174,7 +174,9 @@ class SelectionQueryWidget(QueryPluginWidget):
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setSelectionMode(QAbstractItemView.SingleSelection)
         self.view.horizontalHeader().hide()
-        # self.view.horizontalHeader().setStretchLastSection(True)
+
+        self.toolbar = QToolBar()
+        self.toolbar.setIconSize(QSize(20, 20))
 
         self.view.verticalHeader().show()
         self.view.verticalHeader().setDefaultSectionSize(26)
@@ -183,6 +185,7 @@ class SelectionQueryWidget(QueryPluginWidget):
 
         layout = QVBoxLayout()
         layout.addWidget(self.view)
+        layout.addWidget(self.toolbar)
         layout.setContentsMargins(0, 0, 0, 0)
 
         self.setLayout(layout)
@@ -190,6 +193,11 @@ class SelectionQueryWidget(QueryPluginWidget):
         # call on_current_row_changed when item selection changed
         self.view.selectionModel().currentRowChanged.connect(
             self.on_current_row_changed
+        )
+
+        #  Setup actions
+        self.edit_action = self.toolbar.addAction(
+            FIcon(0xF8FF), self.tr("Edit"), self.edit_selection
         )
 
     def menu_setup(self, locked_selection=False):
