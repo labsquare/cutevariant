@@ -75,9 +75,9 @@ def main():
     # Display
     w = MainWindow()
 
-    STYLES = cm.DIR_STYLES + "frameless.qss"
-    with open(STYLES,"r") as file:
-        w.setStyleSheet(file.read())
+    # STYLES = cm.DIR_STYLES + "frameless.qss"
+    # with open(STYLES,"r") as file:
+    #     w.setStyleSheet(file.read())
 
     w.show()
     app.exec_()

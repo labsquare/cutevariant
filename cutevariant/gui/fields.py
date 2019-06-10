@@ -205,38 +205,50 @@ class FieldFactory(QObject):
 
 
 
-class ToggleButton(BaseField):
+class LogicField(BaseField):
     def __init__(self, parent = None):
         super().__init__(parent)
 
-        tool = QPushButton("AND")
-        tool1 = QPushButton("OR")
+        self.and_button = QPushButton("AND")
+        self.or_button = QPushButton("OR")
 
-        tool1.setCheckable(True)
-        tool.setCheckable(True)
+        self.and_button.setCheckable(True)
+        self.or_button.setCheckable(True)
 
-        tool1.setChecked(True)
+        self.and_button.setChecked(True)
 
+        group = QButtonGroup(parent)
+        group.setExclusive(True)
 
-        # tool.setFlat(True)   
-        # tool1.setFlat(True)
-
-        g = QButtonGroup(parent)
-        g.setExclusive(True)
-
-        g.addButton(tool,0)
-        g.addButton(tool1,1)
+        group.addButton(self.or_button,0)
+        group.addButton(self.and_button,1)
 
         h = QHBoxLayout()
-        h.addWidget(tool)
-        h.addWidget(tool1)
+        h.addWidget(self.or_button)
+        h.addWidget(self.and_button)
 
         self.setLayout(h)
         self.setMaximumWidth(100)
         h.setContentsMargins(0,0,0,0)
 
-        tool.setStyleSheet("QPushButton:checked{background-color:red}")
-        tool1.setStyleSheet("QPushButton:checked{background-color:red}")
+        self.or_button.setStyleSheet("QPushButton:checked{background-color:red}")
+        self.and_button.setStyleSheet("QPushButton:checked{background-color:red}")
+
+
+    def set_value(self, value:str):
+        print("set value", value)
+        if value.upper() == "OR":
+            self.or_button.setChecked(True)
+        else:
+            self.and_button.setChecked(True)
+
+    def get_value(self) -> str:
+        print("get value", self.or_button.isChecked())
+        if self.or_button.isChecked():
+            return "OR"
+        else:
+            return "AND"
+
 
 
 class FilterItem(object):
@@ -271,10 +283,10 @@ class FilterItem(object):
 
     def __del__(self):
         """ FilterItem destructor """
-        del self.children
+        self.children.clear()
 
     def __repr__(self):
-        return str(self.data)
+        return f"Filter Item {self.data}"
 
 
     def __getitem__(self, row):
@@ -285,6 +297,15 @@ class FilterItem(object):
         """ Append FilterItem as child """
         item.parent = self
         self.children.append(item)
+
+    def insert(self, index, item):
+        """ insert FilterItem as child """ 
+        item.parent = self 
+        self.children.insert(index, item)
+
+    def remove(self, index):
+        """ Remove FilterItem from children """ 
+        del self.children[index]
 
     def row(self):
         """ Return index of item from his parent. 
@@ -353,6 +374,7 @@ class FilterModel(QAbstractItemModel):
 
 
     filterChanged = Signal()
+    HEADERS = ["field","operator","value"]
 
     def __init__(self, conn, parent=None):
         super().__init__(parent)
@@ -396,15 +418,29 @@ class FilterModel(QAbstractItemModel):
         if role == Qt.EditRole:
             if index.isValid():
                 item = self.item(index)
-
-                if item.type() == FilterItem.CONDITION_TYPE:
-                    item.set_data(value, index.column())
-
+                item.set_data(value, index.column())
                 self.filterChanged.emit()
+                return True
 
+        return False
 
-        return True
+    def headerData(self, section, orientation, role = Qt.DisplayRole):
+        """Return header data 
+        
+        Args:
+            section (integer): row 
+            orientation (Qt.Orientation): Vertical or horizontal header
+            role (Qt.ItemDataRole, optional): data role 
+        
+        Returns:
+            Any type of data  
+        """
+        if role == Qt.DisplayRole:
+            if orientation == Qt.Horizontal:
+                return self.HEADERS[section]
 
+        return None
+            
 
 
     def index(self, row, column, parent : QModelIndex):
@@ -480,7 +516,49 @@ class FilterModel(QAbstractItemModel):
         if item.type() == FilterItem.CONDITION_TYPE:
             return {"field": item.get_data(0), "operator": item.get_data(1), "value": item.get_data(2)}     
 
+    def add_logic_item(self, value = "AND", parent = QModelIndex()):
+        """Add logic item
         
+        Args:
+            value (str): Can be "AND" or "OR"
+            parent (QModelIndex): parent index 
+        """
+
+        # Skip if parent is a condition type 
+        if self.item(parent).type == FilterItem.CONDITION_TYPE:
+            return
+
+        self.beginInsertRows(parent, 0, 0)
+        self.item(parent).insert(0, FilterItem(data = value))        
+        self.endInsertRows()
+
+
+    def add_condition_item(self, value = ("chr", ">", "100"), parent = QModelIndex()):
+        """Add condition item 
+        
+        Args:
+            value (tuple): tuple (field, operator, value)
+            parent (QModelIndex): Parent index
+        """
+
+        # Skip if parent is a condition type 
+        if self.item(parent).type == FilterItem.CONDITION_TYPE:
+            return
+
+        self.beginInsertRows(parent, 0, 0)
+        self.item(parent).insert(0, FilterItem(data = value))        
+        self.endInsertRows()
+
+    def remove_item(self, index):
+        """Remove Item 
+        Args:
+            index (QModelIndex): item index 
+        """
+        self.beginRemoveRows(index.parent(), index.row(), index.row())
+        self.item(index).parent.remove(index.row())
+        self.endRemoveRows()
+
+
     def rowCount(self, parent: QModelIndex):
         """ overrided : return model row count according parent """ 
         
@@ -517,6 +595,8 @@ class FilterModel(QAbstractItemModel):
     def item(self, index) -> FilterItem:
         if index.isValid():
             return index.internalPointer()
+        else:
+            return self.root_item
 
 
 class FilterDelegate(QStyledItemDelegate):
@@ -531,11 +611,9 @@ class FilterDelegate(QStyledItemDelegate):
         model = index.model()
         conn = model.conn
 
-        print(conn)
-
         if index.column() == 0:
             if item.type() == FilterItem.LOGIC_TYPE:
-                return ToggleButton(parent)
+                return LogicField(parent)
 
             if item.type() == FilterItem.CONDITION_TYPE:
                 w = ColumnField(parent)

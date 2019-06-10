@@ -606,7 +606,6 @@ class ViewQueryWidget(QueryPluginWidget):
         # self.view.setIndentation(0)
         self.view.setIconSize(QSize(22, 22))
         self.view.setAnimated(True)
-        self.view.setStyleSheet("QAbstractScrollArea {border-left: 20px solid red}")
 
         # self.view.setItemDelegate(self.delegate)
 
