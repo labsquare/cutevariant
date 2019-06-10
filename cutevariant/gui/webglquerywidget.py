@@ -52,7 +52,6 @@ class WebGLQueryWidget(QueryPluginWidget):
             </body>
             </html>
             """
-            
         )
 
         layout = QVBoxLayout()

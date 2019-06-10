@@ -26,7 +26,7 @@ from PySide2.QtCore import (
     QSettings,
     QTranslator,
     QCommandLineParser,
-    QCommandLineOption
+    QCommandLineOption,
 )
 from PySide2.QtWidgets import QApplication, QStyleFactory
 
@@ -53,13 +53,10 @@ def main():
     process_arguments(app)
 
     app.setStyle("fusion")
-    # apply dark style 
+    # apply dark style
     style.dark(app)
 
-    #app.setStyle(QStyleFactory.create("Fusion"))
-
- 
-
+    # app.setStyle(QStyleFactory.create("Fusion"))
 
     # Set icons set
     setFontPath(os.path.join(cm.DIR_FONTS, "materialdesignicons-webfont.ttf"))

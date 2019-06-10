@@ -420,7 +420,8 @@ def get_fields(conn):
     conn.row_factory = sqlite3.Row
     return (dict(data) for data in conn.execute("""SELECT * FROM fields"""))
 
-def get_field_by_name(conn, field_name:str):
+
+def get_field_by_name(conn, field_name: str):
     """ Return field by his name 
 
     .. seealso:: get_fields 
@@ -431,34 +432,38 @@ def get_field_by_name(conn, field_name:str):
     :rtype: <dict>
     """
     conn.row_factory = sqlite3.Row
-    return dict(conn.execute("""SELECT * FROM fields WHERE name = ? """, (field_name,)).fetchone())
+    return dict(
+        conn.execute(
+            """SELECT * FROM fields WHERE name = ? """, (field_name,)
+        ).fetchone()
+    )
 
-def get_field_range(conn, field_name:str):
+
+def get_field_range(conn, field_name: str):
     """ Return (min,max) of field_name records . 
     
     :param conn: sqlite3.connect
     :param field_name (str): field name
     :return: (min, max) 
     :rtype: tuple
-    """ 
+    """
     field = get_field_by_name(conn, field_name)
-    table = field["category"] # variants, or annotations or samples
+    table = field["category"]  # variants, or annotations or samples
     query = f"""SELECT min({field_name}), max({field_name}) FROM {table}"""
-    return (tuple(conn.execute(query).fetchone()))
-    
+    return tuple(conn.execute(query).fetchone())
 
 
-def get_field_unique_values(conn, field_name:str):
+def get_field_unique_values(conn, field_name: str):
     """ Return unique record value for a field name 
 
     :param conn: sqlite3.connect 
     :param field_name (str): field_name
     :return: list of unique values
     :rtype: list
-    """ 
+    """
     field = get_field_by_name(conn, field_name)
-    table = field["category"] # variants, or annotations or samples
-    #conn.row_factory = None
+    table = field["category"]  # variants, or annotations or samples
+    # conn.row_factory = None
     query = f"""SELECT DISTINCT {field_name} FROM {table}"""
     return [i[field_name] for i in conn.execute(query)]
 

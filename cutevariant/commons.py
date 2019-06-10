@@ -17,14 +17,9 @@ DIR_ASSETS = resource_filename(__name__, "assets/")  # current package name
 DIR_TRANSLATIONS = DIR_ASSETS + "i18n/"
 DIR_FONTS = DIR_ASSETS + "fonts/"
 DIR_ICONS = DIR_ASSETS + "icons/"
-DIR_STYLES= DIR_ASSETS + "styles/"
+DIR_STYLES = DIR_ASSETS + "styles/"
 
-GENOTYPE_ICONS = {
-    0: 0xf130,
-    1: 0xfaa0,
-    2: 0Xfaa4,
-    -1: 0xf625
-}
+GENOTYPE_ICONS = {0: 0xF130, 1: 0xFAA0, 2: 0xFAA4, -1: 0xF625}
 
 # Websites and variant query
 WEBSITES_URLS = {"varsome": "https://varsome.com/variant/hg19/{chr}-{pos}-{ref}-{alt}"}

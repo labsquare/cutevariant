@@ -39,9 +39,8 @@ def detect_vcf_annotation(filename):
         device = open(filename, "rb")
 
     else:
-        device = open(filename,"r")
+        device = open(filename, "r")
 
-   
     std_reader = vcf.VCFReader(device)
     # print(std_reader.metadata)
     if "VEP" in std_reader.metadata:

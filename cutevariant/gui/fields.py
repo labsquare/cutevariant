@@ -1,20 +1,23 @@
-from PySide2.QtWidgets import * 
-from PySide2.QtCore import * 
-from PySide2.QtGui import * 
+from PySide2.QtWidgets import *
+from PySide2.QtCore import *
+from PySide2.QtGui import *
 import sys
 from cutevariant.gui import style
-# Some fields editors 
+
+# Some fields editors
 
 from cutevariant.core import sql, get_sql_connexion
+
 
 class BaseField(QFrame):
     """Base class for Field widget
     Inherit from this class if you want a custom field editor 
     """
-    def __init__(self, parent = None):
+
+    def __init__(self, parent=None):
         super().__init__(parent)
 
-        # style hack : Set background as same as selection in the view 
+        # style hack : Set background as same as selection in the view
         self.setAutoFillBackground(True)
         self.setBackgroundRole(QPalette.Highlight)
 
@@ -25,12 +28,11 @@ class BaseField(QFrame):
         raise NotImplemented()
 
     def set_widget(self, widget):
-        self.widget = widget 
+        self.widget = widget
         h_layout = QHBoxLayout()
         h_layout.addWidget(widget)
-        h_layout.setContentsMargins(0,0,0,0)
+        h_layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(h_layout)
-
 
 
 class IntegerField(BaseField):
@@ -38,7 +40,8 @@ class IntegerField(BaseField):
 
         ..todo: Create a slider ? 
     """
-    def __init__(self, parent = None):
+
+    def __init__(self, parent=None):
         super().__init__(parent)
         self.spin_box = QSpinBox()
         self.set_widget(self.spin_box)
@@ -50,17 +53,17 @@ class IntegerField(BaseField):
         return self.spin_box.value()
 
     def set_range(self, min_, max_):
-        """ Limit editor with a range of value """ 
-        self.spin_box.setRange(min_,max_)
+        """ Limit editor with a range of value """
+        self.spin_box.setRange(min_, max_)
 
 
 class FloatField(BaseField):
     """ Editor as a QDoubleSpinBoxfor Floating field value """
-    def __init__(self, parent = None):
+
+    def __init__(self, parent=None):
         super().__init__(parent)
         self.spin_box = QDoubleSpinBox()
         self.set_widget(self.spin_box)
-
 
     def set_value(self, value: int):
         self.spin_box.setValue(value)
@@ -69,19 +72,19 @@ class FloatField(BaseField):
         return self.spin_box.value()
 
     def set_range(self, min_, max_):
-        self.spin_box.setRange(min_,max_)
+        self.spin_box.setRange(min_, max_)
 
 
 class StrField(BaseField):
     """Editor as a QLineEditfor String value """
-    def __init__(self, parent = None):
+
+    def __init__(self, parent=None):
         super().__init__(parent)
         self.edit = QLineEdit()
         self.set_widget(self.edit)
 
-
-    def set_value(self, value:str):
-        self.edit.setText(str(value))  
+    def set_value(self, value: str):
+        self.edit.setText(str(value))
 
     def get_value(self) -> str:
         """Return quoted string
@@ -92,20 +95,20 @@ class StrField(BaseField):
         return "'" + self.edit.text() + "'"
 
     def set_completer(self, completer: QCompleter):
-        """ set a completer to autocomplete value """ 
+        """ set a completer to autocomplete value """
         self.edit.setCompleter(completer)
+
 
 class BoolField(BaseField):
     """Editor as a QCheckbox for Boolean value"""
-    def __init__(self, parent = None):
+
+    def __init__(self, parent=None):
         super().__init__(parent)
         self.box = QCheckBox()
         self.set_widget(self.box)
 
-
-
-    def set_value(self, value:bool):
-        self.box.setValue(value) 
+    def set_value(self, value: bool):
+        self.box.setValue(value)
 
     def get_value(self) -> bool:
         return self.box.value()
@@ -120,49 +123,47 @@ class OperatorField(BaseField):
         ("greater", ">"),
         ("greater or equal", ">="),
         ("equal", "="),
-        ("not equal", "!=")
-        )
+        ("not equal", "!="),
+    )
 
-    def __init__(self, parent = None):
+    def __init__(self, parent=None):
         super().__init__(parent)
         self.combo_box = QComboBox()
         self.set_widget(self.combo_box)
         self._fill()
 
-    def set_value(self, value:str):
-        self.combo_box.setCurrentText(value) 
+    def set_value(self, value: str):
+        self.combo_box.setCurrentText(value)
 
-    def get_value(self)->str:
+    def get_value(self) -> str:
         return self.combo_box.currentData()
 
     def _fill(self):
-        """ Fill QCombobox with SYMBOL """ 
+        """ Fill QCombobox with SYMBOL """
         self.combo_box.clear()
         for s in self.SYMBOL:
             self.combo_box.addItem(s[0], s[1])
 
+
 class ColumnField(BaseField):
     """Editor as QCombobox for Columns value aka Field name """
-    def __init__(self, parent = None):
+
+    def __init__(self, parent=None):
         super().__init__(parent)
         self.combo_box = QComboBox()
         self.combo_box.setEditable(True)
         self.set_widget(self.combo_box)
 
-
-
-    def set_value(self, value:str):
+    def set_value(self, value: str):
         self.combo_box.setCurrentText(value)
 
-    def get_value(self)->str:
+    def get_value(self) -> str:
         return self.combo_box.currentText()
 
     def set_columns(self, columns: list):
         """ fill combobox with columns values 
         """
         self.combo_box.addItems(columns)
-
-
 
 
 class FieldFactory(QObject):
@@ -179,34 +180,34 @@ class FieldFactory(QObject):
     def create(self, sql_field):
         field = sql.get_field_by_name(self.conn, sql_field)
 
-        if field["type"] == 'int':
+        if field["type"] == "int":
             w = IntegerField()
-            w.set_range(*sql.get_field_range(self.conn,sql_field))
+            w.set_range(*sql.get_field_range(self.conn, sql_field))
             return w
 
-        if field["type"] == 'float':
+        if field["type"] == "float":
             w = FloatField()
-            w.set_range(*sql.get_field_range(self.conn,sql_field))
+            w.set_range(*sql.get_field_range(self.conn, sql_field))
             return w
 
-        if field["type"] == 'str':
+        if field["type"] == "str":
             w = StrField()
             print(field)
-            unique_values = sql.get_field_unique_values(self.conn, field["name"]) # Can be huge ... How to use "like" ??
+            unique_values = sql.get_field_unique_values(
+                self.conn, field["name"]
+            )  #  Can be huge ... How to use "like" ??
             w.set_completer(QCompleter(unique_values))
             return w
 
-        if field["type"] == 'bool':
+        if field["type"] == "bool":
             w = BoolField()
             return w
-
 
         return StrField()
 
 
-
 class LogicField(BaseField):
-    def __init__(self, parent = None):
+    def __init__(self, parent=None):
         super().__init__(parent)
 
         self.and_button = QPushButton("AND")
@@ -220,8 +221,8 @@ class LogicField(BaseField):
         group = QButtonGroup(parent)
         group.setExclusive(True)
 
-        group.addButton(self.or_button,0)
-        group.addButton(self.and_button,1)
+        group.addButton(self.or_button, 0)
+        group.addButton(self.and_button, 1)
 
         h = QHBoxLayout()
         h.addWidget(self.or_button)
@@ -229,13 +230,12 @@ class LogicField(BaseField):
 
         self.setLayout(h)
         self.setMaximumWidth(100)
-        h.setContentsMargins(0,0,0,0)
+        h.setContentsMargins(0, 0, 0, 0)
 
         self.or_button.setStyleSheet("QPushButton:checked{background-color:red}")
         self.and_button.setStyleSheet("QPushButton:checked{background-color:red}")
 
-
-    def set_value(self, value:str):
+    def set_value(self, value: str):
         print("set value", value)
         if value.upper() == "OR":
             self.or_button.setChecked(True)
@@ -248,7 +248,6 @@ class LogicField(BaseField):
             return "OR"
         else:
             return "AND"
-
 
 
 class FilterItem(object):
@@ -272,13 +271,13 @@ class FilterItem(object):
 
     """
 
-    LOGIC_TYPE = 0  # Logic type is AND/OR/XOR
-    CONDITION_TYPE = 1 # Condition type is (field, operator, value)
+    LOGIC_TYPE = 0  #  Logic type is AND/OR/XOR
+    CONDITION_TYPE = 1  #  Condition type is (field, operator, value)
 
-    def __init__(self, data = None, parent = None):
-        """ FilterItem constructor with parent as FilterItem parent """ 
+    def __init__(self, data=None, parent=None):
+        """ FilterItem constructor with parent as FilterItem parent """
         self.parent = parent
-        self.children = []  
+        self.children = []
         self.data = data
 
     def __del__(self):
@@ -288,9 +287,8 @@ class FilterItem(object):
     def __repr__(self):
         return f"Filter Item {self.data}"
 
-
     def __getitem__(self, row):
-        """ Return child from row """ 
+        """ Return child from row """
         return self.children[row]
 
     def append(self, item):
@@ -299,32 +297,32 @@ class FilterItem(object):
         self.children.append(item)
 
     def insert(self, index, item):
-        """ insert FilterItem as child """ 
-        item.parent = self 
+        """ insert FilterItem as child """
+        item.parent = self
         self.children.insert(index, item)
 
     def remove(self, index):
-        """ Remove FilterItem from children """ 
+        """ Remove FilterItem from children """
         del self.children[index]
 
     def row(self):
         """ Return index of item from his parent. 
-        If the item has no parent, it returns 0 """ 
+        If the item has no parent, it returns 0 """
         if self.parent is not None:
             return self.parent.children.index(self)
 
         return 0
 
     def type(self):
-        if isinstance(self.data, str): # Logic 
-            return self.LOGIC_TYPE 
+        if isinstance(self.data, str):  #  Logic
+            return self.LOGIC_TYPE
 
-        if isinstance(self.data, tuple): # condition
+        if isinstance(self.data, tuple):  #  condition
             return self.CONDITION_TYPE
 
         return None
 
-    def get_data(self, column = 0):
+    def get_data(self, column=0):
         """Return data of item according column 
 
         If item is a CONDITION_TYPE, you can select field (column=1), operator (column=2) or value (column=3)
@@ -335,7 +333,7 @@ class FilterItem(object):
         Returns:
             Any type: Data
         """
-        if column not in range(0,3):
+        if column not in range(0, 3):
             return None
 
         if self.type() == self.LOGIC_TYPE and column == 0:
@@ -346,8 +344,7 @@ class FilterItem(object):
 
         return None
 
-
-    def set_data(self, data, column = 0):
+    def set_data(self, data, column=0):
         """Set data of item according column 
         
         Args:
@@ -359,8 +356,8 @@ class FilterItem(object):
 
         if self.type() == self.CONDITION_TYPE:
             tmp = list(self.data)
-            tmp[column] = data 
-            self.data = tuple(tmp) 
+            tmp[column] = data
+            self.data = tuple(tmp)
 
 
 class FilterModel(QAbstractItemModel):
@@ -372,15 +369,13 @@ class FilterModel(QAbstractItemModel):
         root_item (FilterItem): RootItem (invisible) to store recursive item
     """
 
-
     filterChanged = Signal()
-    HEADERS = ["field","operator","value"]
+    HEADERS = ["field", "operator", "value"]
 
     def __init__(self, conn, parent=None):
         super().__init__(parent)
         self.root_item = FilterItem()
         self.conn = conn
-
 
     def __del__(self):
         del self.root_item
@@ -398,22 +393,19 @@ class FilterModel(QAbstractItemModel):
         if not index.isValid():
             return None
 
-   
-
         if role == Qt.DisplayRole or role == Qt.EditRole:
             item = index.internalPointer()
             return item.get_data(index.column())
 
         if role == Qt.TextAlignmentRole:
             if index.column() == 0:
-                return int(Qt.AlignVCenter)+int(Qt.AlignLeft)
+                return int(Qt.AlignVCenter) + int(Qt.AlignLeft)
             if index.column() == 1:
                 return Qt.AlignCenter
             if index.column() == 2:
-                return int(Qt.AlignVCenter)+int(Qt.AlignLeft)
+                return int(Qt.AlignVCenter) + int(Qt.AlignLeft)
 
-
-    def setData(self, index, value, role = Qt.EditRole):
+    def setData(self, index, value, role=Qt.EditRole):
 
         if role == Qt.EditRole:
             if index.isValid():
@@ -424,7 +416,7 @@ class FilterModel(QAbstractItemModel):
 
         return False
 
-    def headerData(self, section, orientation, role = Qt.DisplayRole):
+    def headerData(self, section, orientation, role=Qt.DisplayRole):
         """Return header data 
         
         Args:
@@ -440,16 +432,14 @@ class FilterModel(QAbstractItemModel):
                 return self.HEADERS[section]
 
         return None
-            
 
+    def index(self, row, column, parent: QModelIndex):
+        """ overrided : create index according row, column and parent """
 
-    def index(self, row, column, parent : QModelIndex):
-        """ overrided : create index according row, column and parent """ 
+        if not self.hasIndex(row, column, parent):
+            return QModelIndex()
 
-        if not self.hasIndex(row,column, parent):
-            return QModelIndex() 
-
-        if not parent.isValid(): # If no parent, then parent is the root item 
+        if not parent.isValid():  #  If no parent, then parent is the root item
             parent_item = self.root_item
 
         else:
@@ -457,36 +447,33 @@ class FilterModel(QAbstractItemModel):
 
         child_item = parent_item[row]
         if child_item:
-            return self.createIndex(row,column, child_item)
+            return self.createIndex(row, column, child_item)
         else:
             return QModelIndex()
-
 
     def parent(self, index: QModelIndex):
         """overrided : Create parent index """
         if not index.isValid():
             return QModelIndex()
 
-        child_item  = index.internalPointer()
+        child_item = index.internalPointer()
         parent_item = child_item.parent
 
         if parent_item == self.root_item:
             return QModelIndex()
 
-        return self.createIndex(parent_item.row(), 0, parent_item) 
+        return self.createIndex(parent_item.row(), 0, parent_item)
 
-    
     def clear(self):
-        """ clear all """ 
-        self.root_item.children.clear() 
+        """ clear all """
+        self.root_item.children.clear()
 
     def load(self, data):
-        """ load data from raw dict """ 
+        """ load data from raw dict """
         self.beginResetModel()
         self.clear()
         if len(data):
             self.root_item.append(self.toItem(data))
-
 
         self.endResetModel()
 
@@ -501,22 +488,24 @@ class FilterModel(QAbstractItemModel):
             item = FilterItem((data["field"], data["operator"], data["value"]))
             return item
 
-    def fromItem(self, item = None ) -> dict:
-        """ return tree as filter dictionnary """ 
+    def fromItem(self, item=None) -> dict:
+        """ return tree as filter dictionnary """
         if item is None:
             item = self.root_item[0]
 
         if item.type() == FilterItem.LOGIC_TYPE:
-                # Return dict with operator as key and item as value
-                operator_data = [
-                    self.fromItem(child) for child in item.children
-                ]
-                return {item.get_data(0): operator_data}
+            # Return dict with operator as key and item as value
+            operator_data = [self.fromItem(child) for child in item.children]
+            return {item.get_data(0): operator_data}
 
         if item.type() == FilterItem.CONDITION_TYPE:
-            return {"field": item.get_data(0), "operator": item.get_data(1), "value": item.get_data(2)}     
+            return {
+                "field": item.get_data(0),
+                "operator": item.get_data(1),
+                "value": item.get_data(2),
+            }
 
-    def add_logic_item(self, value = "AND", parent = QModelIndex()):
+    def add_logic_item(self, value="AND", parent=QModelIndex()):
         """Add logic item
         
         Args:
@@ -524,16 +513,15 @@ class FilterModel(QAbstractItemModel):
             parent (QModelIndex): parent index 
         """
 
-        # Skip if parent is a condition type 
+        #  Skip if parent is a condition type
         if self.item(parent).type == FilterItem.CONDITION_TYPE:
             return
 
         self.beginInsertRows(parent, 0, 0)
-        self.item(parent).insert(0, FilterItem(data = value))        
+        self.item(parent).insert(0, FilterItem(data=value))
         self.endInsertRows()
 
-
-    def add_condition_item(self, value = ("chr", ">", "100"), parent = QModelIndex()):
+    def add_condition_item(self, value=("chr", ">", "100"), parent=QModelIndex()):
         """Add condition item 
         
         Args:
@@ -541,12 +529,12 @@ class FilterModel(QAbstractItemModel):
             parent (QModelIndex): Parent index
         """
 
-        # Skip if parent is a condition type 
+        #  Skip if parent is a condition type
         if self.item(parent).type == FilterItem.CONDITION_TYPE:
             return
 
         self.beginInsertRows(parent, 0, 0)
-        self.item(parent).insert(0, FilterItem(data = value))        
+        self.item(parent).insert(0, FilterItem(data=value))
         self.endInsertRows()
 
     def remove_item(self, index):
@@ -558,39 +546,36 @@ class FilterModel(QAbstractItemModel):
         self.item(index).parent.remove(index.row())
         self.endRemoveRows()
 
-
     def rowCount(self, parent: QModelIndex):
-        """ overrided : return model row count according parent """ 
-        
+        """ overrided : return model row count according parent """
+
         if not parent.isValid():
-            parent_item = self.root_item 
+            parent_item = self.root_item
 
         else:
             parent_item = parent.internalPointer()
 
         return len(parent_item.children)
 
-
     def columnCount(self, parent: QModelIndex):
-        """ overrided: return column count  according parent """ 
+        """ overrided: return column count  according parent """
         return 3
 
-
     def flags(super, index) -> Qt.ItemFlags:
-        """ overrided : return Qt flags """ 
+        """ overrided : return Qt flags """
 
         if not index.isValid():
-            return 0 
+            return 0
 
         item = index.internalPointer()
 
-        if item.type() == FilterItem.LOGIC_TYPE and index.column() == 0: 
-            return Qt.ItemIsSelectable|Qt.ItemIsEditable|Qt.ItemIsEnabled
+        if item.type() == FilterItem.LOGIC_TYPE and index.column() == 0:
+            return Qt.ItemIsSelectable | Qt.ItemIsEditable | Qt.ItemIsEnabled
 
-        if item.type() == FilterItem.CONDITION_TYPE: 
-            return Qt.ItemIsSelectable|Qt.ItemIsEditable|Qt.ItemIsEnabled
-            
-        return Qt.ItemIsSelectable|Qt.ItemIsEditable
+        if item.type() == FilterItem.CONDITION_TYPE:
+            return Qt.ItemIsSelectable | Qt.ItemIsEditable | Qt.ItemIsEnabled
+
+        return Qt.ItemIsSelectable | Qt.ItemIsEditable
 
     def item(self, index) -> FilterItem:
         if index.isValid():
@@ -602,8 +587,6 @@ class FilterModel(QAbstractItemModel):
 class FilterDelegate(QStyledItemDelegate):
     def __init__(self, parent=None):
         super().__init__(parent)
-
-
 
     def createEditor(self, parent, option, index: QModelIndex):
 
@@ -622,36 +605,33 @@ class FilterDelegate(QStyledItemDelegate):
                 return w
 
         if index.column() == 1:
-            w =  OperatorField(parent)
+            w = OperatorField(parent)
             return w
 
         if index.column() == 2:
 
-            sql_field_index = model.index(index.row(),0, index.parent())
+            sql_field_index = model.index(index.row(), 0, index.parent())
             sql_field = model.data(sql_field_index, Qt.DisplayRole)
             w = FieldFactory(conn).create(sql_field)
             w.setParent(parent)
             return w
 
-
-        return super().createEditor(parent,option,index)
+        return super().createEditor(parent, option, index)
 
     def setEditorData(self, editor, index):
         editor.set_value(index.data(Qt.EditRole))
 
-
-    def setModelData(self,editor, model, index):
+    def setModelData(self, editor, model, index):
         model.setData(index, editor.get_value())
 
     def sizeHint(self, option, index: QModelIndex):
-        return QSize(super().sizeHint(option,index).width(), 30)
-      
-    def updateEditorGeometry(self, editor, option,index):
+        return QSize(super().sizeHint(option, index).width(), 30)
+
+    def updateEditorGeometry(self, editor, option, index):
         editor.setGeometry(option.rect)
 
 
-if __name__ == '__main__':
-    
+if __name__ == "__main__":
 
     app = QApplication(sys.argv)
     app.setStyle("fusion")
@@ -660,26 +640,23 @@ if __name__ == '__main__':
 
     conn = get_sql_connexion("/home/sacha/Dev/cutevariant/examples/test.db")
 
-
     data = {
-                "AND": [
-                    {"field": "chr", "operator": "=", "value": "chr"},
-                    {
-                        "OR": [
-                            {"field": "gene", "operator": "=", "value": 5},
-                            {"field": "pos", "operator": "=", "value": 3},
-                        ]
-                    },
+        "AND": [
+            {"field": "chr", "operator": "=", "value": "chr"},
+            {
+                "OR": [
+                    {"field": "gene", "operator": "=", "value": 5},
+                    {"field": "pos", "operator": "=", "value": 3},
                 ]
-            }
+            },
+        ]
+    }
 
     model = FilterModel(conn)
     model.load(data)
     delegate = FilterDelegate()
 
-
     print(model.fromItem(model.root_item[0]))
-
 
     view = QTreeView()
     view.setEditTriggers(QAbstractItemView.DoubleClicked)
@@ -693,8 +670,3 @@ if __name__ == '__main__':
     view.show()
 
     app.exec_()
-
-
-
-
-
