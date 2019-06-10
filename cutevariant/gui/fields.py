@@ -353,7 +353,7 @@ class FilterItem(object):
             item (FilterItem)
         """
         item.parent = self
-        self.children.insert(index, item)
+        self.children.insert(row, item)
 
     def remove(self, row: int):
         """Remove child from a specific position 
