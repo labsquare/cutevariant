@@ -21,6 +21,9 @@ class FilterQueryWidget(QueryPluginWidget):
         self.view.setModel(self.model)
         self.view.setItemDelegate(self.delegate)
         self.view.setIndentation(15)
+        self.view.setDragEnabled(True)
+        self.view.setAcceptDrops(True)
+        self.view.setDragDropMode(QAbstractItemView.InternalMove)
 
         layout = QVBoxLayout()
         layout.addWidget(self.view)
@@ -78,21 +81,21 @@ class FilterQueryWidget(QueryPluginWidget):
         index = self.view.currentIndex()
         if index:
             self.model.add_logic_item(parent=index)
-            self.view.setFirstColumnSpanned(0, index.parent(), True)
+            # self.view.setFirstColumnSpanned(0, index.parent(), True)
 
     def _update_view_geometry(self):
         """Set column Spanned to True for all Logic Item 
         This allows Logic Item Editor to take all the space inside the row 
         """
         self.view.expandAll()
-        for index in self.model.match(
-            self.model.index(0, 0),
-            FilterModel.TypeRole,
-            FilterItem.LOGIC_TYPE,
-            -1,
-            Qt.MatchRecursive,
-        ):
-            self.view.setFirstColumnSpanned(0, index.parent(), True)
+        # for index in self.model.match(
+        #     self.model.index(0, 0),
+        #     FilterModel.TypeRole,
+        #     FilterItem.LOGIC_TYPE,
+        #     -1,
+        #     Qt.MatchRecursive,
+        # ):
+        #     self.view.setFirstColumnSpanned(0, index.parent(), True)
 
     def on_add_condition(self):
         """Add condition item to the current selected index 

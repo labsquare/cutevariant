@@ -3,6 +3,8 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 import sys
 from cutevariant.gui import style
+import pickle
+import uuid
 
 # Some fields editors
 
@@ -317,6 +319,7 @@ class FilterItem(object):
         self.parent = parent
         self.children = []
         self.data = data
+        self.uuid = str(uuid.uuid1())
 
     def __del__(self):
         """ FilterItem destructor """
@@ -480,13 +483,15 @@ class FilterModel(QAbstractItemModel):
     filterChanged = Signal()
     # See self.headerData()
     _HEADERS = ["field", "operator", "value"]
+    _MIMEDATA = "application/x-qabstractitemmodeldatalist"
 
     # Custom type to get FilterItem.type(). See self.data()
     TypeRole = Qt.UserRole + 1
+    UniqueIdRole = Qt.UserRole + 2
 
     def __init__(self, conn, parent=None):
         super().__init__(parent)
-        self.root_item = FilterItem()
+        self.root_item = FilterItem("AND")
         self.conn = conn
 
     def __del__(self):
@@ -531,6 +536,9 @@ class FilterModel(QAbstractItemModel):
         if role == FilterModel.TypeRole:
             # Return item type
             return self.item(index).type()
+
+        if role == FilterModel.UniqueIdRole:
+            return self.item(index).uuid
 
     def setData(self, index, value, role=Qt.EditRole):
         """Overrided Qt methods: Set data according index and value. 
@@ -729,10 +737,21 @@ class FilterModel(QAbstractItemModel):
         item = index.internalPointer()
 
         if item.type() == FilterItem.LOGIC_TYPE and index.column() == 0:
-            return Qt.ItemIsSelectable | Qt.ItemIsEditable | Qt.ItemIsEnabled
+            return (
+                Qt.ItemIsSelectable
+                | Qt.ItemIsEditable
+                | Qt.ItemIsEnabled
+                | Qt.ItemIsDragEnabled
+                | Qt.ItemIsDropEnabled
+            )
 
         if item.type() == FilterItem.CONDITION_TYPE:
-            return Qt.ItemIsSelectable | Qt.ItemIsEditable | Qt.ItemIsEnabled
+            return (
+                Qt.ItemIsSelectable
+                | Qt.ItemIsEditable
+                | Qt.ItemIsEnabled
+                | Qt.ItemIsDragEnabled
+            )
 
         return Qt.ItemIsSelectable | Qt.ItemIsEditable
 
@@ -749,6 +768,123 @@ class FilterModel(QAbstractItemModel):
             return index.internalPointer()
         else:
             return self.root_item
+
+    def moveRow(
+        self,
+        sourceParent: QModelIndex,
+        sourceRow: int,
+        destinationParent: QModelIndex,
+        destinationChild: int,
+    ) -> bool:
+        """Overrided Qt methods : Move an item from source to destination index 
+
+        Args:
+            sourceParent (QModelIndex): parent of souce item
+            sourceRow (int): index position of source item
+            destinationParent (QModelIndex): parent od destination item
+            destinationChild (int): index position of destination item
+        
+        Returns:
+            bool: Return True if success otherwise retur False
+        """
+        parent_source_item = self.item(sourceParent)
+        parent_destination_item = self.item(destinationParent)
+
+        #  if destination is - 1, it's mean we should append the item at the end of children
+        if destinationChild < 0:
+            if sourceParent == destinationParent:
+                return False
+            else:
+                destinationChild = len(parent_destination_item.children)
+
+        # Don't move same same Item
+        if sourceParent == destinationParent and sourceRow == destinationChild:
+            return False
+
+        print("pass")
+
+        self.beginMoveRows(
+            sourceParent, sourceRow, sourceRow, destinationParent, destinationChild
+        )
+        item = parent_source_item.children.pop(sourceRow)
+        parent_destination_item.insert(destinationChild, item)
+        self.endMoveRows()
+
+        self.filterChanged.emit()
+        return True
+
+    def supportedDropActions(self) -> Qt.DropAction:
+        """Overrided from Qt. Return supported drop action by the model
+        
+        Returns:
+            Qt.DropAction
+        """
+        return Qt.MoveAction
+
+    def dropMimeData(self, data, action, row, column, parent) -> bool:
+        """Overrided Qt methods: This method is called when item is dropped by drag/drop.
+
+        data is QMimeData and it contains a pickle serialization of current dragging item. 
+        Get back item by unserialize data.data().
+        
+
+        Args:
+            data (QMimeData)
+            action (Qt.DropAction)
+            row (int): row destination
+            column (int): column destination ( not used)
+            parent (QModelIndex): parent destination
+        
+        Returns:
+            bool: return True if success otherwise return False 
+        """
+
+        if action != Qt.MoveAction:
+            return False
+
+        if not data.data(self._MIMEDATA):
+            return False
+
+        # Unserialize
+        item = pickle.loads(data.data(self._MIMEDATA).data())
+
+        # Get index from item
+        source_parent = self.match(
+            self.index(0, 0),
+            FilterModel.UniqueIdRole,
+            item.parent.uuid,
+            1,
+            Qt.MatchRecursive,
+        )
+
+        if source_parent:
+            source_parent = source_parent[0]
+            return self.moveRow(source_parent, item.row(), parent, row)
+
+        return False
+
+    def mimeData(self, indexes) -> QMimeData:
+        """Serialize item from indexes into a QMimeData
+
+        Actually, it serializes only the first index from t he list.
+        Args:
+            indexes (list<QModelIndex>)
+        
+        Returns:
+            QMimeData
+
+            ..see: self.dropMimeData
+        """
+        data = QMimeData(self._MIMEDATA)
+
+        if not indexes:
+            return
+        else:
+            index = indexes[0]
+
+        serialization = QByteArray(pickle.dumps(self.item(indexes[0])))
+        data.setData(self._MIMEDATA, serialization)
+        return data
 
 
 class FilterDelegate(QStyledItemDelegate):
@@ -872,8 +1008,9 @@ if __name__ == "__main__":
             {"field": "chr", "operator": "=", "value": "chr"},
             {
                 "OR": [
-                    {"field": "gene", "operator": "=", "value": 5},
-                    {"field": "pos", "operator": "=", "value": 3},
+                    {"field": "i0", "operator": "=", "value": 5},
+                    {"field": "i1", "operator": "=", "value": 3},
+                    {"field": "i2", "operator": "=", "value": 3},
                 ]
             },
         ]
@@ -891,9 +1028,15 @@ if __name__ == "__main__":
     view.setAlternatingRowColors(True)
     view.setUniformRowHeights(True)
     view.setModel(model)
+    view.setAcceptDrops(True)
+    view.setDragEnabled(True)
+    view.setDropIndicatorShown(True)
+    view.setSelectionBehavior(QAbstractItemView.SelectRows)
+    view.setDragDropMode(QAbstractItemView.InternalMove)
 
     view.setFirstColumnSpanned(0, QModelIndex(), True)
-
+    view.resize(500, 500)
     view.show()
+    view.expandAll()
 
     app.exec_()
