@@ -34,8 +34,20 @@ SO_COLOR = {
 }
 
 
+def bright(app):
+    """Mock function to don't apply any style to the Qt application instance.
+
+    TODO: Find a way to reset properly and dynamically the effects of `dark()`
+    and put it here.
+
+    .. note:: Called my __main__ on startup and not by StyleSettingsWidget for
+    the moment (see TODO).
+    """
+    pass
+
+
 def dark(app):
-    """ Apply Dark Theme to the Qt application instance.
+    """Apply Dark Theme to the Qt application instance.
         Args:
             app (QApplication): QApplication instance.
     """
@@ -73,5 +85,14 @@ def dark(app):
     app.setPalette(darkPalette)
 
     # _apply_base_theme(app)
-    with open(DIR_STYLES + "dark.style.qss", "r") as file:
+    with open(DIR_STYLES + "dark.qss", "r") as file:
         app.setStyleSheet(file.read())
+
+
+def apply_frameless_style(widget):
+    """Apply frameless style to the given widget
+
+    TODO: What this style is supposed to do ?
+    """
+    with open(DIR_STYLES + "frameless.qss", "r") as file:
+        widget.setStyleSheet(file.read())

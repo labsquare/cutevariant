@@ -1,0 +1,7 @@
+browser position chr7:127471196-127495720
+browser hide all
+track name="ItemRGBDemo" description="Item RGB demonstration" visibility=2 itemRgb="On"
+chr11	10000	15000
+chr11	119000	123000
+chr11	123002	123999
+chr1	0	999999

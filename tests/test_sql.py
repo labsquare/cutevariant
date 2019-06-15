@@ -1,8 +1,8 @@
 import pytest
-import sqlite3
-import os
+
 from cutevariant.core import sql
-from .utils import table_exists, table_count, table_drop
+from cutevariant.core.reader.bedreader import BedTool
+from .utils import table_exists, table_count
 
 
 @pytest.fixture
@@ -217,9 +217,9 @@ def test_selections(conn):
     assert conn.in_transaction == False
 
 
-
 def test_selection_operation(conn):
-    """PS: try to handle precedence of operators"""
+    """test set operations on selections
+    PS: try to handle precedence of operators"""
     prepare_base(conn)
 
     # Select all
@@ -303,12 +303,85 @@ def test_selection_operation(conn):
     assert expected_number == 2
 
 
+def test_selection_from_bedfile(conn):
+    """Test the creation of a selection based on BED data
 
-#     assert table_exists(conn, "selections"), "cannot create table selections"
-#     sql.insert_selection(conn, name="variants", count=10)
-#     assert table_count(conn, "selections") == 1, "cannot insert selection"
+    .. note:: Please note that the bedreader **is not** tested here!
+    """
+
+    prepare_base(conn)
+
+    larger_string = """
+        chr1 1    10   feature1  0 +
+        chr1 50   60   feature2  0 -
+        chr1 51 59 another_feature 0 +
+    """
+    # 1: chr1, pos 1 to 10 => 2 variants
+    # 2: chr1, pos 50 to 60 => 2 variants
+    # 3: chr1, pos 51 to 59 => 0 variants
+
+    bedtool = BedTool(larger_string)
+
+    # Create a new selection (a second one, since there is a default one during DB creation)
+    ret = sql.create_selection_from_bed(conn,"variants", "bedname", bedtool)
+    
+
+    # Test last id of the selection
+    assert ret == 2
+
+    # Query the association table (variant_id, selection_id)
+    data = conn.execute("SELECT * FROM selection_has_variant WHERE selection_id = ?", (ret,))
+    # 4 variants (see above)
+    expected = ((1, ret), (2, ret), (6, ret), (7, ret))
+    record = tuple([tuple(i) for i in data])
+
+    # Is the association table 'selection_has_variant' ok ?
+    assert record == expected
+
+    bed_selection  = [s for s in sql.get_selections(conn) if s["name"] == "bedname"][0]
+    assert bed_selection["name"] == "bedname"
+    assert bed_selection["count"] == 4 
 
 
+def test_selection_from_bedfile_and_subselection(conn):
+    """Test the creation of a selection based on BED data
+
+    .. note:: Please note that the bedreader **is not** tested here!
+    """
+
+    prepare_base(conn)
+
+
+    larger_string = """
+        chr1 1    10   feature1  0 +
+        chr1 50   60   feature2  0 -
+        chr1 51 59 another_feature 0 +
+    """
+    # 1: chr1, pos 1 to 10 => 2 variants
+    # 2: chr1, pos 50 to 60 => 2 variants
+    # 3: chr1, pos 51 to 59 => 0 variants
+
+    bedtool = BedTool(larger_string)
+ 
+    # Create now a sub selection 
+
+    query = """SELECT variants.id,chr,pos,ref,alt FROM variants WHERE ref='C'"""
+    set_A_id = sql.create_selection_from_sql(conn, query, "setA", count=None)
+
+    assert "setA" in list(s["name"] for s in sql.get_selections(conn))
+
+    # 1: chr1, pos 1 to 10 => 1 variants
+    # 2: chr1, pos 50 to 60 => 2 variants
+    # 3: chr1, pos 51 to 59 => 2 variants
+
+    ret = sql.create_selection_from_bed(conn,"setA", "sub_bedname", bedtool)
+
+    data = conn.execute("SELECT * FROM selection_has_variant WHERE selection_id = ?", (ret,))
+    expected = ((2, ret), (6, ret), (7, ret))
+    record = tuple([tuple(i) for i in data])
+    assert record == expected
+    
+    
 # def test_selection_operation(conn):
 
 #     #  Prepare base

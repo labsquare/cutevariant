@@ -2,6 +2,7 @@
 import re
 
 # Custom imports
+from .abstractreader import AbstractReader
 from cutevariant.commons import logger
 
 LOGGER = logger()
@@ -240,6 +241,10 @@ class BaseParser:
             if raw_field_name in self.annotation_default_fields:
                 _f = self.annotation_default_fields[raw_field_name]
             else:
+                # Sanitize fields names here
+                # PS: If name is in annotation_default_fields it will be modified
+                # by the previous condition.
+                raw_field_name = AbstractReader.sanitize_field_name(raw_field_name)
                 _f = {
                     "name": raw_field_name,
                     "description": "None",
@@ -331,13 +336,15 @@ class VepParser(BaseParser):
 
         .. seealso:: handle_descriptions()
 
-        :param fields: Generator of fields.
-        :type fields: <generator <dict>>
+        :param fields: Tuple of fields.
+        :type fields: <tuple <dict>>
         :return: Generator of fields descriptions.
         :rtype: <generator <dict>>
         """
         self.annotation_field_name = list()
-        fields = tuple(fields)
+        # PS: fields names are already sanitized by VcfReader get_fields()
+        # annotations field names will be sanitized in handle_descriptions()
+
         # Help to remove duplicated fields from annotations
         self.variant_field_names = {
             field["name"] for field in fields if field["name"] != "csq"

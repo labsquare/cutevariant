@@ -28,7 +28,7 @@ from PySide2.QtCore import (
     QCommandLineParser,
     QCommandLineOption,
 )
-from PySide2.QtWidgets import QApplication, QStyleFactory
+from PySide2.QtWidgets import QApplication
 
 # Custom imports
 from cutevariant.gui import MainWindow, setFontPath, style
@@ -52,11 +52,10 @@ def main():
     # Process command line arguments
     process_arguments(app)
 
-    app.setStyle("fusion")
-    # apply dark style
-    style.dark(app)
 
-    # app.setStyle(QStyleFactory.create("Fusion"))
+    # Load app styles
+    load_styles(app)
+
 
     # Set icons set
     setFontPath(os.path.join(cm.DIR_FONTS, "materialdesignicons-webfont.ttf"))
@@ -78,6 +77,26 @@ def main():
 
     w.show()
     app.exec_()
+
+
+def load_styles(app):
+    """Apply styles to the application and its windows
+    """
+    # Set fusion style
+    # The Fusion style is a platform-agnostic style that offers a
+    # desktop-oriented look'n'feel.
+    # The Fusion style is not a native desktop style.
+    # The style runs on any platform, and looks similar everywhere
+    app.setStyle("fusion")
+
+    # Load style from settings if exists
+    app_settings = QSettings()
+    # Display current style
+    style_name = app_settings.value("ui/style", "Dark")
+
+    # Apply selected style by calling on the method based on its name
+    # equivalent of style.dark(app)
+    getattr(style, style_name.lower())(app)
 
 
 def load_translations(app):

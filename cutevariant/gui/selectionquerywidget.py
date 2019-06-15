@@ -13,6 +13,7 @@ from PySide2.QtGui import *
 from .plugin import QueryPluginWidget
 from cutevariant.core import Query
 from cutevariant.core import sql
+from cutevariant.core.reader.bedreader import BedTool
 from cutevariant.gui.ficon import FIcon
 from cutevariant.commons import logger, DEFAULT_SELECTION_NAME
 
@@ -210,6 +211,9 @@ class SelectionQueryWidget(QueryPluginWidget):
         if not locked_selection:
             menu.addAction(FIcon(0xF8FF), self.tr("Edit"), self.edit_selection)
 
+        # Create action for bed 
+        menu.addAction(FIcon(0XF219),"Intersect with bed file ...", self.create_selection_from_bed)
+
         # Set operations on selections: create mapping and actions
         set_icons_ids = (0xF55D, 0xF55B, 0xF564)
         set_texts = (self.tr("Intersect"), self.tr("Difference"), self.tr("Union"))
@@ -317,6 +321,7 @@ class SelectionQueryWidget(QueryPluginWidget):
         records_names = set(record["name"] for record in self.model.records)
         records_names.remove(current_selection_name)
 
+        menu.addSeparator()
         # Create an action in the menu for all the remaining elements
         for record_name in records_names:
             action = menu.addAction(record_name)
@@ -393,3 +398,24 @@ class SelectionQueryWidget(QueryPluginWidget):
             old_record = self.model.record(current_index)
             old_record["name"] = new_name[0]
             self.model.edit_record(current_index, old_record)
+
+
+    def create_selection_from_bed(self):
+        """ Ask user for a bed file and create a new selection from it """ 
+
+        result = QFileDialog.getOpenFileName(self, "Open bed file", QDir.homePath(),"Bed File (*.bed)")
+
+        if result:
+            bed_file = result[0]
+            bedtool = BedTool(bed_file)
+            intervals = tuple(bedtool)
+
+            current_index = self.view.selectionModel().currentIndex()
+            current_selection = self.model.record(current_index)
+            source = current_selection["name"]
+            target = QInputDialog.getText(self, "selection  name", "Get a selection name")[0]
+
+            # TODO : create a sql.selection_exists(name) to check if selection already exists 
+            if target:
+                sql.create_selection_from_bed(self.query.conn, source, target, intervals)
+                self.model.load()
