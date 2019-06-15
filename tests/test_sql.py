@@ -323,7 +323,9 @@ def test_selection_from_bedfile(conn):
     bedtool = BedTool(larger_string)
 
     # Create a new selection (a second one, since there is a default one during DB creation)
-    ret = sql.create_selection_from_bed(conn, "coucou", bedtool)
+    ret = sql.create_selection_from_bed(conn,"variants", "bedname", bedtool)
+    
+
     # Test last id of the selection
     assert ret == 2
 
@@ -336,11 +338,9 @@ def test_selection_from_bedfile(conn):
     # Is the association table 'selection_has_variant' ok ?
     assert record == expected
 
-
-
-#     assert table_exists(conn, "selections"), "cannot create table selections"
-#     sql.insert_selection(conn, name="variants", count=10)
-#     assert table_count(conn, "selections") == 1, "cannot insert selection"
+    bed_selection  = [s for s in sql.get_selections(conn) if s["name"] == "bedname"][0]
+    assert bed_selection["name"] == "bedname"
+    assert bed_selection["count"] == 4 
 
 
 # def test_selection_operation(conn):
