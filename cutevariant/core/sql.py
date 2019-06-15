@@ -268,13 +268,22 @@ def create_selection_from_bed(conn, source:str, target: str, bed_intervals):
             (0, interval["chrom"], interval["start"], interval["end"], interval["name"]))
 
 
-    query = """ SELECT variants.id as variant_id FROM variants 
+    if source == "variants": 
+        source_query = "SELECT variants.id as variant_id FROM variants"
+    else:
+        source_query = """
+        SELECT variants.id as variant_id FROM variants
+        INNER JOIN selections ON selections.name = '{}'
+        INNER JOIN selection_has_variant sv ON sv.variant_id = variants.id AND sv.selection_id = selections.id  
+        """.format(source)
+
+    query = source_query + """  
                 INNER JOIN bed_table ON 
                 variants.chr = bed_table.chrom AND 
                 variants.pos >= bed_table.start AND 
                 variants.pos <= bed_table.end """ 
 
-    
+
     return create_selection_from_sql(conn, query, target, from_selection=True)
 
 
