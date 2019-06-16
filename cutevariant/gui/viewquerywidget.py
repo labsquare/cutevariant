@@ -273,9 +273,16 @@ class QueryModel(QAbstractItemModel):
 
         #  TODO : need to put this into QUERY
         # TODO: add filter into left join annotations ... instead in where
+        
+        parent_where_clause = self.query.filter_to_sql(self.query.filter)
         sub_query = f"""SELECT variants.id, {columns} FROM variants
         {joints}
         WHERE annotations.variant_id = {variant_id}"""
+
+        if parent_where_clause:
+            sub_query+= " AND " + parent_where_clause
+
+
         LOGGER.debug(
             "QueryModel:fetchMore:: Extra children cols sub query %s", sub_query
         )
