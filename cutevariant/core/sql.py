@@ -188,9 +188,11 @@ def create_selection_from_sql(
 ):
     """Create a selection record from sql variant query
 
+    :param conn: sqlite3 connection
     :param name : name of the selection
     :param query: sql variant query
-    :param by: can be : 'site' for (chr,pos)  or 'variant' for (chr,pos,ref,alt)
+    :param from_selection: Optimized flag only for the creation of a selection
+        from set operations, variant_id is the only useful column in the given query.
     :return: The id of the new selection. None in case of error.
     :rtype: <int> or None
     """
@@ -242,6 +244,47 @@ def create_selection_from_sql(
     if cursor.rowcount:
         return cursor.lastrowid
     return None
+
+
+def create_selection_from_bed(conn, source:str, target: str, bed_intervals):
+    """Create a new selection based on the given intervals taken from a BED file""" 
+
+
+    cur = conn.cursor()
+
+    # Create temporary table 
+    cur.execute("DROP TABLE IF exists bed_table")
+    cur.execute("""CREATE TABLE bed_table (
+        id INTEGER PRIMARY KEY ASC, 
+        bin INTEGER DEFAULT 0, 
+        chrom TEXT, 
+        start INTEGER, 
+        end INTEGER,
+        name INTEGER )""")
+
+
+    for interval in bed_intervals:
+        cur.execute("INSERT INTO bed_table (bin, chrom, start, end, name) VALUES (?,?,?,?,?)", 
+            (0, interval["chrom"], interval["start"], interval["end"], interval["name"]))
+
+
+    if source == "variants": 
+        source_query = "SELECT variants.id as variant_id FROM variants"
+    else:
+        source_query = """
+        SELECT variants.id as variant_id FROM variants
+        INNER JOIN selections ON selections.name = '{}'
+        INNER JOIN selection_has_variant sv ON sv.variant_id = variants.id AND sv.selection_id = selections.id  
+        """.format(source)
+
+    query = source_query + """  
+                INNER JOIN bed_table ON 
+                variants.chr = bed_table.chrom AND 
+                variants.pos >= bed_table.start AND 
+                variants.pos <= bed_table.end """ 
+
+
+    return create_selection_from_sql(conn, query, target, from_selection=True)
 
 
 def get_selections(conn):
@@ -419,6 +462,53 @@ def get_fields(conn):
     """
     conn.row_factory = sqlite3.Row
     return (dict(data) for data in conn.execute("""SELECT * FROM fields"""))
+
+
+def get_field_by_name(conn, field_name: str):
+    """ Return field by his name 
+
+    .. seealso:: get_fields 
+
+    :param conn: sqlite3.connect
+    :param field_name (str): field name 
+    :return: field record 
+    :rtype: <dict>
+    """
+    conn.row_factory = sqlite3.Row
+    return dict(
+        conn.execute(
+            """SELECT * FROM fields WHERE name = ? """, (field_name,)
+        ).fetchone()
+    )
+
+
+def get_field_range(conn, field_name: str):
+    """ Return (min,max) of field_name records . 
+    
+    :param conn: sqlite3.connect
+    :param field_name (str): field name
+    :return: (min, max) 
+    :rtype: tuple
+    """
+    field = get_field_by_name(conn, field_name)
+    table = field["category"]  # variants, or annotations or samples
+    query = f"""SELECT min({field_name}), max({field_name}) FROM {table}"""
+    return tuple(conn.execute(query).fetchone())
+
+
+def get_field_unique_values(conn, field_name: str):
+    """ Return unique record value for a field name 
+
+    :param conn: sqlite3.connect 
+    :param field_name (str): field_name
+    :return: list of unique values
+    :rtype: list
+    """
+    field = get_field_by_name(conn, field_name)
+    table = field["category"]  # variants, or annotations or samples
+    # conn.row_factory = None
+    query = f"""SELECT DISTINCT {field_name} FROM {table}"""
+    return [i[field_name] for i in conn.execute(query)]
 
 
 ## ================ Annotations functions ======================================
@@ -656,7 +746,7 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
 
         # Insert current variant
         # Use default dict to handle missing values
-        LOGGER.debug(variant_insert_query)
+        LOGGER.debug("async_insert_many_variants:: QUERY: %s\nVALUES: %s", variant_insert_query, variant)
 
         cursor.execute(variant_insert_query, defaultdict(str, variant))
 

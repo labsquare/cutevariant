@@ -6,123 +6,7 @@ from enum import Enum
 from .plugin import QueryPluginWidget
 from cutevariant.core import Query
 from cutevariant.gui.ficon import FIcon
-
-
-class FilterType(Enum):
-    LOGIC = 1
-    CONDITION = 2
-
-
-class LogicItem(QStandardItem):
-
-    _LOGIC_ICONS = {"AND": 0xF8E0, "OR": 0xF8E4}
-
-    def __init__(self, logic_type="AND"):
-        """
-        Create a logic Item : OR / AND  
-        """
-        super().__init__()
-        self.logic_type = logic_type
-        self.setEditable(False)
-        self.set(logic_type)
-
-    def set(self, logic_type):
-        self.setIcon(FIcon(LogicItem._LOGIC_ICONS[self.logic_type]))
-        self.setText(logic_type)
-
-
-class FieldItem(QStandardItem):
-    def __init__(self, name, operator, value):
-        super().__init__()
-        self.setEditable(False)
-        self.set(name, operator, value)
-
-    def set(self, name, operator, value):
-        self.name = name
-        self.operator = operator
-        self.value = value
-        self.setText(f"{self.name}  {self.operator}  {self.value}")
-
-
-class FilterQueryModel(QStandardItemModel):
-    def __init__(self):
-        super().__init__()
-        self._query = None
-
-    @property
-    def query(self) -> Query:
-        if self.rowCount() != 0:
-            self._query.filter = self.fromItem(self.item(0))
-        return self._query
-
-    @query.setter
-    def query(self, query: Query):
-        self._query = query
-
-    def load(self):
-        self.clear()
-        if self._query.filter:
-            self.appendRow(self.toItem(self._query.filter))
-
-    def toItem(self, data: dict) -> QStandardItem:
-        """ recursive function to load item in tree from data """
-        if len(data) == 1:  #  logic item
-            operator = list(data.keys())[0]
-            item = LogicItem(operator)
-            [item.appendRow(self.toItem(k)) for k in data[operator]]
-            return item
-        else:  # condition item
-            item = FieldItem(data["field"], data["operator"], data["value"])
-            return item
-
-    def fromItem(self, item: QStandardItem) -> dict:
-        """ recursive fonction to get items from tree """
-        if isinstance(item, LogicItem):
-            # Return dict with operator as key and item as value
-            operator_data = [
-                self.fromItem(item.child(i)) for i in range(item.rowCount())
-            ]
-            return {item.logic_type: operator_data}
-        else:
-            return {"field": item.name, "operator": item.operator, "value": item.value}
-
-
-class FilterEditDialog(QDialog):
-    def __init__(self, item: QStandardItem):
-        super().__init__()
-        self.field = QLineEdit()
-        self.operator = QLineEdit()
-        self.value = QLineEdit()
-        self.item = item
-
-        form_layout = QFormLayout()
-
-        form_layout.addRow("field", self.field)
-        form_layout.addRow("operator", self.operator)
-        form_layout.addRow("value", self.value)
-
-        layout = QVBoxLayout()
-        buttonBox = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
-        buttonBox.accepted.connect(self.save)
-        buttonBox.rejected.connect(self.close)
-
-        layout.addLayout(form_layout)
-        layout.addWidget(buttonBox)
-        self.setLayout(layout)
-
-        self.load()
-
-    def load(self):
-        self.field.setText(self.item.data(FilterQueryModel.FieldRole))
-        self.operator.setText(self.item.data(FilterQueryModel.OperatorRole))
-        self.value.setText(self.item.data(FilterQueryModel.ValueRole))
-
-    def save(self):
-        self.item.setText(self.field.text() + self.operator.text() + self.value.text())
-        self.item.setData("field", FilterQueryModel.TypeRole)
-        self.item.setData(self.field.text(), FilterQueryModel.FieldRole)
-        self.item.setData(self.operator.text(), FilterQueryModel.OperatorRole)
-        self.item.setData(self.value.text(), FilterQueryModel.ValueRole)
+from cutevariant.gui.fields import *
 
 
 class FilterQueryWidget(QueryPluginWidget):
@@ -130,47 +14,115 @@ class FilterQueryWidget(QueryPluginWidget):
         super().__init__()
         self.setWindowTitle(self.tr("Filter"))
         self.view = QTreeView()
-        self.model = FilterQueryModel()
+        self.model = FilterModel(None)
+        self.delegate = FilterDelegate()
+        self.toolbar = QToolBar()
+        self.toolbar.setIconSize(QSize(20, 20))
         self.view.setModel(self.model)
+        self.view.setItemDelegate(self.delegate)
+        self.view.setIndentation(15)
+        self.view.setDragEnabled(True)
+        self.view.setAcceptDrops(True)
+        self.view.setDragDropMode(QAbstractItemView.InternalMove)
 
         layout = QVBoxLayout()
         layout.addWidget(self.view)
+        layout.addWidget(self.toolbar)
         layout.setContentsMargins(0, 0, 0, 0)
-
+        layout.setSpacing(0)
         self.setLayout(layout)
+        self.model.filterChanged.connect(self.on_filter_changed)
 
-        # self.model.itemChanged.connect(self.changed)
-        self.view.doubleClicked.connect(self.edit)
+        # setup Menu
+
+        self.add_menu = QMenu()
+        self.add_button = QToolButton()
+        self.add_button.setIcon(FIcon(0xF703))
+        self.add_button.setPopupMode(QToolButton.InstantPopup)
+        self.add_menu.addAction(FIcon(0xF8E0), "Add Logic", self.on_add_logic)
+        self.add_menu.addAction(FIcon(0xF70A), "Add Condition", self.on_add_condition)
+        self.add_button.setMenu(self.add_menu)
+
+        self.toolbar.addWidget(self.add_button)
+        self.toolbar.addAction(FIcon(0xF143), "up")
+        self.toolbar.addAction(FIcon(0xF140), "down")
+
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.toolbar.addWidget(spacer)
+
+        self.toolbar.addAction(FIcon(0xF5E8), "delete", self.on_delete_item)
+
+        self.view.selectionModel().currentChanged.connect(self.on_selection_changed)
 
     def on_init_query(self):
         """ Overrided """
-        self.model.query = self.query
+        self.model.conn = self.query.conn
+
+        # self.model.query = self.query
 
     def on_change_query(self):
         """ override methods """
-        self.model.load()
+        # self.model.load()
+        print(self.query.filter)
+        self.model.load(self.query.filter)
+        self._update_view_geometry()
 
-    def edit(self, index):
-        dialog = FilterEditDialog(self.model.itemFromIndex(index))
+    def on_filter_changed(self):
+        """ 
+        This slot is called when the model changed and signal the change to other queryWidget
+        """
+        self.query.filter = self.model.to_dict()
+        self.query_changed.emit()
 
-        if dialog.exec_():
-            dialog.save()
+    def on_add_logic(self):
+        """Add logic item to the current selected index
+        """
+        index = self.view.currentIndex()
+        if index:
+            self.model.add_logic_item(parent=index)
+            # self.view.setFirstColumnSpanned(0, index.parent(), True)
 
-    def contextMenuEvent(self, event):
-        """ override methode """
+    def _update_view_geometry(self):
+        """Set column Spanned to True for all Logic Item 
+        This allows Logic Item Editor to take all the space inside the row 
+        """
+        self.view.expandAll()
+        # for index in self.model.match(
+        #     self.model.index(0, 0),
+        #     FilterModel.TypeRole,
+        #     FilterItem.LOGIC_TYPE,
+        #     -1,
+        #     Qt.MatchRecursive,
+        # ):
+        #     self.view.setFirstColumnSpanned(0, index.parent(), True)
 
-        menu = QMenu(self)
+    def on_add_condition(self):
+        """Add condition item to the current selected index 
+        """
+        index = self.view.currentIndex()
+        if index:
+            self.model.add_condition_item(parent=index)
 
-        pos = self.view.viewport().mapFromGlobal(event.globalPos())
-        index = self.view.indexAt(pos)
+    def on_delete_item(self):
+        """Delete current item 
+        """
+        ret = QMessageBox.question(
+            self,
+            "remove row",
+            "Are you to remove this item ? ",
+            QMessageBox.Yes | QMessageBox.No,
+        )
 
-        if not index.isValid():
-            logic_action = menu.addAction(self.tr("add logic"))
+        if ret == QMessageBox.Yes:
+            self.model.remove_item(self.view.currentIndex())
 
+    def on_selection_changed(self):
+        """ Enable/Disable add button depending item type """
+
+        print("selection changed")
+        index = self.view.currentIndex()
+        if self.model.item(index).type() == FilterItem.CONDITION_TYPE:
+            self.add_button.setDisabled(True)
         else:
-            logic_action = menu.addAction(self.tr("add logic"))
-            item_action = menu.addAction(self.tr("add condition"))
-            menu.addSeparator()
-            rem_action = menu.addAction(self.tr("Remove"))
-
-        menu.exec_(event.globalPos())
+            self.add_button.setDisabled(False)

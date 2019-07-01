@@ -139,13 +139,13 @@ class QueryModel(QAbstractItemModel):
         # Create index for variant as parent
         if self.level(parent) == 0:
             # createIndex(row,col,internalId) is a method from QAbstractItemModel to build an index .
-            # In C++, the third parameters is an internal ID which can be a void pointer or an unsigned int. 
+            # In C++, the third parameters is an internal ID which can be a void pointer or an unsigned int.
             # This is normally used to get the parent's index in a tree model. See self.parent() method.
-            # Here, I am using this internalId as the row id from self.variants() list. 
-            # When there is no parent, I cannot set the internalId to None, because it must be an unsigned int.
-            # In fact it works with None, except on MacOS which print many overflow error. 
+            # Here, I am using this internalId as the row id from self.variants() list.
+            #  When there is no parent, I cannot set the internalId to None, because it must be an unsigned int.
+            #  In fact it works with None, except on MacOS which print many overflow error.
             # So, I m using here a constant NO_PARENT_INTERNAL_ID = 999999 when no parent is required.
-            # See https://doc.qt.io/qt-5/qtwidgets-itemviews-simpletreemodel-example.html
+            #  See https://doc.qt.io/qt-5/qtwidgets-itemviews-simpletreemodel-example.html
             return self.createIndex(row, column, self.NO_PARENT_INTERNAL_ID)
 
         # Create index for variant as child
@@ -161,7 +161,7 @@ class QueryModel(QAbstractItemModel):
             return QModelIndex()
 
         # If internalId is None, index is a variant parent
-        # @see self.index() 
+        #  @see self.index()
         if index.internalId() == self.NO_PARENT_INTERNAL_ID:
             return QModelIndex()
 
@@ -606,7 +606,6 @@ class ViewQueryWidget(QueryPluginWidget):
         # self.view.setIndentation(0)
         self.view.setIconSize(QSize(22, 22))
         self.view.setAnimated(True)
-        self.view.setStyleSheet("QAbstractScrollArea {border-left: 20px solid red}")
 
         # self.view.setItemDelegate(self.delegate)
 

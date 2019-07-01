@@ -26,8 +26,8 @@ from cutevariant import commons as cm
 from cutevariant.commons import MAX_RECENT_PROJECTS, DIR_ICONS
 
 # Proof of concept - testing only
-#from cutevariant.gui.webglquerywidget import WebGLQueryWidget
-#from cutevariant.gui.hpoquerywidget import HpoQueryWidget
+# from cutevariant.gui.webglquerywidget import WebGLQueryWidget
+# from cutevariant.gui.hpoquerywidget import HpoQueryWidget
 # from cutevariant.gui.omnibar import OmniBar
 
 
@@ -232,7 +232,7 @@ class MainWindow(QMainWindow):
 
         self.toolbar.addAction(
             FIcon(0xF412),
-            self.tr("Save query"),
+            self.tr("Save the query"),
             self.selection_widget.save_current_query,
         )
 

@@ -57,13 +57,19 @@ class VcfReader(AbstractReader):
         LOGGER.debug("CsvReader::get_fields: called")
         if not self.fields:
             LOGGER.debug("CsvReader::get_fields: parse")
-            fields = self.parse_fields()
+
+            # Sanitize fields names
+            # PS: annotations fields names are sanitized by the annotation_parser
+            fields = tuple(self.parse_fields())
+            for field in fields:
+                field["name"] = AbstractReader.sanitize_field_name(field["name"])
+
             if self.annotation_parser:
                 # If "ANN" is a field in the current VCF:
                 # Remove and parse special annotations
                 self.fields = tuple(self.annotation_parser.parse_fields(fields))
             else:
-                self.fields = tuple(fields)
+                self.fields = fields
         return self.fields
 
     def get_variants(self):
@@ -217,9 +223,6 @@ class VcfReader(AbstractReader):
             # if key == "ANN": # Parse special annotation
             #     yield from self.parser.parse_fields(info.desc)
             # else:
-
-            # Fix #75 : Avoid dot caracter in fields ...
-            key = key.replace(".", "_")
 
             yield {
                 "name": key.lower(),

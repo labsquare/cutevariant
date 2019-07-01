@@ -150,3 +150,17 @@ QTreeView::indicator::unchecked {
 border: 1px solid palette(alternate-base);
     background: none;
 }
+
+QDockWidget QTreeView
+{
+  
+border: 1px solid palette(base);
+}
+
+QDockWidget QToolBar
+{
+  
+  background: palette(alternate-base);
+  border-top: 1px solid palette(midlight);
+
+}
