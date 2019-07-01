@@ -1,9 +1,9 @@
 """Summary
 """
-from PySide2.QtCore import *
-from PySide2.QtWidgets import *
-from PySide2.QtGui import *
-from PySide2.QtNetwork import * 
+from PySide2.QtCore import QUrl,QDir,Slot,QFile,QIODevice,QTime
+from PySide2.QtWidgets import QLabel,QProgressBar,QDialogButtonBox, QDialog, QApplication,QVBoxLayout
+from PySide2.QtGui import QFont
+from PySide2.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
 import sys
 
 
@@ -68,6 +68,7 @@ class DownloadDialog(QDialog):
         """ Start downloading the file specify by set_source 
         """
         filepath = self.destination.absoluteFilePath(self.source.fileName())
+
 
         
         if QFile(filepath).exists():
