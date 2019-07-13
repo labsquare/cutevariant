@@ -18,7 +18,7 @@ class AbstractReader(ABC):
     """
 
     # To be updated...
-    BANNED_CHARS = ".-+!="
+    BANNED_CHARS = ".-+!=()/"
 
     def __init__(self, device):
         super(AbstractReader, self).__init__()
