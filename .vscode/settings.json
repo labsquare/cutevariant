@@ -1,19 +1,19 @@
 {
-    "python.pythonPath": "/DATA/Dev/snpfrag/venv/bin/python",
+    "python.pythonPath": "venv/bin/python",
     "python.linting.enabled": false,
     "python.linting.pylintEnabled": false,
     "python.linting.pep8Enabled": false,
     "python.linting.banditEnabled": false,
     "python.linting.flake8Enabled": false,
-    "python.unitTest.pyTestArgs": [
+    "python.testing.pytestArgs": [
         "tests"
     ],
-    "python.unitTest.unittestEnabled": false,
-    "python.unitTest.nosetestsEnabled": false,
-    "python.unitTest.pyTestEnabled": true,
     "python.testing.unittestEnabled": false,
     "python.testing.nosetestsEnabled": false,
-    "python.testing.pyTestEnabled": true,
+    "python.testing.pytestEnabled": true,
+    "python.testing.unittestEnabled": false,
+    "python.testing.nosetestsEnabled": false,
+    "python.testing.pytestEnabled": true,
     "python.linting.pydocstyleEnabled": true,
     "python.formatting.provider": "black"
 }
