@@ -47,7 +47,8 @@ class FIconEngine(QIconEngine):
         else:
             painter.setPen(QPen(self.color))
 
-        font.setPixelSize(rect.size().width())
+        
+        #font.setPixelSize(rect.size().width())
 
         painter.setFont(font)
         # painter.setRenderHint(QPainter.HighQualityAntialiasing, True)

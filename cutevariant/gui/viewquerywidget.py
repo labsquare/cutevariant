@@ -8,7 +8,8 @@ QueryDelegate class handles the aesthetic of the view.
 # Standard imports
 import copy
 import csv
-
+import sys 
+import sqlite3
 # Qt imports
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
@@ -16,7 +17,7 @@ from PySide2.QtGui import *
 
 # Custom imports
 from cutevariant.gui.ficon import FIcon
-from .plugin import QueryPluginWidget
+from cutevariant.gui.plugin import QueryPluginWidget
 from cutevariant.core import Query
 from cutevariant.core import sql
 from cutevariant.gui import style
@@ -26,11 +27,13 @@ from cutevariant.commons import GENOTYPE_ICONS
 
 LOGGER = logger()
 
+class ViewQueryWidget(object):
+    pass
 
-class QueryModel(QAbstractItemModel):
+class VariantModel(QAbstractItemModel):
     """
-    QueryModel is a Qt model class which contains variants datas from sql Query. 
-    It loads paginated data from Query and create an interface for a Qt view.
+    VariantModel is a Qt model class which contains variants datas from sql Query. 
+    It loads paginated data from Query and create an interface for a Qt view and controllers.
     When a variant belong to many transcripts, duplicate variants are grouped by (chr,pos,ref,alt) 
     and stored as a Tree structure. Variant row can then be expanded to display each transcript annotation. 
 
@@ -71,13 +74,54 @@ class QueryModel(QAbstractItemModel):
 
     NO_PARENT_INTERNAL_ID = 99999
 
-    def __init__(self, parent=None):
+
+    def __init__(self, conn=None, parent=None):
         super().__init__()
+        self.conn = conn
         self.limit = 50
         self.page = 0
         self.total = 0
-        self._query = None
         self.variants = []
+
+    @property
+    def conn(self):
+        """ Return sqlite connection """
+        return self.query.conn
+
+    @conn.setter 
+    def conn(self, conn):
+        """ Set sqlite connection """
+        self.query = Query(conn)
+
+    @property
+    def columns(self):
+        """ Return query columns list displayed """
+        return self.query.columns
+
+    @columns.setter
+    def columns(self, columns:list):
+        """ Set query columns list to display """
+        self.query.columns = columns 
+
+    @property
+    def filter(self):
+        """ Return query filter """
+        return self.query.filter
+
+    @filter.setter
+    def filter(self,filter):
+        """ Set query filter """
+        self.query.filter = filter
+
+    @property
+    def selection(self):
+        """ Return query selection """
+        return self.query.selection 
+
+    @selection.setter
+    def selection(self, selection):
+        """ Set query selection """
+        self.query.selection = selection
 
     def level(self, index: QModelIndex) -> bool:
         """Return level of index. 
@@ -115,12 +159,12 @@ class QueryModel(QAbstractItemModel):
         """
 
         # If no query is defined, return nothing
-        if not self._query:
+        if not self.query:
             return 0
 
         #  return query columns + child count columns
         #  children count - chr - pos .....
-        return len(self._query.columns) + 1
+        return len(self.query.columns) + 1
 
     def index(self, row: int, column: int, parent=QModelIndex()) -> QModelIndex:
         """Overrided: Create a new model index from row, column and parent  
@@ -229,12 +273,12 @@ class QueryModel(QAbstractItemModel):
                 if section == 0:
                     return "children"
                 else:
-                    col = self._query.columns[section - 1]
+                    col = self.query.columns[section - 1]
                     if type(col) == tuple and len(col) == 3:  #  show functions
                         fct, arg, field = col
                         return f"{fct}({arg}).{field}"
                     else:
-                        return self._query.columns[section - 1]
+                        return self.query.columns[section - 1]
         return None
 
     def hasChildren(self, parent: QModelIndex) -> bool:
@@ -304,14 +348,6 @@ class QueryModel(QAbstractItemModel):
         """
         return self.variants[index.row()][0][-1] - 1
 
-    @property
-    def query(self):
-        return self._query
-
-    @query.setter
-    def query(self, query: Query):
-        # PS: default group by method: ("chr","pos","ref","alt")
-        self._query = query
 
     def load(self):
         """Load variant data into the model from query attributes
@@ -327,7 +363,7 @@ class QueryModel(QAbstractItemModel):
         # Append a list because child can be append after
         self.variants = [
             [tuple(variant)]
-            for variant in self._query.items(self.limit, self.page * self.limit)
+            for variant in self.query.items(self.limit, self.page * self.limit)
         ]
 
         LOGGER.debug("QueryModel:load:: variants queried\n%s", self.variants)
@@ -369,10 +405,10 @@ class QueryModel(QAbstractItemModel):
 
         """
         if column < self.columnCount():
-            colname = self._query.columns[column - 1]
+            colname = self.query.columns[column - 1]
 
-            self._query.order_by = colname
-            self._query.order_desc = order == Qt.DescendingOrder
+            self.query.order_by = colname
+            self.query.order_desc = order == Qt.DescendingOrder
             self.load()
 
     def displayed(self):
@@ -410,7 +446,7 @@ class QueryModel(QAbstractItemModel):
             ]  #  + 1 because the first element is the parent
 
 
-class QueryDelegate(QStyledItemDelegate):
+class VariantDelegate(QStyledItemDelegate):
     """
     This class specify the aesthetic of the view
 
@@ -557,7 +593,7 @@ class QueryDelegate(QStyledItemDelegate):
         return QSize(0, 30)
 
 
-class QueryTreeView(QTreeView):
+class VariantTreeView(QTreeView):
     def __init__(self, parent=None):
         super().__init__()
 
@@ -567,6 +603,10 @@ class QueryTreeView(QTreeView):
         Backround is not alternative for children but inherits from parent 
 
         """
+        if self.itemDelegate().__class__ is not VariantDelegate:
+            # Works only if delegate is a VariantDelegate
+            return 
+
         painter.save()
         painter.setPen(Qt.NoPen)
         painter.setBrush(self.itemDelegate().background_color_index(index))
@@ -581,33 +621,33 @@ class QueryTreeView(QTreeView):
         super().drawBranches(painter, rect, index)
 
 
-class ViewQueryWidget(QueryPluginWidget):
+class VariantWidget(QWidget):
     """Contains the view of query with several controller"""
 
     variant_clicked = Signal(dict)
 
-    def __init__(self):
+    def __init__(self, conn):
         super().__init__()
-        self.model = QueryModel()
-        self.delegate = QueryDelegate()
+        self.model = VariantModel(conn)
+        self.delegate = VariantDelegate()
         self.setWindowTitle(self.tr("Variants"))
         self.topbar = QToolBar()
         self.bottombar = QToolBar()
-        self.view = QueryTreeView()
+        self.view = VariantTreeView()
 
-        # self.view.setFrameStyle(QFrame.NoFrame)
+        # # self.view.setFrameStyle(QFrame.NoFrame)
         self.view.setModel(self.model)
         self.view.setItemDelegate(self.delegate)
-        # self.view.setAlternatingRowColors(True)
+        # # self.view.setAlternatingRowColors(True)
         self.view.setSortingEnabled(True)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setSelectionMode(QAbstractItemView.ContiguousSelection)
         self.view.setRootIsDecorated(True)  # Manage from delegate
-        # self.view.setIndentation(0)
+        ## self.view.setIndentation(0)
         self.view.setIconSize(QSize(22, 22))
         self.view.setAnimated(True)
 
-        # self.view.setItemDelegate(self.delegate)
+        # # self.view.setItemDelegate(self.delegate)
 
         main_layout = QVBoxLayout()
         main_layout.addWidget(self.topbar)
@@ -627,7 +667,7 @@ class ViewQueryWidget(QueryPluginWidget):
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.topbar.addWidget(spacer)
 
-        # Add combobox to choose the grouping method of variants
+        # # Add combobox to choose the grouping method of variants
 
         # Construct bottom bar
         # These actions should be disabled until a query is made (see query setter)
@@ -644,10 +684,10 @@ class ViewQueryWidget(QueryPluginWidget):
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         # Setup actions
-        self.show_sql_action = self.bottombar.addAction(
-            FIcon(0xF865), self.tr("See SQL query"), self.show_sql
-        )
-        self.show_sql_action.setEnabled(False)
+        # self.show_sql_action = self.bottombar.addAction(
+        #     FIcon(0xF865), self.tr("See SQL query"), self.show_sql
+        # )
+        # self.show_sql_action.setEnabled(False)
         self.bottombar.addWidget(self.page_info)
         self.bottombar.addWidget(spacer)
         self.bottombar.addAction(FIcon(0xF792), "<<", self.model.firstPage)
@@ -672,18 +712,26 @@ class ViewQueryWidget(QueryPluginWidget):
         self.view.clicked.connect(self._variant_clicked)
         self.page_box.returnPressed.connect(self._update_page)
 
-    def on_init_query(self):
-        """Method override from AbstractQueryWidget"""
-        self.export_csv_action.setEnabled(True)
-        self.show_sql_action.setEnabled(True)
-        self.model.query = self.query
+    @property
+    def conn(self):
+        return self.model.conn 
 
-    def on_change_query(self):
-        """Method override from AbstractQueryWidget"""
-        #  reset current page
-        self.model.page = 0
-        self.model.load()
-        self.view.header().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+    @conn.setter
+    def conn(self, conn):
+        self.model.conn = conn
+
+    # def on_init_query(self):
+    #     """Method override from AbstractQueryWidget"""
+    #     self.export_csv_action.setEnabled(True)
+    #     self.show_sql_action.setEnabled(True)
+    #     self.model.query = self.query
+
+    # def on_change_query(self):
+    #     """Method override from AbstractQueryWidget"""
+    #     #  reset current page
+    #     self.model.page = 0
+    #     self.model.load()
+    #     self.view.header().setSectionResizeMode(0, QHeaderView.ResizeToContents)
 
     def updateInfo(self):
         """Update metrics for the current query
@@ -782,3 +830,18 @@ class ViewQueryWidget(QueryPluginWidget):
         self.model.setPage(int(self.page_box.text()))
 
         self.page_box.clearFocus()
+
+
+
+if  __name__ == "__main__":
+
+    app = QApplication(sys.argv)
+
+    conn = sqlite3.connect("examples/test.db")
+
+    view = VariantWidget(conn)
+    view.model.load()
+    
+    view.show()
+
+    app.exec_()

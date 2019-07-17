@@ -27,7 +27,7 @@ from cutevariant.commons import MAX_RECENT_PROJECTS, DIR_ICONS
 
 # Proof of concept - testing only
 # from cutevariant.gui.webglquerywidget import WebGLQueryWidget
-# from cutevariant.gui.hpoquerywidget import HpoQueryWidget
+from cutevariant.gui.hpoquerywidget import HpoQueryWidget
 # from cutevariant.gui.omnibar import OmniBar
 
 
@@ -82,7 +82,7 @@ class MainWindow(QMainWindow):
         # Testing
         self.add_query_plugin(ChartQueryWidget())
         # self.add_query_plugin(WebGLQueryWidget())
-        # self.add_query_plugin(HpoQueryWidget())
+        self.add_query_plugin(HpoQueryWidget())
 
         # Setup toolbar (requires selection_widget and some actions of menubar)
         self.setup_toolbar()
