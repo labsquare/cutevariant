@@ -211,8 +211,10 @@ class SelectionQueryWidget(QueryPluginWidget):
         if not locked_selection:
             menu.addAction(FIcon(0xF8FF), self.tr("Edit"), self.edit_selection)
 
-        # Create action for bed 
-        menu.addAction(FIcon(0XF219),"Intersect with bed file ...", self.create_selection_from_bed)
+        #  Create action for bed
+        menu.addAction(
+            FIcon(0xF219), "Intersect with bed file ...", self.create_selection_from_bed
+        )
 
         # Set operations on selections: create mapping and actions
         set_icons_ids = (0xF55D, 0xF55B, 0xF564)
@@ -399,11 +401,12 @@ class SelectionQueryWidget(QueryPluginWidget):
             old_record["name"] = new_name[0]
             self.model.edit_record(current_index, old_record)
 
-
     def create_selection_from_bed(self):
-        """ Ask user for a bed file and create a new selection from it """ 
+        """ Ask user for a bed file and create a new selection from it """
 
-        result = QFileDialog.getOpenFileName(self, "Open bed file", QDir.homePath(),"Bed File (*.bed)")
+        result = QFileDialog.getOpenFileName(
+            self, "Open bed file", QDir.homePath(), "Bed File (*.bed)"
+        )
 
         if result:
             bed_file = result[0]
@@ -413,9 +416,13 @@ class SelectionQueryWidget(QueryPluginWidget):
             current_index = self.view.selectionModel().currentIndex()
             current_selection = self.model.record(current_index)
             source = current_selection["name"]
-            target = QInputDialog.getText(self, "selection  name", "Get a selection name")[0]
+            target = QInputDialog.getText(
+                self, "selection  name", "Get a selection name"
+            )[0]
 
-            # TODO : create a sql.selection_exists(name) to check if selection already exists 
+            # TODO : create a sql.selection_exists(name) to check if selection already exists
             if target:
-                sql.create_selection_from_bed(self.query.conn, source, target, intervals)
+                sql.create_selection_from_bed(
+                    self.query.conn, source, target, intervals
+                )
                 self.model.load()

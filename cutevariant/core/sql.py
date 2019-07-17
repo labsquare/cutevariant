@@ -246,43 +246,54 @@ def create_selection_from_sql(
     return None
 
 
-def create_selection_from_bed(conn, source:str, target: str, bed_intervals):
-    """Create a new selection based on the given intervals taken from a BED file""" 
-
+def create_selection_from_bed(conn, source: str, target: str, bed_intervals):
+    """Create a new selection based on the given intervals taken from a BED file"""
 
     cur = conn.cursor()
 
-    # Create temporary table 
+    #  Create temporary table
     cur.execute("DROP TABLE IF exists bed_table")
-    cur.execute("""CREATE TABLE bed_table (
+    cur.execute(
+        """CREATE TABLE bed_table (
         id INTEGER PRIMARY KEY ASC, 
         bin INTEGER DEFAULT 0, 
         chrom TEXT, 
         start INTEGER, 
         end INTEGER,
-        name INTEGER )""")
-
+        name INTEGER )"""
+    )
 
     for interval in bed_intervals:
-        cur.execute("INSERT INTO bed_table (bin, chrom, start, end, name) VALUES (?,?,?,?,?)", 
-            (0, interval["chrom"], interval["start"], interval["end"], interval["name"]))
+        cur.execute(
+            "INSERT INTO bed_table (bin, chrom, start, end, name) VALUES (?,?,?,?,?)",
+            (
+                0,
+                interval["chrom"],
+                interval["start"],
+                interval["end"],
+                interval["name"],
+            ),
+        )
 
-
-    if source == "variants": 
+    if source == "variants":
         source_query = "SELECT variants.id as variant_id FROM variants"
     else:
         source_query = """
         SELECT variants.id as variant_id FROM variants
         INNER JOIN selections ON selections.name = '{}'
         INNER JOIN selection_has_variant sv ON sv.variant_id = variants.id AND sv.selection_id = selections.id  
-        """.format(source)
+        """.format(
+            source
+        )
 
-    query = source_query + """  
+    query = (
+        source_query
+        + """  
                 INNER JOIN bed_table ON 
                 variants.chr = bed_table.chrom AND 
                 variants.pos >= bed_table.start AND 
-                variants.pos <= bed_table.end """ 
-
+                variants.pos <= bed_table.end """
+    )
 
     return create_selection_from_sql(conn, query, target, from_selection=True)
 
@@ -746,7 +757,11 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
 
         # Insert current variant
         # Use default dict to handle missing values
-        LOGGER.debug("async_insert_many_variants:: QUERY: %s\nVALUES: %s", variant_insert_query, variant)
+        LOGGER.debug(
+            "async_insert_many_variants:: QUERY: %s\nVALUES: %s",
+            variant_insert_query,
+            variant,
+        )
 
         cursor.execute(variant_insert_query, defaultdict(str, variant))
 

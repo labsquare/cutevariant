@@ -8,8 +8,9 @@ QueryDelegate class handles the aesthetic of the view.
 # Standard imports
 import copy
 import csv
-import sys 
+import sys
 import sqlite3
+
 # Qt imports
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
@@ -27,8 +28,10 @@ from cutevariant.commons import GENOTYPE_ICONS
 
 LOGGER = logger()
 
+
 class ViewQueryWidget(object):
     pass
+
 
 class VariantModel(QAbstractItemModel):
     """
@@ -74,7 +77,6 @@ class VariantModel(QAbstractItemModel):
 
     NO_PARENT_INTERNAL_ID = 99999
 
-
     def __init__(self, conn=None, parent=None):
         super().__init__()
         self.conn = conn
@@ -88,7 +90,7 @@ class VariantModel(QAbstractItemModel):
         """ Return sqlite connection """
         return self.query.conn
 
-    @conn.setter 
+    @conn.setter
     def conn(self, conn):
         """ Set sqlite connection """
         self.query = Query(conn)
@@ -99,9 +101,9 @@ class VariantModel(QAbstractItemModel):
         return self.query.columns
 
     @columns.setter
-    def columns(self, columns:list):
+    def columns(self, columns: list):
         """ Set query columns list to display """
-        self.query.columns = columns 
+        self.query.columns = columns
 
     @property
     def filter(self):
@@ -109,14 +111,14 @@ class VariantModel(QAbstractItemModel):
         return self.query.filter
 
     @filter.setter
-    def filter(self,filter):
+    def filter(self, filter):
         """ Set query filter """
         self.query.filter = filter
 
     @property
     def selection(self):
         """ Return query selection """
-        return self.query.selection 
+        return self.query.selection
 
     @selection.setter
     def selection(self, selection):
@@ -347,7 +349,6 @@ class VariantModel(QAbstractItemModel):
         of the GROUP BY
         """
         return self.variants[index.row()][0][-1] - 1
-
 
     def load(self):
         """Load variant data into the model from query attributes
@@ -604,8 +605,8 @@ class VariantTreeView(QTreeView):
 
         """
         if self.itemDelegate().__class__ is not VariantDelegate:
-            # Works only if delegate is a VariantDelegate
-            return 
+            #  Works only if delegate is a VariantDelegate
+            return
 
         painter.save()
         painter.setPen(Qt.NoPen)
@@ -714,7 +715,7 @@ class VariantWidget(QWidget):
 
     @property
     def conn(self):
-        return self.model.conn 
+        return self.model.conn
 
     @conn.setter
     def conn(self, conn):
@@ -832,8 +833,7 @@ class VariantWidget(QWidget):
         self.page_box.clearFocus()
 
 
-
-if  __name__ == "__main__":
+if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
@@ -841,7 +841,7 @@ if  __name__ == "__main__":
 
     view = VariantWidget(conn)
     view.model.load()
-    
+
     view.show()
 
     app.exec_()
