@@ -75,13 +75,25 @@ class Query:
 
         self._samples_to_join = set()
 
+   
+
+
+    @property
+    def conn(self):
+        return self._conn
+
+    @conn.setter
+    def conn(self, conn):
+        self._conn = conn
         # Mapping cols => table
         # Get columns description from the given table
         tables = ("variants", "annotations")
-        self.col_table_mapping = {
-            table_name: set(sql.get_columns(self.conn, table_name))
-            for table_name in tables
-        }
+        if conn:
+            self.col_table_mapping = {
+                table_name: set(sql.get_columns(self.conn, table_name))
+                for table_name in tables
+            }
+
 
     def extract_samples_from_columns_and_filter(self, filter_only=False):
         """Extract samples if columns or filter contains function.

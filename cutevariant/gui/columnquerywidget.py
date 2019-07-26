@@ -3,13 +3,16 @@
 SelectionQueryWidget class is seen by the user and uses ColumnQueryModel class
 as a model that handles records from the database.
 """
+import sys
+import sqlite3 
+
 # Qt imports
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 from PySide2.QtGui import *
 
 # Custom imports
-from .plugin import QueryPluginWidget
+from cutevariant.gui.plugin import QueryPluginWidget
 from cutevariant.core import sql
 from cutevariant.gui.style import TYPE_COLORS
 from cutevariant.gui.ficon import FIcon
@@ -21,11 +24,11 @@ LOGGER = logger()
 class ColumnQueryModel(QStandardItemModel):
     """Model to store all fields available for variants, annotations and samples"""
 
-    def __init__(self):
+    def __init__(self, conn = None):
         super().__init__()
         self.setColumnCount(2)
-        self.query = None
         self.items = []
+        self.conn = conn
 
     def load(self):
         """Load columns into the model"""
@@ -36,7 +39,7 @@ class ColumnQueryModel(QStandardItemModel):
 
         # Fields is a dictionnary with (name,type,description,category) as keys
         # Create a category item and add fields as children
-        for record in sql.get_fields(self.query.conn):
+        for record in sql.get_fields(self.conn):
 
             if record["category"] != "samples":
                 item = QStandardItem(record["name"])
@@ -69,7 +72,7 @@ class ColumnQueryModel(QStandardItemModel):
         self.appendRow(sample_cat_item)
 
         # Get sample names
-        samples_names = (sample["name"] for sample in sql.get_samples(self.query.conn))
+        samples_names = (sample["name"] for sample in sql.get_samples(self.conn))
 
         for sample_name in samples_names:
             sample_item = QStandardItem(sample_name)
@@ -141,3 +144,19 @@ class ColumnQueryWidget(QueryPluginWidget):
 
         # Signal other widget that query has changed
         self.query_changed.emit()
+
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+
+    conn = sqlite3.connect("examples/test.db")
+
+
+    model = ColumnQueryModel(conn)
+    model.load()
+    view  = QTreeView()
+    view.setModel(model)
+    view.show()
+
+
+    app.exec_()

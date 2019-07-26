@@ -1,7 +1,7 @@
 """Main window of Cutevariant"""
 # Standard imports
 import os
-
+import sys
 # Qt imports
 from PySide2.QtCore import Qt, QSettings, QByteArray, QDir
 from PySide2.QtWidgets import *
@@ -10,24 +10,25 @@ from PySide2.QtGui import QIcon, QKeySequence
 # Custom imports
 from cutevariant.core import Query, get_sql_connexion
 from cutevariant.gui.ficon import FIcon
-from cutevariant.gui.plugin import VariantPluginWidget, QueryPluginWidget
+from cutevariant.gui.plugin import PluginWidget
 from cutevariant.gui.wizards import ProjectWizard
 from cutevariant.gui.settings import SettingsWidget
-from cutevariant.gui.viewquerywidget import ViewQueryWidget
-from cutevariant.gui.columnquerywidget import ColumnQueryWidget
-from cutevariant.gui.filterquerywidget import FilterQueryWidget
-from cutevariant.gui.selectionquerywidget import SelectionQueryWidget
-from cutevariant.gui.vqleditor import VqlEditor
-from cutevariant.gui.querydispatcher import QueryDispatcher
-from cutevariant.gui.infovariantwidget import InfoVariantWidget
-from cutevariant.gui.aboutcutevariant import AboutCutevariant
-from cutevariant.gui.chartquerywidget import ChartQueryWidget
+from cutevariant.gui.querywidget import QueryWidget
+# from cutevariant.gui.viewquerywidget import ViewQueryWidget
+# from cutevariant.gui.columnquerywidget import ColumnQueryWidget
+# from cutevariant.gui.filterquerywidget import FilterQueryWidget
+# from cutevariant.gui.selectionquerywidget import SelectionQueryWidget
+# from cutevariant.gui.vqleditor import VqlEditor
+# from cutevariant.gui.querydispatcher import QueryDispatcher
+# from cutevariant.gui.infovariantwidget import InfoVariantWidget
+# from cutevariant.gui.aboutcutevariant import AboutCutevariant
+# from cutevariant.gui.chartquerywidget import ChartQueryWidget
 from cutevariant import commons as cm
 from cutevariant.commons import MAX_RECENT_PROJECTS, DIR_ICONS
 
 # Proof of concept - testing only
 # from cutevariant.gui.webglquerywidget import WebGLQueryWidget
-from cutevariant.gui.hpoquerywidget import HpoQueryWidget
+#from cutevariant.gui.hpoquerywidget import HpoQueryWidget
 
 # from cutevariant.gui.omnibar import OmniBar
 
@@ -50,47 +51,45 @@ class MainWindow(QMainWindow):
         # Init QueryDispatcher to dispatch current query to:
         # - QueryPlugins
         # - VqlEditor
-        self.query_dispatcher = QueryDispatcher()
+        #self.query_dispatcher = QueryDispatcher()
 
         # Build central view based on QTabWidget
         # PS: get current view via current_tab_view()
         # Central widget encapsulates a QTabWidget and VqlEditor
-        self.editor = VqlEditor()
-        view_query_widget = ViewQueryWidget()
+        #self.editor = VqlEditor()
+        self.query_widget =  QueryWidget()
+        self.central_tab = QTabWidget()
 
-        self.tab_view = QTabWidget()
         vsplit = QSplitter(Qt.Vertical)
-        vsplit.addWidget(self.tab_view)  # add QTabWidget
-        vsplit.addWidget(self.editor)  # add VqlEditor
+        vsplit.addWidget(self.central_tab)  # add QTabWidget
+        #vsplit.addWidget(self.editor)  # add VqlEditor
         self.setCentralWidget(vsplit)
         # Manually add query_dispatcher to VqlEditor
-        self.query_dispatcher.addWidget(self.editor)
+        #self.query_dispatcher.addWidget(self.editor)
         # Add ViewQueryWidget to the QTabWidget
-        self.add_tab_view(view_query_widget)
+        self.add_tab_view(self.query_widget)
         # TODO: add other tabs here
 
         # Setup menubar
         self.setup_menubar()
 
         # Build mandatory plugins that require QueryDispatcher and menubar
-        self.column_widget = ColumnQueryWidget()
-        self.filter_widget = FilterQueryWidget()
-        self.selection_widget = SelectionQueryWidget()
-        # Add mandatory query plugins to QDockWidgets
-        self.add_query_plugin(self.column_widget)
-        self.add_query_plugin(self.filter_widget)
-        self.add_query_plugin(self.selection_widget)
-        # Testing
-        self.add_query_plugin(ChartQueryWidget())
-        # self.add_query_plugin(WebGLQueryWidget())
-        self.add_query_plugin(HpoQueryWidget())
+        # self.column_widget = ColumnQueryWidget()
+        # self.filter_widget = FilterQueryWidget()
+        # self.selection_widget = SelectionQueryWidget()
+        # # Add mandatory query plugins to QDockWidgets
+        # self.add_query_plugin(self.column_widget)
+        # self.add_query_plugin(self.filter_widget)
+        # self.add_query_plugin(self.selection_widget)
+        # # Testing
+        # self.add_query_plugin(ChartQueryWidget())
+        # # self.add_query_plugin(WebGLQueryWidget())
+        # self.add_query_plugin(HpoQueryWidget())
 
         # Setup toolbar (requires selection_widget and some actions of menubar)
         self.setup_toolbar()
 
-        # Add mandatory variant plugin (depends on QTabWidget and menubar)
-        self.info_widget = InfoVariantWidget()
-        self.add_variant_plugin(self.info_widget)
+        
 
         # Status Bar
         self.status_bar = QStatusBar()
@@ -109,40 +108,18 @@ class MainWindow(QMainWindow):
         self.setGeometry(qApp.desktop().rect().adjusted(100, 100, -100, -100))
 
         # Load external plugins
-        self.load_plugins()
+        #self.load_plugins()
 
         # Restores the state of this mainwindow's toolbars and dockwidgets
         self.read_settings()
 
         # Display messages from plugins in the status bar
-        self.editor.message.connect(self.handle_plugin_message)
-        view_query_widget.message.connect(self.handle_plugin_message)
+        #self.editor.message.connect(self.handle_plugin_message)
+        #view_query_widget.message.connect(self.handle_plugin_message)
 
         self.open("examples/test2.db")
 
-    def add_variant_plugin(self, plugin: VariantPluginWidget):
-        """Add info variant plugin to QDockWidget
-
-        .. note:: This plugin doesn't require query_dispatcher
-        .. TODO:: current tab view must send signal only for visible widget
-        """
-        # Connect click event on a variant in ViewQueryWidget
-        # => update InfoVariantWidget
-        self.current_tab_view().variant_clicked.connect(plugin.set_variant)
-        self.add_panel(plugin)
-
-    def add_query_plugin(self, plugin: QueryPluginWidget):
-        """Add query plugin to QDockWidget and connect it to query_dispatcher"""
-        self.query_dispatcher.addWidget(plugin)
-        self.add_panel(plugin)
-        plugin.message.connect(self.handle_plugin_message)
-
-    def load_plugins(self, folder_path=None):
-        """TODO ... Load plugins from path.
-        What is a plugin ? A file or a module folder ?
-        """
-        pass
-
+    
     def add_panel(self, widget, area=Qt.LeftDockWidgetArea):
         """Add given widget to a new QDockWidget and to view menu in menubar"""
         dock = QDockWidget()
@@ -231,21 +208,21 @@ class MainWindow(QMainWindow):
         self.toolbar.addAction(self.open_project_action)
         self.toolbar.addSeparator()
 
-        self.toolbar.addAction(
-            FIcon(0xF412),
-            self.tr("Save the query"),
-            self.selection_widget.save_current_query,
-        )
+        # self.toolbar.addAction(
+        #     FIcon(0xF412),
+        #     self.tr("Save the query"),
+        #     self.selection_widget.save_current_query,
+        # )
 
-        self.toolbar.addAction(
-            FIcon(0xF40D), self.tr("Run"), self.editor.run_vql
-        ).setShortcuts([Qt.CTRL + Qt.Key_R, QKeySequence.Refresh])
+        # self.toolbar.addAction(
+        #     FIcon(0xF40D), self.tr("Run"), self.editor.run_vql
+        # ).setShortcuts([Qt.CTRL + Qt.Key_R, QKeySequence.Refresh])
 
     def add_tab_view(self, widget):
         """Add the given widget to the current (QTabWidget),
         and connect it to the query_dispatcher"""
-        self.tab_view.addTab(widget, widget.windowTitle())
-        self.query_dispatcher.addWidget(widget)
+        self.central_tab.addTab(widget, widget.windowTitle())
+        #self.query_dispatcher.addWidget(widget)
 
     def current_tab_view(self):
         """Get the page/tab currently being displayed by the tab dialog
@@ -489,3 +466,15 @@ class MainWindow(QMainWindow):
             # Setting has been deleted: set the current default state
             #  TODO: handle UI changes by passing UI_VERSION to saveState()
             app_settings.setValue("windowState", self.saveState())
+
+
+
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+
+    w = MainWindow()
+
+    w.show()
+
+    app.exec_()
