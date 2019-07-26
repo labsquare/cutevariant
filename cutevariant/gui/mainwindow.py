@@ -35,6 +35,16 @@ from cutevariant.commons import MAX_RECENT_PROJECTS, DIR_ICONS
 
 LOGGER = cm.logger()
 
+class MyTest(PluginWidget):
+    def __init__(self, parent=None):
+        return super().__init__(parent)
+
+    def on_variant_clicked(self, variant):
+        print("clicked")
+
+    def on_query_model_changed(self):
+        print("model changed")
+
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
@@ -47,6 +57,9 @@ class MainWindow(QMainWindow):
 
         # Keep sqlite connection
         self.conn = None
+
+        # store dock plugins 
+        self.plugins = []
 
         # Init QueryDispatcher to dispatch current query to:
         # - QueryPlugins
@@ -89,7 +102,7 @@ class MainWindow(QMainWindow):
         # Setup toolbar (requires selection_widget and some actions of menubar)
         self.setup_toolbar()
 
-        
+        self.add_plugin(MyTest())
 
         # Status Bar
         self.status_bar = QStatusBar()
@@ -136,6 +149,20 @@ class MainWindow(QMainWindow):
             )
         self.addDockWidget(area, dock)
         self.view_menu.addAction(dock.toggleViewAction())
+
+    def add_plugin(self, plugin : PluginWidget, as_dock=True):
+        
+        plugin.query_widget = self.query_widget
+        
+        # for now , use modelReset 
+
+        self.query_widget.model.modelReset.connect(plugin.on_query_model_changed)
+        self.query_widget.variant_clicked.connect(plugin.on_variant_clicked)
+        
+        if as_dock:
+            self.add_panel(plugin)
+        
+        self.plugins.append(plugin)
 
     def setup_menubar(self):
         """Menu bar setup: items and actions"""
@@ -261,16 +288,17 @@ class MainWindow(QMainWindow):
         self.conn = get_sql_connexion(filepath)
 
         # Create a query
-        query = Query(self.conn)
+        self.query_widget.conn = self.conn 
+        self.query_widget.model.load()
 
         # Dispatch the query to all widget from the router
-        self.query_dispatcher.query = query
+#        self.query_dispatcher.query = query
 
         # Update all widgets
-        self.query_dispatcher.update_all_widgets()
+        #self.query_dispatcher.update_all_widgets()
 
         # Refresh recent opened projects
-        self.adjust_recent_projects(filepath)
+        #self.adjust_recent_projects(filepath)
 
     def adjust_recent_projects(self, filepath):
         """Adjust the number of of recent projects to display

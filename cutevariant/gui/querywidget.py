@@ -74,6 +74,8 @@ class QueryModel(QAbstractItemModel):
 
     NO_PARENT_INTERNAL_ID = 99999
 
+    changed = Signal()
+
     def __init__(self, conn=None, parent=None):
         super().__init__()
         self.conn = conn

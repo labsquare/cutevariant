@@ -11,7 +11,7 @@ class PluginWidget(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.query_view = None
+        self.query_widget = None
 
     def objectName(self):
         """Override: Return an object name based on windowTitle
@@ -21,9 +21,9 @@ class PluginWidget(QWidget):
         """
         return self.windowTitle().lower()
 
-    def on_model_changed(self, model):
-        pass 
+    def on_query_model_changed(self):
+        raise NotImplementedError()
 
     def on_variant_clicked(self, variant):
-        pass
+        raise NotImplementedError()
 
