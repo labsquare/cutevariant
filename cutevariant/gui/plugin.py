@@ -2,28 +2,58 @@
 from PySide2.QtWidgets import QWidget
 from PySide2.QtCore import Signal
 
-# Custom imports
-from cutevariant.core import Query
+# standard import 
+from glob import glob 
 
 
-class PluginWidget(QWidget):
-    """Handy class for dockable widget """
+
+class Plugin(object):
+    """Base class for Plugin """
 
     def __init__(self, parent=None):
-        super().__init__(parent)
-        self.query_widget = None
-
-    def objectName(self):
-        """Override: Return an object name based on windowTitle
-
-        .. note:: Some plugins don't set objectName attribute and so their state
-            can't be saved with MainWindow's saveState function.
-        """
-        return self.windowTitle().lower()
+        super().__init__()
+        self.mainwindow = parent 
+        self.dockable = True
 
     def on_query_model_changed(self):
-        raise NotImplementedError()
+        """ This method is called when QueryModel changed """ 
+        pass
 
     def on_variant_clicked(self, variant):
-        raise NotImplementedError()
+        """ This method is called when a a variant is selected from the QueryModel """ 
+        pass
+
+    def on_register(self):
+        """ This method is called when plugin has been registered to the mainwindow """ 
+        pass 
+
+    def on_close(self):
+        """ this method is called when plugin closed """ 
+        pass 
+
+    def on_open_project(self, conn):
+        """This method is called when a new project connection happen
+        
+        Arguments:
+            conn sqlite3.connection 
+        """
+        pass
+
+    def get_widget(self) -> QWidget:
+        """Return the plugin  widget 
+        
+        Returns:
+            QWidget 
+        """
+        return None
+
+    def get_settings_widget(self) -> QWidget:
+        """Return the plugin settings widget
+        
+        Returns:
+            QWidget 
+        """
+        return None
+
+
 

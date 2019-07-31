@@ -2,6 +2,8 @@
 # Standard imports
 import os
 import sys
+import importlib
+import glob 
 # Qt imports
 from PySide2.QtCore import Qt, QSettings, QByteArray, QDir
 from PySide2.QtWidgets import *
@@ -10,10 +12,14 @@ from PySide2.QtGui import QIcon, QKeySequence
 # Custom imports
 from cutevariant.core import Query, get_sql_connexion
 from cutevariant.gui.ficon import FIcon
-from cutevariant.gui.plugin import PluginWidget
 from cutevariant.gui.wizards import ProjectWizard
 from cutevariant.gui.settings import SettingsWidget
 from cutevariant.gui.querywidget import QueryWidget
+from cutevariant.gui import plugin
+
+# Import plugins 
+from cutevariant.gui.plugins.editor.plugin import EditorPlugin
+
 # from cutevariant.gui.viewquerywidget import ViewQueryWidget
 # from cutevariant.gui.columnquerywidget import ColumnQueryWidget
 # from cutevariant.gui.filterquerywidget import FilterQueryWidget
@@ -35,16 +41,6 @@ from cutevariant.commons import MAX_RECENT_PROJECTS, DIR_ICONS
 
 LOGGER = cm.logger()
 
-class MyTest(PluginWidget):
-    def __init__(self, parent=None):
-        return super().__init__(parent)
-
-    def on_variant_clicked(self, variant):
-        print("clicked")
-
-    def on_query_model_changed(self):
-        print("model changed")
-
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
@@ -61,11 +57,6 @@ class MainWindow(QMainWindow):
         # store dock plugins 
         self.plugins = []
 
-        # Init QueryDispatcher to dispatch current query to:
-        # - QueryPlugins
-        # - VqlEditor
-        #self.query_dispatcher = QueryDispatcher()
-
         # Build central view based on QTabWidget
         # PS: get current view via current_tab_view()
         # Central widget encapsulates a QTabWidget and VqlEditor
@@ -73,9 +64,12 @@ class MainWindow(QMainWindow):
         self.query_widget =  QueryWidget()
         self.central_tab = QTabWidget()
 
+        # create editor plugins 
+        self.editor = EditorPlugin(self)
+
         vsplit = QSplitter(Qt.Vertical)
         vsplit.addWidget(self.central_tab)  # add QTabWidget
-        #vsplit.addWidget(self.editor)  # add VqlEditor
+        vsplit.addWidget(self.editor.get_widget())  # add VqlEditor
         self.setCentralWidget(vsplit)
         # Manually add query_dispatcher to VqlEditor
         #self.query_dispatcher.addWidget(self.editor)
@@ -102,7 +96,6 @@ class MainWindow(QMainWindow):
         # Setup toolbar (requires selection_widget and some actions of menubar)
         self.setup_toolbar()
 
-        self.add_plugin(MyTest())
 
         # Status Bar
         self.status_bar = QStatusBar()
@@ -130,6 +123,14 @@ class MainWindow(QMainWindow):
         #self.editor.message.connect(self.handle_plugin_message)
         #view_query_widget.message.connect(self.handle_plugin_message)
 
+        # create plugin editor as native widget 
+
+        self.register_plugin(self.editor)
+
+
+        for plugin in self.find_plugins():
+            self.register_plugin(plugin)
+
         self.open("examples/test2.db")
 
     
@@ -140,7 +141,7 @@ class MainWindow(QMainWindow):
         dock.setWidget(widget)
 
         # Set the objectName for a correct restoration after saveState
-        dock.setObjectName(widget.objectName())
+        dock.setObjectName(str(widget.__class__))
         if not widget.objectName():
             LOGGER.debug(
                 "MainWindow:add_panel:: widget '%s' has no objectName attribute"
@@ -150,19 +151,52 @@ class MainWindow(QMainWindow):
         self.addDockWidget(area, dock)
         self.view_menu.addAction(dock.toggleViewAction())
 
-    def add_plugin(self, plugin : PluginWidget, as_dock=True):
+    def register_plugin(self, plugin : plugin.Plugin):
+        """add plugin to the application
         
-        plugin.query_widget = self.query_widget
-        
-        # for now , use modelReset 
+        Arguments:
+            plugin plugin.Plugin
+        """
 
-        self.query_widget.model.modelReset.connect(plugin.on_query_model_changed)
-        self.query_widget.variant_clicked.connect(plugin.on_variant_clicked)
-        
-        if as_dock:
-            self.add_panel(plugin)
-        
         self.plugins.append(plugin)
+        plugin.on_register()
+
+        self.query_widget.variant_clicked.connect(plugin.on_variant_clicked)
+        self.query_widget.model.modelReset.connect(plugin.on_query_model_changed)
+
+        # Add dockable widget if it's required 
+        widget = plugin.get_widget()
+        if widget is not None:
+            if plugin.dockable:
+                self.add_panel(widget)
+
+
+    def find_plugins(self, path = None):
+        """ Find plugin according to the path """ 
+        
+        # if path is None, return internal plugin path 
+        if path is None:
+            plugin_path = os.path.join(os.path.dirname(__file__),"plugins")
+
+        # get all packages from the path 
+        # TODO: check if they are packages     
+        paths = [f.path for f in os.scandir(plugin_path) if f.is_dir() ]  
+
+        # Loop over packages and load Plugin dynamically
+        for path in paths:
+            # module name example : test 
+            module_name = os.path.basename(path)
+            # class name example : TestPlugin
+            class_name = module_name.capitalize() + "Plugin"
+
+            spec = importlib.util.spec_from_file_location(module_name, path+"/plugin.py")
+            if spec :
+            #load the module
+               module = spec.loader.load_module()
+            # load the class 
+               Plugin = getattr(module, class_name)
+               yield Plugin(self)        
+         
 
     def setup_menubar(self):
         """Menu bar setup: items and actions"""
@@ -291,14 +325,10 @@ class MainWindow(QMainWindow):
         self.query_widget.conn = self.conn 
         self.query_widget.model.load()
 
-        # Dispatch the query to all widget from the router
-#        self.query_dispatcher.query = query
+        for plugin in self.plugins:
+            plugin.on_open_project(self.conn)
 
-        # Update all widgets
-        #self.query_dispatcher.update_all_widgets()
-
-        # Refresh recent opened projects
-        #self.adjust_recent_projects(filepath)
+  
 
     def adjust_recent_projects(self, filepath):
         """Adjust the number of of recent projects to display

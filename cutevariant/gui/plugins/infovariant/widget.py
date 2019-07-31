@@ -13,7 +13,6 @@ from PySide2.QtWidgets import *
 from PySide2.QtGui import QDesktopServices
 
 # Custom imports
-from .plugin import VariantPluginWidget
 from cutevariant.gui.settings import SettingsWidget
 from cutevariant.gui.ficon import FIcon
 from cutevariant.gui.style import TYPE_COLORS
@@ -117,7 +116,7 @@ class VariantPopupMenu(QMenu):
         widget.exec()
 
 
-class InfoVariantWidget(VariantPluginWidget):
+class InfoVariantWidget(QWidget):
     """Plugin to show all characteristics of a selected variant"""
 
     def __init__(self):
