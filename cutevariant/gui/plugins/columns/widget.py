@@ -29,6 +29,30 @@ class ColumnsModel(QStandardItemModel):
         self.items = []
         self.conn = conn
 
+    @property
+    def columns(self):
+        selected_columns = []
+        for item in self.items:
+            if item.checkState() == Qt.Checked:
+                selected_columns.append(item.data()["name"])
+        
+        return selected_columns
+
+    @columns.setter
+    def columns(self, columns):
+        """Check box of item where name is in columns"""
+        self.blockSignals(True)
+        for item in self.items:
+            item.setCheckState(Qt.Unchecked)
+            if item.data()["name"] in columns:
+                item.setCheckState(Qt.Checked)
+        self.blockSignals(False)
+
+        
+
+
+
+        
     def load(self):
         """Load columns into the model"""
         self.clear()
@@ -81,14 +105,6 @@ class ColumnsModel(QStandardItemModel):
             sample_cat_item.appendRow(sample_item)
             self.items.append(sample_item)
 
-    def set_columns(self, columns):
-        """Check column name if it is in query.columns"""
-        self.blockSignals(True)
-        for item in self.items:
-            item.setCheckState(Qt.Unchecked)
-            if item.data()["name"] in columns:
-                item.setCheckState(Qt.Checked)
-        self.blockSignals(False)
 
         
       
@@ -99,7 +115,7 @@ class ColumnsWidget(QWidget):
 
     column_changed = Signal(list)
 
-    def __init__(self):
+    def __init__(self, conn = None):
         super().__init__()
 
         self.setWindowTitle(self.tr("Columns"))
@@ -114,6 +130,8 @@ class ColumnsWidget(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
         self.model.itemChanged.connect(self.on_item_checked)
+        self.conn = conn
+
 
     @property
     def conn(self):
@@ -122,7 +140,8 @@ class ColumnsWidget(QWidget):
     @conn.setter
     def conn(self, conn):
         self.model.conn = conn 
-        self.model.load()
+        if conn:
+            self.model.load()
 
     # def on_init_query(self):
     #     """Overrided"""

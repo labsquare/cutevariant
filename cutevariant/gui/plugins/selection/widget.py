@@ -38,14 +38,6 @@ class selectionModel(QAbstractTableModel):
         self.conn = conn
         self.records = []
 
-    @property
-    def conn(self):
-        return self._conn 
-
-    @conn.setter
-    def conn(self, conn):
-        self._conn = conn
-
     def rowCount(self, parent=QModelIndex()):
         """Overrided from QAbstractTableModel"""
         return len(self.records)

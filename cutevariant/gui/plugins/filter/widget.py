@@ -497,6 +497,16 @@ class FilterModel(QAbstractItemModel):
         self.root_item = FilterItem("AND")
         self.conn = conn
 
+
+    @property
+    def filter(self):
+        return self.to_dict()
+
+    @filter.setter
+    def filter(self, filter):
+        self.load(filter)
+
+
     def __del__(self):
         """Model destructor. 
         """
