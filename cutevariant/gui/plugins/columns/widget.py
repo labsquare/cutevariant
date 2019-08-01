@@ -81,12 +81,17 @@ class ColumnsModel(QStandardItemModel):
             sample_cat_item.appendRow(sample_item)
             self.items.append(sample_item)
 
-    def check_query_columns(self):
+    def set_columns(self, columns):
         """Check column name if it is in query.columns"""
+        self.blockSignals(True)
         for item in self.items:
             item.setCheckState(Qt.Unchecked)
-            if item.data()["name"] in self.query.columns:
+            if item.data()["name"] in columns:
                 item.setCheckState(Qt.Checked)
+        self.blockSignals(False)
+
+        
+      
 
 
 class ColumnsWidget(QWidget):
@@ -152,6 +157,12 @@ class ColumnsWidget(QWidget):
 
         self.column_changed.emit(selected_columns)
 
+    def set_columns(self, columns):
+        self.model.set_columns(columns)
+        # following line are ugly... But update doesn't work as expected ... need to explore 
+        self.hide()
+        self.show()
+      
     
 
 
@@ -163,6 +174,7 @@ if __name__ == "__main__":
 
     view = ColumnsWidget()
     view.conn = conn 
+    view.model.set_columns(["chr","pos"])
     view.show()
 
 

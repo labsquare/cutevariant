@@ -60,42 +60,23 @@ class MainWindow(QMainWindow):
         # Build central view based on QTabWidget
         # PS: get current view via current_tab_view()
         # Central widget encapsulates a QTabWidget and VqlEditor
-        #self.editor = VqlEditor()
         self.query_widget =  QueryWidget()
         self.central_tab = QTabWidget()
 
         # create editor plugins 
-        self.editor = EditorPlugin(self)
+        self.editor_plugin = EditorPlugin(self)
+        self.editor = self.editor_plugin.get_widget()
 
         vsplit = QSplitter(Qt.Vertical)
         vsplit.addWidget(self.central_tab)  # add QTabWidget
-        vsplit.addWidget(self.editor.get_widget())  # add VqlEditor
+        vsplit.addWidget(self.editor)  # add VqlEditor
         self.setCentralWidget(vsplit)
-        # Manually add query_dispatcher to VqlEditor
-        #self.query_dispatcher.addWidget(self.editor)
-        # Add ViewQueryWidget to the QTabWidget
         self.add_tab_view(self.query_widget)
         # TODO: add other tabs here
 
         # Setup menubar
         self.setup_menubar()
-
-        # Build mandatory plugins that require QueryDispatcher and menubar
-        # self.column_widget = ColumnQueryWidget()
-        # self.filter_widget = FilterQueryWidget()
-        # self.selection_widget = SelectionQueryWidget()
-        # # Add mandatory query plugins to QDockWidgets
-        # self.add_query_plugin(self.column_widget)
-        # self.add_query_plugin(self.filter_widget)
-        # self.add_query_plugin(self.selection_widget)
-        # # Testing
-        # self.add_query_plugin(ChartQueryWidget())
-        # # self.add_query_plugin(WebGLQueryWidget())
-        # self.add_query_plugin(HpoQueryWidget())
-
-        # Setup toolbar (requires selection_widget and some actions of menubar)
         self.setup_toolbar()
-
 
         # Status Bar
         self.status_bar = QStatusBar()
@@ -113,25 +94,19 @@ class MainWindow(QMainWindow):
         self.resize(600, 400)
         self.setGeometry(qApp.desktop().rect().adjusted(100, 100, -100, -100))
 
-        # Load external plugins
-        #self.load_plugins()
 
         # Restores the state of this mainwindow's toolbars and dockwidgets
         self.read_settings()
 
-        # Display messages from plugins in the status bar
-        #self.editor.message.connect(self.handle_plugin_message)
-        #view_query_widget.message.connect(self.handle_plugin_message)
+       
+        #registere editor plugins 
+        self.register_plugin(self.editor_plugin)
 
-        # create plugin editor as native widget 
-
-        self.register_plugin(self.editor)
-
-
+        # register other plugins 
         for plugin in self.find_plugins():
             self.register_plugin(plugin)
 
-        self.open("examples/test2.db")
+        self.open("examples/test.db")
 
     
     def add_panel(self, widget, area=Qt.LeftDockWidgetArea):
@@ -162,7 +137,7 @@ class MainWindow(QMainWindow):
         plugin.on_register()
 
         self.query_widget.variant_clicked.connect(plugin.on_variant_clicked)
-        self.query_widget.model.modelReset.connect(plugin.on_query_model_changed)
+        self.query_widget.model.changed.connect(plugin.on_query_model_changed)
 
         # Add dockable widget if it's required 
         widget = plugin.get_widget()
@@ -267,6 +242,7 @@ class MainWindow(QMainWindow):
         self.toolbar.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
         self.toolbar.addAction(self.new_project_action)
         self.toolbar.addAction(self.open_project_action)
+        self.toolbar.addAction("Run", self.execute_vql)
         self.toolbar.addSeparator()
 
         # self.toolbar.addAction(
@@ -525,6 +501,8 @@ class MainWindow(QMainWindow):
             #  TODO: handle UI changes by passing UI_VERSION to saveState()
             app_settings.setValue("windowState", self.saveState())
 
+    def execute_vql(self):
+        self.editor.run_vql()
 
 
 

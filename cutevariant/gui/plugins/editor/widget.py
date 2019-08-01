@@ -9,7 +9,7 @@ from textx.exceptions import TextXSyntaxError
 import sys 
 import sqlite3
 # Qt imports
-from PySide2.QtCore import qApp, Qt, QRegularExpression, QStringListModel
+from PySide2.QtCore import qApp, Qt, QRegularExpression, QStringListModel, Signal
 from PySide2.QtWidgets import QTextEdit, QCompleter, QVBoxLayout, QLabel, QFrame, QWidget, QApplication
 from PySide2.QtGui import (
     QSyntaxHighlighter,
@@ -148,6 +148,8 @@ class VqlSyntaxHighlighter(QSyntaxHighlighter):
 class VqlEditor(QWidget):
     """Exposed class to manage VQL/SQL queries from the mainwindow"""
 
+    executed = Signal()
+
     def __init__(self, conn = None):
         super().__init__()
         self.setWindowTitle(self.tr("Vql Editor"))
@@ -157,6 +159,10 @@ class VqlEditor(QWidget):
         self.log_edit = QLabel()
         self.highlighter = VqlSyntaxHighlighter(self.text_edit.document())
         self.conn = conn
+
+        self.columns = None
+        self.selection = None
+        self.filter = None
 
         self.log_edit.setMinimumHeight(40)
         # self.log_edit.setAlignment(Qt.AlignLeft|Qt.AlignVCenter)
@@ -235,16 +241,18 @@ class VqlEditor(QWidget):
 
             #  If command is a select kind
             if cmd["cmd"] == "select_cmd":
-                self.query.columns = cmd["columns"]  # columns from variant table
-                self.query.selection = cmd["source"]  # name of the variant set
-                self.query.filter = cmd.get(
+                self.columns = cmd["columns"]  # columns from variant table
+                self.selection = cmd["source"]  # name of the variant set
+                self.filter = cmd.get(
                     "filter", dict()
                 )  # filter as raw text; dict if no filter
-                self.query_changed.emit()
+               
 
             if cmd["cmd"] == "create_cmd":
                 #  TODO create selection
                 pass
+        
+        self.executed.emit()
 
     def set_message(self, message: str):
         """Show message error at the bottom of the view"""

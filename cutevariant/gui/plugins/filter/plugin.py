@@ -38,6 +38,9 @@ class FilterPlugin(plugin.Plugin):
         self.mainwindow.query_widget.model.filter = self.view.model.to_dict()
         self.mainwindow.query_widget.model.load()
 
+    def on_query_model_changed(self):
+        self.view.model.load(self.mainwindow.query_widget.model.filter)
+
 
  
 

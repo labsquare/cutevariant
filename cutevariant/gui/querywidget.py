@@ -83,6 +83,7 @@ class QueryModel(QAbstractItemModel):
         self.page = 0
         self.total = 0
         self.variants = []
+        self.emit_changed = False
 
     @property
     def conn(self):
@@ -93,6 +94,7 @@ class QueryModel(QAbstractItemModel):
     def conn(self, conn):
         """ Set sqlite connection """
         self.query = Query(conn)
+        self.emit_changed = True
 
     @property
     def columns(self):
@@ -103,16 +105,19 @@ class QueryModel(QAbstractItemModel):
     def columns(self, columns: list):
         """ Set query columns list to display """
         self.query.columns = columns
+        self.emit_changed = True
 
     @property
     def filter(self):
         """ Return query filter """
         return self.query.filter
+        self.emit_changed = True
 
     @filter.setter
     def filter(self, filter):
         """ Set query filter """
         self.query.filter = filter
+        self.emit_changed = True
 
     @property
     def selection(self):
@@ -123,6 +128,7 @@ class QueryModel(QAbstractItemModel):
     def selection(self, selection):
         """ Set query selection """
         self.query.selection = selection
+        self.emit_changed = True
 
     def level(self, index: QModelIndex) -> bool:
         """Return level of index. 
@@ -371,6 +377,10 @@ class QueryModel(QAbstractItemModel):
 
         LOGGER.debug("QueryModel:load:: variants queried\n%s", self.variants)
         self.endResetModel()
+
+        if self.emit_changed:
+            self.changed.emit()
+            self.emit_changed = False
 
     def hasPage(self, page: int) -> bool:
         """ Return True if <page> exists otherwise return False """

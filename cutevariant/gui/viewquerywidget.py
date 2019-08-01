@@ -18,11 +18,9 @@ from PySide2.QtGui import *
 
 # Custom imports
 from cutevariant.gui.ficon import FIcon
-from cutevariant.gui.plugin import QueryPluginWidget
 from cutevariant.core import Query
 from cutevariant.core import sql
 from cutevariant.gui import style
-from cutevariant.gui.infovariantwidget import VariantPopupMenu
 from cutevariant.commons import logger
 from cutevariant.commons import GENOTYPE_ICONS
 
