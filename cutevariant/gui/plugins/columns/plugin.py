@@ -11,7 +11,7 @@ class ColumnsPlugin(plugin.Plugin):
         super().__init__(parent) 
 
         self.view = widget.ColumnsWidget()
-        self.view.column_changed.connect(self.on_column_changed) 
+        self.view.changed.connect(self.on_column_changed) 
 
 
     def get_widget(self):
@@ -30,12 +30,12 @@ class ColumnsPlugin(plugin.Plugin):
         """
         self.view.conn = conn 
 
-    def on_column_changed(self, columns):
-        self.mainwindow.query_widget.model.columns = columns
+    def on_column_changed(self):
+        self.mainwindow.query_widget.model.columns = self.view.columns
         self.mainwindow.query_widget.model.load()
 
     def on_query_model_changed(self):
-        self.view.set_columns(self.mainwindow.query_widget.model.columns)
+        self.view.columns = self.mainwindow.query_widget.model.columns
 
 
     

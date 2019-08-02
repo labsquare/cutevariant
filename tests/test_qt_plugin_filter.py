@@ -6,7 +6,7 @@ from cutevariant.gui.plugins.filter.widget import FilterModel, FilterWidget
 import sqlite3
 
 
-def test_model(qtbot,qtmodeltester):
+def test_filter_model(qtbot,qtmodeltester):
     conn = sqlite3.connect(":memory:")
     import_file(conn, "examples/test.vcf")
     
@@ -24,13 +24,25 @@ def test_model(qtbot,qtmodeltester):
             },
         ]
     }
-
     model.filter = data 
     assert model.filter == data 
+    #qtmodeltester.check(model)
+
+def test_filter_widget(qtbot):
+    conn = sqlite3.connect(":memory:")
+    import_file(conn, "examples/test.vcf")
+
+    view = FilterWidget()
+    view.conn = conn
+
+    # check if adding condition raise a changed signal 
+    with qtbot.waitSignal(view.changed):
+        view.on_add_logic()
+        assert view.filter == {'AND': []}
+
+
     
 
-
-    #qtmodeltester.check(model)
 
     
 

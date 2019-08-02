@@ -481,9 +481,6 @@ class FilterModel(QAbstractItemModel):
         model.remove_item(view.currentIndex())
 
     """
-
-    # signal definition
-    filterChanged = Signal()
     # See self.headerData()
     _HEADERS = ["field", "operator", "value"]
     _MIMEDATA = "application/x-qabstractitemmodeldatalist"
@@ -491,6 +488,8 @@ class FilterModel(QAbstractItemModel):
     # Custom type to get FilterItem.type(). See self.data()
     TypeRole = Qt.UserRole + 1
     UniqueIdRole = Qt.UserRole + 2
+
+    filterChanged = Signal()
 
     def __init__(self, conn, parent=None):
         super().__init__(parent)
@@ -1010,7 +1009,10 @@ class FilterDelegate(QStyledItemDelegate):
 
 
 class FilterWidget(QWidget):
-    def __init__(self, parent = None):
+
+    changed = Signal()
+
+    def __init__(self,parent = None):
         super().__init__(parent)
         self.setWindowTitle(self.tr("Filter"))
         self.view = QTreeView()
@@ -1053,7 +1055,8 @@ class FilterWidget(QWidget):
 
         self.toolbar.addAction(FIcon(0xF5E8), "delete", self.on_delete_item)
 
-        self.view.selectionModel().currentChanged.connect(self.on_selection_changed)
+        self.view.selectionModel().currentChanged.connect(self.changed)
+        self.model.filterChanged.connect(self.changed)
 
     @property
     def conn(self):
@@ -1063,7 +1066,14 @@ class FilterWidget(QWidget):
     def conn(self, conn):
         self.model.conn = conn
 
- 
+    @property
+    def filter(self):
+        return self.model.filter 
+
+    @filter.setter
+    def filter(self, filter):
+        self.model.filter = filter
+
 
     def on_add_logic(self):
         """Add logic item to the current selected index

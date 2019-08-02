@@ -150,7 +150,7 @@ class VqlEditor(QWidget):
 
     executed = Signal()
 
-    def __init__(self, conn = None):
+    def __init__(self, parent = None):
         super().__init__()
         self.setWindowTitle(self.tr("Vql Editor"))
 
@@ -158,7 +158,6 @@ class VqlEditor(QWidget):
         self.text_edit = VqlEdit()
         self.log_edit = QLabel()
         self.highlighter = VqlSyntaxHighlighter(self.text_edit.document())
-        self.conn = conn
 
         self.columns = None
         self.selection = None

@@ -159,7 +159,9 @@ class SelectionWidget(QWidget):
     User can select one of them to update Query::selection
     """
 
-    def __init__(self, conn = None):
+    changed = Signal()
+
+    def __init__(self, parent = None):
         super().__init__()
 
         self.setWindowTitle(self.tr("Selections"))
@@ -170,7 +172,6 @@ class SelectionWidget(QWidget):
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setSelectionMode(QAbstractItemView.SingleSelection)
         self.view.horizontalHeader().hide()
-        self.conn = conn
 
         self.toolbar = QToolBar()
         self.toolbar.setIconSize(QSize(20, 20))
@@ -188,9 +189,7 @@ class SelectionWidget(QWidget):
         self.setLayout(layout)
 
         # call on_current_row_changed when item selection changed
-        self.view.selectionModel().currentRowChanged.connect(
-            self.on_current_row_changed
-        )
+        self.view.selectionModel().currentRowChanged.connect(self.changed)
 
         #  Setup actions
         self.edit_action = self.toolbar.addAction(
@@ -206,6 +205,16 @@ class SelectionWidget(QWidget):
         self.model.conn = conn
         if conn:
             self.model.load()
+
+    @property
+    def selection(self):
+        return self.model.record(self.view.currentIndex())["name"]
+
+    @selection.setter
+    def selection(self, selection):
+        index = self.model.find_record(selection)
+        self.view.setCurrentIndex(index)
+
 
     def menu_setup(self, locked_selection=False):
         """Setup popup menu
@@ -259,22 +268,6 @@ class SelectionWidget(QWidget):
 
         self.view.selectionModel().blockSignals(False)
 
-    def on_change_query(self):
-        """Overrided from AbstractQueryWidget"""
-        self.load()
-
-    def on_init_query(self):
-        """Overrided from AbstractQueryWidget"""
-        self.model.query = self.query
-
-    def on_current_row_changed(self, index):
-        """Update query when a selection item is clicked
-
-        .. note:: Slot called when item selection is changed.
-        """
-        # We don't really care of the query that created the selection
-        # The joins are based on the name of the table
-        self.selection = self.model.record(index)["name"]
 
     def save_current_query(self):
         """Open a dialog box to save the current query into a selection"""

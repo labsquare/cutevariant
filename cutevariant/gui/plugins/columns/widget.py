@@ -31,16 +31,24 @@ class ColumnsModel(QStandardItemModel):
 
     @property
     def columns(self):
+        """Return checked columns
+        
+        Returns:
+            list -- list of columns
+        """
         selected_columns = []
         for item in self.items:
             if item.checkState() == Qt.Checked:
                 selected_columns.append(item.data()["name"])
-        
         return selected_columns
 
     @columns.setter
     def columns(self, columns):
-        """Check box of item where name is in columns"""
+        """Check items which name is in columns
+        
+        Arguments:
+            columns {list} -- list of columns
+        """
         self.blockSignals(True)
         for item in self.items:
             item.setCheckState(Qt.Unchecked)
@@ -49,12 +57,9 @@ class ColumnsModel(QStandardItemModel):
         self.blockSignals(False)
 
         
-
-
-
-        
     def load(self):
-        """Load columns into the model"""
+        """Load all columns avaible into the model 
+        """
         self.clear()
         # Store QStandardItem as a list to detect easily which one is checked
         self.items = list()
@@ -106,21 +111,24 @@ class ColumnsModel(QStandardItemModel):
             self.items.append(sample_item)
 
 
-        
-      
-
-
 class ColumnsWidget(QWidget):
-    """Display all fields according categories"""
+    """Display all fields according categories
 
-    column_changed = Signal(list)
+    Usage: 
 
-    def __init__(self, conn = None):
+     view = ColumnsWidget(conn)
+     view.columns = ["chr","pos"]
+    
+    """
+
+    changed = Signal()
+
+    def __init__(self, parent = None):
         super().__init__()
 
         self.setWindowTitle(self.tr("Columns"))
         self.view = QTreeView()
-        self.model = ColumnsModel()
+        self.model = ColumnsModel(None)
         self.view.setModel(self.model)
         # self.view.setIndentation(0)
         self.view.header().setVisible(False)
@@ -129,8 +137,7 @@ class ColumnsWidget(QWidget):
         layout.addWidget(self.view)
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
-        self.model.itemChanged.connect(self.on_item_checked)
-        self.conn = conn
+        self.model.itemChanged.connect(self.changed)
 
 
     @property
@@ -143,46 +150,17 @@ class ColumnsWidget(QWidget):
         if conn:
             self.model.load()
 
-    # def on_init_query(self):
-    #     """Overrided"""
-    #     self.model.query = self.query
-    #     self.model.load()
+    @property
+    def columns(self):
+        return self.model.columns
 
-    # def on_change_query(self):
-    #     """Overrided"""
-    #     #  Avoid crash with infinite loop by disconnecting the signals
-    #     self.model.itemChanged.disconnect(self.on_item_checked)
+    @columns.setter
+    def columns(self, columns):
+        self.model.columns = columns
 
-    #     # check selected query fields
-    #     self.model.check_query_columns()
+    def load(self):
+        self.model.load()
 
-    #     # Reconnect signals
-    #     self.model.itemChanged.connect(self.on_item_checked)
-
-    def on_item_checked(self):
-        """Called when an item has been checked"""
-
-        # Get selected columns from checked items
-        selected_columns = [
-            item.data()["name"]
-            for item in self.model.items
-            if item.checkState() == Qt.Checked
-        ]
-
-
-        LOGGER.debug(
-            "ColumnsModel::on_item_checked: columns: %s", selected_columns
-        )
-
-        self.column_changed.emit(selected_columns)
-
-    def set_columns(self, columns):
-        self.model.set_columns(columns)
-        # following line are ugly... But update doesn't work as expected ... need to explore 
-        self.hide()
-        self.show()
-      
-    
 
 
 if __name__ == "__main__":
