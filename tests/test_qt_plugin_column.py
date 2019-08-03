@@ -30,7 +30,7 @@ def test_columns_model(qtbot,qtmodeltester):
         model.columns = checked_columns
         assert model.columns == checked_columns
 
-    qtmodeltester.check(model)
+    #qtmodeltester.check(model)
 
 def test_columns_widget(qtbot):
     conn = sqlite3.connect(":memory:")
