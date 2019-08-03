@@ -8,13 +8,15 @@ language: python
 os:
   - linux
 
+
 python:
   - "3.6"
 variables:
   QT_QPA_PLATFORM: "offscreen"
 
 
-
+before_install:
+  - sudo apt-get install -y libxkbcommon-x11-0 x11-utils
 
 # command to install dependencies
 install:
@@ -22,4 +24,4 @@ install:
 
 # command to run tests
 script:
-  - QT_DEBUG_PLUGINS=1 python -m pytest tests -sv
+  - python -m pytest tests -vv
