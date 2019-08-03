@@ -1,5 +1,9 @@
 language: python
-
+addons:
+  apt:
+    packages:
+    - x11-utils
+    - libxkbcommon-x11-0
 os:
   - linux
 
@@ -8,11 +12,8 @@ python:
 variables:
   QT_QPA_PLATFORM: "offscreen"
 
-addons:
-  apt:
-    packages:
-    - x11-utils
-    - libxkbcommon-x11-0
+
+
 
 # command to install dependencies
 install:
@@ -20,4 +21,4 @@ install:
 
 # command to run tests
 script:
-  - python -m pytest cutevariant tests -vv
+  - QT_DEBUG_PLUGINS=1 python -m pytest tests -sv
