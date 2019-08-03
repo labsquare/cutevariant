@@ -6,6 +6,12 @@ os:
 python:
   - "3.6"
 
+addons:
+  apt:
+    packages:
+    - x11-utils
+    - libxkbcommon-x11-0
+
 # command to install dependencies
 install:
   - make install_deps
