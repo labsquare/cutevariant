@@ -246,43 +246,54 @@ def create_selection_from_sql(
     return None
 
 
-def create_selection_from_bed(conn, source:str, target: str, bed_intervals):
-    """Create a new selection based on the given intervals taken from a BED file""" 
-
+def create_selection_from_bed(conn, source: str, target: str, bed_intervals):
+    """Create a new selection based on the given intervals taken from a BED file"""
 
     cur = conn.cursor()
 
-    # Create temporary table 
+    #  Create temporary table
     cur.execute("DROP TABLE IF exists bed_table")
-    cur.execute("""CREATE TABLE bed_table (
+    cur.execute(
+        """CREATE TABLE bed_table (
         id INTEGER PRIMARY KEY ASC, 
         bin INTEGER DEFAULT 0, 
         chrom TEXT, 
         start INTEGER, 
         end INTEGER,
-        name INTEGER )""")
-
+        name INTEGER )"""
+    )
 
     for interval in bed_intervals:
-        cur.execute("INSERT INTO bed_table (bin, chrom, start, end, name) VALUES (?,?,?,?,?)", 
-            (0, interval["chrom"], interval["start"], interval["end"], interval["name"]))
+        cur.execute(
+            "INSERT INTO bed_table (bin, chrom, start, end, name) VALUES (?,?,?,?,?)",
+            (
+                0,
+                interval["chrom"],
+                interval["start"],
+                interval["end"],
+                interval["name"],
+            ),
+        )
 
-
-    if source == "variants": 
+    if source == "variants":
         source_query = "SELECT variants.id as variant_id FROM variants"
     else:
         source_query = """
         SELECT variants.id as variant_id FROM variants
         INNER JOIN selections ON selections.name = '{}'
         INNER JOIN selection_has_variant sv ON sv.variant_id = variants.id AND sv.selection_id = selections.id  
-        """.format(source)
+        """.format(
+            source
+        )
 
-    query = source_query + """  
+    query = (
+        source_query
+        + """  
                 INNER JOIN bed_table ON 
                 variants.chr = bed_table.chrom AND 
                 variants.pos >= bed_table.start AND 
-                variants.pos <= bed_table.end """ 
-
+                variants.pos <= bed_table.end """
+    )
 
     return create_selection_from_sql(conn, query, target, from_selection=True)
 
@@ -691,21 +702,25 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
     """
 
     def build_columns_and_placeholders(table_name):
-        """Build a tuple of columns and formatted placeholders for INSERT queries
+        """Build a tuple of columns and "?" placeholders for INSERT queries
         """
         # Get columns description from the given table
         cols = get_columns(conn, table_name)
         # Build dynamic insert query
-        # INSERT INTO variant qcol1, qcol2.... VALUES :qcol1, :qcol2 ....
+        # INSERT INTO variant qcol1, qcol2.... VALUES ?, ?
         tb_cols = ",".join([f"`{col}`" for col in cols])
-        tb_places = ",".join([f":{place}" for place in cols])
+        tb_places = ",".join(["?" for place in cols])
         return tb_cols, tb_places
+
 
     # TODO: Can we avoid this step ? This function should receive columns names
     # because all the tables were created before...
     # Build placeholders
     var_cols, var_places = build_columns_and_placeholders("variants")
     ann_cols, ann_places = build_columns_and_placeholders("annotations")
+    
+    var_columns = get_columns(conn, "variants")
+    ann_columns = get_columns(conn, "annotations")
 
     # Get samples with samples names as keys and sqlite rowid as values
     # => used as a mapping for samples ids
@@ -732,7 +747,7 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
 
     else:
         # Handle conflicts on the primary key
-        variant_insert_query = f"""INSERT INTO variants ({var_cols})
+        variant_insert_query = f"""INSERT INTO variants ({var_columns})
                 VALUES ({var_places})
                 ON CONFLICT (chr,pos,ref,alt) DO NOTHING"""
 
@@ -746,9 +761,19 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
 
         # Insert current variant
         # Use default dict to handle missing values
-        LOGGER.debug("async_insert_many_variants:: QUERY: %s\nVALUES: %s", variant_insert_query, variant)
+        LOGGER.debug(
+            "async_insert_many_variants:: QUERY: %s\nVALUES: %s",
+            variant_insert_query,
+            variant,
+        )
 
-        cursor.execute(variant_insert_query, defaultdict(str, variant))
+        # Create list of value to insert 
+        # ["chr",234234,"A","G"]
+        default_values = defaultdict(str, variant)
+        values = [default_values[col] for col in var_columns]
+
+        cursor.execute(variant_insert_query, values)
+
 
         # If the row is not inserted we skip this erroneous variant
         # and the data that goes with
@@ -783,12 +808,21 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
             # A t'on l'assurance de cela ?
             # Dans ce cas pourquoi doit-on bricoler le variant lui-meme avec un
             # defaultdict(str,variant)) ? Les variants n'ont pas leurs champs par def ?
-            temp_ann_places = ann_places.replace(":variant_id,", "")
-            cursor.executemany(
-                f"""INSERT INTO annotations ({ann_cols})
-                VALUES ({variant_id}, {temp_ann_places})""",
-                variant["annotations"],
-            )
+
+            values = []
+            for ann in variant["annotations"]:
+                default_values = defaultdict(str, ann)
+                value = [default_values[col] for col in ann_columns[1:]]
+                value.insert(0, variant_id)
+                values.append(value)
+
+            temp_ann_places = ",".join(["?"] * (len(ann_columns)))
+
+            q = f"""INSERT INTO annotations ({ann_cols})
+                VALUES ({temp_ann_places})"""
+
+            cursor.executemany(q, values)
+            
 
         # If variant has sample data, insert record into "sample_has_variant" table
         # Many-to-many relationships

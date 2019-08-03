@@ -6,11 +6,10 @@ from PySide2.QtGui import *
 from PySide2.QtWebEngineWidgets import QWebEngineView
 
 # Custom imports
-from .plugin import QueryPluginWidget
 from cutevariant.core import Query
 
 
-class WebGLQueryWidget(QueryPluginWidget):
+class WebGLQueryWidget(QWidget):
     """Display the 3D structure of a protein in a WebGL accelerated widget"""
 
     def __init__(self, protein_reference="1crn", parent=None):

@@ -6,10 +6,11 @@ VqlEditor uses:
 """
 # Standard imports
 from textx.exceptions import TextXSyntaxError
-
+import sys 
+import sqlite3
 # Qt imports
-from PySide2.QtCore import qApp, Qt, QRegularExpression, QStringListModel
-from PySide2.QtWidgets import QTextEdit, QCompleter, QVBoxLayout, QLabel, QFrame
+from PySide2.QtCore import qApp, Qt, QRegularExpression, QStringListModel, Signal
+from PySide2.QtWidgets import QTextEdit, QCompleter, QVBoxLayout, QLabel, QFrame, QWidget, QApplication
 from PySide2.QtGui import (
     QSyntaxHighlighter,
     QFont,
@@ -25,7 +26,6 @@ from cutevariant.core import vql
 from cutevariant.commons import MIN_COMPLETION_LETTERS, logger
 from cutevariant.gui.ficon import FIcon
 from cutevariant.gui import style
-from .plugin import QueryPluginWidget
 
 LOGGER = logger()
 
@@ -145,17 +145,23 @@ class VqlSyntaxHighlighter(QSyntaxHighlighter):
                 self.setFormat(match.capturedStart(), match.capturedLength(), t_format)
 
 
-class VqlEditor(QueryPluginWidget):
+class VqlEditor(QWidget):
     """Exposed class to manage VQL/SQL queries from the mainwindow"""
 
-    def __init__(self):
+    executed = Signal()
+
+    def __init__(self, parent = None):
         super().__init__()
-        self.setWindowTitle(self.tr("Columns"))
+        self.setWindowTitle(self.tr("Vql Editor"))
 
         # Syntax highlighter and autocompletion
         self.text_edit = VqlEdit()
         self.log_edit = QLabel()
         self.highlighter = VqlSyntaxHighlighter(self.text_edit.document())
+
+        self.columns = None
+        self.selection = None
+        self.filter = None
 
         self.log_edit.setMinimumHeight(40)
         # self.log_edit.setAlignment(Qt.AlignLeft|Qt.AlignVCenter)
@@ -173,17 +179,20 @@ class VqlEditor(QueryPluginWidget):
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
         self.setLayout(main_layout)
-        self._query = None
 
-    def on_init_query(self):
-        """Overrided"""
-        self.text_edit.setCompleter(self.create_completer())
-        self.on_change_query()
+    @property
+    def conn(self):
+        return self._conn 
 
-    def on_change_query(self):
-        """Overrided"""
+    @conn.setter
+    def conn(self, conn):
+        self._conn = conn
+        if conn is not None:
+            self.text_edit.setCompleter(self.create_completer())
+
+    def set_vql(self, txt:str):
         self.text_edit.blockSignals(True)
-        self.text_edit.setPlainText(self.query.to_vql())
+        self.text_edit.setPlainText(txt)
         self.text_edit.blockSignals(False)
 
     def create_completer(self):
@@ -191,7 +200,7 @@ class VqlEditor(QueryPluginWidget):
         model = QStringListModel()
         completer = QCompleter()
         # Fill the model with the SQL keywords and database fields
-        fields = [i["name"] for i in sql.get_fields(self._query.conn)]
+        fields = [i["name"] for i in sql.get_fields(self.conn)]
         fields.extend(VqlSyntaxHighlighter.sql_keywords)
         model.setStringList(fields)
         completer.setModel(model)
@@ -231,16 +240,18 @@ class VqlEditor(QueryPluginWidget):
 
             #  If command is a select kind
             if cmd["cmd"] == "select_cmd":
-                self.query.columns = cmd["columns"]  # columns from variant table
-                self.query.selection = cmd["source"]  # name of the variant set
-                self.query.filter = cmd.get(
+                self.columns = cmd["columns"]  # columns from variant table
+                self.selection = cmd["source"]  # name of the variant set
+                self.filter = cmd.get(
                     "filter", dict()
                 )  # filter as raw text; dict if no filter
-                self.query_changed.emit()
+               
 
             if cmd["cmd"] == "create_cmd":
                 #  TODO create selection
                 pass
+        
+        self.executed.emit()
 
     def set_message(self, message: str):
         """Show message error at the bottom of the view"""
@@ -403,3 +414,18 @@ class VqlEdit(QTextEdit):
         tc = self.textCursor()
         tc.select(QTextCursor.WordUnderCursor)
         return tc.selectedText()
+
+
+
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+
+    conn = sqlite3.connect("examples/test.db")
+
+
+    view = VqlEditor()
+    view.show()
+
+
+    app.exec_()

@@ -6,19 +6,18 @@ from copy import copy, deepcopy
 from logging import DEBUG
 
 # Qt imports
-from PySide2.QtWidgets import QVBoxLayout
+from PySide2.QtWidgets import QVBoxLayout, QWidget
 from PySide2.QtCore import Qt
 from PySide2.QtGui import QPainter
 from PySide2.QtCharts import QtCharts as charts
 
 # Custom imports
-from .plugin import QueryPluginWidget
 from cutevariant.commons import logger, DEFAULT_SELECTION_NAME
 
 LOGGER = logger()
 
 
-class ChartQueryWidget(QueryPluginWidget):
+class ChartQueryWidget(QWidget):
     """Plugin to show charts based on the current query"""
 
     def __init__(self, parent=None):

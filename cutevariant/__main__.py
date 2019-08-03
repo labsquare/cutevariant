@@ -52,10 +52,8 @@ def main():
     # Process command line arguments
     process_arguments(app)
 
-
     # Load app styles
     load_styles(app)
-
 
     # Set icons set
     setFontPath(os.path.join(cm.DIR_FONTS, "materialdesignicons-webfont.ttf"))

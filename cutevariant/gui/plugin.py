@@ -2,61 +2,58 @@
 from PySide2.QtWidgets import QWidget
 from PySide2.QtCore import Signal
 
-# Custom imports
-from cutevariant.core import Query
+# standard import 
+from glob import glob 
 
 
-class PluginWidget(QWidget):
-    """Handy class for common methods of QueryPluginWidget and VariantPluginWidget"""
+
+class Plugin(object):
+    """Base class for Plugin """
 
     def __init__(self, parent=None):
-        super().__init__(parent)
+        super().__init__()
+        self.mainwindow = parent 
+        self.dockable = True
 
-    def objectName(self):
-        """Override: Return an object name based on windowTitle
+    def on_query_model_changed(self):
+        """ This method is called when QueryModel changed """ 
+        pass
 
-        .. note:: Some plugins don't set objectName attribute and so their state
-            can't be saved with MainWindow's saveState function.
+    def on_variant_clicked(self, variant):
+        """ This method is called when a a variant is selected from the QueryModel """ 
+        pass
+
+    def on_register(self):
+        """ This method is called when plugin has been registered to the mainwindow """ 
+        pass 
+
+    def on_close(self):
+        """ this method is called when plugin closed """ 
+        pass 
+
+    def on_open_project(self, conn):
+        """This method is called when a new project connection happen
+        
+        Arguments:
+            conn sqlite3.connection 
         """
-        return self.windowTitle().lower()
+        pass
 
-
-class QueryPluginWidget(PluginWidget):
-    """Base class for all widgets which observe a Query
-
-    .. seealso:: queryrooter.py
-    """
-
-    # Signals
-    # When the query's widget changed
-    query_changed = Signal()
-    # When the widget emits a message to be displayed in the status bar
-    message = Signal(str)
-
-    @property
-    def query(self):
-        return self._query
-
-    @query.setter
-    def query(self, query: Query):
-        self._query = query
-        self.on_init_query()
-
-    def on_change_query(self):
-        """Called by the queryrouter each time a belong widget send a
-        query_changed signal
+    def get_widget(self) -> QWidget:
+        """Return the plugin  widget 
+        
+        Returns:
+            QWidget 
         """
-        raise NotImplementedError(self.__class__.__name__)
+        return None
 
-    def on_init_query(self):
-        """Called by the queryrouter when query is set"""
-        raise NotImplementedError(self.__class__.__name__)
+    def get_settings_widget(self) -> QWidget:
+        """Return the plugin settings widget
+        
+        Returns:
+            QWidget 
+        """
+        return None
 
 
-class VariantPluginWidget(PluginWidget):
-    """Base class for all widgets which get variant data when clicking on it
-    from the main view
-    """
 
-    def set_variant(self, variant):
-        raise NotImplementedError(self.__class__.__name__)

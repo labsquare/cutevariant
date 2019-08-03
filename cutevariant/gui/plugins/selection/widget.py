@@ -1,7 +1,7 @@
 """Plugin to view/edit/remove/do set operations on selections in the database
 from the GUI.
 
-SelectionQueryWidget class is seen by the user and uses SelectionQueryModel class
+SelectionWidget class is seen by the user and uses selectionModel class
 as a model that handles records from the database.
 """
 # Qt imports
@@ -10,31 +10,32 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 
 # Custom imports
-from .plugin import QueryPluginWidget
 from cutevariant.core import Query
 from cutevariant.core import sql
 from cutevariant.core.reader.bedreader import BedTool
 from cutevariant.gui.ficon import FIcon
 from cutevariant.commons import logger, DEFAULT_SELECTION_NAME
 
+import sys
+
 
 LOGGER = logger()
 
 # =================== SELECTION MODEL ===========================
-class SelectionQueryModel(QAbstractTableModel):
+class selectionModel(QAbstractTableModel):
     """Model to store all selections from SQLite `selections` table.
 
     Usage:
 
-        model = SelectionQueryModel()
+        model = selectionModel()
         model.query = query
         model.load()
 
     """
 
-    def __init__(self):
+    def __init__(self, conn = None):
         super().__init__()
-        self._query = None
+        self.conn = conn
         self.records = []
 
     def rowCount(self, parent=QModelIndex()):
@@ -117,7 +118,7 @@ class SelectionQueryModel(QAbstractTableModel):
         # Get selected record
         record = self.record(index)
         # Delete in database
-        if sql.delete_selection(self.query.conn, record["id"]):
+        if sql.delete_selection(self.conn, record["id"]):
             # Delete in model; triggers currentRowChanged signal
             self.beginRemoveRows(QModelIndex(), index.row(), index.row())
             # Delete in records
@@ -128,16 +129,9 @@ class SelectionQueryModel(QAbstractTableModel):
 
     def edit_record(self, index, record: dict):
         """Edit the given selection in the database and emit `dataChanged` signal"""
-        if sql.edit_selection(self.query.conn, record):
+        if sql.edit_selection(self.conn, record):
             self.dataChanged.emit(index, index)
 
-    @property
-    def query(self):
-        return self._query
-
-    @query.setter
-    def query(self, query: Query):
-        self._query = query
 
     def load(self):
         """Load all selections into the model"""
@@ -145,31 +139,34 @@ class SelectionQueryModel(QAbstractTableModel):
         # Add all selections from the database
         # Dictionnary of all attributes of the table.
         #    :Example: {"name": ..., "count": ..., "query": ...}
-        self.records = list(sql.get_selections(self._query.conn))
+        self.records = list(sql.get_selections(self.conn))
         self.endResetModel()
 
     def save_current_query(self, name):
         """Save current query as a new selection and reload the model"""
         # TODO: just get the id of the created selection and add a new record
         # instead of reloading all the model...
-        if self.query.create_selection(name):
-            self.load()
+        # if self.query.create_selection(name):
+        #     self.load()
+        pass 
 
 
 # =================== SELECTION VIEW ===========================
 
 
-class SelectionQueryWidget(QueryPluginWidget):
+class SelectionWidget(QWidget):
     """Widget displaying the list of avaible selections.
     User can select one of them to update Query::selection
     """
 
-    def __init__(self):
+    changed = Signal()
+
+    def __init__(self, parent = None):
         super().__init__()
 
         self.setWindowTitle(self.tr("Selections"))
 
-        self.model = SelectionQueryModel()
+        self.model = selectionModel()
         self.view = QTableView()
         self.view.setModel(self.model)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
@@ -192,14 +189,32 @@ class SelectionQueryWidget(QueryPluginWidget):
         self.setLayout(layout)
 
         # call on_current_row_changed when item selection changed
-        self.view.selectionModel().currentRowChanged.connect(
-            self.on_current_row_changed
-        )
+        self.view.selectionModel().currentRowChanged.connect(self.changed)
 
         #  Setup actions
         self.edit_action = self.toolbar.addAction(
             FIcon(0xF8FF), self.tr("Edit"), self.edit_selection
         )
+
+    @property
+    def conn(self):
+        return self.model.conn
+
+    @conn.setter
+    def conn(self, conn):
+        self.model.conn = conn
+        if conn:
+            self.model.load()
+
+    @property
+    def selection(self):
+        return self.model.record(self.view.currentIndex())["name"]
+
+    @selection.setter
+    def selection(self, selection):
+        index = self.model.find_record(selection)
+        self.view.setCurrentIndex(index)
+
 
     def menu_setup(self, locked_selection=False):
         """Setup popup menu
@@ -211,8 +226,10 @@ class SelectionQueryWidget(QueryPluginWidget):
         if not locked_selection:
             menu.addAction(FIcon(0xF8FF), self.tr("Edit"), self.edit_selection)
 
-        # Create action for bed 
-        menu.addAction(FIcon(0XF219),"Intersect with bed file ...", self.create_selection_from_bed)
+        #  Create action for bed
+        menu.addAction(
+            FIcon(0xF219), "Intersect with bed file ...", self.create_selection_from_bed
+        )
 
         # Set operations on selections: create mapping and actions
         set_icons_ids = (0xF55D, 0xF55B, 0xF564)
@@ -251,23 +268,6 @@ class SelectionQueryWidget(QueryPluginWidget):
 
         self.view.selectionModel().blockSignals(False)
 
-    def on_change_query(self):
-        """Overrided from AbstractQueryWidget"""
-        self.load()
-
-    def on_init_query(self):
-        """Overrided from AbstractQueryWidget"""
-        self.model.query = self.query
-
-    def on_current_row_changed(self, index):
-        """Update query when a selection item is clicked
-
-        .. note:: Slot called when item selection is changed.
-        """
-        # We don't really care of the query that created the selection
-        # The joins are based on the name of the table
-        self.query.selection = self.model.record(index)["name"]
-        self.query_changed.emit()
 
     def save_current_query(self):
         """Open a dialog box to save the current query into a selection"""
@@ -282,7 +282,7 @@ class SelectionQueryWidget(QueryPluginWidget):
 
         if name == DEFAULT_SELECTION_NAME:
             LOGGER.error(
-                "SelectionQueryWidget:save_current_query:: '%s' is a reserved name for a selection.",
+                "SelectionWidget:save_current_query:: '%s' is a reserved name for a selection.",
                 name,
             )
             self.message.emit(
@@ -290,7 +290,7 @@ class SelectionQueryWidget(QueryPluginWidget):
             )
         elif name in {record["name"] for record in self.model.records}:
             LOGGER.error(
-                "SelectionQueryWidget:save_current_query:: '%s' is a already used.",
+                "SelectionWidget:save_current_query:: '%s' is a already used.",
                 name,
             )
             self.message.emit(self.tr("'%s' is a already used for a selection!") % name)
@@ -399,11 +399,12 @@ class SelectionQueryWidget(QueryPluginWidget):
             old_record["name"] = new_name[0]
             self.model.edit_record(current_index, old_record)
 
-
     def create_selection_from_bed(self):
-        """ Ask user for a bed file and create a new selection from it """ 
+        """ Ask user for a bed file and create a new selection from it """
 
-        result = QFileDialog.getOpenFileName(self, "Open bed file", QDir.homePath(),"Bed File (*.bed)")
+        result = QFileDialog.getOpenFileName(
+            self, "Open bed file", QDir.homePath(), "Bed File (*.bed)"
+        )
 
         if result:
             bed_file = result[0]
@@ -413,9 +414,29 @@ class SelectionQueryWidget(QueryPluginWidget):
             current_index = self.view.selectionModel().currentIndex()
             current_selection = self.model.record(current_index)
             source = current_selection["name"]
-            target = QInputDialog.getText(self, "selection  name", "Get a selection name")[0]
+            target = QInputDialog.getText(
+                self, "selection  name", "Get a selection name"
+            )[0]
 
-            # TODO : create a sql.selection_exists(name) to check if selection already exists 
+            # TODO : create a sql.selection_exists(name) to check if selection already exists
             if target:
-                sql.create_selection_from_bed(self.query.conn, source, target, intervals)
+                sql.create_selection_from_bed(
+                    self.query.conn, source, target, intervals
+                )
                 self.model.load()
+
+
+if __name__ == "__main__":
+
+    import sqlite3
+    import sys 
+    app = QApplication(sys.argv)
+
+
+    conn = sqlite3.connect("examples/test.db")
+
+
+    view = SelectionWidget(conn)
+    view.show() 
+
+    app.exec_()

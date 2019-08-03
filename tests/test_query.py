@@ -25,15 +25,18 @@ def test_query_columns(conn):
     query = Query(conn)
     query.columns = ["chr", "pos", "ref", "alt"]
     # Test normal query: children, joint to annotations, group by added
+    s = query.sql()
+
+    pass
     assert (
         query.sql()
-        == "SELECT variants.id,chr,pos,ref,alt,COUNT(*) as 'children' FROM variants GROUP BY chr,pos,ref,alt"
+        == "SELECT variants.id,`chr`,`pos`,`ref`,`alt`,COUNT(*) as 'children' FROM variants GROUP BY chr,pos,ref,alt"
     )
 
     # Test basic query: no children, no useless annotations joint except if it is needed by cols or filter
     assert (
         query.sql(do_not_add_default_things=True)
-        == "SELECT chr,pos,ref,alt FROM variants GROUP BY chr,pos,ref,alt"
+        == "SELECT `chr`,`pos`,`ref`,`alt` FROM variants GROUP BY chr,pos,ref,alt"
     )
 
     # Count query => remove everything that is not needed in filter
@@ -53,7 +56,7 @@ def test_query_columns(conn):
     query.group_by = None
     assert (
         query.sql()
-        == "SELECT variants.id,chr,pos,ref,alt FROM variants"
+        == "SELECT variants.id,`chr`,`pos`,`ref`,`alt` FROM variants"
     )
 
 
@@ -81,8 +84,9 @@ def test_query_filter(conn):
     }
 
     # todo : cannot break the lines...
-    expected = "SELECT variants.id,chr,pos,ref,alt FROM variants WHERE (chr = 'chr1' AND pos > 10 AND pos < 1000 AND ref IN ('A', 'T') AND ref NOT IN ('G', 'C'))"
-
+    expected = "SELECT variants.id,`chr`,`pos`,`ref`,`alt` FROM variants WHERE (chr = 'chr1' AND pos > 10 AND pos < 1000 AND ref IN ('A', 'T') AND ref NOT IN ('G', 'C'))"
+    
+    q = query.sql()
     assert query.sql() == expected
     conn.execute(query.sql())
 
