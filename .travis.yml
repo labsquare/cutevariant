@@ -5,6 +5,8 @@ os:
 
 python:
   - "3.6"
+variables:
+  QT_QPA_PLATFORM: "offscreen"
 
 addons:
   apt:
