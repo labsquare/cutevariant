@@ -1,20 +1,25 @@
-notifications:
-  email: false
-addons:
-  apt:
-    packages:
-    - x11-utils
-    - libxkbcommon-x11-0
+language: python
+# addons:
+#   apt:
+#     packages:
+#     - libxcb-xkb1
+#     - x11-utils
+#     - libxkbcommon-x11-0
+os:
+  - linux
+
 services: xvfb
-matrix:
- include:
- - os: osx
-   language: generic
-   env: MAC_PYTHON_VERSION=3.6
-   sudo: required
- - os: linux
-   language: python
-   python: 3.6:
+
+python:
+  - "3.6"
+variables:
+  QT_QPA_PLATFORM: "offscreen"
+
+
+before_install:
+  - sudo apt-get install -y libxkbcommon-x11-0 x11-utils
+
+# command to install dependencies
 install:
   - make install_deps
 
