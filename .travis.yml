@@ -1,9 +1,10 @@
 language: python
-addons:
-  apt:
-    packages:
-    - x11-utils
-    - libxkbcommon-x11-0
+# addons:
+#   apt:
+#     packages:
+#     - libxcb-xkb1
+#     - x11-utils
+#     - libxkbcommon-x11-0
 os:
   - linux
 
