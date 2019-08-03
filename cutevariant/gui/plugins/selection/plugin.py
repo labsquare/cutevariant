@@ -1,16 +1,16 @@
 from cutevariant.gui import plugin
 
 from PySide2.QtWidgets import *
-import sys 
+import sys
 import sqlite3
 
 from cutevariant.gui.plugins.selection import widget
 
-class SelectionPlugin(plugin.Plugin):
-    def __init__(self, parent = None):
-        super().__init__(parent) 
-        self.editor = widget.SelectionWidget()
 
+class SelectionPlugin(plugin.Plugin):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.editor = widget.SelectionWidget()
 
     def get_widget(self):
         """Overload from Plugin
@@ -28,12 +28,9 @@ class SelectionPlugin(plugin.Plugin):
         """
         self.editor.conn = conn
 
-  
-
-
 
 if __name__ == "__main__":
-    
+
     app = QApplication(sys.argv)
 
     p = SelectionPlugin()
@@ -41,6 +38,5 @@ if __name__ == "__main__":
     w = p.get_widget()
 
     w.show()
-
 
     app.exec_()

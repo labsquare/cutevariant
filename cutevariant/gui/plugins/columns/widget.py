@@ -4,7 +4,7 @@ SelectionQueryWidget class is seen by the user and uses ColumnsModel class
 as a model that handles records from the database.
 """
 import sys
-import sqlite3 
+import sqlite3
 
 # Qt imports
 from PySide2.QtWidgets import *
@@ -23,7 +23,7 @@ LOGGER = logger()
 class ColumnsModel(QStandardItemModel):
     """Model to store all fields available for variants, annotations and samples"""
 
-    def __init__(self, conn = None):
+    def __init__(self, conn=None):
         super().__init__()
         self.setColumnCount(2)
         self.items = []
@@ -56,7 +56,6 @@ class ColumnsModel(QStandardItemModel):
                 item.setCheckState(Qt.Checked)
         self.blockSignals(False)
 
-        
     def load(self):
         """Load all columns avaible into the model 
         """
@@ -123,7 +122,7 @@ class ColumnsWidget(QWidget):
 
     changed = Signal()
 
-    def __init__(self, parent = None):
+    def __init__(self, parent=None):
         super().__init__()
 
         self.setWindowTitle(self.tr("Columns"))
@@ -139,14 +138,13 @@ class ColumnsWidget(QWidget):
         self.setLayout(layout)
         self.model.itemChanged.connect(self.changed)
 
-
     @property
     def conn(self):
-        return self.model.conn 
+        return self.model.conn
 
     @conn.setter
     def conn(self, conn):
-        self.model.conn = conn 
+        self.model.conn = conn
         if conn:
             self.model.load()
 
@@ -162,17 +160,14 @@ class ColumnsWidget(QWidget):
         self.model.load()
 
 
-
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
     conn = sqlite3.connect("examples/test.db")
 
-
     view = ColumnsWidget()
-    view.conn = conn 
-    view.model.set_columns(["chr","pos"])
+    view.conn = conn
+    view.model.set_columns(["chr", "pos"])
     view.show()
-
 
     app.exec_()

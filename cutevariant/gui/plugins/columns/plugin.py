@@ -1,18 +1,18 @@
 from cutevariant.gui import plugin
 
 from PySide2.QtWidgets import *
-import sys 
+import sys
 import sqlite3
 
 from cutevariant.gui.plugins.columns import widget
 
+
 class ColumnsPlugin(plugin.Plugin):
-    def __init__(self, parent = None):
-        super().__init__(parent) 
+    def __init__(self, parent=None):
+        super().__init__(parent)
 
         self.view = widget.ColumnsWidget()
-        self.view.changed.connect(self.on_column_changed) 
-
+        self.view.changed.connect(self.on_column_changed)
 
     def get_widget(self):
         """Overload from Plugin
@@ -28,8 +28,8 @@ class ColumnsPlugin(plugin.Plugin):
         Arguments:
             conn 
         """
-        self.view.conn = conn 
-        self.view.columns = ["chr","pos","ref","alt"]
+        self.view.conn = conn
+        self.view.columns = ["chr", "pos", "ref", "alt"]
 
     def on_column_changed(self):
         self.mainwindow.query_widget.model.columns = self.view.columns
@@ -39,12 +39,8 @@ class ColumnsPlugin(plugin.Plugin):
         self.view.columns = self.mainwindow.query_widget.model.columns
 
 
-    
-
-
-
 if __name__ == "__main__":
-    
+
     app = QApplication(sys.argv)
 
     p = ColumnsPlugin()
@@ -52,6 +48,5 @@ if __name__ == "__main__":
     w = p.get_widget()
 
     w.show()
-
 
     app.exec_()

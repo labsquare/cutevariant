@@ -1,7 +1,7 @@
 from cutevariant.gui import plugin
 
 from PySide2.QtWidgets import *
-import sys 
+import sys
 import sqlite3
 
 from cutevariant.gui.plugins.filter import widget
@@ -11,8 +11,8 @@ LOGGER = cm.logger()
 
 
 class FilterPlugin(plugin.Plugin):
-    def __init__(self, parent = None):
-        super().__init__(parent) 
+    def __init__(self, parent=None):
+        super().__init__(parent)
         self.view = widget.FilterWidget()
         self.view.model.filterChanged.connect(self.on_filter_changed)
 
@@ -30,10 +30,10 @@ class FilterPlugin(plugin.Plugin):
         Arguments:
             conn 
         """
-        self.view.model.conn = conn 
+        self.view.model.conn = conn
 
     def on_filter_changed(self):
-        """ methods called by self.view.model.filterchanged """ 
+        """ methods called by self.view.model.filterchanged """
 
         self.mainwindow.query_widget.model.filter = self.view.filter
         self.mainwindow.query_widget.model.load()
@@ -42,15 +42,8 @@ class FilterPlugin(plugin.Plugin):
         self.view.filter = self.mainwindow.query_widget.model.filter
 
 
- 
-
-
-    
-
-
-
 if __name__ == "__main__":
-    
+
     app = QApplication(sys.argv)
 
     p = FilterPlugin()
@@ -58,6 +51,5 @@ if __name__ == "__main__":
     w = p.get_widget()
 
     w.show()
-
 
     app.exec_()

@@ -33,7 +33,7 @@ class selectionModel(QAbstractTableModel):
 
     """
 
-    def __init__(self, conn = None):
+    def __init__(self, conn=None):
         super().__init__()
         self.conn = conn
         self.records = []
@@ -132,7 +132,6 @@ class selectionModel(QAbstractTableModel):
         if sql.edit_selection(self.conn, record):
             self.dataChanged.emit(index, index)
 
-
     def load(self):
         """Load all selections into the model"""
         self.beginResetModel()
@@ -148,7 +147,7 @@ class selectionModel(QAbstractTableModel):
         # instead of reloading all the model...
         # if self.query.create_selection(name):
         #     self.load()
-        pass 
+        pass
 
 
 # =================== SELECTION VIEW ===========================
@@ -161,7 +160,7 @@ class SelectionWidget(QWidget):
 
     changed = Signal()
 
-    def __init__(self, parent = None):
+    def __init__(self, parent=None):
         super().__init__()
 
         self.setWindowTitle(self.tr("Selections"))
@@ -215,7 +214,6 @@ class SelectionWidget(QWidget):
         index = self.model.find_record(selection)
         self.view.setCurrentIndex(index)
 
-
     def menu_setup(self, locked_selection=False):
         """Setup popup menu
         :key locked_selection: Allow to mask edit/remove actions (default False)
@@ -268,7 +266,6 @@ class SelectionWidget(QWidget):
 
         self.view.selectionModel().blockSignals(False)
 
-
     def save_current_query(self):
         """Open a dialog box to save the current query into a selection"""
         name, success = QInputDialog.getText(
@@ -290,8 +287,7 @@ class SelectionWidget(QWidget):
             )
         elif name in {record["name"] for record in self.model.records}:
             LOGGER.error(
-                "SelectionWidget:save_current_query:: '%s' is a already used.",
-                name,
+                "SelectionWidget:save_current_query:: '%s' is a already used.", name
             )
             self.message.emit(self.tr("'%s' is a already used for a selection!") % name)
         else:
@@ -429,14 +425,13 @@ class SelectionWidget(QWidget):
 if __name__ == "__main__":
 
     import sqlite3
-    import sys 
-    app = QApplication(sys.argv)
+    import sys
 
+    app = QApplication(sys.argv)
 
     conn = sqlite3.connect("examples/test.db")
 
-
     view = SelectionWidget(conn)
-    view.show() 
+    view.show()
 
     app.exec_()

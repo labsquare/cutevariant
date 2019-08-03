@@ -712,13 +712,12 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
         tb_places = ",".join(["?" for place in cols])
         return tb_cols, tb_places
 
-
     # TODO: Can we avoid this step ? This function should receive columns names
     # because all the tables were created before...
     # Build placeholders
     var_cols, var_places = build_columns_and_placeholders("variants")
     ann_cols, ann_places = build_columns_and_placeholders("annotations")
-    
+
     var_columns = get_columns(conn, "variants")
     ann_columns = get_columns(conn, "annotations")
 
@@ -767,13 +766,12 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
             variant,
         )
 
-        # Create list of value to insert 
+        #  Create list of value to insert
         # ["chr",234234,"A","G"]
         default_values = defaultdict(str, variant)
         values = [default_values[col] for col in var_columns]
 
         cursor.execute(variant_insert_query, values)
-
 
         # If the row is not inserted we skip this erroneous variant
         # and the data that goes with
@@ -822,7 +820,6 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
                 VALUES ({temp_ann_places})"""
 
             cursor.executemany(q, values)
-            
 
         # If variant has sample data, insert record into "sample_has_variant" table
         # Many-to-many relationships

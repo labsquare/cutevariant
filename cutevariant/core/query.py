@@ -75,9 +75,6 @@ class Query:
 
         self._samples_to_join = set()
 
-   
-
-
     @property
     def conn(self):
         return self._conn
@@ -93,7 +90,6 @@ class Query:
                 table_name: set(sql.get_columns(self.conn, table_name))
                 for table_name in tables
             }
-
 
     def extract_samples_from_columns_and_filter(self, filter_only=False):
         """Extract samples if columns or filter contains function.
@@ -323,7 +319,7 @@ class Query:
         """
         ## Build columns
         sql_columns = self.get_columns(do_not_add_default_things)
-        # quotify 
+        #  quotify
         query = f"SELECT {','.join(sql_columns)} "
 
         ## Add FROM clause

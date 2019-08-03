@@ -27,8 +27,6 @@ from cutevariant.commons import GENOTYPE_ICONS
 LOGGER = logger()
 
 
-
-
 class QueryModel(QAbstractItemModel):
     """
     QueryModel is a Qt model class which contains variants datas from sql Query. 
@@ -639,7 +637,7 @@ class QueryWidget(QWidget):
 
     variant_clicked = Signal(dict)
 
-    def __init__(self, conn = None):
+    def __init__(self, conn=None):
         super().__init__()
         self.model = QueryModel(conn)
         self.delegate = QueryDelegate()
@@ -719,7 +717,7 @@ class QueryWidget(QWidget):
         self.model.modelReset.connect(self.updateInfo)
 
         # Create menu
-        #self.context_menu = VariantPopupMenu()
+        # self.context_menu = VariantPopupMenu()
 
         # emit variant when clicked
         self.view.clicked.connect(self._variant_clicked)
@@ -856,7 +854,7 @@ if __name__ == "__main__":
     import_file(conn, "examples/test.snpeff.vcf")
 
     view = QueryWidget(conn)
-    view.model.columns = ["chr","pos","ref","alt","transcript"]
+    view.model.columns = ["chr", "pos", "ref", "alt", "transcript"]
     view.model.load()
 
     print(view.model.query)

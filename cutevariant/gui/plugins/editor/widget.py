@@ -6,11 +6,20 @@ VqlEditor uses:
 """
 # Standard imports
 from textx.exceptions import TextXSyntaxError
-import sys 
+import sys
 import sqlite3
+
 # Qt imports
 from PySide2.QtCore import qApp, Qt, QRegularExpression, QStringListModel, Signal
-from PySide2.QtWidgets import QTextEdit, QCompleter, QVBoxLayout, QLabel, QFrame, QWidget, QApplication
+from PySide2.QtWidgets import (
+    QTextEdit,
+    QCompleter,
+    QVBoxLayout,
+    QLabel,
+    QFrame,
+    QWidget,
+    QApplication,
+)
 from PySide2.QtGui import (
     QSyntaxHighlighter,
     QFont,
@@ -150,7 +159,7 @@ class VqlEditor(QWidget):
 
     executed = Signal()
 
-    def __init__(self, parent = None):
+    def __init__(self, parent=None):
         super().__init__()
         self.setWindowTitle(self.tr("Vql Editor"))
 
@@ -182,7 +191,7 @@ class VqlEditor(QWidget):
 
     @property
     def conn(self):
-        return self._conn 
+        return self._conn
 
     @conn.setter
     def conn(self, conn):
@@ -190,7 +199,7 @@ class VqlEditor(QWidget):
         if conn is not None:
             self.text_edit.setCompleter(self.create_completer())
 
-    def set_vql(self, txt:str):
+    def set_vql(self, txt: str):
         self.text_edit.blockSignals(True)
         self.text_edit.setPlainText(txt)
         self.text_edit.blockSignals(False)
@@ -245,12 +254,11 @@ class VqlEditor(QWidget):
                 self.filter = cmd.get(
                     "filter", dict()
                 )  # filter as raw text; dict if no filter
-               
 
             if cmd["cmd"] == "create_cmd":
                 #  TODO create selection
                 pass
-        
+
         self.executed.emit()
 
     def set_message(self, message: str):
@@ -416,16 +424,12 @@ class VqlEdit(QTextEdit):
         return tc.selectedText()
 
 
-
-
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
     conn = sqlite3.connect("examples/test.db")
 
-
     view = VqlEditor()
     view.show()
-
 
     app.exec_()

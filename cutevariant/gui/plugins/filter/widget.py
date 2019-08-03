@@ -481,6 +481,7 @@ class FilterModel(QAbstractItemModel):
         model.remove_item(view.currentIndex())
 
     """
+
     # See self.headerData()
     _HEADERS = ["field", "operator", "value"]
     _MIMEDATA = "application/x-qabstractitemmodeldatalist"
@@ -496,7 +497,6 @@ class FilterModel(QAbstractItemModel):
         self.root_item = FilterItem("AND")
         self.conn = conn
 
-
     @property
     def filter(self):
         return self.to_dict()
@@ -504,7 +504,6 @@ class FilterModel(QAbstractItemModel):
     @filter.setter
     def filter(self, filter):
         self.load(filter)
-
 
     def __del__(self):
         """Model destructor. 
@@ -1006,13 +1005,11 @@ class FilterDelegate(QStyledItemDelegate):
         editor.setGeometry(option.rect)
 
 
-
-
 class FilterWidget(QWidget):
 
     changed = Signal()
 
-    def __init__(self,parent = None):
+    def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle(self.tr("Filter"))
         self.view = QTreeView()
@@ -1033,7 +1030,7 @@ class FilterWidget(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
         self.setLayout(layout)
-        #self.model.filterChanged.connect(self.on_filter_changed)
+        # self.model.filterChanged.connect(self.on_filter_changed)
 
         # setup Menu
 
@@ -1060,20 +1057,19 @@ class FilterWidget(QWidget):
 
     @property
     def conn(self):
-        return self.model.conn 
+        return self.model.conn
 
-    @conn.setter 
+    @conn.setter
     def conn(self, conn):
         self.model.conn = conn
 
     @property
     def filter(self):
-        return self.model.filter 
+        return self.model.filter
 
     @filter.setter
     def filter(self, filter):
         self.model.filter = filter
-
 
     def on_add_logic(self):
         """Add logic item to the current selected index
@@ -1174,6 +1170,3 @@ if __name__ == "__main__":
     # view.expandAll()
 
     app.exec_()
-
-
-

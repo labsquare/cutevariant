@@ -3,7 +3,8 @@
 import os
 import sys
 import importlib
-import glob 
+import glob
+
 # Qt imports
 from PySide2.QtCore import Qt, QSettings, QByteArray, QDir
 from PySide2.QtWidgets import *
@@ -17,7 +18,7 @@ from cutevariant.gui.settings import SettingsWidget
 from cutevariant.gui.querywidget import QueryWidget
 from cutevariant.gui import plugin
 
-# Import plugins 
+#  Import plugins
 from cutevariant.gui.plugins.editor.plugin import EditorPlugin
 
 # from cutevariant.gui.viewquerywidget import ViewQueryWidget
@@ -34,7 +35,7 @@ from cutevariant.commons import MAX_RECENT_PROJECTS, DIR_ICONS
 
 # Proof of concept - testing only
 # from cutevariant.gui.webglquerywidget import WebGLQueryWidget
-#from cutevariant.gui.hpoquerywidget import HpoQueryWidget
+# from cutevariant.gui.hpoquerywidget import HpoQueryWidget
 
 # from cutevariant.gui.omnibar import OmniBar
 
@@ -54,16 +55,16 @@ class MainWindow(QMainWindow):
         # Keep sqlite connection
         self.conn = None
 
-        # store dock plugins 
+        # store dock plugins
         self.plugins = []
 
         # Build central view based on QTabWidget
         # PS: get current view via current_tab_view()
         # Central widget encapsulates a QTabWidget and VqlEditor
-        self.query_widget =  QueryWidget()
+        self.query_widget = QueryWidget()
         self.central_tab = QTabWidget()
 
-        # create editor plugins 
+        #  create editor plugins
         self.editor_plugin = EditorPlugin(self)
         self.editor = self.editor_plugin.get_widget()
 
@@ -94,21 +95,18 @@ class MainWindow(QMainWindow):
         self.resize(600, 400)
         self.setGeometry(qApp.desktop().rect().adjusted(100, 100, -100, -100))
 
-
         # Restores the state of this mainwindow's toolbars and dockwidgets
         self.read_settings()
 
-       
-        #registere editor plugins 
+        # registere editor plugins
         self.register_plugin(self.editor_plugin)
 
-        # register other plugins 
+        #  register other plugins
         for plugin in self.find_plugins():
             self.register_plugin(plugin)
 
         self.open("examples/test.db")
 
-    
     def add_panel(self, widget, area=Qt.LeftDockWidgetArea):
         """Add given widget to a new QDockWidget and to view menu in menubar"""
         dock = QDockWidget()
@@ -126,7 +124,7 @@ class MainWindow(QMainWindow):
         self.addDockWidget(area, dock)
         self.view_menu.addAction(dock.toggleViewAction())
 
-    def register_plugin(self, plugin : plugin.Plugin):
+    def register_plugin(self, plugin: plugin.Plugin):
         """add plugin to the application
         
         Arguments:
@@ -139,39 +137,39 @@ class MainWindow(QMainWindow):
         self.query_widget.variant_clicked.connect(plugin.on_variant_clicked)
         self.query_widget.model.changed.connect(plugin.on_query_model_changed)
 
-        # Add dockable widget if it's required 
+        #  Add dockable widget if it's required
         widget = plugin.get_widget()
         if widget is not None:
             if plugin.dockable:
                 self.add_panel(widget)
 
+    def find_plugins(self, path=None):
+        """ Find plugin according to the path """
 
-    def find_plugins(self, path = None):
-        """ Find plugin according to the path """ 
-        
-        # if path is None, return internal plugin path 
+        #  if path is None, return internal plugin path
         if path is None:
-            plugin_path = os.path.join(os.path.dirname(__file__),"plugins")
+            plugin_path = os.path.join(os.path.dirname(__file__), "plugins")
 
-        # get all packages from the path 
-        # TODO: check if they are packages     
-        paths = [f.path for f in os.scandir(plugin_path) if f.is_dir() ]  
+        #  get all packages from the path
+        # TODO: check if they are packages
+        paths = [f.path for f in os.scandir(plugin_path) if f.is_dir()]
 
-        # Loop over packages and load Plugin dynamically
+        #  Loop over packages and load Plugin dynamically
         for path in paths:
-            # module name example : test 
+            #  module name example : test
             module_name = os.path.basename(path)
-            # class name example : TestPlugin
+            #  class name example : TestPlugin
             class_name = module_name.capitalize() + "Plugin"
 
-            spec = importlib.util.spec_from_file_location(module_name, path+"/plugin.py")
-            if spec :
-            #load the module
-               module = spec.loader.load_module()
-            # load the class 
-               Plugin = getattr(module, class_name)
-               yield Plugin(self)        
-         
+            spec = importlib.util.spec_from_file_location(
+                module_name, path + "/plugin.py"
+            )
+            if spec:
+                # load the module
+                module = spec.loader.load_module()
+                # load the class
+                Plugin = getattr(module, class_name)
+                yield Plugin(self)
 
     def setup_menubar(self):
         """Menu bar setup: items and actions"""
@@ -259,7 +257,7 @@ class MainWindow(QMainWindow):
         """Add the given widget to the current (QTabWidget),
         and connect it to the query_dispatcher"""
         self.central_tab.addTab(widget, widget.windowTitle())
-        #self.query_dispatcher.addWidget(widget)
+        # self.query_dispatcher.addWidget(widget)
 
     def current_tab_view(self):
         """Get the page/tab currently being displayed by the tab dialog
@@ -298,13 +296,11 @@ class MainWindow(QMainWindow):
         self.conn = get_sql_connexion(filepath)
 
         # Create a query
-        self.query_widget.conn = self.conn 
+        self.query_widget.conn = self.conn
         self.query_widget.model.load()
 
         for plugin in self.plugins:
             plugin.on_open_project(self.conn)
-
-  
 
     def adjust_recent_projects(self, filepath):
         """Adjust the number of of recent projects to display
@@ -503,7 +499,6 @@ class MainWindow(QMainWindow):
 
     def execute_vql(self):
         self.editor.run_vql()
-
 
 
 if __name__ == "__main__":
