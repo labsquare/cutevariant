@@ -29,6 +29,7 @@ class ColumnsPlugin(plugin.Plugin):
             conn 
         """
         self.view.conn = conn 
+        self.view.columns = ["chr","pos","ref","alt"]
 
     def on_column_changed(self):
         self.mainwindow.query_widget.model.columns = self.view.columns

@@ -244,6 +244,9 @@ class Query:
                     # Secure column name
                     col = f"`gt_{arg}`.{field_name}"
 
+            if col != "variants.id":
+                col = f"`{col}`"
+
             sql_columns.append(col)
 
         # If 'group by', add extra columns (child count and child ids)
@@ -320,6 +323,7 @@ class Query:
         """
         ## Build columns
         sql_columns = self.get_columns(do_not_add_default_things)
+        # quotify 
         query = f"SELECT {','.join(sql_columns)} "
 
         ## Add FROM clause

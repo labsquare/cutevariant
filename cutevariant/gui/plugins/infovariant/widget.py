@@ -160,6 +160,7 @@ class InfoVariantWidget(QWidget):
             item.setIcon(0, FIcon(0xF70A, TYPE_COLORS[val.__class__.__name__]))
 
             self.view.addTopLevelItem(item)
+        
 
     def set_variant(self, variant: dict):
         """Register and show the given variant
