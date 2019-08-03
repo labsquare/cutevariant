@@ -8,6 +8,12 @@ language: python
 os:
   - linux
 
+addons:
+  apt:
+    packages:
+    - x11-utils
+    - libxkbcommon-x11-0
+
 services: xvfb
 
 python:
@@ -16,8 +22,6 @@ variables:
   QT_QPA_PLATFORM: "offscreen"
 
 
-before_install:
-  - sudo apt-get install -y libxkbcommon-x11-0 x11-utils
 
 # command to install dependencies
 install:
