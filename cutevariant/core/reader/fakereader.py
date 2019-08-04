@@ -16,7 +16,7 @@ class FakeReader(AbstractReader):
                 {"transcript": "NM_234234", "gene": "CFTR"},
                 {"transcript": "NM_234235", "gene": "CFTR"},
             ],
-            "samples": [{"name": "sacha", "gt": 1}],
+            "samples": [{"name": "sacha", "gt": 1, "dp": 30}],
         }
 
         yield {
@@ -28,7 +28,7 @@ class FakeReader(AbstractReader):
                 {"transcript": "NM_234234", "gene": "CFTR"},
                 {"transcript": "NM_234235", "gene": "CFTR"},
             ],
-            "samples": [{"name": "sacha", "gt": 1}],
+            "samples": [{"name": "sacha", "gt": 1, "dp": 50}],
         }
 
         yield {
@@ -40,7 +40,7 @@ class FakeReader(AbstractReader):
                 {"transcript": "NM_234234", "gene": "CFTR"},
                 {"transcript": "NM_234235", "gene": "CFTR"},
             ],
-            "samples": [{"name": "sacha", "gt": 1}],
+            "samples": [{"name": "sacha", "gt": 1, "dp": 10}],
         }
 
     def get_fields(self):
@@ -84,6 +84,13 @@ class FakeReader(AbstractReader):
             "name": "gt",
             "category": "samples",
             "description": "genotype",
+            "type": "int",
+        }
+
+        yield {
+            "name": "dp",
+            "category": "samples",
+            "description": "genotype depth",
             "type": "int",
         }
 

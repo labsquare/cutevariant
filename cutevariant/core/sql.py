@@ -474,6 +474,17 @@ def get_fields(conn):
     conn.row_factory = sqlite3.Row
     return (dict(data) for data in conn.execute("""SELECT * FROM fields"""))
 
+def get_field_by_category(conn, category):
+    """ Get fields within a category
+
+    :param conn: sqlite3.connect
+     :return: Generator of dictionnaries with as many keys as there are columns
+        in the table.
+    :rtype: <generator <dict>>
+    """
+
+    return [field for field in get_fields(conn) if field["category"] == category]
+
 
 def get_field_by_name(conn, field_name: str):
     """ Return field by his name 
@@ -618,18 +629,7 @@ def create_table_variants(conn, fields):
     )
     # cursor.execute(f"""CREATE UNIQUE INDEX idx_variants_unicity ON variants (chr,pos,ref,alt)""")
 
-    # Association table: do not use useless rowid column
-    cursor.execute(
-        """CREATE TABLE sample_has_variant (
-        sample_id INTEGER NOT NULL,
-        variant_id INTEGER NOT NULL,
-        gt INTEGER DEFAULT -1,
-        PRIMARY KEY (sample_id, variant_id),
-        FOREIGN KEY (sample_id) REFERENCES samples (id)
-          ON DELETE CASCADE
-          ON UPDATE NO ACTION
-        ) WITHOUT ROWID"""
-    )
+
     conn.commit()
 
 
@@ -720,7 +720,8 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
 
     var_columns = get_columns(conn, "variants")
     ann_columns = get_columns(conn, "annotations")
-
+    sample_columns = get_columns(conn, "sample_has_variant")
+    
     # Get samples with samples names as keys and sqlite rowid as values
     # => used as a mapping for samples ids
     samples_id_mapping = {
@@ -832,14 +833,19 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
             # have been inserted from the same source file (or it is not the case ?) ?
             # Retrieve the id of the sample to build the association in
             # "sample_has_variant" table carrying the data "gt" (genotype)
-            g = (
-                (samples_id_mapping[sample["name"]], sample["gt"])
-                for sample in variant["samples"]
-                if sample["name"] in samples_names
-            )
-            cursor.executemany(
-                f"""INSERT INTO sample_has_variant VALUES (?,{variant_id},?)""", g
-            )
+
+            samples = []
+            for sample in variant["samples"]:
+                sample_id = samples_id_mapping[sample["name"]]
+                default_values = defaultdict(str, sample)
+                sample_value = [sample_id, variant_id]
+                sample_value += ([default_values[i] for i in sample_columns[2:]])
+                samples.append(sample_value)
+
+            placeholder = ",".join(["?"] * len(sample_columns))
+
+            q =  f"""INSERT INTO sample_has_variant VALUES ({placeholder})"""
+            cursor.executemany(q,samples)
 
         # Yield progression
         if variant_count % yield_every == 0:
@@ -867,7 +873,7 @@ def insert_many_variants(conn, data, **kwargs):
 ## ================ Samples functions ==========================================
 
 
-def create_table_samples(conn):
+def create_table_samples(conn, fields = None):
     """Create samples table
 
     :param conn: sqlite3.connect
@@ -879,6 +885,31 @@ def create_table_samples(conn):
         id INTEGER PRIMARY KEY ASC,
         name TEXT)"""
     )
+    conn.commit()
+
+    if not fields:
+        return    
+
+    schema = ",".join(
+        [
+            f'`{field["name"]}` {field["type"]} {field.get("constraint", "")}'
+            for field in fields
+            if field["name"]
+        ]
+    )
+
+    cursor.execute(
+        f"""CREATE TABLE sample_has_variant  (
+        sample_id INTEGER NOT NULL,
+        variant_id INTEGER NOT NULL,
+        {schema},
+        PRIMARY KEY (sample_id, variant_id),
+        FOREIGN KEY (sample_id) REFERENCES samples (id)
+          ON DELETE CASCADE
+          ON UPDATE NO ACTION
+        ) WITHOUT ROWID
+       """)
+
     conn.commit()
 
 

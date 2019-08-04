@@ -103,11 +103,17 @@ class ColumnsModel(QStandardItemModel):
 
         for sample_name in samples_names:
             sample_item = QStandardItem(sample_name)
-            sample_item.setCheckable(True)
             sample_item.setIcon(FIcon(0xF2E6))
             sample_item.setData({"name": ("genotype", sample_name, "GT")})
             sample_cat_item.appendRow(sample_item)
             self.items.append(sample_item)
+
+            for sample_annotation in sql.get_field_by_category(self.conn,"samples"):
+                item = QStandardItem(sample_annotation["name"])
+                item.setCheckable(True)
+                sample_item.setData({"name": ("genotype", sample_name, sample_annotation)})
+                sample_item.appendRow(item)
+                self.items.append(sample_item)
 
 
 class ColumnsWidget(QWidget):

@@ -68,7 +68,7 @@ def prepare_base(conn):
     sql.create_table_fields(conn)
     assert table_exists(conn, "fields"), "cannot create table fields"
 
-    sql.create_table_samples(conn)
+    sql.create_table_samples(conn,sql.get_field_by_category(conn,"samples"))
     assert table_exists(conn, "samples"), "cannot create table samples"
 
     sql.create_table_selections(conn)
@@ -77,7 +77,7 @@ def prepare_base(conn):
     sql.insert_many_fields(conn, fields)
     assert table_count(conn, "fields") == len(fields), "cannot insert many fields"
 
-    sql.create_table_variants(conn, sql.get_fields(conn))
+    sql.create_table_variants(conn, sql.get_field_by_category(conn,"variants"))
     assert table_exists(conn, "variants"), "cannot create table variants"
 
     sql.insert_many_variants(conn, variants)

@@ -102,12 +102,11 @@ def test_create_db(reader):
     sql.insert_many_fields(conn, reader.get_fields())
     assert len(list(sql.get_fields(conn))) == len(list(reader.get_fields()))
 
-    sql.create_table_samples(conn)
+    sql.create_table_samples(conn, reader.get_fields_by_category("samples"))
     sql.insert_many_samples(conn, reader.get_samples())
     assert len(list(sql.get_samples(conn))) == len(list(reader.get_samples()))
 
     sql.create_table_annotations(conn, reader.get_fields_by_category("annotations"))
-
     sql.create_table_variants(conn, reader.get_fields_by_category("variants"))
 
     sql.create_table_selections(conn)

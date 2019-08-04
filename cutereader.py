@@ -21,7 +21,9 @@ conn = sqlite3.connect("/tmp/test.db")
 
 import_reader(conn,reader)
 
-conn
+# json.dumps(list(reader.get_fields()))
+
+# print(list(reader.get_variants()))
 
 
 
