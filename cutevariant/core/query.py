@@ -238,9 +238,8 @@ class Query:
                 function_name, arg, field_name = col
                 if function_name == _GENOTYPE_FUNCTION_NAME:
                     # Secure column name
-                    col = f"`gt_{arg}`.{field_name}"
-
-            if col != "variants.id":
+                    col = f"`gt_{arg}`.`{field_name}`"
+            elif col != "variants.id":
                 col = f"`{col}`"
 
             sql_columns.append(col)
@@ -600,7 +599,7 @@ class Query:
             if isinstance(col, tuple):
                 fct, arg, field = col
                 if fct == _GENOTYPE_FUNCTION_NAME:
-                    col = f'genotype("{arg}")'
+                    col = f'genotype("{arg}").{field}'
             _c.append(col)
 
         base = f"SELECT {','.join(_c)} FROM {self.selection}"

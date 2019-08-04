@@ -106,7 +106,9 @@ class FilterOperand(metaclass=model_class):
 class Function(metaclass=model_class):
     @property
     def value(self):
-        return (self.func, self.arg, "gt")
+        if not self.extra:
+            self.extra = "gt"
+        return (self.func, self.arg, self.extra)
 
 
 class Tuple(metaclass=model_class):

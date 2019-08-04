@@ -15,15 +15,17 @@ except:
 
 
 
-#reader  = VcfReader(open("/home/schutz/kevin.vcf")) 
-reader = FakeReader()
+reader  = VcfReader(open("/home/sacha/Downloads/test.hg19_multianno_MPA_20190529.vcf")) 
+# reader = FakeReader()
 conn = sqlite3.connect("/tmp/test.db")
 
 import_reader(conn,reader)
 
-# json.dumps(list(reader.get_fields()))
+# print(json.dumps(list(reader.get_fields())))
 
-# print(list(reader.get_variants()))
+# for i in reader.get_variants():
+#     print(json.dumps(i))
+#     break
 
 
 

@@ -123,7 +123,7 @@ def test_query_functions(conn):
     sql_query = query.sql()
     assert "LEFT JOIN sample_has_variant" in sql_query
     # Column
-    assert "`gt_TUMOR`.gt" in sql_query
+    assert "`gt_TUMOR`.`gt`" in sql_query
     # Filter
     assert "`gt_NORMAL`.GT" in sql_query
 
@@ -131,7 +131,7 @@ def test_query_functions(conn):
     # No cols in annotation => remove dependency
     assert "LEFT JOIN annotations" not in sql_query
     # In column => remove dependency
-    assert "`gt_TUMOR`.gt" not in sql_query
+    assert "`gt_TUMOR`.`gt`" not in sql_query
     # In filter => keep dependency
     assert "`gt_NORMAL`.GT" in sql_query
 

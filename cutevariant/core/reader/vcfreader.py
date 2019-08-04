@@ -104,6 +104,9 @@ class VcfReader(AbstractReader):
         # TODO : ugly for testing progression .. see #60
         self.read_bytes = self._init_read_bytes(vcf_reader)
 
+        # Genotype format
+        formats = [i for i in vcf_reader.formats]
+
         for record in vcf_reader:
 
             self.read_bytes += self._get_record_size(record)
@@ -136,6 +139,24 @@ class VcfReader(AbstractReader):
                     for sample in record.samples:
                         sample_data = {}
                         sample_data["name"] = sample.sample
+
+                        # Load sample annotations 
+                        sample_ann = {}
+                        for key in formats:
+                            try:
+                                value = sample[key]
+                                if type(value) == list:
+                                    value = ",".join([str(i) for i in value])
+                                sample_ann[str.lower(key)] = value
+                            except:
+                                LOGGER.debug(f"VCFReader::parse: {key} not defined in genotype ")
+
+
+
+
+                        sample_data.update(sample_ann)
+
+
                         sample_data["gt"] = (
                             -1 if sample.gt_type == None else sample.gt_type
                         )

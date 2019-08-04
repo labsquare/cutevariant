@@ -25,9 +25,26 @@ class ColumnsModel(QStandardItemModel):
 
     def __init__(self, conn=None):
         super().__init__()
-        self.setColumnCount(2)
-        self.items = []
+        self.checkable_items = []
         self.conn = conn
+        self.setColumnCount(2)
+    
+    def columnCount(self, index = QModelIndex()):
+        return 2
+
+    def headerData(self, section,orientation, role):
+        
+        if role != Qt.DisplayRole:
+            return None 
+
+        if orientation == Qt.Horizontal:
+            if section == 0:
+                return "Name"
+            if section == 1:
+                return "Description" 
+        
+        return None
+
 
     @property
     def columns(self):
@@ -37,7 +54,7 @@ class ColumnsModel(QStandardItemModel):
             list -- list of columns
         """
         selected_columns = []
-        for item in self.items:
+        for item in self.checkable_items:
             if item.checkState() == Qt.Checked:
                 selected_columns.append(item.data()["name"])
         return selected_columns
@@ -50,7 +67,7 @@ class ColumnsModel(QStandardItemModel):
             columns {list} -- list of columns
         """
         self.blockSignals(True)
-        for item in self.items:
+        for item in self.checkable_items:
             item.setCheckState(Qt.Unchecked)
             if item.data()["name"] in columns:
                 item.setCheckState(Qt.Checked)
@@ -60,60 +77,41 @@ class ColumnsModel(QStandardItemModel):
         """Load all columns avaible into the model 
         """
         self.clear()
-        # Store QStandardItem as a list to detect easily which one is checked
-        self.items = list()
-        categories = dict()
+        self.checkable_items.clear()
 
-        # Fields is a dictionnary with (name,type,description,category) as keys
-        # Create a category item and add fields as children
-        for record in sql.get_fields(self.conn):
+        self.appendRow(self.load_fields("variants"))
+        self.appendRow(self.load_fields("annotations"))
 
-            if record["category"] != "samples":
-                item = QStandardItem(record["name"])
-                item.setEditable(False)
-                item.setToolTip(record["description"])
-                # map value type to color
-                item.setIcon(FIcon(0xF70A, TYPE_COLORS[record["type"]]))
-                item.setCheckable(True)
-                item.setData(record)
-                self.items.append(item)
+        samples_items = QStandardItem("samples")
+        for sample in sql.get_samples(self.conn):
+            sample_item = self.load_fields("samples", parent_name = sample["name"])
+            sample_item.setText(sample["name"])
+            samples_items.appendRow(sample_item)
 
-                # Create category parent items
-                if record["category"] not in categories.keys():
-                    cat_item = QStandardItem(record["category"])
-                    cat_item.setEditable(False)
-                    cat_item.setIcon(FIcon(0xF645))
-                    self.appendRow(cat_item)
-                    categories[record["category"]] = cat_item
 
-        # Append child to parent
-        for item in self.items:
-            category = item.data()["category"]
-            if category != "sample":
-                categories[category].appendRow(item)
 
-        # Append samples
-        sample_cat_item = QStandardItem("samples")
-        sample_cat_item.setEditable(False)
-        sample_cat_item.setIcon(FIcon(0xF645))
-        self.appendRow(sample_cat_item)
+        self.appendRow(samples_items)
 
-        # Get sample names
-        samples_names = (sample["name"] for sample in sql.get_samples(self.conn))
 
-        for sample_name in samples_names:
-            sample_item = QStandardItem(sample_name)
-            sample_item.setIcon(FIcon(0xF2E6))
-            sample_item.setData({"name": ("genotype", sample_name, "GT")})
-            sample_cat_item.appendRow(sample_item)
-            self.items.append(sample_item)
+    def load_fields(self, category, parent_name = None):
+        root_item = QStandardItem(category)
+        root_item.setColumnCount(2)
 
-            for sample_annotation in sql.get_field_by_category(self.conn,"samples"):
-                item = QStandardItem(sample_annotation["name"])
-                item.setCheckable(True)
-                sample_item.setData({"name": ("genotype", sample_name, sample_annotation)})
-                sample_item.appendRow(item)
-                self.items.append(sample_item)
+        for field in sql.get_field_by_category(self.conn,category):
+            item1 = QStandardItem(field["name"])
+            item2 = QStandardItem(field["description"])
+            item1.setCheckable(True)
+            root_item.appendRow([item1, item2])
+            self.checkable_items.append(item1)
+            
+            if category == "samples":
+                item1.setData({"name": ("genotype", parent_name, field["name"])})
+            else:
+                item1.setData(field)
+        
+        return root_item
+
+
 
 
 class ColumnsWidget(QWidget):
@@ -135,8 +133,9 @@ class ColumnsWidget(QWidget):
         self.view = QTreeView()
         self.model = ColumnsModel(None)
         self.view.setModel(self.model)
+        
         # self.view.setIndentation(0)
-        self.view.header().setVisible(False)
+        #self.view.header().setVisible(False)
         layout = QVBoxLayout()
 
         layout.addWidget(self.view)
@@ -173,7 +172,10 @@ if __name__ == "__main__":
 
     view = ColumnsWidget()
     view.conn = conn
-    view.model.set_columns(["chr", "pos"])
+    view.model.columns = ["chr", "pos"]
+
+    view.changed.connect(lambda : print(view.columns))
+
     view.show()
 
     app.exec_()

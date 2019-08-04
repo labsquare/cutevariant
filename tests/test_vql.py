@@ -72,6 +72,14 @@ for idx, (vql, expected) in enumerate(VQL_TO_TREE_CASES.items(), start=1):
     globals()[f"test_vql_{idx}"] = template_test_case(vql, expected)
 
 
+def test_vql_function():
+    q = "SELECT chr, pos, genotype('test').g FROM variants"
+
+    found = next(execute_vql(q))
+
+    print(found)
+
+
 # # test exceptions returned by VQL
 # MALFORMED_VQL_CASES = {
 #     "": ("no SELECT clause", -1),

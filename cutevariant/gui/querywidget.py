@@ -549,7 +549,7 @@ class QueryDelegate(QStyledItemDelegate):
             painter.drawText(option.rect, alignement, str(index.data()))
             return
 
-        if "genotype" in colname:
+        if "gt" in colname:
             val = int(value)
 
             icon_code = GENOTYPE_ICONS.get(val, -1)

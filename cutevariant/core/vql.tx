@@ -55,7 +55,7 @@ FilterTerm:
 Comment: /\#.*$/;
 ColumnIdentifier: Function|ID;
 ValueIdentifier: (NUMBER|STRING|BOOL|Tuple);
-Function: func=ID '(' arg=STRING ')' ;
+Function: func=ID '(' arg=STRING ')' ('.' extra=ID)?;
 BoolOperator: "AND"|"OR";
 SetOperator: "+"|"-"|"&"|"^";
 MathOperator: /==|>=|<=|!=|=\/=|=|>|<|\||\*|\/|\%|>>|<<|\&|\||<>|IS|IS
