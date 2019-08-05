@@ -747,7 +747,7 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
 
     else:
         # Handle conflicts on the primary key
-        variant_insert_query = f"""INSERT INTO variants ({var_columns})
+        variant_insert_query = f"""INSERT INTO variants ({var_cols})
                 VALUES ({var_places})
                 ON CONFLICT (chr,pos,ref,alt) DO NOTHING"""
 
