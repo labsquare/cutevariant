@@ -10,6 +10,7 @@ import copy
 import csv
 import sys
 import sqlite3
+import re
 
 # Qt imports
 from PySide2.QtWidgets import *
@@ -549,7 +550,7 @@ class QueryDelegate(QStyledItemDelegate):
             painter.drawText(option.rect, alignement, str(index.data()))
             return
 
-        if "gt" in colname:
+        if re.match(r"genotype(.+).gt", colname):
             val = int(value)
 
             icon_code = GENOTYPE_ICONS.get(val, -1)
