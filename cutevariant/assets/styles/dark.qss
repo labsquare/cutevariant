@@ -161,6 +161,7 @@ QDockWidget QToolBar
 {
   
   background: palette(alternate-base);
-  border-top: 1px solid palette(midlight);
+  border-top: 13px solid palette(midlight);
 
 }
+
