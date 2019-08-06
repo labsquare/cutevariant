@@ -105,7 +105,7 @@ class MainWindow(QMainWindow):
         for plugin in self.find_plugins():
             self.register_plugin(plugin)
 
-        self.open("examples/test.db")
+        self.open("test.db")
 
     def add_panel(self, widget, area=Qt.LeftDockWidgetArea):
         """Add given widget to a new QDockWidget and to view menu in menubar"""
