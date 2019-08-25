@@ -4,10 +4,15 @@ from PySide2.QtCore import Signal
 
 #  standard import
 from glob import glob
+import os
+import importlib
 
 
 class Plugin(object):
     """Base class for Plugin """
+
+    Name = "No Name"
+    Description = ""
 
     def __init__(self, parent=None):
         super().__init__()
@@ -53,3 +58,41 @@ class Plugin(object):
             QWidget 
         """
         return None
+
+
+def find_plugins(path=None):
+    """find and returns plugin instance from a directory 
+    
+    Keyword Arguments:
+        path [str] -- the folder path where plugin are 
+        parent [type] -- the parent object of all instance. It must be the MainWindow
+    
+    Returns:
+        [Plugin] -- An instance of Plugin class 
+    """
+    #  if path is None, return internal plugin path
+    if path is None:
+        plugin_path = os.path.join(os.path.dirname(__file__), "plugins")
+    else:
+        plugin_path = path
+
+    #  get all packages from the path
+    # TODO: check if they are packages
+    paths = [f.path for f in os.scandir(plugin_path) if f.is_dir()]
+
+    #  Loop over packages and load Plugin dynamically
+    for path in paths:
+        #  module name example : test
+        module_name = os.path.basename(path)
+        #  class name example : TestPlugin
+        class_name = module_name.capitalize() + "Plugin"
+
+        spec = importlib.util.spec_from_file_location(
+            module_name, path + "/plugin.py"
+        )
+        if spec:
+            # load the module
+            module = spec.loader.load_module()
+            # load the class
+            Plugin = getattr(module, class_name)
+            yield Plugin

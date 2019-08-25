@@ -5,9 +5,19 @@ import sys
 import sqlite3
 
 from cutevariant.gui.plugins.columns import widget
+from cutevariant.gui import settings
 
+# Settings widget : just for example 
+class ColumnsSettingsWidget(settings.BaseWidget):
+    def load(self):
+        pass 
+
+    def save(self):
+        pass
 
 class ColumnsPlugin(plugin.Plugin):
+    Name = "Columns"
+    Description = "This plugin displays fields"
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -21,6 +31,13 @@ class ColumnsPlugin(plugin.Plugin):
             QWidget
         """
         return self.view
+
+    def get_settings_widget(self):
+        """Overload from plugin
+        Create a settings widget 
+        TODO : just for example 
+        """
+        return ColumnsSettingsWidget()
 
     def on_open_project(self, conn):
         """Overload from Plugin

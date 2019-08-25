@@ -18,6 +18,9 @@ from cutevariant.gui.ficon import FIcon
 from cutevariant.gui.style import TYPE_COLORS
 from cutevariant.commons import logger, WEBSITES_URLS
 
+from cutevariant.core import sql, get_sql_connexion
+
+
 LOGGER = logger()
 
 
@@ -117,12 +120,14 @@ class VariantPopupMenu(QMenu):
 
 
 class InfoVariantWidget(QWidget):
-    """Plugin to show all characteristics of a selected variant"""
+    """Plugin to show all annotations of a selected variant"""
 
     def __init__(self):
         super().__init__()
 
         self.setWindowTitle(self.tr("Info variants"))
+
+        self.tab_view = QTabWidget()
 
         # Set columns of TreeWidget
         self.view = QTreeWidget()
@@ -172,3 +177,18 @@ class InfoVariantWidget(QWidget):
         if not self._variant:
             return
         self.context_menu.popup(self._variant, self.view.mapToGlobal(pos))
+
+
+if __name__ == "__main__":
+    import sys 
+    app = QApplication(sys.argv)
+
+    conn = get_sql_connexion("/home/schutz/Dev/cutevariant/examples/test.db")
+
+
+    w = InfoVariantWidget()
+    w.conn = conn
+
+    w.show()
+
+    app.exec_() 

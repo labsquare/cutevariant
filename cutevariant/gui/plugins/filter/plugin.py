@@ -11,6 +11,8 @@ LOGGER = cm.logger()
 
 
 class FilterPlugin(plugin.Plugin):
+    Name = "Filter"
+    Description = "A plugin to filter variants"
     def __init__(self, parent=None):
         super().__init__(parent)
         self.view = widget.FilterWidget()

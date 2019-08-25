@@ -8,6 +8,8 @@ from cutevariant.gui.plugins.selection import widget
 
 
 class SelectionPlugin(plugin.Plugin):
+    Name = "Selection"
+    Description = "A plugin to manage selection and set operation"
     def __init__(self, parent=None):
         super().__init__(parent)
         self.editor = widget.SelectionWidget()

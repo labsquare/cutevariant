@@ -1070,6 +1070,7 @@ class FilterWidget(QWidget):
     @filter.setter
     def filter(self, filter):
         self.model.filter = filter
+        self.view.expandAll()
 
     def on_add_logic(self):
         """Add logic item to the current selected index

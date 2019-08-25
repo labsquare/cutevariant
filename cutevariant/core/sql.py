@@ -515,7 +515,14 @@ def get_field_range(conn, field_name: str):
     field = get_field_by_name(conn, field_name)
     table = field["category"]  # variants, or annotations or samples
     query = f"""SELECT min({field_name}), max({field_name}) FROM {table}"""
-    return tuple(conn.execute(query).fetchone())
+    
+    result = tuple(conn.execute(query).fetchone())
+    if result == (None,None):
+        return None 
+    if result == ('',''):
+        return None
+
+    return result
 
 
 def get_field_unique_values(conn, field_name: str):

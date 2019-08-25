@@ -6,7 +6,7 @@ import importlib
 import glob
 
 # Qt imports
-from PySide2.QtCore import Qt, QSettings, QByteArray, QDir
+from PySide2.QtCore import Qt, QSettings, QByteArray, QDir, Slot
 from PySide2.QtWidgets import *
 from PySide2.QtGui import QIcon, QKeySequence
 
@@ -102,8 +102,9 @@ class MainWindow(QMainWindow):
         self.register_plugin(self.editor_plugin)
 
         #  register other plugins
-        for plugin in self.find_plugins():
-            self.register_plugin(plugin)
+        for PluginClass in plugin.find_plugins():
+            # Note : passing self is important to make the plugin workable
+            self.register_plugin(PluginClass(self))
 
         self.open("test.db")
 
@@ -143,33 +144,7 @@ class MainWindow(QMainWindow):
             if plugin.dockable:
                 self.add_panel(widget)
 
-    def find_plugins(self, path=None):
-        """ Find plugin according to the path """
-
-        #  if path is None, return internal plugin path
-        if path is None:
-            plugin_path = os.path.join(os.path.dirname(__file__), "plugins")
-
-        #  get all packages from the path
-        # TODO: check if they are packages
-        paths = [f.path for f in os.scandir(plugin_path) if f.is_dir()]
-
-        #  Loop over packages and load Plugin dynamically
-        for path in paths:
-            #  module name example : test
-            module_name = os.path.basename(path)
-            #  class name example : TestPlugin
-            class_name = module_name.capitalize() + "Plugin"
-
-            spec = importlib.util.spec_from_file_location(
-                module_name, path + "/plugin.py"
-            )
-            if spec:
-                # load the module
-                module = spec.loader.load_module()
-                # load the class
-                Plugin = getattr(module, class_name)
-                yield Plugin(self)
+   
 
     def setup_menubar(self):
         """Menu bar setup: items and actions"""
@@ -240,7 +215,7 @@ class MainWindow(QMainWindow):
         self.toolbar.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
         self.toolbar.addAction(self.new_project_action)
         self.toolbar.addAction(self.open_project_action)
-        self.toolbar.addAction("Run", self.execute_vql)
+        self.toolbar.addAction("Run", self.execute_vql).setShortcuts([Qt.CTRL + Qt.Key_R, QKeySequence.Refresh])
         self.toolbar.addSeparator()
 
         # self.toolbar.addAction(
@@ -497,7 +472,9 @@ class MainWindow(QMainWindow):
             #  TODO: handle UI changes by passing UI_VERSION to saveState()
             app_settings.setValue("windowState", self.saveState())
 
+    @Slot()
     def execute_vql(self):
+        """ Execute query from editor """
         self.editor.run_vql()
 
 

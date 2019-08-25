@@ -38,7 +38,8 @@ class FIconEngine(QIconEngine):
         self, painter: QPainter, rect: QRect, mode: QIcon.Mode, state: QIcon.State
     ):
         """override"""
-        font = FIconEngine.font if hasattr(FIconEngine, "font") else painter.font()
+        #font = FIconEngine.font if hasattr(FIconEngine, "font") else painter.font()
+        font = painter.font()
         painter.save()
 
         if mode == QIcon.Disabled:
@@ -46,6 +47,7 @@ class FIconEngine(QIconEngine):
 
         else:
             painter.setPen(QPen(self.color))
+
 
         font.setPixelSize(rect.size().width())
 

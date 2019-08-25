@@ -8,6 +8,8 @@ from cutevariant.gui.plugins.editor import widget
 
 
 class EditorPlugin(plugin.Plugin):
+    Name = "Editor"
+    Description = "VQL editor plugin "
     def __init__(self, parent=None):
         super().__init__(parent)
         self.editor = widget.VqlEditor()

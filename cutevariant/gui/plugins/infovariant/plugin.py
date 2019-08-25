@@ -6,6 +6,8 @@ from cutevariant.gui.plugins.infovariant import widget
 
 
 class InfovariantPlugin(plugin.Plugin):
+    Name = "Info"
+    Description = "A plugin to display all variant annotations"
     def __init__(self, parent=None):
         super().__init__(parent)
 
