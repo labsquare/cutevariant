@@ -83,6 +83,24 @@ def prepare_base(conn):
     sql.insert_many_variants(conn, variants)
 
 
+def test_get_annotations(conn):
+    prepare_base(conn)
+    sql.create_table_annotations(conn, [])
+    conn.execute("DELETE FROM variants")
+
+    sql.insert_many_variants(conn, variants_duplicated_annotations)
+
+    for id, variant in enumerate(variants_duplicated_annotations):
+        read_tx = list(sql.get_annotations(conn,id+1))[0]
+        del read_tx["variant_id"]
+        expected_tx = variants_duplicated_annotations[id]["annotations"][0]
+        assert read_tx == expected_tx
+       
+
+def test_get_sample_annotations(conn):
+    # TODO 
+    pass
+
 def test_duplicated_variants(conn):
     """Test the respect of the unicity constraint of the primary key
 
