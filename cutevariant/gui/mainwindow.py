@@ -91,13 +91,6 @@ class MainWindow(QMainWindow):
         # self.toolbar.addWidget(spacer)
         # self.toolbar.addWidget(self.omnibar)
 
-        # Window geometry
-        self.resize(600, 400)
-        self.setGeometry(qApp.desktop().rect().adjusted(100, 100, -100, -100))
-
-        # Restores the state of this mainwindow's toolbars and dockwidgets
-        self.read_settings()
-
         # registere editor plugins
         self.register_plugin(self.editor_plugin)
 
@@ -105,6 +98,13 @@ class MainWindow(QMainWindow):
         for PluginClass in plugin.find_plugins():
             # Note : passing self is important to make the plugin workable
             self.register_plugin(PluginClass(self))
+
+        # Window geometry
+        self.resize(600, 400)
+        self.setGeometry(qApp.desktop().rect().adjusted(100, 100, -100, -100))
+
+        # Restores the state of this mainwindow's toolbars and dockwidgets
+        self.read_settings()
 
         self.open("test.db")
 
@@ -133,9 +133,14 @@ class MainWindow(QMainWindow):
         """
 
         self.plugins.append(plugin)
+
+        # call abstract method 
         plugin.on_register()
 
+        # connect variant clicked signal with the plugin
         self.query_widget.variant_clicked.connect(plugin.on_variant_clicked)
+
+        # connect variant model with the plugin
         self.query_widget.model.changed.connect(plugin.on_query_model_changed)
 
         #  Add dockable widget if it's required
