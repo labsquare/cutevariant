@@ -671,6 +671,21 @@ def get_one_variant(conn, id: int):
         conn.execute(f"""SELECT * FROM variants WHERE variants.id = {id}""").fetchone()
     )
 
+def get_annotations(conn, id: int):
+    """ Get variant annotation with the given id """ 
+    conn.row_factory = sqlite3.Row
+    for annotation in conn.execute(f"""SELECT * FROM annotations WHERE variant_id = {id}"""):
+        yield dict(annotation)
+
+
+def get_sample_annotations(conn, variant_id: int, sample_id: int):
+    """ Get variant annotation for a given sample """ 
+    conn.row_factory = sqlite3.Row
+    return dict(
+        conn.execute(f"""SELECT * FROM sample_has_variant WHERE variant_id = {variant_id} and sample_id = {sample_id}""").fetchone()
+    )
+     
+
 
 def get_variants_count(conn):
     """Get the number of variants in the "variants" table"""

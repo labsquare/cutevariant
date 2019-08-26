@@ -8,7 +8,7 @@ VariantPopupMenu is also used in viewquerywidget for the same purpose.
 from functools import partial
 
 # Qt imports
-from PySide2.QtCore import Qt, QPoint, QSettings, QUrl
+from PySide2.QtCore import Qt, QPoint, QSettings, QUrl, Slot
 from PySide2.QtWidgets import *
 from PySide2.QtGui import QDesktopServices
 
@@ -127,50 +127,143 @@ class InfoVariantWidget(QWidget):
 
         self.setWindowTitle(self.tr("Info variants"))
 
-        self.tab_view = QTabWidget()
+        self.view = QTabWidget()
+        # build variant tab 
+        self.variant_view = QTreeWidget()
+        self.variant_view.setColumnCount(2)
+        self.variant_view.setHeaderLabels(["Field","Value"])
+        self.view.addTab(self.variant_view, "Variants")
 
-        # Set columns of TreeWidget
-        self.view = QTreeWidget()
-        self.view.setColumnCount(2)
+
+        # build transcript tab 
+        self.transcript_combo = QComboBox()
+        self.transcript_view = QTreeWidget()
+        self.transcript_view.setColumnCount(2)
+        self.transcript_view.setHeaderLabels(["Field","Value"])
+        tx_layout = QVBoxLayout()
+        tx_layout.addWidget(self.transcript_combo)
+        tx_layout.addWidget(self.transcript_view)
+        tx_widget = QWidget()
+        tx_widget.setLayout(tx_layout)
+        self.view.addTab(tx_widget,"Transcripts")
+        self.transcript_combo.currentIndexChanged.connect(self.on_transcript_changed)
+
+        # build Samples tab 
+        self.sample_combo = QComboBox()
+        self.sample_view = QTreeWidget()
+        self.sample_view.setColumnCount(2)
+        self.sample_view.setHeaderLabels(["Field","Value"])
+        tx_layout = QVBoxLayout()
+        tx_layout.addWidget(self.sample_combo)
+        tx_layout.addWidget(self.sample_view)
+        tx_widget = QWidget()
+        tx_widget.setLayout(tx_layout)
+        self.view.addTab(tx_widget,"Samples")
+        self.sample_combo.currentIndexChanged.connect(self.on_sample_changed)
+
+
+    
+       # self.view.setColumnCount(2)
         # Set title of columns
-        self.view.setHeaderLabels([self.tr("Attributes"), self.tr("Values")])
+       # self.view.setHeaderLabels([self.tr("Attributes"), self.tr("Values")])
 
         v_layout = QVBoxLayout()
         v_layout.setContentsMargins(0, 0, 0, 0)
         v_layout.addWidget(self.view)
         self.setLayout(v_layout)
 
-        # Create menu
-        self.context_menu = VariantPopupMenu()
-        # Ability to trigger the menu
-        self.view.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.view.customContextMenuRequested.connect(self.show_menu)
+        # # Create menu
+        # self.context_menu = VariantPopupMenu()
+        # # Ability to trigger the menu
+        # self.view.setContextMenuPolicy(Qt.CustomContextMenu)
+        # self.view.customContextMenuRequested.connect(self.show_menu)
 
-        self._variant = dict()
+        # self._variant = dict()
+
+        #self.add_tab("variants")
+
+   
+
+
+
+    @property
+    def conn(self):
+        """ Return sqlite connexion of cutevariant project """
+        return self._conn 
+
+    @conn.setter
+    def conn(self, conn):
+        """Set sqlite connexion of a cutevariant project
+
+        This method is called Plugin.on_open_project
+        
+        Args:
+            conn (sqlite3.connection)
+        """
+        self._conn = conn
+
+    @property
+    def current_variant(self):
+        """Return variant data as a dictionnary 
+        """
+        return self._current_variant
+
+    @current_variant.setter
+    def current_variant(self, variant):
+        """Set variant data 
+        This method is called by Plugin.on_variant_clicked """
+        self._current_variant = variant
+        self.populate()
 
     def populate(self):
         """Show the current variant attributes on the TreeWidget"""
-        # Reset
-        self.view.clear()
+       
+        if "id" not in self.current_variant:
+            return 
 
-        # Filter None values
-        g = ((key, val) for key, val in self._variant.items() if val)
+        variant_id = self.current_variant["id"]
 
-        for key, val in g:
+        # Populate Variants 
+        self.variant_view.clear()
+        for key, value in sql.get_one_variant(self.conn, variant_id).items():
             item = QTreeWidgetItem()
-            item.setText(0, str(key))
-            item.setText(1, str(val))
-            # item.setFlags(Qt.ItemIsSelectable|Qt.ItemIsEnabled)
-            # map value type to color
-            item.setIcon(0, FIcon(0xF70A, TYPE_COLORS[val.__class__.__name__]))
+            item.setText(0,key)
+            item.setText(1,str(value))
+            self.variant_view.addTopLevelItem(item)
 
-            self.view.addTopLevelItem(item)
+        # Populate annotations
+        self.transcript_combo.clear()
+        for annotation in sql.get_annotations(self.conn, variant_id):
+            if "transcript" in annotation:
+                self.transcript_combo.addItem(annotation["transcript"], annotation)
 
-    def set_variant(self, variant: dict):
-        """Register and show the given variant
-        Called when a user clicks on a vriant on the ViewQueryWidget"""
-        self._variant = variant
-        self.populate()
+        # Populate samples
+        self.sample_combo.clear()
+        for sample in sql.get_samples(self.conn):
+            self.sample_combo.addItem(sample["name"], sample["id"])
+
+    @Slot()
+    def on_transcript_changed(self):
+        annotations = self.transcript_combo.currentData()
+        self.transcript_view.clear()
+        for key, val in annotations.items():
+            item = QTreeWidgetItem()
+            item.setText(0, key)
+            item.setText(1, val)
+            
+            self.transcript_view.addTopLevelItem(item)
+
+    @Slot()
+    def on_sample_changed(self):
+        sample_id = self.sample_combo.currentData()
+        self.sample_view.clear()
+        for key, value in sql.get_sample_annotations(self.conn, self.current_variant["id"], sample_id).items():
+            item = QTreeWidgetItem()
+            item.setText(0, key)
+            item.setText(1, str(value))
+            self.sample_view.addTopLevelItem(item)
+        
+
 
     def show_menu(self, pos: QPoint):
         """Show context menu associated to the current variant"""
@@ -188,6 +281,10 @@ if __name__ == "__main__":
 
     w = InfoVariantWidget()
     w.conn = conn
+
+    variant = sql.get_one_variant(conn, 1)
+
+    w.current_variant = variant
 
     w.show()
 

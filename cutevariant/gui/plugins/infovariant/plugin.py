@@ -13,11 +13,19 @@ class InfovariantPlugin(plugin.Plugin):
 
         self.widget = widget.InfoVariantWidget()
 
+    def on_open_project(self, conn):
+        """Overload from Plugin
+        
+        Arguments:
+            conn 
+        """
+        self.widget.conn = conn
+
     def get_widget(self):
         return self.widget
 
     def on_variant_clicked(self, variant):
-        self.widget.set_variant(variant)
+        self.widget.current_variant = variant
 
 
 if __name__ == "__main__":
