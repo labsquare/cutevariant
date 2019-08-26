@@ -158,7 +158,7 @@ class SelectionWidget(QWidget):
     User can select one of them to update Query::selection
     """
 
-    changed = Signal()
+    selectionChanged = Signal()
 
     def __init__(self, parent=None):
         super().__init__()
@@ -171,6 +171,7 @@ class SelectionWidget(QWidget):
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setSelectionMode(QAbstractItemView.SingleSelection)
         self.view.horizontalHeader().hide()
+        self.view.horizontalHeader().setStretchLastSection(True)
 
         self.toolbar = QToolBar()
         self.toolbar.setIconSize(QSize(20, 20))
@@ -188,7 +189,7 @@ class SelectionWidget(QWidget):
         self.setLayout(layout)
 
         # call on_current_row_changed when item selection changed
-        self.view.selectionModel().currentRowChanged.connect(self.changed)
+        self.view.selectionModel().currentRowChanged.connect(self.selectionChanged)
 
         #  Setup actions
         self.edit_action = self.toolbar.addAction(
