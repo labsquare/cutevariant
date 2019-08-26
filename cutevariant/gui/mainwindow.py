@@ -81,15 +81,7 @@ class MainWindow(QMainWindow):
 
         # Status Bar
         self.status_bar = QStatusBar()
-        self.setStatusBar(self.status_bar)
-
-        # Add omnibar
-        # self.omnibar = OmniBar()
-        # self.toolbar.addSeparator()
-        # spacer = QWidget()
-        # spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        # self.toolbar.addWidget(spacer)
-        # self.toolbar.addWidget(self.omnibar)
+        self.setStatusBar(self.status_bar)  
 
         # registere editor plugins
         self.register_plugin(self.editor_plugin)
@@ -220,18 +212,8 @@ class MainWindow(QMainWindow):
         self.toolbar.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
         self.toolbar.addAction(self.new_project_action)
         self.toolbar.addAction(self.open_project_action)
-        self.toolbar.addAction("Run", self.execute_vql).setShortcuts([Qt.CTRL + Qt.Key_R, QKeySequence.Refresh])
+        self.toolbar.addAction(FIcon(0xF40A),"Run", self.execute_vql).setShortcuts([Qt.CTRL + Qt.Key_R, QKeySequence.Refresh])
         self.toolbar.addSeparator()
-
-        # self.toolbar.addAction(
-        #     FIcon(0xF412),
-        #     self.tr("Save the query"),
-        #     self.selection_widget.save_current_query,
-        # )
-
-        # self.toolbar.addAction(
-        #     FIcon(0xF40D), self.tr("Run"), self.editor.run_vql
-        # ).setShortcuts([Qt.CTRL + Qt.Key_R, QKeySequence.Refresh])
 
     def add_tab_view(self, widget):
         """Add the given widget to the current (QTabWidget),
@@ -275,7 +257,8 @@ class MainWindow(QMainWindow):
         # Create connection
         self.conn = get_sql_connexion(filepath)
 
-        # Create a query
+        # Create central view 
+        # TODO: rename the class 
         self.query_widget.conn = self.conn
         self.query_widget.model.load()
 
@@ -397,7 +380,7 @@ class MainWindow(QMainWindow):
             except Exception as e:
                 self.status_bar.showMessage(e.__class__.__name__ + ": " + str(e))
                 raise
-
+    
     def open_recent(self):
         """Slot to load a recent project"""
         action = self.sender()
@@ -446,6 +429,14 @@ class MainWindow(QMainWindow):
 
         .. note:: Reset windowState if asked.
         """
+        self.write_settings()
+        super().closeEvent(event)
+
+    def write_settings(self):
+        """ Store the state of this mainwindow. 
+
+        .. note:: This methods is called by closeEvent 
+        """
         app_settings = QSettings()
 
         if self.requested_reset_ui:
@@ -455,8 +446,6 @@ class MainWindow(QMainWindow):
             app_settings.setValue("geometry", self.saveGeometry())
             #  TODO: handle UI changes by passing UI_VERSION to saveState()
             app_settings.setValue("windowState", self.saveState())
-
-        super().closeEvent(event)
 
     def read_settings(self):
         """Restore the state of this mainwindow's toolbars and dockwidgets

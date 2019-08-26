@@ -38,8 +38,13 @@ class FIconEngine(QIconEngine):
         self, painter: QPainter, rect: QRect, mode: QIcon.Mode, state: QIcon.State
     ):
         """override"""
-        #font = FIconEngine.font if hasattr(FIconEngine, "font") else painter.font()
-        font = painter.font()
+        font = FIconEngine.font if hasattr(FIconEngine, "font") else painter.font()
+
+        # The following test is to avoid crash when running python widget outside the __main__.my
+        if not font:
+            font = painter.font()
+             
+
         painter.save()
 
         if mode == QIcon.Disabled:
@@ -52,7 +57,7 @@ class FIconEngine(QIconEngine):
         font.setPixelSize(rect.size().width())
 
         painter.setFont(font)
-        # painter.setRenderHint(QPainter.HighQualityAntialiasing, True)
+        #painter.setRenderHint(QPainter.HighQualityAntialiasing, True)
         painter.drawText(
             rect, Qt.AlignCenter | Qt.AlignVCenter, str(chr(self.hex_character))
         )
