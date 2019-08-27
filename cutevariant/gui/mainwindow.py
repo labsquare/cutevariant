@@ -21,14 +21,7 @@ from cutevariant.gui import plugin
 #  Import plugins
 from cutevariant.gui.plugins.editor.plugin import EditorPlugin
 
-# from cutevariant.gui.viewquerywidget import ViewQueryWidget
-# from cutevariant.gui.columnquerywidget import ColumnQueryWidget
-# from cutevariant.gui.filterquerywidget import FilterQueryWidget
-# from cutevariant.gui.selectionquerywidget import SelectionQueryWidget
-# from cutevariant.gui.vqleditor import VqlEditor
-# from cutevariant.gui.querydispatcher import QueryDispatcher
-# from cutevariant.gui.infovariantwidget import InfoVariantWidget
-# from cutevariant.gui.aboutcutevariant import AboutCutevariant
+from cutevariant.gui.aboutcutevariant import AboutCutevariant
 # from cutevariant.gui.chartquerywidget import ChartQueryWidget
 from cutevariant import commons as cm
 from cutevariant.commons import MAX_RECENT_PROJECTS, DIR_ICONS
