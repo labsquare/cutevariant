@@ -1136,19 +1136,16 @@ if __name__ == "__main__":
 
     data = {
         "AND": [
-            {"field": "chr", "operator": "=", "value": "chr"},
-            {
-                "OR": [
-                    {"field": "i0", "operator": "=", "value": 5},
-                    {"field": "i1", "operator": "=", "value": 3},
-                    {"field": "i2", "operator": "=", "value": 3},
-                ]
-            },
+            {"field": "chr", "operator": "=", "value": "chr"}
         ]
     }
 
     view = FilterWidget()
     view.model.load(data)
+
+    print(view.model.to_dict() == data)
+
+
     view.show()
 
     # print(model.to_dict(model.root_item[0]))

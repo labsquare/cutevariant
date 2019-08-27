@@ -500,8 +500,10 @@ class Query:
             out = [self.filter_to_sql(child) for child in node[logic_op]]
             # print("OUT", out, "LOGIC", logic_op)
             # OUT ["refIN'('A', 'T', 'G', 'C')'", "altIN'('A', 'T', 'G', 'C')'"]
-
-            return "(" + f" {logic_op} ".join(out) + ")"
+            if len(out) == 1:
+                return f" {logic_op} ".join(out)
+            else:
+                return "(" + f" {logic_op} ".join(out) + ")"
 
     ##--------------------------------------------------------------------------
 
