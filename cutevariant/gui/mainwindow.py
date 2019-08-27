@@ -189,6 +189,11 @@ class MainWindow(QMainWindow):
         ## View
         self.view_menu = self.menuBar().addMenu(self.tr("&View"))
         self.view_menu.addAction(self.tr("Reset widgets positions"), self.reset_ui)
+        console_action = self.view_menu.addAction(FIcon(0xf18d),self.tr("Show console"))
+        console_action.setCheckable(True)
+        console_action.setShortcuts([Qt.CTRL + Qt.Key_T])
+        console_action.toggled.connect(self.editor.setVisible)
+        
         self.view_menu.addSeparator()
 
         ## Help
