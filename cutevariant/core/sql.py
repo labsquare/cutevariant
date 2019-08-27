@@ -681,9 +681,11 @@ def get_annotations(conn, id: int):
 def get_sample_annotations(conn, variant_id: int, sample_id: int):
     """ Get variant annotation for a given sample """ 
     conn.row_factory = sqlite3.Row
-    return dict(
-        conn.execute(f"""SELECT * FROM sample_has_variant WHERE variant_id = {variant_id} and sample_id = {sample_id}""").fetchone()
-    )
+    cursor = conn.cursor()
+    q = f"""SELECT * FROM sample_has_variant WHERE variant_id = {variant_id} and sample_id = {sample_id}"""
+    result = cursor.execute(f"""SELECT * FROM sample_has_variant WHERE variant_id = {variant_id} and sample_id = {sample_id}""").fetchone()
+    
+    return dict(result)
      
 
 

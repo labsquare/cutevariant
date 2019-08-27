@@ -133,6 +133,7 @@ class InfoVariantWidget(QWidget):
         self.variant_view.setColumnCount(2)
         self.variant_view.setHeaderLabels(["Field","Value"])
         self.view.addTab(self.variant_view, "Variants")
+        
 
 
         # build transcript tab 
@@ -232,36 +233,50 @@ class InfoVariantWidget(QWidget):
             self.variant_view.addTopLevelItem(item)
 
         # Populate annotations
+        self.transcript_combo.blockSignals(True)
         self.transcript_combo.clear()
         for annotation in sql.get_annotations(self.conn, variant_id):
             if "transcript" in annotation:
                 self.transcript_combo.addItem(annotation["transcript"], annotation)
+        self.on_transcript_changed()
+        self.transcript_combo.blockSignals(False)
 
         # Populate samples
+        self.sample_combo.blockSignals(True)
         self.sample_combo.clear()
         for sample in sql.get_samples(self.conn):
             self.sample_combo.addItem(sample["name"], sample["id"])
+        self.on_sample_changed()
+        self.sample_combo.blockSignals(False)
 
     @Slot()
     def on_transcript_changed(self):
+        """This method is triggered when transcript change from combobox
+        """
         annotations = self.transcript_combo.currentData()
         self.transcript_view.clear()
-        for key, val in annotations.items():
-            item = QTreeWidgetItem()
-            item.setText(0, key)
-            item.setText(1, val)
-            
-            self.transcript_view.addTopLevelItem(item)
+        if annotations:
+            for key, val in annotations.items():
+                item = QTreeWidgetItem()
+                item.setText(0, key)
+                item.setText(1, str(val))
+                
+                self.transcript_view.addTopLevelItem(item)
 
     @Slot()
     def on_sample_changed(self):
+        """This method is triggered when sample change from combobox
+        """
         sample_id = self.sample_combo.currentData()
+        variant_id = self.current_variant["id"]
         self.sample_view.clear()
-        for key, value in sql.get_sample_annotations(self.conn, self.current_variant["id"], sample_id).items():
-            item = QTreeWidgetItem()
-            item.setText(0, key)
-            item.setText(1, str(value))
-            self.sample_view.addTopLevelItem(item)
+        ann = sql.get_sample_annotations(self.conn, variant_id, sample_id)
+        if ann:
+            for key, value in ann.items():
+                item = QTreeWidgetItem()
+                item.setText(0, key)
+                item.setText(1, str(value))
+                self.sample_view.addTopLevelItem(item)
         
 
 
