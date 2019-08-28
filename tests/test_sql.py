@@ -321,6 +321,22 @@ def test_selection_operation(conn):
     assert expected_number == 2
 
 
+def test_build_variant_query(conn):
+    """ Test get variants with differents parameters """ 
+    prepare_base(conn)
+    args = dict()
+    args["columns"] = ["chr","pos","ref","alt"]
+ 
+
+    # variants = sql.build_variant_query(conn,**args)
+
+    print("done")
+
+def test_format_columns_to_sql():
+    assert sql._format_columns_to_sql(["chr","pos","ref"]) == ["variants.id","`chr`","`pos`","`ref`"]
+    assert sql._format_columns_to_sql([("genotype","TUMOR","gt"), "chr"]) == ["variants.id","`gt_TUMOR`.`gt`","`chr`"]
+    assert sql._format_columns_to_sql(["chr"],children_column=True) == ["variants.id","`chr`","COUNT(*) as 'children'"]
+
 def test_selection_from_bedfile(conn):
     """Test the creation of a selection based on BED data
 

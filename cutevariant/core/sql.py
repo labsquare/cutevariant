@@ -474,6 +474,7 @@ def get_fields(conn):
     conn.row_factory = sqlite3.Row
     return (dict(data) for data in conn.execute("""SELECT * FROM fields"""))
 
+
 def get_field_by_category(conn, category):
     """ Get fields within a category
 
@@ -515,11 +516,11 @@ def get_field_range(conn, field_name: str):
     field = get_field_by_name(conn, field_name)
     table = field["category"]  # variants, or annotations or samples
     query = f"""SELECT min({field_name}), max({field_name}) FROM {table}"""
-    
+
     result = tuple(conn.execute(query).fetchone())
-    if result == (None,None):
-        return None 
-    if result == ('',''):
+    if result == (None, None):
+        return None
+    if result == ("", ""):
         return None
 
     return result
@@ -636,7 +637,6 @@ def create_table_variants(conn, fields):
     )
     # cursor.execute(f"""CREATE UNIQUE INDEX idx_variants_unicity ON variants (chr,pos,ref,alt)""")
 
-
     conn.commit()
 
 
@@ -671,22 +671,26 @@ def get_one_variant(conn, id: int):
         conn.execute(f"""SELECT * FROM variants WHERE variants.id = {id}""").fetchone()
     )
 
+
 def get_annotations(conn, id: int):
-    """ Get variant annotation with the given id """ 
+    """ Get variant annotation with the given id """
     conn.row_factory = sqlite3.Row
-    for annotation in conn.execute(f"""SELECT * FROM annotations WHERE variant_id = {id}"""):
+    for annotation in conn.execute(
+        f"""SELECT * FROM annotations WHERE variant_id = {id}"""
+    ):
         yield dict(annotation)
 
 
 def get_sample_annotations(conn, variant_id: int, sample_id: int):
-    """ Get variant annotation for a given sample """ 
+    """ Get variant annotation for a given sample """
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     q = f"""SELECT * FROM sample_has_variant WHERE variant_id = {variant_id} and sample_id = {sample_id}"""
-    result = cursor.execute(f"""SELECT * FROM sample_has_variant WHERE variant_id = {variant_id} and sample_id = {sample_id}""").fetchone()
-    
+    result = cursor.execute(
+        f"""SELECT * FROM sample_has_variant WHERE variant_id = {variant_id} and sample_id = {sample_id}"""
+    ).fetchone()
+
     return dict(result)
-     
 
 
 def get_variants_count(conn):
@@ -745,7 +749,7 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
     var_columns = get_columns(conn, "variants")
     ann_columns = get_columns(conn, "annotations")
     sample_columns = get_columns(conn, "sample_has_variant")
-    
+
     # Get samples with samples names as keys and sqlite rowid as values
     # => used as a mapping for samples ids
     samples_id_mapping = {
@@ -863,13 +867,13 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
                 sample_id = samples_id_mapping[sample["name"]]
                 default_values = defaultdict(str, sample)
                 sample_value = [sample_id, variant_id]
-                sample_value += ([default_values[i] for i in sample_columns[2:]])
+                sample_value += [default_values[i] for i in sample_columns[2:]]
                 samples.append(sample_value)
 
             placeholder = ",".join(["?"] * len(sample_columns))
 
-            q =  f"""INSERT INTO sample_has_variant VALUES ({placeholder})"""
-            cursor.executemany(q,samples)
+            q = f"""INSERT INTO sample_has_variant VALUES ({placeholder})"""
+            cursor.executemany(q, samples)
 
         # Yield progression
         if variant_count % yield_every == 0:
@@ -897,7 +901,7 @@ def insert_many_variants(conn, data, **kwargs):
 ## ================ Samples functions ==========================================
 
 
-def create_table_samples(conn, fields = None):
+def create_table_samples(conn, fields=None):
     """Create samples table
 
     :param conn: sqlite3.connect
@@ -912,7 +916,7 @@ def create_table_samples(conn, fields = None):
     conn.commit()
 
     if not fields:
-        return    
+        return
 
     schema = ",".join(
         [
@@ -932,7 +936,8 @@ def create_table_samples(conn, fields = None):
           ON DELETE CASCADE
           ON UPDATE NO ACTION
         ) WITHOUT ROWID
-       """)
+       """
+    )
 
     conn.commit()
 
@@ -974,6 +979,152 @@ def get_samples(conn):
     """
     conn.row_factory = sqlite3.Row
     return (dict(data) for data in conn.execute("""SELECT * FROM samples"""))
+
+
+## ============== VARIANTS QUERY THINGS ... ======================
+
+def _format_columns_to_sql(columns, **args):
+    """Get list of columns ready and secure to be inserted in a query string
+    It does not just secure but convert also a special kind of "function columns" like 
+    genotype() and phenotype()
+     
+    Args:
+        columns (list): List of columns as a strings
+        children_column (bool): COUNT(*) as 'children' 
+
+    Returns:
+        list of well formated columns
+
+    Examples:
+        raw_columns = chr, pos, genotype('TUMOR').gt 
+        sql_columns = `variant.id`,`chr`,`pos`, `TUMOR`.`gt`
+    """
+
+    # TODO : move this constant to VQL 
+    _GENOTYPE_FUNCTION_NAME = "genotype"
+    _PHENOTYPE_FUNCTION_NAME = "phenotype"
+
+    sql_columns = ["variants.id"]
+    # Replace genotype function by name
+    # Transform ("genotype", "boby","gt") to "`gt_boby`.gt" to perform SQL JOIN
+    for col in columns:
+        # a special kind of columns 
+        if isinstance(col, tuple):
+            function_name, arg, field_name = col
+            if function_name == _GENOTYPE_FUNCTION_NAME:
+                # Secure column name
+                col = f"`gt_{arg}`.`{field_name}`"
+        elif col != "variants.id":
+            col = f"`{col}`"
+        
+        sql_columns.append(col)
+
+    if "children_column" in args:
+        sql_columns.extend(["COUNT(*) as 'children'"])
+    return sql_columns
+
+
+
+
+def build_variant_query(conn,
+    columns=["chr", "pos", "ref", "alt"],
+    filter=dict(),
+    selection="variants",
+    group_by=["chr", "pos", "ref", "alt"],
+    order_by=None,
+    order_desc=True,
+    limit = 20,
+    offset = 0):
+    """Return variants list according parameters.
+
+    See:
+        sql.build_variant_query
+    
+    Args:
+        conn (sqlite): sqlite3 connection database
+        columns (list, optional): Columns selections. Defaults to ["chr", "pos", "ref", "alt"].
+        filter (dict, optional): Filter as a nested dictionnary. Defaults to dict().
+        selection (str, optional): Source table. Defaults to "variants".
+        group_by (list, optional): Group by columns. Defaults to ["chr", "pos", "ref", "alt"].
+        order_by (str, optional): Order by column. Defaults to None.
+        order_desc (bool, optional): Sort result in descendant order. Defaults to True.
+        limit (int): variant count per page  
+        offset (int): offset page """
+    
+    sql = "" 
+
+
+
+    return sql
+
+
+
+    
+
+
+def get_variants(
+    conn,
+    columns=["chr", "pos", "ref", "alt"],
+    filter=dict(),
+    selection="variants",
+    group_by=["chr", "pos", "ref", "alt"],
+    order_by=None,
+    order_desc=True,
+    limit = 20,
+    offset = 0
+):
+    """Return variants list according parameters.
+
+    See:
+        sql.build_variant_query
+    
+    Args:
+        conn (sqlite): sqlite3 connection database
+        columns (list, optional): Columns selections. Defaults to ["chr", "pos", "ref", "alt"].
+        filter (dict, optional): Filter as a nested dictionnary. Defaults to dict().
+        selection (str, optional): Source table. Defaults to "variants".
+        group_by (list, optional): Group by columns. Defaults to ["chr", "pos", "ref", "alt"].
+        order_by (str, optional): Order by column. Defaults to None.
+        order_desc (bool, optional): Sort result in descendant order. Defaults to True.
+        limit (int): variant count per page  
+        offset (int): offset page
+        
+    
+    Return:
+        A list of variants with 2 order hierarchy if transcripts are presents 
+
+        output = 
+        [
+        [(chr1,2434,A,T, transcriptA),(chr1,2434,A,T, transcriptB),(chr1,2434,A,T, transcriptC)],
+        [(chr1,9999,C,T, transcriptA),(chr1,9999,C,T, transcriptB),(chr1,9999,C,T, transcriptC),(chr1,9999,C,T, transcriptD]
+        ]
+    ]
+
+    ├── chr1,2434,A,T, transcriptA  # Cannonical transcripts
+    │   ├── chr1,2434,A,T, transcriptB
+    │   ├── chr1,2434,A,T, transcriptC
+    ├── chr1,9999,C,T, transcriptA # Cannonical transcripts
+    │   ├── chr1,9999,C,T, transcriptB
+    │   ├── chr1,9999,C,T, transcriptC
+    │   ├── chr1,9999,C,T, transcriptD
+
+    Example:
+        conn = sqlite.connection(":memory")
+        columns = ["chr","pos","ref","alt"]
+        selection = "variants"
+        filter = {"AND": [
+                {"field": "ref", "operator": "=", "value": "A"},
+                {
+                    "OR": [
+                        {"field": "chr", "operator": "=", "value": "chr5"},
+                        {"field": "chr", "operator": "=", "value": "chr3"},
+                    ]
+                },}}
+
+        variants = get_variants(conn, columns, selection, filter)
+    """
+
+    pass
 
 
 class Selection:
