@@ -3,8 +3,45 @@
     "python.testing.unittestEnabled": false,
     "python.testing.nosetestsEnabled": false,
     "python.testing.pytestEnabled": true,
+    "editor.codeLens": true,
+    "python.jediEnabled": false,
     "search.exclude": {
         "**/__pycache__": true,
-        "**/venv": true
-    }
+        "**/src": true,
+    },
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/*.pyc":true,
+        "**/.DS_Store": true,
+        "**/venv": true,
+        "**/__pycache__":true,
+        "**/.*":true
+    },
+
+
+"files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/node_modules/*/**": true,
+    "**/__pycache__": true,
+    "**/src": true,
+    "**/*.pyc": true
+            
+            
+},
+
+    "python.testing.unittestArgs": [
+        "-v",
+        "-s",
+        "./tests",
+        "-p",
+        "*test.py"
+    ],
+    "editor.mouseWheelZoom": true,
+    "python.formatting.provider": "black"
+
+    
 }
