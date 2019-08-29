@@ -6,7 +6,6 @@ import pprint
 import sys
 import logging 
 
-from prompt_toolkit import prompt 
 from columnar import columnar
 
 from cutevariant.core.importer import import_file, async_import_file
@@ -17,24 +16,26 @@ from cutevariant.core import vql
 if __name__ == "__main__":
     logger = logging.getLogger()
     logger.setLevel(logging.CRITICAL)
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="""
+    Cutevariant cli mode helps your to run actions directly from command-line
+    """)
     sub_parser = parser.add_subparsers(dest='subparser')
     
     #createdb parser 
-    createdb_parser = sub_parser.add_parser("createdb", help="Build a database")
-    createdb_parser.add_argument("-i", "--input", help="VCF file path",metavar='in-file', required=True)
-    createdb_parser.add_argument("-o", "--output", help="cutevariant sqlite database path",metavar='out-file' )
+    createdb_parser = sub_parser.add_parser("createdb", help="Build a sqlite database from a vcf file")
+    createdb_parser.add_argument("-i", "--input", help="VCF file path", required=True)
+    createdb_parser.add_argument("-o", "--output", help="cutevariant sqlite database path")
 
     #show parser 
-    show_parser = sub_parser.add_parser("show", help="Display contents")
-    show_parser.add_argument("table", choices=["fields","selections","samples"])
-    show_parser.add_argument("--db", help="sqlite database", metavar="in-file")
+    show_parser = sub_parser.add_parser("show", help="Display table content")
+    show_parser.add_argument("table", choices=["fields","selections","samples"], help="Name of tables")
+    show_parser.add_argument("--db", help="sqlite database. By default, $CUTEVARIANT_DB is used")
 
     #exec parser 
     select_parser = sub_parser.add_parser("exec", help="Execute VQL statement")
     select_parser.add_argument("vql", help="A vql statement")
-    select_parser.add_argument("--db", help="sqlite database", metavar="in-file")
-    select_parser.add_argument("--limit", help="output line number", type=int, default=100)
+    select_parser.add_argument("--db", help="sqlite database. By default, $CUTEVARIANT_DB is used")
+    select_parser.add_argument("--limit", help="limit output to line number", type=int, default=100)
 
     # #Set parser
     # set_parser = sub_parser.add_parser("set", help="Set variable")
@@ -73,36 +74,62 @@ if __name__ == "__main__":
     # ====== SHOW ============================
     if args.subparser == "show":
         if args.table == "fields":
-            print("#name","category","description", sep="\t")
-            for field in sql.get_fields(conn):
-                print("{1:<10}\t{2:<10}\t{4}".format(*field.values()))
+            print(columnar([i.values() for i in sql.get_fields(conn)], headers=["id","Name","table","type", "description"],  no_borders=True))
 
         if args.table == "samples":
-            print("#name", sep="\t")
-            for sample in sql.get_samples(conn):
-                print("{1:<10}".format(*sample.values()))
+            print(columnar([i.values() for i in sql.get_samples(conn)], headers=["id","Name"],  no_borders=True))        
         
         if args.table == "selections":
-            print("#name", sep="\t")
-            for selections in sql.get_selections(conn):
-                print("{1:<10}".format(*selections.values()))
+            print(columnar([i.values() for i in sql.get_selections(conn)], headers=["id","Name"],  no_borders=True))
+
 
     # ====== EXEC VQL ============================
     if args.subparser == "exec":
         query = "".join(args.vql)
 
-        print(query)
 
-        cmd = next(vql.execute_vql(query))
+        try:
+            cmd = next(vql.execute_vql(query))   
+
+        except vql.textx.TextXSyntaxError as e:
+            # Available attributes: e.message, e.line, e.col
+            print("==================================== ERRORS ====================================")
+            print("TextXSyntaxError: %s, col: %d" % (e.message, e.col))
+            print(" ")
+            print(query)
+            print("_" * (e.col - 1) + "^\n")
+            exit(0)
+
+        except vql.VQLSyntaxError as e:
+            # Available attributes: e.message, e.line, e.col
+            print("==================================== ERRORS ====================================")
+            print("TextXSyntaxError: %s, col: %d" % (e.message, e.col))
+            print(" ")
+            print(query)
+            print("_" * (e.col - 1) + "^ \n")
+            exit(0)
+
+
         if cmd["cmd"] == "select_cmd":
             selector = sql.SelectVariant(conn)
             
             selector.columns = cmd.get("columns")
             selector.filters = cmd.get("filter")
+            #selector.group_by = ["chr","pos","ref","alt"]
             
             # remove ids 
-            items = [list(i)[1:] for i in selector.items(limit = args.limit)]
+            items = [list(i) for i in selector.items(limit = args.limit)]
             
-            print(columnar(items, headers =selector.columns, no_borders=True))
+            #print(columnar(items, headers =selector.headers(), no_borders=True))
             
+            tree = []
+            for variant_group in selector.trees(limit = args.limit):
+                line = []
+                transcript_count = len(variant_group)
+                line.append(transcript_count)
+                line += variant_group[0].values()
+
+                tree.append(line)
+            print(columnar(tree, headers = ["children"] + list(selector.headers()), no_borders=True))
+
           

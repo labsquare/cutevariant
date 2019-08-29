@@ -27,7 +27,7 @@ samples = ["sacha","boby"]
 
 variants = [
     {"chr": "chr1", "pos": 10, "ref": "G", "alt": "A", "extra1": 10, "extra2": 100,
-    "annotations":[{"gene": "gene1", "transcript": "transcript1"}],
+    "annotations":[{"gene": "gene1", "transcript": "transcript1"},{"gene": "gene1", "transcript": "transcript2"}],
     "samples": [{"name": "sacha", "gt": 1, "dp": 70},{"name": "boby", "gt": 1, "dp": 10}]
     },
 
@@ -36,6 +36,7 @@ variants = [
     "samples": [{"name": "sacha", "gt": 0, "dp": 30},{"name": "boby", "gt": 0, "dp": 70}]
     }
 ]
+
 
 filters = {
             "AND": [
@@ -250,9 +251,9 @@ def test_filters_to_flat():
     names = list([i["field"] for i in sql.SelectVariant._filters_to_flat(filters)])
     assert names == ["chr","gene","pos"]
 
-def test_filters_to_where():
+def test_filters_to_sql():
     """ convert filters to sql where clause """
-    assert sql.SelectVariant._filters_to_where(filters) == "(`chr` = 'chr1' AND (`gene` = 'gene1' OR `pos` = 10))"
+    assert sql.SelectVariant._filters_to_sql(filters) == "(`chr` = 'chr1' AND (`gene` = 'gene1' OR `pos` = 10))"
 
 def test_build_variant_query(conn):
     """ Test get variants with differents parameters """ 
@@ -286,7 +287,28 @@ def test_build_variant_query(conn):
                 "WHERE (`chr` = 'chr1' AND (`gene` = 'gene1' OR `pos` = 10)) LIMIT 20 OFFSET 0")
     assert query == expected
 
-def test_get_variants(conn):
+    args = {"columns": ["chr","pos", ("genotype","boby","gt")]}
+    query = sql.SelectVariant(conn, **args).sql()
+    expected = ("SELECT variants.id,`chr`,`pos`,`gt_boby`.`gt` FROM variants "
+                "LEFT JOIN sample_has_variant `gt_boby` ON `gt_boby`.variant_id = variants.id "
+                "AND `gt_boby`.sample_id = 2 LIMIT 20 OFFSET 0")
+    assert query == expected
+
+    filters_with_fct = filters.copy()
+    # add a function genotype in filter
+    filters_with_fct["AND"][1]["OR"][1]["field"] = ("genotype","boby","gt")
+    args = {"columns": ["chr","pos"], "filters":filters}
+    query = sql.SelectVariant(conn, **args).sql()
+    expected = ("SELECT variants.id,`chr`,`pos` FROM variants "
+                "LEFT JOIN annotations ON annotations.variant_id = variants.id "
+                "LEFT JOIN sample_has_variant `gt_boby` ON `gt_boby`.variant_id = variants.id AND `gt_boby`.sample_id = 2 "
+                "WHERE (`chr` = 'chr1' AND (`gene` = 'gene1' OR ``gt_boby`.gt` = 10)) LIMIT 20 OFFSET 0")
+
+    assert query == expected
+
+
+
+def test_select_variant_items(conn):
     prepare_base(conn)
     args = {}
     assert len(list(sql.SelectVariant(conn, **args).items())) == len(variants)
@@ -296,15 +318,27 @@ def test_get_variants(conn):
 
     # TODO more test
 
+def test_select_variant_tree(conn):
+    prepare_base(conn)
+    args = {}
+    args["columns"] = ["chr","pos","ref","gene"]
+    #args["group_by"] = ["chr","pos","ref","alt"]
     
+    variants = list(sql.SelectVariant(conn,**args).trees()) 
+
+    assert len(variants) == 2
+    assert len(variants[0]) == 2
+    assert len(variants[1]) == 1
 
 
 
-def test_format_columns_to_sql():
+
+
+def test_columns_to_sql():
     """ Test sql formatting """ 
-    assert sql.SelectVariant._format_columns_to_sql(["chr","pos","ref"]) == ["variants.id","`chr`","`pos`","`ref`"]
-    assert sql.SelectVariant._format_columns_to_sql([("genotype","TUMOR","gt"), "chr"]) == ["variants.id","`gt_TUMOR`.`gt`","`chr`"]
-    assert sql.SelectVariant._format_columns_to_sql(["chr"],children_column=True) == ["variants.id","`chr`","COUNT(*) as 'children'"]
+    assert sql.SelectVariant._columns_to_sql(["chr","pos","ref"]) == ["variants.id","`chr`","`pos`","`ref`"]
+    assert sql.SelectVariant._columns_to_sql([("genotype","TUMOR","gt"), "chr"]) == ["variants.id","`gt_TUMOR`.`gt`","`chr`"]
+    assert sql.SelectVariant._columns_to_sql(["chr"],children_column=True) == ["variants.id","`chr`","COUNT(*) as 'children'"]
 
 def test_selection_from_bedfile(conn):
     """Test the creation of a selection based on BED data

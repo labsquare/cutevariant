@@ -983,9 +983,11 @@ def get_samples(conn):
 
 ## ============== VARIANTS QUERY THINGS ... ======================
 
+
 class SelectVariant(object):
     """A class to Create a variant Selection query 
     """
+
     _GENOTYPE_FUNCTION_NAME = "genotype"
     _PHENOTYPE_FUNCTION_NAME = "phenotype"
     _VARIANT_TABLE = "variants"
@@ -996,9 +998,10 @@ class SelectVariant(object):
         columns=["chr", "pos", "ref", "alt"],
         filters=dict(),
         selection="variants",
-        group_by=None,
         order_by=None,
-        order_desc=True):
+        order_desc=True,
+        group_by= None
+    ):
         """Create an instance with different parameters 
 
         See:
@@ -1009,7 +1012,6 @@ class SelectVariant(object):
             columns (list, optional): Columns selections. Defaults to ["chr", "pos", "ref", "alt"].
             filters (dict, optional): Filter as a nested dictionnary. Defaults to dict().
             selection (str, optional): Source table. Defaults to "variants".
-            group_by (list, optional): Group by columns. Defaults to ["chr", "pos", "ref", "alt"].
             order_by (str, optional): Order by column. Defaults to None.
             order_desc (bool, optional): Sort result in descendant order. Defaults to True.
         """
@@ -1018,23 +1020,25 @@ class SelectVariant(object):
         self.columns = columns
         self.filters = filters
         self.selection = selection
-        self.group_by = group_by
         self.order_by = order_by
         self.order_desc = order_desc
+        self.group_by = group_by
 
     @property
     def conn(self):
-        return self._conn 
+        return self._conn
 
     @conn.setter
-    def conn(self,conn):
+    def conn(self, conn):
         self._conn = conn
-        # Read those data only once from sqliute 
-        self.annotations_columns = get_columns(conn, "annotations")
-        self.samples = list(get_samples(conn))
-  
+        # Read those data only once from sqliute
+        self.cache_annotation_columns = get_columns(conn, "annotations")
+
+        #  Read samples and make possible to map the sample id from the sample name
+        self.cache_samples_ids = dict([(i["name"], i["id"]) for i in get_samples(conn)])
+
     @staticmethod
-    def _format_columns_to_sql(columns, **args):
+    def _columns_to_sql(columns, **args):
         """Get list of columns ready and secure to be inserted in a query string
         It does not just secure but convert also a special kind of "function columns" like 
         genotype() and phenotype()
@@ -1054,7 +1058,7 @@ class SelectVariant(object):
         # Replace genotype function by name
         # Transform ("genotype", "boby","gt") to "`gt_boby`.gt" to perform SQL JOIN
         for col in columns:
-            # a special kind of columns 
+            #  a special kind of columns
             if isinstance(col, tuple):
                 function_name, arg, field_name = col
                 if function_name == SelectVariant._GENOTYPE_FUNCTION_NAME:
@@ -1062,7 +1066,7 @@ class SelectVariant(object):
                     col = f"`gt_{arg}`.`{field_name}`"
             elif col != "variants.id":
                 col = f"`{col}`"
-            
+
             sql_columns.append(col)
 
         if "children_column" in args:
@@ -1070,7 +1074,7 @@ class SelectVariant(object):
         return sql_columns
 
     @staticmethod
-    def _filters_to_flat(filters : dict):
+    def _filters_to_flat(filters: dict):
         """Recursive function to convert the filter hierarchical dictionnary into a list of fields
 
         Args:
@@ -1105,7 +1109,7 @@ class SelectVariant(object):
                 yield from SelectVariant._filters_to_flat(i)
 
     @staticmethod
-    def _filters_to_where(node: dict):
+    def _filters_to_sql(node: dict):
         """Recursive function to convert the filter hierarchical dictionnary into a SQL WHERE clause.
         
         Args:
@@ -1115,7 +1119,7 @@ class SelectVariant(object):
             Return (str): a Sql Where clause
         
         """
-        
+
         if not node:
             return ""
 
@@ -1165,7 +1169,7 @@ class SelectVariant(object):
             #   {'field': 'alt', 'operator': 'IN', 'value': "('A', 'T', 'G', 'C')"}
             # ]}
             # Wanted: ref IN ('A', 'T', 'G', 'C') AND alt IN ('A', 'T', 'G', 'C')
-            out = [SelectVariant._filters_to_where(child) for child in node[logic_op]]
+            out = [SelectVariant._filters_to_sql(child) for child in node[logic_op]]
             # print("OUT", out, "LOGIC", logic_op)
             # OUT ["refIN'('A', 'T', 'G', 'C')'", "altIN'('A', 'T', 'G', 'C')'"]
             if len(out) == 1:
@@ -1174,8 +1178,8 @@ class SelectVariant(object):
                 return "(" + f" {logic_op} ".join(out) + ")"
 
     @staticmethod
-    def _get_functions(columns, func_name = "genotype"):
-            """Filters functions from column list. 
+    def _get_functions(columns, func_name="genotype"):
+        """Filters functions from column list. 
 
             Function are tuple of 3 elements .
             
@@ -1186,84 +1190,127 @@ class SelectVariant(object):
             Returns:
                 list: Return a list of 3-tuple 
             """
-         
-            return (col for col in columns if isinstance(col, tuple) and len(col) == 3)
 
+        return (col for col in columns if isinstance(col, tuple) and len(col) == 3)
 
-    def sql(self, limit = 20, offset = 0):
-        """Build a sql query """
+    def headers(self):
+        """ Return a clean list of columns 
+
+        It returns self.columns by replacing function tuple by a string
+
+        Returns:
+            (list): a list of string with well formated column name and variant.id
+        """
+
+        yield "id"
+        for column in self.columns:
+            if isinstance(column, tuple):
+                yield "{}:{}:{}".format(*column)
+            else:
+                yield column
+
+    def build_sql(
+        self,
+        columns,
+        filters,
+        selection = "variants",
+        order_by=None,
+        order_desc=True,
+        group_by=None,
+        limit=20,
+        offset=0,
+    ):
+        """Build a SQL Select statement from internal parameters columns, filters, selections.
+        see items() and tree() methods
         
-        # Build Select statement 
-        sql_query = ""  
+        Args:
+            columns (list): Columns to be used in SELECT statement
+            filters (dict): A nested tree to be used in WHERE statement
+            selection (str): Source of the virtual table ( variants or build a joint )
+            order_by (str, optional): ORDER BY statement. Defaults to None.
+            order_desc (bool, optional): ORDER DESC is it's True. Defaults to True.
+            group_by (list, optional): List of columns to group. Defaults to None.
+            limit (int, optional): LIMIT SQL statement for record per page. Defaults to 20.
+            offset (int, optional): OFFSET SQL statement for page number. Defaults to 0.
         
-        # Add columns
-        sql_columns = self._format_columns_to_sql(self.columns)
+        Returns:
+            [type]: [description]
+        """
+
+        #  Build Select statement
+        sql_query = ""
+
+        #  Add columns
+        sql_columns = self._columns_to_sql(columns)
         sql_query = f"SELECT {','.join(sql_columns)} "
 
-        # Add source table
+        #  Add source table
         sql_query += f"FROM variants"
 
-        # Add Join Annotations 
-        columns_in_filters = [ i["field"] for i in self._filters_to_flat(self.filters)]
-        column_has_annotation = bool(set(self.columns) & set(self.annotations_columns))
-        filter_has_annotation = bool(set(columns_in_filters) & set(self.annotations_columns))
+        #  Add Join Annotations
+        columns_in_filters = [i["field"] for i in self._filters_to_flat(filters)]
+        column_has_annotation = bool(set(columns) & set(self.cache_annotation_columns))
+        filter_has_annotation = bool(
+            set(columns_in_filters) & set(self.cache_annotation_columns)
+        )
         need_join_annotations = column_has_annotation or filter_has_annotation
 
+
         if need_join_annotations:
-            sql_query += " LEFT JOIN annotations ON annotations.variant_id = variants.id"
+            sql_query += (
+                " LEFT JOIN annotations ON annotations.variant_id = variants.id"
+            )
 
-        # Add Join Selection 
-        #TODO: set variants as global variables
-        if self.selection is not "variants":
-            sql_query += (" INNER JOIN selection_has_variant sv ON sv.variant_id = variants.id "
-                        f"INNER JOIN selections s ON s.id = sv.selection_id AND s.name = '{self.selection}'")
+        #  Add Join Selection
+        # TODO: set variants as global variables
+        if selection is not "variants":
+            sql_query += (
+                " INNER JOIN selection_has_variant sv ON sv.variant_id = variants.id "
+                f"INNER JOIN selections s ON s.id = sv.selection_id AND s.name = '{selection}'"
+            )
 
-        
-        # Add Join Samples 
-        ## First : detect if columns contains function like (genotype,TUMOR,gt)
-        # all_columns = columns_in_filters + self.columns
-        # samples_in_query = set([fct[1] for fct in self._get_functions(all_columns)])
-        
-        # for sample in samples_in_query:
-        #     sample_id = self.samples.values().index(sample)
+        #  Add Join Samples
+        ## detect if columns contains function like (genotype,TUMOR,gt)
+        all_columns = columns_in_filters + columns
+        samples_in_query = set([fct[1] for fct in self._get_functions(all_columns)])
+        ## Create Sample Join
+        for sample_name in samples_in_query:
+            sample_id = self.cache_samples_ids[sample_name]
+            sql_query += (
+                f" LEFT JOIN sample_has_variant `gt_{sample_name}`"
+                f" ON `gt_{sample_name}`.variant_id = variants.id"
+                f" AND `gt_{sample_name}`.sample_id = {sample_id}"
+            )
 
+        #  Add Where Clause
+        if filters:
+            sql_query += " WHERE " + self._filters_to_sql(filters)
 
-        # samples_to_join = []
-        # for col in all_columns:
-        #     if isinstance(col,tuple):
-        #         #TODO : variable global for genotype !!
-        #         if col[0] == "genotype":
-        #             samples_to_join.append(col[1])
+        #  Add Group By
+        if group_by:
+            sql_query += " GROUP BY " + ",".join(group_by)
 
-        ## Second : Create JOIN 
-        #samples = get_samples(conn)
-        # if samples_to_join:
-        #     for sample, sample_id in self._samples_to_join.items():
-        #         query += f"""
-        #         LEFT JOIN sample_has_variant `gt_{sample_name}`
-        #          ON `gt_{sample_name}`.variant_id = variants.id
-        #          AND `gt_{sample_name}`.sample_id = {sample_id}
-        #"""
-        
-        
-        
-        # Add Where Clause
-        if self.filters:
-            sql_query += " WHERE " + self._filters_to_where(self.filters)
-        
-        # Add Group By 
-        if self.group_by:
-            sql_query += " GROUP BY " + ",".join(self.group_by)
+        #  Add Order By
+        if order_by:
+            # TODO : sqlite escape field with quote
+            orientation = "DESC" if order_desc else "ASC"
+            sql_query += f" ORDER BY {order_by} {orientation}"
 
-        # Add Order By 
-        if self.order_by:
-            #TODO : sqlite escape field with quote 
-            orientation = "DESC" if self.order_desc else "ASC"
-            sql_query += f" ORDER BY {self.order_by} {orientation}"
-
-        sql_query+=f" LIMIT {limit} OFFSET {offset}"
+        if limit:
+            sql_query += f" LIMIT {limit} OFFSET {offset}"
 
         return sql_query
+
+    def sql(self, limit = 20, offset = 0):
+        """Return an SQL Query based on internal parameter columns, filter, selection.
+        See _build_sql()
+
+        Args:
+            limit(int): Maximum number of variants to display per page
+            offset(int): Page number
+
+        """
+        return self.build_sql(self.columns, self.filters,self.selection,self.order_by,True,self.group_by,limit,offset)
 
     def items(self, limit=20, offset=0):
         """Execute SQL query and return variants as a list
@@ -1295,13 +1342,71 @@ class SelectVariant(object):
         for variant in self.conn.execute(self.sql(limit, offset)):
             yield dict(variant).values()
 
+    def trees(self, limit=20, offset=0):
+        """ Execute Sql Query and returns variants as Tree
+
+        This methods  works only 'group_by' defined and it merge groups results as a tree.
+        It usually works with group_by = [chr,pos,ref,alt] when there are several annotations per variants
+
+        Args:
+            limit(int): Maximum number of variants to display per page
+            offset(int): Page number
+
+        Examples:
+            This is an output with two variants and the correspondant tree. 
+            The first variant contains 2 annotations and the second 3 annotations
+
+            [
+                [(chr1,2434,A,T, transcriptA),(chr1,2434,A,T, transcriptB),(chr1,2434,A,T, transcriptC)],
+                [(chr1,9999,C,T, transcriptA),(chr1,9999,C,T, transcriptB),(chr1,9999,C,T, transcriptC),(chr1,9999,C,T, transcriptD]
+            ]
+        
+            ├── chr1,2434,A,T, transcriptA  # Cannonical transcripts
+            │   ├── chr1,2434,A,T, transcriptB
+            │   ├── chr1,2434,A,T, transcriptC
+            ├── chr1,9999,C,T, transcriptA # Cannonical transcripts
+            │   ├── chr1,9999,C,T, transcriptB
+            │   ├── chr1,9999,C,T, transcriptC
+            │   ├── chr1,9999,C,T, transcriptD
+
+
+
+        """
+        self.conn.row_factory = sqlite3.Row
+
+        group_by = ["chr","pos","ref","alt"]
+        query = self.build_sql(
+            self.columns, 
+            self.filters, 
+            self.selection,
+            self.order_by, 
+            self.order_desc,
+            group_by,
+            limit, offset)
+
+        variants = list(self.conn.execute(query))
+
+        variants_tree = []
+        for variant in variants:
+            items = []
+            variant_id = variant["id"]
+            ann_filter = {"AND": [{"field": "variant_id", "operator": "=", "value": variant_id}]}
+            sub_query = self.build_sql(self.columns,ann_filter,self.selection, limit = None)
+
+            for sub_item in self.conn.execute(sub_query):
+                items.append(dict(sub_item))
+                
+            yield items
+            
+           
+            # yield dict(variant).values()
+
     def __repr__(self):
         return f"""
         columns : {self.columns}
-        filter: {self._filters_to_where(self.filters)}
+        filter: {self._filters_to_sql(self.filters)}
         selection: {self.selection}
         """
-
 
 
 # def get_variants(
@@ -1319,7 +1424,7 @@ class SelectVariant(object):
 
 #     See:
 #         sql.build_variant_query
-    
+
 #     Args:
 #         conn (sqlite): sqlite3 connection database
 #         columns (list, optional): Columns selections. Defaults to ["chr", "pos", "ref", "alt"].
@@ -1328,14 +1433,14 @@ class SelectVariant(object):
 #         group_by (list, optional): Group by columns. Defaults to ["chr", "pos", "ref", "alt"].
 #         order_by (str, optional): Order by column. Defaults to None.
 #         order_desc (bool, optional): Sort result in descendant order. Defaults to True.
-#         limit (int): variant count per page  
+#         limit (int): variant count per page
 #         offset (int): offset page
-        
-    
-#     Return:
-#         A list of variants with 2 order hierarchy if transcripts are presents 
 
-#         output = 
+
+#     Return:
+#         A list of variants with 2 order hierarchy if transcripts are presents
+
+#         output =
 #         [
 #         [(chr1,2434,A,T, transcriptA),(chr1,2434,A,T, transcriptB),(chr1,2434,A,T, transcriptC)],
 #         [(chr1,9999,C,T, transcriptA),(chr1,9999,C,T, transcriptB),(chr1,9999,C,T, transcriptC),(chr1,9999,C,T, transcriptD]
