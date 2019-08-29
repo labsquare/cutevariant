@@ -1292,7 +1292,16 @@ class SelectVariant(object):
 
         """
         self.conn.row_factory = sqlite3.Row
-        yield from self.conn.execute(self.sql(limit, offset))
+        for variant in self.conn.execute(self.sql(limit, offset)):
+            yield dict(variant).values()
+
+    def __repr__(self):
+        return f"""
+        columns : {self.columns}
+        filter: {self._filters_to_where(self.filters)}
+        selection: {self.selection}
+        """
+
 
 
 # def get_variants(
