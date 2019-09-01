@@ -322,7 +322,7 @@ class QueryModel(QAbstractItemModel):
             self.variants.append(variant)
         self.endResetModel()
 
-        print(self.builder.sql())
+        LOGGER.debug(self.builder.sql())
 
         if self.emit_changed:
             self.changed.emit()
@@ -396,7 +396,7 @@ class QueryModel(QAbstractItemModel):
             print(variant) # ["chr","242","A","T",.....]
 
         """
-
+        LOGGER.warning(self.builder.sql())
         if self.level(index) == 1:
             return self.variants[index.row()][0]
 

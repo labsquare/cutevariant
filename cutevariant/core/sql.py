@@ -927,7 +927,7 @@ def create_table_samples(conn, fields=None):
     )
 
     if not fields:
-        schema = 'gt INTEGER DEFAULT -1'
+        schema = 'gt INTEGER DEFAULT DEFAULT -1'
 
     cursor.execute(
         f"""CREATE TABLE sample_has_variant  (
@@ -1105,7 +1105,7 @@ class QueryBuilder(object):
 
             if format_sql:
                 # Format for SQL 
-                field = self.column_to_sql(field)
+                field = self.column_to_sql(field, use_alias=False)
         
             # TODO ... c'est degeulasse ....
             if operator in ("IN", "NOT IN"):
@@ -1157,7 +1157,7 @@ class QueryBuilder(object):
 
         return (col for col in columns if isinstance(col, tuple) and len(col) == 3)
 
-    def column_to_sql(self, column):
+    def column_to_sql(self, column, use_alias=True):
         """ Guess from which table the column belongs to and return a well formated name
         
             Return:
@@ -1168,7 +1168,11 @@ class QueryBuilder(object):
         if isinstance(column, tuple):
             function_name, arg, field_name = column
             if function_name == QueryBuilder._GENOTYPE_FUNCTION_NAME:
-                return f"`gt_{arg}`.`{field_name}` AS `gt_{arg}.{field_name}`"
+                if use_alias:
+                    return f"`gt_{arg}`.`{field_name}` AS `gt_{arg}.{field_name}`"
+                else:
+                    return f"`gt_{arg}`.`{field_name}`"
+
 
         if column.startswith("annotations.") or column in self.cache_annotations_columns:
             column = column.replace("annotations.","")
@@ -1415,7 +1419,7 @@ class QueryBuilder(object):
 
         """
         self.conn.row_factory = sqlite3.Row
-
+    
         
         query = self.build_sql(
             self.columns, 
@@ -1426,7 +1430,8 @@ class QueryBuilder(object):
             grouped, # Grouped 
             limit, offset)
 
-        
+        LOGGER.debug(query)
+
         variants = list(self.conn.execute(query))
 
         variants_tree = []
