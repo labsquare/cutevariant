@@ -33,12 +33,15 @@ class EditorPlugin(plugin.Plugin):
         self.editor.conn = conn
 
     def on_query_model_changed(self):
-        self.editor.set_vql(self.mainwindow.query_widget.model.query.to_vql())
+        print("On query model changed FOR VQL")
+        self.editor.set_vql(self.mainwindow.query_widget.model.builder.vql())
 
     def on_vql_executed(self):
         self.mainwindow.query_widget.model.columns = self.editor.columns
-        self.mainwindow.query_widget.model.filter = self.editor.filter
+        self.mainwindow.query_widget.model.filters = self.editor.filters
         self.mainwindow.query_widget.model.selection = self.editor.selection
+        print("executed ",  self.mainwindow.query_widget.model.builder)
+
         self.mainwindow.query_widget.model.load()
 
 

@@ -91,7 +91,7 @@ class MainWindow(QMainWindow):
         # Restores the state of this mainwindow's toolbars and dockwidgets
         self.read_settings()
 
-        self.open("test.db")
+        #self.open("test.db")
 
     def add_panel(self, widget, area=Qt.LeftDockWidgetArea):
         """Add given widget to a new QDockWidget and to view menu in menubar"""

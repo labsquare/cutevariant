@@ -111,7 +111,7 @@ if __name__ == "__main__":
 
 
         if cmd["cmd"] == "select_cmd":
-            selector = sql.SelectVariant(conn)
+            selector = sql.QueryBuilder(conn)
 
             print(cmd.get("filter"))
             
@@ -120,18 +120,21 @@ if __name__ == "__main__":
             #selector.group_by = ["chr","pos","ref","alt"]
             
             # remove ids 
-            items = [list(i) for i in selector.items(limit = args.limit)]
             
             #print(columnar(items, headers =selector.headers(), no_borders=True))
             
             tree = []
-            for variant_group in selector.trees(limit = args.limit):
-                line = []
-                transcript_count = len(variant_group)
-                line.append(transcript_count)
-                line += variant_group[0].values()
-
+            for v in selector.trees(grouped = False,limit = args.limit):
+                line = [len(v)] + v[0]
                 tree.append(line)
-            print(columnar(tree, headers = ["SUB"] + list(selector.headers()), no_borders=True))
+
+                print(v)
+                #line.append(variant_group[0])
+
+                #tree.append(line)
+
+            print(tree)
+            print(selector.headers)
+            print(columnar(tree, headers = ["child"] + list(selector.headers()), no_borders=True))
 
           

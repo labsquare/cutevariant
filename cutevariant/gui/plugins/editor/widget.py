@@ -170,7 +170,7 @@ class VqlEditor(QWidget):
 
         self.columns = None
         self.selection = None
-        self.filter = None
+        self.filters = None
 
         self.log_edit.setMinimumHeight(40)
         # self.log_edit.setAlignment(Qt.AlignLeft|Qt.AlignVCenter)
@@ -203,6 +203,8 @@ class VqlEditor(QWidget):
         self.text_edit.blockSignals(True)
         self.text_edit.setPlainText(txt)
         self.text_edit.blockSignals(False)
+
+    
 
     def create_completer(self):
         """Create Completer with his model"""
@@ -251,7 +253,7 @@ class VqlEditor(QWidget):
             if cmd["cmd"] == "select_cmd":
                 self.columns = cmd["columns"]  # columns from variant table
                 self.selection = cmd["source"]  # name of the variant set
-                self.filter = cmd.get(
+                self.filters = cmd.get(
                     "filter", dict()
                 )  # filter as raw text; dict if no filter
 

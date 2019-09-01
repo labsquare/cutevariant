@@ -27,10 +27,9 @@ class ColumnsModel(QStandardItemModel):
         super().__init__()
         self.checkable_items = []
         self.conn = conn
-        self.setColumnCount(2)
-    
+        
     def columnCount(self, index = QModelIndex()):
-        return 2
+        return 1
 
     def headerData(self, section,orientation, role):
         

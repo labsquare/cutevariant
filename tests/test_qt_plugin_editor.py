@@ -19,7 +19,7 @@ def test_vql_editor(qtbot):
         editor.run_vql()
         assert editor.columns == ["chr","pos"]
         assert editor.selection == "variants"
-        assert editor.filter ==  {"AND": [ {"field": "pos", "operator": ">", "value": 3}]}
+        assert editor.filters ==  {"AND": [ {"field": "pos", "operator": ">", "value": 3}]}
 
 
     

@@ -51,7 +51,7 @@ class ColumnsPlugin(plugin.Plugin):
     def on_column_changed(self):
         self.mainwindow.query_widget.model.columns = self.view.columns
         self.mainwindow.query_widget.model.load()
-
+        
     def on_query_model_changed(self):
         self.view.columns = self.mainwindow.query_widget.model.columns
 

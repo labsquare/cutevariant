@@ -16,7 +16,7 @@ class FilterPlugin(plugin.Plugin):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.view = widget.FilterWidget()
-        self.view.model.filterChanged.connect(self.on_filter_changed)
+        self.view.model.filtersChanged.connect(self.on_filters_changed)
 
     def get_widget(self):
         """Overload from Plugin
@@ -34,14 +34,14 @@ class FilterPlugin(plugin.Plugin):
         """
         self.view.model.conn = conn
 
-    def on_filter_changed(self):
+    def on_filters_changed(self):
         """ methods called by self.view.model.filterchanged """
 
-        self.mainwindow.query_widget.model.filter = self.view.filter
+        self.mainwindow.query_widget.model.filters = self.view.filters
         self.mainwindow.query_widget.model.load()
 
     def on_query_model_changed(self):
-        self.view.filter = self.mainwindow.query_widget.model.filter
+        self.view.filters = self.mainwindow.query_widget.model.filters
 
 
 if __name__ == "__main__":

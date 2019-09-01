@@ -14,6 +14,7 @@ import sqlite3
 import sys
 from collections import defaultdict
 from pkg_resources import parse_version
+from functools import lru_cache
 
 # Custom imports
 import cutevariant.commons as cm
@@ -915,8 +916,7 @@ def create_table_samples(conn, fields=None):
     )
     conn.commit()
 
-    if not fields:
-        return
+    fields = list(fields)
 
     schema = ",".join(
         [
@@ -925,6 +925,9 @@ def create_table_samples(conn, fields=None):
             if field["name"]
         ]
     )
+
+    if not fields:
+        schema = 'gt INTEGER DEFAULT -1'
 
     cursor.execute(
         f"""CREATE TABLE sample_has_variant  (
@@ -1000,7 +1003,6 @@ class QueryBuilder(object):
         selection="variants",
         order_by=None,
         order_desc=True,
-        group_by= None
     ):
         """Create an instance with different parameters 
 
@@ -1022,7 +1024,6 @@ class QueryBuilder(object):
         self.selection = selection
         self.order_by = order_by
         self.order_desc = order_desc
-        self.group_by = group_by
 
     @property
     def conn(self):
@@ -1073,7 +1074,7 @@ class QueryBuilder(object):
             for i in filters:
                 yield from QueryBuilder._filters_to_flat(i)
 
-    def _filters_to_sql(self, node: dict):
+    def _filters_to_sql(self, node: dict, format_sql = True):
         """Recursive function to convert the filter hierarchical dictionnary into a SQL WHERE clause.
         
         Args:
@@ -1102,7 +1103,9 @@ class QueryBuilder(object):
             if type(value) == str:
                 value = f"'{value}'"
 
-            field = self.column_to_sql(field)
+            if format_sql:
+                # Format for SQL 
+                field = self.column_to_sql(field)
         
             # TODO ... c'est degeulasse ....
             if operator in ("IN", "NOT IN"):
@@ -1129,7 +1132,7 @@ class QueryBuilder(object):
             #   {'field': 'alt', 'operator': 'IN', 'value': "('A', 'T', 'G', 'C')"}
             # ]}
             # Wanted: ref IN ('A', 'T', 'G', 'C') AND alt IN ('A', 'T', 'G', 'C')
-            out = [self._filters_to_sql(child) for child in node[logic_op]]
+            out = [self._filters_to_sql(child, format_sql) for child in node[logic_op]]
             # print("OUT", out, "LOGIC", logic_op)
             # OUT ["refIN'('A', 'T', 'G', 'C')'", "altIN'('A', 'T', 'G', 'C')'"]
             if len(out) == 1:
@@ -1165,7 +1168,7 @@ class QueryBuilder(object):
         if isinstance(column, tuple):
             function_name, arg, field_name = column
             if function_name == QueryBuilder._GENOTYPE_FUNCTION_NAME:
-                return f"`gt_{arg}`.`{field_name}`"
+                return f"`gt_{arg}`.`{field_name}` AS `gt_{arg}.{field_name}`"
 
         if column.startswith("annotations.") or column in self.cache_annotations_columns:
             column = column.replace("annotations.","")
@@ -1206,13 +1209,14 @@ class QueryBuilder(object):
         Returns:
             (list): a list of string with well formated column name and variant.id
         """
-
-        yield "id"
+        headers = ["id"]
         for column in self.columns:
             if isinstance(column, tuple):
-                yield "{}:{}:{}".format(*column)
+                headers.append("{}:{}:{}".format(*column))
             else:
-                yield column
+                headers.append(column)
+        
+        return headers
 
     def build_sql(
         self,
@@ -1221,7 +1225,7 @@ class QueryBuilder(object):
         selection = "variants",
         order_by=None,
         order_desc=True,
-        group_by=None,
+        grouped = False,
         limit=20,
         offset=0,
     ):
@@ -1269,7 +1273,7 @@ class QueryBuilder(object):
 
         #  Add Join Selection
         # TODO: set variants as global variables
-        if selection is not "variants":
+        if selection != "variants":
             sql_query += (
                 " INNER JOIN selection_has_variant sv ON sv.variant_id = variants.id "
                 f"INNER JOIN selections s ON s.id = sv.selection_id AND s.name = '{selection}'"
@@ -1293,8 +1297,8 @@ class QueryBuilder(object):
             sql_query += " WHERE " + self._filters_to_sql(filters)
 
         #  Add Group By
-        if group_by:
-            sql_query += " GROUP BY " + ",".join(group_by)
+        if grouped:
+            sql_query += " GROUP BY " + ",".join(["chr","pos","ref","alt"])
 
         #  Add Order By
         if order_by:
@@ -1307,7 +1311,7 @@ class QueryBuilder(object):
 
         return sql_query
 
-    def sql(self, limit = 20, offset = 0):
+    def sql(self, grouped = False, limit = 20, offset = 0):
         """Return an SQL Query based on internal parameter columns, filter, selection.
         See _build_sql()
 
@@ -1316,7 +1320,35 @@ class QueryBuilder(object):
             offset(int): Page number
 
         """
-        return self.build_sql(self.columns, self.filters,self.selection,self.order_by,True,self.group_by,limit,offset)
+        return self.build_sql(self.columns, self.filters,self.selection,self.order_by,self.order_desc,grouped,limit,offset)
+
+    def vql(self) -> str:
+        """Build a VQL query from the current Query
+
+        Todo : Make it cleaner and test it 
+
+        Return
+            A VQL query
+        """
+
+        _c = []
+        for col in self.columns:
+            if isinstance(col, tuple):
+                fct, arg, field = col
+                if fct == QueryBuilder._GENOTYPE_FUNCTION_NAME:
+                    col = f'genotype("{arg}").{field}'
+            _c.append(col)
+
+        base = f"SELECT {','.join(_c)} FROM {self.selection}"
+        where = ""
+        if self.filters:
+            where = f" WHERE {self._filters_to_sql(self.filters,format_sql = False)}"
+        
+
+        return base + where
+
+
+
 
     def items(self, limit=20, offset=0):
         """Execute SQL query and return variants as a list
@@ -1349,15 +1381,16 @@ class QueryBuilder(object):
         LOGGER.debug(sql)
 
         for variant in self.conn.execute(sql):
-            yield dict(variant).values()
+            yield list(dict(variant).values())
 
-    def trees(self, limit=20, offset=0):
+    def trees(self, grouped = True, limit=20, offset=0):
         """ Execute Sql Query and returns variants as Tree
 
         This methods  works only 'group_by' defined and it merge groups results as a tree.
         It usually works with group_by = [chr,pos,ref,alt] when there are several annotations per variants
 
         Args:
+            grouped(bool): Grouped variant by chr,pos,ref,alt. If it is False,  output will be same than self.items()
             limit(int): Maximum number of variants to display per page
             offset(int): Page number
 
@@ -1383,34 +1416,65 @@ class QueryBuilder(object):
         """
         self.conn.row_factory = sqlite3.Row
 
-        group_by = ["chr","pos","ref","alt"]
+        
         query = self.build_sql(
             self.columns, 
             self.filters, 
             self.selection,
             self.order_by, 
             self.order_desc,
-            group_by,
+            grouped, # Grouped 
             limit, offset)
 
+        
         variants = list(self.conn.execute(query))
 
         variants_tree = []
         for variant in variants:
             items = []
             variant_id = variant["id"]
-            ann_filter = {"AND": [{"field": "annotations.variant_id", "operator": "=", "value": variant_id}]}
-            sub_query = self.build_sql(self.columns,ann_filter,self.selection, limit = None)
-            LOGGER.debug("SUB QUERY: "+ sub_query)
 
-            for sub_item in self.conn.execute(sub_query):
-                items.append(dict(sub_item))
-                
+            
+            if grouped:
+                ann_filter = {"AND": [{"field": "annotations.variant_id", "operator": "=", "value": variant_id}]}
+                sub_query = self.build_sql(self.columns,ann_filter,self.selection, limit = None)
+                for sub_item in self.conn.execute(sub_query):
+                    items.append(list(dict(sub_item).values()))
+            else:
+                items.append(list(dict(variant).values()))    
             yield items
             
            
-            # yield dict(variant).values()
 
+    def count(self):
+        """Wrapped function with a memoizing callable that saves up to the
+        maxsize most recent calls.
+
+        .. note:: The LRU feature performs best when maxsize is a power-of-two.
+
+        .. note:: The COUNT() aggregation function is expensive on partially
+            indexed tables (because dynamically built) for large dataset
+            and it seems difficult to predict which fields will be requested
+            by the user.
+        """
+        query = self.sql(limit = None)
+
+        # Trick to accelerate UI refresh on basic queries
+        if self.selection == "variants" and not self.filters:
+            return self.conn.execute(
+                "SELECT MAX(variants.id) as count FROM variants"
+            ).fetchone()[0]
+
+        return self.conn.execute(
+            f"SELECT COUNT(*) as count FROM ({query})"
+        ).fetchone()[0]
+
+    @lru_cache(maxsize=128)
+    def cache_count(self):
+        """ Return lru_cache from self.count 
+        """
+        return self.count()
+        
     def __repr__(self):
         return f"""
         columns : {self.columns}

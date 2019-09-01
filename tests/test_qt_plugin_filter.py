@@ -38,7 +38,7 @@ def test_filter_widget(qtbot):
     # check if adding condition raise a changed signal 
     with qtbot.waitSignal(view.changed):
         view.on_add_logic()
-        assert view.filter == {'AND': []}
+        assert view.filters == {'AND': []}
 
 
     

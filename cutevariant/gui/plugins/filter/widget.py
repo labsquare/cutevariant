@@ -490,7 +490,7 @@ class FilterModel(QAbstractItemModel):
     TypeRole = Qt.UserRole + 1
     UniqueIdRole = Qt.UserRole + 2
 
-    filterChanged = Signal()
+    filtersChanged = Signal()
 
     def __init__(self, conn, parent=None):
         super().__init__(parent)
@@ -498,12 +498,12 @@ class FilterModel(QAbstractItemModel):
         self.conn = conn
 
     @property
-    def filter(self):
+    def filters(self):
         return self.to_dict()
 
-    @filter.setter
-    def filter(self, filter):
-        self.load(filter)
+    @filters.setter
+    def filters(self, filters):
+        self.load(filters)
 
     def __del__(self):
         """Model destructor. 
@@ -567,7 +567,7 @@ class FilterModel(QAbstractItemModel):
             if index.isValid():
                 item = self.item(index)
                 item.set_data(value, index.column())
-                self.filterChanged.emit()
+                self.filtersChanged.emit()
                 return True
 
         return False
@@ -695,7 +695,7 @@ class FilterModel(QAbstractItemModel):
         self.beginInsertRows(parent, 0, 0)
         self.item(parent).insert(0, FilterItem(data=value))
         self.endInsertRows()
-        self.filterChanged.emit()
+        self.filtersChanged.emit()
 
     def add_condition_item(self, value=("chr", ">", "100"), parent=QModelIndex()):
         """Add condition item 
@@ -712,7 +712,7 @@ class FilterModel(QAbstractItemModel):
         self.beginInsertRows(parent, 0, 0)
         self.item(parent).insert(0, FilterItem(data=value))
         self.endInsertRows()
-        self.filterChanged.emit()
+        self.filtersChanged.emit()
 
     def remove_item(self, index):
         """Remove Item 
@@ -722,7 +722,7 @@ class FilterModel(QAbstractItemModel):
         self.beginRemoveRows(index.parent(), index.row(), index.row())
         self.item(index).parent.remove(index.row())
         self.endRemoveRows()
-        self.filterChanged.emit()
+        self.filtersChanged.emit()
 
     def rowCount(self, parent: QModelIndex) -> int:
         """ Overrided Qt methods: return row count according parent """
@@ -821,7 +821,7 @@ class FilterModel(QAbstractItemModel):
         parent_destination_item.insert(destinationChild, item)
         self.endMoveRows()
 
-        self.filterChanged.emit()
+        self.filtersChanged.emit()
         return True
 
     def supportedDropActions(self) -> Qt.DropAction:
@@ -1053,7 +1053,7 @@ class FilterWidget(QWidget):
         self.toolbar.addAction(FIcon(0xF5E8), "delete", self.on_delete_item)
 
         self.view.selectionModel().currentChanged.connect(self.changed)
-        self.model.filterChanged.connect(self.changed)
+        self.model.filtersChanged.connect(self.changed)
 
     @property
     def conn(self):
@@ -1064,12 +1064,12 @@ class FilterWidget(QWidget):
         self.model.conn = conn
 
     @property
-    def filter(self):
-        return self.model.filter
+    def filters(self):
+        return self.model.filters
 
-    @filter.setter
-    def filter(self, filter):
-        self.model.filter = filter
+    @filters.setter
+    def filters(self, filters):
+        self.model.filters = filters
         self.view.expandAll()
 
     def on_add_logic(self):
@@ -1152,7 +1152,6 @@ if __name__ == "__main__":
 
     # view = QTreeView()
     # view.setEditTriggers(QAbstractItemView.DoubleClicked)
-    # view.setItemDelegate(delegate)
     # view.setAlternatingRowColors(True)
     # view.setUniformRowHeights(True)
     # view.setModel(model)
