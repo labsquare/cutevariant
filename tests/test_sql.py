@@ -5,12 +5,7 @@ from cutevariant.core.reader.bedreader import BedTool
 from .utils import table_exists, table_count
 
 
-@pytest.fixture
-def conn():
-    return sql.get_sql_connexion(":memory:")
-
-
-fields = [
+FIELDS = [
     {"name": "chr", "category": "variants","type": "text", "description": "chromosome", },
     {"name": "pos", "category": "variants", "type": "int", "description": "position"},
     {"name": "ref", "category": "variants", "type": "text", "description": "reference"},
@@ -23,9 +18,9 @@ fields = [
     {"name": "dp","category": "samples","type": "int","description": "sample dp"}
 ]
 
-samples = ["sacha","boby"]
+SAMPLES = ["sacha","boby"]
 
-variants = [
+VARIANTS = [
     {"chr": "chr1", "pos": 10, "ref": "G", "alt": "A", "extra1": 10, "extra2": 100,
     "annotations":[{"gene": "gene1", "transcript": "transcript1"},{"gene": "gene1", "transcript": "transcript2"}],
     "samples": [{"name": "sacha", "gt": 1, "dp": 70},{"name": "boby", "gt": 1, "dp": 10}]
@@ -38,7 +33,7 @@ variants = [
 ]
 
 
-filters = {
+FILTERS = {
             "AND": [
                 {"field": "chr", "operator": "=", "value": "chr1"},
                 {
@@ -50,13 +45,20 @@ filters = {
             ]
         }
 
-def prepare_base(conn):
+
+
+@pytest.fixture
+def conn():
+    conn = sql.get_sql_connexion(":memory:")
+
+    sql.create_project(conn, "test","hg19")
+    assert table_exists(conn, "projects"), "cannot create table fields"
 
     sql.create_table_fields(conn)
     assert table_exists(conn, "fields"), "cannot create table fields"
 
-    sql.insert_many_fields(conn, fields)
-    assert table_count(conn, "fields") == len(fields), "cannot insert many fields"
+    sql.insert_many_fields(conn, FIELDS)
+    assert table_count(conn, "fields") == len(FIELDS), "cannot insert many fields"
 
     sql.create_table_selections(conn)
     assert table_exists(conn, "selections"), "cannot create table selections"
@@ -66,21 +68,26 @@ def prepare_base(conn):
 
     sql.create_table_samples(conn,sql.get_field_by_category(conn,"samples"))
     assert table_exists(conn, "samples"), "cannot create table samples"
-    sql.insert_many_samples(conn, samples)
+    sql.insert_many_samples(conn, SAMPLES)
 
     sql.create_table_variants(conn, sql.get_field_by_category(conn,"variants"))
     assert table_exists(conn, "variants"), "cannot create table variants"
-    sql.insert_many_variants(conn, variants)
+    sql.insert_many_variants(conn, VARIANTS)
 
-def test_prepare_base(conn):
-    prepare_base(conn)
+    return conn
+
+def test_create_connexion(conn):
+    assert conn != None
+
+def test_get_columns(conn):
+    sql.get_columns(conn,"variants") == [i["name"] for i in FIELDS if i["category"]=="variants"]
+
 
 def test_get_annotations(conn):
-    prepare_base(conn)
-    for id, variant in enumerate(variants):
+    for id, variant in enumerate(VARIANTS):
         read_tx = list(sql.get_annotations(conn,id+1))[0]
         del read_tx["variant_id"]
-        expected_tx = variants[id]["annotations"][0]
+        expected_tx = VARIANTS[id]["annotations"][0]
         assert read_tx == expected_tx
        
 def test_get_sample_annotations(conn):
@@ -88,29 +95,17 @@ def test_get_sample_annotations(conn):
     pass
 
 def test_get_fields(conn):
-    prepare_base(conn)
-
     # Test if fields returns 
     for index, f in enumerate(sql.get_fields(conn)):
         rowid = f.pop("id")
-        assert f == fields[index]
+        assert f == FIELDS[index]
         assert index+1 == rowid
 
 
 def test_get_samples(conn):
-    prepare_base(conn)
-    assert [sample["name"] for sample in sql.get_samples(conn)] == samples
+    assert [sample["name"] for sample in sql.get_samples(conn)] == SAMPLES
 
 
-def test_sample_selections(conn):
-    """Test creation and simple insertion of a line in "selections" table"""
-
-    sql.create_table_selections(conn)
-    sql.insert_selection(conn, "", name="selection_name", count=10)
-    data = conn.execute("SELECT * FROM selections").fetchone()
-
-    expected = (1, 'selection_name', 10, '')
-    assert tuple(data) == expected
 
 
 def test_selections(conn):
@@ -119,7 +114,6 @@ def test_selections(conn):
     "selection_has_variant" when a selection is deleted.
     """
 
-    prepare_base(conn)
     # Create a selection that contains all 8 variants in the DB
     # (no filter on this list, via annotation table because this table is not
     # initialized here)
@@ -161,7 +155,6 @@ def test_selections(conn):
 def test_selection_operation(conn):
     """test set operations on selections
     PS: try to handle precedence of operators"""
-    prepare_base(conn)
 
     # Select all
     query = """SELECT variants.id,chr,pos,ref,alt FROM variants"""
@@ -246,107 +239,22 @@ def test_selection_operation(conn):
 
 # ============ TEST VARIANTS QUERY 
 
-def test_filters_to_flat():
-    """ convert filters to flatten list """
-    names = list([i["field"] for i in sql.SelectVariant._filters_to_flat(filters)])
-    assert names == ["chr","gene","pos"]
-
-def test_filters_to_sql():
-    """ convert filters to sql where clause """
-    assert sql.SelectVariant._filters_to_sql(filters) == "(`chr` = 'chr1' AND (`gene` = 'gene1' OR `pos` = 10))"
-
-def test_build_variant_query(conn):
-    """ Test get variants with differents parameters """ 
-    prepare_base(conn)
-
-    argv = {}
-    query = sql.SelectVariant(conn, **argv).sql()
-    assert query == "SELECT variants.id,`chr`,`pos`,`ref`,`alt` FROM variants LIMIT 20 OFFSET 0"
     
-    args = {"columns": ["chr","pos"]}
-    query = sql.SelectVariant(conn, **args).sql()
-    assert query == "SELECT variants.id,`chr`,`pos` FROM variants LIMIT 20 OFFSET 0"
-
-    args = {"columns": ["chr","pos", "gene"]}
-    query = sql.SelectVariant(conn, **args).sql()
-    assert query == "SELECT variants.id,`chr`,`pos`,`gene` FROM variants LEFT JOIN annotations ON annotations.variant_id = variants.id LIMIT 20 OFFSET 0"
-
-    args = {"columns": ["chr","pos"], "filters": filters}
-    query = sql.SelectVariant(conn, **args).sql()
-    expected = ("SELECT variants.id,`chr`,`pos` " 
-               "FROM variants LEFT JOIN annotations ON annotations.variant_id = variants.id "
-               "WHERE (`chr` = 'chr1' AND (`gene` = 'gene1' OR `pos` = 10)) LIMIT 20 OFFSET 0")
-    assert query == expected
-
-    args = {"columns": ["chr","pos"], "filters": filters, "selection" : "other"}
-    query = sql.SelectVariant(conn, **args).sql()
-    expected = ("SELECT variants.id,`chr`,`pos` FROM variants "
-                "LEFT JOIN annotations ON annotations.variant_id = variants.id "
-                "INNER JOIN selection_has_variant sv ON sv.variant_id = variants.id "
-                "INNER JOIN selections s ON s.id = sv.selection_id AND s.name = 'other' "
-                "WHERE (`chr` = 'chr1' AND (`gene` = 'gene1' OR `pos` = 10)) LIMIT 20 OFFSET 0")
-    assert query == expected
-
-    args = {"columns": ["chr","pos", ("genotype","boby","gt")]}
-    query = sql.SelectVariant(conn, **args).sql()
-    expected = ("SELECT variants.id,`chr`,`pos`,`gt_boby`.`gt` FROM variants "
-                "LEFT JOIN sample_has_variant `gt_boby` ON `gt_boby`.variant_id = variants.id "
-                "AND `gt_boby`.sample_id = 2 LIMIT 20 OFFSET 0")
-    assert query == expected
-
-    filters_with_fct = filters.copy()
-    # add a function genotype in filter
-    filters_with_fct["AND"][1]["OR"][1]["field"] = ("genotype","boby","gt")
-    args = {"columns": ["chr","pos"], "filters":filters}
-    query = sql.SelectVariant(conn, **args).sql()
-    expected = ("SELECT variants.id,`chr`,`pos` FROM variants "
-                "LEFT JOIN annotations ON annotations.variant_id = variants.id "
-                "LEFT JOIN sample_has_variant `gt_boby` ON `gt_boby`.variant_id = variants.id AND `gt_boby`.sample_id = 2 "
-                "WHERE (`chr` = 'chr1' AND (`gene` = 'gene1' OR ``gt_boby`.gt` = 10)) LIMIT 20 OFFSET 0")
-
-    assert query == expected
-
-
 
 def test_select_variant_items(conn):
-    prepare_base(conn)
     args = {}
-    assert len(list(sql.SelectVariant(conn, **args).items())) == len(variants)
+    #assert len(list(sql.SelectVariant(conn, **args).items())) == len(VARIANTS)
 
     # args = {"filters": filters}
     # assert len(list(sql.get_variants(conn, **args))) == 1
 
     # TODO more test
 
-def test_select_variant_tree(conn):
-    prepare_base(conn)
-    args = {}
-    args["columns"] = ["chr","pos","ref","gene"]
-    #args["group_by"] = ["chr","pos","ref","alt"]
-    
-    variants = list(sql.SelectVariant(conn,**args).trees()) 
-
-    assert len(variants) == 2
-    assert len(variants[0]) == 2
-    assert len(variants[1]) == 1
-
-
-
-
-
-def test_columns_to_sql():
-    """ Test sql formatting """ 
-    assert sql.SelectVariant._columns_to_sql(["chr","pos","ref"]) == ["variants.id","`chr`","`pos`","`ref`"]
-    assert sql.SelectVariant._columns_to_sql([("genotype","TUMOR","gt"), "chr"]) == ["variants.id","`gt_TUMOR`.`gt`","`chr`"]
-    assert sql.SelectVariant._columns_to_sql(["chr"],children_column=True) == ["variants.id","`chr`","COUNT(*) as 'children'"]
-
 def test_selection_from_bedfile(conn):
     """Test the creation of a selection based on BED data
 
     .. note:: Please note that the bedreader **is not** tested here!
     """
-
-    prepare_base(conn)
 
     larger_string = """
         chr1 1    10   feature1  0 +
@@ -385,8 +293,6 @@ def test_selection_from_bedfile_and_subselection(conn):
 
     .. note:: Please note that the bedreader **is not** tested here!
     """
-
-    prepare_base(conn)
 
 
     larger_string = """
@@ -482,8 +388,8 @@ def test_selection_from_bedfile_and_subselection(conn):
 
 
 def test_variants(conn):
+    pass
     """Test that we have all inserted variants in the DB"""
-    prepare_base(conn)
 
     # for i, record in enumerate(conn.execute("SELECT * FROM variants")):
     #     record = list(record) # omit id

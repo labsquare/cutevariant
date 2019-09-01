@@ -15,7 +15,7 @@ from cutevariant.core import vql
 
 if __name__ == "__main__":
     logger = logging.getLogger()
-    logger.setLevel(logging.CRITICAL)
+    logger.setLevel(logging.DEBUG)
     parser = argparse.ArgumentParser(description="""
     Cutevariant cli mode helps your to run actions directly from command-line
     """)
@@ -112,6 +112,8 @@ if __name__ == "__main__":
 
         if cmd["cmd"] == "select_cmd":
             selector = sql.SelectVariant(conn)
+
+            print(cmd.get("filter"))
             
             selector.columns = cmd.get("columns")
             selector.filters = cmd.get("filter")
@@ -130,6 +132,6 @@ if __name__ == "__main__":
                 line += variant_group[0].values()
 
                 tree.append(line)
-            print(columnar(tree, headers = ["children"] + list(selector.headers()), no_borders=True))
+            print(columnar(tree, headers = ["SUB"] + list(selector.headers()), no_borders=True))
 
           
