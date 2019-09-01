@@ -1440,13 +1440,13 @@ class QueryBuilder(object):
             variant_id = variant["id"]
 
             
-            if grouped:
-                ann_filter = {"AND": [{"field": "annotations.variant_id", "operator": "=", "value": variant_id}]}
-                sub_query = self.build_sql(self.columns,ann_filter,self.selection, limit = None)
-                for sub_item in self.conn.execute(sub_query):
-                    items.append(list(dict(sub_item).values()))
-            else:
-                items.append(list(dict(variant).values()))    
+            # if grouped:
+            #     ann_filter = {"AND": [{"field": "annotations.variant_id", "operator": "=", "value": variant_id}]}
+            #     sub_query = self.build_sql(self.columns,ann_filter,self.selection, limit = None)
+            #     for sub_item in self.conn.execute(sub_query):
+            #         items.append(list(dict(sub_item).values()))
+            # else:
+            items.append(list(dict(variant).values()))    
             yield items
             
            
