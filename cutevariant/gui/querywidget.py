@@ -538,7 +538,7 @@ class QueryDelegate(QStyledItemDelegate):
             val = int(value)
 
             icon_code = GENOTYPE_ICONS.get(val, -1)
-            icon = FIcon(icon_code, Qt.white).pixmap(20, 20)
+            icon = FIcon(icon_code, palette.color(QPalette.Text)).pixmap(20, 20)
             painter.setRenderHint(QPainter.Antialiasing)
             painter.drawPixmap(option.rect.left(), option.rect.center().y() - 8, icon)
             return
