@@ -37,8 +37,9 @@ Complete rewriting from Cpp to Python.
     git clone git@github.com:labsquare/cutevariant.git
     cd cutevariant
     virtualenv -p /usr/bin/python3 venv
-    source ven/bin/activate
+    source venv/bin/activate
     make install_deps # install
+    make install # pip install -e . 
     make run     # start application
     make test    # start tests
 
