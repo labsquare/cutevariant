@@ -381,7 +381,6 @@ class QueryModel(QAbstractItemModel):
         """ Set model to the first page """
         self.setPage(0)
 
-    @Slot()
     def lastPage(self):
         """ Set model to the last page """
         self.setPage(int(self.total / self.limit))

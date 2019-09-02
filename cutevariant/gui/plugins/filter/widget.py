@@ -111,7 +111,7 @@ class StrField(BaseField):
 
             ..todo : check if quotes are required 
         """
-        return "'" + self.edit.text() + "'"
+        return self.edit.text()
 
     def set_completer(self, completer: QCompleter):
         """ set a completer to autocomplete value """
@@ -1023,6 +1023,10 @@ class FilterWidget(QWidget):
         self.view.setDragEnabled(True)
         self.view.setAcceptDrops(True)
         self.view.setDragDropMode(QAbstractItemView.InternalMove)
+        self.view.setAlternatingRowColors(True)
+        self.view.header().setSectionResizeMode(0,QHeaderView.Stretch)
+        self.view.header().setSectionResizeMode(1,QHeaderView.ResizeToContents)
+        self.view.header().setSectionResizeMode(2,QHeaderView.Interactive)
 
         layout = QVBoxLayout()
         layout.addWidget(self.view)

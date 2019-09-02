@@ -538,7 +538,7 @@ def get_field_unique_values(conn, field_name: str):
     field = get_field_by_name(conn, field_name)
     table = field["category"]  # variants, or annotations or samples
     # conn.row_factory = None
-    query = f"""SELECT DISTINCT {field_name} FROM {table}"""
+    query = f"""SELECT DISTINCT `{field_name}` FROM {table}"""
     return [i[field_name] for i in conn.execute(query)]
 
 
@@ -1302,7 +1302,10 @@ class QueryBuilder(object):
 
         #  Add Where Clause
         if filters:
-            sql_query += " WHERE " + self._filters_to_sql(filters)
+            where_clause = self._filters_to_sql(filters)
+            # TODO : filter_to_sql should returns empty instead of ()
+            if where_clause and where_clause != "()":
+                sql_query += " WHERE " + where_clause
 
         #  Add Group By
         if grouped:
@@ -1312,6 +1315,7 @@ class QueryBuilder(object):
         if order_by:
             # TODO : sqlite escape field with quote
             orientation = "DESC" if order_desc else "ASC"
+            order_by = self.column_to_sql(order_by)
             sql_query += f" ORDER BY {order_by} {orientation}"
 
         if limit:
@@ -1350,7 +1354,9 @@ class QueryBuilder(object):
         base = f"SELECT {','.join(_c)} FROM {self.selection}"
         where = ""
         if self.filters:
-            where = f" WHERE {self._filters_to_sql(self.filters,format_sql = False)}"
+            where_clause = self._filters_to_sql(self.filters,format_sql = False)
+            if where_clause and where_clause != "()":
+                where = f" WHERE {where_clause}"
         
 
         return base + where
