@@ -152,18 +152,8 @@ class MainWindow(QMainWindow):
         ### Recent projects
         self.recent_files_menu = self.file_menu.addMenu(self.tr("Open recent"))
 
-        self.recentFileActions = list()
-        for i in range(MAX_RECENT_PROJECTS):
-            new_action = QAction()
-            new_action.setVisible(False)
-            # Keep actions in memory for their display to be managed later
-            self.recentFileActions.append(new_action)
-            self.recent_files_menu.addAction(new_action)
-            new_action.triggered.connect(self.open_recent)
-
-        # Init previous files
-        self.update_recent_projects_actions()
-
+        self.setup_recent_menu()
+       
         self.recent_files_menu.addSeparator()
         self.recent_files_menu.addAction(self.tr("Clear"), self.clear_recent_projects)
 
@@ -263,73 +253,27 @@ class MainWindow(QMainWindow):
         for plugin in self.plugins:
             plugin.on_open_project(self.conn)
 
-    def adjust_recent_projects(self, filepath):
-        """Adjust the number of of recent projects to display
+        self.save_recent_project(filepath)
 
-        .. note:: Called after a successful file opening.
-
-        :param filepath: Path of project file.
-        :type filepath: <str>
+    def save_recent_project(self, path):
+        """Save current project into QSettings
+        
+        Args:
+            path (str): path of project
         """
-        # Get recent projects list
-        recent_projects = self.get_recent_projects()
-
-        try:
-            recent_projects.remove(filepath)
-        except ValueError:
-            # New file is not already in the list
-            pass
-        # Prepend new file
-        recent_projects = [filepath] + recent_projects
-        recent_projects = (
-            recent_projects
-            if len(recent_projects) <= MAX_RECENT_PROJECTS
-            else recent_projects[:-1]
-        )
-
-        # Save in settings
+        paths = list(self.get_recent_projects())
+        paths.insert(0, path)
         app_settings = QSettings()
-        app_settings.setValue("recent_projects", recent_projects)
-
-        # Display
-        self.update_recent_projects_actions()
-
-    def update_recent_projects_actions(self):
-        """Display recent projects in the menu
-
-        .. note:: Called after a successful file opening and during the launch
-            of the software.
-        """
-        # Get recent projects list
-        recent_projects = self.get_recent_projects()
-
-        index = -1
-        for index, filepath in enumerate(recent_projects, 0):
-            action = self.recentFileActions[index]
-            # Get filename
-            # TODO: get project name ?
-            action.setText(os.path.basename(filepath))
-            action.setData(filepath)
-            action.setVisible(True)
-
-        # Display the action
-        if index == -1:
-            self.recent_files_menu.setEnabled(False)
-        else:
-            self.recent_files_menu.setEnabled(True)
-
-        # Switch off useless actions
-        # index = -1 if there is no recent_projects
-        index = 0 if index < 0 else index + 1
-        for i in range(index, MAX_RECENT_PROJECTS):
-            self.recentFileActions[i].setVisible(False)
+        unique_paths = list(dict.fromkeys(paths))
+        app_settings.setValue("recent_projects", unique_paths[:MAX_RECENT_PROJECTS])
 
     def get_recent_projects(self):
         """Return the list of recent projects stored in settings
-
-        :return: List of recent projects.
-        :type: <list>
+        
+        Returns:
+            list: Return list of recent project path
         """
+    
         # Reload last projects opened
         app_settings = QSettings()
         recent_projects = app_settings.value("recent_projects", list())
@@ -339,6 +283,24 @@ class MainWindow(QMainWindow):
             recent_projects = [recent_projects]
 
         return recent_projects
+
+    def clear_recent_projects(self):
+        """Slot to clear the list of recent projects"""
+        app_settings = QSettings()
+        app_settings.remove("recent_projects")
+        self.setup_recent_menu()
+
+    def setup_recent_menu(self):
+        """ Setup recent menu """
+        self.recent_files_menu.clear()
+        for path in self.get_recent_projects():
+            self.recent_files_menu.addAction(path,self.on_recent_project_clicked)
+
+    def on_recent_project_clicked(self):
+        """Slot to load a recent project"""
+        action = self.sender()
+        self.open(action.text())
+
 
     def handle_plugin_message(self, message):
         """Slot to display message from plugin in the status bar"""
@@ -379,16 +341,6 @@ class MainWindow(QMainWindow):
                 self.status_bar.showMessage(e.__class__.__name__ + ": " + str(e))
                 raise
     
-    def open_recent(self):
-        """Slot to load a recent project"""
-        action = self.sender()
-        self.open(action.data())
-
-    def clear_recent_projects(self):
-        """Slot to clear the list of recent projects"""
-        app_settings = QSettings()
-        app_settings.remove("recent_projects")
-        self.update_recent_projects_actions()
 
     def show_settings(self):
         """Slot to show settings window"""
@@ -444,6 +396,8 @@ class MainWindow(QMainWindow):
             app_settings.setValue("geometry", self.saveGeometry())
             #  TODO: handle UI changes by passing UI_VERSION to saveState()
             app_settings.setValue("windowState", self.saveState())
+
+
 
     def read_settings(self):
         """Restore the state of this mainwindow's toolbars and dockwidgets
