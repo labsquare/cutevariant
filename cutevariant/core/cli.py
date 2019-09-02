@@ -110,12 +110,11 @@ if __name__ == "__main__":
             print("_" * (e.col - 1) + "^ \n")
             exit(0)
 
-
+        ## ********************** SELECT STATEMENT **************************************
         if cmd["cmd"] == "select_cmd":
             selector = sql.QueryBuilder(conn)
 
-            print(cmd.get("filter"))
-            
+            selector.selection = cmd.get("source")
             selector.columns = cmd.get("columns")
             selector.filters = cmd.get("filter")
             #selector.group_by = ["chr","pos","ref","alt"]
@@ -137,4 +136,16 @@ if __name__ == "__main__":
 
             print(columnar(variants, headers = headers, no_borders=True))
 
-          
+    ## ********************** SELECT STATEMENT **************************************
+        if cmd["cmd"] == "create_cmd":
+            selector = sql.QueryBuilder(conn)
+            selector.filters = cmd.get("filter")
+            target = cmd.get("target")
+
+            selector.save(target)
+
+
+
+    ## ********************** SELECT STATEMENT **************************************
+        if cmd["cmd"] == "set_cmd":
+            print(cmd)

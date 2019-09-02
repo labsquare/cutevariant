@@ -92,6 +92,20 @@ class FilterExpression(metaclass=model_class):
         return {key: out}
 
 
+# class FilterExpression(metaclass=model_class):
+#     @property
+#     def value(self):
+#         out = []
+#         key = "AND"  #  By default
+#         for i in self.op:
+#             if isinstance(i, str):
+#                 if i in ("AND", "OR"):
+#                     key = i
+#                 else:
+#                     out.append(i)
+#             else:
+#                 out.append(i.value)
+#         return {key: out}
 class FilterOperand(metaclass=model_class):
     @property
     def value(self):
@@ -135,18 +149,19 @@ class CreateCmd(metaclass=model_class):
         return {
             "cmd": "create_cmd",
             "source": self.source,
-            "fitler": self.filter.value if self.filter else None,
+            "filter": self.filter.value if self.filter else None,
+            "target": self.target
         }
 
 
-# class SetCmd(metaclass=model_class):
-#     @property
-#     def value(self):
-#         return {
-#         "cmd": "set_cmd",
-#         "source": self.source,
-#         "fitler": self.filter.value if self.filter else None
-#         }
+class SetCmd(metaclass=model_class):
+    @property
+    def value(self):
+        return {
+        "cmd": "set_cmd",
+        "target": self.target,
+        "expression": "todo" #self.expression
+        }
 
 
 METAMODEL = textx.metamodel_from_str(

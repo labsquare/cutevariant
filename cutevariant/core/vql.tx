@@ -18,7 +18,7 @@ CreateCmd:
 ;
 
 SetCmd:
-    'CREATE' target=ID '=' filter=SetExpression
+    'CREATE' target=ID '=' expression=SetExpression
 ;
 
 

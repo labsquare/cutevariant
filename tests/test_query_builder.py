@@ -156,3 +156,17 @@ def test_filters_to_sql(conn):
 
 def test_count(conn):
     assert sql.QueryBuilder(conn).count() == 2
+
+def test_save(conn):
+    selector = sql.QueryBuilder(conn)
+    selector.filters = {"AND": [ {"field": "pos", "operator": "=", "value": 45}]}
+    selector.save("denovo")
+    selections = list(sql.get_selections(conn))
+
+    assert selections[0]["name"] == "variants"
+    assert selections[1]["name"] == "denovo"
+    assert selector.count() == 1
+
+    selector.selection = "denovo"
+    selector.filters = None
+    assert selector.count() == 1

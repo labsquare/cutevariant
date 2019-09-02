@@ -1497,6 +1497,64 @@ class QueryBuilder(object):
         """ Return lru_cache from self.count 
         """
         return self.count()
+
+    def save(self, name):
+        """Save Variant Query into a new selection
+
+        This methods will get all variant.id extracted from self.sql() 
+        and insert them into select_has_variant table 
+
+        Args:
+            name (str): Selection name
+
+        Return:
+            sql index of selection
+        """
+
+        cursor = self.conn.cursor()
+        count = self.count() # Get count .. Can take a while 
+
+        sql_query = self.build_sql(
+            columns = ["variants.id"],
+            filters = self.filters,
+            selection = self.selection,
+            limit = None)
+
+        # Create selection
+        selection_id = insert_selection(cursor,sql_query, name=name, count=count)
+
+        # DROP indexes
+        # For joints between selections and variants tables
+        try:
+            cursor.execute("""DROP INDEX idx_selection_has_variant""")
+        except sqlite3.OperationalError:
+            pass
+
+        # Insert into selection_has_variant table
+        # PS: We use DISTINCT keyword to statisfy the unicity constraint on
+        # (variant_id, selection_id) of "selection_has_variant" table.
+        # TODO: is DISTINCT useful here? How a variant could be associated several
+        # times with an association?
+  
+        q = f"""
+        INSERT INTO selection_has_variant
+        SELECT DISTINCT id, {selection_id} FROM ({sql_query})
+        """
+
+
+        cursor.execute(q)
+
+        # # REBUILD INDEXES
+        # # For joints between selections and variants tables
+        create_selection_has_variant_indexes(cursor)
+
+        self.conn.commit()
+        if cursor.rowcount:
+            return cursor.lastrowid
+        return None
+
+
+    
         
     def __repr__(self):
         return f"""
