@@ -299,10 +299,15 @@ class QueryModel(QAbstractItemModel):
 
     def canFetchMore(self, parent: QModelIndex) -> bool:
         """ Overrided : Return True if variant can fetch children """
-        return self.hasChildren(parent)
+        if parent == QModelIndex():
+            return False
+
+        if self.hasChildren(parent) and len(self.variants[parent.row()]) <= 1:
+            return True
+        else:
+            return False
 
     def fetchMore(self, parent:QModelIndex):
-        LOGGER.debug("fetch more")
 
         if parent == QModelIndex():
             return 
@@ -345,6 +350,7 @@ class QueryModel(QAbstractItemModel):
             self.variants.append([variant[1]])
         self.endResetModel()
 
+        LOGGER.debug(self.builder.sql())
         
 
         if self.emit_changed:
@@ -353,8 +359,7 @@ class QueryModel(QAbstractItemModel):
 
     def hasPage(self, page: int) -> bool:
         """ Return True if <page> exists otherwise return False """
-        #return page >= 0 and page * self.limit < self.total
-        return False 
+        return page >= 0 and page * self.limit < self.total
 
     def setPage(self, page: int):
         """ set the page of the model """
@@ -376,6 +381,7 @@ class QueryModel(QAbstractItemModel):
         """ Set model to the first page """
         self.setPage(0)
 
+    @Slot()
     def lastPage(self):
         """ Set model to the last page """
         self.setPage(int(self.total / self.limit))
@@ -686,11 +692,11 @@ class QueryWidget(QWidget):
         # self.show_sql_action.setEnabled(False)
         self.bottombar.addWidget(self.page_info)
         self.bottombar.addWidget(spacer)
-        self.bottombar.addAction(FIcon(0xF792), "<<", self.model.firstPage)
-        self.bottombar.addAction(FIcon(0xF04D), "<", self.model.previousPage)
+        self.bottombar.addAction(FIcon(0xF792), "<<", self.model.firstPage) 
+        self.bottombar.addAction(FIcon(0xF04D), "<",  self.model.previousPage)
         self.bottombar.addWidget(self.page_box)
-        self.bottombar.addAction(FIcon(0xF054), ">", self.model.nextPage)
-        self.bottombar.addAction(FIcon(0xF793), ">>", self.model.lastPage)
+        self.bottombar.addAction(FIcon(0xF054), ">",  self.model.nextPage)
+        self.bottombar.addAction(FIcon(0xF793), ">>",  self.model.lastPage)
 
         self.bottombar.setIconSize(QSize(16, 16))
         self.bottombar.setMaximumHeight(30)
