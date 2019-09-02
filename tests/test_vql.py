@@ -53,11 +53,13 @@ VQL_TO_TREE_CASES = {
         "cmd":"create_cmd",
         "source": "variants",
         "filter": None,
+        "target": "denovo"
     },
 
     "CREATE denovo FROM variants WHERE some_field IN ('one', 'two')": {
         "cmd":"create_cmd",
         "source": "variants",
+        "target":"denovo",
         "filter": {'AND': [{'field': 'some_field', 'operator': 'IN', 'value': ('one', 'two')}]},
     },
 
