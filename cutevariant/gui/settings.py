@@ -476,6 +476,10 @@ class SettingsWidget(QDialog):
         # Load settings
         self.load_all()
 
+        self.accepted.connect(self.close)
+
+        
+
     def addPanel(self, widget: BaseWidget):
         """Add a widget on the widow via a QStackedWidget; keep a reference on it
         for later connection/activation"""
@@ -490,6 +494,7 @@ class SettingsWidget(QDialog):
     def save_all(self):
         """Call save() method of all widgets"""
         [widget.save() for widget in self.widgets]
+        self.accepted.emit()
 
     def load_all(self):
         """Call load() method of all widgets"""

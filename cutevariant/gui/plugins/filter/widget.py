@@ -544,12 +544,18 @@ class FilterModel(QAbstractItemModel):
                 font.setBold(True)
                 return font
 
+        if role == Qt.CheckStateRole:
+            if index.column() == 0 and self.item(index).type() == FilterItem.CONDITION_TYPE:
+                return Qt.Checked
+
         if role == FilterModel.TypeRole:
             # Return item type
             return self.item(index).type()
 
         if role == FilterModel.UniqueIdRole:
             return self.item(index).uuid
+
+
 
     def setData(self, index, value, role=Qt.EditRole):
         """Overrided Qt methods: Set data according index and value. 
@@ -563,6 +569,9 @@ class FilterModel(QAbstractItemModel):
         Returns:
             bool: Return True if success otherwise return False
         """
+        if role == Qt.CheckStateRole:
+            print("checked")
+
         if role == Qt.EditRole:
             if index.isValid():
                 item = self.item(index)
@@ -762,6 +771,7 @@ class FilterModel(QAbstractItemModel):
                 | Qt.ItemIsEditable
                 | Qt.ItemIsEnabled
                 | Qt.ItemIsDragEnabled
+                | Qt.ItemIsUserCheckable
             )
 
         return Qt.ItemIsSelectable | Qt.ItemIsEditable

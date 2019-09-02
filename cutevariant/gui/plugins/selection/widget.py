@@ -170,13 +170,13 @@ class SelectionWidget(QWidget):
         self.view.setModel(self.model)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setSelectionMode(QAbstractItemView.SingleSelection)
-        self.view.horizontalHeader().hide()
+        self.view.horizontalHeader().show()
         self.view.horizontalHeader().setStretchLastSection(True)
 
         self.toolbar = QToolBar()
         self.toolbar.setIconSize(QSize(20, 20))
 
-        self.view.verticalHeader().show()
+        self.view.verticalHeader().hide()
         self.view.verticalHeader().setDefaultSectionSize(26)
         self.view.setShowGrid(False)
         self.view.setAlternatingRowColors(True)

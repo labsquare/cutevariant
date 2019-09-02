@@ -651,14 +651,17 @@ class QueryWidget(QWidget):
         main_layout.addWidget(self.bottombar)
         main_layout.setContentsMargins(0, 0, 0, 0)
 
+        
+        self.topbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         # Construct top bar
         # These actions should be disabled until a query is made (see query setter)
         self.export_csv_action = self.topbar.addAction(
+            FIcon(0xf207),
             self.tr("Export variants"), self.export_csv
         )
         self.export_csv_action.setEnabled(False)
 
-        self.grouped_action = self.topbar.addAction("Group variant")
+        self.grouped_action = self.topbar.addAction(FIcon(0xf191),"Group variant")
         self.grouped_action.setCheckable(True)
         self.grouped_action.setChecked(True)
         self.grouped_action.toggled.connect(self.on_group_changed)
@@ -685,9 +688,9 @@ class QueryWidget(QWidget):
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         # Setup actions
-        # self.show_sql_action = self.bottombar.addAction(
-        #     FIcon(0xF865), self.tr("See SQL query"), self.show_sql
-        # )
+        self.show_sql_action = self.bottombar.addAction(
+            FIcon(0xF865), self.tr("See SQL query"), self.show_sql
+        )
         # self.show_sql_action.setEnabled(False)
         self.bottombar.addWidget(self.page_info)
         self.bottombar.addWidget(spacer)
@@ -815,11 +818,13 @@ class QueryWidget(QWidget):
     def show_sql(self):
         box = QMessageBox()
         try:
-            text = self.model.query.sql()
+            text = self.model.builder.sql()
         except AttributeError:
             text = self.tr("No query to show")
 
-        box.setInformativeText(text)
+        box.setText("The following query has been executed")
+        box.setInformativeText(str(self.model.builder))
+        box.setDetailedText(text)
         box.exec_()
 
     def contextMenuEvent(self, event: QContextMenuEvent):
