@@ -43,6 +43,11 @@ def drop_table(conn, table_name):
     cursor.execute(f"DROP TABLE IF EXISTS {table_name}")
     conn.commit()
 
+def clear_table(conn, table_name):
+    """ Clear content of the given table """ 
+    cursor = conn.cursor()
+    cursor.execute(f"DELETE  FROM {table_name}")
+    conn.commit()
 
 def create_project(conn, name: str, reference: str):
     """Create the table "projects" and insert project name and reference genome
@@ -183,6 +188,21 @@ def insert_selection(conn, query: str, name="no_name", count=0):
         conn.commit()
     return cursor.lastrowid
 
+def delete_selection_by_name(conn, name: str):
+    """Delete selection from name 
+    
+    Args:
+        conn (conn): sqlite3 connection
+        name (str): selection name 
+    """
+
+    if name == "variants":
+        LOGGER.error("Cannot remove variants")
+        return 
+        
+    cursor = conn.cursor()
+    cursor.execute(f"DELETE FROM selections WHERE name = ?", (name,))
+    conn.commit()
 
 def create_selection_from_sql(
     conn, query: str, name: str, count=None, from_selection=False
@@ -1440,6 +1460,7 @@ class QueryBuilder(object):
             grouped, # Grouped 
             limit, offset)
 
+        LOGGER.debug(query)
 
         for variant in self.conn.execute(query):
             if grouped:
@@ -1515,10 +1536,12 @@ class QueryBuilder(object):
         count = self.count() # Get count .. Can take a while 
 
         sql_query = self.build_sql(
-            columns = ["variants.id"],
+            columns = [],
             filters = self.filters,
             selection = self.selection,
             limit = None)
+
+        LOGGER.debug(sql_query)
 
         # Create selection
         selection_id = insert_selection(cursor,sql_query, name=name, count=count)
@@ -1541,6 +1564,7 @@ class QueryBuilder(object):
         SELECT DISTINCT id, {selection_id} FROM ({sql_query})
         """
 
+        LOGGER.debug(q)
 
         cursor.execute(q)
 

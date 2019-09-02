@@ -13,7 +13,7 @@ from cutevariant.core import sql
 from cutevariant.core import vql
 
 
-if __name__ == "__main__":
+def main():
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
     parser = argparse.ArgumentParser(description="""
@@ -31,12 +31,19 @@ if __name__ == "__main__":
     show_parser.add_argument("table", choices=["fields","selections","samples"], help="Name of tables")
     show_parser.add_argument("--db", help="sqlite database. By default, $CUTEVARIANT_DB is used")
 
+    #remove parser 
+    remove_parser = sub_parser.add_parser("remove", help="remove selection")
+    remove_parser.add_argument("names", nargs='+', help="list of selection's name")
+    remove_parser.add_argument("--db", help="sqlite database. By default, $CUTEVARIANT_DB is used")
+
+
     #exec parser 
     select_parser = sub_parser.add_parser("exec", help="Execute VQL statement")
     select_parser.add_argument("vql", help="A vql statement")
     select_parser.add_argument("--db", help="sqlite database. By default, $CUTEVARIANT_DB is used")
-    select_parser.add_argument("--limit", help="limit output to line number", type=int, default=100)
-    select_parser.add_argument("--group", action="store_true", help="Group Select query by (chr,pos,ref,alt)")
+    select_parser.add_argument("-l","--limit", help="limit output to line number", type=int, default=100)
+    select_parser.add_argument("-g","--group", action="store_true", help="Group Select query by (chr,pos,ref,alt)")
+    select_parser.add_argument("-s","--to-selection",help="Save Select query into a selection name")
 
     # #Set parser
     # set_parser = sub_parser.add_parser("set", help="Set variable")
@@ -72,6 +79,10 @@ if __name__ == "__main__":
             for i, message in progressbar.progressbar(async_import_file(conn, args.input), redirect_stdout=True):
                 print(message)
 
+        #TODO: It doesn't set the env to the parent shell
+        #os.putenv("CUTEVARIANT_DB", args.output)
+        #print("$CUTEVARIANT_DB has been set with ", args.output)
+
     # ====== SHOW ============================
     if args.subparser == "show":
         if args.table == "fields":
@@ -81,7 +92,12 @@ if __name__ == "__main__":
             print(columnar([i.values() for i in sql.get_samples(conn)], headers=["id","Name"],  no_borders=True))        
         
         if args.table == "selections":
-            print(columnar([i.values() for i in sql.get_selections(conn)], headers=["id","Name"],  no_borders=True))
+            print(columnar([i.values() for i in sql.get_selections(conn)], headers=["id","Name","Count"],  no_borders=True))
+
+    # ======= REMOVE =========================
+    if args.subparser == "remove":
+        for name in args.names:
+            sql.delete_selection_by_name(conn, name)
 
 
     # ====== EXEC VQL ============================
@@ -117,29 +133,30 @@ if __name__ == "__main__":
             selector.selection = cmd.get("source")
             selector.columns = cmd.get("columns")
             selector.filters = cmd.get("filter")
-            #selector.group_by = ["chr","pos","ref","alt"]
-            
-            # remove ids 
-            
-            #print(columnar(items, headers =selector.headers(), no_borders=True))
-            variants = []
-            for v in selector.trees(grouped = args.group ,limit = args.limit):
-                
-                line = v[1]
-                if args.group: # Add children count 
-                    line.append(v[0])
-                variants.append(line)
+   
+            if args.to_selection:
+                selector.save(args.to_selection)
 
-            headers = list(selector.headers())
-            if args.group:
-                headers.append("group size")
+            else:
+                variants = []
+                for v in selector.trees(grouped = args.group ,limit = args.limit):
+                    
+                    line = v[1]
+                    if args.group: # Add children count 
+                        line.append(v[0])
+                    variants.append(line)
 
-            print(columnar(variants, headers = headers, no_borders=True))
+                headers = list(selector.headers())
+                if args.group:
+                    headers.append("group size")
+
+                print(columnar(variants, headers = headers, no_borders=True))
 
     ## ********************** SELECT STATEMENT **************************************
         if cmd["cmd"] == "create_cmd":
             selector = sql.QueryBuilder(conn)
             selector.filters = cmd.get("filter")
+            selector.selection = cmd.get("source")
             target = cmd.get("target")
 
             selector.save(target)
@@ -149,3 +166,7 @@ if __name__ == "__main__":
     ## ********************** SELECT STATEMENT **************************************
         if cmd["cmd"] == "set_cmd":
             print(cmd)
+
+
+if __name__ == "__main__":
+    main()

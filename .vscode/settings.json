@@ -5,9 +5,11 @@
     "python.testing.pytestEnabled": true,
     "files.exclude": {
         "**/__pycache__": true,
-        "**/.*": true
+        "**/.*": true,
+        "venv/": true,
+        "**/*.db":true
     },
     "python.formatting.provider": "black",
     "python.linting.pylintEnabled": true,
-    "python.linting.enabled": true
+    "python.linting.enabled": true,
 }
