@@ -36,6 +36,7 @@ if __name__ == "__main__":
     select_parser.add_argument("vql", help="A vql statement")
     select_parser.add_argument("--db", help="sqlite database. By default, $CUTEVARIANT_DB is used")
     select_parser.add_argument("--limit", help="limit output to line number", type=int, default=100)
+    select_parser.add_argument("--group", action="store_true", help="Group Select query by (chr,pos,ref,alt)")
 
     # #Set parser
     # set_parser = sub_parser.add_parser("set", help="Set variable")
@@ -122,23 +123,18 @@ if __name__ == "__main__":
             # remove ids 
             
             #print(columnar(items, headers =selector.headers(), no_borders=True))
-            
-            tree = []
-            for v in selector.trees(grouped = True,limit = args.limit):
+            variants = []
+            for v in selector.trees(grouped = args.group ,limit = args.limit):
                 
-                #line = [len(v)] + v[0]
-                #tree.append(line)
+                line = v[1]
+                if args.group: # Add children count 
+                    line.append(v[0])
+                variants.append(line)
 
-                print(v)
-                #line.append(variant_group[0])
+            headers = list(selector.headers())
+            if args.group:
+                headers.append("group size")
 
-                #tree.append(line)
-
-            for v in selector.children(3):
-                print(v)
-
-            #print(tree)
-            #print(selector.headers)
-            #print(columnar(tree, headers = ["child"] + list(selector.headers()), no_borders=True))
+            print(columnar(variants, headers = headers, no_borders=True))
 
           
