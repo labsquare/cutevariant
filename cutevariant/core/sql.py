@@ -1257,6 +1257,10 @@ class QueryBuilder(object):
         sql_columns = ["`variants`.`id`"] + [self.column_to_sql(col) for col in columns]
         sql_query = f"SELECT {','.join(sql_columns)} "
 
+        # Add child count if grouped 
+        if grouped:
+            sql_query += ", COUNT(*) as `children`"
+
         #  Add source table
         sql_query += f"FROM variants"
 
@@ -1430,14 +1434,13 @@ class QueryBuilder(object):
             grouped, # Grouped 
             limit, offset)
 
-        LOGGER.debug(query)
 
-        variants = list(self.conn.execute(query))
-
-        variants_tree = []
-        for variant in variants:
-            items = []
-            variant_id = variant["id"]
+        for variant in self.conn.execute(query):
+            if grouped:
+            # Return child count, rows with last ( which is children)
+                yield variant["children"], list(dict(variant).values())[:-1]
+            else:
+                yield 0, list(dict(variant).values())
 
             
             # if grouped:
@@ -1446,10 +1449,19 @@ class QueryBuilder(object):
             #     for sub_item in self.conn.execute(sub_query):
             #         items.append(list(dict(sub_item).values()))
             # else:
-            items.append(list(dict(variant).values()))    
-            yield items
+            #items.append(list(dict(variant).values()))    
+            #yield items
             
-           
+    def children(self, variant_id):
+        """ Return children annotations """ 
+
+        self.conn.row_factory = sqlite3.Row
+        ann_filter = {"AND": [{"field": "annotations.variant_id", "operator": "=", "value": variant_id}]}
+        sub_query = self.build_sql(self.columns,ann_filter,self.selection, limit = None)
+        for variant in self.conn.execute(sub_query):
+            yield list(dict(variant).values())
+        
+            
 
     def count(self):
         """Wrapped function with a memoizing callable that saves up to the

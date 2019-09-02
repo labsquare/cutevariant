@@ -121,13 +121,19 @@ def test_build_variant_query(conn, args, expected):
     assert sql.QueryBuilder(conn, **args).sql() == expected
 
 
-def test_select_variant_tree(conn):
+def test_select_tree(conn):
     args = {}
     args["columns"] = ["chr","pos","ref","gene"]
     variants = list(sql.QueryBuilder(conn,**args).trees()) 
     assert len(variants) == 2
-    assert len(variants[0]) == 2
-    assert len(variants[1]) == 1
+
+def test_select_children(conn):
+        assert len(list(sql.QueryBuilder(conn).children(variant_id = 1))) == len(VARIANTS[0]["annotations"])
+        assert len(list(sql.QueryBuilder(conn).children(variant_id = 2))) == len(VARIANTS[1]["annotations"])
+
+
+
+
 
 def test_column_to_sql(conn):
 

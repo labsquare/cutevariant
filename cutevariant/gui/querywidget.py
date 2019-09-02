@@ -292,10 +292,33 @@ class QueryModel(QAbstractItemModel):
             return True
 
         if self.level(parent) == 1:
-            children_count = len(self.variants[parent.row()])
+            children_count = self.variants_children_count[parent.row()]
             return children_count > 1 
 
         return False
+
+    def canFetchMore(self, parent: QModelIndex) -> bool:
+        """ Overrided : Return True if variant can fetch children """
+        return self.hasChildren(parent)
+
+    def fetchMore(self, parent:QModelIndex):
+        LOGGER.debug("fetch more")
+
+        if parent == QModelIndex():
+            return 
+
+        variant_id = self.variants[parent.row()][0][0]
+        #The root parent is the last one.. Reverse to have it at first
+        children = list(self.builder.children(variant_id))[:-1]
+        
+        self.variants[parent.row()][1:] = []
+
+        self.beginInsertRows(parent, 0, len(children))
+        self.variants[parent.row()].extend(children)
+        self.endInsertRows()
+        
+        print("var2", self.variants[parent.row()])
+
 
     def load(self):
         """Load variant data into the model from query attributes
@@ -318,11 +341,11 @@ class QueryModel(QAbstractItemModel):
         self.variants_sql_indexes = []
         self.variants_children_count = []
         for variant in self.builder.trees(grouped = self.grouped, limit = self.limit, offset = self.page * self.limit):
-            self.variants_children_count.append(len(variant))
-            self.variants.append(variant)
+            self.variants_children_count.append(variant[0])
+            self.variants.append([variant[1]])
         self.endResetModel()
 
-        LOGGER.debug(self.builder.sql())
+        
 
         if self.emit_changed:
             self.changed.emit()
@@ -396,7 +419,6 @@ class QueryModel(QAbstractItemModel):
             print(variant) # ["chr","242","A","T",.....]
 
         """
-        LOGGER.warning(self.builder.sql())
         if self.level(index) == 1:
             return self.variants[index.row()][0]
 
@@ -634,7 +656,7 @@ class QueryWidget(QWidget):
         self.grouped_action = self.topbar.addAction("Group variant")
         self.grouped_action.setCheckable(True)
         self.grouped_action.setChecked(True)
-        self.grouped_action.toggled.connect(lambda x: self.model.group_variant(x))
+        self.grouped_action.toggled.connect(self.on_group_changed)
 
         # Add spacer to push next buttons to the right
         spacer = QWidget()
@@ -772,14 +794,18 @@ class QueryWidget(QWidget):
                 query.conn.execute(query.sql(do_not_add_default_things=True))
             )
 
-    def on_group_by_changed(self, index):
+    def on_group_changed(self, changed: bool):
         """Slot called when the currentIndex in the combobox changes
         either through user interaction or programmatically
 
         It triggers a reload of the model and a change of the group by
         command of the query.
         """
-        self.model.group_by_changed(self.group_by_combobox.currentData())
+        self.model.group_variant(changed)
+        if changed:
+            self.view.showColumn(0)
+        else:
+            self.view.hideColumn(0)
 
     def show_sql(self):
         box = QMessageBox()
@@ -818,7 +844,7 @@ if __name__ == "__main__":
 
     w = QueryWidget()
     w.conn = conn 
-    w.model.columns = ["chr","pos","ref","alt"]
+    w.model.columns = ["chr","pos","ref","alt","gene","transcript"]
     w.model.load()
     w.show()
 

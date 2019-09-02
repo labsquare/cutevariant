@@ -124,17 +124,21 @@ if __name__ == "__main__":
             #print(columnar(items, headers =selector.headers(), no_borders=True))
             
             tree = []
-            for v in selector.trees(grouped = False,limit = args.limit):
-                line = [len(v)] + v[0]
-                tree.append(line)
+            for v in selector.trees(grouped = True,limit = args.limit):
+                
+                #line = [len(v)] + v[0]
+                #tree.append(line)
 
                 print(v)
                 #line.append(variant_group[0])
 
                 #tree.append(line)
 
-            print(tree)
-            print(selector.headers)
-            print(columnar(tree, headers = ["child"] + list(selector.headers()), no_borders=True))
+            for v in selector.children(3):
+                print(v)
+
+            #print(tree)
+            #print(selector.headers)
+            #print(columnar(tree, headers = ["child"] + list(selector.headers()), no_borders=True))
 
           
