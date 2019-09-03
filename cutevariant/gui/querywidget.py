@@ -113,7 +113,6 @@ class QueryModel(QAbstractItemModel):
         self.grouped = True
         self.variants = []
         self.builder = None
-        self.emit_changed = False
 
     @property
     def conn(self):
@@ -126,8 +125,6 @@ class QueryModel(QAbstractItemModel):
         if conn is not None:
             self.builder = QueryBuilder(conn)
             self.emit_changed = True
-
-            print(self.builder)
             self.load()
 
     @property
@@ -354,10 +351,12 @@ class QueryModel(QAbstractItemModel):
         self.variants[parent.row()].extend(children)
         self.endInsertRows()
 
-        print("var2", self.variants[parent.row()])
 
-    def load(self):
+    def load(self, emit_changed = True):
         """Load variant data into the model from query attributes
+
+        Args:
+            emit_changed (bool): emit the signal changed()
 
         Called by:
             - on_change_query() from the view.
@@ -384,9 +383,8 @@ class QueryModel(QAbstractItemModel):
 
         LOGGER.debug(self.builder.sql())
 
-        if self.emit_changed:
+        if emit_changed:
             self.changed.emit()
-            self.emit_changed = False
 
     def hasPage(self, page: int) -> bool:
         """ Return True if <page> exists otherwise return False """
@@ -396,7 +394,7 @@ class QueryModel(QAbstractItemModel):
         """ set the page of the model """
         if self.hasPage(page):
             self.page = page
-            self.load()
+            self.load(emit_changed = False)
 
     def nextPage(self):
         """ Set model to the next page """
@@ -428,7 +426,7 @@ class QueryModel(QAbstractItemModel):
 
             self.builder.order_by = colname
             self.builder.order_desc = order == Qt.DescendingOrder
-            self.load()
+            self.load(emit_changed = False)
 
     def displayed(self):
         """Get ids of first, last displayed variants on the total number

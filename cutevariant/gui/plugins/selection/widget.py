@@ -98,13 +98,12 @@ class selectionModel(QAbstractTableModel):
     def find_record(self, name: str):
         """Find a record by name
         @see: view.selectionModel()
-        :return: Tuple of index in the model, and the record itself.
-        :rtype: <tuple <int>, <str>>
+        :return: QModelIndex
         """
         for idx, record in enumerate(self.records):
             if record["name"] == name:
-                return idx, record
-        return None
+                return self.index(idx, 0, QModelIndex())
+        return QModelIndex()
 
     def remove_record(self, index: QModelIndex()):
         """Delete the selection with the given id in the database
@@ -114,12 +113,12 @@ class selectionModel(QAbstractTableModel):
         """
         # Get selected record
         record = self.record(index)
-        # Delete in database
+
+        self.beginRemoveRows(QModelIndex(), index.row(), index.row())
+
         if sql.delete_selection(self.conn, record["id"]):
             # Delete in model; triggers currentRowChanged signal
-            self.beginRemoveRows(QModelIndex(), index.row(), index.row())
-            # Delete in records
-            self.records.pop(index.row())
+            #  Magic... the record disapear ...  ??
             self.endRemoveRows()
             return True
         return False
@@ -131,6 +130,10 @@ class selectionModel(QAbstractTableModel):
 
     def load(self):
         """Load all selections into the model"""
+
+        if self.conn is None:
+            return
+
         self.beginResetModel()
         # Add all selections from the database
         # Dictionnary of all attributes of the table.
@@ -157,13 +160,13 @@ class SelectionWidget(QWidget):
 
     selectionChanged = Signal()
 
-    def __init__(self, conn = None, parent=None):
-        super().__init__()
+    def __init__(self, conn=None, parent=None):
+        super().__init__(parent)
 
         self.setWindowTitle(self.tr("Selections"))
-
         self.model = selectionModel()
         self.view = QTableView()
+        self.is_loading = False  #  Flag to avoid signals loop
         self.view.setModel(self.model)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setSelectionMode(QAbstractItemView.SingleSelection)
@@ -186,7 +189,9 @@ class SelectionWidget(QWidget):
         self.setLayout(layout)
 
         # call on_current_row_changed when item selection changed
-        self.view.selectionModel().currentRowChanged.connect(self.selectionChanged)
+        self.view.selectionModel().currentRowChanged.connect(
+            self.on_current_row_changed
+        )
 
         #  Setup actions
         self.edit_action = self.toolbar.addAction(
@@ -207,12 +212,34 @@ class SelectionWidget(QWidget):
 
     @property
     def selection(self):
-        return self.model.record(self.view.currentIndex())["name"]
+        """Return current selection name    
+        Returns:
+            str: selection name
+        """
+        return self._selection
 
     @selection.setter
     def selection(self, selection):
-        index = self.model.find_record(selection)
-        self.view.setCurrentIndex(index)
+        """Set current selection name
+        
+        Args:
+            selection (str): selection name
+        """
+        self._selection = selection
+
+    @Slot()
+    def on_current_row_changed(self):
+        """ This methods trigger the signal for the view 
+        Note:
+            I don't broadcast the signal rowChanged to selectionChanged directly
+            because I need to block signals for the view only
+        """
+
+        index = self.view.currentIndex()
+        self.selection = self.model.record(index)["name"]
+
+        if not self.is_loading:
+            self.selectionChanged.emit()
 
     def menu_setup(self, locked_selection=False):
         """Setup popup menu
@@ -252,7 +279,8 @@ class SelectionWidget(QWidget):
     def load(self):
         """Load selection model and update the view"""
         # Block signals during the insertions
-        self.view.selectionModel().blockSignals(True)
+        self.is_loading = True
+
         self.model.load()
         self.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         self.view.horizontalHeader().setSectionResizeMode(
@@ -260,11 +288,10 @@ class SelectionWidget(QWidget):
         )
 
         # Select record according to query.selection
-        row, _ = self.model.find_record(self.query.selection)
-        if row is not None:
-            self.view.selectRow(row)
+        current_index = self.model.find_record(self.selection)
+        self.view.setCurrentIndex(current_index)
 
-        self.view.selectionModel().blockSignals(False)
+        self.is_loading = False
 
     def save_current_query(self):
         """Open a dialog box to save the current query into a selection"""
@@ -339,11 +366,11 @@ class SelectionWidget(QWidget):
         set_internal_id = action.data()
 
         # Init class attribute
-        sql.Selection.conn = self.query.conn
+        sql.Selection.conn = self.conn
 
         # Get the records and extract their database id to build 2 Selections objects
         record_1 = self.model.record(self.view.selectionModel().currentIndex())
-        _, record_2 = self.model.find_record(action.text())
+        record_2 = self.model.record(self.model.find_record(action.text()))
         # TODO: handle modes for creation of selections
         selection_1 = sql.Selection.from_selection_id(record_1["id"])
         selection_2 = sql.Selection.from_selection_id(record_2["id"])
@@ -387,12 +414,16 @@ class SelectionWidget(QWidget):
         .. note:: We do not reload all the UI for this
         """
         current_index = self.view.selectionModel().currentIndex()
-        new_name = QInputDialog.getText(
-            self, self.tr("Type a new name"), self.tr("Selection name:")
+        new_name, success = QInputDialog.getText(
+            self,
+            self.tr("Type a new name"),
+            self.tr("Selection name:"),
+            QLineEdit.Normal,
+            self.model.record(current_index)["name"]
         )
-        if new_name[1] and current_index:
+        if success and current_index and new_name:
             old_record = self.model.record(current_index)
-            old_record["name"] = new_name[0]
+            old_record["name"] = new_name
             self.model.edit_record(current_index, old_record)
 
     def create_selection_from_bed(self):
