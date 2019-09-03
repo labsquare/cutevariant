@@ -34,6 +34,8 @@ from PySide2.QtNetwork import *
 import cutevariant.commons as cm
 from cutevariant.gui.ficon import FIcon
 
+from cutevariant.gui import plugin
+
 # from cutevariant.gui import style
 
 
@@ -43,6 +45,8 @@ class BaseWidget(QWidget):
     def __init__(self):
         super().__init__()
         self.settings = QSettings()
+        self.setWindowTitle("No plugin name")
+        self.setWindowIcon(FIcon(0xF5CA))
 
     @abstractmethod
     def save(self):
@@ -244,12 +248,27 @@ class PluginsSettingsWidget(BaseWidget):
         super().__init__()
         self.setWindowTitle(self.tr("Plugins"))
         self.setWindowIcon(FIcon(0xF3D4))
+        self.view = QTreeWidget()
+        self.view.setColumnCount(2)
+        self.view.setHeaderLabels(["Name","Description"])
+    
+        main_layout = QVBoxLayout()
+        main_layout.addWidget(self.view)
+        self.setLayout(main_layout)
 
     def save(self):
         pass
 
     def load(self):
-        pass
+        self.view.clear()
+
+        for PluginClass in plugin.find_plugins():
+            item = QTreeWidgetItem()
+            item.setText(0, PluginClass.Name)
+            item.setText(1, PluginClass.Description)
+            item.setCheckState(0, Qt.Checked)
+            item.setDisabled(True)
+            self.view.addTopLevelItem(item)
 
 
 class DatabaseSettingsWidget(BaseWidget):
@@ -443,6 +462,7 @@ class SettingsWidget(QDialog):
         self.addPanel(PluginsSettingsWidget())
         self.addPanel(VariantSettingsWidget())
         self.addPanel(DatabaseSettingsWidget())
+        self.load_plugins()
 
         self.resize(800, 400)
 
@@ -455,6 +475,10 @@ class SettingsWidget(QDialog):
 
         # Load settings
         self.load_all()
+
+        self.accepted.connect(self.close)
+
+        
 
     def addPanel(self, widget: BaseWidget):
         """Add a widget on the widow via a QStackedWidget; keep a reference on it
@@ -470,7 +494,30 @@ class SettingsWidget(QDialog):
     def save_all(self):
         """Call save() method of all widgets"""
         [widget.save() for widget in self.widgets]
+        self.accepted.emit()
 
     def load_all(self):
         """Call load() method of all widgets"""
         [widget.load() for widget in self.widgets]
+
+    def load_plugins(self):
+        """ Add plugins settings """ 
+        for PluginClass in plugin.find_plugins():
+            p = PluginClass(self)
+            settings_widget = p.get_settings_widget()
+            if settings_widget:
+                self.addPanel(settings_widget)
+
+        
+
+
+if __name__ == "__main__":
+    import sys
+
+    
+    app = QApplication(sys.argv)
+
+    d = SettingsWidget()
+    d.show()
+
+    app.exec_()

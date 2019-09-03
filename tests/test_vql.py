@@ -2,7 +2,6 @@ import pytest
 from pprint import pprint
 from cutevariant.core.vql import execute_vql, VQLSyntaxError
 
-
 # Test valid VQL cases
 VQL_TO_TREE_CASES = {
     'SELECT chr,pos,genotype("sacha") FROM variants': {
@@ -49,6 +48,27 @@ VQL_TO_TREE_CASES = {
         "source": "variants",
         "filter": {'AND': [{'field': 'some_field', 'operator': 'IN', 'value': ('one', 'two')}]},
     },
+
+    "CREATE denovo FROM variants": {
+        "cmd":"create_cmd",
+        "source": "variants",
+        "filter": None,
+        "target": "denovo"
+    },
+
+    "CREATE denovo FROM variants WHERE some_field IN ('one', 'two')": {
+        "cmd":"create_cmd",
+        "source": "variants",
+        "target":"denovo",
+        "filter": {'AND': [{'field': 'some_field', 'operator': 'IN', 'value': ('one', 'two')}]},
+    },
+
+#    "CREATE denovo = boby & alex": {
+#         "cmd":"create_cmd",
+#         "target": "denovo",
+#         "expression":"todo"
+#         },
+
 }
 
 
@@ -72,28 +92,11 @@ for idx, (vql, expected) in enumerate(VQL_TO_TREE_CASES.items(), start=1):
     globals()[f"test_vql_{idx}"] = template_test_case(vql, expected)
 
 
-# # test exceptions returned by VQL
-# MALFORMED_VQL_CASES = {
-#     "": ("no SELECT clause", -1),
-#     "SELECT chr,pos,ref FROM": ("empty 'FROM' clause", 24),
-#     #"SELECT chr,,ref FROM": ("invalid empty identifier in SELECT clause", 12),
-#     #"SELECT c FROM v WHERE a=": ("invalid value in WHERE clause", 25),
-#     #"SELECT c FROM v WHERE a?=3": ("invalid operator in WHERE clause", 24),
-# }
+def test_vql_function():
+    q = "CREATE boby = alex & toi"
 
+    found = next(execute_vql(q))
 
-# def template_test_malformed_case(vql_expr: str, expected: tuple) -> callable:
-#     "Return a function that test equivalence between given VQL and expected result"
+    exp = found["expression"]
+    a = 3
 
-#     def test_function():
-#         print("test function")
-#         with pytest.raises(VQLSyntaxError) as excinfo:
-#             model_from_string(vql_expr)
-#         assert excinfo.value.args == expected
-
-#     return test_function
-
-
-# # generate all test cases
-# for idx, (vql, expected) in enumerate(MALFORMED_VQL_CASES.items(), start=1):
-#     globals()[f"test_malformed_vql_{idx}"] = template_test_malformed_case(vql, expected)

@@ -1,3 +1,6 @@
+from cutevariant.gui.ficon import FIcon
+from cutevariant.gui.fields import *
+
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 from PySide2.QtGui import *
@@ -61,7 +64,7 @@ class IntegerField(BaseField):
     def get_value(self) -> int:
         return self.spin_box.value()
 
-    def set_range(self, min_:int, max_:int):
+    def set_range(self, min_, max_):
         """ Limit editor with a range of value """
         self.spin_box.setRange(min_, max_)
 
@@ -84,8 +87,7 @@ class FloatField(BaseField):
     def get_value(self) -> int:
         return self.spin_box.value()
 
-    def set_range(self, min_: float, max_:float):
-
+    def set_range(self, min_, max_):
         self.spin_box.setRange(min_, max_)
 
 
@@ -109,7 +111,7 @@ class StrField(BaseField):
 
             ..todo : check if quotes are required 
         """
-        return "'" + self.edit.text() + "'"
+        return self.edit.text()
 
     def set_completer(self, completer: QCompleter):
         """ set a completer to autocomplete value """
@@ -261,16 +263,12 @@ class FieldFactory(QObject):
 
         if field["type"] == "int":
             w = IntegerField()
-            _range = sql.get_field_range(self.conn, sql_field)
-            if _range:
-                w.set_range(*_range)
+            w.set_range(*sql.get_field_range(self.conn, sql_field))
             return w
 
         if field["type"] == "float":
             w = FloatField()
-            _range = sql.get_field_range(self.conn, sql_field)  
-            if _range:
-                w.set_range(*_range)            
+            w.set_range(*sql.get_field_range(self.conn, sql_field))
             return w
 
         if field["type"] == "str":
@@ -484,8 +482,6 @@ class FilterModel(QAbstractItemModel):
 
     """
 
-    # signal definition
-    filterChanged = Signal()
     # See self.headerData()
     _HEADERS = ["field", "operator", "value"]
     _MIMEDATA = "application/x-qabstractitemmodeldatalist"
@@ -494,10 +490,20 @@ class FilterModel(QAbstractItemModel):
     TypeRole = Qt.UserRole + 1
     UniqueIdRole = Qt.UserRole + 2
 
+    filtersChanged = Signal()
+
     def __init__(self, conn, parent=None):
         super().__init__(parent)
         self.root_item = FilterItem("AND")
         self.conn = conn
+
+    @property
+    def filters(self):
+        return self.to_dict()
+
+    @filters.setter
+    def filters(self, filters):
+        self.load(filters)
 
     def __del__(self):
         """Model destructor. 
@@ -538,12 +544,18 @@ class FilterModel(QAbstractItemModel):
                 font.setBold(True)
                 return font
 
+        if role == Qt.CheckStateRole:
+            if index.column() == 0 and self.item(index).type() == FilterItem.CONDITION_TYPE:
+                return Qt.Checked
+
         if role == FilterModel.TypeRole:
             # Return item type
             return self.item(index).type()
 
         if role == FilterModel.UniqueIdRole:
             return self.item(index).uuid
+
+
 
     def setData(self, index, value, role=Qt.EditRole):
         """Overrided Qt methods: Set data according index and value. 
@@ -557,11 +569,14 @@ class FilterModel(QAbstractItemModel):
         Returns:
             bool: Return True if success otherwise return False
         """
+        if role == Qt.CheckStateRole:
+            print("checked")
+
         if role == Qt.EditRole:
             if index.isValid():
                 item = self.item(index)
                 item.set_data(value, index.column())
-                self.filterChanged.emit()
+                self.filtersChanged.emit()
                 return True
 
         return False
@@ -689,7 +704,7 @@ class FilterModel(QAbstractItemModel):
         self.beginInsertRows(parent, 0, 0)
         self.item(parent).insert(0, FilterItem(data=value))
         self.endInsertRows()
-        self.filterChanged.emit()
+        self.filtersChanged.emit()
 
     def add_condition_item(self, value=("chr", ">", "100"), parent=QModelIndex()):
         """Add condition item 
@@ -706,7 +721,7 @@ class FilterModel(QAbstractItemModel):
         self.beginInsertRows(parent, 0, 0)
         self.item(parent).insert(0, FilterItem(data=value))
         self.endInsertRows()
-        self.filterChanged.emit()
+        self.filtersChanged.emit()
 
     def remove_item(self, index):
         """Remove Item 
@@ -716,7 +731,7 @@ class FilterModel(QAbstractItemModel):
         self.beginRemoveRows(index.parent(), index.row(), index.row())
         self.item(index).parent.remove(index.row())
         self.endRemoveRows()
-        self.filterChanged.emit()
+        self.filtersChanged.emit()
 
     def rowCount(self, parent: QModelIndex) -> int:
         """ Overrided Qt methods: return row count according parent """
@@ -756,6 +771,7 @@ class FilterModel(QAbstractItemModel):
                 | Qt.ItemIsEditable
                 | Qt.ItemIsEnabled
                 | Qt.ItemIsDragEnabled
+                | Qt.ItemIsUserCheckable
             )
 
         return Qt.ItemIsSelectable | Qt.ItemIsEditable
@@ -815,7 +831,7 @@ class FilterModel(QAbstractItemModel):
         parent_destination_item.insert(destinationChild, item)
         self.endMoveRows()
 
-        self.filterChanged.emit()
+        self.filtersChanged.emit()
         return True
 
     def supportedDropActions(self) -> Qt.DropAction:
@@ -999,106 +1015,128 @@ class FilterDelegate(QStyledItemDelegate):
         editor.setGeometry(option.rect)
 
 
-class FieldDialog(QDialog):
-    def __init__(self, conn = None, parent = None):
-        super().__init__()
-        self.title_label = QLabel("Non title")
-        self.description_label = QLabel("Description")
-        self.btn_box = QDialogButtonBox(QDialogButtonBox.Ok|QDialogButtonBox.Cancel)
+class FilterWidget(QWidget):
 
-        self.field_box = QComboBox()
-        self.field_operator = OperatorField()
+    changed = Signal()
 
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(self.tr("Filter"))
+        self.view = QTreeView()
+        self.model = FilterModel(None)
+        self.delegate = FilterDelegate()
+        self.toolbar = QToolBar()
+        self.toolbar.setIconSize(QSize(20, 20))
+        self.view.setModel(self.model)
+        self.view.setItemDelegate(self.delegate)
+        self.view.setIndentation(15)
+        self.view.setDragEnabled(True)
+        self.view.setAcceptDrops(True)
+        self.view.setDragDropMode(QAbstractItemView.InternalMove)
+        self.view.setAlternatingRowColors(True)
+        self.view.header().setSectionResizeMode(0,QHeaderView.Stretch)
+        self.view.header().setSectionResizeMode(1,QHeaderView.ResizeToContents)
+        self.view.header().setSectionResizeMode(2,QHeaderView.Interactive)
 
-        # setup combobox
-        self.field_box.setEditable(True)
-        #self.field_operator.setEditable(True)
+        layout = QVBoxLayout()
+        layout.addWidget(self.view)
+        layout.addWidget(self.toolbar)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        self.setLayout(layout)
+        # self.model.filterChanged.connect(self.on_filter_changed)
 
-        # setup label
-        font = QFont()
-        font.setBold(True)
-        self.title_label.setFont(font)
-        self.description_label.setWordWrap(True)
+        # setup Menu
 
-        v_layout = QVBoxLayout()
-        v_layout.addWidget(self.title_label)
-        v_layout.addWidget(self.description_label)
-        v_layout.addSpacing(10)
-        self.form_layout = QFormLayout()
+        self.add_menu = QMenu()
+        self.add_button = QToolButton()
+        self.add_button.setIcon(FIcon(0xF703))
+        self.add_button.setPopupMode(QToolButton.InstantPopup)
+        self.add_menu.addAction(FIcon(0xF8E0), "Add Logic", self.on_add_logic)
+        self.add_menu.addAction(FIcon(0xF70A), "Add Condition", self.on_add_condition)
+        self.add_button.setMenu(self.add_menu)
 
-        self.form_layout.addRow("Field", self.field_box)
-        self.form_layout.addRow("Operator", self.field_operator)
-        self.form_layout.addRow("Value", QSpinBox())
+        self.toolbar.addWidget(self.add_button)
+        self.toolbar.addAction(FIcon(0xF143), "up")
+        self.toolbar.addAction(FIcon(0xF140), "down")
 
-        v_layout.addLayout(self.form_layout)
-        v_layout.addStretch(True)
-        v_layout.addWidget(self.btn_box)
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.toolbar.addWidget(spacer)
 
-        self.setLayout(v_layout)
+        self.toolbar.addAction(FIcon(0xF5E8), "delete", self.on_delete_item)
 
-        self.setFixedSize(500,300)
-
-        self.field_box.currentIndexChanged.connect(self.on_field_changed)
-
-        self.conn = conn
-
-        self.btn_box.accepted.connect(self.accept)
-        self.btn_box.rejected.connect(self.reject)
+        self.view.selectionModel().currentChanged.connect(self.changed)
+        self.model.filtersChanged.connect(self.changed)
 
     @property
     def conn(self):
-        return self._conn 
+        return self.model.conn
 
     @conn.setter
     def conn(self, conn):
-        self._conn = conn
-        if self._conn:
-            self.load_fields()
+        self.model.conn = conn
 
-    def load_fields(self):
-        """Load sql fields into combobox
+    @property
+    def filters(self):
+        return self.model.filters
+
+    @filters.setter
+    def filters(self, filters):
+        self.model.filters = filters
+        self.view.expandAll()
+
+    def on_add_logic(self):
+        """Add logic item to the current selected index
         """
-        for field in sql.get_field_by_category(self.conn,"variants"):
-            self.field_box.addItem(field["name"], field)
+        index = self.view.currentIndex()
+        if index:
+            self.model.add_logic_item(parent=index)
+            # self.view.setFirstColumnSpanned(0, index.parent(), True)
 
-    def load_value_editor(self, sql_field):
-        """Create a field widget according sql field name  
-        
-        Args:
-            sql_field (str): field name from sql field table
+    def _update_view_geometry(self):
+        """Set column Spanned to True for all Logic Item 
+        This allows Logic Item Editor to take all the space inside the row 
         """
-        self.form_layout.removeRow(2)
-        widget = FieldFactory(conn).create(sql_field)
-        self.form_layout.addRow("value", widget)
+        self.view.expandAll()
+        # for index in self.model.match(
+        #     self.model.index(0, 0),
+        #     FilterModel.TypeRole,
+        #     FilterItem.LOGIC_TYPE,
+        #     -1,
+        #     Qt.MatchRecursive,
+        # ):
+        #     self.view.setFirstColumnSpanned(0, index.parent(), True)
 
-    @Slot(int)
-    def on_field_changed(self, index):
-        """This method is trigger when a field has changed
-        
-        Args:
-            index (int): current index from self.field_box
+    def on_add_condition(self):
+        """Add condition item to the current selected index 
         """
-        field = self.field_box.itemData(index)
-        self.title_label.setText("{name} ({category})".format(**field))
-        self.description_label.setText(field["description"])
-        self.load_value_editor(field["name"])
+        index = self.view.currentIndex()
+        if index:
+            self.model.add_condition_item(parent=index)
 
-    def get_condition(self):
-        """Return current condition as a dictionnary 
-
-        Returns: 
-            Dictionnary exemple {"field":"chr", "operator":"=", value:5}
-
+    def on_delete_item(self):
+        """Delete current item 
         """
-        field = self.field_box.currentText()
-        operator = self.field_operator.get_value()
-        widget = self.form_layout.itemAt(5).widget()
-        value = widget.get_value()
+        ret = QMessageBox.question(
+            self,
+            "remove row",
+            "Are you to remove this item ? ",
+            QMessageBox.Yes | QMessageBox.No,
+        )
 
-        return {"field": field, "operator": operator, "value": value}
+        if ret == QMessageBox.Yes:
+            self.model.remove_item(self.view.currentIndex())
 
-        
+    def on_selection_changed(self):
+        """ Enable/Disable add button depending item type """
 
+        print("selection changed")
+        index = self.view.currentIndex()
+        if self.model.item(index).type() == FilterItem.CONDITION_TYPE:
+            self.add_button.setDisabled(True)
+        else:
+            self.add_button.setDisabled(False)
 
 
 if __name__ == "__main__":
@@ -1107,34 +1145,27 @@ if __name__ == "__main__":
     app.setStyle("fusion")
 
     style.dark(app)
-    conn = get_sql_connexion("/home/schutz/Dev/cutevariant/examples/test.db")
 
-    d = FieldDialog(conn)
-    d.show()
+    conn = get_sql_connexion("examples/test.db")
+
+    data = {
+        "AND": [
+            {"field": "chr", "operator": "=", "value": "chr"}
+        ]
+    }
+
+    view = FilterWidget()
+    view.model.load(data)
+
+    print(view.model.to_dict() == data)
 
 
-    # data = {
-    #     "AND": [
-    #         {"field": "chr", "operator": "=", "value": "chr"},
-    #         {
-    #             "OR": [
-    #                 {"field": "i0", "operator": "=", "value": 5},
-    #                 {"field": "i1", "operator": "=", "value": 3},
-    #                 {"field": "i2", "operator": "=", "value": 3},
-    #             ]
-    #         },
-    #     ]
-    # }
-
-    # model = FilterModel(conn)
-    # model.load(data)
-    # delegate = FilterDelegate()
+    view.show()
 
     # print(model.to_dict(model.root_item[0]))
 
     # view = QTreeView()
     # view.setEditTriggers(QAbstractItemView.DoubleClicked)
-    # view.setItemDelegate(delegate)
     # view.setAlternatingRowColors(True)
     # view.setUniformRowHeights(True)
     # view.setModel(model)

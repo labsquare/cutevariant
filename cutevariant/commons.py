@@ -27,7 +27,7 @@ WEBSITES_URLS = {"varsome": "https://varsome.com/variant/hg19/{chr}-{pos}-{ref}-
 
 # Logging
 LOGGER_NAME = "cutevariant"
-LOG_LEVEL = "WARNING"
+LOG_LEVEL = "NOTSET"
 LOG_LEVELS = {
     "debug": logging.DEBUG,
     "info": logging.INFO,
@@ -44,7 +44,10 @@ def logger(name=LOGGER_NAME, logfilename=None):
 
     Equivalent of logging.getLogger() call.
     """
-    return logging.getLogger(name)
+    logger =  logging.getLogger(name)
+    FORMAT = "[%(filename)s:%(lineno)s:%(funcName)s() ]\n %(message)s"
+    logging.basicConfig(format=FORMAT)
+    return logger
 
 
 _logger = logging.getLogger(LOGGER_NAME)

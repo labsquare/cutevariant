@@ -1,19 +1,29 @@
 {
     "python.pythonPath": "venv/bin/python",
-    "python.linting.enabled": false,
-    "python.linting.pylintEnabled": false,
-    "python.linting.pep8Enabled": false,
-    "python.linting.banditEnabled": false,
-    "python.linting.flake8Enabled": false,
-    "python.testing.pytestArgs": [
-        "tests"
+    "python.testing.unittestEnabled": false,
+    "python.testing.nosetestsEnabled": false,
+    "python.testing.pytestEnabled": true,
+    "files.exclude": {
+        "**/__pycache__": true,
+        "**/.*": true,
+        "venv/": true,
+        "**/*.db":true
+    },
+
+    "files.watcherExclude": {
+        "**/.git/objects/**": true,
+        "**/.git/subtree-cache/**": true,
+        "**/node_modules/*/**": true,
+        "**/__pycache__": true,
+        "**/.*": true,
+        "venv/": true,
+        "**/*.db":true
+    },
+    "python.formatting.provider": "black",
+    "python.linting.pylintEnabled": true,
+    "python.linting.enabled": true,
+
+    "python.linting.pylintArgs": [
+        "--extension-pkg-whitelist=PySide2"
     ],
-    "python.testing.unittestEnabled": false,
-    "python.testing.nosetestsEnabled": false,
-    "python.testing.pytestEnabled": true,
-    "python.testing.unittestEnabled": false,
-    "python.testing.nosetestsEnabled": false,
-    "python.testing.pytestEnabled": true,
-    "python.linting.pydocstyleEnabled": true,
-    "python.formatting.provider": "black"
 }

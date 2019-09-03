@@ -1,5 +1,5 @@
 test:
-	python setup.py test --addopts "tests cutevariant -vv --doctest-module"
+	python setup.py test --addopts "tests cutevariant -vv"
 
 coverage:
 	python setup.py test --addopts "--cov cutevariant tests"

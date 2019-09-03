@@ -36,6 +36,9 @@ import cutevariant.commons as cm
 from cutevariant import __version__
 
 
+
+
+
 def main():
     """The main routine."""
 
@@ -52,13 +55,12 @@ def main():
     # Process command line arguments
     process_arguments(app)
 
-
     # Load app styles
     load_styles(app)
 
-
     # Set icons set
     setFontPath(os.path.join(cm.DIR_FONTS, "materialdesignicons-webfont.ttf"))
+
 
     # Translations
     load_translations(app)

@@ -20,7 +20,6 @@ from PySide2.QtGui import (
     QBrush,
     QFont,
     QPen,
-    QColor,
     QFontMetrics,
     QDesktopServices,
 )

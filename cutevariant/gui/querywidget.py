@@ -10,15 +10,46 @@ import copy
 import csv
 import sys
 import sqlite3
+import re
 
 # Qt imports
-from PySide2.QtWidgets import *
-from PySide2.QtCore import *
-from PySide2.QtGui import *
+from PySide2.QtWidgets import (
+    QStyledItemDelegate,
+    QTreeView,
+    QWidget,
+    QAction,
+    QToolBar,
+    QVBoxLayout,
+    QAbstractItemView,
+    QApplication,
+    QSizePolicy,
+    QLabel,
+    QLineEdit,
+    QFrame,
+    QStyle,
+    QInputDialog
+)
+from PySide2.QtCore import (
+    QAbstractItemModel,
+    QRect,
+    Signal,
+    Slot,
+    QModelIndex,
+    QSize,
+    Qt
+)
+from PySide2.QtGui import (
+    QPainter,
+    QContextMenuEvent,
+    QIntValidator,
+    QPalette,
+    QPen,
+    QBrush,
+)
 
 # Custom imports
 from cutevariant.gui.ficon import FIcon
-from cutevariant.core import Query
+from cutevariant.core.sql import QueryBuilder
 from cutevariant.core import sql
 from cutevariant.gui import style
 from cutevariant.commons import logger
@@ -27,17 +58,12 @@ from cutevariant.commons import GENOTYPE_ICONS
 LOGGER = logger()
 
 
-class ViewQueryWidget(object):
-    pass
-
-
-class VariantModel(QAbstractItemModel):
+class QueryModel(QAbstractItemModel):
     """
-    VariantModel is a Qt model class which contains variants datas from sql Query. 
-    It loads paginated data from Query and create an interface for a Qt view and controllers.
-    When a variant belong to many transcripts, duplicate variants are grouped by (chr,pos,ref,alt) 
-    and stored as a Tree structure. Variant row can then be expanded to display each transcript annotation. 
-
+    QueryModel is a Qt model class which contains variants datas from sql.VariantBuilder . 
+    It loads paginated data from VariantBuilder and create an interface for a Qt view and controllers.
+    The model can group variants by (chr,pos,ref,alt) into a tree thanks to VariantBuilder.tree().
+   
     See Qt model/view programming for more information
     https://doc.qt.io/qt-5/model-view-programming.html
 
@@ -69,11 +95,14 @@ class VariantModel(QAbstractItemModel):
         model = QueryModel()
         view = QTreeView()
         view.setModel(model)
-        model.setQuery(query)
+        model.columns = ["chr","pos","ref","alt"]
+        model.load()
 
     """
 
     NO_PARENT_INTERNAL_ID = 99999
+
+    changed = Signal()
 
     def __init__(self, conn=None, parent=None):
         super().__init__()
@@ -81,47 +110,57 @@ class VariantModel(QAbstractItemModel):
         self.limit = 50
         self.page = 0
         self.total = 0
+        self.grouped = True
         self.variants = []
+        self.builder = None
 
     @property
     def conn(self):
         """ Return sqlite connection """
-        return self.query.conn
+        return self.builder.conn
 
     @conn.setter
     def conn(self, conn):
         """ Set sqlite connection """
-        self.query = Query(conn)
+        if conn is not None:
+            self.builder = QueryBuilder(conn)
+            self.emit_changed = True
+            self.load()
 
     @property
     def columns(self):
         """ Return query columns list displayed """
-        return self.query.columns
+        if self.builder:
+            return self.builder.columns
 
     @columns.setter
     def columns(self, columns: list):
         """ Set query columns list to display """
-        self.query.columns = columns
+        self.builder.columns = columns
+        self.emit_changed = True
 
     @property
-    def filter(self):
+    def filters(self):
         """ Return query filter """
-        return self.query.filter
+        return self.builder.filters
+        self.emit_changed = True
 
-    @filter.setter
-    def filter(self, filter):
+    @filters.setter
+    def filters(self, filters):
         """ Set query filter """
-        self.query.filter = filter
+        self.builder.filters = filters
+        self.emit_changed = True
 
     @property
     def selection(self):
         """ Return query selection """
-        return self.query.selection
+        return self.builder.selection
 
     @selection.setter
     def selection(self, selection):
         """ Set query selection """
-        self.query.selection = selection
+        self.builder.selection = selection
+        self.emit_changed = True
 
     def level(self, index: QModelIndex) -> bool:
         """Return level of index. 
@@ -150,7 +189,9 @@ class VariantModel(QAbstractItemModel):
             return len(self.variants)
 
         if self.level(parent) == 1:
-            return len(self.variants[parent.row()]) - 1  # Omit first
+            return (
+                len(self.variants[parent.row()]) - 1
+            )  # Omit first item already displayed in parent
 
     def columnCount(self, parent=QModelIndex()):
         """Overrided: Return column count of parent . 
@@ -159,12 +200,12 @@ class VariantModel(QAbstractItemModel):
         """
 
         # If no query is defined, return nothing
-        if not self.query:
+        if not self.builder:
             return 0
 
         #  return query columns + child count columns
         #  children count - chr - pos .....
-        return len(self.query.columns) + 1
+        return len(self.builder.headers())
 
     def index(self, row: int, column: int, parent=QModelIndex()) -> QModelIndex:
         """Overrided: Create a new model index from row, column and parent  
@@ -185,7 +226,7 @@ class VariantModel(QAbstractItemModel):
             # createIndex(row,col,internalId) is a method from QAbstractItemModel to build an index .
             # In C++, the third parameters is an internal ID which can be a void pointer or an unsigned int.
             # This is normally used to get the parent's index in a tree model. See self.parent() method.
-            # Here, I am using this internalId as the row id from self.variants() list.
+            # Here, I am using this internalId as the row id from self.variants list.
             #  When there is no parent, I cannot set the internalId to None, because it must be an unsigned int.
             #  In fact it works with None, except on MacOS which print many overflow error.
             # So, I m using here a constant NO_PARENT_INTERNAL_ID = 999999 when no parent is required.
@@ -234,13 +275,10 @@ class VariantModel(QAbstractItemModel):
         if role == Qt.DisplayRole:
             # Return data for the first level
             if self.level(index) == 1:
-                # First column correspond to children count
                 if index.column() == 0:
-                    return str(self.children_count(index))
-                # Other data come from internal self.variants list
+                    return self.variants_children_count[index.row()]
                 else:
                     return str(self.variant(index)[index.column()])
-                    # return str(self.variants[index.row()][0][index.column()])
 
             # Return data for the second level
             if self.level(index) == 2:
@@ -273,106 +311,80 @@ class VariantModel(QAbstractItemModel):
                 if section == 0:
                     return "children"
                 else:
-                    col = self.query.columns[section - 1]
-                    if type(col) == tuple and len(col) == 3:  #  show functions
-                        fct, arg, field = col
-                        return f"{fct}({arg}).{field}"
-                    else:
-                        return self.query.columns[section - 1]
+                    return self.builder.headers()[section]
         return None
 
     def hasChildren(self, parent: QModelIndex) -> bool:
         """Overrided: Return True if parent index has children """
-
         # if invisible root node, always return True
         if parent == QModelIndex():
             return True
 
         if self.level(parent) == 1:
-            children_count = self.children_count(parent)
-            return children_count >= 1
+            children_count = self.variants_children_count[parent.row()]
+            return children_count > 1
 
         return False
 
-        # if parent.parent() == QModelIndex():
-        #     return self._children_count(parent) > 1
-
     def canFetchMore(self, parent: QModelIndex) -> bool:
-        """ Overrided : Return True if children fetching is required """
-        return self.hasChildren(parent)
+        """ Overrided : Return True if variant can fetch children """
+        if parent == QModelIndex():
+            return False
+
+        if self.hasChildren(parent) and len(self.variants[parent.row()]) <= 1:
+            return True
+        else:
+            return False
 
     def fetchMore(self, parent: QModelIndex):
-        """Overrided: Fetch children variant 
-        """
 
-        # avoid error
         if parent == QModelIndex():
             return
 
-        #  get sql variant id
         variant_id = self.variants[parent.row()][0][0]
+        # The root parent is the last one.. Reverse to have it at first
+        children = list(self.builder.children(variant_id))[:-1]
 
-        columns = ",".join(self._query.get_columns(do_not_add_default_things=True))
-        joints = self._query.get_joints()
-
-        #  TODO : need to put this into QUERY
-        # TODO: add filter into left join annotations ... instead in where
-
-        parent_where_clause = self.query.filter_to_sql(self.query.filter)
-        sub_query = f"""SELECT variants.id, {columns} FROM variants
-        {joints}
-        WHERE annotations.variant_id = {variant_id}"""
-
-        if parent_where_clause:
-            sub_query += " AND " + parent_where_clause
-
-        LOGGER.debug(
-            "QueryModel:fetchMore:: Extra children cols sub query %s", sub_query
-        )
-
-        records = list(self._query.conn.cursor().execute(sub_query).fetchall())
-
-        # remove last item because it's the same as parent
-        records.pop()
-
-        # Insert children
-        self.beginInsertRows(parent, 0, len(records))
-
-        # Clear pevious children
         self.variants[parent.row()][1:] = []
 
-        for idx, record in enumerate(records):  # skip first records
-            self.variants[parent.row()].append(tuple(record))
-
+        self.beginInsertRows(parent, 0, len(children))
+        self.variants[parent.row()].extend(children)
         self.endInsertRows()
 
-    def children_count(self, index: QModelIndex) -> int:
-        """Return children count from variant
 
-        This one is the last value of sql record output and correspond to the COUNT(annotation)
-        of the GROUP BY
-        """
-        return self.variants[index.row()][0][-1] - 1
-
-    def load(self):
+    def load(self, emit_changed = True):
         """Load variant data into the model from query attributes
+
+        Args:
+            emit_changed (bool): emit the signal changed()
 
         Called by:
             - on_change_query() from the view.
             - sort() and setPage() by the model.
         """
+
+        if self.conn is None:
+            return
+
         self.beginResetModel()
         # Set total of variants for pagination
-        self.total = self.query.variants_count()
+        self.total = self.builder.count()
 
         # Append a list because child can be append after
-        self.variants = [
-            [tuple(variant)]
-            for variant in self.query.items(self.limit, self.page * self.limit)
-        ]
-
-        LOGGER.debug("QueryModel:load:: variants queried\n%s", self.variants)
+        self.variants = []
+        self.variants_sql_indexes = []
+        self.variants_children_count = []
+        for variant in self.builder.trees(
+            grouped=self.grouped, limit=self.limit, offset=self.page * self.limit
+        ):
+            self.variants_children_count.append(variant[0])
+            self.variants.append([variant[1]])
         self.endResetModel()
+
+        LOGGER.debug(self.builder.sql())
+
+        if emit_changed:
+            self.changed.emit()
 
     def hasPage(self, page: int) -> bool:
         """ Return True if <page> exists otherwise return False """
@@ -382,7 +394,7 @@ class VariantModel(QAbstractItemModel):
         """ set the page of the model """
         if self.hasPage(page):
             self.page = page
-            self.load()
+            self.load(emit_changed = False)
 
     def nextPage(self):
         """ Set model to the next page """
@@ -410,11 +422,11 @@ class VariantModel(QAbstractItemModel):
 
         """
         if column < self.columnCount():
-            colname = self.query.columns[column - 1]
+            colname = self.builder.columns[column - 1]
 
-            self.query.order_by = colname
-            self.query.order_desc = order == Qt.DescendingOrder
-            self.load()
+            self.builder.order_by = colname
+            self.builder.order_desc = order == Qt.DescendingOrder
+            self.load(emit_changed = False)
 
     def displayed(self):
         """Get ids of first, last displayed variants on the total number
@@ -441,7 +453,6 @@ class VariantModel(QAbstractItemModel):
             print(variant) # ["chr","242","A","T",.....]
 
         """
-
         if self.level(index) == 1:
             return self.variants[index.row()][0]
 
@@ -450,8 +461,18 @@ class VariantModel(QAbstractItemModel):
                 index.row() + 1
             ]  #  + 1 because the first element is the parent
 
+    @Slot(bool)
+    def group_variant(self, is_grouped: bool):
+        """Group variant by chr,pos,ref,alt
+        
+        Args:
+            is_grouped (bool)
+        """
+        self.grouped = is_grouped
+        self.load()
 
-class VariantDelegate(QStyledItemDelegate):
+
+class QueryDelegate(QStyledItemDelegate):
     """
     This class specify the aesthetic of the view
 
@@ -543,11 +564,11 @@ class VariantDelegate(QStyledItemDelegate):
             painter.drawText(option.rect, alignement, str(index.data()))
             return
 
-        if "genotype" in colname:
+        if re.match(r"genotype(.+).gt", colname):
             val = int(value)
 
             icon_code = GENOTYPE_ICONS.get(val, -1)
-            icon = FIcon(icon_code, Qt.white).pixmap(20, 20)
+            icon = FIcon(icon_code, palette.color(QPalette.Text)).pixmap(20, 20)
             painter.setRenderHint(QPainter.Antialiasing)
             painter.drawPixmap(option.rect.left(), option.rect.center().y() - 8, icon)
             return
@@ -598,7 +619,7 @@ class VariantDelegate(QStyledItemDelegate):
         return QSize(0, 30)
 
 
-class VariantTreeView(QTreeView):
+class QueryTreeView(QTreeView):
     def __init__(self, parent=None):
         super().__init__()
 
@@ -608,7 +629,7 @@ class VariantTreeView(QTreeView):
         Backround is not alternative for children but inherits from parent 
 
         """
-        if self.itemDelegate().__class__ is not VariantDelegate:
+        if self.itemDelegate().__class__ is not QueryDelegate:
             #  Works only if delegate is a VariantDelegate
             return
 
@@ -626,19 +647,19 @@ class VariantTreeView(QTreeView):
         super().drawBranches(painter, rect, index)
 
 
-class VariantWidget(QWidget):
+class QueryWidget(QWidget):
     """Contains the view of query with several controller"""
 
     variant_clicked = Signal(dict)
 
-    def __init__(self, conn):
+    def __init__(self, conn=None):
         super().__init__()
-        self.model = VariantModel(conn)
-        self.delegate = VariantDelegate()
+        self.model = QueryModel(conn)
+        self.delegate = QueryDelegate()
         self.setWindowTitle(self.tr("Variants"))
         self.topbar = QToolBar()
         self.bottombar = QToolBar()
-        self.view = VariantTreeView()
+        self.view = QueryTreeView()
 
         # # self.view.setFrameStyle(QFrame.NoFrame)
         self.view.setModel(self.model)
@@ -660,12 +681,22 @@ class VariantWidget(QWidget):
         main_layout.addWidget(self.bottombar)
         main_layout.setContentsMargins(0, 0, 0, 0)
 
+        self.topbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         # Construct top bar
         # These actions should be disabled until a query is made (see query setter)
         self.export_csv_action = self.topbar.addAction(
-            self.tr("Export variants"), self.export_csv
+            FIcon(0xF207), self.tr("Export variants"), self.export_csv
         )
         self.export_csv_action.setEnabled(False)
+
+        self.grouped_action = self.topbar.addAction(FIcon(0xF191), "Group variant")
+        self.grouped_action.setCheckable(True)
+        self.grouped_action.setChecked(True)
+        self.grouped_action.toggled.connect(self.on_group_changed)
+
+        self.save_action = self.topbar.addAction(FIcon(0xF817), "Save selection")
+        self.save_action.setToolTip("Save current selections")
+        self.save_action.triggered.connect(self.on_save_clicked)
 
         # Add spacer to push next buttons to the right
         spacer = QWidget()
@@ -689,9 +720,9 @@ class VariantWidget(QWidget):
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         # Setup actions
-        # self.show_sql_action = self.bottombar.addAction(
-        #     FIcon(0xF865), self.tr("See SQL query"), self.show_sql
-        # )
+        self.show_sql_action = self.bottombar.addAction(
+            FIcon(0xF865), self.tr("See SQL query"), self.show_sql
+        )
         # self.show_sql_action.setEnabled(False)
         self.bottombar.addWidget(self.page_info)
         self.bottombar.addWidget(spacer)
@@ -711,7 +742,7 @@ class VariantWidget(QWidget):
         self.model.modelReset.connect(self.updateInfo)
 
         # Create menu
-        self.context_menu = VariantPopupMenu()
+        # self.context_menu = VariantPopupMenu()
 
         # emit variant when clicked
         self.view.clicked.connect(self._variant_clicked)
@@ -771,7 +802,7 @@ class VariantWidget(QWidget):
         # Get the rowid of the element at the given index
         rowid = self.model.variant(index)[0]
         # Get data from database
-        variant = sql.get_one_variant(self.model.query.conn, rowid)
+        variant = sql.get_one_variant(self.model.conn, rowid)
         # Emit variant through variant_clicked signal
         self.variant_clicked.emit(variant)
         return variant
@@ -803,23 +834,29 @@ class VariantWidget(QWidget):
                 query.conn.execute(query.sql(do_not_add_default_things=True))
             )
 
-    def on_group_by_changed(self, index):
+    def on_group_changed(self, changed: bool):
         """Slot called when the currentIndex in the combobox changes
         either through user interaction or programmatically
 
         It triggers a reload of the model and a change of the group by
         command of the query.
         """
-        self.model.group_by_changed(self.group_by_combobox.currentData())
+        self.model.group_variant(changed)
+        if changed:
+            self.view.showColumn(0)
+        else:
+            self.view.hideColumn(0)
 
     def show_sql(self):
         box = QMessageBox()
         try:
-            text = self.model.query.sql()
+            text = self.model.builder.sql()
         except AttributeError:
             text = self.tr("No query to show")
 
-        box.setInformativeText(text)
+        box.setText("The following query has been executed")
+        box.setInformativeText(str(self.model.builder))
+        box.setDetailedText(text)
         box.exec_()
 
     def contextMenuEvent(self, event: QContextMenuEvent):
@@ -836,16 +873,26 @@ class VariantWidget(QWidget):
 
         self.page_box.clearFocus()
 
+    def on_save_clicked(self):
+        name, success = QInputDialog.getText(self, "Text", "Enter name:")
+        if success:
+            self.model.builder.save(name)
+            self.model.changed.emit()
 
 if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
-    conn = sqlite3.connect("examples/test.db")
+    from cutevariant.core.importer import import_file
 
-    view = VariantWidget(conn)
-    view.model.load()
+    conn = sqlite3.connect(":memory:")
 
-    view.show()
+    import_file(conn, "examples/test.snpeff.vcf")
+
+    w = QueryWidget()
+    w.conn = conn
+    w.model.columns = ["chr", "pos", "ref", "alt", "gene", "transcript"]
+    w.model.load()
+    w.show()
 
     app.exec_()
