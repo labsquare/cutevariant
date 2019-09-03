@@ -9,7 +9,21 @@
         "venv/": true,
         "**/*.db":true
     },
+
+    "files.watcherExclude": {
+        "**/.git/objects/**": true,
+        "**/.git/subtree-cache/**": true,
+        "**/node_modules/*/**": true,
+        "**/__pycache__": true,
+        "**/.*": true,
+        "venv/": true,
+        "**/*.db":true
+    },
     "python.formatting.provider": "black",
     "python.linting.pylintEnabled": true,
     "python.linting.enabled": true,
+
+    "python.linting.pylintArgs": [
+        "--extension-pkg-whitelist=PySide2"
+    ],
 }

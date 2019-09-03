@@ -13,9 +13,39 @@ import sqlite3
 import re
 
 # Qt imports
-from PySide2.QtWidgets import *
-from PySide2.QtCore import *
-from PySide2.QtGui import *
+from PySide2.QtWidgets import (
+    QStyledItemDelegate,
+    QTreeView,
+    QWidget,
+    QAction,
+    QToolBar,
+    QVBoxLayout,
+    QAbstractItemView,
+    QApplication,
+    QSizePolicy,
+    QLabel,
+    QLineEdit,
+    QFrame,
+    QStyle,
+    QInputDialog
+)
+from PySide2.QtCore import (
+    QAbstractItemModel,
+    QRect,
+    Signal,
+    Slot,
+    QModelIndex,
+    QSize,
+    Qt
+)
+from PySide2.QtGui import (
+    QPainter,
+    QContextMenuEvent,
+    QIntValidator,
+    QPalette,
+    QPen,
+    QBrush,
+)
 
 # Custom imports
 from cutevariant.gui.ficon import FIcon
@@ -162,7 +192,9 @@ class QueryModel(QAbstractItemModel):
             return len(self.variants)
 
         if self.level(parent) == 1:
-            return len(self.variants[parent.row()]) - 1  # Omit first item already displayed in parent
+            return (
+                len(self.variants[parent.row()]) - 1
+            )  # Omit first item already displayed in parent
 
     def columnCount(self, parent=QModelIndex()):
         """Overrided: Return column count of parent . 
@@ -244,7 +276,7 @@ class QueryModel(QAbstractItemModel):
 
         #  ---- Display Role ----
         if role == Qt.DisplayRole:
-            #Return data for the first level
+            # Return data for the first level
             if self.level(index) == 1:
                 if index.column() == 0:
                     return self.variants_children_count[index.row()]
@@ -293,7 +325,7 @@ class QueryModel(QAbstractItemModel):
 
         if self.level(parent) == 1:
             children_count = self.variants_children_count[parent.row()]
-            return children_count > 1 
+            return children_count > 1
 
         return False
 
@@ -307,23 +339,22 @@ class QueryModel(QAbstractItemModel):
         else:
             return False
 
-    def fetchMore(self, parent:QModelIndex):
+    def fetchMore(self, parent: QModelIndex):
 
         if parent == QModelIndex():
-            return 
+            return
 
         variant_id = self.variants[parent.row()][0][0]
-        #The root parent is the last one.. Reverse to have it at first
+        # The root parent is the last one.. Reverse to have it at first
         children = list(self.builder.children(variant_id))[:-1]
-        
+
         self.variants[parent.row()][1:] = []
 
         self.beginInsertRows(parent, 0, len(children))
         self.variants[parent.row()].extend(children)
         self.endInsertRows()
-        
-        print("var2", self.variants[parent.row()])
 
+        print("var2", self.variants[parent.row()])
 
     def load(self):
         """Load variant data into the model from query attributes
@@ -340,18 +371,18 @@ class QueryModel(QAbstractItemModel):
         # Set total of variants for pagination
         self.total = self.builder.count()
 
-
         # Append a list because child can be append after
         self.variants = []
         self.variants_sql_indexes = []
         self.variants_children_count = []
-        for variant in self.builder.trees(grouped = self.grouped, limit = self.limit, offset = self.page * self.limit):
+        for variant in self.builder.trees(
+            grouped=self.grouped, limit=self.limit, offset=self.page * self.limit
+        ):
             self.variants_children_count.append(variant[0])
             self.variants.append([variant[1]])
         self.endResetModel()
 
         LOGGER.debug(self.builder.sql())
-        
 
         if self.emit_changed:
             self.changed.emit()
@@ -433,14 +464,15 @@ class QueryModel(QAbstractItemModel):
             ]  #  + 1 because the first element is the parent
 
     @Slot(bool)
-    def group_variant(self, is_grouped:bool):
+    def group_variant(self, is_grouped: bool):
         """Group variant by chr,pos,ref,alt
         
         Args:
             is_grouped (bool)
         """
-        self.grouped = is_grouped 
+        self.grouped = is_grouped
         self.load()
+
 
 class QueryDelegate(QStyledItemDelegate):
     """
@@ -651,20 +683,22 @@ class QueryWidget(QWidget):
         main_layout.addWidget(self.bottombar)
         main_layout.setContentsMargins(0, 0, 0, 0)
 
-        
         self.topbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         # Construct top bar
         # These actions should be disabled until a query is made (see query setter)
         self.export_csv_action = self.topbar.addAction(
-            FIcon(0xf207),
-            self.tr("Export variants"), self.export_csv
+            FIcon(0xF207), self.tr("Export variants"), self.export_csv
         )
         self.export_csv_action.setEnabled(False)
 
-        self.grouped_action = self.topbar.addAction(FIcon(0xf191),"Group variant")
+        self.grouped_action = self.topbar.addAction(FIcon(0xF191), "Group variant")
         self.grouped_action.setCheckable(True)
         self.grouped_action.setChecked(True)
         self.grouped_action.toggled.connect(self.on_group_changed)
+
+        self.save_action = self.topbar.addAction(FIcon(0xF817), "Save selection")
+        self.save_action.setToolTip("Save current selections")
+        self.save_action.triggered.connect(self.on_save_clicked)
 
         # Add spacer to push next buttons to the right
         spacer = QWidget()
@@ -694,11 +728,11 @@ class QueryWidget(QWidget):
         # self.show_sql_action.setEnabled(False)
         self.bottombar.addWidget(self.page_info)
         self.bottombar.addWidget(spacer)
-        self.bottombar.addAction(FIcon(0xF792), "<<", self.model.firstPage) 
-        self.bottombar.addAction(FIcon(0xF04D), "<",  self.model.previousPage)
+        self.bottombar.addAction(FIcon(0xF792), "<<", self.model.firstPage)
+        self.bottombar.addAction(FIcon(0xF04D), "<", self.model.previousPage)
         self.bottombar.addWidget(self.page_box)
-        self.bottombar.addAction(FIcon(0xF054), ">",  self.model.nextPage)
-        self.bottombar.addAction(FIcon(0xF793), ">>",  self.model.lastPage)
+        self.bottombar.addAction(FIcon(0xF054), ">", self.model.nextPage)
+        self.bottombar.addAction(FIcon(0xF793), ">>", self.model.lastPage)
 
         self.bottombar.setIconSize(QSize(16, 16))
         self.bottombar.setMaximumHeight(30)
@@ -841,6 +875,11 @@ class QueryWidget(QWidget):
 
         self.page_box.clearFocus()
 
+    def on_save_clicked(self):
+        name, success = QInputDialog.getText(self, "Text", "Enter name:")
+        if success:
+            self.model.builder.save(name)
+            self.model.changed.emit()
 
 if __name__ == "__main__":
 
@@ -853,8 +892,8 @@ if __name__ == "__main__":
     import_file(conn, "examples/test.snpeff.vcf")
 
     w = QueryWidget()
-    w.conn = conn 
-    w.model.columns = ["chr","pos","ref","alt","gene","transcript"]
+    w.conn = conn
+    w.model.columns = ["chr", "pos", "ref", "alt", "gene", "transcript"]
     w.model.load()
     w.show()
 

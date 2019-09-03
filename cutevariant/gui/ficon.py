@@ -43,6 +43,7 @@ class FIconEngine(QIconEngine):
         # The following test is to avoid crash when running python widget outside the __main__.my
         if not font:
             font = painter.font()
+            return
              
 
         painter.save()
@@ -92,12 +93,16 @@ class FIcon(QIcon):
     def __init__(self, hex_character: int, color=None):
         """Build an icon with the given character and color from the current font"""
         self.engine = FIconEngine()
-        self.engine.setCharacter(hex_character)
-        if color:
-            self.engine.setColor(color)
-        else:
-            self.engine.setColor(qApp.palette().text().color())
-        super().__init__(self.engine)
+
+        if self.engine.font is None: # Return empty QIcon
+            super().__init__()
+        else:    
+            self.engine.setCharacter(hex_character)
+            if color:
+                self.engine.setColor(color)
+            else:
+                self.engine.setColor(qApp.palette().text().color())
+            super().__init__(self.engine)
 
     def to_base64(self, w=32, h=32):
         """Return icon as base64 to make it work with html"""

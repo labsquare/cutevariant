@@ -1,7 +1,4 @@
 from cutevariant.gui import plugin
-
-from PySide2.QtWidgets import *
-import sys
 import sqlite3
 
 from cutevariant.gui.plugins.selection import widget
@@ -31,13 +28,21 @@ class SelectionPlugin(plugin.Plugin):
         """
         self.editor.conn = conn
 
+    def on_query_model_changed(self):
+        self.editor.load()
+
     def on_selection_changed(self):
         
+        self.editor.blockSignals(True)
         self.mainwindow.query_widget.model.selection = self.editor.selection
         self.mainwindow.query_widget.model.load()
-
+        self.editor.blockSignals(False)
 
 if __name__ == "__main__":
+    from PySide2.QtWidgets import QApplication
+    import sys 
+    from cutevariant.core.sql import get_sql_connexion
+
 
     app = QApplication(sys.argv)
 

@@ -10,13 +10,10 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 
 # Custom imports
-from cutevariant.core import Query
 from cutevariant.core import sql
 from cutevariant.core.reader.bedreader import BedTool
 from cutevariant.gui.ficon import FIcon
 from cutevariant.commons import logger, DEFAULT_SELECTION_NAME
-
-import sys
 
 
 LOGGER = logger()
@@ -28,7 +25,7 @@ class selectionModel(QAbstractTableModel):
     Usage:
 
         model = selectionModel()
-        model.query = query
+        model.conn = conn
         model.load()
 
     """
@@ -160,7 +157,7 @@ class SelectionWidget(QWidget):
 
     selectionChanged = Signal()
 
-    def __init__(self, parent=None):
+    def __init__(self, conn = None, parent=None):
         super().__init__()
 
         self.setWindowTitle(self.tr("Selections"))
@@ -195,6 +192,8 @@ class SelectionWidget(QWidget):
         self.edit_action = self.toolbar.addAction(
             FIcon(0xF8FF), self.tr("Edit"), self.edit_selection
         )
+
+        self.conn = conn
 
     @property
     def conn(self):
@@ -427,10 +426,11 @@ if __name__ == "__main__":
 
     import sqlite3
     import sys
+    from PySide2.QtWidgets import QApplication
 
     app = QApplication(sys.argv)
 
-    conn = sqlite3.connect("examples/test.db")
+    conn = sqlite3.connect("examples/test.snpeff.vcf.db")
 
     view = SelectionWidget(conn)
     view.show()
