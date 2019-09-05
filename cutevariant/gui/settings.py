@@ -45,7 +45,7 @@ class BaseWidget(QWidget):
     def __init__(self):
         super().__init__()
         self.settings = QSettings()
-        self.setWindowTitle("No plugin name")
+        self.setWindowTitle("")
         self.setWindowIcon(FIcon(0xF5CA))
 
     @abstractmethod
@@ -505,8 +505,16 @@ class SettingsWidget(QDialog):
         for PluginClass in plugin.find_plugins():
             p = PluginClass(self)
             settings_widget = p.get_settings_widget()
+        
             if settings_widget:
+                if not settings_widget.windowTitle():
+                    settings_widget.setWindowTitle(PluginClass.Name)
+                
+                if not settings_widget.windowIcon():
+                    settings_widget.setWindowIcon(FIcon(0xf431))
+                
                 self.addPanel(settings_widget)
+
 
         
 

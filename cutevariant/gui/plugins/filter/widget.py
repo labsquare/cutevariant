@@ -544,9 +544,9 @@ class FilterModel(QAbstractItemModel):
                 font.setBold(True)
                 return font
 
-        if role == Qt.CheckStateRole:
-            if index.column() == 0 and self.item(index).type() == FilterItem.CONDITION_TYPE:
-                return Qt.Checked
+        # if role == Qt.CheckStateRole:
+        #     if index.column() == 0 and self.item(index).type() == FilterItem.CONDITION_TYPE:
+        #         return Qt.Checked
 
         if role == FilterModel.TypeRole:
             # Return item type
