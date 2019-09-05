@@ -15,7 +15,7 @@ from cutevariant.core import vql
 
 def main():
     logger = logging.getLogger()
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.CRITICAL)
     parser = argparse.ArgumentParser(description="""
     Cutevariant cli mode helps your to run actions directly from command-line
     """)

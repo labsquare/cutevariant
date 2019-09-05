@@ -1126,6 +1126,10 @@ class QueryBuilder(object):
             if format_sql:
                 # Format for SQL 
                 field = self.column_to_sql(field, use_alias=False)
+
+            # convert (genotype,sample,field) to genotype(sample).field
+            if isinstance(field,tuple):
+                field = "{}(\"{}\").{}".format(*field)
         
             # TODO ... c'est degeulasse ....
             if operator in ("IN", "NOT IN"):

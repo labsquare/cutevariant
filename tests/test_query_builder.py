@@ -132,6 +132,37 @@ def test_select_children(conn):
         assert len(list(sql.QueryBuilder(conn).children(variant_id = 2))) == len(VARIANTS[1]["annotations"])
 
 
+@pytest.mark.parametrize("args,expected",
+[
+    (
+        {"columns": ["chr","pos"]},
+        "SELECT chr,pos FROM variants"
+    ),
+    (
+        {"columns": ["chr","pos",("genotype","boby","gt")]},
+        "SELECT chr,pos,genotype(\"boby\").gt FROM variants"
+    ),
+    (
+        {
+            "columns": ["chr","pos"],
+            "filters":{"AND": [{"field": "chr", "operator": ">", "value": 4}]}
+        },
+        "SELECT chr,pos FROM variants WHERE chr > 4"
+    ),
+    (
+        {
+            "columns": ["chr","pos"],
+            "filters":{"AND": [{"field": ("genotype","boby","gt"), "operator":"=" , "value": 1}]}
+        },
+        "SELECT chr,pos FROM variants WHERE genotype(\"boby\").gt = 1"
+    )
+])
+def test_to_vql(conn, args, expected):
+    selector = sql.QueryBuilder(conn, **args)
+    assert selector.vql() == expected
+
+
+
 
 
 
@@ -170,3 +201,4 @@ def test_save(conn):
     selector.selection = "denovo"
     selector.filters = None
     assert selector.count() == 1
+
