@@ -288,6 +288,7 @@ class QueryViewWidget(plugin.PluginWidget):
     def on_register(self, mainwindow):
         """ Override from PluginWidget """
         self.view.setModel(mainwindow.query_model)
+        self.model = mainwindow.query_model
 
     def on_setup_ui(self):
         """ Override from PluginWidget """
