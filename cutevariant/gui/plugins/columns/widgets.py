@@ -1,24 +1,8 @@
-"""Plugin to view all fields available for variants, annotations and samples
-
-SelectionQueryWidget class is seen by the user and uses ColumnsModel class
-as a model that handles records from the database.
-"""
-import sys
-import sqlite3
-
-# Qt imports
+from cutevariant.gui import plugin, FIcon
+from cutevariant.core import sql
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 from PySide2.QtGui import *
-
-# Custom imports
-from cutevariant.core import sql
-from cutevariant.gui.style import TYPE_COLORS
-from cutevariant.gui.ficon import FIcon
-from cutevariant.commons import logger
-
-LOGGER = logger()
-
 
 class ColumnsModel(QStandardItemModel):
     """Model to store all fields available for variants, annotations and samples"""
@@ -122,7 +106,7 @@ class ColumnsModel(QStandardItemModel):
 
 
 
-class ColumnsWidget(QWidget):
+class ColumnsWidget(plugin.PluginWidget):
     """Display all fields according categories
 
     Usage: 
@@ -132,7 +116,6 @@ class ColumnsWidget(QWidget):
     
     """
 
-    changed = Signal()
 
     def __init__(self, parent=None):
         super().__init__()
@@ -150,7 +133,17 @@ class ColumnsWidget(QWidget):
         layout.addWidget(self.view)
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
-        self.model.itemChanged.connect(self.changed)
+        self.model.itemChanged.connect(self.on_column_changed)
+
+    def on_register(self):
+        pass 
+
+    def on_open_project(self,_conn):
+        self.conn = _conn
+
+    def on_column_changed(self):
+        self.mainwindow.query_model.columns = self.columns
+        self.mainwindow.query_model.load()
 
     @property
     def conn(self):
@@ -175,6 +168,9 @@ class ColumnsWidget(QWidget):
 
 
 if __name__ == "__main__":
+    import sys 
+    import sqlite3
+
     app = QApplication(sys.argv)
 
     conn = sqlite3.connect("examples/test.db")
@@ -188,3 +184,5 @@ if __name__ == "__main__":
     view.show()
 
     app.exec_()
+
+

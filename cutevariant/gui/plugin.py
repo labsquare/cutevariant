@@ -7,58 +7,66 @@ from PySide2.QtCore import Signal
 from glob import glob
 import os
 import importlib
+import pkgutil
+
+DOCK_LOCATION = 1 
+CENTRAL_LOCATION = 2 
+FOOTER_LOCATION = 3
 
 
-class Plugin(object):
-    """Base class for Plugin """
+class PluginWidget(QWidget):
 
-    Name = "No Name"
-    Description = ""
-
-    def __init__(self, parent=None):
-        super().__init__()
-        self.mainwindow = parent
-        self.dockable = True
-
-    def on_query_model_changed(self):
-        """ This method is called when QueryModel changed """
-        pass
-
-    def on_variant_clicked(self, variant):
-        """ This method is called when a a variant is selected from the QueryModel """
-        pass
+    def __init__(self, parent = None):
+        super().__init__(parent)
+        self.mainwindow = None
+        self.widget_location = DOCK_LOCATION
 
     def on_register(self):
-        """ This method is called when plugin has been registered to the mainwindow """
+        """This method is called when the plugin is register 
+        """
         pass
 
-    def on_close(self):
-        """ this method is called when plugin closed """
+    def on_setup_ui(self, mainwindow):
+        """This method is called when the mainwindow is build 
+        You should setup the mainwindow with your plugin from here.
+        
+        Args:
+            mainwindow (MainWindow): cutevariant Mainwindow 
+        """
         pass
 
     def on_open_project(self, conn):
-        """This method is called when a new project connection happen
+        """This method is called when a project open
         
-        Arguments:
-            conn sqlite3.connection 
+        Args:
+            conn (sqlite3.connection): A connection to the sqlite project
         """
         pass
 
-    def get_widget(self) -> QWidget:
-        """Return the plugin  widget 
+    def on_query_model_changed(self, model):
+        """This method is called when the variant model changed 
         
-        Returns:
-            QWidget 
+        Args:
+            model (QueryModel): QueryModel
         """
-        return None
+        pass
 
-    def get_settings_widget(self) -> QWidget:
-        """Return the plugin settings widget
+    def on_variant_changed(self,variant):
+        """This method is called when a variant is clicked. 
+        The signal must be sended from mainwindow
         
-        Returns:
-            QWidget 
+        Args:
+            variant (dict): contains data of a variant
         """
-        return None
+        pass
+
+    def on_close(self):
+        """This methods is called when the mainwindow close
+        """
+        pass
+
+
+#         return None
 
 
 def find_plugins(path=None):
@@ -77,23 +85,21 @@ def find_plugins(path=None):
     else:
         plugin_path = path
 
-    #  get all packages from the path
-    # TODO: check if they are packages
-    paths = [f.path for f in os.scandir(plugin_path) if f.is_dir()]
+    plugin_item = {}
 
-    #  Loop over packages and load Plugin dynamically
-    for path in paths:
-        #  module name example : test
-        module_name = os.path.basename(path)
-        #  class name example : TestPlugin
-        class_name = module_name.capitalize() + "Plugin"
+    # Loop over package in plugins directory
+    for package in pkgutil.iter_modules([plugin_path]):
+        
+        widget_path = os.path.join(package.module_finder.path, package.name, "widgets.py")
+        setting_path = None #TODO 
+        spec = importlib.util.spec_from_file_location("widgets", widget_path)
 
-        spec = importlib.util.spec_from_file_location(
-            module_name, path + "/plugin.py"
-        )
         if spec:
-            # load the module
             module = spec.loader.load_module()
-            # load the class
-            Plugin = getattr(module, class_name)
-            yield Plugin
+            # capitalize only the first letter 
+            class_name = package.name[0].upper() + package.name[1:] + "Widget"
+
+            if class_name in dir(module):
+                plugin_item["widget"] = getattr(module, class_name)
+                yield plugin_item
+            

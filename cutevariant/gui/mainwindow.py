@@ -13,13 +13,15 @@ from PySide2.QtGui import QIcon, QKeySequence
 # Custom imports
 from cutevariant.core import Query, get_sql_connexion
 from cutevariant.gui.ficon import FIcon
-from cutevariant.gui.wizards import ProjectWizard
-from cutevariant.gui.settings import SettingsWidget
-from cutevariant.gui.querywidget import QueryWidget
-from cutevariant.gui import plugin
+from cutevariant.gui.querymodel import QueryModel
+# from cutevariant.gui.wizards import ProjectWizard
+# from cutevariant.gui.settings import SettingsWidget
+# from cutevariant.gui.querywidget import QueryWidget
+# from cutevariant.gui import plugin
 
 #  Import plugins
-from cutevariant.gui.plugins.editor.plugin import EditorPlugin
+from cutevariant.gui import plugin
+#from cutevariant.gui.plugins.editor.plugin import EditorPlugin
 
 from cutevariant.gui.aboutcutevariant import AboutCutevariant
 # from cutevariant.gui.chartquerywidget import ChartQueryWidget
@@ -51,47 +53,52 @@ class MainWindow(QMainWindow):
         # store dock plugins
         self.plugins = []
 
-        # Build central view based on QTabWidget
-        # PS: get current view via current_tab_view()
-        # Central widget encapsulates a QTabWidget and VqlEditor
-        self.query_widget = QueryWidget()
-        self.central_tab = QTabWidget()
+        # The query model 
+        self.query_model = QueryModel()
 
-        #  create editor plugins
-        self.editor_plugin = EditorPlugin(self)
-        self.editor = self.editor_plugin.get_widget()
+
+        self.central_tab = QTabWidget()
+        self.footer_tab = QTabWidget()
 
         vsplit = QSplitter(Qt.Vertical)
-        vsplit.addWidget(self.central_tab)  # add QTabWidget
-        vsplit.addWidget(self.editor)  # add VqlEditor
+        vsplit.addWidget(self.central_tab)  
+        vsplit.addWidget(self.footer_tab)  
         self.setCentralWidget(vsplit)
-        self.add_tab_view(self.query_widget)
-        # TODO: add other tabs here
 
-        # Setup menubar
-        self.setup_menubar()
-        self.setup_toolbar()
+
 
         # Status Bar
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)  
 
-        # registere editor plugins
-        self.register_plugin(self.editor_plugin)
+        # Setup UI
+        self.setup_ui()
 
-        #  register other plugins
-        for PluginClass in plugin.find_plugins():
-            # Note : passing self is important to make the plugin workable
-            self.register_plugin(PluginClass(self))
-
+   
         # Window geometry
         self.resize(600, 400)
         self.setGeometry(qApp.desktop().rect().adjusted(100, 100, -100, -100))
 
+        self.register_plugins()
+
         # Restores the state of this mainwindow's toolbars and dockwidgets
         self.read_settings()
 
-        #self.open("test.db")
+    #     #self.open("test.db")
+
+        self.query_model.changed.connect(self.on_query_model_changed)
+    
+
+
+
+    def setup_ui(self):
+        # Setup menubar
+        self.setup_menubar()
+        self.setup_toolbar()
+
+        for _plugin in self.plugins:
+            _plugin.on_setup_ui(self)
+
 
     def add_panel(self, widget, area=Qt.LeftDockWidgetArea):
         """Add given widget to a new QDockWidget and to view menu in menubar"""
@@ -110,29 +117,27 @@ class MainWindow(QMainWindow):
         self.addDockWidget(area, dock)
         self.view_menu.addAction(dock.toggleViewAction())
 
-    def register_plugin(self, plugin: plugin.Plugin):
+    def register_plugins(self):
         """add plugin to the application
-        
-        Arguments:
-            plugin plugin.Plugin
         """
 
-        self.plugins.append(plugin)
+        self.plugins = list() 
+        for p in plugin.find_plugins():
+            if "widget" in p:
+                PluginWidget = p["widget"]
+                w = PluginWidget()
+                self.plugins.append(w)
+                w.mainwindow = self
+                w.on_register()
 
-        # call abstract method 
-        plugin.on_register()
+                if w.widget_location == plugin.DOCK_LOCATION:
+                    self.add_panel(w)
 
-        # connect variant clicked signal with the plugin
-        self.query_widget.variant_clicked.connect(plugin.on_variant_clicked)
+                if w.widget_location == plugin.CENTRAL_LOCATION:
+                    self.central_tab.addTab(w, w.windowTitle())
 
-        # connect variant model with the plugin
-        self.query_widget.model.changed.connect(plugin.on_query_model_changed)
-
-        #  Add dockable widget if it's required
-        widget = plugin.get_widget()
-        if widget is not None:
-            if plugin.dockable:
-                self.add_panel(widget)
+                if w.widget_location == plugin.FOOTER_LOCATION:
+                    self.footer_tab.addtab(w, w.windowTitle())
 
    
 
@@ -178,11 +183,11 @@ class MainWindow(QMainWindow):
 
         ## View
         self.view_menu = self.menuBar().addMenu(self.tr("&View"))
-        self.view_menu.addAction(self.tr("Reset widgets positions"), self.reset_ui)
-        console_action = self.view_menu.addAction(FIcon(0xf18d),self.tr("Show console"))
-        console_action.setCheckable(True)
-        console_action.setShortcuts([Qt.CTRL + Qt.Key_T])
-        console_action.toggled.connect(self.editor.setVisible)
+        # self.view_menu.addAction(self.tr("Reset widgets positions"), self.reset_ui)
+        # console_action = self.view_menu.addAction(FIcon(0xf18d),self.tr("Show console"))
+        # console_action.setCheckable(True)
+        # console_action.setShortcuts([Qt.CTRL + Qt.Key_T])
+        # console_action.toggled.connect(self.editor.setVisible)
         
         self.view_menu.addSeparator()
 
@@ -200,27 +205,27 @@ class MainWindow(QMainWindow):
         self.toolbar.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
         self.toolbar.addAction(self.new_project_action)
         self.toolbar.addAction(self.open_project_action)
-        self.toolbar.addAction(FIcon(0xF40A),"Run", self.execute_vql).setShortcuts([Qt.CTRL + Qt.Key_R, QKeySequence.Refresh])
+        #self.toolbar.addAction(FIcon(0xF40A),"Run", self.execute_vql).setShortcuts([Qt.CTRL + Qt.Key_R, QKeySequence.Refresh])
         self.toolbar.addSeparator()
 
-    def add_tab_view(self, widget):
-        """Add the given widget to the current (QTabWidget),
-        and connect it to the query_dispatcher"""
-        self.central_tab.addTab(widget, widget.windowTitle())
-        # self.query_dispatcher.addWidget(widget)
+    # def add_tab_view(self, widget):
+    #     """Add the given widget to the current (QTabWidget),
+    #     and connect it to the query_dispatcher"""
+    #     self.central_tab.addTab(widget, widget.windowTitle())
+    #     # self.query_dispatcher.addWidget(widget)
 
-    def current_tab_view(self):
-        """Get the page/tab currently being displayed by the tab dialog
+    # def current_tab_view(self):
+    #     """Get the page/tab currently being displayed by the tab dialog
 
-        :return: Return the current tab in the QTabWidget
-        :rtype: <QWidget>
-        """
-        # Get the index position of the current tab page
-        index = self.tab_view.currentIndex()
-        if index == -1:
-            # No tab in the widget
-            return None
-        return self.tab_view.currentWidget()
+    #     :return: Return the current tab in the QTabWidget
+    #     :rtype: <QWidget>
+    #     """
+    #     # Get the index position of the current tab page
+    #     index = self.tab_view.currentIndex()
+    #     if index == -1:
+    #         # No tab in the widget
+    #         return None
+    #     return self.tab_view.currentWidget()
 
     def open(self, filepath):
         """Open the given db/project file
@@ -247,11 +252,11 @@ class MainWindow(QMainWindow):
 
         # Create central view 
         # TODO: rename the class 
-        self.query_widget.conn = self.conn
-        self.query_widget.model.load()
+        self.query_model.conn = self.conn
+        self.query_model.load()
 
-        for plugin in self.plugins:
-            plugin.on_open_project(self.conn)
+        for _plugin in self.plugins:
+            _plugin.on_open_project(self.conn)
 
         self.save_recent_project(filepath)
 
@@ -302,9 +307,9 @@ class MainWindow(QMainWindow):
         self.open(action.text())
 
 
-    def handle_plugin_message(self, message):
-        """Slot to display message from plugin in the status bar"""
-        self.status_bar.showMessage(message)
+    # def handle_plugin_message(self, message):
+    #     """Slot to display message from plugin in the status bar"""
+    #     self.status_bar.showMessage(message)
 
     def new_project(self):
         """Slot to allow creation of a project with the Wizard"""
@@ -419,10 +424,9 @@ class MainWindow(QMainWindow):
             app_settings.setValue("windowState", self.saveState())
 
     @Slot()
-    def execute_vql(self):
-        """ Execute query from editor """
-        self.editor.run_vql()
-
+    def on_query_model_changed(self):
+        for _plugin in self.plugins:
+            _plugin.on_query_model_changed(self.query_model)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
