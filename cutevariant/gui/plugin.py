@@ -19,6 +19,8 @@ FOOTER_LOCATION = 3
 
 class PluginWidget(QWidget):
 
+    LOCATION = DOCK_LOCATION
+
     def __init__(self, parent = None):
         super().__init__(parent)
         self.mainwindow = None
@@ -65,12 +67,14 @@ class PluginWidget(QWidget):
         pass
 
 
+
+
 class PluginSettingsWidget(GroupWidget):
     def __init__(self, parent = None):
         super(parent).__init__()
 
 
-def find_plugins(path=None):
+def find_plugins(path=None, type="widgets"):
     """find and returns plugin instance from a directory 
     
     Keyword Arguments:
@@ -86,22 +90,23 @@ def find_plugins(path=None):
     else:
         plugin_path = path
 
-    plugin_item = {}
-
     # Loop over package in plugins directory
     for package in pkgutil.iter_modules([plugin_path]):
         
-        widget_path = os.path.join(package.module_finder.path, package.name, "widgets.py")
-        setting_path = os.path.join(package.module_finder.path, package.name, "settings.py")
+        widget_path = os.path.join(package.module_finder.path, package.name, f"{type}.py")
         
-        spec = importlib.util.spec_from_file_location("widgets", widget_path)
+        spec = importlib.util.spec_from_file_location(type, widget_path)
 
         if spec:
             module = spec.loader.load_module()
             # capitalize only the first letter 
-            class_name = package.name[0].upper() + package.name[1:] + "Widget"
+            if type == "widgets":
+                # look for {pkgName}Widget class 
+                class_name = package.name[0].upper() + package.name[1:] + "Widget"
+            if type == "settings":
+                class_name = package.name[0].upper() + package.name[1:] + "SettingsWidget"
 
             if class_name in dir(module):
-                plugin_item["widget"] = getattr(module, class_name)
+                plugin_item = getattr(module, class_name)
                 yield plugin_item
             

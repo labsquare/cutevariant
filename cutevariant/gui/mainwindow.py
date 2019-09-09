@@ -99,8 +99,6 @@ class MainWindow(QMainWindow):
         self.setup_menubar()
         self.setup_toolbar()
 
-        for _plugin in self.plugins:
-            _plugin.on_setup_ui(self)
 
 
     def add_panel(self, widget, area=Qt.LeftDockWidgetArea):
@@ -125,22 +123,22 @@ class MainWindow(QMainWindow):
         """
 
         self.plugins = list() 
-        for p in plugin.find_plugins():
-            if "widget" in p:
-                PluginWidget = p["widget"]
-                w = PluginWidget()
-                self.plugins.append(w)
-                w.mainwindow = self
-                w.on_register(self)
+        for PluginWidget in plugin.find_plugins():
+            if PluginWidget:
+                widget = PluginWidget()
+                self.plugins.append(widget)
+                widget.mainwindow = self
+                widget.on_register(self)
 
-                if w.widget_location == plugin.DOCK_LOCATION:
-                    self.add_panel(w)
 
-                if w.widget_location == plugin.CENTRAL_LOCATION:
-                    self.central_tab.addTab(w, w.windowTitle())
+                if PluginWidget.LOCATION == plugin.DOCK_LOCATION:
+                    self.add_panel(widget)
 
-                if w.widget_location == plugin.FOOTER_LOCATION:
-                    self.footer_tab.addTab(w, w.windowTitle())
+                if PluginWidget.LOCATION == plugin.CENTRAL_LOCATION:
+                    self.central_tab.addTab(widget, widget.windowTitle())
+
+                if PluginWidget.LOCATION == plugin.FOOTER_LOCATION:
+                    self.footer_tab.addTab(widget, widget.windowTitle())
 
    
 

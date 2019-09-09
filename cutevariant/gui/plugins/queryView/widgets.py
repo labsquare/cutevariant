@@ -186,11 +186,12 @@ class QueryViewWidget(plugin.PluginWidget):
     """Contains the view of query with several controller"""
 
     variant_clicked = Signal(dict)
+    LOCATION = plugin.CENTRAL_LOCATION
+
 
     def __init__(self, parent = None):
         super().__init__(parent)
 
-        self.widget_location = plugin.CENTRAL_LOCATION
 
         self.delegate = QueryDelegate()
         self.setWindowTitle(self.tr("Variants"))

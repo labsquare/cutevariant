@@ -154,11 +154,12 @@ class EditorWidget(plugin.PluginWidget):
     """Exposed class to manage VQL/SQL queries from the mainwindow"""
 
     executed = Signal()
+    LOCATION = plugin.FOOTER_LOCATION
+
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle(self.tr("Vql Editor"))
-        self.widget_location = plugin.FOOTER_LOCATION
 
         # Syntax highlighter and autocompletion
         self.text_edit = VqlEdit()
