@@ -71,15 +71,18 @@ class MainWindow(QMainWindow):
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)  
 
+    
         # Setup UI
         self.setup_ui()
 
-   
+      # Register plugins 
+        self.register_plugins()
+
+
         # Window geometry
         self.resize(600, 400)
         self.setGeometry(qApp.desktop().rect().adjusted(100, 100, -100, -100))
 
-        self.register_plugins()
 
         # Restores the state of this mainwindow's toolbars and dockwidgets
         self.read_settings()
@@ -128,7 +131,7 @@ class MainWindow(QMainWindow):
                 w = PluginWidget()
                 self.plugins.append(w)
                 w.mainwindow = self
-                w.on_register()
+                w.on_register(self)
 
                 if w.widget_location == plugin.DOCK_LOCATION:
                     self.add_panel(w)
@@ -137,7 +140,7 @@ class MainWindow(QMainWindow):
                     self.central_tab.addTab(w, w.windowTitle())
 
                 if w.widget_location == plugin.FOOTER_LOCATION:
-                    self.footer_tab.addtab(w, w.windowTitle())
+                    self.footer_tab.addTab(w, w.windowTitle())
 
    
 

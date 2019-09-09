@@ -9,6 +9,9 @@ import os
 import importlib
 import pkgutil
 
+# cutevariant import 
+from cutevariant.gui.settings import BaseWidget, GroupWidget
+
 DOCK_LOCATION = 1 
 CENTRAL_LOCATION = 2 
 FOOTER_LOCATION = 3
@@ -21,12 +24,8 @@ class PluginWidget(QWidget):
         self.mainwindow = None
         self.widget_location = DOCK_LOCATION
 
-    def on_register(self):
-        """This method is called when the plugin is register 
-        """
-        pass
 
-    def on_setup_ui(self, mainwindow):
+    def on_register(self, mainwindow):
         """This method is called when the mainwindow is build 
         You should setup the mainwindow with your plugin from here.
         
@@ -66,7 +65,9 @@ class PluginWidget(QWidget):
         pass
 
 
-#         return None
+class PluginSettingsWidget(GroupWidget):
+    def __init__(self, parent = None):
+        super(parent).__init__()
 
 
 def find_plugins(path=None):
@@ -91,7 +92,8 @@ def find_plugins(path=None):
     for package in pkgutil.iter_modules([plugin_path]):
         
         widget_path = os.path.join(package.module_finder.path, package.name, "widgets.py")
-        setting_path = None #TODO 
+        setting_path = os.path.join(package.module_finder.path, package.name, "settings.py")
+        
         spec = importlib.util.spec_from_file_location("widgets", widget_path)
 
         if spec:

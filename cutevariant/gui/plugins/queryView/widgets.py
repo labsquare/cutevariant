@@ -285,15 +285,15 @@ class QueryViewWidget(plugin.PluginWidget):
         # self.page_box.returnPressed.connect(self._update_page)
 
 
-    def on_register(self):
+    def on_register(self, mainwindow):
         """ Override from PluginWidget """
-        self.view.setModel(self.mainwindow.query_model)
+        self.view.setModel(mainwindow.query_model)
 
     def on_setup_ui(self):
         """ Override from PluginWidget """
         print("setup ")
 
-    def on_open_project(self):
+    def on_open_project(self, conn):
         """ Override from PluginWidget """
         pass
 

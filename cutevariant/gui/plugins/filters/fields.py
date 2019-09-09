@@ -1,11 +1,8 @@
-from cutevariant.gui.ficon import FIcon
-from cutevariant.gui.fields import *
-
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 from PySide2.QtGui import *
 import sys
-from cutevariant.gui import style, plugin
+from cutevariant.gui import style
 import pickle
 import uuid
 
@@ -17,6 +14,7 @@ from cutevariant.core import sql, get_sql_connexion
 class BaseField(QFrame):
     """Base class for all editor widgets. Editor widgets are used in FilterDelegate to display different kind of editor according field type.
     Inherit from this class if you want a custom field editor by overriding  set_value and get_value. 
+
         ..note: I don't want to use @property for value. It doesn't suitable for POO in my point of view
         ..see: FilterDelegate 
     """
@@ -107,9 +105,10 @@ class StrField(BaseField):
 
     def get_value(self) -> str:
         """Return quoted string
+
             ..todo : check if quotes are required 
         """
-        return self.edit.text()
+        return "'" + self.edit.text() + "'"
 
     def set_completer(self, completer: QCompleter):
         """ set a completer to autocomplete value """
@@ -199,6 +198,7 @@ class ColumnField(BaseField):
 class LogicField(BaseField):
 
     """ Editor for logic field (And/Or)
+
     """
 
     def __init__(self, parent=None):
@@ -273,7 +273,7 @@ class FieldFactory(QObject):
             print(field)
             unique_values = sql.get_field_unique_values(
                 self.conn, field["name"]
-            )  #  Can be huge ... How to use "like" ??
+            )  #  Can be huge ... How to use "like" ??
             w.set_completer(QCompleter(unique_values))
             return w
 
@@ -286,6 +286,7 @@ class FieldFactory(QObject):
 
 class FilterItem(object):
     """FilterItem is a recursive class which represent item for a FilterModel
+
     A tree of FilterItem can be store by adding FilterItem recursively as children. 
     Each FilterItem has a parent and a list of children.
     see https://doc.qt.io/qt-5/qtwidgets-itemviews-simpletreemodel-example.html 
@@ -293,15 +294,19 @@ class FilterItem(object):
     :Attributes:
         parent (FilterItem)
         children (list of FilterItem)
+
     :Example:
+
     root = FilterItem() # Create rootItem
-    root.append(FilterItem()) # Append 2 children
+    root.append(FilterItem()) # Append 2 children
     root.append(FilterItem())
     root[0].append(FilterItem()) # Append 1 child to the first children
+
+
     """
 
-    LOGIC_TYPE = 0  #  Logic type is AND/OR/XOR
-    CONDITION_TYPE = 1  #  Condition type is (field, operator, value)
+    LOGIC_TYPE = 0  #  Logic type is AND/OR/XOR
+    CONDITION_TYPE = 1  #  Condition type is (field, operator, value)
 
     def __init__(self, data=None, parent=None):
         """FilterItem constructor with parent as FilterItem parent 
@@ -375,15 +380,16 @@ class FilterItem(object):
 
     def type(self):
         """Return item type. 
+
             ..todo : maybe create subclass for each types ? 
         
         Returns:
             LOGIC_TYPE or CONDITION_TYPE
         """
-        if isinstance(self.data, str):  #  Logic
+        if isinstance(self.data, str):  #  Logic
             return self.LOGIC_TYPE
 
-        if isinstance(self.data, tuple):  #  condition
+        if isinstance(self.data, tuple):  #  condition
             return self.CONDITION_TYPE
 
         return None
@@ -397,6 +403,7 @@ class FilterItem(object):
         column 0: Field name 
         column 1: Field operator
         column 2 : Field value 
+
         Args:
             column (int)
         
@@ -420,6 +427,7 @@ class FilterItem(object):
         Args:
             data (Any type): any data
             column (int): Column Type
+
             ..see: self.get_data
         """
         if self.type() == self.LOGIC_TYPE and column == 0:
@@ -434,15 +442,18 @@ class FilterItem(object):
 class FilterModel(QAbstractItemModel):
 
     """Model to display filter from Query.filter.
+
     The model store Query filter as a nested tree of FilterItem. 
     You can access data from self.item() and edit model using self.set_data() and helper method like 
     self.add_logic_item, self.add_condition_item and remove_item.
+
     Attributes:
         conn (sqlite3.connection): sqlite3 connection
         filterChanged (Signal): signal emited when model is edited.
         root_item (FilterItem): RootItem (invisible) to store recursive item=
     
     Examples:
+
         data = {"AND": [
         {"field": "ref", "operator": "=", "value": "A"},
         {
@@ -451,6 +462,7 @@ class FilterModel(QAbstractItemModel):
                 {"field": "chr", "operator": "=", "value": "chr3"},
             ]
         },}}
+
         model = FilterModel(conn)
         model.load(data)
         view = QTreeView()
@@ -458,12 +470,17 @@ class FilterModel(QAbstractItemModel):
     
         # Access item  
         item  = model.item(view.currentIndex())
+
         # Add new item 
         model.add_logic_item(parent = view.currentIndex())
-        # Remove item 
+
+        # Remove item 
         model.remove_item(view.currentIndex())
+
     """
 
+    # signal definition
+    filterChanged = Signal()
     # See self.headerData()
     _HEADERS = ["field", "operator", "value"]
     _MIMEDATA = "application/x-qabstractitemmodeldatalist"
@@ -472,20 +489,10 @@ class FilterModel(QAbstractItemModel):
     TypeRole = Qt.UserRole + 1
     UniqueIdRole = Qt.UserRole + 2
 
-    filtersChanged = Signal()
-
     def __init__(self, conn, parent=None):
         super().__init__(parent)
         self.root_item = FilterItem("AND")
         self.conn = conn
-
-    @property
-    def filters(self):
-        return self.to_dict()
-
-    @filters.setter
-    def filters(self, filters):
-        self.load(filters)
 
     def __del__(self):
         """Model destructor. 
@@ -506,12 +513,12 @@ class FilterModel(QAbstractItemModel):
             return None
 
         if role == Qt.DisplayRole or role == Qt.EditRole:
-            #  Display data
+            #  Display data
             item = self.item(index)
             return item.get_data(index.column())
 
         if role == Qt.TextAlignmentRole:
-            #  Adjust text alignement
+            #  Adjust text alignement
             if index.column() == 0:
                 return int(Qt.AlignVCenter) + int(Qt.AlignLeft)
             if index.column() == 1:
@@ -520,15 +527,11 @@ class FilterModel(QAbstractItemModel):
                 return int(Qt.AlignVCenter) + int(Qt.AlignLeft)
 
         if role == Qt.FontRole:
-            #  Make LogicItem as bold
+            #  Make LogicItem as bold
             if self.item(index).type() == FilterItem.LOGIC_TYPE:
                 font = QFont()
                 font.setBold(True)
                 return font
-
-        # if role == Qt.CheckStateRole:
-        #     if index.column() == 0 and self.item(index).type() == FilterItem.CONDITION_TYPE:
-        #         return Qt.Checked
 
         if role == FilterModel.TypeRole:
             # Return item type
@@ -536,8 +539,6 @@ class FilterModel(QAbstractItemModel):
 
         if role == FilterModel.UniqueIdRole:
             return self.item(index).uuid
-
-
 
     def setData(self, index, value, role=Qt.EditRole):
         """Overrided Qt methods: Set data according index and value. 
@@ -551,14 +552,11 @@ class FilterModel(QAbstractItemModel):
         Returns:
             bool: Return True if success otherwise return False
         """
-        if role == Qt.CheckStateRole:
-            print("checked")
-
         if role == Qt.EditRole:
             if index.isValid():
                 item = self.item(index)
                 item.set_data(value, index.column())
-                self.filtersChanged.emit()
+                self.filterChanged.emit()
                 return True
 
         return False
@@ -586,7 +584,7 @@ class FilterModel(QAbstractItemModel):
         if not self.hasIndex(row, column, parent):
             return QModelIndex()
 
-        if not parent.isValid():  #  If no parent, then parent is the root item
+        if not parent.isValid():  #  If no parent, then parent is the root item
             parent_item = self.root_item
 
         else:
@@ -620,6 +618,7 @@ class FilterModel(QAbstractItemModel):
         """load model from dict  
       
         dict should be a nested dictionnary of condition. For example: 
+
         data = {"AND": [
         {"field": "ref", "operator": "=", "value": "A"},
         {
@@ -628,6 +627,7 @@ class FilterModel(QAbstractItemModel):
                 {"field": "chr", "operator": "=", "value": "chr3"},
             ]
         },}}
+
         Args:
             data (TYPE): Description
         """
@@ -639,7 +639,7 @@ class FilterModel(QAbstractItemModel):
 
     def to_item(self, data: dict) -> FilterItem:
         """ recursive function to build a nested FilterItem structure from dict data """
-        if len(data) == 1:  #  logic item
+        if len(data) == 1:  #  logic item
             operator = list(data.keys())[0]
             item = FilterItem(operator)
             [item.append(self.to_item(k)) for k in data[operator]]
@@ -677,14 +677,14 @@ class FilterModel(QAbstractItemModel):
             parent (QModelIndex): parent index 
         """
 
-        #  Skip if parent is a condition type
+        #  Skip if parent is a condition type
         if self.item(parent).type == FilterItem.CONDITION_TYPE:
             return
 
         self.beginInsertRows(parent, 0, 0)
         self.item(parent).insert(0, FilterItem(data=value))
         self.endInsertRows()
-        self.filtersChanged.emit()
+        self.filterChanged.emit()
 
     def add_condition_item(self, value=("chr", ">", "100"), parent=QModelIndex()):
         """Add condition item 
@@ -694,14 +694,14 @@ class FilterModel(QAbstractItemModel):
             parent (QModelIndex): Parent index
         """
 
-        #  Skip if parent is a condition type
+        #  Skip if parent is a condition type
         if self.item(parent).type == FilterItem.CONDITION_TYPE:
             return
 
         self.beginInsertRows(parent, 0, 0)
         self.item(parent).insert(0, FilterItem(data=value))
         self.endInsertRows()
-        self.filtersChanged.emit()
+        self.filterChanged.emit()
 
     def remove_item(self, index):
         """Remove Item 
@@ -711,7 +711,7 @@ class FilterModel(QAbstractItemModel):
         self.beginRemoveRows(index.parent(), index.row(), index.row())
         self.item(index).parent.remove(index.row())
         self.endRemoveRows()
-        self.filtersChanged.emit()
+        self.filterChanged.emit()
 
     def rowCount(self, parent: QModelIndex) -> int:
         """ Overrided Qt methods: return row count according parent """
@@ -751,7 +751,6 @@ class FilterModel(QAbstractItemModel):
                 | Qt.ItemIsEditable
                 | Qt.ItemIsEnabled
                 | Qt.ItemIsDragEnabled
-                | Qt.ItemIsUserCheckable
             )
 
         return Qt.ItemIsSelectable | Qt.ItemIsEditable
@@ -778,6 +777,7 @@ class FilterModel(QAbstractItemModel):
         destinationChild: int,
     ) -> bool:
         """Overrided Qt methods : Move an item from source to destination index 
+
         Args:
             sourceParent (QModelIndex): parent of souce item
             sourceRow (int): index position of source item
@@ -790,7 +790,7 @@ class FilterModel(QAbstractItemModel):
         parent_source_item = self.item(sourceParent)
         parent_destination_item = self.item(destinationParent)
 
-        #  if destination is - 1, it's mean we should append the item at the end of children
+        #  if destination is - 1, it's mean we should append the item at the end of children
         if destinationChild < 0:
             if sourceParent == destinationParent:
                 return False
@@ -810,7 +810,7 @@ class FilterModel(QAbstractItemModel):
         parent_destination_item.insert(destinationChild, item)
         self.endMoveRows()
 
-        self.filtersChanged.emit()
+        self.filterChanged.emit()
         return True
 
     def supportedDropActions(self) -> Qt.DropAction:
@@ -823,9 +823,11 @@ class FilterModel(QAbstractItemModel):
 
     def dropMimeData(self, data, action, row, column, parent) -> bool:
         """Overrided Qt methods: This method is called when item is dropped by drag/drop.
+
         data is QMimeData and it contains a pickle serialization of current dragging item. 
         Get back item by unserialize data.data().
         
+
         Args:
             data (QMimeData)
             action (Qt.DropAction)
@@ -863,12 +865,14 @@ class FilterModel(QAbstractItemModel):
 
     def mimeData(self, indexes) -> QMimeData:
         """Serialize item from indexes into a QMimeData
+
         Actually, it serializes only the first index from t he list.
         Args:
             indexes (list<QModelIndex>)
         
         Returns:
             QMimeData
+
             ..see: self.dropMimeData
         """
         data = QMimeData(self._MIMEDATA)
@@ -890,12 +894,16 @@ class FilterDelegate(QStyledItemDelegate):
     
     Based editor are created from self.createEditor. 
     FilterModel data are readed and writeed from setEditorData and setModelData
+
+
     Examples:
         view = QTreeView()
         model = FilterModel()
         delegate = FilterDelegate()
+
         view.setModel(model)
         view.setItemDelegate(delegate)
+
     """
 
     def __init__(self, parent=None):
@@ -942,6 +950,7 @@ class FilterDelegate(QStyledItemDelegate):
 
     def setEditorData(self, editor: QWidget, index: QModelIndex):
         """Overrided from Qt. Read data from model and set editor data
+
         Actually, it calls BaseEditor.set_value() methods 
         
         Args:
@@ -952,6 +961,7 @@ class FilterDelegate(QStyledItemDelegate):
 
     def setModelData(self, editor, model, index):
         """Overrided from Qt. Read data from editor and set the model data 
+
         Actually, it calls editor.set_value() 
         
         Args:
@@ -984,149 +994,6 @@ class FilterDelegate(QStyledItemDelegate):
         editor.setGeometry(option.rect)
 
 
-class FiltersWidget(plugin.PluginWidget):
-
-    changed = Signal()
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle(self.tr("Filter"))
-        self.view = QTreeView()
-        self.model = FilterModel(None)
-        self.delegate = FilterDelegate()
-        self.toolbar = QToolBar()
-        self.toolbar.setIconSize(QSize(20, 20))
-        self.view.setModel(self.model)
-        self.view.setItemDelegate(self.delegate)
-        self.view.setIndentation(15)
-        self.view.setDragEnabled(True)
-        self.view.setAcceptDrops(True)
-        self.view.setDragDropMode(QAbstractItemView.InternalMove)
-        self.view.setAlternatingRowColors(True)
-        self.view.header().setSectionResizeMode(0,QHeaderView.Stretch)
-        self.view.header().setSectionResizeMode(1,QHeaderView.ResizeToContents)
-        self.view.header().setSectionResizeMode(2,QHeaderView.Interactive)
-
-        layout = QVBoxLayout()
-        layout.addWidget(self.view)
-        layout.addWidget(self.toolbar)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
-        self.setLayout(layout)
-        # self.model.filterChanged.connect(self.on_filter_changed)
-
-        # setup Menu
-
-        self.add_menu = QMenu()
-        self.add_button = QToolButton()
-        self.add_button.setIcon(FIcon(0xF703))
-        self.add_button.setPopupMode(QToolButton.InstantPopup)
-        self.add_menu.addAction(FIcon(0xF8E0), "Add Logic", self.on_add_logic)
-        self.add_menu.addAction(FIcon(0xF70A), "Add Condition", self.on_add_condition)
-        self.add_button.setMenu(self.add_menu)
-
-        self.toolbar.addWidget(self.add_button)
-        self.toolbar.addAction(FIcon(0xF143), "up")
-        self.toolbar.addAction(FIcon(0xF140), "down")
-
-        spacer = QWidget()
-        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.toolbar.addWidget(spacer)
-
-        self.toolbar.addAction(FIcon(0xF5E8), "delete", self.on_delete_item)
-
-        #self.view.selectionModel().currentChanged.connect(self.on_filters_changed)
-        self.model.filtersChanged.connect(self.on_filters_changed)
-
-    @property
-    def conn(self):
-        return self.model.conn
-
-    @conn.setter
-    def conn(self, conn):
-        self.model.conn = conn
-
-    @property
-    def filters(self):
-        return self.model.filters
-
-    @filters.setter
-    def filters(self, filters):
-        self.model.filters = filters
-        self.view.expandAll()
-
-
-    def on_register(self, mainwindow):
-        """ Overrided from PluginWidget """
-        pass
-
-
-    def on_open_project(self, conn):
-        """ Overrided from PluginWidget """
-        self.conn = conn
-
-    def on_query_model_changed(self, model):
-        """ Overrided from PluginWidget """
-        self.filters = model.filters
-
-    def on_filters_changed(self):
-        """ triggered when filter has changed """ 
-        self.mainwindow.query_model.filters = self.filters 
-        self.mainwindow.query_model.load()
-    
-    def on_add_logic(self):
-        """Add logic item to the current selected index
-        """
-        index = self.view.currentIndex()
-        if index:
-            self.model.add_logic_item(parent=index)
-            # self.view.setFirstColumnSpanned(0, index.parent(), True)
-
-    def _update_view_geometry(self):
-        """Set column Spanned to True for all Logic Item 
-        This allows Logic Item Editor to take all the space inside the row 
-        """
-        self.view.expandAll()
-        # for index in self.model.match(
-        #     self.model.index(0, 0),
-        #     FilterModel.TypeRole,
-        #     FilterItem.LOGIC_TYPE,
-        #     -1,
-        #     Qt.MatchRecursive,
-        # ):
-        #     self.view.setFirstColumnSpanned(0, index.parent(), True)
-
-    def on_add_condition(self):
-        """Add condition item to the current selected index 
-        """
-        index = self.view.currentIndex()
-        if index:
-            self.model.add_condition_item(parent=index)
-
-    def on_delete_item(self):
-        """Delete current item 
-        """
-        ret = QMessageBox.question(
-            self,
-            "remove row",
-            "Are you to remove this item ? ",
-            QMessageBox.Yes | QMessageBox.No,
-        )
-
-        if ret == QMessageBox.Yes:
-            self.model.remove_item(self.view.currentIndex())
-
-    def on_selection_changed(self):
-        """ Enable/Disable add button depending item type """
-
-        print("selection changed")
-        index = self.view.currentIndex()
-        if self.model.item(index).type() == FilterItem.CONDITION_TYPE:
-            self.add_button.setDisabled(True)
-        else:
-            self.add_button.setDisabled(False)
-
-
 if __name__ == "__main__":
 
     app = QApplication(sys.argv)
@@ -1134,38 +1001,42 @@ if __name__ == "__main__":
 
     style.dark(app)
 
-    conn = get_sql_connexion("examples/test.db")
+    conn = get_sql_connexion("/home/sacha/Dev/cutevariant/examples/test.db")
 
     data = {
         "AND": [
-            {"field": "chr", "operator": "=", "value": "chr"}
+            {"field": "chr", "operator": "=", "value": "chr"},
+            {
+                "OR": [
+                    {"field": "i0", "operator": "=", "value": 5},
+                    {"field": "i1", "operator": "=", "value": 3},
+                    {"field": "i2", "operator": "=", "value": 3},
+                ]
+            },
         ]
     }
 
-    view = FilterWidget()
-    view.model.load(data)
+    model = FilterModel(conn)
+    model.load(data)
+    delegate = FilterDelegate()
 
-    print(view.model.to_dict() == data)
+    print(model.to_dict(model.root_item[0]))
 
+    view = QTreeView()
+    view.setEditTriggers(QAbstractItemView.DoubleClicked)
+    view.setItemDelegate(delegate)
+    view.setAlternatingRowColors(True)
+    view.setUniformRowHeights(True)
+    view.setModel(model)
+    view.setAcceptDrops(True)
+    view.setDragEnabled(True)
+    view.setDropIndicatorShown(True)
+    view.setSelectionBehavior(QAbstractItemView.SelectRows)
+    view.setDragDropMode(QAbstractItemView.InternalMove)
 
+    view.setFirstColumnSpanned(0, QModelIndex(), True)
+    view.resize(500, 500)
     view.show()
-
-    # print(model.to_dict(model.root_item[0]))
-
-    # view = QTreeView()
-    # view.setEditTriggers(QAbstractItemView.DoubleClicked)
-    # view.setAlternatingRowColors(True)
-    # view.setUniformRowHeights(True)
-    # view.setModel(model)
-    # view.setAcceptDrops(True)
-    # view.setDragEnabled(True)
-    # view.setDropIndicatorShown(True)
-    # view.setSelectionBehavior(QAbstractItemView.SelectRows)
-    # view.setDragDropMode(QAbstractItemView.InternalMove)
-
-    # view.setFirstColumnSpanned(0, QModelIndex(), True)
-    # view.resize(500, 500)
-    # view.show()
-    # view.expandAll()
+    view.expandAll()
 
     app.exec_()

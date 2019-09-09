@@ -135,11 +135,18 @@ class ColumnsWidget(plugin.PluginWidget):
         self.setLayout(layout)
         self.model.itemChanged.connect(self.on_column_changed)
 
-    def on_register(self):
+    def on_register(self, mainwindow):
+        """ Overrided from PluginWidget"""
         pass 
 
     def on_open_project(self,_conn):
+        """ Overrided from PluginWidget """ 
         self.conn = _conn
+
+    def on_query_model_changed(self, model):
+        """ Overrided from PluginWidget """ 
+        self.view.columns = model.columns
+        
 
     def on_column_changed(self):
         self.mainwindow.query_model.columns = self.columns
