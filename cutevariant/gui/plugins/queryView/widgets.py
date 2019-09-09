@@ -300,6 +300,7 @@ class QueryViewWidget(plugin.PluginWidget):
         pass
 
 
+
     def updateInfo(self):
         """Update metrics for the current query
 
@@ -410,6 +411,11 @@ class QueryViewWidget(plugin.PluginWidget):
             self.model.builder.save(name)
 
             self.model.changed.emit()
+
+
+class QueryViewSettingsWidget(plugin.PluginSettingsWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
 
 
 if __name__ == "__main__":

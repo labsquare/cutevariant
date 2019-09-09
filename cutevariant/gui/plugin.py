@@ -10,7 +10,7 @@ import importlib
 import pkgutil
 
 # cutevariant import 
-from cutevariant.gui.settings import BaseWidget, GroupWidget
+from cutevariant.gui import settings
 
 DOCK_LOCATION = 1 
 CENTRAL_LOCATION = 2 
@@ -69,12 +69,12 @@ class PluginWidget(QWidget):
 
 
 
-class PluginSettingsWidget(GroupWidget):
+class PluginSettingsWidget(settings.GroupWidget):
     def __init__(self, parent = None):
-        super(parent).__init__()
+        super().__init__(parent)
 
 
-def find_plugins(path=None, type="widgets"):
+def find_plugins(path=None):
     """find and returns plugin instance from a directory 
     
     Keyword Arguments:
@@ -91,22 +91,36 @@ def find_plugins(path=None, type="widgets"):
         plugin_path = path
 
     # Loop over package in plugins directory
+    plugins = []
     for package in pkgutil.iter_modules([plugin_path]):
-        
-        widget_path = os.path.join(package.module_finder.path, package.name, f"{type}.py")
-        
-        spec = importlib.util.spec_from_file_location(type, widget_path)
+        package_path = os.path.join(plugin_path, package.name)
+        spec = importlib.util.spec_from_file_location(package.name, os.path.join(package_path, "__init__.py"))
+        module = spec.loader.load_module()
 
-        if spec:
-            module = spec.loader.load_module()
-            # capitalize only the first letter 
-            if type == "widgets":
-                # look for {pkgName}Widget class 
-                class_name = package.name[0].upper() + package.name[1:] + "Widget"
-            if type == "settings":
-                class_name = package.name[0].upper() + package.name[1:] + "SettingsWidget"
+        widget_class_name =  package.name[0].upper() + package.name[1:] + "Widget"
+        settings_class_name =  package.name[0].upper() + package.name[1:] + "SettingsWidget"
 
-            if class_name in dir(module):
-                plugin_item = getattr(module, class_name)
-                yield plugin_item
-            
+        item = {}
+        item["name"] = module.__name__
+        item["description"] = module.__description__
+        item["version"] = module.__version__
+        
+        for sub_module_info in pkgutil.iter_modules([package_path]):
+            if sub_module_info.name in ("widgets"):
+                sub_module_path = os.path.join(sub_module_info.module_finder.path, sub_module_info.name +".py")
+                spec = importlib.util.spec_from_file_location(sub_module_info.name,sub_module_path )
+                sub_module = spec.loader.load_module()
+
+                if widget_class_name in dir(sub_module):
+                    Widget = getattr(sub_module, widget_class_name)
+                    if "PluginWidget" in str(Widget.__bases__):
+                        item["widget"] = Widget
+
+                if settings_class_name in dir(sub_module):
+                    Widget = getattr(sub_module, settings_class_name)
+                    if "SettingsWidget" in str(Widget.__bases__):
+                        item["setting"] = Widget
+        
+        yield item
+
+               

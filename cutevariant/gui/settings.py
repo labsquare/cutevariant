@@ -34,7 +34,6 @@ from PySide2.QtNetwork import *
 import cutevariant.commons as cm
 from cutevariant.gui.ficon import FIcon
 
-from cutevariant.gui import plugin
 
 # from cutevariant.gui import style
 
@@ -249,8 +248,8 @@ class PluginsSettingsWidget(BaseWidget):
         self.setWindowTitle(self.tr("Plugins"))
         self.setWindowIcon(FIcon(0xF3D4))
         self.view = QTreeWidget()
-        self.view.setColumnCount(2)
-        self.view.setHeaderLabels(["Name","Description"])
+        self.view.setColumnCount(3)
+        self.view.setHeaderLabels(["Name","Description","Version"])
     
         main_layout = QVBoxLayout()
         main_layout.addWidget(self.view)
@@ -261,11 +260,12 @@ class PluginsSettingsWidget(BaseWidget):
 
     def load(self):
         self.view.clear()
-
-        for PluginClass in plugin.find_plugins():
+        from cutevariant.gui import plugin
+        for extension in plugin.find_plugins():
             item = QTreeWidgetItem()
-            item.setText(0, PluginClass.Name)
-            item.setText(1, PluginClass.Description)
+            item.setText(0, extension["name"])
+            item.setText(1, extension["description"])
+            item.setText(2, extension["version"])
             item.setCheckState(0, Qt.Checked)
             item.setDisabled(True)
             self.view.addTopLevelItem(item)
@@ -502,18 +502,21 @@ class SettingsWidget(QDialog):
 
     def load_plugins(self):
         """ Add plugins settings """ 
-        for PluginClass in plugin.find_plugins():
-            p = PluginClass(self)
-            settings_widget = p.get_settings_widget()
+        from cutevariant.gui import plugin
+
+        for extension in plugin.find_plugins():
+            
+            if "setting" in extension:
+                settings_widget_class = extension["setting"]
+                widget = settings_widget_class()
         
-            if settings_widget:
-                if not settings_widget.windowTitle():
-                    settings_widget.setWindowTitle(PluginClass.Name)
+                if not widget.windowTitle():
+                    widget.setWindowTitle(extension["name"])
                 
-                if not settings_widget.windowIcon():
-                    settings_widget.setWindowIcon(FIcon(0xf431))
+                if not widget.windowIcon():
+                    widget.setWindowIcon(FIcon(0xf431))
                 
-                self.addPanel(settings_widget)
+                self.addPanel(widget)
 
 
         

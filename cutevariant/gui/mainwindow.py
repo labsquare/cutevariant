@@ -14,8 +14,8 @@ from PySide2.QtGui import QIcon, QKeySequence
 from cutevariant.core import Query, get_sql_connexion
 from cutevariant.gui.ficon import FIcon
 from cutevariant.gui.querymodel import QueryModel
-# from cutevariant.gui.wizards import ProjectWizard
-# from cutevariant.gui.settings import SettingsWidget
+from cutevariant.gui.wizards import ProjectWizard
+from cutevariant.gui.settings import SettingsWidget
 # from cutevariant.gui.querywidget import QueryWidget
 # from cutevariant.gui import plugin
 
@@ -51,7 +51,7 @@ class MainWindow(QMainWindow):
         self.conn = None
 
         # store dock plugins
-        self.plugins = []
+        self.plugins = {}
 
         # The query model 
         self.query_model = QueryModel()
@@ -77,6 +77,8 @@ class MainWindow(QMainWindow):
 
       # Register plugins 
         self.register_plugins()
+
+
 
 
         # Window geometry
@@ -122,22 +124,26 @@ class MainWindow(QMainWindow):
         """add plugin to the application
         """
 
-        self.plugins = list() 
-        for PluginWidget in plugin.find_plugins():
-            if PluginWidget:
-                widget = PluginWidget()
-                self.plugins.append(widget)
+        self.plugins = dict()
+        for extension in plugin.find_plugins():
+            if "widget" in extension:
+                name = extension["name"]
+                plugin_widget_class = extension["widget"]
+                widget = plugin_widget_class()
+                self.plugins[name] = widget
                 widget.mainwindow = self
+                widget.setWindowTitle(extension.get("name"))
+                widget.setToolTip(extension.get("description"))
                 widget.on_register(self)
 
 
-                if PluginWidget.LOCATION == plugin.DOCK_LOCATION:
+                if plugin_widget_class.LOCATION == plugin.DOCK_LOCATION:
                     self.add_panel(widget)
 
-                if PluginWidget.LOCATION == plugin.CENTRAL_LOCATION:
+                if plugin_widget_class.LOCATION == plugin.CENTRAL_LOCATION:
                     self.central_tab.addTab(widget, widget.windowTitle())
 
-                if PluginWidget.LOCATION == plugin.FOOTER_LOCATION:
+                if plugin_widget_class.LOCATION == plugin.FOOTER_LOCATION:
                     self.footer_tab.addTab(widget, widget.windowTitle())
 
    
@@ -256,7 +262,7 @@ class MainWindow(QMainWindow):
         self.query_model.conn = self.conn
         self.query_model.load()
 
-        for _plugin in self.plugins:
+        for name, _plugin in self.plugins.items():
             _plugin.on_open_project(self.conn)
 
         self.save_recent_project(filepath)
@@ -426,7 +432,7 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def on_query_model_changed(self):
-        for _plugin in self.plugins:
+        for name, _plugin in self.plugins.items():
             _plugin.on_query_model_changed(self.query_model)
 
 if __name__ == "__main__":
