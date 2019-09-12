@@ -260,36 +260,38 @@ class QueryViewWidget(plugin.PluginWidget):
         self.show_sql_action = self.bottombar.addAction(
             FIcon(0xF865), self.tr("See SQL query"), self.show_sql
         )
-        # self.show_sql_action.setEnabled(False)
-        # self.bottombar.addWidget(self.page_info)
-        # self.bottombar.addWidget(spacer)
-        # self.bottombar.addAction(FIcon(0xF792), "<<", self.model.firstPage)
-        # self.bottombar.addAction(FIcon(0xF04D), "<", self.model.previousPage)
-        # self.bottombar.addWidget(self.page_box)
-        # self.bottombar.addAction(FIcon(0xF054), ">", self.model.nextPage)
-        # self.bottombar.addAction(FIcon(0xF793), ">>", self.model.lastPage)
+        self.show_sql_action.setEnabled(False)
+        self.bottombar.addWidget(self.page_info)
+        self.bottombar.addWidget(spacer)
+      
+        self.bottombar.setIconSize(QSize(16, 16))
+        self.bottombar.setMaximumHeight(30)
 
-        # self.bottombar.setIconSize(QSize(16, 16))
-        # self.bottombar.setMaximumHeight(30)
-
-        # self.bottombar.setContentsMargins(0, 0, 0, 0)
+        self.bottombar.setContentsMargins(0, 0, 0, 0)
 
         self.setLayout(main_layout)
 
-        # self.model.modelReset.connect(self.updateInfo)
 
         # Create menu
         # self.context_menu = VariantPopupMenu()
 
-        # emit variant when clicked
-        # self.view.clicked.connect(self._variant_clicked)
-        # self.page_box.returnPressed.connect(self._update_page)
+        self.view.clicked.connect(self._variant_clicked)
+
+    def setup_ui(self):
+        self.bottombar.addAction(FIcon(0xF792), "<<", self.model.firstPage)
+        self.bottombar.addAction(FIcon(0xF04D), "<", self.model.previousPage)
+        self.bottombar.addWidget(self.page_box)
+        self.bottombar.addAction(FIcon(0xF054), ">", self.model.nextPage)
+        self.bottombar.addAction(FIcon(0xF793), ">>", self.model.lastPage)
+        self.page_box.returnPressed.connect(self._update_page)
+        self.model.modelReset.connect(self.updateInfo)
 
 
     def on_register(self, mainwindow):
         """ Override from PluginWidget """
         self.view.setModel(mainwindow.query_model)
         self.model = mainwindow.query_model
+        self.setup_ui()
 
     def on_setup_ui(self):
         """ Override from PluginWidget """
@@ -336,8 +338,9 @@ class QueryViewWidget(plugin.PluginWidget):
         # Get data from database
         variant = sql.get_one_variant(self.model.conn, rowid)
         # Emit variant through variant_clicked signal
-        self.variant_clicked.emit(variant)
-        return variant
+        
+        if self.mainwindow:
+            self.mainwindow.on_variant_changed(variant)
 
     def export_csv(self):
         """Export variants displayed in the current view to a CSV file"""

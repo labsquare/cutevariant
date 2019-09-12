@@ -713,7 +713,7 @@ class FilterModel(QAbstractItemModel):
         self.endRemoveRows()
         self.filtersChanged.emit()
 
-    def rowCount(self, parent: QModelIndex) -> int:
+    def rowCount(self, parent = QModelIndex()) -> int:
         """ Overrided Qt methods: return row count according parent """
 
         if not parent.isValid():
@@ -724,9 +724,12 @@ class FilterModel(QAbstractItemModel):
 
         return len(parent_item.children)
 
-    def columnCount(self, parent: QModelIndex) -> int:
+    def columnCount(self, parent = QModelIndex()) -> int:
         """ Overrided Qt methods: return column count according parent """
-        return 3
+        if parent == QModelIndex():
+            return 3
+
+        return 0
 
     def flags(super, index) -> Qt.ItemFlags:
         """ Overrided Qt methods: return Qt flags to make item editable and selectable """

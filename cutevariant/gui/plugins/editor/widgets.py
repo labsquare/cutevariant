@@ -291,10 +291,11 @@ class EditorWidget(plugin.PluginWidget):
 
     def on_vql_executed(self):
         """ Triggered when a VQL is executed """ 
-        self.mainwindow.query_model.columns = self.columns
-        self.mainwindow.query_model.filters = self.filters
-        self.mainwindow.query_model.selection = self.selection
-        self.mainwindow.query_model.load()
+        if self.mainwindow:
+            self.mainwindow.query_model.columns = self.columns
+            self.mainwindow.query_model.filters = self.filters
+            self.mainwindow.query_model.selection = self.selection
+            self.mainwindow.query_model.load()
 
 
 class VqlEdit(QTextEdit):
@@ -445,7 +446,7 @@ if __name__ == "__main__":
 
     conn = sqlite3.connect("examples/test.db")
 
-    view = VqlEditor()
+    view = EditorWidget()
     view.show()
 
     app.exec_()

@@ -11,6 +11,7 @@ class ColumnsModel(QStandardItemModel):
         super().__init__()
         self.checkable_items = []
         self.conn = conn
+
         
     def columnCount(self, index = QModelIndex()):
         return 1
@@ -23,8 +24,6 @@ class ColumnsModel(QStandardItemModel):
         if orientation == Qt.Horizontal:
             if section == 0:
                 return "Name"
-            if section == 1:
-                return "Description" 
         
         return None
 
@@ -140,12 +139,16 @@ class ColumnsWidget(plugin.PluginWidget):
         pass 
 
     def on_open_project(self,_conn):
-        """ Overrided from PluginWidget """ 
+        """ Overrided from PluginWidget """
         self.conn = _conn
 
     def on_query_model_changed(self, model):
-        """ Overrided from PluginWidget """ 
-        self.view.columns = model.columns
+        """ Overrided from PluginWidget """
+        self.columns = model.columns
+        # When you set columns, it means you check columns. 
+        # This will trigger a signal itemChanged which cause an infinite loop
+        # That's why I blocked the signal from the model. So I need to update the view manually
+        self.view.update()
         
 
     def on_column_changed(self):
@@ -186,8 +189,9 @@ if __name__ == "__main__":
     view.conn = conn
     view.model.columns = ["chr", "pos"]
 
-    view.changed.connect(lambda : print(view.columns))
+    #view.changed.connect(lambda : print(view.columns))
 
+    print(view.model.columns)
     view.show()
 
     app.exec_()
