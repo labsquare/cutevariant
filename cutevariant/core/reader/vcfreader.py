@@ -121,7 +121,7 @@ class VcfReader(AbstractReader):
                     "alt": str(alt),
                     "rsid": record.ID,  # Avoid id column duplication in DB
                     "qual": record.QUAL,
-                    "filter": "",  # TODO ?,
+                    "filter": ",".join(record.FILTER)
                 }
 
                 # Parse info
