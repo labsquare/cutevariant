@@ -726,10 +726,8 @@ class FilterModel(QAbstractItemModel):
 
     def columnCount(self, parent = QModelIndex()) -> int:
         """ Overrided Qt methods: return column count according parent """
-        if parent == QModelIndex():
-            return 3
 
-        return 0
+        return 3
 
     def flags(super, index) -> Qt.ItemFlags:
         """ Overrided Qt methods: return Qt flags to make item editable and selectable """
