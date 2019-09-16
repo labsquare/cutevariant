@@ -275,7 +275,7 @@ class QueryViewWidget(plugin.PluginWidget):
         # Create menu
         # self.context_menu = VariantPopupMenu()
 
-        self.view.clicked.connect(self._variant_clicked)
+        self.view.activated.connect(self._variant_clicked)
 
     def setup_ui(self):
         self.bottombar.addAction(FIcon(0xF792), "<<", self.model.firstPage)

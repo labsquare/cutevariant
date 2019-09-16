@@ -704,7 +704,7 @@ def update_variant(conn, variant: dict):
 
     query = "UPDATE variants SET " + ",".join(sql_set) + " WHERE id = " + str(variant["id"])
     conn.execute(query, sql_val)
-
+    conn.commit()
 
 def get_annotations(conn, id: int):
     """ Get variant annotation with the given id """
