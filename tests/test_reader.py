@@ -46,7 +46,6 @@ def test_fields(reader):
     variants_fields = {
         field["name"] for field in reader.get_fields_by_category("variants")
     }
-    print("Variants fields", variants_fields)
     annotations_fields = {
         field["name"] for field in reader.get_fields_by_category("annotations")
     }

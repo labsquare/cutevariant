@@ -14,7 +14,7 @@ class ColumnsModel(QStandardItemModel):
 
         
     def columnCount(self, index = QModelIndex()):
-        return 1
+        return 2
 
     def headerData(self, section,orientation, role):
         
@@ -80,6 +80,7 @@ class ColumnsModel(QStandardItemModel):
         self.appendRow(samples_items)
 
 
+
     def load_fields(self, category, parent_name = None):
         root_item = QStandardItem(category)
         root_item.setColumnCount(2)
@@ -91,6 +92,8 @@ class ColumnsModel(QStandardItemModel):
         for field in sql.get_field_by_category(self.conn,category):
             item1 = QStandardItem(field["name"])
             item2 = QStandardItem(field["description"])
+            item2.setToolTip(field["description"])
+            item1.setToolTip(field["description"])
             item1.setCheckable(True)
             root_item.appendRow([item1, item2])
             self.checkable_items.append(item1)
@@ -149,6 +152,8 @@ class ColumnsWidget(plugin.PluginWidget):
         # This will trigger a signal itemChanged which cause an infinite loop
         # That's why I blocked the signal from the model. So I need to update the view manually
         self.view.update()
+        self.view.resizeColumnToContents(0)
+
         
 
     def on_column_changed(self):

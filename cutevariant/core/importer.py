@@ -32,13 +32,13 @@ def async_import_reader(conn, reader: AbstractReader, **kwargs):
 
 
     # Create annotations tables
-    create_table_annotations(conn, reader.get_fields_by_category("annotations"))
+    create_table_annotations(conn, reader.get_extra_fields_by_category("annotations"))
 
     # Create variants tables
-    create_table_variants(conn, reader.get_fields_by_category("variants"))
+    create_table_variants(conn, reader.get_extra_fields_by_category("variants"))
 
     # Create table samples
-    create_table_samples(conn, reader.get_fields_by_category("samples"))
+    create_table_samples(conn, reader.get_extra_fields_by_category("samples"))
 
     # Create selection
     create_table_selections(conn)
@@ -49,7 +49,7 @@ def async_import_reader(conn, reader: AbstractReader, **kwargs):
 
     # Insert fields
     yield 0, "Inserting fields..."
-    insert_many_fields(conn, reader.get_fields())
+    insert_many_fields(conn, reader.get_extra_fields())
 
     # yield 0, "count variants..."
     # total_variant = reader.get_variants_count()
@@ -57,7 +57,7 @@ def async_import_reader(conn, reader: AbstractReader, **kwargs):
     # Insert variants, link them to annotations and samples
     yield 0, "Inserting variants..."
     percent = 0
-    for value, message in async_insert_many_variants(conn, reader.get_variants()):
+    for value, message in async_insert_many_variants(conn, reader.get_extra_variants()):
 
         if reader.file_size:
             percent = reader.read_bytes / reader.file_size * 100.0

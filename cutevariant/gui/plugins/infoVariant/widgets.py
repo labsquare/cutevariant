@@ -22,13 +22,43 @@ from cutevariant.gui.plugin import PluginWidget
 class InfoVariantWidget(PluginWidget):
     """Plugin to show all annotations of a selected variant"""
 
+    ACMG_CLASSIFICATION = [
+        ("Classe 0", "Unclassed"),
+        ("Classe 1", "Benin"),
+        ("Classe 2", "Likely benin"),
+        ("Classe 3","Unsignificant variant"),
+        ("Classe 4","Probably Pathogen"),
+        ("Classe 5","Pathogen")
+    ]
+
     def __init__(self):
         super().__init__()
 
         self.setWindowTitle(self.tr("Info variants"))
 
         self.view = QTabWidget()
-        # build variant tab 
+
+
+        # Editor 
+        self.classification_box = QComboBox()
+        self.favorite_checkbox = QCheckBox()
+        self.comment_input = QTextEdit()
+        self.save_button = QPushButton("Save")
+        for a,b in self.ACMG_CLASSIFICATION:
+            self.classification_box.addItem(a,b)
+
+        self.editor = QWidget()
+        editor_layout = QFormLayout()
+        editor_layout.addRow("Classification", self.classification_box)
+        editor_layout.addRow("Is Saved", self.favorite_checkbox)
+        editor_layout.addRow("Comments", self.comment_input)
+        editor_layout.addWidget(self.save_button)
+        self.editor.setLayout(editor_layout)
+        self.view.addTab(self.editor, "User")
+        self.save_button.clicked.connect(self.on_save_clicked)
+
+
+        # Build variant tab 
         self.variant_view = QTreeWidget()
         self.variant_view.setColumnCount(2)
         self.variant_view.setHeaderLabels(["Field","Value"])
@@ -134,6 +164,16 @@ class InfoVariantWidget(PluginWidget):
             item = QTreeWidgetItem()
             item.setText(0,key)
             item.setText(1,str(value))
+
+            if key == "classification":
+                self.classification_box.setCurrentIndex(int(value))
+
+            if key == "comment":
+                self.comment_input.setText(str(value))
+
+            if key == "favorite":
+                self.favorite_checkbox.setChecked(bool(value))
+
             self.variant_view.addTopLevelItem(item)
 
         # Populate annotations
@@ -183,6 +223,24 @@ class InfoVariantWidget(PluginWidget):
                 self.sample_view.addTopLevelItem(item)
         
 
+    @Slot()
+    def on_save_clicked(self):
+        """Save button 
+        """
+        classification = self.classification_box.currentIndex() 
+        favorite = self.favorite_checkbox.isChecked()
+        comment = self.comment_input.toPlainText()
+
+        updated = {
+            "id": self.current_variant["id"],
+            "classification": classification,
+            "favorite": favorite,
+            "comment": comment
+            }
+
+        sql.update_variant(self.conn, updated)
+
+        
 
     def show_menu(self, pos: QPoint):
         """Show context menu associated to the current variant"""

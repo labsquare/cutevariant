@@ -106,6 +106,15 @@ def test_get_samples(conn):
     assert [sample["name"] for sample in sql.get_samples(conn)] == SAMPLES
 
 
+def test_update_variant(conn):
+
+    updated = {"id": 1, "ref": "A","chr":"chrX"}
+    sql.update_variant(conn, updated)
+
+    inserted = sql.get_one_variant(conn, 1)
+    
+    assert inserted["ref"] == updated["ref"]
+    assert inserted["chr"] == updated["chr"]
 
 
 def test_selections(conn):

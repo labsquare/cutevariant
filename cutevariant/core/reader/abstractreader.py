@@ -16,10 +16,7 @@ class AbstractReader(ABC):
             reader = Reader()
             reader.get_variants()
     """
-
-    # To be updated...
-    # Banned chars is obsolete now . @see 7a694fe6250a5b54244c2eff0511e2af855d1f24
-    BANNED_CHARS = ""
+    BANNED_CHARS = []
 
     def __init__(self, device):
         super(AbstractReader, self).__init__()
@@ -113,6 +110,33 @@ class AbstractReader(ABC):
        """
         raise NotImplementedError(self.__class__.__name__)
 
+    def get_extra_fields(self):
+        """Yield fields with extra mandatory fields like 'comment' and 'score'
+        """
+        yield {"name": "favorite", "type": "bool", "category": "variants", "description": "is favorite"}
+        yield {"name": "comment", "type": "str", "category": "variants", "description": "Variant comment"}
+        yield {"name": "classification", "type": "int", "category": "variants", "description": "ACMG score"}
+        yield from self.get_fields()
+        
+    def get_extra_variants(self):
+        """Yield fields with extra mandatory value like comment and score
+        """
+        for variant in self.get_variants():
+            variant["favorite"] = False
+            variant["comment"] = ""
+            variant["classification"] = 3
+            yield variant
+
+    def get_extra_fields_by_category(self, category: str):
+        """Syntaxic suggar to get fields according their category
+
+        :param category can be usually variants, samples, annotations
+        :return: A generator of fields
+        :rtype: <generator>
+        """
+        return (field for field in self.get_extra_fields() if field["category"] == category)
+        
+
     def get_fields_by_category(self, category: str):
         """Syntaxic suggar to get fields according their category
 
@@ -133,28 +157,6 @@ class AbstractReader(ABC):
         Override this method to have samples in sqlite database.
         """
         return self.samples
-
-    def get_extra_fields(self):
-        """Mandatory fields to add automatically
-
-        ..todo: Move this methods somewhere else ..
-        ..warning: DEPRECTATED
-        """
-        yield from self.parse_fields()
-        yield {
-            "name": "description",
-            "type": "text",
-            "category": "extra",
-            "description": "description of variant",
-        }
-        yield {
-            "name": "favoris",
-            "type": "bool",
-            "category": "extra",
-            "description": "is favoris",
-            "default": False,
-        }
-
 
 def check_variant_schema(variant: dict):
     """Test if get_variant returns well formated nested data.

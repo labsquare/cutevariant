@@ -18,7 +18,7 @@ from functools import lru_cache
 
 # Custom imports
 import cutevariant.commons as cm
-
+import logging 
 LOGGER = cm.logger()
 
 
@@ -691,6 +691,19 @@ def get_one_variant(conn, id: int):
     return dict(
         conn.execute(f"""SELECT * FROM variants WHERE variants.id = {id}""").fetchone()
     )
+
+def update_variant(conn, variant: dict):
+    """ Update variant data """
+    
+    sql_set = []
+    sql_val = []
+    for key, value in variant.items():
+        if key != "id":
+            sql_set.append(f"`{key}` = ? ")
+            sql_val.append(value)
+
+    query = "UPDATE variants SET " + ",".join(sql_set) + " WHERE id = " + str(variant["id"])
+    conn.execute(query, sql_val)
 
 
 def get_annotations(conn, id: int):
