@@ -275,7 +275,6 @@ class QueryViewWidget(plugin.PluginWidget):
         # Create menu
         # self.context_menu = VariantPopupMenu()
 
-        self.view.activated.connect(self._variant_clicked)
 
     def setup_ui(self):
         self.bottombar.addAction(FIcon(0xF792), "<<", self.model.firstPage)
@@ -285,6 +284,7 @@ class QueryViewWidget(plugin.PluginWidget):
         self.bottombar.addAction(FIcon(0xF793), ">>", self.model.lastPage)
         self.page_box.returnPressed.connect(self._update_page)
         self.model.modelReset.connect(self.updateInfo)
+        self.view.selectionModel().currentRowChanged.connect(self._variant_clicked)
 
 
     def on_register(self, mainwindow):
@@ -322,7 +322,7 @@ class QueryViewWidget(plugin.PluginWidget):
         fm = self.page_box.fontMetrics()
         # self.page_box.setFixedWidth(fm.boundingRect(page_box_text).width() + 5)
 
-    def _variant_clicked(self, index):
+    def _variant_clicked(self, _, index):
         """Slot called when the view (QTreeView) is clicked
 
         .. note:: Emit variant through variant_clicked signal.
@@ -333,6 +333,9 @@ class QueryViewWidget(plugin.PluginWidget):
         :return: The variant.
         :rtype: <dict>
         """
+
+        if not index.isValid():
+            return 
         # Get the rowid of the element at the given index
         rowid = self.model.variant(index)[0]
         # Get data from database
