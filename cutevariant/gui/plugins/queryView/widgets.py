@@ -3,6 +3,7 @@ import re
 
 
 from cutevariant.gui import plugin, FIcon
+from cutevariant.gui.formatter import Formatter
 
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
@@ -16,6 +17,8 @@ class QueryDelegate(QStyledItemDelegate):
 
 
     """
+
+
 
     def background_color_index(self, index):
         """ return background color of index """
@@ -44,10 +47,10 @@ class QueryDelegate(QStyledItemDelegate):
 
         palette = qApp.palette("QTreeView")
         #  get column name of the index
-        colname = index.model().headerData(index.column(), Qt.Horizontal)
+        #colname = index.model().headerData(index.column(), Qt.Horizontal)
 
         #  get value of the index
-        value = index.data(Qt.DisplayRole)
+        #value = index.data(Qt.DisplayRole)
 
         # get select sate
         select = option.state & QStyle.State_Selected
@@ -64,9 +67,38 @@ class QueryDelegate(QStyledItemDelegate):
         painter.drawRect(option.rect)
         painter.restore()
 
-        # painter.setPen(pen)
-
+       
+        painter.save()
         alignement = Qt.AlignLeft | Qt.AlignVCenter
+
+        bg_color = index.data(Qt.BackgroundRole)
+        fg_color = index.data(Qt.ForegroundRole)
+        decoration = index.data(Qt.DecorationRole)
+
+        font = index.data(Qt.FontRole)
+
+        if bg_color:
+            painter.setBrush(QBrush(bg_color))
+            painter.setPen(Qt.NoPen)
+            painter.drawRect(option.rect)
+
+        if font:
+            painter.setFont(QFont())
+        
+        if fg_color:
+            painter.setPen(QPen(fg_color))
+
+        if decoration:
+            rect = QRect(0,0,25,25)
+            rect.moveCenter(option.rect.center())
+            painter.drawPixmap(rect,decoration.pixmap(25,25))
+        else:
+            painter.drawText(option.rect, alignement, str(index.data()))
+        
+        
+        painter.restore()
+
+
 
         # # Add margin for first columns if index is first level
         # if index.column() == 0 and index.parent() == QModelIndex():
@@ -88,67 +120,66 @@ class QueryDelegate(QStyledItemDelegate):
         #     option.rect.adjust(40,0,0,0)
 
         # Draw cell depending column name
-        if colname == "impact":
-            painter.setPen(
-                QPen(style.IMPACT_COLOR.get(value, palette.color(QPalette.Text)))
-            )
-            painter.drawText(option.rect, alignement, str(index.data()))
-            return
+        # if colname == "impact":
+        #     painter.setPen(
+        #         QPen(style.IMPACT_COLOR.get(value, palette.color(QPalette.Text)))
+        #     )
+        #     painter.drawText(option.rect, alignement, str(index.data()))
+        #     return
 
-        if colname == "gene":
-            painter.setPen(QPen(style.GENE_COLOR))
-            painter.drawText(option.rect, alignement, str(index.data()))
-            return
+        # if colname == "gene":
+        #     painter.setPen(QPen(style.GENE_COLOR))
+        #     painter.drawText(option.rect, alignement, str(index.data()))
+        #     return
 
-        if re.match(r"genotype(.+).gt", colname):
-            val = int(value)
+        # if re.match(r"genotype(.+).gt", colname):
+        #     val = int(value)
 
-            icon_code = GENOTYPE_ICONS.get(val, -1)
-            icon = FIcon(icon_code, palette.color(QPalette.Text)).pixmap(20, 20)
-            painter.setRenderHint(QPainter.Antialiasing)
-            painter.drawPixmap(option.rect.left(), option.rect.center().y() - 8, icon)
-            return
+        #     icon_code = GENOTYPE_ICONS.get(val, -1)
+        #     icon = FIcon(icon_code, palette.color(QPalette.Text)).pixmap(20, 20)
+        #     painter.setRenderHint(QPainter.Antialiasing)
+        #     painter.drawPixmap(option.rect.left(), option.rect.center().y() - 8, icon)
+        #     return
 
-        if "consequence" in colname:
-            painter.save()
-            painter.setClipRect(option.rect, Qt.IntersectClip)
-            painter.setRenderHint(QPainter.Antialiasing)
-            soTerms = value.split("&")
-            rect = QRect()
-            font = painter.font()
-            font.setPixelSize(10)
-            painter.setFont(font)
-            metrics = QFontMetrics(painter.font())
-            rect.setX(option.rect.x())
-            rect.setY(option.rect.center().y() - 5)
+        # if "consequence" in colname:
+        #     painter.save()
+        #     painter.setClipRect(option.rect, Qt.IntersectClip)
+        #     painter.setRenderHint(QPainter.Antialiasing)
+        #     soTerms = value.split("&")
+        #     rect = QRect()
+        #     font = painter.font()
+        #     font.setPixelSize(10)
+        #     painter.setFont(font)
+        #     metrics = QFontMetrics(painter.font())
+        #     rect.setX(option.rect.x())
+        #     rect.setY(option.rect.center().y() - 5)
 
-            #  Set background color according so terms
-            #  Can be improve ... Just a copy past from c++ code
-            bg = "#6D7981"
-            for so in soTerms:
-                for i in style.SO_COLOR.keys():
-                    if i in so:
-                        bg = style.SO_COLOR[i]
+        #     #  Set background color according so terms
+        #     #  Can be improve ... Just a copy past from c++ code
+        #     bg = "#6D7981"
+        #     for so in soTerms:
+        #         for i in style.SO_COLOR.keys():
+        #             if i in so:
+        #                 bg = style.SO_COLOR[i]
 
-                painter.setPen(Qt.white)
-                painter.setBrush(QBrush(QColor(bg)))
-                rect.setWidth(metrics.width(so) + 8)
-                rect.setHeight(metrics.height() + 4)
-                painter.drawRoundedRect(rect, 3, 3)
-                painter.drawText(rect, Qt.AlignCenter, so)
+        #         painter.setPen(Qt.white)
+        #         painter.setBrush(QBrush(QColor(bg)))
+        #         rect.setWidth(metrics.width(so) + 8)
+        #         rect.setHeight(metrics.height() + 4)
+        #         painter.drawRoundedRect(rect, 3, 3)
+        #         painter.drawText(rect, Qt.AlignCenter, so)
 
-                rect.translate(rect.width() + 4, 0)
+        #         rect.translate(rect.width() + 4, 0)
 
-            painter.restore()
-            return
+        #     painter.restore()
+        #     return
 
-        painter.setPen(
-            QPen(palette.color(QPalette.HighlightedText if select else QPalette.Text))
-        )
-        painter.drawText(option.rect, alignement, str(index.data()))
+        # painter.setPen(
+        #     QPen(palette.color(QPalette.HighlightedText if select else QPalette.Text))
+        # )
+        # painter.drawText(option.rect, alignement, str(index.data()))
 
-    def draw_biotype(self, value):
-        pass
+
 
     def sizeHint(self, option, index):
         """Override: Return row height"""
@@ -322,7 +353,7 @@ class QueryViewWidget(plugin.PluginWidget):
         fm = self.page_box.fontMetrics()
         # self.page_box.setFixedWidth(fm.boundingRect(page_box_text).width() + 5)
 
-    def _variant_clicked(self, _, index):
+    def _variant_clicked(self, index, _):
         """Slot called when the view (QTreeView) is clicked
 
         .. note:: Emit variant through variant_clicked signal.

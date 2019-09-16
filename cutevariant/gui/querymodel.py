@@ -52,6 +52,7 @@ from cutevariant.gui.ficon import FIcon
 from cutevariant.core.sql import QueryBuilder
 from cutevariant.core import sql
 from cutevariant.gui import style
+from cutevariant.gui.formatter import Formatter
 from cutevariant.commons import logger
 from cutevariant.commons import GENOTYPE_ICONS
 
@@ -113,6 +114,7 @@ class QueryModel(QAbstractItemModel):
         self.grouped = True
         self.variants = []
         self.builder = None
+        self.formatter = Formatter()
 
     @property
     def conn(self):
@@ -288,7 +290,19 @@ class QueryModel(QAbstractItemModel):
                 else:
                     #  Display children data
                     return str(self.variant(index)[index.column()])
+
+        # ------ Other Role -----
+
+        if role in self.formatter.supported_role():
+            column_name = self.builder.headers()[index.column()]
+            value = self.data(index, Qt.DisplayRole)
+            return self.formatter.item_data(column_name, value, role)
+            
+            
+        
+        
         return None
+
 
     def headerData(self, section, orientation, role=Qt.DisplayRole):
         """Overrided: Return column name 
