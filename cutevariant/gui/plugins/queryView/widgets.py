@@ -3,7 +3,7 @@ import re
 
 
 from cutevariant.gui import plugin, FIcon
-from cutevariant.gui.formatter import Formatter
+from cutevariant.gui import formatter
 
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
@@ -12,13 +12,9 @@ from PySide2.QtGui import *
 class QueryDelegate(QStyledItemDelegate):
     """
     This class specify the aesthetic of the view
-
     styles and color of each variant displayed in the view are setup here
 
-
     """
-
-
 
     def background_color_index(self, index):
         """ return background color of index """
@@ -229,6 +225,7 @@ class QueryViewWidget(plugin.PluginWidget):
         self.topbar = QToolBar()
         self.bottombar = QToolBar()
         self.view = QueryTreeView()
+        self.formatters = []
 
         # # self.view.setFrameStyle(QFrame.NoFrame)
         self.view.setItemDelegate(self.delegate)
@@ -266,6 +263,7 @@ class QueryViewWidget(plugin.PluginWidget):
         self.save_action.setToolTip("Save current selections")
         self.save_action.triggered.connect(self.on_save_clicked)
 
+
         # Add spacer to push next buttons to the right
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -291,6 +289,18 @@ class QueryViewWidget(plugin.PluginWidget):
         self.show_sql_action = self.bottombar.addAction(
             FIcon(0xF865), self.tr("See SQL query"), self.show_sql
         )
+
+
+        self.formatter_combo = QComboBox()
+
+        for Object in formatter.find_formatters():
+            self.formatters.append(Object()) 
+            self.formatter_combo.addItem(str(Object.__module__))
+
+        self.formatter_combo.activated.connect(self.on_formatter_changed)
+
+        self.bottombar.addWidget(self.formatter_combo)
+
         self.show_sql_action.setEnabled(False)
         self.bottombar.addWidget(self.page_info)
         self.bottombar.addWidget(spacer)
@@ -415,6 +425,11 @@ class QueryViewWidget(plugin.PluginWidget):
             self.view.showColumn(0)
         else:
             self.view.hideColumn(0)
+
+    def on_formatter_changed(self):
+
+        formatter = self.formatters[self.formatter_combo.currentIndex()]
+        self.model.formatter = formatter
 
     def show_sql(self):
         box = QMessageBox()

@@ -114,7 +114,7 @@ class QueryModel(QAbstractItemModel):
         self.grouped = True
         self.variants = []
         self.builder = None
-        self.formatter = Formatter()
+        self.formatter = None
 
     @property
     def conn(self):
@@ -163,6 +163,16 @@ class QueryModel(QAbstractItemModel):
         """ Set query selection """
         self.builder.selection = selection
         self.emit_changed = True
+
+    @property
+    def formatter(self):
+        return self._formatter
+
+    @formatter.setter
+    def formatter(self, formatter):
+        self.beginResetModel()
+        self._formatter = formatter
+        self.endResetModel()
 
     def level(self, index: QModelIndex) -> bool:
         """Return level of index. 
@@ -293,13 +303,12 @@ class QueryModel(QAbstractItemModel):
 
         # ------ Other Role -----
 
-        if role in self.formatter.supported_role():
-            column_name = self.builder.headers()[index.column()]
-            value = self.data(index, Qt.DisplayRole)
-            return self.formatter.item_data(column_name, value, role)
+        if self.formatter:
+            if role in self.formatter.supported_role():
+                column_name = self.builder.headers()[index.column()]
+                value = self.data(index, Qt.DisplayRole)
+                return self.formatter.item_data(column_name, value, role)
             
-            
-        
         
         return None
 

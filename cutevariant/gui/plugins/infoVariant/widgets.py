@@ -49,6 +49,7 @@ class InfoVariantWidget(PluginWidget):
 
         self.editor = QWidget()
         editor_layout = QFormLayout()
+        #editor_layout.setRowWrapPolicy(QFormLayout.WrapAllRows)
         editor_layout.addRow("Classification", self.classification_box)
         editor_layout.addRow("Is Saved", self.favorite_checkbox)
         editor_layout.addRow("Comments", self.comment_input)
