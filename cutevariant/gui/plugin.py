@@ -17,6 +17,21 @@ CENTRAL_LOCATION = 2
 FOOTER_LOCATION = 3
 
 
+def snake_to_camel(name:str) -> str:
+    """Convert snake case to camel case
+    
+    Args:
+        name (str): a snake string like : query_view
+    
+    Returns:
+        str: a camel string like: QueryView
+    """
+
+    return "".join([i.capitalize() for i in name.split("_")])
+
+
+
+
 class PluginWidget(QWidget):
 
     LOCATION = DOCK_LOCATION
@@ -97,30 +112,31 @@ def find_plugins(path=None):
         spec = importlib.util.spec_from_file_location(package.name, os.path.join(package_path, "__init__.py"))
         module = spec.loader.load_module()
 
-        widget_class_name =  package.name[0].upper() + package.name[1:] + "Widget"
-        settings_class_name =  package.name[0].upper() + package.name[1:] + "SettingsWidget"
+        widget_class_name = snake_to_camel(package.name) + "Widget"
+        settings_class_name = snake_to_camel(package.name)+ "SettingsWidget"
 
         item = {}
         item["name"] = module.__name__
         item["description"] = module.__description__
         item["version"] = module.__version__
-        
+
         for sub_module_info in pkgutil.iter_modules([package_path]):
-            if sub_module_info.name in ("widgets"):
+            if sub_module_info.name in ("widgets", "settings"):
                 sub_module_path = os.path.join(sub_module_info.module_finder.path, sub_module_info.name +".py")
                 spec = importlib.util.spec_from_file_location(sub_module_info.name,sub_module_path )
                 sub_module = spec.loader.load_module()
 
-                if widget_class_name in dir(sub_module):
+                if widget_class_name in dir(sub_module) and sub_module_info.name == "widgets":
                     Widget = getattr(sub_module, widget_class_name)
                     if "PluginWidget" in str(Widget.__bases__):
                         item["widget"] = Widget
 
-                if settings_class_name in dir(sub_module):
+                if settings_class_name in dir(sub_module) and sub_module_info.name == "settings":
                     Widget = getattr(sub_module, settings_class_name)
-                    if "SettingsWidget" in str(Widget.__bases__):
+                    if "PluginSettingsWidget" in str(Widget.__bases__):
                         item["setting"] = Widget
+       
         
         yield item
 
-               
+
