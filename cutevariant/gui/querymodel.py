@@ -494,6 +494,19 @@ class QueryModel(QAbstractItemModel):
         self.grouped = is_grouped
         self.load()
 
+    def set_favorite(self, index: QModelIndex, favorite : bool):
+        """ Mark/Unmark variant as favorite according value""" 
+        variant_id = self.variant(index)[0]
+        variant = sql.get_one_variant(self.conn, variant_id)
+        if "favorite" in variant:
+            sql.update_variant(self.conn, {"id": variant_id,"favorite": favorite})
+
+        if "favorite" in self.builder.headers():
+            fav_col = self.builder.headers().index("favorite")
+            for i , _ in enumerate(self.variants[index.row()]):
+                self.variants[index.row()][i][fav_col] = int(favorite)
+
+
 
 class QueryDelegate(QStyledItemDelegate):
     """

@@ -10,12 +10,11 @@ from PySide2.QtGui import *
 from PySide2.QtWidgets import * 
 
 
-class VariantSettings(BaseWidget):
+class LinkSettings(BaseWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Link"))
         self.setWindowIcon(FIcon(0xf339))
-
         self.view = QListWidget()
         self.add_button = QPushButton(self.tr("Add"))
         self.edit_button = QPushButton(self.tr("Edit"))
@@ -41,21 +40,37 @@ class VariantSettings(BaseWidget):
 
 
     def save(self):
+        """Override from BaseSettings """
         settings = QSettings()
-        settings.beginGroup("queryview")
 
-
-
+        settings.remove("plugins/query_view/links")
+        settings.beginGroup("plugins/query_view/links")
+        for i in range(self.view.count()):
+            item = self.view.item(i)
+            name = item.text()
+            url = item.data(Qt.UserRole)
+            settings.setValue(name, url)
+        settings.endGroup()
 
 
     def load(self):
-        pass
+        """Override from BaseSettings """
+        settings = QSettings()
+        settings.beginGroup("plugins/query_view/links")
+        self.view.clear()
+        for key in settings.childKeys():
+            self.add_list_widget_item(key, settings.value(key))
+
+        settings.endGroup()
+
 
     def add_list_widget_item(self, db_name: str, url: str):
         """Add an item to the QListWidget of the current view"""
         # Key is the name of the database, value is its url
         item = QListWidgetItem(db_name)
-        item.setData(Qt.UserRole, url)
+        item.setIcon(FIcon(0xf339))
+        item.setData(Qt.UserRole, str(url))
+        item.setToolTip(str(url))
         self.view.addItem(item)
 
     def edit_list_widget_item(self, item: QListWidgetItem, db_name: str, url: str):
@@ -67,12 +82,14 @@ class VariantSettings(BaseWidget):
         """Allow the user to insert and save custom database URL"""
         # Display dialog box to let the user enter it's own url
         dialog = QDialog()
+        title = QLabel("example: http://url_with_columns{chr}{pos}{ref}{alt}")
         name = QLineEdit()
         url = QLineEdit()
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         buttons.accepted.connect(dialog.accept)
         buttons.rejected.connect(dialog.reject)
         layout = QFormLayout()
+        layout.addWidget(title)
         layout.addRow(self.tr("Name"), name)
         layout.addRow(self.tr("Url"), url)
         layout.addWidget(buttons)
@@ -115,9 +132,6 @@ class VariantSettings(BaseWidget):
         # Get selected item
         item = self.view.selectedItems()[0]
 
-        # Delete key in settings
-        self.settings.remove(self.settings_key + item.text())
-
         # Delete the item
         self.view.takeItem(self.view.row(item))
         del item  # Is it mandatory in Python ?
@@ -128,4 +142,6 @@ class QueryViewSettingsWidget(PluginSettingsWidget):
         super().__init__(parent)
         self.setWindowIcon(FIcon(0xf503))
         self.setWindowTitle("Variant view")
-        self.add_settings_widget(VariantSettings())
+        self.add_settings_widget(LinkSettings())
+
+        

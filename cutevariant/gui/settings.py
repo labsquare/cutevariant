@@ -43,9 +43,9 @@ class BaseWidget(QWidget):
 
     def __init__(self):
         super().__init__()
-        self.parent = None
+        self.group_parent = None
         self.settings = QSettings()
-        self.setWindowTitle("")
+        self.setWindowTitle("base")
         self.setWindowIcon(FIcon(0xF5CA))
 
     @abstractmethod
@@ -59,14 +59,11 @@ class BaseWidget(QWidget):
         raise NotImplementedError(self.__class__.__name__)
 
 
-
-
-
 class GroupWidget(QTabWidget):
     """Handy class to group similar settings widgets in tabs"""
 
     def add_settings_widget(self, widget: BaseWidget):
-        widget.parent = self
+        widget.group_parent = self
         self.addTab(widget, widget.windowIcon(), widget.windowTitle())
 
     def save(self):

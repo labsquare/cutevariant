@@ -10,12 +10,6 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 
 
-class VariantMenu(QMenu):
-    def __init__(self):
-        super().__init__()
-
-        self.addAction("test")
-        self.addAction("boby")
 
 class QueryDelegate(QStyledItemDelegate):
     """
@@ -320,7 +314,6 @@ class QueryViewWidget(plugin.PluginWidget):
 
         self.setLayout(main_layout)
 
-        self.variant_menu = VariantMenu()
 
 
 
@@ -340,6 +333,8 @@ class QueryViewWidget(plugin.PluginWidget):
         self.view.setModel(mainwindow.query_model)
         self.model = mainwindow.query_model
         self.setup_ui()
+        formatter = self.formatters[self.formatter_combo.currentIndex()]
+        self.model.formatter = formatter
 
     def on_setup_ui(self):
         """ Override from PluginWidget """
@@ -453,9 +448,60 @@ class QueryViewWidget(plugin.PluginWidget):
     def contextMenuEvent(self, event: QContextMenuEvent):
         """Overrided method: Show custom context menu associated to the current variant"""
         menu = QMenu(self)
-        menu.addAction("test")
-        menu.addAction("truc")
+
+        # Get variant data 
+        index = self.view.indexAt(self.view.viewport().mapFromGlobal(event.globalPos()))
+
+        if not index:
+            return
+
+        variant_id = self.model.variant(index)[0]
+        variant = sql.get_one_variant(self.model.conn, variant_id)
+
+
+        if "favorite" in variant:
+            if not variant["favorite"]:
+                msg = "Mark variant"
+                icon = FIcon(0xf4d2)
+            else:
+                msg = "Unmark variant"
+                icon = FIcon(0xf4ce)
+            menu.addAction(icon, msg, lambda : self.model.set_favorite(index,not variant["favorite"]))
+
+        menu.addSeparator()
+        # Create copy action 
+        cell_value = self.model.variant(index)[index.column()]
+        menu.addAction(FIcon(0xf18f),
+        f"Copy {cell_value}", 
+        lambda : qApp.clipboard().setText(str(self.model.variant(index)))
+        )
+
+        genomic_location = "{chr}:{pos}{ref}>{alt}".format(**variant)
+        menu.addAction(FIcon(0xf18f),
+        f"Copy {genomic_location}", 
+        lambda : qApp.clipboard().setText(genomic_location)
+        )
+
+
+        menu.addSeparator()
+
+        from functools import partial
+
+        # Create open with action 
+        open_with_action = QMenu(self.tr("Open with"))
+        settings = QSettings()
+        settings.beginGroup("plugins/query_view/links")
+        urls = {}
+        for key in settings.childKeys():
+            url = QUrl(settings.value(key).format(**variant))
+            open_with_action.addAction(FIcon(0xf339), key,  lambda url=url : QDesktopServices.openUrl(url))
+
+        settings.endGroup()
+
+        menu.addMenu(open_with_action)
+
         menu.exec_(event.globalPos())
+
 
     def _update_page(self):
         """Set page from page_box edit. When user set a page manually, this method is called"""
@@ -483,7 +529,7 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
-    w = QueryViewSettingsWidget()
+    w = QueryViewWidget()
     w.show()
     
 
