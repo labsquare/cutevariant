@@ -301,6 +301,7 @@ class QueryModel(QAbstractItemModel):
                     #  Display children data
                     return str(self.variant(index)[index.column()])
 
+
         # ------ Other Role -----
 
         if self.formatter:

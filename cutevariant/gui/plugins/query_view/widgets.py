@@ -445,6 +445,8 @@ class QueryViewWidget(plugin.PluginWidget):
         box.setDetailedText(text)
         box.exec_()
 
+
+
     def contextMenuEvent(self, event: QContextMenuEvent):
         """Overrided method: Show custom context menu associated to the current variant"""
         menu = QMenu(self)
