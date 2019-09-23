@@ -9,6 +9,14 @@ from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 from PySide2.QtGui import *
 
+
+class VariantMenu(QMenu):
+    def __init__(self):
+        super().__init__()
+
+        self.addAction("test")
+        self.addAction("boby")
+
 class QueryDelegate(QStyledItemDelegate):
     """
     This class specify the aesthetic of the view
@@ -312,9 +320,8 @@ class QueryViewWidget(plugin.PluginWidget):
 
         self.setLayout(main_layout)
 
+        self.variant_menu = VariantMenu()
 
-        # Create menu
-        # self.context_menu = VariantPopupMenu()
 
 
     def setup_ui(self):
@@ -445,11 +452,10 @@ class QueryViewWidget(plugin.PluginWidget):
 
     def contextMenuEvent(self, event: QContextMenuEvent):
         """Overrided method: Show custom context menu associated to the current variant"""
-        # Get the variant (and refresh InfoVariantWidget)
-        current_index = self.view.currentIndex()
-        variant = self._variant_clicked(current_index)
-        # Show the context menu with the given variant
-        self.context_menu.popup(variant, event.globalPos())
+        menu = QMenu(self)
+        menu.addAction("test")
+        menu.addAction("truc")
+        menu.exec_(event.globalPos())
 
     def _update_page(self):
         """Set page from page_box edit. When user set a page manually, this method is called"""
@@ -463,6 +469,8 @@ class QueryViewWidget(plugin.PluginWidget):
             self.model.builder.save(name)
 
             self.model.changed.emit()
+
+
 
 
 class QueryViewSettingsWidget(plugin.PluginSettingsWidget):

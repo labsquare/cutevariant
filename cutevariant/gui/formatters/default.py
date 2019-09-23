@@ -68,5 +68,15 @@ class DefaultFormatter(Formatter):
                 return QIcon(FIcon(0xf3ad,style.DARK_COLOR["red"]))
             if value == 5:
                 return QIcon(FIcon(0xf3b0,style.DARK_COLOR["red"]))    
-        return None
+
+        if re.match(r"genotype(.+).gt", column):
+            value = int(value)
+            if value == 0:
+                return QIcon(FIcon(0xF130))
+            if value == 1:
+                return QIcon(FIcon(0xFAA0))
+            if value == 2:
+                return QIcon(FIcon(0xFAA4))
+
+
 
