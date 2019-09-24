@@ -18,7 +18,7 @@ install:
   - pip install cx_Freeze
   - pip install pytest
   - pip install schema
-  - pip install win32ui
+  - pip install pywin32
   - ps: Start-FileDownload 'https://www.sqlite.org/2019/sqlite-dll-win32-x86-3280000.zip'
   - unzip sqlite-dll-win32-x86-3280000.zip
   - copy sqlite3.dll C:\Miniconda3\envs\test-environment\DLLs\
