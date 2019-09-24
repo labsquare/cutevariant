@@ -180,9 +180,17 @@ class ProxySettingsWidget(BaseWidget):
         """Load "proxy" group settings"""
         settings = QSettings()
         settings.beginGroup("proxy")
-        self.combo_box.setCurrentIndex(int(settings.value("type", 0)))
+        
+        s_type = settings.value("type",0)
+        if s_type:
+            self.combo_box.setCurrentIndex(int(s_type))
+                
         self.host_edit.setText(settings.value("host"))
-        self.port_edit.setValue(int(settings.value("port", 0)))
+
+        s_port = settings.value("port", 0)
+        if s_port:
+            self.port_edit.setValue(int(s_port))
+            
         self.user_edit.setText(settings.value("username"))
         self.pass_edit.setText(settings.value("password"))
         settings.endGroup()
