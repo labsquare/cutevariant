@@ -5,6 +5,7 @@ environment:
 
 init:
   - "ECHO %PYTHON_VERSION% %MINICONDA%"
+  - cmd: SET PATH=c:\python36;c:\python36\Scripts;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\ProgramData\chocolatey\bin;C:\Program Files\Git\cmd;C:\Program Files\Git\usr\bin
 
 install:
   - pip install -e .
