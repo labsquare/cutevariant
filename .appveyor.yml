@@ -3,7 +3,6 @@ environment:
   matrix:
     - PYTHON_VERSION: 3.6
       MINICONDA: C:\Miniconda3
-    - VS_VERSION: Visual Studio 14
 
 init:
   - "ECHO %PYTHON_VERSION% %MINICONDA%"
