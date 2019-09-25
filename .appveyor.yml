@@ -8,9 +8,6 @@ init:
   - cmd: SET PATH=c:\python37;c:\python37\Scripts;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\ProgramData\chocolatey\bin;C:\Program Files\Git\cmd;C:\Program Files\Git\usr\bin
 
 install:
-  - pip install virtualenv 
-  - virtualenv venv 
-  - .\venv\Scripts\activate.bat
   - pip install -e .
   - pip install fbs
   - pip install pytest
@@ -28,6 +25,7 @@ install:
 
   #- python make_a_blob.py build_exe
 
+  - cd .. 
 artifacts:
   - path: fbs
     name: cutevariant
