@@ -3,11 +3,16 @@ from cx_Freeze import setup, Executable
 # Dependencies are automatically detected, but it might need fine tuning.
 buildOptions = dict(
     # Fix six, appdirs import bug
-    packages = ["pkg_resources._vendor"],
+    packages = ["pkg_resources._vendor","win32ui","requests"],
     # Manual copy of files outside the package (MANIFEST.IN seems to be ignored ><)
-    include_files = [("LICENSE", "lib/LICENSE")],
-    optimize = 2, # lol
-)
+    include_files = [("LICENSE", "lib/LICENSE"),
+    ("cutevariant/", "lib/cutevariant/")
+
+    ],
+    optimize = 0,# lol
+    include_msvcr = True,
+	add_to_path = True
+    )
 
 import sys
 # Use Console to have a console in the background

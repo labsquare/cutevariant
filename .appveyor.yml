@@ -1,27 +1,22 @@
 
 environment:
   matrix:
-    - PYTHON_VERSION: 3.6
-      MINICONDA: C:\Miniconda3
-    - VS_VERSION: Visual Studio 14
+    - PYTHON_VERSION: 3.7
 
 init:
   - "ECHO %PYTHON_VERSION% %MINICONDA%"
+  - cmd: SET PATH=c:\python37;c:\python37\Scripts;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\ProgramData\chocolatey\bin;C:\Program Files\Git\cmd;C:\Program Files\Git\usr\bin
 
 install:
-  - "set PATH=%MINICONDA%;%MINICONDA%\\Scripts;%PATH%"
-  - conda config --set always_yes yes --set changeps1 no
-  - conda update -q conda
-  - conda info -a
-  - "conda create -q -n test-environment python=%PYTHON_VERSION%"
-  - activate test-environment
   - pip install -e .
   - pip install cx_Freeze
   - pip install pytest
   - pip install schema
+  - pip install pywin32
+  - pip install requests
   - ps: Start-FileDownload 'https://www.sqlite.org/2019/sqlite-dll-win32-x86-3280000.zip'
   - unzip sqlite-dll-win32-x86-3280000.zip
-  - copy sqlite3.dll C:\Miniconda3\envs\test-environment\DLLs\
+  # - copy sqlite3.dll C:\Miniconda3\envs\test-environment\DLLs\
   - python make_a_blob.py build_exe
 
 artifacts:
