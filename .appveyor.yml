@@ -16,15 +16,19 @@ install:
   - activate test-environment
   - pip install -e .
   - pip install cx_Freeze
+  - pip install fbs
   - pip install pytest
   - pip install schema
   - ps: Start-FileDownload 'https://www.sqlite.org/2019/sqlite-dll-win32-x86-3280000.zip'
   - unzip sqlite-dll-win32-x86-3280000.zip
-  - copy sqlite3.dll C:\Miniconda3\envs\test-environment\DLLs\
-  - python make_a_blob.py build_exe
+  - cd fbs
+  - fbs freeze
+  - cp -R ..\cutevariant\ target\cutevariant\
+  #- copy sqlite3.dll C:\Miniconda3\envs\test-environment\DLLs\
+  #- python make_a_blob.py build_exe
 
 artifacts:
-  - path: build
+  - path: fbs
     name: cutevariant
 
   
