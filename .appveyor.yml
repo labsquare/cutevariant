@@ -8,8 +8,10 @@ init:
   - cmd: SET PATH=c:\python37;c:\python37\Scripts;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\ProgramData\chocolatey\bin;C:\Program Files\Git\cmd;C:\Program Files\Git\usr\bin
 
 install:
+  - pip install virtualenv 
+  - virtualenv venv 
+  - .\venv\Scripts\activate.bat
   - pip install -e .
-  - pip install cx_Freeze
   - pip install fbs
   - pip install pytest
   - pip install schema
@@ -23,6 +25,7 @@ install:
   #- copy sqlite3.dll C:\Miniconda3\envs\test-environment\DLLs\
   #- python make_a_blob.py build_exe
   # - copy sqlite3.dll C:\Miniconda3\envs\test-environment\DLLs\
+
   #- python make_a_blob.py build_exe
 
 artifacts:
