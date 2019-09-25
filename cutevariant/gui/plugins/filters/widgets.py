@@ -1073,7 +1073,7 @@ class FiltersWidget(plugin.PluginWidget):
     def on_filters_changed(self):
         """ triggered when filter has changed """ 
         self.mainwindow.query_model.filters = self.filters 
-        self.mainwindow.query_model.load()
+        self.mainwindow.query_model.load(reset_page=True)
     
     def on_add_logic(self):
         """Add logic item to the current selected index

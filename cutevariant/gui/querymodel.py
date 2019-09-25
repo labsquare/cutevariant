@@ -376,7 +376,7 @@ class QueryModel(QAbstractItemModel):
         self.endInsertRows()
 
 
-    def load(self, emit_changed = True):
+    def load(self, emit_changed = True, reset_page=False):
         """Load variant data into the model from query attributes
 
         Args:
@@ -393,6 +393,9 @@ class QueryModel(QAbstractItemModel):
         self.beginResetModel()
         # Set total of variants for pagination
         self.total = self.builder.count()
+
+        if reset_page:
+            self.page = 0
 
         # Append a list because child can be append after
         self.variants = []

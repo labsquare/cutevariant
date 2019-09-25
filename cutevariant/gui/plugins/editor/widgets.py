@@ -295,7 +295,7 @@ class EditorWidget(plugin.PluginWidget):
             self.mainwindow.query_model.columns = self.columns
             self.mainwindow.query_model.filters = self.filters
             self.mainwindow.query_model.selection = self.selection
-            self.mainwindow.query_model.load()
+            self.mainwindow.query_model.load(reset_page=True)
 
 
 class VqlEdit(QTextEdit):
