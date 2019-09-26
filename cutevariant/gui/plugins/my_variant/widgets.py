@@ -18,7 +18,7 @@ class MyVariantWidget(plugin.PluginWidget):
         self.model = QJsonModel()
         self.proxy_model = QSortFilterProxyModel()
         self.proxy_model.setSourceModel(self.model)
-        self.proxy_model.setRecursiveFilteringEnabled(True)
+        #self.proxy_model.setRecursiveFilteringEnabled(True)
         self.view.setAlternatingRowColors(True)
         self.view.setModel(self.proxy_model)
         self.save_expands = []
@@ -55,7 +55,7 @@ class MyVariantWidget(plugin.PluginWidget):
         endpoint = "https://myvariant.info/v1/variant/"
 
         if endpoint:
-            url = endpoint + "chr{chr}:g.{pos}{ref}>{alt}".format(**variant)
+            url = endpoint + "{chr}:g.{pos}{ref}>{alt}".format(**variant)
             logging.warning(url)
             request = QNetworkRequest(QUrl(url))
             reply = self.net.get(request)
