@@ -33,6 +33,7 @@ from PySide2.QtNetwork import *
 # Custom imports
 import cutevariant.commons as cm
 from cutevariant.gui.ficon import FIcon
+from cutevariant.gui import network
 
 
 # from cutevariant.gui import style
@@ -131,13 +132,6 @@ class TranslationSettingsWidget(BaseWidget):
 class ProxySettingsWidget(BaseWidget):
     """Allow to configure proxy settings for widgets that require internet connection"""
 
-    PROXY_TYPES = {
-        "No Proxy": QNetworkProxy.NoProxy,
-        "Default": QNetworkProxy.DefaultProxy,
-        "Sock5": QNetworkProxy.Socks5Proxy,
-        "Http": QNetworkProxy.HttpProxy,
-    }
-
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Proxy"))
@@ -150,8 +144,8 @@ class ProxySettingsWidget(BaseWidget):
         self.pass_edit = QLineEdit()
 
         # Load proxy type
-        for key in self.PROXY_TYPES:
-            self.combo_box.addItem(key, self.PROXY_TYPES[key])
+        for key in network.PROXY_TYPES:
+            self.combo_box.addItem(key, network.PROXY_TYPES[key])
 
         # edit restriction
         self.pass_edit.setEchoMode(QLineEdit.PasswordEchoOnEdit)
@@ -162,6 +156,8 @@ class ProxySettingsWidget(BaseWidget):
         f_layout.addRow("Proxy Port", self.port_edit)
         f_layout.addRow("Username", self.user_edit)
         f_layout.addRow("Password", self.pass_edit)
+
+        self.combo_box.currentIndexChanged.connect(self.on_combo_changed)
 
         self.setLayout(f_layout)
 
@@ -194,6 +190,21 @@ class ProxySettingsWidget(BaseWidget):
         self.user_edit.setText(settings.value("username"))
         self.pass_edit.setText(settings.value("password"))
         settings.endGroup()
+
+    def on_combo_changed(self, index):
+        """ disable formular when No proxy """ 
+        if index == 0:
+            self._disable_form(True)
+        else:
+            self._disable_form(False)
+
+    def _disable_form(self, disabled = True):
+        """ Disabled formular """
+        self.host_edit.setDisabled(disabled)
+        self.port_edit.setDisabled(disabled)
+        self.user_edit.setDisabled(disabled)
+        self.pass_edit.setDisabled(disabled)
+
 
 
 class StyleSettingsWidget(BaseWidget):
