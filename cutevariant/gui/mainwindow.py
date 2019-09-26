@@ -433,12 +433,14 @@ class MainWindow(QMainWindow):
     @Slot()
     def on_query_model_changed(self):
         for name, _plugin in self.plugins.items():
-            _plugin.on_query_model_changed(self.query_model)
+            if _plugin.isVisible():
+                _plugin.on_query_model_changed(self.query_model)
 
     @Slot()
     def on_variant_changed(self, variant):
         for name, _plugin in self.plugins.items():
-            _plugin.on_variant_changed(variant) 
+            if _plugin.isVisible():
+                _plugin.on_variant_changed(variant) 
 
 
 if __name__ == "__main__":

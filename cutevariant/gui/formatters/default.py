@@ -29,8 +29,6 @@ class DefaultFormatter(Formatter):
     
     @functools.lru_cache(maxsize=128)
     def get_background(self, column, value):
-        if column == "ref" and value == "A":
-            return QColor("red")
         return None
 
     @functools.lru_cache(maxsize=128)
