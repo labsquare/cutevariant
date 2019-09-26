@@ -39,7 +39,7 @@ from cutevariant import __version__
 
 
 
-def main():
+def main(app : QApplication):
     """The main routine."""
 
     # Define the names of the organization and the application
@@ -51,7 +51,7 @@ def main():
     QCoreApplication.setApplicationName("cutevariant")
     QCoreApplication.setApplicationVersion(__version__)
 
-    app = QApplication(sys.argv)
+   
     # Process command line arguments
     process_arguments(app)
 
@@ -78,7 +78,6 @@ def main():
     #     w.setStyleSheet(file.read())
 
     w.show()
-    app.exec_()
 
 
 def load_styles(app):
@@ -156,5 +155,7 @@ def process_arguments(app):
 
 
 if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    main(app)
 
-    main()
+    app.exec_()

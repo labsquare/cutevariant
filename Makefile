@@ -5,7 +5,7 @@ coverage:
 	python setup.py test --addopts "--cov cutevariant tests"
 
 run:
-	cutevariant
+	python -m cutevariant
 
 black:
 	black cutevariant
