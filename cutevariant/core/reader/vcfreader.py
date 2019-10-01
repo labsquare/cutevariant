@@ -8,7 +8,7 @@ from cutevariant.commons import logger
 
 LOGGER = logger()
 
-VCF_TYPE_MAPPING = {"Float": "float", "Integer": "int", "Flag": "bool", "String": "str"}
+VCF_TYPE_MAPPING = {"Float": "float", "Integer": "int", "Flag": "bool", "String": "str","Character":"str"}
 
 
 class VcfReader(AbstractReader):
@@ -121,7 +121,7 @@ class VcfReader(AbstractReader):
                     "alt": str(alt),
                     "rsid": record.ID,  # Avoid id column duplication in DB
                     "qual": record.QUAL,
-                    "filter": ",".join(record.FILTER)
+                    "filter": "" if record.FILTER is None else ",".join(record.FILTER)
                 }
 
                 # Parse info
