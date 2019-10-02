@@ -945,7 +945,13 @@ def create_table_samples(conn, fields=None):
     cursor.execute(
         """CREATE TABLE samples (
         id INTEGER PRIMARY KEY ASC,
-        name TEXT)"""
+        name TEXT,
+        fam TEXT DEFAULT 'fam',
+        father_id INTEGER DEFAULT 0,
+        mother_id INTEGER DEFAULT 0,
+        sexe INTEGER DEFAULT 0,
+        phenotype INTEGER DEFAULT 0
+        )"""
     )
     conn.commit()
 
@@ -1016,7 +1022,39 @@ def get_samples(conn):
     conn.row_factory = sqlite3.Row
     return (dict(data) for data in conn.execute("""SELECT * FROM samples"""))
 
+def update_sample(conn, sample: dict):
+    """Update sample record
+    
+    sample = {
+        id : 3 # sample id 
+        name : "Boby",  # Name of sample 
+        fam : "fam", # familly identifier 
+        father_id : 0, # father id, 0 if not  
+        mother_id : 0, # mother id, 0 if not
+        sexe : 0 # Sexe code ( 1 = male, 2 = female, 0 = unknown)
+        phenotype: 0 # ( 1 = control , 2 = case, 0 = unknown)
+    }
 
+    Args:
+        conn (sqlite.connection): sqlite connection
+        sample (dict): data 
+    """
+
+    if "id" not in sample:
+        logging.debug("sample id is required")
+        return 
+    
+    sql_set = []
+    sql_val = []
+
+    for key, value in sample.items():
+        if key != "id":
+            sql_set.append(f"`{key}` = ? ")
+            sql_val.append(value)
+
+    query = "UPDATE samples SET " + ",".join(sql_set) + " WHERE id = " + str(sample["id"])
+    conn.execute(query, sql_val)
+    conn.commit()
 ## ============== VARIANTS QUERY THINGS ... ======================
 
 

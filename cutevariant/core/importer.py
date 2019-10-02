@@ -2,6 +2,7 @@
 import os
 import csv
 import sqlite3
+import logging
 
 # Custom imports
 from .reader.abstractreader import AbstractReader
@@ -98,3 +99,60 @@ def import_reader(conn, reader):
     for progress, message in async_import_reader(conn, reader):
         #  don't show message
         pass
+
+def import_familly(conn, filename):
+    """import *.fam file into sample table
+
+    data has the same structure of a fam file object
+    https://www.cog-genomics.org/plink/1.9/formats#fam
+
+    the file is a tabular with the following column 
+
+    Family String Id : "Fam"
+    Sample String Id: "Boby"
+    Father String Id
+    Mother String Id
+    Sex code:  (1 = male, 2 = female, 0 = unknown)
+    Phenotype code: (1 = control, 2 = case, 0 = missing data if case/control)
+    
+    Arguments:
+        conn {[type]} -- [description]
+        data {list} -- [description]
+    """
+
+    with open(filename) as file:
+        reader = csv.reader(file, delimiter="\t")
+
+        sample_map = dict([(sample["name"], sample["id"]) for sample in get_samples(conn)])
+        sample_names = list(sample_map.keys())
+
+        for line in reader:
+            if len(line) >= 6:
+                fam = line[0]
+                name = line[1]
+                father = line[2]
+                mother = line[3]
+                sexe = line[4]
+                phenotype = line[5]
+
+                sexe = int(sexe) if sexe.isdigit() else 0
+                phenotype = int(phenotype) if phenotype.isdigit() else 0 
+
+                if name in sample_names:
+                    edit_sample = {
+                        "id" : sample_map[name],
+                        "fam": fam,
+                        "sexe": sexe,
+                        "phenotype": phenotype
+                    }
+
+                    if father in sample_names:
+                        edit_sample["father_id"] = sample_map[father]
+                    
+                    if mother in sample_names:
+                        edit_sample["mother_id"] = sample_map[mother]
+
+                    update_sample(conn, edit_sample)
+
+            
+   

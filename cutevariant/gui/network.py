@@ -18,21 +18,23 @@ def get_network_manager():
     settings.beginGroup("proxy")
     p_type_index = settings.value("type")
     p_host = settings.value("host")
-    p_port = int(settings.value("port"))
+    p_port = settings.value("port", 80)
     p_username = settings.value("username")
     p_password = settings.value("password")
     settings.endGroup()
 
-    if p_type_index:
-        p_type = list(PROXY_TYPES.values())[p_type_index]
-        p_host = settings.value("host")
-        p_port = int(settings.value("port"))
-        p_username = settings.value("username")
-        p_password = settings.value("password")
+    try:
+        if p_type_index:
+            p_type = list(PROXY_TYPES.values())[int(p_type_index)]
+
+        if p_port:
+            p_port = int(p_port)
 
         if p_type is not QNetworkProxy.NoProxy:
-            proxy = QNetworkProxy(p_type, p_host, p_port,p_username, p_password)
+            proxy = QNetworkProxy(p_type, p_host,p_port,p_username, p_password)
             network_manager.setProxy(proxy)
+    except:
+        pass
 
     return network_manager
 

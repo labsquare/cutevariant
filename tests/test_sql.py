@@ -104,7 +104,40 @@ def test_get_fields(conn):
 
 def test_get_samples(conn):
     assert [sample["name"] for sample in sql.get_samples(conn)] == SAMPLES
+    first_sample = list(sql.get_samples(conn))[0]
 
+    # test default value 
+    assert first_sample["name"] == "sacha"
+    assert first_sample["fam"] == "fam"
+    assert first_sample["father_id"] == 0
+    assert first_sample["mother_id"] == 0
+    assert first_sample["sexe"] == 0
+    assert first_sample["phenotype"] == 0
+
+
+def test_update_samples(conn):
+    previous_sample = list(sql.get_samples(conn))[0]
+
+    assert previous_sample["name"] == "sacha"
+    assert previous_sample["id"] == 1
+    # Update with info
+    previous_sample["name"] = "maco"
+    previous_sample["fam"] = "fam2"
+    previous_sample["father_id"] = 1
+    previous_sample["mother_id"] = 1
+    previous_sample["sexe"] = 2
+    previous_sample["phenotype"] = 2
+
+    sql.update_sample(conn, previous_sample)
+
+    edit_sample = list(sql.get_samples(conn))[0]
+
+    assert edit_sample["name"] == "maco"
+    assert edit_sample["fam"] == "fam2"
+    assert edit_sample["father_id"] == 1
+    assert edit_sample["mother_id"] == 1
+    assert edit_sample["sexe"] == 2
+    assert edit_sample["phenotype"] == 2
 
 def test_update_variant(conn):
 
