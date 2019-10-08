@@ -87,6 +87,7 @@ class FilePage(QWizardPage):
         self.setSubTitle(self.tr("Supported file are vcf, vcf.gz, vep.txt."))
 
         self.file_path_edit = QLineEdit()
+
         self.anotation_detect_label = QLabel()
         self.button = QPushButton(self.tr("Browse"))
         h_layout = QHBoxLayout()

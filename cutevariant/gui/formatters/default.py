@@ -40,8 +40,7 @@ class DefaultFormatter(Formatter):
         if column == "impact": 
             return self.IMPACT_COLOR[value]
 
-        if re.match(r"genotype(.+).gt", column):
-            return "red"
+   
 
 
     @functools.lru_cache(maxsize=128)
@@ -71,10 +70,11 @@ class DefaultFormatter(Formatter):
             value = int(value)
             if value == 0:
                 return QIcon(FIcon(0xF130))
-            if value == 1:
+            elif value == 1:
                 return QIcon(FIcon(0xFAA0))
-            if value == 2:
+            elif value == 2:
                 return QIcon(FIcon(0xFAA4))
+            return QIcon(FIcon(0xF2D7))
 
 
 

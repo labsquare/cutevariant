@@ -10,23 +10,31 @@ PROXY_TYPES = {
 
 def get_network_manager():
 
-    # Get proxy settings data
+    # Create network access manager
+    network_manager = QNetworkAccessManager()
+
+     # Get proxy settings data
     settings = QSettings("labsquare","cutevariant")
     settings.beginGroup("proxy")
-    p_type_index = int(settings.value("type"))
-    p_type = list(PROXY_TYPES.values())[p_type_index]
+    p_type_index = settings.value("type")
     p_host = settings.value("host")
-    p_port = int(settings.value("port"))
+    p_port = settings.value("port", 80)
     p_username = settings.value("username")
     p_password = settings.value("password")
     settings.endGroup()
 
-    # Create network access manager
-    network_manager = QNetworkAccessManager()
+    try:
+        if p_type_index:
+            p_type = list(PROXY_TYPES.values())[int(p_type_index)]
 
-    if p_type is not QNetworkProxy.NoProxy:
-        proxy = QNetworkProxy(p_type, p_host, p_port,p_username, p_password)
-        network_manager.setProxy(proxy)
+        if p_port:
+            p_port = int(p_port)
+
+        if p_type is not QNetworkProxy.NoProxy:
+            proxy = QNetworkProxy(p_type, p_host,p_port,p_username, p_password)
+            network_manager.setProxy(proxy)
+    except:
+        pass
 
     return network_manager
 
