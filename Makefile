@@ -10,6 +10,9 @@ run:
 black:
 	black cutevariant
 
+doc-deploy:
+	git subtree push --prefix docs/build/html origin gh-pages  
+
 
 # development & release cycle
 fullrelease:
