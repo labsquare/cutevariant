@@ -10,8 +10,9 @@ Welcome to cutevariant's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-.. automodule:: cutevariant.core.sql
-   :members:
+   overview
+   installation
+   core_api
 
 Indices and tables
 ==================

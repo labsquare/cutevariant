@@ -20,6 +20,17 @@
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 
+# At top on conf.py (with other import statements)
+import recommonmark
+from recommonmark.transform import AutoStructify
+
+# At the bottom of conf.py
+def setup(app):
+    app.add_config_value('recommonmark_config', {
+            'url_resolver': lambda url: github_doc_root + url,
+            'auto_toc_tree_section': 'Contents',
+            }, True)
+    app.add_transform(AutoStructify)
 
 # -- General configuration ------------------------------------------------
 
@@ -34,7 +45,7 @@ extensions = ['sphinx.ext.autodoc',
     'sphinx.ext.coverage',
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
-    'sphinx_rtd_theme']
+    'sphinx_rtd_theme','recommonmark']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -167,6 +178,5 @@ texinfo_documents = [
      author, 'cutevariant', 'One line description of project.',
      'Miscellaneous'),
 ]
-
 
 

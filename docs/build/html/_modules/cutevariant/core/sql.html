@@ -78,8 +78,13 @@
               
             
             
-              <!-- Local TOC -->
-              <div class="local-toc"></div>
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core_api.html">Core API</a></li>
+</ul>
+
             
           
         </div>
@@ -168,7 +173,7 @@
 <span class="c1">## ================ Misc functions =============================================</span>
 
 
-<div class="viewcode-block" id="get_sql_connexion"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.get_sql_connexion">[docs]</a><span class="k">def</span> <span class="nf">get_sql_connexion</span><span class="p">(</span><span class="n">filepath</span><span class="p">):</span>
+<div class="viewcode-block" id="get_sql_connexion"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.get_sql_connexion">[docs]</a><span class="k">def</span> <span class="nf">get_sql_connexion</span><span class="p">(</span><span class="n">filepath</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Open a SQLite database and return the connexion object&quot;&quot;&quot;</span>
     <span class="n">connexion</span> <span class="o">=</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
     <span class="c1"># Activate Foreign keys</span>
@@ -180,19 +185,19 @@
     <span class="k">return</span> <span class="n">connexion</span></div>
 
 
-<div class="viewcode-block" id="drop_table"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.drop_table">[docs]</a><span class="k">def</span> <span class="nf">drop_table</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">table_name</span><span class="p">):</span>
+<div class="viewcode-block" id="drop_table"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.drop_table">[docs]</a><span class="k">def</span> <span class="nf">drop_table</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">table_name</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Drop the given table&quot;&quot;&quot;</span>
     <span class="n">cursor</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
     <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;DROP TABLE IF EXISTS </span><span class="si">{table_name}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="clear_table"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.clear_table">[docs]</a><span class="k">def</span> <span class="nf">clear_table</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">table_name</span><span class="p">):</span>
+<div class="viewcode-block" id="clear_table"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.clear_table">[docs]</a><span class="k">def</span> <span class="nf">clear_table</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">table_name</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Clear content of the given table &quot;&quot;&quot;</span> 
     <span class="n">cursor</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
     <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;DELETE  FROM </span><span class="si">{table_name}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="create_project"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.create_project">[docs]</a><span class="k">def</span> <span class="nf">create_project</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">reference</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<div class="viewcode-block" id="create_project"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.create_project">[docs]</a><span class="k">def</span> <span class="nf">create_project</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">reference</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Create the table &quot;projects&quot; and insert project name and reference genome</span>
 
 <span class="sd">    :param conn: sqlite3.connect</span>
@@ -209,7 +214,7 @@
     <span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span></div>
 
 
-<div class="viewcode-block" id="get_columns"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.get_columns">[docs]</a><span class="k">def</span> <span class="nf">get_columns</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">table_name</span><span class="p">):</span>
+<div class="viewcode-block" id="get_columns"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.get_columns">[docs]</a><span class="k">def</span> <span class="nf">get_columns</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">table_name</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Return the list of columns for the given table</span>
 
 <span class="sd">    .. note:: used by async_insert_many_variants()</span>
@@ -225,7 +230,7 @@
     <span class="p">]</span></div>
 
 
-<div class="viewcode-block" id="create_indexes"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.create_indexes">[docs]</a><span class="k">def</span> <span class="nf">create_indexes</span><span class="p">(</span><span class="n">conn</span><span class="p">):</span>
+<div class="viewcode-block" id="create_indexes"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.create_indexes">[docs]</a><span class="k">def</span> <span class="nf">create_indexes</span><span class="p">(</span><span class="n">conn</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Create extra indexes on tables</span>
 
 <span class="sd">    .. note:: This function must be called after batch insertions.</span>
@@ -244,7 +249,7 @@
 <span class="c1">## ================ Selections functions =======================================</span>
 
 
-<div class="viewcode-block" id="create_table_selections"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.create_table_selections">[docs]</a><span class="k">def</span> <span class="nf">create_table_selections</span><span class="p">(</span><span class="n">conn</span><span class="p">):</span>
+<div class="viewcode-block" id="create_table_selections"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.create_table_selections">[docs]</a><span class="k">def</span> <span class="nf">create_table_selections</span><span class="p">(</span><span class="n">conn</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Create the table &quot;selections&quot; and association table &quot;selection_has_variant&quot;</span>
 
 <span class="sd">    This table stores the queries saved by the user:</span>
@@ -277,7 +282,7 @@
     <span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span></div>
 
 
-<div class="viewcode-block" id="create_selections_indexes"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.create_selections_indexes">[docs]</a><span class="k">def</span> <span class="nf">create_selections_indexes</span><span class="p">(</span><span class="n">conn</span><span class="p">):</span>
+<div class="viewcode-block" id="create_selections_indexes"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.create_selections_indexes">[docs]</a><span class="k">def</span> <span class="nf">create_selections_indexes</span><span class="p">(</span><span class="n">conn</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Create indexes on the &quot;selections&quot; table</span>
 
 <span class="sd">    .. note:: This function should be called after batch insertions.</span>
@@ -287,7 +292,7 @@
     <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;CREATE UNIQUE INDEX idx_selections ON selections (name)&quot;&quot;&quot;</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="create_selection_has_variant_indexes"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.create_selection_has_variant_indexes">[docs]</a><span class="k">def</span> <span class="nf">create_selection_has_variant_indexes</span><span class="p">(</span><span class="n">conn</span><span class="p">):</span>
+<div class="viewcode-block" id="create_selection_has_variant_indexes"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.create_selection_has_variant_indexes">[docs]</a><span class="k">def</span> <span class="nf">create_selection_has_variant_indexes</span><span class="p">(</span><span class="n">conn</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Create indexes on &quot;selection_has_variant&quot; table</span>
 
 <span class="sd">    .. note:: This function is called by:</span>
@@ -300,7 +305,7 @@
     <span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="insert_selection"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.insert_selection">[docs]</a><span class="k">def</span> <span class="nf">insert_selection</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;no_name&quot;</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<div class="viewcode-block" id="insert_selection"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.insert_selection">[docs]</a><span class="k">def</span> <span class="nf">insert_selection</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;no_name&quot;</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Insert one selection record</span>
 
 <span class="sd">    TODO: retirer le group by inutile</span>
@@ -331,7 +336,7 @@
         <span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">cursor</span><span class="o">.</span><span class="n">lastrowid</span></div>
 
-<div class="viewcode-block" id="delete_selection_by_name"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.delete_selection_by_name">[docs]</a><span class="k">def</span> <span class="nf">delete_selection_by_name</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<div class="viewcode-block" id="delete_selection_by_name"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.delete_selection_by_name">[docs]</a><span class="k">def</span> <span class="nf">delete_selection_by_name</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Delete selection from name </span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
@@ -347,7 +352,7 @@
     <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;DELETE FROM selections WHERE name = ?&quot;</span><span class="p">,</span> <span class="p">(</span><span class="n">name</span><span class="p">,))</span>
     <span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="create_selection_from_sql"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.create_selection_from_sql">[docs]</a><span class="k">def</span> <span class="nf">create_selection_from_sql</span><span class="p">(</span>
+<div class="viewcode-block" id="create_selection_from_sql"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.create_selection_from_sql">[docs]</a><span class="k">def</span> <span class="nf">create_selection_from_sql</span><span class="p">(</span>
     <span class="n">conn</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">from_selection</span><span class="o">=</span><span class="kc">False</span>
 <span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Create a selection record from sql variant query</span>
@@ -410,7 +415,7 @@
     <span class="k">return</span> <span class="kc">None</span></div>
 
 
-<div class="viewcode-block" id="create_selection_from_bed"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.create_selection_from_bed">[docs]</a><span class="k">def</span> <span class="nf">create_selection_from_bed</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">bed_intervals</span><span class="p">):</span>
+<div class="viewcode-block" id="create_selection_from_bed"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.create_selection_from_bed">[docs]</a><span class="k">def</span> <span class="nf">create_selection_from_bed</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">bed_intervals</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Create a new selection based on the given intervals taken from a BED file&quot;&quot;&quot;</span>
 
     <span class="n">cur</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
@@ -462,7 +467,7 @@
     <span class="k">return</span> <span class="n">create_selection_from_sql</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">from_selection</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="get_selections"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.get_selections">[docs]</a><span class="k">def</span> <span class="nf">get_selections</span><span class="p">(</span><span class="n">conn</span><span class="p">):</span>
+<div class="viewcode-block" id="get_selections"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.get_selections">[docs]</a><span class="k">def</span> <span class="nf">get_selections</span><span class="p">(</span><span class="n">conn</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Get selections in &quot;selections&quot; table</span>
 
 <span class="sd">    :return: Generator of dictionnaries with as many keys as there are columns</span>
@@ -475,7 +480,7 @@
     <span class="k">return</span> <span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="k">for</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;SELECT * FROM selections&quot;&quot;&quot;</span><span class="p">))</span></div>
 
 
-<div class="viewcode-block" id="delete_selection"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.delete_selection">[docs]</a><span class="k">def</span> <span class="nf">delete_selection</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">selection_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<div class="viewcode-block" id="delete_selection"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.delete_selection">[docs]</a><span class="k">def</span> <span class="nf">delete_selection</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">selection_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Delete the selection with the given id in the &quot;selections&quot; table</span>
 
 <span class="sd">    :return: Number of rows deleted</span>
@@ -488,7 +493,7 @@
     <span class="k">return</span> <span class="n">cursor</span><span class="o">.</span><span class="n">rowcount</span></div>
 
 
-<div class="viewcode-block" id="edit_selection"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.edit_selection">[docs]</a><span class="k">def</span> <span class="nf">edit_selection</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">selection</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+<div class="viewcode-block" id="edit_selection"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.edit_selection">[docs]</a><span class="k">def</span> <span class="nf">edit_selection</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">selection</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Update the name and count of a selection with the given id</span>
 
 <span class="sd">    :return: Number of rows deleted</span>
@@ -505,7 +510,7 @@
 <span class="c1">## ================ Operations on sets of variants =============================</span>
 
 
-<div class="viewcode-block" id="get_query_columns"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.get_query_columns">[docs]</a><span class="k">def</span> <span class="nf">get_query_columns</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;variant&quot;</span><span class="p">):</span>
+<div class="viewcode-block" id="get_query_columns"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.get_query_columns">[docs]</a><span class="k">def</span> <span class="nf">get_query_columns</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;variant&quot;</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;(DEPRECATED FOR NOW, NOT USED)</span>
 <span class="sd">    Handy func to get columns to be queried according to the group by argument</span>
 
@@ -522,7 +527,7 @@
     <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
 
 
-<div class="viewcode-block" id="intersect_variants"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.intersect_variants">[docs]</a><span class="k">def</span> <span class="nf">intersect_variants</span><span class="p">(</span><span class="n">query1</span><span class="p">,</span> <span class="n">query2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="intersect_variants"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.intersect_variants">[docs]</a><span class="k">def</span> <span class="nf">intersect_variants</span><span class="p">(</span><span class="n">query1</span><span class="p">,</span> <span class="n">query2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Get the variants obtained by the intersection of 2 queries</span>
 <span class="sd">    Try to handl precedence of operators.</span>
 <span class="sd">    - The precedence of UNION and EXCEPT are similar, they are processed from</span>
@@ -534,12 +539,12 @@
     <span class="k">return</span> <span class="n">f</span><span class="s2">&quot;&quot;&quot;SELECT * FROM (</span><span class="si">{query1}</span><span class="s2"> INTERSECT </span><span class="si">{query2}</span><span class="s2">)&quot;&quot;&quot;</span></div>
 
 
-<div class="viewcode-block" id="union_variants"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.union_variants">[docs]</a><span class="k">def</span> <span class="nf">union_variants</span><span class="p">(</span><span class="n">query1</span><span class="p">,</span> <span class="n">query2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="union_variants"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.union_variants">[docs]</a><span class="k">def</span> <span class="nf">union_variants</span><span class="p">(</span><span class="n">query1</span><span class="p">,</span> <span class="n">query2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Get the variants obtained by the union of 2 queries&quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">f</span><span class="s2">&quot;&quot;&quot;</span><span class="si">{query1}</span><span class="s2"> UNION </span><span class="si">{query2}</span><span class="s2">&quot;&quot;&quot;</span></div>
 
 
-<div class="viewcode-block" id="subtract_variants"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.subtract_variants">[docs]</a><span class="k">def</span> <span class="nf">subtract_variants</span><span class="p">(</span><span class="n">query1</span><span class="p">,</span> <span class="n">query2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="subtract_variants"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.subtract_variants">[docs]</a><span class="k">def</span> <span class="nf">subtract_variants</span><span class="p">(</span><span class="n">query1</span><span class="p">,</span> <span class="n">query2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Get the variants obtained by the difference of 2 queries&quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">f</span><span class="s2">&quot;&quot;&quot;</span><span class="si">{query1}</span><span class="s2"> EXCEPT </span><span class="si">{query2}</span><span class="s2">&quot;&quot;&quot;</span></div>
 
@@ -547,7 +552,7 @@
 <span class="c1">## ================ Fields functions ===========================================</span>
 
 
-<div class="viewcode-block" id="create_table_fields"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.create_table_fields">[docs]</a><span class="k">def</span> <span class="nf">create_table_fields</span><span class="p">(</span><span class="n">conn</span><span class="p">):</span>
+<div class="viewcode-block" id="create_table_fields"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.create_table_fields">[docs]</a><span class="k">def</span> <span class="nf">create_table_fields</span><span class="p">(</span><span class="n">conn</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Create the table &quot;fields&quot;</span>
 
 <span class="sd">    This table contain fields. A field is a column with its description and type;</span>
@@ -575,7 +580,7 @@
     <span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span></div>
 
 
-<div class="viewcode-block" id="insert_field"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.insert_field">[docs]</a><span class="k">def</span> <span class="nf">insert_field</span><span class="p">(</span>
+<div class="viewcode-block" id="insert_field"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.insert_field">[docs]</a><span class="k">def</span> <span class="nf">insert_field</span><span class="p">(</span>
     <span class="n">conn</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;no_name&quot;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s2">&quot;variants&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;text&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="nb">str</span><span class="p">()</span>
 <span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Insert one field record (NOT USED)</span>
@@ -601,7 +606,7 @@
     <span class="k">return</span> <span class="n">cursor</span><span class="o">.</span><span class="n">lastrowid</span></div>
 
 
-<div class="viewcode-block" id="insert_many_fields"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.insert_many_fields">[docs]</a><span class="k">def</span> <span class="nf">insert_many_fields</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+<div class="viewcode-block" id="insert_many_fields"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.insert_many_fields">[docs]</a><span class="k">def</span> <span class="nf">insert_many_fields</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Insert multiple fields into &quot;fields&quot; table using one commit</span>
 
 <span class="sd">    :param conn: sqlite3.connect</span>
@@ -625,7 +630,7 @@
     <span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span></div>
 
 
-<div class="viewcode-block" id="get_fields"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.get_fields">[docs]</a><span class="k">def</span> <span class="nf">get_fields</span><span class="p">(</span><span class="n">conn</span><span class="p">):</span>
+<div class="viewcode-block" id="get_fields"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.get_fields">[docs]</a><span class="k">def</span> <span class="nf">get_fields</span><span class="p">(</span><span class="n">conn</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Get fields as list of dictionnary</span>
 
 <span class="sd">    .. seealso:: insert_many_fields</span>
@@ -639,7 +644,7 @@
     <span class="k">return</span> <span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="k">for</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;SELECT * FROM fields&quot;&quot;&quot;</span><span class="p">))</span></div>
 
 
-<div class="viewcode-block" id="get_field_by_category"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.get_field_by_category">[docs]</a><span class="k">def</span> <span class="nf">get_field_by_category</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">category</span><span class="p">):</span>
+<div class="viewcode-block" id="get_field_by_category"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.get_field_by_category">[docs]</a><span class="k">def</span> <span class="nf">get_field_by_category</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">category</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Get fields within a category</span>
 
 <span class="sd">    :param conn: sqlite3.connect</span>
@@ -651,7 +656,7 @@
     <span class="k">return</span> <span class="p">[</span><span class="n">field</span> <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">get_fields</span><span class="p">(</span><span class="n">conn</span><span class="p">)</span> <span class="k">if</span> <span class="n">field</span><span class="p">[</span><span class="s2">&quot;category&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">category</span><span class="p">]</span></div>
 
 
-<div class="viewcode-block" id="get_field_by_name"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.get_field_by_name">[docs]</a><span class="k">def</span> <span class="nf">get_field_by_name</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">field_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<div class="viewcode-block" id="get_field_by_name"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.get_field_by_name">[docs]</a><span class="k">def</span> <span class="nf">get_field_by_name</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">field_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Return field by his name </span>
 
 <span class="sd">    .. seealso:: get_fields </span>
@@ -669,7 +674,7 @@
     <span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="get_field_range"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.get_field_range">[docs]</a><span class="k">def</span> <span class="nf">get_field_range</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">field_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<div class="viewcode-block" id="get_field_range"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.get_field_range">[docs]</a><span class="k">def</span> <span class="nf">get_field_range</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">field_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Return (min,max) of field_name records . </span>
 <span class="sd">    </span>
 <span class="sd">    :param conn: sqlite3.connect</span>
@@ -690,7 +695,7 @@
     <span class="k">return</span> <span class="n">result</span></div>
 
 
-<div class="viewcode-block" id="get_field_unique_values"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.get_field_unique_values">[docs]</a><span class="k">def</span> <span class="nf">get_field_unique_values</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">field_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<div class="viewcode-block" id="get_field_unique_values"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.get_field_unique_values">[docs]</a><span class="k">def</span> <span class="nf">get_field_unique_values</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">field_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Return unique record value for a field name </span>
 
 <span class="sd">    :param conn: sqlite3.connect </span>
@@ -708,7 +713,7 @@
 <span class="c1">## ================ Annotations functions ======================================</span>
 
 
-<div class="viewcode-block" id="create_table_annotations"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.create_table_annotations">[docs]</a><span class="k">def</span> <span class="nf">create_table_annotations</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">fields</span><span class="p">):</span>
+<div class="viewcode-block" id="create_table_annotations"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.create_table_annotations">[docs]</a><span class="k">def</span> <span class="nf">create_table_annotations</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">fields</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Create &quot;annotations&quot; table which contains dynamics fields</span>
 
 <span class="sd">    :param fields: Generator of SQL fields.</span>
@@ -735,7 +740,7 @@
     <span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span></div>
 
 
-<div class="viewcode-block" id="create_annotations_indexes"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.create_annotations_indexes">[docs]</a><span class="k">def</span> <span class="nf">create_annotations_indexes</span><span class="p">(</span><span class="n">conn</span><span class="p">):</span>
+<div class="viewcode-block" id="create_annotations_indexes"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.create_annotations_indexes">[docs]</a><span class="k">def</span> <span class="nf">create_annotations_indexes</span><span class="p">(</span><span class="n">conn</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Create indexes on the &quot;annotations&quot; table</span>
 
 <span class="sd">    .. warning: This function must be called after batch insertions.</span>
@@ -755,7 +760,7 @@
 <span class="c1">## ================ Variants functions =========================================</span>
 
 
-<div class="viewcode-block" id="create_table_variants"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.create_table_variants">[docs]</a><span class="k">def</span> <span class="nf">create_table_variants</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">fields</span><span class="p">):</span>
+<div class="viewcode-block" id="create_table_variants"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.create_table_variants">[docs]</a><span class="k">def</span> <span class="nf">create_table_variants</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">fields</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Create &quot;variants&quot; and &quot;sample_has_variant&quot; tables which contains dynamics fields</span>
 
 <span class="sd">    :Example:</span>
@@ -804,7 +809,7 @@
     <span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span></div>
 
 
-<div class="viewcode-block" id="create_variants_indexes"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.create_variants_indexes">[docs]</a><span class="k">def</span> <span class="nf">create_variants_indexes</span><span class="p">(</span><span class="n">conn</span><span class="p">):</span>
+<div class="viewcode-block" id="create_variants_indexes"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.create_variants_indexes">[docs]</a><span class="k">def</span> <span class="nf">create_variants_indexes</span><span class="p">(</span><span class="n">conn</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Create indexes on the &quot;variants&quot; table</span>
 
 <span class="sd">    .. warning: This function must be called after batch insertions.</span>
@@ -826,7 +831,7 @@
     <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;CREATE INDEX idx_variants_ref_alt ON variants (ref, alt)&quot;&quot;&quot;</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="get_one_variant"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.get_one_variant">[docs]</a><span class="k">def</span> <span class="nf">get_one_variant</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<div class="viewcode-block" id="get_one_variant"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.get_one_variant">[docs]</a><span class="k">def</span> <span class="nf">get_one_variant</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Get the variant with the given id&quot;&quot;&quot;</span>
     <span class="c1"># Use row_factory here</span>
     <span class="n">conn</span><span class="o">.</span><span class="n">row_factory</span> <span class="o">=</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">Row</span>
@@ -835,7 +840,7 @@
         <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;&quot;&quot;SELECT * FROM variants WHERE variants.id = </span><span class="si">{id}</span><span class="s2">&quot;&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
     <span class="p">)</span></div>
 
-<div class="viewcode-block" id="update_variant"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.update_variant">[docs]</a><span class="k">def</span> <span class="nf">update_variant</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">variant</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+<div class="viewcode-block" id="update_variant"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.update_variant">[docs]</a><span class="k">def</span> <span class="nf">update_variant</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">variant</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Update variant data &quot;&quot;&quot;</span>
     
     <span class="n">sql_set</span> <span class="o">=</span> <span class="p">[]</span>
@@ -849,7 +854,7 @@
     <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">sql_val</span><span class="p">)</span>
     <span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="get_annotations"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.get_annotations">[docs]</a><span class="k">def</span> <span class="nf">get_annotations</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<div class="viewcode-block" id="get_annotations"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.get_annotations">[docs]</a><span class="k">def</span> <span class="nf">get_annotations</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Get variant annotation with the given id &quot;&quot;&quot;</span>
     <span class="n">conn</span><span class="o">.</span><span class="n">row_factory</span> <span class="o">=</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">Row</span>
     <span class="k">for</span> <span class="n">annotation</span> <span class="ow">in</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
@@ -858,7 +863,7 @@
         <span class="k">yield</span> <span class="nb">dict</span><span class="p">(</span><span class="n">annotation</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="get_sample_annotations"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.get_sample_annotations">[docs]</a><span class="k">def</span> <span class="nf">get_sample_annotations</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">variant_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">sample_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<div class="viewcode-block" id="get_sample_annotations"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.get_sample_annotations">[docs]</a><span class="k">def</span> <span class="nf">get_sample_annotations</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">variant_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">sample_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Get variant annotation for a given sample &quot;&quot;&quot;</span>
     <span class="n">conn</span><span class="o">.</span><span class="n">row_factory</span> <span class="o">=</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">Row</span>
     <span class="n">cursor</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
@@ -870,12 +875,12 @@
     <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">result</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="get_variants_count"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.get_variants_count">[docs]</a><span class="k">def</span> <span class="nf">get_variants_count</span><span class="p">(</span><span class="n">conn</span><span class="p">):</span>
+<div class="viewcode-block" id="get_variants_count"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.get_variants_count">[docs]</a><span class="k">def</span> <span class="nf">get_variants_count</span><span class="p">(</span><span class="n">conn</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Get the number of variants in the &quot;variants&quot; table&quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;SELECT COUNT(*) FROM variants&quot;&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span></div>
 
 
-<div class="viewcode-block" id="async_insert_many_variants"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.async_insert_many_variants">[docs]</a><span class="k">def</span> <span class="nf">async_insert_many_variants</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">total_variant_count</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">yield_every</span><span class="o">=</span><span class="mi">3000</span><span class="p">):</span>
+<div class="viewcode-block" id="async_insert_many_variants"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.async_insert_many_variants">[docs]</a><span class="k">def</span> <span class="nf">async_insert_many_variants</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">total_variant_count</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">yield_every</span><span class="o">=</span><span class="mi">3000</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Insert many variants from data into variants table</span>
 
 <span class="sd">    :param conn: sqlite3.connect</span>
@@ -1078,7 +1083,7 @@
 <span class="c1">## ================ Samples functions ==========================================</span>
 
 
-<div class="viewcode-block" id="create_table_samples"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.create_table_samples">[docs]</a><span class="k">def</span> <span class="nf">create_table_samples</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="create_table_samples"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.create_table_samples">[docs]</a><span class="k">def</span> <span class="nf">create_table_samples</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Create samples table</span>
 
 <span class="sd">    :param conn: sqlite3.connect</span>
@@ -1127,7 +1132,7 @@
     <span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span></div>
 
 
-<div class="viewcode-block" id="insert_sample"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.insert_sample">[docs]</a><span class="k">def</span> <span class="nf">insert_sample</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;no_name&quot;</span><span class="p">):</span>
+<div class="viewcode-block" id="insert_sample"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.insert_sample">[docs]</a><span class="k">def</span> <span class="nf">insert_sample</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;no_name&quot;</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Insert one sample in samples table (USED in TESTS)</span>
 
 <span class="sd">    :param conn: sqlite3.connect</span>
@@ -1140,7 +1145,7 @@
     <span class="k">return</span> <span class="n">cursor</span><span class="o">.</span><span class="n">lastrowid</span></div>
 
 
-<div class="viewcode-block" id="insert_many_samples"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.insert_many_samples">[docs]</a><span class="k">def</span> <span class="nf">insert_many_samples</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">samples</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+<div class="viewcode-block" id="insert_many_samples"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.insert_many_samples">[docs]</a><span class="k">def</span> <span class="nf">insert_many_samples</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">samples</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Insert many samples at a time in samples table</span>
 
 <span class="sd">    :param samples: List of samples names</span>
@@ -1154,7 +1159,7 @@
     <span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span></div>
 
 
-<div class="viewcode-block" id="get_samples"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.get_samples">[docs]</a><span class="k">def</span> <span class="nf">get_samples</span><span class="p">(</span><span class="n">conn</span><span class="p">):</span>
+<div class="viewcode-block" id="get_samples"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.get_samples">[docs]</a><span class="k">def</span> <span class="nf">get_samples</span><span class="p">(</span><span class="n">conn</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;&quot;Get samples from sample table</span>
 
 <span class="sd">    :param con: sqlite3.conn</span>
@@ -1165,7 +1170,7 @@
     <span class="n">conn</span><span class="o">.</span><span class="n">row_factory</span> <span class="o">=</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">Row</span>
     <span class="k">return</span> <span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="k">for</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;SELECT * FROM samples&quot;&quot;&quot;</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="update_sample"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.update_sample">[docs]</a><span class="k">def</span> <span class="nf">update_sample</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">sample</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+<div class="viewcode-block" id="update_sample"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.update_sample">[docs]</a><span class="k">def</span> <span class="nf">update_sample</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">sample</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Update sample record</span>
 <span class="sd">    </span>
 <span class="sd">    sample = {</span>
@@ -1201,7 +1206,7 @@
 <span class="c1">## ============== VARIANTS QUERY THINGS ... ======================</span>
 
 
-<div class="viewcode-block" id="QueryBuilder"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.QueryBuilder">[docs]</a><span class="k">class</span> <span class="nc">QueryBuilder</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="QueryBuilder"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.QueryBuilder">[docs]</a><span class="k">class</span> <span class="nc">QueryBuilder</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;A class to Create a variant Selection query </span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -1375,7 +1380,7 @@
 
         <span class="k">return</span> <span class="p">(</span><span class="n">col</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">columns</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">col</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">)</span>
 
-<div class="viewcode-block" id="QueryBuilder.column_to_sql"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.QueryBuilder.column_to_sql">[docs]</a>    <span class="k">def</span> <span class="nf">column_to_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">column</span><span class="p">,</span> <span class="n">use_alias</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<div class="viewcode-block" id="QueryBuilder.column_to_sql"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.QueryBuilder.column_to_sql">[docs]</a>    <span class="k">def</span> <span class="nf">column_to_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">column</span><span class="p">,</span> <span class="n">use_alias</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Guess from which table the column belongs to and return a well formated name</span>
 <span class="sd">        </span>
 <span class="sd">            Return:</span>
@@ -1402,7 +1407,7 @@
 
         <span class="k">return</span> <span class="n">column</span></div>
 
-<div class="viewcode-block" id="QueryBuilder.get_table_of_column"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.QueryBuilder.get_table_of_column">[docs]</a>    <span class="k">def</span> <span class="nf">get_table_of_column</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">column</span><span class="p">):</span>
+<div class="viewcode-block" id="QueryBuilder.get_table_of_column"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.QueryBuilder.get_table_of_column">[docs]</a>    <span class="k">def</span> <span class="nf">get_table_of_column</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">column</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return table&#39;s name of a specific column</span>
 <span class="sd">        </span>
 <span class="sd">        Args:</span>
@@ -1423,7 +1428,7 @@
         <span class="k">return</span> <span class="kc">None</span></div>
 
 
-<div class="viewcode-block" id="QueryBuilder.headers"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.QueryBuilder.headers">[docs]</a>    <span class="k">def</span> <span class="nf">headers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="QueryBuilder.headers"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.QueryBuilder.headers">[docs]</a>    <span class="k">def</span> <span class="nf">headers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Return a clean list of columns </span>
 
 <span class="sd">        It returns self.columns by replacing function tuple by a string</span>
@@ -1440,7 +1445,7 @@
         
         <span class="k">return</span> <span class="n">headers</span></div>
 
-<div class="viewcode-block" id="QueryBuilder.build_sql"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.QueryBuilder.build_sql">[docs]</a>    <span class="k">def</span> <span class="nf">build_sql</span><span class="p">(</span>
+<div class="viewcode-block" id="QueryBuilder.build_sql"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.QueryBuilder.build_sql">[docs]</a>    <span class="k">def</span> <span class="nf">build_sql</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">columns</span><span class="p">,</span>
         <span class="n">filters</span><span class="p">,</span>
@@ -1541,7 +1546,7 @@
 
         <span class="k">return</span> <span class="n">sql_query</span></div>
 
-<div class="viewcode-block" id="QueryBuilder.sql"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.QueryBuilder.sql">[docs]</a>    <span class="k">def</span> <span class="nf">sql</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grouped</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">limit</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span> <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
+<div class="viewcode-block" id="QueryBuilder.sql"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.QueryBuilder.sql">[docs]</a>    <span class="k">def</span> <span class="nf">sql</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grouped</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">limit</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span> <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return an SQL Query based on internal parameter columns, filter, selection.</span>
 <span class="sd">        See _build_sql()</span>
 
@@ -1552,7 +1557,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_sql</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">selection</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">order_by</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">order_desc</span><span class="p">,</span><span class="n">grouped</span><span class="p">,</span><span class="n">limit</span><span class="p">,</span><span class="n">offset</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="QueryBuilder.vql"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.QueryBuilder.vql">[docs]</a>    <span class="k">def</span> <span class="nf">vql</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<div class="viewcode-block" id="QueryBuilder.vql"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.QueryBuilder.vql">[docs]</a>    <span class="k">def</span> <span class="nf">vql</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Build a VQL query from the current Query</span>
 
 <span class="sd">        Todo : Make it cleaner and test it </span>
@@ -1582,7 +1587,7 @@
 
 
 
-<div class="viewcode-block" id="QueryBuilder.items"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.QueryBuilder.items">[docs]</a>    <span class="k">def</span> <span class="nf">items</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<div class="viewcode-block" id="QueryBuilder.items"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.QueryBuilder.items">[docs]</a>    <span class="k">def</span> <span class="nf">items</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Execute SQL query and return variants as a list</span>
 
 <span class="sd">        .. note:: Used:</span>
@@ -1615,7 +1620,7 @@
         <span class="k">for</span> <span class="n">variant</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sql</span><span class="p">):</span>
             <span class="k">yield</span> <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">variant</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">())</span></div>
 
-<div class="viewcode-block" id="QueryBuilder.trees"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.QueryBuilder.trees">[docs]</a>    <span class="k">def</span> <span class="nf">trees</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grouped</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<div class="viewcode-block" id="QueryBuilder.trees"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.QueryBuilder.trees">[docs]</a>    <span class="k">def</span> <span class="nf">trees</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grouped</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Execute Sql Query and returns variants as Tree</span>
 
 <span class="sd">        This methods  works only &#39;group_by&#39; defined and it merge groups results as a tree.</span>
@@ -1677,7 +1682,7 @@
             <span class="c1">#items.append(list(dict(variant).values()))    </span>
             <span class="c1">#yield items</span>
             
-<div class="viewcode-block" id="QueryBuilder.children"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.QueryBuilder.children">[docs]</a>    <span class="k">def</span> <span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variant_id</span><span class="p">):</span>
+<div class="viewcode-block" id="QueryBuilder.children"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.QueryBuilder.children">[docs]</a>    <span class="k">def</span> <span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variant_id</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Return children annotations &quot;&quot;&quot;</span> 
 
         <span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">row_factory</span> <span class="o">=</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">Row</span>
@@ -1688,7 +1693,7 @@
         
             
 
-<div class="viewcode-block" id="QueryBuilder.count"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.QueryBuilder.count">[docs]</a>    <span class="k">def</span> <span class="nf">count</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="QueryBuilder.count"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.QueryBuilder.count">[docs]</a>    <span class="k">def</span> <span class="nf">count</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Wrapped function with a memoizing callable that saves up to the</span>
 <span class="sd">        maxsize most recent calls.</span>
 
@@ -1711,13 +1716,13 @@
             <span class="n">f</span><span class="s2">&quot;SELECT COUNT(*) as count FROM (</span><span class="si">{query}</span><span class="s2">)&quot;</span>
         <span class="p">)</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span></div>
 
-<div class="viewcode-block" id="QueryBuilder.cache_count"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.QueryBuilder.cache_count">[docs]</a>    <span class="nd">@lru_cache</span><span class="p">(</span><span class="n">maxsize</span><span class="o">=</span><span class="mi">128</span><span class="p">)</span>
+<div class="viewcode-block" id="QueryBuilder.cache_count"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.QueryBuilder.cache_count">[docs]</a>    <span class="nd">@lru_cache</span><span class="p">(</span><span class="n">maxsize</span><span class="o">=</span><span class="mi">128</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">cache_count</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Return lru_cache from self.count </span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">count</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="QueryBuilder.save"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.QueryBuilder.save">[docs]</a>    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+<div class="viewcode-block" id="QueryBuilder.save"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.QueryBuilder.save">[docs]</a>    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Save Variant Query into a new selection</span>
 
 <span class="sd">        This methods will get all variant.id extracted from self.sql() </span>
@@ -1787,7 +1792,7 @@
 
 
 
-<div class="viewcode-block" id="Selection"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.Selection">[docs]</a><span class="k">class</span> <span class="nc">Selection</span><span class="p">:</span>
+<div class="viewcode-block" id="Selection"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.Selection">[docs]</a><span class="k">class</span> <span class="nc">Selection</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Binding object over selection which allows to do set operations on variants</span>
 <span class="sd">    associated to it</span>
 
@@ -1824,13 +1829,13 @@
     <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="s2">&quot;&lt;Selection&gt;: &quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">sql_query</span>
 
-<div class="viewcode-block" id="Selection.save"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.Selection.save">[docs]</a>    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+<div class="viewcode-block" id="Selection.save"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.Selection.save">[docs]</a>    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Create the new selection in the database&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">create_selection_from_sql</span><span class="p">(</span>
             <span class="n">Selection</span><span class="o">.</span><span class="n">conn</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sql_query</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">from_selection</span><span class="o">=</span><span class="kc">True</span>
         <span class="p">)</span></div>
 
-<div class="viewcode-block" id="Selection.from_selection_id"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.Selection.from_selection_id">[docs]</a>    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Selection.from_selection_id"><a class="viewcode-back" href="../../../core_api.html#cutevariant.core.sql.Selection.from_selection_id">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">from_selection_id</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">selection_id</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;variant&quot;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Get new Selection object based on a sql query that defines it</span>
 
