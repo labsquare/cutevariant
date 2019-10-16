@@ -1,0 +1,1908 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>cutevariant.core.sql &mdash; cutevariant  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> cutevariant
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">cutevariant</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>cutevariant.core.sql</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for cutevariant.core.sql</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Module bringing together all the SQL related functions.</span>
+
+<span class="sd">- Misc functions</span>
+<span class="sd">- Selections functions</span>
+<span class="sd">- Fields functions</span>
+<span class="sd">- Operations on sets of variants</span>
+<span class="sd">- Annotations functions</span>
+<span class="sd">- Variants functions</span>
+<span class="sd">- Samples functions</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="c1"># Standard imports</span>
+<span class="kn">import</span> <span class="nn">sqlite3</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">defaultdict</span>
+<span class="kn">from</span> <span class="nn">pkg_resources</span> <span class="k">import</span> <span class="n">parse_version</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">lru_cache</span>
+
+<span class="c1"># Custom imports</span>
+<span class="kn">import</span> <span class="nn">cutevariant.commons</span> <span class="k">as</span> <span class="nn">cm</span>
+<span class="kn">import</span> <span class="nn">logging</span> 
+<span class="n">LOGGER</span> <span class="o">=</span> <span class="n">cm</span><span class="o">.</span><span class="n">logger</span><span class="p">()</span>
+
+
+<span class="c1">## ================ Misc functions =============================================</span>
+
+
+<div class="viewcode-block" id="get_sql_connexion"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.get_sql_connexion">[docs]</a><span class="k">def</span> <span class="nf">get_sql_connexion</span><span class="p">(</span><span class="n">filepath</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Open a SQLite database and return the connexion object&quot;&quot;&quot;</span>
+    <span class="n">connexion</span> <span class="o">=</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+    <span class="c1"># Activate Foreign keys</span>
+    <span class="n">connexion</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;PRAGMA foreign_keys = ON&quot;</span><span class="p">)</span>
+    <span class="n">connexion</span><span class="o">.</span><span class="n">row_factory</span> <span class="o">=</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">Row</span>
+    <span class="n">foreign_keys_status</span> <span class="o">=</span> <span class="n">connexion</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;PRAGMA foreign_keys&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;get_sql_connexion:: foreign_keys state: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">foreign_keys_status</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">foreign_keys_status</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;Foreign keys can&#39;t be activated :(&quot;</span>
+    <span class="k">return</span> <span class="n">connexion</span></div>
+
+
+<div class="viewcode-block" id="drop_table"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.drop_table">[docs]</a><span class="k">def</span> <span class="nf">drop_table</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">table_name</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Drop the given table&quot;&quot;&quot;</span>
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;DROP TABLE IF EXISTS </span><span class="si">{table_name}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="clear_table"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.clear_table">[docs]</a><span class="k">def</span> <span class="nf">clear_table</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">table_name</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Clear content of the given table &quot;&quot;&quot;</span> 
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;DELETE  FROM </span><span class="si">{table_name}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="create_project"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.create_project">[docs]</a><span class="k">def</span> <span class="nf">create_project</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">reference</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Create the table &quot;projects&quot; and insert project name and reference genome</span>
+
+<span class="sd">    :param conn: sqlite3.connect</span>
+<span class="sd">    :param name: Project&#39;s name</span>
+<span class="sd">    :param reference: Reference genome</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+        <span class="sd">&quot;&quot;&quot;CREATE TABLE projects (id INTEGER PRIMARY KEY, name TEXT, reference TEXT)&quot;&quot;&quot;</span>
+    <span class="p">)</span>
+    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+        <span class="sd">&quot;&quot;&quot;INSERT INTO projects (name, reference) VALUES (?, ?)&quot;&quot;&quot;</span><span class="p">,</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">reference</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="get_columns"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.get_columns">[docs]</a><span class="k">def</span> <span class="nf">get_columns</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">table_name</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return the list of columns for the given table</span>
+
+<span class="sd">    .. note:: used by async_insert_many_variants()</span>
+<span class="sd">        to build queries with placeholders</span>
+
+<span class="sd">    :param conn: sqlite3.connect</span>
+<span class="sd">    :param table_name: Table for which columns will be returned.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Get columns description from table_info</span>
+    <span class="c1"># ((0, &#39;chr&#39;, &#39;str&#39;, 0, None, 1), ...</span>
+    <span class="k">return</span> <span class="p">[</span>
+        <span class="n">c</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;pragma table_info(</span><span class="si">{table_name}</span><span class="s2">)&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">c</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;id&quot;</span>
+    <span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="create_indexes"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.create_indexes">[docs]</a><span class="k">def</span> <span class="nf">create_indexes</span><span class="p">(</span><span class="n">conn</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Create extra indexes on tables</span>
+
+<span class="sd">    .. note:: This function must be called after batch insertions.</span>
+<span class="sd">    .. note:: You should use this function instead of individual functions.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">create_variants_indexes</span><span class="p">(</span><span class="n">conn</span><span class="p">)</span>
+    <span class="n">create_selections_indexes</span><span class="p">(</span><span class="n">conn</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Some databases have not annotations table</span>
+        <span class="n">create_annotations_indexes</span><span class="p">(</span><span class="n">conn</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">OperationalError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;create_indexes:: sqlite3.</span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span></div>
+
+
+<span class="c1">## ================ Selections functions =======================================</span>
+
+
+<div class="viewcode-block" id="create_table_selections"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.create_table_selections">[docs]</a><span class="k">def</span> <span class="nf">create_table_selections</span><span class="p">(</span><span class="n">conn</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Create the table &quot;selections&quot; and association table &quot;selection_has_variant&quot;</span>
+
+<span class="sd">    This table stores the queries saved by the user:</span>
+<span class="sd">        - name: name of the set of variants</span>
+<span class="sd">        - count: number of variants concerned by this set</span>
+<span class="sd">        - query: the SQL query which generated the set</span>
+
+<span class="sd">    :param conn: sqlite3.connect</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+    <span class="c1"># selection_id is an alias on internal autoincremented &#39;rowid&#39;</span>
+    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+        <span class="sd">&quot;&quot;&quot;CREATE TABLE selections (</span>
+<span class="sd">        id INTEGER PRIMARY KEY ASC,</span>
+<span class="sd">        name TEXT, count INTEGER, query TEXT</span>
+<span class="sd">        )&quot;&quot;&quot;</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Association table: do not use useless rowid column</span>
+    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+        <span class="sd">&quot;&quot;&quot;CREATE TABLE selection_has_variant (</span>
+<span class="sd">        variant_id INTEGER NOT NULL,</span>
+<span class="sd">        selection_id INTEGER NOT NULL,</span>
+<span class="sd">        PRIMARY KEY (variant_id, selection_id),</span>
+<span class="sd">        FOREIGN KEY (selection_id) REFERENCES selections (id)</span>
+<span class="sd">          ON DELETE CASCADE</span>
+<span class="sd">          ON UPDATE NO ACTION</span>
+<span class="sd">        ) WITHOUT ROWID&quot;&quot;&quot;</span>
+    <span class="p">)</span>
+    <span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="create_selections_indexes"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.create_selections_indexes">[docs]</a><span class="k">def</span> <span class="nf">create_selections_indexes</span><span class="p">(</span><span class="n">conn</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Create indexes on the &quot;selections&quot; table</span>
+
+<span class="sd">    .. note:: This function should be called after batch insertions.</span>
+
+<span class="sd">    .. note:: This function ensures the unicity of selections names.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;CREATE UNIQUE INDEX idx_selections ON selections (name)&quot;&quot;&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="create_selection_has_variant_indexes"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.create_selection_has_variant_indexes">[docs]</a><span class="k">def</span> <span class="nf">create_selection_has_variant_indexes</span><span class="p">(</span><span class="n">conn</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Create indexes on &quot;selection_has_variant&quot; table</span>
+
+<span class="sd">    .. note:: This function is called by:</span>
+<span class="sd">        - create_selections_indexes</span>
+<span class="sd">        - insert_selection to rebuild index</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># For joints between selections and variants tables</span>
+    <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+        <span class="sd">&quot;&quot;&quot;CREATE INDEX idx_selection_has_variant ON selection_has_variant (selection_id)&quot;&quot;&quot;</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="insert_selection"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.insert_selection">[docs]</a><span class="k">def</span> <span class="nf">insert_selection</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;no_name&quot;</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Insert one selection record</span>
+
+<span class="sd">    TODO: retirer le group by inutile</span>
+
+<span class="sd">    .. warning:: This function does a commit !</span>
+
+<span class="sd">    :param conn: sqlite3 connection OR cursor</span>
+<span class="sd">        If connection: commit is made.</span>
+<span class="sd">        If cursor: commit is not made.</span>
+<span class="sd">    :param name: name of the selection</span>
+<span class="sd">    :param count: precompute variant count</span>
+<span class="sd">    :param query: Sql variant query selection</span>
+<span class="sd">    :type conn: &lt;sqlite3.Connection&gt; or &lt;sqlite3.Cursor&gt;</span>
+<span class="sd">    :return: rowid of the new selection inserted.</span>
+<span class="sd">    :rtype: &lt;int&gt;</span>
+
+<span class="sd">    .. seealso:: create_selection_from_sql</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># conn can be a cursor or a connection here...</span>
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">Connection</span><span class="p">)</span> <span class="k">else</span> <span class="n">conn</span>
+
+    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+        <span class="sd">&quot;&quot;&quot;INSERT INTO selections (name, count, query) VALUES (?,?,?)&quot;&quot;&quot;</span><span class="p">,</span>
+        <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">count</span><span class="p">,</span> <span class="n">query</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">Connection</span><span class="p">):</span>
+        <span class="c1"># Commit only if connection is given. =&gt; avoid not consistent DB</span>
+        <span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">cursor</span><span class="o">.</span><span class="n">lastrowid</span></div>
+
+<div class="viewcode-block" id="delete_selection_by_name"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.delete_selection_by_name">[docs]</a><span class="k">def</span> <span class="nf">delete_selection_by_name</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Delete selection from name </span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        conn (conn): sqlite3 connection</span>
+<span class="sd">        name (str): selection name </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;variants&quot;</span><span class="p">:</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Cannot remove variants&quot;</span><span class="p">)</span>
+        <span class="k">return</span> 
+        
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;DELETE FROM selections WHERE name = ?&quot;</span><span class="p">,</span> <span class="p">(</span><span class="n">name</span><span class="p">,))</span>
+    <span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="create_selection_from_sql"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.create_selection_from_sql">[docs]</a><span class="k">def</span> <span class="nf">create_selection_from_sql</span><span class="p">(</span>
+    <span class="n">conn</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">from_selection</span><span class="o">=</span><span class="kc">False</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Create a selection record from sql variant query</span>
+
+<span class="sd">    :param conn: sqlite3 connection</span>
+<span class="sd">    :param name : name of the selection</span>
+<span class="sd">    :param query: sql variant query</span>
+<span class="sd">    :param from_selection: Optimized flag only for the creation of a selection</span>
+<span class="sd">        from set operations, variant_id is the only useful column in the given query.</span>
+<span class="sd">    :return: The id of the new selection. None in case of error.</span>
+<span class="sd">    :rtype: &lt;int&gt; or None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+
+    <span class="c1"># Compute query count</span>
+    <span class="c1">#  TODO : this can take a while .... need to compute only one from elsewhere</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">count</span><span class="p">:</span>
+        <span class="n">count</span> <span class="o">=</span> <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;SELECT COUNT(*) FROM (</span><span class="si">{query}</span><span class="s2">)&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="c1"># Create selection</span>
+    <span class="n">selection_id</span> <span class="o">=</span> <span class="n">insert_selection</span><span class="p">(</span><span class="n">cursor</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="n">count</span><span class="p">)</span>
+
+    <span class="c1"># DROP indexes</span>
+    <span class="c1"># For joints between selections and variants tables</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;DROP INDEX idx_selection_has_variant&quot;&quot;&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">OperationalError</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+    <span class="c1"># Insert into selection_has_variant table</span>
+    <span class="c1"># PS: We use DISTINCT keyword to statisfy the unicity constraint on</span>
+    <span class="c1"># (variant_id, selection_id) of &quot;selection_has_variant&quot; table.</span>
+    <span class="c1"># TODO: is DISTINCT useful here? How a variant could be associated several</span>
+    <span class="c1"># times with an association?</span>
+    <span class="k">if</span> <span class="n">from_selection</span><span class="p">:</span>
+        <span class="c1"># Optimized only for the creation of a selection from set operations</span>
+        <span class="c1"># variant_id is the only useful column here</span>
+        <span class="n">q</span> <span class="o">=</span> <span class="n">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">        INSERT INTO selection_has_variant</span>
+<span class="s2">        SELECT DISTINCT variant_id, </span><span class="si">{selection_id}</span><span class="s2"> FROM (</span><span class="si">{query}</span><span class="s2">)</span>
+<span class="s2">        &quot;&quot;&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Fallback</span>
+        <span class="c1"># Used when creating a selection from a VQL query in the UI</span>
+        <span class="c1"># Default behavior =&gt; a variant is based on chr,pos,ref,alt</span>
+        <span class="n">q</span> <span class="o">=</span> <span class="n">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">        INSERT INTO selection_has_variant</span>
+<span class="s2">        SELECT DISTINCT id, </span><span class="si">{selection_id}</span><span class="s2"> FROM (</span><span class="si">{query}</span><span class="s2">)</span>
+<span class="s2">        &quot;&quot;&quot;</span>
+
+    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">q</span><span class="p">)</span>
+
+    <span class="c1"># REBUILD INDEXES</span>
+    <span class="c1"># For joints between selections and variants tables</span>
+    <span class="n">create_selection_has_variant_indexes</span><span class="p">(</span><span class="n">cursor</span><span class="p">)</span>
+
+    <span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">cursor</span><span class="o">.</span><span class="n">rowcount</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">cursor</span><span class="o">.</span><span class="n">lastrowid</span>
+    <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="create_selection_from_bed"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.create_selection_from_bed">[docs]</a><span class="k">def</span> <span class="nf">create_selection_from_bed</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">bed_intervals</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Create a new selection based on the given intervals taken from a BED file&quot;&quot;&quot;</span>
+
+    <span class="n">cur</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+
+    <span class="c1">#  Create temporary table</span>
+    <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;DROP TABLE IF exists bed_table&quot;</span><span class="p">)</span>
+    <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+        <span class="sd">&quot;&quot;&quot;CREATE TABLE bed_table (</span>
+<span class="sd">        id INTEGER PRIMARY KEY ASC, </span>
+<span class="sd">        bin INTEGER DEFAULT 0, </span>
+<span class="sd">        chrom TEXT, </span>
+<span class="sd">        start INTEGER, </span>
+<span class="sd">        end INTEGER,</span>
+<span class="sd">        name INTEGER )&quot;&quot;&quot;</span>
+    <span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">interval</span> <span class="ow">in</span> <span class="n">bed_intervals</span><span class="p">:</span>
+        <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+            <span class="s2">&quot;INSERT INTO bed_table (bin, chrom, start, end, name) VALUES (?,?,?,?,?)&quot;</span><span class="p">,</span>
+            <span class="p">(</span>
+                <span class="mi">0</span><span class="p">,</span>
+                <span class="n">interval</span><span class="p">[</span><span class="s2">&quot;chrom&quot;</span><span class="p">],</span>
+                <span class="n">interval</span><span class="p">[</span><span class="s2">&quot;start&quot;</span><span class="p">],</span>
+                <span class="n">interval</span><span class="p">[</span><span class="s2">&quot;end&quot;</span><span class="p">],</span>
+                <span class="n">interval</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">],</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">source</span> <span class="o">==</span> <span class="s2">&quot;variants&quot;</span><span class="p">:</span>
+        <span class="n">source_query</span> <span class="o">=</span> <span class="s2">&quot;SELECT variants.id as variant_id FROM variants&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">source_query</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">        SELECT variants.id as variant_id FROM variants</span>
+<span class="s2">        INNER JOIN selections ON selections.name = &#39;</span><span class="si">{}</span><span class="s2">&#39;</span>
+<span class="s2">        INNER JOIN selection_has_variant sv ON sv.variant_id = variants.id AND sv.selection_id = selections.id  </span>
+<span class="s2">        &quot;&quot;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">source</span>
+        <span class="p">)</span>
+
+    <span class="n">query</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">source_query</span>
+        <span class="o">+</span> <span class="s2">&quot;&quot;&quot;  </span>
+<span class="s2">                INNER JOIN bed_table ON </span>
+<span class="s2">                variants.chr = bed_table.chrom AND </span>
+<span class="s2">                variants.pos &gt;= bed_table.start AND </span>
+<span class="s2">                variants.pos &lt;= bed_table.end &quot;&quot;&quot;</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">create_selection_from_sql</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">from_selection</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_selections"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.get_selections">[docs]</a><span class="k">def</span> <span class="nf">get_selections</span><span class="p">(</span><span class="n">conn</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Get selections in &quot;selections&quot; table</span>
+
+<span class="sd">    :return: Generator of dictionnaries with as many keys as there are columns</span>
+<span class="sd">        in the table.</span>
+<span class="sd">        Dictionnary of all attributes of the table.</span>
+<span class="sd">            :Example: {&quot;id&quot;: ..., &quot;name&quot;: ..., &quot;count&quot;: ..., &quot;query&quot;: ...}</span>
+<span class="sd">    :rtype: &lt;generator &lt;dict&gt;&gt;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">conn</span><span class="o">.</span><span class="n">row_factory</span> <span class="o">=</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">Row</span>
+    <span class="k">return</span> <span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="k">for</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;SELECT * FROM selections&quot;&quot;&quot;</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="delete_selection"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.delete_selection">[docs]</a><span class="k">def</span> <span class="nf">delete_selection</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">selection_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Delete the selection with the given id in the &quot;selections&quot; table</span>
+
+<span class="sd">    :return: Number of rows deleted</span>
+<span class="sd">    :rtype: &lt;int&gt;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># ON CASCADE deletion</span>
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;DELETE FROM selections WHERE rowid = ?&quot;</span><span class="p">,</span> <span class="p">(</span><span class="n">selection_id</span><span class="p">,))</span>
+    <span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">cursor</span><span class="o">.</span><span class="n">rowcount</span></div>
+
+
+<div class="viewcode-block" id="edit_selection"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.edit_selection">[docs]</a><span class="k">def</span> <span class="nf">edit_selection</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">selection</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Update the name and count of a selection with the given id</span>
+
+<span class="sd">    :return: Number of rows deleted</span>
+<span class="sd">    :rtype: &lt;int&gt;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+    <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+        <span class="s2">&quot;UPDATE selections SET name=:name, count=:count WHERE id = :id&quot;</span><span class="p">,</span> <span class="n">selection</span>
+    <span class="p">)</span>
+    <span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">cursor</span><span class="o">.</span><span class="n">rowcount</span></div>
+
+
+<span class="c1">## ================ Operations on sets of variants =============================</span>
+
+
+<div class="viewcode-block" id="get_query_columns"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.get_query_columns">[docs]</a><span class="k">def</span> <span class="nf">get_query_columns</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;variant&quot;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;(DEPRECATED FOR NOW, NOT USED)</span>
+<span class="sd">    Handy func to get columns to be queried according to the group by argument</span>
+
+<span class="sd">    .. note:: Used by intersect_variants, union_variants, subtract_variants</span>
+<span class="sd">        in order to avoid code duplication.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;site&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;chr,pos&quot;</span>
+
+    <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;variant&quot;</span><span class="p">:</span>
+        <span class="c1"># Not used</span>
+        <span class="k">return</span> <span class="s2">&quot;variant_id&quot;</span>
+
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+
+<div class="viewcode-block" id="intersect_variants"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.intersect_variants">[docs]</a><span class="k">def</span> <span class="nf">intersect_variants</span><span class="p">(</span><span class="n">query1</span><span class="p">,</span> <span class="n">query2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Get the variants obtained by the intersection of 2 queries</span>
+<span class="sd">    Try to handl precedence of operators.</span>
+<span class="sd">    - The precedence of UNION and EXCEPT are similar, they are processed from</span>
+<span class="sd">    left to right.</span>
+<span class="sd">    - Both of the operations are fulfilled before INTERSECT operation,</span>
+<span class="sd">    i.e. they have precedence over it.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">f</span><span class="s2">&quot;&quot;&quot;SELECT * FROM (</span><span class="si">{query1}</span><span class="s2"> INTERSECT </span><span class="si">{query2}</span><span class="s2">)&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="union_variants"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.union_variants">[docs]</a><span class="k">def</span> <span class="nf">union_variants</span><span class="p">(</span><span class="n">query1</span><span class="p">,</span> <span class="n">query2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Get the variants obtained by the union of 2 queries&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">f</span><span class="s2">&quot;&quot;&quot;</span><span class="si">{query1}</span><span class="s2"> UNION </span><span class="si">{query2}</span><span class="s2">&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="subtract_variants"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.subtract_variants">[docs]</a><span class="k">def</span> <span class="nf">subtract_variants</span><span class="p">(</span><span class="n">query1</span><span class="p">,</span> <span class="n">query2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Get the variants obtained by the difference of 2 queries&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">f</span><span class="s2">&quot;&quot;&quot;</span><span class="si">{query1}</span><span class="s2"> EXCEPT </span><span class="si">{query2}</span><span class="s2">&quot;&quot;&quot;</span></div>
+
+
+<span class="c1">## ================ Fields functions ===========================================</span>
+
+
+<div class="viewcode-block" id="create_table_fields"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.create_table_fields">[docs]</a><span class="k">def</span> <span class="nf">create_table_fields</span><span class="p">(</span><span class="n">conn</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Create the table &quot;fields&quot;</span>
+
+<span class="sd">    This table contain fields. A field is a column with its description and type;</span>
+<span class="sd">    it can be choose by a user to build a Query</span>
+<span class="sd">    Fields are the columns of the tables: variants, annotations and sample_has_variant.</span>
+<span class="sd">    Fields are extracted from reader objects and are dynamically constructed.</span>
+
+<span class="sd">    variants:</span>
+<span class="sd">    Chr,pos,ref,alt, filter, qual, dp, af, etc.</span>
+
+<span class="sd">    annotations:</span>
+<span class="sd">    Gene, transcrit, etc.</span>
+
+<span class="sd">    sample_has_variant:</span>
+<span class="sd">    Genotype</span>
+
+<span class="sd">    :param conn: sqlite3.connect</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+        <span class="sd">&quot;&quot;&quot;CREATE TABLE fields</span>
+<span class="sd">        (id INTEGER PRIMARY KEY, name TEXT, category TEXT, type TEXT, description TEXT)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+    <span class="p">)</span>
+    <span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="insert_field"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.insert_field">[docs]</a><span class="k">def</span> <span class="nf">insert_field</span><span class="p">(</span>
+    <span class="n">conn</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;no_name&quot;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s2">&quot;variants&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;text&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="nb">str</span><span class="p">()</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Insert one field record (NOT USED)</span>
+
+<span class="sd">    :param conn: sqlite3.connect</span>
+<span class="sd">    :key name: field name</span>
+<span class="sd">    :key category: category field name.</span>
+<span class="sd">        .. warning:: The default is &quot;variants&quot;. Don&#39;t use sample as category name</span>
+<span class="sd">    :key type: sqlite type which can be: INTEGER, REAL, TEXT</span>
+<span class="sd">        .. todo:: Check this argument...</span>
+<span class="sd">    :key description: Text that describes the field (showed to the user).</span>
+<span class="sd">    :return: Last row id</span>
+<span class="sd">    :rtype: &lt;int&gt;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        INSERT INTO fields VALUES (?, ?, ?, ?)</span>
+<span class="sd">        &quot;&quot;&quot;</span><span class="p">,</span>
+        <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">category</span><span class="p">,</span> <span class="nb">type</span><span class="p">,</span> <span class="n">description</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">cursor</span><span class="o">.</span><span class="n">lastrowid</span></div>
+
+
+<div class="viewcode-block" id="insert_many_fields"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.insert_many_fields">[docs]</a><span class="k">def</span> <span class="nf">insert_many_fields</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Insert multiple fields into &quot;fields&quot; table using one commit</span>
+
+<span class="sd">    :param conn: sqlite3.connect</span>
+<span class="sd">    :param data: list of field dictionnary</span>
+
+<span class="sd">    :Examples:</span>
+
+<span class="sd">        insert_many_fields(conn, [{name:&quot;sacha&quot;, category:&quot;variant&quot;, count: 0, description=&quot;a description&quot;}])</span>
+<span class="sd">        insert_many_fields(conn, reader.get_fields())</span>
+
+<span class="sd">    .. seealso:: insert_field, abstractreader</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+    <span class="n">cursor</span><span class="o">.</span><span class="n">executemany</span><span class="p">(</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        INSERT INTO fields (name,category,type,description)</span>
+<span class="sd">        VALUES (:name,:category,:type,:description)</span>
+<span class="sd">        &quot;&quot;&quot;</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="get_fields"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.get_fields">[docs]</a><span class="k">def</span> <span class="nf">get_fields</span><span class="p">(</span><span class="n">conn</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Get fields as list of dictionnary</span>
+
+<span class="sd">    .. seealso:: insert_many_fields</span>
+
+<span class="sd">    :param conn: sqlite3.connect</span>
+<span class="sd">    :return: Generator of dictionnaries with as many keys as there are columns</span>
+<span class="sd">        in the table.</span>
+<span class="sd">    :rtype: &lt;generator &lt;dict&gt;&gt;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">conn</span><span class="o">.</span><span class="n">row_factory</span> <span class="o">=</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">Row</span>
+    <span class="k">return</span> <span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="k">for</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;SELECT * FROM fields&quot;&quot;&quot;</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="get_field_by_category"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.get_field_by_category">[docs]</a><span class="k">def</span> <span class="nf">get_field_by_category</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">category</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Get fields within a category</span>
+
+<span class="sd">    :param conn: sqlite3.connect</span>
+<span class="sd">     :return: Generator of dictionnaries with as many keys as there are columns</span>
+<span class="sd">        in the table.</span>
+<span class="sd">    :rtype: &lt;generator &lt;dict&gt;&gt;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">return</span> <span class="p">[</span><span class="n">field</span> <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">get_fields</span><span class="p">(</span><span class="n">conn</span><span class="p">)</span> <span class="k">if</span> <span class="n">field</span><span class="p">[</span><span class="s2">&quot;category&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">category</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="get_field_by_name"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.get_field_by_name">[docs]</a><span class="k">def</span> <span class="nf">get_field_by_name</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">field_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Return field by his name </span>
+
+<span class="sd">    .. seealso:: get_fields </span>
+
+<span class="sd">    :param conn: sqlite3.connect</span>
+<span class="sd">    :param field_name (str): field name </span>
+<span class="sd">    :return: field record </span>
+<span class="sd">    :rtype: &lt;dict&gt;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">conn</span><span class="o">.</span><span class="n">row_factory</span> <span class="o">=</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">Row</span>
+    <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span>
+        <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+            <span class="sd">&quot;&quot;&quot;SELECT * FROM fields WHERE name = ? &quot;&quot;&quot;</span><span class="p">,</span> <span class="p">(</span><span class="n">field_name</span><span class="p">,)</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_field_range"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.get_field_range">[docs]</a><span class="k">def</span> <span class="nf">get_field_range</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">field_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Return (min,max) of field_name records . </span>
+<span class="sd">    </span>
+<span class="sd">    :param conn: sqlite3.connect</span>
+<span class="sd">    :param field_name (str): field name</span>
+<span class="sd">    :return: (min, max) </span>
+<span class="sd">    :rtype: tuple</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">field</span> <span class="o">=</span> <span class="n">get_field_by_name</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">field_name</span><span class="p">)</span>
+    <span class="n">table</span> <span class="o">=</span> <span class="n">field</span><span class="p">[</span><span class="s2">&quot;category&quot;</span><span class="p">]</span>  <span class="c1"># variants, or annotations or samples</span>
+    <span class="n">query</span> <span class="o">=</span> <span class="n">f</span><span class="s2">&quot;&quot;&quot;SELECT min(</span><span class="si">{field_name}</span><span class="s2">), max(</span><span class="si">{field_name}</span><span class="s2">) FROM </span><span class="si">{table}</span><span class="s2">&quot;&quot;&quot;</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">)</span><span class="o">.</span><span class="n">fetchone</span><span class="p">())</span>
+    <span class="k">if</span> <span class="n">result</span> <span class="o">==</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">result</span> <span class="o">==</span> <span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">return</span> <span class="n">result</span></div>
+
+
+<div class="viewcode-block" id="get_field_unique_values"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.get_field_unique_values">[docs]</a><span class="k">def</span> <span class="nf">get_field_unique_values</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">field_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Return unique record value for a field name </span>
+
+<span class="sd">    :param conn: sqlite3.connect </span>
+<span class="sd">    :param field_name (str): field_name</span>
+<span class="sd">    :return: list of unique values</span>
+<span class="sd">    :rtype: list</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">field</span> <span class="o">=</span> <span class="n">get_field_by_name</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">field_name</span><span class="p">)</span>
+    <span class="n">table</span> <span class="o">=</span> <span class="n">field</span><span class="p">[</span><span class="s2">&quot;category&quot;</span><span class="p">]</span>  <span class="c1"># variants, or annotations or samples</span>
+    <span class="c1"># conn.row_factory = None</span>
+    <span class="n">query</span> <span class="o">=</span> <span class="n">f</span><span class="s2">&quot;&quot;&quot;SELECT DISTINCT `</span><span class="si">{field_name}</span><span class="s2">` FROM </span><span class="si">{table}</span><span class="s2">&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">i</span><span class="p">[</span><span class="n">field_name</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">)]</span></div>
+
+
+<span class="c1">## ================ Annotations functions ======================================</span>
+
+
+<div class="viewcode-block" id="create_table_annotations"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.create_table_annotations">[docs]</a><span class="k">def</span> <span class="nf">create_table_annotations</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">fields</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Create &quot;annotations&quot; table which contains dynamics fields</span>
+
+<span class="sd">    :param fields: Generator of SQL fields.</span>
+<span class="sd">        :Example of fields:</span>
+<span class="sd">            (&#39;allele str NULL&#39;, &#39;consequence str NULL&#39;, ...)</span>
+<span class="sd">    :type fields: &lt;generator&gt;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">schema</span> <span class="o">=</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{field[&quot;name&quot;]}</span><span class="s1"> </span><span class="si">{field[&quot;type&quot;]}</span><span class="s1">&#39;</span> <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">schema</span><span class="p">:</span>
+        <span class="c1">#  Create minimum annotation table... Can be use later for dynamic annotation.</span>
+        <span class="c1"># TODO : we may want to fix annotation fields .</span>
+        <span class="n">schema</span> <span class="o">=</span> <span class="s2">&quot;gene TEXT, transcript TEXT&quot;</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="s2">&quot;create_table_annotations:: No annotation fields detected! =&gt; Fallback&quot;</span>
+        <span class="p">)</span>
+        <span class="c1"># return</span>
+
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+    <span class="c1"># TODO: no primary key/unique index for this table?</span>
+    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+        <span class="n">f</span><span class="s2">&quot;&quot;&quot;CREATE TABLE annotations (variant_id INTEGER NOT NULL, </span><span class="si">{schema}</span><span class="s2">)&quot;&quot;&quot;</span>
+    <span class="p">)</span>
+    <span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="create_annotations_indexes"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.create_annotations_indexes">[docs]</a><span class="k">def</span> <span class="nf">create_annotations_indexes</span><span class="p">(</span><span class="n">conn</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Create indexes on the &quot;annotations&quot; table</span>
+
+<span class="sd">    .. warning: This function must be called after batch insertions.</span>
+
+<span class="sd">    :Example:</span>
+<span class="sd">        SELECT *, group_concat(annotations.rowid) FROM variants</span>
+<span class="sd">        LEFT JOIN annotations ON variants.rowid = annotations.variant_id</span>
+<span class="sd">        WHERE pos = 0</span>
+<span class="sd">        GROUP BY chr,pos</span>
+<span class="sd">        LIMIT 100</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Allow search on variant_id</span>
+    <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;CREATE INDEX idx_annotations ON annotations (variant_id)&quot;&quot;&quot;</span><span class="p">)</span></div>
+
+
+<span class="c1">## ================ Variants functions =========================================</span>
+
+
+<div class="viewcode-block" id="create_table_variants"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.create_table_variants">[docs]</a><span class="k">def</span> <span class="nf">create_table_variants</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">fields</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Create &quot;variants&quot; and &quot;sample_has_variant&quot; tables which contains dynamics fields</span>
+
+<span class="sd">    :Example:</span>
+
+<span class="sd">        fields = get_fields()</span>
+<span class="sd">        create_table_variants(conn, fields)</span>
+
+<span class="sd">    .. seealso:: get_fields</span>
+
+<span class="sd">    .. note:: &quot;gt&quot; field in &quot;sample_has_variant&quot; = Patient&#39;s genotype.</span>
+<span class="sd">        - Patient without variant: gt = 0: Wild homozygote</span>
+<span class="sd">        - Patient with variant in the heterozygote state: gt = -1: Heterozygote</span>
+<span class="sd">        - Patient with variant in the homozygote state: gt = 2: Homozygote</span>
+
+<span class="sd">        :Example of VQL query:</span>
+<span class="sd">            SELECT chr, pos, genotype(&quot;pierre&quot;) FROM variants</span>
+
+<span class="sd">    :param conn: sqlite3.connect</span>
+<span class="sd">    :param fields: list of field dictionnary.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+
+    <span class="c1"># Primary key MUST NOT have NULL fields !</span>
+    <span class="c1"># PRIMARY KEY should always imply NOT NULL.</span>
+    <span class="c1"># Unfortunately, due to a bug in some early versions, this is not the case in SQLite.</span>
+    <span class="c1"># For the purposes of UNIQUE constraints, NULL values are considered distinct</span>
+    <span class="c1"># from all other values, including other NULLs.</span>
+    <span class="n">schema</span> <span class="o">=</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+        <span class="p">[</span>
+            <span class="n">f</span><span class="s1">&#39;`</span><span class="si">{field[&quot;name&quot;]}</span><span class="s1">` </span><span class="si">{field[&quot;type&quot;]}</span><span class="s1"> {field.get(&quot;constraint&quot;, &quot;&quot;)}&#39;</span>
+            <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">fields</span>
+            <span class="k">if</span> <span class="n">field</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
+        <span class="p">]</span>
+    <span class="p">)</span>
+
+    <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;create_table_variants:: schema: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">schema</span><span class="p">)</span>
+    <span class="c1"># Unicity constraint or NOT NULL fields (Cf VcfReader, FakeReader, etc.)</span>
+    <span class="c1"># NOTE: specify the constraint in CREATE TABLE generates a lighter DB than</span>
+    <span class="c1"># a separated index... Don&#39;t know why.</span>
+    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+        <span class="n">f</span><span class="s2">&quot;&quot;&quot;CREATE TABLE variants (id INTEGER PRIMARY KEY, </span><span class="si">{schema}</span><span class="s2">,</span>
+<span class="s2">        UNIQUE (chr,pos,ref,alt))&quot;&quot;&quot;</span>
+    <span class="p">)</span>
+    <span class="c1"># cursor.execute(f&quot;&quot;&quot;CREATE UNIQUE INDEX idx_variants_unicity ON variants (chr,pos,ref,alt)&quot;&quot;&quot;)</span>
+
+    <span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="create_variants_indexes"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.create_variants_indexes">[docs]</a><span class="k">def</span> <span class="nf">create_variants_indexes</span><span class="p">(</span><span class="n">conn</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Create indexes on the &quot;variants&quot; table</span>
+
+<span class="sd">    .. warning: This function must be called after batch insertions.</span>
+
+<span class="sd">    :Example:</span>
+<span class="sd">        SELECT *, group_concat(annotations.rowid) FROM variants</span>
+<span class="sd">        LEFT JOIN annotations ON variants.rowid = annotations.variant_id</span>
+<span class="sd">        WHERE pos = 0</span>
+<span class="sd">        GROUP BY chr,pos</span>
+<span class="sd">        LIMIT 100</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Complementary index of the primary key (sample_id, variant_id)</span>
+    <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+        <span class="sd">&quot;&quot;&quot;CREATE INDEX idx_sample_has_variant ON sample_has_variant (variant_id)&quot;&quot;&quot;</span>
+    <span class="p">)</span>
+
+    <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;CREATE INDEX idx_variants_pos ON variants (pos)&quot;&quot;&quot;</span><span class="p">)</span>
+    <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;CREATE INDEX idx_variants_ref_alt ON variants (ref, alt)&quot;&quot;&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_one_variant"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.get_one_variant">[docs]</a><span class="k">def</span> <span class="nf">get_one_variant</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Get the variant with the given id&quot;&quot;&quot;</span>
+    <span class="c1"># Use row_factory here</span>
+    <span class="n">conn</span><span class="o">.</span><span class="n">row_factory</span> <span class="o">=</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">Row</span>
+    <span class="c1"># Cast sqlite3.Row object to dict because later, we use items() method.</span>
+    <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span>
+        <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;&quot;&quot;SELECT * FROM variants WHERE variants.id = </span><span class="si">{id}</span><span class="s2">&quot;&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
+    <span class="p">)</span></div>
+
+<div class="viewcode-block" id="update_variant"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.update_variant">[docs]</a><span class="k">def</span> <span class="nf">update_variant</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">variant</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Update variant data &quot;&quot;&quot;</span>
+    
+    <span class="n">sql_set</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">sql_val</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">variant</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="o">!=</span> <span class="s2">&quot;id&quot;</span><span class="p">:</span>
+            <span class="n">sql_set</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;`</span><span class="si">{key}</span><span class="s2">` = ? &quot;</span><span class="p">)</span>
+            <span class="n">sql_val</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;UPDATE variants SET &quot;</span> <span class="o">+</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sql_set</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; WHERE id = &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">variant</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">])</span>
+    <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">sql_val</span><span class="p">)</span>
+    <span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="get_annotations"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.get_annotations">[docs]</a><span class="k">def</span> <span class="nf">get_annotations</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Get variant annotation with the given id &quot;&quot;&quot;</span>
+    <span class="n">conn</span><span class="o">.</span><span class="n">row_factory</span> <span class="o">=</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">Row</span>
+    <span class="k">for</span> <span class="n">annotation</span> <span class="ow">in</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+        <span class="n">f</span><span class="s2">&quot;&quot;&quot;SELECT * FROM annotations WHERE variant_id = </span><span class="si">{id}</span><span class="s2">&quot;&quot;&quot;</span>
+    <span class="p">):</span>
+        <span class="k">yield</span> <span class="nb">dict</span><span class="p">(</span><span class="n">annotation</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_sample_annotations"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.get_sample_annotations">[docs]</a><span class="k">def</span> <span class="nf">get_sample_annotations</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">variant_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">sample_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Get variant annotation for a given sample &quot;&quot;&quot;</span>
+    <span class="n">conn</span><span class="o">.</span><span class="n">row_factory</span> <span class="o">=</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">Row</span>
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+    <span class="n">q</span> <span class="o">=</span> <span class="n">f</span><span class="s2">&quot;&quot;&quot;SELECT * FROM sample_has_variant WHERE variant_id = </span><span class="si">{variant_id}</span><span class="s2"> and sample_id = </span><span class="si">{sample_id}</span><span class="s2">&quot;&quot;&quot;</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+        <span class="n">f</span><span class="s2">&quot;&quot;&quot;SELECT * FROM sample_has_variant WHERE variant_id = </span><span class="si">{variant_id}</span><span class="s2"> and sample_id = </span><span class="si">{sample_id}</span><span class="s2">&quot;&quot;&quot;</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">result</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_variants_count"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.get_variants_count">[docs]</a><span class="k">def</span> <span class="nf">get_variants_count</span><span class="p">(</span><span class="n">conn</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Get the number of variants in the &quot;variants&quot; table&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;SELECT COUNT(*) FROM variants&quot;&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="async_insert_many_variants"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.async_insert_many_variants">[docs]</a><span class="k">def</span> <span class="nf">async_insert_many_variants</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">total_variant_count</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">yield_every</span><span class="o">=</span><span class="mi">3000</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Insert many variants from data into variants table</span>
+
+<span class="sd">    :param conn: sqlite3.connect</span>
+<span class="sd">    :param data: list of variant dictionnary which contains same number of key than fields numbers.</span>
+<span class="sd">    :param variant_count: total variant count, to compute progression</span>
+<span class="sd">    :return: Yield a tuple with progression and message.</span>
+<span class="sd">        Progression is 0 if total_variant_count is not set.</span>
+<span class="sd">    :rtype: &lt;generator &lt;tuple &lt;int&gt;, &lt;str&gt;&gt;</span>
+
+
+<span class="sd">    :Example:</span>
+
+<span class="sd">        insert_many_variant(conn, [{chr:&quot;chr1&quot;, pos:24234, alt:&quot;A&quot;,&quot;ref&quot;:T }])</span>
+<span class="sd">        insert_many_variant(conn, reader.get_variants())</span>
+
+<span class="sd">    .. warning:: Using reader, this can take a while</span>
+<span class="sd">    .. todo:: with large dataset, need to cache import</span>
+<span class="sd">    .. todo:: handle insertion errors...</span>
+<span class="sd">    .. seealso:: abstractreader</span>
+
+<span class="sd">    .. warning:: About using INSERT OR IGNORE:</span>
+<span class="sd">        INSERT OR IGNORE avoids errors:</span>
+
+<span class="sd">            - Upon insertion of a duplicate key where the column must contain</span>
+<span class="sd">            a PRIMARY KEY or UNIQUE constraint</span>
+<span class="sd">            - Upon insertion of NULL value where the column has</span>
+<span class="sd">            a NOT NULL constraint.</span>
+<span class="sd">        =&gt; This is not recommended</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">build_columns_and_placeholders</span><span class="p">(</span><span class="n">table_name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Build a tuple of columns and &quot;?&quot; placeholders for INSERT queries</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Get columns description from the given table</span>
+        <span class="n">cols</span> <span class="o">=</span> <span class="n">get_columns</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">table_name</span><span class="p">)</span>
+        <span class="c1"># Build dynamic insert query</span>
+        <span class="c1"># INSERT INTO variant qcol1, qcol2.... VALUES ?, ?</span>
+        <span class="n">tb_cols</span> <span class="o">=</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">f</span><span class="s2">&quot;`</span><span class="si">{col}</span><span class="s2">`&quot;</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">])</span>
+        <span class="n">tb_places</span> <span class="o">=</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s2">&quot;?&quot;</span> <span class="k">for</span> <span class="n">place</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">tb_cols</span><span class="p">,</span> <span class="n">tb_places</span>
+
+    <span class="c1"># TODO: Can we avoid this step ? This function should receive columns names</span>
+    <span class="c1"># because all the tables were created before...</span>
+    <span class="c1"># Build placeholders</span>
+    <span class="n">var_cols</span><span class="p">,</span> <span class="n">var_places</span> <span class="o">=</span> <span class="n">build_columns_and_placeholders</span><span class="p">(</span><span class="s2">&quot;variants&quot;</span><span class="p">)</span>
+    <span class="n">ann_cols</span><span class="p">,</span> <span class="n">ann_places</span> <span class="o">=</span> <span class="n">build_columns_and_placeholders</span><span class="p">(</span><span class="s2">&quot;annotations&quot;</span><span class="p">)</span>
+
+    <span class="n">var_columns</span> <span class="o">=</span> <span class="n">get_columns</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="s2">&quot;variants&quot;</span><span class="p">)</span>
+    <span class="n">ann_columns</span> <span class="o">=</span> <span class="n">get_columns</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="s2">&quot;annotations&quot;</span><span class="p">)</span>
+    <span class="n">sample_columns</span> <span class="o">=</span> <span class="n">get_columns</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="s2">&quot;sample_has_variant&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Get samples with samples names as keys and sqlite rowid as values</span>
+    <span class="c1"># =&gt; used as a mapping for samples ids</span>
+    <span class="n">samples_id_mapping</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">name</span><span class="p">:</span> <span class="n">rowid</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">rowid</span> <span class="ow">in</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;SELECT name, id FROM samples&quot;</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="n">samples_names</span> <span class="o">=</span> <span class="n">samples_id_mapping</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+
+    <span class="c1"># Check SQLite version and build insertion queries for variants</span>
+    <span class="c1"># Old version doesn&#39;t support ON CONFLICT ..target.. DO ... statements</span>
+    <span class="c1"># to handle violation of unicity constraint.</span>
+    <span class="n">old_sqlite_version</span> <span class="o">=</span> <span class="n">parse_version</span><span class="p">(</span><span class="n">sqlite3</span><span class="o">.</span><span class="n">sqlite_version</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">parse_version</span><span class="p">(</span><span class="s2">&quot;3.24.0&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">old_sqlite_version</span><span class="p">:</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="s2">&quot;async_insert_many_variants:: Old SQLite version: </span><span class="si">%s</span><span class="s2">&quot;</span>
+            <span class="s2">&quot; - Fallback to ignore errors!&quot;</span><span class="p">,</span>
+            <span class="n">sqlite3</span><span class="o">.</span><span class="n">sqlite_version</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="c1"># /!\ This syntax is SQLite specific</span>
+        <span class="c1"># /!\ We mask all errors here !</span>
+        <span class="n">variant_insert_query</span> <span class="o">=</span> <span class="n">f</span><span class="s2">&quot;&quot;&quot;INSERT OR IGNORE INTO variants (</span><span class="si">{var_cols}</span><span class="s2">)</span>
+<span class="s2">                VALUES (</span><span class="si">{var_places}</span><span class="s2">)&quot;&quot;&quot;</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Handle conflicts on the primary key</span>
+        <span class="n">variant_insert_query</span> <span class="o">=</span> <span class="n">f</span><span class="s2">&quot;&quot;&quot;INSERT INTO variants (</span><span class="si">{var_cols}</span><span class="s2">)</span>
+<span class="s2">                VALUES (</span><span class="si">{var_places}</span><span class="s2">)</span>
+<span class="s2">                ON CONFLICT (chr,pos,ref,alt) DO NOTHING&quot;&quot;&quot;</span>
+
+    <span class="c1"># Insertion - Begin transaction</span>
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+
+    <span class="c1"># Loop over variants</span>
+    <span class="n">errors</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">progress</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">variant_count</span><span class="p">,</span> <span class="n">variant</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
+
+        <span class="c1"># Insert current variant</span>
+        <span class="c1"># Use default dict to handle missing values</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="s2">&quot;async_insert_many_variants:: QUERY: </span><span class="si">%s</span><span class="se">\n</span><span class="s2">VALUES: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">variant_insert_query</span><span class="p">,</span>
+            <span class="n">variant</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1">#  Create list of value to insert</span>
+        <span class="c1"># [&quot;chr&quot;,234234,&quot;A&quot;,&quot;G&quot;]</span>
+        <span class="n">default_values</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">variant</span><span class="p">)</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="p">[</span><span class="n">default_values</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">var_columns</span><span class="p">]</span>
+
+        <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">variant_insert_query</span><span class="p">,</span> <span class="n">values</span><span class="p">)</span>
+
+        <span class="c1"># If the row is not inserted we skip this erroneous variant</span>
+        <span class="c1"># and the data that goes with</span>
+        <span class="k">if</span> <span class="n">cursor</span><span class="o">.</span><span class="n">rowcount</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                <span class="s2">&quot;async_insert_many_variants:: The following variant &quot;</span>
+                <span class="s2">&quot;contains erroneous data; most of the time it is a &quot;</span>
+                <span class="s2">&quot;duplication of the primary key: (chr,pos,ref,alt). &quot;</span>
+                <span class="s2">&quot;Please check your data; this variant and its attached &quot;</span>
+                <span class="s2">&quot;data will not be inserted!</span><span class="se">\n</span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">variant</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">errors</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">continue</span>
+
+        <span class="c1"># Get variant rowid</span>
+        <span class="n">variant_id</span> <span class="o">=</span> <span class="n">cursor</span><span class="o">.</span><span class="n">lastrowid</span>
+
+        <span class="c1"># If variant has annotation data, insert record into &quot;annotations&quot; table</span>
+        <span class="c1"># One-to-many relationships</span>
+        <span class="k">if</span> <span class="s2">&quot;annotations&quot;</span> <span class="ow">in</span> <span class="n">variant</span><span class="p">:</span>
+            <span class="c1"># print(&quot;VAR annotations:&quot;, variant[&quot;annotations&quot;])</span>
+
+            <span class="c1"># [{&#39;allele&#39;: &#39;T&#39;, &#39;consequence&#39;: &#39;intergenic_region&#39;, &#39;impact&#39;: &#39;MODIFIER&#39;, ...}]</span>
+            <span class="c1"># The aim is to execute all insertions through executemany()</span>
+            <span class="c1"># We remove the placeholder :variant_id from places,</span>
+            <span class="c1"># and fix it&#39;s value.</span>
+            <span class="c1"># TODO: handle missing values;</span>
+            <span class="c1"># Les dict de variant[&quot;annotations&quot;] contiennent a priori déjà</span>
+            <span class="c1"># tous les champs requis (mais vides) car certaines annotations</span>
+            <span class="c1"># ont des données manquantes.</span>
+            <span class="c1"># A t&#39;on l&#39;assurance de cela ?</span>
+            <span class="c1"># Dans ce cas pourquoi doit-on bricoler le variant lui-meme avec un</span>
+            <span class="c1"># defaultdict(str,variant)) ? Les variants n&#39;ont pas leurs champs par def ?</span>
+
+            <span class="n">values</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">ann</span> <span class="ow">in</span> <span class="n">variant</span><span class="p">[</span><span class="s2">&quot;annotations&quot;</span><span class="p">]:</span>
+                <span class="n">default_values</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">ann</span><span class="p">)</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="p">[</span><span class="n">default_values</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">ann_columns</span><span class="p">[</span><span class="mi">1</span><span class="p">:]]</span>
+                <span class="n">value</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">variant_id</span><span class="p">)</span>
+                <span class="n">values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+            <span class="n">temp_ann_places</span> <span class="o">=</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s2">&quot;?&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ann_columns</span><span class="p">)))</span>
+
+            <span class="n">q</span> <span class="o">=</span> <span class="n">f</span><span class="s2">&quot;&quot;&quot;INSERT INTO annotations (</span><span class="si">{ann_cols}</span><span class="s2">)</span>
+<span class="s2">                VALUES (</span><span class="si">{temp_ann_places}</span><span class="s2">)&quot;&quot;&quot;</span>
+
+            <span class="n">cursor</span><span class="o">.</span><span class="n">executemany</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">values</span><span class="p">)</span>
+
+        <span class="c1"># If variant has sample data, insert record into &quot;sample_has_variant&quot; table</span>
+        <span class="c1"># Many-to-many relationships</span>
+        <span class="k">if</span> <span class="s2">&quot;samples&quot;</span> <span class="ow">in</span> <span class="n">variant</span><span class="p">:</span>
+            <span class="c1"># print(&quot;VAR samples:&quot;, variant[&quot;samples&quot;])</span>
+            <span class="c1"># [{&#39;name&#39;: &#39;NORMAL&#39;, &#39;gt&#39;: 1, &#39;AD&#39;: &#39;64,0&#39;, &#39;AF&#39;: 0.0, ...}]</span>
+            <span class="c1"># Insertion only if the current sample name is in samples_names</span>
+            <span class="c1"># (authorized sample names already in the database)</span>
+            <span class="c1"># TODO: is this test usefull since samples that are in the database</span>
+            <span class="c1"># have been inserted from the same source file (or it is not the case ?) ?</span>
+            <span class="c1"># Retrieve the id of the sample to build the association in</span>
+            <span class="c1"># &quot;sample_has_variant&quot; table carrying the data &quot;gt&quot; (genotype)</span>
+
+            <span class="n">samples</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="n">variant</span><span class="p">[</span><span class="s2">&quot;samples&quot;</span><span class="p">]:</span>
+                <span class="n">sample_id</span> <span class="o">=</span> <span class="n">samples_id_mapping</span><span class="p">[</span><span class="n">sample</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]]</span>
+                <span class="n">default_values</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">sample</span><span class="p">)</span>
+                <span class="n">sample_value</span> <span class="o">=</span> <span class="p">[</span><span class="n">sample_id</span><span class="p">,</span> <span class="n">variant_id</span><span class="p">]</span>
+                <span class="n">sample_value</span> <span class="o">+=</span> <span class="p">[</span><span class="n">default_values</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">sample_columns</span><span class="p">[</span><span class="mi">2</span><span class="p">:]]</span>
+                <span class="n">samples</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sample_value</span><span class="p">)</span>
+
+            <span class="n">placeholder</span> <span class="o">=</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s2">&quot;?&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">sample_columns</span><span class="p">))</span>
+
+            <span class="n">q</span> <span class="o">=</span> <span class="n">f</span><span class="s2">&quot;&quot;&quot;INSERT INTO sample_has_variant VALUES (</span><span class="si">{placeholder}</span><span class="s2">)&quot;&quot;&quot;</span>
+            <span class="n">cursor</span><span class="o">.</span><span class="n">executemany</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">samples</span><span class="p">)</span>
+
+        <span class="c1"># Yield progression</span>
+        <span class="k">if</span> <span class="n">variant_count</span> <span class="o">%</span> <span class="n">yield_every</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">total_variant_count</span><span class="p">:</span>
+                <span class="n">progress</span> <span class="o">=</span> <span class="n">variant_count</span> <span class="o">/</span> <span class="n">total_variant_count</span> <span class="o">*</span> <span class="mi">100</span>
+
+            <span class="k">yield</span> <span class="n">progress</span><span class="p">,</span> <span class="n">f</span><span class="s2">&quot;</span><span class="si">{variant_count}</span><span class="s2"> variants inserted.&quot;</span>
+
+    <span class="c1"># Commit the transaction</span>
+    <span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+
+    <span class="k">yield</span> <span class="mi">97</span><span class="p">,</span> <span class="n">f</span><span class="s2">&quot;{variant_count - errors} variant(s) has been inserted.&quot;</span>
+
+    <span class="c1"># Create default selection (we need the number of variants for this)</span>
+    <span class="n">insert_selection</span><span class="p">(</span>
+        <span class="n">conn</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">cm</span><span class="o">.</span><span class="n">DEFAULT_SELECTION_NAME</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="n">variant_count</span> <span class="o">-</span> <span class="n">errors</span>
+    <span class="p">)</span></div>
+
+
+<span class="k">def</span> <span class="nf">insert_many_variants</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">async_insert_many_variants</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+
+<span class="c1">## ================ Samples functions ==========================================</span>
+
+
+<div class="viewcode-block" id="create_table_samples"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.create_table_samples">[docs]</a><span class="k">def</span> <span class="nf">create_table_samples</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Create samples table</span>
+
+<span class="sd">    :param conn: sqlite3.connect</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+    <span class="c1"># sample_id is an alias on internal autoincremented &#39;rowid&#39;</span>
+    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+        <span class="sd">&quot;&quot;&quot;CREATE TABLE samples (</span>
+<span class="sd">        id INTEGER PRIMARY KEY ASC,</span>
+<span class="sd">        name TEXT,</span>
+<span class="sd">        fam TEXT DEFAULT &#39;fam&#39;,</span>
+<span class="sd">        father_id INTEGER DEFAULT 0,</span>
+<span class="sd">        mother_id INTEGER DEFAULT 0,</span>
+<span class="sd">        sexe INTEGER DEFAULT 0,</span>
+<span class="sd">        phenotype INTEGER DEFAULT 0</span>
+<span class="sd">        )&quot;&quot;&quot;</span>
+    <span class="p">)</span>
+    <span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+
+    <span class="n">fields</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">fields</span><span class="p">)</span>
+
+    <span class="n">schema</span> <span class="o">=</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+        <span class="p">[</span>
+            <span class="n">f</span><span class="s1">&#39;`</span><span class="si">{field[&quot;name&quot;]}</span><span class="s1">` </span><span class="si">{field[&quot;type&quot;]}</span><span class="s1"> {field.get(&quot;constraint&quot;, &quot;&quot;)}&#39;</span>
+            <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">fields</span>
+            <span class="k">if</span> <span class="n">field</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
+        <span class="p">]</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">fields</span><span class="p">:</span>
+        <span class="n">schema</span> <span class="o">=</span> <span class="s1">&#39;gt INTEGER DEFAULT DEFAULT -1&#39;</span>
+
+    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+        <span class="n">f</span><span class="s2">&quot;&quot;&quot;CREATE TABLE sample_has_variant  (</span>
+<span class="s2">        sample_id INTEGER NOT NULL,</span>
+<span class="s2">        variant_id INTEGER NOT NULL,</span>
+<span class="s2">        </span><span class="si">{schema}</span><span class="s2">,</span>
+<span class="s2">        PRIMARY KEY (sample_id, variant_id),</span>
+<span class="s2">        FOREIGN KEY (sample_id) REFERENCES samples (id)</span>
+<span class="s2">          ON DELETE CASCADE</span>
+<span class="s2">          ON UPDATE NO ACTION</span>
+<span class="s2">        ) WITHOUT ROWID</span>
+<span class="s2">       &quot;&quot;&quot;</span>
+    <span class="p">)</span>
+
+    <span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="insert_sample"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.insert_sample">[docs]</a><span class="k">def</span> <span class="nf">insert_sample</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;no_name&quot;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Insert one sample in samples table (USED in TESTS)</span>
+
+<span class="sd">    :param conn: sqlite3.connect</span>
+<span class="sd">    :return: Last row id</span>
+<span class="sd">    :rtype: &lt;int&gt;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;INSERT INTO samples (name) VALUES (?)&quot;&quot;&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">name</span><span class="p">])</span>
+    <span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">cursor</span><span class="o">.</span><span class="n">lastrowid</span></div>
+
+
+<div class="viewcode-block" id="insert_many_samples"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.insert_many_samples">[docs]</a><span class="k">def</span> <span class="nf">insert_many_samples</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">samples</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Insert many samples at a time in samples table</span>
+
+<span class="sd">    :param samples: List of samples names</span>
+<span class="sd">        .. todo:: only names in this list ?</span>
+<span class="sd">    :type samples: &lt;list &lt;str&gt;&gt;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+    <span class="n">cursor</span><span class="o">.</span><span class="n">executemany</span><span class="p">(</span>
+        <span class="sd">&quot;&quot;&quot;INSERT INTO samples (name) VALUES (?)&quot;&quot;&quot;</span><span class="p">,</span> <span class="p">((</span><span class="n">sample</span><span class="p">,)</span> <span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="n">samples</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="get_samples"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.get_samples">[docs]</a><span class="k">def</span> <span class="nf">get_samples</span><span class="p">(</span><span class="n">conn</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;&quot;Get samples from sample table</span>
+
+<span class="sd">    :param con: sqlite3.conn</span>
+<span class="sd">    :return: Generator of dictionnaries with as sample fields as values.</span>
+<span class="sd">        :Example: ({&#39;id&#39;: &lt;unique_id&gt;, &#39;name&#39;: &lt;sample_name&gt;})</span>
+<span class="sd">    :rtype: &lt;generator &lt;dict&gt;&gt;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">conn</span><span class="o">.</span><span class="n">row_factory</span> <span class="o">=</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">Row</span>
+    <span class="k">return</span> <span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="k">for</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;SELECT * FROM samples&quot;&quot;&quot;</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="update_sample"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.update_sample">[docs]</a><span class="k">def</span> <span class="nf">update_sample</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">sample</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Update sample record</span>
+<span class="sd">    </span>
+<span class="sd">    sample = {</span>
+<span class="sd">        id : 3 # sample id </span>
+<span class="sd">        name : &quot;Boby&quot;,  # Name of sample </span>
+<span class="sd">        fam : &quot;fam&quot;, # familly identifier </span>
+<span class="sd">        father_id : 0, # father id, 0 if not  </span>
+<span class="sd">        mother_id : 0, # mother id, 0 if not</span>
+<span class="sd">        sexe : 0 # Sexe code ( 1 = male, 2 = female, 0 = unknown)</span>
+<span class="sd">        phenotype: 0 # ( 1 = control , 2 = case, 0 = unknown)</span>
+<span class="sd">    }</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        conn (sqlite.connection): sqlite connection</span>
+<span class="sd">        sample (dict): data </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="s2">&quot;id&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sample</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;sample id is required&quot;</span><span class="p">)</span>
+        <span class="k">return</span> 
+    
+    <span class="n">sql_set</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">sql_val</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">sample</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="o">!=</span> <span class="s2">&quot;id&quot;</span><span class="p">:</span>
+            <span class="n">sql_set</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;`</span><span class="si">{key}</span><span class="s2">` = ? &quot;</span><span class="p">)</span>
+            <span class="n">sql_val</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;UPDATE samples SET &quot;</span> <span class="o">+</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sql_set</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; WHERE id = &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">sample</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">])</span>
+    <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">sql_val</span><span class="p">)</span>
+    <span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span></div>
+<span class="c1">## ============== VARIANTS QUERY THINGS ... ======================</span>
+
+
+<div class="viewcode-block" id="QueryBuilder"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.QueryBuilder">[docs]</a><span class="k">class</span> <span class="nc">QueryBuilder</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A class to Create a variant Selection query </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">_GENOTYPE_FUNCTION_NAME</span> <span class="o">=</span> <span class="s2">&quot;genotype&quot;</span>
+    <span class="n">_PHENOTYPE_FUNCTION_NAME</span> <span class="o">=</span> <span class="s2">&quot;phenotype&quot;</span>
+    <span class="n">_VARIANT_TABLE</span> <span class="o">=</span> <span class="s2">&quot;variants&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">conn</span><span class="p">,</span>
+        <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;chr&quot;</span><span class="p">,</span> <span class="s2">&quot;pos&quot;</span><span class="p">,</span> <span class="s2">&quot;ref&quot;</span><span class="p">,</span> <span class="s2">&quot;alt&quot;</span><span class="p">],</span>
+        <span class="n">filters</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
+        <span class="n">selection</span><span class="o">=</span><span class="s2">&quot;variants&quot;</span><span class="p">,</span>
+        <span class="n">order_by</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">order_desc</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create an instance with different parameters </span>
+
+<span class="sd">        See:</span>
+<span class="sd">            sql.build_variant_query</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            conn (sqlite): sqlite3 connection database</span>
+<span class="sd">            columns (list, optional): Columns selections. Defaults to [&quot;chr&quot;, &quot;pos&quot;, &quot;ref&quot;, &quot;alt&quot;].</span>
+<span class="sd">            filters (dict, optional): Filter as a nested dictionnary. Defaults to dict().</span>
+<span class="sd">            selection (str, optional): Source table. Defaults to &quot;variants&quot;.</span>
+<span class="sd">            order_by (str, optional): Order by column. Defaults to None.</span>
+<span class="sd">            order_desc (bool, optional): Sort result in descendant order. Defaults to True.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">conn</span> <span class="o">=</span> <span class="n">conn</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="n">columns</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filters</span> <span class="o">=</span> <span class="n">filters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">selection</span> <span class="o">=</span> <span class="n">selection</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">order_by</span> <span class="o">=</span> <span class="n">order_by</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">order_desc</span> <span class="o">=</span> <span class="n">order_desc</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">conn</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_conn</span>
+
+    <span class="nd">@conn</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">conn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">conn</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_conn</span> <span class="o">=</span> <span class="n">conn</span>
+        <span class="c1"># Read those data only once from sqliute</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cache_annotations_columns</span> <span class="o">=</span> <span class="n">get_columns</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="s2">&quot;annotations&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cache_variants_columns</span> <span class="o">=</span> <span class="n">get_columns</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="s2">&quot;variants&quot;</span><span class="p">)</span>
+
+        <span class="c1">#  Read samples and make possible to map the sample id from the sample name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cache_samples_ids</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">([(</span><span class="n">i</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">],</span> <span class="n">i</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">get_samples</span><span class="p">(</span><span class="n">conn</span><span class="p">)])</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_filters_to_flat</span><span class="p">(</span><span class="n">filters</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Recursive function to convert the filter hierarchical dictionnary into a list of fields</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            filter (dict): a nested tree of condition. @See example</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Return (list): all field are now inside a a list </span>
+
+<span class="sd">        Todo:</span>
+<span class="sd">            Move to vql ? </span>
+
+<span class="sd">        Examples:</span>
+<span class="sd">            filters = {&#39;AND&#39;: </span>
+<span class="sd">            [{&#39;field&#39;: &#39;ref&#39;, &#39;operator&#39;: &#39;=&#39;, &#39;value&#39;: &quot;A&quot;},</span>
+<span class="sd">            {&#39;field&#39;: &#39;alt&#39;, &#39;operator&#39;: &#39;=&#39;, &#39;value&#39;: &quot;C&quot;}]</span>
+<span class="sd">            }</span>
+<span class="sd">            </span>
+<span class="sd">            filters = _flatten_filter(filters)</span>
+
+<span class="sd">            # filters is now [{&#39;field&#39;: &#39;ref&#39;, &#39;operator&#39;: &#39;=&#39;, &#39;value&#39;: &quot;A&quot;},{&#39;field&#39;: &#39;alt&#39;, &#39;operator&#39;: &#39;=&#39;, &#39;value&#39;: &quot;C&quot;}]] </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">filters</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">filters</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">filters</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">filters</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">filters</span><span class="p">:</span>
+                <span class="k">yield from</span> <span class="n">QueryBuilder</span><span class="o">.</span><span class="n">_filters_to_flat</span><span class="p">(</span><span class="n">filters</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">filters</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">filters</span><span class="p">:</span>
+                <span class="k">yield from</span> <span class="n">QueryBuilder</span><span class="o">.</span><span class="n">_filters_to_flat</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_filters_to_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">format_sql</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Recursive function to convert the filter hierarchical dictionnary into a SQL WHERE clause.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            filters (dict): a nested tree of condition. @See example</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Return (str): a Sql Where clause</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">node</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;&quot;</span>
+
+        <span class="c1"># Function to detect IF node is a Condition node (AND/OR)</span>
+        <span class="c1"># OR a field node with (name, operator, value) as keys</span>
+        <span class="n">is_field</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="kc">True</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span> <span class="k">else</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="n">is_field</span><span class="p">(</span><span class="n">node</span><span class="p">):</span>
+            <span class="c1"># print(&quot;IS FIELD&quot;, node)</span>
+
+            <span class="c1"># Process value</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">node</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">]</span>
+            <span class="n">operator</span> <span class="o">=</span> <span class="n">node</span><span class="p">[</span><span class="s2">&quot;operator&quot;</span><span class="p">]</span>
+            <span class="n">field</span> <span class="o">=</span> <span class="n">node</span><span class="p">[</span><span class="s2">&quot;field&quot;</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">==</span> <span class="nb">str</span><span class="p">:</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">f</span><span class="s2">&quot;&#39;</span><span class="si">{value}</span><span class="s2">&#39;&quot;</span>
+
+            <span class="k">if</span> <span class="n">format_sql</span><span class="p">:</span>
+                <span class="c1"># Format for SQL </span>
+                <span class="n">field</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">column_to_sql</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="n">use_alias</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+            <span class="c1"># convert (genotype,sample,field) to genotype(sample).field</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">field</span><span class="p">,</span><span class="nb">tuple</span><span class="p">):</span>
+                <span class="n">field</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">(</span><span class="se">\&quot;</span><span class="si">{}</span><span class="se">\&quot;</span><span class="s2">).</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">*</span><span class="n">field</span><span class="p">)</span>
+        
+            <span class="c1"># TODO ... c&#39;est degeulasse ....</span>
+            <span class="k">if</span> <span class="n">operator</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;IN&quot;</span><span class="p">,</span> <span class="s2">&quot;NOT IN&quot;</span><span class="p">):</span>
+                <span class="c1"># DO NOT enclose value in quotes</span>
+                <span class="c1"># node: {&#39;field&#39;: &#39;ref&#39;, &#39;operator&#39;: &#39;IN&#39;, &#39;value&#39;: &quot;(&#39;A&#39;, &#39;T&#39;, &#39;G&#39;, &#39;C&#39;)&quot;}</span>
+                <span class="c1"># wanted: ref IN (&#39;A&#39;, &#39;T&#39;, &#39;G&#39;, &#39;C&#39;)</span>
+                <span class="k">pass</span>
+
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="s2">&quot;(&quot;</span> <span class="o">+</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;)&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+            <span class="c1"># There must be spaces between these strings because of strings operators (IN, etc.)</span>
+            <span class="k">return</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> </span><span class="si">%s</span><span class="s2"> </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="n">operator</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Not a field: 1 key only: the logical operator</span>
+            <span class="n">logic_op</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="c1"># Recursive call for each field in the list associated to the</span>
+            <span class="c1"># logical operator.</span>
+            <span class="c1"># node:</span>
+            <span class="c1"># {&#39;AND&#39;: [</span>
+            <span class="c1">#   {&#39;field&#39;: &#39;ref&#39;, &#39;operator&#39;: &#39;IN&#39;, &#39;value&#39;: &quot;(&#39;A&#39;, &#39;T&#39;, &#39;G&#39;, &#39;C&#39;)&quot;},</span>
+            <span class="c1">#   {&#39;field&#39;: &#39;alt&#39;, &#39;operator&#39;: &#39;IN&#39;, &#39;value&#39;: &quot;(&#39;A&#39;, &#39;T&#39;, &#39;G&#39;, &#39;C&#39;)&quot;}</span>
+            <span class="c1"># ]}</span>
+            <span class="c1"># Wanted: ref IN (&#39;A&#39;, &#39;T&#39;, &#39;G&#39;, &#39;C&#39;) AND alt IN (&#39;A&#39;, &#39;T&#39;, &#39;G&#39;, &#39;C&#39;)</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_filters_to_sql</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="n">format_sql</span><span class="p">)</span> <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">node</span><span class="p">[</span><span class="n">logic_op</span><span class="p">]]</span>
+            <span class="c1"># print(&quot;OUT&quot;, out, &quot;LOGIC&quot;, logic_op)</span>
+            <span class="c1"># OUT [&quot;refIN&#39;(&#39;A&#39;, &#39;T&#39;, &#39;G&#39;, &#39;C&#39;)&#39;&quot;, &quot;altIN&#39;(&#39;A&#39;, &#39;T&#39;, &#39;G&#39;, &#39;C&#39;)&#39;&quot;]</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">out</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">f</span><span class="s2">&quot; </span><span class="si">{logic_op}</span><span class="s2"> &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s2">&quot;(&quot;</span> <span class="o">+</span> <span class="n">f</span><span class="s2">&quot; </span><span class="si">{logic_op}</span><span class="s2"> &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;)&quot;</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_get_functions</span><span class="p">(</span><span class="n">columns</span><span class="p">,</span> <span class="n">func_name</span><span class="o">=</span><span class="s2">&quot;genotype&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Search and return Column-function (aka 3-tuple) from a list </span>
+
+<span class="sd">            Column-function are tuple of 3 elements to describe a function.</span>
+<span class="sd">            genotype(&quot;TUMOR&quot;).GT == &gt; (genotype,TUMOR,GT)</span>
+<span class="sd">            </span>
+<span class="sd">            Args:</span>
+<span class="sd">                columns (list): List of columns</span>
+<span class="sd">                func_name (str, optional): The name of function. Defaults to &quot;genotype&quot;.</span>
+<span class="sd">            </span>
+<span class="sd">            Returns:</span>
+<span class="sd">                list: Return a list of 3-tuple </span>
+<span class="sd">            &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="p">(</span><span class="n">col</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">columns</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">col</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">)</span>
+
+<div class="viewcode-block" id="QueryBuilder.column_to_sql"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.QueryBuilder.column_to_sql">[docs]</a>    <span class="k">def</span> <span class="nf">column_to_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">column</span><span class="p">,</span> <span class="n">use_alias</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Guess from which table the column belongs to and return a well formated name</span>
+<span class="sd">        </span>
+<span class="sd">            Return:</span>
+<span class="sd">                The table name annotations or variants </span>
+<span class="sd">        &quot;&quot;&quot;</span> 
+
+        <span class="c1"># If column is a function aka tuple : (&quot;genotype&quot;, &quot;boby&quot;,&quot;gt&quot;) to &quot;`gt_boby`.gt&quot; to perform SQL JOIN</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">column</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+            <span class="n">function_name</span><span class="p">,</span> <span class="n">arg</span><span class="p">,</span> <span class="n">field_name</span> <span class="o">=</span> <span class="n">column</span>
+            <span class="k">if</span> <span class="n">function_name</span> <span class="o">==</span> <span class="n">QueryBuilder</span><span class="o">.</span><span class="n">_GENOTYPE_FUNCTION_NAME</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">use_alias</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">f</span><span class="s2">&quot;`gt_</span><span class="si">{arg}</span><span class="s2">`.`</span><span class="si">{field_name}</span><span class="s2">` AS `gt_</span><span class="si">{arg}</span><span class="s2">.</span><span class="si">{field_name}</span><span class="s2">`&quot;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">f</span><span class="s2">&quot;`gt_</span><span class="si">{arg}</span><span class="s2">`.`</span><span class="si">{field_name}</span><span class="s2">`&quot;</span>
+
+
+        <span class="k">if</span> <span class="n">column</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;annotations.&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">column</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache_annotations_columns</span><span class="p">:</span>
+            <span class="n">column</span> <span class="o">=</span> <span class="n">column</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;annotations.&quot;</span><span class="p">,</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">f</span><span class="s2">&quot;`annotations`.`</span><span class="si">{column}</span><span class="s2">`&quot;</span>
+        
+        <span class="k">if</span> <span class="n">column</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;variants.&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">column</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache_variants_columns</span><span class="p">:</span>
+            <span class="n">column</span> <span class="o">=</span> <span class="n">column</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;variants.&quot;</span><span class="p">,</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">f</span><span class="s2">&quot;`variants`.`</span><span class="si">{column}</span><span class="s2">`&quot;</span>
+
+        <span class="k">return</span> <span class="n">column</span></div>
+
+<div class="viewcode-block" id="QueryBuilder.get_table_of_column"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.QueryBuilder.get_table_of_column">[docs]</a>    <span class="k">def</span> <span class="nf">get_table_of_column</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">column</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return table&#39;s name of a specific column</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            column (str): column name</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            str: table name ( samples, annnotations, variants)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">column</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+            <span class="k">return</span> <span class="s2">&quot;samples&quot;</span>
+
+        <span class="k">if</span> <span class="n">column</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;annotations.&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">column</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache_annotations_columns</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;annotations&quot;</span>
+
+        <span class="k">if</span> <span class="n">column</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;variants.&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">column</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache_variants_columns</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;variants&quot;</span>
+
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="QueryBuilder.headers"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.QueryBuilder.headers">[docs]</a>    <span class="k">def</span> <span class="nf">headers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Return a clean list of columns </span>
+
+<span class="sd">        It returns self.columns by replacing function tuple by a string</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (list): a list of string with well formated column name and variant.id</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">headers</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">column</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">column</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+                <span class="n">headers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">:</span><span class="si">{}</span><span class="s2">:</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">*</span><span class="n">column</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">headers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">column</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">headers</span></div>
+
+<div class="viewcode-block" id="QueryBuilder.build_sql"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.QueryBuilder.build_sql">[docs]</a>    <span class="k">def</span> <span class="nf">build_sql</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">columns</span><span class="p">,</span>
+        <span class="n">filters</span><span class="p">,</span>
+        <span class="n">selection</span> <span class="o">=</span> <span class="s2">&quot;variants&quot;</span><span class="p">,</span>
+        <span class="n">order_by</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">order_desc</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">grouped</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+        <span class="n">offset</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Build a SQL Select statement from internal parameters columns, filters, selections.</span>
+<span class="sd">        see items() and tree() methods</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            columns (list): Columns to be used in SELECT statement</span>
+<span class="sd">            filters (dict): A nested tree to be used in WHERE statement</span>
+<span class="sd">            selection (str): Source of the virtual table ( variants or build a joint )</span>
+<span class="sd">            order_by (str, optional): ORDER BY statement. Defaults to None.</span>
+<span class="sd">            order_desc (bool, optional): ORDER DESC is it&#39;s True. Defaults to True.</span>
+<span class="sd">            group_by (list, optional): List of columns to group. Defaults to None.</span>
+<span class="sd">            limit (int, optional): LIMIT SQL statement for record per page. Defaults to 20.</span>
+<span class="sd">            offset (int, optional): OFFSET SQL statement for page number. Defaults to 0.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            [type]: [description]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1">#  Build Select statement</span>
+        <span class="n">sql_query</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+        <span class="c1">#  Add columns</span>
+        <span class="n">sql_columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;`variants`.`id`&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">column_to_sql</span><span class="p">(</span><span class="n">col</span><span class="p">)</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">columns</span><span class="p">]</span>
+        <span class="n">sql_query</span> <span class="o">=</span> <span class="n">f</span><span class="s2">&quot;SELECT {&#39;,&#39;.join(sql_columns)} &quot;</span>
+
+        <span class="c1"># Add child count if grouped </span>
+        <span class="k">if</span> <span class="n">grouped</span><span class="p">:</span>
+            <span class="n">sql_query</span> <span class="o">+=</span> <span class="s2">&quot;, COUNT(*) as `children`&quot;</span>
+
+        <span class="c1">#  Add source table</span>
+        <span class="n">sql_query</span> <span class="o">+=</span> <span class="n">f</span><span class="s2">&quot;FROM variants&quot;</span>
+
+        <span class="c1">#  Add Join Annotations</span>
+        <span class="n">columns_in_filters</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span><span class="p">[</span><span class="s2">&quot;field&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filters_to_flat</span><span class="p">(</span><span class="n">filters</span><span class="p">)]</span>
+        
+        <span class="c1"># Loop over columns and check is annotations is required </span>
+        <span class="n">need_join_annotations</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">columns</span> <span class="o">+</span> <span class="n">columns_in_filters</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_table_of_column</span><span class="p">(</span><span class="n">col</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;annotations&quot;</span><span class="p">:</span>
+                <span class="n">need_join_annotations</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">break</span>
+
+        <span class="k">if</span> <span class="n">need_join_annotations</span><span class="p">:</span>
+            <span class="n">sql_query</span> <span class="o">+=</span> <span class="p">(</span>
+                <span class="s2">&quot; LEFT JOIN annotations ON annotations.variant_id = variants.id&quot;</span>
+            <span class="p">)</span>
+
+        <span class="c1">#  Add Join Selection</span>
+        <span class="c1"># TODO: set variants as global variables</span>
+        <span class="k">if</span> <span class="n">selection</span> <span class="o">!=</span> <span class="s2">&quot;variants&quot;</span><span class="p">:</span>
+            <span class="n">sql_query</span> <span class="o">+=</span> <span class="p">(</span>
+                <span class="s2">&quot; INNER JOIN selection_has_variant sv ON sv.variant_id = variants.id &quot;</span>
+                <span class="n">f</span><span class="s2">&quot;INNER JOIN selections s ON s.id = sv.selection_id AND s.name = &#39;</span><span class="si">{selection}</span><span class="s2">&#39;&quot;</span>
+            <span class="p">)</span>
+
+        <span class="c1">#  Add Join Samples</span>
+        <span class="c1">## detect if columns contains function like (genotype,TUMOR,gt)</span>
+        <span class="n">all_columns</span> <span class="o">=</span> <span class="n">columns_in_filters</span> <span class="o">+</span> <span class="n">columns</span>
+        <span class="n">samples_in_query</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="n">fct</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">fct</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_functions</span><span class="p">(</span><span class="n">all_columns</span><span class="p">)])</span>
+        <span class="c1">## Create Sample Join</span>
+        <span class="k">for</span> <span class="n">sample_name</span> <span class="ow">in</span> <span class="n">samples_in_query</span><span class="p">:</span>
+            <span class="n">sample_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache_samples_ids</span><span class="p">[</span><span class="n">sample_name</span><span class="p">]</span>
+            <span class="n">sql_query</span> <span class="o">+=</span> <span class="p">(</span>
+                <span class="n">f</span><span class="s2">&quot; LEFT JOIN sample_has_variant `gt_</span><span class="si">{sample_name}</span><span class="s2">`&quot;</span>
+                <span class="n">f</span><span class="s2">&quot; ON `gt_</span><span class="si">{sample_name}</span><span class="s2">`.variant_id = variants.id&quot;</span>
+                <span class="n">f</span><span class="s2">&quot; AND `gt_</span><span class="si">{sample_name}</span><span class="s2">`.sample_id = </span><span class="si">{sample_id}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="c1">#  Add Where Clause</span>
+        <span class="k">if</span> <span class="n">filters</span><span class="p">:</span>
+            <span class="n">where_clause</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filters_to_sql</span><span class="p">(</span><span class="n">filters</span><span class="p">)</span>
+            <span class="c1"># TODO : filter_to_sql should returns empty instead of ()</span>
+            <span class="k">if</span> <span class="n">where_clause</span> <span class="ow">and</span> <span class="n">where_clause</span> <span class="o">!=</span> <span class="s2">&quot;()&quot;</span><span class="p">:</span>
+                <span class="n">sql_query</span> <span class="o">+=</span> <span class="s2">&quot; WHERE &quot;</span> <span class="o">+</span> <span class="n">where_clause</span>
+
+        <span class="c1">#  Add Group By</span>
+        <span class="k">if</span> <span class="n">grouped</span><span class="p">:</span>
+            <span class="n">sql_query</span> <span class="o">+=</span> <span class="s2">&quot; GROUP BY &quot;</span> <span class="o">+</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s2">&quot;chr&quot;</span><span class="p">,</span><span class="s2">&quot;pos&quot;</span><span class="p">,</span><span class="s2">&quot;ref&quot;</span><span class="p">,</span><span class="s2">&quot;alt&quot;</span><span class="p">])</span>
+
+        <span class="c1">#  Add Order By</span>
+        <span class="k">if</span> <span class="n">order_by</span><span class="p">:</span>
+            <span class="c1"># TODO : sqlite escape field with quote</span>
+            <span class="n">orientation</span> <span class="o">=</span> <span class="s2">&quot;DESC&quot;</span> <span class="k">if</span> <span class="n">order_desc</span> <span class="k">else</span> <span class="s2">&quot;ASC&quot;</span>
+            <span class="n">order_by</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">column_to_sql</span><span class="p">(</span><span class="n">order_by</span><span class="p">)</span>
+            <span class="n">sql_query</span> <span class="o">+=</span> <span class="n">f</span><span class="s2">&quot; ORDER BY </span><span class="si">{order_by}</span><span class="s2"> </span><span class="si">{orientation}</span><span class="s2">&quot;</span>
+
+        <span class="k">if</span> <span class="n">limit</span><span class="p">:</span>
+            <span class="n">sql_query</span> <span class="o">+=</span> <span class="n">f</span><span class="s2">&quot; LIMIT </span><span class="si">{limit}</span><span class="s2"> OFFSET </span><span class="si">{offset}</span><span class="s2">&quot;</span>
+
+        <span class="k">return</span> <span class="n">sql_query</span></div>
+
+<div class="viewcode-block" id="QueryBuilder.sql"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.QueryBuilder.sql">[docs]</a>    <span class="k">def</span> <span class="nf">sql</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grouped</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">limit</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span> <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return an SQL Query based on internal parameter columns, filter, selection.</span>
+<span class="sd">        See _build_sql()</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            limit(int): Maximum number of variants to display per page</span>
+<span class="sd">            offset(int): Page number</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_sql</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">selection</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">order_by</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">order_desc</span><span class="p">,</span><span class="n">grouped</span><span class="p">,</span><span class="n">limit</span><span class="p">,</span><span class="n">offset</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="QueryBuilder.vql"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.QueryBuilder.vql">[docs]</a>    <span class="k">def</span> <span class="nf">vql</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Build a VQL query from the current Query</span>
+
+<span class="sd">        Todo : Make it cleaner and test it </span>
+
+<span class="sd">        Return</span>
+<span class="sd">            A VQL query</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">_c</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+                <span class="n">fct</span><span class="p">,</span> <span class="n">arg</span><span class="p">,</span> <span class="n">field</span> <span class="o">=</span> <span class="n">col</span>
+                <span class="k">if</span> <span class="n">fct</span> <span class="o">==</span> <span class="n">QueryBuilder</span><span class="o">.</span><span class="n">_GENOTYPE_FUNCTION_NAME</span><span class="p">:</span>
+                    <span class="n">col</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;genotype(&quot;</span><span class="si">{arg}</span><span class="s1">&quot;).</span><span class="si">{field}</span><span class="s1">&#39;</span>
+            <span class="n">_c</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">col</span><span class="p">)</span>
+
+        <span class="n">base</span> <span class="o">=</span> <span class="n">f</span><span class="s2">&quot;SELECT {&#39;,&#39;.join(_c)} FROM </span><span class="si">{self.selection}</span><span class="s2">&quot;</span>
+        <span class="n">where</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="p">:</span>
+            <span class="n">where_clause</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filters_to_sql</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="p">,</span><span class="n">format_sql</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">where_clause</span> <span class="ow">and</span> <span class="n">where_clause</span> <span class="o">!=</span> <span class="s2">&quot;()&quot;</span><span class="p">:</span>
+                <span class="n">where</span> <span class="o">=</span> <span class="n">f</span><span class="s2">&quot; WHERE </span><span class="si">{where_clause}</span><span class="s2">&quot;</span>
+        
+
+        <span class="k">return</span> <span class="n">base</span> <span class="o">+</span> <span class="n">where</span></div>
+
+
+
+
+<div class="viewcode-block" id="QueryBuilder.items"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.QueryBuilder.items">[docs]</a>    <span class="k">def</span> <span class="nf">items</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Execute SQL query and return variants as a list</span>
+
+<span class="sd">        .. note:: Used:</span>
+<span class="sd">            - as dict of variants in chartquerywidget.py</span>
+<span class="sd">            - as tuples of variants in viewquerywidget.py</span>
+
+<span class="sd">        :param limit: SQL LIMIT for pagination</span>
+<span class="sd">        :param offset: SQL OFFSET for pagination</span>
+<span class="sd">        :return: Generator of variants as sqlite3.Row objects.</span>
+<span class="sd">            A Row instance serves as a highly optimized row_factory for</span>
+<span class="sd">            Connection objects. It tries to mimic a tuple in most of its features.</span>
+
+<span class="sd">            It supports mapping access by column name and index, iteration,</span>
+<span class="sd">            representation, equality testing and len().</span>
+<span class="sd">        :rtype: &lt;generator &lt;sqlite3.Row&gt;&gt;</span>
+
+<span class="sd">        :Example:</span>
+
+<span class="sd">            for row in query.items():</span>
+<span class="sd">        ...     print(tuple(row))</span>
+<span class="sd">        (324, &quot;chr2&quot;, &quot;24234&quot;, &quot;A&quot;, &quot;T&quot;, ...)</span>
+<span class="sd">        ...     print(dict(row))</span>
+<span class="sd">        {&quot;rowid&quot;:23423, &quot;chr&quot;:&quot;chr2&quot;, &quot;pos&quot;:4234, &quot;ref&quot;:&quot;A&quot;, &quot;alt&quot;: &quot;T&quot;, ...}</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">row_factory</span> <span class="o">=</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">Row</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sql</span><span class="p">(</span><span class="n">limit</span><span class="p">,</span> <span class="n">offset</span><span class="p">)</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">variant</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sql</span><span class="p">):</span>
+            <span class="k">yield</span> <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">variant</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="QueryBuilder.trees"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.QueryBuilder.trees">[docs]</a>    <span class="k">def</span> <span class="nf">trees</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grouped</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Execute Sql Query and returns variants as Tree</span>
+
+<span class="sd">        This methods  works only &#39;group_by&#39; defined and it merge groups results as a tree.</span>
+<span class="sd">        It usually works with group_by = [chr,pos,ref,alt] when there are several annotations per variants</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            grouped(bool): Grouped variant by chr,pos,ref,alt. If it is False,  output will be same than self.items()</span>
+<span class="sd">            limit(int): Maximum number of variants to display per page</span>
+<span class="sd">            offset(int): Page number</span>
+
+<span class="sd">        Examples:</span>
+<span class="sd">            This is an output with two variants and the correspondant tree. </span>
+<span class="sd">            The first variant contains 2 annotations and the second 3 annotations</span>
+
+<span class="sd">            [</span>
+<span class="sd">                [(chr1,2434,A,T, transcriptA),(chr1,2434,A,T, transcriptB),(chr1,2434,A,T, transcriptC)],</span>
+<span class="sd">                [(chr1,9999,C,T, transcriptA),(chr1,9999,C,T, transcriptB),(chr1,9999,C,T, transcriptC),(chr1,9999,C,T, transcriptD]</span>
+<span class="sd">            ]</span>
+<span class="sd">        </span>
+<span class="sd">            ├── chr1,2434,A,T, transcriptA  # Cannonical transcripts</span>
+<span class="sd">            │   ├── chr1,2434,A,T, transcriptB</span>
+<span class="sd">            │   ├── chr1,2434,A,T, transcriptC</span>
+<span class="sd">            ├── chr1,9999,C,T, transcriptA # Cannonical transcripts</span>
+<span class="sd">            │   ├── chr1,9999,C,T, transcriptB</span>
+<span class="sd">            │   ├── chr1,9999,C,T, transcriptC</span>
+<span class="sd">            │   ├── chr1,9999,C,T, transcriptD</span>
+
+
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">row_factory</span> <span class="o">=</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">Row</span>
+    
+        
+        <span class="n">query</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_sql</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="p">,</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">selection</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">order_by</span><span class="p">,</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">order_desc</span><span class="p">,</span>
+            <span class="n">grouped</span><span class="p">,</span> <span class="c1"># Grouped </span>
+            <span class="n">limit</span><span class="p">,</span> <span class="n">offset</span><span class="p">)</span>
+
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">variant</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">grouped</span><span class="p">:</span>
+            <span class="c1"># Return child count, rows with last ( which is children)</span>
+                <span class="k">yield</span> <span class="n">variant</span><span class="p">[</span><span class="s2">&quot;children&quot;</span><span class="p">],</span> <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">variant</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">())[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="mi">0</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">variant</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">())</span></div>
+
+            
+            <span class="c1"># if grouped:</span>
+            <span class="c1">#     ann_filter = {&quot;AND&quot;: [{&quot;field&quot;: &quot;annotations.variant_id&quot;, &quot;operator&quot;: &quot;=&quot;, &quot;value&quot;: variant_id}]}</span>
+            <span class="c1">#     sub_query = self.build_sql(self.columns,ann_filter,self.selection, limit = None)</span>
+            <span class="c1">#     for sub_item in self.conn.execute(sub_query):</span>
+            <span class="c1">#         items.append(list(dict(sub_item).values()))</span>
+            <span class="c1"># else:</span>
+            <span class="c1">#items.append(list(dict(variant).values()))    </span>
+            <span class="c1">#yield items</span>
+            
+<div class="viewcode-block" id="QueryBuilder.children"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.QueryBuilder.children">[docs]</a>    <span class="k">def</span> <span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variant_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Return children annotations &quot;&quot;&quot;</span> 
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">row_factory</span> <span class="o">=</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">Row</span>
+        <span class="n">ann_filter</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;AND&quot;</span><span class="p">:</span> <span class="p">[{</span><span class="s2">&quot;field&quot;</span><span class="p">:</span> <span class="s2">&quot;annotations.variant_id&quot;</span><span class="p">,</span> <span class="s2">&quot;operator&quot;</span><span class="p">:</span> <span class="s2">&quot;=&quot;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="n">variant_id</span><span class="p">}]}</span>
+        <span class="n">sub_query</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_sql</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span><span class="n">ann_filter</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">selection</span><span class="p">,</span> <span class="n">limit</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">variant</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sub_query</span><span class="p">):</span>
+            <span class="k">yield</span> <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">variant</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">())</span></div>
+        
+            
+
+<div class="viewcode-block" id="QueryBuilder.count"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.QueryBuilder.count">[docs]</a>    <span class="k">def</span> <span class="nf">count</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Wrapped function with a memoizing callable that saves up to the</span>
+<span class="sd">        maxsize most recent calls.</span>
+
+<span class="sd">        .. note:: The LRU feature performs best when maxsize is a power-of-two.</span>
+
+<span class="sd">        .. note:: The COUNT() aggregation function is expensive on partially</span>
+<span class="sd">            indexed tables (because dynamically built) for large dataset</span>
+<span class="sd">            and it seems difficult to predict which fields will be requested</span>
+<span class="sd">            by the user.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sql</span><span class="p">(</span><span class="n">limit</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+
+        <span class="c1"># Trick to accelerate UI refresh on basic queries</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">selection</span> <span class="o">==</span> <span class="s2">&quot;variants&quot;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+                <span class="s2">&quot;SELECT MAX(variants.id) as count FROM variants&quot;</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+            <span class="n">f</span><span class="s2">&quot;SELECT COUNT(*) as count FROM (</span><span class="si">{query}</span><span class="s2">)&quot;</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="QueryBuilder.cache_count"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.QueryBuilder.cache_count">[docs]</a>    <span class="nd">@lru_cache</span><span class="p">(</span><span class="n">maxsize</span><span class="o">=</span><span class="mi">128</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">cache_count</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Return lru_cache from self.count </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">count</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="QueryBuilder.save"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.QueryBuilder.save">[docs]</a>    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Save Variant Query into a new selection</span>
+
+<span class="sd">        This methods will get all variant.id extracted from self.sql() </span>
+<span class="sd">        and insert them into select_has_variant table </span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            name (str): Selection name</span>
+
+<span class="sd">        Return:</span>
+<span class="sd">            sql index of selection</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">cursor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+        <span class="n">count</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">count</span><span class="p">()</span> <span class="c1"># Get count .. Can take a while </span>
+
+        <span class="n">sql_query</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_sql</span><span class="p">(</span>
+            <span class="n">columns</span> <span class="o">=</span> <span class="p">[],</span>
+            <span class="n">filters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="p">,</span>
+            <span class="n">selection</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">selection</span><span class="p">,</span>
+            <span class="n">limit</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">sql_query</span><span class="p">)</span>
+
+        <span class="c1"># Create selection</span>
+        <span class="n">selection_id</span> <span class="o">=</span> <span class="n">insert_selection</span><span class="p">(</span><span class="n">cursor</span><span class="p">,</span><span class="n">sql_query</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="n">count</span><span class="p">)</span>
+
+        <span class="c1"># DROP indexes</span>
+        <span class="c1"># For joints between selections and variants tables</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;DROP INDEX idx_selection_has_variant&quot;&quot;&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">OperationalError</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+        <span class="c1"># Insert into selection_has_variant table</span>
+        <span class="c1"># PS: We use DISTINCT keyword to statisfy the unicity constraint on</span>
+        <span class="c1"># (variant_id, selection_id) of &quot;selection_has_variant&quot; table.</span>
+        <span class="c1"># TODO: is DISTINCT useful here? How a variant could be associated several</span>
+        <span class="c1"># times with an association?</span>
+  
+        <span class="n">q</span> <span class="o">=</span> <span class="n">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">        INSERT INTO selection_has_variant</span>
+<span class="s2">        SELECT DISTINCT id, </span><span class="si">{selection_id}</span><span class="s2"> FROM (</span><span class="si">{sql_query}</span><span class="s2">)</span>
+<span class="s2">        &quot;&quot;&quot;</span>
+
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">q</span><span class="p">)</span>
+
+        <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">q</span><span class="p">)</span>
+
+        <span class="c1"># # REBUILD INDEXES</span>
+        <span class="c1"># # For joints between selections and variants tables</span>
+        <span class="n">create_selection_has_variant_indexes</span><span class="p">(</span><span class="n">cursor</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">cursor</span><span class="o">.</span><span class="n">rowcount</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">cursor</span><span class="o">.</span><span class="n">lastrowid</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+
+    
+        
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">        columns : </span><span class="si">{self.columns}</span><span class="s2"></span>
+<span class="s2">        filter: {self._filters_to_sql(self.filters)}</span>
+<span class="s2">        selection: </span><span class="si">{self.selection}</span><span class="s2"></span>
+<span class="s2">        &quot;&quot;&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="Selection"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.Selection">[docs]</a><span class="k">class</span> <span class="nc">Selection</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Binding object over selection which allows to do set operations on variants</span>
+<span class="sd">    associated to it</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        - cls.conn: Class attribute for sqlite3 connection.</span>
+<span class="sd">        - self.query: SQL query ready to be used in set operations.</span>
+<span class="sd">        - self.mode: Define the way variants are compared to each other.</span>
+<span class="sd">            - &quot;variant&quot; (default): chr,pos,ref,alt = variant.id</span>
+<span class="sd">            - &quot;site&quot;: chr,pos</span>
+<span class="sd">        ..seealso:: from_selection_id()</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Class attribute, shared accross all instances</span>
+    <span class="n">conn</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sql_query</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;variant&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create a new selection object&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sql_query</span> <span class="o">=</span> <span class="n">sql_query</span>
+        <span class="c1"># Define the way variants are compared</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">=</span> <span class="n">mode</span>
+
+    <span class="k">def</span> <span class="nf">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="n">sql_query</span> <span class="o">=</span> <span class="n">union_variants</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sql_query</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">sql_query</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mode</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Selection</span><span class="p">(</span><span class="n">sql_query</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__and__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="n">sql_query</span> <span class="o">=</span> <span class="n">intersect_variants</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sql_query</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">sql_query</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mode</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Selection</span><span class="p">(</span><span class="n">sql_query</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__sub__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="n">sql_query</span> <span class="o">=</span> <span class="n">subtract_variants</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sql_query</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">sql_query</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mode</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Selection</span><span class="p">(</span><span class="n">sql_query</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;&lt;Selection&gt;: &quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">sql_query</span>
+
+<div class="viewcode-block" id="Selection.save"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.Selection.save">[docs]</a>    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create the new selection in the database&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">create_selection_from_sql</span><span class="p">(</span>
+            <span class="n">Selection</span><span class="o">.</span><span class="n">conn</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sql_query</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">from_selection</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="Selection.from_selection_id"><a class="viewcode-back" href="../../../index.html#cutevariant.core.sql.Selection.from_selection_id">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_selection_id</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">selection_id</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;variant&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get new Selection object based on a sql query that defines it</span>
+
+<span class="sd">        .. note:: Called from the UI. It is here that &#39;mode&#39; is selected.</span>
+
+<span class="sd">        :param selection_id: The id of the selection for which the object will be</span>
+<span class="sd">            based.</span>
+<span class="sd">        :key mode: Modifies the definition of the unicity of a variant.</span>
+<span class="sd">            (optional: &quot;variant&quot; | &quot;site&quot;),(default: &quot;variant&quot;).</span>
+<span class="sd">            - variant: (chr, pos, ref, alt) is the primary key so we query only</span>
+<span class="sd">            &#39;selection_has_variant&#39; for &#39;variant_id&#39; field.</span>
+<span class="sd">            - site: (chr, pos) modifies the default definition of the unicity</span>
+<span class="sd">            of a variant.</span>
+<span class="sd">            =&gt; joint on &#39;variants&#39; table is mandatory here.</span>
+<span class="sd">        :type selection_id: &lt;int&gt;</span>
+<span class="sd">        :type mode: &lt;str&gt;</span>
+<span class="sd">        :return: A new Selection object.</span>
+<span class="sd">        :rtype: &lt;Selection&gt;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">selection_id</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="c1"># Get ids from the default selection</span>
+            <span class="n">sql_query</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;SELECT id as variant_id FROM variants&quot;&quot;&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># A variant is defined as chr,pos,ref,alt</span>
+            <span class="c1"># which is the primary key (unique)</span>
+            <span class="c1"># So these columns are synonyms of &#39;variants.id&#39; for the table &#39;variants&#39;</span>
+            <span class="c1"># or &#39;variant_id&#39; for &#39;selection_has_variant&#39; table.</span>
+            <span class="c1"># No further joints are required here.</span>
+            <span class="n">sql_query</span> <span class="o">=</span> <span class="n">f</span><span class="s2">&quot;&quot;&quot;SELECT variant_id</span>
+<span class="s2">            FROM selection_has_variant sv</span>
+<span class="s2">             WHERE sv.selection_id = </span><span class="si">{selection_id}</span><span class="s2">&quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">sql_query</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, sacha schutz
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
