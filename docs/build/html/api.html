@@ -1,0 +1,1156 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Core API &mdash; cutevariant  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> cutevariant
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core_api.html">Core API</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">cutevariant</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Core API</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/api.md.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="core-api">
+<h1>Core API<a class="headerlink" href="#core-api" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="core">
+<h2>Core<a class="headerlink" href="#core" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-cutevariant.core.sql">
+<span id="sql"></span><h3>Sql<a class="headerlink" href="#module-cutevariant.core.sql" title="Permalink to this headline">¶</a></h3>
+<p>Module bringing together all the SQL related functions.</p>
+<ul class="simple">
+<li><p>Misc functions</p></li>
+<li><p>Selections functions</p></li>
+<li><p>Fields functions</p></li>
+<li><p>Operations on sets of variants</p></li>
+<li><p>Annotations functions</p></li>
+<li><p>Variants functions</p></li>
+<li><p>Samples functions</p></li>
+</ul>
+<dl class="class">
+<dt id="cutevariant.core.sql.QueryBuilder">
+<em class="property">class </em><code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">QueryBuilder</code><span class="sig-paren">(</span><em class="sig-param">conn, columns=['chr', 'pos', 'ref', 'alt'], filters={}, selection='variants', order_by=None, order_desc=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#QueryBuilder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.QueryBuilder" title="Permalink to this definition">¶</a></dt>
+<dd><p>A class to Create a variant Selection query</p>
+<dl class="method">
+<dt id="cutevariant.core.sql.QueryBuilder.build_sql">
+<code class="sig-name descname">build_sql</code><span class="sig-paren">(</span><em class="sig-param">columns</em>, <em class="sig-param">filters</em>, <em class="sig-param">selection='variants'</em>, <em class="sig-param">order_by=None</em>, <em class="sig-param">order_desc=True</em>, <em class="sig-param">grouped=False</em>, <em class="sig-param">limit=20</em>, <em class="sig-param">offset=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#QueryBuilder.build_sql"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.QueryBuilder.build_sql" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build a SQL Select statement from internal parameters columns, filters, selections.
+see items() and tree() methods</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>columns (list): Columns to be used in SELECT statement
+filters (dict): A nested tree to be used in WHERE statement
+selection (str): Source of the virtual table ( variants or build a joint )
+order_by (str, optional): ORDER BY statement. Defaults to None.
+order_desc (bool, optional): ORDER DESC is it’s True. Defaults to True.
+group_by (list, optional): List of columns to group. Defaults to None.
+limit (int, optional): LIMIT SQL statement for record per page. Defaults to 20.
+offset (int, optional): OFFSET SQL statement for page number. Defaults to 0.</p>
+</dd>
+<dt>Returns:</dt><dd><p>[type]: [description]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="cutevariant.core.sql.QueryBuilder.cache_count">
+<code class="sig-name descname">cache_count</code><a class="reference internal" href="_modules/cutevariant/core/sql.html#QueryBuilder.cache_count"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.QueryBuilder.cache_count" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return lru_cache from self.count</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cutevariant.core.sql.QueryBuilder.children">
+<code class="sig-name descname">children</code><span class="sig-paren">(</span><em class="sig-param">variant_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#QueryBuilder.children"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.QueryBuilder.children" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return children annotations</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cutevariant.core.sql.QueryBuilder.column_to_sql">
+<code class="sig-name descname">column_to_sql</code><span class="sig-paren">(</span><em class="sig-param">column</em>, <em class="sig-param">use_alias=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#QueryBuilder.column_to_sql"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.QueryBuilder.column_to_sql" title="Permalink to this definition">¶</a></dt>
+<dd><p>Guess from which table the column belongs to and return a well formated name</p>
+<dl class="simple">
+<dt>Return:</dt><dd><p>The table name annotations or variants</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="cutevariant.core.sql.QueryBuilder.count">
+<code class="sig-name descname">count</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#QueryBuilder.count"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.QueryBuilder.count" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapped function with a memoizing callable that saves up to the
+maxsize most recent calls.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The LRU feature performs best when maxsize is a power-of-two.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The COUNT() aggregation function is expensive on partially
+indexed tables (because dynamically built) for large dataset
+and it seems difficult to predict which fields will be requested
+by the user.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="cutevariant.core.sql.QueryBuilder.get_table_of_column">
+<code class="sig-name descname">get_table_of_column</code><span class="sig-paren">(</span><em class="sig-param">column</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#QueryBuilder.get_table_of_column"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.QueryBuilder.get_table_of_column" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return table’s name of a specific column</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>column (str): column name</p>
+</dd>
+<dt>Returns:</dt><dd><p>str: table name ( samples, annnotations, variants)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="cutevariant.core.sql.QueryBuilder.headers">
+<code class="sig-name descname">headers</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#QueryBuilder.headers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.QueryBuilder.headers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a clean list of columns</p>
+<p>It returns self.columns by replacing function tuple by a string</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>(list): a list of string with well formated column name and variant.id</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="cutevariant.core.sql.QueryBuilder.items">
+<code class="sig-name descname">items</code><span class="sig-paren">(</span><em class="sig-param">limit=20</em>, <em class="sig-param">offset=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#QueryBuilder.items"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.QueryBuilder.items" title="Permalink to this definition">¶</a></dt>
+<dd><p>Execute SQL query and return variants as a list</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Used:
+- as dict of variants in chartquerywidget.py
+- as tuples of variants in viewquerywidget.py</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>limit</strong> – SQL LIMIT for pagination</p></li>
+<li><p><strong>offset</strong> – SQL OFFSET for pagination</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><p>Generator of variants as sqlite3.Row objects.
+A Row instance serves as a highly optimized row_factory for
+Connection objects. It tries to mimic a tuple in most of its features.</p>
+<p>It supports mapping access by column name and index, iteration,
+representation, equality testing and len().</p>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>&lt;generator &lt;sqlite3.Row&gt;&gt;</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p>for row in query.items():</p>
+</dd>
+</dl>
+<p>…     print(tuple(row))
+(324, “chr2”, “24234”, “A”, “T”, …)
+…     print(dict(row))
+{“rowid”:23423, “chr”:”chr2”, “pos”:4234, “ref”:”A”, “alt”: “T”, …}</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cutevariant.core.sql.QueryBuilder.save">
+<code class="sig-name descname">save</code><span class="sig-paren">(</span><em class="sig-param">name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#QueryBuilder.save"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.QueryBuilder.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save Variant Query into a new selection</p>
+<p>This methods will get all variant.id extracted from self.sql() 
+and insert them into select_has_variant table</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>name (str): Selection name</p>
+</dd>
+<dt>Return:</dt><dd><p>sql index of selection</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="cutevariant.core.sql.QueryBuilder.sql">
+<code class="sig-name descname">sql</code><span class="sig-paren">(</span><em class="sig-param">grouped=False</em>, <em class="sig-param">limit=20</em>, <em class="sig-param">offset=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#QueryBuilder.sql"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.QueryBuilder.sql" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return an SQL Query based on internal parameter columns, filter, selection.
+See _build_sql()</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>limit(int): Maximum number of variants to display per page
+offset(int): Page number</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="cutevariant.core.sql.QueryBuilder.trees">
+<code class="sig-name descname">trees</code><span class="sig-paren">(</span><em class="sig-param">grouped=True</em>, <em class="sig-param">limit=20</em>, <em class="sig-param">offset=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#QueryBuilder.trees"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.QueryBuilder.trees" title="Permalink to this definition">¶</a></dt>
+<dd><p>Execute Sql Query and returns variants as Tree</p>
+<p>This methods  works only ‘group_by’ defined and it merge groups results as a tree.
+It usually works with group_by = [chr,pos,ref,alt] when there are several annotations per variants</p>
+<dl>
+<dt>Args:</dt><dd><p>grouped(bool): Grouped variant by chr,pos,ref,alt. If it is False,  output will be same than self.items()
+limit(int): Maximum number of variants to display per page
+offset(int): Page number</p>
+</dd>
+<dt>Examples:</dt><dd><p>This is an output with two variants and the correspondant tree. 
+The first variant contains 2 annotations and the second 3 annotations</p>
+<dl class="simple">
+<dt>[</dt><dd><p>[(chr1,2434,A,T, transcriptA),(chr1,2434,A,T, transcriptB),(chr1,2434,A,T, transcriptC)],
+[(chr1,9999,C,T, transcriptA),(chr1,9999,C,T, transcriptB),(chr1,9999,C,T, transcriptC),(chr1,9999,C,T, transcriptD]</p>
+</dd>
+</dl>
+<p>]</p>
+<p>├── chr1,2434,A,T, transcriptA  # Cannonical transcripts
+│   ├── chr1,2434,A,T, transcriptB
+│   ├── chr1,2434,A,T, transcriptC
+├── chr1,9999,C,T, transcriptA # Cannonical transcripts
+│   ├── chr1,9999,C,T, transcriptB
+│   ├── chr1,9999,C,T, transcriptC
+│   ├── chr1,9999,C,T, transcriptD</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="cutevariant.core.sql.QueryBuilder.vql">
+<code class="sig-name descname">vql</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; str<a class="reference internal" href="_modules/cutevariant/core/sql.html#QueryBuilder.vql"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.QueryBuilder.vql" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build a VQL query from the current Query</p>
+<p>Todo : Make it cleaner and test it</p>
+<dl class="simple">
+<dt>Return</dt><dd><p>A VQL query</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="cutevariant.core.sql.Selection">
+<em class="property">class </em><code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">Selection</code><span class="sig-paren">(</span><em class="sig-param">sql_query=None</em>, <em class="sig-param">mode='variant'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#Selection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.Selection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Binding object over selection which allows to do set operations on variants
+associated to it</p>
+<dl>
+<dt>Attributes:</dt><dd><ul class="simple">
+<li><p>cls.conn: Class attribute for sqlite3 connection.</p></li>
+<li><p>self.query: SQL query ready to be used in set operations.</p></li>
+<li><dl class="simple">
+<dt>self.mode: Define the way variants are compared to each other.</dt><dd><ul>
+<li><p>“variant” (default): chr,pos,ref,alt = variant.id</p></li>
+<li><p>“site”: chr,pos</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+<p>..seealso:: from_selection_id()</p>
+</dd>
+</dl>
+<dl class="method">
+<dt id="cutevariant.core.sql.Selection.from_selection_id">
+<em class="property">classmethod </em><code class="sig-name descname">from_selection_id</code><span class="sig-paren">(</span><em class="sig-param">selection_id</em>, <em class="sig-param">mode='variant'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#Selection.from_selection_id"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.Selection.from_selection_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get new Selection object based on a sql query that defines it</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Called from the UI. It is here that ‘mode’ is selected.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>selection_id</strong> (<em>&lt;int&gt;</em>) – The id of the selection for which the object will be
+based.</p>
+</dd>
+<dt class="field-even">Key mode</dt>
+<dd class="field-even"><p>Modifies the definition of the unicity of a variant.
+(optional: “variant” | “site”),(default: “variant”).
+- variant: (chr, pos, ref, alt) is the primary key so we query only
+‘selection_has_variant’ for ‘variant_id’ field.
+- site: (chr, pos) modifies the default definition of the unicity
+of a variant.
+=&gt; joint on ‘variants’ table is mandatory here.</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A new Selection object.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>&lt;Selection&gt;</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="cutevariant.core.sql.Selection.save">
+<code class="sig-name descname">save</code><span class="sig-paren">(</span><em class="sig-param">name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#Selection.save"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.Selection.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create the new selection in the database</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.async_insert_many_variants">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">async_insert_many_variants</code><span class="sig-paren">(</span><em class="sig-param">conn</em>, <em class="sig-param">data</em>, <em class="sig-param">total_variant_count=None</em>, <em class="sig-param">yield_every=3000</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#async_insert_many_variants"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.async_insert_many_variants" title="Permalink to this definition">¶</a></dt>
+<dd><p>Insert many variants from data into variants table</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>conn</strong> – sqlite3.connect</p></li>
+<li><p><strong>data</strong> – list of variant dictionnary which contains same number of key than fields numbers.</p></li>
+<li><p><strong>variant_count</strong> – total variant count, to compute progression</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Yield a tuple with progression and message.
+Progression is 0 if total_variant_count is not set.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>&lt;generator &lt;tuple &lt;int&gt;, &lt;str&gt;&gt;</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p>insert_many_variant(conn, [{chr:”chr1”, pos:24234, alt:”A”,”ref”:T }])
+insert_many_variant(conn, reader.get_variants())</p>
+</dd>
+</dl>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Using reader, this can take a while</p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>abstractreader</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>About using INSERT OR IGNORE:
+INSERT OR IGNORE avoids errors:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Upon insertion of a duplicate key where the column must contain</p></li>
+</ul>
+<p>a PRIMARY KEY or UNIQUE constraint
+- Upon insertion of NULL value where the column has
+a NOT NULL constraint.</p>
+</div></blockquote>
+<p>=&gt; This is not recommended</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.clear_table">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">clear_table</code><span class="sig-paren">(</span><em class="sig-param">conn</em>, <em class="sig-param">table_name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#clear_table"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.clear_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clear content of the given table</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.create_annotations_indexes">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">create_annotations_indexes</code><span class="sig-paren">(</span><em class="sig-param">conn</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#create_annotations_indexes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.create_annotations_indexes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create indexes on the “annotations” table</p>
+<dl class="field-list simple">
+<dt class="field-odd">Example</dt>
+<dd class="field-odd"><p>SELECT <a href="#id1"><span class="problematic" id="id2">*</span></a>, group_concat(annotations.rowid) FROM variants
+LEFT JOIN annotations ON variants.rowid = annotations.variant_id
+WHERE pos = 0
+GROUP BY chr,pos
+LIMIT 100</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.create_indexes">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">create_indexes</code><span class="sig-paren">(</span><em class="sig-param">conn</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#create_indexes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.create_indexes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create extra indexes on tables</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This function must be called after batch insertions.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You should use this function instead of individual functions.</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.create_project">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">create_project</code><span class="sig-paren">(</span><em class="sig-param">conn</em>, <em class="sig-param">name: str</em>, <em class="sig-param">reference: str</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#create_project"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.create_project" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create the table “projects” and insert project name and reference genome</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>conn</strong> – sqlite3.connect</p></li>
+<li><p><strong>name</strong> – Project’s name</p></li>
+<li><p><strong>reference</strong> – Reference genome</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.create_selection_from_bed">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">create_selection_from_bed</code><span class="sig-paren">(</span><em class="sig-param">conn</em>, <em class="sig-param">source: str</em>, <em class="sig-param">target: str</em>, <em class="sig-param">bed_intervals</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#create_selection_from_bed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.create_selection_from_bed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a new selection based on the given intervals taken from a BED file</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.create_selection_from_sql">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">create_selection_from_sql</code><span class="sig-paren">(</span><em class="sig-param">conn</em>, <em class="sig-param">query: str</em>, <em class="sig-param">name: str</em>, <em class="sig-param">count=None</em>, <em class="sig-param">from_selection=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#create_selection_from_sql"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.create_selection_from_sql" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a selection record from sql variant query</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>conn</strong> – sqlite3 connection</p>
+</dd>
+</dl>
+<p>:param name : name of the selection
+:param query: sql variant query
+:param from_selection: Optimized flag only for the creation of a selection</p>
+<blockquote>
+<div><p>from set operations, variant_id is the only useful column in the given query.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The id of the new selection. None in case of error.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>&lt;int&gt; or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.create_selection_has_variant_indexes">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">create_selection_has_variant_indexes</code><span class="sig-paren">(</span><em class="sig-param">conn</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#create_selection_has_variant_indexes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.create_selection_has_variant_indexes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create indexes on “selection_has_variant” table</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This function is called by:
+- create_selections_indexes
+- insert_selection to rebuild index</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.create_selections_indexes">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">create_selections_indexes</code><span class="sig-paren">(</span><em class="sig-param">conn</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#create_selections_indexes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.create_selections_indexes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create indexes on the “selections” table</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This function should be called after batch insertions.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This function ensures the unicity of selections names.</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.create_table_annotations">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">create_table_annotations</code><span class="sig-paren">(</span><em class="sig-param">conn</em>, <em class="sig-param">fields</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#create_table_annotations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.create_table_annotations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create “annotations” table which contains dynamics fields</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>fields</strong> (<em>&lt;generator&gt;</em>) – <p>Generator of SQL fields.
+:Example of fields:</p>
+<blockquote>
+<div><p>(‘allele str NULL’, ‘consequence str NULL’, …)</p>
+</div></blockquote>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.create_table_fields">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">create_table_fields</code><span class="sig-paren">(</span><em class="sig-param">conn</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#create_table_fields"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.create_table_fields" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create the table “fields”</p>
+<p>This table contain fields. A field is a column with its description and type;
+it can be choose by a user to build a Query
+Fields are the columns of the tables: variants, annotations and sample_has_variant.
+Fields are extracted from reader objects and are dynamically constructed.</p>
+<p>variants:
+Chr,pos,ref,alt, filter, qual, dp, af, etc.</p>
+<p>annotations:
+Gene, transcrit, etc.</p>
+<p>sample_has_variant:
+Genotype</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>conn</strong> – sqlite3.connect</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.create_table_samples">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">create_table_samples</code><span class="sig-paren">(</span><em class="sig-param">conn</em>, <em class="sig-param">fields=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#create_table_samples"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.create_table_samples" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create samples table</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>conn</strong> – sqlite3.connect</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.create_table_selections">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">create_table_selections</code><span class="sig-paren">(</span><em class="sig-param">conn</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#create_table_selections"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.create_table_selections" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create the table “selections” and association table “selection_has_variant”</p>
+<dl class="simple">
+<dt>This table stores the queries saved by the user:</dt><dd><ul class="simple">
+<li><p>name: name of the set of variants</p></li>
+<li><p>count: number of variants concerned by this set</p></li>
+<li><p>query: the SQL query which generated the set</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>conn</strong> – sqlite3.connect</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.create_table_variants">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">create_table_variants</code><span class="sig-paren">(</span><em class="sig-param">conn</em>, <em class="sig-param">fields</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#create_table_variants"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.create_table_variants" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create “variants” and “sample_has_variant” tables which contains dynamics fields</p>
+<dl class="field-list simple">
+<dt class="field-odd">Example</dt>
+<dd class="field-odd"><p>fields = get_fields()
+create_table_variants(conn, fields)</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>get_fields</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>“gt” field in “sample_has_variant” = Patient’s genotype.
+- Patient without variant: gt = 0: Wild homozygote
+- Patient with variant in the heterozygote state: gt = -1: Heterozygote
+- Patient with variant in the homozygote state: gt = 2: Homozygote</p>
+<dl class="field-list simple">
+<dt class="field-odd">Example of VQL query</dt>
+<dd class="field-odd"><p>SELECT chr, pos, genotype(“pierre”) FROM variants</p>
+</dd>
+</dl>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>conn</strong> – sqlite3.connect</p></li>
+<li><p><strong>fields</strong> – list of field dictionnary.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.create_variants_indexes">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">create_variants_indexes</code><span class="sig-paren">(</span><em class="sig-param">conn</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#create_variants_indexes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.create_variants_indexes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create indexes on the “variants” table</p>
+<dl class="field-list simple">
+<dt class="field-odd">Example</dt>
+<dd class="field-odd"><p>SELECT <a href="#id3"><span class="problematic" id="id4">*</span></a>, group_concat(annotations.rowid) FROM variants
+LEFT JOIN annotations ON variants.rowid = annotations.variant_id
+WHERE pos = 0
+GROUP BY chr,pos
+LIMIT 100</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.delete_selection">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">delete_selection</code><span class="sig-paren">(</span><em class="sig-param">conn</em>, <em class="sig-param">selection_id: int</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#delete_selection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.delete_selection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete the selection with the given id in the “selections” table</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Number of rows deleted</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>&lt;int&gt;</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.delete_selection_by_name">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">delete_selection_by_name</code><span class="sig-paren">(</span><em class="sig-param">conn</em>, <em class="sig-param">name: str</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#delete_selection_by_name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.delete_selection_by_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete selection from name</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>conn (conn): sqlite3 connection
+name (str): selection name</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.drop_table">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">drop_table</code><span class="sig-paren">(</span><em class="sig-param">conn</em>, <em class="sig-param">table_name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#drop_table"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.drop_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>Drop the given table</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.edit_selection">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">edit_selection</code><span class="sig-paren">(</span><em class="sig-param">conn</em>, <em class="sig-param">selection: dict</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#edit_selection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.edit_selection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the name and count of a selection with the given id</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Number of rows deleted</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>&lt;int&gt;</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.get_annotations">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">get_annotations</code><span class="sig-paren">(</span><em class="sig-param">conn</em>, <em class="sig-param">id: int</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#get_annotations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.get_annotations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get variant annotation with the given id</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.get_columns">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">get_columns</code><span class="sig-paren">(</span><em class="sig-param">conn</em>, <em class="sig-param">table_name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#get_columns"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.get_columns" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the list of columns for the given table</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>used by async_insert_many_variants()
+to build queries with placeholders</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>conn</strong> – sqlite3.connect</p></li>
+<li><p><strong>table_name</strong> – Table for which columns will be returned.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.get_field_by_category">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">get_field_by_category</code><span class="sig-paren">(</span><em class="sig-param">conn</em>, <em class="sig-param">category</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#get_field_by_category"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.get_field_by_category" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get fields within a category</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>conn</strong> – <p>sqlite3.connect
+:return: Generator of dictionnaries with as many keys as there are columns</p>
+<blockquote>
+<div><p>in the table.</p>
+</div></blockquote>
+</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>&lt;generator &lt;dict&gt;&gt;</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.get_field_by_name">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">get_field_by_name</code><span class="sig-paren">(</span><em class="sig-param">conn</em>, <em class="sig-param">field_name: str</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#get_field_by_name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.get_field_by_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return field by his name</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>get_fields</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>conn</strong> – sqlite3.connect</p></li>
+<li><p><strong>(</strong><strong>str</strong><strong>)</strong> (<em>field_name</em>) – field name</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>field record</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>&lt;dict&gt;</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.get_field_range">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">get_field_range</code><span class="sig-paren">(</span><em class="sig-param">conn</em>, <em class="sig-param">field_name: str</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#get_field_range"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.get_field_range" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return (min,max) of field_name records .</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>conn</strong> – sqlite3.connect</p></li>
+<li><p><strong>(</strong><strong>str</strong><strong>)</strong> (<em>field_name</em>) – field name</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>(min, max)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.get_field_unique_values">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">get_field_unique_values</code><span class="sig-paren">(</span><em class="sig-param">conn</em>, <em class="sig-param">field_name: str</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#get_field_unique_values"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.get_field_unique_values" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return unique record value for a field name</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>conn</strong> – sqlite3.connect</p></li>
+<li><p><strong>(</strong><strong>str</strong><strong>)</strong> (<em>field_name</em>) – field_name</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>list of unique values</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.get_fields">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">get_fields</code><span class="sig-paren">(</span><em class="sig-param">conn</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#get_fields"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.get_fields" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get fields as list of dictionnary</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>insert_many_fields</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>conn</strong> – sqlite3.connect</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Generator of dictionnaries with as many keys as there are columns
+in the table.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>&lt;generator &lt;dict&gt;&gt;</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.get_one_variant">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">get_one_variant</code><span class="sig-paren">(</span><em class="sig-param">conn</em>, <em class="sig-param">id: int</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#get_one_variant"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.get_one_variant" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the variant with the given id</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.get_query_columns">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">get_query_columns</code><span class="sig-paren">(</span><em class="sig-param">mode='variant'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#get_query_columns"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.get_query_columns" title="Permalink to this definition">¶</a></dt>
+<dd><p>(DEPRECATED FOR NOW, NOT USED)
+Handy func to get columns to be queried according to the group by argument</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Used by intersect_variants, union_variants, subtract_variants
+in order to avoid code duplication.</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.get_sample_annotations">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">get_sample_annotations</code><span class="sig-paren">(</span><em class="sig-param">conn</em>, <em class="sig-param">variant_id: int</em>, <em class="sig-param">sample_id: int</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#get_sample_annotations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.get_sample_annotations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get variant annotation for a given sample</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.get_samples">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">get_samples</code><span class="sig-paren">(</span><em class="sig-param">conn</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#get_samples"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.get_samples" title="Permalink to this definition">¶</a></dt>
+<dd><p>“Get samples from sample table</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>con</strong> – sqlite3.conn</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Generator of dictionnaries with as sample fields as values.
+:Example: ({‘id’: &lt;unique_id&gt;, ‘name’: &lt;sample_name&gt;})</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>&lt;generator &lt;dict&gt;&gt;</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.get_selections">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">get_selections</code><span class="sig-paren">(</span><em class="sig-param">conn</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#get_selections"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.get_selections" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get selections in “selections” table</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><p>Generator of dictionnaries with as many keys as there are columns
+in the table.
+Dictionnary of all attributes of the table.</p>
+<blockquote>
+<div><dl class="field-list simple">
+<dt class="field-odd">Example</dt>
+<dd class="field-odd"><p>{“id”: …, “name”: …, “count”: …, “query”: …}</p>
+</dd>
+</dl>
+</div></blockquote>
+</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>&lt;generator &lt;dict&gt;&gt;</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.get_sql_connexion">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">get_sql_connexion</code><span class="sig-paren">(</span><em class="sig-param">filepath</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#get_sql_connexion"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.get_sql_connexion" title="Permalink to this definition">¶</a></dt>
+<dd><p>Open a SQLite database and return the connexion object</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.get_variants_count">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">get_variants_count</code><span class="sig-paren">(</span><em class="sig-param">conn</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#get_variants_count"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.get_variants_count" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the number of variants in the “variants” table</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.insert_field">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">insert_field</code><span class="sig-paren">(</span><em class="sig-param">conn</em>, <em class="sig-param">name='no_name'</em>, <em class="sig-param">category='variants'</em>, <em class="sig-param">type='text'</em>, <em class="sig-param">description=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#insert_field"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.insert_field" title="Permalink to this definition">¶</a></dt>
+<dd><p>Insert one field record (NOT USED)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>conn</strong> – sqlite3.connect</p>
+</dd>
+<dt class="field-even">Key name</dt>
+<dd class="field-even"><p>field name</p>
+</dd>
+<dt class="field-odd">Key category</dt>
+<dd class="field-odd"><p>category field name.
+.. warning:: The default is “variants”. Don’t use sample as category name</p>
+</dd>
+<dt class="field-even">Key type</dt>
+<dd class="field-even"><p>sqlite type which can be: INTEGER, REAL, TEXT
+.. todo:: Check this argument…</p>
+</dd>
+<dt class="field-odd">Key description</dt>
+<dd class="field-odd"><p>Text that describes the field (showed to the user).</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Last row id</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>&lt;int&gt;</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.insert_many_fields">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">insert_many_fields</code><span class="sig-paren">(</span><em class="sig-param">conn</em>, <em class="sig-param">data: list</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#insert_many_fields"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.insert_many_fields" title="Permalink to this definition">¶</a></dt>
+<dd><p>Insert multiple fields into “fields” table using one commit</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>conn</strong> – sqlite3.connect</p></li>
+<li><p><strong>data</strong> – list of field dictionnary</p></li>
+</ul>
+</dd>
+<dt class="field-even">Examples</dt>
+<dd class="field-even"><p>insert_many_fields(conn, [{name:”sacha”, category:”variant”, count: 0, description=”a description”}])
+insert_many_fields(conn, reader.get_fields())</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>insert_field, abstractreader</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.insert_many_samples">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">insert_many_samples</code><span class="sig-paren">(</span><em class="sig-param">conn</em>, <em class="sig-param">samples: list</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#insert_many_samples"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.insert_many_samples" title="Permalink to this definition">¶</a></dt>
+<dd><p>Insert many samples at a time in samples table</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>samples</strong> (<em>&lt;list &lt;str&gt;&gt;</em>) – List of samples names
+.. todo:: only names in this list ?</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.insert_sample">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">insert_sample</code><span class="sig-paren">(</span><em class="sig-param">conn</em>, <em class="sig-param">name='no_name'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#insert_sample"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.insert_sample" title="Permalink to this definition">¶</a></dt>
+<dd><p>Insert one sample in samples table (USED in TESTS)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>conn</strong> – sqlite3.connect</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Last row id</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>&lt;int&gt;</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.insert_selection">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">insert_selection</code><span class="sig-paren">(</span><em class="sig-param">conn</em>, <em class="sig-param">query: str</em>, <em class="sig-param">name='no_name'</em>, <em class="sig-param">count=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#insert_selection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.insert_selection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Insert one selection record</p>
+<p>TODO: retirer le group by inutile</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>This function does a commit !</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>conn</strong> (<em>&lt;sqlite3.Connection&gt;</em><em> or </em><em>&lt;sqlite3.Cursor&gt;</em>) – sqlite3 connection OR cursor
+If connection: commit is made.
+If cursor: commit is not made.</p></li>
+<li><p><strong>name</strong> – name of the selection</p></li>
+<li><p><strong>count</strong> – precompute variant count</p></li>
+<li><p><strong>query</strong> – Sql variant query selection</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>rowid of the new selection inserted.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>&lt;int&gt;</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>create_selection_from_sql</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.intersect_variants">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">intersect_variants</code><span class="sig-paren">(</span><em class="sig-param">query1</em>, <em class="sig-param">query2</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#intersect_variants"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.intersect_variants" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the variants obtained by the intersection of 2 queries
+Try to handl precedence of operators.
+- The precedence of UNION and EXCEPT are similar, they are processed from
+left to right.
+- Both of the operations are fulfilled before INTERSECT operation,
+i.e. they have precedence over it.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.subtract_variants">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">subtract_variants</code><span class="sig-paren">(</span><em class="sig-param">query1</em>, <em class="sig-param">query2</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#subtract_variants"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.subtract_variants" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the variants obtained by the difference of 2 queries</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.union_variants">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">union_variants</code><span class="sig-paren">(</span><em class="sig-param">query1</em>, <em class="sig-param">query2</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#union_variants"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.union_variants" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the variants obtained by the union of 2 queries</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.update_sample">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">update_sample</code><span class="sig-paren">(</span><em class="sig-param">conn</em>, <em class="sig-param">sample: dict</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#update_sample"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.update_sample" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update sample record</p>
+<dl class="simple">
+<dt>sample = {</dt><dd><p>id : 3 # sample id 
+name : “Boby”,  # Name of sample 
+fam : “fam”, # familly identifier 
+father_id : 0, # father id, 0 if not  
+mother_id : 0, # mother id, 0 if not
+sexe : 0 # Sexe code ( 1 = male, 2 = female, 0 = unknown)
+phenotype: 0 # ( 1 = control , 2 = case, 0 = unknown)</p>
+</dd>
+</dl>
+<p>}</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>conn (sqlite.connection): sqlite connection
+sample (dict): data</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="cutevariant.core.sql.update_variant">
+<code class="sig-prename descclassname">cutevariant.core.sql.</code><code class="sig-name descname">update_variant</code><span class="sig-paren">(</span><em class="sig-param">conn</em>, <em class="sig-param">variant: dict</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cutevariant/core/sql.html#update_variant"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cutevariant.core.sql.update_variant" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update variant data</p>
+</dd></dl>
+
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, sacha schutz
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

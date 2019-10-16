@@ -11,6 +11,7 @@ black:
 	black cutevariant
 
 doc-deploy:
+	git add docs/build/html/
 	git subtree push --prefix docs/build/html origin gh-pages  
 
 
