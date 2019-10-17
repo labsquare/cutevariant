@@ -4,7 +4,7 @@
 
 ```eval_rst
 .. automodule:: cutevariant.core.sql
-   :members:
+   :members: 
 ```
 
 ## Importer

@@ -10,6 +10,16 @@ from .readerfactory import create_reader
 from .sql import *
 
 
+
+def test(boby:int, test = "test"):
+    """Summary
+    
+    Args:
+        boby (int): Description
+        test (str, optional): Description
+    """
+    pass
+
 def async_import_reader(conn, reader: AbstractReader, **kwargs):
     """Import data via the given reader into a SQLite database via the given connection
 

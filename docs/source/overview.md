@@ -1,6 +1,6 @@
 # Overview
 
-Cutevariant is ... 
+Cutevariant is awesome
 
 ```eval_rst
 .. important:: Doc is not complete
