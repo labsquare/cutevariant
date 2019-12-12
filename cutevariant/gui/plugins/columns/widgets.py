@@ -127,7 +127,8 @@ class ColumnsWidget(plugin.PluginWidget):
         self.model = ColumnsModel(None)
         self.view.setModel(self.model)
         self.view.setIconSize(QSize(20,20))
-        
+        self.view.header().setSectionResizeMode(QHeaderView.ResizeToContents)
+
         # self.view.setIndentation(0)
         #self.view.header().setVisible(False)
         layout = QVBoxLayout()
@@ -188,7 +189,7 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
-    conn = sqlite3.connect("examples/test.db")
+    conn = sqlite3.connect("/home/schutz/Dev/cutevariant/examples/test.db")
 
     view = ColumnsWidget()
     view.conn = conn
