@@ -238,7 +238,7 @@ class QueryViewWidget(plugin.PluginWidget):
         self.view.setRootIsDecorated(True)  # Manage from delegate
         ## self.view.setIndentation(0)
         self.view.setIconSize(QSize(22, 22))
-        self.view.setAnimated(True)
+        self.view.setAnimated(False)
 
         # # self.view.setItemDelegate(self.delegate)
 
