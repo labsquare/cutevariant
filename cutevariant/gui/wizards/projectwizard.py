@@ -1,14 +1,15 @@
 # Standard imports
 import os
 from PySide2.QtWidgets import *
-from PySide2.QtCore import QThread, Signal, QDir, QSettings, QFile
+from PySide2.QtCore import QThread, Signal, QDir, QSettings, QFile, Qt, QAbstractTableModel, QModelIndex
+from PySide2.QtGui import QStandardItemModel, QStandardItem
 from PySide2.QtGui import QIcon
 
 # Custom imports
 from cutevariant.core.importer import async_import_file
 from cutevariant.core import get_sql_connexion
 import cutevariant.commons as cm
-from cutevariant.core.readerfactory import detect_vcf_annotation
+from cutevariant.core.readerfactory import detect_vcf_annotation, create_reader
 
 LOGGER = cm.logger()
 
@@ -147,7 +148,155 @@ class FilePage(QWizardPage):
                 and QFile(self.file_path_edit.text()).exists()
             )
             else False
-        )
+        ) 
+
+
+
+
+
+class SampleModel(QAbstractTableModel):
+    def __init__(self):
+        super().__init__()
+
+        self.samples_data = []
+        self.headers = ("Name","Family","Father_id", "Mother_id","Sexe","Phenotype")
+
+    def rowCount(self, index = QModelIndex()):
+        """ override """ 
+        return len(self.samples_data)
+
+    def columnCount(self, index = QModelIndex()):
+        """ override """ 
+        return len(self.headers)
+
+    def clear(self):
+        """ clear model """ 
+        self.samples_data.clear()
+
+    def get_data_list(self, column : int):
+        return list(set([i[column] for i in self.samples_data]))
+
+
+
+    def set_samples(self, samples: list):
+        """ fill model """ 
+        self.beginResetModel()
+        self.clear()
+        for sample in samples:
+            self.samples_data.append([sample, "", "", "", "", ""])
+        self.endResetModel()
+
+    def data(self, index: QModelIndex , role = Qt.DisplayRole):
+        """ overrided """ 
+        if not index.isValid():
+            return None 
+
+        if role == Qt.DisplayRole or role == Qt.EditRole:
+            return self.samples_data[index.row()][index.column()]
+
+        return None
+
+    def setData(self, index: QModelIndex, value, role = Qt.EditRole):
+        """ overrided """ 
+
+        if not index.isValid():
+            return None 
+
+        if role == Qt.EditRole:
+            self.samples_data[index.row()][index.column()] = value
+            return True 
+
+        return False
+
+
+    def headerData(self, section: int, orientation:Qt.Orientation, role: Qt.DisplayRole):
+        """ overrided """ 
+        if orientation == Qt.Horizontal:
+            if role == Qt.DisplayRole:
+                return self.headers[section]
+
+        return None
+
+    def flags(self, index: QModelIndex):
+        """ overrided """ 
+        if index.column() > 0:
+            return Qt.ItemIsSelectable|Qt.ItemIsEditable|Qt.ItemIsEnabled
+
+        else:
+            return Qt.ItemIsSelectable|Qt.ItemIsEnabled
+
+
+
+class SampleDelegate(QItemDelegate):
+
+    def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex):
+        
+        # index.model refer to SampleModel 
+
+        if index.column()  < 2:
+            return super().createEditor(parent,option,index)
+
+        widget = QComboBox(parent)
+        if index.column() == 2 or index.column() == 3: # father_id or mother_id
+            widget.addItems([""] + index.model().get_data_list(0))  # Fill with sample name 
+            return widget
+
+        if index.column() == 4: # sexe
+            widget.addItems(["","Male","Female"])
+            return widget
+
+
+        if index.column() == 5:
+            widget.addItems(["","Case", "Control"])
+            return widget
+
+        return super().createEditor(parent,option,index)
+
+
+
+
+class SamplePage(QWizardPage):
+    def __init__(self):
+        super().__init__()
+
+        self.setTitle(self.tr("Samples"))
+        self.setSubTitle(self.tr("Add sample description or skip this step"))
+
+        self.view = QTableView()
+        self.model = SampleModel()
+        self.delegate = SampleDelegate()
+        self.view.setModel(self.model)
+        self.view.horizontalHeader().setStretchLastSection(True)
+        self.view.setAlternatingRowColors(True)
+        self.view.verticalHeader().hide()
+        self.view.setItemDelegate(self.delegate)
+
+
+        v_layout = QVBoxLayout()
+        v_layout.addWidget(self.view)
+        self.setLayout(v_layout)
+
+
+    def initializePage(self):
+        """ override """ 
+
+        self.model.clear()
+
+
+        # read samples 
+        filename = self.field("filename")
+        with create_reader(filename) as reader:
+            self.model.set_samples(reader.get_samples())
+
+
+
+    def validatePage(self):
+        """ override """ 
+        # read table and create a dict for setFields
+        self.setField("samples_data", self.model.samples_data)
+
+        return True
+
 
 
 class ImportThread(QThread):
@@ -350,4 +499,16 @@ class ProjectWizard(QWizard):
         self.setWizardStyle(QWizard.ClassicStyle)
         self.addPage(ProjectPage())
         self.addPage(FilePage())
+        self.addPage(SamplePage())
         self.addPage(ImportPage())
+
+
+
+if __name__ == '__main__':
+    import sys
+    app = QApplication(sys.argv)
+
+    w = ProjectWizard()
+    w.show()
+
+    app.exec_()
