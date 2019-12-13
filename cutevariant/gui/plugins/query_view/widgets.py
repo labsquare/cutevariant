@@ -12,6 +12,8 @@ from PySide2.QtGui import *
 
 
 class QueryDelegate(QStyledItemDelegate):
+
+    pass
     """
     This class specify the aesthetic of the view
     styles and color of each variant displayed in the view are setup here
@@ -36,12 +38,7 @@ class QueryDelegate(QStyledItemDelegate):
         return base_brush
 
     def paint(self, painter, option, index):
-        """
-        overriden
-
-        Draw the view item for index using a painter
-
-        """
+    
 
         palette = qApp.palette("QTreeView")
         #  get column name of the index
@@ -66,6 +63,7 @@ class QueryDelegate(QStyledItemDelegate):
         painter.restore()
 
        
+
         painter.save()
         alignement = Qt.AlignLeft | Qt.AlignVCenter
 
@@ -91,11 +89,14 @@ class QueryDelegate(QStyledItemDelegate):
             rect.moveCenter(option.rect.center())
             painter.drawPixmap(rect,decoration.pixmap(25,25))
         else:
+
             painter.drawText(option.rect, alignement, str(index.data()))
         
         
         painter.restore()
 
+
+        #super().paint(painter,option, index)
 
 
         # # Add margin for first columns if index is first level
@@ -181,35 +182,38 @@ class QueryDelegate(QStyledItemDelegate):
 
     def sizeHint(self, option, index):
         """Override: Return row height"""
-        return QSize(0, 30)
+
+        size = super().sizeHint(option, index)
+        size.setHeight(30)
+        return size
 
 
 class QueryTreeView(QTreeView):
     def __init__(self, parent=None):
         super().__init__()
 
-    def drawBranches(self, painter, rect, index):
-        """ overrided : Draw Branch decorator with background 
+    # def drawBranches(self, painter, rect, index):
+    #     """ overrided : Draw Branch decorator with background 
         
-        Backround is not alternative for children but inherits from parent 
+    #     Backround is not alternative for children but inherits from parent 
 
-        """
-        if self.itemDelegate().__class__ is not QueryDelegate:
-            #  Works only if delegate is a VariantDelegate
-            return
+    #     """
+    #     if self.itemDelegate().__class__ is not QueryDelegate:
+    #         #  Works only if delegate is a VariantDelegate
+    #         return
 
-        painter.save()
-        painter.setPen(Qt.NoPen)
-        painter.setBrush(self.itemDelegate().background_color_index(index))
-        painter.drawRect(rect)
+    #     painter.save()
+    #     painter.setPen(Qt.NoPen)
+    #     painter.setBrush(self.itemDelegate().background_color_index(index))
+    #     painter.drawRect(rect)
 
-        if index.parent() != QModelIndex():
-            #  draw child indicator
-            painter.drawPixmap(rect.center(), FIcon(0xF12F).pixmap(10, 10))
+    #     if index.parent() != QModelIndex():
+    #         #  draw child indicator
+    #         painter.drawPixmap(rect.center(), FIcon(0xF12F).pixmap(10, 10))
 
-        painter.restore()
+    #     painter.restore()
 
-        super().drawBranches(painter, rect, index)
+    #     super().drawBranches(painter, rect, index)
 
 class QueryViewWidget(plugin.PluginWidget):
     """Contains the view of query with several controller"""
@@ -230,7 +234,7 @@ class QueryViewWidget(plugin.PluginWidget):
         self.formatters = []
 
         # # self.view.setFrameStyle(QFrame.NoFrame)
-        self.view.setItemDelegate(self.delegate)
+        #self.view.setItemDelegate(self.delegate)
         # # self.view.setAlternatingRowColors(True)
         self.view.setSortingEnabled(True)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
@@ -240,7 +244,7 @@ class QueryViewWidget(plugin.PluginWidget):
         self.view.setIconSize(QSize(22, 22))
         self.view.setAnimated(False)
 
-        # # self.view.setItemDelegate(self.delegate)
+        self.view.setItemDelegate(self.delegate)
 
         main_layout = QVBoxLayout()
         main_layout.addWidget(self.topbar)
