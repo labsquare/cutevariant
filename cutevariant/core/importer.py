@@ -79,6 +79,11 @@ def async_import_reader(conn, reader: AbstractReader, **kwargs):
             percent = value
         yield percent, message
 
+
+    # Insert sample data   
+    sample_data = kwargs.get("sample_data", None)
+    # TODO ...
+
     # Create indexes
     yield 99, "Creating indexes..."
     create_indexes(conn)

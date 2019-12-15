@@ -1,7 +1,7 @@
 # Standard imports
 import os
 from PySide2.QtWidgets import *
-from PySide2.QtCore import QThread, Signal, QDir, QSettings, QFile, Qt, QAbstractTableModel, QModelIndex
+from PySide2.QtCore import QThread, Signal, QDir, QSettings, QFile, Qt, QAbstractTableModel, QModelIndex, Property
 from PySide2.QtGui import QStandardItemModel, QStandardItem
 from PySide2.QtGui import QIcon
 
@@ -253,6 +253,31 @@ class SampleDelegate(QItemDelegate):
         return super().createEditor(parent,option,index)
 
 
+class SampleWidget(QTableView):
+    def __init__(self):
+        super().__init__()
+        self.model = SampleModel()
+        self.delegate = SampleDelegate()
+        self.setModel(self.model)
+        self.horizontalHeader().setStretchLastSection(True)
+        self.setAlternatingRowColors(True)
+        self.verticalHeader().hide()
+        self.setItemDelegate(self.delegate)
+
+
+    def clear(self):
+        self.model.clear()
+
+    def set_samples(self, data):
+        self.model.set_samples(data)
+
+    def get_samples(self):
+        return self.model.samples_data
+
+    # Create property binding for QWizardPage.registerFields
+    samples = Property(list,get_samples, set_samples)
+
+
 
 
 class SamplePage(QWizardPage):
@@ -261,40 +286,36 @@ class SamplePage(QWizardPage):
 
         self.setTitle(self.tr("Samples"))
         self.setSubTitle(self.tr("Add sample description or skip this step"))
-
-        self.view = QTableView()
-        self.model = SampleModel()
-        self.delegate = SampleDelegate()
-        self.view.setModel(self.model)
-        self.view.horizontalHeader().setStretchLastSection(True)
-        self.view.setAlternatingRowColors(True)
-        self.view.verticalHeader().hide()
-        self.view.setItemDelegate(self.delegate)
-
-
+        self.view = SampleWidget()
+        self.box = QGroupBox()
+        self.box.setTitle("Use pedigree data ")
+        self.box.setCheckable(True)
         v_layout = QVBoxLayout()
         v_layout.addWidget(self.view)
-        self.setLayout(v_layout)
+        self.box.setLayout(v_layout)
+
+        m_layout = QVBoxLayout()
+        m_layout.addWidget(self.box)
+        self.setLayout(m_layout)
 
 
     def initializePage(self):
         """ override """ 
 
-        self.model.clear()
-
-
+        self.view.clear()
         # read samples 
         filename = self.field("filename")
         with create_reader(filename) as reader:
-            self.model.set_samples(reader.get_samples())
+            self.view.set_samples(reader.get_samples())
+
+        self.registerField("samples", self.view, "samples")
+        self.registerField("has_ped", self.box)
 
 
 
     def validatePage(self):
         """ override """ 
         # read table and create a dict for setFields
-        self.setField("samples_data", self.model.samples_data)
-
         return True
 
 
@@ -319,7 +340,7 @@ class ImportThread(QThread):
         self.db_filename = ""
         self.project_settings = dict()
 
-    def set_importer_settings(self, filename, db_filename, project_settings={}):
+    def set_importer_settings(self, filename, db_filename, project_settings={}, sample_data = {}):
         """Init settings of the importer
 
         :param filename: File to be opened.
@@ -329,6 +350,8 @@ class ImportThread(QThread):
         :type filename: <str>
         :type db_filename: <str>
         :type project_settings: <dict>
+        :type sample_data: <dict>
+
         """
         # File top open
         self.filename = filename
@@ -336,6 +359,8 @@ class ImportThread(QThread):
         self.db_filename = db_filename
         # Project settings
         self.project_settings = project_settings
+
+        self.sample_data = sample_data
 
     def run(self):
         """Overrided QThread method
@@ -413,6 +438,19 @@ class ImportPage(QWizardPage):
         self.thread.progress_changed.connect(self.progress_changed)
         self.thread.finished.connect(self.import_thread_finished)
         self.thread.finished_status.connect(self.import_thread_finished_status)
+
+
+    def initializePage(self):
+        """ override """ 
+
+        # Ugly hack to get sample data from SamplePage.. 
+        # TODO : Use setFields with property binding 
+        for page_id in self.wizard().pageIds():
+            page = self.wizard().page(page_id)
+            if page.__class__.__name__ == "SamplePage":
+                self.samples_data = page.model.samples_data
+
+        print(self.samples_data)
 
     def progress_changed(self, value, message):
         """Update the progress bar

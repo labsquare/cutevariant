@@ -122,21 +122,21 @@ class ColumnsWidget(plugin.PluginWidget):
     def __init__(self, parent=None):
         super().__init__()
 
-        self.setWindowTitle(self.tr("Columns"))
-        self.view = QTreeView()
-        self.model = ColumnsModel(None)
-        self.view.setModel(self.model)
-        self.view.setIconSize(QSize(20,20))
-        self.view.header().setSectionResizeMode(QHeaderView.ResizeToContents)
+        # self.setWindowTitle(self.tr("Columns"))
+        # self.view = QListView()
+        # self.model = ColumnsModel(None)
+        # self.view.setModel(self.model)
+        # self.view.setIconSize(QSize(20,20))
+        # self.view.header().setSectionResizeMode(QHeaderView.ResizeToContents)
 
-        # self.view.setIndentation(0)
-        #self.view.header().setVisible(False)
-        layout = QVBoxLayout()
+        # # self.view.setIndentation(0)
+        # #self.view.header().setVisible(False)
+        # layout = QVBoxLayout()
 
-        layout.addWidget(self.view)
-        layout.setContentsMargins(0, 0, 0, 0)
-        self.setLayout(layout)
-        self.model.itemChanged.connect(self.on_column_changed)
+        # layout.addWidget(self.view)
+        # layout.setContentsMargins(0, 0, 0, 0)
+        # self.setLayout(layout)
+        # self.model.itemChanged.connect(self.on_column_changed)
 
     def on_register(self, mainwindow):
         """ Overrided from PluginWidget"""
@@ -148,39 +148,41 @@ class ColumnsWidget(plugin.PluginWidget):
 
     def on_query_model_changed(self, model):
         """ Overrided from PluginWidget """
-        self.columns = model.columns
-        # When you set columns, it means you check columns. 
-        # This will trigger a signal itemChanged which cause an infinite loop
-        # That's why I blocked the signal from the model. So I need to update the view manually
-        self.view.update()
-        self.view.resizeColumnToContents(0)
+        pass
+        # self.columns = model.columns
+        # # When you set columns, it means you check columns. 
+        # # This will trigger a signal itemChanged which cause an infinite loop
+        # # That's why I blocked the signal from the model. So I need to update the view manually
+        # self.view.update()
+        # self.view.resizeColumnToContents(0)
 
         
 
     def on_column_changed(self):
-        self.mainwindow.query_model.columns = self.columns
-        self.mainwindow.query_model.load()
+        pass
+        # self.mainwindow.query_model.columns = self.columns
+        # self.mainwindow.query_model.load()
 
-    @property
-    def conn(self):
-        return self.model.conn
+    # @property
+    # def conn(self):
+    #     return self.model.conn
 
-    @conn.setter
-    def conn(self, conn):
-        self.model.conn = conn
-        if conn:
-            self.model.load()
+    # @conn.setter
+    # def conn(self, conn):
+    #     self.model.conn = conn
+    #     if conn:
+    #         self.model.load()
 
-    @property
-    def columns(self):
-        return self.model.columns
+    # @property
+    # def columns(self):
+    #     return self.model.columns
 
-    @columns.setter
-    def columns(self, columns):
-        self.model.columns = columns
+    # @columns.setter
+    # def columns(self, columns):
+    #     self.model.columns = columns
 
-    def load(self):
-        self.model.load()
+    # def load(self):
+    #     self.model.load()
 
 
 if __name__ == "__main__":
@@ -189,15 +191,15 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
-    conn = sqlite3.connect("/home/schutz/Dev/cutevariant/examples/test.db")
+   # conn = sqlite3.connect("/home/schutz/Dev/cutevariant/examples/test.db")
 
     view = ColumnsWidget()
-    view.conn = conn
-    view.model.columns = ["chr", "pos"]
+   # view.conn = conn
+   # view.model.columns = ["chr", "pos"]
 
     #view.changed.connect(lambda : print(view.columns))
 
-    print(view.model.columns)
+  #  print(view.model.columns)
     view.show()
 
     app.exec_()
