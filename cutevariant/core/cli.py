@@ -18,6 +18,7 @@ def main():
     logger.setLevel(logging.CRITICAL)
     parser = argparse.ArgumentParser(description="""
     Cutevariant cli mode helps your to run actions directly from command-line
+    You can use the env variable $CUTEVARIANT_DB to define a database instead arguments
     """)
     sub_parser = parser.add_subparsers(dest='subparser')
     

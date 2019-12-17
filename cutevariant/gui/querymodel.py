@@ -411,7 +411,6 @@ class QueryModel(QAbstractItemModel):
             self.variants.append([variant[1]])
         self.endResetModel()
 
-        LOGGER.debug(self.builder.sql())
 
         if emit_changed:
             self.changed.emit()

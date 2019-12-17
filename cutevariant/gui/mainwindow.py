@@ -219,7 +219,7 @@ class MainWindow(QMainWindow):
     #     """Add the given widget to the current (QTabWidget),
     #     and connect it to the query_dispatcher"""
     #     self.central_tab.addTab(widget, widget.windowTitle())
-    #     # self.query_dispatcher.addWidget(widget)
+    #     # self.query_dispatcher.addWidget(widgePt)
 
     # def current_tab_view(self):
     #     """Get the page/tab currently being displayed by the tab dialog
@@ -260,7 +260,7 @@ class MainWindow(QMainWindow):
         # Create central view 
         # TODO: rename the class 
         self.query_model.conn = self.conn
-        self.query_model.load()
+        #self.query_model.load()
 
         for name, _plugin in self.plugins.items():
             _plugin.on_open_project(self.conn)
