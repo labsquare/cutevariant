@@ -33,6 +33,9 @@ class ProjectPage(QWizardPage):
         self.browse_button = QPushButton("Browse")
         self.reference = QComboBox()
 
+        # Unused for now 
+        self.reference.hide()
+
         self.reference.addItem("hg19")
         self.registerField("project_name", self.project_name_edit, "text")
         self.registerField("project_path", self.project_path_edit, "text")
