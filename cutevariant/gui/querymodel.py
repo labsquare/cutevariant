@@ -107,7 +107,6 @@ class QueryModel(QAbstractItemModel):
 
     def __init__(self, conn=None, parent=None):
         super().__init__()
-        self.conn = conn
         self.limit = 50
         self.page = 0
         self.total = 0
@@ -115,6 +114,10 @@ class QueryModel(QAbstractItemModel):
         self.variants = []
         self.builder = None
         self.formatter = None
+
+        # Keep after all initialization 
+        self.conn = conn
+
 
     @property
     def conn(self):
@@ -288,7 +291,7 @@ class QueryModel(QAbstractItemModel):
             # Return data for the first level
             if self.level(index) == 1:
                 if index.column() == 0:
-                    return self.variants_children_count[index.row()]
+                    return str(self.variants_children_count[index.row()])
                 else:
                     return str(self.variant(index)[index.column()])
 
