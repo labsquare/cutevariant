@@ -116,7 +116,18 @@ class AbstractReader(ABC):
         yield {"name": "favorite", "type": "bool", "category": "variants", "description": "is favorite"}
         yield {"name": "comment", "type": "str", "category": "variants", "description": "Variant comment"}
         yield {"name": "classification", "type": "int", "category": "variants", "description": "ACMG score"}
-        yield from self.get_fields()
+        
+
+        # avoid duplicates fields ... 
+        duplicates = set()
+        for field in self.get_fields():
+            
+            if field["name"] not in duplicates:
+                yield field 
+
+            duplicates.add(field["name"])
+
+
         
     def get_extra_variants(self):
         """Yield fields with extra mandatory value like comment and score
