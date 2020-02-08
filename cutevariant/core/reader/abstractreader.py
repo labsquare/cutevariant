@@ -1,6 +1,7 @@
 from abc import ABC, abstractclassmethod
 
 
+
 class AbstractReader(ABC):
     """Base class for all Readers required to import variants into the database.
     Subclass it if you want a new file parser .
@@ -137,6 +138,7 @@ class AbstractReader(ABC):
             variant["comment"] = ""
             variant["classification"] = 3
             yield variant
+
 
     def get_extra_fields_by_category(self, category: str):
         """Syntaxic suggar to get fields according their category

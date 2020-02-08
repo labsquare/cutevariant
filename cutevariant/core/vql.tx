@@ -53,7 +53,8 @@ FilterTerm:
 
 //################################## TERMINALS #########################
 Comment: /\#.*$/;
-ColumnIdentifier: Function|ID;
+FieldId:/[^\d\W](\w*\.)?\w*\b/;
+ColumnIdentifier: Function|FieldId;
 ValueIdentifier: (NUMBER|STRING|BOOL|Tuple);
 Function: func=ID '(' arg=STRING ')' ('.' extra=ID)?;
 BoolOperator: "AND"|"OR";
