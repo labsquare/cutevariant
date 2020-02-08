@@ -395,7 +395,7 @@ class QueryModel(QAbstractItemModel):
 
         self.beginResetModel()
         # Set total of variants for pagination
-        self.total = self.builder.count()
+        self.total = self.builder.count(self.grouped)
 
         if reset_page:
             self.page = 0
@@ -498,6 +498,7 @@ class QueryModel(QAbstractItemModel):
             is_grouped (bool)
         """
         self.grouped = is_grouped
+        self.page = 0
         self.load()
 
     def set_favorite(self, index: QModelIndex, favorite : bool):

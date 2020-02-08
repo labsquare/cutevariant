@@ -1643,7 +1643,7 @@ class QueryBuilder(object):
         
             
 
-    def count(self):
+    def count(self, grouped = False):
         """Wrapped function with a memoizing callable that saves up to the
         maxsize most recent calls.
 
@@ -1654,13 +1654,15 @@ class QueryBuilder(object):
             and it seems difficult to predict which fields will be requested
             by the user.
         """
-        query = self.sql(limit = None)
 
-        # Trick to accelerate UI refresh on basic queries
-        if self.selection == "variants" and not self.filters:
-            return self.conn.execute(
-                "SELECT MAX(variants.id) as count FROM variants"
-            ).fetchone()[0]
+        query = self.sql(grouped = grouped, limit = None)
+        print("grouped", grouped, query)
+
+        #Trick to accelerate UI refresh on basic queries
+        # if self.selection == "variants" and not self.filters:
+        #     return self.conn.execute(
+        #         "SELECT MAX(variants.id) as count FROM variants"
+        #     ).fetchone()[0]
 
         return self.conn.execute(
             f"SELECT COUNT(*) as count FROM ({query})"
