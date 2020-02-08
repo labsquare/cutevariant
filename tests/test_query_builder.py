@@ -185,6 +185,14 @@ def test_filters_to_sql(conn):
     """ convert filters to sql where clause """
     assert sql.QueryBuilder(conn)._filters_to_sql(FILTERS) == "(`variants`.`chr` = 'chr1' AND (`annotations`.`gene` = 'gene1' OR `variants`.`pos` = 10))"
 
+def test_from_vql(conn):
+    q  = sql.QueryBuilder(conn)
+    q.set_from_vql("SELECT chr, pos FROM variants WHERE pos > 3 ")
+    assert q.columns == ["chr","pos"]
+    assert q.selection == "variants"
+    assert q.filters == {'AND':[{'field': 'pos', 'operator': '>', 'value': 3}]}
+
+
 def test_count(conn):
     assert sql.QueryBuilder(conn).count() == 2
 
