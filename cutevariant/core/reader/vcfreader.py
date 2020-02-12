@@ -140,14 +140,19 @@ class VcfReader(AbstractReader):
                     "filter": "" if record.FILTER is None else ",".join(record.FILTER)
                 }
 
+
+                forbidden_field = ("chr","pos","ref","alt","rsid","qual","filter")
+
                 # Parse info
                 for name in record.INFO:
-                    if isinstance(record.INFO[name], list):
-                        variant[name.lower()] = ",".join(
-                            [str(i) for i in record.INFO[name]]
-                        )
-                    else:
-                        variant[name.lower()] = record.INFO[name]
+                    if name.lower() not in forbidden_field:
+                        if isinstance(record.INFO[name], list):
+                            variant[name.lower()] = ",".join(
+                                [str(i) for i in record.INFO[name]]
+                            )
+                        else:
+                            variant[name.lower()] = record.INFO[name]
+
 
                 # parse sample
                 if record.samples:
