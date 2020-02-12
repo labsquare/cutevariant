@@ -4,7 +4,8 @@ import logging
 import datetime as dt
 import tempfile
 from pkg_resources import resource_filename
-
+import gzip
+import io 
 # Misc
 MAX_RECENT_PROJECTS = 5
 MIN_COMPLETION_LETTERS = 1
@@ -92,3 +93,18 @@ def log_level(level):
         if handler.__class__
         in (logging.StreamHandler, logging.handlers.RotatingFileHandler)
     ]
+
+
+def is_gz_file(filepath):
+    """Return a boolean according to the compression state of the file"""
+    with open(filepath, "rb") as test_f:
+        return test_f.read(3) == b"\x1f\x8b\x08"
+
+
+def get_uncompressed_size(filepath):
+    """Get the size of the given compressed file
+    This size is stored in the last 4 bytes of the file.
+    """
+    with gzip.open(filepath, 'rb') as file_obj:
+        return file_obj.seek(0, io.SEEK_END) 
+

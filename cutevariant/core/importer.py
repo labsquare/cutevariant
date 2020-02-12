@@ -71,7 +71,9 @@ def async_import_reader(conn, reader: AbstractReader, **kwargs):
     for value, message in async_insert_many_variants(conn, reader.get_extra_variants()):
 
         if reader.file_size:
-            percent = reader.read_bytes / reader.file_size * 100.0
+            percent = reader.read_bytes / reader.file_size * 100 
+
+           
         else:
             # Fallback
             # TODO: useless for now because we don't give the total of variants

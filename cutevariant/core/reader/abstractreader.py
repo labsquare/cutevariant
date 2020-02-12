@@ -1,6 +1,6 @@
 from abc import ABC, abstractclassmethod
-
-
+import os 
+import cutevariant.commons as cm 
 
 class AbstractReader(ABC):
     """Base class for all Readers required to import variants into the database.
@@ -22,10 +22,10 @@ class AbstractReader(ABC):
     def __init__(self, device):
         super(AbstractReader, self).__init__()
         self.device = device
-        self.file_size = 0
-        self.read_bytes = 0
         self.samples = []
         self.fields = tuple()
+        self.file_size = self.compute_total_size()
+        self.read_bytes = 0
 
     @classmethod
     def sanitize_field_name(cls, fieldname):
@@ -170,6 +170,23 @@ class AbstractReader(ABC):
         Override this method to have samples in sqlite database.
         """
         return self.samples
+
+
+    def compute_total_size(self) -> int:
+        """ Compute file size int bytes """ 
+
+        if not self.device:
+            return 0 
+
+        filename = self.device.name 
+
+        if cm.is_gz_file(filename):
+            return cm.get_uncompressed_size(filename)
+
+        else:
+            return os.path.getsize(filename)
+
+
 
 def check_variant_schema(variant: dict):
     """Test if get_variant returns well formated nested data.

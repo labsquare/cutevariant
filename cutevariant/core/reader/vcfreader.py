@@ -116,6 +116,7 @@ class VcfReader(AbstractReader):
         # loop over record
         self.device.seek(0)
         vcf_reader = vcf.VCFReader(self.device)
+        import sys
 
         # TODO : ugly for testing progression .. see #60
         self.read_bytes = self._init_read_bytes(vcf_reader)
@@ -125,6 +126,8 @@ class VcfReader(AbstractReader):
 
         for record in vcf_reader:
 
+
+            #elf.read_bytes += sys.getsizeof(record)
             self.read_bytes += self._get_record_size(record)
 
             # split row with multiple alt
@@ -321,11 +324,11 @@ class VcfReader(AbstractReader):
             + str(rec.INFO)
             + str(rec.FORMAT)
             + str(rec.samples)
-        )
+        ) - 10
 
     def _init_read_bytes(self, reader):
         """Init read bytes : It's the size in bytes of header data file"""
-        return len("".join(reader._column_headers)) + len("".join(reader._header_lines))
+        return 0
 
     def __repr__(self):
         return f"VCF Reader using {type(self.annotation_parser).__name__}"

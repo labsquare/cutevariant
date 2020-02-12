@@ -7,10 +7,9 @@ import io
 import re
 
 # Custom imports
-from cutevariant.core.readerfactory import is_gz_file
-from cutevariant.commons import logger
+import cutevariant.commons as cm
 
-LOGGER = logger()
+LOGGER = cm.logger()
 
 
 class BedTool:
@@ -61,7 +60,7 @@ class BedTool:
             self.is_gz_file = False
         else:
             self.is_from_string = False
-            self.is_gz_file = is_gz_file(filepath)
+            self.is_gz_file = cm.is_gz_file(filepath)
 
     def __iter__(self):
         """Yield Interval objects in the given BED file

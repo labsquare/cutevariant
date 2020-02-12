@@ -12,19 +12,7 @@ import vcf
 LOGGER = cm.logger()
 
 
-def is_gz_file(filepath):
-    """Return a boolean according to the compression state of the file"""
-    with open(filepath, "rb") as test_f:
-        return test_f.read(3) == b"\x1f\x8b\x08"
 
-
-def get_uncompressed_size(filepath):
-    """Get the size of the given compressed file
-    This size is stored in the last 4 bytes of the file.
-    """
-    with open(filepath, "rb") as f:
-        f.seek(-4, 2)
-        return struct.unpack("I", f.read(4))[0]
 
 
 def detect_vcf_annotation(filepath):
@@ -34,7 +22,7 @@ def detect_vcf_annotation(filepath):
 
     :return: "vep", "snpeff", None
     """
-    if is_gz_file(filepath):
+    if cm.is_gz_file(filepath):
         # Open .gz files in binary mode (See #84)
         device = open(filepath, "rb")
     else:
@@ -72,14 +60,14 @@ def create_reader(filepath):
     LOGGER.debug(
         "create_reader: PATH suffix %s, is_gz_file: %s",
         path.suffixes,
-        is_gz_file(filepath),
+        cm.is_gz_file(filepath),
     )
 
     if ".vcf" in path.suffixes and ".gz" in path.suffixes:
         annotation_detected = detect_vcf_annotation(filepath)
         device = open(filepath, "rb")
         reader = VcfReader(device, annotation_detected)
-        reader.file_size = get_uncompressed_size(filepath)
+        reader.file_size = cm.get_uncompressed_size(filepath)
         yield reader
         device.close()
         return
