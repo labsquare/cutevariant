@@ -176,8 +176,7 @@ class MainWindow(QMainWindow):
 
         self.file_menu.addSeparator()
 
-        self.file_menu.addAction(
-            FIcon(), self.tr("Export ... "))
+
 
         self.file_menu.addSeparator()
 
