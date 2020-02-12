@@ -19,7 +19,7 @@ install:
   - unzip sqlite-dll-win32-x86-3280000.zip
   - cd fbs
   - fbs freeze
-  - cp -R ..\cutevariant\ target\cutevariant\
+  - cp -R ..\cutevariant\ target\
   #- copy sqlite3.dll C:\Miniconda3\envs\test-environment\DLLs\
   #- python make_a_blob.py build_exe
   # - copy sqlite3.dll C:\Miniconda3\envs\test-environment\DLLs\
