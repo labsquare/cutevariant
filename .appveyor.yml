@@ -9,7 +9,8 @@ init:
 
 install:
   - pip install -e .
-  - pip install fbs
+  - pip install PyInstaller==3.5
+  - pip install fbs==0.8.4
   - pip install pytest
   - pip install schema
   - pip install pywin32
