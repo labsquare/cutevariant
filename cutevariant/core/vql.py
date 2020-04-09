@@ -12,7 +12,6 @@ def model_class(name: str, bases: tuple, attrs: dict) -> type:
     and register the class for metamodel
     """
     if "__init__" not in attrs:
-
         def __init__(self, *args, **kwargs):
             for field, value in kwargs.items():
                 setattr(self, field, value)
@@ -143,6 +142,9 @@ class SelectCmd(metaclass=model_class):
         return output
 
 
+
+
+
 class CreateCmd(metaclass=model_class):
     @property
     def value(self):
@@ -162,6 +164,8 @@ class SetCmd(metaclass=model_class):
         "target": self.target,
         "expression": "todo" #self.expression
         }
+
+
 
 
 METAMODEL = textx.metamodel_from_str(
@@ -186,6 +190,6 @@ def execute_vql(raw_vql: str) -> list:
     yield from (command.value for command in raw_model.commands)
 
 
-def model_from_string(raw_vql: str) -> dict:
-    """Obsolete : retro compatibility"""
-    return next(execute_vql(raw_vql))
+# def model_from_string(raw_vql: str) -> dict:
+#     """Obsolete : retro compatibility"""
+#     return next(execute_vql(raw_vql))

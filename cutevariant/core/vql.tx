@@ -53,13 +53,14 @@ FilterTerm:
 
 //################################## TERMINALS #########################
 Comment: /\#.*$/;
+
 FieldId:/[^\d\W](\w*\.)?\w*\b/;
 ColumnIdentifier: Function|FieldId;
 ValueIdentifier: (NUMBER|STRING|BOOL|Tuple);
-Function: func=ID '(' arg=STRING ')' ('.' extra=ID)?;
+ARGS: STRING;
+Function: func=ID '(' arg=ARGS ')' ('.' extra=ID)?;
 BoolOperator: "AND"|"OR";
 SetOperator: "+"|"-"|"&"|"^";
-MathOperator: /==|>=|<=|!=|=\/=|=|>|<|\||\*|\/|\%|>>|<<|\&|\||<>|IS|IS
-NOT|IN|LIKE|GLOB|MATCH|REGEXP/;
-Tuple: '(' items*=ValueIdentifier[','] ')';
+MathOperator: />=|<=|!=|=|>|<|!~|~|is|like|in/;
+Tuple: '(' items+=ValueIdentifier[','] ')';
 
