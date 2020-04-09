@@ -261,6 +261,31 @@ class LogicField(BaseField):
             return "AND"
 
 
+class GenotypeField(BaseField):
+    """Editor for the genotype (gt) field
+    """
+
+    GENOTYPES = {
+        -1: FIcon(0xF2D7),
+        0: FIcon(0xF130),
+        1: FIcon(0xFAA0),
+        2: FIcon(0xFAA4)
+    }
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.combo_box = QComboBox()
+        for gt, icon in self.GENOTYPES.items():
+            self.combo_box.addItem(icon, "", userData=gt)
+        self.set_widget(self.combo_box)
+
+    def set_value(self, value: int):
+        self.combo_box.setCurrentIndex(self.combo_box.findData(value))
+
+    def get_value(self):
+        return self.combo_box.currentData()
+
+
 class FieldFactory(QObject):
     """FieldFactory is a factory to build BaseEditor according sql Field data
 
@@ -283,6 +308,9 @@ class FieldFactory(QObject):
 
         field = sql.get_field_by_name(self.conn, sql_field)
 
+        if field["name"] == "gt":
+            w = GenotypeField()
+            return w
         if field["type"] == "int":
             w = IntegerField()
             w.set_range(*sql.get_field_range(self.conn, sql_field, sample))
@@ -536,6 +564,16 @@ class FilterModel(QAbstractItemModel):
                 # However we have to format it for display
                 data = f"{data[1]}.{data[2]}"
             return data
+        if role in (Qt.DecorationRole, Qt.DisplayRole) and index.column() == 2:
+            # Special case to display an icon instead of a number for gt fields
+            field = self.item(index).get_data(0)
+            if type(field) is tuple and field[2] == "gt":
+                if role == Qt.DecorationRole:
+                    gt = self.item(index).get_data(index.column())
+                    return QIcon(GenotypeField.GENOTYPES[gt])
+                else:
+                    # don't display any text
+                    return None
         if role == Qt.DisplayRole or role == Qt.EditRole:
             #  Display data
             item = self.item(index)
