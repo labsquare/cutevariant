@@ -14,6 +14,21 @@ import uuid
 from cutevariant.core import sql, get_sql_connexion
 
 
+def prepare_columns(conn):
+    """Prepares a list of columns on which filters can be applied
+    """
+    columns = []
+    samples = [s["name"] for s in sql.get_samples(conn)]
+    for field in sql.get_fields(conn):
+        name = field["name"]
+        if field["category"] == "samples":
+            for sample in samples:
+                columns.append((f"{sample}.{name}", ("genotype", sample, name), field))
+        else:
+            columns.append((name, name, field))
+    return columns
+
+
 class BaseField(QFrame):
     """Base class for all editor widgets. Editor widgets are used in FilterDelegate to display different kind of editor according field type.
     Inherit from this class if you want a custom field editor by overriding  set_value and get_value.
@@ -184,16 +199,20 @@ class ColumnField(BaseField):
         self.combo_box.setEditable(True)
         self.set_widget(self.combo_box)
 
-    def set_value(self, value: str):
+    def set_value(self, value):
+        # sample fields are stored as tuples
+        if type(value) is tuple:
+            value = f"{value[1]}.{value[2]}"
         self.combo_box.setCurrentText(value)
 
     def get_value(self) -> str:
-        return self.combo_box.currentText()
+        return self.combo_box.currentData()
 
     def set_columns(self, columns: list):
         """ fill combobox with columns values
         """
-        self.combo_box.addItems(columns)
+        for label, value, _ in columns:
+            self.combo_box.addItem(label, userData=value)
 
 
 class LogicField(BaseField):
@@ -230,14 +249,12 @@ class LogicField(BaseField):
         self.and_button.setStyleSheet("QPushButton:checked{background-color:red}")
 
     def set_value(self, value: str):
-        print("set value", value)
         if value.upper() == "OR":
             self.or_button.setChecked(True)
         else:
             self.and_button.setChecked(True)
 
     def get_value(self) -> str:
-        print("get value", self.or_button.isChecked())
         if self.or_button.isChecked():
             return "OR"
         else:
@@ -256,23 +273,30 @@ class FieldFactory(QObject):
         self.conn = conn
 
     def create(self, sql_field):
+        # sample fields are stored as tuples
+        if type(sql_field) is tuple:
+            sample = sql_field[1]
+            sql_field = sql_field[2]
+        else:
+            # Passing sample has no effect for non-sample fields
+            sample = None
+
         field = sql.get_field_by_name(self.conn, sql_field)
 
         if field["type"] == "int":
             w = IntegerField()
-            w.set_range(*sql.get_field_range(self.conn, sql_field))
+            w.set_range(*sql.get_field_range(self.conn, sql_field, sample))
             return w
 
         if field["type"] == "float":
             w = FloatField()
-            w.set_range(*sql.get_field_range(self.conn, sql_field))
+            w.set_range(*sql.get_field_range(self.conn, sql_field, sample))
             return w
 
         if field["type"] == "str":
             w = StrField()
-            print(field)
             unique_values = sql.get_field_unique_values(
-                self.conn, field["name"]
+                self.conn, field["name"], sample
             )  #  Can be huge ... How to use "like" ??
             w.set_completer(QCompleter(unique_values))
             return w
@@ -505,6 +529,13 @@ class FilterModel(QAbstractItemModel):
         if not index.isValid():
             return None
 
+        if role == Qt.DisplayRole and index.column() == 0:
+            data = self.item(index).get_data(index.column())
+            if type(data) is tuple:
+                # If the field is a sample field, we store it as a tuple
+                # However we have to format it for display
+                data = f"{data[1]}.{data[2]}"
+            return data
         if role == Qt.DisplayRole or role == Qt.EditRole:
             #  Display data
             item = self.item(index)
@@ -921,8 +952,7 @@ class FilterDelegate(QStyledItemDelegate):
 
             if item.type() == FilterItem.CONDITION_TYPE:
                 w = ColumnField(parent)
-                columns = [i["name"] for i in sql.get_fields(conn)]
-                w.set_columns(columns)
+                w.set_columns(prepare_columns(conn))
                 return w
 
         if index.column() == 1:
@@ -932,7 +962,7 @@ class FilterDelegate(QStyledItemDelegate):
         if index.column() == 2:
 
             sql_field_index = model.index(index.row(), 0, index.parent())
-            sql_field = model.data(sql_field_index, Qt.DisplayRole)
+            sql_field = model.data(sql_field_index, Qt.EditRole)
             w = FieldFactory(conn).create(sql_field)
             w.setParent(parent)
             return w
@@ -1021,8 +1051,6 @@ class FieldDialog(QDialog):
 
         self.setLayout(v_layout)
 
-        self.setFixedSize(500, 300)
-
         self.field_box.currentIndexChanged.connect(self.on_field_changed)
 
         self.conn = conn
@@ -1043,10 +1071,8 @@ class FieldDialog(QDialog):
     def load_fields(self):
         """Load sql fields into combobox
         """
-        for field in sql.get_field_by_category(self.conn, "variants"):
-            self.field_box.addItem(field["name"], field)
-        for field in sql.get_field_by_category(self.conn, "annotations"):
-            self.field_box.addItem(field["name"], field)
+        for label, value, field in prepare_columns(self.conn):
+            self.field_box.addItem(label, userData=(value, field))
 
     def load_value_editor(self, sql_field):
         """Create a field widget according sql field name
@@ -1065,10 +1091,10 @@ class FieldDialog(QDialog):
         Args:
             index (int): current index from self.field_box
         """
-        field = self.field_box.itemData(index)
+        value, field = self.field_box.itemData(index)
         self.title_label.setText("{name} ({category})".format(**field))
         self.description_label.setText(field["description"])
-        self.load_value_editor(field["name"])
+        self.load_value_editor(value)
 
     def get_condition(self):
         """Return current condition as a dictionnary
@@ -1077,7 +1103,7 @@ class FieldDialog(QDialog):
             Dictionnary exemple {"field":"chr", "operator":"=", value:5}
 
         """
-        field = self.field_box.currentText()
+        field = self.field_box.currentData()[0]
         operator = self.field_operator.get_value()
         widget = self.form_layout.itemAt(5).widget()
         value = widget.get_value()
