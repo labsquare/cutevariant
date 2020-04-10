@@ -479,7 +479,7 @@ class QueryViewWidget(plugin.PluginWidget):
         cell_value = self.model.variant(index)[index.column()]
         menu.addAction(FIcon(0xf18f),
         f"Copy {cell_value}", 
-        lambda : qApp.clipboard().setText(str(self.model.variant(index)))
+        lambda : qApp.clipboard().setText(str(cell_value))
         )
 
         genomic_location = "{chr}:{pos}{ref}>{alt}".format(**variant)
