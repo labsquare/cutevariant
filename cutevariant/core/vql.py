@@ -91,6 +91,11 @@ class FilterExpression(metaclass=model_class):
         return {key: out}
 
 
+class SetExpression(metaclass=model_class):
+    @property
+    def value(self):
+        return "test"
+
 # class FilterExpression(metaclass=model_class):
 #     @property
 #     def value(self):
@@ -162,7 +167,7 @@ class SetCmd(metaclass=model_class):
         return {
         "cmd": "set_cmd",
         "target": self.target,
-        "expression": "todo" #self.expression
+        "expression": self.expression
         }
 
 

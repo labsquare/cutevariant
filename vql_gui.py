@@ -69,7 +69,7 @@ w.show()
 app.exec_()
 
 
-a = execute_vql("SELECT a FROM b WHERE a in (1,2,3)")
+a = execute_vql("CREATE a = b + c ")
 
 i = next(a)
 
