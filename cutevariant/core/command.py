@@ -1,6 +1,6 @@
 
 from cutevariant.core.querybuilder import * 
-from cutevariant.core import sql
+from cutevariant.core import sql, vql 
 import sqlite3
 
 
@@ -139,4 +139,4 @@ class SetCommand(Command):
 
     def undo(self):
         pass 
-    
+

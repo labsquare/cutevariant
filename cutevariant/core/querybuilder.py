@@ -136,3 +136,92 @@ def filters_to_sql(filters, default_tables = {}):
                 return "(" + f" {logic_op} ".join(out) + ")"
 
     return recursive(filters)
+
+
+
+def build_query(columns, 
+    source = "variants", 
+    filters = {}, 
+    order_by = None, 
+    order_desc = True,
+    grouped = False,
+    limit = 50,
+    offset = 0,
+    default_tables = {},
+    default_samples = {}):
+
+    sql_query = ""
+    # Create columns 
+    sql_columns = ["`variants`.`id`"] + [fields_to_sql(col, default_tables) for col in columns if "id" not in col]
+    sql_query = f"SELECT {','.join(sql_columns)} "
+
+    # Add child count if grouped 
+    if grouped:
+        sql_query += ", COUNT(*) as `children`"
+
+    #  Add source table
+    sql_query += f"FROM variants"
+
+    # Extract columns from filters 
+    columns_in_filters = [i["field"] for i in filters_to_flat(filters)]
+    
+    # Loop over columns and check is annotations is required 
+    need_join_annotations = False
+    for col in columns + columns_in_filters:
+        if "annotations." in col:
+            need_join_annotations = True
+            break
+
+    if need_join_annotations:
+        sql_query += (
+            " LEFT JOIN annotations ON annotations.variant_id = variants.id"
+        )
+
+    #  Add Join Selection
+    # TODO: set variants as global variables
+    if source != "variants":
+        sql_query += (
+            " INNER JOIN selection_has_variant sv ON sv.variant_id = variants.id "
+            f"INNER JOIN selections s ON s.id = sv.selection_id AND s.name = '{source}'"
+        )
+
+    #  Add Join Samples
+    ## detect if columns contains function like (genotype,boby,gt) and save boby
+    all_columns = columns_in_filters + columns
+    samples = []
+    for col in all_columns:
+        if isinstance(col, tuple):
+            if col[0] == "genotype":
+                samples.append(col[1])
+
+    ## Create Sample Join
+    for sample_name in samples:
+        # Optimisation ? 
+        #sample_id = self.cache_samples_ids[sample_name]
+        sql_query += (
+            f" INNER JOIN sample_has_variant `genotype_{sample_name}` ON `genotype_{sample_name}`.variant_id = variants.id"
+            f" INNER JOIN samples ON samples.name = '{sample_name}' AND `genotype_{sample_name}`.sample_id = samples.id"
+        )
+
+    #  Add Where Clause
+    if filters:
+        where_clause = filters_to_sql(filters, default_tables)
+        # TODO : filter_to_sql should returns empty instead of ()
+        if where_clause and where_clause != "()":
+            sql_query += " WHERE " + where_clause
+
+    #  Add Group By
+    if grouped:
+        sql_query += " GROUP BY " + ",".join(["chr","pos","ref","alt"])
+
+    #  Add Order By
+    if order_by:
+        # TODO : sqlite escape field with quote
+        orientation = "DESC" if order_desc else "ASC"
+        order_by = fields_to_sql(order_by, default_tables)
+        sql_query += f" ORDER BY {order_by} {orientation}"
+
+    if limit:
+        sql_query += f" LIMIT {limit} OFFSET {offset}"
+
+    return sql_query
