@@ -2,7 +2,7 @@
 from cutevariant.core.querybuilder import * 
 from cutevariant.core import sql, vql 
 import sqlite3
-
+import networkx as nx 
 
 class Command(object):
     def __init__(self, conn : sqlite3.Connection):
@@ -27,102 +27,68 @@ class SelectCommand(Command):
         self.limit = 50
         self.offset = 0
         self.as_dict = True
-        self.default_tables = self._get_default_tables()
+        self.default_tables = dict([(i["name"], i["category"]) for i in sql.get_fields(self.conn)])
 
 
-    def _get_default_tables(self):
-        return dict([(i["name"], i["category"]) for i in sql.get_fields(self.conn)])
+    def do(self):
+        q = build_query(self.columns, self.source, self.filters, self.order_by, self.order_desc, self.grouped, self.limit, self.offset, self.default_tables) 
 
-    def _build_query(self):
-
-        sql_query = ""
-        # Create columns 
-        sql_columns = ["`variants`.`id`"] + [fields_to_sql(col, self.default_tables) for col in self.columns if "id" not in col]
-        sql_query = f"SELECT {','.join(sql_columns)} "
-
-        # Add child count if grouped 
-        if self.grouped:
-            sql_query += ", COUNT(*) as `children`"
-
-        #  Add source table
-        sql_query += f"FROM variants"
-
-        # Extract columns from filters 
-        columns_in_filters = [i["field"] for i in filters_to_flat(self.filters)]
-        
-        # Loop over columns and check is annotations is required 
-        need_join_annotations = False
-        for col in self.columns + columns_in_filters:
-            if "annotations." in col:
-                need_join_annotations = True
-                break
-
-        print(self.columns)
-
-        if need_join_annotations:
-            sql_query += (
-                " LEFT JOIN annotations ON annotations.variant_id = variants.id"
-            )
-
-        #  Add Join Selection
-        # TODO: set variants as global variables
-        if self.source != "variants":
-            sql_query += (
-                " INNER JOIN selection_has_variant sv ON sv.variant_id = variants.id "
-                f"INNER JOIN selections s ON s.id = sv.selection_id AND s.name = '{self.source}'"
-            )
-
-        #  Add Join Samples
-        ## detect if columns contains function like (genotype,TUMOR,gt)
-        # all_columns = columns_in_filters + self.columns
-        # samples_in_query = set([fct[1] for fct in self._get_functions(all_columns)])
-        # ## Create Sample Join
-        # for sample_name in samples_in_query:
-        #     sample_id = self.cache_samples_ids[sample_name]
-        #     sql_query += (
-        #         f" LEFT JOIN sample_has_variant `gt_{sample_name}`"
-        #         f" ON `gt_{sample_name}`.variant_id = variants.id"
-        #         f" AND `gt_{sample_name}`.sample_id = {sample_id}"
-        #     )
-
-        #  Add Where Clause
-        if self.filters:
-            where_clause = filter_to_sql(self.filters)
-            # TODO : filter_to_sql should returns empty instead of ()
-            if where_clause and where_clause != "()":
-                sql_query += " WHERE " + where_clause
-
-        #  Add Group By
-        if self.grouped:
-            sql_query += " GROUP BY " + ",".join(["chr","pos","ref","alt"])
-
-        #  Add Order By
-        if self.order_by:
-            # TODO : sqlite escape field with quote
-            orientation = "DESC" if self.order_desc else "ASC"
-            order_by = self.column_to_sql(self.order_by)
-            sql_query += f" ORDER BY {order_by} {orientation}"
-
-        if self.limit:
-            sql_query += f" LIMIT {self.limit} OFFSET {self.offset}"
-
-        return sql_query
-
-
-    def do(self, **args):
         self.conn.row_factory = sqlite3.Row
-        sql = self._build_query()
-        for v in self.conn.execute(sql):
-            yield dict(v)
 
-            
+        for i in self.conn.execute(q):
+            yield dict(i)
+
+    
 
 class CreateCommand(Command):
     def __init__(self, conn: sqlite3.Connection):
         super().__init__(conn)
+        self.filters=dict()
+        self.source="variants"
+        self.target = None
+        self.count = 0 
+        self.default_tables = dict([(i["name"], i["category"]) for i in sql.get_fields(self.conn)])
+
+
 
     def do(self):
-        pass 
+        if self.target is None:
+            return 
+
+        cursor = self.conn.cursor()
+
+        sql_query = build_query(["id"], self.source, self.filters, default_tables = self.default_tables) 
+        count = sql.count_query(self.conn, sql_query)
+
+
+        selection_id = sql.insert_selection(cursor, sql_query, name=self.target, count=count)
+
+
+        q = f"""
+        INSERT INTO selection_has_variant
+        SELECT DISTINCT id, {selection_id} FROM ({sql_query})
+        """
+
+        # DROP indexes
+        # For joints between selections and variants tables
+        try:
+            cursor.execute("""DROP INDEX idx_selection_has_variant""")
+        except sqlite3.OperationalError:
+            pass
+
+        cursor.execute(q)
+
+        # # REBUILD INDEXES
+        # # For joints between selections and variants tables
+        sql.create_selection_has_variant_indexes(cursor)
+
+        self.conn.commit()
+        if cursor.rowcount:
+            return {"id": cursor.lastrowid}
+        return {}
+
+
+
 
     def undo(self):
         pass 
@@ -139,4 +105,65 @@ class SetCommand(Command):
 
     def undo(self):
         pass 
+
+
+def VqlCommand(Command):
+    def __init__(self, conn: sqlite3.Connection, vql : str):
+        super().__init__(conn)
+
+        self.vql = vql 
+        self.cmds = []
+
+    def do(self):
+        for cmd in self.cmds:
+            cmd.do()
+
+    def undo(self):
+        for cmd in self.cmds:
+            cmd.undo()
+
+    def _create_cmds(self):
+        pass
+
+
+def cmd_from_vql(conn, vql_cmd): 
+    if vql_cmd["cmd"] == "select_cmd":
+        cmd = SelectCommand(conn)
+        cmd.columns = vql_cmd["columns"]
+        cmd.source = vql_cmd["source"]
+        cmd.filters = vql_cmd["filters"]
+        return cmd 
+
+    if vql_cmd["cmd"] == "create_cmd":
+        cmd = CreateCommand(conn)
+        cmd.source = vql_cmd["source"]
+        cmd.filters = vql_cmd["filters"]
+        cmd.target = vql_cmd["target"] 
+        return cmd 
+
+    return None
+
+
+class CommandGraph(object):
+    def __init__(self, conn):
+        super().__init__()
+        self.conn = conn
+        self.graph = nx.DiGraph() 
+        self.graph.add_node("variants")
+
+    def add_command(self, command: Command):
+
+        if type(command) == CreateCommand:
+            self.graph.add_node(command.target)
+            self.graph.add_edge(command.source, command.target)
+
+        if type(command) == SelectCommand:
+            self.graph.add_node("Select")
+            self.graph.add_edge(command.source, "Select")
+
+    def set_source(self, source):
+        self.graph.clear()
+        for vql_cmd in vql.execute_vql(source):
+            cmd = cmd_from_vql(self.conn, vql_cmd)
+            self.add_command(cmd)
 

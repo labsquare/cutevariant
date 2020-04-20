@@ -147,8 +147,7 @@ def build_query(columns,
     grouped = False,
     limit = 50,
     offset = 0,
-    default_tables = {},
-    default_samples = {}):
+    default_tables = {}):
 
     sql_query = ""
     # Create columns 
@@ -225,3 +224,5 @@ def build_query(columns,
         sql_query += f" LIMIT {limit} OFFSET {offset}"
 
     return sql_query
+
+

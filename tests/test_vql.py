@@ -13,7 +13,7 @@ VQL_TO_TREE_CASES = {
         "cmd":"select_cmd",
         "columns": ["chr", "pos", "ref"],
         "source": "variants",
-        "filter": {
+        "filters": {
             "AND": [
                 {"field": "a", "operator": "=", "value": 3},
                 {"field": "b", "operator": "!=", "value": 5},
@@ -25,7 +25,7 @@ VQL_TO_TREE_CASES = {
         "cmd":"select_cmd",
         "columns": ["chr", "pos", "ref"],
         "source": "variants",
-        "filter": {
+        "filters": {
             "AND": [
                 {"field": "a", "operator": "=", "value": 3},
                 {
@@ -46,13 +46,13 @@ VQL_TO_TREE_CASES = {
         "cmd":"select_cmd",
         "columns": ["chr"],
         "source": "variants",
-        "filter": {'AND': [{'field': 'some_field', 'operator': 'IN', 'value': ('one', 'two')}]},
+        "filters": {'AND': [{'field': 'some_field', 'operator': 'IN', 'value': ('one', 'two')}]},
     },
 
     "CREATE denovo FROM variants": {
         "cmd":"create_cmd",
         "source": "variants",
-        "filter": None,
+        "filters": None,
         "target": "denovo"
     },
 
@@ -60,7 +60,7 @@ VQL_TO_TREE_CASES = {
         "cmd":"create_cmd",
         "source": "variants",
         "target":"denovo",
-        "filter": {'AND': [{'field': 'some_field', 'operator': 'IN', 'value': ('one', 'two')}]},
+        "filters": {'AND': [{'field': 'some_field', 'operator': 'IN', 'value': ('one', 'two')}]},
     },
 
 #    "CREATE denovo = boby & alex": {

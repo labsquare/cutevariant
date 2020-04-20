@@ -142,7 +142,9 @@ class SelectCmd(metaclass=model_class):
         }
 
         if self.filter:
-            output["filter"] = self.filter.value
+            output["filters"] = self.filter.value
+        else:
+            output["filters"] = {}
 
         return output
 
@@ -156,7 +158,7 @@ class CreateCmd(metaclass=model_class):
         return {
             "cmd": "create_cmd",
             "source": self.source,
-            "filter": self.filter.value if self.filter else None,
+            "filters": self.filter.value if self.filter else {},
             "target": self.target
         }
 

@@ -1140,6 +1140,15 @@ def update_sample(conn, sample: dict):
     query = "UPDATE samples SET " + ",".join(sql_set) + " WHERE id = " + str(sample["id"])
     conn.execute(query, sql_val)
     conn.commit()
+
+
+def count_query(conn, query):
+    """ count from query """ 
+    return conn.execute(
+        f"SELECT COUNT(*) as count FROM ({query})"
+    ).fetchone()[0]
+
+
 ## ============== VARIANTS QUERY THINGS ... ======================
 from cutevariant.core.vql import execute_vql
 
