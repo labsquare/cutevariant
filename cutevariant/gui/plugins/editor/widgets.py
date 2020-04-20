@@ -262,7 +262,7 @@ class EditorWidget(plugin.PluginWidget):
                 self.columns = cmd["columns"]  # columns from variant table
                 self.selection = cmd["source"]  # name of the variant set
                 self.filters = cmd.get(
-                    "filter", dict()
+                    "filters", dict()
                 )  # filter as raw text; dict if no filter
 
             if cmd["cmd"] == "create_cmd":

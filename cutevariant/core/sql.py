@@ -1542,7 +1542,7 @@ class QueryBuilder(object):
         if result["cmd"] == "select_cmd":
             self.columns = result.get("columns", None)
             self.selection = result.get("source", "variants")
-            self.filters = result.get("filter", None)
+            self.filters = result.get("filters", None)
 
 
 
