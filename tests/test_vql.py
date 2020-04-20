@@ -7,6 +7,7 @@ VQL_TO_TREE_CASES = {
     'SELECT chr,pos,genotype("sacha") FROM variants': {
         "cmd":"select_cmd",
         "columns": ["chr", "pos", ('genotype','sacha','gt')],
+        "filters": {},
         "source": "variants",
     },
     "SELECT chr,pos,ref FROM variants WHERE a=3 AND b!=5 AND c<3": {
@@ -40,6 +41,7 @@ VQL_TO_TREE_CASES = {
     'SELECT chr,pos, genotype("sacha") FROM variants # comments are handled': {
         "cmd":"select_cmd",
         "columns": ["chr", "pos", ('genotype','sacha','gt')],
+        "filters": {},
         "source": "variants"
         },
     "SELECT chr FROM variants WHERE some_field IN ('one', 'two')": {
@@ -52,7 +54,7 @@ VQL_TO_TREE_CASES = {
     "CREATE denovo FROM variants": {
         "cmd":"create_cmd",
         "source": "variants",
-        "filters": None,
+        "filters": {},
         "target": "denovo"
     },
 
@@ -62,6 +64,15 @@ VQL_TO_TREE_CASES = {
         "target":"denovo",
         "filters": {'AND': [{'field': 'some_field', 'operator': 'IN', 'value': ('one', 'two')}]},
     },
+
+
+    "CREATE denovo = A + B " : {
+    "cmd": "set_cmd",
+    "first": "A",
+    "second": "B",
+    "operator":"+", 
+    "target": "denovo"
+    }
 
 #    "CREATE denovo = boby & alex": {
 #         "cmd":"create_cmd",
@@ -91,12 +102,4 @@ def template_test_case(vql_expr: str, expected: dict) -> callable:
 for idx, (vql, expected) in enumerate(VQL_TO_TREE_CASES.items(), start=1):
     globals()[f"test_vql_{idx}"] = template_test_case(vql, expected)
 
-
-def test_vql_function():
-    q = "CREATE boby = alex & toi"
-
-    found = next(execute_vql(q))
-
-    exp = found["expression"]
-    a = 3
 

@@ -17,8 +17,12 @@ CreateCmd:
     'CREATE' target=ID 'FROM' source=ID ('WHERE' filter=FilterExpression)?
 ;
 
-SetCmd:
+SetCmdFull:
     'CREATE' target=ID '=' expression=SetExpression
+;
+
+SetCmd:
+	'CREATE' target=ID '=' first=ID op=SetOperator second=ID
 ;
 
 
@@ -63,4 +67,5 @@ BoolOperator: "AND"|"OR";
 SetOperator: "+"|"-"|"&"|"^";
 MathOperator: />=|<=|!=|=|>|<|!~|~|is|like|in/;
 Tuple: '(' items+=ValueIdentifier[','] ')';
+
 

@@ -169,7 +169,9 @@ class SetCmd(metaclass=model_class):
         return {
         "cmd": "set_cmd",
         "target": self.target,
-        "expression": self.expression
+        "first": self.first,
+        "operator": self.op, 
+        "second": self.second
         }
 
 
