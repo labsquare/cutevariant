@@ -94,6 +94,11 @@ class InfoVariantWidget(PluginWidget):
         self.sample_combo.currentIndexChanged.connect(self.on_sample_changed)
 
 
+        # Build genotype tabs 
+        self.genotype_view = QListWidget()
+        self.genotype_view.setIconSize(QSize(20,20))
+        self.view.addTab(self.genotype_view, "Genotypes")
+
     
        # self.view.setColumnCount(2)
         # Set title of columns
@@ -193,6 +198,39 @@ class InfoVariantWidget(PluginWidget):
             self.sample_combo.addItem(sample["name"], sample["id"])
         self.on_sample_changed()
         self.sample_combo.blockSignals(False)
+
+
+        # Populate genotype 
+        self.genotype_view.clear()
+        q = f"SELECT samples.name, sv.gt FROM samples LEFT JOIN sample_has_variant sv ON samples.id = sv.sample_id AND sv.variant_id = {variant_id}"
+        
+        # TODO : move somewhere else
+        GENOTYPES = {
+        -1: FIcon(0xF2D7),
+        0: FIcon(0xF130),
+        1: FIcon(0xFAA0),
+        2: FIcon(0xFAA4)}
+
+        for row in self.conn.execute(q):
+            item = QListWidgetItem() 
+            genotype = int(row[1])
+            icon = GENOTYPES[genotype]
+
+            item.setText(str(row[0]))
+            item.setIcon(icon)
+            
+            self.genotype_view.addItem(item)
+
+        # cur = self.conn.cursor()
+        # cur.execute(q)
+       
+
+
+        # for sample in sql.get_samples(self.conn):
+        #     item = QTreeWidgetItem()
+        #     item.setText(0, sample["name"])
+        #     self.genotype_view.addTopLevelItem(item)
+
 
     @Slot()
     def on_transcript_changed(self):
