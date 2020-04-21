@@ -1070,7 +1070,7 @@ def create_table_samples(conn, fields=None):
     )
 
     if not fields:
-        schema = 'gt INTEGER DEFAULT DEFAULT -1'
+        schema = 'gt INTEGER DEFAULT -1'
 
     cursor.execute(
         f"""CREATE TABLE sample_has_variant  (
