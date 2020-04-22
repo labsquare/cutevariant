@@ -175,6 +175,26 @@ class SetCmd(metaclass=model_class):
         }
 
 
+class BedCmd(metaclass = model_class):
+    @property
+    def value(self):
+        return {
+        "cmd" : "bed_cmd",
+        "target": self.target,
+        "source": self.source,
+        "path": self.path
+        }
+    
+class CopyCmd(metaclass = model_class):
+    @property
+    def value(self):
+        return {
+        "cmd": "create_cmd",
+        "source": self.source,
+        "filters": {},
+        "target": self.target
+        }
+    
 
 
 METAMODEL = textx.metamodel_from_str(
@@ -186,7 +206,10 @@ METAMODEL = textx.metamodel_from_str(
 
 
 def execute_vql(raw_vql: str) -> list:
-    """Execute multiline VQL statement separated by ";"
+    """DEPRECETED : USE parse_vql 
+
+    RENAME 
+    Execute multiline VQL statement separated by ";"
 
     :return: yield 1 dictionnary per command
         .. example :: {'cmd': 'select_cmd', 'columns': ['chr','pos'], 'source':'variants', 'filter': 'None'}
@@ -199,6 +222,15 @@ def execute_vql(raw_vql: str) -> list:
     yield from (command.value for command in raw_model.commands)
 
 
-# def model_from_string(raw_vql: str) -> dict:
-#     """Obsolete : retro compatibility"""
-#     return next(execute_vql(raw_vql))
+def parse_vql(raw_vql: str) -> list:
+    """Execute multiline VQL statement separated by ";"
+
+    :return: yield 1 dictionnary per command
+        .. example :: {'cmd': 'select_cmd', 'columns': ['chr','pos'], 'source':'variants', 'filter': 'None'}
+    """
+    try:
+        raw_model = METAMODEL.model_from_str(raw_vql)
+    except textx.exceptions.TextXSyntaxError as err:
+        raise VQLSyntaxError(*error_message_from_err(err, raw_vql))
+
+    yield from (command.value for command in raw_model.commands)

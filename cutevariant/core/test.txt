@@ -1,1 +1,2 @@
-SELECT chr,pos, gene, sample("boby").GT FROM variants WHERE sample("boby").isHetero = True
+
+CREATE test FROM boby INTERSECT "boby"

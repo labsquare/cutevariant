@@ -4,12 +4,14 @@ from cutevariant.core.vql import execute_vql, VQLSyntaxError
 
 # Test valid VQL cases
 VQL_TO_TREE_CASES = {
+    # Test 1 
     'SELECT chr,pos,genotype("sacha") FROM variants': {
         "cmd":"select_cmd",
         "columns": ["chr", "pos", ('genotype','sacha','gt')],
         "filters": {},
         "source": "variants",
     },
+    # Test 2
     "SELECT chr,pos,ref FROM variants WHERE a=3 AND b!=5 AND c<3": {
         "cmd":"select_cmd",
         "columns": ["chr", "pos", "ref"],
@@ -22,6 +24,7 @@ VQL_TO_TREE_CASES = {
             ]
         },
     },
+    # Test 3
     "SELECT chr,pos,ref FROM variants WHERE a=3 AND (b=5 OR c=3)": {
         "cmd":"select_cmd",
         "columns": ["chr", "pos", "ref"],
@@ -38,47 +41,50 @@ VQL_TO_TREE_CASES = {
             ]
         },
     },
+    # Test 4
     'SELECT chr,pos, genotype("sacha") FROM variants # comments are handled': {
         "cmd":"select_cmd",
         "columns": ["chr", "pos", ('genotype','sacha','gt')],
         "filters": {},
         "source": "variants"
         },
+    # Test 5
     "SELECT chr FROM variants WHERE some_field IN ('one', 'two')": {
         "cmd":"select_cmd",
         "columns": ["chr"],
         "source": "variants",
         "filters": {'AND': [{'field': 'some_field', 'operator': 'IN', 'value': ('one', 'two')}]},
     },
-
+    # Test 6
     "CREATE denovo FROM variants": {
         "cmd":"create_cmd",
         "source": "variants",
         "filters": {},
         "target": "denovo"
     },
-
+    # Test 7
     "CREATE denovo FROM variants WHERE some_field IN ('one', 'two')": {
         "cmd":"create_cmd",
         "source": "variants",
         "target":"denovo",
         "filters": {'AND': [{'field': 'some_field', 'operator': 'IN', 'value': ('one', 'two')}]},
     },
-
-
+    # Test 8
     "CREATE denovo = A + B " : {
     "cmd": "set_cmd",
     "first": "A",
     "second": "B",
     "operator":"+", 
     "target": "denovo"
-    }
+    },
 
-#    "CREATE denovo = boby & alex": {
-#         "cmd":"create_cmd",
-#         "target": "denovo",
-#         "expression":"todo"
-#         },
+    # Test 9
+   "CREATE subset FROM variants INTERSECT \"/home/sacha/test.bed\"": {
+        "cmd":"bed_cmd",
+        "target": "subset",
+        "source": "variants",
+        "path":"/home/sacha/test.bed"
+        },
 
 }
 

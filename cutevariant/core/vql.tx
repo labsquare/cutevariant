@@ -4,8 +4,9 @@ Model:
 ;
 
 
+// Keep orders 
 Command:
-    SelectCmd|CreateCmd|SetCmd
+    SelectCmd|CreateCmd|SetCmd|BedCmd|CopyCmd
 ;
 
 
@@ -14,7 +15,11 @@ SelectCmd:
 ;
 
 CreateCmd:
-    'CREATE' target=ID 'FROM' source=ID ('WHERE' filter=FilterExpression)?
+    'CREATE' target=ID 'FROM' source=ID 'WHERE' filter=FilterExpression
+;
+
+CopyCmd:
+	'CREATE' target=ID 'FROM' source=ID
 ;
 
 SetCmdFull:
@@ -23,6 +28,10 @@ SetCmdFull:
 
 SetCmd:
 	'CREATE' target=ID '=' first=ID op=SetOperator second=ID
+;
+
+BedCmd:
+	'CREATE' target=ID 'FROM' source=ID 'INTERSECT' path=STRING
 ;
 
 

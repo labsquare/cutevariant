@@ -3,6 +3,8 @@ from cutevariant.core.querybuilder import *
 from cutevariant.core import sql, vql 
 import sqlite3
 import networkx as nx 
+import os 
+import csv
 
 class Command(object):
     def __init__(self, conn : sqlite3.Connection):
@@ -111,8 +113,8 @@ class SetCommand(Command):
 
         cursor = self.conn.cursor()
 
-        query_first = build_query(["id"], self.first) 
-        query_second = build_query(["id"], self.second) 
+        query_first = build_query(["id"], self.first, limit = None) 
+        query_second = build_query(["id"], self.second, limit = None) 
 
 
         if self.operator == "+":
@@ -153,51 +155,86 @@ class SetCommand(Command):
     def undo(self):
         pass 
 
+class BedCommand(Command):
+    def __init__(self, conn: sqlite3.Connection):
+        super().__init__(conn)    
+        self.bedfile = None
+        self.source = None
+        self.target = None
 
-def VqlCommand(Command):
-    def __init__(self, conn: sqlite3.Connection, vql : str):
-        super().__init__(conn)
+    def read_bed(self):
+        with open(self.bedfile) as file:
+            reader = csv.reader(file, delimiter="\t")
+            for line in reader: 
+                if len(line) >= 3:
+                    yield {"chr":line[0], "start":int(line[1]), "end": int(line[2]), "name": ""}
 
-        self.vql = vql 
-        self.cmds = []
 
     def do(self):
-        for cmd in self.cmds:
-            cmd.do()
+        selection_id = sql.create_selection_from_bed(self.conn, self.source, self.target, self.read_bed())
+        return {"id": selection_id}
 
     def undo(self):
-        for cmd in self.cmds:
-            cmd.undo()
-
-    def _create_cmds(self):
         pass
+        
 
 
-def cmd_from_vql(conn, vql_cmd): 
-    if vql_cmd["cmd"] == "select_cmd":
+
+
+        
+def create_command_from_vql_objet(conn, vql_obj: dict): 
+    if vql_obj["cmd"] == "select_cmd":
         cmd = SelectCommand(conn)
-        cmd.columns = vql_cmd["columns"]
-        cmd.source = vql_cmd["source"]
-        cmd.filters = vql_cmd["filters"]
+        cmd.columns = vql_obj["columns"]
+        cmd.source = vql_obj["source"]
+        cmd.filters = vql_obj["filters"]
         return cmd 
 
-    if vql_cmd["cmd"] == "create_cmd":
+    if vql_obj["cmd"] == "create_cmd":
         cmd = CreateCommand(conn)
-        cmd.source = vql_cmd["source"]
-        cmd.filters = vql_cmd["filters"]
-        cmd.target = vql_cmd["target"] 
+        cmd.source = vql_obj["source"]
+        cmd.filters = vql_obj["filters"]
+        cmd.target = vql_obj["target"] 
         return cmd 
 
-    if vql_cmd["cmd"] == "set_cmd":
+    if vql_obj["cmd"] == "set_cmd":
         cmd = SetCommand(conn)
-        cmd.target = vql_cmd["target"]
-        cmd.first = vql_cmd["first"]
-        cmd.second = vql_cmd["second"]
-        cmd.operator = vql_cmd["operator"]
+        cmd.target = vql_obj["target"]
+        cmd.first = vql_obj["first"]
+        cmd.second = vql_obj["second"]
+        cmd.operator = vql_obj["operator"]
         return cmd
 
+    if vql_obj["cmd"] == "bed_cmd": 
+        cmd = BedCommand(conn)
+        cmd.target = vql_obj["target"]
+        cmd.source = vql_obj["source"]
+        cmd.bedfile = vql_obj["path"]
+        return cmd
     return None
 
+def create_commands(conn, vql_source: str):
+    for vql_obj in vql.parse_vql(vql_source):
+        cmd = create_command_from_vql_objet(conn, vql_obj)
+        yield cmd 
+        
+
+def execute_vql(conn, vql_source: str):
+
+    vql_obj = next(vql.parse_vql(vql_source))
+    cmd = create_command_from_vql_objet(conn, vql_obj)
+    if type(cmd) == SelectCommand:
+        return cmd.do()
+    else:
+        return cmd.do()
+
+def execute_full_vql(conn, vql_source: str):
+    for vql_obj in vql.parse_vql(vql_source):
+        cmd = create_command_from_vql_objet(conn, vql_obj)
+        if type(cmd) == SelectCommand:
+            yield cmd.do()
+        else:
+            yield cmd.do()
 
 class CommandGraph(object):
     def __init__(self, conn):
@@ -223,7 +260,7 @@ class CommandGraph(object):
 
     def set_source(self, source):
         self.graph.clear()
-        for vql_cmd in vql.execute_vql(source):
-            cmd = cmd_from_vql(self.conn, vql_cmd)
+        for vql_obj in vql.execute_vql(source):
+            cmd = create_command_from_vql_objet(self.conn, vql_obj)
             self.add_command(cmd)
 

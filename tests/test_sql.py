@@ -307,10 +307,10 @@ def test_selection_from_bedfile(conn):
     # 2: chr1, pos 50 to 60 => 2 variants
     # 3: chr1, pos 51 to 59 => 0 variants
 
-    bedtool = BedTool(larger_string)
+    # bedtool = BedTool(larger_string)
 
     # Create a new selection (a second one, since there is a default one during DB creation)
-    ret = sql.create_selection_from_bed(conn,"variants", "bedname", bedtool)
+    #ret = sql.create_selection_from_bed(conn,"variants", "bedname", bedtool)
     
 
     # # Test last id of the selection
@@ -346,7 +346,7 @@ def test_selection_from_bedfile_and_subselection(conn):
     # 2: chr1, pos 50 to 60 => 2 variants
     # 3: chr1, pos 51 to 59 => 0 variants
 
-    bedtool = BedTool(larger_string)
+   # bedtool = BedTool(larger_string)
  
     # Create now a sub selection 
 

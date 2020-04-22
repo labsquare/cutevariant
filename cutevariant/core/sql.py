@@ -349,23 +349,26 @@ def create_selection_from_bed(conn: sqlite3.Connection, source: str, target: str
         """CREATE TABLE bed_table (
         id INTEGER PRIMARY KEY ASC, 
         bin INTEGER DEFAULT 0, 
-        chrom TEXT, 
+        chr TEXT, 
         start INTEGER, 
         end INTEGER,
         name INTEGER )"""
     )
 
     for interval in bed_intervals:
+
         cur.execute(
-            "INSERT INTO bed_table (bin, chrom, start, end, name) VALUES (?,?,?,?,?)",
+            "INSERT INTO bed_table (bin, chr, start, end, name) VALUES (?,?,?,?,?)",
             (
                 0,
-                interval["chrom"],
+                interval["chr"],
                 interval["start"],
                 interval["end"],
                 interval["name"],
             ),
         )
+
+
 
     if source == "variants":
         source_query = "SELECT variants.id as variant_id FROM variants"
@@ -382,10 +385,11 @@ def create_selection_from_bed(conn: sqlite3.Connection, source: str, target: str
         source_query
         + """  
                 INNER JOIN bed_table ON 
-                variants.chr = bed_table.chrom AND 
+                variants.chr = bed_table.chr AND 
                 variants.pos >= bed_table.start AND 
                 variants.pos <= bed_table.end """
     )
+
 
     return create_selection_from_sql(conn, query, target, from_selection=True)
 
