@@ -36,6 +36,9 @@ def async_import_reader(conn, reader: AbstractReader, **kwargs):
         reference=kwargs.get("reference", "UKN"),
     )
 
+    create_table_metadatas(conn)
+    insert_many_metadatas(conn, reader.get_metadatas())
+
     yield 0, "Creating table shema..."
     # Create table fields
     create_table_fields(conn)

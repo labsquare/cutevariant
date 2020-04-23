@@ -105,7 +105,7 @@ class AbstractReader(ABC):
         """
         return []
 
-    def get_metadata(self) -> dict:
+    def get_metadatas(self) -> dict:
         """ Get meta data 
         Override this method to have meta data in sqlite database 
         """ 

@@ -156,6 +156,33 @@ def create_project(conn: sqlite3.Connection, name: str, reference: str):
     )
     conn.commit()
 
+def create_table_metadatas(conn: sqlite3.Connection):
+    """Create table metdata
+    
+    Args:
+        conn (sqlite3.Connection): Description
+    """
+    cursor = conn.execute("""CREATE TABLE metadatas (id INTEGER PRIMARY KEY, key TEXT, value TEXT)""")
+
+def insert_many_metadatas(conn : sqlite3.Connection, metadatas = {}):
+    """Insert metadata 
+    
+    Args:
+        conn (sqlite3.Connection): Description
+    """
+    if metadatas:
+        conn.executemany(
+            """
+            INSERT INTO metadatas (key,value)
+            VALUES (?,?)
+            """,
+            list(metadatas.items()),
+        )
+
+        conn.commit()
+
+
+
 
 ## ================ SELECTION TABLE ===================================
 

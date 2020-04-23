@@ -47,6 +47,7 @@ class VcfReader(AbstractReader):
         vcf_reader = vcf.VCFReader(device)
         self.samples = vcf_reader.samples
         self.annotation_parser = None
+        self.metadata = vcf_reader.metadata
         self._set_annotation_parser(annotation_parser)
 
     def get_fields(self):
@@ -317,3 +318,15 @@ class VcfReader(AbstractReader):
 
     def __repr__(self):
         return f"VCF Reader using {type(self.annotation_parser).__name__}"
+
+
+    def get_metadatas(self):
+        """override from AbstractReaer """ 
+        output = {}
+        output["filename"] = self.device.name 
+
+        for key, value in self.metadata.items():
+            output[key] = str(value)
+
+        return output
+        
