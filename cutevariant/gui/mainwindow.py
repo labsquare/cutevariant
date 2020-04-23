@@ -28,6 +28,8 @@ from cutevariant.gui.aboutcutevariant import AboutCutevariant
 from cutevariant import commons as cm
 from cutevariant.commons import MAX_RECENT_PROJECTS, DIR_ICONS
 
+from cutevariant.core.writer import CsvWriter
+
 # Proof of concept - testing only
 # from cutevariant.gui.webglquerywidget import WebGLQueryWidget
 # from cutevariant.gui.hpoquerywidget import HpoQueryWidget
@@ -168,6 +170,10 @@ class MainWindow(QMainWindow):
        
         self.recent_files_menu.addSeparator()
         self.recent_files_menu.addAction(self.tr("Clear"), self.clear_recent_projects)
+
+        ## Export projects as 
+        self.export_action= self.file_menu.addAction(self.tr("Export as csv"), self.export_project)
+
 
         self.file_menu.addSeparator()
         self.file_menu.addAction(
@@ -359,6 +365,20 @@ class MainWindow(QMainWindow):
                 self.status_bar.showMessage(e.__class__.__name__ + ": " + str(e))
                 raise
     
+
+    def export_project(self):
+
+        filepath, _ = QFileDialog.getSaveFileName(
+            self,
+            self.tr("Save project"),
+            QDir.homePath(),
+            self.tr("(*.csv)")
+            )
+
+        if filepath:
+            with open(filepath, "w") as file:
+                writer = CsvWriter(file)
+                writer.save(self.conn)
 
     def show_settings(self):
         """Slot to show settings window"""

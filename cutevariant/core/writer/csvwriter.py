@@ -1,6 +1,8 @@
 from cutevariant.core import sql
+from cutevariant.core.command import execute_vql 
 from .abstractwriter import AbstractWriter
 import csv 
+
 
 class CsvWriter(AbstractWriter):
     """Base class for all Writer required to export variants into a file or a database.
@@ -25,8 +27,8 @@ class CsvWriter(AbstractWriter):
     def save(self, conn) -> bool:
         
         writer = csv.writer(self.device, delimiter=self.delimiter, quotechar = self.quotechar)
-        for row in sql.QueryBuilder(conn).items():
-            writer.writerow(row)
+        for row in execute_vql(conn, "SELECT chr, pos, ref, alt FROM variants"):
+            writer.writerow(row.values())
 
 
 
