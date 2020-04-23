@@ -34,6 +34,7 @@ def test_fields_to_sql():
     assert querybuilder.fields_to_sql("variants.gene", DEFAULT_TABLES) == "`variants`.`gene`"
     assert querybuilder.fields_to_sql(("genotype","sacha","gt"), DEFAULT_TABLES) == "`genotype_sacha`.`gt`"
 
+
 def test_filters_to_sql():
 
     filter_in = {'AND': [{'field': 'ref', 'operator': '=', 'value': "A"}, {'field': 'alt', 'operator': '=', 'value': "C"} ]}
@@ -77,6 +78,11 @@ QUERY_TESTS = [
         (
         {"columns": ["chr","pos"], "source": "variants", "filters": {'AND': [{'field': 'ref', 'operator': '=', 'value': "A"}, {'field': 'alt', 'operator': '=', 'value': "C"} ]}},
         "SELECT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants WHERE (`variants`.`ref` = 'A' AND `variants`.`alt` = 'C') LIMIT 50 OFFSET 0"
+        ),
+
+        (
+        {"columns": ["chr","pos"], "source": "variants", "filters": {'AND': [{'field': 'ref', 'operator': 'has', 'value': "A"}, {'field': 'alt', 'operator': '~', 'value': "C"} ]}},
+        "SELECT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants WHERE (`variants`.`ref` LIKE '%A%' AND `variants`.`alt` REGEXP 'C') LIMIT 50 OFFSET 0"
         ),
 
         # Test different source 
