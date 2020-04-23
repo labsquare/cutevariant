@@ -8,7 +8,7 @@ from textx.exceptions import TextXSyntaxError
 import sqlite3
 
 # Qt imports
-from PySide2.QtCore import qApp, Qt, QRegularExpression, QStringListModel, Signal
+from PySide2.QtCore import QCoreApplication, Qt, QRegularExpression, QStringListModel, Signal
 from PySide2.QtWidgets import (
     QTextEdit,
     QCompleter,
@@ -68,7 +68,7 @@ class VqlSyntaxHighlighter(QSyntaxHighlighter):
     def __init__(self, document=None):
         super().__init__(document)
 
-        palette = qApp.palette("QTextEdit")
+        palette = QCoreApplication.instance().palette("QTextEdit")
 
         # SQL Syntax highlighter rules
         # dict: pattern, font, color, minimal (not greedy)

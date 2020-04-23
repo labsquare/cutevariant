@@ -1,6 +1,5 @@
 from PySide2.QtGui import QColor, QFont, QIcon, QPalette
-from PySide2.QtWidgets import qApp
-
+from PySide2.QtCore import QCoreApplication
 import functools
 import re 
 
@@ -47,7 +46,7 @@ class DefaultFormatter(Formatter):
     def get_decoration(self, column, value):
         if column == "favorite":
             if bool(int(value)) == 1:
-                return QIcon(FIcon(0Xf0c1,qApp.palette("QWidget").color(QPalette.Highlight)))
+                return QIcon(FIcon(0Xf0c1,QCoreApplication.instance().palette("QWidget").color(QPalette.Highlight)))
             else:
                 return QIcon(FIcon(0xf0c3))
 
