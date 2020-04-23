@@ -69,6 +69,7 @@ VQL_TO_TREE_CASES = {
         "target":"denovo",
         "filters": {'AND': [{'field': 'some_field', 'operator': 'IN', 'value': ('one', 'two')}]},
     },
+
     # Test 8
     "CREATE denovo = A + B " : {
     "cmd": "set_cmd",
@@ -84,7 +85,8 @@ VQL_TO_TREE_CASES = {
         "target": "subset",
         "source": "variants",
         "path":"/home/sacha/test.bed"
-        },
+        }
+
 
 }
 

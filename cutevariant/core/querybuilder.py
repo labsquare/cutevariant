@@ -100,6 +100,16 @@ def filters_to_sql(filters, default_tables = {}):
             if isinstance(field, str):
                 value = f"'{value}'"
 
+            if operator == "~":
+                operator="REGEXP"
+
+            if operator == "has":
+                operator = "LIKE"
+                # replace  "'test' " =>  "'%test%' "
+                value = "'" + value.translate(str.maketrans("'\"","%%"))  + "'"
+
+                
+
             field = fields_to_sql(field, default_tables)
         
             # TODO ... c'est degeulasse ....
@@ -166,8 +176,9 @@ def build_query(columns,
     
     # Loop over columns and check is annotations is required 
     need_join_annotations = False
-    for col in columns + columns_in_filters:
-        if "annotations." in col:
+    for col in sql_columns + columns_in_filters:
+        print(col)
+        if "annotations" in col:
             need_join_annotations = True
             break
 

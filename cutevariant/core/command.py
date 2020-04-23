@@ -37,6 +37,7 @@ class SelectCommand(Command):
 
         self.conn.row_factory = sqlite3.Row
 
+        print(q)
         for i in self.conn.execute(q):
             yield dict(i)
 

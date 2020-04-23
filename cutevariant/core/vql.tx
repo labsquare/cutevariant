@@ -74,7 +74,7 @@ ARGS: STRING;
 Function: func=ID '(' arg=ARGS ')' ('.' extra=ID)?;
 BoolOperator: "AND"|"OR";
 SetOperator: "+"|"-"|"&"|"^";
-MathOperator: />=|<=|!=|=|>|<|!~|~|is|like|in/;
+MathOperator: />=|<=|!=|=|>|<|!~|~|is|like|has|in/;
 Tuple: '(' items+=ValueIdentifier[','] ')';
 
 

@@ -28,6 +28,7 @@ import sys
 from collections import defaultdict
 from pkg_resources import parse_version
 from functools import lru_cache
+import re
 
 # Custom imports
 import cutevariant.commons as cm
@@ -53,6 +54,15 @@ def get_sql_connexion(filepath):
     foreign_keys_status = connexion.execute("PRAGMA foreign_keys").fetchone()[0]
     LOGGER.debug("get_sql_connexion:: foreign_keys state: %s", foreign_keys_status)
     assert foreign_keys_status == 1, "Foreign keys can't be activated :("
+
+    # Create function for sqlite 
+    def regexp(expr, item):
+        reg = re.compile(expr)
+        return reg.search(item) is not None
+
+    connexion.create_function("REGEXP", 2, regexp)
+
+
     return connexion
 
 def drop_table(conn, table_name):
