@@ -39,16 +39,23 @@ def filters_to_flat(filters: dict):
     return list(recursive_generator(filters))
 
 
-def field_function_to_sql(field_function: tuple):
+def field_function_to_sql(field_function: tuple, use_as = False):
     ''' Convert genotype(boby).GT to `genotype_boby`.GT ''' 
-    func_name, arg_name, field_name = field_function 
-    if field_name:
-        return f"`{func_name}_{arg_name}`.`{field_name}`"
+    
+    func_name, arg_name, field_name = field_function
+
+    if use_as:
+        suffix = f" AS '{func_name}.{arg_name}.{field_name}'"
     else:
-        return f"`{func_name}_{arg_name}`"
+        suffix = ""
+
+    if field_name:
+        return f"`{func_name}_{arg_name}`.`{field_name}`" + suffix
+    else:
+        return f"`{func_name}_{arg_name}`" + suffix
 
 
-def fields_to_sql(field, default_tables = {}):
+def fields_to_sql(field, default_tables = {}, use_as = False):
     """
     Return field as sql syntax . 
     
@@ -63,8 +70,9 @@ def fields_to_sql(field, default_tables = {}):
         fields_to_sql("chr", {"chr":variants})  => `variants`.`chr` 
     """
 
+    # If it is "genotype.name.truc then it is is field function"
     if isinstance(field, tuple):
-        return field_function_to_sql(field)
+        return field_function_to_sql(field, use_as)
 
     # extract variants.chr  ==> (variant, chr)
     match = re.match(r"^(\w+)\.(\w+)", field)
@@ -97,7 +105,7 @@ def filters_to_sql(filters, default_tables = {}):
             operator = node["operator"]
 
             # quote string 
-            if isinstance(field, str):
+            if isinstance(value, str):
                 value = f"'{value}'"
 
             if operator == "~":
@@ -149,7 +157,8 @@ def filters_to_sql(filters, default_tables = {}):
 
 
 
-def build_query(columns, 
+def build_query(
+    fields, 
     source = "variants", 
     filters = {}, 
     order_by = None, 
@@ -157,12 +166,15 @@ def build_query(columns,
     grouped = False,
     limit = 50,
     offset = 0,
-    default_tables = {}):
+    default_tables = {},
+    samples_ids = {}
+    ):
+
 
     sql_query = ""
-    # Create columns 
-    sql_columns = ["`variants`.`id`"] + [fields_to_sql(col, default_tables) for col in columns if "id" not in col]
-    sql_query = f"SELECT {','.join(sql_columns)} "
+    # Create fields 
+    sql_fields = ["`variants`.`id`"] + [fields_to_sql(col, default_tables, use_as=True) for col in fields if "id" not in col]
+    sql_query = f"SELECT {','.join(sql_fields)} "
 
     # Add child count if grouped 
     if grouped:
@@ -171,12 +183,12 @@ def build_query(columns,
     #  Add source table
     sql_query += f"FROM variants"
 
-    # Extract columns from filters 
-    columns_in_filters = [i["field"] for i in filters_to_flat(filters)]
+    # Extract fields from filters 
+    fields_in_filters = [i["field"] for i in filters_to_flat(filters)]
     
-    # Loop over columns and check is annotations is required 
+    # Loop over fields and check is annotations is required 
     need_join_annotations = False
-    for col in sql_columns + columns_in_filters:
+    for col in sql_fields + fields_in_filters:
         print(col)
         if "annotations" in col:
             need_join_annotations = True
@@ -196,22 +208,27 @@ def build_query(columns,
         )
 
     #  Add Join Samples
-    ## detect if columns contains function like (genotype,boby,gt) and save boby
-    all_columns = columns_in_filters + columns
+    ## detect if fields contains function like (genotype,boby,gt) and save boby
+    GENOTYPE_FUNC_NAME = "sample"
+
+    all_fields = fields_in_filters + fields
     samples = []
-    for col in all_columns:
+    for col in all_fields:
+        # if column looks like  "genotype.tumor.gt"
         if isinstance(col, tuple):
-            if col[0] == "genotype":
-                samples.append(col[1])
+            if col[0] == GENOTYPE_FUNC_NAME:
+                sample_name = col[1]
+                samples.append(sample_name)
 
     ## Create Sample Join
     for sample_name in samples:
         # Optimisation ? 
         #sample_id = self.cache_samples_ids[sample_name]
-        sql_query += (
-            f" INNER JOIN sample_has_variant `genotype_{sample_name}` ON `genotype_{sample_name}`.variant_id = variants.id"
-            f" INNER JOIN samples ON samples.name = '{sample_name}' AND `genotype_{sample_name}`.sample_id = samples.id"
-        )
+        if sample_name in samples_ids:
+            sample_id = samples_ids[sample_name]
+            sql_query += (
+                f" INNER JOIN sample_has_variant `{GENOTYPE_FUNC_NAME}_{sample_name}` ON `{GENOTYPE_FUNC_NAME}_{sample_name}`.variant_id = variants.id AND `{GENOTYPE_FUNC_NAME}_{sample_name}`.sample_id = {sample_id}"
+            )
 
     #  Add Where Clause
     if filters:

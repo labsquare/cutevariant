@@ -135,8 +135,8 @@ class SelectCmd(metaclass=model_class):
     def value(self):
         output = {
             "cmd": "select_cmd",
-            "columns": [
-                col.value if hasattr(col, "value") else col for col in self.columns
+            "fields": [
+                col.value if hasattr(col, "value") else col for col in self.fields
             ],
             "source": self.source,
         }

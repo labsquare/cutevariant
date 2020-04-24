@@ -15,12 +15,12 @@ def conn():
 def test_select_command(conn):
 
     cmd = command.SelectCommand(conn)
-    cmd.columns = ["chr","pos", "annotations.gene"]
+    cmd.fields = ["chr","pos", "annotations.gene"]
     cmd.source = "variants"
     first_variant = next(cmd.do())
     assert "chr" in first_variant
     assert "pos" in first_variant
-    assert "gene" in first_variant
+    assert "gene" in first_variantls
 
 def test_create_command(conn):
 
@@ -50,7 +50,7 @@ def test_create_command_from_vql_objet(conn):
 
     cmd = command.create_command_from_vql_objet(conn, next(vql.execute_vql("SELECT chr, pos FROM variants")))
     assert type(cmd) == command.SelectCommand
-    assert cmd.columns == ["chr","pos"]
+    assert cmd.fields == ["chr","pos"]
     assert cmd.source == "variants"
 
     cmd = command.create_command_from_vql_objet(conn,  next(vql.execute_vql("CREATE denovo FROM variants")))

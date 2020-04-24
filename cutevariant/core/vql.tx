@@ -11,7 +11,7 @@ Command:
 
 
 SelectCmd:
-    'SELECT' columns+=ColumnIdentifier[","] ('FROM' source=ID ('WHERE' filter=FilterExpression)?)?
+    'SELECT' fields+=FieldIdentifier[","] ('FROM' source=ID ('WHERE' filter=FilterExpression)?)?
 ;
 
 CreateCmd:
@@ -60,7 +60,7 @@ op= FilterTerm | ('(' op=FilterExpression ')')
 ;
 
 FilterTerm:
-    field=ColumnIdentifier op=MathOperator val=ValueIdentifier
+    field=FieldIdentifier op=MathOperator val=ValueIdentifier
 ;
 
 
@@ -68,7 +68,7 @@ FilterTerm:
 Comment: /\#.*$/;
 
 FieldId:/[^\d\W](\w*\.)?\w*\b/;
-ColumnIdentifier: Function|FieldId;
+FieldIdentifier: Function|FieldId;
 ValueIdentifier: (NUMBER|STRING|BOOL|Tuple);
 ARGS: STRING;
 Function: func=ID '(' arg=ARGS ')' ('.' extra=ID)?;

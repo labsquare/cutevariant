@@ -12,6 +12,12 @@ DEFAULT_TABLES = {
     "gt": "sample_has_variant"
     }
 
+
+SAMPLES_ID = {
+    "TUMOR": 1, 
+    "NORMAL": 2
+    }
+
 def test_filter_to_flat():
     filters = {'AND': [
         {'field': 'ref', 'operator': '=', 'value': "A"},
@@ -23,6 +29,7 @@ def test_filter_to_flat():
 def test_field_function_to_sql():
     assert querybuilder.field_function_to_sql(("genotype", "boby", "GT"))  == "`genotype_boby`.`GT`"
     assert querybuilder.field_function_to_sql(("phenotype", "sacha", ""))  == "`phenotype_sacha`"
+    assert querybuilder.field_function_to_sql(("genotype", "sacha", "gt"), use_as =True)  == "`genotype_sacha`.`gt` AS 'genotype.sacha.gt'"
 
 
 def test_fields_to_sql():
@@ -58,36 +65,36 @@ def test_filters_to_sql():
 QUERY_TESTS = [ 
         (
         # Test simple 
-        {"columns": ["chr","pos"], "source": "variants"},
+        {"fields": ["chr","pos"], "source": "variants"},
         "SELECT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants LIMIT 50 OFFSET 0"
         ), 
 
         # Test limit offset 
         (
-        {"columns": ["chr","pos"], "source": "variants", "limit": 10, "offset": 4},
+        {"fields": ["chr","pos"], "source": "variants", "limit": 10, "offset": 4},
         "SELECT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants LIMIT 10 OFFSET 4"
         ), 
 
         # Test order by 
         (
-        {"columns": ["chr","pos"], "source": "variants", "order_by": "chr", "order_desc": True},
+        {"fields": ["chr","pos"], "source": "variants", "order_by": "chr", "order_desc": True},
         "SELECT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants ORDER BY `variants`.`chr` DESC LIMIT 50 OFFSET 0"
         ), 
 
         # Test filters  
         (
-        {"columns": ["chr","pos"], "source": "variants", "filters": {'AND': [{'field': 'ref', 'operator': '=', 'value': "A"}, {'field': 'alt', 'operator': '=', 'value': "C"} ]}},
+        {"fields": ["chr","pos"], "source": "variants", "filters": {'AND': [{'field': 'ref', 'operator': '=', 'value': "A"}, {'field': 'alt', 'operator': '=', 'value': "C"} ]}},
         "SELECT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants WHERE (`variants`.`ref` = 'A' AND `variants`.`alt` = 'C') LIMIT 50 OFFSET 0"
         ),
 
         (
-        {"columns": ["chr","pos"], "source": "variants", "filters": {'AND': [{'field': 'ref', 'operator': 'has', 'value': "A"}, {'field': 'alt', 'operator': '~', 'value': "C"} ]}},
+        {"fields": ["chr","pos"], "source": "variants", "filters": {'AND': [{'field': 'ref', 'operator': 'has', 'value': "A"}, {'field': 'alt', 'operator': '~', 'value': "C"} ]}},
         "SELECT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants WHERE (`variants`.`ref` LIKE '%A%' AND `variants`.`alt` REGEXP 'C') LIMIT 50 OFFSET 0"
         ),
 
         # Test different source 
         (
-        {"columns": ["chr","pos"], "source": "other"},
+        {"fields": ["chr","pos"], "source": "other"},
         
          (
          "SELECT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants " 
@@ -98,21 +105,22 @@ QUERY_TESTS = [
 
         # Test genotype fields 
         (
-        {"columns": ["chr","pos",("genotype","TUMOR","gt")], "source": "variants"},
+        {"fields": ["chr","pos",("sample","TUMOR","gt")], "source": "variants"},
 
             (
-            "SELECT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`genotype_TUMOR`.`gt` FROM variants" 
-            " INNER JOIN sample_has_variant `genotype_TUMOR` ON `genotype_TUMOR`.variant_id = variants.id"
-            " INNER JOIN samples ON samples.name = 'TUMOR' AND `genotype_TUMOR`.sample_id = samples.id LIMIT 50 OFFSET 0"
+            "SELECT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`sample_TUMOR`.`gt` AS 'sample.TUMOR.gt' FROM variants" 
+            " INNER JOIN sample_has_variant `sample_TUMOR` ON `sample_TUMOR`.variant_id = variants.id AND `sample_TUMOR`.sample_id = 1"
+            " LIMIT 50 OFFSET 0"
             )
         )
     ]
 
 @pytest.mark.parametrize("test_input, test_output", QUERY_TESTS, ids = [str(i) for i in range(len(QUERY_TESTS))])
 def test_build_query(test_input, test_output):
-    query = querybuilder.build_query(**test_input, default_tables=DEFAULT_TABLES ) 
+    query = querybuilder.build_query(**test_input, default_tables=DEFAULT_TABLES, samples_ids = SAMPLES_ID ) 
     
     assert query == test_output
+  
 
     # from cutevariant.core import sql
     # from cutevariant.core.importer import import_reader

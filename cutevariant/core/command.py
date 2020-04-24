@@ -20,7 +20,7 @@ class Command(object):
 class SelectCommand(Command):
     def __init__(self, conn : sqlite3.Connection):
         super().__init__(conn) 
-        self.columns=["chr", "pos", "ref", "alt"]
+        self.fields=["chr", "pos", "ref", "alt"]
         self.filters=dict()
         self.source="variants"
         self.order_by=None
@@ -29,16 +29,15 @@ class SelectCommand(Command):
         self.limit = 50
         self.offset = 0
         self.as_dict = True
-        self.default_tables = dict([(i["name"], i["category"]) for i in sql.get_fields(self.conn)])
 
+    def sql(self):
+        default_tables = dict([(i["name"], i["category"]) for i in sql.get_fields(self.conn)])
+        samples_ids = dict([(i["name"], i["id"]) for i in sql.get_samples(self.conn)])
+
+        return build_query(self.fields, self.source, self.filters, self.order_by, self.order_desc, self.grouped, self.limit, self.offset, default_tables, samples_ids =samples_ids) 
 
     def do(self):
-        q = build_query(self.columns, self.source, self.filters, self.order_by, self.order_desc, self.grouped, self.limit, self.offset, self.default_tables) 
-
-        self.conn.row_factory = sqlite3.Row
-
-        print(q)
-        for i in self.conn.execute(q):
+        for i in self.conn.execute(self.sql()):
             yield dict(i)
 
     
@@ -186,7 +185,7 @@ class BedCommand(Command):
 def create_command_from_vql_objet(conn, vql_obj: dict): 
     if vql_obj["cmd"] == "select_cmd":
         cmd = SelectCommand(conn)
-        cmd.columns = vql_obj["columns"]
+        cmd.fields = vql_obj["fields"]
         cmd.source = vql_obj["source"]
         cmd.filters = vql_obj["filters"]
         return cmd 
@@ -224,10 +223,8 @@ def execute_vql(conn, vql_source: str):
 
     vql_obj = next(vql.parse_vql(vql_source))
     cmd = create_command_from_vql_objet(conn, vql_obj)
-    if type(cmd) == SelectCommand:
-        return cmd.do()
-    else:
-        return cmd.do()
+    return cmd.do()
+
 
 def execute_full_vql(conn, vql_source: str):
     for vql_obj in vql.parse_vql(vql_source):

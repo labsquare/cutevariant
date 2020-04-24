@@ -7,14 +7,14 @@ VQL_TO_TREE_CASES = {
     # Test 1 
     'SELECT chr,pos,genotype("sacha") FROM variants': {
         "cmd":"select_cmd",
-        "columns": ["chr", "pos", ('genotype','sacha','gt')],
+        "fields": ["chr", "pos", ('genotype','sacha','gt')],
         "filters": {},
         "source": "variants",
     },
     # Test 2
     "SELECT chr,pos,ref FROM variants WHERE a=3 AND b!=5 AND c<3": {
         "cmd":"select_cmd",
-        "columns": ["chr", "pos", "ref"],
+        "fields": ["chr", "pos", "ref"],
         "source": "variants",
         "filters": {
             "AND": [
@@ -27,7 +27,7 @@ VQL_TO_TREE_CASES = {
     # Test 3
     "SELECT chr,pos,ref FROM variants WHERE a=3 AND (b=5 OR c=3)": {
         "cmd":"select_cmd",
-        "columns": ["chr", "pos", "ref"],
+        "fields": ["chr", "pos", "ref"],
         "source": "variants",
         "filters": {
             "AND": [
@@ -44,14 +44,14 @@ VQL_TO_TREE_CASES = {
     # Test 4
     'SELECT chr,pos, genotype("sacha") FROM variants # comments are handled': {
         "cmd":"select_cmd",
-        "columns": ["chr", "pos", ('genotype','sacha','gt')],
+        "fields": ["chr", "pos", ('genotype','sacha','gt')],
         "filters": {},
         "source": "variants"
         },
     # Test 5
     "SELECT chr FROM variants WHERE some_field IN ('one', 'two')": {
         "cmd":"select_cmd",
-        "columns": ["chr"],
+        "fields": ["chr"],
         "source": "variants",
         "filters": {'AND': [{'field': 'some_field', 'operator': 'IN', 'value': ('one', 'two')}]},
     },
