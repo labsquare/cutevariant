@@ -113,6 +113,7 @@ QUERY_TESTS = [
             " LIMIT 50 OFFSET 0"
             )
         )
+
     ]
 
 @pytest.mark.parametrize("test_input, test_output", QUERY_TESTS, ids = [str(i) for i in range(len(QUERY_TESTS))])

@@ -6,7 +6,7 @@ Model:
 
 // Keep orders 
 Command:
-    SelectCmd|CreateCmd|SetCmd|BedCmd|CopyCmd
+    SelectCmd|CreateCmd|SetCmd|BedCmd|CopyCmd|CountCmd
 ;
 
 
@@ -32,6 +32,10 @@ SetCmd:
 
 BedCmd:
 	'CREATE' target=ID 'FROM' source=ID 'INTERSECT' path=STRING
+;
+
+CountCmd:
+	'COUNT' 'FROM' source=ID  ('WHERE' filters=FilterExpression)?
 ;
 
 

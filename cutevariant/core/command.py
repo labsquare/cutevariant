@@ -4,6 +4,7 @@ from cutevariant.core import sql, vql
 import sqlite3
 import networkx as nx 
 import os 
+import functools
 import csv
 
 class Command(object):
@@ -48,16 +49,18 @@ class CountCommand(Command):
         self.source = None
         self.filters = None 
 
+    @functools.lru_cache
+    def _compute_cache_count(self, query):
+        return self.conn.execute(query).fetchone()[0]   
+
     def do(self):
         default_tables = dict([(i["name"], i["category"]) for i in sql.get_fields(self.conn)])
         samples_ids = dict([(i["name"], i["id"]) for i in sql.get_samples(self.conn)])
-
         query = build_query([""], self.source, self.filters, None,None,None, None, None, default_tables, samples_ids =samples_ids) 
         from_pos = query.index("FROM")
-
         query = "SELECT COUNT(variants.id) " + query[from_pos:]
 
-        return self.conn.execute(query).fetchone()[0]
+        return {"count": self._compute_cache_count(query)}
 
 
 

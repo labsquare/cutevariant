@@ -85,8 +85,21 @@ VQL_TO_TREE_CASES = {
         "target": "subset",
         "source": "variants",
         "path":"/home/sacha/test.bed"
-        }
+        },
 
+    # Test 10
+   "COUNT FROM variants": {
+        "cmd":"count_cmd",
+        "source": "variants",
+        "filters": {}
+        },
+
+    # Test 110
+   "COUNT FROM variants WHERE a = 3": {
+        "cmd":"count_cmd",
+        "source": "variants",
+        "filters":  { "AND": [{"field": "a", "operator": "=", "value": 3} ]}
+        }
 
 }
 

@@ -54,7 +54,7 @@ from cutevariant.gui import style
 from cutevariant.gui.formatter import Formatter
 from cutevariant.commons import logger
 from cutevariant.commons import GENOTYPE_ICONS
-from cutevariant.core.command import SelectCommand 
+from cutevariant.core.command import SelectCommand, CountCommand, create_commands
 
 LOGGER = logger()
 
@@ -234,17 +234,35 @@ class QueryModel(QAbstractTableModel):
 
         self.beginResetModel()
 
+        self.cmd.limit = self.limit 
+        self.cmd.offset = self.page * self.limit
+
         self.variants = list(self.cmd.do())
+
+        print(self.cmd.sql())
 
         if self.variants:
             self.headers = list(self.variants[0].keys())
 
-        print(self.headers)
 
         self.endResetModel()
 
+        if emit_changed:
+            self.changed.emit()
+            #Probably need to compute total 
+            count_cmd = CountCommand(self.conn)
+            count_cmd.source = self.cmd.source 
+            count_cmd.filters = self.cmd.filters 
+            self.total = count_cmd.do()["count"]
 
-        self.changed.emit()
+    def load_from_vql(self, vql):
+
+        cmd = next(create_commands(self.conn, vql))
+        if isinstance(cmd, SelectCommand):
+            self.cmd = cmd
+            self.load()
+
+
 
     def hasPage(self, page: int) -> bool:
         """ Return True if <page> exists otherwise return False """
@@ -254,6 +272,7 @@ class QueryModel(QAbstractTableModel):
         """ set the page of the model """
         if self.hasPage(page):
             self.page = page
+            print("set page ")
             self.load(emit_changed = False)
 
     def nextPage(self):
@@ -282,10 +301,10 @@ class QueryModel(QAbstractTableModel):
 
         """
         if column < self.columnCount():
-            colname = self.builder.columns[column - 1]
+            colname = self.headers[column]
 
-            self.builder.order_by = colname
-            self.builder.order_desc = order == Qt.DescendingOrder
+            self.cmd.order_by = colname
+            self.cmd.order_desc = order == Qt.DescendingOrder
             self.load(emit_changed = False)
 
     def displayed(self):
@@ -310,10 +329,6 @@ class QueryModel(QAbstractTableModel):
 
         return self.variants[row]
 
-    def column_name(self, column : int) -> str:
-
-        col_name = self.columns[column]
-        return "d"
 
         
     #     Examples:

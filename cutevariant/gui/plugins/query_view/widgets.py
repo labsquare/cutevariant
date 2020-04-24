@@ -23,8 +23,8 @@ class QueryDelegate(QStyledItemDelegate):
     def background_color_index(self, index):
         """ return background color of index """
 
-        base_brush = qApp.palette("QTreeView").brush(QPalette.Base)
-        alternate_brush = qApp.palette("QTreeView").brush(QPalette.AlternateBase)
+        base_brush = qApp.palette("QTableView").brush(QPalette.Base)
+        alternate_brush = qApp.palette("QTableView").brush(QPalette.AlternateBase)
 
         if index.parent() == QModelIndex():
             if index.row() % 2:
@@ -38,62 +38,64 @@ class QueryDelegate(QStyledItemDelegate):
         return base_brush
 
     def paint(self, painter, option, index):
-    
+        
 
-        palette = qApp.palette("QTreeView")
-        #  get column name of the index
-        #colname = index.model().headerData(index.column(), Qt.Horizontal)
+        return super().paint(painter, option, index)
 
-        #  get value of the index
-        #value = index.data(Qt.DisplayRole)
+        # palette = qApp.palette("QTreeView")
+        # #  get column name of the index
+        # #colname = index.model().headerData(index.column(), Qt.Horizontal)
 
-        # get select sate
-        select = option.state & QStyle.State_Selected
+        # #  get value of the index
+        # #value = index.data(Qt.DisplayRole)
 
-        #  draw selection if it is
-        if not select:
-            bg_brush = self.background_color_index(index)
-        else:
-            bg_brush = palette.brush(QPalette.Highlight)
+        # # get select sate
+        # select = option.state & QStyle.State_Selected
 
-        painter.save()
-        painter.setBrush(bg_brush)
-        painter.setPen(Qt.NoPen)
-        painter.drawRect(option.rect)
-        painter.restore()
+        # #  draw selection if it is
+        # if not select:
+        #     bg_brush = self.background_color_index(index)
+        # else:
+        #     bg_brush = palette.brush(QPalette.Highlight)
+
+        # painter.save()
+        # painter.setBrush(bg_brush)
+        # painter.setPen(Qt.NoPen)
+        # painter.drawRect(option.rect)
+        # painter.restore()
 
        
 
-        painter.save()
-        alignement = Qt.AlignLeft | Qt.AlignVCenter
+        # painter.save()
+        # alignement = Qt.AlignLeft | Qt.AlignVCenter
 
-        bg_color = index.data(Qt.BackgroundRole)
-        fg_color = index.data(Qt.ForegroundRole)
-        decoration = index.data(Qt.DecorationRole)
+        # bg_color = index.data(Qt.BackgroundRole)
+        # fg_color = index.data(Qt.ForegroundRole)
+        # decoration = index.data(Qt.DecorationRole)
 
-        font = index.data(Qt.FontRole)
+        # font = index.data(Qt.FontRole)
 
-        if bg_color:
-            painter.setBrush(QBrush(bg_color))
-            painter.setPen(Qt.NoPen)
-            painter.drawRect(option.rect)
+        # if bg_color:
+        #     painter.setBrush(QBrush(bg_color))
+        #     painter.setPen(Qt.NoPen)
+        #     painter.drawRect(option.rect)
 
-        if font:
-            painter.setFont(QFont())
+        # if font:
+        #     painter.setFont(QFont())
         
-        if fg_color:
-            painter.setPen(QPen(fg_color))
+        # if fg_color:
+        #     painter.setPen(QPen(fg_color))
 
-        if decoration:
-            rect = QRect(0,0,25,25)
-            rect.moveCenter(option.rect.center())
-            painter.drawPixmap(rect,decoration.pixmap(25,25))
-        else:
+        # if decoration:
+        #     rect = QRect(0,0,25,25)
+        #     rect.moveCenter(option.rect.center())
+        #     painter.drawPixmap(rect,decoration.pixmap(25,25))
+        # else:
 
-            painter.drawText(option.rect, alignement, str(index.data()))
+        #     painter.drawText(option.rect, alignement, str(index.data()))
         
         
-        painter.restore()
+        # painter.restore()
 
 
         #super().paint(painter,option, index)
@@ -188,7 +190,7 @@ class QueryDelegate(QStyledItemDelegate):
         return size
 
 
-class QueryTreeView(QTreeView):
+class QueryTableView(QTableView):
     def __init__(self, parent=None):
         super().__init__()
 
@@ -230,7 +232,7 @@ class QueryViewWidget(plugin.PluginWidget):
         self.setWindowTitle(self.tr("Variants"))
         self.topbar = QToolBar()
         self.bottombar = QToolBar()
-        self.view = QueryTreeView()
+        self.view = QueryTableView()
         self.formatters = []
 
         # # self.view.setFrameStyle(QFrame.NoFrame)
@@ -239,10 +241,8 @@ class QueryViewWidget(plugin.PluginWidget):
         self.view.setSortingEnabled(True)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setSelectionMode(QAbstractItemView.ContiguousSelection)
-        self.view.setRootIsDecorated(True)  # Manage from delegate
         ## self.view.setIndentation(0)
         self.view.setIconSize(QSize(22, 22))
-        self.view.setAnimated(False)
 
         self.view.setItemDelegate(self.delegate)
 
@@ -322,6 +322,8 @@ class QueryViewWidget(plugin.PluginWidget):
 
 
     def setup_ui(self):
+        
+        print("setup ui ", self.model)
         self.bottombar.addAction(FIcon(0xF792), "<<", self.model.firstPage)
         self.bottombar.addAction(FIcon(0xF04D), "<", self.model.previousPage)
         self.bottombar.addWidget(self.page_box)
@@ -334,11 +336,16 @@ class QueryViewWidget(plugin.PluginWidget):
 
     def on_register(self, mainwindow):
         """ Override from PluginWidget """
-        self.view.setModel(mainwindow.query_model)
-        self.model = mainwindow.query_model
+        self.setModel(mainwindow.query_model)
+        
+
+    def set_model(self, model):
+        self.view.setModel(model)
+        self.model = model
         self.setup_ui()
         formatter = self.formatters[self.formatter_combo.currentIndex()]
         self.model.formatter = formatter
+
 
     def on_setup_ui(self):
         """ Override from PluginWidget """
@@ -384,7 +391,7 @@ class QueryViewWidget(plugin.PluginWidget):
         if not index.isValid():
             return 
         # Get the rowid of the element at the given index
-        rowid = self.model.variant(index)[0]
+        rowid = self.model.variant(index.row())["id"]
         # Get data from database
         variant = sql.get_one_variant(self.model.conn, rowid)
         # Emit variant through variant_clicked signal
@@ -529,13 +536,28 @@ class QueryViewWidget(plugin.PluginWidget):
 if __name__ == "__main__":
     import sys
     from PySide2.QtWidgets import QApplication 
+    from cutevariant.core.importer import import_file, import_reader
+    from cutevariant.core.reader import FakeReader, VcfReader
+    from cutevariant.core import sql
+    from cutevariant.gui.querymodel import QueryModel 
 
     def test():
         print("salut")
 
     app = QApplication(sys.argv)
 
+    conn = sql.get_sql_connexion(":memory:")
+    reader = VcfReader(open("examples/test.snpeff.vcf"), "snpeff")
+    import_reader(conn, reader)
+
+
+    model = QueryModel(conn)
+    model.limit = 3 
     w = QueryViewWidget()
+    w.conn = conn 
+
+    w.set_model(model)
+    w.model.load()
     w.show()
     
 

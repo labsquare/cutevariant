@@ -20,7 +20,7 @@ def test_select_command(conn):
     first_variant = next(cmd.do())
     assert "chr" in first_variant
     assert "pos" in first_variant
-    assert "gene" in first_variantls
+    assert "gene" in first_variant
 
 def test_create_command(conn):
 
@@ -38,6 +38,13 @@ def test_create_command(conn):
 
     assert source_q == target_q
 
+def test_count_command(conn):
+    cmd = command.CountCommand(conn)
+    cmd.source = "variants"
+
+    result = cmd.do()
+    assert "count" in result 
+    assert result["count"] == 11
 
 def test_bed_command(conn):
     cmd = command.BedCommand(conn)

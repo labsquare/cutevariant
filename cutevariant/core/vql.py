@@ -195,6 +195,19 @@ class CopyCmd(metaclass = model_class):
         "target": self.target
         }
     
+class CountCmd(metaclass = model_class):
+    @property
+    def value(self):
+        obj = {
+        "cmd": "count_cmd",
+        "source": self.source,
+        "filters": self.filters.value if self.filters else {},
+        }
+
+   
+        return obj
+
+
 
 
 METAMODEL = textx.metamodel_from_str(
