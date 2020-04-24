@@ -42,6 +42,25 @@ class SelectCommand(Command):
 
     
 
+class CountCommand(Command):
+    def __init__(self, conn : sqlite3.Connection):
+        super().__init__(conn) 
+        self.source = None
+        self.filters = None 
+
+    def do(self):
+        default_tables = dict([(i["name"], i["category"]) for i in sql.get_fields(self.conn)])
+        samples_ids = dict([(i["name"], i["id"]) for i in sql.get_samples(self.conn)])
+
+        query = build_query([""], self.source, self.filters, None,None,None, None, None, default_tables, samples_ids =samples_ids) 
+        from_pos = query.index("FROM")
+
+        query = "SELECT COUNT(variants.id) " + query[from_pos:]
+
+        return self.conn.execute(query).fetchone()[0]
+
+
+
 class CreateCommand(Command):
     def __init__(self, conn: sqlite3.Connection):
         super().__init__(conn)
@@ -177,7 +196,6 @@ class BedCommand(Command):
     def undo(self):
         pass
         
-
 
 
 
