@@ -62,6 +62,16 @@ class CountCommand(Command):
 
         return {"count": self._compute_cache_count(query)}
 
+class DropCommand(Command):
+    def __init__(self, conn : sqlite3.Connection):
+        super().__init__(conn) 
+        self.source = None
+
+    def do(self):
+        for selection in sql.get_selections(self.conn):
+            if selection["name"] == self.source:
+                selection_id = int(selection["id"])
+                sql.delete_selection(self.conn, selection_id)
 
 
 class CreateCommand(Command):

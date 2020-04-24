@@ -99,7 +99,12 @@ VQL_TO_TREE_CASES = {
         "cmd":"count_cmd",
         "source": "variants",
         "filters":  { "AND": [{"field": "a", "operator": "=", "value": 3} ]}
-        }
+        },
+    # Test 110
+   "DROP subset": {
+        "cmd":"drop_cmd",
+        "source": "subset"
+    }
 
 }
 

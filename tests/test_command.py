@@ -46,6 +46,21 @@ def test_count_command(conn):
     assert "count" in result 
     assert result["count"] == 11
 
+
+def test_drop_command(conn):
+
+    conn.execute("INSERT INTO selections (name) VALUES ('subset')")
+
+    assert "subset" in [i["name"] for i in conn.execute("SELECT name FROM selections").fetchall()]
+
+    cmd = command.DropCommand(conn)
+    cmd.source = "subset"
+    cmd.do()
+
+    assert "subset" not in [i["name"] for i in conn.execute("SELECT name FROM selections").fetchall()]
+
+
+
 def test_bed_command(conn):
     cmd = command.BedCommand(conn)
     cmd.source ="variants"

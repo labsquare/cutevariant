@@ -207,7 +207,15 @@ class CountCmd(metaclass = model_class):
    
         return obj
 
+class DropCmd(metaclass = model_class):
+    @property
+    def value(self):
+        return  {
+        "cmd": "drop_cmd",
+        "source": self.source,
+        }
 
+   
 
 
 METAMODEL = textx.metamodel_from_str(
