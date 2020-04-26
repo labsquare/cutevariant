@@ -1,5 +1,5 @@
 from cutevariant.core import sql
-from cutevariant.core.command import execute_vql 
+from cutevariant.core import command 
 from .abstractwriter import AbstractWriter
 import csv 
 
@@ -27,7 +27,7 @@ class CsvWriter(AbstractWriter):
     def save(self, conn) -> bool:
         
         writer = csv.writer(self.device, delimiter=self.delimiter, quotechar = self.quotechar)
-        for row in execute_vql(conn, "SELECT chr, pos, ref, alt FROM variants"):
+        for row in command.execute(conn, "SELECT chr, pos, ref, alt FROM variants"):
             writer.writerow(row.values())
 
 

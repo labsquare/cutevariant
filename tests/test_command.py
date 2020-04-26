@@ -12,115 +12,115 @@ def conn():
     return conn
 
 
-def test_select_command(conn):
+def test_select_cmd(conn):
 
-    cmd = command.SelectCommand(conn)
-    cmd.fields = ["chr","pos", "annotations.gene"]
-    cmd.source = "variants"
-    first_variant = next(cmd.do())
-    assert "chr" in first_variant
-    assert "pos" in first_variant
-    assert "gene" in first_variant
+    variant = next(command.select_cmd(conn, fields = ["chr","pos","gene"], source="variants"))
 
-def test_create_command(conn):
+    assert "chr" in variant
+    assert "pos" in variant
+    assert "gene" in variant
 
-    cmd = command.CreateCommand(conn) 
-    cmd.source = "variants"
-    cmd.target = "test" 
+def test_create_cmd(conn):
 
-    selection = cmd.do()
-    assert "id" in selection 
+    result = command.create_cmd(conn, source = "variants", target="test")
 
-    selection_id = selection["id"]
+    assert "id" in result 
+
+    selection_id = result["id"]
     source_q = conn.execute(f"SELECT COUNT(id) FROM variants").fetchone()[0]
     target_q= conn.execute(f"SELECT COUNT(id) FROM variants INNER JOIN selection_has_variant vs ON variants.id = vs.variant_id AND vs.selection_id = {selection_id}").fetchone()[0]
 
 
     assert source_q == target_q
 
-def test_count_command(conn):
-    cmd = command.CountCommand(conn)
-    cmd.source = "variants"
-
-    result = cmd.do()
+def test_count_cmd(conn):
+    result = command.count_cmd(conn, source="variants")
     assert "count" in result 
     assert result["count"] == 11
 
 
-def test_drop_command(conn):
+def test_drop_cmd(conn):
 
     conn.execute("INSERT INTO selections (name) VALUES ('subset')")
-
     assert "subset" in [i["name"] for i in conn.execute("SELECT name FROM selections").fetchall()]
-
-    cmd = command.DropCommand(conn)
-    cmd.source = "subset"
-    cmd.do()
-
+    command.drop_cmd(conn, source="subset")
     assert "subset" not in [i["name"] for i in conn.execute("SELECT name FROM selections").fetchall()]
 
 
+def test_bed_cmd(conn):
+    command.bed_cmd(conn, source="variants", target="test", path="examples/test.bed")
 
-def test_bed_command(conn):
-    cmd = command.BedCommand(conn)
-    cmd.source ="variants"
-    cmd.target = "test"
-    cmd.bedfile = "examples/test.bed"
-    cmd.do()
 
-def test_create_command_from_vql_objet(conn):
+def test_set_cmd(conn):
+    command.create_cmd(conn, source = "variants", target="A")
+    command.create_cmd(conn, source = "variants", target="B")
+    command.set_cmd(conn, target="C", first="A", second="B", operator="+")
 
-    cmd = command.create_command_from_vql_objet(conn, next(vql.execute_vql("SELECT chr, pos FROM variants")))
-    assert type(cmd) == command.SelectCommand
-    assert cmd.fields == ["chr","pos"]
-    assert cmd.source == "variants"
 
-    cmd = command.create_command_from_vql_objet(conn,  next(vql.execute_vql("CREATE denovo FROM variants")))
-    assert type(cmd) == command.CreateCommand
-    assert cmd.source == "variants"
-    assert cmd.target == "denovo"
 
-    cmd = command.create_command_from_vql_objet(conn,  next(vql.execute_vql("CREATE denovo = a + b ")))
-    assert type(cmd) == command.SetCommand
-    assert cmd.target == "denovo"
-    assert cmd.first == "a"
-    assert cmd.second == "b"
+    # assert type(cmd) == command.SelectCommand
+    # assert cmd.fields == ["chr","pos"]
+    # assert cmd.source == "variants"
 
-    cmd = command.create_command_from_vql_objet(conn,  next(vql.execute_vql("CREATE denovo FROM variants INTERSECT 'test.bed' ")))
-    assert type(cmd) == command.BedCommand
-    assert cmd.source == "variants"
-    assert cmd.target == "denovo"
-    assert cmd.bedfile == "test.bed"
+    # cmd = command.create_command_from_vql_objet(conn,  next(vql.execute_vql("CREATE denovo FROM variants")))
+    # assert type(cmd) == command.CreateCommand
+    # assert cmd.source == "variants"
+    # assert cmd.target == "denovo"
 
-def test_execute_vql(conn):
+    # cmd = command.create_command_from_vql_objet(conn,  next(vql.execute_vql("CREATE denovo = a + b ")))
+    # assert type(cmd) == command.SetCommand
+    # assert cmd.target == "denovo"
+    # assert cmd.first == "a"
+    # assert cmd.second == "b"
+
+    # cmd = command.create_command_from_vql_objet(conn,  next(vql.execute_vql("CREATE denovo FROM variants INTERSECT 'test.bed' ")))
+    # assert type(cmd) == command.BedCommand
+    # assert cmd.source == "variants"
+    # assert cmd.target == "denovo"
+    # assert cmd.bedfile == "test.bed"
+
+
+def test_create_command_from_obj(conn):
+    import inspect 
+    partial_fct = command.create_command_from_obj(conn, {"cmd":"create_cmd", "fields": ["chr","pos"], "target":"test", "source":"variants", "filters": {}})
+    assert partial_fct.func == command.create_cmd
+
+    partial_fct = command.create_command_from_obj(conn, {"cmd":"select_cmd", "fields": ["chr","pos"], "source":"variants", "filters": {}})
+    assert partial_fct.func == command.select_cmd
+
+    # etc ... 
+
+def test_execute(conn):
 
 
     # Select variant with ref = C
-    result = command.execute_vql(conn, "CREATE setA FROM variants WHERE ref ='C'")
-    assert "id" in result
-    for variant in command.execute_vql(conn, "SELECT chr, pos, ref, alt FROM setA"):
+    result = command.execute(conn, "CREATE setA FROM variants WHERE ref='C'")
+
+    assert "id" in result 
+    
+    for variant in command.execute(conn, "SELECT chr, pos, ref, alt FROM setA"):
         assert variant["ref"] == 'C'
 
     # Select variants with alt = A
-    result = command.execute_vql(conn, "CREATE setB FROM variants WHERE alt ='A'")
+    result = command.execute(conn, "CREATE setB FROM variants WHERE alt ='A'")
     assert "id" in result
-    for variant in command.execute_vql(conn, "SELECT chr, pos, ref, alt FROM setB"):
+    for variant in command.execute(conn, "SELECT chr, pos, ref, alt FROM setB"):
         assert variant["alt"] == 'A'
 
     #Create intersection 
-    result = command.execute_vql(conn, "CREATE set_inter = setB & setA")
+    result = command.execute(conn, "CREATE set_inter = setB & setA")
     assert "id" in result
-    for variant in command.execute_vql(conn, "SELECT chr, pos, ref, alt FROM set_inter"):
+    for variant in command.execute(conn, "SELECT chr, pos, ref, alt FROM set_inter"):
         assert variant["alt"] == 'A' and variant["ref"] == 'C'
 
     # Create bedfile 
     BEDFILE = "examples/test.bed"
-    result = command.execute_vql(conn, f"CREATE set_bed FROM variants INTERSECT '{BEDFILE}' ")
+    result = command.execute(conn, f"CREATE set_bed FROM variants INTERSECT '{BEDFILE}' ")
     assert "id" in result
     
     with open(BEDFILE) as file:
         reader = csv.reader(file, delimiter="\t")
-        for variant in command.execute_vql(conn, "SELECT chr, pos, ref, alt FROM set_bed"):
+        for variant in command.execute(conn, "SELECT chr, pos, ref, alt FROM set_bed"):
             is_in = False
             file.seek(0)
             for line in reader:

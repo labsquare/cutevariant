@@ -255,3 +255,7 @@ def parse_vql(raw_vql: str) -> list:
         raise VQLSyntaxError(*error_message_from_err(err, raw_vql))
 
     yield from (command.value for command in raw_model.commands)
+
+
+def parse_one_vql(raw_vql: str) -> dict:
+    return next(parse_vql(raw_vql))

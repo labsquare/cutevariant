@@ -7,289 +7,230 @@ import os
 import functools
 import csv
 
-class Command(object):
-    def __init__(self, conn : sqlite3.Connection):
-        self.conn = conn
 
-    def do(self, **args):
-        raise NotImplemented() 
-
-    def undo(self):
-        pass 
-
-
-class SelectCommand(Command):
-    def __init__(self, conn : sqlite3.Connection):
-        super().__init__(conn) 
-        self.fields=["chr", "pos", "ref", "alt"]
-        self.filters=dict()
-        self.source="variants"
-        self.order_by=None
-        self.order_desc=True
-        self.grouped = False 
-        self.limit = 50
-        self.offset = 0
-        self.as_dict = True
-
-    def sql(self):
-        default_tables = dict([(i["name"], i["category"]) for i in sql.get_fields(self.conn)])
-        samples_ids = dict([(i["name"], i["id"]) for i in sql.get_samples(self.conn)])
-
-        return build_query(self.fields, self.source, self.filters, self.order_by, self.order_desc, self.grouped, self.limit, self.offset, default_tables, samples_ids =samples_ids) 
-
-    def do(self):
-        for i in self.conn.execute(self.sql()):
+def select_cmd(
+    conn: sqlite3.Connection, 
+    fields = ["chr", "pos", "ref", "alt"],
+    filters = dict(),
+    source = "variants",
+    order_by = None, 
+    order_desc = True, 
+    limit = 50,
+    offset = 0,
+    **kwargs):
+        """Select query Command 
+        
+        Args:
+            conn (sqlite3.Connection): Description
+            fields (list, optional): Description
+            filters (TYPE, optional): Description
+            source (str, optional): Description
+            order_by (None, optional): Description
+            order_desc (bool, optional): Description
+            limit (int, optional): Description
+            offset (int, optional): Description
+        
+        Yields:
+            TYPE: Description
+        """
+        default_tables = dict([(i["name"], i["category"]) for i in sql.get_fields(conn)])
+        samples_ids = dict([(i["name"], i["id"]) for i in sql.get_samples(conn)])
+        query = build_query(fields, source, filters, order_by, order_desc, True, limit, offset, default_tables, samples_ids = samples_ids) 
+        for i in conn.execute(query):
             yield dict(i)
 
+
+
+@functools.lru_cache(128)
+def count_cmd(conn: sqlite3.Connection, source = "variants", filters = {},**kwargs):
+    """Count command 
     
+    Args:
+        conn (sqlite3.Connection): Description
+        source (str, optional): Description
+        filters (dict, optional): Description
+    
+    Returns:
+        TYPE: Description
+    """
+    default_tables = dict([(i["name"], i["category"]) for i in sql.get_fields(conn)])
+    samples_ids = dict([(i["name"], i["id"]) for i in sql.get_samples(conn)])
+    query = build_query([""], source, filters, None,None,None, None, None, default_tables, samples_ids =samples_ids) 
+    from_pos = query.index("FROM")
+    query = "SELECT COUNT(variants.id) " + query[from_pos:]
+    return {"count": conn.execute(query).fetchone()[0]}
 
-class CountCommand(Command):
-    def __init__(self, conn : sqlite3.Connection):
-        super().__init__(conn) 
-        self.source = None
-        self.filters = None 
-
-    @functools.lru_cache
-    def _compute_cache_count(self, query):
-        return self.conn.execute(query).fetchone()[0]   
-
-    def do(self):
-        default_tables = dict([(i["name"], i["category"]) for i in sql.get_fields(self.conn)])
-        samples_ids = dict([(i["name"], i["id"]) for i in sql.get_samples(self.conn)])
-        query = build_query([""], self.source, self.filters, None,None,None, None, None, default_tables, samples_ids =samples_ids) 
-        from_pos = query.index("FROM")
-        query = "SELECT COUNT(variants.id) " + query[from_pos:]
-
-        return {"count": self._compute_cache_count(query)}
-
-class DropCommand(Command):
-    def __init__(self, conn : sqlite3.Connection):
-        super().__init__(conn) 
-        self.source = None
-
-    def do(self):
-        for selection in sql.get_selections(self.conn):
-            if selection["name"] == self.source:
-                selection_id = int(selection["id"])
-                sql.delete_selection(self.conn, selection_id)
+def drop_cmd(conn: sqlite3.Connection, source,**kwargs ): 
+    """Drop commande
+    
+    Args:
+        conn (sqlite3.Connection): Description
+        source (TYPE): Description
+    """
+    for selection in sql.get_selections(conn):
+        if selection["name"] == source:
+            selection_id = int(selection["id"])
+            sql.delete_selection(conn, selection_id)   
 
 
-class CreateCommand(Command):
-    def __init__(self, conn: sqlite3.Connection):
-        super().__init__(conn)
-        self.filters=dict()
-        self.source="variants"
-        self.target = None
-        self.count = 0 
-        self.default_tables = dict([(i["name"], i["category"]) for i in sql.get_fields(self.conn)])
+def create_cmd(conn: sqlite3.Connection, target, source = "variants", filters = dict(), count = 0,**kwargs ):
+
+    default_tables = dict([(i["name"], i["category"]) for i in sql.get_fields(conn)])
+    samples_ids = dict([(i["name"], i["id"]) for i in sql.get_samples(conn)])
+
+    if target is None:
+        return {} 
+
+    cursor = conn.cursor()
+
+    sql_query = build_query(["id"],source,filters, default_tables = default_tables,  samples_ids =samples_ids) 
+    count = sql.count_query(conn, sql_query)
 
 
-
-    def do(self):
-        if self.target is None:
-            return 
-
-        cursor = self.conn.cursor()
-
-        sql_query = build_query(["id"], self.source, self.filters, default_tables = self.default_tables) 
-        count = sql.count_query(self.conn, sql_query)
+    selection_id = sql.insert_selection(cursor, sql_query, name=target, count=count)
 
 
-        selection_id = sql.insert_selection(cursor, sql_query, name=self.target, count=count)
+    q = f"""
+    INSERT INTO selection_has_variant
+    SELECT DISTINCT id, {selection_id} FROM ({sql_query})
+    """
+
+    # DROP indexes
+    # For joints between selections and variants tables
+    try:
+        cursor.execute("""DROP INDEX idx_selection_has_variant""")
+    except sqlite3.OperationalError:
+        pass
+
+    cursor.execute(q)
+
+    # # REBUILD INDEXES
+    # # For joints between selections and variants tables
+    sql.create_selection_has_variant_indexes(cursor)
 
 
-        q = f"""
-        INSERT INTO selection_has_variant
-        SELECT DISTINCT id, {selection_id} FROM ({sql_query})
-        """
+    conn.commit()
 
-        # DROP indexes
-        # For joints between selections and variants tables
-        try:
-            cursor.execute("""DROP INDEX idx_selection_has_variant""")
-        except sqlite3.OperationalError:
-            pass
+    if cursor.rowcount:
+        return {"id": cursor.lastrowid}
+    return {}
 
-        cursor.execute(q)
 
-        # # REBUILD INDEXES
-        # # For joints between selections and variants tables
-        sql.create_selection_has_variant_indexes(cursor)
+def set_cmd(conn: sqlite3.Connection, target, first, second, operator, **kwargs):
 
-        self.conn.commit()
-        if cursor.rowcount:
-            return {"id": cursor.lastrowid}
+    if target is None or first is None or second is None or operator is None:
         return {}
 
+    cursor = conn.cursor()
+
+    query_first = build_query(["id"], first, limit = None) 
+    query_second = build_query(["id"], second, limit = None) 
+
+
+    if operator == "+":
+        sql_query = sql.union_variants(query_first, query_second)
+
+    if operator == "-":
+        sql_query = sql.subtract_variants(query_first, query_second)
+
+    if operator == "&":
+        sql_query = sql.intersect_variants(query_first, query_second)
+
+
+    selection_id = sql.insert_selection(cursor, sql_query, name=target, count= 0 )
+
+    q = f"""
+    INSERT INTO selection_has_variant
+    SELECT DISTINCT id, {selection_id} FROM ({sql_query})
+    """
+
+    # DROP indexes
+    # For joints between selections and variants tables
+    try:
+        cursor.execute("""DROP INDEX idx_selection_has_variant""")
+    except sqlite3.OperationalError:
+        pass
+
+    cursor.execute(q)
+
+    # # REBUILD INDEXES
+    # # For joints between selections and variants tables
+    sql.create_selection_has_variant_indexes(cursor)
+
+    conn.commit()
+    if cursor.rowcount:
+        return {"id": cursor.lastrowid}
+    return {}
 
 
 
-    def undo(self):
-        pass 
+def bed_cmd(conn: sqlite3.Connection, path, target, source, **kwargs):
 
-
-
-
-class SetCommand(Command):
-    def __init__(self, conn: sqlite3.Connection):
-        super().__init__(conn)
-        self.target = None
-        self.first = None
-        self.second = None 
-        self.operator = None
-
-    def do(self):
-        
-        if self.target is None or self.first is None or self.second is None or self.operator is None:
-            return {}
-
-        cursor = self.conn.cursor()
-
-        query_first = build_query(["id"], self.first, limit = None) 
-        query_second = build_query(["id"], self.second, limit = None) 
-
-
-        if self.operator == "+":
-            sql_query = sql.union_variants(query_first, query_second)
-
-        if self.operator == "-":
-            sql_query = sql.subtract_variants(query_first, query_second)
-
-        if self.operator == "&":
-            sql_query = sql.intersect_variants(query_first, query_second)
-
-
-        selection_id = sql.insert_selection(cursor, sql_query, name=self.target, count= 0 )
-
-        q = f"""
-        INSERT INTO selection_has_variant
-        SELECT DISTINCT id, {selection_id} FROM ({sql_query})
-        """
-
-        # DROP indexes
-        # For joints between selections and variants tables
-        try:
-            cursor.execute("""DROP INDEX idx_selection_has_variant""")
-        except sqlite3.OperationalError:
-            pass
-
-        cursor.execute(q)
-
-        # # REBUILD INDEXES
-        # # For joints between selections and variants tables
-        sql.create_selection_has_variant_indexes(cursor)
-
-        self.conn.commit()
-        if cursor.rowcount:
-            return {"id": cursor.lastrowid}
-        return {}
-
-    def undo(self):
-        pass 
-
-class BedCommand(Command):
-    def __init__(self, conn: sqlite3.Connection):
-        super().__init__(conn)    
-        self.bedfile = None
-        self.source = None
-        self.target = None
-
-    def read_bed(self):
-        with open(self.bedfile) as file:
+    def read_bed():
+        with open(path) as file:
             reader = csv.reader(file, delimiter="\t")
             for line in reader: 
                 if len(line) >= 3:
                     yield {"chr":line[0], "start":int(line[1]), "end": int(line[2]), "name": ""}
 
 
-    def do(self):
-        selection_id = sql.create_selection_from_bed(self.conn, self.source, self.target, self.read_bed())
-        return {"id": selection_id}
+    selection_id = sql.create_selection_from_bed(conn, source, target, read_bed())
+    return {"id": selection_id}
 
-    def undo(self):
-        pass
-        
+    
 
-
-
-        
-def create_command_from_vql_objet(conn, vql_obj: dict): 
+def create_command_from_obj(conn, vql_obj: dict): 
     if vql_obj["cmd"] == "select_cmd":
-        cmd = SelectCommand(conn)
-        cmd.fields = vql_obj["fields"]
-        cmd.source = vql_obj["source"]
-        cmd.filters = vql_obj["filters"]
-        return cmd 
+        return functools.partial(select_cmd,conn, **vql_obj)
 
     if vql_obj["cmd"] == "create_cmd":
-        cmd = CreateCommand(conn)
-        cmd.source = vql_obj["source"]
-        cmd.filters = vql_obj["filters"]
-        cmd.target = vql_obj["target"] 
-        return cmd 
+        return functools.partial(create_cmd,conn, **vql_obj) 
 
     if vql_obj["cmd"] == "set_cmd":
-        cmd = SetCommand(conn)
-        cmd.target = vql_obj["target"]
-        cmd.first = vql_obj["first"]
-        cmd.second = vql_obj["second"]
-        cmd.operator = vql_obj["operator"]
-        return cmd
+        return functools.partial(set_cmd,conn, **vql_obj)
 
     if vql_obj["cmd"] == "bed_cmd": 
-        cmd = BedCommand(conn)
-        cmd.target = vql_obj["target"]
-        cmd.source = vql_obj["source"]
-        cmd.bedfile = vql_obj["path"]
-        return cmd
-    return None
-
-def create_commands(conn, vql_source: str):
-    for vql_obj in vql.parse_vql(vql_source):
-        cmd = create_command_from_vql_objet(conn, vql_obj)
-        yield cmd 
-        
-
-def execute_vql(conn, vql_source: str):
-
-    vql_obj = next(vql.parse_vql(vql_source))
-    cmd = create_command_from_vql_objet(conn, vql_obj)
-    return cmd.do()
+        return functools.partial(bed_cmd,conn, **vql_obj)
 
 
-def execute_full_vql(conn, vql_source: str):
-    for vql_obj in vql.parse_vql(vql_source):
-        cmd = create_command_from_vql_objet(conn, vql_obj)
-        if type(cmd) == SelectCommand:
-            yield cmd.do()
-        else:
-            yield cmd.do()
 
-class CommandGraph(object):
-    def __init__(self, conn):
-        super().__init__()
-        self.conn = conn
-        self.graph = nx.DiGraph() 
-        self.graph.add_node("variants")
+def execute(conn, vql_source: str):
+    vql_obj = vql.parse_one_vql(vql_source)
+    cmd = create_command_from_obj(conn, vql_obj)
+    return cmd()
 
-    def add_command(self, command: Command):
+def execute_all(conn, vql_source: str):
+    for vql in vql.parse_vql(vql_source):
+        cmd = create_command_from_obj(conn, vql)
+        yield cmd()
 
-        if type(command) == CreateCommand:
-            self.graph.add_node(command.target)
-            self.graph.add_edge(command.source, command.target)
 
-        if type(command) == SelectCommand:
-            self.graph.add_node("Select")
-            self.graph.add_edge(command.source, "Select")
 
-        if type(command) == SetCommand:
-            self.graph.add_node(command.target)
-            self.graph.add_edge(command.first, command.target)
-            self.graph.add_edge(command.second, command.target)
+# class CommandGraph(object):
+#     def __init__(self, conn):
+#         super().__init__()
+#         self.conn = conn
+#         self.graph = nx.DiGraph() 
+#         self.graph.add_node("variants")
 
-    def set_source(self, source):
-        self.graph.clear()
-        for vql_obj in vql.execute_vql(source):
-            cmd = create_command_from_vql_objet(self.conn, vql_obj)
-            self.add_command(cmd)
+#     def add_command(self, command: Command):
+
+#         if type(command) == CreateCommand:
+#             self.graph.add_node(command.target)
+#             self.graph.add_edge(command.source, command.target)
+
+#         if type(command) == SelectCommand:
+#             self.graph.add_node("Select")
+#             self.graph.add_edge(command.source, "Select")
+
+#         if type(command) == SetCommand:
+#             self.graph.add_node(command.target)
+#             self.graph.add_edge(command.first, command.target)
+#             self.graph.add_edge(command.second, command.target)
+
+#     def set_source(self, source):
+#         self.graph.clear()
+#         for vql_obj in vql.execute_vql(source):
+#             cmd = create_command_from_vql_objet(self.conn, vql_obj)
+#             self.add_command(cmd)
 
