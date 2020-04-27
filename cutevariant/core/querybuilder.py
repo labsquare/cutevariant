@@ -2,6 +2,10 @@ from cutevariant.core import sql
 import sqlite3
 import re
 
+
+GENOTYPE_FUNC_NAME = "sample"
+SET_FUNC_NAME = "set"
+
 def filters_to_flat(filters: dict):
     """Recursive function to convert the filter hierarchical dictionnary into a list of fields
 
@@ -55,6 +59,11 @@ def field_function_to_sql(field_function: tuple, use_as = False):
         return f"`{func_name}_{arg_name}`" + suffix
 
 
+def set_function_to_sql(field_function: tuple):
+    func_name, arg_name = field_function; 
+    q = f"(SELECT value FROM sets WHERE name = '{arg_name}')"
+    return q 
+
 def fields_to_sql(field, default_tables = {}, use_as = False):
     """
     Return field as sql syntax . 
@@ -70,10 +79,12 @@ def fields_to_sql(field, default_tables = {}, use_as = False):
         fields_to_sql("chr", {"chr":variants})  => `variants`.`chr` 
     """
 
-    # If it is "genotype.name.truc then it is is field function"
     if isinstance(field, tuple):
+        
+        # If it is "genotype.name.truc then it is is field function"
         return field_function_to_sql(field, use_as)
 
+ 
     # extract variants.chr  ==> (variant, chr)
     match = re.match(r"^(\w+)\.(\w+)", field)
 
@@ -107,6 +118,10 @@ def filters_to_sql(filters, default_tables = {}):
             # quote string 
             if isinstance(value, str):
                 value = f"'{value}'"
+
+            if isinstance(value, tuple):
+                if value[0] == SET_FUNC_NAME:
+                    value = set_function_to_sql(value)
 
             if operator == "~":
                 operator="REGEXP"
@@ -189,7 +204,6 @@ def build_query(
     # Loop over fields and check is annotations is required 
     need_join_annotations = False
     for col in sql_fields + fields_in_filters:
-        print(col)
         if "annotations" in col:
             need_join_annotations = True
             break
@@ -209,7 +223,6 @@ def build_query(
 
     #  Add Join Samples
     ## detect if fields contains function like (genotype,boby,gt) and save boby
-    GENOTYPE_FUNC_NAME = "sample"
 
     all_fields = fields_in_filters + fields
     samples = []

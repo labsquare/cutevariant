@@ -57,6 +57,9 @@ def async_import_reader(conn, reader: AbstractReader, **kwargs):
     # Create selection
     create_table_selections(conn)
 
+    # Create table sets 
+    create_table_sets(conn)
+
     # Insert samples
     yield 0, "Inserting samples..."
     insert_many_samples(conn, reader.get_samples())

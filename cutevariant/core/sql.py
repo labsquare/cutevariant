@@ -484,6 +484,38 @@ def edit_selection(conn:sqlite3.Connection, selection: dict):
     conn.commit()
     return cursor.rowcount
 
+## ================ Create sets tables =========================================
+
+def create_table_sets(conn:sqlite3.Connection):
+    """Create the table "sets" 
+    
+    This table stores variants selection saved by the user:
+            - name: name of the set of variants
+            - value: number of variants concerned by this set
+
+    Args:
+        conn (sqlite3.Connection): Sqlite3 Connection
+    """
+    cursor = conn.cursor()
+    # selection_id is an alias on internal autoincremented 'rowid'
+    cursor.execute(
+        """CREATE TABLE sets (
+        id INTEGER PRIMARY KEY ASC,
+        name TEXT, 
+        value TEXT
+        )"""
+    )
+
+    conn.commit()
+
+def insert_set_from_file(conn: sqlite3.Connection, name,  filename):
+
+    cursor = conn.cursor() 
+
+    with open(filename) as file:
+        cursor.executemany("""INSERT INTO sets (name, value) VALUES (?,?)""", ((name, i.strip()) for i in file))
+    
+    conn.commit()
 
 ## ================ Operations on sets of variants =============================
 
@@ -712,9 +744,13 @@ def create_table_annotations(conn, fields):
 
     cursor = conn.cursor()
     # TODO: no primary key/unique index for this table?
+    print(f"CREATE TABLE annotations (variant_id INTEGER NOT NULL, {schema})")
+
+
     cursor.execute(
         f"""CREATE TABLE annotations (variant_id INTEGER NOT NULL, {schema})"""
     )
+
     conn.commit()
 
 

@@ -77,9 +77,11 @@ Comment: /\#.*$/;
 
 FieldId:/[^\d\W](\w*\.)?\w*\b/;
 FieldIdentifier: Function|FieldId;
-ValueIdentifier: (NUMBER|STRING|BOOL|Tuple);
+ValueIdentifier: (NUMBER|STRING|BOOL|Tuple|SetIdentifier);
 ARGS: STRING;
 Function: func=ID '(' arg=ARGS ')' ('.' extra=ID)?;
+SetIdentifier: 'Set[' arg=ARGS ']';
+
 BoolOperator: "AND"|"OR";
 SetOperator: "+"|"-"|"&"|"^";
 MathOperator: />=|<=|!=|=|>|<|!~|~|is|like|has|in/;

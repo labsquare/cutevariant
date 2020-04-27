@@ -31,6 +31,9 @@ def test_field_function_to_sql():
     assert querybuilder.field_function_to_sql(("phenotype", "sacha", ""))  == "`phenotype_sacha`"
     assert querybuilder.field_function_to_sql(("genotype", "sacha", "gt"), use_as =True)  == "`genotype_sacha`.`gt` AS 'genotype.sacha.gt'"
 
+def test_set_function_to_sql():
+    assert querybuilder.set_function_to_sql(("set","sacha")) == "(SELECT value FROM sets WHERE name = 'sacha')"
+
 
 def test_fields_to_sql():
 
@@ -39,7 +42,8 @@ def test_fields_to_sql():
     assert querybuilder.fields_to_sql("annotations.gene", DEFAULT_TABLES) == "`annotations`.`gene`"
 
     assert querybuilder.fields_to_sql("variants.gene", DEFAULT_TABLES) == "`variants`.`gene`"
-    assert querybuilder.fields_to_sql(("genotype","sacha","gt"), DEFAULT_TABLES) == "`genotype_sacha`.`gt`"
+    assert querybuilder.fields_to_sql(("sample","sacha","gt"), DEFAULT_TABLES) == "`sample_sacha`.`gt`"
+
 
 
 def test_filters_to_sql():
@@ -48,8 +52,8 @@ def test_filters_to_sql():
     filter_out =  "(`variants`.`ref` = 'A' AND `variants`.`alt` = 'C')"
     assert querybuilder.filters_to_sql(filter_in, DEFAULT_TABLES) == filter_out 
 
-    filter_in = {'AND': [{'field': ('genotype','sacha','gt'), 'operator': '=', 'value': 4}, {'field': 'alt', 'operator': '=', 'value': "C"} ]}
-    filter_out =  "(`genotype_sacha`.`gt` = 4 AND `variants`.`alt` = 'C')"
+    filter_in = {'AND': [{'field': ('sample','sacha','gt'), 'operator': '=', 'value': 4}, {'field': 'alt', 'operator': '=', 'value': "C"} ]}
+    filter_out =  "(`sample_sacha`.`gt` = 4 AND `variants`.`alt` = 'C')"
     assert querybuilder.filters_to_sql(filter_in, DEFAULT_TABLES) == filter_out 
 
     filter_in = {'AND':

@@ -129,6 +129,10 @@ class Tuple(metaclass=model_class):
     def value(self):
         return tuple(self.items)
 
+class SetIdentifier(metaclass=model_class):
+    @property
+    def value(self):
+        return ("set", self.arg)
 
 class SelectCmd(metaclass=model_class):
     @property
