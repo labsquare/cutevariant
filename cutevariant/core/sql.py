@@ -731,7 +731,7 @@ def create_table_annotations(conn, fields):
             ('allele str NULL', 'consequence str NULL', ...)
     :type fields: <generator>
     """
-    schema = ",".join([f'{field["name"]} {field["type"]}' for field in fields])
+    schema = ",".join([f'`{field["name"]}` {field["type"]}' for field in fields])
 
     if not schema:
         #  Create minimum annotation table... Can be use later for dynamic annotation.
