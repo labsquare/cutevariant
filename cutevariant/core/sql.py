@@ -744,7 +744,6 @@ def create_table_annotations(conn, fields):
 
     cursor = conn.cursor()
     # TODO: no primary key/unique index for this table?
-    print(f"CREATE TABLE annotations (variant_id INTEGER NOT NULL, {schema})")
 
 
     cursor.execute(
