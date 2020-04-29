@@ -517,6 +517,13 @@ def insert_set_from_file(conn: sqlite3.Connection, name,  filename):
     
     conn.commit()
 
+
+def get_sets(conn):
+    """ Get sets """ 
+    for row in conn.execute("SELECT name , COUNT(*) as 'count' FROM sets GROUP BY name"):
+        yield dict(row)
+
+
 ## ================ Operations on sets of variants =============================
 
 
@@ -1223,6 +1230,8 @@ def count_query(conn, query):
     return conn.execute(
         f"SELECT COUNT(*) as count FROM ({query})"
     ).fetchone()[0]
+
+
 
 
 #======================== execute commande ======================================
