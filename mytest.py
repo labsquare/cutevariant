@@ -29,7 +29,7 @@ cmd.execute(conn, "IMPORT sets 'examples/gene.txt' AS sacha")
 
 
 
-print(cmd.execute(conn, "COUNT FROM variants WHERE gene = 'CHID1'"))
+print(cmd.execute(conn, "COUNT FROM variants WHERE ref='G'"))
 
 
 

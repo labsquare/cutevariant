@@ -43,7 +43,7 @@ def select_cmd(
 
 
 
-def count_cmd(conn: sqlite3.Connection, source = "variants", filters = {}, groupby=True, **kwargs):
+def count_cmd(conn: sqlite3.Connection, source = "variants", filters = {}, distinct=True, **kwargs):
     """Count command 
     
     Args:
@@ -58,9 +58,12 @@ def count_cmd(conn: sqlite3.Connection, source = "variants", filters = {}, group
     samples_ids = dict([(i["name"], i["id"]) for i in sql.get_samples(conn)])
     query = build_query([""], source, filters, None,None, None, None, default_tables, samples_ids =samples_ids) 
     from_pos = query.index("FROM")
-    query = "SELECT COUNT(variants.id) " + query[from_pos:] 
-    if groupby:
-        query += " GROUP BY variants.id"
+
+    if distinct:
+        query = "SELECT COUNT(DISTINCT variants.id) " + query[from_pos:] 
+    else:
+        query = "SELECT COUNT(variants.id) " + query[from_pos:] 
+
     return {"count": conn.execute(query).fetchone()[0]}
 
 def drop_cmd(conn: sqlite3.Connection, feature, name ,**kwargs ): 
@@ -71,7 +74,7 @@ def drop_cmd(conn: sqlite3.Connection, feature, name ,**kwargs ):
         raise vql.VQLSyntaxError(f"{feature} doesn't exists")
 
     if feature == "selections":
-        conn.execute("DELETE FROM selections WHERE name = '{name}'")
+        conn.execute(f"DELETE FROM selections WHERE name = '{name}'")
         conn.commit()
         return {"success": True}
 
