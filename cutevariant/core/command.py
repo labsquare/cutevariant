@@ -43,8 +43,7 @@ def select_cmd(
 
 
 
-@functools.lru_cache(128)
-def count_cmd(conn: sqlite3.Connection, source = "variants", filters = {},**kwargs):
+def count_cmd(conn: sqlite3.Connection, source = "variants", filters = {}, groupby=True, **kwargs):
     """Count command 
     
     Args:
@@ -57,9 +56,11 @@ def count_cmd(conn: sqlite3.Connection, source = "variants", filters = {},**kwar
     """
     default_tables = dict([(i["name"], i["category"]) for i in sql.get_fields(conn)])
     samples_ids = dict([(i["name"], i["id"]) for i in sql.get_samples(conn)])
-    query = build_query([""], source, filters, None,None,None, None, None, default_tables, samples_ids =samples_ids) 
+    query = build_query([""], source, filters, None,None, None, None, default_tables, samples_ids =samples_ids) 
     from_pos = query.index("FROM")
-    query = "SELECT COUNT(variants.id) " + query[from_pos:]
+    query = "SELECT COUNT(variants.id) " + query[from_pos:] 
+    if groupby:
+        query += " GROUP BY variants.id"
     return {"count": conn.execute(query).fetchone()[0]}
 
 def drop_cmd(conn: sqlite3.Connection, feature, name ,**kwargs ): 
@@ -175,8 +176,8 @@ def set_cmd(conn: sqlite3.Connection, target, first, second, operator, **kwargs)
 
 def bed_cmd(conn: sqlite3.Connection, path, target, source, **kwargs):
 
-    if os.path.exists(path):
-        raise VQLSyntaxError(f"{path} doesn't exists")
+    if not os.path.exists(path):
+        raise vql.VQLSyntaxError(f"{path} doesn't exists")
 
     def read_bed():
         with open(path) as file:
@@ -232,6 +233,7 @@ def import_cmd(conn: sqlite3.Connection, feature=str, name=str, path=str, **kwar
     
 
 def create_command_from_obj(conn, vql_obj: dict): 
+
     if vql_obj["cmd"] == "select_cmd":
         return functools.partial(select_cmd,conn, **vql_obj)
 
@@ -252,6 +254,10 @@ def create_command_from_obj(conn, vql_obj: dict):
     
     if vql_obj["cmd"] == "drop_cmd":
         return functools.partial(drop_cmd,conn, **vql_obj)
+
+    if vql_obj["cmd"] == "count_cmd":
+        return functools.partial(count_cmd,conn, **vql_obj)
+ 
 
 def execute(conn, vql_source: str):
     vql_obj = vql.parse_one_vql(vql_source)

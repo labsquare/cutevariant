@@ -28,8 +28,9 @@ cmd.execute(conn, "IMPORT sets 'examples/gene.txt' AS sacha")
 #cmd.execute(conn, "DROP sets sacha")
 
 
-for i in cmd.execute(conn, "SELECT chr,pos FROM variants WHERE gene ='CFTR'"):
-	pass
+
+print(cmd.execute(conn, "COUNT FROM variants WHERE gene = 'CHID1'"))
+
 
 
 
