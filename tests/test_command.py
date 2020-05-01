@@ -43,7 +43,7 @@ def test_drop_cmd(conn):
 
     conn.execute("INSERT INTO selections (name) VALUES ('subset')")
     assert "subset" in [i["name"] for i in conn.execute("SELECT name FROM selections").fetchall()]
-    command.drop_cmd(conn, source="subset")
+    command.drop_cmd(conn, feature="selections", name="subset")
     assert "subset" not in [i["name"] for i in conn.execute("SELECT name FROM selections").fetchall()]
 
 

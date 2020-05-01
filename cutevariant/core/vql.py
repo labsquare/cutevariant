@@ -216,10 +216,28 @@ class DropCmd(metaclass = model_class):
     def value(self):
         return  {
         "cmd": "drop_cmd",
-        "source": self.source,
+        "feature": self.feature,
+        "name": self.name
         }
 
    
+class ShowCmd(metaclass = model_class):
+    @property
+    def value(self):
+        return {
+        "cmd": "show_cmd",
+        "feature": self.feature
+        }
+
+class ImportCmd(metaclass = model_class):
+    @property
+    def value(self):
+        return {
+        "cmd": "import_cmd",
+        "feature": self.feature,
+        "path": self.path,
+        "name": self.name
+        }
 
 
 METAMODEL = textx.metamodel_from_str(

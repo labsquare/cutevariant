@@ -178,7 +178,6 @@ def build_query(
     filters = {}, 
     order_by = None, 
     order_desc = True,
-    grouped = False,
     limit = 50,
     offset = 0,
     default_tables = {},
@@ -191,15 +190,15 @@ def build_query(
     sql_fields = ["`variants`.`id`"] + [fields_to_sql(col, default_tables, use_as=True) for col in fields if "id" not in col]
     sql_query = f"SELECT {','.join(sql_fields)} "
 
-    # Add child count if grouped 
-    if grouped:
-        sql_query += ", COUNT(*) as `children`"
+    # # Add child count if grouped 
+    # if grouped:
+    #     sql_query += ", COUNT(*) as `children`"
 
     #  Add source table
     sql_query += f"FROM variants"
 
     # Extract fields from filters 
-    fields_in_filters = [i["field"] for i in filters_to_flat(filters)]
+    fields_in_filters = [fields_to_sql(i["field"], default_tables) for i in filters_to_flat(filters)]
     
     # Loop over fields and check is annotations is required 
     need_join_annotations = False
@@ -251,8 +250,8 @@ def build_query(
             sql_query += " WHERE " + where_clause
 
     #  Add Group By
-    if grouped:
-        sql_query += " GROUP BY " + ",".join(["chr","pos","ref","alt"])
+    # if grouped:
+    #     sql_query += " GROUP BY " + ",".join(["chr","pos","ref","alt"])
 
     #  Add Order By
     if order_by:

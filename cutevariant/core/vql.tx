@@ -6,7 +6,7 @@ Model:
 
 // Keep orders 
 Command:
-    SelectCmd|CreateCmd|SetCmd|BedCmd|CopyCmd|CountCmd|DropCmd
+    SelectCmd|CreateCmd|SetCmd|BedCmd|CopyCmd|CountCmd|DropCmd|ShowCmd|ImportCmd
 ;
 
 
@@ -39,11 +39,15 @@ CountCmd:
 ;
 
 DropCmd:
-	'DROP' source=ID
+	'DROP' feature=ID name=ID
 ;
 
 ShowCmd:
-	'SHOW' source=ID
+	'SHOW' feature=ID
+;
+
+ImportCmd:
+	'IMPORT' feature=ID path=STRING 'AS' name=ID
 ;
 
 //################################## Set Operation ###################
@@ -82,7 +86,7 @@ FieldId:/[^\d\W](\w*\.)?\w*\b/;
 FieldIdentifier: Function|FieldId;
 ValueIdentifier: (NUMBER|STRING|BOOL|Tuple|SetIdentifier);
 ARGS: STRING;
-Function: func=ID '(' arg=ARGS ')' ('.' extra=ID)?;
+Function: func=ID '[' arg=ARGS ']' ('.' extra=ID)?;
 SetIdentifier: 'Set[' arg=ARGS ']';
 
 BoolOperator: "AND"|"OR";
