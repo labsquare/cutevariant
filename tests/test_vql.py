@@ -5,9 +5,9 @@ from cutevariant.core.vql import execute_vql, VQLSyntaxError
 # Test valid VQL cases
 VQL_TO_TREE_CASES = {
     # Test 1 
-    'SELECT chr,pos,genotype("sacha") FROM variants': {
+    'SELECT chr,pos,sample["sacha"] FROM variants': {
         "cmd":"select_cmd",
-        "fields": ["chr", "pos", ('genotype','sacha','gt')],
+        "fields": ["chr", "pos", ('sample','sacha','gt')],
         "filters": {},
         "source": "variants",
     },
@@ -42,9 +42,9 @@ VQL_TO_TREE_CASES = {
         },
     },
     # Test 4
-    'SELECT chr,pos, genotype("sacha") FROM variants # comments are handled': {
+    'SELECT chr,pos, sample["sacha"] FROM variants # comments are handled': {
         "cmd":"select_cmd",
-        "fields": ["chr", "pos", ('genotype','sacha','gt')],
+        "fields": ["chr", "pos", ('sample','sacha','gt')],
         "filters": {},
         "source": "variants"
         },
@@ -101,9 +101,10 @@ VQL_TO_TREE_CASES = {
         "filters":  { "AND": [{"field": "a", "operator": "=", "value": 3} ]}
         },
     # Test 110
-   "DROP subset": {
+   "DROP selections subset": {
         "cmd":"drop_cmd",
-        "source": "subset"
+        "feature": "selections",
+        "name": "subset"
     }
 
 }
