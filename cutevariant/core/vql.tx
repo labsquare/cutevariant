@@ -42,6 +42,9 @@ DropCmd:
 	'DROP' source=ID
 ;
 
+ShowCmd:
+	'SHOW' source=ID
+;
 
 //################################## Set Operation ###################
 
