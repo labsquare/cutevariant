@@ -13,8 +13,8 @@ import csv
 def select_cmd(
     conn: sqlite3.Connection, 
     fields = ["chr", "pos", "ref", "alt"],
-    filters = dict(),
     source = "variants",
+    filters = dict(),
     order_by = None, 
     order_desc = True, 
     limit = 50,
@@ -260,6 +260,8 @@ def create_command_from_obj(conn, vql_obj: dict):
 
     if vql_obj["cmd"] == "count_cmd":
         return functools.partial(count_cmd,conn, **vql_obj)
+
+    return None
  
 
 def execute(conn, vql_source: str):

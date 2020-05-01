@@ -35,6 +35,7 @@ def snake_to_camel(name:str) -> str:
 class PluginWidget(QWidget):
 
     LOCATION = DOCK_LOCATION
+    ENABLE = False
 
     def __init__(self, parent = None):
         super().__init__(parent)
@@ -60,10 +61,7 @@ class PluginWidget(QWidget):
         pass
 
     def on_query_model_changed(self, model):
-        """This method is called when the variant model changed 
-        
-        Args:
-            model (QueryModel): QueryModel
+        """ DEPRECATED 
         """
         pass
 
@@ -75,6 +73,7 @@ class PluginWidget(QWidget):
             variant (dict): contains data of a variant
         """
         pass
+
 
     def on_close(self):
         """This methods is called when the mainwindow close

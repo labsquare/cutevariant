@@ -13,7 +13,7 @@ from PySide2.QtGui import QIcon, QKeySequence
 # Custom imports
 from cutevariant.core import Query, get_sql_connexion
 from cutevariant.gui.ficon import FIcon
-from cutevariant.gui.querymodel import QueryModel
+
 from cutevariant.gui.wizards import ProjectWizard
 from cutevariant.gui.settings import SettingsWidget
 # from cutevariant.gui.querywidget import QueryWidget
@@ -23,7 +23,7 @@ from cutevariant.gui.settings import SettingsWidget
 from cutevariant.gui import plugin
 #from cutevariant.gui.plugins.editor.plugin import EditorPlugin
 
-from cutevariant.gui.aboutcutevariant import AboutCutevariant
+from cutevariant.gui.widgets.aboutcutevariant import AboutCutevariant
 # from cutevariant.gui.chartquerywidget import ChartQueryWidget
 from cutevariant import commons as cm
 from cutevariant.commons import MAX_RECENT_PROJECTS, DIR_ICONS
@@ -55,10 +55,6 @@ class MainWindow(QMainWindow):
         # store dock plugins
         self.plugins = {}
 
-        # The query model 
-        self.query_model = QueryModel()
-
-
         self.central_tab = QTabWidget()
         self.footer_tab = QTabWidget()
 
@@ -66,8 +62,6 @@ class MainWindow(QMainWindow):
         vsplit.addWidget(self.central_tab)  
         vsplit.addWidget(self.footer_tab)  
         self.setCentralWidget(vsplit)
-
-
 
         # Status Bar
         self.status_bar = QStatusBar()
@@ -81,8 +75,6 @@ class MainWindow(QMainWindow):
         self.register_plugins()
 
 
-
-
         # Window geometry
         self.resize(600, 400)
         self.setGeometry(qApp.desktop().rect().adjusted(100, 100, -100, -100))
@@ -91,18 +83,12 @@ class MainWindow(QMainWindow):
         # Restores the state of this mainwindow's toolbars and dockwidgets
         self.read_settings()
 
-    #     #self.open("test.db")
-
-        self.query_model.changed.connect(self.on_query_model_changed)
-    
-
 
 
     def setup_ui(self):
         # Setup menubar
         self.setup_menubar()
         self.setup_toolbar()
-
 
 
     def add_panel(self, widget, area=Qt.LeftDockWidgetArea):
@@ -132,23 +118,33 @@ class MainWindow(QMainWindow):
                 name = extension["name"]
                 plugin_widget_class = extension["widget"]
                 widget = plugin_widget_class()
-                self.plugins[name] = widget
-                widget.mainwindow = self
-                widget.setWindowTitle(extension.get("name"))
-                widget.setToolTip(extension.get("description"))
-                widget.on_register(self)
+                if widget.ENABLE == True: 
+                    self.plugins[name] = widget
+                    widget.mainwindow = self
+                    widget.setWindowTitle(extension.get("name"))
+                    widget.setToolTip(extension.get("description"))
+                    widget.on_register(self)
 
 
-                if plugin_widget_class.LOCATION == plugin.DOCK_LOCATION:
-                    self.add_panel(widget)
+                    if plugin_widget_class.LOCATION == plugin.DOCK_LOCATION:
+                        self.add_panel(widget)
 
-                if plugin_widget_class.LOCATION == plugin.CENTRAL_LOCATION:
-                    self.central_tab.addTab(widget, widget.windowTitle())
+                    if plugin_widget_class.LOCATION == plugin.CENTRAL_LOCATION:
+                        self.central_tab.addTab(widget, widget.windowTitle())
 
-                if plugin_widget_class.LOCATION == plugin.FOOTER_LOCATION:
-                    self.footer_tab.addTab(widget, widget.windowTitle())
+                    if plugin_widget_class.LOCATION == plugin.FOOTER_LOCATION:
+                        self.footer_tab.addTab(widget, widget.windowTitle())
 
-   
+    def get_plugin(self, name) -> plugin.PluginWidget:
+        """ Return plugin by name """ 
+
+        if name in self.plugins:
+            return self.plugins[name]
+
+        else:
+            return None
+
+
 
     def setup_menubar(self):
         """Menu bar setup: items and actions"""
@@ -269,15 +265,17 @@ class MainWindow(QMainWindow):
         # Create connection
         self.conn = get_sql_connexion(filepath)
 
-        # Create central view 
-        # TODO: rename the class 
-        self.query_model.conn = self.conn
-        #self.query_model.load()
+        self.open_database()
+        self.save_recent_project(filepath)
 
+
+    def open_database(self, conn):
+        self.conn = conn
+
+        # signals plugins 
         for name, _plugin in self.plugins.items():
             _plugin.on_open_project(self.conn)
 
-        self.save_recent_project(filepath)
 
     def save_recent_project(self, path):
         """Save current project into QSettings
@@ -456,17 +454,17 @@ class MainWindow(QMainWindow):
             #  TODO: handle UI changes by passing UI_VERSION to saveState()
             app_settings.setValue("windowState", self.saveState())
 
-    @Slot()
-    def on_query_model_changed(self):
-        for name, _plugin in self.plugins.items():
-            if _plugin.isVisible():
-                _plugin.on_query_model_changed(self.query_model)
+    # @Slot()
+    # def on_query_model_changed(self):
+    #     for name, _plugin in self.plugins.items():
+    #         if _plugin.isVisible():
+    #             _plugin.on_query_model_changed(self.query_model)
 
-    @Slot()
-    def on_variant_changed(self, variant):
-        for name, _plugin in self.plugins.items():
-            if _plugin.isVisible():
-                _plugin.on_variant_changed(variant) 
+    # @Slot()
+    # def on_variant_changed(self, variant):
+    #     for name, _plugin in self.plugins.items():
+    #         if _plugin.isVisible():
+    #             _plugin.on_variant_changed(variant) 
 
 
 if __name__ == "__main__":
