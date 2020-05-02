@@ -4,7 +4,8 @@ from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 from PySide2.QtGui import *
 
-class ColumnsModel(QStandardItemModel):
+
+class FieldsModel(QStandardItemModel):
     """Model to store all fields available for variants, annotations and samples"""
 
     def __init__(self, conn=None):
@@ -29,20 +30,20 @@ class ColumnsModel(QStandardItemModel):
 
 
     @property
-    def columns(self):
+    def fields(self):
         """Return checked columns
         
         Returns:
             list -- list of columns
         """
-        selected_columns = []
+        selected_fields= []
         for item in self.checkable_items:
             if item.checkState() == Qt.Checked:
-                selected_columns.append(item.data()["name"])
-        return selected_columns
+                selected_fields.append(item.data()["name"])
+        return selected_fields
 
-    @columns.setter
-    def columns(self, columns):
+    @fields.setter
+    def fields(self, columns):
         """Check items which name is in columns
         
         Arguments:
@@ -51,7 +52,7 @@ class ColumnsModel(QStandardItemModel):
         self.blockSignals(True)
         for item in self.checkable_items:
             item.setCheckState(Qt.Unchecked)
-            if item.data()["name"] in columns:
+            if item.data()["name"] in self.fields:
                 item.setCheckState(Qt.Checked)
         self.blockSignals(False)
 
@@ -67,7 +68,7 @@ class ColumnsModel(QStandardItemModel):
         samples_items = QStandardItem("samples")
         samples_items.setIcon(FIcon(0xf00e))
         font = QFont()
-        font.setBold(True)
+        
         samples_items.setFont(font)
 
         for sample in sql.get_samples(self.conn):
@@ -86,7 +87,6 @@ class ColumnsModel(QStandardItemModel):
         root_item.setColumnCount(2)
         root_item.setIcon(FIcon(0Xf24b))
         font = QFont()
-        font.setBold(True)
         root_item.setFont(font)
 
         for field in sql.get_field_by_category(self.conn,category):
@@ -99,7 +99,7 @@ class ColumnsModel(QStandardItemModel):
             self.checkable_items.append(item1)
             
             if category == "samples":
-                item1.setData({"name": ("genotype", parent_name, field["name"])})
+                item1.setData({"name": ("sample", parent_name, field["name"])})
             else:
                 item1.setData(field)
         
@@ -108,15 +108,18 @@ class ColumnsModel(QStandardItemModel):
 
 
 
-class ColumnsWidget(plugin.PluginWidget):
-    """Display all fields according categories
+class FieldsEditorWidget(plugin.PluginWidget):
+    """Display all fields according categorie
 
     Usage: 
 
-     view = ColumnsWidget(conn)
+     view = FieldsWidget
+     (conn)
      view.columns = ["chr","pos"]
     
     """
+
+    ENABLE = True
 
 
     def __init__(self, parent=None):
@@ -124,42 +127,82 @@ class ColumnsWidget(plugin.PluginWidget):
 
         self.setWindowTitle(self.tr("Columns"))
         self.view = QTreeView()
-        self.model = ColumnsModel(None)
-        self.view.setModel(self.model)
-        self.view.setIconSize(QSize(20,20))
-        self.view.header().setSectionResizeMode(QHeaderView.ResizeToContents)
+        self.toolbar = QToolBar()
+        self.model = FieldsModel(None)
+        self.proxy_model = QSortFilterProxyModel()
 
+        # setup proxy ( for search option )
+        self.proxy_model.setSourceModel(self.model)
+        self.proxy_model.setRecursiveFilteringEnabled(True)
+
+        self.view.setModel(self.proxy_model)
+        self.view.setIconSize(QSize(16,16))
+        self.view.header().setSectionResizeMode(QHeaderView.ResizeToContents)
+        self.search_edit = QLineEdit()
         # self.view.setIndentation(0)
-        #self.view.header().setVisible(False)
+        self.view.header().setVisible(False)
         layout = QVBoxLayout()
 
+
+        layout.addWidget(self.search_edit)
         layout.addWidget(self.view)
+        layout.addWidget(self.toolbar)
+
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
-        self.model.itemChanged.connect(self.on_column_changed)
+        self.model.itemChanged.connect(self.on_fields_changed)
+
+        # Setup toolbar 
+        self.toolbar.setIconSize(QSize(16,16))
+        self.toolbar.addAction(FIcon(0XF615), self.tr("collapse"), self.view.collapseAll)
+        self.toolbar.addAction(FIcon(0XF616), self.tr("Expand"), self.view.expandAll)
+
+        # setup search edit 
+        search_act = self.toolbar.addAction(FIcon(0XF349), self.tr("Search ..."))
+        search_act.setCheckable(True)
+        search_act.toggled.connect(self.__on_search_pressed)
+        self.search_edit.setVisible(False)
+        self.search_edit.setPlaceholderText(self.tr("Search by keywords ... "))
+
+        self.search_edit.textChanged.connect(self.proxy_model.setFilterRegExp)
+
+    def __on_search_pressed(self, checked : bool):
+        self.search_edit.setVisible(checked)
+        self.search_edit.setFocus(Qt.MenuBarFocusReason)
+
+
+
 
     def on_register(self, mainwindow):
         """ Overrided from PluginWidget"""
         pass 
 
-    def on_open_project(self,_conn):
+    def on_open_project(self,conn):
         """ Overrided from PluginWidget """
-        self.conn = _conn
+        self.conn = conn
 
-    def on_query_model_changed(self, model):
-        """ Overrided from PluginWidget """
-        self.columns = model.columns
-        # When you set columns, it means you check columns. 
-        # This will trigger a signal itemChanged which cause an infinite loop
-        # That's why I blocked the signal from the model. So I need to update the view manually
-        self.view.update()
-        self.view.resizeColumnToContents(0)
+    # def on_query_model_changed(self, model):
+    #     """ Overrided from PluginWidget """
+    #     self.columns = model.columns
+    #     # When you set columns, it means you check columns. 
+    #     # This will trigger a signal itemChanged which cause an infinite loop
+    #     # That's why I blocked the signal from the model. So I need to update the view manually
+    #     self.view.update()
+    #     self.view.resizeColumnToContents(0)
 
         
 
-    def on_column_changed(self):
-        self.mainwindow.query_model.columns = self.columns
-        self.mainwindow.query_model.load()
+    def on_fields_changed(self):
+
+
+        if self.mainwindow is None:
+            return
+
+
+        if "variant_view" in self.mainwindow.plugins:
+            plugin = self.mainwindow.get_plugin("variant_view")
+            plugin.fields = self.fields
+            plugin.load()
 
     @property
     def conn(self):
@@ -172,32 +215,41 @@ class ColumnsWidget(plugin.PluginWidget):
             self.model.load()
 
     @property
-    def columns(self):
-        return self.model.columns
+    def fields(self):
+        return self.model.fields
 
-    @columns.setter
-    def columns(self, columns):
-        self.model.columns = columns
+    @fields.setter
+    def fields(self, fields):
+        self.model.fields = fields
 
     def load(self):
         self.model.load()
 
 
+    def test(self):
+        print(self.fields)
+
 if __name__ == "__main__":
     import sys 
     import sqlite3
+    from cutevariant.core.importer import import_reader
+    from cutevariant.core.reader import FakeReader
 
     app = QApplication(sys.argv)
 
-    conn = sqlite3.connect("/home/schutz/Dev/cutevariant/examples/test.db")
+    conn = sql.get_sql_connexion(":memory:")
+    import_reader(conn, FakeReader())
+    #import_file(conn, "examples/test.snpeff.vcf")
 
-    view = ColumnsWidget()
+
+    view = FieldsEditorWidget()
+
     view.conn = conn
-    view.model.columns = ["chr", "pos"]
+    view.fields = ["chr", "pos"]
 
     #view.changed.connect(lambda : print(view.columns))
 
-    print(view.model.columns)
+
     view.show()
 
     app.exec_()

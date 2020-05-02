@@ -460,11 +460,11 @@ class MainWindow(QMainWindow):
     #         if _plugin.isVisible():
     #             _plugin.on_query_model_changed(self.query_model)
 
-    # @Slot()
-    # def on_variant_changed(self, variant):
-    #     for name, _plugin in self.plugins.items():
-    #         if _plugin.isVisible():
-    #             _plugin.on_variant_changed(variant) 
+    @Slot()
+    def on_variant_changed(self, variant):
+        for name, _plugin in self.plugins.items():
+            if _plugin.isVisible():
+                _plugin.on_variant_changed(variant) 
 
 
 if __name__ == "__main__":

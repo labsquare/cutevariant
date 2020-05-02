@@ -7,7 +7,10 @@ import os
 import functools
 import csv
 
+from cutevariant.commons import logger 
 
+
+LOGGER = logger()
 
 
 def select_cmd(
@@ -38,6 +41,7 @@ def select_cmd(
         default_tables = dict([(i["name"], i["category"]) for i in sql.get_fields(conn)])
         samples_ids = dict([(i["name"], i["id"]) for i in sql.get_samples(conn)])
         query = build_query(fields, source, filters, order_by, order_desc, limit, offset, default_tables, samples_ids = samples_ids) 
+        LOGGER.debug(query)
         for i in conn.execute(query):
             yield dict(i)
 

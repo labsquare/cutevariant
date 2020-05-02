@@ -13,9 +13,9 @@ from PySide2.QtGui import *
 
 
 
-class QueryModel(QAbstractTableModel):
+class VariantModel(QAbstractTableModel):
     """
-    QueryModel is a Qt model class which contains variants datas from sql.VariantBuilder . 
+    VariantModel is a Qt model class which contains variants datas from sql.VariantBuilder . 
     It loads paginated data from VariantBuilder and create an interface for a Qt view and controllers.
     The model can group variants by (chr,pos,ref,alt) into a tree thanks to VariantBuilder.tree().
    
@@ -445,30 +445,9 @@ class QueryTableView(QTableView):
     def __init__(self, parent=None):
         super().__init__()
 
-    # def drawBranches(self, painter, rect, index):
-    #     """ overrided : Draw Branch decorator with background 
-        
-    #     Backround is not alternative for children but inherits from parent 
 
-    #     """
-    #     if self.itemDelegate().__class__ is not QueryDelegate:
-    #         #  Works only if delegate is a VariantDelegate
-    #         return
 
-    #     painter.save()
-    #     painter.setPen(Qt.NoPen)
-    #     painter.setBrush(self.itemDelegate().background_color_index(index))
-    #     painter.drawRect(rect)
-
-    #     if index.parent() != QModelIndex():
-    #         #  draw child indicator
-    #         painter.drawPixmap(rect.center(), FIcon(0xF12F).pixmap(10, 10))
-
-    #     painter.restore()
-
-    #     super().drawBranches(painter, rect, index)
-
-class QueryViewWidget(plugin.PluginWidget):
+class VariantViewWidget(plugin.PluginWidget):
     """Contains the view of query with several controller"""
 
     variant_clicked = Signal(dict)
@@ -482,16 +461,18 @@ class QueryViewWidget(plugin.PluginWidget):
 
 
         self.delegate = QueryDelegate()
-        self.model = QueryModel()
+        self.model = VariantModel()
         self.setWindowTitle(self.tr("Variants"))
         self.topbar = QToolBar()
         self.bottombar = QToolBar()
         self.view = QueryTableView()
         self.formatters = []
 
-        # # self.view.setFrameStyle(QFrame.NoFrame)
-        #self.view.setItemDelegate(self.delegate)
-        # # self.view.setAlternatingRowColors(True)
+        #self.view.setFrameStyle(QFrame.NoFrame)
+        self.view.setItemDelegate(self.delegate)
+        self.view.setAlternatingRowColors(True)
+        #self.view.horizontalHeader().setStretchLastSection(True)
+        
         self.view.setSortingEnabled(True)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setSelectionMode(QAbstractItemView.ContiguousSelection)
@@ -576,7 +557,35 @@ class QueryViewWidget(plugin.PluginWidget):
 
         self.setLayout(main_layout)
 
+        self.setup_ui()
 
+
+    @property
+    def fields(self):
+        return self.model.fields 
+
+    @fields.setter
+    def fields(self, value):
+        self.model.fields = value
+
+    @property
+    def source(self):
+        return self.model.source 
+
+    @source.setter
+    def source(self, value):
+        self.model.source = value 
+
+    @property
+    def filters(self):
+        return self.model.filters
+
+    @filters.setter
+    def filters(self, value):
+        self.model.filters = value
+
+    def load(self):
+        self.model.load()
 
 
     def setup_ui(self):
@@ -792,7 +801,6 @@ if __name__ == "__main__":
     from cutevariant.core.importer import import_file, import_reader
     from cutevariant.core.reader import FakeReader, VcfReader
     from cutevariant.core import sql
-    from cutevariant.gui.querymodel import QueryModel 
 
     def test():
         print("salut")
@@ -804,7 +812,7 @@ if __name__ == "__main__":
     import_reader(conn, reader)
 
 
-    model = QueryModel(conn)
+    model = VariantModel(conn)
     model.limit = 3 
     w = QueryViewWidget()
     w.conn = conn 

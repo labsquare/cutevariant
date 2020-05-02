@@ -1,6 +1,6 @@
 """Plugin to view/edit/remove/do set operations on selections in the database
 from the GUI.
-SelectionWidget class is seen by the user and uses selectionModel class
+SourceEditorWidget class is seen by the user and uses selectionModel class
 as a model that handles records from the database.
 """
 # Qt imports
@@ -18,7 +18,7 @@ from cutevariant.commons import logger, DEFAULT_SELECTION_NAME
 LOGGER = logger()
 
 # =================== SELECTION MODEL ===========================
-class selectionModel(QAbstractTableModel):
+class SourceModel(QAbstractTableModel):
     """Model to store all selections from SQLite `selections` table.
     Usage:
         model = selectionModel()
@@ -145,28 +145,32 @@ class selectionModel(QAbstractTableModel):
 # =================== SELECTION VIEW ===========================
 
 
-class SelectionWidget(plugin.PluginWidget):
+class SourceEditorWidget(plugin.PluginWidget):
     """Widget displaying the list of avaible selections.
     User can select one of them to update Query::selection
     """
 
-    selectionChanged = Signal()
+    sourceChanged = Signal()
+
+    ENABLE = True
 
     def __init__(self, conn=None, parent=None):
         super().__init__(parent)
 
-        self.setWindowTitle(self.tr("Selections"))
-        self.model = selectionModel()
+        self.setWindowTitle(self.tr("Source editor"))
+        self.model = SourceModel()
         self.view = QTableView()
         self.is_loading = False  #  Flag to avoid signals loop
+        self.source = None
         self.view.setModel(self.model)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setSelectionMode(QAbstractItemView.SingleSelection)
         self.view.horizontalHeader().show()
         self.view.horizontalHeader().setStretchLastSection(True)
+        self.view.horizontalHeader().hide()
 
         self.toolbar = QToolBar()
-        self.toolbar.setIconSize(QSize(20, 20))
+        self.toolbar.setIconSize(QSize(16, 16))
 
         self.view.verticalHeader().hide()
         self.view.verticalHeader().setDefaultSectionSize(26)
@@ -177,8 +181,9 @@ class SelectionWidget(plugin.PluginWidget):
         layout.addWidget(self.view)
         layout.addWidget(self.toolbar)
         layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
 
-        self.selectionChanged.connect(self.on_selection_changed)
+        self.sourceChanged.connect(self.on_source_changed)
 
         self.setLayout(layout)
 
@@ -192,6 +197,8 @@ class SelectionWidget(plugin.PluginWidget):
             FIcon(0xF8FF), self.tr("Edit"), self.edit_selection
         )
 
+
+        self.toolbar.addAction(QIcon(), "reload", self.load)
         self.conn = conn
 
     def on_register(self, mainwindow):
@@ -200,14 +207,15 @@ class SelectionWidget(plugin.PluginWidget):
     def on_open_project(self, conn):
         self.conn = conn
 
-    def on_query_model_changed(self, model):
-        self.selection = model.selection
-        self.load()
+    def on_source_changed(self):
 
-    def on_selection_changed(self):
-        self.mainwindow.query_model.selection = self.selection
-        self.mainwindow.query_model.load()
+        if not self.mainwindow:
+            return
 
+        if "variant_view" in self.mainwindow.plugins:
+            plugin = self.mainwindow.get_plugin("variant_view")
+            plugin.source = self.source
+            plugin.load()
 
     @property
     def conn(self):
@@ -219,22 +227,6 @@ class SelectionWidget(plugin.PluginWidget):
         if conn:
             self.model.load()
 
-    @property
-    def selection(self):
-        """Return current selection name    
-        Returns:
-            str: selection name
-        """
-        return self._selection
-
-    @selection.setter
-    def selection(self, selection):
-        """Set current selection name
-        
-        Args:
-            selection (str): selection name
-        """
-        self._selection = selection
 
     @Slot()
     def on_current_row_changed(self):
@@ -245,10 +237,9 @@ class SelectionWidget(plugin.PluginWidget):
         """
 
         index = self.view.currentIndex()
-        self.selection = self.model.record(index)["name"]
+        self.source = self.model.record(index)["name"]
 
-        if not self.is_loading:
-            self.selectionChanged.emit()
+ 
 
     def menu_setup(self, locked_selection=False):
         """Setup popup menu
@@ -297,7 +288,8 @@ class SelectionWidget(plugin.PluginWidget):
         )
 
         # Select record according to query.selection
-        current_index = self.model.find_record(self.selection)
+        if self.source:
+            current_index = self.model.find_record(self.source)
         self.view.setCurrentIndex(current_index)
 
         self.is_loading = False
@@ -315,7 +307,7 @@ class SelectionWidget(plugin.PluginWidget):
 
         if name == DEFAULT_SELECTION_NAME:
             LOGGER.error(
-                "SelectionWidget:save_current_query:: '%s' is a reserved name for a selection.",
+                "SourceEditorWidget:save_current_query:: '%s' is a reserved name for a selection.",
                 name,
             )
             self.message.emit(
@@ -323,7 +315,7 @@ class SelectionWidget(plugin.PluginWidget):
             )
         elif name in {record["name"] for record in self.model.records}:
             LOGGER.error(
-                "SelectionWidget:save_current_query:: '%s' is a already used.", name
+                "SourceEditorWidget:save_current_query:: '%s' is a already used.", name
             )
             self.message.emit(self.tr("'%s' is a already used for a selection!") % name)
         else:
@@ -471,7 +463,7 @@ if __name__ == "__main__":
 
     conn = sqlite3.connect("examples/test.snpeff.vcf.db")
 
-    view = SelectionWidget(conn)
+    view = SourceEditorWidget(conn)
     view.show()
 
     app.exec_()

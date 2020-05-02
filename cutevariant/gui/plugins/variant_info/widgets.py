@@ -1,6 +1,6 @@
 """Plugin to show all characteristics of a selected variant
 
-InfoVariantWidget is showed on the GUI, it uses VariantPopupMenu to display a
+VariantInfoWidget is showed on the GUI, it uses VariantPopupMenu to display a
 contextual menu about the variant which is selected.
 VariantPopupMenu is also used in viewquerywidget for the same purpose.
 """
@@ -19,7 +19,7 @@ from cutevariant.core import sql, get_sql_connexion
 
 from cutevariant.gui.plugin import PluginWidget
 
-class InfoVariantWidget(PluginWidget):
+class VariantInfoWidget(PluginWidget):
     """Plugin to show all annotations of a selected variant"""
 
     ACMG_CLASSIFICATION = [
@@ -30,6 +30,9 @@ class InfoVariantWidget(PluginWidget):
         ("Classe 4","Probably Pathogen"),
         ("Classe 5","Pathogen")
     ]
+
+
+    ENABLE = True
 
     def __init__(self):
         super().__init__()
@@ -48,13 +51,26 @@ class InfoVariantWidget(PluginWidget):
             self.classification_box.addItem(a,b)
 
         self.editor = QWidget()
-        editor_layout = QFormLayout()
+        self.editor_layout = QVBoxLayout()
+
+        self.toolbar = QToolBar()
+        self.toolbar.setIconSize(QSize(16,16))
+
+        sub_edit_layout = QFormLayout()
+        sub_edit_box = QGroupBox()
         #editor_layout.setRowWrapPolicy(QFormLayout.WrapAllRows)
-        editor_layout.addRow("Classification", self.classification_box)
-        editor_layout.addRow("Is Saved", self.favorite_checkbox)
-        editor_layout.addRow("Comments", self.comment_input)
-        editor_layout.addWidget(self.save_button)
-        self.editor.setLayout(editor_layout)
+        sub_edit_layout.addRow("Classification", self.classification_box)
+        sub_edit_layout.addRow("Is Saved", self.favorite_checkbox)
+        sub_edit_box.setLayout(sub_edit_layout)
+        #sub_edit_layout.addWidget(self.comment_input)
+        #sub_edit_layout.addWidget(self.save_button)
+
+        self.editor_layout.addWidget(sub_edit_box)
+        self.editor_layout.addWidget(self.comment_input)
+        self.editor_layout.addWidget(self.save_button)
+
+
+        self.editor.setLayout(self.editor_layout)
         self.view.addTab(self.editor, "User")
         self.save_button.clicked.connect(self.on_save_clicked)
 
@@ -257,7 +273,7 @@ if __name__ == "__main__":
     conn = get_sql_connexion("/home/schutz/Dev/cutevariant/examples/test.db")
 
 
-    w = InfoVariantWidget()
+    w = VariantInfoWidget()
     w.conn = conn
 
     variant = sql.get_one_variant(conn, 1)

@@ -985,7 +985,9 @@ class FilterDelegate(QStyledItemDelegate):
         editor.setGeometry(option.rect)
 
 
-class FiltersWidget(plugin.PluginWidget):
+class FiltersEditorWidget(plugin.PluginWidget):
+
+    ENABLE = True
 
     changed = Signal()
 
@@ -996,7 +998,7 @@ class FiltersWidget(plugin.PluginWidget):
         self.model = FilterModel(None)
         self.delegate = FilterDelegate()
         self.toolbar = QToolBar()
-        self.toolbar.setIconSize(QSize(20, 20))
+        self.toolbar.setIconSize(QSize(16, 16))
         self.view.setModel(self.model)
         self.view.setItemDelegate(self.delegate)
         self.view.setIndentation(15)
@@ -1007,6 +1009,7 @@ class FiltersWidget(plugin.PluginWidget):
         self.view.header().setSectionResizeMode(0,QHeaderView.Stretch)
         self.view.header().setSectionResizeMode(1,QHeaderView.ResizeToContents)
         self.view.header().setSectionResizeMode(2,QHeaderView.Interactive)
+        self.view.header().hide() 
 
         layout = QVBoxLayout()
         layout.addWidget(self.view)
@@ -1066,15 +1069,15 @@ class FiltersWidget(plugin.PluginWidget):
         """ Overrided from PluginWidget """
         self.conn = conn
 
-    def on_query_model_changed(self, model):
-        """ Overrided from PluginWidget """
-        self.filters = model.filters
 
     def on_filters_changed(self):
         """ triggered when filter has changed """ 
-        self.mainwindow.query_model.filters = self.filters 
-        self.mainwindow.query_model.load(reset_page=True)
-    
+
+        if "variant_view" in self.mainwindow.plugins:
+            plugin = self.mainwindow.plugins["variant_view"]
+            plugin.filters = self.filters
+            plugin.load()
+
     def on_add_logic(self):
         """Add logic item to the current selected index
         """
@@ -1135,7 +1138,12 @@ if __name__ == "__main__":
 
     style.dark(app)
 
-    conn = get_sql_connexion("examples/test.db")
+    from cutevariant.core.importer import import_reader
+    from cutevariant.core.reader import FakeReader
+
+
+    conn = sql.get_sql_connexion(":memory:")
+    import_reader(conn, FakeReader())
 
     data = {
         "AND": [
@@ -1143,7 +1151,7 @@ if __name__ == "__main__":
         ]
     }
 
-    view = FilterWidget()
+    view = FiltersEditorWidget()
     view.model.load(data)
 
     print(view.model.to_dict() == data)
