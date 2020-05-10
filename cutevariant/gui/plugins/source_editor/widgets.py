@@ -152,7 +152,7 @@ class SourceEditorWidget(plugin.PluginWidget):
 
     sourceChanged = Signal()
 
-    ENABLE = True
+    ENABLE = False
 
     def __init__(self, conn=None, parent=None):
         super().__init__(parent)

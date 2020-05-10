@@ -74,12 +74,15 @@ class PluginWidget(QWidget):
         """
         pass
 
-
     def on_close(self):
         """This methods is called when the mainwindow close
         """
         pass
 
+
+    def on_refresh(self):
+        """ This methods is called to refresh the gui """
+        pass 
 
 
 

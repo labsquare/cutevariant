@@ -9,6 +9,7 @@ VQL_TO_TREE_CASES = {
         "cmd":"select_cmd",
         "fields": ["chr", "pos", ('sample','sacha','gt')],
         "filters": {},
+        "group_by": [],
         "source": "variants",
     },
     # Test 2
@@ -16,6 +17,7 @@ VQL_TO_TREE_CASES = {
         "cmd":"select_cmd",
         "fields": ["chr", "pos", "ref"],
         "source": "variants",
+        "group_by": [],
         "filters": {
             "AND": [
                 {"field": "a", "operator": "=", "value": 3},
@@ -29,6 +31,7 @@ VQL_TO_TREE_CASES = {
         "cmd":"select_cmd",
         "fields": ["chr", "pos", "ref"],
         "source": "variants",
+        "group_by": [],
         "filters": {
             "AND": [
                 {"field": "a", "operator": "=", "value": 3},
@@ -46,13 +49,25 @@ VQL_TO_TREE_CASES = {
         "cmd":"select_cmd",
         "fields": ["chr", "pos", ('sample','sacha','gt')],
         "filters": {},
+        "group_by": [],
         "source": "variants"
         },
+
+    # Test 4bis GROUP BY 
+    'SELECT chr, pos, ref, alt FROM variants GROUP BY chr,pos' : {
+        "cmd":"select_cmd",
+        "fields": ["chr", "pos", "ref","alt"],
+        "filters": {},
+        "source": "variants",
+        "group_by": ["chr","pos"]
+        },         
+
     # Test 5
     "SELECT chr FROM variants WHERE some_field IN ('one', 'two')": {
         "cmd":"select_cmd",
         "fields": ["chr"],
         "source": "variants",
+        "group_by": [],
         "filters": {'AND': [{'field': 'some_field', 'operator': 'IN', 'value': ('one', 'two')}]},
     },
     # Test 6

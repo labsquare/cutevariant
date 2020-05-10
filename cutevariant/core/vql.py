@@ -150,6 +150,11 @@ class SelectCmd(metaclass=model_class):
         else:
             output["filters"] = {}
 
+        if self.group_by: 
+            output["group_by"] = self.group_by
+        else:
+            output["group_by"] = []
+
         return output
 
 

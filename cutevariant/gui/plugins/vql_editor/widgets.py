@@ -34,6 +34,7 @@ from cutevariant.core.vql import VQLSyntaxError
 from cutevariant.commons import logger
 from cutevariant.core import command
 
+
 from cutevariant.gui.widgets import VqlEditor, VqlSyntaxHighlighter
 
 LOGGER = logger()
@@ -90,6 +91,18 @@ class VqlEditorWidget(plugin.PluginWidget):
         """
         self.conn = conn
         self.text_edit.setCompleter(self.__create_completer())
+
+        self.on_refresh()
+
+    def on_refresh(self):
+        """ overrided from PluginWidget 
+        """
+
+        vql = "SELECT "
+        vql += ",".join(self.mainwindow.controller.fields)
+        vql += " FROM " + self.mainwindow.controller.source 
+        
+        self.set_vql(vql) 
 
 
     def set_vql(self, txt: str):
@@ -156,24 +169,27 @@ class VqlEditorWidget(plugin.PluginWidget):
 
             #  If command is a select kind
             if cmd["cmd"] == "select_cmd":
-                self.fields = cmd["fields"]  # columns from variant table
-                self.source = cmd["source"]  # name of the variant set
-                self.filters = cmd["filters"]
+                self.mainwindow.controller.fields = cmd["fields"]  # columns from variant table
+                self.mainwindow.controller.source = cmd["source"]  # name of the variant set
+                self.mainwindow.controller.filters = cmd["filters"]
+                self.mainwindow.controller.group_by = cmd["group_by"]
 
-                if "variant_view" in self.mainwindow.plugins:
-                    plugin = self.mainwindow.get_plugin("variant_view")
-                    plugin.fields = self.fields
-                    plugin.source = self.source
-                    plugin.filters = self.filters
-                    plugin.load()
+                self.mainwindow.controller.refresh_plugins(sender = self)
 
-            if cmd["cmd"] == "create_cmd":
-                fct = command.create_command_from_obj(self.conn, cmd)
-                fct()
-                # TODO : Use UNDO STACK 
-                if "source_editor" in self.mainwindow.plugins:
-                    plugin = self.mainwindow.get_plugin("source_editor")
-                    plugin.load()
+            #     if "variant_view" in self.mainwindow.plugins:
+            #         plugin = self.mainwindow.get_plugin("variant_view")
+            #         plugin.fields = self.fields
+            #         plugin.source = self.source
+            #         plugin.filters = self.filters
+            #         plugin.load()
+
+            # if cmd["cmd"] == "create_cmd":
+            #     fct = command.create_command_from_obj(self.conn, cmd)
+            #     fct()
+            #     # TODO : Use UNDO STACK 
+            #     if "source_editor" in self.mainwindow.plugins:
+            #         plugin = self.mainwindow.get_plugin("source_editor")
+            #         plugin.load()
 
 
 

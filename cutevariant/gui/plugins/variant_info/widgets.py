@@ -32,7 +32,7 @@ class VariantInfoWidget(PluginWidget):
     ]
 
 
-    ENABLE = True
+    ENABLE = False
 
     def __init__(self):
         super().__init__()

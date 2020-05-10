@@ -171,15 +171,15 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self.search_edit.setFocus(Qt.MenuBarFocusReason)
 
 
-
-
     def on_register(self, mainwindow):
         """ Overrided from PluginWidget"""
         pass 
 
     def on_open_project(self,conn):
         """ Overrided from PluginWidget """
-        self.conn = conn
+        self.model.conn = conn
+        self.on_refresh()
+
 
     # def on_query_model_changed(self, model):
     #     """ Overrided from PluginWidget """
@@ -191,43 +191,25 @@ class FieldsEditorWidget(plugin.PluginWidget):
     #     self.view.resizeColumnToContents(0)
 
         
+    def on_refresh(self):
+        """ overrided from PluginWidget """ 
+
+        self.model.fields = self.mainwindow.controller.fields 
+        self.model.load()
+
+
 
     def on_fields_changed(self):
-
 
         if self.mainwindow is None:
             return
 
-
-        if "variant_view" in self.mainwindow.plugins:
-            plugin = self.mainwindow.get_plugin("variant_view")
-            plugin.fields = self.fields
-            plugin.load()
-
-    @property
-    def conn(self):
-        return self.model.conn
-
-    @conn.setter
-    def conn(self, conn):
-        self.model.conn = conn
-        if conn:
-            self.model.load()
-
-    @property
-    def fields(self):
-        return self.model.fields
-
-    @fields.setter
-    def fields(self, fields):
-        self.model.fields = fields
-
-    def load(self):
-        self.model.load()
+        self.mainwindow.controller.fields = self.model.fields 
+        self.mainwindow.controller.refresh_plugins(sender = self)
 
 
-    def test(self):
-        print(self.fields)
+
+
 
 if __name__ == "__main__":
     import sys 

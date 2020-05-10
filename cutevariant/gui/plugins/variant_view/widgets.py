@@ -42,6 +42,7 @@ class VariantModel(QAbstractTableModel):
         self.fields = ["chr", "pos", "ref", "alt"]
         self.filters = dict()
         self.source = "variants"
+        self.group_by = []
         self.order_by = None
         self.order_desc = True 
         # Keep after all initialization 
@@ -169,7 +170,9 @@ class VariantModel(QAbstractTableModel):
             limit= self.limit,
             offset = offset,
             order_desc = self.order_desc,
-            order_by= self.order_by))
+            order_by= self.order_by, 
+            group_by = self.group_by
+            ))
 
         if self.variants:
             self.headers = list(self.variants[0].keys())
@@ -560,34 +563,6 @@ class VariantViewWidget(plugin.PluginWidget):
         self.setup_ui()
 
 
-    @property
-    def fields(self):
-        return self.model.fields 
-
-    @fields.setter
-    def fields(self, value):
-        self.model.fields = value
-
-    @property
-    def source(self):
-        return self.model.source 
-
-    @source.setter
-    def source(self, value):
-        self.model.source = value 
-
-    @property
-    def filters(self):
-        return self.model.filters
-
-    @filters.setter
-    def filters(self, value):
-        self.model.filters = value
-
-    def load(self):
-        self.model.load()
-
-
     def setup_ui(self):
         
         print("setup ui ", self.model)
@@ -606,18 +581,18 @@ class VariantViewWidget(plugin.PluginWidget):
         #self.setModel(mainwindow.query_model)
         pass
 
-
-    def on_setup_ui(self):
-        """ Override from PluginWidget """
-        print("setup ")
-
     def on_open_project(self, conn):
         """ Override from PluginWidget """
         
         self.model.conn = conn
+        self.on_refresh() 
+
+    def on_refresh(self):
+        self.model.fields = self.mainwindow.controller.fields 
+        self.model.source = self.mainwindow.controller.source 
+        self.model.filters = self.mainwindow.controller.filters
+        self.model.group_by = self.mainwindow.controller.group_by
         self.model.load()
-
-
 
     def updateInfo(self):
         """Update metrics for the current query

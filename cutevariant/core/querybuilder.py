@@ -172,6 +172,9 @@ def filters_to_sql(filters, default_tables = {}):
 
 
 
+
+
+
 def build_query(
     fields, 
     source = "variants", 
@@ -180,6 +183,7 @@ def build_query(
     order_desc = True,
     limit = 50,
     offset = 0,
+    group_by = [],
     default_tables = {},
     samples_ids = {}
     ):
@@ -188,6 +192,11 @@ def build_query(
     sql_query = ""
     # Create fields 
     sql_fields = ["`variants`.`id`"] + [fields_to_sql(col, default_tables, use_as=True) for col in fields if "id" not in col]
+   
+    if group_by:
+        sql_fields.insert(1, "COUNT(`variants`.`id`) as 'count'")
+
+
     sql_query = f"SELECT {','.join(sql_fields)} "
 
     # # Add child count if grouped 
@@ -250,8 +259,8 @@ def build_query(
             sql_query += " WHERE " + where_clause
 
     #  Add Group By
-    # if grouped:
-    #     sql_query += " GROUP BY " + ",".join(["chr","pos","ref","alt"])
+    if group_by:
+        sql_query += " GROUP BY " + ",".join(group_by)
 
     #  Add Order By
     if order_by:

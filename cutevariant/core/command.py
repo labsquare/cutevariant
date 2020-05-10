@@ -20,6 +20,7 @@ def select_cmd(
     filters = dict(),
     order_by = None, 
     order_desc = True, 
+    group_by = [],
     limit = 50,
     offset = 0,
     **kwargs):
@@ -40,7 +41,7 @@ def select_cmd(
         """
         default_tables = dict([(i["name"], i["category"]) for i in sql.get_fields(conn)])
         samples_ids = dict([(i["name"], i["id"]) for i in sql.get_samples(conn)])
-        query = build_query(fields, source, filters, order_by, order_desc, limit, offset, default_tables, samples_ids = samples_ids) 
+        query = build_query(fields, source, filters, order_by, order_desc, limit, offset, group_by, default_tables, samples_ids = samples_ids) 
         LOGGER.debug(query)
         for i in conn.execute(query):
             yield dict(i)
@@ -60,7 +61,7 @@ def count_cmd(conn: sqlite3.Connection, source = "variants", filters = {}, disti
     """
     default_tables = dict([(i["name"], i["category"]) for i in sql.get_fields(conn)])
     samples_ids = dict([(i["name"], i["id"]) for i in sql.get_samples(conn)])
-    query = build_query([""], source, filters, None,None, None, None, default_tables, samples_ids =samples_ids) 
+    query = build_query([""], source, filters, None,None, None, None, [], default_tables, samples_ids =samples_ids) 
     from_pos = query.index("FROM")
 
     if distinct:

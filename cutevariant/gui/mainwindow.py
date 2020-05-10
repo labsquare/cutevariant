@@ -21,6 +21,8 @@ from cutevariant.gui.settings import SettingsWidget
 
 #  Import plugins
 from cutevariant.gui import plugin
+from cutevariant.gui.controller import Controller
+
 #from cutevariant.gui.plugins.editor.plugin import EditorPlugin
 
 from cutevariant.gui.widgets.aboutcutevariant import AboutCutevariant
@@ -29,6 +31,9 @@ from cutevariant import commons as cm
 from cutevariant.commons import MAX_RECENT_PROJECTS, DIR_ICONS
 
 from cutevariant.core.writer import CsvWriter
+
+
+
 
 # Proof of concept - testing only
 # from cutevariant.gui.webglquerywidget import WebGLQueryWidget
@@ -52,8 +57,8 @@ class MainWindow(QMainWindow):
         # Keep sqlite connection
         self.conn = None
 
-        # store dock plugins
-        self.plugins = {}
+        # controller 
+        self.controller = Controller()
 
         self.central_tab = QTabWidget()
         self.footer_tab = QTabWidget()
@@ -112,19 +117,20 @@ class MainWindow(QMainWindow):
         """add plugin to the application
         """
 
-        self.plugins = dict()
+        LOGGER.info("register plugins")
+
         for extension in plugin.find_plugins():
             if "widget" in extension:
                 name = extension["name"]
                 plugin_widget_class = extension["widget"]
                 widget = plugin_widget_class()
                 if widget.ENABLE == True: 
-                    self.plugins[name] = widget
                     widget.mainwindow = self
                     widget.setWindowTitle(extension.get("name"))
                     widget.setToolTip(extension.get("description"))
                     widget.on_register(self)
-
+                    # Add plugin to controller 
+                    self.controller.add_plugin(name, widget)
 
                     if plugin_widget_class.LOCATION == plugin.DOCK_LOCATION:
                         self.add_panel(widget)
@@ -134,15 +140,6 @@ class MainWindow(QMainWindow):
 
                     if plugin_widget_class.LOCATION == plugin.FOOTER_LOCATION:
                         self.footer_tab.addTab(widget, widget.windowTitle())
-
-    def get_plugin(self, name) -> plugin.PluginWidget:
-        """ Return plugin by name """ 
-
-        if name in self.plugins:
-            return self.plugins[name]
-
-        else:
-            return None
 
 
 
@@ -265,7 +262,7 @@ class MainWindow(QMainWindow):
         # Create connection
         self.conn = get_sql_connexion(filepath)
 
-        self.open_database()
+        self.open_database(self.conn)
         self.save_recent_project(filepath)
 
 
@@ -273,8 +270,8 @@ class MainWindow(QMainWindow):
         self.conn = conn
 
         # signals plugins 
-        for name, _plugin in self.plugins.items():
-            _plugin.on_open_project(self.conn)
+        self.controller.conn = conn
+
 
 
     def save_recent_project(self, path):
@@ -460,11 +457,11 @@ class MainWindow(QMainWindow):
     #         if _plugin.isVisible():
     #             _plugin.on_query_model_changed(self.query_model)
 
-    @Slot()
-    def on_variant_changed(self, variant):
-        for name, _plugin in self.plugins.items():
-            if _plugin.isVisible():
-                _plugin.on_variant_changed(variant) 
+    # @Slot()
+    # def on_variant_changed(self, variant):
+    #     for name, _plugin in self.plugins.items():
+    #         if _plugin.isVisible():
+    #             _plugin.on_variant_changed(variant) 
 
 
 if __name__ == "__main__":

@@ -1042,13 +1042,6 @@ class FiltersEditorWidget(plugin.PluginWidget):
         #self.view.selectionModel().currentChanged.connect(self.on_filters_changed)
         self.model.filtersChanged.connect(self.on_filters_changed)
 
-    @property
-    def conn(self):
-        return self.model.conn
-
-    @conn.setter
-    def conn(self, conn):
-        self.model.conn = conn
 
     @property
     def filters(self):
@@ -1067,16 +1060,19 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
     def on_open_project(self, conn):
         """ Overrided from PluginWidget """
-        self.conn = conn
+        self.model.conn = conn
+        self.on_refresh()
+
+    def on_refresh(self):
+        """ Overrided """ 
+        self.model.filters = self.mainwindow.controller.filters
 
 
     def on_filters_changed(self):
         """ triggered when filter has changed """ 
 
-        if "variant_view" in self.mainwindow.plugins:
-            plugin = self.mainwindow.plugins["variant_view"]
-            plugin.filters = self.filters
-            plugin.load()
+        self.mainwindow.controller.filters = self.model.filters
+        self.mainwindow.controller.refresh_plugins(sender = self)
 
     def on_add_logic(self):
         """Add logic item to the current selected index
