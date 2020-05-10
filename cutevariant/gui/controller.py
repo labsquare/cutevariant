@@ -17,6 +17,9 @@ class Controller(object):
         self.source = "variants"
         self.filters = {}
         self.group_by = []
+        self.current_variant = None
+
+
         self.plugins = {}
 
 
@@ -44,8 +47,7 @@ class Controller(object):
     def add_plugin(self, name:str, plugin : PluginWidget):
         self.plugins[name] = plugin
 
-    def refresh_plugins(self, sender = None):
+    def refresh_plugins(self, sender = None, plugin = None):
         for plugin in self.plugins.values():
             if plugin != sender:
-                LOGGER.info(f"refresh {plugin}")
                 plugin.on_refresh()

@@ -150,18 +150,14 @@ class SourceEditorWidget(plugin.PluginWidget):
     User can select one of them to update Query::selection
     """
 
-    sourceChanged = Signal()
-
-    ENABLE = False
+    ENABLE = True
 
     def __init__(self, conn=None, parent=None):
         super().__init__(parent)
 
         self.setWindowTitle(self.tr("Source editor"))
-        self.model = SourceModel()
+        self.model = SourceModel(conn)
         self.view = QTableView()
-        self.is_loading = False  #  Flag to avoid signals loop
-        self.source = None
         self.view.setModel(self.model)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setSelectionMode(QAbstractItemView.SingleSelection)
@@ -183,7 +179,6 @@ class SourceEditorWidget(plugin.PluginWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-        self.sourceChanged.connect(self.on_source_changed)
 
         self.setLayout(layout)
 
@@ -205,27 +200,12 @@ class SourceEditorWidget(plugin.PluginWidget):
         pass
 
     def on_open_project(self, conn):
-        self.conn = conn
-
-    def on_source_changed(self):
-
-        if not self.mainwindow:
-            return
-
-        if "variant_view" in self.mainwindow.plugins:
-            plugin = self.mainwindow.get_plugin("variant_view")
-            plugin.source = self.source
-            plugin.load()
-
-    @property
-    def conn(self):
-        return self.model.conn
-
-    @conn.setter
-    def conn(self, conn):
         self.model.conn = conn
-        if conn:
-            self.model.load()
+        self.on_refresh()
+
+    def on_refresh(self):
+        self.model.source = self.mainwindow.controller.source 
+        self.model.load()
 
 
     @Slot()
@@ -237,7 +217,11 @@ class SourceEditorWidget(plugin.PluginWidget):
         """
 
         index = self.view.currentIndex()
-        self.source = self.model.record(index)["name"]
+        source = self.model.record(index)["name"]
+
+        self.mainwindow.controller.source = source 
+        self.mainwindow.controller.refresh_plugins(sender = self)
+
 
  
 

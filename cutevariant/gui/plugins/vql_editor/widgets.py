@@ -173,23 +173,15 @@ class VqlEditorWidget(plugin.PluginWidget):
                 self.mainwindow.controller.source = cmd["source"]  # name of the variant set
                 self.mainwindow.controller.filters = cmd["filters"]
                 self.mainwindow.controller.group_by = cmd["group_by"]
-
                 self.mainwindow.controller.refresh_plugins(sender = self)
 
-            #     if "variant_view" in self.mainwindow.plugins:
-            #         plugin = self.mainwindow.get_plugin("variant_view")
-            #         plugin.fields = self.fields
-            #         plugin.source = self.source
-            #         plugin.filters = self.filters
-            #         plugin.load()
+            if cmd["cmd"] == "create_cmd":
+                fct = command.create_command_from_obj(self.conn, cmd)
+                fct()
 
-            # if cmd["cmd"] == "create_cmd":
-            #     fct = command.create_command_from_obj(self.conn, cmd)
-            #     fct()
-            #     # TODO : Use UNDO STACK 
-            #     if "source_editor" in self.mainwindow.plugins:
-            #         plugin = self.mainwindow.get_plugin("source_editor")
-            #         plugin.load()
+                if "source_editor" in self.mainwindow.controller.plugins:
+                    plugin = self.mainwindow.controller.plugins["source_editor"]
+                    plugin.on_refresh()
 
 
 

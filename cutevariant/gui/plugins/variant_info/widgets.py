@@ -32,16 +32,16 @@ class VariantInfoWidget(PluginWidget):
     ]
 
 
-    ENABLE = False
+    ENABLE = True
 
-    def __init__(self):
+    def __init__(self,conn = None):
         super().__init__()
+
+        self.conn = conn
 
         self.setWindowTitle(self.tr("Info variants"))
 
         self.view = QTabWidget()
-
-
         # Editor 
         self.classification_box = QComboBox()
         self.favorite_checkbox = QCheckBox()
@@ -133,43 +133,17 @@ class VariantInfoWidget(PluginWidget):
 
     def on_open_project(self, conn):
         self.conn = conn
+        self.on_refresh()
 
-    def on_variant_changed(self, variant):
-        self.current_variant = variant
-
-
-    @property
-    def conn(self):
-        """ Return sqlite connexion of cutevariant project """
-        return self._conn 
-
-    @conn.setter
-    def conn(self, conn):
-        """Set sqlite connexion of a cutevariant project
-
-        This method is called Plugin.on_open_project
-        
-        Args:
-            conn (sqlite3.connection)
-        """
-        self._conn = conn
-
-    @property
-    def current_variant(self):
-        """Return variant data as a dictionnary 
-        """
-        return self._current_variant
-
-    @current_variant.setter
-    def current_variant(self, variant):
-        """Set variant data 
-        This method is called by Plugin.on_variant_clicked """
-        self._current_variant = variant
+    def on_refresh(self):
+        self.current_variant = self.mainwindow.controller.current_variant
         self.populate()
 
     def populate(self):
         """Show the current variant attributes on the TreeWidget"""
-       
+        if not self.current_variant:
+            return 
+
         if "id" not in self.current_variant:
             return 
 
