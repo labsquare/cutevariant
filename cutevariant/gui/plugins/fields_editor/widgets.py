@@ -49,12 +49,11 @@ class FieldsModel(QStandardItemModel):
         Arguments:
             columns {list} -- list of columns
         """
-        self.blockSignals(True)
+
         for item in self.checkable_items:
             item.setCheckState(Qt.Unchecked)
-            if item.data()["name"] in self.fields:
+            if item.data()["name"] in columns:
                 item.setCheckState(Qt.Checked)
-        self.blockSignals(False)
 
     def load(self):
         """Load all columns avaible into the model 
@@ -166,6 +165,8 @@ class FieldsEditorWidget(plugin.PluginWidget):
 
         self.search_edit.textChanged.connect(self.proxy_model.setFilterRegExp)
 
+        self._is_refreshing = False  # Help to avoid loop between on_refresh and on_fields_changed
+
     def __on_search_pressed(self, checked : bool):
         self.search_edit.setVisible(checked)
         self.search_edit.setFocus(Qt.MenuBarFocusReason)
@@ -178,6 +179,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
     def on_open_project(self,conn):
         """ Overrided from PluginWidget """
         self.model.conn = conn
+        self.model.load()
         self.on_refresh()
 
 
@@ -193,19 +195,18 @@ class FieldsEditorWidget(plugin.PluginWidget):
         
     def on_refresh(self):
         """ overrided from PluginWidget """ 
-
-        self.model.fields = self.mainwindow.controller.fields 
-        self.model.load()
-
+        self._is_refreshing = True
+        self.model.fields = self.mainwindow.state.fields 
+        self._is_refreshing = False
 
 
     def on_fields_changed(self):
 
-        if self.mainwindow is None:
+        if self.mainwindow is None or self._is_refreshing:
             return
 
-        self.mainwindow.controller.fields = self.model.fields 
-        self.mainwindow.controller.refresh_plugins(sender = self)
+        self.mainwindow.state.fields = self.model.fields 
+        self.mainwindow.refresh_plugins(sender = self)
 
 
 

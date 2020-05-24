@@ -136,7 +136,7 @@ class VariantInfoWidget(PluginWidget):
         self.on_refresh()
 
     def on_refresh(self):
-        self.current_variant = self.mainwindow.controller.current_variant
+        self.current_variant = self.mainwindow.state.current_variant
         self.populate()
 
     def populate(self):

@@ -204,8 +204,12 @@ class SourceEditorWidget(plugin.PluginWidget):
         self.on_refresh()
 
     def on_refresh(self):
-        self.model.source = self.mainwindow.controller.source 
+        #self.model.source = self.mainwindow.state.source 
         self.model.load()
+
+        model_index = self.model.find_record(self.mainwindow.state.source)
+        self.view.setCurrentIndex(model_index)
+
 
 
     @Slot()
@@ -219,8 +223,8 @@ class SourceEditorWidget(plugin.PluginWidget):
         index = self.view.currentIndex()
         source = self.model.record(index)["name"]
 
-        self.mainwindow.controller.source = source 
-        self.mainwindow.controller.refresh_plugins(sender = self)
+        self.mainwindow.state.source = source 
+        self.mainwindow.refresh_plugins(sender = self)
 
 
  

@@ -1065,14 +1065,14 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
     def on_refresh(self):
         """ Overrided """ 
-        self.model.filters = self.mainwindow.controller.filters
+        self.model.filters = self.mainwindow.state.filters
 
 
     def on_filters_changed(self):
         """ triggered when filter has changed """ 
 
-        self.mainwindow.controller.filters = self.model.filters
-        self.mainwindow.controller.refresh_plugins(sender = self)
+        self.mainwindow.state.filters = self.model.filters
+        self.mainwindow.state.refresh_plugins(sender = self)
 
     def on_add_logic(self):
         """Add logic item to the current selected index

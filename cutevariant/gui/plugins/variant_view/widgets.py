@@ -3,6 +3,7 @@ import re
 
 from cutevariant.core import command as cmd
 from cutevariant.core import vql 
+import  cutevariant.commons as cm
 
 from cutevariant.gui import plugin, FIcon
 from cutevariant.gui import formatter
@@ -11,7 +12,7 @@ from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 from PySide2.QtGui import *
 
-
+LOGGER = cm.logger()
 
 class VariantModel(QAbstractTableModel):
     """
@@ -588,10 +589,11 @@ class VariantViewWidget(plugin.PluginWidget):
         self.on_refresh() 
 
     def on_refresh(self):
-        self.model.fields = self.mainwindow.controller.fields 
-        self.model.source = self.mainwindow.controller.source 
-        self.model.filters = self.mainwindow.controller.filters
-        self.model.group_by = self.mainwindow.controller.group_by
+
+        self.model.fields = self.mainwindow.state.fields 
+        self.model.source = self.mainwindow.state.source 
+        self.model.filters = self.mainwindow.state.filters
+        self.model.group_by = self.mainwindow.state.group_by
         self.model.load()
 
     def updateInfo(self):
@@ -634,7 +636,9 @@ class VariantViewWidget(plugin.PluginWidget):
         # Emit variant through variant_clicked signal
         
         if self.mainwindow:
-            self.mainwindow.on_variant_changed(variant)
+            self.mainwindow.state.current_variant = variant
+            self.mainwindow.refresh_plugins(sender = self)
+
 
     def export_csv(self):
         """Export variants displayed in the current view to a CSV file"""

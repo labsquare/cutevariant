@@ -42,6 +42,8 @@ class PluginWidget(QWidget):
         self.mainwindow = None
         self.widget_location = DOCK_LOCATION
 
+        self.refresh_groups = [] # TODO 
+
 
     def on_register(self, mainwindow):
         """This method is called when the mainwindow is build 
@@ -60,19 +62,6 @@ class PluginWidget(QWidget):
         """
         pass
 
-    def on_query_model_changed(self, model):
-        """ DEPRECATED 
-        """
-        pass
-
-    def on_variant_changed(self,variant):
-        """This method is called when a variant is clicked. 
-        The signal must be sended from mainwindow
-        
-        Args:
-            variant (dict): contains data of a variant
-        """
-        pass
 
     def on_close(self):
         """This methods is called when the mainwindow close
@@ -81,7 +70,11 @@ class PluginWidget(QWidget):
 
 
     def on_refresh(self):
-        """ This methods is called to refresh the gui """
+        """This methods is called to refresh the gui 
+        
+        This is called by the mainwindow.controller::refresh methods 
+
+        """
         pass 
 
 
@@ -140,5 +133,4 @@ def find_plugins(path=None):
        
         
         yield item
-
 

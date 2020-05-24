@@ -99,8 +99,8 @@ class VqlEditorWidget(plugin.PluginWidget):
         """
 
         vql = "SELECT "
-        vql += ",".join(self.mainwindow.controller.fields)
-        vql += " FROM " + self.mainwindow.controller.source 
+        vql += ",".join(self.mainwindow.state.fields)
+        vql += " FROM " + self.mainwindow.state.source 
         
         self.set_vql(vql) 
 
@@ -169,19 +169,19 @@ class VqlEditorWidget(plugin.PluginWidget):
 
             #  If command is a select kind
             if cmd["cmd"] == "select_cmd":
-                self.mainwindow.controller.fields = cmd["fields"]  # columns from variant table
-                self.mainwindow.controller.source = cmd["source"]  # name of the variant set
-                self.mainwindow.controller.filters = cmd["filters"]
-                self.mainwindow.controller.group_by = cmd["group_by"]
-                self.mainwindow.controller.refresh_plugins(sender = self)
+                self.mainwindow.state.fields = cmd["fields"]  # columns from variant table
+                self.mainwindow.state.source = cmd["source"]  # name of the variant set
+                self.mainwindow.state.filters = cmd["filters"]
+                self.mainwindow.state.group_by = cmd["group_by"]
+                self.mainwindow.refresh_plugins(sender = self)
 
             if cmd["cmd"] == "create_cmd":
                 fct = command.create_command_from_obj(self.conn, cmd)
                 fct()
 
-                if "source_editor" in self.mainwindow.controller.plugins:
-                    plugin = self.mainwindow.controller.plugins["source_editor"]
-                    plugin.on_refresh()
+                # if "source_editor" in self.mainwindow.controller.plugins:
+                #     plugin = self.mainwindow.plugins["source_editor"]
+                #     plugin.on_refresh()
 
 
 

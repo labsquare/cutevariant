@@ -13,6 +13,7 @@ from PySide2.QtGui import QIcon, QKeySequence
 # Custom imports
 from cutevariant.core import Query, get_sql_connexion
 from cutevariant.gui.ficon import FIcon
+from cutevariant.gui.state import State
 
 from cutevariant.gui.wizards import ProjectWizard
 from cutevariant.gui.settings import SettingsWidget
@@ -21,7 +22,6 @@ from cutevariant.gui.settings import SettingsWidget
 
 #  Import plugins
 from cutevariant.gui import plugin
-from cutevariant.gui.controller import Controller
 
 #from cutevariant.gui.plugins.editor.plugin import EditorPlugin
 
@@ -57,8 +57,9 @@ class MainWindow(QMainWindow):
         # Keep sqlite connection
         self.conn = None
 
-        # controller 
-        self.controller = Controller()
+        # State variable of application 
+        # Often changed by plugins 
+        self.state = State()
 
         self.central_tab = QTabWidget()
         self.footer_tab = QTabWidget()
@@ -76,9 +77,9 @@ class MainWindow(QMainWindow):
         # Setup UI
         self.setup_ui()
 
-      # Register plugins 
+        # Register plugins 
+        self.plugins = {}
         self.register_plugins()
-
 
         # Window geometry
         self.resize(600, 400)
@@ -129,8 +130,8 @@ class MainWindow(QMainWindow):
                     widget.setWindowTitle(extension.get("name"))
                     widget.setToolTip(extension.get("description"))
                     widget.on_register(self)
-                    # Add plugin to controller 
-                    self.controller.add_plugin(name, widget)
+                    # Add plugins 
+                    self.plugins[name] = widget
 
                     if plugin_widget_class.LOCATION == plugin.DOCK_LOCATION:
                         self.add_panel(widget)
@@ -141,6 +142,27 @@ class MainWindow(QMainWindow):
                     if plugin_widget_class.LOCATION == plugin.FOOTER_LOCATION:
                         self.footer_tab.addTab(widget, widget.windowTitle())
 
+
+    def refresh_plugins(self, sender: plugin.PluginWidget = None):
+        """Refresh all plugins except_plugins 
+        
+        Args:
+            sender (PluginWidget): from a plugin, you can pass "self" as argument 
+        """
+        for plugin in self.plugins.values():
+            if plugin != sender:
+                plugin.on_refresh()
+
+    def refresh_plugin(self, plugin_name:str):
+        """Refresh a plugin identified by plugin_name 
+        It doesn't refresh the sender plugin 
+        
+        Args:
+            plugin_name (str): a plugin name. 
+        """
+        if plugin_name in self._plugins:
+            plugin = self.plugins[plugin_name]
+            plugin.on_refresh()
 
 
     def setup_menubar(self):
@@ -269,10 +291,8 @@ class MainWindow(QMainWindow):
     def open_database(self, conn):
         self.conn = conn
 
-        # signals plugins 
-        self.controller.conn = conn
-
-
+        for plugin in self.plugins.values():
+            plugin.on_open_project(self.conn)
 
     def save_recent_project(self, path):
         """Save current project into QSettings
