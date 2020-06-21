@@ -266,188 +266,90 @@ class VariantModel(QAbstractTableModel):
 
 
 
-class QueryDelegate(QStyledItemDelegate):
+# class QueryDelegate(QStyledItemDelegate):
 
-    pass
-    """
-    This class specify the aesthetic of the view
-    styles and color of each variant displayed in the view are setup here
+    # pass
+    # """
+    # This class specify the aesthetic of the view
+    # styles and color of each variant displayed in the view are setup here
 
-    """
+    # """
 
-    def background_color_index(self, index):
-        """ return background color of index """
+    # def background_color_index(self, index):
+        # """ return background color of index """
 
-        base_brush = qApp.palette("QTableView").brush(QPalette.Base)
-        alternate_brush = qApp.palette("QTableView").brush(QPalette.AlternateBase)
+        # base_brush = qApp.palette("QTableView").brush(QPalette.Base)
+        # alternate_brush = qApp.palette("QTableView").brush(QPalette.AlternateBase)
 
-        if index.parent() == QModelIndex():
-            if index.row() % 2:
-                return base_brush
-            else:
-                return alternate_brush
+        # if index.parent() == QModelIndex():
+            # if index.row() % 2:
+                # return base_brush
+            # else:
+                # return alternate_brush
 
-        if index.parent().parent() == QModelIndex():
-            return self.background_color_index(index.parent())
+        # if index.parent().parent() == QModelIndex():
+            # return self.background_color_index(index.parent())
 
-        return base_brush
+        # return base_brush
 
-    def paint(self, painter, option, index):
+    # def paint(self, painter, option, index):
         
 
-        return super().paint(painter, option, index)
-
-        # palette = qApp.palette("QTreeView")
-        # #  get column name of the index
-        # #colname = index.model().headerData(index.column(), Qt.Horizontal)
-
-        # #  get value of the index
-        # #value = index.data(Qt.DisplayRole)
-
-        # # get select sate
-        # select = option.state & QStyle.State_Selected
-
-        # #  draw selection if it is
-        # if not select:
-        #     bg_brush = self.background_color_index(index)
-        # else:
-        #     bg_brush = palette.brush(QPalette.Highlight)
-
-        # painter.save()
-        # painter.setBrush(bg_brush)
-        # painter.setPen(Qt.NoPen)
-        # painter.drawRect(option.rect)
-        # painter.restore()
-
-       
-
-        # painter.save()
-        # alignement = Qt.AlignLeft | Qt.AlignVCenter
-
-        # bg_color = index.data(Qt.BackgroundRole)
-        # fg_color = index.data(Qt.ForegroundRole)
-        # decoration = index.data(Qt.DecorationRole)
-
-        # font = index.data(Qt.FontRole)
-
-        # if bg_color:
-        #     painter.setBrush(QBrush(bg_color))
-        #     painter.setPen(Qt.NoPen)
-        #     painter.drawRect(option.rect)
-
-        # if font:
-        #     painter.setFont(QFont())
-        
-        # if fg_color:
-        #     painter.setPen(QPen(fg_color))
-
-        # if decoration:
-        #     rect = QRect(0,0,25,25)
-        #     rect.moveCenter(option.rect.center())
-        #     painter.drawPixmap(rect,decoration.pixmap(25,25))
-        # else:
-
-        #     painter.drawText(option.rect, alignement, str(index.data()))
-        
-        
-        # painter.restore()
+        # return super().paint(painter, option, index)
 
 
-        #super().paint(painter,option, index)
+    # def sizeHint(self, option, index):
+        # """Override: Return row height"""
+
+        # size = super().sizeHint(option, index)
+        # size.setHeight(30)
+        # return size
 
 
-        # # Add margin for first columns if index is first level
-        # if index.column() == 0 and index.parent() == QModelIndex():
-
-        #     expanded = bool(option.state & QStyle.State_Open)
-
-        #     branch_option = copy.copy(option)
-        #     branch_option.rect.setWidth(65)
-
-        #     qApp.style().drawPrimitive(QStyle.PE_IndicatorBranch, branch_option, painter)
-
-        #     icon = index.data(Qt.DecorationRole)
-        #     if icon:
-        #         target = QRect(0,0, option.decorationSize.width(), option.decorationSize.height())
-        #         target.moveCenter(option.rect.center())
-        #         painter.drawPixmap(option.rect.x()+5, target.top() ,icon.pixmap(option.decorationSize))
-
-        # if index.column() == 0:
-        #     option.rect.adjust(40,0,0,0)
-
-        # Draw cell depending column name
-        # if colname == "impact":
-        #     painter.setPen(
-        #         QPen(style.IMPACT_COLOR.get(value, palette.color(QPalette.Text)))
-        #     )
-        #     painter.drawText(option.rect, alignement, str(index.data()))
-        #     return
-
-        # if colname == "gene":
-        #     painter.setPen(QPen(style.GENE_COLOR))
-        #     painter.drawText(option.rect, alignement, str(index.data()))
-        #     return
-
-        # if re.match(r"genotype(.+).gt", colname):
-        #     val = int(value)
-
-        #     icon_code = GENOTYPE_ICONS.get(val, -1)
-        #     icon = FIcon(icon_code, palette.color(QPalette.Text)).pixmap(20, 20)
-        #     painter.setRenderHint(QPainter.Antialiasing)
-        #     painter.drawPixmap(option.rect.left(), option.rect.center().y() - 8, icon)
-        #     return
-
-        # if "consequence" in colname:
-        #     painter.save()
-        #     painter.setClipRect(option.rect, Qt.IntersectClip)
-        #     painter.setRenderHint(QPainter.Antialiasing)
-        #     soTerms = value.split("&")
-        #     rect = QRect()
-        #     font = painter.font()
-        #     font.setPixelSize(10)
-        #     painter.setFont(font)
-        #     metrics = QFontMetrics(painter.font())
-        #     rect.setX(option.rect.x())
-        #     rect.setY(option.rect.center().y() - 5)
-
-        #     #  Set background color according so terms
-        #     #  Can be improve ... Just a copy past from c++ code
-        #     bg = "#6D7981"
-        #     for so in soTerms:
-        #         for i in style.SO_COLOR.keys():
-        #             if i in so:
-        #                 bg = style.SO_COLOR[i]
-
-        #         painter.setPen(Qt.white)
-        #         painter.setBrush(QBrush(QColor(bg)))
-        #         rect.setWidth(metrics.width(so) + 8)
-        #         rect.setHeight(metrics.height() + 4)
-        #         painter.drawRoundedRect(rect, 3, 3)
-        #         painter.drawText(rect, Qt.AlignCenter, so)
-
-        #         rect.translate(rect.width() + 4, 0)
-
-        #     painter.restore()
-        #     return
-
-        # painter.setPen(
-        #     QPen(palette.color(QPalette.HighlightedText if select else QPalette.Text))
-        # )
-        # painter.drawText(option.rect, alignement, str(index.data()))
+        # super().__init__()
 
 
 
-    def sizeHint(self, option, index):
-        """Override: Return row height"""
+class VariantView(QWidget):
 
-        size = super().sizeHint(option, index)
-        size.setHeight(30)
-        return size
-
-
-class QueryTableView(QTableView):
-    def __init__(self, parent=None):
+    def __init__(self, parent = None):
         super().__init__()
+
+        self.view = QTableView()
+        self.model = VariantModel()
+
+        self.view.setModel(self.model)
+        #self.view.setFrameStyle(QFrame.NoFrame)
+        self.view.setAlternatingRowColors(True)
+        self.view.horizontalHeader().setStretchLastSection(True)
+        self.view.setSelectionMode(QAbstractItemView.SingleSelection)
+
+        self.view.setSortingEnabled(True)
+        self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.view.setSelectionMode(QAbstractItemView.ContiguousSelection)
+        ## self.view.setIndentation(0)
+        self.view.setIconSize(QSize(22, 22))
+
+        self.view.setModel(self.model)
+        #self.view.setItemDelegate(self.delegate)
+
+
+        main_layout = QVBoxLayout()
+
+        main_layout.setContentsMargins(0,0,0,0)
+
+        # Construct bottom bar
+        # These actions should be disabled until a query is made (see query setter)
+        
+     
+
+        main_layout.addWidget(self.view)
+
+        self.setLayout(main_layout)
+
+
+
+    
 
 
 
@@ -463,313 +365,106 @@ class VariantViewWidget(plugin.PluginWidget):
     def __init__(self, parent = None):
         super().__init__(parent)
 
+        self.splitter = QSplitter(Qt.Vertical)
+        self.top_bar = QToolBar()
+        self.bottom_bar = QToolBar()
 
-        self.delegate = QueryDelegate()
-        self.model = VariantModel()
-        self.setWindowTitle(self.tr("Variants"))
-        self.topbar = QToolBar()
-        self.bottombar = QToolBar()
-        self.view = QueryTableView()
-        self.formatters = []
-
-        #self.view.setFrameStyle(QFrame.NoFrame)
-        self.view.setItemDelegate(self.delegate)
-        self.view.setAlternatingRowColors(True)
-        #self.view.horizontalHeader().setStretchLastSection(True)
-        
-        self.view.setSortingEnabled(True)
-        self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.view.setSelectionMode(QAbstractItemView.ContiguousSelection)
-        ## self.view.setIndentation(0)
-        self.view.setIconSize(QSize(22, 22))
-
-        self.view.setItemDelegate(self.delegate)
-        self.view.setModel(self.model)
+        self.main_view = VariantView()
+        self.sub_view = VariantView()
 
 
+        self.splitter.addWidget(self.main_view)
+        self.splitter.addWidget(self.sub_view)
 
 
-        main_layout = QVBoxLayout()
-        main_layout.addWidget(self.topbar)
-        main_layout.addWidget(self.view)
-        main_layout.addWidget(self.bottombar)
-        main_layout.setContentsMargins(0, 0, 0, 0)
-
-        self.topbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-        # Construct top bar
-        # These actions should be disabled until a query is made (see query setter)
-        self.export_csv_action = self.topbar.addAction(
-            FIcon(0xF207), self.tr("Export variants"), self.export_csv
-        )
-        self.export_csv_action.setEnabled(False)
-
-        self.grouped_action = self.topbar.addAction(FIcon(0xF191), "Group variant")
-        self.grouped_action.setCheckable(True)
-        self.grouped_action.setChecked(True)
-        self.grouped_action.toggled.connect(self.on_group_changed)
-
-        self.save_action = self.topbar.addAction(FIcon(0xF817), "Save selection")
-        self.save_action.setToolTip("Save current selections")
-        self.save_action.triggered.connect(self.on_save_clicked)
-
-
-        # Add spacer to push next buttons to the right
-        spacer = QWidget()
-        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.topbar.addWidget(spacer)
-
-        # # Add combobox to choose the grouping method of variants
-
-        # Construct bottom bar
-        # These actions should be disabled until a query is made (see query setter)
-        self.page_info = QLabel()
-        self.page_box = QLineEdit()
-        self.page_box.setReadOnly(False)
+        self.page_box = QComboBox()
+        self.page_box.setEditable(True)
         self.page_box.setValidator(QIntValidator())
-        # self.page_box.setFrame(QFrame.NoFrame)
         self.page_box.setFixedWidth(50)
-        self.page_box.setAlignment(Qt.AlignHCenter)
-        self.page_box.setStyleSheet("QWidget{background-color: transparent;}")
-        self.page_box.setText("0")
+        #self.page_box.setAlignment(Qt.AlignHCenter)
+        #self.page_box.setStyleSheet("QWidget{background-color: transparent;}")
+        #self.page_box.("0")
         self.page_box.setFrame(QFrame.NoFrame)
+        
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        # Setup actions
-        self.show_sql_action = self.bottombar.addAction(
-            FIcon(0xF865), self.tr("See SQL query"), self.show_sql
-        )
+        
+
+        # topbar 
+
+        group_box = QComboBox()
+        group_box.addItems(["nogroup", "chr,pos,ref,alt","gene"] )
+        self.top_bar.addWidget(group_box)
 
 
-        self.formatter_combo = QComboBox()
+        self.bottom_bar.addWidget(spacer)     
+        self.bottom_bar.setIconSize(QSize(16, 16))
+        self.bottom_bar.setMaximumHeight(30)
+        self.bottom_bar.setContentsMargins(0, 0, 0, 0)
 
-        for Object in formatter.find_formatters():
-            self.formatters.append(Object()) 
-            self.formatter_combo.addItem(str(Object.__module__))
 
-        self.formatter_combo.activated.connect(self.on_formatter_changed)
+        self.bottom_bar.addAction(FIcon(0xF792), "<<", lambda : self.current_view().view.model.self.firstPage)
+        self.bottom_bar.addAction(FIcon(0xF04D), "<", lambda : self.current_view().view.model.self.firstPage)
+        self.bottom_bar.addWidget(self.page_box)
+        self.bottom_bar.addAction(FIcon(0xF054), ">", lambda : self.current_view().view.model.self.firstPage)
+        self.bottom_bar.addAction(FIcon(0xF793), ">>", lambda : self.current_view().view.model.self.firstPage)
+        #self.page_box.returnPressed.connect()
 
-        self.bottombar.addWidget(self.formatter_combo)
 
-        self.show_sql_action.setEnabled(False)
-        self.bottombar.addWidget(self.page_info)
-        self.bottombar.addWidget(spacer)
-      
-        self.bottombar.setIconSize(QSize(16, 16))
-        self.bottombar.setMaximumHeight(30)
+        self.main_view.view.clicked.connect(self.on_variant_clicked)
 
-        self.bottombar.setContentsMargins(0, 0, 0, 0)
+
+        # setup layout 
+        main_layout  = QVBoxLayout()
+
+        main_layout.addWidget(self.top_bar)
+        main_layout.addWidget(self.splitter)
+        main_layout.addWidget(self.bottom_bar)
 
         self.setLayout(main_layout)
-
-        self.setup_ui()
-
-
-    def setup_ui(self):
         
-        print("setup ui ", self.model)
-        self.bottombar.addAction(FIcon(0xF792), "<<", self.model.firstPage)
-        self.bottombar.addAction(FIcon(0xF04D), "<", self.model.previousPage)
-        self.bottombar.addWidget(self.page_box)
-        self.bottombar.addAction(FIcon(0xF054), ">", self.model.nextPage)
-        self.bottombar.addAction(FIcon(0xF793), ">>", self.model.lastPage)
-        self.page_box.returnPressed.connect(self._update_page)
-        self.model.modelReset.connect(self.updateInfo)
-        self.view.selectionModel().currentRowChanged.connect(self._variant_clicked)
 
 
-    def on_register(self, mainwindow):
-        """ Override from PluginWidget """
-        #self.setModel(mainwindow.query_model)
-        pass
+    def current_view(self):
+        if self.sub_view.view.hasFocus():
+            return self.sub_view
+        else:
+            return self.main_view
 
-    def on_open_project(self, conn):
-        """ Override from PluginWidget """
-        
-        self.model.conn = conn
-        self.on_refresh() 
+
+
+
+    def on_open_project(self,conn):
+        self.conn = conn 
+        self.main_view.model.conn = self.conn
+        self.sub_view.model.conn = self.conn
+
+        self.on_refresh()
 
     def on_refresh(self):
 
-        self.model.fields = self.mainwindow.state.fields 
-        self.model.source = self.mainwindow.state.source 
-        self.model.filters = self.mainwindow.state.filters
-        self.model.group_by = self.mainwindow.state.group_by
-        self.model.load()
 
-    def updateInfo(self):
-        """Update metrics for the current query
+        self.main_view.model.fields = self.mainwindow.state.fields 
+        self.main_view.model.fields = self.mainwindow.state.fields 
+        self.main_view.model.source = self.mainwindow.state.source
+        self.main_view.model.filters = self.mainwindow.state.filters
 
-        .. note:: Update page_info and page_box.
-        """
+        # self.main_view.model.group_by = ["chr","pos","ref","alt"]
 
-        # Set text
-        self.page_info.setText(
-            self.tr("{} variant(s)  {}-{} of {}").format(
-                self.model.total, *self.model.displayed()
-            )
-        )
-        page_box_text = str(self.model.page)
-        self.page_box.setText(page_box_text)
+        self.main_view.model.load()
 
-        # Adjust page_èbox size to content
-        fm = self.page_box.fontMetrics()
-        # self.page_box.setFixedWidth(fm.boundingRect(page_box_text).width() + 5)
 
-    def _variant_clicked(self, index, _):
-        """Slot called when the view (QTreeView) is clicked
-
-        .. note:: Emit variant through variant_clicked signal.
-            This signal updates InfoVariantWidget.
-        .. note:: Is also called manually by contextMenuEvent() in order to
-            get the variant and refresh InfoVariantWidget when the
-            ContextMenuEvent is triggered.
-        :return: The variant.
-        :rtype: <dict>
-        """
-
-        if not index.isValid():
-            return 
-        # Get the rowid of the element at the given index
-        rowid = self.model.variant(index.row())["id"]
-        # Get data from database
-        variant = sql.get_one_variant(self.model.conn, rowid)
-        # Emit variant through variant_clicked signal
+    def on_variant_clicked(self, index: QModelIndex):
         
-        if self.mainwindow:
-            self.mainwindow.state.current_variant = variant
-            self.mainwindow.refresh_plugins(sender = self)
+        variant = self.main_view.model.variant(index.row())
 
+        self.sub_view.model.fields = self.main_view.model.fields
+        self.sub_view.model.source = self.main_view.model.source
+        self.sub_view.model.filters =   {"AND": [ {"field": "id", "operator": "=", "value": variant["id"]}]}
 
-    def export_csv(self):
-        """Export variants displayed in the current view to a CSV file"""
-        filepath, filter = QFileDialog.getSaveFileName(
-            self,
-            self.tr("Export variants of the current view"),
-            "view.csv",
-            self.tr("CSV (Comma-separated values) (*.csv)"),
-        )
+        self.sub_view.model.load()
 
-        if not filepath:
-            return
-
-        with open(filepath, "w") as f_d:
-            writer = csv.writer(f_d, delimiter=",")
-            # Write headers (columns in the query) + variants from the model
-            writer.writerow(self.model.query.columns)
-            # Duplicate the current query, but remove automatically added columns
-            # and remove group by/order by commands.
-            # Columns are kept as they are selected in the GUI
-            query = copy.copy(self.model.query)
-            query.group_by = None
-            query.order_by = None
-            # Query the database
-            writer.writerows(
-                query.conn.execute(query.sql(do_not_add_default_things=True))
-            )
-
-    def on_group_changed(self, changed: bool):
-        """Slot called when the currentIndex in the combobox changes
-        either through user interaction or programmatically
-
-        It triggers a reload of the model and a change of the group by
-        command of the query.
-        """
-        self.model.group_variant(changed)
-        if changed:
-            self.view.showColumn(0)
-        else:
-            self.view.hideColumn(0)
-
-    def on_formatter_changed(self):
-
-        formatter = self.formatters[self.formatter_combo.currentIndex()]
-        self.model.formatter = formatter
-
-    def show_sql(self):
-        box = QMessageBox()
-        try:
-            text = self.model.builder.sql()
-        except AttributeError:
-            text = self.tr("No query to show")
-
-        box.setText("The following query has been executed")
-        box.setInformativeText(str(self.model.builder))
-        box.setDetailedText(text)
-        box.exec_()
-
-
-
-    def contextMenuEvent(self, event: QContextMenuEvent):
-        """Overrided method: Show custom context menu associated to the current variant"""
-        menu = QMenu(self)
-
-        # Get variant data 
-        index = self.view.indexAt(self.view.viewport().mapFromGlobal(event.globalPos()))
-
-        if not index:
-            return
-
-        variant_id = self.model.variant(index)[0]
-        variant = sql.get_one_variant(self.model.conn, variant_id)
-
-
-        if "favorite" in variant:
-            if not variant["favorite"]:
-                msg = "Mark variant"
-                icon = FIcon(0xf4d2)
-            else:
-                msg = "Unmark variant"
-                icon = FIcon(0xf4ce)
-            menu.addAction(icon, msg, lambda : self.model.set_favorite(index,not variant["favorite"]))
-
-        menu.addSeparator()
-        # Create copy action 
-        cell_value = self.model.variant(index)[index.column()]
-        menu.addAction(FIcon(0xf18f),
-        f"Copy {cell_value}", 
-        lambda : qApp.clipboard().setText(str(self.model.variant(index)))
-        )
-
-        genomic_location = "{chr}:{pos}{ref}>{alt}".format(**variant)
-        menu.addAction(FIcon(0xf18f),
-        f"Copy {genomic_location}", 
-        lambda : qApp.clipboard().setText(genomic_location)
-        )
-
-
-        menu.addSeparator()
-
-        from functools import partial
-
-        # Create open with action 
-        open_with_action = QMenu(self.tr("Open with"))
-        settings = QSettings()
-        settings.beginGroup("plugins/query_view/links")
-        urls = {}
-        for key in settings.childKeys():
-            url = QUrl(settings.value(key).format(**variant))
-            open_with_action.addAction(FIcon(0xf339), key,  lambda url=url : QDesktopServices.openUrl(url))
-
-        settings.endGroup()
-
-        menu.addMenu(open_with_action)
-
-        menu.exec_(event.globalPos())
-
-
-    def _update_page(self):
-        """Set page from page_box edit. When user set a page manually, this method is called"""
-        self.model.setPage(int(self.page_box.text()))
-
-        self.page_box.clearFocus()
-
-    def on_save_clicked(self):
-        name, success = QInputDialog.getText(self, "Text", "Enter name:")
-        if success:
-            self.model.builder.save(name)
-
-            self.model.changed.emit()
-
+        print("done")
 
 
 
@@ -781,24 +476,21 @@ if __name__ == "__main__":
     from cutevariant.core.reader import FakeReader, VcfReader
     from cutevariant.core import sql
 
-    def test():
-        print("salut")
-
     app = QApplication(sys.argv)
 
+
     conn = sql.get_sql_connexion(":memory:")
-    reader = VcfReader(open("examples/test.snpeff.vcf"), "snpeff")
+    reader = VcfReader(open("/home/sacha/Dev/cutevariant/examples/test.snpeff.vcf"), "snpeff")
     import_reader(conn, reader)
 
+    w = VariantViewWidget()
 
-    model = VariantModel(conn)
-    model.limit = 3 
-    w = QueryViewWidget()
-    w.conn = conn 
+    w.on_open_project(conn)
+    w.main_view.model.group_by = ["chr","pos","ref","alt"]
+    w.on_refresh()
 
-    w.set_model(model)
-    w.model.load()
     w.show()
-    
 
     app.exec_()
+
+
