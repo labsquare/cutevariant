@@ -173,10 +173,10 @@ class MainWindow(QMainWindow):
         ## File Menu
         self.file_menu = self.menuBar().addMenu(self.tr("&File"))
         self.new_project_action = self.file_menu.addAction(
-            FIcon(0xF415), self.tr("&New project"), self.new_project, QKeySequence.New
+            FIcon(0xF01BA), self.tr("&New project"), self.new_project, QKeySequence.New
         )
         self.open_project_action = self.file_menu.addAction(
-            FIcon(0xF76F),
+            FIcon(0xF095D),
             self.tr("&Open project ..."),
             self.open_project,
             QKeySequence.Open,
@@ -195,7 +195,7 @@ class MainWindow(QMainWindow):
 
         self.file_menu.addSeparator()
         self.file_menu.addAction(
-            FIcon(0xF493), self.tr("Settings ..."), self.show_settings
+            FIcon(0xF0493), self.tr("Settings ..."), self.show_settings
         )
 
         self.file_menu.addSeparator()
@@ -209,13 +209,13 @@ class MainWindow(QMainWindow):
 
         ## Edit
         self.edit_menu = self.menuBar().addMenu(self.tr("&Edit"))
-        self.edit_menu.addAction(FIcon(0xF18F), "&Copy", self.copy, QKeySequence.Copy)
+        self.edit_menu.addAction(FIcon(0xF018F), "&Copy", self.copy, QKeySequence.Copy)
         self.edit_menu.addAction(
-            FIcon(0xF192), "&Paste", self.paste, QKeySequence.Paste
+            FIcon(0xF0192), "&Paste", self.paste, QKeySequence.Paste
         )
         self.edit_menu.addSeparator()
         self.edit_menu.addAction(
-            FIcon(0xF486), "Select all", self.select_all, QKeySequence.SelectAll
+            FIcon(0xF0486), "Select all", self.select_all, QKeySequence.SelectAll
         )
 
         ## View
@@ -401,12 +401,12 @@ class MainWindow(QMainWindow):
     def show_settings(self):
         """Slot to show settings window"""
         widget = SettingsWidget()
-        widget.exec()
+        widget.exec_()
 
     def aboutCutevariant(self):
         """Slot to show about window"""
         dialog_window = AboutCutevariant()
-        dialog_window.exec()
+        dialog_window.exec_()
 
     def reset_ui(self):
         """Slot to reset the position of docks to the state of the previous launch"""

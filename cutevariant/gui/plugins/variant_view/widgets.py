@@ -395,7 +395,7 @@ class VariantViewWidget(plugin.PluginWidget):
 
         self.main_view = VariantView()
         self.sub_view = VariantView()
-        # self.sub_view.hide()
+        self.sub_view.hide()
 
 
         self.splitter.addWidget(self.main_view)
@@ -419,9 +419,8 @@ class VariantViewWidget(plugin.PluginWidget):
 
         # topbar 
 
-        group_box = QComboBox()
-        group_box.addItems(["nogroup", "chr,pos,ref,alt","gene"] )
-        self.top_bar.addWidget(group_box)
+        self.group_action = self.top_bar.addAction(FIcon(0XF14E0), "Group by",  self.on_group_clicked)
+        self.group_action.setCheckable(True)
 
 
         self.bottom_bar.addWidget(spacer)     
@@ -430,11 +429,11 @@ class VariantViewWidget(plugin.PluginWidget):
         self.bottom_bar.setContentsMargins(0, 0, 0, 0)
 
 
-        self.bottom_bar.addAction(FIcon(0xF792), "<<", self.on_page_clicked)
-        self.bottom_bar.addAction(FIcon(0xF04D), "<",  self.on_page_clicked)
+        self.bottom_bar.addAction(FIcon(0xF0600), "<<", self.on_page_clicked)
+        self.bottom_bar.addAction(FIcon(0xF0141), "<",  self.on_page_clicked)
         self.bottom_bar.addWidget(self.page_box)
-        self.bottom_bar.addAction(FIcon(0xF054), ">",  self.on_page_clicked)
-        self.bottom_bar.addAction(FIcon(0xF793), ">>", self.on_page_clicked)
+        self.bottom_bar.addAction(FIcon(0xF0142), ">",  self.on_page_clicked)
+        self.bottom_bar.addAction(FIcon(0xF0601), ">>", self.on_page_clicked)
         #self.page_box.returnPressed.connect()
 
 
@@ -535,6 +534,15 @@ class VariantViewWidget(plugin.PluginWidget):
 
         self.main_view.model.load()
         self.update_current_view()
+
+    def on_group_clicked(self):
+
+        if self.group_action.isChecked():
+            self.sub_view.setVisible(True)
+        else:
+            self.sub_view.setVisible(False)
+
+
 
 
     def on_variant_clicked(self, index: QModelIndex):

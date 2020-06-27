@@ -81,7 +81,7 @@ class VqlEditorWidget(plugin.PluginWidget):
         Args:
             mainwindow (MainWindow): Mainwindow reference
         """
-        mainwindow.toolbar.addAction(FIcon(0xF40A),"Run", self.run_vql).setShortcuts([Qt.CTRL + Qt.Key_R, QKeySequence.Refresh])
+        mainwindow.toolbar.addAction(FIcon(0xF040A),"Run", self.run_vql).setShortcuts([Qt.CTRL + Qt.Key_R, QKeySequence.Refresh])
 
 
 
@@ -206,7 +206,7 @@ class VqlEditorWidget(plugin.PluginWidget):
         if self.log_edit.isHidden():
             self.log_edit.show()
 
-        icon_64 = FIcon(0xF5D6, style.WARNING_TEXT_COLOR).to_base64(18, 18)
+        icon_64 = FIcon(0xF0027, style.WARNING_TEXT_COLOR).to_base64(18, 18)
 
         self.log_edit.setText(
             """

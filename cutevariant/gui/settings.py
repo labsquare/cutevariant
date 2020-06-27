@@ -83,7 +83,7 @@ class TranslationSettingsWidget(BaseWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Translation"))
-        self.setWindowIcon(FIcon(0xF5CA))
+        self.setWindowIcon(FIcon(0xF05CA))
         self.locales_combobox = QComboBox()
         mainLayout = QFormLayout()
         mainLayout.addRow(self.tr("&Choose a locale:"), self.locales_combobox)
@@ -135,7 +135,7 @@ class ProxySettingsWidget(BaseWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Proxy"))
-        self.setWindowIcon(FIcon(0xF484))
+        self.setWindowIcon(FIcon(0xF0484))
 
         self.combo_box = QComboBox()
         self.host_edit = QLineEdit()
@@ -213,7 +213,7 @@ class StyleSettingsWidget(BaseWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Styles"))
-        self.setWindowIcon(FIcon(0xF3D8))
+        self.setWindowIcon(FIcon(0xF03D8))
 
         self.styles_combobox = QComboBox()
         mainLayout = QFormLayout()
@@ -267,7 +267,7 @@ class PluginsSettingsWidget(BaseWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Plugins"))
-        self.setWindowIcon(FIcon(0xF3D4))
+        self.setWindowIcon(FIcon(0xF0431))
         self.view = QTreeWidget()
         self.view.setColumnCount(3)
         self.view.setHeaderLabels(["Name","Description","Version"])
@@ -296,7 +296,7 @@ class DatabaseSettingsWidget(BaseWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("database"))
-        self.setWindowIcon(FIcon(0xF1B8))
+        self.setWindowIcon(FIcon(0xF01BC))
 
     def save(self):
         pass
@@ -340,7 +340,7 @@ class SettingsWidget(QDialog):
         # Similar widgets for general configuration
         general_settings = GroupWidget()
         general_settings.setWindowTitle(self.tr("General"))
-        general_settings.setWindowIcon(FIcon(0xF493))
+        general_settings.setWindowIcon(FIcon(0xF0614))
 
         general_settings.add_settings_widget(TranslationSettingsWidget())
         general_settings.add_settings_widget(ProxySettingsWidget())
@@ -402,7 +402,7 @@ class SettingsWidget(QDialog):
                     widget.setWindowTitle(extension["name"])
                 
                 if not widget.windowIcon():
-                    widget.setWindowIcon(FIcon(0xf431))
+                    widget.setWindowIcon(FIcon(0xF0431))
                 
                 self.addPanel(widget)
 

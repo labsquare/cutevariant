@@ -1023,15 +1023,15 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
         self.add_menu = QMenu()
         self.add_button = QToolButton()
-        self.add_button.setIcon(FIcon(0xF703))
+        self.add_button.setIcon(FIcon(0xF0415))
         self.add_button.setPopupMode(QToolButton.InstantPopup)
-        self.add_menu.addAction(FIcon(0xF8E0), "Add Logic", self.on_add_logic)
-        self.add_menu.addAction(FIcon(0xF70A), "Add Condition", self.on_add_condition)
+        self.add_menu.addAction(FIcon(0xF0415), "Add Logic", self.on_add_logic)
+        self.add_menu.addAction(FIcon(0xF0415), "Add Condition", self.on_add_condition)
         self.add_button.setMenu(self.add_menu)
 
         self.toolbar.addWidget(self.add_button)
-        self.toolbar.addAction(FIcon(0xF143), "up")
-        self.toolbar.addAction(FIcon(0xF140), "down")
+        self.toolbar.addAction(FIcon(0xF0143), "up")
+        self.toolbar.addAction(FIcon(0xF0140), "down")
 
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)

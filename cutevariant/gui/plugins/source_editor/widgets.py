@@ -189,11 +189,11 @@ class SourceEditorWidget(plugin.PluginWidget):
 
         #  Setup actions
         self.edit_action = self.toolbar.addAction(
-            FIcon(0xF8FF), self.tr("Edit"), self.edit_selection
+            FIcon(0xF0900), self.tr("Edit"), self.edit_selection
         )
 
 
-        self.toolbar.addAction(QIcon(), "reload", self.load)
+        self.toolbar.addAction(FIcon(0xF0453), "reload", self.load)
         self.conn = conn
 
     def on_register(self, mainwindow):
@@ -240,15 +240,15 @@ class SourceEditorWidget(plugin.PluginWidget):
         menu = QMenu()
 
         if not locked_selection:
-            menu.addAction(FIcon(0xF8FF), self.tr("Edit"), self.edit_selection)
+            menu.addAction(FIcon(0xF0900), self.tr("Edit"), self.edit_selection)
 
         #  Create action for bed
         menu.addAction(
-            FIcon(0xF219), "Intersect with bed file ...", self.create_selection_from_bed
+            FIcon(0xF0219), "Intersect with bed file ...", self.create_selection_from_bed
         )
 
         # Set operations on selections: create mapping and actions
-        set_icons_ids = (0xF55D, 0xF55B, 0xF564)
+        set_icons_ids = (0xF0779, 0xF077C, 0xF0778)
         set_texts = (self.tr("Intersect"), self.tr("Difference"), self.tr("Union"))
         set_internal_ids = ("intersect", "difference", "union")
         # Map the operations with an internal id not visible for the user
@@ -264,7 +264,7 @@ class SourceEditorWidget(plugin.PluginWidget):
 
         if not locked_selection:
             menu.addSeparator()
-            menu.addAction(FIcon(0xF413), self.tr("Remove"), self.remove_selection)
+            menu.addAction(FIcon(0xF0413), self.tr("Remove"), self.remove_selection)
         return menu
 
     def load(self):

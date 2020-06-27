@@ -65,7 +65,7 @@ class FieldsModel(QStandardItemModel):
         self.appendRow(self.load_fields("annotations"))
 
         samples_items = QStandardItem("samples")
-        samples_items.setIcon(FIcon(0xf00e))
+        samples_items.setIcon(FIcon(0xF0B9C))
         font = QFont()
         
         samples_items.setFont(font)
@@ -84,7 +84,7 @@ class FieldsModel(QStandardItemModel):
     def load_fields(self, category, parent_name = None):
         root_item = QStandardItem(category)
         root_item.setColumnCount(2)
-        root_item.setIcon(FIcon(0Xf24b))
+        root_item.setIcon(FIcon(0XF0256))
         font = QFont()
         root_item.setFont(font)
 
