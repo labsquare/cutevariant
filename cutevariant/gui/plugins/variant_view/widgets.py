@@ -418,7 +418,7 @@ class VariantViewWidget(plugin.PluginWidget):
         
 
         # topbar 
-
+        self.top_bar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         self.group_action = self.top_bar.addAction(FIcon(0XF14E0), "Group by",  self.on_group_clicked)
         self.group_action.setCheckable(True)
 
@@ -535,13 +535,18 @@ class VariantViewWidget(plugin.PluginWidget):
         self.main_view.model.load()
         self.update_current_view()
 
+
     def on_group_clicked(self):
 
         if self.group_action.isChecked():
             self.sub_view.setVisible(True)
+            self.main_view.model.group_by = ["chr","pos","ref","alt"]
+            self.on_refresh()
+
         else:
             self.sub_view.setVisible(False)
-
+            self.main_view.model.group_by = []
+            self.on_refresh()
 
 
 
