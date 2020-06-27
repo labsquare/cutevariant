@@ -184,7 +184,7 @@ class VariantModel(QAbstractTableModel):
         if emit_changed:
             self.changed.emit()
             #Probably need to compute total 
-            self.total = cmd.count_cmd(self.conn, self.source, self.filters)
+            self.total = cmd.count_cmd(self.conn, self.source, self.filters)["count"]
 
     def load_from_vql(self, vql):
 
@@ -205,9 +205,9 @@ class VariantModel(QAbstractTableModel):
 
     def setPage(self, page: int):
         """ set the page of the model """
+        print("set page ")
         if self.hasPage(page):
             self.page = page
-            print("set page ")
             self.load(emit_changed = False)
 
     def nextPage(self):
@@ -226,7 +226,12 @@ class VariantModel(QAbstractTableModel):
 
     def lastPage(self):
         """ Set model to the last page """
-        self.setPage(int(self.total / self.limit))
+        self.setPage(self.pageCount())
+
+    def pageCount(self):
+        """ Return total page count """ 
+        return int(self.total / self.limit)        
+
 
     def sort(self, column: int, order):
         """Overrided: Sort data by specified column 
@@ -310,7 +315,20 @@ class VariantModel(QAbstractTableModel):
 
 
 
+
+
+    # def focusInEvent(self, event: QFocusEvent):
+    #     self.setStyleSheet("QTableView{ border: 1px solid palette(highlight)}")
+    #     self.focusChanged.emit(True)
+
+    # def focusOutEvent(self, event: QFocusEvent):
+    #     self.setStyleSheet("QTableView{ border: 1px solid palette(shadow)}")
+    #     self.focusChanged.emit(False)
+
+
 class VariantView(QWidget):
+
+    view_clicked = Signal()
 
     def __init__(self, parent = None):
         super().__init__()
@@ -323,6 +341,7 @@ class VariantView(QWidget):
         self.view.setAlternatingRowColors(True)
         self.view.horizontalHeader().setStretchLastSection(True)
         self.view.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.view.verticalHeader().hide()
 
         self.view.setSortingEnabled(True)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
@@ -333,23 +352,28 @@ class VariantView(QWidget):
         self.view.setModel(self.model)
         #self.view.setItemDelegate(self.delegate)
 
-
         main_layout = QVBoxLayout()
-
         main_layout.setContentsMargins(0,0,0,0)
 
-        # Construct bottom bar
-        # These actions should be disabled until a query is made (see query setter)
-        
-     
-
+   
         main_layout.addWidget(self.view)
-
         self.setLayout(main_layout)
 
+        # broadcast focus signal 
 
 
-    
+
+        self.view.viewport().installEventFilter(self)
+
+
+    def eventFilter(self, obj: QObject, event : QEvent):
+
+        if event.type() == QEvent.MouseButtonPress:
+            self.view_clicked.emit()
+
+        return super().eventFilter(obj, event)
+        
+
 
 
 
@@ -371,10 +395,13 @@ class VariantViewWidget(plugin.PluginWidget):
 
         self.main_view = VariantView()
         self.sub_view = VariantView()
+        # self.sub_view.hide()
 
 
         self.splitter.addWidget(self.main_view)
         self.splitter.addWidget(self.sub_view)
+
+        self.current_view = self.main_view
 
 
         self.page_box = QComboBox()
@@ -403,15 +430,20 @@ class VariantViewWidget(plugin.PluginWidget):
         self.bottom_bar.setContentsMargins(0, 0, 0, 0)
 
 
-        self.bottom_bar.addAction(FIcon(0xF792), "<<", lambda : self.current_view().view.model.self.firstPage)
-        self.bottom_bar.addAction(FIcon(0xF04D), "<", lambda : self.current_view().view.model.self.firstPage)
+        self.bottom_bar.addAction(FIcon(0xF792), "<<", self.on_page_clicked)
+        self.bottom_bar.addAction(FIcon(0xF04D), "<",  self.on_page_clicked)
         self.bottom_bar.addWidget(self.page_box)
-        self.bottom_bar.addAction(FIcon(0xF054), ">", lambda : self.current_view().view.model.self.firstPage)
-        self.bottom_bar.addAction(FIcon(0xF793), ">>", lambda : self.current_view().view.model.self.firstPage)
+        self.bottom_bar.addAction(FIcon(0xF054), ">",  self.on_page_clicked)
+        self.bottom_bar.addAction(FIcon(0xF793), ">>", self.on_page_clicked)
         #self.page_box.returnPressed.connect()
 
 
         self.main_view.view.clicked.connect(self.on_variant_clicked)
+
+        self.main_view.view_clicked.connect(self.on_view_clicked)
+        self.sub_view.view_clicked.connect(self.on_view_clicked)
+
+        self.page_box.currentTextChanged.connect(self.on_page_changed)
 
 
         # setup layout 
@@ -423,16 +455,66 @@ class VariantViewWidget(plugin.PluginWidget):
 
         self.setLayout(main_layout)
         
+    def on_view_clicked(self):
+
+        view = self.sender()
+        
+        if view != self.current_view:
+            self.current_view = view 
+            self.update_current_view()
 
 
-    def current_view(self):
-        if self.sub_view.view.hasFocus():
-            return self.sub_view
+    def update_current_view(self):
+        """ Update style and bottom bar when current view changed """ 
+
+        if self.current_view == self.main_view:
+            other = self.sub_view
         else:
-            return self.main_view
+            other = self.main_view
+
+        self.current_view.setStyleSheet("QTableView{ border: 1px solid palette(highlight)}")
+        other.setStyleSheet("QTableView{ border: 1px solid palette(shadow)}")
+
+        # Update page count 
+        self.update_page_control()
 
 
+    def update_page_control(self):
+        """ Update page control like previous, next according page Count """         
+        self.page_box.clear()
+        self.page_box.addItems([str(i) for i in range(self.current_view.model.pageCount())])
+        
+        enabled = True if self.current_view.model.pageCount() > 1 else False
 
+        for action in self.bottom_bar.actions():
+            if action.text() in ("<<",">>","<",">"):
+                action.setEnabled(enabled)
+
+
+    def on_page_clicked(self):
+
+        action_text = self.sender().text()
+
+        if action_text == "<<":
+            fct = self.current_view.model.firstPage 
+
+        if action_text == ">>":
+            fct = self.current_view.model.lastPage
+            
+        if action_text == "<":
+            fct = self.current_view.model.previousPage 
+            
+        if action_text == ">":
+            fct = self.current_view.model.nextPage
+
+        fct()
+        self.page_box.setCurrentText(str(self.current_view.model.page))
+
+    def on_page_changed(self):
+
+        page = int(self.page_box.currentText())
+        self.current_view.model.setPage(page)
+        self.current_view.setFocus(Qt.OtherFocusReason)
 
     def on_open_project(self,conn):
         self.conn = conn 
@@ -452,6 +534,7 @@ class VariantViewWidget(plugin.PluginWidget):
         # self.main_view.model.group_by = ["chr","pos","ref","alt"]
 
         self.main_view.model.load()
+        self.update_current_view()
 
 
     def on_variant_clicked(self, index: QModelIndex):
@@ -465,6 +548,7 @@ class VariantViewWidget(plugin.PluginWidget):
         self.sub_view.model.load()
 
         print("done")
+
 
 
 
@@ -485,9 +569,11 @@ if __name__ == "__main__":
 
     w = VariantViewWidget()
 
-    w.on_open_project(conn)
-    w.main_view.model.group_by = ["chr","pos","ref","alt"]
-    w.on_refresh()
+
+
+    #w.on_open_project(conn)
+    #w.main_view.model.group_by = ["chr","pos","ref","alt"]
+    #w.on_refresh()
 
     w.show()
 

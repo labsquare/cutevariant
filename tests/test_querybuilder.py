@@ -64,6 +64,18 @@ def test_filters_to_sql():
     filter_out =  "(`variants`.`ref` = 'A' AND (`variants`.`alt` = 'C' OR `variants`.`alt` = 'C'))"
     assert querybuilder.filters_to_sql(filter_in, DEFAULT_TABLES) == filter_out
 
+def test_filters_to_vql():
+    filter_in = {'AND': [{'field': 'ref', 'operator': '=', 'value': "A"}, {'field': 'alt', 'operator': '=', 'value': "C"} ]}
+
+    assert querybuilder.filters_to_vql(filter_in) == "(ref = 'A' AND alt = 'C')"
+    
+    filter_in = {'AND':
+        [{'field': 'ref', 'operator': '=', 'value': "A"}, 
+        {'OR': 
+            [{'field': 'alt', 'operator': '=', 'value': "C"},{'field': 'alt', 'operator': '=', 'value': "C"}]}]}
+
+    assert querybuilder.filters_to_vql(filter_in) == "(ref = 'A' AND (alt = 'C' OR alt = 'C'))"
+
 
 
 QUERY_TESTS = [ 

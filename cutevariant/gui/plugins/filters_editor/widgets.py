@@ -1071,7 +1071,6 @@ class FiltersEditorWidget(plugin.PluginWidget):
     def on_filters_changed(self):
         """ triggered when filter has changed """ 
 
-        print("I AM ", self)
 
         self.mainwindow.state.filters = self.model.filters
         self.mainwindow.refresh_plugins(sender = self)
