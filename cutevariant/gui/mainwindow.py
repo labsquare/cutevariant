@@ -149,8 +149,11 @@ class MainWindow(QMainWindow):
         Args:
             sender (PluginWidget): from a plugin, you can pass "self" as argument 
         """
+
+        print("sender", sender)
         for plugin in self.plugins.values():
-            if plugin != sender:
+            if plugin is not sender:
+                print(plugin)
                 plugin.on_refresh()
 
     def refresh_plugin(self, plugin_name:str):

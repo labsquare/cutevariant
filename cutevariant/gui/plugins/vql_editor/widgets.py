@@ -34,6 +34,8 @@ from cutevariant.core.vql import VQLSyntaxError
 from cutevariant.commons import logger
 from cutevariant.core import command
 
+from cutevariant.core.querybuilder import filters_to_vql
+
 
 from cutevariant.gui.widgets import VqlEditor, VqlSyntaxHighlighter
 
@@ -101,7 +103,13 @@ class VqlEditorWidget(plugin.PluginWidget):
         vql = "SELECT "
         vql += ",".join(self.mainwindow.state.fields)
         vql += " FROM " + self.mainwindow.state.source 
-        
+
+        if self.mainwindow.state.filters:
+            vql += " WHERE" + filters_to_vql(self.mainwindow.state.filters)        
+
+        print(self.mainwindow.state.filters)
+
+
         self.set_vql(vql) 
 
 

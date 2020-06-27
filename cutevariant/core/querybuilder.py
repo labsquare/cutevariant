@@ -113,7 +113,7 @@ def filters_to_sql(filters, default_tables = {}):
         if is_field(node):
             field = node["field"]
             value = node["value"]
-            operator = node["operator"]
+            operator = node["operator"].upper()
 
             # quote string 
             if isinstance(value, str):
@@ -126,7 +126,7 @@ def filters_to_sql(filters, default_tables = {}):
             if operator == "~":
                 operator="REGEXP"
 
-            if operator == "has":
+            if operator == "HAS":
                 operator = "LIKE"
                 # replace  "'test' " =>  "'%test%' "
                 value = "'" + value.translate(str.maketrans("'\"","%%"))  + "'"
@@ -171,7 +171,38 @@ def filters_to_sql(filters, default_tables = {}):
     return recursive(filters)
 
 
+def filters_to_vql(filters):
 
+    def is_field(node):
+        return True if len(node) == 3 else False
+
+    def recursive(node):
+        if not node:
+            return ""
+
+        if is_field(node):
+            field = node["field"]
+            value = node["value"]
+            operator = node["operator"]
+
+            if type(value) == str:
+                value = f"'{value}'"
+
+            return "%s %s %s" % (field, operator, value)
+
+
+        else:
+            logic_op = list(node.keys())[0]
+              
+            out = [recursive(child) for child in node[logic_op]]
+            # print("OUT", out, "LOGIC", logic_op)
+            # OUT ["refIN'('A', 'T', 'G', 'C')'", "altIN'('A', 'T', 'G', 'C')'"]
+            # if len(out) == 1:
+            #     return f" {logic_op} ".join(out)
+            # else:
+            return "(" + f" {logic_op} ".join(out) + ")"
+
+    return recursive(filters)
 
 
 

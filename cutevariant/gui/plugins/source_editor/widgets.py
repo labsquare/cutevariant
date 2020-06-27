@@ -205,10 +205,13 @@ class SourceEditorWidget(plugin.PluginWidget):
 
     def on_refresh(self):
         #self.model.source = self.mainwindow.state.source 
+
+        self.view.selectionModel().blockSignals(True)
         self.model.load()
 
         model_index = self.model.find_record(self.mainwindow.state.source)
         self.view.setCurrentIndex(model_index)
+        self.view.selectionModel().blockSignals(False)
 
 
 

@@ -1071,8 +1071,10 @@ class FiltersEditorWidget(plugin.PluginWidget):
     def on_filters_changed(self):
         """ triggered when filter has changed """ 
 
+        print("I AM ", self)
+
         self.mainwindow.state.filters = self.model.filters
-        self.mainwindow.state.refresh_plugins(sender = self)
+        self.mainwindow.refresh_plugins(sender = self)
 
     def on_add_logic(self):
         """Add logic item to the current selected index

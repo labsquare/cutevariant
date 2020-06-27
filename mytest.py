@@ -4,6 +4,8 @@ from cutevariant.core.readerfactory import  create_reader
 from cutevariant.core.reader import FakeReader, VcfReader
 from cutevariant.core import sql, vql
 from cutevariant.core import command as cmd 
+
+from cutevariant.core.querybuilder import filters_to_vql, filters_to_sql
 import sqlite3 
 import re
 
@@ -16,20 +18,12 @@ from PySide2.QtWidgets import *
 from PySide2.QtCore import * 
 from PySide2.QtGui import * 
 
-conn = sql.get_sql_connexion(":memory:")
+
+filters = {'AND': [{'field': 'chr', 'operator': '>', 'value': '100'}]}
 
 
-reader = VcfReader(open("examples/test.snpeff.vcf"), "snpeff")
+print(filters_to_vql(filters))
 
-import_reader(conn, reader)
-
-
-cmd.execute(conn, "IMPORT sets 'examples/gene.txt' AS sacha")
-#cmd.execute(conn, "DROP sets sacha")
-
-
-
-print(cmd.execute(conn, "COUNT FROM variants WHERE ref='G'"))
 
 
 
