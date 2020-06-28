@@ -19,6 +19,7 @@ from cutevariant.core import sql, get_sql_connexion
 
 from cutevariant.gui.plugin import PluginWidget
 
+
 class VariantInfoWidget(PluginWidget):
     """Plugin to show all annotations of a selected variant"""
 
@@ -26,15 +27,14 @@ class VariantInfoWidget(PluginWidget):
         ("Classe 0", "Unclassed"),
         ("Classe 1", "Benin"),
         ("Classe 2", "Likely benin"),
-        ("Classe 3","Unsignificant variant"),
-        ("Classe 4","Probably Pathogen"),
-        ("Classe 5","Pathogen")
+        ("Classe 3", "Unsignificant variant"),
+        ("Classe 4", "Probably Pathogen"),
+        ("Classe 5", "Pathogen"),
     ]
-
 
     ENABLE = True
 
-    def __init__(self,conn = None):
+    def __init__(self, conn=None):
         super().__init__()
 
         self.conn = conn
@@ -42,83 +42,77 @@ class VariantInfoWidget(PluginWidget):
         self.setWindowTitle(self.tr("Info variants"))
 
         self.view = QTabWidget()
-        # Editor 
+        # Editor
         self.classification_box = QComboBox()
         self.favorite_checkbox = QCheckBox()
         self.comment_input = QTextEdit()
         self.save_button = QPushButton("Save")
-        for a,b in self.ACMG_CLASSIFICATION:
-            self.classification_box.addItem(a,b)
+        for a, b in self.ACMG_CLASSIFICATION:
+            self.classification_box.addItem(a, b)
 
         self.editor = QWidget()
         self.editor_layout = QVBoxLayout()
 
         self.toolbar = QToolBar()
-        self.toolbar.setIconSize(QSize(16,16))
+        self.toolbar.setIconSize(QSize(16, 16))
 
         sub_edit_layout = QFormLayout()
         sub_edit_box = QGroupBox()
-        #editor_layout.setRowWrapPolicy(QFormLayout.WrapAllRows)
+        # editor_layout.setRowWrapPolicy(QFormLayout.WrapAllRows)
         sub_edit_layout.addRow("Classification", self.classification_box)
         sub_edit_layout.addRow("Is Saved", self.favorite_checkbox)
         sub_edit_box.setLayout(sub_edit_layout)
-        #sub_edit_layout.addWidget(self.comment_input)
-        #sub_edit_layout.addWidget(self.save_button)
+        # sub_edit_layout.addWidget(self.comment_input)
+        # sub_edit_layout.addWidget(self.save_button)
 
         self.editor_layout.addWidget(sub_edit_box)
         self.editor_layout.addWidget(self.comment_input)
         self.editor_layout.addWidget(self.save_button)
 
-
         self.editor.setLayout(self.editor_layout)
         self.view.addTab(self.editor, "User")
         self.save_button.clicked.connect(self.on_save_clicked)
 
-
-        # Build variant tab 
+        # Build variant tab
         self.variant_view = QTreeWidget()
         self.variant_view.setColumnCount(2)
-        self.variant_view.setHeaderLabels(["Field","Value"])
+        self.variant_view.setHeaderLabels(["Field", "Value"])
         self.view.addTab(self.variant_view, "Variants")
-        
 
-
-        # build transcript tab 
+        # build transcript tab
         self.transcript_combo = QComboBox()
         self.transcript_view = QTreeWidget()
         self.transcript_view.setColumnCount(2)
-        self.transcript_view.setHeaderLabels(["Field","Value"])
+        self.transcript_view.setHeaderLabels(["Field", "Value"])
         tx_layout = QVBoxLayout()
         tx_layout.addWidget(self.transcript_combo)
         tx_layout.addWidget(self.transcript_view)
         tx_widget = QWidget()
         tx_widget.setLayout(tx_layout)
-        self.view.addTab(tx_widget,"Transcripts")
+        self.view.addTab(tx_widget, "Transcripts")
         self.transcript_combo.currentIndexChanged.connect(self.on_transcript_changed)
 
-        # build Samples tab 
+        # build Samples tab
         self.sample_combo = QComboBox()
         self.sample_view = QTreeWidget()
         self.sample_view.setColumnCount(2)
-        self.sample_view.setHeaderLabels(["Field","Value"])
+        self.sample_view.setHeaderLabels(["Field", "Value"])
         tx_layout = QVBoxLayout()
         tx_layout.addWidget(self.sample_combo)
         tx_layout.addWidget(self.sample_view)
         tx_widget = QWidget()
         tx_widget.setLayout(tx_layout)
-        self.view.addTab(tx_widget,"Samples")
+        self.view.addTab(tx_widget, "Samples")
         self.sample_combo.currentIndexChanged.connect(self.on_sample_changed)
 
-
-        # Build genotype tabs 
+        # Build genotype tabs
         self.genotype_view = QListWidget()
-        self.genotype_view.setIconSize(QSize(20,20))
+        self.genotype_view.setIconSize(QSize(20, 20))
         self.view.addTab(self.genotype_view, "Genotypes")
 
-    
-       # self.view.setColumnCount(2)
+        # self.view.setColumnCount(2)
         # Set title of columns
-       # self.view.setHeaderLabels([self.tr("Attributes"), self.tr("Values")])
+        # self.view.setHeaderLabels([self.tr("Attributes"), self.tr("Values")])
 
         v_layout = QVBoxLayout()
         v_layout.setContentsMargins(0, 0, 0, 0)
@@ -133,8 +127,7 @@ class VariantInfoWidget(PluginWidget):
 
         # self._variant = dict()
 
-        #self.add_tab("variants")
-
+        # self.add_tab("variants")
 
     def on_open_project(self, conn):
         self.conn = conn
@@ -147,19 +140,19 @@ class VariantInfoWidget(PluginWidget):
     def populate(self):
         """Show the current variant attributes on the TreeWidget"""
         if not self.current_variant:
-            return 
+            return
 
         if "id" not in self.current_variant:
-            return 
+            return
 
         variant_id = self.current_variant["id"]
 
-        # Populate Variants 
+        # Populate Variants
         self.variant_view.clear()
         for key, value in sql.get_one_variant(self.conn, variant_id).items():
             item = QTreeWidgetItem()
-            item.setText(0,key)
-            item.setText(1,str(value))
+            item.setText(0, key)
+            item.setText(1, str(value))
 
             if key == "classification":
                 self.classification_box.setCurrentIndex(int(value))
@@ -189,38 +182,35 @@ class VariantInfoWidget(PluginWidget):
         self.on_sample_changed()
         self.sample_combo.blockSignals(False)
 
-
-        # Populate genotype 
+        # Populate genotype
         self.genotype_view.clear()
         q = f"SELECT samples.name, sv.gt FROM samples LEFT JOIN sample_has_variant sv ON samples.id = sv.sample_id AND sv.variant_id = {variant_id}"
-        
+
         # TODO : move somewhere else
         GENOTYPES = {
-        -1: FIcon(0xF2D7),
-        0: FIcon(0xF130),
-        1: FIcon(0xFAA0),
-        2: FIcon(0xFAA4)}
+            -1: FIcon(0xF2D7),
+            0: FIcon(0xF130),
+            1: FIcon(0xFAA0),
+            2: FIcon(0xFAA4),
+        }
 
         for row in self.conn.execute(q):
-            item = QListWidgetItem() 
+            item = QListWidgetItem()
             genotype = int(row[1])
             icon = GENOTYPES[genotype]
 
             item.setText(str(row[0]))
             item.setIcon(icon)
-            
+
             self.genotype_view.addItem(item)
 
         # cur = self.conn.cursor()
         # cur.execute(q)
-       
-
 
         # for sample in sql.get_samples(self.conn):
         #     item = QTreeWidgetItem()
         #     item.setText(0, sample["name"])
         #     self.genotype_view.addTopLevelItem(item)
-
 
     @Slot()
     def on_transcript_changed(self):
@@ -233,7 +223,7 @@ class VariantInfoWidget(PluginWidget):
                 item = QTreeWidgetItem()
                 item.setText(0, key)
                 item.setText(1, str(val))
-                
+
                 self.transcript_view.addTopLevelItem(item)
 
     @Slot()
@@ -250,13 +240,12 @@ class VariantInfoWidget(PluginWidget):
                 item.setText(0, key)
                 item.setText(1, str(value))
                 self.sample_view.addTopLevelItem(item)
-        
 
     @Slot()
     def on_save_clicked(self):
         """Save button 
         """
-        classification = self.classification_box.currentIndex() 
+        classification = self.classification_box.currentIndex()
         favorite = self.favorite_checkbox.isChecked()
         comment = self.comment_input.toPlainText()
 
@@ -264,12 +253,10 @@ class VariantInfoWidget(PluginWidget):
             "id": self.current_variant["id"],
             "classification": classification,
             "favorite": favorite,
-            "comment": comment
-            }
+            "comment": comment,
+        }
 
         sql.update_variant(self.conn, updated)
-
-        
 
     def show_menu(self, pos: QPoint):
         """Show context menu associated to the current variant"""
@@ -279,11 +266,11 @@ class VariantInfoWidget(PluginWidget):
 
 
 if __name__ == "__main__":
-    import sys 
+    import sys
+
     app = QApplication(sys.argv)
 
     conn = get_sql_connexion("/home/schutz/Dev/cutevariant/examples/test.db")
-
 
     w = VariantInfoWidget()
     w.conn = conn
@@ -294,4 +281,4 @@ if __name__ == "__main__":
 
     w.show()
 
-    app.exec_() 
+    app.exec_()

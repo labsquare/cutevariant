@@ -5,7 +5,8 @@ import datetime as dt
 import tempfile
 from pkg_resources import resource_filename
 import gzip
-import io 
+import io
+
 # Misc
 MAX_RECENT_PROJECTS = 5
 MIN_COMPLETION_LETTERS = 1
@@ -45,7 +46,7 @@ def logger(name=LOGGER_NAME, logfilename=None):
 
     Equivalent of logging.getLogger() call.
     """
-    logger =  logging.getLogger(name)
+    logger = logging.getLogger(name)
     FORMAT = "[%(filename)s:%(lineno)s:%(funcName)s() ]\n %(message)s"
     logging.basicConfig(format=FORMAT)
     return logger
@@ -105,6 +106,5 @@ def get_uncompressed_size(filepath):
     """Get the size of the given compressed file
     This size is stored in the last 4 bytes of the file.
     """
-    with gzip.open(filepath, 'rb') as file_obj:
-        return file_obj.seek(0, io.SEEK_END) 
-
+    with gzip.open(filepath, "rb") as file_obj:
+        return file_obj.seek(0, io.SEEK_END)

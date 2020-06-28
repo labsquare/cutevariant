@@ -33,10 +33,12 @@ import re
 # Custom imports
 import cutevariant.commons as cm
 import logging
+
 LOGGER = cm.logger()
 
 
 ## ================ Misc functions ====================================
+
 
 def get_sql_connexion(filepath):
     """Open a SQLite database and return the connexion object
@@ -55,15 +57,15 @@ def get_sql_connexion(filepath):
     LOGGER.debug("get_sql_connexion:: foreign_keys state: %s", foreign_keys_status)
     assert foreign_keys_status == 1, "Foreign keys can't be activated :("
 
-    # Create function for sqlite 
+    # Create function for sqlite
     def regexp(expr, item):
         reg = re.compile(expr)
         return reg.search(item) is not None
 
     connexion.create_function("REGEXP", 2, regexp)
 
-
     return connexion
+
 
 def drop_table(conn, table_name):
     """Drop the given table
@@ -75,6 +77,7 @@ def drop_table(conn, table_name):
     cursor = conn.cursor()
     cursor.execute(f"DROP TABLE IF EXISTS {table_name}")
     conn.commit()
+
 
 def clear_table(conn: sqlite3.Connection, table_name):
     """Clear content of the given table
@@ -135,6 +138,7 @@ def create_indexes(conn: sqlite3.Connection):
 
 ## ================ PROJECT TABLE ===================================
 
+
 def create_project(conn: sqlite3.Connection, name: str, reference: str):
     """Create the table "projects" and insert project name and reference genome
 
@@ -156,15 +160,19 @@ def create_project(conn: sqlite3.Connection, name: str, reference: str):
     )
     conn.commit()
 
+
 def create_table_metadatas(conn: sqlite3.Connection):
     """Create table metdata
     
     Args:
         conn (sqlite3.Connection): Description
     """
-    cursor = conn.execute("""CREATE TABLE metadatas (id INTEGER PRIMARY KEY, key TEXT, value TEXT)""")
+    cursor = conn.execute(
+        """CREATE TABLE metadatas (id INTEGER PRIMARY KEY, key TEXT, value TEXT)"""
+    )
 
-def insert_many_metadatas(conn : sqlite3.Connection, metadatas = {}):
+
+def insert_many_metadatas(conn: sqlite3.Connection, metadatas={}):
     """Insert metadata 
     
     Args:
@@ -182,11 +190,10 @@ def insert_many_metadatas(conn : sqlite3.Connection, metadatas = {}):
         conn.commit()
 
 
-
-
 ## ================ SELECTION TABLE ===================================
 
-def create_table_selections(conn:sqlite3.Connection):
+
+def create_table_selections(conn: sqlite3.Connection):
     """Create the table "selections" and association table "selection_has_variant"
 
     This table stores variants selection saved by the user:
@@ -283,6 +290,7 @@ def insert_selection(conn, query: str, name="no_name", count=0):
         conn.commit()
     return cursor.lastrowid
 
+
 def delete_selection_by_name(conn: sqlite3.Connection, name: str):
     """Delete selection from name
 
@@ -301,6 +309,7 @@ def delete_selection_by_name(conn: sqlite3.Connection, name: str):
     cursor = conn.cursor()
     cursor.execute(f"DELETE FROM selections WHERE name = ?", (name,))
     conn.commit()
+
 
 def create_selection_from_sql(
     conn: sqlite3.Connection, query: str, name: str, count=None, from_selection=False
@@ -364,7 +373,9 @@ def create_selection_from_sql(
     return None
 
 
-def create_selection_from_bed(conn: sqlite3.Connection, source: str, target: str, bed_intervals):
+def create_selection_from_bed(
+    conn: sqlite3.Connection, source: str, target: str, bed_intervals
+):
     """Create a new selection based on the given intervals taken from a BED file
 
     Args:
@@ -397,16 +408,8 @@ def create_selection_from_bed(conn: sqlite3.Connection, source: str, target: str
 
         cur.execute(
             "INSERT INTO bed_table (bin, chr, start, end, name) VALUES (?,?,?,?,?)",
-            (
-                0,
-                interval["chr"],
-                interval["start"],
-                interval["end"],
-                interval["name"],
-            ),
+            (0, interval["chr"], interval["start"], interval["end"], interval["name"]),
         )
-
-
 
     if source == "variants":
         source_query = "SELECT variants.id as variant_id FROM variants"
@@ -427,7 +430,6 @@ def create_selection_from_bed(conn: sqlite3.Connection, source: str, target: str
                 variants.pos >= bed_table.start AND 
                 variants.pos <= bed_table.end """
     )
-
 
     return create_selection_from_sql(conn, query, target, from_selection=True)
 
@@ -468,7 +470,7 @@ def delete_selection(conn: sqlite3.Connection, selection_id: int):
     return cursor.rowcount
 
 
-def edit_selection(conn:sqlite3.Connection, selection: dict):
+def edit_selection(conn: sqlite3.Connection, selection: dict):
     """Update the name and count of a selection with the given id
 
     Args:
@@ -485,9 +487,11 @@ def edit_selection(conn:sqlite3.Connection, selection: dict):
     conn.commit()
     return cursor.rowcount
 
+
 ## ================ Create sets tables =========================================
 
-def create_table_sets(conn:sqlite3.Connection):
+
+def create_table_sets(conn: sqlite3.Connection):
     """Create the table "sets" 
     
     This table stores variants selection saved by the user:
@@ -509,19 +513,25 @@ def create_table_sets(conn:sqlite3.Connection):
 
     conn.commit()
 
-def insert_set_from_file(conn: sqlite3.Connection, name,  filename):
 
-    cursor = conn.cursor() 
+def insert_set_from_file(conn: sqlite3.Connection, name, filename):
+
+    cursor = conn.cursor()
 
     with open(filename) as file:
-        cursor.executemany("""INSERT INTO sets (name, value) VALUES (?,?)""", ((name, i.strip()) for i in file))
-    
+        cursor.executemany(
+            """INSERT INTO sets (name, value) VALUES (?,?)""",
+            ((name, i.strip()) for i in file),
+        )
+
     conn.commit()
 
 
 def get_sets(conn):
-    """ Get sets """ 
-    for row in conn.execute("SELECT name , COUNT(*) as 'count' FROM sets GROUP BY name"):
+    """ Get sets """
+    for row in conn.execute(
+        "SELECT name , COUNT(*) as 'count' FROM sets GROUP BY name"
+    ):
         yield dict(row)
 
 
@@ -772,7 +782,6 @@ def create_table_annotations(conn, fields):
     cursor = conn.cursor()
     # TODO: no primary key/unique index for this table?
 
-
     cursor.execute(
         f"""CREATE TABLE annotations (variant_id INTEGER NOT NULL, {schema})"""
     )
@@ -880,6 +889,7 @@ def get_one_variant(conn, id: int):
         conn.execute(f"""SELECT * FROM variants WHERE variants.id = {id}""").fetchone()
     )
 
+
 def update_variant(conn, variant: dict):
     """ Update variant data """
 
@@ -890,9 +900,12 @@ def update_variant(conn, variant: dict):
             sql_set.append(f"`{key}` = ? ")
             sql_val.append(value)
 
-    query = "UPDATE variants SET " + ",".join(sql_set) + " WHERE id = " + str(variant["id"])
+    query = (
+        "UPDATE variants SET " + ",".join(sql_set) + " WHERE id = " + str(variant["id"])
+    )
     conn.execute(query, sql_val)
     conn.commit()
+
 
 def get_annotations(conn, id: int):
     """ Get variant annotation with the given id """
@@ -1154,7 +1167,7 @@ def create_table_samples(conn, fields=None):
     )
 
     if not fields:
-        schema = 'gt INTEGER DEFAULT -1'
+        schema = "gt INTEGER DEFAULT -1"
 
     cursor.execute(
         f"""CREATE TABLE sample_has_variant  (
@@ -1210,6 +1223,7 @@ def get_samples(conn):
     conn.row_factory = sqlite3.Row
     return (dict(data) for data in conn.execute("""SELECT * FROM samples"""))
 
+
 def update_sample(conn, sample: dict):
     """Update sample record
 
@@ -1240,17 +1254,16 @@ def update_sample(conn, sample: dict):
             sql_set.append(f"`{key}` = ? ")
             sql_val.append(value)
 
-    query = "UPDATE samples SET " + ",".join(sql_set) + " WHERE id = " + str(sample["id"])
+    query = (
+        "UPDATE samples SET " + ",".join(sql_set) + " WHERE id = " + str(sample["id"])
+    )
     conn.execute(query, sql_val)
     conn.commit()
 
+
 def count_query(conn, query):
-    """ count from query """ 
-    return conn.execute(
-        f"SELECT COUNT(*) as count FROM ({query})"
-    ).fetchone()[0]
+    """ count from query """
+    return conn.execute(f"SELECT COUNT(*) as count FROM ({query})").fetchone()[0]
 
 
-
-
-#======================== execute commande ======================================
+# ======================== execute commande ======================================

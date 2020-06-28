@@ -1,20 +1,19 @@
-
 ## ================= Settings widgets ===================
 
 from cutevariant.gui.plugin import PluginSettingsWidget
 from cutevariant.gui.settings import BaseWidget
 from cutevariant.gui import FIcon
 
-from PySide2.QtCore import * 
-from PySide2.QtGui import * 
-from PySide2.QtWidgets import * 
+from PySide2.QtCore import *
+from PySide2.QtGui import *
+from PySide2.QtWidgets import *
 
 
 class LinkSettings(BaseWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Link"))
-        self.setWindowIcon(FIcon(0xf339))
+        self.setWindowIcon(FIcon(0xF339))
         self.view = QListWidget()
         self.add_button = QPushButton(self.tr("Add"))
         self.edit_button = QPushButton(self.tr("Edit"))
@@ -38,7 +37,6 @@ class LinkSettings(BaseWidget):
         self.view.itemDoubleClicked.connect(self.add_url)
         self.remove_button.clicked.connect(self.remove_item)
 
-
     def save(self):
         """Override from BaseSettings """
         settings = QSettings()
@@ -52,7 +50,6 @@ class LinkSettings(BaseWidget):
             settings.setValue(name, url)
         settings.endGroup()
 
-
     def load(self):
         """Override from BaseSettings """
         settings = QSettings()
@@ -63,12 +60,11 @@ class LinkSettings(BaseWidget):
 
         settings.endGroup()
 
-
     def add_list_widget_item(self, db_name: str, url: str):
         """Add an item to the QListWidget of the current view"""
         # Key is the name of the database, value is its url
         item = QListWidgetItem(db_name)
-        item.setIcon(FIcon(0xf339))
+        item.setIcon(FIcon(0xF339))
         item.setData(Qt.UserRole, str(url))
         item.setToolTip(str(url))
         self.view.addItem(item)
@@ -140,8 +136,6 @@ class LinkSettings(BaseWidget):
 class QueryViewSettingsWidget(PluginSettingsWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowIcon(FIcon(0xf503))
+        self.setWindowIcon(FIcon(0xF503))
         self.setWindowTitle("Variant view")
         self.add_settings_widget(LinkSettings())
-
-        

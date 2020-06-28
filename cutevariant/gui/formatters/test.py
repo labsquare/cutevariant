@@ -10,5 +10,5 @@ class TestFormatter(Formatter):
     def get_background(self, column, value):
         if column == "alt" and value == "A":
             return QColor("green")
-        
+
         return None

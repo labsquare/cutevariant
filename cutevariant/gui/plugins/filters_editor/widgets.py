@@ -269,7 +269,7 @@ class GenotypeField(BaseField):
         -1: FIcon(0xF2D7),
         0: FIcon(0xF130),
         1: FIcon(0xFAA0),
-        2: FIcon(0xFAA4)
+        2: FIcon(0xFAA4),
     }
 
     def __init__(self, parent=None):
@@ -1051,7 +1051,6 @@ class FilterDelegate(QStyledItemDelegate):
         editor.setGeometry(option.rect)
 
 
-
 class FiltersEditorWidget(plugin.PluginWidget):
 
     ENABLE = True
@@ -1073,10 +1072,10 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.view.setDragDropMode(QAbstractItemView.InternalMove)
         self.view.setAlternatingRowColors(True)
 
-        self.view.header().setSectionResizeMode(0,QHeaderView.Stretch)
-        self.view.header().setSectionResizeMode(1,QHeaderView.ResizeToContents)
-        self.view.header().setSectionResizeMode(2,QHeaderView.Interactive)
-        self.view.header().hide() 
+        self.view.header().setSectionResizeMode(0, QHeaderView.Stretch)
+        self.view.header().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        self.view.header().setSectionResizeMode(2, QHeaderView.Interactive)
+        self.view.header().hide()
 
         layout = QVBoxLayout()
         layout.addWidget(self.view)
@@ -1110,7 +1109,6 @@ class FiltersEditorWidget(plugin.PluginWidget):
         # self.view.selectionModel().currentChanged.connect(self.on_filters_changed)
         self.model.filtersChanged.connect(self.on_filters_changed)
 
-
     @property
     def filters(self):
         return self.model.filters
@@ -1130,17 +1128,15 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.on_refresh()
 
     def on_refresh(self):
-        """ Overrided """ 
+        """ Overrided """
         self.model.filters = self.mainwindow.state.filters
-
 
     def on_filters_changed(self):
 
-        """ triggered when filter has changed """ 
-
+        """ triggered when filter has changed """
 
         self.mainwindow.state.filters = self.model.filters
-        self.mainwindow.refresh_plugins(sender = self)
+        self.mainwindow.refresh_plugins(sender=self)
 
     def on_add_logic(self):
         """Add logic item to the current selected index
@@ -1214,7 +1210,6 @@ if __name__ == "__main__":
 
     from cutevariant.core.importer import import_reader
     from cutevariant.core.reader import FakeReader
-
 
     conn = sql.get_sql_connexion(":memory:")
     import_reader(conn, FakeReader())

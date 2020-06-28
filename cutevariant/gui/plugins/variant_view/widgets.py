@@ -1,9 +1,8 @@
-
 import re
 
 from cutevariant.core import command as cmd
-from cutevariant.core import vql 
-import  cutevariant.commons as cm
+from cutevariant.core import vql
+import cutevariant.commons as cm
 
 from cutevariant.gui import plugin, FIcon
 from cutevariant.gui import formatter
@@ -13,6 +12,7 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 
 LOGGER = cm.logger()
+
 
 class VariantModel(QAbstractTableModel):
     """
@@ -45,8 +45,8 @@ class VariantModel(QAbstractTableModel):
         self.source = "variants"
         self.group_by = []
         self.order_by = None
-        self.order_desc = True 
-        # Keep after all initialization 
+        self.order_desc = True
+        # Keep after all initialization
         self.conn = conn
 
     @property
@@ -77,7 +77,6 @@ class VariantModel(QAbstractTableModel):
 
         return len(self.variants)
 
-   
     def columnCount(self, parent=QModelIndex()):
         """Overrided: Return column count of parent . 
 
@@ -103,7 +102,7 @@ class VariantModel(QAbstractTableModel):
             return None
 
         if self.variants and self.headers:
-        
+
             column_name = self.headers[index.column()]
 
             #  ---- Display Role ----
@@ -116,10 +115,8 @@ class VariantModel(QAbstractTableModel):
                 if role in self.formatter.supported_role():
                     value = self.data(index, Qt.DisplayRole)
                     return self.formatter.item_data(column_name, value, role)
-                
-        
-        return None
 
+        return None
 
     def headerData(self, section, orientation, role=Qt.DisplayRole):
         """Overrided: Return column name 
@@ -136,14 +133,13 @@ class VariantModel(QAbstractTableModel):
 
          """
 
-        #Display columns headers
+        # Display columns headers
         if orientation == Qt.Horizontal:
             if role == Qt.DisplayRole:
                 return self.headers[section]
         return None
 
-
-    def load(self, emit_changed = True, reset_page=False):
+    def load(self, emit_changed=True, reset_page=False):
         """Load variant data into the model from query attributes
 
         Args:
@@ -159,31 +155,32 @@ class VariantModel(QAbstractTableModel):
 
         self.beginResetModel()
 
-
         offset = self.page * self.limit
 
         self.variants.clear()
 
-        self.variants = list(cmd.select_cmd(self.conn,
-            fields = self.fields,
-            source = self.source,
-            filters = self.filters,
-            limit= self.limit,
-            offset = offset,
-            order_desc = self.order_desc,
-            order_by= self.order_by, 
-            group_by = self.group_by
-            ))
+        self.variants = list(
+            cmd.select_cmd(
+                self.conn,
+                fields=self.fields,
+                source=self.source,
+                filters=self.filters,
+                limit=self.limit,
+                offset=offset,
+                order_desc=self.order_desc,
+                order_by=self.order_by,
+                group_by=self.group_by,
+            )
+        )
 
         if self.variants:
             self.headers = list(self.variants[0].keys())
-
 
         self.endResetModel()
 
         if emit_changed:
             self.changed.emit()
-            #Probably need to compute total 
+            # Probably need to compute total
             self.total = cmd.count_cmd(self.conn, self.source, self.filters)["count"]
 
     def load_from_vql(self, vql):
@@ -195,7 +192,7 @@ class VariantModel(QAbstractTableModel):
                 self.source = vql_object["source"]
                 self.filters = vql_object["filters"]
         except:
-            pass 
+            pass
         else:
             self.load()
 
@@ -208,7 +205,7 @@ class VariantModel(QAbstractTableModel):
         print("set page ")
         if self.hasPage(page):
             self.page = page
-            self.load(emit_changed = False)
+            self.load(emit_changed=False)
 
     def nextPage(self):
         """ Set model to the next page """
@@ -229,9 +226,8 @@ class VariantModel(QAbstractTableModel):
         self.setPage(self.pageCount())
 
     def pageCount(self):
-        """ Return total page count """ 
-        return int(self.total / self.limit)        
-
+        """ Return total page count """
+        return int(self.total / self.limit)
 
     def sort(self, column: int, order):
         """Overrided: Sort data by specified column 
@@ -245,7 +241,7 @@ class VariantModel(QAbstractTableModel):
 
             self.order_by = colname
             self.order_desc = order == Qt.DescendingOrder
-            self.load(emit_changed = False)
+            self.load(emit_changed=False)
 
     def displayed(self):
         """Get ids of first, last displayed variants on the total number
@@ -264,80 +260,76 @@ class VariantModel(QAbstractTableModel):
 
         return (first_id, last_id, self.total)
 
-    def variant(self, row : int) -> dict:
-    #     """ Return variant data according index 
+    def variant(self, row: int) -> dict:
+        #     """ Return variant data according index
 
         return self.variants[row]
 
 
-
 # class QueryDelegate(QStyledItemDelegate):
 
-    # pass
-    # """
-    # This class specify the aesthetic of the view
-    # styles and color of each variant displayed in the view are setup here
+# pass
+# """
+# This class specify the aesthetic of the view
+# styles and color of each variant displayed in the view are setup here
 
-    # """
+# """
 
-    # def background_color_index(self, index):
-        # """ return background color of index """
+# def background_color_index(self, index):
+# """ return background color of index """
 
-        # base_brush = qApp.palette("QTableView").brush(QPalette.Base)
-        # alternate_brush = qApp.palette("QTableView").brush(QPalette.AlternateBase)
+# base_brush = qApp.palette("QTableView").brush(QPalette.Base)
+# alternate_brush = qApp.palette("QTableView").brush(QPalette.AlternateBase)
 
-        # if index.parent() == QModelIndex():
-            # if index.row() % 2:
-                # return base_brush
-            # else:
-                # return alternate_brush
+# if index.parent() == QModelIndex():
+# if index.row() % 2:
+# return base_brush
+# else:
+# return alternate_brush
 
-        # if index.parent().parent() == QModelIndex():
-            # return self.background_color_index(index.parent())
+# if index.parent().parent() == QModelIndex():
+# return self.background_color_index(index.parent())
 
-        # return base_brush
+# return base_brush
 
-    # def paint(self, painter, option, index):
-        
-
-        # return super().paint(painter, option, index)
+# def paint(self, painter, option, index):
 
 
-    # def sizeHint(self, option, index):
-        # """Override: Return row height"""
-
-        # size = super().sizeHint(option, index)
-        # size.setHeight(30)
-        # return size
+# return super().paint(painter, option, index)
 
 
-        # super().__init__()
+# def sizeHint(self, option, index):
+# """Override: Return row height"""
+
+# size = super().sizeHint(option, index)
+# size.setHeight(30)
+# return size
 
 
+# super().__init__()
 
 
+# def focusInEvent(self, event: QFocusEvent):
+#     self.setStyleSheet("QTableView{ border: 1px solid palette(highlight)}")
+#     self.focusChanged.emit(True)
 
-    # def focusInEvent(self, event: QFocusEvent):
-    #     self.setStyleSheet("QTableView{ border: 1px solid palette(highlight)}")
-    #     self.focusChanged.emit(True)
-
-    # def focusOutEvent(self, event: QFocusEvent):
-    #     self.setStyleSheet("QTableView{ border: 1px solid palette(shadow)}")
-    #     self.focusChanged.emit(False)
+# def focusOutEvent(self, event: QFocusEvent):
+#     self.setStyleSheet("QTableView{ border: 1px solid palette(shadow)}")
+#     self.focusChanged.emit(False)
 
 
 class VariantView(QWidget):
 
     view_clicked = Signal()
 
-    def __init__(self, parent = None):
+    def __init__(self, parent=None):
         super().__init__()
 
         self.view = QTableView()
         self.model = VariantModel()
 
         self.view.setModel(self.model)
-        #self.view.setFrameStyle(QFrame.NoFrame)
+        # self.view.setFrameStyle(QFrame.NoFrame)
         self.view.setAlternatingRowColors(True)
         self.view.horizontalHeader().setStretchLastSection(True)
         self.view.setSelectionMode(QAbstractItemView.SingleSelection)
@@ -350,31 +342,24 @@ class VariantView(QWidget):
         self.view.setIconSize(QSize(22, 22))
 
         self.view.setModel(self.model)
-        #self.view.setItemDelegate(self.delegate)
+        # self.view.setItemDelegate(self.delegate)
 
         main_layout = QVBoxLayout()
-        main_layout.setContentsMargins(0,0,0,0)
+        main_layout.setContentsMargins(0, 0, 0, 0)
 
-   
         main_layout.addWidget(self.view)
         self.setLayout(main_layout)
 
-        # broadcast focus signal 
-
-
+        # broadcast focus signal
 
         self.view.viewport().installEventFilter(self)
 
-
-    def eventFilter(self, obj: QObject, event : QEvent):
+    def eventFilter(self, obj: QObject, event: QEvent):
 
         if event.type() == QEvent.MouseButtonPress:
             self.view_clicked.emit()
 
         return super().eventFilter(obj, event)
-        
-
-
 
 
 class VariantViewWidget(plugin.PluginWidget):
@@ -385,8 +370,7 @@ class VariantViewWidget(plugin.PluginWidget):
 
     ENABLE = True
 
-
-    def __init__(self, parent = None):
+    def __init__(self, parent=None):
         super().__init__(parent)
 
         self.splitter = QSplitter(Qt.Vertical)
@@ -397,45 +381,41 @@ class VariantViewWidget(plugin.PluginWidget):
         self.sub_view = VariantView()
         self.sub_view.hide()
 
-
         self.splitter.addWidget(self.main_view)
         self.splitter.addWidget(self.sub_view)
 
         self.current_view = self.main_view
 
-
         self.page_box = QComboBox()
         self.page_box.setEditable(True)
         self.page_box.setValidator(QIntValidator())
         self.page_box.setFixedWidth(50)
-        #self.page_box.setAlignment(Qt.AlignHCenter)
-        #self.page_box.setStyleSheet("QWidget{background-color: transparent;}")
-        #self.page_box.("0")
+        # self.page_box.setAlignment(Qt.AlignHCenter)
+        # self.page_box.setStyleSheet("QWidget{background-color: transparent;}")
+        # self.page_box.("0")
         self.page_box.setFrame(QFrame.NoFrame)
-        
+
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        
 
-        # topbar 
+        # topbar
         self.top_bar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-        self.group_action = self.top_bar.addAction(FIcon(0XF14E0), "Group by",  self.on_group_clicked)
+        self.group_action = self.top_bar.addAction(
+            FIcon(0xF14E0), "Group by", self.on_group_clicked
+        )
         self.group_action.setCheckable(True)
 
-
-        self.bottom_bar.addWidget(spacer)     
+        self.bottom_bar.addWidget(spacer)
         self.bottom_bar.setIconSize(QSize(16, 16))
         self.bottom_bar.setMaximumHeight(30)
         self.bottom_bar.setContentsMargins(0, 0, 0, 0)
 
-
         self.bottom_bar.addAction(FIcon(0xF0600), "<<", self.on_page_clicked)
-        self.bottom_bar.addAction(FIcon(0xF0141), "<",  self.on_page_clicked)
+        self.bottom_bar.addAction(FIcon(0xF0141), "<", self.on_page_clicked)
         self.bottom_bar.addWidget(self.page_box)
-        self.bottom_bar.addAction(FIcon(0xF0142), ">",  self.on_page_clicked)
+        self.bottom_bar.addAction(FIcon(0xF0142), ">", self.on_page_clicked)
         self.bottom_bar.addAction(FIcon(0xF0601), ">>", self.on_page_clicked)
-        #self.page_box.returnPressed.connect()
-
+        # self.page_box.returnPressed.connect()
 
         self.main_view.view.clicked.connect(self.on_variant_clicked)
 
@@ -444,65 +424,65 @@ class VariantViewWidget(plugin.PluginWidget):
 
         self.page_box.currentTextChanged.connect(self.on_page_changed)
 
-
-        # setup layout 
-        main_layout  = QVBoxLayout()
+        #  setup layout
+        main_layout = QVBoxLayout()
 
         main_layout.addWidget(self.top_bar)
         main_layout.addWidget(self.splitter)
         main_layout.addWidget(self.bottom_bar)
 
         self.setLayout(main_layout)
-        
+
     def on_view_clicked(self):
 
         view = self.sender()
-        
+
         if view != self.current_view:
-            self.current_view = view 
+            self.current_view = view
             self.update_current_view()
 
-
     def update_current_view(self):
-        """ Update style and bottom bar when current view changed """ 
+        """ Update style and bottom bar when current view changed """
 
         if self.current_view == self.main_view:
             other = self.sub_view
         else:
             other = self.main_view
 
-        self.current_view.setStyleSheet("QTableView{ border: 1px solid palette(highlight)}")
+        self.current_view.setStyleSheet(
+            "QTableView{ border: 1px solid palette(highlight)}"
+        )
         other.setStyleSheet("QTableView{ border: 1px solid palette(shadow)}")
 
-        # Update page count 
+        #  Update page count
         self.update_page_control()
 
-
     def update_page_control(self):
-        """ Update page control like previous, next according page Count """         
+        """ Update page control like previous, next according page Count """
         self.page_box.clear()
-        self.page_box.addItems([str(i) for i in range(self.current_view.model.pageCount())])
-        
+        self.page_box.addItems(
+            [str(i) for i in range(self.current_view.model.pageCount())]
+        )
+
         enabled = True if self.current_view.model.pageCount() > 1 else False
 
         for action in self.bottom_bar.actions():
-            if action.text() in ("<<",">>","<",">"):
+            if action.text() in ("<<", ">>", "<", ">"):
                 action.setEnabled(enabled)
-
 
     def on_page_clicked(self):
 
         action_text = self.sender().text()
 
         if action_text == "<<":
-            fct = self.current_view.model.firstPage 
+            fct = self.current_view.model.firstPage
 
         if action_text == ">>":
             fct = self.current_view.model.lastPage
-            
+
         if action_text == "<":
-            fct = self.current_view.model.previousPage 
-            
+            fct = self.current_view.model.previousPage
+
         if action_text == ">":
             fct = self.current_view.model.nextPage
 
@@ -515,8 +495,8 @@ class VariantViewWidget(plugin.PluginWidget):
         self.current_view.model.setPage(page)
         self.current_view.setFocus(Qt.OtherFocusReason)
 
-    def on_open_project(self,conn):
-        self.conn = conn 
+    def on_open_project(self, conn):
+        self.conn = conn
         self.main_view.model.conn = self.conn
         self.sub_view.model.conn = self.conn
 
@@ -524,9 +504,8 @@ class VariantViewWidget(plugin.PluginWidget):
 
     def on_refresh(self):
 
-
-        self.main_view.model.fields = self.mainwindow.state.fields 
-        self.main_view.model.fields = self.mainwindow.state.fields 
+        self.main_view.model.fields = self.mainwindow.state.fields
+        self.main_view.model.fields = self.mainwindow.state.fields
         self.main_view.model.source = self.mainwindow.state.source
         self.main_view.model.filters = self.mainwindow.state.filters
 
@@ -535,12 +514,11 @@ class VariantViewWidget(plugin.PluginWidget):
         self.main_view.model.load()
         self.update_current_view()
 
-
     def on_group_clicked(self):
 
         if self.group_action.isChecked():
             self.sub_view.setVisible(True)
-            self.main_view.model.group_by = ["chr","pos","ref","alt"]
+            self.main_view.model.group_by = ["chr", "pos", "ref", "alt"]
             self.on_refresh()
 
         else:
@@ -548,48 +526,42 @@ class VariantViewWidget(plugin.PluginWidget):
             self.main_view.model.group_by = []
             self.on_refresh()
 
-
-
     def on_variant_clicked(self, index: QModelIndex):
-        
+
         variant = self.main_view.model.variant(index.row())
 
         self.sub_view.model.fields = self.main_view.model.fields
         self.sub_view.model.source = self.main_view.model.source
-        self.sub_view.model.filters =   {"AND": [ {"field": "id", "operator": "=", "value": variant["id"]}]}
+        self.sub_view.model.filters = {
+            "AND": [{"field": "id", "operator": "=", "value": variant["id"]}]
+        }
 
         self.sub_view.model.load()
 
         print("done")
 
 
-
-
-
 if __name__ == "__main__":
     import sys
-    from PySide2.QtWidgets import QApplication 
+    from PySide2.QtWidgets import QApplication
     from cutevariant.core.importer import import_file, import_reader
     from cutevariant.core.reader import FakeReader, VcfReader
     from cutevariant.core import sql
 
     app = QApplication(sys.argv)
 
-
     conn = sql.get_sql_connexion(":memory:")
-    reader = VcfReader(open("/home/sacha/Dev/cutevariant/examples/test.snpeff.vcf"), "snpeff")
+    reader = VcfReader(
+        open("/home/sacha/Dev/cutevariant/examples/test.snpeff.vcf"), "snpeff"
+    )
     import_reader(conn, reader)
 
     w = VariantViewWidget()
 
-
-
-    #w.on_open_project(conn)
-    #w.main_view.model.group_by = ["chr","pos","ref","alt"]
-    #w.on_refresh()
+    # w.on_open_project(conn)
+    # w.main_view.model.group_by = ["chr","pos","ref","alt"]
+    # w.on_refresh()
 
     w.show()
 
     app.exec_()
-
-

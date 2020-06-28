@@ -9,15 +9,15 @@ import os
 import importlib
 import pkgutil
 
-# cutevariant import 
+#  cutevariant import
 from cutevariant.gui import settings
 
-DOCK_LOCATION = 1 
-CENTRAL_LOCATION = 2 
+DOCK_LOCATION = 1
+CENTRAL_LOCATION = 2
 FOOTER_LOCATION = 3
 
 
-def snake_to_camel(name:str) -> str:
+def snake_to_camel(name: str) -> str:
     """Convert snake case to camel case
     
     Args:
@@ -30,20 +30,17 @@ def snake_to_camel(name:str) -> str:
     return "".join([i.capitalize() for i in name.split("_")])
 
 
-
-
 class PluginWidget(QWidget):
 
     LOCATION = DOCK_LOCATION
     ENABLE = False
 
-    def __init__(self, parent = None):
+    def __init__(self, parent=None):
         super().__init__(parent)
         self.mainwindow = None
         self.widget_location = DOCK_LOCATION
 
-        self.refresh_groups = [] # TODO 
-
+        self.refresh_groups = []  #  TODO
 
     def on_register(self, mainwindow):
         """This method is called when the mainwindow is build 
@@ -62,12 +59,10 @@ class PluginWidget(QWidget):
         """
         pass
 
-
     def on_close(self):
         """This methods is called when the mainwindow close
         """
         pass
-
 
     def on_refresh(self):
         """This methods is called to refresh the gui 
@@ -75,12 +70,11 @@ class PluginWidget(QWidget):
         This is called by the mainwindow.controller::refresh methods 
 
         """
-        pass 
-
+        pass
 
 
 class PluginSettingsWidget(settings.GroupWidget):
-    def __init__(self, parent = None):
+    def __init__(self, parent=None):
         super().__init__(parent)
 
 
@@ -104,11 +98,13 @@ def find_plugins(path=None):
     plugins = []
     for package in pkgutil.iter_modules([plugin_path]):
         package_path = os.path.join(plugin_path, package.name)
-        spec = importlib.util.spec_from_file_location(package.name, os.path.join(package_path, "__init__.py"))
+        spec = importlib.util.spec_from_file_location(
+            package.name, os.path.join(package_path, "__init__.py")
+        )
         module = spec.loader.load_module()
 
         widget_class_name = snake_to_camel(package.name) + "Widget"
-        settings_class_name = snake_to_camel(package.name)+ "SettingsWidget"
+        settings_class_name = snake_to_camel(package.name) + "SettingsWidget"
 
         item = {}
         item["name"] = module.__name__
@@ -117,20 +113,28 @@ def find_plugins(path=None):
 
         for sub_module_info in pkgutil.iter_modules([package_path]):
             if sub_module_info.name in ("widgets", "settings"):
-                sub_module_path = os.path.join(sub_module_info.module_finder.path, sub_module_info.name +".py")
-                spec = importlib.util.spec_from_file_location(sub_module_info.name,sub_module_path )
+                sub_module_path = os.path.join(
+                    sub_module_info.module_finder.path, sub_module_info.name + ".py"
+                )
+                spec = importlib.util.spec_from_file_location(
+                    sub_module_info.name, sub_module_path
+                )
                 sub_module = spec.loader.load_module()
 
-                if widget_class_name in dir(sub_module) and sub_module_info.name == "widgets":
+                if (
+                    widget_class_name in dir(sub_module)
+                    and sub_module_info.name == "widgets"
+                ):
                     Widget = getattr(sub_module, widget_class_name)
                     if "PluginWidget" in str(Widget.__bases__):
                         item["widget"] = Widget
 
-                if settings_class_name in dir(sub_module) and sub_module_info.name == "settings":
+                if (
+                    settings_class_name in dir(sub_module)
+                    and sub_module_info.name == "settings"
+                ):
                     Widget = getattr(sub_module, settings_class_name)
                     if "PluginSettingsWidget" in str(Widget.__bases__):
                         item["setting"] = Widget
-       
-        
-        yield item
 
+        yield item

@@ -1,7 +1,8 @@
 from abc import ABC, abstractclassmethod
-import os 
+import os
 from collections import Counter
-import cutevariant.commons as cm 
+import cutevariant.commons as cm
+
 
 class AbstractReader(ABC):
     """Base class for all Readers required to import variants into the database.
@@ -26,7 +27,6 @@ class AbstractReader(ABC):
         self.file_size = self.compute_total_size()
         self.read_bytes = 0
 
-  
     @abstractclassmethod
     def get_variants(self):
         """Abstract method must return variants as an iterable of dictionnaries.
@@ -108,30 +108,69 @@ class AbstractReader(ABC):
     def get_metadatas(self) -> dict:
         """ Get meta data 
         Override this method to have meta data in sqlite database 
-        """ 
+        """
         return {}
-
 
     def get_extra_fields(self):
         """Yield fields with extra mandatory fields like 'comment' and 'score'
         """
-        yield {"name": "favorite", "type": "bool", "category": "variants", "description": "is favorite"}
-        yield {"name": "comment", "type": "str", "category": "variants", "description": "Variant comment"}
-        yield {"name": "classification", "type": "int", "category": "variants", "description": "ACMG score"}
-        
-        yield {"name": "is_major", "type": "bool", "category": "annotations", "description": "is a major transcript"}
+        yield {
+            "name": "favorite",
+            "type": "bool",
+            "category": "variants",
+            "description": "is favorite",
+        }
+        yield {
+            "name": "comment",
+            "type": "str",
+            "category": "variants",
+            "description": "Variant comment",
+        }
+        yield {
+            "name": "classification",
+            "type": "int",
+            "category": "variants",
+            "description": "ACMG score",
+        }
 
-        yield {"name": "count_hom", "type": "int", "category": "variants", "description": "Count number of homozygous genotypes (1/1)"}
-        yield {"name": "count_het", "type": "int", "category": "variants", "description": "Count number of heterozygous genotypes (0/1)"}
-        yield {"name": "count_ref", "type": "int", "category": "variants", "description": "Count number of homozygous genotypes (0/0)"}
-        yield {"name": "count_var", "type": "int", "category": "variants", "description": "Count number of variant ( not 0/0)"}
+        yield {
+            "name": "is_major",
+            "type": "bool",
+            "category": "annotations",
+            "description": "is a major transcript",
+        }
 
-        # avoid duplicates fields ... 
+        yield {
+            "name": "count_hom",
+            "type": "int",
+            "category": "variants",
+            "description": "Count number of homozygous genotypes (1/1)",
+        }
+        yield {
+            "name": "count_het",
+            "type": "int",
+            "category": "variants",
+            "description": "Count number of heterozygous genotypes (0/1)",
+        }
+        yield {
+            "name": "count_ref",
+            "type": "int",
+            "category": "variants",
+            "description": "Count number of homozygous genotypes (0/0)",
+        }
+        yield {
+            "name": "count_var",
+            "type": "int",
+            "category": "variants",
+            "description": "Count number of variant ( not 0/0)",
+        }
+
+        # avoid duplicates fields ...
         duplicates = set()
         for field in self.get_fields():
-            
+
             if field["name"] not in duplicates:
-                yield field 
+                yield field
 
             duplicates.add(field["name"])
 
@@ -143,31 +182,27 @@ class AbstractReader(ABC):
             variant["comment"] = ""
             variant["classification"] = 3
 
-
-            # For now set the first annotation as a major transcripts 
+            # For now set the first annotation as a major transcripts
             if "annotations" in variant:
                 for index, ann in enumerate(variant["annotations"]):
                     if "is_major" not in ann:
                         if index == 0:
-                            ann["is_major"] = True 
+                            ann["is_major"] = True
                         else:
                             ann["is_major"] = False
 
             # Compute genotype
-            genotype_counter = Counter() 
-            if "samples" in variant: 
+            genotype_counter = Counter()
+            if "samples" in variant:
                 for sample in variant["samples"]:
-                    genotype_counter[sample["gt"]]+=1 
+                    genotype_counter[sample["gt"]] += 1
 
             variant["count_hom"] = genotype_counter[2]
             variant["count_het"] = genotype_counter[1]
             variant["count_ref"] = genotype_counter[0]
             variant["count_var"] = genotype_counter[1] + genotype_counter[2]
 
-            
             yield variant
-
-
 
     def get_extra_fields_by_category(self, category: str):
         """Syntaxic suggar to get fields according their category
@@ -176,8 +211,9 @@ class AbstractReader(ABC):
         :return: A generator of fields
         :rtype: <generator>
         """
-        return (field for field in self.get_extra_fields() if field["category"] == category)
-        
+        return (
+            field for field in self.get_extra_fields() if field["category"] == category
+        )
 
     def get_fields_by_category(self, category: str):
         """Syntaxic suggar to get fields according their category
@@ -193,21 +229,20 @@ class AbstractReader(ABC):
         Override this method to make it faster
         """
         return len(tuple(self.get_variants()))
+
     def compute_total_size(self) -> int:
-        """ Compute file size int bytes """ 
+        """ Compute file size int bytes """
 
         if not self.device:
-            return 0 
+            return 0
 
-        filename = self.device.name 
+        filename = self.device.name
 
         if cm.is_gz_file(filename):
             return cm.get_uncompressed_size(filename)
 
         else:
             return os.path.getsize(filename)
-
-
 
 
 def check_variant_schema(variant: dict):
@@ -242,11 +277,10 @@ def check_variant_schema(variant: dict):
             ],
             Optional("samples"): [
                 {
-                    "name": str, 
+                    "name": str,
                     "gt": And(int, lambda x: x in [-1, 0, 1, 2]),
-                    Optional(str): Or(int, str, bool, float)
-                    
-                    }
+                    Optional(str): Or(int, str, bool, float),
+                }
             ],
         }
     )
@@ -282,6 +316,6 @@ def check_field_schema(field: dict):
     checker.validate(field)
 
 
-def sanitize_field_name(field:str):
-        # TODO 
+def sanitize_field_name(field: str):
+    # TODO
     return field

@@ -6,6 +6,7 @@ import re
 GENOTYPE_FUNC_NAME = "sample"
 SET_FUNC_NAME = "set"
 
+
 def filters_to_flat(filters: dict):
     """Recursive function to convert the filter hierarchical dictionnary into a list of fields
 
@@ -28,6 +29,7 @@ def filters_to_flat(filters: dict):
 
         # filters is now [{'field': 'ref', 'operator': '=', 'value': "A"},{'field': 'alt', 'operator': '=', 'value': "C"}]] 
     """
+
     def recursive_generator(filters):
         if isinstance(filters, dict) and len(filters) == 3:
             yield filters
@@ -43,9 +45,9 @@ def filters_to_flat(filters: dict):
     return list(recursive_generator(filters))
 
 
-def field_function_to_sql(field_function: tuple, use_as = False):
-    ''' Convert genotype(boby).GT to `genotype_boby`.GT ''' 
-    
+def field_function_to_sql(field_function: tuple, use_as=False):
+    """ Convert genotype(boby).GT to `genotype_boby`.GT """
+
     func_name, arg_name, field_name = field_function
 
     if use_as:
@@ -60,11 +62,12 @@ def field_function_to_sql(field_function: tuple, use_as = False):
 
 
 def set_function_to_sql(field_function: tuple):
-    func_name, arg_name = field_function; 
+    func_name, arg_name = field_function
     q = f"(SELECT value FROM sets WHERE name = '{arg_name}')"
-    return q 
+    return q
 
-def fields_to_sql(field, default_tables = {}, use_as = False):
+
+def fields_to_sql(field, default_tables={}, use_as=False):
     """
     Return field as sql syntax . 
     
@@ -80,15 +83,14 @@ def fields_to_sql(field, default_tables = {}, use_as = False):
     """
 
     if isinstance(field, tuple):
-        
+
         # If it is "genotype.name.truc then it is is field function"
         return field_function_to_sql(field, use_as)
 
- 
     # extract variants.chr  ==> (variant, chr)
     match = re.match(r"^(\w+)\.(\w+)", field)
 
-    if match: 
+    if match:
         table = match[1]
         field = match[2]
     else:
@@ -100,9 +102,7 @@ def fields_to_sql(field, default_tables = {}, use_as = False):
     return f"`{table}`.`{field}`"
 
 
-def filters_to_sql(filters, default_tables = {}):
-
-
+def filters_to_sql(filters, default_tables={}):
     def is_field(node):
         return True if len(node) == 3 else False
 
@@ -115,7 +115,7 @@ def filters_to_sql(filters, default_tables = {}):
             value = node["value"]
             operator = node["operator"].upper()
 
-            # quote string 
+            # quote string
             if isinstance(value, str):
                 value = f"'{value}'"
 
@@ -124,17 +124,15 @@ def filters_to_sql(filters, default_tables = {}):
                     value = set_function_to_sql(value)
 
             if operator == "~":
-                operator="REGEXP"
+                operator = "REGEXP"
 
             if operator == "HAS":
                 operator = "LIKE"
                 # replace  "'test' " =>  "'%test%' "
-                value = "'" + value.translate(str.maketrans("'\"","%%"))  + "'"
-
-                
+                value = "'" + value.translate(str.maketrans("'\"", "%%")) + "'"
 
             field = fields_to_sql(field, default_tables)
-        
+
             # TODO ... c'est degeulasse ....
             if operator in ("IN", "NOT IN"):
                 # DO NOT enclose value in quotes
@@ -172,7 +170,6 @@ def filters_to_sql(filters, default_tables = {}):
 
 
 def filters_to_vql(filters):
-
     def is_field(node):
         return True if len(node) == 3 else False
 
@@ -190,10 +187,9 @@ def filters_to_vql(filters):
 
             return "%s %s %s" % (field, operator, value)
 
-
         else:
             logic_op = list(node.keys())[0]
-              
+
             out = [recursive(child) for child in node[logic_op]]
             # print("OUT", out, "LOGIC", logic_op)
             # OUT ["refIN'('A', 'T', 'G', 'C')'", "altIN'('A', 'T', 'G', 'C')'"]
@@ -205,42 +201,45 @@ def filters_to_vql(filters):
     return recursive(filters)
 
 
-
 def build_query(
-    fields, 
-    source = "variants", 
-    filters = {}, 
-    order_by = None, 
-    order_desc = True,
-    limit = 50,
-    offset = 0,
-    group_by = [],
-    default_tables = {},
-    samples_ids = {}
-    ):
-
+    fields,
+    source="variants",
+    filters={},
+    order_by=None,
+    order_desc=True,
+    limit=50,
+    offset=0,
+    group_by=[],
+    default_tables={},
+    samples_ids={},
+):
 
     sql_query = ""
-    # Create fields 
-    sql_fields = ["`variants`.`id`"] + [fields_to_sql(col, default_tables, use_as=True) for col in fields if "id" not in col]
-   
+    # Create fields
+    sql_fields = ["`variants`.`id`"] + [
+        fields_to_sql(col, default_tables, use_as=True)
+        for col in fields
+        if "id" not in col
+    ]
+
     if group_by:
         sql_fields.insert(1, "COUNT(`variants`.`id`) as 'count'")
 
-
     sql_query = f"SELECT {','.join(sql_fields)} "
 
-    # # Add child count if grouped 
+    # # Add child count if grouped
     # if grouped:
     #     sql_query += ", COUNT(*) as `children`"
 
     #  Add source table
     sql_query += f"FROM variants"
 
-    # Extract fields from filters 
-    fields_in_filters = [fields_to_sql(i["field"], default_tables) for i in filters_to_flat(filters)]
-    
-    # Loop over fields and check is annotations is required 
+    # Extract fields from filters
+    fields_in_filters = [
+        fields_to_sql(i["field"], default_tables) for i in filters_to_flat(filters)
+    ]
+
+    #  Loop over fields and check is annotations is required
     need_join_annotations = False
     for col in sql_fields + fields_in_filters:
         if "annotations" in col:
@@ -248,9 +247,7 @@ def build_query(
             break
 
     if need_join_annotations:
-        sql_query += (
-            " LEFT JOIN annotations ON annotations.variant_id = variants.id"
-        )
+        sql_query += " LEFT JOIN annotations ON annotations.variant_id = variants.id"
 
     #  Add Join Selection
     # TODO: set variants as global variables
@@ -274,13 +271,11 @@ def build_query(
 
     ## Create Sample Join
     for sample_name in samples:
-        # Optimisation ? 
-        #sample_id = self.cache_samples_ids[sample_name]
+        #  Optimisation ?
+        # sample_id = self.cache_samples_ids[sample_name]
         if sample_name in samples_ids:
             sample_id = samples_ids[sample_name]
-            sql_query += (
-                f" INNER JOIN sample_has_variant `{GENOTYPE_FUNC_NAME}_{sample_name}` ON `{GENOTYPE_FUNC_NAME}_{sample_name}`.variant_id = variants.id AND `{GENOTYPE_FUNC_NAME}_{sample_name}`.sample_id = {sample_id}"
-            )
+            sql_query += f" INNER JOIN sample_has_variant `{GENOTYPE_FUNC_NAME}_{sample_name}` ON `{GENOTYPE_FUNC_NAME}_{sample_name}`.variant_id = variants.id AND `{GENOTYPE_FUNC_NAME}_{sample_name}`.sample_id = {sample_id}"
 
     #  Add Where Clause
     if filters:
@@ -304,5 +299,3 @@ def build_query(
         sql_query += f" LIMIT {limit} OFFSET {offset}"
 
     return sql_query
-
-

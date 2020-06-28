@@ -10,8 +10,7 @@ from .readerfactory import create_reader
 from .sql import *
 
 
-
-def test(boby:int, test = "test"):
+def test(boby: int, test="test"):
     """Summary
     
     Args:
@@ -19,6 +18,7 @@ def test(boby:int, test = "test"):
         test (str, optional): Description
     """
     pass
+
 
 def async_import_reader(conn, reader: AbstractReader, **kwargs):
     """Import data via the given reader into a SQLite database via the given connection
@@ -43,8 +43,6 @@ def async_import_reader(conn, reader: AbstractReader, **kwargs):
     # Create table fields
     create_table_fields(conn)
 
-
-
     # Create annotations tables
     create_table_annotations(conn, reader.get_extra_fields_by_category("annotations"))
 
@@ -57,7 +55,7 @@ def async_import_reader(conn, reader: AbstractReader, **kwargs):
     # Create selection
     create_table_selections(conn)
 
-    # Create table sets 
+    # Create table sets
     create_table_sets(conn)
 
     # Insert samples
@@ -77,9 +75,8 @@ def async_import_reader(conn, reader: AbstractReader, **kwargs):
     for value, message in async_insert_many_variants(conn, reader.get_extra_variants()):
 
         if reader.file_size:
-            percent = reader.read_bytes / reader.file_size * 100 
+            percent = reader.read_bytes / reader.file_size * 100
 
-           
         else:
             # Fallback
             # TODO: useless for now because we don't give the total of variants
@@ -87,8 +84,7 @@ def async_import_reader(conn, reader: AbstractReader, **kwargs):
             percent = value
         yield percent, message
 
-
-    # Insert sample data   
+    #  Insert sample data
     sample_data = kwargs.get("sample_data", None)
     # TODO ...
 
@@ -123,6 +119,7 @@ def import_reader(conn, reader):
         #  don't show message
         pass
 
+
 def import_familly(conn, filename):
     """import *.fam file into sample table
 
@@ -146,7 +143,9 @@ def import_familly(conn, filename):
     with open(filename) as file:
         reader = csv.reader(file, delimiter="\t")
 
-        sample_map = dict([(sample["name"], sample["id"]) for sample in get_samples(conn)])
+        sample_map = dict(
+            [(sample["name"], sample["id"]) for sample in get_samples(conn)]
+        )
         sample_names = list(sample_map.keys())
 
         for line in reader:
@@ -159,23 +158,20 @@ def import_familly(conn, filename):
                 phenotype = line[5]
 
                 sexe = int(sexe) if sexe.isdigit() else 0
-                phenotype = int(phenotype) if phenotype.isdigit() else 0 
+                phenotype = int(phenotype) if phenotype.isdigit() else 0
 
                 if name in sample_names:
                     edit_sample = {
-                        "id" : sample_map[name],
+                        "id": sample_map[name],
                         "fam": fam,
                         "sexe": sexe,
-                        "phenotype": phenotype
+                        "phenotype": phenotype,
                     }
 
                     if father in sample_names:
                         edit_sample["father_id"] = sample_map[father]
-                    
+
                     if mother in sample_names:
                         edit_sample["mother_id"] = sample_map[mother]
 
                     update_sample(conn, edit_sample)
-
-            
-   

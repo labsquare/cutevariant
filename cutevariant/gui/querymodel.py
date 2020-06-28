@@ -27,7 +27,7 @@ from PySide2.QtWidgets import (
     QLineEdit,
     QFrame,
     QStyle,
-    QInputDialog
+    QInputDialog,
 )
 from PySide2.QtCore import (
     QAbstractTableModel,
@@ -36,7 +36,7 @@ from PySide2.QtCore import (
     Slot,
     QModelIndex,
     QSize,
-    Qt
+    Qt,
 )
 from PySide2.QtGui import (
     QPainter,
@@ -85,7 +85,7 @@ class QueryModel(QAbstractTableModel):
         self.headers = []
         self.formatter = None
         self.cmd = None
-        # Keep after all initialization 
+        # Keep after all initialization
         self.conn = conn
 
     @property
@@ -105,7 +105,7 @@ class QueryModel(QAbstractTableModel):
     def fields(self):
         """ Return query columns list displayed """
         return self.cmd.columns
-        
+
     @fields.setter
     def fields(self, columns: list):
         """ Set query columns list to display """
@@ -152,7 +152,6 @@ class QueryModel(QAbstractTableModel):
 
         return len(self.variants)
 
-   
     def columnCount(self, parent=QModelIndex()):
         """Overrided: Return column count of parent . 
 
@@ -178,7 +177,7 @@ class QueryModel(QAbstractTableModel):
             return None
 
         if self.variants and self.headers:
-        
+
             column_name = self.headers[index.column()]
 
             #  ---- Display Role ----
@@ -191,10 +190,8 @@ class QueryModel(QAbstractTableModel):
                 if role in self.formatter.supported_role():
                     value = self.data(index, Qt.DisplayRole)
                     return self.formatter.item_data(column_name, value, role)
-                
-        
-        return None
 
+        return None
 
     def headerData(self, section, orientation, role=Qt.DisplayRole):
         """Overrided: Return column name 
@@ -211,14 +208,13 @@ class QueryModel(QAbstractTableModel):
 
          """
 
-        #Display columns headers
+        # Display columns headers
         if orientation == Qt.Horizontal:
             if role == Qt.DisplayRole:
                 return self.headers[section]
         return None
 
-
-    def load(self, emit_changed = True, reset_page=False):
+    def load(self, emit_changed=True, reset_page=False):
         """Load variant data into the model from query attributes
 
         Args:
@@ -234,7 +230,7 @@ class QueryModel(QAbstractTableModel):
 
         self.beginResetModel()
 
-        self.cmd.limit = self.limit 
+        self.cmd.limit = self.limit
         self.cmd.offset = self.page * self.limit
 
         self.variants = list(self.cmd.do())
@@ -244,15 +240,14 @@ class QueryModel(QAbstractTableModel):
         if self.variants:
             self.headers = list(self.variants[0].keys())
 
-
         self.endResetModel()
 
         if emit_changed:
             self.changed.emit()
-            #Probably need to compute total 
+            # Probably need to compute total
             count_cmd = CountCommand(self.conn)
-            count_cmd.source = self.cmd.source 
-            count_cmd.filters = self.cmd.filters 
+            count_cmd.source = self.cmd.source
+            count_cmd.filters = self.cmd.filters
             self.total = count_cmd.do()["count"]
 
     def load_from_vql(self, vql):
@@ -261,8 +256,6 @@ class QueryModel(QAbstractTableModel):
         if isinstance(cmd, SelectCommand):
             self.cmd = cmd
             self.load()
-
-
 
     def hasPage(self, page: int) -> bool:
         """ Return True if <page> exists otherwise return False """
@@ -273,7 +266,7 @@ class QueryModel(QAbstractTableModel):
         if self.hasPage(page):
             self.page = page
             print("set page ")
-            self.load(emit_changed = False)
+            self.load(emit_changed=False)
 
     def nextPage(self):
         """ Set model to the next page """
@@ -305,7 +298,7 @@ class QueryModel(QAbstractTableModel):
 
             self.cmd.order_by = colname
             self.cmd.order_desc = order == Qt.DescendingOrder
-            self.load(emit_changed = False)
+            self.load(emit_changed=False)
 
     def displayed(self):
         """Get ids of first, last displayed variants on the total number
@@ -324,13 +317,11 @@ class QueryModel(QAbstractTableModel):
 
         return (first_id, last_id, self.total)
 
-    def variant(self, row : int) -> dict:
-    #     """ Return variant data according index 
+    def variant(self, row: int) -> dict:
+        #     """ Return variant data according index
 
         return self.variants[row]
 
-
-        
     #     Examples:
     #         variant = model.variant(index)
     #         print(variant) # ["chr","242","A","T",.....]
@@ -343,10 +334,6 @@ class QueryModel(QAbstractTableModel):
     #         return self.variants[index.parent().row()][
     #             index.row() + 1
     #         ]  #  + 1 because the first element is the parent
-
-  
-
-
 
 
 # class QueryDelegate(QStyledItemDelegate):
@@ -494,4 +481,3 @@ class QueryModel(QAbstractTableModel):
 #     def sizeHint(self, option, index):
 #         """Override: Return row height"""
 #         return QSize(0, 30)
-

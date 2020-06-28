@@ -24,7 +24,7 @@ from PySide2.QtGui import (
     QPalette,
     QTextCharFormat,
     QTextCursor,
-    QKeySequence
+    QKeySequence,
 )
 
 # Custom imports
@@ -40,7 +40,6 @@ from cutevariant.core.querybuilder import filters_to_vql
 from cutevariant.gui.widgets import VqlEditor, VqlSyntaxHighlighter
 
 LOGGER = logger()
-
 
 
 class VqlEditorWidget(plugin.PluginWidget):
@@ -74,16 +73,15 @@ class VqlEditorWidget(plugin.PluginWidget):
         main_layout.setSpacing(0)
         self.setLayout(main_layout)
 
-
     def on_register(self, mainwindow):
         """Override from PluginWidget : Do not call this methods 
         
         Args:
             mainwindow (MainWindow): Mainwindow reference
         """
-        mainwindow.toolbar.addAction(FIcon(0xF040A),"Run", self.run_vql).setShortcuts([Qt.CTRL + Qt.Key_R, QKeySequence.Refresh])
-
-
+        mainwindow.toolbar.addAction(FIcon(0xF040A), "Run", self.run_vql).setShortcuts(
+            [Qt.CTRL + Qt.Key_R, QKeySequence.Refresh]
+        )
 
     def on_open_project(self, conn: sqlite3.Connection):
         """overrided from PluginWidget : Do not call this methods 
@@ -102,16 +100,14 @@ class VqlEditorWidget(plugin.PluginWidget):
 
         vql = "SELECT "
         vql += ",".join(self.mainwindow.state.fields)
-        vql += " FROM " + self.mainwindow.state.source 
+        vql += " FROM " + self.mainwindow.state.source
 
         if self.mainwindow.state.filters:
-            vql += " WHERE" + filters_to_vql(self.mainwindow.state.filters)        
+            vql += " WHERE" + filters_to_vql(self.mainwindow.state.filters)
 
         print(self.mainwindow.state.filters)
 
-
-        self.set_vql(vql) 
-
+        self.set_vql(vql)
 
     def set_vql(self, txt: str):
         """Set vql source code without executed 
@@ -123,7 +119,6 @@ class VqlEditorWidget(plugin.PluginWidget):
         self.text_edit.setPlainText(txt)
         self.text_edit.blockSignals(False)
 
-    
     def __create_completer(self):
         """Create Completer with his model"""
         model = QStringListModel()
@@ -169,7 +164,7 @@ class VqlEditorWidget(plugin.PluginWidget):
         Drop command will update selection plugin 
         """
 
-        # Check VQL syntax first 
+        #  Check VQL syntax first
         if not self.check_vql():
             return
 
@@ -177,11 +172,13 @@ class VqlEditorWidget(plugin.PluginWidget):
 
             #  If command is a select kind
             if cmd["cmd"] == "select_cmd":
-                self.mainwindow.state.fields = cmd["fields"]  # columns from variant table
+                self.mainwindow.state.fields = cmd[
+                    "fields"
+                ]  # columns from variant table
                 self.mainwindow.state.source = cmd["source"]  # name of the variant set
                 self.mainwindow.state.filters = cmd["filters"]
                 self.mainwindow.state.group_by = cmd["group_by"]
-                self.mainwindow.refresh_plugins(sender = self)
+                self.mainwindow.refresh_plugins(sender=self)
 
             if cmd["cmd"] == "create_cmd":
                 fct = command.create_command_from_obj(self.conn, cmd)
@@ -191,11 +188,7 @@ class VqlEditorWidget(plugin.PluginWidget):
                 #     plugin = self.mainwindow.plugins["source_editor"]
                 #     plugin.on_refresh()
 
-
-
-                # TODO : manage other request 
-
-        
+                #  TODO : manage other request
 
     def set_message(self, message: str):
         """Show message error at the bottom of the view
@@ -218,9 +211,11 @@ class VqlEditorWidget(plugin.PluginWidget):
             )
         )
 
+
 if __name__ == "__main__":
 
-    import sys 
+    import sys
+
     app = QApplication(sys.argv)
 
     conn = sqlite3.connect("examples/test.db")

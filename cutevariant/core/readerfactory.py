@@ -12,9 +12,6 @@ import vcf
 LOGGER = cm.logger()
 
 
-
-
-
 def detect_vcf_annotation(filepath):
     """Return the name of the annotation parser to be used on the given file
     Called: In the importer and in the project wizard to display the detected

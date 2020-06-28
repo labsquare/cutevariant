@@ -13,21 +13,19 @@ class FieldsModel(QStandardItemModel):
         self.checkable_items = []
         self.conn = conn
 
-        
-    def columnCount(self, index = QModelIndex()):
+    def columnCount(self, index=QModelIndex()):
         return 2
 
-    def headerData(self, section,orientation, role):
-        
+    def headerData(self, section, orientation, role):
+
         if role != Qt.DisplayRole:
-            return None 
+            return None
 
         if orientation == Qt.Horizontal:
             if section == 0:
                 return "Name"
-        
-        return None
 
+        return None
 
     @property
     def fields(self):
@@ -36,7 +34,7 @@ class FieldsModel(QStandardItemModel):
         Returns:
             list -- list of columns
         """
-        selected_fields= []
+        selected_fields = []
         for item in self.checkable_items:
             if item.checkState() == Qt.Checked:
                 selected_fields.append(item.data()["name"])
@@ -67,28 +65,24 @@ class FieldsModel(QStandardItemModel):
         samples_items = QStandardItem("samples")
         samples_items.setIcon(FIcon(0xF0B9C))
         font = QFont()
-        
+
         samples_items.setFont(font)
 
         for sample in sql.get_samples(self.conn):
-            sample_item = self.load_fields("samples", parent_name = sample["name"])
+            sample_item = self.load_fields("samples", parent_name=sample["name"])
             sample_item.setText(sample["name"])
             samples_items.appendRow(sample_item)
 
-
-
         self.appendRow(samples_items)
 
-
-
-    def load_fields(self, category, parent_name = None):
+    def load_fields(self, category, parent_name=None):
         root_item = QStandardItem(category)
         root_item.setColumnCount(2)
-        root_item.setIcon(FIcon(0XF0256))
+        root_item.setIcon(FIcon(0xF0256))
         font = QFont()
         root_item.setFont(font)
 
-        for field in sql.get_field_by_category(self.conn,category):
+        for field in sql.get_field_by_category(self.conn, category):
             item1 = QStandardItem(field["name"])
             item2 = QStandardItem(field["description"])
             item2.setToolTip(field["description"])
@@ -96,15 +90,13 @@ class FieldsModel(QStandardItemModel):
             item1.setCheckable(True)
             root_item.appendRow([item1, item2])
             self.checkable_items.append(item1)
-            
+
             if category == "samples":
                 item1.setData({"name": ("sample", parent_name, field["name"])})
             else:
                 item1.setData(field)
-        
+
         return root_item
-
-
 
 
 class FieldsEditorWidget(plugin.PluginWidget):
@@ -120,7 +112,6 @@ class FieldsEditorWidget(plugin.PluginWidget):
 
     ENABLE = True
 
-
     def __init__(self, parent=None):
         super().__init__()
 
@@ -130,18 +121,17 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self.model = FieldsModel(None)
         self.proxy_model = QSortFilterProxyModel()
 
-        # setup proxy ( for search option )
+        #  setup proxy ( for search option )
         self.proxy_model.setSourceModel(self.model)
         self.proxy_model.setRecursiveFilteringEnabled(True)
 
         self.view.setModel(self.proxy_model)
-        self.view.setIconSize(QSize(16,16))
+        self.view.setIconSize(QSize(16, 16))
         self.view.header().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.search_edit = QLineEdit()
         # self.view.setIndentation(0)
         self.view.header().setVisible(False)
         layout = QVBoxLayout()
-
 
         layout.addWidget(self.search_edit)
         layout.addWidget(self.view)
@@ -151,13 +141,15 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self.setLayout(layout)
         self.model.itemChanged.connect(self.on_fields_changed)
 
-        # Setup toolbar 
-        self.toolbar.setIconSize(QSize(16,16))
-        self.toolbar.addAction(FIcon(0XF615), self.tr("collapse"), self.view.collapseAll)
-        self.toolbar.addAction(FIcon(0XF616), self.tr("Expand"), self.view.expandAll)
+        #  Setup toolbar
+        self.toolbar.setIconSize(QSize(16, 16))
+        self.toolbar.addAction(
+            FIcon(0xF615), self.tr("collapse"), self.view.collapseAll
+        )
+        self.toolbar.addAction(FIcon(0xF616), self.tr("Expand"), self.view.expandAll)
 
-        # setup search edit 
-        search_act = self.toolbar.addAction(FIcon(0XF349), self.tr("Search ..."))
+        #  setup search edit
+        search_act = self.toolbar.addAction(FIcon(0xF349), self.tr("Search ..."))
         search_act.setCheckable(True)
         search_act.toggled.connect(self.__on_search_pressed)
         self.search_edit.setVisible(False)
@@ -165,55 +157,50 @@ class FieldsEditorWidget(plugin.PluginWidget):
 
         self.search_edit.textChanged.connect(self.proxy_model.setFilterRegExp)
 
-        self._is_refreshing = False  # Help to avoid loop between on_refresh and on_fields_changed
+        self._is_refreshing = (
+            False
+        )  #  Help to avoid loop between on_refresh and on_fields_changed
 
-    def __on_search_pressed(self, checked : bool):
+    def __on_search_pressed(self, checked: bool):
         self.search_edit.setVisible(checked)
         self.search_edit.setFocus(Qt.MenuBarFocusReason)
 
-
     def on_register(self, mainwindow):
         """ Overrided from PluginWidget"""
-        pass 
+        pass
 
-    def on_open_project(self,conn):
+    def on_open_project(self, conn):
         """ Overrided from PluginWidget """
         self.model.conn = conn
         self.model.load()
         self.on_refresh()
 
-
     # def on_query_model_changed(self, model):
     #     """ Overrided from PluginWidget """
     #     self.columns = model.columns
-    #     # When you set columns, it means you check columns. 
+    #     # When you set columns, it means you check columns.
     #     # This will trigger a signal itemChanged which cause an infinite loop
     #     # That's why I blocked the signal from the model. So I need to update the view manually
     #     self.view.update()
     #     self.view.resizeColumnToContents(0)
 
-        
     def on_refresh(self):
-        """ overrided from PluginWidget """ 
+        """ overrided from PluginWidget """
         self._is_refreshing = True
-        self.model.fields = self.mainwindow.state.fields 
+        self.model.fields = self.mainwindow.state.fields
         self._is_refreshing = False
-
 
     def on_fields_changed(self):
 
         if self.mainwindow is None or self._is_refreshing:
             return
 
-        self.mainwindow.state.fields = self.model.fields 
-        self.mainwindow.refresh_plugins(sender = self)
-
-
-
+        self.mainwindow.state.fields = self.model.fields
+        self.mainwindow.refresh_plugins(sender=self)
 
 
 if __name__ == "__main__":
-    import sys 
+    import sys
     import sqlite3
     from cutevariant.core.importer import import_reader
     from cutevariant.core.reader import FakeReader
@@ -222,19 +209,15 @@ if __name__ == "__main__":
 
     conn = sql.get_sql_connexion(":memory:")
     import_reader(conn, FakeReader())
-    #import_file(conn, "examples/test.snpeff.vcf")
-
+    # import_file(conn, "examples/test.snpeff.vcf")
 
     view = FieldsEditorWidget()
 
     view.conn = conn
     view.fields = ["chr", "pos"]
 
-    #view.changed.connect(lambda : print(view.columns))
-
+    # view.changed.connect(lambda : print(view.columns))
 
     view.show()
 
     app.exec_()
-
-

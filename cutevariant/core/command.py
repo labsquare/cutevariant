@@ -1,30 +1,30 @@
-
-from cutevariant.core.querybuilder import * 
-from cutevariant.core import sql, vql 
+from cutevariant.core.querybuilder import *
+from cutevariant.core import sql, vql
 import sqlite3
-import networkx as nx 
-import os 
+import networkx as nx
+import os
 import functools
 import csv
 
-from cutevariant.commons import logger 
+from cutevariant.commons import logger
 
 
 LOGGER = logger()
 
 
 def select_cmd(
-    conn: sqlite3.Connection, 
-    fields = ["chr", "pos", "ref", "alt"],
-    source = "variants",
-    filters = dict(),
-    order_by = None, 
-    order_desc = True, 
-    group_by = [],
-    limit = 50,
-    offset = 0,
-    **kwargs):
-        """Select query Command 
+    conn: sqlite3.Connection,
+    fields=["chr", "pos", "ref", "alt"],
+    source="variants",
+    filters=dict(),
+    order_by=None,
+    order_desc=True,
+    group_by=[],
+    limit=50,
+    offset=0,
+    **kwargs,
+):
+    """Select query Command 
         
         Args:
             conn (sqlite3.Connection): Description
@@ -39,16 +39,28 @@ def select_cmd(
         Yields:
             TYPE: Description
         """
-        default_tables = dict([(i["name"], i["category"]) for i in sql.get_fields(conn)])
-        samples_ids = dict([(i["name"], i["id"]) for i in sql.get_samples(conn)])
-        query = build_query(fields, source, filters, order_by, order_desc, limit, offset, group_by, default_tables, samples_ids = samples_ids) 
-        LOGGER.debug(query)
-        for i in conn.execute(query):
-            yield dict(i)
+    default_tables = dict([(i["name"], i["category"]) for i in sql.get_fields(conn)])
+    samples_ids = dict([(i["name"], i["id"]) for i in sql.get_samples(conn)])
+    query = build_query(
+        fields,
+        source,
+        filters,
+        order_by,
+        order_desc,
+        limit,
+        offset,
+        group_by,
+        default_tables,
+        samples_ids=samples_ids,
+    )
+    LOGGER.debug(query)
+    for i in conn.execute(query):
+        yield dict(i)
 
 
-
-def count_cmd(conn: sqlite3.Connection, source = "variants", filters = {}, distinct=True, **kwargs):
+def count_cmd(
+    conn: sqlite3.Connection, source="variants", filters={}, distinct=True, **kwargs
+):
     """Count command 
     
     Args:
@@ -61,19 +73,31 @@ def count_cmd(conn: sqlite3.Connection, source = "variants", filters = {}, disti
     """
     default_tables = dict([(i["name"], i["category"]) for i in sql.get_fields(conn)])
     samples_ids = dict([(i["name"], i["id"]) for i in sql.get_samples(conn)])
-    query = build_query([""], source, filters, None,None, None, None, [], default_tables, samples_ids =samples_ids) 
+    query = build_query(
+        [""],
+        source,
+        filters,
+        None,
+        None,
+        None,
+        None,
+        [],
+        default_tables,
+        samples_ids=samples_ids,
+    )
     from_pos = query.index("FROM")
 
     if distinct:
-        query = "SELECT COUNT(DISTINCT variants.id) " + query[from_pos:] 
+        query = "SELECT COUNT(DISTINCT variants.id) " + query[from_pos:]
     else:
-        query = "SELECT COUNT(variants.id) " + query[from_pos:] 
+        query = "SELECT COUNT(variants.id) " + query[from_pos:]
 
     return {"count": conn.execute(query).fetchone()[0]}
 
-def drop_cmd(conn: sqlite3.Connection, feature, name ,**kwargs ): 
 
-    accept_features = ["selections","sets"]
+def drop_cmd(conn: sqlite3.Connection, feature, name, **kwargs):
+
+    accept_features = ["selections", "sets"]
 
     if feature not in accept_features:
         raise vql.VQLSyntaxError(f"{feature} doesn't exists")
@@ -90,23 +114,29 @@ def drop_cmd(conn: sqlite3.Connection, feature, name ,**kwargs ):
         return {"success": True}
 
 
-
-def create_cmd(conn: sqlite3.Connection, target, source = "variants", filters = dict(), count = 0,**kwargs ):
+def create_cmd(
+    conn: sqlite3.Connection,
+    target,
+    source="variants",
+    filters=dict(),
+    count=0,
+    **kwargs,
+):
 
     default_tables = dict([(i["name"], i["category"]) for i in sql.get_fields(conn)])
     samples_ids = dict([(i["name"], i["id"]) for i in sql.get_samples(conn)])
 
     if target is None:
-        return {} 
+        return {}
 
     cursor = conn.cursor()
 
-    sql_query = build_query(["id"],source,filters, default_tables = default_tables,  samples_ids =samples_ids) 
+    sql_query = build_query(
+        ["id"], source, filters, default_tables=default_tables, samples_ids=samples_ids
+    )
     count = sql.count_query(conn, sql_query)
 
-
     selection_id = sql.insert_selection(cursor, sql_query, name=target, count=count)
-
 
     q = f"""
     INSERT INTO selection_has_variant
@@ -125,7 +155,6 @@ def create_cmd(conn: sqlite3.Connection, target, source = "variants", filters = 
     # # REBUILD INDEXES
     # # For joints between selections and variants tables
     sql.create_selection_has_variant_indexes(cursor)
-
 
     conn.commit()
 
@@ -141,9 +170,8 @@ def set_cmd(conn: sqlite3.Connection, target, first, second, operator, **kwargs)
 
     cursor = conn.cursor()
 
-    query_first = build_query(["id"], first, limit = None) 
-    query_second = build_query(["id"], second, limit = None) 
-
+    query_first = build_query(["id"], first, limit=None)
+    query_second = build_query(["id"], second, limit=None)
 
     if operator == "+":
         sql_query = sql.union_variants(query_first, query_second)
@@ -154,8 +182,7 @@ def set_cmd(conn: sqlite3.Connection, target, first, second, operator, **kwargs)
     if operator == "&":
         sql_query = sql.intersect_variants(query_first, query_second)
 
-
-    selection_id = sql.insert_selection(cursor, sql_query, name=target, count= 0 )
+    selection_id = sql.insert_selection(cursor, sql_query, name=target, count=0)
 
     q = f"""
     INSERT INTO selection_has_variant
@@ -181,7 +208,6 @@ def set_cmd(conn: sqlite3.Connection, target, first, second, operator, **kwargs)
     return {}
 
 
-
 def bed_cmd(conn: sqlite3.Connection, path, target, source, **kwargs):
 
     if not os.path.exists(path):
@@ -190,18 +216,22 @@ def bed_cmd(conn: sqlite3.Connection, path, target, source, **kwargs):
     def read_bed():
         with open(path) as file:
             reader = csv.reader(file, delimiter="\t")
-            for line in reader: 
+            for line in reader:
                 if len(line) >= 3:
-                    yield {"chr":line[0], "start":int(line[1]), "end": int(line[2]), "name": ""}
-
+                    yield {
+                        "chr": line[0],
+                        "start": int(line[1]),
+                        "end": int(line[2]),
+                        "name": "",
+                    }
 
     selection_id = sql.create_selection_from_bed(conn, source, target, read_bed())
     return {"id": selection_id}
 
 
-def show_cmd(conn:sqlite3.Connection, feature: str, **kwargs):
+def show_cmd(conn: sqlite3.Connection, feature: str, **kwargs):
 
-    accept_features = ["selections","fields","samples","sets"]
+    accept_features = ["selections", "fields", "samples", "sets"]
 
     if feature not in accept_features:
         raise vql.VQLSyntaxError(f"option {feature} doesn't exists")
@@ -212,7 +242,7 @@ def show_cmd(conn:sqlite3.Connection, feature: str, **kwargs):
 
     if feature == "samples":
         for sample in sql.get_samples(conn):
-            yield sample 
+            yield sample
 
     if feature == "selections":
         for selection in sql.get_selections(conn):
@@ -220,7 +250,7 @@ def show_cmd(conn:sqlite3.Connection, feature: str, **kwargs):
 
     if feature == "sets":
         for item in sql.get_sets(conn):
-            yield item 
+            yield item
 
 
 def import_cmd(conn: sqlite3.Connection, feature=str, name=str, path=str, **kwargs):
@@ -237,42 +267,40 @@ def import_cmd(conn: sqlite3.Connection, feature=str, name=str, path=str, **kwar
     return {"success": True}
 
 
-
-    
-
-def create_command_from_obj(conn, vql_obj: dict): 
+def create_command_from_obj(conn, vql_obj: dict):
 
     if vql_obj["cmd"] == "select_cmd":
-        return functools.partial(select_cmd,conn, **vql_obj)
+        return functools.partial(select_cmd, conn, **vql_obj)
 
     if vql_obj["cmd"] == "create_cmd":
-        return functools.partial(create_cmd,conn, **vql_obj) 
+        return functools.partial(create_cmd, conn, **vql_obj)
 
     if vql_obj["cmd"] == "set_cmd":
-        return functools.partial(set_cmd,conn, **vql_obj)
+        return functools.partial(set_cmd, conn, **vql_obj)
 
-    if vql_obj["cmd"] == "bed_cmd": 
-        return functools.partial(bed_cmd,conn, **vql_obj)
+    if vql_obj["cmd"] == "bed_cmd":
+        return functools.partial(bed_cmd, conn, **vql_obj)
 
-    if vql_obj["cmd"] == "show_cmd": 
-        return functools.partial(show_cmd,conn, **vql_obj)
+    if vql_obj["cmd"] == "show_cmd":
+        return functools.partial(show_cmd, conn, **vql_obj)
 
     if vql_obj["cmd"] == "import_cmd":
-        return functools.partial(import_cmd,conn, **vql_obj)
-    
+        return functools.partial(import_cmd, conn, **vql_obj)
+
     if vql_obj["cmd"] == "drop_cmd":
-        return functools.partial(drop_cmd,conn, **vql_obj)
+        return functools.partial(drop_cmd, conn, **vql_obj)
 
     if vql_obj["cmd"] == "count_cmd":
-        return functools.partial(count_cmd,conn, **vql_obj)
+        return functools.partial(count_cmd, conn, **vql_obj)
 
     return None
- 
+
 
 def execute(conn, vql_source: str):
     vql_obj = vql.parse_one_vql(vql_source)
     cmd = create_command_from_obj(conn, vql_obj)
     return cmd()
+
 
 def execute_all(conn, vql_source: str):
     for vql in vql.parse_vql(vql_source):
@@ -280,12 +308,11 @@ def execute_all(conn, vql_source: str):
         yield cmd()
 
 
-
 # class CommandGraph(object):
 #     def __init__(self, conn):
 #         super().__init__()
 #         self.conn = conn
-#         self.graph = nx.DiGraph() 
+#         self.graph = nx.DiGraph()
 #         self.graph.add_node("variants")
 
 #     def add_command(self, command: Command):
@@ -308,4 +335,3 @@ def execute_all(conn, vql_source: str):
 #         for vql_obj in vql.execute_vql(source):
 #             cmd = create_command_from_vql_objet(self.conn, vql_obj)
 #             self.add_command(cmd)
-

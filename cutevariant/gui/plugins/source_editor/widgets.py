@@ -179,7 +179,6 @@ class SourceEditorWidget(plugin.PluginWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-
         self.setLayout(layout)
 
         # call on_current_row_changed when item selection changed
@@ -192,7 +191,6 @@ class SourceEditorWidget(plugin.PluginWidget):
             FIcon(0xF0900), self.tr("Edit"), self.edit_selection
         )
 
-
         self.toolbar.addAction(FIcon(0xF0453), "reload", self.load)
         self.conn = conn
 
@@ -204,7 +202,7 @@ class SourceEditorWidget(plugin.PluginWidget):
         self.on_refresh()
 
     def on_refresh(self):
-        #self.model.source = self.mainwindow.state.source 
+        # self.model.source = self.mainwindow.state.source
 
         self.view.selectionModel().blockSignals(True)
         self.model.load()
@@ -212,8 +210,6 @@ class SourceEditorWidget(plugin.PluginWidget):
         model_index = self.model.find_record(self.mainwindow.state.source)
         self.view.setCurrentIndex(model_index)
         self.view.selectionModel().blockSignals(False)
-
-
 
     @Slot()
     def on_current_row_changed(self):
@@ -226,11 +222,8 @@ class SourceEditorWidget(plugin.PluginWidget):
         index = self.view.currentIndex()
         source = self.model.record(index)["name"]
 
-        self.mainwindow.state.source = source 
-        self.mainwindow.refresh_plugins(sender = self)
-
-
- 
+        self.mainwindow.state.source = source
+        self.mainwindow.refresh_plugins(sender=self)
 
     def menu_setup(self, locked_selection=False):
         """Setup popup menu
@@ -244,7 +237,9 @@ class SourceEditorWidget(plugin.PluginWidget):
 
         #  Create action for bed
         menu.addAction(
-            FIcon(0xF0219), "Intersect with bed file ...", self.create_selection_from_bed
+            FIcon(0xF0219),
+            "Intersect with bed file ...",
+            self.create_selection_from_bed,
         )
 
         # Set operations on selections: create mapping and actions
@@ -410,7 +405,7 @@ class SourceEditorWidget(plugin.PluginWidget):
             self.tr("Type a new name"),
             self.tr("Selection name:"),
             QLineEdit.Normal,
-            self.model.record(current_index)["name"]
+            self.model.record(current_index)["name"],
         )
         if success and current_index and new_name:
             old_record = self.model.record(current_index)

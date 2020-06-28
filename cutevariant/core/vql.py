@@ -12,6 +12,7 @@ def model_class(name: str, bases: tuple, attrs: dict) -> type:
     and register the class for metamodel
     """
     if "__init__" not in attrs:
+
         def __init__(self, *args, **kwargs):
             for field, value in kwargs.items():
                 setattr(self, field, value)
@@ -96,6 +97,7 @@ class SetExpression(metaclass=model_class):
     def value(self):
         return "test"
 
+
 # class FilterExpression(metaclass=model_class):
 #     @property
 #     def value(self):
@@ -129,10 +131,12 @@ class Tuple(metaclass=model_class):
     def value(self):
         return tuple(self.items)
 
+
 class SetIdentifier(metaclass=model_class):
     @property
     def value(self):
         return ("set", self.arg)
+
 
 class SelectCmd(metaclass=model_class):
     @property
@@ -150,15 +154,12 @@ class SelectCmd(metaclass=model_class):
         else:
             output["filters"] = {}
 
-        if self.group_by: 
+        if self.group_by:
             output["group_by"] = self.group_by
         else:
             output["group_by"] = []
 
         return output
-
-
-
 
 
 class CreateCmd(metaclass=model_class):
@@ -168,7 +169,7 @@ class CreateCmd(metaclass=model_class):
             "cmd": "create_cmd",
             "source": self.source,
             "filters": self.filter.value if self.filter else {},
-            "target": self.target
+            "target": self.target,
         }
 
 
@@ -176,72 +177,68 @@ class SetCmd(metaclass=model_class):
     @property
     def value(self):
         return {
-        "cmd": "set_cmd",
-        "target": self.target,
-        "first": self.first,
-        "operator": self.op, 
-        "second": self.second
+            "cmd": "set_cmd",
+            "target": self.target,
+            "first": self.first,
+            "operator": self.op,
+            "second": self.second,
         }
 
 
-class BedCmd(metaclass = model_class):
+class BedCmd(metaclass=model_class):
     @property
     def value(self):
         return {
-        "cmd" : "bed_cmd",
-        "target": self.target,
-        "source": self.source,
-        "path": self.path
+            "cmd": "bed_cmd",
+            "target": self.target,
+            "source": self.source,
+            "path": self.path,
         }
-    
-class CopyCmd(metaclass = model_class):
+
+
+class CopyCmd(metaclass=model_class):
     @property
     def value(self):
         return {
-        "cmd": "create_cmd",
-        "source": self.source,
-        "filters": {},
-        "target": self.target
+            "cmd": "create_cmd",
+            "source": self.source,
+            "filters": {},
+            "target": self.target,
         }
-    
-class CountCmd(metaclass = model_class):
+
+
+class CountCmd(metaclass=model_class):
     @property
     def value(self):
         obj = {
-        "cmd": "count_cmd",
-        "source": self.source,
-        "filters": self.filters.value if self.filters else {},
+            "cmd": "count_cmd",
+            "source": self.source,
+            "filters": self.filters.value if self.filters else {},
         }
 
-   
         return obj
 
-class DropCmd(metaclass = model_class):
+
+class DropCmd(metaclass=model_class):
     @property
     def value(self):
-        return  {
-        "cmd": "drop_cmd",
-        "feature": self.feature,
-        "name": self.name
-        }
+        return {"cmd": "drop_cmd", "feature": self.feature, "name": self.name}
 
-   
-class ShowCmd(metaclass = model_class):
+
+class ShowCmd(metaclass=model_class):
+    @property
+    def value(self):
+        return {"cmd": "show_cmd", "feature": self.feature}
+
+
+class ImportCmd(metaclass=model_class):
     @property
     def value(self):
         return {
-        "cmd": "show_cmd",
-        "feature": self.feature
-        }
-
-class ImportCmd(metaclass = model_class):
-    @property
-    def value(self):
-        return {
-        "cmd": "import_cmd",
-        "feature": self.feature,
-        "path": self.path,
-        "name": self.name
+            "cmd": "import_cmd",
+            "feature": self.feature,
+            "path": self.path,
+            "name": self.name,
         }
 
 

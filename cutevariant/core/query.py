@@ -14,7 +14,7 @@ _GENOTYPE_FUNCTION_NAME = "genotype"
 _PHENOTYPE_FUNCTION_NAME = "phenotype"
 
 
-class Query: 
+class Query:
     """Class used to build sql query to select variants records
     [ OBSOLETE : See Query Builder ]
     Available attributes:

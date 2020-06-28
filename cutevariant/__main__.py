@@ -36,10 +36,7 @@ import cutevariant.commons as cm
 from cutevariant import __version__
 
 
-
-
-
-def main(app : QApplication):
+def main(app: QApplication):
     """The main routine."""
 
     # Define the names of the organization and the application
@@ -51,7 +48,6 @@ def main(app : QApplication):
     QCoreApplication.setApplicationName("cutevariant")
     QCoreApplication.setApplicationVersion(__version__)
 
-   
     # Process command line arguments
     process_arguments(app)
 
@@ -60,7 +56,6 @@ def main(app : QApplication):
 
     # Set icons set
     setFontPath(os.path.join(cm.DIR_FONTS, "materialdesignicons-webfont.ttf"))
-
 
     # Translations
     load_translations(app)

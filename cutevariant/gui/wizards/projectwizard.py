@@ -1,7 +1,17 @@
 # Standard imports
 import os
 from PySide2.QtWidgets import *
-from PySide2.QtCore import QThread, Signal, QDir, QSettings, QFile, Qt, QAbstractTableModel, QModelIndex, Property
+from PySide2.QtCore import (
+    QThread,
+    Signal,
+    QDir,
+    QSettings,
+    QFile,
+    Qt,
+    QAbstractTableModel,
+    QModelIndex,
+    Property,
+)
 from PySide2.QtGui import QStandardItemModel, QStandardItem
 from PySide2.QtGui import QIcon
 
@@ -33,7 +43,7 @@ class ProjectPage(QWizardPage):
         self.browse_button = QPushButton("Browse")
         self.reference = QComboBox()
 
-        # Unused for now 
+        # Unused for now
         self.reference.hide()
 
         self.reference.addItem("hg19")
@@ -151,10 +161,7 @@ class FilePage(QWizardPage):
                 and QFile(self.file_path_edit.text()).exists()
             )
             else False
-        ) 
-
-
-
+        )
 
 
 class SampleModel(QAbstractTableModel):
@@ -162,58 +169,57 @@ class SampleModel(QAbstractTableModel):
         super().__init__()
 
         self.samples_data = []
-        self.headers = ("Name","Family","Father_id", "Mother_id","Sexe","Phenotype")
+        self.headers = ("Name", "Family", "Father_id", "Mother_id", "Sexe", "Phenotype")
 
-    def rowCount(self, index = QModelIndex()):
-        """ override """ 
+    def rowCount(self, index=QModelIndex()):
+        """ override """
         return len(self.samples_data)
 
-    def columnCount(self, index = QModelIndex()):
-        """ override """ 
+    def columnCount(self, index=QModelIndex()):
+        """ override """
         return len(self.headers)
 
     def clear(self):
-        """ clear model """ 
+        """ clear model """
         self.samples_data.clear()
 
-    def get_data_list(self, column : int):
+    def get_data_list(self, column: int):
         return list(set([i[column] for i in self.samples_data]))
 
-
-
     def set_samples(self, samples: list):
-        """ fill model """ 
+        """ fill model """
         self.beginResetModel()
         self.clear()
         for sample in samples:
             self.samples_data.append([sample, "", "", "", "", ""])
         self.endResetModel()
 
-    def data(self, index: QModelIndex , role = Qt.DisplayRole):
-        """ overrided """ 
+    def data(self, index: QModelIndex, role=Qt.DisplayRole):
+        """ overrided """
         if not index.isValid():
-            return None 
+            return None
 
         if role == Qt.DisplayRole or role == Qt.EditRole:
             return self.samples_data[index.row()][index.column()]
 
         return None
 
-    def setData(self, index: QModelIndex, value, role = Qt.EditRole):
-        """ overrided """ 
+    def setData(self, index: QModelIndex, value, role=Qt.EditRole):
+        """ overrided """
 
         if not index.isValid():
-            return None 
+            return None
 
         if role == Qt.EditRole:
             self.samples_data[index.row()][index.column()] = value
-            return True 
+            return True
 
         return False
 
-
-    def headerData(self, section: int, orientation:Qt.Orientation, role: Qt.DisplayRole):
-        """ overrided """ 
+    def headerData(
+        self, section: int, orientation: Qt.Orientation, role: Qt.DisplayRole
+    ):
+        """ overrided """
         if orientation == Qt.Horizontal:
             if role == Qt.DisplayRole:
                 return self.headers[section]
@@ -221,39 +227,40 @@ class SampleModel(QAbstractTableModel):
         return None
 
     def flags(self, index: QModelIndex):
-        """ overrided """ 
+        """ overrided """
         if index.column() > 0:
-            return Qt.ItemIsSelectable|Qt.ItemIsEditable|Qt.ItemIsEnabled
+            return Qt.ItemIsSelectable | Qt.ItemIsEditable | Qt.ItemIsEnabled
 
         else:
-            return Qt.ItemIsSelectable|Qt.ItemIsEnabled
-
+            return Qt.ItemIsSelectable | Qt.ItemIsEnabled
 
 
 class SampleDelegate(QItemDelegate):
+    def createEditor(
+        self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex
+    ):
 
-    def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex):
-        
-        # index.model refer to SampleModel 
+        # index.model refer to SampleModel
 
-        if index.column()  < 2:
-            return super().createEditor(parent,option,index)
+        if index.column() < 2:
+            return super().createEditor(parent, option, index)
 
         widget = QComboBox(parent)
-        if index.column() == 2 or index.column() == 3: # father_id or mother_id
-            widget.addItems([""] + index.model().get_data_list(0))  # Fill with sample name 
+        if index.column() == 2 or index.column() == 3:  # father_id or mother_id
+            widget.addItems(
+                [""] + index.model().get_data_list(0)
+            )  #  Fill with sample name
             return widget
 
-        if index.column() == 4: # sexe
-            widget.addItems(["","Male","Female"])
+        if index.column() == 4:  #  sexe
+            widget.addItems(["", "Male", "Female"])
             return widget
-
 
         if index.column() == 5:
-            widget.addItems(["","Case", "Control"])
+            widget.addItems(["", "Case", "Control"])
             return widget
 
-        return super().createEditor(parent,option,index)
+        return super().createEditor(parent, option, index)
 
 
 class SampleWidget(QTableView):
@@ -267,7 +274,6 @@ class SampleWidget(QTableView):
         self.verticalHeader().hide()
         self.setItemDelegate(self.delegate)
 
-
     def clear(self):
         self.model.clear()
 
@@ -278,9 +284,7 @@ class SampleWidget(QTableView):
         return self.model.samples_data
 
     # Create property binding for QWizardPage.registerFields
-    samples = Property(list,get_samples, set_samples)
-
-
+    samples = Property(list, get_samples, set_samples)
 
 
 class SamplePage(QWizardPage):
@@ -301,12 +305,11 @@ class SamplePage(QWizardPage):
         m_layout.addWidget(self.box)
         self.setLayout(m_layout)
 
-
     def initializePage(self):
-        """ override """ 
+        """ override """
 
         self.view.clear()
-        # read samples 
+        #  read samples
         filename = self.field("filename")
         with create_reader(filename) as reader:
             self.view.set_samples(reader.get_samples())
@@ -314,13 +317,10 @@ class SamplePage(QWizardPage):
         self.registerField("samples", self.view, "samples")
         self.registerField("has_ped", self.box)
 
-
-
     def validatePage(self):
-        """ override """ 
+        """ override """
         # read table and create a dict for setFields
         return True
-
 
 
 class ImportThread(QThread):
@@ -343,7 +343,9 @@ class ImportThread(QThread):
         self.db_filename = ""
         self.project_settings = dict()
 
-    def set_importer_settings(self, filename, db_filename, project_settings={}, sample_data = {}):
+    def set_importer_settings(
+        self, filename, db_filename, project_settings={}, sample_data={}
+    ):
         """Init settings of the importer
 
         :param filename: File to be opened.
@@ -442,12 +444,11 @@ class ImportPage(QWizardPage):
         self.thread.finished.connect(self.import_thread_finished)
         self.thread.finished_status.connect(self.import_thread_finished_status)
 
-
     def initializePage(self):
-        """ override """ 
+        """ override """
 
-        # Ugly hack to get sample data from SamplePage.. 
-        # TODO : Use setFields with property binding 
+        #  Ugly hack to get sample data from SamplePage..
+        # TODO : Use setFields with property binding
         for page_id in self.wizard().pageIds():
             page = self.wizard().page(page_id)
             if page.__class__.__name__ == "SamplePage":
@@ -544,9 +545,9 @@ class ProjectWizard(QWizard):
         self.addPage(ImportPage())
 
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     import sys
+
     app = QApplication(sys.argv)
 
     w = ProjectWizard()

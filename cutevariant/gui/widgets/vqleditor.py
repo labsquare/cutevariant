@@ -1,4 +1,3 @@
-
 from PySide2.QtCore import Qt, QRegularExpression, QStringListModel, Signal
 
 from PySide2.QtWidgets import (
@@ -55,7 +54,6 @@ class VqlSyntaxHighlighter(QSyntaxHighlighter):
 
     def __init__(self, document=None):
         super().__init__(document)
-
 
         palette = QApplication.instance().palette("QTextEdit")
 

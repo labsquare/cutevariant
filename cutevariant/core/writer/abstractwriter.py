@@ -18,12 +18,5 @@ class AbstractWriter(object):
         super(AbstractWriter, self).__init__()
         self.device = device
 
-
     def save(self, conn) -> bool:
         raise NotImplemented()
-
-
-
-
-
-

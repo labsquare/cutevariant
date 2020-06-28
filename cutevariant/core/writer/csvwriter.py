@@ -1,7 +1,7 @@
 from cutevariant.core import sql
-from cutevariant.core import command 
+from cutevariant.core import command
 from .abstractwriter import AbstractWriter
-import csv 
+import csv
 
 
 class CsvWriter(AbstractWriter):
@@ -21,18 +21,12 @@ class CsvWriter(AbstractWriter):
         super(AbstractWriter, self).__init__()
         super().__init__(device)
         self.delimiter = "\t"
-        self.quotechar="|" 
-
+        self.quotechar = "|"
 
     def save(self, conn) -> bool:
-        
-        writer = csv.writer(self.device, delimiter=self.delimiter, quotechar = self.quotechar)
+
+        writer = csv.writer(
+            self.device, delimiter=self.delimiter, quotechar=self.quotechar
+        )
         for row in command.execute(conn, "SELECT chr, pos, ref, alt FROM variants"):
             writer.writerow(row.values())
-
-
-
-
-
-
-

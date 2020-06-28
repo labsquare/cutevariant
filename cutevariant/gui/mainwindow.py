@@ -17,22 +17,22 @@ from cutevariant.gui.state import State
 
 from cutevariant.gui.wizards import ProjectWizard
 from cutevariant.gui.settings import SettingsWidget
+
 # from cutevariant.gui.querywidget import QueryWidget
 # from cutevariant.gui import plugin
 
 #  Import plugins
 from cutevariant.gui import plugin
 
-#from cutevariant.gui.plugins.editor.plugin import EditorPlugin
+# from cutevariant.gui.plugins.editor.plugin import EditorPlugin
 
 from cutevariant.gui.widgets.aboutcutevariant import AboutCutevariant
+
 # from cutevariant.gui.chartquerywidget import ChartQueryWidget
 from cutevariant import commons as cm
 from cutevariant.commons import MAX_RECENT_PROJECTS, DIR_ICONS
 
 from cutevariant.core.writer import CsvWriter
-
-
 
 
 # Proof of concept - testing only
@@ -57,27 +57,26 @@ class MainWindow(QMainWindow):
         # Keep sqlite connection
         self.conn = None
 
-        # State variable of application 
-        # Often changed by plugins 
+        #  State variable of application
+        #  Often changed by plugins
         self.state = State()
 
         self.central_tab = QTabWidget()
         self.footer_tab = QTabWidget()
 
         vsplit = QSplitter(Qt.Vertical)
-        vsplit.addWidget(self.central_tab)  
-        vsplit.addWidget(self.footer_tab)  
+        vsplit.addWidget(self.central_tab)
+        vsplit.addWidget(self.footer_tab)
         self.setCentralWidget(vsplit)
 
         # Status Bar
         self.status_bar = QStatusBar()
-        self.setStatusBar(self.status_bar)  
+        self.setStatusBar(self.status_bar)
 
-    
         # Setup UI
         self.setup_ui()
 
-        # Register plugins 
+        # Register plugins
         self.plugins = {}
         self.register_plugins()
 
@@ -85,17 +84,13 @@ class MainWindow(QMainWindow):
         self.resize(600, 400)
         self.setGeometry(qApp.desktop().rect().adjusted(100, 100, -100, -100))
 
-
         # Restores the state of this mainwindow's toolbars and dockwidgets
         self.read_settings()
-
-
 
     def setup_ui(self):
         # Setup menubar
         self.setup_menubar()
         self.setup_toolbar()
-
 
     def add_panel(self, widget, area=Qt.LeftDockWidgetArea):
         """Add given widget to a new QDockWidget and to view menu in menubar"""
@@ -125,12 +120,12 @@ class MainWindow(QMainWindow):
                 name = extension["name"]
                 plugin_widget_class = extension["widget"]
                 widget = plugin_widget_class()
-                if widget.ENABLE == True: 
+                if widget.ENABLE == True:
                     widget.mainwindow = self
                     widget.setWindowTitle(extension.get("name"))
                     widget.setToolTip(extension.get("description"))
                     widget.on_register(self)
-                    # Add plugins 
+                    #  Add plugins
                     self.plugins[name] = widget
 
                     if plugin_widget_class.LOCATION == plugin.DOCK_LOCATION:
@@ -141,7 +136,6 @@ class MainWindow(QMainWindow):
 
                     if plugin_widget_class.LOCATION == plugin.FOOTER_LOCATION:
                         self.footer_tab.addTab(widget, widget.windowTitle())
-
 
     def refresh_plugins(self, sender: plugin.PluginWidget = None):
         """Refresh all plugins except_plugins 
@@ -156,7 +150,7 @@ class MainWindow(QMainWindow):
                 print(plugin)
                 plugin.on_refresh()
 
-    def refresh_plugin(self, plugin_name:str):
+    def refresh_plugin(self, plugin_name: str):
         """Refresh a plugin identified by plugin_name 
         It doesn't refresh the sender plugin 
         
@@ -166,7 +160,6 @@ class MainWindow(QMainWindow):
         if plugin_name in self._plugins:
             plugin = self.plugins[plugin_name]
             plugin.on_refresh()
-
 
     def setup_menubar(self):
         """Menu bar setup: items and actions"""
@@ -185,13 +178,14 @@ class MainWindow(QMainWindow):
         self.recent_files_menu = self.file_menu.addMenu(self.tr("Open recent"))
 
         self.setup_recent_menu()
-       
+
         self.recent_files_menu.addSeparator()
         self.recent_files_menu.addAction(self.tr("Clear"), self.clear_recent_projects)
 
-        ## Export projects as 
-        self.export_action= self.file_menu.addAction(self.tr("Export as csv"), self.export_project)
-
+        ## Export projects as
+        self.export_action = self.file_menu.addAction(
+            self.tr("Export as csv"), self.export_project
+        )
 
         self.file_menu.addSeparator()
         self.file_menu.addAction(
@@ -199,8 +193,6 @@ class MainWindow(QMainWindow):
         )
 
         self.file_menu.addSeparator()
-
-
 
         self.file_menu.addSeparator()
 
@@ -225,7 +217,7 @@ class MainWindow(QMainWindow):
         # console_action.setCheckable(True)
         # console_action.setShortcuts([Qt.CTRL + Qt.Key_T])
         # console_action.toggled.connect(self.editor.setVisible)
-        
+
         self.view_menu.addSeparator()
 
         ## Help
@@ -242,7 +234,7 @@ class MainWindow(QMainWindow):
         self.toolbar.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
         self.toolbar.addAction(self.new_project_action)
         self.toolbar.addAction(self.open_project_action)
-        #self.toolbar.addAction(FIcon(0xF40A),"Run", self.execute_vql).setShortcuts([Qt.CTRL + Qt.Key_R, QKeySequence.Refresh])
+        # self.toolbar.addAction(FIcon(0xF40A),"Run", self.execute_vql).setShortcuts([Qt.CTRL + Qt.Key_R, QKeySequence.Refresh])
         self.toolbar.addSeparator()
 
     # def add_tab_view(self, widget):
@@ -290,7 +282,6 @@ class MainWindow(QMainWindow):
         self.open_database(self.conn)
         self.save_recent_project(filepath)
 
-
     def open_database(self, conn):
         self.conn = conn
 
@@ -315,7 +306,7 @@ class MainWindow(QMainWindow):
         Returns:
             list: Return list of recent project path
         """
-    
+
         # Reload last projects opened
         app_settings = QSettings()
         recent_projects = app_settings.value("recent_projects", list())
@@ -336,13 +327,12 @@ class MainWindow(QMainWindow):
         """ Setup recent menu """
         self.recent_files_menu.clear()
         for path in self.get_recent_projects():
-            self.recent_files_menu.addAction(path,self.on_recent_project_clicked)
+            self.recent_files_menu.addAction(path, self.on_recent_project_clicked)
 
     def on_recent_project_clicked(self):
         """Slot to load a recent project"""
         action = self.sender()
         self.open(action.text())
-
 
     # def handle_plugin_message(self, message):
     #     """Slot to display message from plugin in the status bar"""
@@ -382,16 +372,12 @@ class MainWindow(QMainWindow):
             except Exception as e:
                 self.status_bar.showMessage(e.__class__.__name__ + ": " + str(e))
                 raise
-    
 
     def export_project(self):
 
         filepath, _ = QFileDialog.getSaveFileName(
-            self,
-            self.tr("Save project"),
-            QDir.homePath(),
-            self.tr("(*.csv)")
-            )
+            self, self.tr("Save project"), QDir.homePath(), self.tr("(*.csv)")
+        )
 
         if filepath:
             with open(filepath, "w") as file:
@@ -453,8 +439,6 @@ class MainWindow(QMainWindow):
             #  TODO: handle UI changes by passing UI_VERSION to saveState()
             app_settings.setValue("windowState", self.saveState())
 
-
-
     def read_settings(self):
         """Restore the state of this mainwindow's toolbars and dockwidgets
 
@@ -484,7 +468,7 @@ class MainWindow(QMainWindow):
     # def on_variant_changed(self, variant):
     #     for name, _plugin in self.plugins.items():
     #         if _plugin.isVisible():
-    #             _plugin.on_variant_changed(variant) 
+    #             _plugin.on_variant_changed(variant)
 
 
 if __name__ == "__main__":

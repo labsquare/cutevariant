@@ -176,35 +176,34 @@ class ProxySettingsWidget(BaseWidget):
         """Load "proxy" group settings"""
         settings = QSettings()
         settings.beginGroup("proxy")
-        
-        s_type = settings.value("type",0)
+
+        s_type = settings.value("type", 0)
         if s_type:
             self.combo_box.setCurrentIndex(int(s_type))
-                
+
         self.host_edit.setText(settings.value("host"))
 
         s_port = settings.value("port", 0)
         if s_port:
             self.port_edit.setValue(int(s_port))
-            
+
         self.user_edit.setText(settings.value("username"))
         self.pass_edit.setText(settings.value("password"))
         settings.endGroup()
 
     def on_combo_changed(self, index):
-        """ disable formular when No proxy """ 
+        """ disable formular when No proxy """
         if index == 0:
             self._disable_form(True)
         else:
             self._disable_form(False)
 
-    def _disable_form(self, disabled = True):
+    def _disable_form(self, disabled=True):
         """ Disabled formular """
         self.host_edit.setDisabled(disabled)
         self.port_edit.setDisabled(disabled)
         self.user_edit.setDisabled(disabled)
         self.pass_edit.setDisabled(disabled)
-
 
 
 class StyleSettingsWidget(BaseWidget):
@@ -270,8 +269,8 @@ class PluginsSettingsWidget(BaseWidget):
         self.setWindowIcon(FIcon(0xF0431))
         self.view = QTreeWidget()
         self.view.setColumnCount(3)
-        self.view.setHeaderLabels(["Name","Description","Version"])
-    
+        self.view.setHeaderLabels(["Name", "Description", "Version"])
+
         main_layout = QVBoxLayout()
         main_layout.addWidget(self.view)
         self.setLayout(main_layout)
@@ -282,6 +281,7 @@ class PluginsSettingsWidget(BaseWidget):
     def load(self):
         self.view.clear()
         from cutevariant.gui import plugin
+
         for extension in plugin.find_plugins():
             item = QTreeWidgetItem()
             item.setText(0, extension["name"])
@@ -366,8 +366,6 @@ class SettingsWidget(QDialog):
 
         self.accepted.connect(self.close)
 
-        
-
     def addPanel(self, widget: BaseWidget):
         """Add a widget on the widow via a QStackedWidget; keep a reference on it
         for later connection/activation"""
@@ -389,31 +387,27 @@ class SettingsWidget(QDialog):
         [widget.load() for widget in self.widgets]
 
     def load_plugins(self):
-        """ Add plugins settings """ 
+        """ Add plugins settings """
         from cutevariant.gui import plugin
 
         for extension in plugin.find_plugins():
-            
+
             if "setting" in extension:
                 settings_widget_class = extension["setting"]
                 widget = settings_widget_class()
-        
+
                 if not widget.windowTitle():
                     widget.setWindowTitle(extension["name"])
-                
+
                 if not widget.windowIcon():
                     widget.setWindowIcon(FIcon(0xF0431))
-                
+
                 self.addPanel(widget)
-
-
-        
 
 
 if __name__ == "__main__":
     import sys
 
-    
     app = QApplication(sys.argv)
 
     d = SettingsWidget()

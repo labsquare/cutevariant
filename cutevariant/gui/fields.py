@@ -61,7 +61,7 @@ class IntegerField(BaseField):
     def get_value(self) -> int:
         return self.spin_box.value()
 
-    def set_range(self, min_:int, max_:int):
+    def set_range(self, min_: int, max_: int):
         """ Limit editor with a range of value """
         self.spin_box.setRange(min_, max_)
 
@@ -84,7 +84,7 @@ class FloatField(BaseField):
     def get_value(self) -> int:
         return self.spin_box.value()
 
-    def set_range(self, min_: float, max_:float):
+    def set_range(self, min_: float, max_: float):
 
         self.spin_box.setRange(min_, max_)
 
@@ -268,9 +268,9 @@ class FieldFactory(QObject):
 
         if field["type"] == "float":
             w = FloatField()
-            _range = sql.get_field_range(self.conn, sql_field)  
+            _range = sql.get_field_range(self.conn, sql_field)
             if _range:
-                w.set_range(*_range)            
+                w.set_range(*_range)
             return w
 
         if field["type"] == "str":
@@ -1000,21 +1000,20 @@ class FilterDelegate(QStyledItemDelegate):
 
 
 class FieldDialog(QDialog):
-    def __init__(self, conn = None, parent = None):
+    def __init__(self, conn=None, parent=None):
         super().__init__()
         self.title_label = QLabel("Non title")
         self.description_label = QLabel("Description")
-        self.btn_box = QDialogButtonBox(QDialogButtonBox.Ok|QDialogButtonBox.Cancel)
+        self.btn_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
 
         self.field_box = QComboBox()
         self.field_operator = OperatorField()
 
-
         # setup combobox
         self.field_box.setEditable(True)
-        #self.field_operator.setEditable(True)
+        # self.field_operator.setEditable(True)
 
-        # setup label
+        #  setup label
         font = QFont()
         font.setBold(True)
         self.title_label.setFont(font)
@@ -1036,7 +1035,7 @@ class FieldDialog(QDialog):
 
         self.setLayout(v_layout)
 
-        self.setFixedSize(500,300)
+        self.setFixedSize(500, 300)
 
         self.field_box.currentIndexChanged.connect(self.on_field_changed)
 
@@ -1047,7 +1046,7 @@ class FieldDialog(QDialog):
 
     @property
     def conn(self):
-        return self._conn 
+        return self._conn
 
     @conn.setter
     def conn(self, conn):
@@ -1058,7 +1057,7 @@ class FieldDialog(QDialog):
     def load_fields(self):
         """Load sql fields into combobox
         """
-        for field in sql.get_field_by_category(self.conn,"variants"):
+        for field in sql.get_field_by_category(self.conn, "variants"):
             self.field_box.addItem(field["name"], field)
 
     def load_value_editor(self, sql_field):
@@ -1097,9 +1096,6 @@ class FieldDialog(QDialog):
 
         return {"field": field, "operator": operator, "value": value}
 
-        
-
-
 
 if __name__ == "__main__":
 
@@ -1111,7 +1107,6 @@ if __name__ == "__main__":
 
     d = FieldDialog(conn)
     d.show()
-
 
     # data = {
     #     "AND": [

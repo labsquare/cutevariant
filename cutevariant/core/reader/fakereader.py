@@ -43,7 +43,6 @@ class FakeReader(AbstractReader):
             "samples": [{"name": "sacha", "gt": 1, "dp": 10}],
         }
 
-
     def get_fields(self):
         """Extract fields informations from VCF fields
 
@@ -122,7 +121,6 @@ class FakeReader(AbstractReader):
             "description": "duplicate test",
             "type": "str",
         }
-
 
     def get_samples(self):
         return ["sacha"]
