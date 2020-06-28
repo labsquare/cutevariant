@@ -219,7 +219,7 @@ def build_query(
     sql_fields = ["`variants`.`id`"] + [
         fields_to_sql(col, default_tables, use_as=True)
         for col in fields
-        if "id" not in col
+        if col != "id"
     ]
 
     if group_by:
