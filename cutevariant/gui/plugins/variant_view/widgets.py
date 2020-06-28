@@ -537,8 +537,13 @@ class VariantViewWidget(plugin.PluginWidget):
         }
 
         self.sub_view.model.load()
+        
+        # Refresh plugins when clicked 
+        self.mainwindow.state.current_variant = variant
+        self.mainwindow.refresh_plugins(self)
 
-        print("done")
+
+
 
 
 if __name__ == "__main__":
