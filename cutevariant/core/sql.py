@@ -28,6 +28,7 @@ import sys
 from collections import defaultdict
 from pkg_resources import parse_version
 from functools import lru_cache
+import re
 
 # Custom imports
 import cutevariant.commons as cm
@@ -53,6 +54,15 @@ def get_sql_connexion(filepath):
     foreign_keys_status = connexion.execute("PRAGMA foreign_keys").fetchone()[0]
     LOGGER.debug("get_sql_connexion:: foreign_keys state: %s", foreign_keys_status)
     assert foreign_keys_status == 1, "Foreign keys can't be activated :("
+
+    # Create function for sqlite 
+    def regexp(expr, item):
+        reg = re.compile(expr)
+        return reg.search(item) is not None
+
+    connexion.create_function("REGEXP", 2, regexp)
+
+
     return connexion
 
 def drop_table(conn, table_name):
@@ -145,6 +155,33 @@ def create_project(conn: sqlite3.Connection, name: str, reference: str):
         """INSERT INTO projects (name, reference) VALUES (?, ?)""", (name, reference)
     )
     conn.commit()
+
+def create_table_metadatas(conn: sqlite3.Connection):
+    """Create table metdata
+    
+    Args:
+        conn (sqlite3.Connection): Description
+    """
+    cursor = conn.execute("""CREATE TABLE metadatas (id INTEGER PRIMARY KEY, key TEXT, value TEXT)""")
+
+def insert_many_metadatas(conn : sqlite3.Connection, metadatas = {}):
+    """Insert metadata 
+    
+    Args:
+        conn (sqlite3.Connection): Description
+    """
+    if metadatas:
+        conn.executemany(
+            """
+            INSERT INTO metadatas (key,value)
+            VALUES (?,?)
+            """,
+            list(metadatas.items()),
+        )
+
+        conn.commit()
+
+
 
 
 ## ================ SELECTION TABLE ===================================
@@ -347,25 +384,29 @@ def create_selection_from_bed(conn: sqlite3.Connection, source: str, target: str
     cur.execute("DROP TABLE IF exists bed_table")
     cur.execute(
         """CREATE TABLE bed_table (
-        id INTEGER PRIMARY KEY ASC,
-        bin INTEGER DEFAULT 0,
-        chrom TEXT,
-        start INTEGER,
+
+        id INTEGER PRIMARY KEY ASC, 
+        bin INTEGER DEFAULT 0, 
+        chr TEXT, 
+        start INTEGER, 
         end INTEGER,
         name INTEGER )"""
     )
 
     for interval in bed_intervals:
+
         cur.execute(
-            "INSERT INTO bed_table (bin, chrom, start, end, name) VALUES (?,?,?,?,?)",
+            "INSERT INTO bed_table (bin, chr, start, end, name) VALUES (?,?,?,?,?)",
             (
                 0,
-                interval["chrom"],
+                interval["chr"],
                 interval["start"],
                 interval["end"],
                 interval["name"],
             ),
         )
+
+
 
     if source == "variants":
         source_query = "SELECT variants.id as variant_id FROM variants"
@@ -380,12 +421,13 @@ def create_selection_from_bed(conn: sqlite3.Connection, source: str, target: str
 
     query = (
         source_query
-        + """
-                INNER JOIN bed_table ON
-                variants.chr = bed_table.chrom AND
-                variants.pos >= bed_table.start AND
+        + """  
+                INNER JOIN bed_table ON 
+                variants.chr = bed_table.chr AND 
+                variants.pos >= bed_table.start AND 
                 variants.pos <= bed_table.end """
     )
+
 
     return create_selection_from_sql(conn, query, target, from_selection=True)
 
@@ -442,6 +484,45 @@ def edit_selection(conn:sqlite3.Connection, selection: dict):
     )
     conn.commit()
     return cursor.rowcount
+
+## ================ Create sets tables =========================================
+
+def create_table_sets(conn:sqlite3.Connection):
+    """Create the table "sets" 
+    
+    This table stores variants selection saved by the user:
+            - name: name of the set of variants
+            - value: number of variants concerned by this set
+
+    Args:
+        conn (sqlite3.Connection): Sqlite3 Connection
+    """
+    cursor = conn.cursor()
+    # selection_id is an alias on internal autoincremented 'rowid'
+    cursor.execute(
+        """CREATE TABLE sets (
+        id INTEGER PRIMARY KEY ASC,
+        name TEXT, 
+        value TEXT
+        )"""
+    )
+
+    conn.commit()
+
+def insert_set_from_file(conn: sqlite3.Connection, name,  filename):
+
+    cursor = conn.cursor() 
+
+    with open(filename) as file:
+        cursor.executemany("""INSERT INTO sets (name, value) VALUES (?,?)""", ((name, i.strip()) for i in file))
+    
+    conn.commit()
+
+
+def get_sets(conn):
+    """ Get sets """ 
+    for row in conn.execute("SELECT name , COUNT(*) as 'count' FROM sets GROUP BY name"):
+        yield dict(row)
 
 
 ## ================ Operations on sets of variants =============================
@@ -677,7 +758,7 @@ def create_table_annotations(conn, fields):
             ('allele str NULL', 'consequence str NULL', ...)
     :type fields: <generator>
     """
-    schema = ",".join([f'{field["name"]} {field["type"]}' for field in fields])
+    schema = ",".join([f'`{field["name"]}` {field["type"]}' for field in fields])
 
     if not schema:
         #  Create minimum annotation table... Can be use later for dynamic annotation.
@@ -690,9 +771,12 @@ def create_table_annotations(conn, fields):
 
     cursor = conn.cursor()
     # TODO: no primary key/unique index for this table?
+
+
     cursor.execute(
         f"""CREATE TABLE annotations (variant_id INTEGER NOT NULL, {schema})"""
     )
+
     conn.commit()
 
 
@@ -1159,684 +1243,14 @@ def update_sample(conn, sample: dict):
     query = "UPDATE samples SET " + ",".join(sql_set) + " WHERE id = " + str(sample["id"])
     conn.execute(query, sql_val)
     conn.commit()
-## ============== VARIANTS QUERY THINGS ... ======================
-from cutevariant.core.vql import execute_vql
 
-class QueryBuilder(object):
-    """A class to Create a variant Selection query
-    """
+def count_query(conn, query):
+    """ count from query """ 
+    return conn.execute(
+        f"SELECT COUNT(*) as count FROM ({query})"
+    ).fetchone()[0]
 
-    _GENOTYPE_FUNCTION_NAME = "genotype"
-    _PHENOTYPE_FUNCTION_NAME = "phenotype"
-    _VARIANT_TABLE = "variants"
 
-    def __init__(
-        self,
-        conn,
-        columns=["chr", "pos", "ref", "alt"],
-        filters=dict(),
-        selection="variants",
-        order_by=None,
-        order_desc=True,
-    ):
-        """Create an instance with different parameters
 
-        See:
-            sql.build_variant_query
 
-        Args:
-            conn (sqlite): sqlite3 connection database
-            columns (list, optional): Columns selections. Defaults to ["chr", "pos", "ref", "alt"].
-            filters (dict, optional): Filter as a nested dictionnary. Defaults to dict().
-            selection (str, optional): Source table. Defaults to "variants".
-            order_by (str, optional): Order by column. Defaults to None.
-            order_desc (bool, optional): Sort result in descendant order. Defaults to True.
-        """
-
-        self.conn = conn
-        self.columns = columns
-        self.filters = filters
-        self.selection = selection
-        self.order_by = order_by
-        self.order_desc = order_desc
-
-    @property
-    def conn(self):
-        return self._conn
-
-    @conn.setter
-    def conn(self, conn):
-        self._conn = conn
-        # Read those data only once from sqliute
-        self.cache_annotations_columns = get_columns(conn, "annotations")
-        self.cache_variants_columns = get_columns(conn, "variants")
-
-        #  Read samples and make possible to map the sample id from the sample name
-        self.cache_samples_ids = dict([(i["name"], i["id"]) for i in get_samples(conn)])
-
-    @staticmethod
-    def _filters_to_flat(filters: dict):
-        """Recursive function to convert the filter hierarchical dictionnary into a list of fields
-
-        Args:
-            filter (dict): a nested tree of condition. @See example
-
-        Returns:
-            Return (list): all field are now inside a a list
-
-        Todo:
-            Move to vql ?
-
-        Examples:
-            filters = {'AND':
-            [{'field': 'ref', 'operator': '=', 'value': "A"},
-            {'field': 'alt', 'operator': '=', 'value': "C"}]
-            }
-
-            filters = _flatten_filter(filters)
-
-            # filters is now [{'field': 'ref', 'operator': '=', 'value': "A"},{'field': 'alt', 'operator': '=', 'value': "C"}]]
-        """
-
-        if isinstance(filters, dict) and len(filters) == 3:
-            yield filters
-
-        if isinstance(filters, dict):
-            for i in filters:
-                yield from QueryBuilder._filters_to_flat(filters[i])
-
-        if isinstance(filters, list):
-            for i in filters:
-                yield from QueryBuilder._filters_to_flat(i)
-
-    def _filters_to_sql(self, node: dict, format_sql = True):
-        """Recursive function to convert the filter hierarchical dictionnary into a SQL WHERE clause.
-
-        Args:
-            filters (dict): a nested tree of condition. @See example
-
-        Returns:
-            Return (str): a Sql Where clause
-
-        """
-
-        if not node:
-            return ""
-
-        # Function to detect IF node is a Condition node (AND/OR)
-        # OR a field node with (name, operator, value) as keys
-        is_field = lambda x: True if len(x) == 3 else False
-
-        if is_field(node):
-            # print("IS FIELD", node)
-
-            # Process value
-            value = node["value"]
-            operator = node["operator"]
-            field = node["field"]
-
-            if type(value) == str:
-                value = f"'{value}'"
-
-            if format_sql:
-                # Format for SQL
-                field = self.column_to_sql(field, use_alias=False)
-
-            # convert (genotype,sample,field) to genotype(sample).field
-            if isinstance(field,tuple):
-                field = "{}(\"{}\").{}".format(*field)
-
-            # TODO ... c'est degeulasse ....
-            if operator in ("IN", "NOT IN"):
-                # DO NOT enclose value in quotes
-                # node: {'field': 'ref', 'operator': 'IN', 'value': "('A', 'T', 'G', 'C')"}
-                # wanted: ref IN ('A', 'T', 'G', 'C')
-                pass
-
-            elif isinstance(value, list):
-                value = "(" + ",".join(value) + ")"
-            else:
-                value = str(value)
-
-            # There must be spaces between these strings because of strings operators (IN, etc.)
-            return "%s %s %s" % (field, operator, value)
-        else:
-            # Not a field: 1 key only: the logical operator
-            logic_op = list(node.keys())[0]
-            # Recursive call for each field in the list associated to the
-            # logical operator.
-            # node:
-            # {'AND': [
-            #   {'field': 'ref', 'operator': 'IN', 'value': "('A', 'T', 'G', 'C')"},
-            #   {'field': 'alt', 'operator': 'IN', 'value': "('A', 'T', 'G', 'C')"}
-            # ]}
-            # Wanted: ref IN ('A', 'T', 'G', 'C') AND alt IN ('A', 'T', 'G', 'C')
-            out = [self._filters_to_sql(child, format_sql) for child in node[logic_op]]
-            # print("OUT", out, "LOGIC", logic_op)
-            # OUT ["refIN'('A', 'T', 'G', 'C')'", "altIN'('A', 'T', 'G', 'C')'"]
-            if len(out) == 1:
-                return f" {logic_op} ".join(out)
-            else:
-                return "(" + f" {logic_op} ".join(out) + ")"
-
-    @staticmethod
-    def _get_functions(columns, func_name="genotype"):
-        """Search and return Column-function (aka 3-tuple) from a list
-
-            Column-function are tuple of 3 elements to describe a function.
-            genotype("TUMOR").GT == > (genotype,TUMOR,GT)
-
-            Args:
-                columns (list): List of columns
-                func_name (str, optional): The name of function. Defaults to "genotype".
-
-            Returns:
-                list: Return a list of 3-tuple
-            """
-
-        return (col for col in columns if isinstance(col, tuple) and len(col) == 3)
-
-    def column_to_sql(self, column, use_alias=True):
-        """ Guess from which table the column belongs to and return a well formated name
-
-            Return:
-                The table name annotations or variants
-        """
-
-        # If column is a function aka tuple : ("genotype", "boby","gt") to "`gt_boby`.gt" to perform SQL JOIN
-        if isinstance(column, tuple):
-            function_name, arg, field_name = column
-            if function_name == QueryBuilder._GENOTYPE_FUNCTION_NAME:
-                if use_alias:
-                    return f"`gt_{arg}`.`{field_name}` AS `gt_{arg}.{field_name}`"
-                else:
-                    return f"`gt_{arg}`.`{field_name}`"
-
-        if column.startswith("variants.") or column in self.cache_variants_columns:
-            column = column.replace("variants.","")
-            return f"`variants`.`{column}`"
-
-        if column.startswith("annotations.") or column in self.cache_annotations_columns:
-            column = column.replace("annotations.","")
-            return f"`annotations`.`{column}`"
-
-
-
-        return column
-
-    def get_table_of_column(self, column):
-        """Return table's name of a specific column
-
-        Args:
-            column (str): column name
-
-        Returns:
-            str: table name ( samples, annnotations, variants)
-        """
-        if isinstance(column, tuple):
-            return "samples"
-
-        if column.startswith("annotations.") or column in self.cache_annotations_columns:
-            return "annotations"
-
-        if column.startswith("variants.") or column in self.cache_variants_columns:
-            return "variants"
-
-        return None
-
-
-    def headers(self):
-        """ Return a clean list of columns
-
-        It returns self.columns by replacing function tuple by a string
-
-        Returns:
-            (list): a list of string with well formated column name and variant.id
-        """
-        headers = ["id"]
-        for column in self.columns:
-            if isinstance(column, tuple):
-                headers.append("{}:{}:{}".format(*column))
-            else:
-                headers.append(column)
-
-        return headers
-
-    def build_sql(
-        self,
-        columns,
-        filters,
-        selection = "variants",
-        order_by=None,
-        order_desc=True,
-        grouped = False,
-        limit=20,
-        offset=0,
-    ):
-        """Build a SQL Select statement from internal parameters columns, filters, selections.
-        see items() and tree() methods
-
-        Args:
-            columns (list): Columns to be used in SELECT statement
-            filters (dict): A nested tree to be used in WHERE statement
-            selection (str): Source of the virtual table ( variants or build a joint )
-            order_by (str, optional): ORDER BY statement. Defaults to None.
-            order_desc (bool, optional): ORDER DESC is it's True. Defaults to True.
-            group_by (list, optional): List of columns to group. Defaults to None.
-            limit (int, optional): LIMIT SQL statement for record per page. Defaults to 20.
-            offset (int, optional): OFFSET SQL statement for page number. Defaults to 0.
-
-        Returns:
-            [type]: [description]
-        """
-
-        #  Build Select statement
-        sql_query = ""
-
-        #  Add columns
-        sql_columns = ["`variants`.`id`"] + [self.column_to_sql(col) for col in columns]
-        sql_query = f"SELECT {','.join(sql_columns)} "
-
-        # Add child count if grouped
-        if grouped:
-            sql_query += ", COUNT(*) as `children`"
-
-        #  Add source table
-        sql_query += f"FROM variants"
-
-        #  Add Join Annotations
-        columns_in_filters = [i["field"] for i in self._filters_to_flat(filters)]
-
-        # Loop over columns and check is annotations is required
-        need_join_annotations = False
-        for col in columns + columns_in_filters:
-            if self.get_table_of_column(col) == "annotations":
-                need_join_annotations = True
-                break
-
-        if need_join_annotations:
-            sql_query += (
-                " LEFT JOIN annotations ON annotations.variant_id = variants.id"
-            )
-
-        #  Add Join Selection
-        # TODO: set variants as global variables
-        if selection != "variants":
-            sql_query += (
-                " INNER JOIN selection_has_variant sv ON sv.variant_id = variants.id "
-                f"INNER JOIN selections s ON s.id = sv.selection_id AND s.name = '{selection}'"
-            )
-
-        #  Add Join Samples
-        ## detect if columns contains function like (genotype,TUMOR,gt)
-        all_columns = columns_in_filters + columns
-        samples_in_query = set([fct[1] for fct in self._get_functions(all_columns)])
-        ## Create Sample Join
-        for sample_name in samples_in_query:
-            sample_id = self.cache_samples_ids[sample_name]
-            sql_query += (
-                f" LEFT JOIN sample_has_variant `gt_{sample_name}`"
-                f" ON `gt_{sample_name}`.variant_id = variants.id"
-                f" AND `gt_{sample_name}`.sample_id = {sample_id}"
-            )
-
-        #  Add Where Clause
-        if filters:
-            where_clause = self._filters_to_sql(filters)
-            # TODO : filter_to_sql should returns empty instead of ()
-            if where_clause and where_clause != "()":
-                sql_query += " WHERE " + where_clause
-
-        #  Add Group By
-        if grouped:
-            sql_query += " GROUP BY " + ",".join(["chr","pos","ref","alt"])
-
-        #  Add Order By
-        if order_by:
-            # TODO : sqlite escape field with quote
-            orientation = "DESC" if order_desc else "ASC"
-            order_by = self.column_to_sql(order_by)
-            sql_query += f" ORDER BY {order_by} {orientation}"
-
-        if limit:
-            sql_query += f" LIMIT {limit} OFFSET {offset}"
-
-        return sql_query
-
-    def sql(self, grouped = False, limit = 20, offset = 0):
-        """Return an SQL Query based on internal parameter columns, filter, selection.
-        See _build_sql()
-
-        Args:
-            limit(int): Maximum number of variants to display per page
-            offset(int): Page number
-
-        """
-        return self.build_sql(self.columns, self.filters,self.selection,self.order_by,self.order_desc,grouped,limit,offset)
-
-    def vql(self) -> str:
-        """Build a VQL query from the current Query
-
-        Todo : Make it cleaner and test it
-
-        Return
-            A VQL query
-        """
-
-        _c = []
-        for col in self.columns:
-            if isinstance(col, tuple):
-                fct, arg, field = col
-                if fct == QueryBuilder._GENOTYPE_FUNCTION_NAME:
-                    col = f'genotype("{arg}").{field}'
-            _c.append(col)
-
-        base = f"SELECT {','.join(_c)} FROM {self.selection}"
-        where = ""
-        if self.filters:
-            where_clause = self._filters_to_sql(self.filters,format_sql = False)
-            if where_clause and where_clause != "()":
-                where = f" WHERE {where_clause}"
-
-
-        return base + where
-
-    def set_from_vql(self, vql: str):
-        """Create a Query from vql
-
-        Args:
-            vql (str): vql grammar query
-        """
-
-        result = next(execute_vql(vql))
-        if result["cmd"] == "select_cmd":
-            self.columns = result.get("columns", None)
-            self.selection = result.get("source", "variants")
-            self.filters = result.get("filter", None)
-
-
-
-    def items(self, limit=20, offset=0):
-        """Execute SQL query and return variants as a list
-
-        .. note:: Used:
-            - as dict of variants in chartquerywidget.py
-            - as tuples of variants in viewquerywidget.py
-
-        :param limit: SQL LIMIT for pagination
-        :param offset: SQL OFFSET for pagination
-        :return: Generator of variants as sqlite3.Row objects.
-            A Row instance serves as a highly optimized row_factory for
-            Connection objects. It tries to mimic a tuple in most of its features.
-
-            It supports mapping access by column name and index, iteration,
-            representation, equality testing and len().
-        :rtype: <generator <sqlite3.Row>>
-
-        :Example:
-
-            for row in query.items():
-        ...     print(tuple(row))
-        (324, "chr2", "24234", "A", "T", ...)
-        ...     print(dict(row))
-        {"rowid":23423, "chr":"chr2", "pos":4234, "ref":"A", "alt": "T", ...}
-
-        """
-        self.conn.row_factory = sqlite3.Row
-        sql = self.sql(limit, offset)
-        LOGGER.debug(sql)
-
-        for variant in self.conn.execute(sql):
-            yield list(dict(variant).values())
-
-    def trees(self, grouped = True, limit=20, offset=0):
-        """ Execute Sql Query and returns variants as Tree
-
-        This methods  works only 'group_by' defined and it merge groups results as a tree.
-        It usually works with group_by = [chr,pos,ref,alt] when there are several annotations per variants
-
-        Args:
-            grouped(bool): Grouped variant by chr,pos,ref,alt. If it is False,  output will be same than self.items()
-            limit(int): Maximum number of variants to display per page
-            offset(int): Page number
-
-        Examples:
-            This is an output with two variants and the correspondant tree.
-            The first variant contains 2 annotations and the second 3 annotations
-
-            [
-                [(chr1,2434,A,T, transcriptA),(chr1,2434,A,T, transcriptB),(chr1,2434,A,T, transcriptC)],
-                [(chr1,9999,C,T, transcriptA),(chr1,9999,C,T, transcriptB),(chr1,9999,C,T, transcriptC),(chr1,9999,C,T, transcriptD]
-            ]
-
-            ├── chr1,2434,A,T, transcriptA  # Cannonical transcripts
-            │   ├── chr1,2434,A,T, transcriptB
-            │   ├── chr1,2434,A,T, transcriptC
-            ├── chr1,9999,C,T, transcriptA # Cannonical transcripts
-            │   ├── chr1,9999,C,T, transcriptB
-            │   ├── chr1,9999,C,T, transcriptC
-            │   ├── chr1,9999,C,T, transcriptD
-
-
-
-        """
-        self.conn.row_factory = sqlite3.Row
-
-
-        query = self.build_sql(
-            self.columns,
-            self.filters,
-            self.selection,
-            self.order_by,
-            self.order_desc,
-            grouped, # Grouped
-            limit, offset)
-
-        LOGGER.debug(query)
-
-        for variant in self.conn.execute(query):
-            if grouped:
-            # Return child count, rows with last ( which is children)
-                yield variant["children"], list(dict(variant).values())[:-1]
-            else:
-                yield 0, list(dict(variant).values())
-
-
-            # if grouped:
-            #     ann_filter = {"AND": [{"field": "annotations.variant_id", "operator": "=", "value": variant_id}]}
-            #     sub_query = self.build_sql(self.columns,ann_filter,self.selection, limit = None)
-            #     for sub_item in self.conn.execute(sub_query):
-            #         items.append(list(dict(sub_item).values()))
-            # else:
-            #items.append(list(dict(variant).values()))
-            #yield items
-
-    def children(self, variant_id):
-        """ Return children annotations """
-
-        self.conn.row_factory = sqlite3.Row
-        ann_filter = {"AND": [{"field": "annotations.variant_id", "operator": "=", "value": variant_id}]}
-        sub_query = self.build_sql(self.columns,ann_filter,self.selection, limit = None)
-        for variant in self.conn.execute(sub_query):
-            yield list(dict(variant).values())
-
-
-
-    def count(self, grouped = False):
-        """Wrapped function with a memoizing callable that saves up to the
-        maxsize most recent calls.
-
-        .. note:: The LRU feature performs best when maxsize is a power-of-two.
-
-        .. note:: The COUNT() aggregation function is expensive on partially
-            indexed tables (because dynamically built) for large dataset
-            and it seems difficult to predict which fields will be requested
-            by the user.
-        """
-
-        query = self.sql(grouped = grouped, limit = None)
-        print("grouped", grouped, query)
-
-        #Trick to accelerate UI refresh on basic queries
-        # if self.selection == "variants" and not self.filters:
-        #     return self.conn.execute(
-        #         "SELECT MAX(variants.id) as count FROM variants"
-        #     ).fetchone()[0]
-
-        return self.conn.execute(
-            f"SELECT COUNT(*) as count FROM ({query})"
-        ).fetchone()[0]
-
-    @lru_cache(maxsize=128)
-    def cache_count(self):
-        """ Return lru_cache from self.count
-        """
-        return self.count()
-
-    def save(self, name):
-        """Save Variant Query into a new selection
-
-        This methods will get all variant.id extracted from self.sql()
-        and insert them into select_has_variant table
-
-        Args:
-            name (str): Selection name
-
-        Return:
-            sql index of selection
-        """
-
-        cursor = self.conn.cursor()
-        count = self.count() # Get count .. Can take a while
-
-        sql_query = self.build_sql(
-            columns = [],
-            filters = self.filters,
-            selection = self.selection,
-            limit = None)
-
-        LOGGER.debug(sql_query)
-
-        # Create selection
-        selection_id = insert_selection(cursor,sql_query, name=name, count=count)
-
-        # DROP indexes
-        # For joints between selections and variants tables
-        try:
-            cursor.execute("""DROP INDEX idx_selection_has_variant""")
-        except sqlite3.OperationalError:
-            pass
-
-        # Insert into selection_has_variant table
-        # PS: We use DISTINCT keyword to statisfy the unicity constraint on
-        # (variant_id, selection_id) of "selection_has_variant" table.
-        # TODO: is DISTINCT useful here? How a variant could be associated several
-        # times with an association?
-
-        q = f"""
-        INSERT INTO selection_has_variant
-        SELECT DISTINCT id, {selection_id} FROM ({sql_query})
-        """
-
-        LOGGER.debug(q)
-
-        cursor.execute(q)
-
-        # # REBUILD INDEXES
-        # # For joints between selections and variants tables
-        create_selection_has_variant_indexes(cursor)
-
-        self.conn.commit()
-        if cursor.rowcount:
-            return cursor.lastrowid
-        return None
-
-
-
-
-    def __repr__(self):
-        return f"""
-        columns : {self.columns}
-        filter: {self._filters_to_sql(self.filters)}
-        selection: {self.selection}
-        """
-
-
-
-class Selection:
-    """Binding object over selection which allows to do set operations on variants
-    associated to it
-
-    Attributes:
-        - cls.conn: Class attribute for sqlite3 connection.
-        - self.query: SQL query ready to be used in set operations.
-        - self.mode: Define the way variants are compared to each other.
-            - "variant" (default): chr,pos,ref,alt = variant.id
-            - "site": chr,pos
-        ..seealso:: from_selection_id()
-    """
-
-    # Class attribute, shared accross all instances
-    conn = None
-
-    def __init__(self, sql_query=None, mode="variant"):
-        """Create a new selection object"""
-        self.sql_query = sql_query
-        # Define the way variants are compared
-        self.mode = mode
-
-    def __add__(self, other):
-        sql_query = union_variants(self.sql_query, other.sql_query, mode=self.mode)
-        return Selection(sql_query, self.mode)
-
-    def __and__(self, other):
-        sql_query = intersect_variants(self.sql_query, other.sql_query, mode=self.mode)
-        return Selection(sql_query, self.mode)
-
-    def __sub__(self, other):
-        sql_query = subtract_variants(self.sql_query, other.sql_query, mode=self.mode)
-        return Selection(sql_query, self.mode)
-
-    def __repr__(self):
-        return "<Selection>: " + self.sql_query
-
-    def save(self, name):
-        """Create the new selection in the database"""
-        return create_selection_from_sql(
-            Selection.conn, self.sql_query, name, from_selection=True
-        )
-
-    @classmethod
-    def from_selection_id(cls, selection_id, mode="variant"):
-        """Get new Selection object based on a sql query that defines it
-
-        .. note:: Called from the UI. It is here that 'mode' is selected.
-
-        :param selection_id: The id of the selection for which the object will be
-            based.
-        :key mode: Modifies the definition of the unicity of a variant.
-            (optional: "variant" | "site"),(default: "variant").
-            - variant: (chr, pos, ref, alt) is the primary key so we query only
-            'selection_has_variant' for 'variant_id' field.
-            - site: (chr, pos) modifies the default definition of the unicity
-            of a variant.
-            => joint on 'variants' table is mandatory here.
-        :type selection_id: <int>
-        :type mode: <str>
-        :return: A new Selection object.
-        :rtype: <Selection>
-        """
-        if selection_id == 1:
-            # Get ids from the default selection
-            sql_query = """SELECT id as variant_id FROM variants"""
-        else:
-            # A variant is defined as chr,pos,ref,alt
-            # which is the primary key (unique)
-            # So these columns are synonyms of 'variants.id' for the table 'variants'
-            # or 'variant_id' for 'selection_has_variant' table.
-            # No further joints are required here.
-            sql_query = f"""SELECT variant_id
-            FROM selection_has_variant sv
-             WHERE sv.selection_id = {selection_id}"""
-
-        return cls(sql_query, mode=mode)
+#======================== execute commande ======================================

@@ -36,6 +36,9 @@ def async_import_reader(conn, reader: AbstractReader, **kwargs):
         reference=kwargs.get("reference", "UKN"),
     )
 
+    create_table_metadatas(conn)
+    insert_many_metadatas(conn, reader.get_metadatas())
+
     yield 0, "Creating table shema..."
     # Create table fields
     create_table_fields(conn)
@@ -53,6 +56,9 @@ def async_import_reader(conn, reader: AbstractReader, **kwargs):
 
     # Create selection
     create_table_selections(conn)
+
+    # Create table sets 
+    create_table_sets(conn)
 
     # Insert samples
     yield 0, "Inserting samples..."

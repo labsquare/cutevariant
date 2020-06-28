@@ -35,11 +35,14 @@ def snake_to_camel(name:str) -> str:
 class PluginWidget(QWidget):
 
     LOCATION = DOCK_LOCATION
+    ENABLE = False
 
     def __init__(self, parent = None):
         super().__init__(parent)
         self.mainwindow = None
         self.widget_location = DOCK_LOCATION
+
+        self.refresh_groups = [] # TODO 
 
 
     def on_register(self, mainwindow):
@@ -59,28 +62,20 @@ class PluginWidget(QWidget):
         """
         pass
 
-    def on_query_model_changed(self, model):
-        """This method is called when the variant model changed 
-        
-        Args:
-            model (QueryModel): QueryModel
-        """
-        pass
-
-    def on_variant_changed(self,variant):
-        """This method is called when a variant is clicked. 
-        The signal must be sended from mainwindow
-        
-        Args:
-            variant (dict): contains data of a variant
-        """
-        pass
 
     def on_close(self):
         """This methods is called when the mainwindow close
         """
         pass
 
+
+    def on_refresh(self):
+        """This methods is called to refresh the gui 
+        
+        This is called by the mainwindow.controller::refresh methods 
+
+        """
+        pass 
 
 
 
@@ -138,5 +133,4 @@ def find_plugins(path=None):
        
         
         yield item
-
 

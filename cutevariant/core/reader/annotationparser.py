@@ -2,7 +2,7 @@
 import re
 
 # Custom imports
-from .abstractreader import AbstractReader
+from .abstractreader import AbstractReader, sanitize_field_name
 from cutevariant.commons import logger
 
 LOGGER = logger()
@@ -244,7 +244,7 @@ class BaseParser:
                 # Sanitize fields names here
                 # PS: If name is in annotation_default_fields it will be modified
                 # by the previous condition.
-                raw_field_name = AbstractReader.sanitize_field_name(raw_field_name)
+                raw_field_name = sanitize_field_name(raw_field_name)
                 _f = {
                     "name": raw_field_name,
                     "description": "None",

@@ -2,7 +2,7 @@
 import vcf
 
 # Custom imports
-from .abstractreader import AbstractReader
+from .abstractreader import AbstractReader, sanitize_field_name
 from .annotationparser import VepParser, SnpEffParser
 from cutevariant.commons import logger
 
@@ -17,9 +17,6 @@ def _map(self, func, iterable, bad=['.', '', 'NA']):
 vcf.Reader._map = _map
 
 # End fixing 
-
-
-
 
 
 LOGGER = logger()
@@ -50,6 +47,7 @@ class VcfReader(AbstractReader):
         vcf_reader = vcf.VCFReader(device)
         self.samples = vcf_reader.samples
         self.annotation_parser = None
+        self.metadata = vcf_reader.metadata
         self._set_annotation_parser(annotation_parser)
 
     def get_fields(self):
@@ -70,15 +68,13 @@ class VcfReader(AbstractReader):
             .. seealso parse_fields() for basic default fields.
         :rtype: <tuple <dict>>
         """
-        LOGGER.debug("CsvReader::get_fields: called")
-        if not self.fields:
-            LOGGER.debug("CsvReader::get_fields: parse")
+        if not hasattr(self,"fields"):
 
             # Sanitize fields names
             # PS: annotations fields names are sanitized by the annotation_parser
             fields = tuple(self.parse_fields())
             for field in fields:
-                field["name"] = AbstractReader.sanitize_field_name(field["name"])
+                field["name"] = sanitize_field_name(field["name"])
 
             if self.annotation_parser:
                 # If "ANN" is a field in the current VCF:
@@ -99,6 +95,11 @@ class VcfReader(AbstractReader):
         :return: Generator of full variants with "annotations" key.
         :rtype: <generator <dict>>
         """
+
+        if not hasattr(self, 'fields'):
+            # This is a bad caching code .... 
+            self.get_fields()
+
         if self.annotation_parser:
             yield from self.annotation_parser.parse_variants(self.parse_variants())
         else:
@@ -174,9 +175,6 @@ class VcfReader(AbstractReader):
                                 sample_ann[str.lower(key)] = value
                             except:
                                 LOGGER.debug(f"VCFReader::parse: {key} not defined in genotype ")
-
-
-
 
                         sample_data.update(sample_ann)
 
@@ -289,18 +287,6 @@ class VcfReader(AbstractReader):
         """Return list of samples."""
         return self.samples
 
-    # def _keep_unique_fields(self,fields):
-    #     ''' return fields list with unique field name '''
-    #     names = []
-    #     for field in fields:
-    #         if field["name"] not in names:
-    #             names.append(field["name"])
-    #             yield field
-
-    # else:
-    #     # Rename duplicate fields : field_1, field_2 etc ...
-    #     field["name"]  = field["name"] +"_"+ str(names.count(field["name"])+1)
-    #     yield field
 
     def _set_annotation_parser(self, parser: str):
         """Set the given annotation parser"""
@@ -332,3 +318,15 @@ class VcfReader(AbstractReader):
 
     def __repr__(self):
         return f"VCF Reader using {type(self.annotation_parser).__name__}"
+
+
+    def get_metadatas(self):
+        """override from AbstractReaer """ 
+        output = {}
+        output["filename"] = self.device.name 
+
+        for key, value in self.metadata.items():
+            output[key] = str(value)
+
+        return output
+        

@@ -13,7 +13,8 @@ from PySide2.QtGui import QIcon, QKeySequence
 # Custom imports
 from cutevariant.core import Query, get_sql_connexion
 from cutevariant.gui.ficon import FIcon
-from cutevariant.gui.querymodel import QueryModel
+from cutevariant.gui.state import State
+
 from cutevariant.gui.wizards import ProjectWizard
 from cutevariant.gui.settings import SettingsWidget
 # from cutevariant.gui.querywidget import QueryWidget
@@ -21,12 +22,18 @@ from cutevariant.gui.settings import SettingsWidget
 
 #  Import plugins
 from cutevariant.gui import plugin
+
 #from cutevariant.gui.plugins.editor.plugin import EditorPlugin
 
-from cutevariant.gui.aboutcutevariant import AboutCutevariant
+from cutevariant.gui.widgets.aboutcutevariant import AboutCutevariant
 # from cutevariant.gui.chartquerywidget import ChartQueryWidget
 from cutevariant import commons as cm
 from cutevariant.commons import MAX_RECENT_PROJECTS, DIR_ICONS
+
+from cutevariant.core.writer import CsvWriter
+
+
+
 
 # Proof of concept - testing only
 # from cutevariant.gui.webglquerywidget import WebGLQueryWidget
@@ -50,12 +57,9 @@ class MainWindow(QMainWindow):
         # Keep sqlite connection
         self.conn = None
 
-        # store dock plugins
-        self.plugins = {}
-
-        # The query model 
-        self.query_model = QueryModel()
-
+        # State variable of application 
+        # Often changed by plugins 
+        self.state = State()
 
         self.central_tab = QTabWidget()
         self.footer_tab = QTabWidget()
@@ -65,8 +69,6 @@ class MainWindow(QMainWindow):
         vsplit.addWidget(self.footer_tab)  
         self.setCentralWidget(vsplit)
 
-
-
         # Status Bar
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)  
@@ -75,11 +77,9 @@ class MainWindow(QMainWindow):
         # Setup UI
         self.setup_ui()
 
-      # Register plugins 
+        # Register plugins 
+        self.plugins = {}
         self.register_plugins()
-
-
-
 
         # Window geometry
         self.resize(600, 400)
@@ -89,18 +89,12 @@ class MainWindow(QMainWindow):
         # Restores the state of this mainwindow's toolbars and dockwidgets
         self.read_settings()
 
-    #     #self.open("test.db")
-
-        self.query_model.changed.connect(self.on_query_model_changed)
-    
-
 
 
     def setup_ui(self):
         # Setup menubar
         self.setup_menubar()
         self.setup_toolbar()
-
 
 
     def add_panel(self, widget, area=Qt.LeftDockWidgetArea):
@@ -124,39 +118,65 @@ class MainWindow(QMainWindow):
         """add plugin to the application
         """
 
-        self.plugins = dict()
+        LOGGER.info("register plugins")
+
         for extension in plugin.find_plugins():
             if "widget" in extension:
                 name = extension["name"]
                 plugin_widget_class = extension["widget"]
                 widget = plugin_widget_class()
-                self.plugins[name] = widget
-                widget.mainwindow = self
-                widget.setWindowTitle(extension.get("name"))
-                widget.setToolTip(extension.get("description"))
-                widget.on_register(self)
+                if widget.ENABLE == True: 
+                    widget.mainwindow = self
+                    widget.setWindowTitle(extension.get("name"))
+                    widget.setToolTip(extension.get("description"))
+                    widget.on_register(self)
+                    # Add plugins 
+                    self.plugins[name] = widget
+
+                    if plugin_widget_class.LOCATION == plugin.DOCK_LOCATION:
+                        self.add_panel(widget)
+
+                    if plugin_widget_class.LOCATION == plugin.CENTRAL_LOCATION:
+                        self.central_tab.addTab(widget, widget.windowTitle())
+
+                    if plugin_widget_class.LOCATION == plugin.FOOTER_LOCATION:
+                        self.footer_tab.addTab(widget, widget.windowTitle())
 
 
-                if plugin_widget_class.LOCATION == plugin.DOCK_LOCATION:
-                    self.add_panel(widget)
+    def refresh_plugins(self, sender: plugin.PluginWidget = None):
+        """Refresh all plugins except_plugins 
+        
+        Args:
+            sender (PluginWidget): from a plugin, you can pass "self" as argument 
+        """
 
-                if plugin_widget_class.LOCATION == plugin.CENTRAL_LOCATION:
-                    self.central_tab.addTab(widget, widget.windowTitle())
+        print("sender", sender)
+        for plugin in self.plugins.values():
+            if plugin is not sender:
+                print(plugin)
+                plugin.on_refresh()
 
-                if plugin_widget_class.LOCATION == plugin.FOOTER_LOCATION:
-                    self.footer_tab.addTab(widget, widget.windowTitle())
+    def refresh_plugin(self, plugin_name:str):
+        """Refresh a plugin identified by plugin_name 
+        It doesn't refresh the sender plugin 
+        
+        Args:
+            plugin_name (str): a plugin name. 
+        """
+        if plugin_name in self._plugins:
+            plugin = self.plugins[plugin_name]
+            plugin.on_refresh()
 
-   
 
     def setup_menubar(self):
         """Menu bar setup: items and actions"""
         ## File Menu
         self.file_menu = self.menuBar().addMenu(self.tr("&File"))
         self.new_project_action = self.file_menu.addAction(
-            FIcon(0xF415), self.tr("&New project"), self.new_project, QKeySequence.New
+            FIcon(0xF01BA), self.tr("&New project"), self.new_project, QKeySequence.New
         )
         self.open_project_action = self.file_menu.addAction(
-            FIcon(0xF76F),
+            FIcon(0xF095D),
             self.tr("&Open project ..."),
             self.open_project,
             QKeySequence.Open,
@@ -169,9 +189,13 @@ class MainWindow(QMainWindow):
         self.recent_files_menu.addSeparator()
         self.recent_files_menu.addAction(self.tr("Clear"), self.clear_recent_projects)
 
+        ## Export projects as 
+        self.export_action= self.file_menu.addAction(self.tr("Export as csv"), self.export_project)
+
+
         self.file_menu.addSeparator()
         self.file_menu.addAction(
-            FIcon(0xF493), self.tr("Settings ..."), self.show_settings
+            FIcon(0xF0493), self.tr("Settings ..."), self.show_settings
         )
 
         self.file_menu.addSeparator()
@@ -185,13 +209,13 @@ class MainWindow(QMainWindow):
 
         ## Edit
         self.edit_menu = self.menuBar().addMenu(self.tr("&Edit"))
-        self.edit_menu.addAction(FIcon(0xF18F), "&Copy", self.copy, QKeySequence.Copy)
+        self.edit_menu.addAction(FIcon(0xF018F), "&Copy", self.copy, QKeySequence.Copy)
         self.edit_menu.addAction(
-            FIcon(0xF192), "&Paste", self.paste, QKeySequence.Paste
+            FIcon(0xF0192), "&Paste", self.paste, QKeySequence.Paste
         )
         self.edit_menu.addSeparator()
         self.edit_menu.addAction(
-            FIcon(0xF486), "Select all", self.select_all, QKeySequence.SelectAll
+            FIcon(0xF0486), "Select all", self.select_all, QKeySequence.SelectAll
         )
 
         ## View
@@ -263,15 +287,15 @@ class MainWindow(QMainWindow):
         # Create connection
         self.conn = get_sql_connexion(filepath)
 
-        # Create central view 
-        # TODO: rename the class 
-        self.query_model.conn = self.conn
-        #self.query_model.load()
-
-        for name, _plugin in self.plugins.items():
-            _plugin.on_open_project(self.conn)
-
+        self.open_database(self.conn)
         self.save_recent_project(filepath)
+
+
+    def open_database(self, conn):
+        self.conn = conn
+
+        for plugin in self.plugins.values():
+            plugin.on_open_project(self.conn)
 
     def save_recent_project(self, path):
         """Save current project into QSettings
@@ -360,15 +384,29 @@ class MainWindow(QMainWindow):
                 raise
     
 
+    def export_project(self):
+
+        filepath, _ = QFileDialog.getSaveFileName(
+            self,
+            self.tr("Save project"),
+            QDir.homePath(),
+            self.tr("(*.csv)")
+            )
+
+        if filepath:
+            with open(filepath, "w") as file:
+                writer = CsvWriter(file)
+                writer.save(self.conn)
+
     def show_settings(self):
         """Slot to show settings window"""
         widget = SettingsWidget()
-        widget.exec()
+        widget.exec_()
 
     def aboutCutevariant(self):
         """Slot to show about window"""
         dialog_window = AboutCutevariant()
-        dialog_window.exec()
+        dialog_window.exec_()
 
     def reset_ui(self):
         """Slot to reset the position of docks to the state of the previous launch"""
@@ -436,17 +474,17 @@ class MainWindow(QMainWindow):
             #  TODO: handle UI changes by passing UI_VERSION to saveState()
             app_settings.setValue("windowState", self.saveState())
 
-    @Slot()
-    def on_query_model_changed(self):
-        for name, _plugin in self.plugins.items():
-            if _plugin.isVisible():
-                _plugin.on_query_model_changed(self.query_model)
+    # @Slot()
+    # def on_query_model_changed(self):
+    #     for name, _plugin in self.plugins.items():
+    #         if _plugin.isVisible():
+    #             _plugin.on_query_model_changed(self.query_model)
 
-    @Slot()
-    def on_variant_changed(self, variant):
-        for name, _plugin in self.plugins.items():
-            if _plugin.isVisible():
-                _plugin.on_variant_changed(variant) 
+    # @Slot()
+    # def on_variant_changed(self, variant):
+    #     for name, _plugin in self.plugins.items():
+    #         if _plugin.isVisible():
+    #             _plugin.on_variant_changed(variant) 
 
 
 if __name__ == "__main__":

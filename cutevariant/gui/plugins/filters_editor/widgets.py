@@ -1051,106 +1051,10 @@ class FilterDelegate(QStyledItemDelegate):
         editor.setGeometry(option.rect)
 
 
-class FieldDialog(QDialog):
-    def __init__(self, conn=None, parent=None):
-        super().__init__()
-        self.setModal(True)
-        self.setWindowTitle(self.tr("Create filter"))
-        self.title_label = QLabel("Non title")
-        self.description_label = QLabel("Description")
-        self.btn_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
 
-        self.field_box = QComboBox()
-        self.field_operator = OperatorField()
+class FiltersEditorWidget(plugin.PluginWidget):
 
-        # setup combobox
-        self.field_box.setEditable(True)
-        # self.field_operator.setEditable(True)
-
-        #  setup label
-        font = QFont()
-        font.setBold(True)
-        self.title_label.setFont(font)
-        self.description_label.setWordWrap(True)
-
-        v_layout = QVBoxLayout()
-        v_layout.addWidget(self.title_label)
-        v_layout.addWidget(self.description_label)
-        v_layout.addSpacing(10)
-        self.form_layout = QFormLayout()
-
-        self.form_layout.addRow("Field", self.field_box)
-        self.form_layout.addRow("Operator", self.field_operator)
-        self.form_layout.addRow("Value", QSpinBox())
-
-        v_layout.addLayout(self.form_layout)
-        v_layout.addStretch(True)
-        v_layout.addWidget(self.btn_box)
-
-        self.setLayout(v_layout)
-
-        self.field_box.currentIndexChanged.connect(self.on_field_changed)
-
-        self.conn = conn
-
-        self.btn_box.accepted.connect(self.accept)
-        self.btn_box.rejected.connect(self.reject)
-
-    @property
-    def conn(self):
-        return self._conn
-
-    @conn.setter
-    def conn(self, conn):
-        self._conn = conn
-        if self._conn:
-            self.load_fields()
-
-    def load_fields(self):
-        """Load sql fields into combobox
-        """
-        for label, value, field in prepare_columns(self.conn):
-            self.field_box.addItem(label, userData=(value, field))
-
-    def load_value_editor(self, sql_field):
-        """Create a field widget according sql field name
-
-        Args:
-            sql_field (str): field name from sql field table
-        """
-        self.form_layout.removeRow(2)
-        widget = FieldFactory(self.conn).create(sql_field)
-        self.form_layout.addRow("value", widget)
-
-    @Slot(int)
-    def on_field_changed(self, index):
-        """This method is trigger when a field has changed
-
-        Args:
-            index (int): current index from self.field_box
-        """
-        value, field = self.field_box.itemData(index)
-        self.title_label.setText("{name} ({category})".format(**field))
-        self.description_label.setText(field["description"])
-        self.load_value_editor(value)
-
-    def get_condition(self):
-        """Return current condition as a dictionnary
-
-        Returns:
-            Dictionnary exemple {"field":"chr", "operator":"=", value:5}
-
-        """
-        field = self.field_box.currentData()[0]
-        operator = self.field_operator.get_value()
-        widget = self.form_layout.itemAt(5).widget()
-        value = widget.get_value()
-
-        return (field, operator, value)
-
-
-class FiltersWidget(plugin.PluginWidget):
-
+    ENABLE = True
     changed = Signal()
 
     def __init__(self, parent=None):
@@ -1160,7 +1064,7 @@ class FiltersWidget(plugin.PluginWidget):
         self.model = FilterModel(None)
         self.delegate = FilterDelegate()
         self.toolbar = QToolBar()
-        self.toolbar.setIconSize(QSize(20, 20))
+        self.toolbar.setIconSize(QSize(16, 16))
         self.view.setModel(self.model)
         self.view.setItemDelegate(self.delegate)
         self.view.setIndentation(15)
@@ -1168,9 +1072,11 @@ class FiltersWidget(plugin.PluginWidget):
         self.view.setAcceptDrops(True)
         self.view.setDragDropMode(QAbstractItemView.InternalMove)
         self.view.setAlternatingRowColors(True)
-        self.view.header().setSectionResizeMode(0, QHeaderView.Stretch)
-        self.view.header().setSectionResizeMode(1, QHeaderView.ResizeToContents)
-        self.view.header().setSectionResizeMode(2, QHeaderView.Interactive)
+
+        self.view.header().setSectionResizeMode(0,QHeaderView.Stretch)
+        self.view.header().setSectionResizeMode(1,QHeaderView.ResizeToContents)
+        self.view.header().setSectionResizeMode(2,QHeaderView.Interactive)
+        self.view.header().hide() 
 
         layout = QVBoxLayout()
         layout.addWidget(self.view)
@@ -1184,20 +1090,16 @@ class FiltersWidget(plugin.PluginWidget):
 
         self.add_menu = QMenu()
         self.add_button = QToolButton()
-        self.add_button.setIcon(FIcon(0xF703))
+        self.add_button.setIcon(FIcon(0xF0415))
         self.add_button.setPopupMode(QToolButton.InstantPopup)
-        self.add_menu.addAction(FIcon(0xF8E0), "Add Logic", self.on_add_logic)
-        self.add_menu.addAction(
-            FIcon(0xF70A), "Add Condition (inline)", self.on_add_condition
-        )
-        self.add_menu.addAction(
-            FIcon(0xF70A), "Add Condition", self.on_open_condition_dialog
-        )
+
+        self.add_menu.addAction(FIcon(0xF0415), "Add Logic", self.on_add_logic)
+        self.add_menu.addAction(FIcon(0xF0415), "Add Condition", self.on_add_condition)
         self.add_button.setMenu(self.add_menu)
 
         self.toolbar.addWidget(self.add_button)
-        self.toolbar.addAction(FIcon(0xF143), "up")
-        self.toolbar.addAction(FIcon(0xF140), "down")
+        self.toolbar.addAction(FIcon(0xF0143), "up")
+        self.toolbar.addAction(FIcon(0xF0140), "down")
 
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -1208,13 +1110,6 @@ class FiltersWidget(plugin.PluginWidget):
         # self.view.selectionModel().currentChanged.connect(self.on_filters_changed)
         self.model.filtersChanged.connect(self.on_filters_changed)
 
-    @property
-    def conn(self):
-        return self.model.conn
-
-    @conn.setter
-    def conn(self, conn):
-        self.model.conn = conn
 
     @property
     def filters(self):
@@ -1231,16 +1126,21 @@ class FiltersWidget(plugin.PluginWidget):
 
     def on_open_project(self, conn):
         """ Overrided from PluginWidget """
-        self.conn = conn
+        self.model.conn = conn
+        self.on_refresh()
 
-    def on_query_model_changed(self, model):
-        """ Overrided from PluginWidget """
-        self.filters = model.filters
+    def on_refresh(self):
+        """ Overrided """ 
+        self.model.filters = self.mainwindow.state.filters
+
 
     def on_filters_changed(self):
-        """ triggered when filter has changed """
-        self.mainwindow.query_model.filters = self.filters
-        self.mainwindow.query_model.load(reset_page=True)
+
+        """ triggered when filter has changed """ 
+
+
+        self.mainwindow.state.filters = self.model.filters
+        self.mainwindow.refresh_plugins(sender = self)
 
     def on_add_logic(self):
         """Add logic item to the current selected index
@@ -1312,11 +1212,16 @@ if __name__ == "__main__":
 
     style.dark(app)
 
-    conn = get_sql_connexion("examples/test.db")
+    from cutevariant.core.importer import import_reader
+    from cutevariant.core.reader import FakeReader
+
+
+    conn = sql.get_sql_connexion(":memory:")
+    import_reader(conn, FakeReader())
 
     data = {"AND": [{"field": "chr", "operator": "=", "value": "chr"}]}
 
-    view = FilterWidget()
+    view = FiltersEditorWidget()
     view.model.load(data)
 
     print(view.model.to_dict() == data)

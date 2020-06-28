@@ -77,7 +77,7 @@ class AboutCutevariant(QDialog):
     def addTab(self, filename):
         """Read the given text file and load it in a new tab"""
         # Get file at the project's root directory
-        filepath = resource_filename(__name__, "../../" + filename)
+        filepath = resource_filename(__name__, "../../.." + filename)
 
         text_edit = QPlainTextEdit()
         text_edit.setFrameShape(QFrame.NoFrame)

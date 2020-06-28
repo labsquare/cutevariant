@@ -1,6 +1,6 @@
 """Plugin to show all characteristics of a selected variant
 
-InfoVariantWidget is showed on the GUI, it uses VariantPopupMenu to display a
+VariantInfoWidget is showed on the GUI, it uses VariantPopupMenu to display a
 contextual menu about the variant which is selected.
 VariantPopupMenu is also used in viewquerywidget for the same purpose.
 """
@@ -19,7 +19,7 @@ from cutevariant.core import sql, get_sql_connexion
 
 from cutevariant.gui.plugin import PluginWidget
 
-class InfoVariantWidget(PluginWidget):
+class VariantInfoWidget(PluginWidget):
     """Plugin to show all annotations of a selected variant"""
 
     ACMG_CLASSIFICATION = [
@@ -31,14 +31,17 @@ class InfoVariantWidget(PluginWidget):
         ("Classe 5","Pathogen")
     ]
 
-    def __init__(self):
+
+    ENABLE = True
+
+    def __init__(self,conn = None):
         super().__init__()
+
+        self.conn = conn
 
         self.setWindowTitle(self.tr("Info variants"))
 
         self.view = QTabWidget()
-
-
         # Editor 
         self.classification_box = QComboBox()
         self.favorite_checkbox = QCheckBox()
@@ -48,13 +51,26 @@ class InfoVariantWidget(PluginWidget):
             self.classification_box.addItem(a,b)
 
         self.editor = QWidget()
-        editor_layout = QFormLayout()
+        self.editor_layout = QVBoxLayout()
+
+        self.toolbar = QToolBar()
+        self.toolbar.setIconSize(QSize(16,16))
+
+        sub_edit_layout = QFormLayout()
+        sub_edit_box = QGroupBox()
         #editor_layout.setRowWrapPolicy(QFormLayout.WrapAllRows)
-        editor_layout.addRow("Classification", self.classification_box)
-        editor_layout.addRow("Is Saved", self.favorite_checkbox)
-        editor_layout.addRow("Comments", self.comment_input)
-        editor_layout.addWidget(self.save_button)
-        self.editor.setLayout(editor_layout)
+        sub_edit_layout.addRow("Classification", self.classification_box)
+        sub_edit_layout.addRow("Is Saved", self.favorite_checkbox)
+        sub_edit_box.setLayout(sub_edit_layout)
+        #sub_edit_layout.addWidget(self.comment_input)
+        #sub_edit_layout.addWidget(self.save_button)
+
+        self.editor_layout.addWidget(sub_edit_box)
+        self.editor_layout.addWidget(self.comment_input)
+        self.editor_layout.addWidget(self.save_button)
+
+
+        self.editor.setLayout(self.editor_layout)
         self.view.addTab(self.editor, "User")
         self.save_button.clicked.connect(self.on_save_clicked)
 
@@ -122,43 +138,17 @@ class InfoVariantWidget(PluginWidget):
 
     def on_open_project(self, conn):
         self.conn = conn
+        self.on_refresh()
 
-    def on_variant_changed(self, variant):
-        self.current_variant = variant
-
-
-    @property
-    def conn(self):
-        """ Return sqlite connexion of cutevariant project """
-        return self._conn 
-
-    @conn.setter
-    def conn(self, conn):
-        """Set sqlite connexion of a cutevariant project
-
-        This method is called Plugin.on_open_project
-        
-        Args:
-            conn (sqlite3.connection)
-        """
-        self._conn = conn
-
-    @property
-    def current_variant(self):
-        """Return variant data as a dictionnary 
-        """
-        return self._current_variant
-
-    @current_variant.setter
-    def current_variant(self, variant):
-        """Set variant data 
-        This method is called by Plugin.on_variant_clicked """
-        self._current_variant = variant
+    def on_refresh(self):
+        self.current_variant = self.mainwindow.state.current_variant
         self.populate()
 
     def populate(self):
         """Show the current variant attributes on the TreeWidget"""
-       
+        if not self.current_variant:
+            return 
+
         if "id" not in self.current_variant:
             return 
 
@@ -295,7 +285,7 @@ if __name__ == "__main__":
     conn = get_sql_connexion("/home/schutz/Dev/cutevariant/examples/test.db")
 
 
-    w = InfoVariantWidget()
+    w = VariantInfoWidget()
     w.conn = conn
 
     variant = sql.get_one_variant(conn, 1)

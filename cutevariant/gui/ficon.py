@@ -1,5 +1,7 @@
 # Qt imports
-from PySide2.QtCore import QCoreApplication, Qt, QRect, QPoint, QBuffer, QByteArray
+
+from PySide2.QtCore import  Qt, QRect, QPoint, QBuffer, QByteArray
+
 from PySide2.QtGui import (
     QIconEngine,
     QColor,
@@ -11,6 +13,8 @@ from PySide2.QtGui import (
     QPixmap,
     QPen,
 )
+
+from PySide2.QtWidgets import QApplication
 
 # Custom imports
 from cutevariant.commons import logger
@@ -26,7 +30,9 @@ class FIconEngine(QIconEngine):
 
     def __init__(self):
         super().__init__()
-        self.setColor(QCoreApplication.instance().palette().color(QPalette.Normal, QPalette.Text))
+
+        self.setColor(QApplication.instance().palette().color(QPalette.Normal, QPalette.Text))
+
 
     def setCharacter(self, hex_character: int):
         self.hex_character = hex_character
@@ -49,7 +55,8 @@ class FIconEngine(QIconEngine):
         painter.save()
 
         if mode == QIcon.Disabled:
-            painter.setPen(QPen(QCoreApplication.instance().palette().color(QPalette.Disabled, QPalette.Text)))
+
+            painter.setPen(QPen(QApplication.instance().palette().color(QPalette.Disabled, QPalette.Text)))
 
         else:
             painter.setPen(QPen(self.color))
@@ -101,7 +108,7 @@ class FIcon(QIcon):
             if color:
                 self.engine.setColor(color)
             else:
-                self.engine.setColor(qApp.palette().text().color())
+                self.engine.setColor(QApplication.instance().palette().text().color())
             super().__init__(self.engine)
 
     def to_base64(self, w=32, h=32):

@@ -1,0 +1,2 @@
+
+CREATE test FROM boby INTERSECT "boby"

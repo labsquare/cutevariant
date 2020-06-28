@@ -1,5 +1,6 @@
 from abc import ABC, abstractclassmethod
 import os 
+from collections import Counter
 import cutevariant.commons as cm 
 
 class AbstractReader(ABC):
@@ -17,82 +18,62 @@ class AbstractReader(ABC):
             reader = Reader()
             reader.get_variants()
     """
-    BANNED_CHARS = []
 
     def __init__(self, device):
         super(AbstractReader, self).__init__()
         self.device = device
-        self.samples = []
-        self.fields = tuple()
+
         self.file_size = self.compute_total_size()
         self.read_bytes = 0
 
-    @classmethod
-    def sanitize_field_name(cls, fieldname):
-        """Remove unwanted characters in the given field name for SQL tables
-
-        .. note:: See #75 #88
-
-        .. note:: We always can escape fields in SQL queries, but prepared named
-            queries have no way to escape fields in VALUES statements.
-            => we MUST secure fields here.
-
-        .. todo:: Remove spaces in order to avoid unnecessary escapes later...
-        """
-        for banned_char in cls.BANNED_CHARS:
-            fieldname = fieldname.replace(banned_char, "_")
-        return fieldname
-
+  
     @abstractclassmethod
     def get_variants(self):
-        """Abstract method that must return variants as an iterable of dictionnaries.
+        """Abstract method must return variants as an iterable of dictionnaries.
 
-        Mandatory fields:
-        =================
-        `chr`, `pos`, `ref`, `alt` are mandatory.
-        :Example:
-            [
-                {"chr": "chr3","pos": 3244,"ref": "A","alt":"C"},
-                {"chr": "chr4","pos": 3244,"ref": "A","alt":"C"},
-                {"chr": "chr5","pos": 3244,"ref": "A","alt":"C"},
-            ]
-
-        Full fields:
-        ============
-       `annotations`, `samples` and other fields can be added.
-        :Example:
-            [{
-                "chr": "chr3",
-                "pos": 3244,
-                "ref": "A",
-                "alt":"C",
-                "field_n": "value_n",
-                "annotations": [
-                    {"gene": "GJB2", "transcripts": "NM_00232.1", "field_n": "value_n"},
-                    {"gene": "GJB2", "transcripts": "NM_00232.2", "field_n": "value_n"}
-                ],
-                "samples": [
-                    {"name":"boby", "gt": 1, "field_n":"value_n"},
-                    {"name":"kevin", "gt": 1, "field_n":"value_n"}
+            Variant dictionnary has 4 mandatory fields `chr`, `pos`, `ref`, `alt`.
+            Other fields are optionnal
+            For instance: 
+                [
+                    {"chr": "chr3","pos": 3244,"ref": "A","alt":"C", "qual": 30},
+                    {"chr": "chr4","pos": 3244,"ref": "A","alt":"C","qual": 20},
+                    {"chr": "chr5","pos": 3244,"ref": "A","alt":"C","qual": 10 },
                 ]
-            },]
+        
+            Annotations and Samples objects can be embbeded into a variant dictionnaries. 
+            Annotations describes several annotations for one variant. In the most of the case, those are relative to transcripts.
+            Samples describes information relative to a variant with a sample, like genotype (gt). This is a mandatory field.
 
-        :return: A generator of variants
-        :rtype: <generator>
+                [{
+                    "chr": "chr3",
+                    "pos": 3244,
+                    "ref": "A",
+                    "alt":"C",
+                    "field_n": "value_n",
+                    "annotations": [
+                        {"gene": "GJB2", "transcripts": "NM_00232.1", "field_n": "value_n"},
+                        {"gene": "GJB2", "transcripts": "NM_00232.2", "field_n": "value_n"}
+                    ],
+                    "samples": [
+                        {"name":"boby", "genotype": 1, "field_n":"value_n"},
+                        {"name":"kevin", "genotype": 1, "field_n":"value_n"}
+                    ]
+                },]      
+
+        Yields: 
+            dict: variant dictionnary 
+
+        Examples:
+            >>> for variant in reader.get_variants():
+                print(variant["chr"], variant["pos"])
+
         """
         raise NotImplementedError(self.__class__.__name__)
 
     @abstractclassmethod
     def get_fields(self):
-        """Abstract methodthat must return fields description defined from parse_variant output.
+        """Abstract method hat must return fields description 
 
-        You **must** define sqlite type for each field (text, integer, bool).
-
-        This function should set the attribute `fields` because it is called
-        several times during the import and it could be expensive to redo the
-        parsing every time.
-
-        This function is called a first time before variants insertion.
 
         Full output:
         ============
@@ -103,13 +84,33 @@ class AbstractReader(ABC):
         {"name": "alt", "type": "text", "category": "variant", "description": "description"},
         {"name": "field_n", "type": "text", "category": "variant", "description": "description"},
         {"name": "name", "type": "text", "category": "annotations", "samples": "description"},
-        {"name": "gt", "type": "text", "category": "annotations", "samples": "description"}
+        {"name": "genotype", "type": "text", "category": "annotations", "samples": "description"}
         ]
 
-        :return: A generator of fields
-        :rtype: <generator>
+        Yields:
+            dict: field dictionnary
+ 
+        Examples:
+            >>> for field in reader.get_fields():
+                    print(field["name"], field["description"])
+
+
+
        """
         raise NotImplementedError(self.__class__.__name__)
+
+    def get_samples(self) -> list:
+        """Return list of samples.
+        Override this method to have samples in sqlite database.
+        """
+        return []
+
+    def get_metadatas(self) -> dict:
+        """ Get meta data 
+        Override this method to have meta data in sqlite database 
+        """ 
+        return {}
+
 
     def get_extra_fields(self):
         """Yield fields with extra mandatory fields like 'comment' and 'score'
@@ -118,6 +119,12 @@ class AbstractReader(ABC):
         yield {"name": "comment", "type": "str", "category": "variants", "description": "Variant comment"}
         yield {"name": "classification", "type": "int", "category": "variants", "description": "ACMG score"}
         
+        yield {"name": "is_major", "type": "bool", "category": "annotations", "description": "is a major transcript"}
+
+        yield {"name": "count_hom", "type": "int", "category": "variants", "description": "Count number of homozygous genotypes (1/1)"}
+        yield {"name": "count_het", "type": "int", "category": "variants", "description": "Count number of heterozygous genotypes (0/1)"}
+        yield {"name": "count_ref", "type": "int", "category": "variants", "description": "Count number of homozygous genotypes (0/0)"}
+        yield {"name": "count_var", "type": "int", "category": "variants", "description": "Count number of variant ( not 0/0)"}
 
         # avoid duplicates fields ... 
         duplicates = set()
@@ -128,8 +135,6 @@ class AbstractReader(ABC):
 
             duplicates.add(field["name"])
 
-
-        
     def get_extra_variants(self):
         """Yield fields with extra mandatory value like comment and score
         """
@@ -137,7 +142,31 @@ class AbstractReader(ABC):
             variant["favorite"] = False
             variant["comment"] = ""
             variant["classification"] = 3
+
+
+            # For now set the first annotation as a major transcripts 
+            if "annotations" in variant:
+                for index, ann in enumerate(variant["annotations"]):
+                    if "is_major" not in ann:
+                        if index == 0:
+                            ann["is_major"] = True 
+                        else:
+                            ann["is_major"] = False
+
+            # Compute genotype
+            genotype_counter = Counter() 
+            if "samples" in variant: 
+                for sample in variant["samples"]:
+                    genotype_counter[sample["gt"]]+=1 
+
+            variant["count_hom"] = genotype_counter[2]
+            variant["count_het"] = genotype_counter[1]
+            variant["count_ref"] = genotype_counter[0]
+            variant["count_var"] = genotype_counter[1] + genotype_counter[2]
+
+            
             yield variant
+
 
 
     def get_extra_fields_by_category(self, category: str):
@@ -164,14 +193,6 @@ class AbstractReader(ABC):
         Override this method to make it faster
         """
         return len(tuple(self.get_variants()))
-
-    def get_samples(self) -> str:
-        """Return list of samples.
-        Override this method to have samples in sqlite database.
-        """
-        return self.samples
-
-
     def compute_total_size(self) -> int:
         """ Compute file size int bytes """ 
 
@@ -185,6 +206,7 @@ class AbstractReader(ABC):
 
         else:
             return os.path.getsize(filename)
+
 
 
 
@@ -258,3 +280,8 @@ def check_field_schema(field: dict):
     )
 
     checker.validate(field)
+
+
+def sanitize_field_name(field:str):
+        # TODO 
+    return field
