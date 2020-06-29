@@ -189,9 +189,9 @@ class VariantInfoWidget(PluginWidget):
         # TODO : move somewhere else
         GENOTYPES = {
             -1: FIcon(0xF2D7),
-            0: FIcon(0xF130),
-            1: FIcon(0xFAA0),
-            2: FIcon(0xFAA4),
+            0: FIcon(0xF0766),
+            1: FIcon(0xF0AA1),
+            2: FIcon(0xF0AA5),
         }
 
         for row in self.conn.execute(q):
