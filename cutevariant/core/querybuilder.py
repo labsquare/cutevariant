@@ -1,9 +1,28 @@
+
+""" 
+This module contains all functions to build a complex SQL Select statement to query variant.
+In te most of the case, you will only use build_query function.
+
+Examples:
+
+    conn = sqlite3.Connection("::memory::")
+    query = build_query(["chr","pos"])
+    conn.execute(query)
+
+"""
+
+
 from cutevariant.core import sql
 import sqlite3
 import re
 
 
+# Function name used from VQL
+# sample("boby").gt 
+# TODO : can be move somewhere else . In common ? 
 GENOTYPE_FUNC_NAME = "sample"
+
+# set("truc")
 SET_FUNC_NAME = "set"
 
 
@@ -46,7 +65,14 @@ def filters_to_flat(filters: dict):
 
 
 def field_function_to_sql(field_function: tuple, use_as=False):
-    """ Convert genotype(boby).GT to `genotype_boby`.GT """
+    """ Convert VQL function to a a jointure field name 
+       
+    Examples:
+
+        field = ("genotype", "boby","gt") # which correspond to genotype(boby).GT in VQL 
+        field_function_to_sql(field) == `genotype_boby`.GT
+
+    """
 
     func_name, arg_name, field_name = field_function
 
@@ -62,6 +88,13 @@ def field_function_to_sql(field_function: tuple, use_as=False):
 
 
 def set_function_to_sql(field_function: tuple):
+    """ Replace a set_function by a select statement 
+    
+    Set_functions is used from VQL to filter annotation within a set of word. 
+    For instance : " SELECT ... WHERE gene IN SET("boby") " 
+    will be replaced by "SELECT ... WHERE gene IN ( SELECT value FROM sets WHERE name = 'boby') 
+
+    """
     func_name, arg_name = field_function
     q = f"(SELECT value FROM sets WHERE name = '{arg_name}')"
     return q
@@ -103,6 +136,23 @@ def fields_to_sql(field, default_tables={}, use_as=False):
 
 
 def filters_to_sql(filters, default_tables={}):
+
+    """
+    Return filters as sql syntax . 
+    
+    Args:
+        filters (dict): Nested tree of condition 
+        default_tables (dict, optional): association between field name and table origin 
+
+    Returns:
+        str: SQL WHERE expression 
+
+    Examples: 
+        filters_to_sql({"AND": [("pos",">",34), ("af", "==", 10]}) == 'pos > 34 AND af = 10
+   
+    Note: 
+        There is a recursive function inside to parse the nested tree of condition 
+   """
     def is_field(node):
         return True if len(node) == 3 else False
 
@@ -170,6 +220,7 @@ def filters_to_sql(filters, default_tables={}):
 
 
 def filters_to_vql(filters):
+    """ Same than filters_to_sql but generate a VQL expression. It means no SQL transformations are made """ 
     def is_field(node):
         return True if len(node) == 3 else False
 
@@ -213,6 +264,24 @@ def build_query(
     default_tables={},
     samples_ids={},
 ):
+
+    """
+    Build SQL SELECT query on variants tables 
+
+    Args:
+        fields (list): List of fields 
+        source (str): source of the virtual table ( see: selection ) 
+        filters (dict): nested condition tree 
+        order_by (str): Order by field 
+        order_desc (bool): Descending or Ascending order 
+        limit (int): limit record count 
+        offset (int): record count per page 
+        group_by (list): list of field you want to group
+        default_tables (dict): association map between fields and sql table origin 
+        samples_ids (dict): association map between samples name and id 
+
+    """
+
 
     sql_query = ""
     # Create fields

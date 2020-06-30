@@ -1,3 +1,12 @@
+""" 
+This module contains the design pattern "COMMANDS" to execute VQL query . 
+
+Each VQL statement corresponds to a <name>_cmd() fonction and are construted by `create_command_from_obj()`.
+You can use `execute(conn, vql)` or `execute_one(conn,vql)` to run a specific VQL query.
+
+Each command returns a json Array with a success status code. 
+
+"""
 from cutevariant.core.querybuilder import *
 from cutevariant.core import sql, vql
 import sqlite3
@@ -27,17 +36,17 @@ def select_cmd(
     """Select query Command 
         
         Args:
-            conn (sqlite3.Connection): Description
-            fields (list, optional): Description
-            filters (TYPE, optional): Description
-            source (str, optional): Description
-            order_by (None, optional): Description
-            order_desc (bool, optional): Description
-            limit (int, optional): Description
-            offset (int, optional): Description
+            conn (sqlite3.Connection): sqlite3 connection 
+            fields (list, optional): list of fields 
+            filters (dict, optional): nested tree of condition 
+            source (str, optional): virtual table source
+            order_by (list, optional): order by field name 
+            order_desc (bool, optional): Descending or Ascending Order  
+            limit (int, optional): record count 
+            offset (int, optional): record count per page  
         
         Yields:
-            TYPE: Description
+            list of variants   
         """
     default_tables = dict([(i["name"], i["category"]) for i in sql.get_fields(conn)])
     samples_ids = dict([(i["name"], i["id"]) for i in sql.get_samples(conn)])
@@ -64,12 +73,12 @@ def count_cmd(
     """Count command 
     
     Args:
-        conn (sqlite3.Connection): Description
-        source (str, optional): Description
-        filters (dict, optional): Description
+        conn (sqlite3.Connection): sqlite3 connection
+        source (str, optional): virtual source table  
+        filters (dict, optional): nested tree of condition  
     
     Returns:
-        TYPE: Description
+        dict : return count of variant with "count" as a key 
     """
     default_tables = dict([(i["name"], i["category"]) for i in sql.get_fields(conn)])
     samples_ids = dict([(i["name"], i["id"]) for i in sql.get_samples(conn)])

@@ -1,5 +1,12 @@
 """Proof of concept for the VQL DSL.
 
+From this module, you only need to use parse_vql or parse_one_vql.
+For instance : 
+
+cmd = parse_one_vql("SELECT chr, pos FROM variants") 
+
+print(cmd)
+
 See test_vql.py for usage and features.
 
 """
