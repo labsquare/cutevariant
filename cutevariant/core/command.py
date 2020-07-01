@@ -156,23 +156,14 @@ def create_cmd(
     cursor = conn.cursor()
 
     sql_query = build_query(
-        ["id"], source, filters, default_tables=default_tables, samples_ids=samples_ids
-    )
-
-    query = build_query(
-        ["chr", "pos"],
+        ["id"],
         source,
         filters,
-        None,
-        None,
-        None,
-        None,
-        ["chr"],
-        default_tables,
+        default_tables=default_tables,
         samples_ids=samples_ids,
+        limit=None,
     )
 
-    print(filters, build_query)
     count = sql.count_query(conn, sql_query)
 
     selection_id = sql.insert_selection(cursor, sql_query, name=target, count=count)
