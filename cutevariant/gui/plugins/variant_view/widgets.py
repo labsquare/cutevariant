@@ -107,14 +107,14 @@ class VariantModel(QAbstractTableModel):
             column_name = self.headers[index.column()]
 
             #  ---- Display Role ----
-            if role == Qt.DisplayRole:
+            if role == Qt.DisplayRole and self.formatter is None:
                 return str(self.variant(index.row())[column_name])
 
             # ------ Other Role -----
 
             if self.formatter:
                 if role in self.formatter.supported_role():
-                    value = self.data(index, Qt.DisplayRole)
+                    value = str(self.variant(index.row())[column_name])
                     return self.formatter.item_data(column_name, value, role)
 
         return None
@@ -518,6 +518,8 @@ class VariantViewWidget(plugin.PluginWidget):
         self.main_model.fields = self.mainwindow.state.fields
         self.main_model.source = self.mainwindow.state.source
         self.main_model.filters = self.mainwindow.state.filters
+
+        self.main_model.formatter = next(formatter.find_formatters())()
 
         # self.main_view.model.group_by = ["chr","pos","ref","alt"]
 

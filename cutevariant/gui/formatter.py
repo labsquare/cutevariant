@@ -18,6 +18,9 @@ class Formatter(object):
     def __init__(self):
         super().__init__()
 
+    def get_display(self, column, value):
+        return value
+
     @functools.lru_cache(maxsize=128)
     def get_font(self, column, value):
         """Return font for a cell according column name and value
@@ -98,10 +101,19 @@ class Formatter(object):
         if role == Qt.DecorationRole:
             return self.get_decoration(column_name, value)
 
+        if role == Qt.DisplayRole:
+            return self.get_display(column_name, value)
+
         return None
 
     def supported_role(cls):
-        return (Qt.FontRole, Qt.BackgroundRole, Qt.ForegroundRole, Qt.DecorationRole)
+        return (
+            Qt.FontRole,
+            Qt.BackgroundRole,
+            Qt.ForegroundRole,
+            Qt.DecorationRole,
+            Qt.DisplayRole,
+        )
 
 
 def find_formatters(path=None):

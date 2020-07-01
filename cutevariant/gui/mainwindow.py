@@ -49,6 +49,7 @@ class MainWindow(QMainWindow):
     def __init__(self, parent=None):
 
         super(MainWindow, self).__init__()
+
         self.setWindowTitle("Cutevariant")
         self.toolbar = self.addToolBar("maintoolbar")
         self.toolbar.setObjectName("maintoolbar")  # For window saveState
@@ -86,6 +87,8 @@ class MainWindow(QMainWindow):
 
         # Restores the state of this mainwindow's toolbars and dockwidgets
         self.read_settings()
+
+        self.open(os.getcwd() + "/examples/test.db")
 
     def setup_ui(self):
         # Setup menubar

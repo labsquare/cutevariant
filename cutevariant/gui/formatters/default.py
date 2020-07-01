@@ -1,4 +1,13 @@
-from PySide2.QtGui import QColor, QFont, QIcon, QPalette
+from PySide2.QtGui import (
+    QColor,
+    QFont,
+    QBrush,
+    QFontMetrics,
+    QIcon,
+    QPalette,
+    QPixmap,
+    QPainter,
+)
 from PySide2.QtCore import QCoreApplication
 from PySide2.QtWidgets import QApplication
 
@@ -22,6 +31,14 @@ class DefaultFormatter(Formatter):
 
     def __init__(self):
         return super().__init__()
+
+    def get_display(self, column, value):
+
+        #  Hide genotype texte
+        if re.match(r"sample\..+\.gt", column):
+            return ""
+
+        return super().get_display(column, value)
 
     @functools.lru_cache(maxsize=128)
     def get_font(self, column, value):
@@ -71,12 +88,12 @@ class DefaultFormatter(Formatter):
             if value == 5:
                 return QIcon(FIcon(0xF3B0, style.DARK_COLOR["red"]))
 
-        if re.match(r"genotype(.+).gt", column):
+        if re.match(r"sample\..+\.gt", column):
             value = int(value)
             if value == 0:
-                return QIcon(FIcon(0xF130))
+                return QIcon(FIcon(0xF0766))
             elif value == 1:
-                return QIcon(FIcon(0xFAA0))
+                return QIcon(FIcon(0xF0AA1))
             elif value == 2:
-                return QIcon(FIcon(0xFAA4))
-            return QIcon(FIcon(0xF2D7))
+                return QIcon(FIcon(0xF0AA5))
+            return QIcon(FIcon(0xF10D3))
