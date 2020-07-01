@@ -46,6 +46,7 @@ class VariantModel(QAbstractTableModel):
         self.group_by = []
         self.order_by = None
         self.order_desc = True
+        self.formatter = None
         # Keep after all initialization
         self.conn = conn
 
@@ -461,18 +462,33 @@ class VariantViewWidget(plugin.PluginWidget):
         self.groupby_action.setCheckable(True)
 
         self.groupby_v1_action = self.top_bar.addAction(
-            FIcon(0xF0575), "view 1", self.on_group_clicked
+            FIcon(0xF0575, self.palette().color(QPalette.Highlight)),
+            "view 1",
+            self.on_group_clicked,
         )
         self.groupby_v2_action = self.top_bar.addAction(
-            FIcon(0xF0BCC), "view 2", self.on_group_clicked
+            FIcon(0xF0BCC, self.palette().color(QPalette.Highlight)),
+            "view 2",
+            self.on_group_clicked,
         )
 
         self.groupby_v1_action.setCheckable(True)
-        self.groupby_v2_action.setCheckable(False)
+        self.groupby_v2_action.setCheckable(True)
         self.groupby_act_gp.addAction(self.groupby_v1_action)
         self.groupby_act_gp.addAction(self.groupby_v2_action)
 
         self.top_view.view.clicked.connect(self.on_variant_clicked)
+
+        #  Formatter tools
+        self.top_bar.addSeparator()
+        # spacer = QWidget()
+        # spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        # self.top_bar.addWidget(spacer)
+        self.formatter_combo = QComboBox()
+        for i in formatter.find_formatters():
+            self.formatter_combo.addItem(i.__name__, i)
+        self.top_bar.addWidget(self.formatter_combo)
+        self.formatter_combo.currentTextChanged.connect(self.on_formatter_changed)
 
         #  setup layout
         ## Build stack view
@@ -483,7 +499,13 @@ class VariantViewWidget(plugin.PluginWidget):
 
         self.setLayout(main_layout)
 
+    def on_formatter_changed(self):
+
+        formatter = self.formatter_combo.currentData()
+        self.main_model.formatter = formatter()
+
     def on_open_project(self, conn):
+        """override """
         self.conn = conn
         self.main_model.conn = self.conn
         self.group_model.conn = self.conn
@@ -491,7 +513,7 @@ class VariantViewWidget(plugin.PluginWidget):
         self.on_refresh()
 
     def on_refresh(self):
-
+        """ override """
         self.main_model.fields = self.mainwindow.state.fields
         self.main_model.fields = self.mainwindow.state.fields
         self.main_model.source = self.mainwindow.state.source

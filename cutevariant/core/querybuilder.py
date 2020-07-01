@@ -1,4 +1,3 @@
-
 """ 
 This module contains all functions to build a complex SQL Select statement to query variant.
 In te most of the case, you will only use build_query function.
@@ -18,8 +17,8 @@ import re
 
 
 # Function name used from VQL
-# sample("boby").gt 
-# TODO : can be move somewhere else . In common ? 
+# sample("boby").gt
+# TODO : can be move somewhere else . In common ?
 GENOTYPE_FUNC_NAME = "sample"
 
 # set("truc")
@@ -100,6 +99,16 @@ def set_function_to_sql(field_function: tuple):
     return q
 
 
+def fields_to_vql(field):
+
+    if type(field) == str:
+        return field
+
+    if type(field) == tuple:
+        if field[0] == GENOTYPE_FUNC_NAME and len(field) == 3:
+            return f"{field[0]}['{field[1]}'].{field[2]}"
+
+
 def fields_to_sql(field, default_tables={}, use_as=False):
     """
     Return field as sql syntax . 
@@ -153,6 +162,7 @@ def filters_to_sql(filters, default_tables={}):
     Note: 
         There is a recursive function inside to parse the nested tree of condition 
    """
+
     def is_field(node):
         return True if len(node) == 3 else False
 
@@ -220,7 +230,8 @@ def filters_to_sql(filters, default_tables={}):
 
 
 def filters_to_vql(filters):
-    """ Same than filters_to_sql but generate a VQL expression. It means no SQL transformations are made """ 
+    """ Same than filters_to_sql but generate a VQL expression. It means no SQL transformations are made """
+
     def is_field(node):
         return True if len(node) == 3 else False
 
@@ -229,7 +240,7 @@ def filters_to_vql(filters):
             return ""
 
         if is_field(node):
-            field = node["field"]
+            field = fields_to_vql(node["field"])
             value = node["value"]
             operator = node["operator"]
 
@@ -250,6 +261,24 @@ def filters_to_vql(filters):
             return "(" + f" {logic_op} ".join(out) + ")"
 
     return recursive(filters)
+
+
+def build_vql_query(fields, source="variants", filters={}):
+    """Build VQL query 
+
+    TODO : harmonize name with build_query => build_sql
+    
+    Args:
+        fields (TYPE): Description
+        source (str, optional): Description
+        filters (dict, optional): Description
+    """
+
+    query = "SELECT " + ",".join([fields_to_vql(i) for i in fields]) + " FROM " + source
+    if filters:
+        query += " WHERE " + filters_to_vql(filters)
+
+    return query
 
 
 def build_query(
@@ -282,13 +311,10 @@ def build_query(
 
     """
 
-
     sql_query = ""
     # Create fields
     sql_fields = ["`variants`.`id`"] + [
-        fields_to_sql(col, default_tables, use_as=True)
-        for col in fields
-        if col != "id"
+        fields_to_sql(col, default_tables, use_as=True) for col in fields if col != "id"
     ]
 
     if group_by:

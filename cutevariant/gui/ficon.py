@@ -54,7 +54,7 @@ class FIconEngine(QIconEngine):
 
         painter.save()
 
-        if mode == QIcon.Disabled:
+        if mode == QIcon.Disabled or state == QIcon.Off:
 
             painter.setPen(
                 QPen(
