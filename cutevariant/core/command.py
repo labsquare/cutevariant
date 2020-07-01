@@ -147,7 +147,6 @@ def create_cmd(
     count=0,
     **kwargs,
 ):
-
     default_tables = dict([(i["name"], i["category"]) for i in sql.get_fields(conn)])
     samples_ids = dict([(i["name"], i["id"]) for i in sql.get_samples(conn)])
 
@@ -159,6 +158,21 @@ def create_cmd(
     sql_query = build_query(
         ["id"], source, filters, default_tables=default_tables, samples_ids=samples_ids
     )
+
+    query = build_query(
+        ["chr", "pos"],
+        source,
+        filters,
+        None,
+        None,
+        None,
+        None,
+        ["chr"],
+        default_tables,
+        samples_ids=samples_ids,
+    )
+
+    print(filters, build_query)
     count = sql.count_query(conn, sql_query)
 
     selection_id = sql.insert_selection(cursor, sql_query, name=target, count=count)
@@ -176,6 +190,8 @@ def create_cmd(
         pass
 
     cursor.execute(q)
+
+    LOGGER.debug(q)
 
     # # REBUILD INDEXES
     # # For joints between selections and variants tables

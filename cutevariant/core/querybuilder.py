@@ -333,9 +333,7 @@ def build_query(
     sql_query += f"FROM variants"
 
     # Extract fields from filters
-    fields_in_filters = [
-        fields_to_sql(i["field"], default_tables) for i in filters_to_flat(filters)
-    ]
+    fields_in_filters = [i["field"] for i in filters_to_flat(filters)]
 
     #  Loop over fields and check is annotations is required
     need_join_annotations = False
@@ -359,6 +357,9 @@ def build_query(
     ## detect if fields contains function like (genotype,boby,gt) and save boby
 
     all_fields = fields_in_filters + fields
+
+    print("FIELDS IN FILTERS", fields_in_filters)
+
     samples = []
     for col in all_fields:
         # if column looks like  "genotype.tumor.gt"

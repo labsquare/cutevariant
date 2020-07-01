@@ -6,7 +6,7 @@ class State(object):
     def __init__(self):
 
         #  query
-        self.fields = ["chr", "pos", "ref", "alt", "consequence"]
+        self.fields = ["chr", "pos", "ref", "alt"]
         self.source = "variants"
         self.filters = {}
         self.group_by = []

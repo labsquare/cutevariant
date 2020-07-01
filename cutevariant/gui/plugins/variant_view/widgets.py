@@ -355,6 +355,7 @@ class VariantView(QWidget):
         ## self.view.setIndentation(0)
         self.view.setIconSize(QSize(22, 22))
         # self.view.setItemDelegate(self.delegate)
+        self.view.horizontalHeader().setSectionsMovable(True)
 
         #  setup toolbar
         spacer = QWidget()

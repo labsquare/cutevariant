@@ -31,9 +31,12 @@ class FIconEngine(QIconEngine):
     def __init__(self):
         super().__init__()
 
-        self.setColor(
-            QApplication.instance().palette().color(QPalette.Normal, QPalette.Text)
-        )
+        if QApplication.instance():
+            self.palette = QApplication.instance().palette()
+        else:
+            self.palette = QPalette()
+
+        self.setColor(self.palette.color(QPalette.Normal, QPalette.Text))
 
     def setCharacter(self, hex_character: int):
         self.hex_character = hex_character
@@ -56,13 +59,7 @@ class FIconEngine(QIconEngine):
 
         if mode == QIcon.Disabled or state == QIcon.Off:
 
-            painter.setPen(
-                QPen(
-                    QApplication.instance()
-                    .palette()
-                    .color(QPalette.Disabled, QPalette.Text)
-                )
-            )
+            painter.setPen(QPen(self.palette.color(QPalette.Disabled, QPalette.Text)))
 
         else:
             painter.setPen(QPen(self.color))
@@ -113,6 +110,11 @@ class FIcon(QIcon):
             if color:
                 self.engine.setColor(color)
             else:
+                if QApplication.instance():
+                    palette = QApplication.instance().palette()
+                else:
+                    palette = QPalette()
+
                 self.engine.setColor(QApplication.instance().palette().text().color())
             super().__init__(self.engine)
 

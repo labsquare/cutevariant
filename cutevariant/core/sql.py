@@ -1263,6 +1263,7 @@ def update_sample(conn, sample: dict):
 
 def count_query(conn, query):
     """ count from query """
+    print(query)
     return conn.execute(f"SELECT COUNT(*) as count FROM ({query})").fetchone()[0]
 
 

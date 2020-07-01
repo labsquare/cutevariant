@@ -206,8 +206,8 @@ class SourceEditorWidget(plugin.PluginWidget):
 
         self.view.selectionModel().blockSignals(True)
         self.model.load()
-
-        model_index = self.model.find_record(self.mainwindow.state.source)
+        self.source = self.mainwindow.state.source
+        model_index = self.model.find_record(self.source)
         self.view.setCurrentIndex(model_index)
         self.view.selectionModel().blockSignals(False)
 
