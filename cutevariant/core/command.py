@@ -68,7 +68,12 @@ def select_cmd(
 
 
 def count_cmd(
-    conn: sqlite3.Connection, source="variants", filters={}, distinct=True, **kwargs
+    conn: sqlite3.Connection,
+    source="variants",
+    filters={},
+    group_by=[],
+    distinct=True,
+    **kwargs,
 ):
     """Count command 
     
@@ -90,16 +95,22 @@ def count_cmd(
         None,
         None,
         None,
-        [],
+        group_by,
         default_tables,
         samples_ids=samples_ids,
     )
     from_pos = query.index("FROM")
 
     if distinct:
-        query = "SELECT COUNT(DISTINCT variants.id) " + query[from_pos:]
+        query = (
+            "SELECT COUNT (*) FROM (SELECT DISTINCT variants.id "
+            + query[from_pos:]
+            + ")"
+        )
     else:
-        query = "SELECT COUNT(variants.id) " + query[from_pos:]
+        query = "SELECT COUNT (*) FROM (SELECT variants.id " + query[from_pos:] + ")"
+
+    LOGGER.debug(query)
 
     return {"count": conn.execute(query).fetchone()[0]}
 

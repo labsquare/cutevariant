@@ -181,7 +181,11 @@ class VariantModel(QAbstractTableModel):
         if emit_changed:
             self.changed.emit()
             # Probably need to compute total
-            self.total = cmd.count_cmd(self.conn, self.source, self.filters)["count"]
+            self.total = cmd.count_cmd(
+                self.conn, self.source, self.filters, group_by=self.group_by
+            )["count"]
+
+            print("TOTAL", self.total)
 
     def load_from_vql(self, vql):
 
@@ -350,6 +354,9 @@ class VariantView(QWidget):
         self.page_box.setValidator(QIntValidator())
         self.page_box.setFixedWidth(50)
 
+        self.info_label = QLabel()
+
+        self.bottom_bar.addWidget(self.info_label)
         self.bottom_bar.addWidget(spacer)
         self.bottom_bar.setIconSize(QSize(16, 16))
         self.bottom_bar.setMaximumHeight(30)
@@ -398,8 +405,9 @@ class VariantView(QWidget):
         self.page_box.setCurrentText(str(self.model.page))
 
     def on_page_changed(self):
-        page = int(self.page_box.currentText())
-        self.model.setPage(page)
+        if self.page_box.currentText() != "":
+            page = int(self.page_box.currentText())
+            self.model.setPage(page)
 
     def load_page_box(self):
         self.page_box.clear()
@@ -408,6 +416,8 @@ class VariantView(QWidget):
         else:
             self.page_box.addItems([str(i) for i in range(self.model.pageCount())])
             self.bottom_bar.setEnabled(True)
+
+        self.info_label.setText("Total: {}".format(self.model.total))
 
 
 class VariantViewWidget(plugin.PluginWidget):
@@ -421,7 +431,7 @@ class VariantViewWidget(plugin.PluginWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.groupby = ["chr", "pos", "ref", "alt"]
+        self.groupby = ["chr"]
 
         #  Create 2 model
         self.main_model = VariantModel()
@@ -491,6 +501,9 @@ class VariantViewWidget(plugin.PluginWidget):
 
         self.main_model.load()
         self.top_view.load_page_box()
+        self.show_group_column_only(False)
+        self.groupby_v1_action.setChecked(True)
+        self.splitter.setOrientation(Qt.Vertical)
 
     def on_group_clicked(self):
 
@@ -507,10 +520,12 @@ class VariantViewWidget(plugin.PluginWidget):
             if self.groupby_action.isChecked():
                 self.main_model.group_by = self.groupby
                 self.bottom_view.show()
+                self.on_refresh()
+
             else:
                 self.main_model.group_by = []
                 self.bottom_view.hide()
-            self.on_refresh()
+                self.on_refresh()
 
         if self.sender() == self.groupby_v1_action:
             self.splitter.setOrientation(Qt.Vertical)
@@ -523,7 +538,7 @@ class VariantViewWidget(plugin.PluginWidget):
     def show_group_column_only(self, active=True):
 
         for i, val in enumerate(self.main_model.headers):
-            if val not in self.groupby and active is True:
+            if val not in self.groupby + ["count"] and active is True:
                 self.top_view.view.setColumnHidden(i, True)
             else:
                 self.top_view.view.setColumnHidden(i, False)
@@ -538,9 +553,12 @@ class VariantViewWidget(plugin.PluginWidget):
 
         self.group_model.fields = self.main_model.fields
         self.group_model.source = self.main_model.source
-        self.group_model.filters = {
-            "AND": [{"field": "id", "operator": "=", "value": variant["id"]}]
-        }
+
+        and_list = []
+        for i in self.groupby:
+            and_list.append({"field": i, "operator": "=", "value": variant[i]})
+
+        self.group_model.filters = {"AND": and_list}
 
         self.group_model.load()
         self.bottom_view.load_page_box()
