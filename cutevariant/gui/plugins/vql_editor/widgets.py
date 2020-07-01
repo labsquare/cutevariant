@@ -181,13 +181,14 @@ class VqlEditorWidget(plugin.PluginWidget):
                 self.mainwindow.state.group_by = cmd["group_by"]
                 self.mainwindow.refresh_plugins(sender=self)
 
-            if cmd["cmd"] == "create_cmd":
+            if cmd["cmd"] in ("create_cmd", "set_cmd", "drop_cmd"):
                 fct = command.create_command_from_obj(self.conn, cmd)
                 fct()
 
-                # if "source_editor" in self.mainwindow.controller.plugins:
-                #     plugin = self.mainwindow.plugins["source_editor"]
-                #     plugin.on_refresh()
+                #  refresh source editor plugin
+                if "source_editor" in self.mainwindow.plugins:
+                    plugin = self.mainwindow.plugins["source_editor"]
+                    plugin.on_refresh()
 
                 #  TODO : manage other request
 

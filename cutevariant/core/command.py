@@ -214,7 +214,8 @@ def set_cmd(conn: sqlite3.Connection, target, first, second, operator, **kwargs)
     if operator == "&":
         sql_query = sql.intersect_variants(query_first, query_second)
 
-    selection_id = sql.insert_selection(cursor, sql_query, name=target, count=0)
+    count = sql.count_query(conn, sql_query)
+    selection_id = sql.insert_selection(cursor, sql_query, name=target, count=count)
 
     q = f"""
     INSERT INTO selection_has_variant
