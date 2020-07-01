@@ -265,34 +265,34 @@ class VariantModel(QAbstractTableModel):
 
         return self.variants[row]
 
+        # class QueryDelegate(QStyledItemDelegate):
 
-# class QueryDelegate(QStyledItemDelegate):
+        # pass
+        # """
+        # This class specify the aesthetic of the view
+        # styles and color of each variant displayed in the view are setup here
 
-# pass
-# """
-# This class specify the aesthetic of the view
-# styles and color of each variant displayed in the view are setup here
+        # """
 
-# """
+        # def background_color_index(self, index):
+        # """ return background color of index """
 
-# def background_color_index(self, index):
-# """ return background color of index """
+        # base_brush = qApp.palette("QTableView").brush(QPalette.Base)
+        # alternate_brush = qApp.palette("QTableView").brush(QPalette.AlternateBase)
 
-# base_brush = qApp.palette("QTableView").brush(QPalette.Base)
-# alternate_brush = qApp.palette("QTableView").brush(QPalette.AlternateBase)
+        # if index.parent() == QModelIndex():
+        # if index.row() % 2:
+        # return base_brush
+        # else:
+        # return alternate_brush
 
-# if index.parent() == QModelIndex():
-# if index.row() % 2:
-# return base_brush
-# else:
-# return alternate_brush
+        # if index.parent().parent() == QModelIndex():
+        # return self.background_color_index(index.parent())
 
-# if index.parent().parent() == QModelIndex():
-# return self.background_color_index(index.parent())
+        # return base_brush     self.groupby_v1_action = self.top_bar.addAction(FIcon())
 
-# return base_brush
-
-# def paint(self, painter, option, index):
+        # def paint(self, painter, option, index):
+        self.groupby_v1_action = self.top_bar.addAction(FIcon())
 
 
 # return super().paint(painter, option, index)
@@ -326,9 +326,8 @@ class VariantView(QWidget):
         super().__init__()
 
         self.view = QTableView()
-        self.model = VariantModel()
+        self.bottom_bar = QToolBar()
 
-        self.view.setModel(self.model)
         # self.view.setFrameStyle(QFrame.NoFrame)
         self.view.setAlternatingRowColors(True)
         self.view.horizontalHeader().setStretchLastSection(True)
@@ -340,70 +339,16 @@ class VariantView(QWidget):
         self.view.setSelectionMode(QAbstractItemView.ContiguousSelection)
         ## self.view.setIndentation(0)
         self.view.setIconSize(QSize(22, 22))
-
-        self.view.setModel(self.model)
         # self.view.setItemDelegate(self.delegate)
 
-        main_layout = QVBoxLayout()
-        main_layout.setContentsMargins(0, 0, 0, 0)
-
-        main_layout.addWidget(self.view)
-        self.setLayout(main_layout)
-
-        # broadcast focus signal
-
-        self.view.viewport().installEventFilter(self)
-
-    def eventFilter(self, obj: QObject, event: QEvent):
-
-        if event.type() == QEvent.MouseButtonPress:
-            self.view_clicked.emit()
-
-        return super().eventFilter(obj, event)
-
-
-class VariantViewWidget(plugin.PluginWidget):
-    """Contains the view of query with several controller"""
-
-    variant_clicked = Signal(dict)
-    LOCATION = plugin.CENTRAL_LOCATION
-
-    ENABLE = True
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-        self.splitter = QSplitter(Qt.Vertical)
-        self.top_bar = QToolBar()
-        self.bottom_bar = QToolBar()
-
-        self.main_view = VariantView()
-        self.sub_view = VariantView()
-        self.sub_view.hide()
-
-        self.splitter.addWidget(self.main_view)
-        self.splitter.addWidget(self.sub_view)
-
-        self.current_view = self.main_view
+        #  setup toolbar
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
 
         self.page_box = QComboBox()
         self.page_box.setEditable(True)
         self.page_box.setValidator(QIntValidator())
         self.page_box.setFixedWidth(50)
-        # self.page_box.setAlignment(Qt.AlignHCenter)
-        # self.page_box.setStyleSheet("QWidget{background-color: transparent;}")
-        # self.page_box.("0")
-        self.page_box.setFrame(QFrame.NoFrame)
-
-        spacer = QWidget()
-        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-
-        # topbar
-        self.top_bar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-        self.group_action = self.top_bar.addAction(
-            FIcon(0xF14E0), "Group by", self.on_group_clicked
-        )
-        self.group_action.setCheckable(True)
 
         self.bottom_bar.addWidget(spacer)
         self.bottom_bar.setIconSize(QSize(16, 16))
@@ -417,133 +362,192 @@ class VariantViewWidget(plugin.PluginWidget):
         self.bottom_bar.addAction(FIcon(0xF0601), ">>", self.on_page_clicked)
         # self.page_box.returnPressed.connect()
 
-        self.main_view.view.clicked.connect(self.on_variant_clicked)
-
-        self.main_view.view_clicked.connect(self.on_view_clicked)
-        self.sub_view.view_clicked.connect(self.on_view_clicked)
-
         self.page_box.currentTextChanged.connect(self.on_page_changed)
 
-        #  setup layout
         main_layout = QVBoxLayout()
+        main_layout.setContentsMargins(0, 0, 0, 0)
 
-        main_layout.addWidget(self.top_bar)
-        main_layout.addWidget(self.splitter)
+        main_layout.addWidget(self.view)
         main_layout.addWidget(self.bottom_bar)
-
         self.setLayout(main_layout)
 
-    def on_view_clicked(self):
+        # broadcast focus signal
 
-        view = self.sender()
-
-        if view != self.current_view:
-            self.current_view = view
-            self.update_current_view()
-
-    def update_current_view(self):
-        """ Update style and bottom bar when current view changed """
-
-        if self.current_view == self.main_view:
-            other = self.sub_view
-        else:
-            other = self.main_view
-
-        self.current_view.setStyleSheet(
-            "QTableView{ border: 1px solid palette(highlight)}"
-        )
-        other.setStyleSheet("QTableView{ border: 1px solid palette(shadow)}")
-
-        #  Update page count
-        self.update_page_control()
-
-    def update_page_control(self):
-        """ Update page control like previous, next according page Count """
-        self.page_box.clear()
-        self.page_box.addItems(
-            [str(i) for i in range(self.current_view.model.pageCount())]
-        )
-
-        enabled = True if self.current_view.model.pageCount() > 1 else False
-
-        for action in self.bottom_bar.actions():
-            if action.text() in ("<<", ">>", "<", ">"):
-                action.setEnabled(enabled)
+    def setModel(self, model: VariantModel):
+        self.model = model
+        self.view.setModel(model)
 
     def on_page_clicked(self):
 
         action_text = self.sender().text()
 
         if action_text == "<<":
-            fct = self.current_view.model.firstPage
+            fct = self.model.firstPage
 
         if action_text == ">>":
-            fct = self.current_view.model.lastPage
+            fct = self.model.lastPage
 
         if action_text == "<":
-            fct = self.current_view.model.previousPage
+            fct = self.model.previousPage
 
         if action_text == ">":
-            fct = self.current_view.model.nextPage
+            fct = self.model.nextPage
 
         fct()
-        self.page_box.setCurrentText(str(self.current_view.model.page))
+
+        self.page_box.setCurrentText(str(self.model.page))
 
     def on_page_changed(self):
-
         page = int(self.page_box.currentText())
-        self.current_view.model.setPage(page)
-        self.current_view.setFocus(Qt.OtherFocusReason)
+        self.model.setPage(page)
+
+    def load_page_box(self):
+        self.page_box.clear()
+        if self.model.pageCount() == 0:
+            self.bottom_bar.setEnabled(False)
+        else:
+            self.page_box.addItems([str(i) for i in range(self.model.pageCount())])
+            self.bottom_bar.setEnabled(True)
+
+
+class VariantViewWidget(plugin.PluginWidget):
+    """Contains the view of query with several controller"""
+
+    variant_clicked = Signal(dict)
+    LOCATION = plugin.CENTRAL_LOCATION
+
+    ENABLE = True
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.groupby = ["chr", "pos", "ref", "alt"]
+
+        #  Create 2 model
+        self.main_model = VariantModel()
+        self.group_model = VariantModel()
+
+        #  Create groupby view 1
+        self.splitter = QSplitter(Qt.Vertical)
+        self.top_view = VariantView()
+        self.top_view.setModel(self.main_model)
+        self.bottom_view = VariantView()
+        self.bottom_view.setModel(self.group_model)
+        self.splitter.addWidget(self.top_view)
+        self.splitter.addWidget(self.bottom_view)
+
+        self.bottom_view.hide()
+
+        #  Common toolbar
+        self.top_bar = QToolBar()
+        self.groupby_act_gp = QActionGroup(self)
+        self.groupby_act_gp.setExclusive(True)
+        self.groupby_act_gp.setEnabled(False)
+        #  Activate groupby action
+        self.top_bar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        self.groupby_action = self.top_bar.addAction(
+            FIcon(0xF14E0), "Group by", self.on_group_clicked
+        )
+        self.groupby_action.setCheckable(True)
+
+        self.groupby_v1_action = self.top_bar.addAction(
+            FIcon(0xF0575), "view 1", self.on_group_clicked
+        )
+        self.groupby_v2_action = self.top_bar.addAction(
+            FIcon(0xF0BCC), "view 2", self.on_group_clicked
+        )
+
+        self.groupby_v1_action.setCheckable(True)
+        self.groupby_v2_action.setCheckable(False)
+        self.groupby_act_gp.addAction(self.groupby_v1_action)
+        self.groupby_act_gp.addAction(self.groupby_v2_action)
+
+        self.top_view.view.clicked.connect(self.on_variant_clicked)
+
+        #  setup layout
+        ## Build stack view
+
+        main_layout = QVBoxLayout()
+        main_layout.addWidget(self.top_bar)
+        main_layout.addWidget(self.splitter)
+
+        self.setLayout(main_layout)
 
     def on_open_project(self, conn):
         self.conn = conn
-        self.main_view.model.conn = self.conn
-        self.sub_view.model.conn = self.conn
+        self.main_model.conn = self.conn
+        self.group_model.conn = self.conn
 
         self.on_refresh()
 
     def on_refresh(self):
 
-        self.main_view.model.fields = self.mainwindow.state.fields
-        self.main_view.model.fields = self.mainwindow.state.fields
-        self.main_view.model.source = self.mainwindow.state.source
-        self.main_view.model.filters = self.mainwindow.state.filters
+        self.main_model.fields = self.mainwindow.state.fields
+        self.main_model.fields = self.mainwindow.state.fields
+        self.main_model.source = self.mainwindow.state.source
+        self.main_model.filters = self.mainwindow.state.filters
 
         # self.main_view.model.group_by = ["chr","pos","ref","alt"]
 
-        self.main_view.model.load()
-        self.update_current_view()
+        self.main_model.load()
+        self.top_view.load_page_box()
 
     def on_group_clicked(self):
 
-        if self.group_action.isChecked():
-            self.sub_view.setVisible(True)
-            self.main_view.model.group_by = ["chr", "pos", "ref", "alt"]
+        # TODO : must be user defined
+
+        # When Horizontal view is enable, we hide some columns not in GP
+        # hidden_col = [
+        #     self.main_model.headers.index(i) for i in GP if i in self.main_model.headers
+        # ]
+
+        self.groupby_act_gp.setEnabled(self.groupby_action.isChecked())
+
+        if self.sender() == self.groupby_action:
+            if self.groupby_action.isChecked():
+                self.main_model.group_by = self.groupby
+                self.bottom_view.show()
+            else:
+                self.main_model.group_by = []
+                self.bottom_view.hide()
             self.on_refresh()
 
-        else:
-            self.sub_view.setVisible(False)
-            self.main_view.model.group_by = []
-            self.on_refresh()
+        if self.sender() == self.groupby_v1_action:
+            self.splitter.setOrientation(Qt.Vertical)
+            self.show_group_column_only(False)
+
+        if self.sender() == self.groupby_v2_action:
+            self.splitter.setOrientation(Qt.Horizontal)
+            self.show_group_column_only(True)
+
+    def show_group_column_only(self, active=True):
+
+        for i, val in enumerate(self.main_model.headers):
+            if val not in self.groupby and active is True:
+                self.top_view.view.setColumnHidden(i, True)
+            else:
+                self.top_view.view.setColumnHidden(i, False)
+
+        # hidden_col = [
+        #     self.main_model.headers.index(i) for i in GP if i in self.main_model.headers
+        # ]
 
     def on_variant_clicked(self, index: QModelIndex):
 
-        variant = self.main_view.model.variant(index.row())
+        variant = self.main_model.variant(index.row())
 
-        self.sub_view.model.fields = self.main_view.model.fields
-        self.sub_view.model.source = self.main_view.model.source
-        self.sub_view.model.filters = {
+        self.group_model.fields = self.main_model.fields
+        self.group_model.source = self.main_model.source
+        self.group_model.filters = {
             "AND": [{"field": "id", "operator": "=", "value": variant["id"]}]
         }
 
-        self.sub_view.model.load()
-        
-        # Refresh plugins when clicked 
+        self.group_model.load()
+        self.bottom_view.load_page_box()
+
+        #  Refresh plugins when clicked
         self.mainwindow.state.current_variant = variant
         self.mainwindow.refresh_plugins(self)
-
-
-
 
 
 if __name__ == "__main__":
