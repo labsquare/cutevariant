@@ -37,6 +37,7 @@ class VqlSyntaxHighlighter(QSyntaxHighlighter):
         "ANY",
         "BETWEEN",
         "EXISTS",
+        "CREATE",
         "IN",
         "LIKE",
         "SOME",

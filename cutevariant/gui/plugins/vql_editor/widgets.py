@@ -122,9 +122,22 @@ class VqlEditorWidget(plugin.PluginWidget):
         model = QStringListModel()
         completer = QCompleter()
         # Fill the model with the SQL keywords and database fields
-        fields = [i["name"] for i in sql.get_fields(self.conn)]
-        fields.extend(VqlSyntaxHighlighter.sql_keywords)
-        model.setStringList(fields)
+
+        # fields = [i["name"] for i in sql.get_fields(self.conn)]
+
+        keywords = []
+        samples = [i["name"] for i in sql.get_samples(self.conn)]
+        selections = [i["name"] for i in sql.get_selections(self.conn)]
+        for i in sql.get_fields(self.conn):
+            if i["category"] == "samples":
+                for s in samples:
+                    keywords.append("sample['{}'].{}".format(s, i["name"]))
+            else:
+                keywords.append(i)
+
+        keywords.extend(VqlSyntaxHighlighter.sql_keywords)
+        keywords.extend(selections)
+        model.setStringList(keywords)
         completer.setModel(model)
         return completer
 
