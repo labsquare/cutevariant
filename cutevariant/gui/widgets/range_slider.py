@@ -6,13 +6,16 @@ from PySide2.QtWidgets import (
     QSizePolicy,
     QStyle,
 )
-from PySide2.QtCore import Qt, QRect, QSize
+from PySide2.QtCore import Qt, QRect, QSize, Signal
 from PySide2.QtGui import QPainter, QPaintEvent, QMouseEvent, QPalette, QBrush, QPen
 
 import sys
 
 
 class RangeSlider(QWidget):
+
+    rangeChanged = Signal(int, int)
+
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -134,6 +137,11 @@ class RangeSlider(QWidget):
             if pos >= self.first_position:
                 self.second_position = pos
                 self.update()
+
+    def mouseReleaseEvent(self, event: QMouseEvent):
+
+        self.rangeChanged.emit(self.first_position, self.second_position)
+        print("yes")
 
     def sizeHint(self):
         """ override """
