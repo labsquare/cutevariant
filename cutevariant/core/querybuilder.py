@@ -356,9 +356,9 @@ def build_query(
     #  Add Join Samples
     ## detect if fields contains function like (genotype,boby,gt) and save boby
 
-    all_fields = fields_in_filters + fields
+    all_fields = set(fields_in_filters + fields)
 
-    print("FIELDS IN FILTERS", fields_in_filters)
+    print("FIELDS IN FILTERS", all_fields)
 
     samples = []
     for col in all_fields:
