@@ -263,7 +263,7 @@ def filters_to_vql(filters):
     return recursive(filters)
 
 
-def build_vql_query(fields, source="variants", filters={}):
+def build_vql_query(fields, source="variants", filters={}, group_by=[]):
     """Build VQL query 
 
     TODO : harmonize name with build_query => build_sql
@@ -277,6 +277,9 @@ def build_vql_query(fields, source="variants", filters={}):
     query = "SELECT " + ",".join([fields_to_vql(i) for i in fields]) + " FROM " + source
     if filters:
         query += " WHERE " + filters_to_vql(filters)
+
+    if group_by:
+        query += " GROUP BY " + ",".join(group_by)
 
     return query
 

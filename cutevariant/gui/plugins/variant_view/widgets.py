@@ -160,6 +160,12 @@ class VariantModel(QAbstractTableModel):
 
         self.variants.clear()
 
+        #  Add fields from group by
+
+        for g in self.group_by:
+            if g not in self.fields:
+                self.fields.append(g)
+
         self.variants = list(
             cmd.select_cmd(
                 self.conn,
@@ -177,16 +183,20 @@ class VariantModel(QAbstractTableModel):
         if self.variants:
             self.headers = list(self.variants[0].keys())
 
-        self.endResetModel()
-
+        #  Compute total
         if emit_changed:
             self.changed.emit()
             # Probably need to compute total
             self.total = cmd.count_cmd(
-                self.conn, self.source, self.filters, group_by=self.group_by
+                self.conn,
+                fields=self.fields,
+                source=self.source,
+                filters=self.filters,
+                group_by=self.group_by,
+                distinct=False,
             )["count"]
 
-            print("TOTAL", self.total)
+        self.endResetModel()
 
     def load_from_vql(self, vql):
 
@@ -432,8 +442,6 @@ class VariantViewWidget(plugin.PluginWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.groupby = ["chr"]
-
         #  Create 2 model
         self.main_model = VariantModel()
         self.group_model = VariantModel()
@@ -501,8 +509,9 @@ class VariantViewWidget(plugin.PluginWidget):
 
     def on_formatter_changed(self):
 
-        formatter = self.formatter_combo.currentData()
-        self.main_model.formatter = formatter()
+        Formatter = self.formatter_combo.currentData()
+        self.main_model.formatter = Formatter()
+        self.group_model.formatter = Formatter()
 
     def on_open_project(self, conn):
         """override """
@@ -518,16 +527,16 @@ class VariantViewWidget(plugin.PluginWidget):
         self.main_model.fields = self.mainwindow.state.fields
         self.main_model.source = self.mainwindow.state.source
         self.main_model.filters = self.mainwindow.state.filters
+        self.main_model.group_by = self.mainwindow.state.group_by
 
         self.main_model.formatter = next(formatter.find_formatters())()
+        self.group_model.formatter = next(formatter.find_formatters())()
 
         # self.main_view.model.group_by = ["chr","pos","ref","alt"]
 
         self.main_model.load()
         self.top_view.load_page_box()
-        self.show_group_column_only(False)
-        self.groupby_v1_action.setChecked(True)
-        self.splitter.setOrientation(Qt.Vertical)
+        self.show_group_column_only(self.groupby_v2_action.isChecked())
 
     def on_group_clicked(self):
 
@@ -542,14 +551,9 @@ class VariantViewWidget(plugin.PluginWidget):
 
         if self.sender() == self.groupby_action:
             if self.groupby_action.isChecked():
-                self.main_model.group_by = self.groupby
                 self.bottom_view.show()
-                self.on_refresh()
-
             else:
-                self.main_model.group_by = []
                 self.bottom_view.hide()
-                self.on_refresh()
 
         if self.sender() == self.groupby_v1_action:
             self.splitter.setOrientation(Qt.Vertical)
@@ -562,7 +566,7 @@ class VariantViewWidget(plugin.PluginWidget):
     def show_group_column_only(self, active=True):
 
         for i, val in enumerate(self.main_model.headers):
-            if val not in self.groupby + ["count"] and active is True:
+            if val not in self.main_model.group_by + ["count"] and active is True:
                 self.top_view.view.setColumnHidden(i, True)
             else:
                 self.top_view.view.setColumnHidden(i, False)
@@ -579,7 +583,7 @@ class VariantViewWidget(plugin.PluginWidget):
         self.group_model.source = self.main_model.source
 
         and_list = []
-        for i in self.groupby:
+        for i in self.main_model.group_by:
             and_list.append({"field": i, "operator": "=", "value": variant[i]})
 
         self.group_model.filters = {"AND": and_list}

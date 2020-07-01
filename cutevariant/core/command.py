@@ -69,6 +69,7 @@ def select_cmd(
 
 def count_cmd(
     conn: sqlite3.Connection,
+    fields=["chr", "pos", "ref", "alt"],
     source="variants",
     filters={},
     group_by=[],
@@ -88,7 +89,7 @@ def count_cmd(
     default_tables = dict([(i["name"], i["category"]) for i in sql.get_fields(conn)])
     samples_ids = dict([(i["name"], i["id"]) for i in sql.get_samples(conn)])
     query = build_query(
-        [""],
+        fields,
         source,
         filters,
         None,
@@ -101,14 +102,18 @@ def count_cmd(
     )
     from_pos = query.index("FROM")
 
-    if distinct:
-        query = (
-            "SELECT COUNT (*) FROM (SELECT DISTINCT variants.id "
-            + query[from_pos:]
-            + ")"
-        )
-    else:
-        query = "SELECT COUNT (*) FROM (SELECT variants.id " + query[from_pos:] + ")"
+    # #    print("ICI", query, query[from_pos:])
+
+    # print("ICI", filters)
+    # if distinct:
+    #     query = (
+    #         "SELECT COUNT (*) FROM (SELECT DISTINCT variants.id "
+    #         + query[from_pos:]
+    #         + ")"
+    #     )
+    # else:
+
+    query = "SELECT COUNT (*) FROM ( SELECT variants.id " + query[from_pos:] + ")"
 
     LOGGER.debug(query)
 

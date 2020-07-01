@@ -102,6 +102,7 @@ class VqlEditorWidget(plugin.PluginWidget):
             self.mainwindow.state.fields,
             self.mainwindow.state.source,
             self.mainwindow.state.filters,
+            self.mainwindow.state.group_by,
         )
 
         self.set_vql(vql)
