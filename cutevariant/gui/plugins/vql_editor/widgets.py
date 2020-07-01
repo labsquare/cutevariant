@@ -136,9 +136,12 @@ class VqlEditorWidget(plugin.PluginWidget):
         Returns:
             bool: Status 
         """
+
+        print("check vql")
+
         try:
             self.log_edit.hide()
-            vql.parse_vql(self.text_edit.toPlainText())
+            [i for i in vql.parse_vql(self.text_edit.toPlainText())]
 
         except TextXSyntaxError as e:
             # Available attributes: e.message, e.line, e.col
