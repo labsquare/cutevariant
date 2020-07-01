@@ -1,6 +1,13 @@
-from PySide2.QtWidgets import *
-from PySide2.QtCore import *
-from PySide2.QtGui import *
+from PySide2.QtWidgets import (
+    QWidget,
+    QSlider,
+    QApplication,
+    QStyleOptionSlider,
+    QSizePolicy,
+    QStyle,
+)
+from PySide2.QtCore import Qt, QRect, QSize
+from PySide2.QtGui import QPainter, QPaintEvent, QMouseEvent, QPalette, QBrush, QPen
 
 import sys
 
