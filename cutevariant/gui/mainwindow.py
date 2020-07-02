@@ -200,7 +200,7 @@ class MainWindow(QMainWindow):
         self.file_menu.addSeparator()
 
         self.file_menu.addSeparator()
-        self.file_menu.addAction(self.tr("&Quit"), qApp.quit, QKeySequence.Quit)
+        self.file_menu.addAction(self.tr("&Quit"), self.close, QKeySequence.Quit)
 
         ## Edit
         self.edit_menu = self.menuBar().addMenu(self.tr("&Edit"))
