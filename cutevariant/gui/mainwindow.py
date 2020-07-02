@@ -318,6 +318,9 @@ class MainWindow(QMainWindow):
         if isinstance(recent_projects, str):
             recent_projects = [recent_projects]
 
+        # Check if file exists
+        recent_projects = [p for p in recent_projects if os.path.exists(p)]
+
         return recent_projects
 
     def clear_recent_projects(self):
