@@ -82,12 +82,18 @@ class FieldsModel(QStandardItemModel):
         font = QFont()
         root_item.setFont(font)
 
+        type_icons = {"int": 0xF03A0, "str": 0xF100D, "float": 0xF03A0, "bool": 0xF023B}
+
         for field in sql.get_field_by_category(self.conn, category):
             item1 = QStandardItem(field["name"])
             item2 = QStandardItem(field["description"])
             item2.setToolTip(field["description"])
-            item1.setToolTip(field["description"])
+
             item1.setCheckable(True)
+
+            if field["type"] in type_icons.keys():
+                item1.setIcon(FIcon(type_icons[field["type"]]))
+
             root_item.appendRow([item1, item2])
             self.checkable_items.append(item1)
 
@@ -159,8 +165,8 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self.search_edit.textChanged.connect(self.proxy_model.setFilterRegExp)
 
         self._is_refreshing = (
-            False
-        )  #  Help to avoid loop between on_refresh and on_fields_changed
+            False  #  Help to avoid loop between on_refresh and on_fields_changed
+        )
 
     def __on_search_pressed(self, checked: bool):
         self.search_edit.setVisible(checked)
