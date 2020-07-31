@@ -336,9 +336,12 @@ def build_query(
     fields_in_filters = [i["field"] for i in filters_to_flat(filters)]
 
     #  Loop over fields and check is annotations is required
+
+    annotation_fields = [i for i,v in default_tables.items() if v == "annotations"]
+
     need_join_annotations = False
     for col in sql_fields + fields_in_filters:
-        if "annotations" in col:
+        if "annotations" in col or col in annotation_fields:
             need_join_annotations = True
             break
 
