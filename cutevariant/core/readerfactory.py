@@ -19,6 +19,7 @@ def detect_vcf_annotation(filepath):
 
     :return: "vep", "snpeff", None
     """
+
     if cm.is_gz_file(filepath):
         # Open .gz files in binary mode (See #84)
         device = open(filepath, "rb")
@@ -27,6 +28,8 @@ def detect_vcf_annotation(filepath):
 
     std_reader = vcf.VCFReader(device)
     # print(std_reader.metadata)
+
+    
     if "VEP" in std_reader.metadata:
         if "CSQ" in std_reader.infos:
             device.close()
