@@ -103,6 +103,7 @@ class VqlEditorWidget(plugin.PluginWidget):
             self.mainwindow.state.source,
             self.mainwindow.state.filters,
             self.mainwindow.state.group_by,
+            self.mainwindow.state.having,
         )
 
         self.set_vql(vql)
@@ -192,6 +193,7 @@ class VqlEditorWidget(plugin.PluginWidget):
                 self.mainwindow.state.source = cmd["source"]  # name of the variant set
                 self.mainwindow.state.filters = cmd["filters"]
                 self.mainwindow.state.group_by = cmd["group_by"]
+                self.mainwindow.state.having = cmd["having"]
                 self.mainwindow.refresh_plugins(sender=self)
 
             if cmd["cmd"] in ("create_cmd", "set_cmd", "drop_cmd"):

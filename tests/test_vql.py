@@ -10,6 +10,7 @@ VQL_TO_TREE_CASES = {
         "fields": ["chr", "pos", ("sample", "sacha", "gt")],
         "filters": {},
         "group_by": [],
+        "having": {},
         "source": "variants",
     },
     # Test 2
@@ -18,6 +19,7 @@ VQL_TO_TREE_CASES = {
         "fields": ["chr", "pos", "ref"],
         "source": "variants",
         "group_by": [],
+        "having": {},
         "filters": {
             "AND": [
                 {"field": "a", "operator": "=", "value": 3},
@@ -32,6 +34,7 @@ VQL_TO_TREE_CASES = {
         "fields": ["chr", "pos", "ref"],
         "source": "variants",
         "group_by": [],
+        "having": {},
         "filters": {
             "AND": [
                 {"field": "a", "operator": "=", "value": 3},
@@ -50,6 +53,7 @@ VQL_TO_TREE_CASES = {
         "fields": ["chr", "pos", ("sample", "sacha", "gt")],
         "filters": {},
         "group_by": [],
+        "having": {},
         "source": "variants",
     },
     #  Test 4bis GROUP BY
@@ -59,6 +63,16 @@ VQL_TO_TREE_CASES = {
         "filters": {},
         "source": "variants",
         "group_by": ["chr", "pos"],
+        "having": {},
+    },
+    #  Test 4bis GROUP BY HAVING
+    "SELECT chr, pos, ref, alt FROM variants GROUP BY chr HAVING count > 3": {
+        "cmd": "select_cmd",
+        "fields": ["chr", "pos", "ref", "alt"],
+        "filters": {},
+        "source": "variants",
+        "group_by": ["chr"],
+        "having": {"op": ">", "value": 3},
     },
     # Test 5
     "SELECT chr FROM variants WHERE some_field IN ('one', 'two')": {
@@ -66,6 +80,7 @@ VQL_TO_TREE_CASES = {
         "fields": ["chr"],
         "source": "variants",
         "group_by": [],
+        "having": {},
         "filters": {
             "AND": [{"field": "some_field", "operator": "IN", "value": ("one", "two")}]
         },

@@ -29,6 +29,7 @@ def select_cmd(
     order_by=None,
     order_desc=True,
     group_by=[],
+    having={},  # {"op":">", "value": 3  }
     limit=50,
     offset=0,
     **kwargs,
@@ -51,15 +52,16 @@ def select_cmd(
     default_tables = dict([(i["name"], i["category"]) for i in sql.get_fields(conn)])
     samples_ids = dict([(i["name"], i["id"]) for i in sql.get_samples(conn)])
     query = build_query(
-        fields,
-        source,
-        filters,
-        order_by,
-        order_desc,
-        limit,
-        offset,
-        group_by,
-        default_tables,
+        fields=fields,
+        source=source,
+        filters=filters,
+        order_by=order_by,
+        order_desc=order_desc,
+        limit=limit,
+        offset=offset,
+        group_by=group_by,
+        having=having,
+        default_tables=default_tables,
         samples_ids=samples_ids,
     )
     LOGGER.debug(query)
@@ -73,6 +75,7 @@ def count_cmd(
     source="variants",
     filters={},
     group_by=[],
+    having={},
     distinct=True,
     **kwargs,
 ):
@@ -89,15 +92,16 @@ def count_cmd(
     default_tables = dict([(i["name"], i["category"]) for i in sql.get_fields(conn)])
     samples_ids = dict([(i["name"], i["id"]) for i in sql.get_samples(conn)])
     query = build_query(
-        fields,
-        source,
-        filters,
-        None,
-        None,
-        None,
-        None,
-        group_by,
-        default_tables,
+        fields=fields,
+        source=source,
+        filters=filters,
+        limit=None,
+        offset=None,
+        order_desc=None,
+        order_by=None,
+        group_by=group_by,
+        having=having,
+        default_tables=default_tables,
         samples_ids=samples_ids,
     )
     from_pos = query.index("FROM")

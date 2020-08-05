@@ -166,6 +166,11 @@ class SelectCmd(metaclass=model_class):
         else:
             output["group_by"] = []
 
+        if self.having_op and self.having_val:
+            output["having"] = {"op": self.having_op, "value": self.having_val}
+        else:
+            output["having"] = {}
+
         return output
 
 

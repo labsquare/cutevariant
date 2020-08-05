@@ -263,7 +263,7 @@ def filters_to_vql(filters):
     return recursive(filters)
 
 
-def build_vql_query(fields, source="variants", filters={}, group_by=[]):
+def build_vql_query(fields, source="variants", filters={}, group_by=[], having={}):
     """Build VQL query 
 
     TODO : harmonize name with build_query => build_sql
@@ -281,6 +281,11 @@ def build_vql_query(fields, source="variants", filters={}, group_by=[]):
     if group_by:
         query += " GROUP BY " + ",".join(group_by)
 
+        if having:
+            op = having["op"]
+            value = having["value"]
+            query += f" HAVING count {op} {value}"
+
     return query
 
 
@@ -293,6 +298,7 @@ def build_query(
     limit=50,
     offset=0,
     group_by=[],
+    having={},  # {"op":">", "value": 3  }
     default_tables={},
     samples_ids={},
 ):
@@ -337,7 +343,7 @@ def build_query(
 
     #  Loop over fields and check is annotations is required
 
-    annotation_fields = [i for i,v in default_tables.items() if v == "annotations"]
+    annotation_fields = [i for i, v in default_tables.items() if v == "annotations"]
 
     need_join_annotations = False
     for col in sql_fields + fields_in_filters:
@@ -389,6 +395,10 @@ def build_query(
     #  Add Group By
     if group_by:
         sql_query += " GROUP BY " + ",".join(group_by)
+        if having:
+            op = having["op"]
+            val = having["value"]
+            sql_query += f" HAVING count {op} {val}"
 
     #  Add Order By
     if order_by:

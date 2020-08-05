@@ -138,6 +138,23 @@ QUERY_TESTS = [
         "SELECT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants LIMIT 50 OFFSET 0",
         "SELECT chr,pos FROM variants",
     ),
+    (
+        # Test GROUPBY
+        {"fields": ["chr", "pos"], "source": "variants", "group_by": ["chr"]},
+        "SELECT `variants`.`id`,COUNT(`variants`.`id`) as 'count',`variants`.`chr`,`variants`.`pos` FROM variants GROUP BY chr LIMIT 50 OFFSET 0",
+        "SELECT chr,pos FROM variants GROUP BY chr",
+    ),
+    (
+        # Test GROUPBY HAVING
+        {
+            "fields": ["chr", "pos"],
+            "source": "variants",
+            "group_by": ["chr"],
+            "having": {"op": ">", "value": 10},
+        },
+        "SELECT `variants`.`id`,COUNT(`variants`.`id`) as 'count',`variants`.`chr`,`variants`.`pos` FROM variants GROUP BY chr HAVING count > 10 LIMIT 50 OFFSET 0",
+        "SELECT chr,pos FROM variants GROUP BY chr HAVING count > 10",
+    ),
     #  Test limit offset
     (
         {"fields": ["chr", "pos"], "source": "variants", "limit": 10, "offset": 4},
@@ -266,6 +283,8 @@ def test_build_query(test_input, test_output, vql):
         fields=test_input["fields"],
         source=test_input["source"],
         filters=test_input["filters"] if "filters" in test_input else [],
+        group_by=test_input["group_by"] if "group_by" in test_input else [],
+        having=test_input["having"] if "having" in test_input else [],
     )
 
     assert query == vql

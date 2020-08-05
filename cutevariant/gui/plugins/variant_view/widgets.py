@@ -44,6 +44,7 @@ class VariantModel(QAbstractTableModel):
         self.filters = dict()
         self.source = "variants"
         self.group_by = []
+        self.having = {}
         self.order_by = None
         self.order_desc = True
         self.formatter = None
@@ -177,6 +178,7 @@ class VariantModel(QAbstractTableModel):
                 order_desc=self.order_desc,
                 order_by=self.order_by,
                 group_by=self.group_by,
+                having=self.having,
             )
         )
 
@@ -456,6 +458,12 @@ class VariantViewWidget(plugin.PluginWidget):
         self.splitter.addWidget(self.first_pane)
         self.splitter.addWidget(self.second_pane)
 
+        self.second_pane.view.horizontalHeader().hide()
+
+        self.first_pane.view.horizontalHeader().sectionResized.connect(
+            lambda l, o, n: self.second_pane.view.horizontalHeader().resizeSection(l, n)
+        )
+
         # self.second_pane.view.setHorizontalHeader(self.first_pane.view.horizontalHeader())
 
         self.second_pane.hide()
@@ -548,6 +556,7 @@ class VariantViewWidget(plugin.PluginWidget):
         self.first_model.source = self.mainwindow.state.source
         self.first_model.filters = self.mainwindow.state.filters
         self.first_model.group_by = self.mainwindow.state.group_by
+        self.first_model.having = self.mainwindow.state.having
 
         self.first_model.formatter = next(formatter.find_formatters())()
         self.second_model.formatter = next(formatter.find_formatters())()
@@ -561,8 +570,13 @@ class VariantViewWidget(plugin.PluginWidget):
         self.show_group_column_only(self.horizontal_view_action.isChecked())
 
         # Hide columns id
+        self.first_pane.view.setColumnHidden(0, True)
+        self.second_pane.view.setColumnHidden(0, True)
 
-        # self.first_pane.view.setColumnHidden(self.first_model.headers.index("count"), True)
+        # if "count" in self.first_model.headers:
+        #     self.first_pane.view.setColumnHidden(
+        #         self.first_model.headers.index("count"), True
+        #     )
 
     def load_group_by(self, groupby: list):
 
