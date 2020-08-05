@@ -553,6 +553,10 @@ class VariantViewWidget(plugin.PluginWidget):
 
         self.on_refresh()
 
+        self.set_view_split(False)
+        self.groupby_act_gp.setVisible(False)
+        self.groupby_action.setChecked(False)
+
     def on_refresh(self):
         """ override """
 
