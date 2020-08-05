@@ -559,10 +559,8 @@ class VariantViewWidget(plugin.PluginWidget):
 
         self.on_refresh()
 
-        # Reset group action
-        self.set_view_split(False)
-        self.groupby_act_gp.setVisible(False)
-        self.groupby_action.setChecked(False)
+        # reset
+        self.reset()
 
     def on_refresh(self):
         """ override """
@@ -603,6 +601,7 @@ class VariantViewWidget(plugin.PluginWidget):
 
         else:
             checked_fields = []
+            self.reset()
 
         self.mainwindow.state.group_by = checked_fields
         self.on_refresh()
@@ -611,6 +610,12 @@ class VariantViewWidget(plugin.PluginWidget):
         if "vql_editor" in self.mainwindow.plugins:
             plugin = self.mainwindow.plugins["vql_editor"]
             plugin.on_refresh()
+
+    def reset(self):
+        self.set_view_split(False)
+        self.groupby_act_gp.setVisible(False)
+        self.groupby_action.setChecked(False)
+        self.first_model.order_by = None
 
     def load_fields(self):
         self.groupby_actions = []

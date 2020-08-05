@@ -165,6 +165,20 @@ class AbstractReader(ABC):
             "description": "Count number of variant ( not 0/0)",
         }
 
+        yield {
+            "name": "is_indel",
+            "type": "bool",
+            "category": "variants",
+            "description": "True is variant is an indel",
+        }
+
+        yield {
+            "name": "is_snp",
+            "type": "bool",
+            "category": "variants",
+            "description": "True is variant is a snp",
+        }
+
         # avoid duplicates fields ...
         duplicates = set()
         for field in self.get_fields():
@@ -201,6 +215,9 @@ class AbstractReader(ABC):
             variant["count_het"] = genotype_counter[1]
             variant["count_ref"] = genotype_counter[0]
             variant["count_var"] = genotype_counter[1] + genotype_counter[2]
+
+            variant["is_indel"] = len(variant["ref"]) != len(variant["alt"])
+            variant["is_snp"] = len(variant["ref"]) == len(variant["alt"])
 
             yield variant
 
