@@ -304,10 +304,10 @@ class VariantModel(QAbstractTableModel):
         # if index.parent().parent() == QModelIndex():
         # return self.background_color_index(index.parent())
 
-        # return base_brush     self.groupby_v1_action = self.top_bar.addAction(FIcon())
+        # return base_brush     self.vertical_view_action = self.top_bar.addAction(FIcon())
 
         # def paint(self, painter, option, index):
-        self.groupby_v1_action = self.top_bar.addAction(FIcon())
+        self.vertical_view_action = self.top_bar.addAction(FIcon())
 
 
 # return super().paint(painter, option, index)
@@ -456,35 +456,55 @@ class VariantViewWidget(plugin.PluginWidget):
         self.splitter.addWidget(self.top_view)
         self.splitter.addWidget(self.bottom_view)
 
+        # self.bottom_view.view.setHorizontalHeader(self.top_view.view.horizontalHeader())
+
         self.bottom_view.hide()
 
         #  Common toolbar
         self.top_bar = QToolBar()
+        self.top_bar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+
         self.groupby_act_gp = QActionGroup(self)
         self.groupby_act_gp.setExclusive(True)
-        self.groupby_act_gp.setEnabled(False)
-        #  Activate groupby action
-        self.top_bar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        self.groupby_act_gp.setVisible(False)
+
+        # checkable group action
         self.groupby_action = self.top_bar.addAction(
-            FIcon(0xF14E0), "Group by", self.on_group_clicked
+            FIcon(0xF14E0), "Group by", self.on_group_changed,
         )
         self.groupby_action.setCheckable(True)
 
-        self.groupby_v1_action = self.top_bar.addAction(
+        # List group action
+        self.groupby_actions = []  # List of actions
+        self.groupby_act_list = QToolButton()
+        self.groupby_act_list.setIcon(FIcon(0xF0756))
+        self.groupby_act_list.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        self.groupby_act_list.setPopupMode(QToolButton.InstantPopup)
+        self._groupby_act_list = QWidgetAction(self)
+        self._groupby_act_list.setDefaultWidget(self.groupby_act_list)
+        self.top_bar.addAction(self._groupby_act_list)
+
+        # vertical group view button
+        self.vertical_view_action = self.top_bar.addAction(
             FIcon(0xF0575, self.palette().color(QPalette.Highlight)),
             "view 1",
-            self.on_group_clicked,
+            self.on_viewmode_clicked,
         )
-        self.groupby_v2_action = self.top_bar.addAction(
+        self.vertical_view_action.setCheckable(True)
+        self.vertical_view_action.setChecked(True)  # Default
+        self.top_bar.addAction(self.vertical_view_action)
+        # horizontal group view button
+        self.horizontal_view_action = self.top_bar.addAction(
             FIcon(0xF0BCC, self.palette().color(QPalette.Highlight)),
             "view 2",
-            self.on_group_clicked,
+            self.on_viewmode_clicked,
         )
+        self.horizontal_view_action.setCheckable(True)
+        self.top_bar.addAction(self.horizontal_view_action)
 
-        self.groupby_v1_action.setCheckable(True)
-        self.groupby_v2_action.setCheckable(True)
-        self.groupby_act_gp.addAction(self.groupby_v1_action)
-        self.groupby_act_gp.addAction(self.groupby_v2_action)
+        self.groupby_act_gp.addAction(self.vertical_view_action)
+        self.groupby_act_gp.addAction(self.horizontal_view_action)
+        self.groupby_act_gp.addAction(self._groupby_act_list)
 
         self.top_view.view.clicked.connect(self.on_variant_clicked)
 
@@ -525,7 +545,6 @@ class VariantViewWidget(plugin.PluginWidget):
     def on_refresh(self):
         """ override """
         self.main_model.fields = self.mainwindow.state.fields
-        self.main_model.fields = self.mainwindow.state.fields
         self.main_model.source = self.mainwindow.state.source
         self.main_model.filters = self.mainwindow.state.filters
         self.main_model.group_by = self.mainwindow.state.group_by
@@ -536,10 +555,43 @@ class VariantViewWidget(plugin.PluginWidget):
         # self.main_view.model.group_by = ["chr","pos","ref","alt"]
 
         self.main_model.load()
+        self.load_group_by(self.main_model.group_by)
         self.top_view.load_page_box()
-        self.show_group_column_only(self.groupby_v2_action.isChecked())
 
-    def on_group_clicked(self):
+        self.show_group_column_only(self.horizontal_view_action.isChecked())
+
+        # Hide columns id
+
+        # self.top_view.view.setColumnHidden(self.main_model.headers.index("count"), True)
+
+    def load_group_by(self, groupby: list):
+
+        self.groupby_actions = []
+        self.groupby_menu = QMenu()
+        name = ",".join(groupby)
+        for field in self.mainwindow.state.fields:
+            action = self.groupby_menu.addAction(field, self.on_group_changed)
+            action.setCheckable(True)
+            if field in groupby:
+                action.setChecked(True)
+            self.groupby_actions.append(action)
+
+        self.groupby_menu.addSeparator()
+        self.groupby_act_list.setText(name)
+
+        self.groupby_act_list.setMenu(self.groupby_menu)
+
+    def on_viewmode_clicked(self):
+
+        if self.sender() == self.vertical_view_action:
+            self.splitter.setOrientation(Qt.Vertical)
+            self.show_group_column_only(False)
+
+        if self.sender() == self.horizontal_view_action:
+            self.splitter.setOrientation(Qt.Horizontal)
+            self.show_group_column_only(True)
+
+    def on_group_changed(self):
 
         # TODO : must be user defined
 
@@ -548,21 +600,19 @@ class VariantViewWidget(plugin.PluginWidget):
         #     self.main_model.headers.index(i) for i in GP if i in self.main_model.headers
         # ]
 
-        self.groupby_act_gp.setEnabled(self.groupby_action.isChecked())
+        self.groupby_act_gp.setVisible(self.groupby_action.isChecked())
+        self.bottom_view.setVisible(self.groupby_action.isChecked())
 
-        if self.sender() == self.groupby_action:
-            if self.groupby_action.isChecked():
-                self.bottom_view.show()
-            else:
-                self.bottom_view.hide()
+        if self.groupby_action.isChecked() is False:
+            checked_fields = []
+        else:
+            checked_fields = [
+                action.text() for action in self.groupby_actions if action.isChecked()
+            ]
 
-        if self.sender() == self.groupby_v1_action:
-            self.splitter.setOrientation(Qt.Vertical)
-            self.show_group_column_only(False)
+        self.mainwindow.state.group_by = checked_fields
 
-        if self.sender() == self.groupby_v2_action:
-            self.splitter.setOrientation(Qt.Horizontal)
-            self.show_group_column_only(True)
+        self.on_refresh()
 
     def show_group_column_only(self, active=True):
 
