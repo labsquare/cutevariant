@@ -7,6 +7,8 @@ from PySide2.QtGui import (
     QPalette,
     QPixmap,
     QPainter,
+    Qt,
+    QPen,
 )
 from PySide2.QtCore import QCoreApplication
 from PySide2.QtWidgets import QApplication
@@ -54,8 +56,8 @@ class DefaultFormatter(Formatter):
             return QColor(self.GENE_COLOR)
 
         # Draw cell depending column name
-        if column == "impact":
-            return self.IMPACT_COLOR[value]
+        if "impact" in column:
+            return QColor(self.IMPACT_COLOR[value])
 
     @functools.lru_cache(maxsize=128)
     def get_decoration(self, column, value):
@@ -97,3 +99,19 @@ class DefaultFormatter(Formatter):
             elif value == 2:
                 return QIcon(FIcon(0xF0AA5))
             return QIcon(FIcon(0xF10D3))
+
+        # if column == "count":
+
+        #     pixmap = QPixmap(32, 32)
+        #     pixmap.fill(Qt.transparent)
+
+        #     painter = QPainter(pixmap)
+        #     painter.setBrush(
+        #         QApplication.instance().palette("QWidget").color(QPalette.Highlight)
+        #     )
+        #     painter.setPen(Qt.transparent)
+        #     rect = pixmap.rect().adjusted(2, 8, -2, -8)
+        #     painter.drawRoundedRect(rect, 3, 3)
+        #     painter.setPen(QPen(QColor("lightgray")))
+        #     painter.drawText(rect, Qt.AlignCenter | Qt.AlignVCenter, str(value))
+        #     return pixmap

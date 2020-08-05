@@ -460,9 +460,15 @@ class VariantViewWidget(plugin.PluginWidget):
 
         # self.second_pane.view.horizontalHeader().hide()
 
-        self.first_pane.view.horizontalHeader().sectionResized.connect(
-            lambda l, o, n: self.second_pane.view.horizontalHeader().resizeSection(l, n)
-        )
+        def _resize_section(l, o, n):
+            if self.vertical_view_action.isChecked():
+                name = self.first_model.headers[l]
+
+                if name in self.second_model.headers:
+                    index = self.second_model.headers.index(name)
+                    self.second_pane.view.horizontalHeader().resizeSection(index, n)
+
+        self.first_pane.view.horizontalHeader().sectionResized.connect(_resize_section)
 
         # self.second_pane.view.setHorizontalHeader(self.first_pane.view.horizontalHeader())
 
@@ -553,6 +559,7 @@ class VariantViewWidget(plugin.PluginWidget):
 
         self.on_refresh()
 
+        # Reset group action
         self.set_view_split(False)
         self.groupby_act_gp.setVisible(False)
         self.groupby_action.setChecked(False)
@@ -576,19 +583,11 @@ class VariantViewWidget(plugin.PluginWidget):
 
         self.groupby_action.setChecked(bool(self.first_model.group_by))
         self.groupby_act_gp.setVisible(bool(self.first_model.group_by))
+        self.set_view_split(self.groupby_action.isChecked())
 
         self.first_pane.load_page_box()
 
         # self.show_group_column_only(self.horizontal_view_action.isChecked())
-
-        # # Hide columns id
-        # self.first_pane.view.setColumnHidden(0, True)
-        # self.second_pane.view.setColumnHidden(0, True)
-
-        # if "count" in self.first_model.headers:
-        #     self.first_pane.view.setColumnHidden(
-        #         self.first_model.headers.index("count"), True
-        #     )
 
     def on_group_changed(self):
 
@@ -607,7 +606,6 @@ class VariantViewWidget(plugin.PluginWidget):
 
         self.mainwindow.state.group_by = checked_fields
         self.on_refresh()
-        self.set_view_split(is_checked)
 
         #  refresh source editor plugin
         if "vql_editor" in self.mainwindow.plugins:
@@ -617,12 +615,14 @@ class VariantViewWidget(plugin.PluginWidget):
     def load_fields(self):
         self.groupby_actions = []
         self.groupby_menu = QMenu()
+        self.groupby_menu.setTearOffEnabled(True)
         for field in self.first_model.fields:
-            action = self.groupby_menu.addAction(field, self.on_group_changed)
-            action.setCheckable(True)
-            if field in self.first_model.group_by:
-                action.setChecked(True)
-            self.groupby_actions.append(action)
+            if type(field) == str:  # Avoid tuple ...
+                action = self.groupby_menu.addAction(field, self.on_group_changed)
+                action.setCheckable(True)
+                if field in self.first_model.group_by:
+                    action.setChecked(True)
+                self.groupby_actions.append(action)
 
         self.groupby_act_list.setMenu(self.groupby_menu)
         self.groupby_act_list.setText("Group by " + ",".join(self.first_model.group_by))
@@ -635,6 +635,11 @@ class VariantViewWidget(plugin.PluginWidget):
         if orientation == Qt.Horizontal:
             self.splitter.setOrientation(Qt.Horizontal)
             self.show_group_column_only(True)
+
+        if "count" in self.first_model.headers:
+            self.first_pane.view.setColumnHidden(
+                self.first_model.headers.index("count"), orientation == Qt.Vertical
+            )
 
     def set_view_split(self, active=True):
 
