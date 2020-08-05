@@ -85,6 +85,8 @@ class MainWindow(QMainWindow):
         self.resize(600, 400)
         self.setGeometry(qApp.desktop().rect().adjusted(100, 100, -100, -100))
 
+        self.setTabPosition(Qt.AllDockWidgetAreas, QTabWidget.North)
+
         # Restores the state of this mainwindow's toolbars and dockwidgets
         self.read_settings()
 

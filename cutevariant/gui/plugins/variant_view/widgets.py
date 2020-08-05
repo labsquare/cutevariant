@@ -111,6 +111,13 @@ class VariantModel(QAbstractTableModel):
             if role == Qt.DisplayRole and self.formatter is None:
                 return str(self.variant(index.row())[column_name])
 
+            if role == Qt.ToolTipRole:
+                return (
+                    "<font>"
+                    + str(self.variant(index.row())[column_name]).replace(",", " ")
+                    + "</font>"
+                )
+
             # ------ Other Role -----
 
             if self.formatter:
@@ -715,7 +722,7 @@ class VariantViewWidget(plugin.PluginWidget):
 
         #  Refresh plugins when clicked
         self.mainwindow.state.current_variant = variant
-        self.mainwindow.refresh_plugins(self)
+        self.mainwindow.refresh_plugins(sender=self)
 
 
 if __name__ == "__main__":

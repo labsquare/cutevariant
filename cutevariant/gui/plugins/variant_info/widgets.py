@@ -153,6 +153,7 @@ class VariantInfoWidget(PluginWidget):
             item = QTreeWidgetItem()
             item.setText(0, key)
             item.setText(1, str(value))
+            item.setToolTip(1, "<font color=black>" + str(value) + "</font>")
 
             if key == "classification":
                 self.classification_box.setCurrentIndex(int(value))
