@@ -458,7 +458,7 @@ class VariantViewWidget(plugin.PluginWidget):
         self.splitter.addWidget(self.first_pane)
         self.splitter.addWidget(self.second_pane)
 
-        self.second_pane.view.horizontalHeader().hide()
+        # self.second_pane.view.horizontalHeader().hide()
 
         self.first_pane.view.horizontalHeader().sectionResized.connect(
             lambda l, o, n: self.second_pane.view.horizontalHeader().resizeSection(l, n)
@@ -496,7 +496,7 @@ class VariantViewWidget(plugin.PluginWidget):
         self.vertical_view_action = self.top_bar.addAction(
             FIcon(0xF0575, self.palette().color(QPalette.Highlight)),
             "view 1",
-            self.on_viewmode_clicked,
+            lambda: self.set_view_orientation(Qt.Vertical),
         )
         self.vertical_view_action.setCheckable(True)
         self.vertical_view_action.setChecked(True)  # Default
@@ -505,7 +505,7 @@ class VariantViewWidget(plugin.PluginWidget):
         self.horizontal_view_action = self.top_bar.addAction(
             FIcon(0xF0BCC, self.palette().color(QPalette.Highlight)),
             "view 2",
-            self.on_viewmode_clicked,
+            lambda: self.set_view_orientation(Qt.Horizontal),
         )
         self.horizontal_view_action.setCheckable(True)
         self.top_bar.addAction(self.horizontal_view_action)
@@ -530,6 +530,9 @@ class VariantViewWidget(plugin.PluginWidget):
         #  setup layout
         ## Build stack view
 
+        self.top_bar.addSeparator()
+        self.top_bar.addAction(FIcon(0xF0450), "Refresh", self.on_refresh)
+
         main_layout = QVBoxLayout()
         main_layout.addWidget(self.top_bar)
         main_layout.addWidget(self.splitter)
@@ -552,6 +555,7 @@ class VariantViewWidget(plugin.PluginWidget):
 
     def on_refresh(self):
         """ override """
+
         self.first_model.fields = self.mainwindow.state.fields
         self.first_model.source = self.mainwindow.state.source
         self.first_model.filters = self.mainwindow.state.filters
@@ -564,69 +568,108 @@ class VariantViewWidget(plugin.PluginWidget):
         # self.main_view.model.group_by = ["chr","pos","ref","alt"]
 
         self.first_model.load()
-        self.load_group_by(self.first_model.group_by)
+        self.load_fields()
+
+        self.groupby_action.setChecked(bool(self.first_model.group_by))
+        self.groupby_act_gp.setVisible(bool(self.first_model.group_by))
+
         self.first_pane.load_page_box()
 
-        self.show_group_column_only(self.horizontal_view_action.isChecked())
+        # self.show_group_column_only(self.horizontal_view_action.isChecked())
 
-        # Hide columns id
-        self.first_pane.view.setColumnHidden(0, True)
-        self.second_pane.view.setColumnHidden(0, True)
+        # # Hide columns id
+        # self.first_pane.view.setColumnHidden(0, True)
+        # self.second_pane.view.setColumnHidden(0, True)
 
         # if "count" in self.first_model.headers:
         #     self.first_pane.view.setColumnHidden(
         #         self.first_model.headers.index("count"), True
         #     )
 
-    def load_group_by(self, groupby: list):
-
-        self.groupby_actions = []
-        self.groupby_menu = QMenu()
-        name = ",".join(groupby)
-        for field in self.mainwindow.state.fields:
-            action = self.groupby_menu.addAction(field, self.on_group_changed)
-            action.setCheckable(True)
-            if field in groupby:
-                action.setChecked(True)
-            self.groupby_actions.append(action)
-
-        self.groupby_menu.addSeparator()
-        self.groupby_act_list.setText(name)
-
-        self.groupby_act_list.setMenu(self.groupby_menu)
-
-    def on_viewmode_clicked(self):
-
-        if self.sender() == self.vertical_view_action:
-            self.splitter.setOrientation(Qt.Vertical)
-            self.show_group_column_only(False)
-
-        if self.sender() == self.horizontal_view_action:
-            self.splitter.setOrientation(Qt.Horizontal)
-            self.show_group_column_only(True)
-
     def on_group_changed(self):
 
-        # TODO : must be user defined
+        is_checked = self.groupby_action.isChecked()
 
-        # When Horizontal view is enable, we hide some columns not in GP
-        # hidden_col = [
-        #     self.first_model.headers.index(i) for i in GP if i in self.first_model.headers
-        # ]
-
-        self.groupby_act_gp.setVisible(self.groupby_action.isChecked())
-        self.second_pane.setVisible(self.groupby_action.isChecked())
-
-        if self.groupby_action.isChecked() is False:
-            checked_fields = []
-        else:
+        if is_checked:
             checked_fields = [
                 action.text() for action in self.groupby_actions if action.isChecked()
             ]
 
-        self.mainwindow.state.group_by = checked_fields
+            if not checked_fields:  # By default, add one groupby
+                checked_fields = [self.groupby_actions[0].text()]
 
+        else:
+            checked_fields = []
+
+        self.mainwindow.state.group_by = checked_fields
         self.on_refresh()
+        self.set_view_split(is_checked)
+
+        #  refresh source editor plugin
+        if "vql_editor" in self.mainwindow.plugins:
+            plugin = self.mainwindow.plugins["vql_editor"]
+            plugin.on_refresh()
+
+    def load_fields(self):
+        self.groupby_actions = []
+        self.groupby_menu = QMenu()
+        for field in self.first_model.fields:
+            action = self.groupby_menu.addAction(field, self.on_group_changed)
+            action.setCheckable(True)
+            if field in self.first_model.group_by:
+                action.setChecked(True)
+            self.groupby_actions.append(action)
+
+        self.groupby_act_list.setMenu(self.groupby_menu)
+        self.groupby_act_list.setText("Group by " + ",".join(self.first_model.group_by))
+
+    def set_view_orientation(self, orientation):
+        if orientation == Qt.Vertical:
+            self.splitter.setOrientation(Qt.Vertical)
+            self.show_group_column_only(False)
+
+        if orientation == Qt.Horizontal:
+            self.splitter.setOrientation(Qt.Horizontal)
+            self.show_group_column_only(True)
+
+    def set_view_split(self, active=True):
+
+        if active:
+            self.second_pane.setVisible(True)
+            if self.vertical_view_action.isChecked():
+                self.set_view_orientation(Qt.Vertical)
+            else:
+                self.set_view_orientation(Qt.Horizontal)
+        else:
+            self.second_pane.setVisible(False)
+            self.show_group_column_only(False)
+
+    # def on_group_changed(self):
+
+    #     # TODO : must be user defined
+
+    #     # When Horizontal view is enable, we hide some columns not in GP
+    #     # hidden_col = [
+    #     #     self.first_model.headers.index(i) for i in GP if i in self.first_model.headers
+    #     # ]
+
+    #     self.groupby_act_gp.setVisible(self.groupby_action.isChecked())
+    #     self.second_pane.setVisible(self.groupby_action.isChecked())
+
+    #     if self.groupby_action.isChecked() is False:
+    #         checked_fields = []
+    #     else:
+    #         checked_fields = [
+    #             action.text() for action in self.groupby_actions if action.isChecked()
+    #         ]
+
+    #     self.mainwindow.state.group_by = checked_fields
+    #     #  refresh source editor plugin
+    #     if "vql_editor" in self.mainwindow.plugins:
+    #         plugin = self.mainwindow.plugins["source_editor"]
+    #         plugin.on_refresh()
+
+    #     self.on_refresh()
 
     def show_group_column_only(self, active=True):
 
