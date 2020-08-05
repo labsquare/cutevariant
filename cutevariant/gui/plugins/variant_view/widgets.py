@@ -444,21 +444,21 @@ class VariantViewWidget(plugin.PluginWidget):
         super().__init__(parent)
 
         #  Create 2 model
-        self.main_model = VariantModel()
-        self.group_model = VariantModel()
+        self.first_model = VariantModel()
+        self.second_model = VariantModel()
 
         #  Create groupby view 1
         self.splitter = QSplitter(Qt.Vertical)
-        self.top_view = VariantView()
-        self.top_view.setModel(self.main_model)
-        self.bottom_view = VariantView()
-        self.bottom_view.setModel(self.group_model)
-        self.splitter.addWidget(self.top_view)
-        self.splitter.addWidget(self.bottom_view)
+        self.first_pane = VariantView()
+        self.first_pane.setModel(self.first_model)
+        self.second_pane = VariantView()
+        self.second_pane.setModel(self.second_model)
+        self.splitter.addWidget(self.first_pane)
+        self.splitter.addWidget(self.second_pane)
 
-        # self.bottom_view.view.setHorizontalHeader(self.top_view.view.horizontalHeader())
+        # self.second_pane.view.setHorizontalHeader(self.first_pane.view.horizontalHeader())
 
-        self.bottom_view.hide()
+        self.second_pane.hide()
 
         #  Common toolbar
         self.top_bar = QToolBar()
@@ -506,7 +506,7 @@ class VariantViewWidget(plugin.PluginWidget):
         self.groupby_act_gp.addAction(self.horizontal_view_action)
         self.groupby_act_gp.addAction(self._groupby_act_list)
 
-        self.top_view.view.clicked.connect(self.on_variant_clicked)
+        self.first_pane.view.clicked.connect(self.on_variant_clicked)
 
         #  Formatter tools
         self.top_bar.addSeparator()
@@ -531,38 +531,38 @@ class VariantViewWidget(plugin.PluginWidget):
     def on_formatter_changed(self):
 
         Formatter = self.formatter_combo.currentData()
-        self.main_model.formatter = Formatter()
-        self.group_model.formatter = Formatter()
+        self.first_model.formatter = Formatter()
+        self.second_model.formatter = Formatter()
 
     def on_open_project(self, conn):
         """override """
         self.conn = conn
-        self.main_model.conn = self.conn
-        self.group_model.conn = self.conn
+        self.first_model.conn = self.conn
+        self.second_model.conn = self.conn
 
         self.on_refresh()
 
     def on_refresh(self):
         """ override """
-        self.main_model.fields = self.mainwindow.state.fields
-        self.main_model.source = self.mainwindow.state.source
-        self.main_model.filters = self.mainwindow.state.filters
-        self.main_model.group_by = self.mainwindow.state.group_by
+        self.first_model.fields = self.mainwindow.state.fields
+        self.first_model.source = self.mainwindow.state.source
+        self.first_model.filters = self.mainwindow.state.filters
+        self.first_model.group_by = self.mainwindow.state.group_by
 
-        self.main_model.formatter = next(formatter.find_formatters())()
-        self.group_model.formatter = next(formatter.find_formatters())()
+        self.first_model.formatter = next(formatter.find_formatters())()
+        self.second_model.formatter = next(formatter.find_formatters())()
 
         # self.main_view.model.group_by = ["chr","pos","ref","alt"]
 
-        self.main_model.load()
-        self.load_group_by(self.main_model.group_by)
-        self.top_view.load_page_box()
+        self.first_model.load()
+        self.load_group_by(self.first_model.group_by)
+        self.first_pane.load_page_box()
 
         self.show_group_column_only(self.horizontal_view_action.isChecked())
 
         # Hide columns id
 
-        # self.top_view.view.setColumnHidden(self.main_model.headers.index("count"), True)
+        # self.first_pane.view.setColumnHidden(self.first_model.headers.index("count"), True)
 
     def load_group_by(self, groupby: list):
 
@@ -597,11 +597,11 @@ class VariantViewWidget(plugin.PluginWidget):
 
         # When Horizontal view is enable, we hide some columns not in GP
         # hidden_col = [
-        #     self.main_model.headers.index(i) for i in GP if i in self.main_model.headers
+        #     self.first_model.headers.index(i) for i in GP if i in self.first_model.headers
         # ]
 
         self.groupby_act_gp.setVisible(self.groupby_action.isChecked())
-        self.bottom_view.setVisible(self.groupby_action.isChecked())
+        self.second_pane.setVisible(self.groupby_action.isChecked())
 
         if self.groupby_action.isChecked() is False:
             checked_fields = []
@@ -616,31 +616,31 @@ class VariantViewWidget(plugin.PluginWidget):
 
     def show_group_column_only(self, active=True):
 
-        for i, val in enumerate(self.main_model.headers):
-            if val not in self.main_model.group_by + ["count"] and active is True:
-                self.top_view.view.setColumnHidden(i, True)
+        for i, val in enumerate(self.first_model.headers):
+            if val not in self.first_model.group_by + ["count"] and active is True:
+                self.first_pane.view.setColumnHidden(i, True)
             else:
-                self.top_view.view.setColumnHidden(i, False)
+                self.first_pane.view.setColumnHidden(i, False)
 
         # hidden_col = [
-        #     self.main_model.headers.index(i) for i in GP if i in self.main_model.headers
+        #     self.first_model.headers.index(i) for i in GP if i in self.first_model.headers
         # ]
 
     def on_variant_clicked(self, index: QModelIndex):
 
-        variant = self.main_model.variant(index.row())
+        variant = self.first_model.variant(index.row())
 
-        self.group_model.fields = self.main_model.fields
-        self.group_model.source = self.main_model.source
+        self.second_model.fields = self.first_model.fields
+        self.second_model.source = self.first_model.source
 
         and_list = []
-        for i in self.main_model.group_by:
+        for i in self.first_model.group_by:
             and_list.append({"field": i, "operator": "=", "value": variant[i]})
 
-        self.group_model.filters = {"AND": and_list}
+        self.second_model.filters = {"AND": and_list}
 
-        self.group_model.load()
-        self.bottom_view.load_page_box()
+        self.second_model.load()
+        self.second_pane.load_page_box()
 
         #  Refresh plugins when clicked
         self.mainwindow.state.current_variant = variant
