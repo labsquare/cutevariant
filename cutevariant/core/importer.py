@@ -10,17 +10,7 @@ from .readerfactory import create_reader
 from .sql import *
 
 
-def test(boby: int, test="test"):
-    """Summary
-    
-    Args:
-        boby (int): Description
-        test (str, optional): Description
-    """
-    pass
-
-
-def async_import_reader(conn, reader: AbstractReader, **kwargs):
+def async_import_reader(conn, reader: AbstractReader, pedfile=None, project={}):
     """Import data via the given reader into a SQLite database via the given connection
 
     :param conn: sqlite connection
@@ -32,8 +22,8 @@ def async_import_reader(conn, reader: AbstractReader, **kwargs):
     yield 0, f"Importing data with {reader}"
     create_project(
         conn,
-        name=kwargs.get("project_name", "UKN"),
-        reference=kwargs.get("reference", "UKN"),
+        name=project.get("project_name", "UKN"),
+        reference=project.get("reference", "UKN"),
     )
 
     create_table_metadatas(conn)
@@ -62,6 +52,10 @@ def async_import_reader(conn, reader: AbstractReader, **kwargs):
     yield 0, "Inserting samples..."
     insert_many_samples(conn, reader.get_samples())
 
+    if pedfile:
+        yield 0, "Import pedfile "
+        import_pedfile(conn, pedfile)
+
     # Insert fields
     yield 0, "Inserting fields..."
     insert_many_fields(conn, reader.get_extra_fields())
@@ -84,10 +78,6 @@ def async_import_reader(conn, reader: AbstractReader, **kwargs):
             percent = value
         yield percent, message
 
-    #  Insert sample data
-    sample_data = kwargs.get("sample_data", None)
-    # TODO ...
-
     # Create indexes
     yield 99, "Creating indexes..."
     create_indexes(conn)
@@ -96,7 +86,7 @@ def async_import_reader(conn, reader: AbstractReader, **kwargs):
     # session.add(Selection(name="favoris", description="favoris", count = 0))
 
 
-def async_import_file(conn, filename, project={}):
+def async_import_file(conn, filename, pedfile=None, project={}):
     """Import filename into SQLite database
 
     :param conn: sqlite connection
@@ -105,22 +95,22 @@ def async_import_file(conn, filename, project={}):
     """
     # Context manager that wraps the given file
     with create_reader(filename) as reader:
-        yield from async_import_reader(conn, reader, **project)
+        yield from async_import_reader(conn, reader, pedfile, project)
 
 
-def import_file(conn, filename):
-    for progress, message in async_import_file(conn, filename):
+def import_file(conn, filename, pedfile=None, project={}):
+    for progress, message in async_import_file(conn, filename, pedfile, project):
         #  don't show message
         pass
 
 
-def import_reader(conn, reader):
-    for progress, message in async_import_reader(conn, reader):
+def import_reader(conn, reader, pedfile=None, project={}):
+    for progress, message in async_import_reader(conn, reader, pedfile, project):
         #  don't show message
         pass
 
 
-def import_familly(conn, filename):
+def import_pedfile(conn, filename):
     """import *.fam file into sample table
 
     data has the same structure of a fam file object
@@ -164,7 +154,7 @@ def import_familly(conn, filename):
                     edit_sample = {
                         "id": sample_map[name],
                         "fam": fam,
-                        "sexe": sexe,
+                        "sex": sexe,
                         "phenotype": phenotype,
                     }
 

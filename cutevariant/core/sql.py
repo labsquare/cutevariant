@@ -1150,7 +1150,7 @@ def create_table_samples(conn, fields=None):
         fam TEXT DEFAULT 'fam',
         father_id INTEGER DEFAULT 0,
         mother_id INTEGER DEFAULT 0,
-        sexe INTEGER DEFAULT 0,
+        sex INTEGER DEFAULT 0,
         phenotype INTEGER DEFAULT 0
         )"""
     )
@@ -1233,7 +1233,7 @@ def update_sample(conn, sample: dict):
         fam : "fam", # familly identifier
         father_id : 0, # father id, 0 if not
         mother_id : 0, # mother id, 0 if not
-        sexe : 0 # Sexe code ( 1 = male, 2 = female, 0 = unknown)
+        sex : 0 # sex code ( 1 = male, 2 = female, 0 = unknown)
         phenotype: 0 # ( 1 = control , 2 = case, 0 = unknown)
     }
 

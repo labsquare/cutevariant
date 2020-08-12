@@ -179,6 +179,44 @@ class AbstractReader(ABC):
             "description": "True is variant is a snp",
         }
 
+        # yield {
+        #     "name": "case_count_hom",
+        #     "type": "int",
+        #     "category": "variants",
+        #     "description": "Count number of homozygous genotypes (1/1)",
+        # }
+        # yield {
+        #     "name": "case_count_het",
+        #     "type": "int",
+        #     "category": "variants",
+        #     "description": "Count number of heterozygous genotypes (0/1)",
+        # }
+        # yield {
+        #     "name": "case_count_ref",
+        #     "type": "int",
+        #     "category": "variants",
+        #     "description": "Count number of homozygous genotypes (0/0)",
+        # }
+
+        # yield {
+        #     "name": "control_count_hom",
+        #     "type": "int",
+        #     "category": "variants",
+        #     "description": "Count number of homozygous genotypes (1/1)",
+        # }
+        # yield {
+        #     "name": "control_count_het",
+        #     "type": "int",
+        #     "category": "variants",
+        #     "description": "Count number of heterozygous genotypes (0/1)",
+        # }
+        # yield {
+        #     "name": "control_count_ref",
+        #     "type": "int",
+        #     "category": "variants",
+        #     "description": "Count number of homozygous genotypes (0/0)",
+        # }
+
         # avoid duplicates fields ...
         duplicates = set()
         for field in self.get_fields():

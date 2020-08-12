@@ -21,6 +21,8 @@ from cutevariant.core import get_sql_connexion
 import cutevariant.commons as cm
 from cutevariant.core.readerfactory import detect_vcf_annotation, create_reader
 
+from cutevariant.gui.model_view import PedView
+
 LOGGER = cm.logger()
 
 
@@ -164,150 +166,23 @@ class FilePage(QWizardPage):
         )
 
 
-class SampleModel(QAbstractTableModel):
-    def __init__(self):
-        super().__init__()
-
-        self.samples_data = []
-        self.headers = ("Name", "Family", "Father_id", "Mother_id", "Sexe", "Phenotype")
-
-    def rowCount(self, index=QModelIndex()):
-        """ override """
-        return len(self.samples_data)
-
-    def columnCount(self, index=QModelIndex()):
-        """ override """
-        return len(self.headers)
-
-    def get_data_list(self, column: int):
-        return list(set([i[column] for i in self.samples_data]))
-
-    def clear(self):
-        self.beginResetModel()
-        self.samples_data.clear()
-        self.endResetModel()
-
-    def set_samples(self, samples: list):
-        """ fill model """
-        self.beginResetModel()
-        self.samples_data.clear()
-        for sample in samples:
-            self.samples_data.append([sample, "", "", "", "", ""])
-        self.endResetModel()
-
-    def data(self, index: QModelIndex, role=Qt.DisplayRole):
-        """ overrided """
-        if not index.isValid():
-            return None
-
-        if role == Qt.DisplayRole or role == Qt.EditRole:
-            return self.samples_data[index.row()][index.column()]
-
-        return None
-
-    def setData(self, index: QModelIndex, value, role=Qt.EditRole):
-        """ overrided """
-
-        if not index.isValid():
-            return None
-
-        if role == Qt.EditRole:
-            self.samples_data[index.row()][index.column()] = value
-            return True
-
-        return False
-
-    def headerData(
-        self, section: int, orientation: Qt.Orientation, role: Qt.DisplayRole
-    ):
-        """ overrided """
-        if orientation == Qt.Horizontal:
-            if role == Qt.DisplayRole:
-                return self.headers[section]
-
-        return None
-
-    def flags(self, index: QModelIndex):
-        """ overrided """
-        if index.column() > 0:
-            return Qt.ItemIsSelectable | Qt.ItemIsEditable | Qt.ItemIsEnabled
-
-        else:
-            return Qt.ItemIsSelectable | Qt.ItemIsEnabled
-
-
-class SampleDelegate(QItemDelegate):
-    def createEditor(
-        self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex
-    ):
-
-        # index.model refer to SampleModel
-
-        if index.column() < 2:
-            return super().createEditor(parent, option, index)
-
-        widget = QComboBox(parent)
-        if index.column() == 2 or index.column() == 3:  # father_id or mother_id
-            widget.addItems(
-                [""] + index.model().get_data_list(0)
-            )  #  Fill with sample name
-            return widget
-
-        if index.column() == 4:  #  sexe
-            widget.addItems(["", "Male", "Female"])
-            return widget
-
-        if index.column() == 5:
-            widget.addItems(["", "Case", "Control"])
-            return widget
-
-        return super().createEditor(parent, option, index)
-
-
-class SampleWidget(QTableView):
-    def __init__(self):
-        super().__init__()
-        self.model = SampleModel()
-        self.delegate = SampleDelegate()
-        self.setModel(self.model)
-        self.horizontalHeader().setStretchLastSection(True)
-        self.setAlternatingRowColors(True)
-        self.verticalHeader().hide()
-        self.setItemDelegate(self.delegate)
-
-    def clear(self):
-        self.model.clear()
-
-    def set_samples(self, data):
-        self.model.set_samples(data)
-
-    def get_samples(self):
-        return self.model.samples_data
-
-    # Create property binding for QWizardPage.registerFields
-    samples = Property(list, get_samples, set_samples)
-
-
 class SamplePage(QWizardPage):
     def __init__(self):
         super().__init__()
 
         self.setTitle(self.tr("Samples"))
         self.setSubTitle(self.tr("Add sample description or skip this step"))
-        self.view = SampleWidget()
-        self.box = QGroupBox()
-        self.box.setTitle("Use pedigree data")
-        self.box.setCheckable(True)
+        self.view = PedView()
+        self.import_button = QPushButton("Import ped file ...")
         v_layout = QVBoxLayout()
         v_layout.addWidget(self.view)
-        self.box.setLayout(v_layout)
+        v_layout.addWidget(self.import_button)
 
-        m_layout = QVBoxLayout()
-        m_layout.addWidget(self.box)
-        self.setLayout(m_layout)
+        self.setLayout(v_layout)
 
-        self.registerField("samples", self.view, "samples")
-        self.registerField("has_ped", self.box)
+        self.import_button.clicked.connect(self.on_import_clicked)
+
+        self.registerField("pedfile", self.view, "pedfile")
 
     def initializePage(self):
         """ override """
@@ -316,12 +191,33 @@ class SamplePage(QWizardPage):
         #  read samples
         filename = self.field("filename")
         with create_reader(filename) as reader:
-            self.view.set_samples(reader.get_samples())
+            samples = []
+            self.vcf_samples = reader.get_samples()
+
+            for name in self.vcf_samples:
+                samples.append([name, "", "", "", "", "", ""])
+            self.view.set_samples(samples)
 
     def validatePage(self):
         """ override """
         # read table and create a dict for setFields
         return True
+
+    def on_import_clicked(self):
+
+        filename, filetype = QFileDialog.getOpenFileName(
+            self, "Open ped file", QDir.homePath(), "Ped files (*.ped *.tfam)"
+        )
+
+        with open(filename, "r") as file:
+            samples = []
+            for line in file:
+                line = line.strip().split("\t")
+                if len(line) == 6 and line[1] in self.vcf_samples:
+                    # Check if ped file name is in vcf samples
+                    samples.append(line)
+
+            self.view.set_samples(samples)
 
 
 class ImportThread(QThread):
@@ -342,10 +238,11 @@ class ImportThread(QThread):
         self.filename = ""
         # Project's filepath
         self.db_filename = ""
+        self.pedfile = ""
         self.project_settings = dict()
 
     def set_importer_settings(
-        self, filename, db_filename, project_settings={}, sample_data={}
+        self, filename, pedfile, db_filename, project_settings={}
     ):
         """Init settings of the importer
 
@@ -365,8 +262,8 @@ class ImportThread(QThread):
         self.db_filename = db_filename
         # Project settings
         self.project_settings = project_settings
-
-        self.sample_data = sample_data
+        # Ped file
+        self.pedfile = pedfile
 
     def run(self):
         """Overrided QThread method
@@ -384,13 +281,17 @@ class ImportThread(QThread):
         try:
             # Import the file
             for value, message in async_import_file(
-                self.conn, self.filename, self.project_settings
+                self.conn, self.filename, self.pedfile, self.project_settings
             ):
                 if self._stop == True:
                     self.conn.close()
                     break
                 # Send progression
                 self.progress_changed.emit(value, message)
+
+            # Import ped file
+            self.progress_changed.emit(100, "Import pedfile")
+
         except BaseException as e:
             self.progress_changed.emit(0, str(e))
             self._stop = True
@@ -447,17 +348,7 @@ class ImportPage(QWizardPage):
 
     def initializePage(self):
         """ override """
-
-        #  Ugly hack to get sample data from SamplePage..
-        # TODO : Use setFields with property binding
-        # for page_id in self.wizard().pageIds():
-        #     page = self.wizard().page(page_id)
-        #     if page.__class__.__name__ == "SamplePage":
-        #         self.samples_data = page.model.samples_data
-
-        # print("Samples", self.field("samples"))
-        pass
-        # print(self.samples_data)
+        print(self.field("pedfile"))
 
     def progress_changed(self, value, message):
         """Update the progress bar
@@ -501,16 +392,17 @@ class ImportPage(QWizardPage):
         else:
             self.thread.set_importer_settings(
                 # File to open
-                self.field("filename"),
+                filename=self.field("filename"),
+                pedfile=self.field("pedfile"),
                 # Project's filepath
-                (
+                db_filename=(
                     self.field("project_path")
                     + QDir.separator()
                     + self.field("project_name")
                     + ".db"
                 ),
                 # Project's settings
-                {
+                project_settings={
                     # Reference genome
                     "reference": self.field("reference"),
                     # Project's name
