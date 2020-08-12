@@ -179,17 +179,18 @@ class SampleModel(QAbstractTableModel):
         """ override """
         return len(self.headers)
 
-    def clear(self):
-        """ clear model """
-        self.samples_data.clear()
-
     def get_data_list(self, column: int):
         return list(set([i[column] for i in self.samples_data]))
+
+    def clear(self):
+        self.beginResetModel()
+        self.samples_data.clear()
+        self.endResetModel()
 
     def set_samples(self, samples: list):
         """ fill model """
         self.beginResetModel()
-        self.clear()
+        self.samples_data.clear()
         for sample in samples:
             self.samples_data.append([sample, "", "", "", "", ""])
         self.endResetModel()
@@ -295,7 +296,7 @@ class SamplePage(QWizardPage):
         self.setSubTitle(self.tr("Add sample description or skip this step"))
         self.view = SampleWidget()
         self.box = QGroupBox()
-        self.box.setTitle("Use pedigree data ")
+        self.box.setTitle("Use pedigree data")
         self.box.setCheckable(True)
         v_layout = QVBoxLayout()
         v_layout.addWidget(self.view)
@@ -305,6 +306,9 @@ class SamplePage(QWizardPage):
         m_layout.addWidget(self.box)
         self.setLayout(m_layout)
 
+        self.registerField("samples", self.view, "samples")
+        self.registerField("has_ped", self.box)
+
     def initializePage(self):
         """ override """
 
@@ -313,9 +317,6 @@ class SamplePage(QWizardPage):
         filename = self.field("filename")
         with create_reader(filename) as reader:
             self.view.set_samples(reader.get_samples())
-
-        self.registerField("samples", self.view, "samples")
-        self.registerField("has_ped", self.box)
 
     def validatePage(self):
         """ override """
@@ -449,12 +450,14 @@ class ImportPage(QWizardPage):
 
         #  Ugly hack to get sample data from SamplePage..
         # TODO : Use setFields with property binding
-        for page_id in self.wizard().pageIds():
-            page = self.wizard().page(page_id)
-            if page.__class__.__name__ == "SamplePage":
-                self.samples_data = page.model.samples_data
+        # for page_id in self.wizard().pageIds():
+        #     page = self.wizard().page(page_id)
+        #     if page.__class__.__name__ == "SamplePage":
+        #         self.samples_data = page.model.samples_data
 
-        print(self.samples_data)
+        # print("Samples", self.field("samples"))
+        pass
+        # print(self.samples_data)
 
     def progress_changed(self, value, message):
         """Update the progress bar
