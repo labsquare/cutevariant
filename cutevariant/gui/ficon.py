@@ -36,7 +36,7 @@ class FIconEngine(QIconEngine):
         else:
             self.palette = QPalette()
 
-        self.setColor(self.palette.color(QPalette.Normal, QPalette.Text))
+        self.color = None
 
     def setCharacter(self, hex_character: int):
         self.hex_character = hex_character
@@ -57,12 +57,16 @@ class FIconEngine(QIconEngine):
 
         painter.save()
 
-        if mode == QIcon.Disabled or state == QIcon.Off:
-
-            painter.setPen(QPen(self.palette.color(QPalette.Disabled, QPalette.Text)))
+        if self.color:
+            painter.setPen(QPen(self.color))
 
         else:
-            painter.setPen(QPen(self.color))
+            if mode == QIcon.Disabled:
+                painter.setPen(
+                    QPen(self.palette.color(QPalette.Disabled, QPalette.ButtonText))
+                )
+            else:
+                painter.setPen(QPen(self.palette.color(QPalette.Active, QPalette.Text)))
 
         font.setPixelSize(rect.size().width())
 
@@ -107,15 +111,8 @@ class FIcon(QIcon):
             super().__init__()
         else:
             self.engine.setCharacter(hex_character)
-            if color:
-                self.engine.setColor(color)
-            else:
-                if QApplication.instance():
-                    palette = QApplication.instance().palette()
-                else:
-                    palette = QPalette()
+            self.engine.setColor(color)
 
-                self.engine.setColor(QApplication.instance().palette().text().color())
             super().__init__(self.engine)
 
     def to_base64(self, w=32, h=32):
