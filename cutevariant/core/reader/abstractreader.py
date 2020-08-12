@@ -318,11 +318,11 @@ class AbstractReader(ABC):
 
                 variant["case_count_hom"] = case_counter[2]
                 variant["case_count_het"] = case_counter[1]
-                variant["case_count_het"] = case_counter[0]
+                variant["case_count_ref"] = case_counter[0]
 
                 variant["control_count_hom"] = control_counter[2]
                 variant["control_count_het"] = control_counter[1]
-                variant["case_count_het"] = case_counter[0]
+                variant["control_count_ref"] = control_counter[0]
 
             yield variant
 
