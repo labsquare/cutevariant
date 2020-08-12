@@ -52,21 +52,36 @@ def async_import_reader(conn, reader: AbstractReader, pedfile=None, project={}):
     yield 0, "Inserting samples..."
     insert_many_samples(conn, reader.get_samples())
 
+    # Get cases and control samples
+
     if pedfile:
-        yield 0, "Import pedfile "
+        yield 0, f"Import pedfile {pedfile}"
         import_pedfile(conn, pedfile)
+
+    print(list(get_samples(conn)))
 
     # Insert fields
     yield 0, "Inserting fields..."
     insert_many_fields(conn, reader.get_extra_fields())
 
-    # yield 0, "count variants..."
-    # total_variant = reader.get_variants_count()
+    # Compute control andd cases samples
+
+    control_samples = [
+        sample["name"] for sample in get_samples(conn) if sample["phenotype"] == 1
+    ]
+    case_samples = [
+        sample["name"] for sample in get_samples(conn) if sample["phenotype"] == 2
+    ]
+
+    yield 0, "Compute case / control"
+    yield 0, "controls are " + ",".join(control_samples)
+    yield 0, "cases are " + ",".join(case_samples)
 
     # Insert variants, link them to annotations and samples
     yield 0, "Inserting variants..."
     percent = 0
-    for value, message in async_insert_many_variants(conn, reader.get_extra_variants()):
+    variants = reader.get_extra_variants(control=control_samples, case=case_samples)
+    for value, message in async_insert_many_variants(conn, variants):
 
         if reader.file_size:
             percent = reader.read_bytes / reader.file_size * 100

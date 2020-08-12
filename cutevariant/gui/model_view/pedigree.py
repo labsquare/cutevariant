@@ -86,6 +86,10 @@ class PedModel(QAbstractTableModel):
 
         if role == Qt.DisplayRole or role == Qt.EditRole:
             value = self.samples_data[index.row()][index.column()]
+
+            if index.column() == 3 or index.column() == 2:  # parent
+                return value if value != "0" else ""
+
             if index.column() == 4:  # Sexe
                 return self.sex_map.get(value, "")
 

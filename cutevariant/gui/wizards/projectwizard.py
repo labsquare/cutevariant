@@ -195,7 +195,7 @@ class SamplePage(QWizardPage):
             self.vcf_samples = reader.get_samples()
 
             for name in self.vcf_samples:
-                samples.append([name, "", "", "", "", "", ""])
+                samples.append(["fam", name, "0", "0", "0", "0", "0"])
             self.view.set_samples(samples)
 
     def validatePage(self):

@@ -179,6 +179,48 @@ class AbstractReader(ABC):
             "description": "True is variant is a snp",
         }
 
+        yield {
+            "name": "case_count_hom",
+            "type": "int",
+            "category": "variants",
+            "description": "Count number of homozygous genotypes (1/1) in case",
+        }
+
+        yield {
+            "name": "case_count_het",
+            "type": "int",
+            "category": "variants",
+            "description": "Count number of heterozygous genotypes (1/0) in case",
+        }
+
+        yield {
+            "name": "case_count_ref",
+            "type": "int",
+            "category": "variants",
+            "description": "Count number of homozygous ( 0/0) in case",
+        }
+
+        yield {
+            "name": "control_count_hom",
+            "type": "int",
+            "category": "variants",
+            "description": "Count number of homozygous genotypes (1/1) in control",
+        }
+
+        yield {
+            "name": "control_count_het",
+            "type": "int",
+            "category": "variants",
+            "description": "Count number of heterozygous genotypes (1/0) in control",
+        }
+
+        yield {
+            "name": "control_count_ref",
+            "type": "int",
+            "category": "variants",
+            "description": "Count number of homozygous (0/0) in control",
+        }
+
         # yield {
         #     "name": "case_count_hom",
         #     "type": "int",
@@ -226,7 +268,7 @@ class AbstractReader(ABC):
 
             duplicates.add(field["name"])
 
-    def get_extra_variants(self):
+    def get_extra_variants(self, **kwargs):
         """Yield fields with extra mandatory value like comment and score
         """
         for variant in self.get_variants():
@@ -243,7 +285,7 @@ class AbstractReader(ABC):
                         else:
                             ann["is_major"] = False
 
-            # Compute genotype
+            # Count genotype by control and case
             genotype_counter = Counter()
             if "samples" in variant:
                 for sample in variant["samples"]:
@@ -256,6 +298,31 @@ class AbstractReader(ABC):
 
             variant["is_indel"] = len(variant["ref"]) != len(variant["alt"])
             variant["is_snp"] = len(variant["ref"]) == len(variant["alt"])
+
+            # Count genotype by control and case
+            if "case" in kwargs and "control" in kwargs:
+
+                case_samples = kwargs["case"]
+                control_samples = kwargs["control"]
+
+                case_counter = Counter()
+                control_counter = Counter()
+
+                if "samples" in variant:
+                    for sample in variant["samples"]:
+                        if sample["name"] in case_samples:
+                            case_counter[sample["gt"]] += 1
+
+                        if sample["name"] in control_samples:
+                            control_counter[sample["gt"]] += 1
+
+                variant["case_count_hom"] = case_counter[2]
+                variant["case_count_het"] = case_counter[1]
+                variant["case_count_het"] = case_counter[0]
+
+                variant["control_count_hom"] = control_counter[2]
+                variant["control_count_het"] = control_counter[1]
+                variant["case_count_het"] = case_counter[0]
 
             yield variant
 
