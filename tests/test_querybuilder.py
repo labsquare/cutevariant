@@ -111,7 +111,7 @@ def test_filters_to_vql():
         ]
     }
 
-    assert querybuilder.filters_to_vql(filter_in) == "(ref = 'A' AND alt = 'C')"
+    assert querybuilder.filters_to_vql(filter_in) == "ref = 'A' AND alt = 'C'"
 
     filter_in = {
         "AND": [
@@ -127,7 +127,7 @@ def test_filters_to_vql():
 
     assert (
         querybuilder.filters_to_vql(filter_in)
-        == "(ref = 'A' AND (alt = 'C' OR alt = 'C'))"
+        == "ref = 'A' AND (alt = 'C' OR alt = 'C')"
     )
 
 
@@ -185,7 +185,7 @@ QUERY_TESTS = [
             },
         },
         "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants WHERE (`variants`.`ref` = 'A' AND `variants`.`alt` = 'C') LIMIT 50 OFFSET 0",
-        "SELECT chr,pos FROM variants WHERE (ref = 'A' AND alt = 'C')",
+        "SELECT chr,pos FROM variants WHERE ref = 'A' AND alt = 'C'",
     ),
     (
         {
@@ -199,7 +199,7 @@ QUERY_TESTS = [
             },
         },
         "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants WHERE (`variants`.`ref` LIKE '%A%' AND `variants`.`alt` REGEXP 'C') LIMIT 50 OFFSET 0",
-        "SELECT chr,pos FROM variants WHERE (ref has 'A' AND alt ~ 'C')",
+        "SELECT chr,pos FROM variants WHERE ref has 'A' AND alt ~ 'C'",
     ),
     # Test different source
     (
@@ -238,7 +238,7 @@ QUERY_TESTS = [
             " WHERE `sample_TUMOR`.`gt` = 1"
             " LIMIT 50 OFFSET 0"
         ),
-        "SELECT chr,pos FROM variants WHERE (sample['TUMOR'].gt = 1)",
+        "SELECT chr,pos FROM variants WHERE sample['TUMOR'].gt = 1",
     ),
     #   Test genotype in both filters and fields
     (
@@ -257,7 +257,7 @@ QUERY_TESTS = [
             " WHERE `sample_TUMOR`.`gt` = 1"
             " LIMIT 50 OFFSET 0"
         ),
-        "SELECT chr,pos,sample['TUMOR'].gt FROM variants WHERE (sample['TUMOR'].gt = 1)",
+        "SELECT chr,pos,sample['TUMOR'].gt FROM variants WHERE sample['TUMOR'].gt = 1",
     ),
 ]
 

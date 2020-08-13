@@ -260,7 +260,9 @@ def filters_to_vql(filters):
             # else:
             return "(" + f" {logic_op} ".join(out) + ")"
 
-    return recursive(filters)
+    query = recursive(filters)[1:-1]
+
+    return query
 
 
 def build_vql_query(fields, source="variants", filters={}, group_by=[], having={}):
