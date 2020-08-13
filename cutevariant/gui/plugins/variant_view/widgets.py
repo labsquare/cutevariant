@@ -14,6 +14,36 @@ from PySide2.QtGui import *
 LOGGER = cm.logger()
 
 
+# class VariantCounter(QThread):
+
+#     countChanged = Signal(int)
+
+#     def __init__(self):
+
+#         super().__init__()
+
+#         self.conn = None
+#         self.fields = None
+#         self.source = None
+#         self.filters = None
+#         self.group_by = None
+#         self.total = 0
+
+#     def run(self):
+#         """ override """
+
+#         print("RUN ")
+#         self.total = cmd.count_cmd(
+#             self.conn,
+#             fields=self.fields,
+#             source=self.source,
+#             filters=self.filters,
+#             group_by=self.group_by,
+#         )["count"]
+
+#         self.countChanged.emit(self.total)
+
+
 class VariantModel(QAbstractTableModel):
     """
     VariantModel is a Qt model class which contains variants datas from sql.VariantBuilder . 
@@ -195,7 +225,8 @@ class VariantModel(QAbstractTableModel):
         #  Compute total
         if emit_changed:
             self.changed.emit()
-            # Probably need to compute total
+            # Probably need to compute total ==> >Must be async !
+            # But sqlite cannot be async ? Does it ?
             self.total = cmd.count_cmd(
                 self.conn,
                 fields=self.fields,
@@ -344,6 +375,10 @@ class VariantModel(QAbstractTableModel):
 
 class VariantView(QWidget):
 
+    """A Variant view with controller like pagination
+    
+    """
+
     view_clicked = Signal()
 
     def __init__(self, parent=None):
@@ -365,6 +400,10 @@ class VariantView(QWidget):
         self.view.setIconSize(QSize(22, 22))
         # self.view.setItemDelegate(self.delegate)
         self.view.horizontalHeader().setSectionsMovable(True)
+
+        # Setup model
+        self.model = VariantModel()
+        self.view.setModel(self.model)
 
         #  setup toolbar
         spacer = QWidget()
@@ -405,6 +444,50 @@ class VariantView(QWidget):
         self.model = model
         self.view.setModel(model)
 
+    def load(self):
+        self.model.load()
+        self.load_page_box()
+
+    @property
+    def conn(self):
+        return self.model.conn
+
+    @conn.setter
+    def conn(self, _conn):
+        self.model.conn = _conn
+
+    @property
+    def fields(self):
+        return self.model.fields
+
+    @fields.setter
+    def fields(self, _fields):
+        self.model.fields = _fields
+
+    @property
+    def source(self):
+        return self.model.source
+
+    @source.setter
+    def source(self, _source):
+        self.model.source = _source
+
+    @property
+    def filters(self):
+        return self.model.filters
+
+    @filters.setter
+    def filters(self, _filters):
+        self.model.filters = _filters
+
+    @property
+    def group_by(self):
+        return self.model.group_by
+
+    @group_by.setter
+    def group_by(self, _group_by):
+        self.model.group_by = _group_by
+
     def on_page_clicked(self):
 
         action_text = self.sender().text()
@@ -431,6 +514,8 @@ class VariantView(QWidget):
             self.model.setPage(page)
 
     def load_page_box(self):
+        """Load Bottom toolbar with pagination 
+        """
         self.page_box.clear()
         if self.model.pageCount() == 0:
             self.bottom_bar.setEnabled(False)
@@ -452,34 +537,27 @@ class VariantViewWidget(plugin.PluginWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        #  Create 2 model
-        self.first_model = VariantModel()
-        self.second_model = VariantModel()
-
-        #  Create groupby view 1
+        # Create 2 Pane
         self.splitter = QSplitter(Qt.Vertical)
         self.first_pane = VariantView()
-        self.first_pane.setModel(self.first_model)
         self.second_pane = VariantView()
-        self.second_pane.setModel(self.second_model)
+        self.second_pane.hide()
+
         self.splitter.addWidget(self.first_pane)
         self.splitter.addWidget(self.second_pane)
 
-        # self.second_pane.view.horizontalHeader().hide()
+        # Make resizable
+        # def _resize_section(l, o, n):
+        #     if self.vertical_view_action.isChecked():
+        #         name = self.first_pane.model.headers[l]
 
-        def _resize_section(l, o, n):
-            if self.vertical_view_action.isChecked():
-                name = self.first_model.headers[l]
+        #         if name in self.second_pane.model.headers:
+        #             index = self.second_pane.model.headers.index(name)
+        #             self.second_pane.view.horizontalHeader().resizeSection(index, n)
 
-                if name in self.second_model.headers:
-                    index = self.second_model.headers.index(name)
-                    self.second_pane.view.horizontalHeader().resizeSection(index, n)
-
-        self.first_pane.view.horizontalHeader().sectionResized.connect(_resize_section)
+        # self.first_pane.view.horizontalHeader().sectionResized.connect(_resize_section)
 
         # self.second_pane.view.setHorizontalHeader(self.first_pane.view.horizontalHeader())
-
-        self.second_pane.hide()
 
         #  Common toolbar
         self.top_bar = QToolBar()
@@ -555,39 +633,36 @@ class VariantViewWidget(plugin.PluginWidget):
     def on_formatter_changed(self):
 
         Formatter = self.formatter_combo.currentData()
-        self.first_model.formatter = Formatter()
-        self.second_model.formatter = Formatter()
+        self.first_pane.model.formatter = Formatter()
+        self.second_pane.model.formatter = Formatter()
 
     def on_open_project(self, conn):
         """override """
         self.conn = conn
-        self.first_model.conn = self.conn
-        self.second_model.conn = self.conn
+        self.first_pane.conn = self.conn
+        self.second_pane.conn = self.conn
 
         self.on_refresh()
-
-        # reset
         self.reset()
 
     def on_refresh(self):
         """ override """
 
-        self.first_model.fields = self.mainwindow.state.fields
-        self.first_model.source = self.mainwindow.state.source
-        self.first_model.filters = self.mainwindow.state.filters
-        self.first_model.group_by = self.mainwindow.state.group_by
-        self.first_model.having = self.mainwindow.state.having
+        self.first_pane.fields = self.mainwindow.state.fields
+        self.first_pane.source = self.mainwindow.state.source
+        self.first_pane.filters = self.mainwindow.state.filters
+        self.first_pane.group_by = self.mainwindow.state.group_by
 
-        self.first_model.formatter = next(formatter.find_formatters())()
-        self.second_model.formatter = next(formatter.find_formatters())()
+        self.first_pane.model.formatter = next(formatter.find_formatters())()
+        self.second_pane.model.formatter = next(formatter.find_formatters())()
 
         # self.main_view.model.group_by = ["chr","pos","ref","alt"]
 
-        self.first_model.load()
-        self.load_fields()
+        self.first_pane.load()
+        self.load_group_fields()
 
-        self.groupby_action.setChecked(bool(self.first_model.group_by))
-        self.groupby_act_gp.setVisible(bool(self.first_model.group_by))
+        self.groupby_action.setChecked(bool(self.first_pane.model.group_by))
+        self.groupby_act_gp.setVisible(bool(self.first_pane.model.group_by))
         self.set_view_split(self.groupby_action.isChecked())
 
         self.first_pane.load_page_box()
@@ -622,22 +697,24 @@ class VariantViewWidget(plugin.PluginWidget):
         self.set_view_split(False)
         self.groupby_act_gp.setVisible(False)
         self.groupby_action.setChecked(False)
-        self.first_model.order_by = None
+        self.first_pane.model.order_by = None
 
-    def load_fields(self):
+    def load_group_fields(self):
         self.groupby_actions = []
         self.groupby_menu = QMenu()
         self.groupby_menu.setTearOffEnabled(True)
-        for field in self.first_model.fields:
+        for field in self.first_pane.model.fields:
             if type(field) == str:  # Avoid tuple ...
                 action = self.groupby_menu.addAction(field, self.on_group_changed)
                 action.setCheckable(True)
-                if field in self.first_model.group_by:
+                if field in self.first_pane.model.group_by:
                     action.setChecked(True)
                 self.groupby_actions.append(action)
 
         self.groupby_act_list.setMenu(self.groupby_menu)
-        self.groupby_act_list.setText("Group by " + ",".join(self.first_model.group_by))
+        self.groupby_act_list.setText(
+            "Group by " + ",".join(self.first_pane.model.group_by)
+        )
 
     def set_view_orientation(self, orientation):
         if orientation == Qt.Vertical:
@@ -648,9 +725,9 @@ class VariantViewWidget(plugin.PluginWidget):
             self.splitter.setOrientation(Qt.Horizontal)
             self.show_group_column_only(True)
 
-        if "count" in self.first_model.headers:
+        if "count" in self.first_pane.model.headers:
             self.first_pane.view.setColumnHidden(
-                self.first_model.headers.index("count"), orientation == Qt.Vertical
+                self.first_pane.model.headers.index("count"), orientation == Qt.Vertical
             )
 
     def set_view_split(self, active=True):
@@ -671,7 +748,7 @@ class VariantViewWidget(plugin.PluginWidget):
 
     #     # When Horizontal view is enable, we hide some columns not in GP
     #     # hidden_col = [
-    #     #     self.first_model.headers.index(i) for i in GP if i in self.first_model.headers
+    #     #     self.first_pane.model.headers.index(i) for i in GP if i in self.first_pane.model.headers
     #     # ]
 
     #     self.groupby_act_gp.setVisible(self.groupby_action.isChecked())
@@ -694,30 +771,30 @@ class VariantViewWidget(plugin.PluginWidget):
 
     def show_group_column_only(self, active=True):
 
-        for i, val in enumerate(self.first_model.headers):
-            if val not in self.first_model.group_by + ["count"] and active is True:
+        for i, val in enumerate(self.first_pane.model.headers):
+            if val not in self.first_pane.model.group_by + ["count"] and active is True:
                 self.first_pane.view.setColumnHidden(i, True)
             else:
                 self.first_pane.view.setColumnHidden(i, False)
 
         # hidden_col = [
-        #     self.first_model.headers.index(i) for i in GP if i in self.first_model.headers
+        #     self.first_pane.model.headers.index(i) for i in GP if i in self.first_pane.model.headers
         # ]
 
     def on_variant_clicked(self, index: QModelIndex):
 
-        variant = self.first_model.variant(index.row())
+        variant = self.first_pane.model.variant(index.row())
 
-        self.second_model.fields = self.first_model.fields
-        self.second_model.source = self.first_model.source
+        self.second_pane.fields = self.first_pane.model.fields
+        self.second_pane.source = self.first_pane.model.source
 
         and_list = []
-        for i in self.first_model.group_by:
+        for i in self.first_pane.group_by:
             and_list.append({"field": i, "operator": "=", "value": variant[i]})
 
-        self.second_model.filters = {"AND": and_list}
+        self.second_pane.filters = {"AND": and_list}
 
-        self.second_model.load()
+        self.second_pane.load()
         self.second_pane.load_page_box()
 
         #  Refresh plugins when clicked
