@@ -152,8 +152,8 @@ class MainWindow(QMainWindow):
         print("sender", sender)
         for plugin in self.plugins.values():
             if plugin is not sender:
-                print(plugin)
-                plugin.on_refresh()
+                if plugin.isVisible():
+                    plugin.on_refresh()
 
     def refresh_plugin(self, plugin_name: str):
         """Refresh a plugin identified by plugin_name 
