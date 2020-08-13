@@ -79,6 +79,7 @@ class MainWindow(QMainWindow):
 
         # Register plugins
         self.plugins = {}
+        self.dialog_plugins = {}
         self.register_plugins()
 
         # Window geometry
@@ -121,6 +122,7 @@ class MainWindow(QMainWindow):
         LOGGER.info("register plugins")
 
         for extension in plugin.find_plugins():
+            print("ext", extension)
             if "widget" in extension:
                 name = extension["name"]
                 plugin_widget_class = extension["widget"]
@@ -141,6 +143,15 @@ class MainWindow(QMainWindow):
 
                     if plugin_widget_class.LOCATION == plugin.FOOTER_LOCATION:
                         self.footer_tab.addTab(widget, widget.windowTitle())
+
+            if "dialog" in extension:
+                name = extension["name"]
+                title = extension["title"]
+                plugin_dialog_class = extension["dialog"]
+
+                dialog_action = self.tool_menu.addAction(title)
+                self.dialog_plugins[dialog_action] = plugin_dialog_class
+                dialog_action.triggered.connect(self.show_dialog)
 
     def refresh_plugins(self, sender: plugin.PluginWidget = None):
         """Refresh all plugins except_plugins 
@@ -224,6 +235,9 @@ class MainWindow(QMainWindow):
         # console_action.toggled.connect(self.editor.setVisible)
 
         self.view_menu.addSeparator()
+
+        ## Tools
+        self.tool_menu = self.menuBar().addMenu(self.tr("&Tools"))
 
         ## Help
         self.help_menu = self.menuBar().addMenu(self.tr("Help"))
@@ -396,6 +410,15 @@ class MainWindow(QMainWindow):
         """Slot to show settings window"""
         widget = SettingsWidget()
         widget.exec_()
+
+    def show_dialog(self):
+        """Show Plugin dialog 
+        """
+        action = self.sender()
+        if action in self.dialog_plugins:
+            DialogClass = self.dialog_plugins[action]
+            dialog = DialogClass()
+            dialog.exec_()
 
     def aboutCutevariant(self):
         """Slot to show about window"""

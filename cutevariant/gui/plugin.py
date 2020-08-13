@@ -1,5 +1,5 @@
 # Qt imports
-from PySide2.QtWidgets import QWidget
+from PySide2.QtWidgets import QWidget, QDialog
 from PySide2.QtCore import Signal
 
 
@@ -73,6 +73,14 @@ class PluginWidget(QWidget):
         pass
 
 
+class PluginDialog(QDialog):
+    ENABLE = False
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.mainwindow = None
+
+
 class PluginSettingsWidget(settings.GroupWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -105,14 +113,18 @@ def find_plugins(path=None):
 
         widget_class_name = snake_to_camel(package.name) + "Widget"
         settings_class_name = snake_to_camel(package.name) + "SettingsWidget"
+        dialog_class_name = snake_to_camel(package.name) + "Dialog"
 
         item = {}
         item["name"] = module.__name__
+        item["title"] = module.__title__
         item["description"] = module.__description__
         item["version"] = module.__version__
 
         for sub_module_info in pkgutil.iter_modules([package_path]):
-            if sub_module_info.name in ("widgets", "settings"):
+
+            if sub_module_info.name in ("widgets", "settings", "dialogs"):
+
                 sub_module_path = os.path.join(
                     sub_module_info.module_finder.path, sub_module_info.name + ".py"
                 )
@@ -136,5 +148,13 @@ def find_plugins(path=None):
                     Widget = getattr(sub_module, settings_class_name)
                     if "PluginSettingsWidget" in str(Widget.__bases__):
                         item["setting"] = Widget
+
+                if (
+                    dialog_class_name in dir(sub_module)
+                    and sub_module_info.name == "dialogs"
+                ):
+                    Widget = getattr(sub_module, dialog_class_name)
+                    if "PluginDialog" in str(Widget.__bases__):
+                        item["dialog"] = Widget
 
         yield item

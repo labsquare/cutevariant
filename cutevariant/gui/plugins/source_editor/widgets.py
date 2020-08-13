@@ -61,6 +61,10 @@ class SourceModel(QAbstractTableModel):
             if index.column() == 1:
                 return self.records[index.row()]["count"]
 
+        if role == Qt.DecorationRole:
+            if index.column() == 0:
+                return QIcon(FIcon(0xF04F1))
+
         return None
 
     def headerData(self, section, orientation, role=Qt.DisplayRole):
