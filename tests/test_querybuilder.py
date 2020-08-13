@@ -141,19 +141,8 @@ QUERY_TESTS = [
     (
         # Test GROUPBY
         {"fields": ["chr", "pos"], "source": "variants", "group_by": ["chr"]},
-        "SELECT DISTINCT `variants`.`id`,COUNT(`variants`.`id`) as 'count',`variants`.`chr`,`variants`.`pos` FROM variants GROUP BY chr LIMIT 50 OFFSET 0",
+        "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants GROUP BY chr LIMIT 50 OFFSET 0",
         "SELECT chr,pos FROM variants GROUP BY chr",
-    ),
-    (
-        # Test GROUPBY HAVING
-        {
-            "fields": ["chr", "pos"],
-            "source": "variants",
-            "group_by": ["chr"],
-            "having": {"op": ">", "value": 10},
-        },
-        "SELECT DISTINCT `variants`.`id`,COUNT(`variants`.`id`) as 'count',`variants`.`chr`,`variants`.`pos` FROM variants GROUP BY chr HAVING count > 10 LIMIT 50 OFFSET 0",
-        "SELECT chr,pos FROM variants GROUP BY chr HAVING count > 10",
     ),
     #  Test limit offset
     (

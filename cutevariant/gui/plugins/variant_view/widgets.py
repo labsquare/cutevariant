@@ -438,7 +438,7 @@ class VariantView(QWidget):
             self.page_box.addItems([str(i) for i in range(self.model.pageCount())])
             self.bottom_bar.setEnabled(True)
 
-        self.info_label.setText("Total: {}".format(self.model.total))
+        self.info_label.setText("{} row(s)".format(self.model.total))
 
 
 class VariantViewWidget(plugin.PluginWidget):

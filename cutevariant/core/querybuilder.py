@@ -328,8 +328,8 @@ def build_query(
         fields_to_sql(col, default_tables, use_as=True) for col in fields if col != "id"
     ]
 
-    if group_by:
-        sql_fields.insert(1, "COUNT(`variants`.`id`) as 'count'")
+    # if group_by:
+    #     sql_fields.insert(1, "COUNT() as 'count'")
 
     sql_query = f"SELECT DISTINCT {','.join(sql_fields)} "
 
