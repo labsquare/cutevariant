@@ -135,13 +135,13 @@ QUERY_TESTS = [
     (
         # Test simple
         {"fields": ["chr", "pos"], "source": "variants"},
-        "SELECT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants LIMIT 50 OFFSET 0",
+        "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants LIMIT 50 OFFSET 0",
         "SELECT chr,pos FROM variants",
     ),
     (
         # Test GROUPBY
         {"fields": ["chr", "pos"], "source": "variants", "group_by": ["chr"]},
-        "SELECT `variants`.`id`,COUNT(`variants`.`id`) as 'count',`variants`.`chr`,`variants`.`pos` FROM variants GROUP BY chr LIMIT 50 OFFSET 0",
+        "SELECT DISTINCT `variants`.`id`,COUNT(`variants`.`id`) as 'count',`variants`.`chr`,`variants`.`pos` FROM variants GROUP BY chr LIMIT 50 OFFSET 0",
         "SELECT chr,pos FROM variants GROUP BY chr",
     ),
     (
@@ -152,13 +152,13 @@ QUERY_TESTS = [
             "group_by": ["chr"],
             "having": {"op": ">", "value": 10},
         },
-        "SELECT `variants`.`id`,COUNT(`variants`.`id`) as 'count',`variants`.`chr`,`variants`.`pos` FROM variants GROUP BY chr HAVING count > 10 LIMIT 50 OFFSET 0",
+        "SELECT DISTINCT `variants`.`id`,COUNT(`variants`.`id`) as 'count',`variants`.`chr`,`variants`.`pos` FROM variants GROUP BY chr HAVING count > 10 LIMIT 50 OFFSET 0",
         "SELECT chr,pos FROM variants GROUP BY chr HAVING count > 10",
     ),
     #  Test limit offset
     (
         {"fields": ["chr", "pos"], "source": "variants", "limit": 10, "offset": 4},
-        "SELECT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants LIMIT 10 OFFSET 4",
+        "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants LIMIT 10 OFFSET 4",
         "SELECT chr,pos FROM variants",
     ),
     #  Test order by
@@ -169,7 +169,7 @@ QUERY_TESTS = [
             "order_by": "chr",
             "order_desc": True,
         },
-        "SELECT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants ORDER BY `variants`.`chr` DESC LIMIT 50 OFFSET 0",
+        "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants ORDER BY `variants`.`chr` DESC LIMIT 50 OFFSET 0",
         "SELECT chr,pos FROM variants",
     ),
     # Test filters
@@ -184,7 +184,7 @@ QUERY_TESTS = [
                 ]
             },
         },
-        "SELECT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants WHERE (`variants`.`ref` = 'A' AND `variants`.`alt` = 'C') LIMIT 50 OFFSET 0",
+        "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants WHERE (`variants`.`ref` = 'A' AND `variants`.`alt` = 'C') LIMIT 50 OFFSET 0",
         "SELECT chr,pos FROM variants WHERE (ref = 'A' AND alt = 'C')",
     ),
     (
@@ -198,14 +198,14 @@ QUERY_TESTS = [
                 ]
             },
         },
-        "SELECT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants WHERE (`variants`.`ref` LIKE '%A%' AND `variants`.`alt` REGEXP 'C') LIMIT 50 OFFSET 0",
+        "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants WHERE (`variants`.`ref` LIKE '%A%' AND `variants`.`alt` REGEXP 'C') LIMIT 50 OFFSET 0",
         "SELECT chr,pos FROM variants WHERE (ref has 'A' AND alt ~ 'C')",
     ),
     # Test different source
     (
         {"fields": ["chr", "pos"], "source": "other"},
         (
-            "SELECT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants "
+            "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants "
             "INNER JOIN selection_has_variant sv ON sv.variant_id = variants.id "
             "INNER JOIN selections s ON s.id = sv.selection_id AND s.name = 'other' LIMIT 50 OFFSET 0"
         ),
@@ -215,7 +215,7 @@ QUERY_TESTS = [
     (
         {"fields": ["chr", "pos", ("sample", "TUMOR", "gt")], "source": "variants"},
         (
-            "SELECT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`sample_TUMOR`.`gt` AS 'sample.TUMOR.gt' FROM variants"
+            "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`sample_TUMOR`.`gt` AS 'sample.TUMOR.gt' FROM variants"
             " INNER JOIN sample_has_variant `sample_TUMOR` ON `sample_TUMOR`.variant_id = variants.id AND `sample_TUMOR`.sample_id = 1"
             " LIMIT 50 OFFSET 0"
         ),
@@ -233,7 +233,7 @@ QUERY_TESTS = [
             },
         },
         (
-            "SELECT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants"
+            "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants"
             " INNER JOIN sample_has_variant `sample_TUMOR` ON `sample_TUMOR`.variant_id = variants.id AND `sample_TUMOR`.sample_id = 1"
             " WHERE `sample_TUMOR`.`gt` = 1"
             " LIMIT 50 OFFSET 0"
@@ -252,7 +252,7 @@ QUERY_TESTS = [
             },
         },
         (
-            "SELECT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`sample_TUMOR`.`gt` AS 'sample.TUMOR.gt' FROM variants"
+            "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`sample_TUMOR`.`gt` AS 'sample.TUMOR.gt' FROM variants"
             " INNER JOIN sample_has_variant `sample_TUMOR` ON `sample_TUMOR`.variant_id = variants.id AND `sample_TUMOR`.sample_id = 1"
             " WHERE `sample_TUMOR`.`gt` = 1"
             " LIMIT 50 OFFSET 0"

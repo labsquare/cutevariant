@@ -329,7 +329,7 @@ def build_query(
     if group_by:
         sql_fields.insert(1, "COUNT(`variants`.`id`) as 'count'")
 
-    sql_query = f"SELECT {','.join(sql_fields)} "
+    sql_query = f"SELECT DISTINCT {','.join(sql_fields)} "
 
     # # Add child count if grouped
     # if grouped:

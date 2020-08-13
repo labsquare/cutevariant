@@ -104,8 +104,6 @@ def count_cmd(
         default_tables=default_tables,
         samples_ids=samples_ids,
     )
-    from_pos = query.index("FROM")
-
     # #    print("ICI", query, query[from_pos:])
 
     # print("ICI", filters)
@@ -117,10 +115,7 @@ def count_cmd(
     #     )
     # else:
 
-    query = "SELECT COUNT (*) FROM ( SELECT variants.id " + query[from_pos:] + ")"
-
-    LOGGER.debug(query)
-
+    query = "SELECT COUNT (*) FROM (  " + query + ")"
     return {"count": conn.execute(query).fetchone()[0]}
 
 
