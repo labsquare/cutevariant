@@ -548,16 +548,17 @@ class VariantViewWidget(plugin.PluginWidget):
         self.splitter.addWidget(self.first_pane)
         self.splitter.addWidget(self.second_pane)
 
-        # Make resizable
-        # def _resize_section(l, o, n):
-        #     if self.vertical_view_action.isChecked():
-        #         name = self.first_pane.model.headers[l]
+        # Make resizable TODO : ugly ... Make it nicer
+        def _resize1_section(l, o, n):
+            self.second_pane.view.horizontalHeader().resizeSection(l, n)
 
-        #         if name in self.second_pane.model.headers:
-        #             index = self.second_pane.model.headers.index(name)
-        #             self.second_pane.view.horizontalHeader().resizeSection(index, n)
+        def _resize2_section(l, o, n):
+            self.first_pane.view.horizontalHeader().resizeSection(l, n)
 
-        # self.first_pane.view.horizontalHeader().sectionResized.connect(_resize_section)
+        self.first_pane.view.horizontalHeader().sectionResized.connect(_resize1_section)
+        self.second_pane.view.horizontalHeader().sectionResized.connect(
+            _resize2_section
+        )
 
         # self.second_pane.view.setHorizontalHeader(self.first_pane.view.horizontalHeader())
 
