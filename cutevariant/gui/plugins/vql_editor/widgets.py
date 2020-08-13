@@ -134,7 +134,8 @@ class VqlEditorWidget(plugin.PluginWidget):
                 for s in samples:
                     keywords.append("sample['{}'].{}".format(s, i["name"]))
             else:
-                keywords.append(i)
+                print(i)
+                keywords.append(i["name"])
 
         keywords.extend(VqlSyntaxHighlighter.sql_keywords)
         keywords.extend(selections)
