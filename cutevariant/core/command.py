@@ -15,7 +15,9 @@ import os
 import functools
 import csv
 
-from memoization import cached # Pip install ( because functools doesnt work with unhachable)
+from memoization import (
+    cached,
+)  # Pip install ( because functools doesnt work with unhachable)
 
 from cutevariant.commons import logger
 
@@ -70,6 +72,7 @@ def select_cmd(
     for i in conn.execute(query):
         yield dict(i)
 
+
 @cached(max_size=128)
 def count_cmd(
     conn: sqlite3.Connection,
@@ -78,7 +81,6 @@ def count_cmd(
     filters={},
     group_by=[],
     having={},
-    distinct=True,
     **kwargs,
 ):
     """Count command 

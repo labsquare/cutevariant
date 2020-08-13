@@ -7,6 +7,8 @@ import cutevariant.commons as cm
 from cutevariant.gui import plugin, FIcon
 from cutevariant.gui import formatter
 
+import math
+
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 from PySide2.QtGui import *
@@ -233,7 +235,6 @@ class VariantModel(QAbstractTableModel):
                 source=self.source,
                 filters=self.filters,
                 group_by=self.group_by,
-                distinct=False,
             )["count"]
 
         self.endResetModel()
@@ -257,7 +258,6 @@ class VariantModel(QAbstractTableModel):
 
     def setPage(self, page: int):
         """ set the page of the model """
-        print("set page ")
         if self.hasPage(page):
             self.page = page
             self.load(emit_changed=False)
@@ -278,11 +278,12 @@ class VariantModel(QAbstractTableModel):
 
     def lastPage(self):
         """ Set model to the last page """
-        self.setPage(self.pageCount())
+
+        self.setPage(self.pageCount() - 1)
 
     def pageCount(self):
         """ Return total page count """
-        return int(self.total / self.limit)
+        return math.ceil(self.total / self.limit)
 
     def sort(self, column: int, order):
         """Overrided: Sort data by specified column 
@@ -297,23 +298,6 @@ class VariantModel(QAbstractTableModel):
             self.order_by = colname
             self.order_desc = order == Qt.DescendingOrder
             self.load(emit_changed=False)
-
-    def displayed(self):
-        """Get ids of first, last displayed variants on the total number
-
-        :return: Tuple with (first_id, last_id, self.total).
-        :rtype: <tuple <int>,<int>,<int>>
-        """
-        first_id = self.limit * self.page
-
-        if self.hasPage(self.page + 1):
-            # Remainder : self.total - (self.limit * (self.page + 1)))
-            last_id = self.limit * (self.page + 1)
-        else:
-            # Remainder : self.total - (self.limit * self.page)
-            last_id = self.total
-
-        return (first_id, last_id, self.total)
 
     def variant(self, row: int) -> dict:
         #     """ Return variant data according index
@@ -413,6 +397,7 @@ class VariantView(QWidget):
         self.page_box.setEditable(True)
         self.page_box.setValidator(QIntValidator())
         self.page_box.setFixedWidth(50)
+        self.page_box.setValidator(QIntValidator())
 
         self.info_label = QLabel()
 
@@ -422,11 +407,20 @@ class VariantView(QWidget):
         self.bottom_bar.setMaximumHeight(30)
         self.bottom_bar.setContentsMargins(0, 0, 0, 0)
 
-        self.bottom_bar.addAction(FIcon(0xF0600), "<<", self.on_page_clicked)
-        self.bottom_bar.addAction(FIcon(0xF0141), "<", self.on_page_clicked)
+        self.pagging_actions = []
+        self.pagging_actions.append(
+            self.bottom_bar.addAction(FIcon(0xF0600), "<<", self.on_page_clicked)
+        )
+        self.pagging_actions.append(
+            self.bottom_bar.addAction(FIcon(0xF0141), "<", self.on_page_clicked)
+        )
         self.bottom_bar.addWidget(self.page_box)
-        self.bottom_bar.addAction(FIcon(0xF0142), ">", self.on_page_clicked)
-        self.bottom_bar.addAction(FIcon(0xF0601), ">>", self.on_page_clicked)
+        self.pagging_actions.append(
+            self.bottom_bar.addAction(FIcon(0xF0142), ">", self.on_page_clicked)
+        )
+        self.pagging_actions.append(
+            self.bottom_bar.addAction(FIcon(0xF0601), ">>", self.on_page_clicked)
+        )
         # self.page_box.returnPressed.connect()
 
         self.page_box.currentTextChanged.connect(self.on_page_changed)
@@ -517,13 +511,21 @@ class VariantView(QWidget):
         """Load Bottom toolbar with pagination 
         """
         self.page_box.clear()
-        if self.model.pageCount() == 0:
-            self.bottom_bar.setEnabled(False)
+        if self.model.pageCount() - 1 == 0:
+            self.set_pagging_enabled(False)
         else:
             self.page_box.addItems([str(i) for i in range(self.model.pageCount())])
-            self.bottom_bar.setEnabled(True)
+            self.page_box.validator().setRange(0, self.model.pageCount() - 1)
+            self.set_pagging_enabled(True)
 
-        self.info_label.setText("{} row(s)".format(self.model.total))
+        self.info_label.setText(
+            "{} row(s) {} page(s)".format(self.model.total, self.model.pageCount())
+        )
+
+    def set_pagging_enabled(self, active=True):
+        self.page_box.setEnabled(active)
+        for action in self.pagging_actions:
+            action.setEnabled(active)
 
 
 class VariantViewWidget(plugin.PluginWidget):
@@ -664,8 +666,6 @@ class VariantViewWidget(plugin.PluginWidget):
         self.groupby_action.setChecked(bool(self.first_pane.model.group_by))
         self.groupby_act_gp.setVisible(bool(self.first_pane.model.group_by))
         self.set_view_split(self.groupby_action.isChecked())
-
-        self.first_pane.load_page_box()
 
         # self.show_group_column_only(self.horizontal_view_action.isChecked())
 

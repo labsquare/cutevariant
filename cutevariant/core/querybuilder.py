@@ -369,8 +369,6 @@ def build_query(
 
     all_fields = set(fields_in_filters + fields)
 
-    print("FIELDS IN FILTERS", all_fields)
-
     samples = []
     for col in all_fields:
         # if column looks like  "genotype.tumor.gt"
