@@ -66,14 +66,14 @@ class DefaultFormatter(Formatter):
 
                 return QIcon(
                     FIcon(
-                        0xF0C1,
+                        0xF00C0,
                         QApplication.instance()
                         .palette("QWidget")
                         .color(QPalette.Highlight),
                     )
                 )
             else:
-                return QIcon(FIcon(0xF0C3))
+                return QIcon(FIcon(0xF00C3))
 
         if column == "classification":
             value = int(value)

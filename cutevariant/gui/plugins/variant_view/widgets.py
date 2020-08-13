@@ -549,16 +549,16 @@ class VariantViewWidget(plugin.PluginWidget):
         self.splitter.addWidget(self.second_pane)
 
         # Make resizable TODO : ugly ... Make it nicer
-        def _resize1_section(l, o, n):
-            self.second_pane.view.horizontalHeader().resizeSection(l, n)
+        # def _resize1_section(l, o, n):
+        #     self.second_pane.view.horizontalHeader().resizeSection(l, n)
 
-        def _resize2_section(l, o, n):
-            self.first_pane.view.horizontalHeader().resizeSection(l, n)
+        # def _resize2_section(l, o, n):
+        #     self.first_pane.view.horizontalHeader().resizeSection(l, n)
 
-        self.first_pane.view.horizontalHeader().sectionResized.connect(_resize1_section)
-        self.second_pane.view.horizontalHeader().sectionResized.connect(
-            _resize2_section
-        )
+        # self.first_pane.view.horizontalHeader().sectionResized.connect(_resize1_section)
+        # self.second_pane.view.horizontalHeader().sectionResized.connect(
+        #     _resize2_section
+        # )
 
         # self.second_pane.view.setHorizontalHeader(self.first_pane.view.horizontalHeader())
 
@@ -609,6 +609,7 @@ class VariantViewWidget(plugin.PluginWidget):
         self.groupby_act_gp.addAction(self._groupby_act_list)
 
         self.first_pane.view.clicked.connect(self.on_variant_clicked)
+        self.second_pane.view.clicked.connect(self.on_variant_clicked)
 
         #  Formatter tools
         self.top_bar.addSeparator()
@@ -783,24 +784,36 @@ class VariantViewWidget(plugin.PluginWidget):
         # ]
 
     def on_variant_clicked(self, index: QModelIndex):
+        """React on variant clicked 
 
-        variant = self.first_pane.model.variant(index.row())
+        TODO : ugly... 
+        
+        Args:
+            index (QModelIndex): Description
+        """
+        if self.sender() == self.first_pane.view:
+            variant = self.first_pane.model.variant(index.row())
 
-        self.second_pane.fields = self.first_pane.model.fields
-        self.second_pane.source = self.first_pane.model.source
+            self.second_pane.fields = self.first_pane.model.fields
+            self.second_pane.source = self.first_pane.model.source
 
-        and_list = []
-        for i in self.first_pane.group_by:
-            and_list.append({"field": i, "operator": "=", "value": variant[i]})
+            and_list = []
+            for i in self.first_pane.group_by:
+                and_list.append({"field": i, "operator": "=", "value": variant[i]})
 
-        self.second_pane.filters = {"AND": and_list}
+            self.second_pane.filters = {"AND": and_list}
 
-        self.second_pane.load()
-        self.second_pane.load_page_box()
+            self.second_pane.load()
+            self.second_pane.load_page_box()
 
-        #  Refresh plugins when clicked
-        self.mainwindow.state.current_variant = variant
-        self.mainwindow.refresh_plugins(sender=self)
+            #  Refresh plugins when clicked
+            self.mainwindow.state.current_variant = variant
+            self.mainwindow.refresh_plugins(sender=self)
+
+        if self.sender() == self.second_pane.view:
+            variant = self.first_pane.model.variant(index.row())
+            self.mainwindow.state.current_variant = variant
+            self.mainwindow.refresh_plugins(sender=self)
 
 
 if __name__ == "__main__":
