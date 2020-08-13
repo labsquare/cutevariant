@@ -76,7 +76,7 @@ def count_cmd(
     fields=["chr", "pos", "ref", "alt"],
     source="variants",
     filters={},
-    group_by=(),
+    group_by=[],
     having={},
     distinct=True,
     **kwargs,
