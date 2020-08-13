@@ -180,6 +180,13 @@ class AbstractReader(ABC):
         }
 
         yield {
+            "name": "annotation_count",
+            "type": "int",
+            "category": "variants",
+            "description": "Transcript count per variants",
+        }
+
+        yield {
             "name": "case_count_hom",
             "type": "int",
             "category": "variants",
@@ -278,6 +285,7 @@ class AbstractReader(ABC):
 
             # For now set the first annotation as a major transcripts
             if "annotations" in variant:
+                variant["annotation_count"] = len(variant["annotations"])
                 for index, ann in enumerate(variant["annotations"]):
                     if "is_major" not in ann:
                         if index == 0:
