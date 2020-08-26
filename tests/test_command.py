@@ -57,6 +57,25 @@ def test_set_cmd(conn):
     command.set_cmd(conn, target="C", first="A", second="B", operator="+")
 
 
+def test_import_cmd(conn):
+
+
+    TEST_FILE = "examples/gene.txt"
+    NAME = "boby"
+
+    excepted_word = []
+    with open(TEST_FILE, "r") as file:
+        for word in file:
+            excepted_word.append(word.strip())
+
+    command.import_cmd(conn,"sets",NAME, TEST_FILE)
+
+    for record in conn.execute("SELECT * FROM sets"):
+        item = dict(record)
+        item["name"] == NAME
+
+
+
 
     # assert type(cmd) == command.SelectCommand
     # assert cmd.fields == ["chr","pos"]

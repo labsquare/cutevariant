@@ -130,6 +130,15 @@ VQL_TO_TREE_CASES = {
         "feature": "selections",
         "name": "subset",
     },
+
+    #  Test Import 
+    "IMPORT set '/home/truc/test.txt' AS boby" : 
+    {
+    "cmd": "import_cmd",
+    "feature": "set",
+    "path": "/home/truc/test.txt",
+    "name": "boby"
+    }
 }
 
 
