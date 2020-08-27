@@ -85,6 +85,19 @@ VQL_TO_TREE_CASES = {
             "AND": [{"field": "some_field", "operator": "IN", "value": ("one", "two")}]
         },
     },
+
+
+    "SELECT chr FROM variants WHERE gene IN SET['test']": {
+        "cmd" : "select_cmd",
+        "fields": ["chr"],
+        "source":"variants",
+        "group_by": [],
+        "having": {},
+        "filters": {
+        "AND": [{"field": "gene", "operator": "IN", "value": ("SET", "test")}]
+        }
+    },
+
     # Test 6
     "CREATE denovo FROM variants": {
         "cmd": "create_cmd",

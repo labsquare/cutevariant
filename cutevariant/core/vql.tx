@@ -87,7 +87,7 @@ FieldIdentifier: Function|FieldId;
 ValueIdentifier: (NUMBER|STRING|BOOL|Tuple|SetIdentifier);
 ARGS: STRING;
 Function: func=ID '[' arg=ARGS ']' ('.' extra=ID)?;
-SetIdentifier: 'Set[' arg=ARGS ']';
+SetIdentifier: 'SET[' arg=ARGS ']';
 
 BoolOperator: "AND"|"OR";
 SetOperator: "+"|"-"|"&"|"^";

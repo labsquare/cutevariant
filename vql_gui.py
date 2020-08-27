@@ -56,6 +56,7 @@ class Editor(QWidget):
 		datas = json.dumps(datas)
 		datas = json.loads(datas)
 		self.bmodel.load(datas)
+		print(datas)
 
 		self.b.expandAll()
 

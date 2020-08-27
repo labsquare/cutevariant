@@ -22,7 +22,7 @@ import re
 GENOTYPE_FUNC_NAME = "sample"
 
 # set("truc")
-SET_FUNC_NAME = "set"
+SET_FUNC_NAME = "SET"
 
 
 def filters_to_flat(filters: dict):
@@ -246,6 +246,12 @@ def filters_to_vql(filters):
 
             if type(value) == str:
                 value = f"'{value}'"
+
+            if type(value) == tuple:
+                # if set   ["set", "name"]
+                if len(value) == 2 and value[0] == SET_FUNC_NAME:
+                    value = "{}['{}']".format(SET_FUNC_NAME, value[1])
+
 
             return "%s %s %s" % (field, operator, value)
 

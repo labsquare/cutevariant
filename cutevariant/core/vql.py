@@ -142,7 +142,7 @@ class Tuple(metaclass=model_class):
 class SetIdentifier(metaclass=model_class):
     @property
     def value(self):
-        return ("set", self.arg)
+        return ("SET", self.arg)
 
 
 class SelectCmd(metaclass=model_class):

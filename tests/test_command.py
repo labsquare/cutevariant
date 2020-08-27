@@ -20,6 +20,27 @@ def test_select_cmd(conn):
     assert "pos" in variant
     assert "gene" in variant
 
+
+def test_select_cmd_with_set(conn):
+    
+    #Import fake words (gene) as a new set called "test"
+
+    geneSets = ["CHID1", "AP2A2"]
+    for gene in geneSets:
+        conn.execute(f"INSERT INTO sets (name,value) VALUES ('test', '{gene}') ")
+
+    filters = {
+    "AND": [{"field": "gene", "operator": "IN", "value": ("SET", "test")}]
+    }
+
+    for variant in command.select_cmd(conn, fields = ["chr","ref","alt","gene"], source="variants", filters= filters):
+        assert variant["gene"] in geneSets
+
+    
+
+    #filters  = {"AND": {"field":"gene", }} 
+
+
 def test_create_cmd(conn):
 
     result = command.create_cmd(conn, source = "variants", target="test")

@@ -41,7 +41,7 @@ def test_field_function_to_sql():
 
 def test_set_function_to_sql():
     assert (
-        querybuilder.set_function_to_sql(("set", "sacha"))
+        querybuilder.set_function_to_sql(("SET", "sacha"))
         == "(SELECT value FROM sets WHERE name = 'sacha')"
     )
 
@@ -248,6 +248,25 @@ QUERY_TESTS = [
         ),
         "SELECT chr,pos,sample['TUMOR'].gt FROM variants WHERE sample['TUMOR'].gt = 1",
     ),
+
+    # Test IN SET   
+    (
+
+        {
+        "fields": ["chr"],
+        "source": "variants",
+        "filters": {
+            "AND": [
+                {"field": "chr", "operator":"IN", "value": ("SET","name")}
+            ]
+        }
+        }, 
+        (
+        "SELECT DISTINCT `variants`.`id`,`variants`.`chr` FROM variants WHERE `variants`.`chr` IN (SELECT value FROM sets WHERE name = 'name') LIMIT 50 OFFSET 0"
+        ),
+
+        "SELECT chr FROM variants WHERE chr IN SET['name']"
+    )
 ]
 
 
