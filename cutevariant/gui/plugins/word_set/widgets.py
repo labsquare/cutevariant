@@ -2,6 +2,8 @@ from cutevariant.gui.plugin import PluginWidget
 from cutevariant.core.sql import get_sql_connexion, get_sets, get_words_set
 from cutevariant.core.command import import_cmd, import_cmd, drop_cmd
 from cutevariant import commons as cm
+from cutevariant.gui.ficon import FIcon
+
 import os 
 from PySide2.QtWidgets import (
     QToolBar,
@@ -32,14 +34,15 @@ class WordSetWidget(PluginWidget):
         self.setWindowTitle(self.tr("Word Set"))
         self.toolbar = QToolBar()
         self.view = QListWidget()
+        self.view.setIconSize(QSize(20,20))
         self.view.itemDoubleClicked.connect(self.open_wordset)
 
 
         # setup tool bar
-
-        self.toolbar.addAction("Add", self.add_wordset)
-        self.toolbar.addAction("Rem", self.rem_wordset)
-        self.toolbar.addAction("open", self.open_wordset)
+        self.toolbar.setIconSize(QSize(16,16))
+        self.toolbar.addAction(FIcon(0xF0415), "Add", self.add_wordset)
+        self.toolbar.addAction(FIcon(0xF0A7A), "Rem", self.rem_wordset)
+        self.toolbar.addAction(FIcon(0xF06D0), "open", self.open_wordset)
 
         v_layout = QVBoxLayout()
         v_layout.setContentsMargins(0, 0, 0, 0)
@@ -98,6 +101,7 @@ class WordSetWidget(PluginWidget):
         vlayout.addWidget(view)
         vlayout.addWidget(button)
         dialog.setLayout(vlayout)
+        dialog.setWindowTitle(set_name)
 
         #Load word sets 
 
@@ -123,6 +127,7 @@ class WordSetWidget(PluginWidget):
         for data in get_sets(self.conn):
             item = QListWidgetItem()
             item.setText(data["name"])
+            item.setIcon(FIcon(0xF0A38))
             self.view.addItem(item)
 
 

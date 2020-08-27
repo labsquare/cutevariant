@@ -103,6 +103,7 @@ class MainWindow(QMainWindow):
         dock = QDockWidget()
         dock.setWindowTitle(widget.windowTitle())
         dock.setWidget(widget)
+        dock.setStyleSheet("QDockWidget { font: bold }")
 
         # Set the objectName for a correct restoration after saveState
         dock.setObjectName(str(widget.__class__))
