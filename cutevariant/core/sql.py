@@ -517,7 +517,7 @@ def create_table_sets(conn: sqlite3.Connection):
 def insert_set_from_file(conn: sqlite3.Connection, name, filename):
 
     cursor = conn.cursor()
-
+    # TODO ignore duplicate 
     with open(filename) as file:
         cursor.executemany(
             """INSERT INTO sets (name, value) VALUES (?,?)""",
@@ -533,6 +533,16 @@ def get_sets(conn):
         "SELECT name , COUNT(*) as 'count' FROM sets GROUP BY name"
     ):
         yield dict(row)
+
+
+def get_words_set(conn, name):
+    """ Get word from sets """ 
+    for row in conn.execute(
+        f"SELECT DISTINCT value FROM sets WHERE name = '{name}'"
+    ):
+        yield dict(row)["value"]
+
+
 
 
 ## ================ Operations on sets of variants =============================
