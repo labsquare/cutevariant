@@ -418,6 +418,9 @@ class MainWindow(QMainWindow):
         if action in self.dialog_plugins:
             DialogClass = self.dialog_plugins[action]
             dialog = DialogClass()
+            dialog.mainwindow = self
+            dialog.conn = self.conn
+            dialog.on_refresh()
             dialog.exec_()
 
     def aboutCutevariant(self):

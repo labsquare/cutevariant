@@ -85,6 +85,11 @@ class PluginSettingsWidget(settings.GroupWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
+    def on_refresh(self):
+        pass
+
+
+
 
 def find_plugins(path=None):
     """find and returns plugin instance from a directory 
