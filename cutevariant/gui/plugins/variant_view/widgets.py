@@ -1,5 +1,5 @@
 import re
-
+import functools 
 from cutevariant.core import command as cmd
 from cutevariant.core import vql
 import cutevariant.commons as cm
@@ -179,6 +179,31 @@ class VariantModel(QAbstractTableModel):
             if role == Qt.DisplayRole:
                 return self.headers[section]
         return None
+
+    def update_variant(self, row: int, variant = {}):
+        """Update a row 
+        
+        Args:
+            row (int): Description
+        """
+
+        # Update in database 
+        left = self.index(row, 0)
+        right = self.index(row, self.columnCount()-1)
+
+        if left.isValid() and right.isValid():
+            # Set id 
+            variant["id"] = self.variants[row]["id"]
+            sql.update_variant(self.conn, variant)
+            self.variants[row].update(variant)
+            self.dataChanged.emit(left, right)
+
+        
+            
+
+
+
+
 
     def load(self, emit_changed=True, reset_page=False):
         """Load variant data into the model from query attributes
@@ -527,6 +552,79 @@ class VariantView(QWidget):
         self.page_box.setEnabled(active)
         for action in self.pagging_actions:
             action.setEnabled(active)
+
+
+    def contextMenuEvent(self, event: QContextMenuEvent):
+        """ override :  Show Menu """ 
+
+        menu = QMenu(self)
+        pos = self.view.viewport().mapFromGlobal(event.globalPos())
+        current_index = self.view.indexAt(pos)
+        current_variant = self.model.variant(current_index.row())
+       
+        if current_index.isValid():
+            full_variant = sql.get_one_variant(self.conn, current_variant["id"])
+            # Create favorite action 
+            fav_action = menu.addAction("Mark as favorite")
+            fav_action.setCheckable(True)
+            fav_action.setChecked(bool(full_variant["favorite"]))
+            fav_action.toggled.connect(lambda x: self.update_favorite(current_index, x))
+
+            # Create classication action 
+            class_menu = menu.addMenu("Classification")
+            for key, value in cm.CLASSIFICATION.items():
+                
+                action = class_menu.addAction(FIcon(cm.CLASSIFICATION_ICONS[key]), value)
+                action.setData(key)
+                on_click = functools.partial(self.update_classification, current_index, key)
+                action.triggered.connect(on_click)
+
+
+            menu.exec_(event.globalPos())
+
+
+    def update_favorite(self, index: QModelIndex, value = 1):
+
+        if index.isValid():
+            update = {"favorite": int(value)}
+            self.model.update_variant(index.row(), update)
+
+    def update_classification(self, index: QModelIndex, value = 3):
+        
+        if index.isValid():
+            update = {"classification": int(value)}
+            self.model.update_variant(index.row(), update)  
+
+
+
+
+            
+            
+
+
+
+
+
+
+
+        # classification = self.classification_box.currentIndex()
+        # favorite = self.favorite_checkbox.isChecked()
+        # comment = self.comment_input.toPlainText()
+
+        # updated = {
+        #     "id": self.current_variant["id"],
+        #     "classification": classification,
+        #     "favorite": favorite,
+        #     "comment": comment,
+        # }
+
+        # sql.update_variant(self.conn, updated)
+
+
+
+
+
+
 
 
 class VariantViewWidget(plugin.PluginWidget):

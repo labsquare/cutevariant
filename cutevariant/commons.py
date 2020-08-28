@@ -12,6 +12,23 @@ MAX_RECENT_PROJECTS = 5
 MIN_COMPLETION_LETTERS = 1
 DEFAULT_SELECTION_NAME = "variants"
 
+
+# Classification 
+
+CLASSIFICATION = {
+    0: "Unclassified",
+    1: "Benin",
+    2: "Likely benin",
+    3: "Variant of uncertain significance",
+    4: "Likely pathogen",
+    5: "Pathogen"
+}
+
+CLASSIFICATION_ICONS = {0: 0xF03A1, 1: 0xF03A4, 2: 0xF03A7, 3: 0xF03AA, 4: 0xF03AD, 5 : 0xF03B1}
+
+
+
+
 # Paths
 DIR_LOGS = tempfile.gettempdir() + "/"
 
@@ -23,13 +40,17 @@ DIR_STYLES = DIR_ASSETS + "styles/"
 
 GENOTYPE_ICONS = {0: 0xF130, 1: 0xFAA0, 2: 0xFAA4, -1: 0xF625}
 
+
+
+
+
 # Websites and variant query
 WEBSITES_URLS = {"varsome": "https://varsome.com/variant/hg19/{chr}-{pos}-{ref}-{alt}"}
 
 
 # Logging
 LOGGER_NAME = "cutevariant"
-LOG_LEVEL = "DEBUG"
+LOG_LEVEL = "NOTSET"
 LOG_LEVELS = {
     "debug": logging.DEBUG,
     "info": logging.INFO,
