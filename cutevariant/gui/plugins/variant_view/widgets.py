@@ -713,8 +713,15 @@ class VariantViewWidget(plugin.PluginWidget):
         self.groupby_act_gp.addAction(self.horizontal_view_action)
         self.groupby_act_gp.addAction(self._groupby_act_list)
 
-        self.first_pane.view.clicked.connect(self.on_variant_clicked)
-        self.second_pane.view.clicked.connect(self.on_variant_clicked)
+        # self.first_pane.view.clicked.connect(self.on_variant_clicked)
+
+        self.first_pane.view.selectionModel().currentRowChanged.connect(
+            lambda x, _: self.on_variant_clicked(x)
+        )
+
+        self.second_pane.view.selectionModel().currentRowChanged.connect(
+            lambda x, _: self.on_variant_clicked(x)
+        )
 
         #  Formatter tools
         self.top_bar.addSeparator()
@@ -896,7 +903,8 @@ class VariantViewWidget(plugin.PluginWidget):
         Args:
             index (QModelIndex): Description
         """
-        if self.sender() == self.first_pane.view:
+
+        if index.model() == self.first_pane.view.model():
             variant = self.first_pane.model.variant(index.row())
 
             self.second_pane.fields = self.first_pane.model.fields
@@ -915,8 +923,8 @@ class VariantViewWidget(plugin.PluginWidget):
             self.mainwindow.state.current_variant = variant
             self.mainwindow.refresh_plugins(sender=self)
 
-        if self.sender() == self.second_pane.view:
-            variant = self.first_pane.model.variant(index.row())
+        if index.model() == self.second_pane.view.model():
+            variant = self.second_pane.model.variant(index.row())
             self.mainwindow.state.current_variant = variant
             self.mainwindow.refresh_plugins(sender=self)
 
