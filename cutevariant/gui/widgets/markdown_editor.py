@@ -26,7 +26,8 @@ class MarkdownEditor(QWidget):
         self.rich_edit = QTextEdit()
         self.source_edit = QPlainTextEdit()
         vlayout = QVBoxLayout()
-
+        vlayout.setSpacing(1)
+        vlayout.setContentsMargins(0, 0, 0, 0)
         # self.rich_edit.setStyleSheet("QWidget {background-color:'lightgray'}")
 
         self.splitter = QSplitter(Qt.Horizontal)
@@ -120,6 +121,9 @@ class MarkdownEditor(QWidget):
 
     def on_return_pressed(self):
         pass
+
+    def to_source(self):
+        return self.source_edit.toPlainText()
 
 
 if __name__ == "__main__":

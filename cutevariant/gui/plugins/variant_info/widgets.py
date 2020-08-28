@@ -44,9 +44,9 @@ class VariantInfoWidget(PluginWidget):
         self.view = QTabWidget()
         # Editor
 
-        self.comment_input = QLabel()
-        self.comment_input.setAlignment(Qt.AlignTop|Qt.AlignLeft)
-
+        self.comment_input = QTextBrowser()
+        self.comment_input.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+        self.comment_input.setOpenExternalLinks(True)
 
         self.editor = QWidget()
         self.editor_layout = QVBoxLayout()
@@ -60,10 +60,7 @@ class VariantInfoWidget(PluginWidget):
         # sub_edit_layout.addWidget(self.save_button)
 
         self.editor_layout.addWidget(self.comment_input)
-        #self.editor_layout.addWidget(self.save_button)
-
-
-
+        # self.editor_layout.addWidget(self.save_button)
 
         self.editor.setLayout(self.editor_layout)
         self.view.addTab(self.editor, "Comments")
@@ -161,12 +158,8 @@ class VariantInfoWidget(PluginWidget):
             item.setText(1, str(value))
             item.setToolTip(1, "<font color=black>" + str(value) + "</font>")
 
-  
-
             if key == "comment":
-                self.comment_input.setText(str(value))
-
-        
+                self.comment_input.setMarkdown(str(value))
 
             self.variant_view.addTopLevelItem(item)
 
@@ -254,7 +247,7 @@ class VariantInfoWidget(PluginWidget):
 
     # @Slot()
     # def on_save_clicked(self):
-    #     """Save button 
+    #     """Save button
     #     """
     #     classification = self.classification_box.currentIndex()
     #     favorite = self.favorite_checkbox.isChecked()
@@ -270,7 +263,7 @@ class VariantInfoWidget(PluginWidget):
     #         main_view = self.mainwindow.plugins["variant_view"]
     #         print(main_view)
 
-        #sql.update_variant(self.conn, updated)
+    # sql.update_variant(self.conn, updated)
 
     def show_menu(self, pos: QPoint):
         """Show context menu associated to the current variant"""
