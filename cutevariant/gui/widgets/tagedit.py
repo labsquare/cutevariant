@@ -72,14 +72,12 @@ class FlowLayout(QLayout):
         for item in self.itemList:
             wid = item.widget()
             spaceX = self.spacing() + wid.style().layoutSpacing(
-                QSizePolicy.PushButton,
-                QSizePolicy.PushButton,
-                Qt.Horizontal)
+                QSizePolicy.PushButton, QSizePolicy.PushButton, Qt.Horizontal
+            )
 
             spaceY = self.spacing() + wid.style().layoutSpacing(
-                QSizePolicy.PushButton, 
-                QSizePolicy.PushButton, 
-                Qt.Vertical)
+                QSizePolicy.PushButton, QSizePolicy.PushButton, Qt.Vertical
+            )
 
             nextX = x + item.sizeHint().width() + spaceX
             if nextX - spaceX > rect.right() and lineHeight > 0:
@@ -89,8 +87,7 @@ class FlowLayout(QLayout):
                 lineHeight = 0
 
             if not testOnly:
-                item.setGeometry(
-                    QRect(QPoint(x, y), item.sizeHint()))
+                item.setGeometry(QRect(QPoint(x, y), item.sizeHint()))
 
             x = nextX
             lineHeight = max(lineHeight, item.sizeHint().height())
@@ -99,64 +96,65 @@ class FlowLayout(QLayout):
 
 
 class TagItem(QWidget):
-    def __init__(self, word:str, parent = None):
+    def __init__(self, word: str, parent=None):
         super().__init__(parent)
 
-        self.word = word 
+        self.word = word
         self.font = QFont()
         self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.setMouseTracking(True)
         self.hover = False
 
     def paintEvent(self, event: QPaintEvent):
-        """ override """ 
+        """ override """
 
         painter = QPainter(self)
         painter.setFont(self.font)
-        round_rect = self.rect().adjusted(4,4,-4,-4)
-        
+        round_rect = self.rect().adjusted(4, 4, -4, -4)
+
         painter.setBrush(QColor("#E0EAF1"))
         painter.setPen(Qt.NoPen)
         painter.drawRect(round_rect)
         painter.setPen(QColor("#80A3BB"))
 
-        # draw icon 
+        # draw icon
         cross_icon = self.style().standardIcon(QStyle.SP_TitleBarCloseButton)
-        painter.drawPixmap(self.rect().right() -20, self.rect().center().y() - 7, cross_icon.pixmap(16,16))
+        painter.drawPixmap(
+            self.rect().right() - 20,
+            self.rect().center().y() - 7,
+            cross_icon.pixmap(16, 16),
+        )
 
-        painter.drawText(round_rect.adjusted(-10,0,0,0), Qt.AlignCenter, self.word)
-        super().paintEvent(event)        
+        painter.drawText(round_rect.adjusted(-10, 0, 0, 0), Qt.AlignCenter, self.word)
+        super().paintEvent(event)
 
     def sizeHint(self):
-        """ override """ 
-        return self.word_size() + QSize(40,15)
+        """ override """
+        return self.word_size() + QSize(40, 15)
 
     def word_size(self):
         metric = QFontMetrics(self.font)
         return QSize(metric.width(self.word), metric.height())
 
-    def mouseMoveEvent(self, event : QMouseEvent):
+    def mouseMoveEvent(self, event: QMouseEvent):
         """ override """
         pass
 
-    def mousePressEvent(self, event : QMouseEvent):
+    def mousePressEvent(self, event: QMouseEvent):
         """ override """
         pass
 
-    def enterEvent(self, event : QMouseEvent):
+    def enterEvent(self, event: QMouseEvent):
         """ override """
         pass
 
-    def leaveEvent(self, event : QEvent):
+    def leaveEvent(self, event: QEvent):
         """ override """
         pass
-
-
-
 
 
 class TagEdit(QWidget):
-    def __init__(self, parent = None):
+    def __init__(self, parent=None):
         super().__init__(parent)
 
         self.flow_layout = FlowLayout()
@@ -168,8 +166,7 @@ class TagEdit(QWidget):
         self.items = []
         self.setLayout(self.flow_layout)
 
-
-    def add_item(self, item : TagItem):
+    def add_item(self, item: TagItem):
         self.items.append(item)
         self.flow_layout.addWidget(item)
 
@@ -177,12 +174,7 @@ class TagEdit(QWidget):
         self.add_item(TagItem(tag))
 
 
-
-
-
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     import sys
 
@@ -192,8 +184,7 @@ if __name__ == '__main__':
     w.add_tag("boby")
     w.add_tag("olivier")
     w.add_tag("Valentin")
-    
+
     w.show()
 
     sys.exit(app.exec_())
-

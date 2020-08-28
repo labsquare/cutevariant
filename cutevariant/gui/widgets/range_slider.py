@@ -22,6 +22,8 @@ class RangeSlider(QWidget):
         self.first_position = 1
         self.second_position = 8
 
+        self.tick_visible = False
+
         self.opt = QStyleOptionSlider()
         self.opt.minimum = 0
         self.opt.maximum = 10
@@ -50,6 +52,9 @@ class RangeSlider(QWidget):
     def setTickInterval(self, ti: int):
         self.opt.tickInterval = ti
 
+    def setTickVisible(self, visible: bool):
+        self.tick_visible = visible
+
     def paintEvent(self, event: QPaintEvent):
 
         painter = QPainter(self)
@@ -58,7 +63,11 @@ class RangeSlider(QWidget):
         self.opt.initFrom(self)
         self.opt.rect = self.rect()
         self.opt.sliderPosition = 0
-        self.opt.subControls = QStyle.SC_SliderGroove | QStyle.SC_SliderTickmarks
+
+        if self.tick_visible:
+            self.opt.subControls = QStyle.SC_SliderGroove | QStyle.SC_SliderTickmarks
+        else:
+            self.opt.subControls = QStyle.SC_SliderGroove
 
         #   Draw GROOVE
         self.style().drawComplexControl(QStyle.CC_Slider, self.opt, painter)
@@ -141,7 +150,6 @@ class RangeSlider(QWidget):
     def mouseReleaseEvent(self, event: QMouseEvent):
 
         self.rangeChanged.emit(self.first_position, self.second_position)
-        print("yes")
 
     def sizeHint(self):
         """ override """

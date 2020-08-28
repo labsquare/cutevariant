@@ -4,7 +4,7 @@ from PySide2.QtWidgets import (
     QTableView,
     QDialogButtonBox,
     QAbstractItemView,
-    QHeaderView
+    QHeaderView,
 )
 from PySide2.QtCore import Qt, QAbstractTableModel, QModelIndex
 from cutevariant.gui.plugin import PluginDialog
@@ -35,8 +35,11 @@ def get_variant_transversion(conn: sqlite3.Connection):
 def get_sample_count(conn: sqlite3.Connection):
     return conn.execute("SELECT COUNT(*)  as `count` FROM samples").fetchone()["count"]
 
+
 def get_snp_count(conn: sqlite3.Connection):
-    return conn.execute("SELECT COUNT(*)  as `count` FROM variants WHERE is_snp = 1").fetchone()["count"]
+    return conn.execute(
+        "SELECT COUNT(*)  as `count` FROM variants WHERE is_snp = 1"
+    ).fetchone()["count"]
 
 
 class MetricModel(QAbstractTableModel):
@@ -49,7 +52,7 @@ class MetricModel(QAbstractTableModel):
         """ override """
         if parent == QModelIndex():
             return 2
-        else: 
+        else:
             return None
 
     def rowCount(self, parent=QModelIndex()) -> int:
@@ -93,16 +96,14 @@ class MetricDialog(PluginDialog):
 
         self.setWindowTitle("Metrics Plugin")
 
-
         v_layout = QVBoxLayout()
         v_layout.addWidget(self.view)
         v_layout.addWidget(self.buttons)
         self.setLayout(v_layout)
 
     def on_refresh(self):
-        """ override """ 
+        """ override """
         self.populate()
-
 
     def populate(self):
 
@@ -115,14 +116,15 @@ class MetricDialog(PluginDialog):
         transversion = get_variant_transversion(self.conn)
         ratio = transition / transversion
 
-        self.model.add_metrics("Transition count",  transition)
+        self.model.add_metrics("Transition count", transition)
         self.model.add_metrics("Transversion count", transversion)
         self.model.add_metrics("Tr/tv ratio", ratio)
         self.model.add_metrics("Samples count", get_sample_count(self.conn))
 
-        self.view.horizontalHeader().setSectionResizeMode(0,QHeaderView.ResizeToContents)
-        self.view.horizontalHeader().setSectionResizeMode(1,QHeaderView.Stretch)
-
+        self.view.horizontalHeader().setSectionResizeMode(
+            0, QHeaderView.ResizeToContents
+        )
+        self.view.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
 
 
 if __name__ == "__main__":

@@ -4,7 +4,7 @@ from cutevariant.core.command import import_cmd, import_cmd, drop_cmd
 from cutevariant import commons as cm
 from cutevariant.gui.ficon import FIcon
 
-import os 
+import os
 from PySide2.QtWidgets import (
     QToolBar,
     QListWidget,
@@ -15,13 +15,14 @@ from PySide2.QtWidgets import (
     QFileDialog,
     QMessageBox,
     QDialog,
-    QPushButton
+    QPushButton,
 )
 
 
 from PySide2.QtCore import QStringListModel
 
 LOGGER = cm.logger()
+
 
 class WordSetWidget(PluginWidget):
     """Plugin to show all annotations of a selected variant"""
@@ -34,12 +35,11 @@ class WordSetWidget(PluginWidget):
         self.setWindowTitle(self.tr("Word Set"))
         self.toolbar = QToolBar()
         self.view = QListWidget()
-        self.view.setIconSize(QSize(20,20))
+        self.view.setIconSize(QSize(20, 20))
         self.view.itemDoubleClicked.connect(self.open_wordset)
 
-
         # setup tool bar
-        self.toolbar.setIconSize(QSize(16,16))
+        self.toolbar.setIconSize(QSize(16, 16))
         self.toolbar.addAction(FIcon(0xF0415), "Add", self.add_wordset)
         self.toolbar.addAction(FIcon(0xF0A7A), "Rem", self.rem_wordset)
         self.toolbar.addAction(FIcon(0xF06D0), "open", self.open_wordset)
@@ -55,7 +55,7 @@ class WordSetWidget(PluginWidget):
 
     def add_wordset(self):
         filename, _ = QFileDialog.getOpenFileName(
-            self, "Open word set","", "Text File (*.txt)"
+            self, "Open word set", "", "Text File (*.txt)"
         )
 
         if filename:
@@ -64,27 +64,27 @@ class WordSetWidget(PluginWidget):
             LOGGER.debug(result)
             self.populate()
 
-
     def rem_wordset(self):
-        
 
-        # if selection is empty 
+        # if selection is empty
         if len(self.view.selectedItems()) == 0:
             return
 
-        reply = QMessageBox.question(self,"Drop word set", "Are you sure you want to remove selected elements ?", QMessageBox.Yes| QMessageBox.No)
+        reply = QMessageBox.question(
+            self,
+            "Drop word set",
+            "Are you sure you want to remove selected elements ?",
+            QMessageBox.Yes | QMessageBox.No,
+        )
         print(reply)
         if reply == QMessageBox.Yes:
             for i in self.view.selectedItems():
                 result = drop_cmd(self.conn, "sets", i.text())
                 LOGGER.debug(result)
 
-
             self.populate()
 
-
     def open_wordset(self):
-        
 
         if len(self.view.selectedItems()) == 0:
             return
@@ -103,15 +103,12 @@ class WordSetWidget(PluginWidget):
         dialog.setLayout(vlayout)
         dialog.setWindowTitle(set_name)
 
-        #Load word sets 
+        # Load word sets
 
-        model.setStringList(get_words_set(self.conn,set_name))
+        model.setStringList(get_words_set(self.conn, set_name))
         button.clicked.connect(dialog.accept)
 
-
         dialog.exec_()
-
-
 
     def on_open_project(self, conn):
         """ override """
@@ -119,7 +116,7 @@ class WordSetWidget(PluginWidget):
         self.on_refresh()
 
     def on_refresh(self):
-        """ override """ 
+        """ override """
         self.populate()
 
     def populate(self):
