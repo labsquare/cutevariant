@@ -12,7 +12,7 @@ from cutevariant.gui.widgets.filters import (
 class AuragenFilterWidget(PluginWidget):
     """Plugin to show all annotations of a selected variant"""
 
-    ENABLE = True
+    ENABLE = False
 
     def __init__(self, conn=None):
         super().__init__()
