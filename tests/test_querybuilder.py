@@ -229,6 +229,34 @@ QUERY_TESTS = [
         ),
         "SELECT chr,pos FROM variants WHERE sample['TUMOR'].gt = 1",
     ),
+
+
+    # Test genotype with 2 filters 
+    (
+        {
+            "fields": ["chr", "pos"],
+            "source": "variants",
+            "filters": {
+                "AND": [
+                    {"field": ("sample", "TUMOR", "gt"), "operator": "=", "value": 1},
+                    {"field": ("sample", "TUMOR", "dp"), "operator": ">", "value": 10}
+
+                ]
+            },
+        },
+        (
+            "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants"
+            " INNER JOIN sample_has_variant `sample_TUMOR` ON `sample_TUMOR`.variant_id = variants.id AND `sample_TUMOR`.sample_id = 1"
+            " WHERE (`sample_TUMOR`.`gt` = 1 AND `sample_TUMOR`.`dp` > 10)"
+            " LIMIT 50 OFFSET 0"
+        ),
+        "SELECT chr,pos FROM variants WHERE sample['TUMOR'].gt = 1 AND sample['TUMOR'].dp > 10",
+    ),
+
+
+
+
+
     #   Test genotype in both filters and fields
     (
         {

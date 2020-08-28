@@ -383,7 +383,11 @@ def build_query(
                 sample_name = col[1]
                 samples.append(sample_name)
 
+    # make samples uniques 
+    samples = set(samples)
+
     ## Create Sample Join
+
     for sample_name in samples:
         #  Optimisation ?
         # sample_id = self.cache_samples_ids[sample_name]
