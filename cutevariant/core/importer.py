@@ -98,6 +98,14 @@ def async_import_reader(conn, reader: AbstractReader, pedfile=None, project={}):
     create_indexes(conn)
     yield 100, "Indexes created."
 
+
+    conn.execute("PRAGMA auto_vacuum = FULL")
+    # conn.execute("PRAGMA main.cache_size=10000")
+    # conn.execute("PRAGMA main.locking_mode=EXCLUSIVE")
+    # conn.execute("PRAGMA main.synchronous=NORMAL")
+    # conn.execute("PRAGMA main.journal_mode=WAL")
+    # conn.execute("PRAGMA main.cache_size=5000")
+
     # session.add(Selection(name="favoris", description="favoris", count = 0))
 
 
