@@ -590,16 +590,18 @@ class VariantView(QWidget):
             self.model.update_variant(index.row(), update)
 
     def update_classification(self, index: QModelIndex, value = 3):
-        
+
         if index.isValid():
             update = {"classification": int(value)}
             self.model.update_variant(index.row(), update)  
 
 
+    def update_comments(self, index: QModelIndex, value = ""):
+        if index.isValid():
+            update = {"classification": int(value)}
+            self.model.update_variant(index.row(), update)  
+  
 
-
-            
-            
 
 
 

@@ -43,12 +43,10 @@ class VariantInfoWidget(PluginWidget):
 
         self.view = QTabWidget()
         # Editor
-        self.classification_box = QComboBox()
-        self.favorite_checkbox = QCheckBox()
+
         self.comment_input = QLabel()
-        # self.save_button = QPushButton("Save")
-        for a, b in self.ACMG_CLASSIFICATION:
-            self.classification_box.addItem(a, b)
+        self.comment_input.setAlignment(Qt.AlignTop|Qt.AlignLeft)
+
 
         self.editor = QWidget()
         self.editor_layout = QVBoxLayout()
@@ -57,25 +55,24 @@ class VariantInfoWidget(PluginWidget):
         self.toolbar.setIconSize(QSize(16, 16))
 
         sub_edit_layout = QFormLayout()
-        sub_edit_box = QGroupBox()
         # editor_layout.setRowWrapPolicy(QFormLayout.WrapAllRows)
-        sub_edit_layout.addRow("Classification", self.classification_box)
-        sub_edit_layout.addRow("Is Saved", self.favorite_checkbox)
-        sub_edit_box.setLayout(sub_edit_layout)
         # sub_edit_layout.addWidget(self.comment_input)
         # sub_edit_layout.addWidget(self.save_button)
 
-        self.editor_layout.addWidget(sub_edit_box)
         self.editor_layout.addWidget(self.comment_input)
         #self.editor_layout.addWidget(self.save_button)
 
+
+
+
         self.editor.setLayout(self.editor_layout)
-        self.view.addTab(self.editor, "User")
+        self.view.addTab(self.editor, "Comments")
         # self.save_button.clicked.connect(self.on_save_clicked)
 
         # Build variant tab
         self.variant_view = QTreeWidget()
         self.variant_view.setColumnCount(2)
+        self.variant_view.setAlternatingRowColors(True)
         self.variant_view.setHeaderLabels(["Field", "Value"])
         self.view.addTab(self.variant_view, "Variants")
 
@@ -83,6 +80,8 @@ class VariantInfoWidget(PluginWidget):
         self.transcript_combo = QComboBox()
         self.transcript_view = QTreeWidget()
         self.transcript_view.setColumnCount(2)
+        self.transcript_view.setAlternatingRowColors(True)
+
         self.transcript_view.setHeaderLabels(["Field", "Value"])
         tx_layout = QVBoxLayout()
         tx_layout.addWidget(self.transcript_combo)
@@ -95,6 +94,8 @@ class VariantInfoWidget(PluginWidget):
         # build Samples tab
         self.sample_combo = QComboBox()
         self.sample_view = QTreeWidget()
+        self.sample_view.setAlternatingRowColors(True)
+
         self.sample_view.setColumnCount(2)
         self.sample_view.setHeaderLabels(["Field", "Value"])
         tx_layout = QVBoxLayout()
@@ -148,21 +149,24 @@ class VariantInfoWidget(PluginWidget):
         variant_id = self.current_variant["id"]
 
         # Populate Variants
+
+        font = QFont()
+        font.setBold(True)
+
         self.variant_view.clear()
         for key, value in sql.get_one_variant(self.conn, variant_id).items():
             item = QTreeWidgetItem()
             item.setText(0, key)
+            item.setFont(0, font)
             item.setText(1, str(value))
             item.setToolTip(1, "<font color=black>" + str(value) + "</font>")
 
-            if key == "classification":
-                self.classification_box.setCurrentIndex(int(value))
+  
 
             if key == "comment":
                 self.comment_input.setText(str(value))
 
-            if key == "favorite":
-                self.favorite_checkbox.setChecked(bool(value))
+        
 
             self.variant_view.addTopLevelItem(item)
 
@@ -218,10 +222,13 @@ class VariantInfoWidget(PluginWidget):
         """This method is triggered when transcript change from combobox
         """
         annotations = self.transcript_combo.currentData()
+        font = QFont()
+        font.setBold(True)
         self.transcript_view.clear()
         if annotations:
             for key, val in annotations.items():
                 item = QTreeWidgetItem()
+                item.setFont(0, font)
                 item.setText(0, key)
                 item.setText(1, str(val))
 
@@ -233,12 +240,15 @@ class VariantInfoWidget(PluginWidget):
         """
         sample_id = self.sample_combo.currentData()
         variant_id = self.current_variant["id"]
+        font = QFont()
+        font.setBold(True)
         self.sample_view.clear()
         ann = sql.get_sample_annotations(self.conn, variant_id, sample_id)
         if ann:
             for key, value in ann.items():
                 item = QTreeWidgetItem()
                 item.setText(0, key)
+                item.setFont(0, font)
                 item.setText(1, str(value))
                 self.sample_view.addTopLevelItem(item)
 
