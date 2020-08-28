@@ -45,8 +45,8 @@ class VariantInfoWidget(PluginWidget):
         # Editor
         self.classification_box = QComboBox()
         self.favorite_checkbox = QCheckBox()
-        self.comment_input = QTextEdit()
-        self.save_button = QPushButton("Save")
+        self.comment_input = QLabel()
+        # self.save_button = QPushButton("Save")
         for a, b in self.ACMG_CLASSIFICATION:
             self.classification_box.addItem(a, b)
 
@@ -67,11 +67,11 @@ class VariantInfoWidget(PluginWidget):
 
         self.editor_layout.addWidget(sub_edit_box)
         self.editor_layout.addWidget(self.comment_input)
-        self.editor_layout.addWidget(self.save_button)
+        #self.editor_layout.addWidget(self.save_button)
 
         self.editor.setLayout(self.editor_layout)
         self.view.addTab(self.editor, "User")
-        self.save_button.clicked.connect(self.on_save_clicked)
+        # self.save_button.clicked.connect(self.on_save_clicked)
 
         # Build variant tab
         self.variant_view = QTreeWidget()
@@ -242,22 +242,25 @@ class VariantInfoWidget(PluginWidget):
                 item.setText(1, str(value))
                 self.sample_view.addTopLevelItem(item)
 
-    @Slot()
-    def on_save_clicked(self):
-        """Save button 
-        """
-        classification = self.classification_box.currentIndex()
-        favorite = self.favorite_checkbox.isChecked()
-        comment = self.comment_input.toPlainText()
+    # @Slot()
+    # def on_save_clicked(self):
+    #     """Save button 
+    #     """
+    #     classification = self.classification_box.currentIndex()
+    #     favorite = self.favorite_checkbox.isChecked()
+    #     comment = self.comment_input.toPlainText()
 
-        updated = {
-            "id": self.current_variant["id"],
-            "classification": classification,
-            "favorite": favorite,
-            "comment": comment,
-        }
+    #     updated = {
+    #         "classification": classification,
+    #         "favorite": favorite,
+    #         "comment": comment,
+    #     }
 
-        sql.update_variant(self.conn, updated)
+    #     if "variant_view" in self.mainwindow.plugins:
+    #         main_view = self.mainwindow.plugins["variant_view"]
+    #         print(main_view)
+
+        #sql.update_variant(self.conn, updated)
 
     def show_menu(self, pos: QPoint):
         """Show context menu associated to the current variant"""
