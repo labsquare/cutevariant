@@ -1034,11 +1034,11 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
 
         # Insert current variant
         # Use default dict to handle missing values
-        LOGGER.debug(
-            "async_insert_many_variants:: QUERY: %s\nVALUES: %s",
-            variant_insert_query,
-            variant,
-        )
+        #LOGGER.debug(
+        #    "async_insert_many_variants:: QUERY: %s\nVALUES: %s",
+        #    variant_insert_query,
+        #    variant,
+        # )
 
         #  Create list of value to insert
         # ["chr",234234,"A","G"]
