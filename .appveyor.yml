@@ -7,7 +7,7 @@ environment:
 
 
 init:
-  - "ECHO %PYTHON_VERSION%
+  - "ECHO %PYTHON_VERSION%"
   - cmd: SET PATH=c:\python37-x64;c:\python37-x64\Scripts;
 
 install:
