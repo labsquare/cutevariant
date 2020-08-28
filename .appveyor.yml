@@ -1,14 +1,14 @@
 image: Visual Studio 2019
+platform:
+  -x64
 environment:
   matrix:
     - PYTHON_VERSION: 3.7
 
-platform:
-  -x64
 
 init:
-  - "ECHO %PYTHON_VERSION% %MINICONDA%"
-  - cmd: SET PATH=c:\python37;c:\python37\Scripts;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\ProgramData\chocolatey\bin;C:\Program Files\Git\cmd;C:\Program Files\Git\usr\bin
+  - "ECHO %PYTHON_VERSION%
+  - cmd: SET PATH=c:\python37-x64;c:\python37-x64\Scripts;
 
 install:
   - pip install -e .
