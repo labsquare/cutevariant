@@ -499,6 +499,7 @@ class VariantView(QWidget):
             fct = self.model.nextPage
 
         fct()
+        self.view.scrollToTop()
 
         self.page_box.setCurrentText(str(self.model.page))
 
