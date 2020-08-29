@@ -120,11 +120,19 @@ class StrField(BaseField):
     def set_value(self, value: str):
         self.edit.setText(str(value))
 
-    def get_value(self) -> str:
+    def get_value(self):
         """Return quoted string
             ..todo : check if quotes are required
         """
-        return self.edit.text()
+        value = self.edit.text()
+
+        if value.isdigit():
+            return int(value)
+
+        if value.isdecimal():
+            return float(value)
+
+        return value
 
     def set_completer(self, completer: QCompleter):
         """ set a completer to autocomplete value """
@@ -299,39 +307,39 @@ class FieldFactory(QObject):
 
     def create(self, sql_field):
         # sample fields are stored as tuples
-        if type(sql_field) is tuple:
-            sample = sql_field[1]
-            sql_field = sql_field[2]
-        else:
-            # Passing sample has no effect for non-sample fields
-            sample = None
+        # if type(sql_field) is tuple:
+        #     sample = sql_field[1]
+        #     sql_field = sql_field[2]
+        # else:
+        #     # Passing sample has no effect for non-sample fields
+        #     sample = None
 
-        field = sql.get_field_by_name(self.conn, sql_field)
+        # field = sql.get_field_by_name(self.conn, sql_field)
 
-        if field["name"] == "gt":
-            w = GenotypeField()
-            return w
-        if field["type"] == "int":
-            w = IntegerField()
-            w.set_range(*sql.get_field_range(self.conn, sql_field, sample))
-            return w
+        # if field["name"] == "gt":
+        #     w = GenotypeField()
+        #     return w
+        # if field["type"] == "int":
+        #     w = IntegerField()
+        #     w.set_range(*sql.get_field_range(self.conn, sql_field, sample))
+        #     return w
 
-        if field["type"] == "float":
-            w = FloatField()
-            w.set_range(*sql.get_field_range(self.conn, sql_field, sample))
-            return w
+        # if field["type"] == "float":
+        #     w = FloatField()
+        #     w.set_range(*sql.get_field_range(self.conn, sql_field, sample))
+        #     return w
 
-        if field["type"] == "str":
-            w = StrField()
-            unique_values = sql.get_field_unique_values(
-                self.conn, field["name"], sample
-            )  #  Can be huge ... How to use "like" ??
-            w.set_completer(QCompleter(unique_values))
-            return w
+        # if field["type"] == "str":
+        #     w = StrField()
+        #     unique_values = sql.get_field_unique_values(
+        #         self.conn, field["name"], sample
+        #     )  #  Can be huge ... How to use "like" ??
+        #     w.set_completer(QCompleter(unique_values))
+        #     return w
 
-        if field["type"] == "bool":
-            w = BoolField()
-            return w
+        # if field["type"] == "bool":
+        #     w = BoolField()
+        #     return w
 
         return StrField()
 
@@ -1116,7 +1124,6 @@ class FiltersEditorWidget(plugin.PluginWidget):
     @filters.setter
     def filters(self, filters):
         self.model.filters = filters
-        self.view.expandAll()
 
     def on_register(self, mainwindow):
         """ Overrided from PluginWidget """
@@ -1130,6 +1137,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
     def on_refresh(self):
         """ Overrided """
         self.model.filters = self.mainwindow.state.filters
+        self._update_view_geometry()
 
     def on_filters_changed(self):
 
