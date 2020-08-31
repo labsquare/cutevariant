@@ -6,9 +6,9 @@ class State(object):
     def __init__(self):
 
         #  query
-        self.fields = ["chr", "pos", "ref", "alt"]
+        self.fields = ["favorite", "chr", "pos", "ref", "alt"]
         self.source = "variants"
-        self.filters = {}
+        self.filters = {"AND":[{"field":"gene","operator":"=", "value":"CFTR"}]}
         self.group_by = []
         self.having = {}
 

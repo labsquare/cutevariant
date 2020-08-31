@@ -91,7 +91,9 @@ class MainWindow(QMainWindow):
         # Restores the state of this mainwindow's toolbars and dockwidgets
         self.read_settings()
 
-    #        self.open(os.getcwd() + "/examples/test.db")
+        recent = self.get_recent_projects()
+        if recent:
+            self.open(recent[0])
 
     def setup_ui(self):
         # Setup menubar

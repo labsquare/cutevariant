@@ -57,6 +57,7 @@ class BaseField(QFrame):
         h_layout = QHBoxLayout()
         h_layout.addWidget(widget)
         h_layout.setContentsMargins(0, 0, 0, 0)
+        h_layout.setSpacing(0)
         self.setLayout(h_layout)
 
 
@@ -71,6 +72,7 @@ class IntegerField(BaseField):
         super().__init__(parent)
         self.spin_box = QSpinBox()
         self.set_widget(self.spin_box)
+        self.spin_box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
     def set_value(self, value: int):
         self.spin_box.setValue(value)
@@ -94,6 +96,7 @@ class FloatField(BaseField):
         super().__init__(parent)
         self.spin_box = QDoubleSpinBox()
         self.set_widget(self.spin_box)
+        self.spin_box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
     def set_value(self, value: int):
         self.spin_box.setValue(value)
@@ -115,6 +118,7 @@ class StrField(BaseField):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.edit = QLineEdit()
+        self.edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.set_widget(self.edit)
 
     def set_value(self, value: str):
@@ -148,21 +152,25 @@ class BoolField(BaseField):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.box = QCheckBox()
+        self.box = QComboBox()
+        self.box.addItem("False", False)
+        self.box.addItem("True", True)
         self.set_widget(self.box)
+        self.box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
 
     def set_value(self, value: bool):
-        self.box.setValue(value)
+        self.box.setCurrentIndex(int(value))
 
     def get_value(self) -> bool:
-        return self.box.value()
+        return self.box.currentData()
 
 
 class OperatorField(BaseField):
     """Editor for Logic Value (less, greater, more than etc ...)
 
     Attributes:
-        combo_box (QCombobox
+        combo_box (QComboBox
     """
 
     SYMBOL = (
@@ -179,6 +187,8 @@ class OperatorField(BaseField):
         super().__init__(parent)
         self.combo_box = QComboBox()
         self.set_widget(self.combo_box)
+        self.combo_box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
         self._fill()
 
     def set_value(self, value: str):
@@ -188,39 +198,10 @@ class OperatorField(BaseField):
         return self.combo_box.currentData()
 
     def _fill(self):
-        """ Fill QCombobox with SYMBOL """
+        """ Fill QComboBox with SYMBOL """
         self.combo_box.clear()
         for s in self.SYMBOL:
             self.combo_box.addItem(s[0], s[1])
-
-
-class ColumnField(BaseField):
-    """Editor for field name
-
-    Attributes:
-        combo_box (QCombobox)
-    """
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.combo_box = QComboBox()
-        self.combo_box.setEditable(True)
-        self.set_widget(self.combo_box)
-
-    def set_value(self, value):
-        # sample fields are stored as tuples
-        if type(value) is tuple:
-            value = f"{value[1]}.{value[2]}"
-        self.combo_box.setCurrentText(value)
-
-    def get_value(self) -> str:
-        return self.combo_box.currentData()
-
-    def set_columns(self, columns: list):
-        """ fill combobox with columns values
-        """
-        for label, value, _ in columns:
-            self.combo_box.addItem(label, userData=value)
 
 
 class LogicField(BaseField):
@@ -230,68 +211,27 @@ class LogicField(BaseField):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.box = QComboBox()
 
-        self.and_button = QPushButton("AND")
-        self.or_button = QPushButton("OR")
+        self.box.addItem("AND", "AND")
+        self.box.addItem("OR","OR")
 
-        self.and_button.setCheckable(True)
-        self.or_button.setCheckable(True)
-
-        self.and_button.setChecked(True)
-
-        group = QButtonGroup(parent)
-        group.setExclusive(True)
-
-        group.addButton(self.or_button, 0)
-        group.addButton(self.and_button, 1)
-
-        h = QHBoxLayout()
-        h.addWidget(self.or_button)
-        h.addWidget(self.and_button)
-
-        self.setLayout(h)
-        self.setMaximumWidth(100)
-        h.setContentsMargins(0, 0, 0, 0)
-
-        self.or_button.setStyleSheet("QPushButton:checked{background-color:red}")
-        self.and_button.setStyleSheet("QPushButton:checked{background-color:red}")
+        self.box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.set_widget(self.box)
+       
 
     def set_value(self, value: str):
+
         if value.upper() == "OR":
-            self.or_button.setChecked(True)
-        else:
-            self.and_button.setChecked(True)
+            self.box.setCurrentIndex(1)
+
+        else: # AND 
+            self.box.setCurrentIndex(0)
+        
 
     def get_value(self) -> str:
-        if self.or_button.isChecked():
-            return "OR"
-        else:
-            return "AND"
+        return self.box.currentData()
 
-
-class GenotypeField(BaseField):
-    """Editor for the genotype (gt) field
-    """
-
-    GENOTYPES = {
-        -1: FIcon(0xF2D7),
-        0: FIcon(0xF130),
-        1: FIcon(0xFAA0),
-        2: FIcon(0xFAA4),
-    }
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.combo_box = QComboBox()
-        for gt, icon in self.GENOTYPES.items():
-            self.combo_box.addItem(icon, "", userData=gt)
-        self.set_widget(self.combo_box)
-
-    def set_value(self, value: int):
-        self.combo_box.setCurrentIndex(self.combo_box.findData(value))
-
-    def get_value(self):
-        return self.combo_box.currentData()
 
 
 class FieldFactory(QObject):
@@ -314,32 +254,28 @@ class FieldFactory(QObject):
         #     # Passing sample has no effect for non-sample fields
         #     sample = None
 
-        # field = sql.get_field_by_name(self.conn, sql_field)
+        field = sql.get_field_by_name(self.conn, sql_field)
 
         # if field["name"] == "gt":
         #     w = GenotypeField()
         #     return w
-        # if field["type"] == "int":
-        #     w = IntegerField()
-        #     w.set_range(*sql.get_field_range(self.conn, sql_field, sample))
-        #     return w
+        if field["type"] == "int":
+            w = IntegerField()
+            #w.set_range(*sql.get_field_range(self.conn, sql_field, sample))
+            return w
 
-        # if field["type"] == "float":
-        #     w = FloatField()
-        #     w.set_range(*sql.get_field_range(self.conn, sql_field, sample))
-        #     return w
+        if field["type"] == "float":
+            w = FloatField()
+            #w.set_range(*sql.get_field_range(self.conn, sql_field, sample))
+            return w
 
-        # if field["type"] == "str":
-        #     w = StrField()
-        #     unique_values = sql.get_field_unique_values(
-        #         self.conn, field["name"], sample
-        #     )  #  Can be huge ... How to use "like" ??
-        #     w.set_completer(QCompleter(unique_values))
-        #     return w
+        if field["type"] == "str":
+            w = StrField()
+            return w
 
-        # if field["type"] == "bool":
-        #     w = BoolField()
-        #     return w
+        if field["type"] == "bool":
+            w = BoolField()
+            return w
 
         return StrField()
 
@@ -375,6 +311,7 @@ class FilterItem(object):
         self.children = []
         self.data = data
         self.uuid = str(uuid.uuid1())
+        self.checked = True
 
     def __del__(self):
         """ FilterItem destructor """
@@ -525,7 +462,7 @@ class FilterModel(QAbstractItemModel):
     """
 
     # See self.headerData()
-    _HEADERS = ["field", "operator", "value",""]
+    _HEADERS = ["field", "operator", "value","op"]
     _MIMEDATA = "application/x-qabstractitemmodeldatalist"
 
     # Custom type to get FilterItem.type(). See self.data()
@@ -603,9 +540,10 @@ class FilterModel(QAbstractItemModel):
                 font.setBold(True)
                 return font
 
-        # if role == Qt.CheckStateRole:
-        #     if index.column() == 0 and self.item(index).type() == FilterItem.CONDITION_TYPE:
-        #         return Qt.Checked
+
+        if role == Qt.CheckStateRole:
+            if index.column() == 0 and self.item(index).type() == FilterItem.CONDITION_TYPE:
+                return Qt.Checked
 
         if role == FilterModel.TypeRole:
             # Return item type
@@ -627,7 +565,9 @@ class FilterModel(QAbstractItemModel):
             bool: Return True if success otherwise return False
         """
         if role == Qt.CheckStateRole:
-            print("checked")
+            item = self.item(index)
+            item.checked = bool(value)
+            self.filtersChanged.emit()
 
         if role == Qt.EditRole:
             if index.isValid():
@@ -802,7 +742,7 @@ class FilterModel(QAbstractItemModel):
     def columnCount(self, parent=QModelIndex()) -> int:
         """ Overrided Qt methods: return column count according parent """
 
-        return 3
+        return 4
 
     def flags(super, index) -> Qt.ItemFlags:
         """ Overrided Qt methods: return Qt flags to make item editable and selectable """
@@ -811,6 +751,9 @@ class FilterModel(QAbstractItemModel):
             return 0
 
         item = index.internalPointer()
+
+        if index.column() == 3:
+            return Qt.ItemIsEnabled|Qt.ItemIsSelectable
 
         if item.type() == FilterItem.LOGIC_TYPE and index.column() == 0:
             return (
@@ -830,7 +773,7 @@ class FilterModel(QAbstractItemModel):
                 | Qt.ItemIsUserCheckable
             )
 
-        return Qt.ItemIsSelectable | Qt.ItemIsEditable
+        return Qt.ItemIsSelectable | Qt.ItemIsEditable | Qt.ItemIsEnabled
 
     def item(self, index) -> FilterItem:
         """Return Filter Item from model index
@@ -977,6 +920,10 @@ class FilterDelegate(QStyledItemDelegate):
     def __init__(self, parent=None):
         super().__init__(parent)
 
+        self.add_icon = FIcon(0xF0419)
+        self.rem_icon = FIcon(0xF0156)
+        self.icon_size = QSize(20,20)
+        
     def createEditor(self, parent, option, index: QModelIndex) -> QWidget:
         """Overrided from Qt. Create an editor
 
@@ -997,8 +944,8 @@ class FilterDelegate(QStyledItemDelegate):
                 return LogicField(parent)
 
             if item.type() == FilterItem.CONDITION_TYPE:
-                w = ColumnField(parent)
-                w.set_columns(prepare_columns(conn))
+                w = StrField(parent)
+                #w.set_columns(prepare_columns(conn))
                 return w
 
         if index.column() == 1:
@@ -1006,7 +953,6 @@ class FilterDelegate(QStyledItemDelegate):
             return w
 
         if index.column() == 2:
-
             sql_field_index = model.index(index.row(), 0, index.parent())
             sql_field = model.data(sql_field_index, Qt.EditRole)
             w = FieldFactory(conn).create(sql_field)
@@ -1024,6 +970,34 @@ class FilterDelegate(QStyledItemDelegate):
             index (QModelindex)
         """
         editor.set_value(index.data(Qt.EditRole))
+
+    def editorEvent(self, event: QEvent, model, option, index):
+
+
+        if event.type() == QEvent.MouseButtonPress:
+
+            item = model.item(index)
+
+            if index.column() == 3 and self._icon_rect(option).contains(event.pos()):
+                print("remove")
+
+            if index.column() == 0 and self._check_rect(option).contains(event.pos()) and item.type() == FilterItem.CONDITION_TYPE:
+                print("check")
+                model.setData(index, not item.checked, Qt.CheckStateRole)
+                return True
+
+        return False
+
+
+    def eventFilter(self, editor, event ):
+        if event.type() == QEvent.MouseButtonPress:
+            if index.column() == 0 and self._check_rect(option).contains(event.pos()) and item.type() == FilterItem.CONDITION_TYPE:
+                print("check")
+                return False
+
+        return super().eventFilter(editor, event)
+                #model.remove_item(index)
+
 
     def setModelData(self, editor, model, index):
         """Overrided from Qt. Read data from editor and set the model data
@@ -1046,20 +1020,78 @@ class FilterDelegate(QStyledItemDelegate):
         Returns:
             TYPE: Description
         """
+
+
         if index.column() == 3 :
-            return QSize(200, 30)
+            return QSize(20, 30)
         else:
             return QSize(super().sizeHint(option, index).width(), 30)
 
 
+    def on_add_condition(self, model, index):
+        pass 
+
+    def on_add_group(self, model, index):
+        pass
+
+
+
+
     def paint(self, painter: QPainter, option: QStyleOptionViewItem, index : QModelIndex):
 
-        super().paint(painter,option, index)
+        item = index.model().item(index)
+
+
+        if option.state & QStyle.State_Enabled:
+            bg = QPalette.Normal if option.state & QStyle.State_Active else QPalette.Inactive
+        else:
+            bg = QPalette.Disabled
+
+        if option.state & QStyle.State_Selected:
+                painter.fillRect(option.rect, option.palette.color(bg, QPalette.Highlight))
+
+
+        # ========== Check box ====================
+        if index.column() == 0 and item.type() == FilterItem.CONDITION_TYPE:
+            cbOpt = QStyleOptionButton()
+            cbOpt.rect = self._check_rect(option)
+            cbOpt.state |= QStyle.State_On if item.checked else QStyle.State_Off
+            QApplication.instance().style().drawControl(QStyle.CE_CheckBox, cbOpt, painter)
+
+
+        if index.column() != 2:
+            align = Qt.AlignCenter|Qt.AlignVCenter
+        else:
+            align = Qt.AlignLeft|Qt.AlignVCenter
+        
+        font = QFont()
+
+        if index.column() == 0 and item.type() == FilterItem.LOGIC_TYPE:
+            font.setBold(True)
+
+        painter.setFont(font)
+        painter.drawText(option.rect, align, index.data(Qt.DisplayRole))
+
+
         if index.column() == 3: 
-            painter.drawPixmap(option.rect.right()-20, option.rect.center().y()-5, QApplication.instance().style().standardIcon(QStyle.SP_TitleBarCloseButton).pixmap(20,20))
+            painter.drawPixmap(self._icon_rect(option), self.rem_icon.pixmap(self.icon_size))
+
+        # if index.column() == 3 and item.type() == FilterItem.LOGIC_TYPE:
+        #     x = option.rect.right() - 20 
+        #     y = option.rect.center().y() - self.icon_size.height() / 2
+        #     painter.drawPixmap(QRect(x,y,self.icon_size.width(), self.icon_size.height()), self.add_icon.pixmap(self.icon_size))
 
 
+        #super().paint(painter, option,index)
 
+    def _icon_rect(self, option):
+        x = option.rect.x() 
+        y = option.rect.center().y() - self.icon_size.height() / 2    
+
+        return QRect(x,y, self.icon_size.width(), self.icon_size.height())
+
+    def _check_rect(self, option):
+        return QRect(10, option.rect.y(), option.rect.height(),option.rect.height())
 
 
     def updateEditorGeometry(self, editor, option, index):
@@ -1090,6 +1122,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.view.setItemDelegate(self.delegate)
         self.view.setIndentation(15)
         self.view.setDragEnabled(True)
+        self.view.header().setStretchLastSection(False)
         self.view.setAcceptDrops(True)
         self.view.setDragDropMode(QAbstractItemView.InternalMove)
         self.view.setAlternatingRowColors(True)
@@ -1098,6 +1131,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.view.header().setSectionResizeMode(0, QHeaderView.Interactive)
         self.view.header().setSectionResizeMode(1, QHeaderView.ResizeToContents)
         self.view.header().setSectionResizeMode(2, QHeaderView.Stretch)
+        self.view.header().setSectionResizeMode(3, QHeaderView.ResizeToContents)
 
 
 
@@ -1135,6 +1169,12 @@ class FiltersEditorWidget(plugin.PluginWidget):
         # self.view.selectionModel().currentChanged.connect(self.on_filters_changed)
         self.model.filtersChanged.connect(self.on_filters_changed)
 
+    def set_add_icon(self, icon: QIcon):
+        self.delegate.add_icon = icon
+
+    def set_rem_icon(self, icon:  QIcon):
+        self.delegate.rem_icon = icon
+
     @property
     def filters(self):
         return self.model.filters
@@ -1161,9 +1201,9 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
         """ triggered when filter has changed """
 
-        print(self.model.filters)
-        self.mainwindow.state.filters = self.model.filters
-        self.mainwindow.refresh_plugins(sender=self)
+        if self.mainwindow:
+            self.mainwindow.state.filters = self.model.filters
+            self.mainwindow.refresh_plugins(sender=self)
 
     def on_add_logic(self):
         """Add logic item to the current selected index
@@ -1251,6 +1291,13 @@ if __name__ == "__main__":
 
     from cutevariant.core.importer import import_reader
     from cutevariant.core.reader import FakeReader
+    import os 
+
+    from cutevariant.gui.ficon import FIcon, setFontPath
+
+    setFontPath(os.path.join("../../materialdesignicons-webfont.ttf"))
+
+    print("font exists", os.path.exists("../../../assets/fonts/materialdesignicons-webfont.ttf"))
 
     conn = sql.get_sql_connexion(":memory:")
     import_reader(conn, FakeReader())
@@ -1263,10 +1310,14 @@ if __name__ == "__main__":
     ]}
 
     view = FiltersEditorWidget()
+    view.model.conn = conn
     view.model.load(data)
+
     view._update_view_geometry()
     print(view.model.to_dict() == data)
 
+    view.set_add_icon(FIcon(0xF0419))
+    view.set_rem_icon(FIcon(0xF0419))
     view.show()
 
     # print(model.to_dict(model.root_item[0]))
