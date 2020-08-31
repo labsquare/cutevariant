@@ -525,7 +525,7 @@ class FilterModel(QAbstractItemModel):
     """
 
     # See self.headerData()
-    _HEADERS = ["field", "operator", "value"]
+    _HEADERS = ["field", "operator", "value",""]
     _MIMEDATA = "application/x-qabstractitemmodeldatalist"
 
     # Custom type to get FilterItem.type(). See self.data()
@@ -1046,7 +1046,21 @@ class FilterDelegate(QStyledItemDelegate):
         Returns:
             TYPE: Description
         """
-        return QSize(super().sizeHint(option, index).width(), 30)
+        if index.column() == 3 :
+            return QSize(200, 30)
+        else:
+            return QSize(super().sizeHint(option, index).width(), 30)
+
+
+    def paint(self, painter: QPainter, option: QStyleOptionViewItem, index : QModelIndex):
+
+        super().paint(painter,option, index)
+        if index.column() == 3: 
+            painter.drawPixmap(option.rect.right()-20, option.rect.center().y()-5, QApplication.instance().style().standardIcon(QStyle.SP_TitleBarCloseButton).pixmap(20,20))
+
+
+
+
 
     def updateEditorGeometry(self, editor, option, index):
         """Overrided from Qt. Set editor geometry
@@ -1079,11 +1093,15 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.view.setAcceptDrops(True)
         self.view.setDragDropMode(QAbstractItemView.InternalMove)
         self.view.setAlternatingRowColors(True)
+        #self.view.setRootIsDecorated(False)
 
-        self.view.header().setSectionResizeMode(0, QHeaderView.Stretch)
+        self.view.header().setSectionResizeMode(0, QHeaderView.Interactive)
         self.view.header().setSectionResizeMode(1, QHeaderView.ResizeToContents)
-        self.view.header().setSectionResizeMode(2, QHeaderView.Interactive)
-        self.view.header().hide()
+        self.view.header().setSectionResizeMode(2, QHeaderView.Stretch)
+
+
+
+        #self.view.header().hide()
 
         layout = QVBoxLayout()
         layout.addWidget(self.view)
@@ -1100,7 +1118,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.add_button.setIcon(FIcon(0xF0415))
         self.add_button.setPopupMode(QToolButton.InstantPopup)
 
-        self.add_menu.addAction(FIcon(0xF0415), "Add Logic", self.on_add_logic)
+        self.add_menu.addAction(FIcon(0xF0415), "Create group", self.on_add_logic)
         self.add_menu.addAction(FIcon(0xF0415), "Add Condition", self.on_add_condition)
         self.add_button.setMenu(self.add_menu)
 
@@ -1143,6 +1161,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
         """ triggered when filter has changed """
 
+        print(self.model.filters)
         self.mainwindow.state.filters = self.model.filters
         self.mainwindow.refresh_plugins(sender=self)
 
@@ -1154,11 +1173,18 @@ class FiltersEditorWidget(plugin.PluginWidget):
             self.model.add_logic_item(parent=index)
             # self.view.setFirstColumnSpanned(0, index.parent(), True)
 
+        self._update_view_geometry()
+
+
     def _update_view_geometry(self):
         """Set column Spanned to True for all Logic Item
         This allows Logic Item Editor to take all the space inside the row
         """
         self.view.expandAll()
+
+        # self.view.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeToContents)
+        # self.view.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
+
         # for index in self.model.match(
         #     self.model.index(0, 0),
         #     FilterModel.TypeRole,
@@ -1172,8 +1198,15 @@ class FiltersEditorWidget(plugin.PluginWidget):
         """Add condition item to the current selected index
         """
         index = self.view.currentIndex()
-        if index:
+        if index == QModelIndex():
+            self.model.add_logic_item(parent=index)
+            new_index = self.model.index(0,0, parent = index)
+            self.model.add_condition_item(parent=new_index)
+
+        else:
             self.model.add_condition_item(parent=index)
+
+        self._update_view_geometry()
 
     def on_open_condition_dialog(self):
         """Open the condition creation dialog
@@ -1222,11 +1255,16 @@ if __name__ == "__main__":
     conn = sql.get_sql_connexion(":memory:")
     import_reader(conn, FakeReader())
 
-    data = {"AND": [{"field": "chr", "operator": "=", "value": "chr"}]}
+    data = {"AND": [
+    {"field": "chr", "operator": "=", "value": "chr"},
+    {"field": "gene", "operator": "=", "value": "chr"},
+    {"field": "ref", "operator": "=", "value": "chr"}
+
+    ]}
 
     view = FiltersEditorWidget()
     view.model.load(data)
-
+    view._update_view_geometry()
     print(view.model.to_dict() == data)
 
     view.show()
