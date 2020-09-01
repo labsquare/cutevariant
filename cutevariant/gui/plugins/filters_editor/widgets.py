@@ -537,7 +537,7 @@ class FilterModel(QAbstractItemModel):
         if role == Qt.DisplayRole or role == Qt.EditRole:
             item = self.item(index)
             if index.column() == 0:
-                    return item.checked
+                return str(item.checked)
       
             if index.column() == 1:
                 if item.type() == FilterItem.CONDITION_TYPE:
@@ -555,6 +555,15 @@ class FilterModel(QAbstractItemModel):
                     return str(item.get_value())
 
 
+        if role == FilterModel.TypeRole:
+            # Return item type
+            return self.item(index).type()
+
+        if role == FilterModel.UniqueIdRole:
+            return self.item(index).uuid
+
+
+        return None
 
 
         # if role == Qt.DisplayRole and index.column() == 1:
@@ -594,12 +603,6 @@ class FilterModel(QAbstractItemModel):
         #         return font
 
 
-        if role == FilterModel.TypeRole:
-            # Return item type
-            return self.item(index).type()
-
-        if role == FilterModel.UniqueIdRole:
-            return self.item(index).uuid
 
     def setData(self, index, value, role=Qt.EditRole):
         """Overrided Qt methods: Set data according index and value.
@@ -694,9 +697,9 @@ class FilterModel(QAbstractItemModel):
         if parent_item == self.root_item:
             return QModelIndex()
 
-        return self.createIndex(parent_item.row(), 0, parent_item)
-        return QModelindex()
-
+        return self.createIndex(parent_item.row(), index.column(), parent_item)
+        
+        
     def clear(self):
         """Clear Model
         """

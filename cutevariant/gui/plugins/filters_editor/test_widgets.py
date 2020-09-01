@@ -1,8 +1,13 @@
 import sqlite3
 
-FILTER_DATA = {"AND": [{"field": "chr", "operator": ">", "value": 4}]}
+FILTER_DATA = {"AND": []}
 
+from .widgets import FilterModel
 
 def test_model(qtbot, qtmodeltester):
     conn = sqlite3.connect("examples/test.db")
-    # qtmodeltester.check(model)
+
+    model = FilterModel(conn)
+    model.load(FILTER_DATA)
+    qtmodeltester.check(model)
+
