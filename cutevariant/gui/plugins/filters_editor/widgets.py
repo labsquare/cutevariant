@@ -370,6 +370,11 @@ class FilterItem(object):
 
         return 0
 
+    def setRecursiveChecked(self, checked = True):
+        self.checked = checked 
+        for child in self.children:
+            child.setRecursiveChecked(checked)
+
     def type(self):
         """Return item type.
             ..todo : maybe create subclass for each types ?
@@ -385,47 +390,73 @@ class FilterItem(object):
 
         return None
 
-    def get_data(self, column=0):
-        """ get data according columns.
-
-        if item is a LOGIC_FIELD, it return self.data not matter the column.
-        If item is a CONDITION_TYPE, you can select value from tuple according columns.
-
-        column 0: Field name
-        column 1: Field operator
-        column 2 : Field value
-        Args:
-            column (int)
-
-        Returns:
-            (any): Data
-        """
-        if column not in range(0, 3):
-            return None
-
-        if self.type() == self.LOGIC_TYPE and column == 0:
-            return self.data
-
+    def get_field(self):
         if self.type() == self.CONDITION_TYPE:
-            return self.data[column]
-
+            return self.data[0]
         return None
 
-    def set_data(self, data, column=0):
-        """Set data of item according column. See self.get_data
+    def get_operator(self):
+        if self.type() == self.CONDITION_TYPE:
+            return self.data[1]
+        return None
 
-        Args:
-            data (Any type): any data
-            column (int): Column Type
-            ..see: self.get_data
-        """
-        if self.type() == self.LOGIC_TYPE and column == 0:
-            self.data = data
+    def get_value(self):
+        if self.type() == self.CONDITION_TYPE:
+            return self.data[2]
 
+        if self.type() == self.LOGIC_TYPE:
+            return self.data
+
+
+
+
+    # def get_data(self, column=0):
+    #     """ get data according columns.
+
+    #     if item is a LOGIC_FIELD, it return self.data not matter the column.
+    #     If item is a CONDITION_TYPE, you can select value from tuple according columns.
+
+    #     column 0: Field name
+    #     column 1: Field operator
+    #     column 2 : Field value
+    #     Args:
+    #         column (int)
+
+    #     Returns:
+    #         (any): Data
+    #     """
+
+    #     if column == 0:
+    #         return self.checked
+
+    #     # if column == 1 or column == 2 or column == 3:
+    #     #     if self.type() == self.LOGIC_TYPE:
+    #     #         return self.data
+
+    #     #     if self.type() == self.CONDITION_TYPE:
+    #     #         return self.data[column - 1]
+
+
+    def set_field(self, data):
         if self.type() == self.CONDITION_TYPE:
             tmp = list(self.data)
-            tmp[column] = data
+            tmp[0] = data
             self.data = tuple(tmp)
+
+    def set_operator(self, data):
+        if self.type() == self.CONDITION_TYPE:
+            tmp = list(self.data)
+            tmp[1] = data
+            self.data = tuple(tmp)
+
+    def set_value(self, data):
+        if self.type() == self.CONDITION_TYPE:
+            tmp = list(self.data)
+            tmp[2] = data
+            self.data = tuple(tmp)
+
+        if self.type() == self.LOGIC_TYPE:
+            self.data = data
 
 
 class FilterModel(QAbstractItemModel):
@@ -462,7 +493,7 @@ class FilterModel(QAbstractItemModel):
     """
 
     # See self.headerData()
-    _HEADERS = ["field", "operator", "value","op"]
+    _HEADERS = ["c","field", "operator", "value","op"]
     _MIMEDATA = "application/x-qabstractitemmodeldatalist"
 
     # Custom type to get FilterItem.type(). See self.data()
@@ -502,48 +533,66 @@ class FilterModel(QAbstractItemModel):
         if not index.isValid():
             return None
 
-        if role == Qt.DisplayRole and index.column() == 0:
-            data = self.item(index).get_data(index.column())
-            if type(data) is tuple:
-                # If the field is a sample field, we store it as a tuple
-                # However we have to format it for display
-                data = f"{data[1]}.{data[2]}"
-            return data
-        if role in (Qt.DecorationRole, Qt.DisplayRole) and index.column() == 2:
-            # Special case to display an icon instead of a number for gt fields
-            field = self.item(index).get_data(0)
-            if type(field) is tuple and field[2] == "gt":
-                if role == Qt.DecorationRole:
-                    gt = self.item(index).get_data(index.column())
-                    return QIcon(GenotypeField.GENOTYPES[gt])
-                else:
-                    # don't display any text
-                    return None
+
         if role == Qt.DisplayRole or role == Qt.EditRole:
-            #  Display data
             item = self.item(index)
-            return item.get_data(index.column())
-
-        if role == Qt.TextAlignmentRole:
-            #  Adjust text alignement
             if index.column() == 0:
-                return int(Qt.AlignVCenter) + int(Qt.AlignLeft)
+                    return item.checked
+      
             if index.column() == 1:
-                return Qt.AlignCenter
+                if item.type() == FilterItem.CONDITION_TYPE:
+                    return str(item.get_field())
+                if item.type() == FilterItem.LOGIC_TYPE:
+                    return str(item.get_value())
+
+
             if index.column() == 2:
-                return int(Qt.AlignVCenter) + int(Qt.AlignLeft)
+                if item.type() == FilterItem.CONDITION_TYPE:
+                    return str(item.get_operator())
 
-        if role == Qt.FontRole:
-            #  Make LogicItem as bold
-            if self.item(index).type() == FilterItem.LOGIC_TYPE:
-                font = QFont()
-                font.setBold(True)
-                return font
+            if index.column() == 3:
+                if item.type() == FilterItem.CONDITION_TYPE:
+                    return str(item.get_value())
 
 
-        if role == Qt.CheckStateRole:
-            if index.column() == 0 and self.item(index).type() == FilterItem.CONDITION_TYPE:
-                return Qt.Checked
+
+
+        # if role == Qt.DisplayRole and index.column() == 1:
+        #     data = self.item(index).get_data(index.column())
+        #     return str(data)
+
+
+        # if role in (Qt.DecorationRole, Qt.DisplayRole) and index.column() == 2:
+        #     # Special case to display an icon instead of a number for gt fields
+        #     field = self.item(index).get_data(0)
+        #     if type(field) is tuple and field[2] == "gt":
+        #         if role == Qt.DecorationRole:
+        #             gt = self.item(index).get_data(index.column())
+        #             return QIcon(GenotypeField.GENOTYPES[gt])
+        #         else:
+        #             # don't display any text
+        #             return None
+        # if role == Qt.DisplayRole or role == Qt.EditRole:
+        #     #  Display data
+        #     item = self.item(index)
+        #     return item.get_data(index.column())
+
+        # if role == Qt.TextAlignmentRole:
+        #     #  Adjust text alignement
+        #     if index.column() == 0:
+        #         return int(Qt.AlignVCenter) + int(Qt.AlignLeft)
+        #     if index.column() == 1:
+        #         return Qt.AlignCenter
+        #     if index.column() == 2:
+        #         return int(Qt.AlignVCenter) + int(Qt.AlignLeft)
+
+        # if role == Qt.FontRole:
+        #     #  Make LogicItem as bold
+        #     if self.item(index).type() == FilterItem.LOGIC_TYPE:
+        #         font = QFont()
+        #         font.setBold(True)
+        #         return font
+
 
         if role == FilterModel.TypeRole:
             # Return item type
@@ -564,19 +613,40 @@ class FilterModel(QAbstractItemModel):
         Returns:
             bool: Return True if success otherwise return False
         """
-        if role == Qt.CheckStateRole:
-            item = self.item(index)
-            item.checked = bool(value)
-            self.filtersChanged.emit()
 
         if role == Qt.EditRole:
             if index.isValid():
                 item = self.item(index)
-                item.set_data(value, index.column())
+
+                if index.column() == 0:
+                    item.checked = bool(value)
+
+                if index.column() == 1:
+                    if item.type() == FilterItem.LOGIC_TYPE:
+                        item.set_value(value)
+
+                    if item.type() == FilterItem.CONDITION_TYPE:
+                        item.set_field(value)
+
+                if index.column() == 2 and item.type() == FilterItem.CONDITION_TYPE:
+                    item.set_operator(value)
+
+                if index.column() == 3 and item.type() == FilterItem.CONDITION_TYPE:
+                    item.set_value(value)
+
                 self.filtersChanged.emit()
                 return True
 
+        if role == Qt.CheckStateRole:
+            if index.isValid():
+                self.setRecursiveChecked(index, bool(value))
+                self.filtersChanged.emit()
+
+                return True
+
         return False
+
+
 
     def headerData(self, section, orientation, role=Qt.DisplayRole):
         """Return header data
@@ -625,6 +695,7 @@ class FilterModel(QAbstractItemModel):
             return QModelIndex()
 
         return self.createIndex(parent_item.row(), 0, parent_item)
+        return QModelindex()
 
     def clear(self):
         """Clear Model
@@ -672,16 +743,16 @@ class FilterModel(QAbstractItemModel):
         if item is None:
             item = self.root_item[0]
 
-        if item.type() == FilterItem.LOGIC_TYPE:
+        if item.type() == FilterItem.LOGIC_TYPE and item.checked is True:
             # Return dict with operator as key and item as value
-            operator_data = [self.to_dict(child) for child in item.children]
-            return {item.get_data(0): operator_data}
+            operator_data = [self.to_dict(child) for child in item.children if child.checked is True]
+            return {item.get_value(): operator_data}
 
-        if item.type() == FilterItem.CONDITION_TYPE:
+        if item.type() == FilterItem.CONDITION_TYPE :
             return {
-                "field": item.get_data(0),
-                "operator": item.get_data(1),
-                "value": item.get_data(2),
+                "field": item.get_field(),
+                "operator": item.get_operator(),
+                "value": item.get_value(),
             }
 
     def add_logic_item(self, value="AND", parent=QModelIndex()):
@@ -713,8 +784,10 @@ class FilterModel(QAbstractItemModel):
         if self.item(parent).type == FilterItem.CONDITION_TYPE:
             return
 
-        self.beginInsertRows(parent, 0, 0)
-        self.item(parent).insert(0, FilterItem(data=value))
+        row = self.rowCount(parent)
+        self.beginInsertRows(parent, row-1, row-1)
+        item = FilterItem(data=value)
+        self.item(parent).append(item)
         self.endInsertRows()
         self.filtersChanged.emit()
 
@@ -723,10 +796,11 @@ class FilterModel(QAbstractItemModel):
         Args:
             index (QModelIndex): item index
         """
-        self.beginRemoveRows(index.parent(), index.row(), index.row())
-        self.item(index).parent.remove(index.row())
-        self.endRemoveRows()
-        self.filtersChanged.emit()
+        if index.isValid():
+            self.beginRemoveRows(index.parent(), index.row(), index.row())
+            self.item(index).parent.remove(index.row())
+            self.endRemoveRows()
+            self.filtersChanged.emit()
 
     def rowCount(self, parent=QModelIndex()) -> int:
         """ Overrided Qt methods: return row count according parent """
@@ -742,7 +816,7 @@ class FilterModel(QAbstractItemModel):
     def columnCount(self, parent=QModelIndex()) -> int:
         """ Overrided Qt methods: return column count according parent """
 
-        return 4
+        return 5
 
     def flags(super, index) -> Qt.ItemFlags:
         """ Overrided Qt methods: return Qt flags to make item editable and selectable """
@@ -752,10 +826,15 @@ class FilterModel(QAbstractItemModel):
 
         item = index.internalPointer()
 
-        if index.column() == 3:
-            return Qt.ItemIsEnabled|Qt.ItemIsSelectable
+        if index.column() == 0 or index.column() == 4:
+            return Qt.ItemIsSelectable|Qt.ItemIsEnabled
 
-        if item.type() == FilterItem.LOGIC_TYPE and index.column() == 0:
+        if item.type() == FilterItem.LOGIC_TYPE and index.column() != 1:
+            return Qt.ItemIsSelectable|Qt.ItemIsEnabled
+
+
+
+        if item.type() == FilterItem.LOGIC_TYPE and index.column() == 1:
             return (
                 Qt.ItemIsSelectable
                 | Qt.ItemIsEditable
@@ -770,12 +849,11 @@ class FilterModel(QAbstractItemModel):
                 | Qt.ItemIsEditable
                 | Qt.ItemIsEnabled
                 | Qt.ItemIsDragEnabled
-                | Qt.ItemIsUserCheckable
             )
 
         return Qt.ItemIsSelectable | Qt.ItemIsEditable | Qt.ItemIsEnabled
 
-    def item(self, index) -> FilterItem:
+    def item(self, index: QModelIndex) -> FilterItem:
         """Return Filter Item from model index
 
         Args:
@@ -820,7 +898,6 @@ class FilterModel(QAbstractItemModel):
         if sourceParent == destinationParent and sourceRow == destinationChild:
             return False
 
-        print("pass")
 
         self.beginMoveRows(
             sourceParent, sourceRow, sourceRow, destinationParent, destinationChild
@@ -902,6 +979,24 @@ class FilterModel(QAbstractItemModel):
         return data
 
 
+    def setRecursiveChecked(self, index, checked = True):
+
+        if not index.isValid():
+            return 
+
+        item = self.item(index)
+        
+        item.checked = checked 
+        start = self.index(index.row(), 0, index.parent())
+        end = self.index(index.row(), self.columnCount()-1, index.parent())
+
+        self.dataChanged.emit(start, end)
+
+        for row in range(self.rowCount(index)):
+            cindex = self.index(row, 0, index)
+            self.setRecursiveChecked(cindex, checked)
+
+
 class FilterDelegate(QStyledItemDelegate):
 
     """FilterDelegate is used to create widget editor for the model inside the view.
@@ -916,6 +1011,13 @@ class FilterDelegate(QStyledItemDelegate):
         view.setModel(model)
         view.setItemDelegate(delegate)
     """
+
+    COLUMN_CHECKBOX = 0
+    COLUMN_FIELD = 1 
+    COLUMN_LOGIC = 1
+    COLUMN_OPERATOR = 2 
+    COLUMN_VALUE = 3 
+    COLUMN_REMOVE = 4
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -935,31 +1037,32 @@ class FilterDelegate(QStyledItemDelegate):
         Returns:
             QWidget: a editor with set_value and get_value methods
         """
-        model = index.model()
-        item = model.item(index)
-        conn = model.conn
+        return super().createEditor(parent,option,index)
+        # model = index.model()
+        # item = model.item(index)
+        # conn = model.conn
 
-        if index.column() == 0:
-            if item.type() == FilterItem.LOGIC_TYPE:
-                return LogicField(parent)
+        # if index.column() == 0:
+        #     if item.type() == FilterItem.LOGIC_TYPE:
+        #         return LogicField(parent)
 
-            if item.type() == FilterItem.CONDITION_TYPE:
-                w = StrField(parent)
-                #w.set_columns(prepare_columns(conn))
-                return w
+        #     if item.type() == FilterItem.CONDITION_TYPE:
+        #         w = StrField(parent)
+        #         #w.set_columns(prepare_columns(conn))
+        #         return w
 
-        if index.column() == 1:
-            w = OperatorField(parent)
-            return w
+        # if index.column() == 1:
+        #     w = OperatorField(parent)
+        #     return w
 
-        if index.column() == 2:
-            sql_field_index = model.index(index.row(), 0, index.parent())
-            sql_field = model.data(sql_field_index, Qt.EditRole)
-            w = FieldFactory(conn).create(sql_field)
-            w.setParent(parent)
-            return w
+        # if index.column() == 2:
+        #     sql_field_index = model.index(index.row(), 0, index.parent())
+        #     sql_field = model.data(sql_field_index, Qt.EditRole)
+        #     w = FieldFactory(conn).create(sql_field)
+        #     w.setParent(parent)
+        #     return w
 
-        return super().createEditor(parent, option, index)
+        # return super().createEditor(parent, option, index)
 
     def setEditorData(self, editor: QWidget, index: QModelIndex):
         """Overrided from Qt. Read data from model and set editor data
@@ -969,34 +1072,32 @@ class FilterDelegate(QStyledItemDelegate):
             editor (QWidget)
             index (QModelindex)
         """
-        editor.set_value(index.data(Qt.EditRole))
+        #editor.set_value(index.data(Qt.EditRole))
+        super().setEditorData(editor, index)
 
-    def editorEvent(self, event: QEvent, model, option, index):
+    def editorEvent(self, event: QEvent, model, option, index: QModelIndex):
+        
 
+        if not index.isValid():
+            return False 
 
         if event.type() == QEvent.MouseButtonPress:
 
             item = model.item(index)
 
-            if index.column() == 3 and self._icon_rect(option).contains(event.pos()):
-                print("remove")
-
-            if index.column() == 0 and self._check_rect(option).contains(event.pos()) and item.type() == FilterItem.CONDITION_TYPE:
-                print("check")
+            if index.column() == self.COLUMN_CHECKBOX and self._check_rect(option.rect).contains(event.pos()):
                 model.setData(index, not item.checked, Qt.CheckStateRole)
                 return True
 
-        return False
+            if index.column() == self.COLUMN_REMOVE and self._check_rect(option.rect).contains(event.pos()):
+                model.remove_item(index)
+                return True
+
+        return super().editorEvent(event,model,option,index)
 
 
-    def eventFilter(self, editor, event ):
-        if event.type() == QEvent.MouseButtonPress:
-            if index.column() == 0 and self._check_rect(option).contains(event.pos()) and item.type() == FilterItem.CONDITION_TYPE:
-                print("check")
-                return False
 
-        return super().eventFilter(editor, event)
-                #model.remove_item(index)
+
 
 
     def setModelData(self, editor, model, index):
@@ -1008,7 +1109,19 @@ class FilterDelegate(QStyledItemDelegate):
             model (FilterModel)
             index (QModelindex)
         """
-        model.setData(index, editor.get_value())
+        #model.setData(index, editor.get_value())
+
+        super().setModelData(editor, model, index)
+
+    # def _compute_width(self, index):
+
+    #     if index.isValid():
+    #         font = QFont()
+    #         metric = QFontMetrics(font)
+    #         return metric.width(str(index.data(Qt.DisplayRole)))
+
+    #     return 50
+
 
     def sizeHint(self, option, index: QModelIndex) -> QSize:
         """Overrided from Qt. Return size of row
@@ -1020,27 +1133,39 @@ class FilterDelegate(QStyledItemDelegate):
         Returns:
             TYPE: Description
         """
-
-
-        if index.column() == 3 :
+        
+        if index.column() == self.COLUMN_CHECKBOX:
             return QSize(20, 30)
-        else:
-            return QSize(super().sizeHint(option, index).width(), 30)
+
+        if index.column() == self.COLUMN_OPERATOR:
+            return QSize(20,30)
+
+        if index.column() == self.COLUMN_FIELD:
+            margin = self._compute_margin(index)
+            option.rect.setWidth(self._compute_width(index)   + margin + 10 )
+            return QSize(option.rect.width() , 30)
 
 
-    def on_add_condition(self, model, index):
-        pass 
-
-    def on_add_group(self, model, index):
-        pass
+        return QSize(option.rect.width() , 30)
 
 
 
+    def _compute_level(self, index: QModelIndex):
+        level = 0
+        i = index.parent()
+        while i.isValid():
+            i = i.parent()
+            level+=1
+
+        return level
+
+    def _compute_margin(self, index: QModelIndex):
+        return self._compute_level(index) * 10 + 5 
 
     def paint(self, painter: QPainter, option: QStyleOptionViewItem, index : QModelIndex):
-
+        
         item = index.model().item(index)
-
+        is_selected = False
 
         if option.state & QStyle.State_Enabled:
             bg = QPalette.Normal if option.state & QStyle.State_Active else QPalette.Inactive
@@ -1048,33 +1173,57 @@ class FilterDelegate(QStyledItemDelegate):
             bg = QPalette.Disabled
 
         if option.state & QStyle.State_Selected:
+                is_selected = True
                 painter.fillRect(option.rect, option.palette.color(bg, QPalette.Highlight))
 
 
+        # Indentation level  
+        margin = self._compute_margin(index)
+
+        rect = option.rect
+        # Add margin for column 1 and 0  
+        if index.column() <= 1:
+            rect.setLeft(rect.x() + margin)
+
         # ========== Check box ====================
-        if index.column() == 0 and item.type() == FilterItem.CONDITION_TYPE:
+        if index.column() == self.COLUMN_CHECKBOX:
             cbOpt = QStyleOptionButton()
-            cbOpt.rect = self._check_rect(option)
+            cbOpt.rect = self._check_rect(rect)
+            #cbOpt.setLeft(cbOpt.rect.x() + margin)
             cbOpt.state |= QStyle.State_On if item.checked else QStyle.State_Off
             QApplication.instance().style().drawControl(QStyle.CE_CheckBox, cbOpt, painter)
 
 
-        if index.column() != 2:
-            align = Qt.AlignCenter|Qt.AlignVCenter
-        else:
-            align = Qt.AlignLeft|Qt.AlignVCenter
-        
-        font = QFont()
+        if index.column() > self.COLUMN_CHECKBOX:
 
-        if index.column() == 0 and item.type() == FilterItem.LOGIC_TYPE:
-            font.setBold(True)
-
-        painter.setFont(font)
-        painter.drawText(option.rect, align, index.data(Qt.DisplayRole))
+            font  = QFont()
+            align = Qt.AlignVCenter
+            color = option.palette.color(QPalette.Normal if item.checked else QPalette.Disabled, QPalette.HighlightedText if is_selected else QPalette.WindowText)
 
 
-        if index.column() == 3: 
-            painter.drawPixmap(self._icon_rect(option), self.rem_icon.pixmap(self.icon_size))
+            if item.type() == FilterItem.LOGIC_TYPE:
+                font.setBold(True)
+
+            if index.column() == self.COLUMN_FIELD:
+                align |=Qt.AlignLeft 
+
+            if index.column() == self.COLUMN_OPERATOR:
+                align |= Qt.AlignCenter
+
+
+
+            painter.setFont(font)
+            painter.setPen(color)
+            painter.drawText(rect, align, index.data(Qt.DisplayRole))
+
+            if index.column() == self.COLUMN_REMOVE:
+                rect = QRect(0,0,self.icon_size.width(), self.icon_size.height())
+                rect.moveCenter(option.rect.center())
+                painter.drawPixmap(rect.right() - self.icon_size.width(), rect.y(), self.rem_icon.pixmap(self.icon_size))   
+
+
+        # if index.column() == 3: 
+        #     painter.drawPixmap(self._icon_rect(option), self.rem_icon.pixmap(self.icon_size))
 
         # if index.column() == 3 and item.type() == FilterItem.LOGIC_TYPE:
         #     x = option.rect.right() - 20 
@@ -1084,14 +1233,14 @@ class FilterDelegate(QStyledItemDelegate):
 
         #super().paint(painter, option,index)
 
-    def _icon_rect(self, option):
-        x = option.rect.x() 
-        y = option.rect.center().y() - self.icon_size.height() / 2    
+    def _icon_rect(self, rect):
+        x = rect.x() 
+        y = rect.center().y() - self.icon_size.height() / 2    
 
         return QRect(x,y, self.icon_size.width(), self.icon_size.height())
 
-    def _check_rect(self, option):
-        return QRect(10, option.rect.y(), option.rect.height(),option.rect.height())
+    def _check_rect(self, rect):
+        return QRect(rect.x(), rect.y(), rect.height(),rect.height())
 
 
     def updateEditorGeometry(self, editor, option, index):
@@ -1102,7 +1251,15 @@ class FilterDelegate(QStyledItemDelegate):
             option (QStyleOptionViewItem)
             index (QModelIndex)
         """
-        editor.setGeometry(option.rect)
+
+        if index.column() == 1:
+            margin = self._compute_margin(index)
+            option.rect.setLeft(option.rect.x() + margin)
+            editor.setGeometry(option.rect)
+            return 
+
+        super().updateEditorGeometry(editor,option,index)
+
 
 
 class FiltersEditorWidget(plugin.PluginWidget):
@@ -1120,22 +1277,24 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.toolbar.setIconSize(QSize(16, 16))
         self.view.setModel(self.model)
         self.view.setItemDelegate(self.delegate)
-        self.view.setIndentation(15)
         self.view.setDragEnabled(True)
         self.view.header().setStretchLastSection(False)
         self.view.setAcceptDrops(True)
         self.view.setDragDropMode(QAbstractItemView.InternalMove)
         self.view.setAlternatingRowColors(True)
+        self.view.setIndentation(0)
+        self.view.setItemsExpandable(False)
         #self.view.setRootIsDecorated(False)
 
-        self.view.header().setSectionResizeMode(0, QHeaderView.Interactive)
+        self.view.header().setSectionResizeMode(0, QHeaderView.ResizeToContents)
         self.view.header().setSectionResizeMode(1, QHeaderView.ResizeToContents)
-        self.view.header().setSectionResizeMode(2, QHeaderView.Stretch)
-        self.view.header().setSectionResizeMode(3, QHeaderView.ResizeToContents)
+        self.view.header().setSectionResizeMode(2, QHeaderView.ResizeToContents)
+        self.view.header().setSectionResizeMode(3, QHeaderView.Stretch)
+        self.view.header().setSectionResizeMode(4, QHeaderView.ResizeToContents)
 
 
 
-        #self.view.header().hide()
+        self.view.header().hide()
 
         layout = QVBoxLayout()
         layout.addWidget(self.view)
@@ -1238,15 +1397,14 @@ class FiltersEditorWidget(plugin.PluginWidget):
         """Add condition item to the current selected index
         """
         index = self.view.currentIndex()
-        if index == QModelIndex():
-            self.model.add_logic_item(parent=index)
-            new_index = self.model.index(0,0, parent = index)
-            self.model.add_condition_item(parent=new_index)
 
-        else:
-            self.model.add_condition_item(parent=index)
+        if index.isValid():
 
-        self._update_view_geometry()
+            if self.model.item(index).type() == FilterItem.LOGIC_TYPE:
+                self.model.add_condition_item(parent=index)
+
+            self._update_view_geometry()
+
 
     def on_open_condition_dialog(self):
         """Open the condition creation dialog
@@ -1274,7 +1432,6 @@ class FiltersEditorWidget(plugin.PluginWidget):
     def on_selection_changed(self):
         """ Enable/Disable add button depending item type """
 
-        print("selection changed")
         index = self.view.currentIndex()
         if self.model.item(index).type() == FilterItem.CONDITION_TYPE:
             self.add_button.setDisabled(True)
@@ -1297,15 +1454,18 @@ if __name__ == "__main__":
 
     setFontPath(os.path.join("../../materialdesignicons-webfont.ttf"))
 
-    print("font exists", os.path.exists("../../../assets/fonts/materialdesignicons-webfont.ttf"))
 
     conn = sql.get_sql_connexion(":memory:")
     import_reader(conn, FakeReader())
 
     data = {"AND": [
-    {"field": "chr", "operator": "=", "value": "chr"},
-    {"field": "gene", "operator": "=", "value": "chr"},
-    {"field": "ref", "operator": "=", "value": "chr"}
+    {"field": "gene", "operator": "=", "value": "chr12"},
+    {"field": "gene", "operator": "=", "value": "chr12"},
+    {"field": "gene", "operator": "=", "value": "chr12"},
+    {"field": "gene", "operator": "=", "value": "chr12"},
+    {"field": "gene", "operator": "=", "value": "chr12"},
+    {"field": "gene", "operator": "=", "value": "chr12"},
+
 
     ]}
 
@@ -1314,13 +1474,11 @@ if __name__ == "__main__":
     view.model.load(data)
 
     view._update_view_geometry()
-    print(view.model.to_dict() == data)
 
     view.set_add_icon(FIcon(0xF0419))
     view.set_rem_icon(FIcon(0xF0419))
     view.show()
 
-    # print(model.to_dict(model.root_item[0]))
 
     # view = QTreeView()
     # view.setEditTriggers(QAbstractItemView.DoubleClicked)
