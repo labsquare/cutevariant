@@ -93,7 +93,8 @@ class MainWindow(QMainWindow):
 
         recent = self.get_recent_projects()
         if recent:
-            self.open(recent[0])
+            if os.path.exists(recent[0]):
+                self.open(recent[0])
 
     def setup_ui(self):
         # Setup menubar

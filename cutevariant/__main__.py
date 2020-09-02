@@ -29,7 +29,7 @@ from PySide2.QtCore import (
     QCommandLineOption,
 )
 from PySide2.QtWidgets import QApplication, QSplashScreen
-
+from PySide2.QtGui import QPixmap
 # Custom imports
 from cutevariant.gui import MainWindow, setFontPath, style
 import cutevariant.commons as cm
@@ -66,6 +66,7 @@ def main(app: QApplication):
     # w.show()
 
     splash = QSplashScreen()
+    splash.setPixmap(QPixmap(cm.DIR_ICONS + "app.png"))
 
     splash.show()
 
