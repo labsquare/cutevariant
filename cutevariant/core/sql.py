@@ -517,7 +517,7 @@ def create_table_sets(conn: sqlite3.Connection):
 def insert_set_from_file(conn: sqlite3.Connection, name, filename):
 
     cursor = conn.cursor()
-    # TODO ignore duplicate 
+    # TODO ignore duplicate
     with open(filename) as file:
         cursor.executemany(
             """INSERT INTO sets (name, value) VALUES (?,?)""",
@@ -536,13 +536,9 @@ def get_sets(conn):
 
 
 def get_words_set(conn, name):
-    """ Get word from sets """ 
-    for row in conn.execute(
-        f"SELECT DISTINCT value FROM sets WHERE name = '{name}'"
-    ):
+    """ Get word from sets """
+    for row in conn.execute(f"SELECT DISTINCT value FROM sets WHERE name = '{name}'"):
         yield dict(row)["value"]
-
-
 
 
 ## ================ Operations on sets of variants =============================
@@ -1034,7 +1030,7 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
 
         # Insert current variant
         # Use default dict to handle missing values
-        #LOGGER.debug(
+        # LOGGER.debug(
         #    "async_insert_many_variants:: QUERY: %s\nVALUES: %s",
         #    variant_insert_query,
         #    variant,

@@ -151,9 +151,6 @@ class VariantModel(QAbstractTableModel):
                     + "</font>"
                 )
 
-
-
-
             # ------ Other Role -----
 
             if self.formatter:
@@ -228,7 +225,6 @@ class VariantModel(QAbstractTableModel):
             if g not in self.fields:
                 self.fields.append(g)
 
-
         self.variants = list(
             cmd.select_cmd(
                 self.conn,
@@ -248,8 +244,6 @@ class VariantModel(QAbstractTableModel):
         # self.favorite = [i["favorite"] for i in self.variants]
         # for i in self.variants:
         #     i.pop("favorite")
-
-
 
         if self.variants:
             self.headers = list(self.variants[0].keys())
@@ -567,11 +561,13 @@ class VariantView(QWidget):
         current_variant = self.model.variant(current_index.row())
 
         if current_index.isValid():
-            
-            full_variant = sql.get_one_variant(self.conn, current_variant["id"])
-            # Copy action 
 
-            copy_action = menu.addAction("{chr}:{pos}-{ref}-{alt}".format(**full_variant))
+            full_variant = sql.get_one_variant(self.conn, current_variant["id"])
+            # Copy action
+
+            copy_action = menu.addAction(
+                "{chr}:{pos}-{ref}-{alt}".format(**full_variant)
+            )
             on_copy = functools.partial(self.copy_to_clipboard, current_index)
             copy_action.triggered.connect(on_copy)
 
@@ -597,8 +593,6 @@ class VariantView(QWidget):
             #  Comment action
             on_edit = functools.partial(self.edit_comment, current_index)
             menu.addAction("Edit comment ...", on_edit)
-
-
 
             menu.exec_(event.globalPos())
 
@@ -643,7 +637,9 @@ class VariantView(QWidget):
 
         if index.isValid():
             variant = self.model.variant(index.row())
-            QApplication.instance().clipboard().setText("{chr}:{pos}-{ref}-{alt}".format(**variant))
+            QApplication.instance().clipboard().setText(
+                "{chr}:{pos}-{ref}-{alt}".format(**variant)
+            )
 
         # classification = self.classification_box.currentIndex()
         # favorite = self.favorite_checkbox.isChecked()

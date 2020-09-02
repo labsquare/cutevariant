@@ -13,7 +13,7 @@ MIN_COMPLETION_LETTERS = 1
 DEFAULT_SELECTION_NAME = "variants"
 
 
-# Classification 
+# Classification
 
 CLASSIFICATION = {
     0: "Unclassified",
@@ -21,12 +21,17 @@ CLASSIFICATION = {
     2: "Likely benin",
     3: "Variant of uncertain significance",
     4: "Likely pathogen",
-    5: "Pathogen"
+    5: "Pathogen",
 }
 
-CLASSIFICATION_ICONS = {0: 0xF03A1, 1: 0xF03A4, 2: 0xF03A7, 3: 0xF03AA, 4: 0xF03AD, 5 : 0xF03B1}
-
-
+CLASSIFICATION_ICONS = {
+    0: 0xF03A1,
+    1: 0xF03A4,
+    2: 0xF03A7,
+    3: 0xF03AA,
+    4: 0xF03AD,
+    5: 0xF03B1,
+}
 
 
 # Paths
@@ -39,9 +44,6 @@ DIR_ICONS = DIR_ASSETS + "icons/"
 DIR_STYLES = DIR_ASSETS + "styles/"
 
 GENOTYPE_ICONS = {0: 0xF130, 1: 0xFAA0, 2: 0xFAA4, -1: 0xF625}
-
-
-
 
 
 # Websites and variant query

@@ -98,7 +98,6 @@ def async_import_reader(conn, reader: AbstractReader, pedfile=None, project={}):
     create_indexes(conn)
     yield 100, "Indexes created."
 
-
     conn.execute("PRAGMA auto_vacuum = FULL")
     # conn.execute("PRAGMA main.cache_size=10000")
     # conn.execute("PRAGMA main.locking_mode=EXCLUSIVE")

@@ -252,7 +252,6 @@ def filters_to_vql(filters):
                 if len(value) == 2 and value[0] == SET_FUNC_NAME:
                     value = "{}['{}']".format(SET_FUNC_NAME, value[1])
 
-
             return "%s %s %s" % (field, operator, value)
 
         else:
@@ -383,7 +382,7 @@ def build_query(
                 sample_name = col[1]
                 samples.append(sample_name)
 
-    # make samples uniques 
+    # make samples uniques
     samples = set(samples)
 
     ## Create Sample Join

@@ -29,7 +29,6 @@ def detect_vcf_annotation(filepath):
     std_reader = vcf.VCFReader(device)
     # print(std_reader.metadata)
 
-    
     if "VEP" in std_reader.metadata:
         if "CSQ" in std_reader.infos:
             device.close()

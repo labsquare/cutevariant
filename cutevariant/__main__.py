@@ -28,7 +28,7 @@ from PySide2.QtCore import (
     QCommandLineParser,
     QCommandLineOption,
 )
-from PySide2.QtWidgets import QApplication
+from PySide2.QtWidgets import QApplication, QSplashScreen
 
 # Custom imports
 from cutevariant.gui import MainWindow, setFontPath, style
@@ -64,6 +64,10 @@ def main(app: QApplication):
     # from cutevariant.gui.settings import *
     # w = SettingsWidget()
     # w.show()
+
+    splash = QSplashScreen()
+
+    splash.show()
 
     # Display
     w = MainWindow()

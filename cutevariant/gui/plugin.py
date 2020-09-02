@@ -89,8 +89,6 @@ class PluginSettingsWidget(settings.GroupWidget):
         pass
 
 
-
-
 def find_plugins(path=None):
     """find and returns plugin instance from a directory 
     
@@ -118,7 +116,7 @@ def find_plugins(path=None):
 
         widget_class_name = snake_to_camel(package.name) + "Widget"
         settings_class_name = snake_to_camel(package.name) + "SettingsWidget"
-        dialog_class_name = snake_to_camel(package.name) 
+        dialog_class_name = snake_to_camel(package.name)
 
         item = {}
         item["name"] = module.__name__
