@@ -1,5 +1,6 @@
-from PySide2.QtCore import Qt
-from PySide2.QtGui import QFont, QIcon, QColor
+from PySide2.QtCore import Qt,QModelIndex,QRect
+from PySide2.QtWidgets import QStyleOptionViewItem
+from PySide2.QtGui import QFont, QIcon, QColor, QPainter
 from cutevariant.gui.ficon import FIcon
 
 import importlib
@@ -18,103 +19,16 @@ class Formatter(object):
     def __init__(self):
         super().__init__()
 
-    def get_display(self, column, value):
-        return value
+    def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex):
 
-    @functools.lru_cache(maxsize=128)
-    def get_font(self, column, value):
-        """Return font for a cell according column name and value
-        
-        Args:
-            column (str): Column name
-            value (any): Value of the cell 
-        
-        Returns:
-            QFont: a font
-        """
-        return None
 
-    @functools.lru_cache(maxsize=128)
-    def get_background(self, column, value):
-        """Return background color of the cell acording column name and value 
-        
-        Args:
-            column (str):Column name
-            value (any):Value of the cell
-        
-        Returns:
-            QColor: A color  
-        """
-        return None
+        painter.drawText(option.rect, option.displayAlignment, self.value(index))
 
-    @functools.lru_cache(maxsize=128)
-    def get_foreground(self, column, value):
-        """Return text color of the cell according column name and value
-        
-        Args:
-            column (str): Column name
-            value (any): Value of the cell
-        
-        Returns:
-            QColor: A color
-        """
-        return None
+    def field_name(self,index: QModelIndex):
+        return index.model().headerData(index.column(), Qt.Horizontal)
 
-    @functools.lru_cache(maxsize=128)
-    def get_decoration(self, column, value):
-        """Return decoration as QIcon of the cell according column and value
-        
-        Args:
-            column (str): Column name
-            value (any): Value of the cell
-        
-        Returns:
-            QIcon: a Icon. 
-            TODO : I guess it can be QPixmap also 
-        """
-        return None
-
-    def item_data(self, column_name, value, role: Qt.ItemDataRole):
-        """Return cell data according column name and value for the specific role
-        
-        Args:
-            column_name (str): Column name
-            value (any): Value of the cell
-            role (Qt.ItemDataRole): a Qt Role 
-        
-        Returns:
-            any: depending of the role, it can be QColor, QFont or QIcon
-        """
-
-        if role == Qt.FontRole:
-            return self.get_font(column_name, value)
-
-        if role == Qt.BackgroundRole:
-            return self.get_background(column_name, value)
-
-        if role == Qt.ForegroundRole:
-            return self.get_foreground(column_name, value)
-
-        if role == Qt.TextColorRole:
-            return self.get_textcolor(column_name, value)
-
-        if role == Qt.DecorationRole:
-            return self.get_decoration(column_name, value)
-
-        if role == Qt.DisplayRole:
-            return self.get_display(column_name, value)
-
-        return None
-
-    def supported_role(cls):
-        return (
-            Qt.FontRole,
-            Qt.BackgroundRole,
-            Qt.ForegroundRole,
-            Qt.DecorationRole,
-            Qt.DisplayRole,
-        )
-
+    def value(self, index: QModelIndex):
+        return index.data(Qt.DisplayRole)
 
 def find_formatters(path=None):
     #  if path is None, return internal plugin path

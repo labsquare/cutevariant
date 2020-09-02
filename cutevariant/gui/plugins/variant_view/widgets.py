@@ -141,7 +141,7 @@ class VariantModel(QAbstractTableModel):
             column_name = self.headers[index.column()]
 
             #  ---- Display Role ----
-            if role == Qt.DisplayRole and self.formatter is None:
+            if role == Qt.DisplayRole:
                 return str(self.variant(index.row())[column_name])
 
             if role == Qt.ToolTipRole:
@@ -150,13 +150,6 @@ class VariantModel(QAbstractTableModel):
                     + str(self.variant(index.row())[column_name]).replace(",", " ")
                     + "</font>"
                 )
-
-            # ------ Other Role -----
-
-            if self.formatter:
-                if role in self.formatter.supported_role():
-                    value = str(self.variant(index.row())[column_name])
-                    return self.formatter.item_data(column_name, value, role)
 
         return None
 
@@ -358,27 +351,43 @@ class VariantModel(QAbstractTableModel):
         self.vertical_view_action = self.top_bar.addAction(FIcon())
 
 
-# return super().paint(painter, option, index)
 
 
-# def sizeHint(self, option, index):
-# """Override: Return row height"""
+class VariantDelegate(QStyledItemDelegate):
 
-# size = super().sizeHint(option, index)
-# size.setHeight(30)
-# return size
+    def __init__(self, parent = None):
+        super().__init__(parent)
 
-
-# super().__init__()
+        self.formatter = None
 
 
-# def focusInEvent(self, event: QFocusEvent):
-#     self.setStyleSheet("QTableView{ border: 1px solid palette(highlight)}")
-#     self.focusChanged.emit(True)
+    def paint(self, painter, option, index):
 
-# def focusOutEvent(self, event: QFocusEvent):
-#     self.setStyleSheet("QTableView{ border: 1px solid palette(shadow)}")
-#     self.focusChanged.emit(False)
+        if self.formatter is None:
+            return super().paint(painter,option,index)
+
+
+        # Draw selections 
+        if option.state & QStyle.State_Enabled:
+            bg = (
+                QPalette.Normal
+                if option.state & QStyle.State_Active
+                else QPalette.Inactive
+            )
+        else:
+            bg = QPalette.Disabled
+
+        if option.state & QStyle.State_Selected:
+            is_selected = True
+            painter.fillRect(option.rect, option.palette.color(bg, QPalette.Highlight))
+
+
+        # Draw formatters 
+        option.rect = option.rect.adjusted(3,0,0,0) #Don't know why I need to adjust the left margin .. .
+        self.formatter.paint(painter,option,index)
+
+
+
 
 
 class VariantView(QWidget):
@@ -406,12 +415,16 @@ class VariantView(QWidget):
         self.view.setSelectionMode(QAbstractItemView.ContiguousSelection)
         ## self.view.setIndentation(0)
         self.view.setIconSize(QSize(22, 22))
-        # self.view.setItemDelegate(self.delegate)
         self.view.horizontalHeader().setSectionsMovable(True)
 
         # Setup model
         self.model = VariantModel()
         self.view.setModel(self.model)
+
+        # Setup delegate
+        self.delegate = VariantDelegate()
+        self.view.setItemDelegate(self.delegate)
+        
 
         #  setup toolbar
         spacer = QWidget()
@@ -465,6 +478,12 @@ class VariantView(QWidget):
     def load(self):
         self.model.load()
         self.load_page_box()
+
+    def set_formatter(self, formatter):
+        print("set formatter")
+        self.delegate.formatter = formatter
+        self.view.reset()
+
 
     @property
     def conn(self):
@@ -771,8 +790,8 @@ class VariantViewWidget(plugin.PluginWidget):
     def on_formatter_changed(self):
 
         Formatter = self.formatter_combo.currentData()
-        self.first_pane.model.formatter = Formatter()
-        self.second_pane.model.formatter = Formatter()
+        self.first_pane.set_formatter(Formatter())
+        self.second_pane.set_formatter(Formatter())
 
     def on_open_project(self, conn):
         """override """
