@@ -60,7 +60,7 @@ class SeqoneFormatter(Formatter):
         value = self.value(index)
 
         if field_name == "ref" or field_name == "alt" and value in ("A", "C", "G", "T"):
-            pen.setColor(self.BASE_COLOR[value])
+            pen.setColor(self.BASE_COLOR.get(value, "black"))
 
         if field_name == "impact":
             font.setBold(True)
