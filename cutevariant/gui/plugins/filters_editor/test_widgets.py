@@ -1,6 +1,6 @@
 import sqlite3
 
-FILTER_DATA = {"AND": []}
+FILTER_DATA = {"AND": [{"field": "chr", "operator": ">", "value": 4}]}
 
 from .widgets import FilterModel
 

@@ -14,18 +14,18 @@ import uuid
 from cutevariant.core import sql, get_sql_connexion
 
 
-def prepare_columns(conn):
+def prepare_fields(conn):
     """Prepares a list of columns on which filters can be applied
     """
     columns = []
     samples = [s["name"] for s in sql.get_samples(conn)]
     for field in sql.get_fields(conn):
-        name = field["name"]
         if field["category"] == "samples":
             for sample in samples:
-                columns.append((f"{sample}.{name}", ("genotype", sample, name), field))
+                field["name"] = "samples['{}'].{}".format(sample, field["name"])
+                columns.append(field)
         else:
-            columns.append((name, name, field))
+            columns.append(field)
     return columns
 
 
@@ -141,6 +141,36 @@ class StrField(BaseField):
     def set_completer(self, completer: QCompleter):
         """ set a completer to autocomplete value """
         self.edit.setCompleter(completer)
+
+class ComboField(BaseField):
+    """Editor for string value
+
+    Attributes:
+        edit (QLineEdit)
+    """
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.edit = QComboBox()
+        self.edit.setEditable(True)
+        self.edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.set_widget(self.edit)
+
+    def set_value(self, value: str):
+        self.edit.setCurrentText(str(value))
+
+    def get_value(self):
+        """Return quoted string
+            ..todo : check if quotes are required
+        """
+        return self.edit.currentText()
+
+    def addItems(self, words: list):
+        """ set a completer to autocomplete value """
+        self.edit.clear()
+
+        self.edit.addItems(words)
+
 
 
 class BoolField(BaseField):
@@ -697,7 +727,7 @@ class FilterModel(QAbstractItemModel):
         if parent_item == self.root_item:
             return QModelIndex()
 
-        return self.createIndex(parent_item.row(), index.column(), parent_item)
+        return self.createIndex(parent_item.row(), 0, parent_item)
         
         
     def clear(self):
@@ -807,6 +837,9 @@ class FilterModel(QAbstractItemModel):
 
     def rowCount(self, parent=QModelIndex()) -> int:
         """ Overrided Qt methods: return row count according parent """
+
+        if parent.column() > 0:
+            return 0
 
         if not parent.isValid():
             parent_item = self.root_item
@@ -1027,7 +1060,12 @@ class FilterDelegate(QStyledItemDelegate):
 
         self.add_icon = FIcon(0xF0419)
         self.rem_icon = FIcon(0xF0156)
-        self.icon_size = QSize(20,20)
+
+        self.eye_on = FIcon(0xF06D0)
+        self.eye_off = FIcon(0xF06D1)
+
+        self.icon_size = QSize(16,16)
+
         
     def createEditor(self, parent, option, index: QModelIndex) -> QWidget:
         """Overrided from Qt. Create an editor
@@ -1040,32 +1078,28 @@ class FilterDelegate(QStyledItemDelegate):
         Returns:
             QWidget: a editor with set_value and get_value methods
         """
-        return super().createEditor(parent,option,index)
-        # model = index.model()
-        # item = model.item(index)
-        # conn = model.conn
+        # return super().createEditor(parent,option,index)
+        model = index.model()
+        item = model.item(index)
+        conn = model.conn
 
-        # if index.column() == 0:
-        #     if item.type() == FilterItem.LOGIC_TYPE:
-        #         return LogicField(parent)
+        if index.column() == 1:
+            if item.type() == FilterItem.LOGIC_TYPE:
+                return LogicField(parent)
 
-        #     if item.type() == FilterItem.CONDITION_TYPE:
-        #         w = StrField(parent)
-        #         #w.set_columns(prepare_columns(conn))
-        #         return w
+            if item.type() == FilterItem.CONDITION_TYPE:
+                w = ComboField(parent)
+                w.addItems([i["name"] for i in prepare_fields(conn)])
+                return w
 
-        # if index.column() == 1:
-        #     w = OperatorField(parent)
-        #     return w
+        if index.column() == 2:
+            w = OperatorField(parent)
+            return w
 
-        # if index.column() == 2:
-        #     sql_field_index = model.index(index.row(), 0, index.parent())
-        #     sql_field = model.data(sql_field_index, Qt.EditRole)
-        #     w = FieldFactory(conn).create(sql_field)
-        #     w.setParent(parent)
-        #     return w
+        if index.column() == 3:
+            return StrField(parent)
 
-        # return super().createEditor(parent, option, index)
+        return super().createEditor(parent, option, index)
 
     def setEditorData(self, editor: QWidget, index: QModelIndex):
         """Overrided from Qt. Read data from model and set editor data
@@ -1075,8 +1109,8 @@ class FilterDelegate(QStyledItemDelegate):
             editor (QWidget)
             index (QModelindex)
         """
-        #editor.set_value(index.data(Qt.EditRole))
-        super().setEditorData(editor, index)
+        editor.set_value(index.data(Qt.EditRole))
+        #super().setEditorData(editor, index)
 
     def editorEvent(self, event: QEvent, model, option, index: QModelIndex):
         
@@ -1112,9 +1146,9 @@ class FilterDelegate(QStyledItemDelegate):
             model (FilterModel)
             index (QModelindex)
         """
-        #model.setData(index, editor.get_value())
+        model.setData(index, editor.get_value())
 
-        super().setModelData(editor, model, index)
+        #super().setModelData(editor, model, index)
 
     # def _compute_width(self, index):
 
@@ -1136,6 +1170,8 @@ class FilterDelegate(QStyledItemDelegate):
         Returns:
             TYPE: Description
         """
+
+        size = QSize(option.rect.width(), 30)
         
         if index.column() == self.COLUMN_CHECKBOX:
             return QSize(20, 30)
@@ -1145,11 +1181,9 @@ class FilterDelegate(QStyledItemDelegate):
 
         if index.column() == self.COLUMN_FIELD:
             margin = self._compute_margin(index)
-            option.rect.setWidth(self._compute_width(index)   + margin + 10 )
-            return QSize(option.rect.width() , 30)
+            size.setWidth(size.width() + margin + 10 )
 
-
-        return QSize(option.rect.width() , 30)
+        return size
 
 
 
@@ -1190,11 +1224,17 @@ class FilterDelegate(QStyledItemDelegate):
 
         # ========== Check box ====================
         if index.column() == self.COLUMN_CHECKBOX:
-            cbOpt = QStyleOptionButton()
-            cbOpt.rect = self._check_rect(rect)
+            #cbOpt = QStyleOptionButton()
+            #cbOpt.rect = self._check_rect(rect)
             #cbOpt.setLeft(cbOpt.rect.x() + margin)
-            cbOpt.state |= QStyle.State_On if item.checked else QStyle.State_Off
-            QApplication.instance().style().drawControl(QStyle.CE_CheckBox, cbOpt, painter)
+            #cbOpt.state |= QStyle.State_On if item.checked else QStyle.State_Off
+            #QApplication.instance().style().drawControl(QStyle.CE_CheckBox, cbOpt, painter)
+            
+            check_icon = self.eye_on if item.checked else self.eye_off
+            rect = QRect(0,0,self.icon_size.width(), self.icon_size.height())
+            rect.moveCenter(option.rect.center())
+            painter.drawPixmap(rect.x(), rect.y() , check_icon.pixmap(self.icon_size))
+
 
 
         if index.column() > self.COLUMN_CHECKBOX:
@@ -1212,6 +1252,9 @@ class FilterDelegate(QStyledItemDelegate):
 
             if index.column() == self.COLUMN_OPERATOR:
                 align |= Qt.AlignCenter
+
+            if index.column() == self.COLUMN_VALUE:
+                align |= Qt.AlignLeft
 
 
 
@@ -1278,6 +1321,9 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.delegate = FilterDelegate()
         self.toolbar = QToolBar()
         self.toolbar.setIconSize(QSize(16, 16))
+        #self.toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+
+
         self.view.setModel(self.model)
         self.view.setItemDelegate(self.delegate)
         self.view.setDragEnabled(True)
@@ -1286,11 +1332,11 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.view.setDragDropMode(QAbstractItemView.InternalMove)
         self.view.setAlternatingRowColors(True)
         self.view.setIndentation(0)
-        self.view.setItemsExpandable(False)
+        #self.view.setItemsExpandable(False)
         #self.view.setRootIsDecorated(False)
 
         self.view.header().setSectionResizeMode(0, QHeaderView.ResizeToContents)
-        self.view.header().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        self.view.header().setSectionResizeMode(1, QHeaderView.Stretch)
         self.view.header().setSectionResizeMode(2, QHeaderView.ResizeToContents)
         self.view.header().setSectionResizeMode(3, QHeaderView.Stretch)
         self.view.header().setSectionResizeMode(4, QHeaderView.ResizeToContents)
@@ -1299,34 +1345,38 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
         self.view.header().hide()
 
+        self.combo = QComboBox()
+        self.combo.addItem("")
+        self.combo.setMinimumHeight(30)
+        self.combo.currentTextChanged.connect(self.on_combo_changed)
+        self.save_button = QToolButton()
+        self.save_button.setIcon(FIcon(0xF0193))
+        #self.save_button.setAutoRaise(True)
+        self.save_button.setMinimumHeight(30)
+        self.save_button.clicked.connect(self.on_save_filters)
+
+        hlayout = QHBoxLayout()
+        hlayout.addWidget(self.combo)
+        hlayout.addWidget(self.save_button)
+
         layout = QVBoxLayout()
+        layout.addLayout(hlayout)
         layout.addWidget(self.view)
         layout.addWidget(self.toolbar)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
+        layout.setSpacing(1)
         self.setLayout(layout)
         # self.model.filterChanged.connect(self.on_filter_changed)
 
         # setup Menu
 
-        self.add_menu = QMenu()
-        self.add_button = QToolButton()
-        self.add_button.setIcon(FIcon(0xF0415))
-        self.add_button.setPopupMode(QToolButton.InstantPopup)
+        self.toolbar.addAction(FIcon(0xF0415), "Add Condition", self.on_add_condition)
 
-        self.add_menu.addAction(FIcon(0xF0415), "Create group", self.on_add_logic)
-        self.add_menu.addAction(FIcon(0xF0415), "Add Condition", self.on_add_condition)
-        self.add_button.setMenu(self.add_menu)
-
-        self.toolbar.addWidget(self.add_button)
-        self.toolbar.addAction(FIcon(0xF0143), "up")
-        self.toolbar.addAction(FIcon(0xF0140), "down")
+ 
 
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.toolbar.addWidget(spacer)
-
-        self.toolbar.addAction(FIcon(0xF5E8), "delete", self.on_delete_item)
+        #self.toolbar.addAction(FIcon(0xF5E8), "delete", self.on_delete_item)
 
         # self.view.selectionModel().currentChanged.connect(self.on_filters_changed)
         self.model.filtersChanged.connect(self.on_filters_changed)
@@ -1377,6 +1427,27 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
         self._update_view_geometry()
 
+    def on_save_filters(self):
+
+        # TODO : MANAGE PLUGINS SETTINGS 
+        name, _ = QInputDialog.getText(self,"Filter name", "Filter Name")
+        self.combo.addItem(name, self.filters)
+
+
+    def on_combo_changed(self):
+
+        data = self.combo.currentData()
+        if data:
+            self.filters = data
+            self.on_filters_changed()
+            self._update_view_geometry()
+        else:
+            self.model.clear()
+            self._update_view_geometry()
+
+
+    
+
 
     def _update_view_geometry(self):
         """Set column Spanned to True for all Logic Item
@@ -1402,11 +1473,16 @@ class FiltersEditorWidget(plugin.PluginWidget):
         index = self.view.currentIndex()
 
         if index.isValid():
-
             if self.model.item(index).type() == FilterItem.LOGIC_TYPE:
                 self.model.add_condition_item(parent=index)
 
-            self._update_view_geometry()
+        else:
+            if self.model.rowCount() == 0:
+                self.model.add_logic_item(parent=QModelIndex())
+                gpindex = self.model.index(0,0, QModelIndex())
+                self.model.add_condition_item(parent=gpindex)
+
+        self._update_view_geometry()
 
 
     def on_open_condition_dialog(self):
@@ -1440,6 +1516,25 @@ class FiltersEditorWidget(plugin.PluginWidget):
             self.add_button.setDisabled(True)
         else:
             self.add_button.setDisabled(False)
+
+
+    def contextMenuEvent(self, event : QContextMenuEvent):
+
+
+
+        pos = self.view.viewport().mapFromGlobal(event.globalPos())
+        index = self.view.indexAt(pos)
+
+        if index.isValid():
+            menu = QMenu(self)
+
+            item = self.model.item(index)
+            if item.type() == FilterItem.LOGIC_TYPE:
+                menu.addAction("Add condition", self.on_add_condition)
+                menu.addAction("Add group", self.on_add_logic)
+                
+
+            menu.exec_(event.globalPos())
 
 
 if __name__ == "__main__":
