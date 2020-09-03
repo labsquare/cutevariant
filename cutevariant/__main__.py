@@ -30,6 +30,7 @@ from PySide2.QtCore import (
 )
 from PySide2.QtWidgets import QApplication, QSplashScreen
 from PySide2.QtGui import QPixmap
+
 # Custom imports
 from cutevariant.gui import MainWindow, setFontPath, style
 import cutevariant.commons as cm
@@ -66,9 +67,10 @@ def main(app: QApplication):
     # w.show()
 
     splash = QSplashScreen()
-    splash.setPixmap(QPixmap(cm.DIR_ICONS + "app.png"))
-
+    splash.setPixmap(QPixmap(cm.DIR_ICONS + "splash.png"))
+    splash.showMessage(f"Version {__version__}")
     splash.show()
+    app.processEvents()
 
     # Display
     w = MainWindow()
@@ -78,6 +80,7 @@ def main(app: QApplication):
     #     w.setStyleSheet(file.read())
 
     w.show()
+    splash.finish(w)
 
 
 def load_styles(app):

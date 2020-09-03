@@ -103,7 +103,7 @@ venv.bak/
 .mypy_cache/
 
 # image 
-*.png
+#*.png
 *.dot 
 
 # sublime text 
