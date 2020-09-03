@@ -45,6 +45,9 @@ class SeqoneFormatter(Formatter):
 
     FAV_ICON = {0: FIcon(0xF00C3), 1: FIcon(0xF00C0)}
 
+    GENOTYPE_ICONS = {0: FIcon(0xF0766), 1: FIcon(0xF0AA1), 2: FIcon(0xF0AA5), -1: FIcon(0xF10D3)}
+
+
     def __init__(self):
         return super().__init__()
 
@@ -70,19 +73,21 @@ class SeqoneFormatter(Formatter):
             pen.setColor("#6a9fca")
 
         if field_name == "classification":
-
-            rect = QRect(0, 0, 20, 20)
-            rect.moveCenter(option.rect.center())
             icon = self.ACMG_ICON.get(str(value), self.ACMG_ICON["0"])
-            painter.drawPixmap(rect, icon.pixmap(20, 20))
+            self.draw_icon(painter, option.rect,icon)
             return
 
         if field_name == "favorite":
-            rect = QRect(0, 0, 20, 20)
-            rect.moveCenter(option.rect.center())
             icon = self.FAV_ICON.get(int(value), self.FAV_ICON[0])
-            painter.drawPixmap(rect, icon.pixmap(20, 20))
+            self.draw_icon(painter, option.rect,icon)
             return
+
+
+        if re.match(r"sample\..+\.gt", field_name):
+            icon = self.GENOTYPE_ICONS.get(int(value), self.GENOTYPE_ICONS[0])
+            self.draw_icon(painter, option.rect,icon)          
+            return
+
 
         if field_name == "consequence":
             values = str(self.value(index)).split("&")

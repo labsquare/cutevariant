@@ -30,6 +30,12 @@ class Formatter(object):
     def value(self, index: QModelIndex):
         return index.data(Qt.DisplayRole)
 
+
+    def draw_icon(self,painter:QPainter, rect: QRect, icon : QIcon):
+        r = QRect(0, 0, 20, 20)
+        r.moveCenter(rect.center())
+        painter.drawPixmap(r, icon.pixmap(20, 20))
+
 def find_formatters(path=None):
     #  if path is None, return internal plugin path
     if path is None:
