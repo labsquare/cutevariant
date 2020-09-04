@@ -43,6 +43,14 @@ class SeqoneFormatter(Formatter):
         "5": FIcon(0xF03B1, "#ed6d79"),
     }
 
+    IMPACT_COLOR = {
+        "HIGH": "#ff4b5c",
+        "LOW": "#056674",
+        "MODERATE": "#ecad7d",
+        "MODIFIER": "#ecad7d"
+
+    }
+
     FAV_ICON = {0: FIcon(0xF00C3), 1: FIcon(0xF00C0)}
 
     GENOTYPE_ICONS = {0: FIcon(0xF0766), 1: FIcon(0xF0AA1), 2: FIcon(0xF0AA5), -1: FIcon(0xF10D3)}
@@ -67,7 +75,7 @@ class SeqoneFormatter(Formatter):
 
         if field_name == "impact":
             font.setBold(True)
-            pen.setColor("#ecad7d")
+            pen.setColor(self.IMPACT_COLOR.get(value, self.IMPACT_COLOR["MODIFIER"]))
 
         if field_name == "gene":
             pen.setColor("#6a9fca")
