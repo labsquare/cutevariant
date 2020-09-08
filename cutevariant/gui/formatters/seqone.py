@@ -91,10 +91,25 @@ class SeqoneFormatter(Formatter):
             return
 
 
+        if field_name == "hgvs_c":
+            font.setBold(True)
+            m = re.search(r"(c\..+)", str(value))
+            if m:
+                value = m.group(1)
+
+        if field_name == "hgvs_p":
+            font.setBold(True)
+            m = re.search(r"(p\..+)", str(value))
+            if m:
+                value = m.group(1)
+
+
         if re.match(r"sample\..+\.gt", field_name):
             icon = self.GENOTYPE_ICONS.get(int(value), self.GENOTYPE_ICONS[0])
             self.draw_icon(painter, option.rect,icon)          
             return
+
+
 
 
         if field_name == "consequence":
@@ -123,4 +138,4 @@ class SeqoneFormatter(Formatter):
         painter.setBrush(brush)
         painter.setPen(pen)
         painter.setFont(font)
-        painter.drawText(option.rect, option.displayAlignment, self.value(index))
+        painter.drawText(option.rect, option.displayAlignment, value)
