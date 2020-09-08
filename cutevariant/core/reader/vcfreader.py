@@ -122,7 +122,7 @@ class VcfReader(AbstractReader):
         """
         # loop over record
         self.device.seek(0)
-        vcf_reader = vcf.VCFReader(self.device)
+        vcf_reader = vcf.VCFReader(self.device,strict_whitespace=True)
         import sys
 
         # TODO : ugly for testing progression .. see #60
@@ -262,7 +262,7 @@ class VcfReader(AbstractReader):
 
         # Reads VCF INFO
         self.device.seek(0)
-        vcf_reader = vcf.VCFReader(self.device)
+        vcf_reader = vcf.VCFReader(self.device,strict_whitespace=True)
 
         #  Reads VCF info
         for key, info in vcf_reader.infos.items():
