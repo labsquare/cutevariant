@@ -186,7 +186,7 @@ class VariantInfoWidget(PluginWidget):
 
         # TODO : move somewhere else
         GENOTYPES = {
-            "-1": FIcon(0xF2D7),
+            "-1": FIcon(0xF10D3),
             "0": FIcon(0xF0766),
             "1": FIcon(0xF0AA1),
             "2": FIcon(0xF0AA5),
