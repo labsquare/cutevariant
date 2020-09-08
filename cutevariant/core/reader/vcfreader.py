@@ -50,7 +50,7 @@ class VcfReader(AbstractReader):
         """
         super().__init__(device)
 
-        vcf_reader = vcf.VCFReader(device)
+        vcf_reader = vcf.VCFReader(device, strict_whitespace=True)
         self.samples = vcf_reader.samples
         self.annotation_parser = None
         self.metadata = vcf_reader.metadata
