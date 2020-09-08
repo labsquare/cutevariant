@@ -168,7 +168,13 @@ class MainWindow(QMainWindow):
         for plugin in self.plugins.values():
             if plugin is not sender:
                 if plugin.isVisible():
-                    plugin.on_refresh()
+
+                    try:
+                        plugin.on_refresh()
+                    except Exception as e:
+                        LOGGER.error("{}:{} {}".format(plugin, format(sys.exc_info()[-1].tb_lineno),  e))
+
+
 
     def refresh_plugin(self, plugin_name: str):
         """Refresh a plugin identified by plugin_name 
