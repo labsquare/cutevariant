@@ -186,16 +186,16 @@ class VariantInfoWidget(PluginWidget):
 
         # TODO : move somewhere else
         GENOTYPES = {
-            -1: FIcon(0xF2D7),
-            0: FIcon(0xF0766),
-            1: FIcon(0xF0AA1),
-            2: FIcon(0xF0AA5),
+            "-1": FIcon(0xF2D7),
+            "0": FIcon(0xF0766),
+            "1": FIcon(0xF0AA1),
+            "2": FIcon(0xF0AA5),
         }
 
         for row in self.conn.execute(q):
             item = QListWidgetItem()
-            genotype = int(row[1])
-            icon = GENOTYPES[genotype]
+            genotype = str(row[1])
+            icon = GENOTYPES.get(genotype, GENOTYPES["-1"])
 
             item.setText(str(row[0]))
             item.setIcon(icon)
