@@ -67,6 +67,7 @@ class SeqoneFormatter(Formatter):
         pen = QPen()
         font = QFont()
 
+
         field_name = self.field_name(index).lower()
         value = self.value(index)
 
@@ -93,7 +94,7 @@ class SeqoneFormatter(Formatter):
 
         if field_name == "hgvs_c":
             font.setBold(True)
-            m = re.search(r"(c\..+)", str(value))
+            m = re.search(r"([cnm]\..+)", str(value))
             if m:
                 value = m.group(1)
 
@@ -123,7 +124,7 @@ class SeqoneFormatter(Formatter):
                 rect = QRect(x, 0, width + 15, height + 10)
                 rect.moveCenter(option.rect.center())
                 rect.moveLeft(x)
-
+                painter.setFont(font)
                 painter.setClipRect(option.rect, Qt.IntersectClip)
                 painter.setBrush(QBrush(QColor(self.SO_COLOR.get(value, "#90d4f7"))))
                 painter.setPen(Qt.NoPen)
