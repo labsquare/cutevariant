@@ -63,7 +63,6 @@ class VariantInfoWidget(PluginWidget):
         # self.editor_layout.addWidget(self.save_button)
 
         self.editor.setLayout(self.editor_layout)
-        self.view.addTab(self.editor, "Comments")
         # self.save_button.clicked.connect(self.on_save_clicked)
 
         # Build variant tab
@@ -107,6 +106,8 @@ class VariantInfoWidget(PluginWidget):
         self.genotype_view = QListWidget()
         self.genotype_view.setIconSize(QSize(20, 20))
         self.view.addTab(self.genotype_view, "Genotypes")
+
+        self.view.addTab(self.editor, "Comments")
 
         # self.view.setColumnCount(2)
         # Set title of columns
