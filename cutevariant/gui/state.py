@@ -8,7 +8,7 @@ class State(object):
         #  query
         self.fields = ["favorite", "chr", "pos", "ref", "alt"]
         self.source = "variants"
-        self.filters = {"AND": [{"field": "gene", "operator": "=", "value": "CFTR"}]}
+        self.filters = {}
         self.group_by = []
         self.having = {}
 

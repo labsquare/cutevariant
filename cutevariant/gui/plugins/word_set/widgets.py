@@ -12,16 +12,85 @@ from PySide2.QtWidgets import (
     QAbstractItemView,
     QListWidgetItem,
     QVBoxLayout,
+    QHBoxLayout,
     QFileDialog,
     QMessageBox,
+    QDialogButtonBox,
     QDialog,
     QPushButton,
+    QInputDialog,
 )
 
 
-from PySide2.QtCore import QStringListModel
+from PySide2.QtCore import QStringListModel, Qt, QDir, QSize
+from PySide2.QtGui import QIcon
+
+import tempfile
+
 
 LOGGER = cm.logger()
+
+
+class WordListDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        box = QVBoxLayout()
+        self.add_button = QPushButton("Add")
+        self.del_button = QPushButton("Remove")
+        self.add_file_button = QPushButton("From file ...")
+
+        self.save_button = QPushButton("Save")
+        self.cancel_button = QPushButton("Cancel")
+
+        box.addWidget(self.add_button)
+        box.addWidget(self.del_button)
+        box.addWidget(self.add_file_button)
+        box.addStretch()
+        box.addWidget(self.save_button)
+        box.addWidget(self.cancel_button)
+
+        self.view = QListView()
+        self.model = QStringListModel()
+        self.view.setModel(self.model)
+        self.view.setSelectionMode(QAbstractItemView.ContiguousSelection)
+
+        hlayout = QHBoxLayout()
+        hlayout.addWidget(self.view)
+        hlayout.addLayout(box)
+
+        self.setLayout(hlayout)
+
+        self.add_button.pressed.connect(self.on_add)
+        self.del_button.pressed.connect(self.on_rem)
+        self.add_file_button.pressed.connect(self.on_load_file)
+
+        self.cancel_button.pressed.connect(self.reject)
+        self.save_button.pressed.connect(self.accept)
+
+    def on_add(self):
+        data = self.model.stringList()
+        data.append("<double click to edit>")
+        self.model.setStringList(data)
+
+    def on_rem(self):
+
+        while len(self.view.selectionModel().selectedRows()) > 0:
+            indexes = self.view.selectionModel().selectedRows()
+            self.model.removeRows(indexes[0].row(), 1)
+
+    def on_load_file(self):
+
+        filename, _ = QFileDialog.getOpenFileName(self, "file", "", "Text file (*.txt)")
+
+        if filename:
+            data = []
+            with open(filename, "r") as file:
+                for line in file:
+                    line = line.strip()
+                    data.append(str(line))
+
+            self.model.setStringList(data)
 
 
 class WordSetWidget(PluginWidget):
@@ -42,7 +111,6 @@ class WordSetWidget(PluginWidget):
         self.toolbar.setIconSize(QSize(16, 16))
         self.toolbar.addAction(FIcon(0xF0415), "Add", self.add_wordset)
         self.toolbar.addAction(FIcon(0xF0A7A), "Rem", self.rem_wordset)
-        self.toolbar.addAction(FIcon(0xF06D0), "open", self.open_wordset)
 
         v_layout = QVBoxLayout()
         v_layout.setContentsMargins(0, 0, 0, 0)
@@ -54,15 +122,19 @@ class WordSetWidget(PluginWidget):
         self.setLayout(v_layout)
 
     def add_wordset(self):
-        filename, _ = QFileDialog.getOpenFileName(
-            self, "Open word set", "", "Text File (*.txt)"
-        )
 
-        if filename:
-            name = os.path.basename(filename)
-            result = import_cmd(self.conn, "sets", name, filename)
-            LOGGER.debug(result)
-            self.populate()
+        dialog = WordListDialog()
+
+        if dialog.exec_() == QDialog.Accepted:
+            name, _ = QInputDialog.getText(self, "Set name", "Set name")
+            if name:
+                _, filename = tempfile.mkstemp()
+                with open(filename, "w") as file:
+                    for word in dialog.model.stringList():
+                        file.write(word + "\n")
+
+                import_cmd(self.conn, "sets", name, filename)
+                self.populate()
 
     def rem_wordset(self):
 
@@ -86,29 +158,22 @@ class WordSetWidget(PluginWidget):
 
     def open_wordset(self):
 
-        if len(self.view.selectedItems()) == 0:
-            return
+        name = self.view.currentItem().text()
+        dialog = WordListDialog()
 
-        set_name = self.view.selectedItems()[0].text()
+        # populate dialog
+        dialog.model.setStringList(list(get_words_set(self.conn, name)))
 
-        dialog = QDialog()
-        view = QListView()
-        model = QStringListModel()
-        view.setModel(model)
-        view.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        button = QPushButton("OK")
-        vlayout = QVBoxLayout()
-        vlayout.addWidget(view)
-        vlayout.addWidget(button)
-        dialog.setLayout(vlayout)
-        dialog.setWindowTitle(set_name)
+        if dialog.exec_() == QDialog.Accepted:
+            #  Drop previous
+            drop_cmd(self.conn, "sets", name)
+            _, filename = tempfile.mkstemp()
+            with open(filename, "w") as file:
+                for word in dialog.model.stringList():
+                    file.write(word + "\n")
 
-        # Load word sets
-
-        model.setStringList(get_words_set(self.conn, set_name))
-        button.clicked.connect(dialog.accept)
-
-        dialog.exec_()
+            import_cmd(self.conn, "sets", name, filename)
+            self.populate()
 
     def on_open_project(self, conn):
         """ override """
@@ -134,9 +199,9 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
-    conn = get_sql_connexion("test.db")
+    conn = get_sql_connexion("C:/sacha/Dev/cutevariant/test.db")
 
-    import_cmd(conn, "sets", "boby", "examples/gene.txt")
+    # import_cmd(conn, "sets", "boby", "examples/gene.txt")
 
     w = WordSetWidget()
     w.conn = conn
