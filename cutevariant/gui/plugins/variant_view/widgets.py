@@ -351,23 +351,18 @@ class VariantModel(QAbstractTableModel):
         self.vertical_view_action = self.top_bar.addAction(FIcon())
 
 
-
-
 class VariantDelegate(QStyledItemDelegate):
-
-    def __init__(self, parent = None):
+    def __init__(self, parent=None):
         super().__init__(parent)
 
         self.formatter = None
 
-
     def paint(self, painter, option, index):
 
         if self.formatter is None:
-            return super().paint(painter,option,index)
+            return super().paint(painter, option, index)
 
-
-        # Draw selections 
+        # Draw selections
         if option.state & QStyle.State_Enabled:
             bg = (
                 QPalette.Normal
@@ -381,13 +376,11 @@ class VariantDelegate(QStyledItemDelegate):
             is_selected = True
             painter.fillRect(option.rect, option.palette.color(bg, QPalette.Highlight))
 
-
-        # Draw formatters 
-        option.rect = option.rect.adjusted(3,0,0,0) #Don't know why I need to adjust the left margin .. .
-        self.formatter.paint(painter,option,index)
-
-
-
+        # Draw formatters
+        option.rect = option.rect.adjusted(
+            3, 0, 0, 0
+        )  # Don't know why I need to adjust the left margin .. .
+        self.formatter.paint(painter, option, index)
 
 
 class VariantView(QWidget):
@@ -424,7 +417,6 @@ class VariantView(QWidget):
         # Setup delegate
         self.delegate = VariantDelegate()
         self.view.setItemDelegate(self.delegate)
-        
 
         #  setup toolbar
         spacer = QWidget()
@@ -483,7 +475,6 @@ class VariantView(QWidget):
         print("set formatter")
         self.delegate.formatter = formatter
         self.view.reset()
-
 
     @property
     def conn(self):
@@ -686,8 +677,9 @@ class VariantViewWidget(plugin.PluginWidget):
         super().__init__(parent)
 
         # Create 2 Pane
-        self.splitter = QSplitter(Qt.Vertical)
+        self.splitter = QSplitter(Qt.Horizontal)
         self.first_pane = VariantView()
+
         self.second_pane = VariantView()
         self.second_pane.hide()
 
@@ -708,61 +700,21 @@ class VariantViewWidget(plugin.PluginWidget):
 
         # self.second_pane.view.setHorizontalHeader(self.first_pane.view.horizontalHeader())
 
-        #  Common toolbar
+        # Top toolbar
         self.top_bar = QToolBar()
         self.top_bar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-
-        self.groupby_act_gp = QActionGroup(self)
-        self.groupby_act_gp.setExclusive(True)
-        self.groupby_act_gp.setVisible(False)
 
         # checkable group action
         self.groupby_action = self.top_bar.addAction(
             FIcon(0xF14E0), "Group by", self.on_group_changed
         )
         self.groupby_action.setCheckable(True)
+        self.groupby_action.setChecked(False)
 
-        # List group action
-        self.groupby_actions = []  # List of actions
-        self.groupby_act_list = QToolButton()
-        self.groupby_act_list.setIcon(FIcon(0xF0756))
-        self.groupby_act_list.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-        self.groupby_act_list.setPopupMode(QToolButton.InstantPopup)
-        self._groupby_act_list = QWidgetAction(self)
-        self._groupby_act_list.setDefaultWidget(self.groupby_act_list)
-        self.top_bar.addAction(self._groupby_act_list)
-
-        # vertical group view button
-        self.vertical_view_action = self.top_bar.addAction(
-            FIcon(0xF0575, self.palette().color(QPalette.Highlight)),
-            "view 1",
-            lambda: self.set_view_orientation(Qt.Vertical),
-        )
-        self.vertical_view_action.setCheckable(True)
-        self.vertical_view_action.setChecked(True)  # Default
-        self.top_bar.addAction(self.vertical_view_action)
-        # horizontal group view button
-        self.horizontal_view_action = self.top_bar.addAction(
-            FIcon(0xF0BCC, self.palette().color(QPalette.Highlight)),
-            "view 2",
-            lambda: self.set_view_orientation(Qt.Horizontal),
-        )
-        self.horizontal_view_action.setCheckable(True)
-        self.top_bar.addAction(self.horizontal_view_action)
-
-        self.groupby_act_gp.addAction(self.vertical_view_action)
-        self.groupby_act_gp.addAction(self.horizontal_view_action)
-        self.groupby_act_gp.addAction(self._groupby_act_list)
-
-        # self.first_pane.view.clicked.connect(self.on_variant_clicked)
-
-        self.first_pane.view.selectionModel().currentRowChanged.connect(
-            lambda x, _: self.on_variant_clicked(x)
-        )
-
-        self.second_pane.view.selectionModel().currentRowChanged.connect(
-            lambda x, _: self.on_variant_clicked(x)
-        )
+        # groupbylist
+        self.groupbylist_action = self.top_bar.addAction("chr,pos,ref")
+        self.groupbylist_action.setVisible(False)
+        self.groupbylist_action.triggered.connect(self._show_group_dialog)
 
         #  Formatter tools
         self.top_bar.addSeparator()
@@ -781,11 +733,23 @@ class VariantViewWidget(plugin.PluginWidget):
         self.top_bar.addSeparator()
         self.top_bar.addAction(FIcon(0xF0450), "Refresh", self.on_refresh)
 
+        #   Setup layour
         main_layout = QVBoxLayout()
         main_layout.addWidget(self.top_bar)
         main_layout.addWidget(self.splitter)
 
         self.setLayout(main_layout)
+
+        #  Make connection
+        self.first_pane.view.selectionModel().currentRowChanged.connect(
+            lambda x, _: self.on_variant_clicked(x)
+        )
+
+        self.second_pane.view.selectionModel().currentRowChanged.connect(
+            lambda x, _: self.on_variant_clicked(x)
+        )
+
+        self.last_group = ["chr"]
 
     def on_formatter_changed(self):
 
@@ -800,141 +764,81 @@ class VariantViewWidget(plugin.PluginWidget):
         self.second_pane.conn = self.conn
 
         self.on_refresh()
-        self.reset()
 
     def on_refresh(self):
         """ override """
 
+        self.save_fields = self.mainwindow.state.fields
         self.first_pane.fields = self.mainwindow.state.fields
         self.first_pane.source = self.mainwindow.state.source
         self.first_pane.filters = self.mainwindow.state.filters
-        self.first_pane.group_by = self.mainwindow.state.group_by
+        #        self.first_pane.group_by = self.mainwindow.state.group_by
+
+        self._set_groups(self.mainwindow.state.group_by)
 
         self.first_pane.model.formatter = next(formatter.find_formatters())()
         self.second_pane.model.formatter = next(formatter.find_formatters())()
+        self.load()
 
-        # self.main_view.model.group_by = ["chr","pos","ref","alt"]
+    def _is_grouped(self) -> bool:
+        """Return if view is in grouped mode
+        """
+        return self.first_pane.model.group_by != []
 
-        self.first_pane.load()
-        self.load_group_fields()
+    def load(self):
+        """ load all view """
 
-        self.groupby_action.setChecked(bool(self.first_pane.model.group_by))
-        self.groupby_act_gp.setVisible(bool(self.first_pane.model.group_by))
-        self.set_view_split(self.groupby_action.isChecked())
+        is_grouped = self._is_grouped()
+        self.second_pane.setVisible(is_grouped)
+        self.groupbylist_action.setVisible(is_grouped)
 
-        # self.show_group_column_only(self.horizontal_view_action.isChecked())
+        self.groupby_action.blockSignals(True)
+        self.groupby_action.setChecked(is_grouped)
+        self.groupby_action.blockSignals(False)
+
+        if self._is_grouped():
+            self.first_pane.model.fields = self.first_pane.model.group_by
+            self.first_pane.load()
+            self.second_pane.load()
+        else:
+            self.first_pane.model.fields = self.save_fields
+            self.first_pane.load()
 
     def on_group_changed(self):
 
         is_checked = self.groupby_action.isChecked()
-
-        if is_checked:
-            checked_fields = [
-                action.text() for action in self.groupby_actions if action.isChecked()
-            ]
-
-            if not checked_fields:  # By default, add one groupby
-                checked_fields = [self.groupby_actions[0].text()]
-
+        if is_checked and not self._is_grouped():
+            self._set_groups(self.last_group)
         else:
-            checked_fields = []
-            self.reset()
+            self.last_group = self.first_pane.model.group_by
 
-        self.mainwindow.state.group_by = checked_fields
-        self.on_refresh()
+        if not is_checked:
+            self._set_groups([])
 
-        #  refresh source editor plugin
-        if "vql_editor" in self.mainwindow.plugins:
-            plugin = self.mainwindow.plugins["vql_editor"]
-            plugin.on_refresh()
+        # self.mainwindow.state.group_by = checked_fields
 
-    def reset(self):
-        self.set_view_split(False)
-        self.groupby_act_gp.setVisible(False)
-        self.groupby_action.setChecked(False)
-        self.first_pane.model.order_by = None
+        self.load()
+        self._refresh_vql_editor()
 
-    def load_group_fields(self):
-        self.groupby_actions = []
-        self.groupby_menu = QMenu()
-        self.groupby_menu.setTearOffEnabled(True)
-        for field in self.first_pane.model.fields:
-            if type(field) == str:  # Avoid tuple ...
-                action = self.groupby_menu.addAction(field, self.on_group_changed)
-                action.setCheckable(True)
-                if field in self.first_pane.model.group_by:
-                    action.setChecked(True)
-                self.groupby_actions.append(action)
+        # if is_checked:
+        #     checked_fields = [
+        #         action.text() for action in self.groupby_actions if action.isChecked()
+        #     ]
 
-        self.groupby_act_list.setMenu(self.groupby_menu)
-        self.groupby_act_list.setText(
-            "Group by " + ",".join(self.first_pane.model.group_by)
-        )
+        #     if not checked_fields:  # By default, add one groupby
+        #         checked_fields = [self.groupby_actions[0].text()]
 
-    def set_view_orientation(self, orientation):
-        if orientation == Qt.Vertical:
-            self.splitter.setOrientation(Qt.Vertical)
-            self.show_group_column_only(False)
+        # else:
+        #     checked_fields = []
+        #     self.reset()
 
-        if orientation == Qt.Horizontal:
-            self.splitter.setOrientation(Qt.Horizontal)
-            self.show_group_column_only(True)
+        # self.mainwindow.state.group_by = checked_fields
+        # self.on_refresh()
 
-        if "count" in self.first_pane.model.headers:
-            self.first_pane.view.setColumnHidden(
-                self.first_pane.model.headers.index("count"), orientation == Qt.Vertical
-            )
-
-    def set_view_split(self, active=True):
-
-        if active:
-            self.second_pane.setVisible(True)
-            if self.vertical_view_action.isChecked():
-                self.set_view_orientation(Qt.Vertical)
-            else:
-                self.set_view_orientation(Qt.Horizontal)
-        else:
-            self.second_pane.setVisible(False)
-            self.show_group_column_only(False)
-
-    # def on_group_changed(self):
-
-    #     # TODO : must be user defined
-
-    #     # When Horizontal view is enable, we hide some columns not in GP
-    #     # hidden_col = [
-    #     #     self.first_pane.model.headers.index(i) for i in GP if i in self.first_pane.model.headers
-    #     # ]
-
-    #     self.groupby_act_gp.setVisible(self.groupby_action.isChecked())
-    #     self.second_pane.setVisible(self.groupby_action.isChecked())
-
-    #     if self.groupby_action.isChecked() is False:
-    #         checked_fields = []
-    #     else:
-    #         checked_fields = [
-    #             action.text() for action in self.groupby_actions if action.isChecked()
-    #         ]
-
-    #     self.mainwindow.state.group_by = checked_fields
-    #     #  refresh source editor plugin
-    #     if "vql_editor" in self.mainwindow.plugins:
-    #         plugin = self.mainwindow.plugins["source_editor"]
-    #         plugin.on_refresh()
-
-    #     self.on_refresh()
-
-    def show_group_column_only(self, active=True):
-
-        for i, val in enumerate(self.first_pane.model.headers):
-            if val not in self.first_pane.model.group_by + ["count"] and active is True:
-                self.first_pane.view.setColumnHidden(i, True)
-            else:
-                self.first_pane.view.setColumnHidden(i, False)
-
-        # hidden_col = [
-        #     self.first_pane.model.headers.index(i) for i in GP if i in self.first_pane.model.headers
-        # ]
+        # #  refresh source editor plugin
+        # if "vql_editor" in self.mainwindow.plugins:
+        #     plugin = self.mainwindow.plugins["vql_editor"]
+        #     plugin.on_refresh()
 
     def on_variant_clicked(self, index: QModelIndex):
         """React on variant clicked 
@@ -948,7 +852,7 @@ class VariantViewWidget(plugin.PluginWidget):
         if index.model() == self.first_pane.view.model():
             variant = self.first_pane.model.variant(index.row())
 
-            self.second_pane.fields = self.first_pane.model.fields
+            self.second_pane.fields = self.save_fields
             self.second_pane.source = self.first_pane.model.source
 
             and_list = []
@@ -969,6 +873,64 @@ class VariantViewWidget(plugin.PluginWidget):
             self.mainwindow.state.current_variant = variant
             self.mainwindow.refresh_plugins(sender=self)
 
+    def _show_group_column_only(self, active=True):
+        """ Show or hide group fields in first panel """
+        for i, val in enumerate(self.first_pane.model.headers):
+            if val not in self.first_pane.model.group_by + ["count"] and active is True:
+                self.first_pane.view.setColumnHidden(i, True)
+            else:
+                self.first_pane.view.setColumnHidden(i, False)
+
+    def _show_group_dialog(self):
+        """ Show a dialog to select group fields """
+
+        dialog = QDialog(self)
+
+        view = QListWidget()
+        box = QVBoxLayout()
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        box.addWidget(view)
+        box.addWidget(buttons)
+        buttons.accepted.connect(dialog.accept)
+        buttons.rejected.connect(dialog.reject)
+
+        for field in self.save_fields:
+            item = QListWidgetItem()
+            item.setText(field)
+            if field in self.first_pane.model.group_by:
+                item.setCheckState(Qt.Checked)
+            else:
+                item.setCheckState(Qt.Unchecked)
+
+            view.addItem(item)
+        dialog.setLayout(box)
+
+        if dialog.exec_() == QDialog.Accepted:
+
+            selected_fields = []
+            for i in range(view.count()):
+                item = view.item(i)
+                if item.checkState() == Qt.Checked:
+                    selected_fields.append(item.text())
+
+            # if no group
+            if selected_fields == []:
+                selected_fields = ["chr"]
+
+            self._set_groups(selected_fields)
+            self.load()
+            self._refresh_vql_editor()
+
+    def _set_groups(self, fields):
+        self.first_pane.model.group_by = fields
+        self.groupbylist_action.setText(",".join(fields))
+
+    def _refresh_vql_editor(self):
+        if "vql_editor" in self.mainwindow.plugins:
+            self.mainwindow.state.group_by = self.first_pane.model.group_by
+            plugin = self.mainwindow.plugins["vql_editor"]
+            plugin.on_refresh()
+
 
 if __name__ == "__main__":
     import sys
@@ -987,7 +949,9 @@ if __name__ == "__main__":
 
     w = VariantViewWidget()
 
-    # w.on_open_project(conn)
+    w.conn = conn
+    w.first_pane.model.conn = conn
+    w.first_pane.load()
     # w.main_view.model.group_by = ["chr","pos","ref","alt"]
     # w.on_refresh()
 
