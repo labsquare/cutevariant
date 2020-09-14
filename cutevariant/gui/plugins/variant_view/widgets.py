@@ -718,9 +718,9 @@ class VariantViewWidget(plugin.PluginWidget):
 
         #  Formatter tools
         self.top_bar.addSeparator()
-        # spacer = QWidget()
-        # spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        # self.top_bar.addWidget(spacer)
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        self.top_bar.addWidget(spacer)
         self.formatter_combo = QComboBox()
         for i in formatter.find_formatters():
             self.formatter_combo.addItem(i.__name__, i)
@@ -873,14 +873,6 @@ class VariantViewWidget(plugin.PluginWidget):
             self.mainwindow.state.current_variant = variant
             self.mainwindow.refresh_plugins(sender=self)
 
-    def _show_group_column_only(self, active=True):
-        """ Show or hide group fields in first panel """
-        for i, val in enumerate(self.first_pane.model.headers):
-            if val not in self.first_pane.model.group_by + ["count"] and active is True:
-                self.first_pane.view.setColumnHidden(i, True)
-            else:
-                self.first_pane.view.setColumnHidden(i, False)
-
     def _show_group_dialog(self):
         """ Show a dialog to select group fields """
 
@@ -897,7 +889,7 @@ class VariantViewWidget(plugin.PluginWidget):
         for field in self.save_fields:
             item = QListWidgetItem()
             item.setText(field)
-            if field in self.first_pane.model.group_by:
+            if field in self.first_pane.model.group_by and type(field) == str:
                 item.setCheckState(Qt.Checked)
             else:
                 item.setCheckState(Qt.Unchecked)
