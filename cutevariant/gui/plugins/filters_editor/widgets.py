@@ -210,6 +210,8 @@ class OperatorField(BaseField):
         ("equal", "="),
         ("not equal", "!="),
         ("like", "LIKE"),
+        ("regex", "~"),
+        ("in", "IN"),
     )
 
     def __init__(self, parent=None):
