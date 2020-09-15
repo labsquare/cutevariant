@@ -549,7 +549,7 @@ class VariantView(QWidget):
         if self.model.pageCount() - 1 == 0:
             self.set_pagging_enabled(False)
         else:
-            self.page_box.addItems([str(i) for i in range(self.model.pageCount())])
+            # self.page_box.addItems([str(i) for i in range(self.model.pageCount())])
             self.page_box.validator().setRange(0, self.model.pageCount() - 1)
             self.set_pagging_enabled(True)
 
@@ -852,17 +852,18 @@ class VariantViewWidget(plugin.PluginWidget):
         if index.model() == self.first_pane.view.model():
             variant = self.first_pane.model.variant(index.row())
 
-            self.second_pane.fields = self.save_fields
-            self.second_pane.source = self.first_pane.model.source
+            if self._is_grouped():
+                self.second_pane.fields = self.save_fields
+                self.second_pane.source = self.first_pane.model.source
 
-            and_list = []
-            for i in self.first_pane.group_by:
-                and_list.append({"field": i, "operator": "=", "value": variant[i]})
+                and_list = []
+                for i in self.first_pane.group_by:
+                    and_list.append({"field": i, "operator": "=", "value": variant[i]})
 
-            self.second_pane.filters = {"AND": and_list}
+                self.second_pane.filters = {"AND": and_list}
 
-            self.second_pane.load()
-            self.second_pane.load_page_box()
+                self.second_pane.load()
+                self.second_pane.load_page_box()
 
             #  Refresh plugins when clicked
             self.mainwindow.state.current_variant = variant

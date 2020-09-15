@@ -93,6 +93,15 @@ def count_cmd(
     Returns:
         dict : return count of variant with "count" as a key 
     """
+
+    if not filters:
+        # Returned stored cache variant
+        return {
+            "count": conn.execute(
+                f"SELECT count FROM selections WHERE name = '{source}'"
+            ).fetchone()[0]
+        }
+
     default_tables = dict([(i["name"], i["category"]) for i in sql.get_fields(conn)])
     samples_ids = dict([(i["name"], i["id"]) for i in sql.get_samples(conn)])
     query = build_query(
