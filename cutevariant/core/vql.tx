@@ -4,23 +4,51 @@ Model:
 ;
 
 
+// Keep orders 
 Command:
-    SelectCmd|CreateCmd|SetCmd
+    SelectCmd|CreateCmd|SetCmd|BedCmd|CopyCmd|CountCmd|DropCmd|ShowCmd|ImportCmd
 ;
 
 
 SelectCmd:
-    'SELECT' columns+=ColumnIdentifier[","] ('FROM' source=ID ('WHERE' filter=FilterExpression)?)?
+    'SELECT' fields+=FieldIdentifier[","] ('FROM' source=ID ('WHERE' filter=FilterExpression)? ('GROUP BY' group_by+=FieldIdentifier[","] ('HAVING' 'count' having_op=MathOperator having_val=NUMBER )?)?)?
 ;
 
 CreateCmd:
-    'CREATE' target=ID 'FROM' source=ID ('WHERE' filter=FilterExpression)?
+    'CREATE' target=ID 'FROM' source=ID 'WHERE' filter=FilterExpression
+;
+
+CopyCmd:
+	'CREATE' target=ID 'FROM' source=ID
+;
+
+SetCmdFull:
+    'CREATE' target=ID '=' expression=SetExpression
 ;
 
 SetCmd:
-    'CREATE' target=ID '=' filter=SetExpression
+	'CREATE' target=ID '=' first=ID op=SetOperator second=ID
 ;
 
+BedCmd:
+	'CREATE' target=ID 'FROM' source=ID 'INTERSECT' path=STRING
+;
+
+CountCmd:
+	'COUNT' 'FROM' source=ID  ('WHERE' filters=FilterExpression)?
+;
+
+DropCmd:
+	'DROP' feature=ID name=ID
+;
+
+ShowCmd:
+	'SHOW' feature=ID
+;
+
+ImportCmd:
+	'IMPORT' feature=ID path=STRING 'AS' name=ID
+;
 
 //################################## Set Operation ###################
 
@@ -47,18 +75,23 @@ op= FilterTerm | ('(' op=FilterExpression ')')
 ;
 
 FilterTerm:
-    field=ColumnIdentifier op=MathOperator val=ValueIdentifier
+    field=FieldIdentifier op=MathOperator val=ValueIdentifier
 ;
 
 
 //################################## TERMINALS #########################
 Comment: /\#.*$/;
-ColumnIdentifier: Function|ID;
-ValueIdentifier: (NUMBER|STRING|BOOL|Tuple);
-Function: func=ID '(' arg=STRING ')' ;
+
+FieldId:/[^\d\W](\w*\.)?\w*\b/;
+FieldIdentifier: Function|FieldId;
+ValueIdentifier: (NUMBER|STRING|BOOL|Tuple|SetIdentifier);
+ARGS: STRING;
+Function: func=ID '[' arg=ARGS ']' ('.' extra=ID)?;
+SetIdentifier: 'SET[' arg=ARGS ']';
+
 BoolOperator: "AND"|"OR";
 SetOperator: "+"|"-"|"&"|"^";
-MathOperator: /==|>=|<=|!=|=\/=|=|>|<|\||\*|\/|\%|>>|<<|\&|\||<>|IS|IS
-NOT|IN|LIKE|GLOB|MATCH|REGEXP/;
-Tuple: '(' items*=ValueIdentifier[','] ')';
+MathOperator: />=|<=|!=|=|>|<|!~|~|is|like|has|in/;
+Tuple: '(' items+=ValueIdentifier[','] ')';
+
 

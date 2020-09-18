@@ -24,8 +24,6 @@ READERS = [
 def test_fields(reader):
     fields = tuple(reader.get_fields())
     field_names = [f["name"] for f in fields]
-    # # search if field name are unique
-    # assert len(set(field_names)) == len(field_names)
 
     # test mandatory fields name
     assert "chr" in field_names
@@ -37,24 +35,9 @@ def test_fields(reader):
     for field in fields:
         check_field_schema(field)
 
-    # Test the removing of duplicated fields (in annotations AND in variants)
-    # annotations fields have to be removed.
-    # Typically, 'af' field in test.vep.vcf
-    # is a good candidate.
-    # PS: we do not care of duplicated fields in samples since we do not use
-    # other field than genotype for now.
-    variants_fields = {
-        field["name"] for field in reader.get_fields_by_category("variants")
-    }
-    print("Variants fields", variants_fields)
-    annotations_fields = {
-        field["name"] for field in reader.get_fields_by_category("annotations")
-    }
-    print("Annotations fields", variants_fields)
-    duplicated_variants = variants_fields & annotations_fields
-    print("DUPLICATED VARIANTS", duplicated_variants)
-
-    assert duplicated_variants == set()
+    # Test if fields are unique per categories 
+    field_with_categories = [f["name"]+f["category"] for f in fields]
+    assert len(field_with_categories) == len(set(field_with_categories))
 
 
 @pytest.mark.parametrize(
@@ -69,10 +52,6 @@ def test_variants(reader):
     field_of_annotations = [f["name"] for f in fields if f["category"] == "annotations"]
     field_of_samples = [f["name"] for f in fields if f["category"] == "samples"]
 
-    print(fields)
-    print(field_of_annotations)
-    print(field_of_samples)
-
     for variant in reader.get_variants():
 
         assert isinstance(variant, dict)
@@ -84,7 +63,6 @@ def test_variants(reader):
         if "samples" in variant:
             assert isinstance(variant["samples"], list)
             samples_names = [s["name"] for s in variant["samples"]]
-            print(reader.get_samples())
             assert sorted(reader.get_samples()) == sorted(samples_names)
 
         # check variant schema
@@ -102,12 +80,11 @@ def test_create_db(reader):
     sql.insert_many_fields(conn, reader.get_fields())
     assert len(list(sql.get_fields(conn))) == len(list(reader.get_fields()))
 
-    sql.create_table_samples(conn)
+    sql.create_table_samples(conn, reader.get_fields_by_category("samples"))
     sql.insert_many_samples(conn, reader.get_samples())
     assert len(list(sql.get_samples(conn))) == len(list(reader.get_samples()))
 
     sql.create_table_annotations(conn, reader.get_fields_by_category("annotations"))
-
     sql.create_table_variants(conn, reader.get_fields_by_category("variants"))
 
     sql.create_table_selections(conn)

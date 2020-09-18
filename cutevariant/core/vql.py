@@ -1,5 +1,12 @@
 """Proof of concept for the VQL DSL.
 
+From this module, you only need to use parse_vql or parse_one_vql.
+For instance : 
+
+cmd = parse_one_vql("SELECT chr, pos FROM variants") 
+
+print(cmd)
+
 See test_vql.py for usage and features.
 
 """
@@ -73,11 +80,6 @@ class FilterTerm(metaclass=model_class):
     def value(self):
         field = self.field.value if hasattr(self.field, "value") else self.field
         val = self.val.value if hasattr(self.val, "value") else self.val
-
-        # escape if quoted
-        if isinstance(val, str):
-            val = f"'{val}'"
-
         return {"field": field, "operator": self.op, "value": val}
 
 
@@ -97,6 +99,26 @@ class FilterExpression(metaclass=model_class):
         return {key: out}
 
 
+class SetExpression(metaclass=model_class):
+    @property
+    def value(self):
+        return "test"
+
+
+# class FilterExpression(metaclass=model_class):
+#     @property
+#     def value(self):
+#         out = []
+#         key = "AND"  #  By default
+#         for i in self.op:
+#             if isinstance(i, str):
+#                 if i in ("AND", "OR"):
+#                     key = i
+#                 else:
+#                     out.append(i)
+#             else:
+#                 out.append(i.value)
+#         return {key: out}
 class FilterOperand(metaclass=model_class):
     @property
     def value(self):
@@ -106,7 +128,9 @@ class FilterOperand(metaclass=model_class):
 class Function(metaclass=model_class):
     @property
     def value(self):
-        return (self.func, self.arg, "gt")
+        if not self.extra:
+            self.extra = "gt"
+        return (self.func, self.arg, self.extra)
 
 
 class Tuple(metaclass=model_class):
@@ -115,19 +139,37 @@ class Tuple(metaclass=model_class):
         return tuple(self.items)
 
 
+class SetIdentifier(metaclass=model_class):
+    @property
+    def value(self):
+        return ("SET", self.arg)
+
+
 class SelectCmd(metaclass=model_class):
     @property
     def value(self):
         output = {
             "cmd": "select_cmd",
-            "columns": [
-                col.value if hasattr(col, "value") else col for col in self.columns
+            "fields": [
+                col.value if hasattr(col, "value") else col for col in self.fields
             ],
             "source": self.source,
         }
 
         if self.filter:
-            output["filter"] = self.filter.value
+            output["filters"] = self.filter.value
+        else:
+            output["filters"] = {}
+
+        if self.group_by:
+            output["group_by"] = self.group_by
+        else:
+            output["group_by"] = []
+
+        if self.having_op and self.having_val:
+            output["having"] = {"op": self.having_op, "value": self.having_val}
+        else:
+            output["having"] = {}
 
         return output
 
@@ -138,18 +180,78 @@ class CreateCmd(metaclass=model_class):
         return {
             "cmd": "create_cmd",
             "source": self.source,
-            "fitler": self.filter.value if self.filter else None,
+            "filters": self.filter.value if self.filter else {},
+            "target": self.target,
         }
 
 
-# class SetCmd(metaclass=model_class):
-#     @property
-#     def value(self):
-#         return {
-#         "cmd": "set_cmd",
-#         "source": self.source,
-#         "fitler": self.filter.value if self.filter else None
-#         }
+class SetCmd(metaclass=model_class):
+    @property
+    def value(self):
+        return {
+            "cmd": "set_cmd",
+            "target": self.target,
+            "first": self.first,
+            "operator": self.op,
+            "second": self.second,
+        }
+
+
+class BedCmd(metaclass=model_class):
+    @property
+    def value(self):
+        return {
+            "cmd": "bed_cmd",
+            "target": self.target,
+            "source": self.source,
+            "path": self.path,
+        }
+
+
+class CopyCmd(metaclass=model_class):
+    @property
+    def value(self):
+        return {
+            "cmd": "create_cmd",
+            "source": self.source,
+            "filters": {},
+            "target": self.target,
+        }
+
+
+class CountCmd(metaclass=model_class):
+    @property
+    def value(self):
+        obj = {
+            "cmd": "count_cmd",
+            "source": self.source,
+            "filters": self.filters.value if self.filters else {},
+        }
+
+        return obj
+
+
+class DropCmd(metaclass=model_class):
+    @property
+    def value(self):
+        return {"cmd": "drop_cmd", "feature": self.feature, "name": self.name}
+
+
+class ShowCmd(metaclass=model_class):
+    @property
+    def value(self):
+        return {"cmd": "show_cmd", "feature": self.feature}
+
+
+class ImportCmd(metaclass=model_class):
+    @property
+    def value(self):
+        return {
+            "cmd": "import_cmd",
+            "feature": self.feature,
+            "path": self.path,
+            "name": self.name,
+        }
 
 
 METAMODEL = textx.metamodel_from_str(
@@ -161,6 +263,23 @@ METAMODEL = textx.metamodel_from_str(
 
 
 def execute_vql(raw_vql: str) -> list:
+    """DEPRECETED : USE parse_vql 
+
+    RENAME 
+    Execute multiline VQL statement separated by ";"
+
+    :return: yield 1 dictionnary per command
+        .. example :: {'cmd': 'select_cmd', 'columns': ['chr','pos'], 'source':'variants', 'filter': 'None'}
+    """
+    try:
+        raw_model = METAMODEL.model_from_str(raw_vql)
+    except textx.exceptions.TextXSyntaxError as err:
+        raise VQLSyntaxError(*error_message_from_err(err, raw_vql))
+
+    yield from (command.value for command in raw_model.commands)
+
+
+def parse_vql(raw_vql: str) -> list:
     """Execute multiline VQL statement separated by ";"
 
     :return: yield 1 dictionnary per command
@@ -174,6 +293,5 @@ def execute_vql(raw_vql: str) -> list:
     yield from (command.value for command in raw_model.commands)
 
 
-def model_from_string(raw_vql: str) -> dict:
-    """Obsolete : retro compatibility"""
-    return next(execute_vql(raw_vql))
+def parse_one_vql(raw_vql: str) -> dict:
+    return next(parse_vql(raw_vql))

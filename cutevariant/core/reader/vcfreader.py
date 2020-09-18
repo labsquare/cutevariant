@@ -2,13 +2,32 @@
 import vcf
 
 # Custom imports
-from .abstractreader import AbstractReader
+from .abstractreader import AbstractReader, sanitize_field_name
 from .annotationparser import VepParser, SnpEffParser
 from cutevariant.commons import logger
 
+
+#  Fixing PyVCF bug
+#  https://github.com/jamescasbon/PyVCF/pull/320
+def _map(self, func, iterable, bad=[".", "", "NA"]):
+    """``map``, but make bad values None."""
+    return [func(x) if x not in bad else None for x in iterable]
+
+
+vcf.Reader._map = _map
+
+#  End fixing
+
+
 LOGGER = logger()
 
-VCF_TYPE_MAPPING = {"Float": "float", "Integer": "int", "Flag": "bool", "String": "str"}
+VCF_TYPE_MAPPING = {
+    "Float": "float",
+    "Integer": "int",
+    "Flag": "bool",
+    "String": "str",
+    "Character": "str",
+}
 
 
 class VcfReader(AbstractReader):
@@ -31,9 +50,10 @@ class VcfReader(AbstractReader):
         """
         super().__init__(device)
 
-        vcf_reader = vcf.VCFReader(device)
+        vcf_reader = vcf.VCFReader(device, strict_whitespace=True)
         self.samples = vcf_reader.samples
         self.annotation_parser = None
+        self.metadata = vcf_reader.metadata
         self._set_annotation_parser(annotation_parser)
 
     def get_fields(self):
@@ -54,15 +74,13 @@ class VcfReader(AbstractReader):
             .. seealso parse_fields() for basic default fields.
         :rtype: <tuple <dict>>
         """
-        LOGGER.debug("CsvReader::get_fields: called")
-        if not self.fields:
-            LOGGER.debug("CsvReader::get_fields: parse")
+        if not hasattr(self, "fields"):
 
             # Sanitize fields names
             # PS: annotations fields names are sanitized by the annotation_parser
             fields = tuple(self.parse_fields())
             for field in fields:
-                field["name"] = AbstractReader.sanitize_field_name(field["name"])
+                field["name"] = sanitize_field_name(field["name"])
 
             if self.annotation_parser:
                 # If "ANN" is a field in the current VCF:
@@ -83,6 +101,11 @@ class VcfReader(AbstractReader):
         :return: Generator of full variants with "annotations" key.
         :rtype: <generator <dict>>
         """
+
+        if not hasattr(self, "fields"):
+            # This is a bad caching code ....
+            self.get_fields()
+
         if self.annotation_parser:
             yield from self.annotation_parser.parse_variants(self.parse_variants())
         else:
@@ -99,13 +122,18 @@ class VcfReader(AbstractReader):
         """
         # loop over record
         self.device.seek(0)
-        vcf_reader = vcf.VCFReader(self.device)
+        vcf_reader = vcf.VCFReader(self.device,strict_whitespace=True)
+        import sys
 
         # TODO : ugly for testing progression .. see #60
         self.read_bytes = self._init_read_bytes(vcf_reader)
 
+        # Genotype format
+        formats = [i for i in vcf_reader.formats]
+
         for record in vcf_reader:
 
+            # elf.read_bytes += sys.getsizeof(record)
             self.read_bytes += self._get_record_size(record)
 
             # split row with multiple alt
@@ -118,17 +146,20 @@ class VcfReader(AbstractReader):
                     "alt": str(alt),
                     "rsid": record.ID,  # Avoid id column duplication in DB
                     "qual": record.QUAL,
-                    "filter": "",  # TODO ?,
+                    "filter": "" if record.FILTER is None else ",".join(record.FILTER),
                 }
+
+                forbidden_field = ("chr", "pos", "ref", "alt", "rsid", "qual", "filter")
 
                 # Parse info
                 for name in record.INFO:
-                    if isinstance(record.INFO[name], list):
-                        variant[name.lower()] = ",".join(
-                            [str(i) for i in record.INFO[name]]
-                        )
-                    else:
-                        variant[name.lower()] = record.INFO[name]
+                    if name.lower() not in forbidden_field:
+                        if isinstance(record.INFO[name], list):
+                            variant[name.lower()] = ",".join(
+                                [str(i) for i in record.INFO[name]]
+                            )
+                        else:
+                            variant[name.lower()] = record.INFO[name]
 
                 # parse sample
                 if record.samples:
@@ -136,6 +167,22 @@ class VcfReader(AbstractReader):
                     for sample in record.samples:
                         sample_data = {}
                         sample_data["name"] = sample.sample
+
+                        #  Load sample annotations
+                        sample_ann = {}
+                        for key in formats:
+                            try:
+                                value = sample[key]
+                                if type(value) == list:
+                                    value = ",".join([str(i) for i in value])
+                                sample_ann[str.lower(key)] = value
+                            except:
+                                LOGGER.debug(
+                                    f"VCFReader::parse: {key} not defined in genotype "
+                                )
+
+                        sample_data.update(sample_ann)
+
                         sample_data["gt"] = (
                             -1 if sample.gt_type == None else sample.gt_type
                         )
@@ -215,7 +262,7 @@ class VcfReader(AbstractReader):
 
         # Reads VCF INFO
         self.device.seek(0)
-        vcf_reader = vcf.VCFReader(self.device)
+        vcf_reader = vcf.VCFReader(self.device,strict_whitespace=True)
 
         #  Reads VCF info
         for key, info in vcf_reader.infos.items():
@@ -244,19 +291,6 @@ class VcfReader(AbstractReader):
         """Return list of samples."""
         return self.samples
 
-    # def _keep_unique_fields(self,fields):
-    #     ''' return fields list with unique field name '''
-    #     names = []
-    #     for field in fields:
-    #         if field["name"] not in names:
-    #             names.append(field["name"])
-    #             yield field
-
-    # else:
-    #     # Rename duplicate fields : field_1, field_2 etc ...
-    #     field["name"]  = field["name"] +"_"+ str(names.count(field["name"])+1)
-    #     yield field
-
     def _set_annotation_parser(self, parser: str):
         """Set the given annotation parser"""
         if parser == "vep":
@@ -268,22 +302,35 @@ class VcfReader(AbstractReader):
     def _get_record_size(self, rec):
         """Approximate record size in bytes"""
         # TODO : ugly .. For testing progression
-        return len(
-            str(rec.CHROM)
-            + str(rec.POS)
-            + str(rec.ID)
-            + str(rec.REF)
-            + str(rec.ALT)
-            + str(rec.QUAL)
-            + str(rec.FILTER)
-            + str(rec.INFO)
-            + str(rec.FORMAT)
-            + str(rec.samples)
+        return (
+            len(
+                str(rec.CHROM)
+                + str(rec.POS)
+                + str(rec.ID)
+                + str(rec.REF)
+                + str(rec.ALT)
+                + str(rec.QUAL)
+                + str(rec.FILTER)
+                + str(rec.INFO)
+                + str(rec.FORMAT)
+                + str(rec.samples)
+            )
+            - 10
         )
 
     def _init_read_bytes(self, reader):
         """Init read bytes : It's the size in bytes of header data file"""
-        return len("".join(reader._column_headers)) + len("".join(reader._header_lines))
+        return 0
 
     def __repr__(self):
         return f"VCF Reader using {type(self.annotation_parser).__name__}"
+
+    def get_metadatas(self):
+        """override from AbstractReaer """
+        output = {}
+        output["filename"] = self.device.name
+
+        for key, value in self.metadata.items():
+            output[key] = str(value)
+
+        return output

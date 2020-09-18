@@ -1,12 +1,25 @@
-"""Module bringing together all the SQL related functions.
+"""This Modules bringing together all the SQL related functions
+to read and write the sqlite database with the schema describe here.
+Each method refer to a CRUD operation using following prefixes:
+``get_``, ``insert_``, ``update_``, ``remove_`` and take a sqlite connexion as ``conn`` attribut.
 
-- Misc functions
-- Selections functions
-- Fields functions
-- Operations on sets of variants
-- Annotations functions
-- Variants functions
-- Samples functions
+The module contains also QueryBuilder class to build complexe variant query based on
+filters,columns and selection.
+
+Example::
+
+    # Read sample table information
+    from cutevariant.core import sql
+    conn = sql.get_sql_connexion("project.db")
+    sql.get_samples(conn)
+
+    # Build a variant query
+    from cutevariant.core import sql
+    conn = sql.get_sql_connexion("project.db")
+    builder = QueryBuilder(conn)
+    builder.columns = ["chr","pos","ref","alt"]
+    print(builder.sql())
+
 """
 
 # Standard imports
@@ -14,18 +27,28 @@ import sqlite3
 import sys
 from collections import defaultdict
 from pkg_resources import parse_version
+from functools import lru_cache
+import re
 
 # Custom imports
 import cutevariant.commons as cm
+import logging
 
 LOGGER = cm.logger()
 
 
-## ================ Misc functions =============================================
+## ================ Misc functions ====================================
 
 
 def get_sql_connexion(filepath):
-    """Open a SQLite database and return the connexion object"""
+    """Open a SQLite database and return the connexion object
+
+    Args:
+        filepath (str): sqlite filepath
+
+    Returns:
+        sqlite3.Connection: Sqlite3 Connection
+    """
     connexion = sqlite3.connect(filepath)
     # Activate Foreign keys
     connexion.execute("PRAGMA foreign_keys = ON")
@@ -33,22 +56,100 @@ def get_sql_connexion(filepath):
     foreign_keys_status = connexion.execute("PRAGMA foreign_keys").fetchone()[0]
     LOGGER.debug("get_sql_connexion:: foreign_keys state: %s", foreign_keys_status)
     assert foreign_keys_status == 1, "Foreign keys can't be activated :("
+
+    # Create function for sqlite
+    def regexp(expr, item):
+        reg = re.compile(expr)
+        return reg.search(item) is not None
+
+    connexion.create_function("REGEXP", 2, regexp)
+
     return connexion
 
 
 def drop_table(conn, table_name):
-    """Drop the given table"""
+    """Drop the given table
+
+    Args:
+        conn (sqlite3.connexion): Sqlite3 connexion
+        table_name (str): sqlite table name
+    """
     cursor = conn.cursor()
     cursor.execute(f"DROP TABLE IF EXISTS {table_name}")
     conn.commit()
 
 
-def create_project(conn, name: str, reference: str):
+def clear_table(conn: sqlite3.Connection, table_name):
+    """Clear content of the given table
+
+    Args:
+        conn (sqlite3.Connection): Sqlite3 Connection
+        table_name (str): sqlite table name
+    """
+    cursor = conn.cursor()
+    cursor.execute(f"DELETE  FROM {table_name}")
+    conn.commit()
+
+
+def get_columns(conn: sqlite3.Connection, table_name):
+    """Return the list of columns for the given table
+
+    Args:
+        conn (sqlite3.Connection): Sqlite3 Connection
+        table_name (str): sqlite table name
+
+    Returns:
+        Columns description from table_info
+        ((0, 'chr', 'str', 0, None, 1 ... ))
+
+    References:
+        used by async_insert_many_variants() to build queries with placeholders
+
+    Todo:
+        Rename to get_table_columns
+
+    """
+    return [
+        c[1] for c in conn.execute(f"pragma table_info({table_name})") if c[1] != "id"
+    ]
+
+
+def create_indexes(conn: sqlite3.Connection):
+    """Create extra indexes on tables
+
+    Args:
+        conn (sqlite3.Connection): Sqlite3 Connection
+
+    Note:
+        This function must be called after batch insertions.
+        You should use this function instead of individual functions.
+
+    """
+
+    create_variants_indexes(conn)
+    create_selections_indexes(conn)
+
+    try:
+        # Some databases have not annotations table
+        create_annotations_indexes(conn)
+    except sqlite3.OperationalError as e:
+        LOGGER.debug("create_indexes:: sqlite3.%s: %s", e.__class__.__name__, str(e))
+
+
+## ================ PROJECT TABLE ===================================
+
+
+def create_project(conn: sqlite3.Connection, name: str, reference: str):
     """Create the table "projects" and insert project name and reference genome
 
-    :param conn: sqlite3.connect
-    :param name: Project's name
-    :param reference: Reference genome
+    Args:
+        conn (sqlite3.Connection): Sqlite3 Connection
+        name (str): Project name
+        reference (str): Genom project
+
+    Todo:
+        * Rename to create_table_project
+
     """
     cursor = conn.cursor()
     cursor.execute(
@@ -60,50 +161,50 @@ def create_project(conn, name: str, reference: str):
     conn.commit()
 
 
-def get_columns(conn, table_name):
-    """Return the list of columns for the given table
-
-    .. note:: used by async_insert_many_variants()
-        to build queries with placeholders
-
-    :param conn: sqlite3.connect
-    :param table_name: Table for which columns will be returned.
+def create_table_metadatas(conn: sqlite3.Connection):
+    """Create table metdata
+    
+    Args:
+        conn (sqlite3.Connection): Description
     """
-    # Get columns description from table_info
-    # ((0, 'chr', 'str', 0, None, 1), ...
-    return [
-        c[1] for c in conn.execute(f"pragma table_info({table_name})") if c[1] != "id"
-    ]
+    cursor = conn.execute(
+        """CREATE TABLE metadatas (id INTEGER PRIMARY KEY, key TEXT, value TEXT)"""
+    )
 
 
-def create_indexes(conn):
-    """Create extra indexes on tables
-
-    .. note:: This function must be called after batch insertions.
-    .. note:: You should use this function instead of individual functions.
+def insert_many_metadatas(conn: sqlite3.Connection, metadatas={}):
+    """Insert metadata 
+    
+    Args:
+        conn (sqlite3.Connection): Description
     """
-    create_variants_indexes(conn)
-    create_selections_indexes(conn)
+    if metadatas:
+        conn.executemany(
+            """
+            INSERT INTO metadatas (key,value)
+            VALUES (?,?)
+            """,
+            list(metadatas.items()),
+        )
 
-    try:
-        # Some databases have not annotations table
-        create_annotations_indexes(conn)
-    except sqlite3.OperationalError as e:
-        LOGGER.debug("create_indexes:: sqlite3.%s: %s", e.__class__.__name__, str(e))
+        conn.commit()
 
 
-## ================ Selections functions =======================================
+## ================ SELECTION TABLE ===================================
 
 
-def create_table_selections(conn):
+def create_table_selections(conn: sqlite3.Connection):
     """Create the table "selections" and association table "selection_has_variant"
 
-    This table stores the queries saved by the user:
-        - name: name of the set of variants
-        - count: number of variants concerned by this set
-        - query: the SQL query which generated the set
+    This table stores variants selection saved by the user:
+            - name: name of the set of variants
+            - count: number of variants concerned by this set
+            - query: the SQL query which generated the set
 
-    :param conn: sqlite3.connect
+        :param conn: sqlite3.connect
+
+    Args:
+        conn (sqlite3.Connection): Sqlite3 Connection
     """
     cursor = conn.cursor()
     # selection_id is an alias on internal autoincremented 'rowid'
@@ -128,24 +229,31 @@ def create_table_selections(conn):
     conn.commit()
 
 
-def create_selections_indexes(conn):
+def create_selections_indexes(conn: sqlite3.Connection):
     """Create indexes on the "selections" table
 
-    .. note:: This function should be called after batch insertions.
+    Args:
+        conn (sqlite3.Connection): Sqlite3 Connection
 
-    .. note:: This function ensures the unicity of selections names.
+    Note:
+        * This function should be called after batch insertions.
+        * This function ensures the unicity of selections names.
     """
     conn.execute("""CREATE UNIQUE INDEX idx_selections ON selections (name)""")
 
 
-def create_selection_has_variant_indexes(conn):
+def create_selection_has_variant_indexes(conn: sqlite3.Connection):
     """Create indexes on "selection_has_variant" table
+    For joints between selections and variants tables
 
-    .. note:: This function is called by:
-        - create_selections_indexes
-        - insert_selection to rebuild index
+    Reference:
+        * create_selections_indexes()
+        * insert_selection()
+
+    Args:
+        conn (sqlite3.Connection): Sqlite3 connection
     """
-    # For joints between selections and variants tables
+    #
     conn.execute(
         """CREATE INDEX idx_selection_has_variant ON selection_has_variant (selection_id)"""
     )
@@ -154,23 +262,23 @@ def create_selection_has_variant_indexes(conn):
 def insert_selection(conn, query: str, name="no_name", count=0):
     """Insert one selection record
 
-    TODO: retirer le group by inutile
+    Args:
+        conn (sqlite3.Connection): Sqlite3 Connection.It can be a cursor or a connection here...
+        query (str): a VQL query
+        name (str, optional): Name of selection
+        count (int, optional): Variant count of selection
 
-    .. warning:: This function does a commit !
+    Returns:
+        int: Return last rowid
 
-    :param conn: sqlite3 connection OR cursor
-        If connection: commit is made.
-        If cursor: commit is not made.
-    :param name: name of the selection
-    :param count: precompute variant count
-    :param query: Sql variant query selection
-    :type conn: <sqlite3.Connection> or <sqlite3.Cursor>
-    :return: rowid of the new selection inserted.
-    :rtype: <int>
+    See Also:
+        create_selection_from_sql()
 
-    .. seealso:: create_selection_from_sql
+    Warning:
+        This function does a commit !
+
+
     """
-    # conn can be a cursor or a connection here...
     cursor = conn.cursor() if isinstance(conn, sqlite3.Connection) else conn
 
     cursor.execute(
@@ -183,18 +291,37 @@ def insert_selection(conn, query: str, name="no_name", count=0):
     return cursor.lastrowid
 
 
+def delete_selection_by_name(conn: sqlite3.Connection, name: str):
+    """Delete selection from name
+
+    Args:
+        conn (sqlit3.Connection): sqlite3 connection
+        name (str): selection name
+
+    Returns:
+        TYPE: Description
+    """
+
+    if name == "variants":
+        LOGGER.error("Cannot remove variants")
+        return
+
+    cursor = conn.cursor()
+    cursor.execute(f"DELETE FROM selections WHERE name = ?", (name,))
+    conn.commit()
+
+
 def create_selection_from_sql(
-    conn, query: str, name: str, count=None, from_selection=False
+    conn: sqlite3.Connection, query: str, name: str, count=None, from_selection=False
 ):
     """Create a selection record from sql variant query
 
-    :param conn: sqlite3 connection
-    :param name : name of the selection
-    :param query: sql variant query
-    :param from_selection: Optimized flag only for the creation of a selection
-        from set operations, variant_id is the only useful column in the given query.
-    :return: The id of the new selection. None in case of error.
-    :rtype: <int> or None
+    Args:
+        conn (sqlite3.connexion): Sqlite3 connexion
+        query (str): VQL query
+        name (str): Name of selection
+        count (int, optional): Variant count
+        from_selection (bool, optional): selection name
     """
     cursor = conn.cursor()
 
@@ -246,68 +373,112 @@ def create_selection_from_sql(
     return None
 
 
-def create_selection_from_bed(conn, name:str, bed_intervals):
+def create_selection_from_bed(
+    conn: sqlite3.Connection, source: str, target: str, bed_intervals
+):
     """Create a new selection based on the given intervals taken from a BED file
 
-    :Example of query string built here:
-        SELECT id as variant_id FROM variants
-        WHERE
-            (chr = 11 AND (pos BETWEEN 10000 AND 15000))
-            OR (chr = 11 AND (pos BETWEEN 119000 AND 123000))
-            OR (chr = 11 AND (pos BETWEEN 123002 AND 123999))
-            OR (chr = 1 AND (pos BETWEEN 0 AND 999999))
+    Args:
+        conn (sqlite3.connexion): Sqlite3 connexion
+        source (str): Selection name (source)
+        target (str): Selection name (target)
+        bed_intervals (list): List of interval (begin,end)
 
-    :param conn: sqlite3 connection
-    :param name: Name of the selection
-    :param bed_intervals: Iterable of Interval objects
-        (how pybedtools represents a line in a BED).
-    :return: The id of the new selection. None in case of error.
-    :rtype: <int> or None
+    Returns:
+        TYPE: Description
+
     """
-    # Build query string based on intervals
-    query = "SELECT id as variant_id FROM variants WHERE "
+
+    cur = conn.cursor()
+
+    #  Create temporary table
+    cur.execute("DROP TABLE IF exists bed_table")
+    cur.execute(
+        """CREATE TABLE bed_table (
+
+        id INTEGER PRIMARY KEY ASC, 
+        bin INTEGER DEFAULT 0, 
+        chr TEXT, 
+        start INTEGER, 
+        end INTEGER,
+        name INTEGER )"""
+    )
+
     for interval in bed_intervals:
-        query += "(chr = '{}' AND (pos BETWEEN '{}' AND '{}')) OR ".format(interval["chrom"], interval["start"], interval["end"])
-    # Remove last 'OR' operator
-    query = query[:-4]
 
-    LOGGER.debug("create_selection_from_bed:: %s", query)
+        cur.execute(
+            "INSERT INTO bed_table (bin, chr, start, end, name) VALUES (?,?,?,?,?)",
+            (0, interval["chr"], interval["start"], interval["end"], interval["name"]),
+        )
 
-    # Build the selection
-    return create_selection_from_sql(conn, query, name, from_selection=True)
+    if source == "variants":
+        source_query = "SELECT variants.id as variant_id FROM variants"
+    else:
+        source_query = """
+        SELECT variants.id as variant_id FROM variants
+        INNER JOIN selections ON selections.name = '{}'
+        INNER JOIN selection_has_variant sv ON sv.variant_id = variants.id AND sv.selection_id = selections.id
+        """.format(
+            source
+        )
+
+    query = (
+        source_query
+        + """  
+                INNER JOIN bed_table ON 
+                variants.chr = bed_table.chr AND 
+                variants.pos >= bed_table.start AND 
+                variants.pos <= bed_table.end """
+    )
+
+    return create_selection_from_sql(conn, query, target, from_selection=True)
 
 
-def get_selections(conn):
+def get_selections(conn: sqlite3.Connection):
     """Get selections in "selections" table
 
-    :return: Generator of dictionnaries with as many keys as there are columns
-        in the table.
-        Dictionnary of all attributes of the table.
-            :Example: {"id": ..., "name": ..., "count": ..., "query": ...}
-    :rtype: <generator <dict>>
+    Args:
+        conn (sqlite3.connexion): Sqlite3 connexion
+
+    Yield:
+        Dictionnaries with as many keys as there are columnsin the table.
+
+    Example::
+        {"id": ..., "name": ..., "count": ..., "query": ...}
+
     """
     conn.row_factory = sqlite3.Row
     return (dict(data) for data in conn.execute("""SELECT * FROM selections"""))
 
 
-def delete_selection(conn, selection_id: int):
+def delete_selection(conn: sqlite3.Connection, selection_id: int):
     """Delete the selection with the given id in the "selections" table
 
     :return: Number of rows deleted
     :rtype: <int>
+
+    Args:
+        conn (sqlite3.Connection): Sqlite connection
+        selection_id (int): id from selection table
+
+    Returns:
+        int: last rowid
     """
-    # ON CASCADE deletion
     cursor = conn.cursor()
     cursor.execute("DELETE FROM selections WHERE rowid = ?", (selection_id,))
     conn.commit()
     return cursor.rowcount
 
 
-def edit_selection(conn, selection: dict):
+def edit_selection(conn: sqlite3.Connection, selection: dict):
     """Update the name and count of a selection with the given id
 
-    :return: Number of rows deleted
-    :rtype: <int>
+    Args:
+        conn (sqlite3.Connection): sqlite3 Connection
+        selection (dict): key/value data
+
+    Returns:
+        int: last rowid
     """
     cursor = conn.cursor()
     conn.execute(
@@ -315,6 +486,59 @@ def edit_selection(conn, selection: dict):
     )
     conn.commit()
     return cursor.rowcount
+
+
+## ================ Create sets tables =========================================
+
+
+def create_table_sets(conn: sqlite3.Connection):
+    """Create the table "sets" 
+    
+    This table stores variants selection saved by the user:
+            - name: name of the set of variants
+            - value: number of variants concerned by this set
+
+    Args:
+        conn (sqlite3.Connection): Sqlite3 Connection
+    """
+    cursor = conn.cursor()
+    # selection_id is an alias on internal autoincremented 'rowid'
+    cursor.execute(
+        """CREATE TABLE sets (
+        id INTEGER PRIMARY KEY ASC,
+        name TEXT, 
+        value TEXT
+        )"""
+    )
+
+    conn.commit()
+
+
+def insert_set_from_file(conn: sqlite3.Connection, name, filename):
+
+    cursor = conn.cursor()
+    # TODO ignore duplicate
+    with open(filename) as file:
+        cursor.executemany(
+            """INSERT INTO sets (name, value) VALUES (?,?)""",
+            ((name, i.strip()) for i in file),
+        )
+
+    conn.commit()
+
+
+def get_sets(conn):
+    """ Get sets """
+    for row in conn.execute(
+        "SELECT name , COUNT(*) as 'count' FROM sets GROUP BY name"
+    ):
+        yield dict(row)
+
+
+def get_words_set(conn, name):
+    """ Get word from sets """
+    for row in conn.execute(f"SELECT DISTINCT value FROM sets WHERE name = '{name}'"):
+        yield dict(row)["value"]
 
 
 ## ================ Operations on sets of variants =============================
@@ -454,6 +678,91 @@ def get_fields(conn):
     return (dict(data) for data in conn.execute("""SELECT * FROM fields"""))
 
 
+def get_field_by_category(conn, category):
+    """ Get fields within a category
+
+    :param conn: sqlite3.connect
+     :return: Generator of dictionnaries with as many keys as there are columns
+        in the table.
+    :rtype: <generator <dict>>
+    """
+
+    return [field for field in get_fields(conn) if field["category"] == category]
+
+
+def get_field_by_name(conn, field_name: str):
+    """ Return field by his name
+
+    .. seealso:: get_fields
+
+    :param conn: sqlite3.connect
+    :param field_name (str): field name
+    :return: field record
+    :rtype: <dict>
+    """
+    conn.row_factory = sqlite3.Row
+    return dict(
+        conn.execute(
+            """SELECT * FROM fields WHERE name = ? """, (field_name,)
+        ).fetchone()
+    )
+
+
+def get_field_range(conn, field_name: str, sample_name=None):
+    """ Return (min,max) of field_name records .
+
+    :param conn: sqlite3.connect
+    :param field_name (str): field name
+    :param sample_name (str): sample name. mandatory for fields in the "samples" categories
+    :return: (min, max)
+    :rtype: tuple
+    """
+    field = get_field_by_name(conn, field_name)
+    table = field["category"]  # variants, or annotations or samples
+    if table == "samples":
+        if not sample_name:
+            raise ValueError("Pass sample parameter for sample fields")
+        query = f"""SELECT min({field_name}), max({field_name})
+        FROM sample_has_variant
+        JOIN samples ON sample_has_variant.sample_id = samples.id
+        WHERE samples.name='{sample_name}'
+        """
+    else:
+        query = f"""SELECT min({field_name}), max({field_name}) FROM {table}"""
+
+    result = tuple(conn.execute(query).fetchone())
+    if result == (None, None):
+        return None
+    if result == ("", ""):
+        return None
+
+    return result
+
+
+def get_field_unique_values(conn, field_name: str, sample_name=None):
+    """ Return unique record value for a field name
+
+    :param conn: sqlite3.connect
+    :param field_name (str): field_name
+    :param sample_name (str): sample name. mandatory for fields in the "samples" categories
+    :return: list of unique values
+    :rtype: list
+    """
+    field = get_field_by_name(conn, field_name)
+    table = field["category"]  # variants, or annotations or samples
+    if table == "samples":
+        if not sample_name:
+            raise ValueError("Pass sample parameter for sample fields")
+        query = f"""SELECT DISTINCT {field_name}
+        FROM sample_has_variant
+        JOIN samples ON sample_has_variant.sample_id = samples.id
+        WHERE samples.name='{sample_name}'
+        """
+    else:
+        query = f"""SELECT DISTINCT `{field_name}` FROM {table}"""
+    return [i[field_name] for i in conn.execute(query)]
+
+
 ## ================ Annotations functions ======================================
 
 
@@ -465,7 +774,7 @@ def create_table_annotations(conn, fields):
             ('allele str NULL', 'consequence str NULL', ...)
     :type fields: <generator>
     """
-    schema = ",".join([f'{field["name"]} {field["type"]}' for field in fields])
+    schema = ",".join([f'`{field["name"]}` {field["type"]}' for field in fields])
 
     if not schema:
         #  Create minimum annotation table... Can be use later for dynamic annotation.
@@ -478,9 +787,11 @@ def create_table_annotations(conn, fields):
 
     cursor = conn.cursor()
     # TODO: no primary key/unique index for this table?
+
     cursor.execute(
         f"""CREATE TABLE annotations (variant_id INTEGER NOT NULL, {schema})"""
     )
+
     conn.commit()
 
 
@@ -550,18 +861,6 @@ def create_table_variants(conn, fields):
     )
     # cursor.execute(f"""CREATE UNIQUE INDEX idx_variants_unicity ON variants (chr,pos,ref,alt)""")
 
-    # Association table: do not use useless rowid column
-    cursor.execute(
-        """CREATE TABLE sample_has_variant (
-        sample_id INTEGER NOT NULL,
-        variant_id INTEGER NOT NULL,
-        gt INTEGER DEFAULT -1,
-        PRIMARY KEY (sample_id, variant_id),
-        FOREIGN KEY (sample_id) REFERENCES samples (id)
-          ON DELETE CASCADE
-          ON UPDATE NO ACTION
-        ) WITHOUT ROWID"""
-    )
     conn.commit()
 
 
@@ -595,6 +894,44 @@ def get_one_variant(conn, id: int):
     return dict(
         conn.execute(f"""SELECT * FROM variants WHERE variants.id = {id}""").fetchone()
     )
+
+
+def update_variant(conn, variant: dict):
+    """ Update variant data """
+
+    sql_set = []
+    sql_val = []
+    for key, value in variant.items():
+        if key != "id":
+            sql_set.append(f"`{key}` = ? ")
+            sql_val.append(value)
+
+    query = (
+        "UPDATE variants SET " + ",".join(sql_set) + " WHERE id = " + str(variant["id"])
+    )
+    conn.execute(query, sql_val)
+    conn.commit()
+
+
+def get_annotations(conn, id: int):
+    """ Get variant annotation with the given id """
+    conn.row_factory = sqlite3.Row
+    for annotation in conn.execute(
+        f"""SELECT * FROM annotations WHERE variant_id = {id}"""
+    ):
+        yield dict(annotation)
+
+
+def get_sample_annotations(conn, variant_id: int, sample_id: int):
+    """ Get variant annotation for a given sample """
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    q = f"""SELECT * FROM sample_has_variant WHERE variant_id = {variant_id} and sample_id = {sample_id}"""
+    result = cursor.execute(
+        f"""SELECT * FROM sample_has_variant WHERE variant_id = {variant_id} and sample_id = {sample_id}"""
+    ).fetchone()
+
+    return dict(result)
 
 
 def get_variants_count(conn):
@@ -634,14 +971,14 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
     """
 
     def build_columns_and_placeholders(table_name):
-        """Build a tuple of columns and formatted placeholders for INSERT queries
+        """Build a tuple of columns and "?" placeholders for INSERT queries
         """
         # Get columns description from the given table
         cols = get_columns(conn, table_name)
         # Build dynamic insert query
-        # INSERT INTO variant qcol1, qcol2.... VALUES :qcol1, :qcol2 ....
+        # INSERT INTO variant qcol1, qcol2.... VALUES ?, ?
         tb_cols = ",".join([f"`{col}`" for col in cols])
-        tb_places = ",".join([f":{place}" for place in cols])
+        tb_places = ",".join(["?" for place in cols])
         return tb_cols, tb_places
 
     # TODO: Can we avoid this step ? This function should receive columns names
@@ -649,6 +986,10 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
     # Build placeholders
     var_cols, var_places = build_columns_and_placeholders("variants")
     ann_cols, ann_places = build_columns_and_placeholders("annotations")
+
+    var_columns = get_columns(conn, "variants")
+    ann_columns = get_columns(conn, "annotations")
+    sample_columns = get_columns(conn, "sample_has_variant")
 
     # Get samples with samples names as keys and sqlite rowid as values
     # => used as a mapping for samples ids
@@ -689,9 +1030,18 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
 
         # Insert current variant
         # Use default dict to handle missing values
-        LOGGER.debug("async_insert_many_variants:: QUERY: %s\nVALUES: %s", variant_insert_query, variant)
+        # LOGGER.debug(
+        #    "async_insert_many_variants:: QUERY: %s\nVALUES: %s",
+        #    variant_insert_query,
+        #    variant,
+        # )
 
-        cursor.execute(variant_insert_query, defaultdict(str, variant))
+        #  Create list of value to insert
+        # ["chr",234234,"A","G"]
+        default_values = defaultdict(str, variant)
+        values = [default_values[col] for col in var_columns]
+
+        cursor.execute(variant_insert_query, values)
 
         # If the row is not inserted we skip this erroneous variant
         # and the data that goes with
@@ -726,12 +1076,20 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
             # A t'on l'assurance de cela ?
             # Dans ce cas pourquoi doit-on bricoler le variant lui-meme avec un
             # defaultdict(str,variant)) ? Les variants n'ont pas leurs champs par def ?
-            temp_ann_places = ann_places.replace(":variant_id,", "")
-            cursor.executemany(
-                f"""INSERT INTO annotations ({ann_cols})
-                VALUES ({variant_id}, {temp_ann_places})""",
-                variant["annotations"],
-            )
+
+            values = []
+            for ann in variant["annotations"]:
+                default_values = defaultdict(str, ann)
+                value = [default_values[col] for col in ann_columns[1:]]
+                value.insert(0, variant_id)
+                values.append(value)
+
+            temp_ann_places = ",".join(["?"] * (len(ann_columns)))
+
+            q = f"""INSERT INTO annotations ({ann_cols})
+                VALUES ({temp_ann_places})"""
+
+            cursor.executemany(q, values)
 
         # If variant has sample data, insert record into "sample_has_variant" table
         # Many-to-many relationships
@@ -744,14 +1102,19 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
             # have been inserted from the same source file (or it is not the case ?) ?
             # Retrieve the id of the sample to build the association in
             # "sample_has_variant" table carrying the data "gt" (genotype)
-            g = (
-                (samples_id_mapping[sample["name"]], sample["gt"])
-                for sample in variant["samples"]
-                if sample["name"] in samples_names
-            )
-            cursor.executemany(
-                f"""INSERT INTO sample_has_variant VALUES (?,{variant_id},?)""", g
-            )
+
+            samples = []
+            for sample in variant["samples"]:
+                sample_id = samples_id_mapping[sample["name"]]
+                default_values = defaultdict(str, sample)
+                sample_value = [sample_id, variant_id]
+                sample_value += [default_values[i] for i in sample_columns[2:]]
+                samples.append(sample_value)
+
+            placeholder = ",".join(["?"] * len(sample_columns))
+
+            q = f"""INSERT INTO sample_has_variant VALUES ({placeholder})"""
+            cursor.executemany(q, samples)
 
         # Yield progression
         if variant_count % yield_every == 0:
@@ -779,7 +1142,7 @@ def insert_many_variants(conn, data, **kwargs):
 ## ================ Samples functions ==========================================
 
 
-def create_table_samples(conn):
+def create_table_samples(conn, fields=None):
     """Create samples table
 
     :param conn: sqlite3.connect
@@ -789,8 +1152,42 @@ def create_table_samples(conn):
     cursor.execute(
         """CREATE TABLE samples (
         id INTEGER PRIMARY KEY ASC,
-        name TEXT)"""
+        name TEXT,
+        fam TEXT DEFAULT 'fam',
+        father_id INTEGER DEFAULT 0,
+        mother_id INTEGER DEFAULT 0,
+        sex INTEGER DEFAULT 0,
+        phenotype INTEGER DEFAULT 0
+        )"""
     )
+    conn.commit()
+
+    fields = list(fields)
+
+    schema = ",".join(
+        [
+            f'`{field["name"]}` {field["type"]} {field.get("constraint", "")}'
+            for field in fields
+            if field["name"]
+        ]
+    )
+
+    if not fields:
+        schema = "gt INTEGER DEFAULT -1"
+
+    cursor.execute(
+        f"""CREATE TABLE sample_has_variant  (
+        sample_id INTEGER NOT NULL,
+        variant_id INTEGER NOT NULL,
+        {schema},
+        PRIMARY KEY (sample_id, variant_id),
+        FOREIGN KEY (sample_id) REFERENCES samples (id)
+          ON DELETE CASCADE
+          ON UPDATE NO ACTION
+        ) WITHOUT ROWID
+       """
+    )
+
     conn.commit()
 
 
@@ -833,80 +1230,47 @@ def get_samples(conn):
     return (dict(data) for data in conn.execute("""SELECT * FROM samples"""))
 
 
-class Selection:
-    """Binding object over selection which allows to do set operations on variants
-    associated to it
+def update_sample(conn, sample: dict):
+    """Update sample record
 
-    Attributes:
-        - cls.conn: Class attribute for sqlite3 connection.
-        - self.query: SQL query ready to be used in set operations.
-        - self.mode: Define the way variants are compared to each other.
-            - "variant" (default): chr,pos,ref,alt = variant.id
-            - "site": chr,pos
-        ..seealso:: from_selection_id()
+    sample = {
+        id : 3 # sample id
+        name : "Boby",  # Name of sample
+        fam : "fam", # familly identifier
+        father_id : 0, # father id, 0 if not
+        mother_id : 0, # mother id, 0 if not
+        sex : 0 # sex code ( 1 = male, 2 = female, 0 = unknown)
+        phenotype: 0 # ( 1 = control , 2 = case, 0 = unknown)
+    }
+
+    Args:
+        conn (sqlite.connection): sqlite connection
+        sample (dict): data
     """
 
-    # Class attribute, shared accross all instances
-    conn = None
+    if "id" not in sample:
+        logging.debug("sample id is required")
+        return
 
-    def __init__(self, sql_query=None, mode="variant"):
-        """Create a new selection object"""
-        self.sql_query = sql_query
-        # Define the way variants are compared
-        self.mode = mode
+    sql_set = []
+    sql_val = []
 
-    def __add__(self, other):
-        sql_query = union_variants(self.sql_query, other.sql_query, mode=self.mode)
-        return Selection(sql_query, self.mode)
+    for key, value in sample.items():
+        if key != "id":
+            sql_set.append(f"`{key}` = ? ")
+            sql_val.append(value)
 
-    def __and__(self, other):
-        sql_query = intersect_variants(self.sql_query, other.sql_query, mode=self.mode)
-        return Selection(sql_query, self.mode)
+    query = (
+        "UPDATE samples SET " + ",".join(sql_set) + " WHERE id = " + str(sample["id"])
+    )
+    conn.execute(query, sql_val)
+    conn.commit()
 
-    def __sub__(self, other):
-        sql_query = subtract_variants(self.sql_query, other.sql_query, mode=self.mode)
-        return Selection(sql_query, self.mode)
 
-    def __repr__(self):
-        return "<Selection>: " + self.sql_query
+def count_query(conn, query):
+    """ count from query """
+    print(query)
+    return conn.execute(f"SELECT COUNT(*) as count FROM ({query})").fetchone()[0]
 
-    def save(self, name):
-        """Create the new selection in the database"""
-        return create_selection_from_sql(
-            Selection.conn, self.sql_query, name, from_selection=True
-        )
 
-    @classmethod
-    def from_selection_id(cls, selection_id, mode="variant"):
-        """Get new Selection object based on a sql query that defines it
-
-        .. note:: Called from the UI. It is here that 'mode' is selected.
-
-        :param selection_id: The id of the selection for which the object will be
-            based.
-        :key mode: Modifies the definition of the unicity of a variant.
-            (optional: "variant" | "site"),(default: "variant").
-            - variant: (chr, pos, ref, alt) is the primary key so we query only
-            'selection_has_variant' for 'variant_id' field.
-            - site: (chr, pos) modifies the default definition of the unicity
-            of a variant.
-            => joint on 'variants' table is mandatory here.
-        :type selection_id: <int>
-        :type mode: <str>
-        :return: A new Selection object.
-        :rtype: <Selection>
-        """
-        if selection_id == 1:
-            # Get ids from the default selection
-            sql_query = """SELECT id as variant_id FROM variants"""
-        else:
-            # A variant is defined as chr,pos,ref,alt
-            # which is the primary key (unique)
-            # So these columns are synonyms of 'variants.id' for the table 'variants'
-            # or 'variant_id' for 'selection_has_variant' table.
-            # No further joints are required here.
-            sql_query = f"""SELECT variant_id
-            FROM selection_has_variant sv
-             WHERE sv.selection_id = {selection_id}"""
-
-        return cls(sql_query, mode=mode)
+# ======================== execute commande ======================================

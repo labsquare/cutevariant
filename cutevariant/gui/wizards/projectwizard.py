@@ -1,14 +1,27 @@
 # Standard imports
 import os
 from PySide2.QtWidgets import *
-from PySide2.QtCore import QThread, Signal, QDir, QSettings, QFile
+from PySide2.QtCore import (
+    QThread,
+    Signal,
+    QDir,
+    QSettings,
+    QFile,
+    Qt,
+    QAbstractTableModel,
+    QModelIndex,
+    Property,
+)
+from PySide2.QtGui import QStandardItemModel, QStandardItem
 from PySide2.QtGui import QIcon
 
 # Custom imports
 from cutevariant.core.importer import async_import_file
 from cutevariant.core import get_sql_connexion
 import cutevariant.commons as cm
-from cutevariant.core.readerfactory import detect_vcf_annotation
+from cutevariant.core.readerfactory import detect_vcf_annotation, create_reader
+
+from cutevariant.gui.model_view import PedView
 
 LOGGER = cm.logger()
 
@@ -31,6 +44,9 @@ class ProjectPage(QWizardPage):
         self.project_path_edit.setText(os.getcwd())
         self.browse_button = QPushButton("Browse")
         self.reference = QComboBox()
+
+        # Unused for now
+        self.reference.hide()
 
         self.reference.addItem("hg19")
         self.registerField("project_name", self.project_name_edit, "text")
@@ -87,6 +103,7 @@ class FilePage(QWizardPage):
         self.setSubTitle(self.tr("Supported file are vcf, vcf.gz, vep.txt."))
 
         self.file_path_edit = QLineEdit()
+
         self.anotation_detect_label = QLabel()
         self.button = QPushButton(self.tr("Browse"))
         h_layout = QHBoxLayout()
@@ -149,6 +166,60 @@ class FilePage(QWizardPage):
         )
 
 
+class SamplePage(QWizardPage):
+    def __init__(self):
+        super().__init__()
+
+        self.setTitle(self.tr("Samples"))
+        self.setSubTitle(self.tr("Add sample description or skip this step"))
+        self.view = PedView()
+        self.import_button = QPushButton("Import ped file ...")
+        v_layout = QVBoxLayout()
+        v_layout.addWidget(self.view)
+        v_layout.addWidget(self.import_button)
+
+        self.setLayout(v_layout)
+
+        self.import_button.clicked.connect(self.on_import_clicked)
+
+        self.registerField("pedfile", self.view, "pedfile")
+
+    def initializePage(self):
+        """ override """
+
+        self.view.clear()
+        #  read samples
+        filename = self.field("filename")
+        with create_reader(filename) as reader:
+            samples = []
+            self.vcf_samples = reader.get_samples()
+
+            for name in self.vcf_samples:
+                samples.append(["fam", name, "0", "0", "0", "0", "0"])
+            self.view.set_samples(samples)
+
+    def validatePage(self):
+        """ override """
+        # read table and create a dict for setFields
+        return True
+
+    def on_import_clicked(self):
+
+        filename, filetype = QFileDialog.getOpenFileName(
+            self, "Open ped file", QDir.homePath(), "Ped files (*.ped *.tfam)"
+        )
+
+        with open(filename, "r") as file:
+            samples = []
+            for line in file:
+                line = line.strip().split("\t")
+                if len(line) == 6 and line[1] in self.vcf_samples:
+                    # Check if ped file name is in vcf samples
+                    samples.append(line)
+
+            self.view.set_samples(samples)
+
+
 class ImportThread(QThread):
     """Thread used to create a new project by importing a variant file
 
@@ -167,9 +238,12 @@ class ImportThread(QThread):
         self.filename = ""
         # Project's filepath
         self.db_filename = ""
+        self.pedfile = ""
         self.project_settings = dict()
 
-    def set_importer_settings(self, filename, db_filename, project_settings={}):
+    def set_importer_settings(
+        self, filename, pedfile, db_filename, project_settings={}
+    ):
         """Init settings of the importer
 
         :param filename: File to be opened.
@@ -179,6 +253,8 @@ class ImportThread(QThread):
         :type filename: <str>
         :type db_filename: <str>
         :type project_settings: <dict>
+        :type sample_data: <dict>
+
         """
         # File top open
         self.filename = filename
@@ -186,6 +262,8 @@ class ImportThread(QThread):
         self.db_filename = db_filename
         # Project settings
         self.project_settings = project_settings
+        # Ped file
+        self.pedfile = pedfile
 
     def run(self):
         """Overrided QThread method
@@ -203,13 +281,17 @@ class ImportThread(QThread):
         try:
             # Import the file
             for value, message in async_import_file(
-                self.conn, self.filename, self.project_settings
+                self.conn, self.filename, self.pedfile, self.project_settings
             ):
                 if self._stop == True:
                     self.conn.close()
                     break
                 # Send progression
                 self.progress_changed.emit(value, message)
+
+            # Import ped file
+            self.progress_changed.emit(100, "Import pedfile")
+
         except BaseException as e:
             self.progress_changed.emit(0, str(e))
             self._stop = True
@@ -264,6 +346,10 @@ class ImportPage(QWizardPage):
         self.thread.finished.connect(self.import_thread_finished)
         self.thread.finished_status.connect(self.import_thread_finished_status)
 
+    def initializePage(self):
+        """ override """
+        print(self.field("pedfile"))
+
     def progress_changed(self, value, message):
         """Update the progress bar
         Slot called when progress_changed is emitted by the thread
@@ -306,16 +392,17 @@ class ImportPage(QWizardPage):
         else:
             self.thread.set_importer_settings(
                 # File to open
-                self.field("filename"),
+                filename=self.field("filename"),
+                pedfile=self.field("pedfile"),
                 # Project's filepath
-                (
+                db_filename=(
                     self.field("project_path")
                     + QDir.separator()
                     + self.field("project_name")
                     + ".db"
                 ),
                 # Project's settings
-                {
+                project_settings={
                     # Reference genome
                     "reference": self.field("reference"),
                     # Project's name
@@ -349,4 +436,16 @@ class ProjectWizard(QWizard):
         self.setWizardStyle(QWizard.ClassicStyle)
         self.addPage(ProjectPage())
         self.addPage(FilePage())
+        self.addPage(SamplePage())
         self.addPage(ImportPage())
+
+
+if __name__ == "__main__":
+    import sys
+
+    app = QApplication(sys.argv)
+
+    w = ProjectWizard()
+    w.show()
+
+    app.exec_()

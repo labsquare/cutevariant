@@ -1,33 +1,44 @@
 """Main window of Cutevariant"""
 # Standard imports
 import os
+import sys
+import importlib
+import glob
 
 # Qt imports
-from PySide2.QtCore import Qt, QSettings, QByteArray, QDir
+from PySide2.QtCore import Qt, QSettings, QByteArray, QDir, Slot
 from PySide2.QtWidgets import *
 from PySide2.QtGui import QIcon, QKeySequence
 
 # Custom imports
 from cutevariant.core import Query, get_sql_connexion
 from cutevariant.gui.ficon import FIcon
-from cutevariant.gui.plugin import VariantPluginWidget, QueryPluginWidget
+from cutevariant.gui.state import State
+
 from cutevariant.gui.wizards import ProjectWizard
 from cutevariant.gui.settings import SettingsWidget
-from cutevariant.gui.viewquerywidget import ViewQueryWidget
-from cutevariant.gui.columnquerywidget import ColumnQueryWidget
-from cutevariant.gui.filterquerywidget import FilterQueryWidget
-from cutevariant.gui.selectionquerywidget import SelectionQueryWidget
-from cutevariant.gui.vqleditor import VqlEditor
-from cutevariant.gui.querydispatcher import QueryDispatcher
-from cutevariant.gui.infovariantwidget import InfoVariantWidget
-from cutevariant.gui.aboutcutevariant import AboutCutevariant
-from cutevariant.gui.chartquerywidget import ChartQueryWidget
+
+# from cutevariant.gui.querywidget import QueryWidget
+# from cutevariant.gui import plugin
+
+#  Import plugins
+from cutevariant.gui import plugin
+
+# from cutevariant.gui.plugins.editor.plugin import EditorPlugin
+
+from cutevariant.gui.widgets.aboutcutevariant import AboutCutevariant
+
+# from cutevariant.gui.chartquerywidget import ChartQueryWidget
 from cutevariant import commons as cm
 from cutevariant.commons import MAX_RECENT_PROJECTS, DIR_ICONS
 
+from cutevariant.core.writer import CsvWriter
+
+
 # Proof of concept - testing only
-#from cutevariant.gui.webglquerywidget import WebGLQueryWidget
-#from cutevariant.gui.hpoquerywidget import HpoQueryWidget
+# from cutevariant.gui.webglquerywidget import WebGLQueryWidget
+# from cutevariant.gui.hpoquerywidget import HpoQueryWidget
+
 # from cutevariant.gui.omnibar import OmniBar
 
 
@@ -38,6 +49,7 @@ class MainWindow(QMainWindow):
     def __init__(self, parent=None):
 
         super(MainWindow, self).__init__()
+
         self.setWindowTitle("Cutevariant")
         self.toolbar = self.addToolBar("maintoolbar")
         self.toolbar.setObjectName("maintoolbar")  # For window saveState
@@ -46,110 +58,58 @@ class MainWindow(QMainWindow):
         # Keep sqlite connection
         self.conn = None
 
-        # Init QueryDispatcher to dispatch current query to:
-        # - QueryPlugins
-        # - VqlEditor
-        self.query_dispatcher = QueryDispatcher()
+        #  State variable of application
+        #  Often changed by plugins
+        self.state = State()
 
-        # Build central view based on QTabWidget
-        # PS: get current view via current_tab_view()
-        # Central widget encapsulates a QTabWidget and VqlEditor
-        self.editor = VqlEditor()
-        view_query_widget = ViewQueryWidget()
+        self.central_tab = QTabWidget()
+        self.footer_tab = QTabWidget()
 
-        self.tab_view = QTabWidget()
         vsplit = QSplitter(Qt.Vertical)
-        vsplit.addWidget(self.tab_view)  # add QTabWidget
-        vsplit.addWidget(self.editor)  # add VqlEditor
+        vsplit.addWidget(self.central_tab)
+        vsplit.addWidget(self.footer_tab)
         self.setCentralWidget(vsplit)
-        # Manually add query_dispatcher to VqlEditor
-        self.query_dispatcher.addWidget(self.editor)
-        # Add ViewQueryWidget to the QTabWidget
-        self.add_tab_view(view_query_widget)
-        # TODO: add other tabs here
-
-        # Setup menubar
-        self.setup_menubar()
-
-        # Build mandatory plugins that require QueryDispatcher and menubar
-        self.column_widget = ColumnQueryWidget()
-        self.filter_widget = FilterQueryWidget()
-        self.selection_widget = SelectionQueryWidget()
-        # Add mandatory query plugins to QDockWidgets
-        self.add_query_plugin(self.column_widget)
-        self.add_query_plugin(self.filter_widget)
-        self.add_query_plugin(self.selection_widget)
-        # Testing
-        self.add_query_plugin(ChartQueryWidget())
-        # self.add_query_plugin(WebGLQueryWidget())
-        # self.add_query_plugin(HpoQueryWidget())
-
-        # Setup toolbar (requires selection_widget and some actions of menubar)
-        self.setup_toolbar()
-
-        # Add mandatory variant plugin (depends on QTabWidget and menubar)
-        self.info_widget = InfoVariantWidget()
-        self.add_variant_plugin(self.info_widget)
 
         # Status Bar
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
 
-        # Add omnibar
-        # self.omnibar = OmniBar()
-        # self.toolbar.addSeparator()
-        # spacer = QWidget()
-        # spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        # self.toolbar.addWidget(spacer)
-        # self.toolbar.addWidget(self.omnibar)
+        # Setup UI
+        self.setup_ui()
+
+        # Register plugins
+        self.plugins = {}
+        self.dialog_plugins = {}
+        self.register_plugins()
 
         # Window geometry
         self.resize(600, 400)
         self.setGeometry(qApp.desktop().rect().adjusted(100, 100, -100, -100))
 
-        # Load external plugins
-        self.load_plugins()
+        self.setTabPosition(Qt.AllDockWidgetAreas, QTabWidget.North)
 
         # Restores the state of this mainwindow's toolbars and dockwidgets
         self.read_settings()
 
-        # Display messages from plugins in the status bar
-        self.editor.message.connect(self.handle_plugin_message)
-        view_query_widget.message.connect(self.handle_plugin_message)
+        recent = self.get_recent_projects()
+        if recent:
+            if os.path.exists(recent[0]):
+                self.open(recent[0])
 
-        self.open("examples/test2.db")
-
-    def add_variant_plugin(self, plugin: VariantPluginWidget):
-        """Add info variant plugin to QDockWidget
-
-        .. note:: This plugin doesn't require query_dispatcher
-        .. TODO:: current tab view must send signal only for visible widget
-        """
-        # Connect click event on a variant in ViewQueryWidget
-        # => update InfoVariantWidget
-        self.current_tab_view().variant_clicked.connect(plugin.set_variant)
-        self.add_panel(plugin)
-
-    def add_query_plugin(self, plugin: QueryPluginWidget):
-        """Add query plugin to QDockWidget and connect it to query_dispatcher"""
-        self.query_dispatcher.addWidget(plugin)
-        self.add_panel(plugin)
-        plugin.message.connect(self.handle_plugin_message)
-
-    def load_plugins(self, folder_path=None):
-        """TODO ... Load plugins from path.
-        What is a plugin ? A file or a module folder ?
-        """
-        pass
+    def setup_ui(self):
+        # Setup menubar
+        self.setup_menubar()
+        self.setup_toolbar()
 
     def add_panel(self, widget, area=Qt.LeftDockWidgetArea):
         """Add given widget to a new QDockWidget and to view menu in menubar"""
         dock = QDockWidget()
         dock.setWindowTitle(widget.windowTitle())
         dock.setWidget(widget)
+        dock.setStyleSheet("QDockWidget { font: bold }")
 
         # Set the objectName for a correct restoration after saveState
-        dock.setObjectName(widget.objectName())
+        dock.setObjectName(str(widget.__class__))
         if not widget.objectName():
             LOGGER.debug(
                 "MainWindow:add_panel:: widget '%s' has no objectName attribute"
@@ -159,15 +119,83 @@ class MainWindow(QMainWindow):
         self.addDockWidget(area, dock)
         self.view_menu.addAction(dock.toggleViewAction())
 
+    def register_plugins(self):
+        """add plugin to the application
+        """
+
+        LOGGER.info("register plugins")
+
+        for extension in plugin.find_plugins():
+            print("ext", extension)
+            if "widget" in extension:
+                name = extension["name"]
+                plugin_widget_class = extension["widget"]
+                widget = plugin_widget_class()
+                if widget.ENABLE == True:
+                    widget.mainwindow = self
+                    widget.setWindowTitle(extension.get("name"))
+                    widget.setToolTip(extension.get("description"))
+                    widget.on_register(self)
+                    #  Add plugins
+                    self.plugins[name] = widget
+
+                    if plugin_widget_class.LOCATION == plugin.DOCK_LOCATION:
+                        self.add_panel(widget)
+
+                    if plugin_widget_class.LOCATION == plugin.CENTRAL_LOCATION:
+                        self.central_tab.addTab(widget, widget.windowTitle())
+
+                    if plugin_widget_class.LOCATION == plugin.FOOTER_LOCATION:
+                        self.footer_tab.addTab(widget, widget.windowTitle())
+
+            if "dialog" in extension:
+                name = extension["name"]
+                title = extension["title"]
+                plugin_dialog_class = extension["dialog"]
+
+                dialog_action = self.tool_menu.addAction(title)
+                self.dialog_plugins[dialog_action] = plugin_dialog_class
+                dialog_action.triggered.connect(self.show_dialog)
+
+    def refresh_plugins(self, sender: plugin.PluginWidget = None):
+        """Refresh all plugins except_plugins 
+        
+        Args:
+            sender (PluginWidget): from a plugin, you can pass "self" as argument 
+        """
+
+        print("sender", sender)
+        for plugin in self.plugins.values():
+            if plugin is not sender:
+                if plugin.isVisible():
+
+                    try:
+                        plugin.on_refresh()
+                    except Exception as e:
+                        LOGGER.error("{}:{} {}".format(plugin, format(sys.exc_info()[-1].tb_lineno),  e))
+
+
+
+    def refresh_plugin(self, plugin_name: str):
+        """Refresh a plugin identified by plugin_name 
+        It doesn't refresh the sender plugin 
+        
+        Args:
+            plugin_name (str): a plugin name. 
+        """
+        if plugin_name in self._plugins:
+            plugin = self.plugins[plugin_name]
+            plugin.on_refresh()
+
     def setup_menubar(self):
         """Menu bar setup: items and actions"""
         ## File Menu
         self.file_menu = self.menuBar().addMenu(self.tr("&File"))
         self.new_project_action = self.file_menu.addAction(
-            FIcon(0xF415), self.tr("&New project"), self.new_project, QKeySequence.New
+            FIcon(0xF01BA), self.tr("&New project"), self.new_project, QKeySequence.New
         )
         self.open_project_action = self.file_menu.addAction(
-            FIcon(0xF76F),
+            FIcon(0xF095D),
             self.tr("&Open project ..."),
             self.open_project,
             QKeySequence.Open,
@@ -175,44 +203,51 @@ class MainWindow(QMainWindow):
         ### Recent projects
         self.recent_files_menu = self.file_menu.addMenu(self.tr("Open recent"))
 
-        self.recentFileActions = list()
-        for i in range(MAX_RECENT_PROJECTS):
-            new_action = QAction()
-            new_action.setVisible(False)
-            # Keep actions in memory for their display to be managed later
-            self.recentFileActions.append(new_action)
-            self.recent_files_menu.addAction(new_action)
-            new_action.triggered.connect(self.open_recent)
-
-        # Init previous files
-        self.update_recent_projects_actions()
+        self.setup_recent_menu()
 
         self.recent_files_menu.addSeparator()
         self.recent_files_menu.addAction(self.tr("Clear"), self.clear_recent_projects)
 
-        self.file_menu.addSeparator()
-        self.file_menu.addAction(
-            FIcon(0xF493), self.tr("Settings ..."), self.show_settings
+        ## Export projects as
+        self.export_action = self.file_menu.addAction(
+            self.tr("Export as csv"), self.export_project
         )
 
         self.file_menu.addSeparator()
-        self.file_menu.addAction(self.tr("&Quit"), qApp.quit, QKeySequence.Quit)
+        self.file_menu.addAction(
+            FIcon(0xF0493), self.tr("Settings ..."), self.show_settings
+        )
+
+        self.file_menu.addSeparator()
+
+        self.file_menu.addSeparator()
+
+        self.file_menu.addSeparator()
+        self.file_menu.addAction(self.tr("&Quit"), self.close, QKeySequence.Quit)
 
         ## Edit
         self.edit_menu = self.menuBar().addMenu(self.tr("&Edit"))
-        self.edit_menu.addAction(FIcon(0xF18F), "&Copy", self.copy, QKeySequence.Copy)
+        self.edit_menu.addAction(FIcon(0xF018F), "&Copy", self.copy, QKeySequence.Copy)
         self.edit_menu.addAction(
-            FIcon(0xF192), "&Paste", self.paste, QKeySequence.Paste
+            FIcon(0xF0192), "&Paste", self.paste, QKeySequence.Paste
         )
         self.edit_menu.addSeparator()
         self.edit_menu.addAction(
-            FIcon(0xF486), "Select all", self.select_all, QKeySequence.SelectAll
+            FIcon(0xF0486), "Select all", self.select_all, QKeySequence.SelectAll
         )
 
         ## View
         self.view_menu = self.menuBar().addMenu(self.tr("&View"))
-        self.view_menu.addAction(self.tr("Reset widgets positions"), self.reset_ui)
+        # self.view_menu.addAction(self.tr("Reset widgets positions"), self.reset_ui)
+        # console_action = self.view_menu.addAction(FIcon(0xf18d),self.tr("Show console"))
+        # console_action.setCheckable(True)
+        # console_action.setShortcuts([Qt.CTRL + Qt.Key_T])
+        # console_action.toggled.connect(self.editor.setVisible)
+
         self.view_menu.addSeparator()
+
+        ## Tools
+        self.tool_menu = self.menuBar().addMenu(self.tr("&Tools"))
 
         ## Help
         self.help_menu = self.menuBar().addMenu(self.tr("Help"))
@@ -228,36 +263,27 @@ class MainWindow(QMainWindow):
         self.toolbar.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
         self.toolbar.addAction(self.new_project_action)
         self.toolbar.addAction(self.open_project_action)
+        # self.toolbar.addAction(FIcon(0xF40A),"Run", self.execute_vql).setShortcuts([Qt.CTRL + Qt.Key_R, QKeySequence.Refresh])
         self.toolbar.addSeparator()
 
-        self.toolbar.addAction(
-            FIcon(0xF412),
-            self.tr("Save the query"),
-            self.selection_widget.save_current_query,
-        )
+    # def add_tab_view(self, widget):
+    #     """Add the given widget to the current (QTabWidget),
+    #     and connect it to the query_dispatcher"""
+    #     self.central_tab.addTab(widget, widget.windowTitle())
+    #     # self.query_dispatcher.addWidget(widgePt)
 
-        self.toolbar.addAction(
-            FIcon(0xF40D), self.tr("Run"), self.editor.run_vql
-        ).setShortcuts([Qt.CTRL + Qt.Key_R, QKeySequence.Refresh])
+    # def current_tab_view(self):
+    #     """Get the page/tab currently being displayed by the tab dialog
 
-    def add_tab_view(self, widget):
-        """Add the given widget to the current (QTabWidget),
-        and connect it to the query_dispatcher"""
-        self.tab_view.addTab(widget, widget.windowTitle())
-        self.query_dispatcher.addWidget(widget)
-
-    def current_tab_view(self):
-        """Get the page/tab currently being displayed by the tab dialog
-
-        :return: Return the current tab in the QTabWidget
-        :rtype: <QWidget>
-        """
-        # Get the index position of the current tab page
-        index = self.tab_view.currentIndex()
-        if index == -1:
-            # No tab in the widget
-            return None
-        return self.tab_view.currentWidget()
+    #     :return: Return the current tab in the QTabWidget
+    #     :rtype: <QWidget>
+    #     """
+    #     # Get the index position of the current tab page
+    #     index = self.tab_view.currentIndex()
+    #     if index == -1:
+    #         # No tab in the widget
+    #         return None
+    #     return self.tab_view.currentWidget()
 
     def open(self, filepath):
         """Open the given db/project file
@@ -282,85 +308,34 @@ class MainWindow(QMainWindow):
         # Create connection
         self.conn = get_sql_connexion(filepath)
 
-        # Create a query
-        query = Query(self.conn)
+        self.open_database(self.conn)
+        self.save_recent_project(filepath)
 
-        # Dispatch the query to all widget from the router
-        self.query_dispatcher.query = query
+    def open_database(self, conn):
+        self.conn = conn
 
-        # Update all widgets
-        self.query_dispatcher.update_all_widgets()
+        for plugin in self.plugins.values():
+            plugin.on_open_project(self.conn)
 
-        # Refresh recent opened projects
-        self.adjust_recent_projects(filepath)
-
-    def adjust_recent_projects(self, filepath):
-        """Adjust the number of of recent projects to display
-
-        .. note:: Called after a successful file opening.
-
-        :param filepath: Path of project file.
-        :type filepath: <str>
+    def save_recent_project(self, path):
+        """Save current project into QSettings
+        
+        Args:
+            path (str): path of project
         """
-        # Get recent projects list
-        recent_projects = self.get_recent_projects()
-
-        try:
-            recent_projects.remove(filepath)
-        except ValueError:
-            # New file is not already in the list
-            pass
-        # Prepend new file
-        recent_projects = [filepath] + recent_projects
-        recent_projects = (
-            recent_projects
-            if len(recent_projects) <= MAX_RECENT_PROJECTS
-            else recent_projects[:-1]
-        )
-
-        # Save in settings
+        paths = list(self.get_recent_projects())
+        paths.insert(0, path)
         app_settings = QSettings()
-        app_settings.setValue("recent_projects", recent_projects)
-
-        # Display
-        self.update_recent_projects_actions()
-
-    def update_recent_projects_actions(self):
-        """Display recent projects in the menu
-
-        .. note:: Called after a successful file opening and during the launch
-            of the software.
-        """
-        # Get recent projects list
-        recent_projects = self.get_recent_projects()
-
-        index = -1
-        for index, filepath in enumerate(recent_projects, 0):
-            action = self.recentFileActions[index]
-            # Get filename
-            # TODO: get project name ?
-            action.setText(os.path.basename(filepath))
-            action.setData(filepath)
-            action.setVisible(True)
-
-        # Display the action
-        if index == -1:
-            self.recent_files_menu.setEnabled(False)
-        else:
-            self.recent_files_menu.setEnabled(True)
-
-        # Switch off useless actions
-        # index = -1 if there is no recent_projects
-        index = 0 if index < 0 else index + 1
-        for i in range(index, MAX_RECENT_PROJECTS):
-            self.recentFileActions[i].setVisible(False)
+        unique_paths = list(dict.fromkeys(paths))
+        app_settings.setValue("recent_projects", unique_paths[:MAX_RECENT_PROJECTS])
 
     def get_recent_projects(self):
         """Return the list of recent projects stored in settings
-
-        :return: List of recent projects.
-        :type: <list>
+        
+        Returns:
+            list: Return list of recent project path
         """
+
         # Reload last projects opened
         app_settings = QSettings()
         recent_projects = app_settings.value("recent_projects", list())
@@ -369,11 +344,31 @@ class MainWindow(QMainWindow):
         if isinstance(recent_projects, str):
             recent_projects = [recent_projects]
 
+        # Check if file exists
+        recent_projects = [p for p in recent_projects if os.path.exists(p)]
+
         return recent_projects
 
-    def handle_plugin_message(self, message):
-        """Slot to display message from plugin in the status bar"""
-        self.status_bar.showMessage(message)
+    def clear_recent_projects(self):
+        """Slot to clear the list of recent projects"""
+        app_settings = QSettings()
+        app_settings.remove("recent_projects")
+        self.setup_recent_menu()
+
+    def setup_recent_menu(self):
+        """ Setup recent menu """
+        self.recent_files_menu.clear()
+        for path in self.get_recent_projects():
+            self.recent_files_menu.addAction(path, self.on_recent_project_clicked)
+
+    def on_recent_project_clicked(self):
+        """Slot to load a recent project"""
+        action = self.sender()
+        self.open(action.text())
+
+    # def handle_plugin_message(self, message):
+    #     """Slot to display message from plugin in the status bar"""
+    #     self.status_bar.showMessage(message)
 
     def new_project(self):
         """Slot to allow creation of a project with the Wizard"""
@@ -410,26 +405,38 @@ class MainWindow(QMainWindow):
                 self.status_bar.showMessage(e.__class__.__name__ + ": " + str(e))
                 raise
 
-    def open_recent(self):
-        """Slot to load a recent project"""
-        action = self.sender()
-        self.open(action.data())
+    def export_project(self):
 
-    def clear_recent_projects(self):
-        """Slot to clear the list of recent projects"""
-        app_settings = QSettings()
-        app_settings.remove("recent_projects")
-        self.update_recent_projects_actions()
+        filepath, _ = QFileDialog.getSaveFileName(
+            self, self.tr("Save project"), QDir.homePath(), self.tr("(*.csv)")
+        )
+
+        if filepath:
+            with open(filepath, "w") as file:
+                writer = CsvWriter(file)
+                writer.save(self.conn)
 
     def show_settings(self):
         """Slot to show settings window"""
         widget = SettingsWidget()
-        widget.exec()
+        widget.exec_()
+
+    def show_dialog(self):
+        """Show Plugin dialog 
+        """
+        action = self.sender()
+        if action in self.dialog_plugins:
+            DialogClass = self.dialog_plugins[action]
+            dialog = DialogClass()
+            dialog.mainwindow = self
+            dialog.conn = self.conn
+            dialog.on_refresh()
+            dialog.exec_()
 
     def aboutCutevariant(self):
         """Slot to show about window"""
         dialog_window = AboutCutevariant()
-        dialog_window.exec()
+        dialog_window.exec_()
 
     def reset_ui(self):
         """Slot to reset the position of docks to the state of the previous launch"""
@@ -458,6 +465,14 @@ class MainWindow(QMainWindow):
 
         .. note:: Reset windowState if asked.
         """
+        self.write_settings()
+        super().closeEvent(event)
+
+    def write_settings(self):
+        """ Store the state of this mainwindow. 
+
+        .. note:: This methods is called by closeEvent 
+        """
         app_settings = QSettings()
 
         if self.requested_reset_ui:
@@ -467,8 +482,6 @@ class MainWindow(QMainWindow):
             app_settings.setValue("geometry", self.saveGeometry())
             #  TODO: handle UI changes by passing UI_VERSION to saveState()
             app_settings.setValue("windowState", self.saveState())
-
-        super().closeEvent(event)
 
     def read_settings(self):
         """Restore the state of this mainwindow's toolbars and dockwidgets
@@ -488,3 +501,25 @@ class MainWindow(QMainWindow):
             # Setting has been deleted: set the current default state
             #  TODO: handle UI changes by passing UI_VERSION to saveState()
             app_settings.setValue("windowState", self.saveState())
+
+    # @Slot()
+    # def on_query_model_changed(self):
+    #     for name, _plugin in self.plugins.items():
+    #         if _plugin.isVisible():
+    #             _plugin.on_query_model_changed(self.query_model)
+
+    # @Slot()
+    # def on_variant_changed(self, variant):
+    #     for name, _plugin in self.plugins.items():
+    #         if _plugin.isVisible():
+    #             _plugin.on_variant_changed(variant)
+
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+
+    w = MainWindow()
+
+    w.show()
+
+    app.exec_()

@@ -1,14 +1,18 @@
 test:
-	python setup.py test --addopts "tests cutevariant -vv --doctest-module"
+	python setup.py test --addopts "tests cutevariant -vv"
 
 coverage:
 	python setup.py test --addopts "--cov cutevariant tests"
 
 run:
-	cutevariant
+	python -m cutevariant
 
 black:
 	black cutevariant
+
+doc-deploy:
+	git add docs/build/html/
+	git subtree push --prefix docs/build/html origin gh-pages  
 
 
 # development & release cycle

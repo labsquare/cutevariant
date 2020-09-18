@@ -26,9 +26,10 @@ from PySide2.QtCore import (
     QSettings,
     QTranslator,
     QCommandLineParser,
-    QCommandLineOption
+    QCommandLineOption,
 )
-from PySide2.QtWidgets import QApplication
+from PySide2.QtWidgets import QApplication, QSplashScreen
+from PySide2.QtGui import QPixmap
 
 # Custom imports
 from cutevariant.gui import MainWindow, setFontPath, style
@@ -36,7 +37,7 @@ import cutevariant.commons as cm
 from cutevariant import __version__
 
 
-def main():
+def main(app: QApplication):
     """The main routine."""
 
     # Define the names of the organization and the application
@@ -48,7 +49,6 @@ def main():
     QCoreApplication.setApplicationName("cutevariant")
     QCoreApplication.setApplicationVersion(__version__)
 
-    app = QApplication(sys.argv)
     # Process command line arguments
     process_arguments(app)
 
@@ -66,12 +66,21 @@ def main():
     # w = SettingsWidget()
     # w.show()
 
+    splash = QSplashScreen()
+    splash.setPixmap(QPixmap(cm.DIR_ICONS + "splash.png"))
+    splash.showMessage(f"Version {__version__}")
+    splash.show()
+    app.processEvents()
+
     # Display
     w = MainWindow()
-    style.apply_frameless_style(w)
+
+    # STYLES = cm.DIR_STYLES + "frameless.qss"
+    # with open(STYLES,"r") as file:
+    #     w.setStyleSheet(file.read())
 
     w.show()
-    app.exec_()
+    splash.finish(w)
 
 
 def load_styles(app):
@@ -149,5 +158,7 @@ def process_arguments(app):
 
 
 if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    main(app)
 
-    main()
+    app.exec_()

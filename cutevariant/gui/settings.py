@@ -33,6 +33,8 @@ from PySide2.QtNetwork import *
 # Custom imports
 import cutevariant.commons as cm
 from cutevariant.gui.ficon import FIcon
+from cutevariant.gui import network
+
 
 # from cutevariant.gui import style
 
@@ -42,7 +44,10 @@ class BaseWidget(QWidget):
 
     def __init__(self):
         super().__init__()
+        self.group_parent = None
         self.settings = QSettings()
+        self.setWindowTitle("base")
+        self.setWindowIcon(FIcon(0xF5CA))
 
     @abstractmethod
     def save(self):
@@ -59,6 +64,7 @@ class GroupWidget(QTabWidget):
     """Handy class to group similar settings widgets in tabs"""
 
     def add_settings_widget(self, widget: BaseWidget):
+        widget.group_parent = self
         self.addTab(widget, widget.windowIcon(), widget.windowTitle())
 
     def save(self):
@@ -77,7 +83,7 @@ class TranslationSettingsWidget(BaseWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Translation"))
-        self.setWindowIcon(FIcon(0xF5CA))
+        self.setWindowIcon(FIcon(0xF05CA))
         self.locales_combobox = QComboBox()
         mainLayout = QFormLayout()
         mainLayout.addRow(self.tr("&Choose a locale:"), self.locales_combobox)
@@ -126,17 +132,10 @@ class TranslationSettingsWidget(BaseWidget):
 class ProxySettingsWidget(BaseWidget):
     """Allow to configure proxy settings for widgets that require internet connection"""
 
-    PROXY_TYPES = {
-        "No Proxy": QNetworkProxy.NoProxy,
-        "Default": QNetworkProxy.DefaultProxy,
-        "Sock5": QNetworkProxy.Socks5Proxy,
-        "Http": QNetworkProxy.HttpProxy,
-    }
-
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Proxy"))
-        self.setWindowIcon(FIcon(0xF484))
+        self.setWindowIcon(FIcon(0xF0484))
 
         self.combo_box = QComboBox()
         self.host_edit = QLineEdit()
@@ -145,8 +144,8 @@ class ProxySettingsWidget(BaseWidget):
         self.pass_edit = QLineEdit()
 
         # Load proxy type
-        for key in self.PROXY_TYPES:
-            self.combo_box.addItem(key, self.PROXY_TYPES[key])
+        for key in network.PROXY_TYPES:
+            self.combo_box.addItem(key, network.PROXY_TYPES[key])
 
         # edit restriction
         self.pass_edit.setEchoMode(QLineEdit.PasswordEchoOnEdit)
@@ -157,6 +156,8 @@ class ProxySettingsWidget(BaseWidget):
         f_layout.addRow("Proxy Port", self.port_edit)
         f_layout.addRow("Username", self.user_edit)
         f_layout.addRow("Password", self.pass_edit)
+
+        self.combo_box.currentIndexChanged.connect(self.on_combo_changed)
 
         self.setLayout(f_layout)
 
@@ -175,12 +176,34 @@ class ProxySettingsWidget(BaseWidget):
         """Load "proxy" group settings"""
         settings = QSettings()
         settings.beginGroup("proxy")
-        self.combo_box.setCurrentIndex(int(settings.value("type", 0)))
+
+        s_type = settings.value("type", 0)
+        if s_type:
+            self.combo_box.setCurrentIndex(int(s_type))
+
         self.host_edit.setText(settings.value("host"))
-        self.port_edit.setValue(int(settings.value("port", 0)))
+
+        s_port = settings.value("port", 0)
+        if s_port:
+            self.port_edit.setValue(int(s_port))
+
         self.user_edit.setText(settings.value("username"))
         self.pass_edit.setText(settings.value("password"))
         settings.endGroup()
+
+    def on_combo_changed(self, index):
+        """ disable formular when No proxy """
+        if index == 0:
+            self._disable_form(True)
+        else:
+            self._disable_form(False)
+
+    def _disable_form(self, disabled=True):
+        """ Disabled formular """
+        self.host_edit.setDisabled(disabled)
+        self.port_edit.setDisabled(disabled)
+        self.user_edit.setDisabled(disabled)
+        self.pass_edit.setDisabled(disabled)
 
 
 class StyleSettingsWidget(BaseWidget):
@@ -189,7 +212,7 @@ class StyleSettingsWidget(BaseWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Styles"))
-        self.setWindowIcon(FIcon(0xF3D8))
+        self.setWindowIcon(FIcon(0xF03D8))
 
         self.styles_combobox = QComboBox()
         mainLayout = QFormLayout()
@@ -243,158 +266,43 @@ class PluginsSettingsWidget(BaseWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Plugins"))
-        self.setWindowIcon(FIcon(0xF3D4))
+        self.setWindowIcon(FIcon(0xF0431))
+        self.view = QTreeWidget()
+        self.view.setColumnCount(3)
+        self.view.setHeaderLabels(["Name", "Description", "Version"])
+
+        main_layout = QVBoxLayout()
+        main_layout.addWidget(self.view)
+        self.setLayout(main_layout)
 
     def save(self):
         pass
 
     def load(self):
-        pass
+        self.view.clear()
+        from cutevariant.gui import plugin
+
+        for extension in plugin.find_plugins():
+            item = QTreeWidgetItem()
+            item.setText(0, extension["name"])
+            item.setText(1, extension["description"])
+            item.setText(2, extension["version"])
+            item.setCheckState(0, Qt.Checked)
+            item.setDisabled(True)
+            self.view.addTopLevelItem(item)
 
 
 class DatabaseSettingsWidget(BaseWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("database"))
-        self.setWindowIcon(FIcon(0xF1B8))
+        self.setWindowIcon(FIcon(0xF01BC))
 
     def save(self):
         pass
 
     def load(self):
         pass
-
-
-class VariantSettingsWidget(BaseWidget):
-    """Allow to add personal templates to search a variant in a third-party database
-
-    .. note:: These templates are used in the right click context menu displayed
-        on InfoVariantWidget and ViewQueryWidget.
-    """
-
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle(self.tr("Variants"))
-        self.setWindowIcon(FIcon(0xF683))
-
-        self.view = QListWidget()
-        self.add_button = QPushButton(self.tr("Add"))
-        self.edit_button = QPushButton(self.tr("Edit"))
-        self.remove_button = QPushButton(self.tr("Remove"))
-
-        v_layout = QVBoxLayout()
-        v_layout.addWidget(self.add_button)
-        v_layout.addWidget(self.edit_button)
-        v_layout.addStretch()
-        v_layout.addWidget(self.remove_button)
-
-        main_layout = QHBoxLayout()
-        main_layout.addWidget(self.view)
-        main_layout.addLayout(v_layout)
-
-        self.setLayout(main_layout)
-
-        # Settings key
-        self.settings_key = "databases_urls/"
-
-        # Signals
-        self.add_button.clicked.connect(self.add_url)
-        self.edit_button.clicked.connect(self.edit_item)
-        self.view.itemDoubleClicked.connect(self.add_url)
-        self.remove_button.clicked.connect(self.remove_item)
-
-        # Load built-in databases first
-        [
-            self.add_list_widget_item(*db_name_url)
-            for db_name_url in cm.WEBSITES_URLS.items()
-        ]
-
-    def save(self):
-        # TODO : save links from settings
-        pass
-
-    def load(self):
-        """Load databases URLs from settings"""
-        # Get all child keys of the group databases_urls
-        self.settings.beginGroup(self.settings_key)
-
-        for db_name in self.settings.childKeys():
-            # Add the item to the list
-            self.add_list_widget_item(db_name, self.settings.value(db_name))
-
-        self.settings.endGroup()
-
-    def add_list_widget_item(self, db_name: str, url: str):
-        """Add an item to the QListWidget of the current view"""
-        # Key is the name of the database, value is its url
-        item = QListWidgetItem(db_name)
-        item.setData(Qt.UserRole, url)
-        self.view.addItem(item)
-
-    def edit_list_widget_item(self, item: QListWidgetItem, db_name: str, url: str):
-        """Modify the given item"""
-        item.setText(db_name)
-        item.setData(Qt.UserRole, url)
-
-    def add_url(self, item=None):
-        """Allow the user to insert and save custom database URL"""
-        # Display dialog box to let the user enter it's own url
-        dialog = QDialog()
-        name = QLineEdit()
-        url = QLineEdit()
-        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        buttons.accepted.connect(dialog.accept)
-        buttons.rejected.connect(dialog.reject)
-        layout = QFormLayout()
-        layout.addRow(self.tr("Name"), name)
-        layout.addRow(self.tr("Url"), url)
-        layout.addWidget(buttons)
-
-        dialog.setLayout(layout)
-
-        if item:
-            # Called by itemDoubleClicked or edit_item
-            # Fill forms with item data
-            name.setText(item.text())
-            url.setText(item.data(Qt.UserRole))
-
-        # Also do a minimal check on the data inserted
-        if dialog.exec_() == QDialog.Accepted and name.text() and url.text():
-
-            if item:
-                # Edit the current item in the list
-                self.edit_list_widget_item(item, name.text(), url.text())
-            else:
-                # Add the item to the list
-                self.add_list_widget_item(name.text(), url.text())
-
-            # Save the item in settings
-            # (Here to limit the friction with Save all button)
-            self.settings.setValue(self.settings_key + name.text(), url.text())
-
-    def edit_item(self):
-        """Edit the selected item
-
-        .. note:: This function uses add_url to display the edit window
-        """
-        # Get selected item
-        # Always use the first selected item returned
-        self.add_url(self.view.selectedItems()[0])
-
-    def remove_item(self):
-        """Remove the selected item
-
-        .. todo:: removeItemWidget() is not functional?
-        """
-        # Get selected item
-        item = self.view.selectedItems()[0]
-
-        # Delete key in settings
-        self.settings.remove(self.settings_key + item.text())
-
-        # Delete the item
-        self.view.takeItem(self.view.row(item))
-        del item  # Is it mandatory in Python ?
 
 
 class SettingsWidget(QDialog):
@@ -432,7 +340,7 @@ class SettingsWidget(QDialog):
         # Similar widgets for general configuration
         general_settings = GroupWidget()
         general_settings.setWindowTitle(self.tr("General"))
-        general_settings.setWindowIcon(FIcon(0xF493))
+        general_settings.setWindowIcon(FIcon(0xF0614))
 
         general_settings.add_settings_widget(TranslationSettingsWidget())
         general_settings.add_settings_widget(ProxySettingsWidget())
@@ -441,8 +349,8 @@ class SettingsWidget(QDialog):
         # Specialized widgets on panels
         self.addPanel(general_settings)
         self.addPanel(PluginsSettingsWidget())
-        self.addPanel(VariantSettingsWidget())
         self.addPanel(DatabaseSettingsWidget())
+        self.load_plugins()
 
         self.resize(800, 400)
 
@@ -455,6 +363,8 @@ class SettingsWidget(QDialog):
 
         # Load settings
         self.load_all()
+
+        self.accepted.connect(self.close)
 
     def addPanel(self, widget: BaseWidget):
         """Add a widget on the widow via a QStackedWidget; keep a reference on it
@@ -470,7 +380,37 @@ class SettingsWidget(QDialog):
     def save_all(self):
         """Call save() method of all widgets"""
         [widget.save() for widget in self.widgets]
+        self.accepted.emit()
 
     def load_all(self):
         """Call load() method of all widgets"""
         [widget.load() for widget in self.widgets]
+
+    def load_plugins(self):
+        """ Add plugins settings """
+        from cutevariant.gui import plugin
+
+        for extension in plugin.find_plugins():
+
+            if "setting" in extension:
+                settings_widget_class = extension["setting"]
+                widget = settings_widget_class()
+
+                if not widget.windowTitle():
+                    widget.setWindowTitle(extension["name"])
+
+                if not widget.windowIcon():
+                    widget.setWindowIcon(FIcon(0xF0431))
+
+                self.addPanel(widget)
+
+
+if __name__ == "__main__":
+    import sys
+
+    app = QApplication(sys.argv)
+
+    d = SettingsWidget()
+    d.show()
+
+    app.exec_()

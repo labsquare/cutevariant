@@ -21,6 +21,14 @@ GENE_COLOR = "#F5A26F"
 WARNING_BACKGROUND_COLOR = "#FFCCBA"
 WARNING_TEXT_COLOR = "#D73705"
 
+DARK_COLOR = {
+    "darkpurple": "#40375C",
+    "purple": "#5A4F7C",
+    "red": "#F14235",
+    "yellow": "#F5A623",
+    "green": "#7BBB44",
+}
+
 
 # Sequence ontology colors
 SO_COLOR = {
@@ -61,7 +69,7 @@ def dark(app):
     darkPalette.setColor(QPalette.Midlight, QColor(90, 90, 90))
     darkPalette.setColor(QPalette.Dark, QColor(35, 35, 35))
     darkPalette.setColor(QPalette.Text, QColor(180, 180, 180))
-    darkPalette.setColor(QPalette.BrightText, QColor(180, 180, 180))
+    darkPalette.setColor(QPalette.BrightText, QColor(200, 200, 200))
     darkPalette.setColor(QPalette.ButtonText, QColor(180, 180, 180))
     darkPalette.setColor(QPalette.Base, QColor(42, 42, 42))
     darkPalette.setColor(QPalette.Window, QColor(53, 53, 53))

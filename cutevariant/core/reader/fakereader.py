@@ -13,10 +13,10 @@ class FakeReader(AbstractReader):
             "ref": "T",
             "alt": "A",
             "annotations": [
-                {"transcript": "NM_234234", "gene": "CFTR"},
-                {"transcript": "NM_234235", "gene": "CFTR"},
+                {"transcript": "NM_234234", "gene": "CFTR", "ref": "NN"},
+                {"transcript": "NM_234235", "gene": "CFTR", "ref": "NN"},
             ],
-            "samples": [{"name": "sacha", "gt": 1}],
+            "samples": [{"name": "sacha", "gt": 1, "dp": 30}],
         }
 
         yield {
@@ -25,10 +25,10 @@ class FakeReader(AbstractReader):
             "ref": "T",
             "alt": "A",
             "annotations": [
-                {"transcript": "NM_234234", "gene": "CFTR"},
-                {"transcript": "NM_234235", "gene": "CFTR"},
+                {"transcript": "NM_234234", "gene": "CFTR", "ref": "YY"},
+                {"transcript": "NM_234235", "gene": "CFTR", "ref": "YY"},
             ],
-            "samples": [{"name": "sacha", "gt": 1}],
+            "samples": [{"name": "sacha", "gt": 1, "dp": 50}],
         }
 
         yield {
@@ -40,7 +40,7 @@ class FakeReader(AbstractReader):
                 {"transcript": "NM_234234", "gene": "CFTR"},
                 {"transcript": "NM_234235", "gene": "CFTR"},
             ],
-            "samples": [{"name": "sacha", "gt": 1}],
+            "samples": [{"name": "sacha", "gt": 1, "dp": 10}],
         }
 
     def get_fields(self):
@@ -88,6 +88,13 @@ class FakeReader(AbstractReader):
         }
 
         yield {
+            "name": "dp",
+            "category": "samples",
+            "description": "genotype depth",
+            "type": "int",
+        }
+
+        yield {
             "name": "af",
             "category": "samples",
             "description": "allele frequency",
@@ -105,6 +112,13 @@ class FakeReader(AbstractReader):
             "name": "transcript",
             "category": "annotations",
             "description": "gene transcripts",
+            "type": "str",
+        }
+
+        yield {
+            "name": "ref",
+            "category": "annotations",
+            "description": "duplicate test",
             "type": "str",
         }
 

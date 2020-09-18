@@ -1,10 +1,28 @@
+dist: xenial
 language: python
-
+# addons:
+#   apt:
+#     packages:
+#     - libxcb-xkb1
+#     - x11-utils
+#     - libxkbcommon-x11-0
 os:
   - linux
 
+addons:
+  apt:
+    packages:
+    - x11-utils
+    - libxkbcommon-x11-0
+
+services: xvfb
+
 python:
   - "3.6"
+variables:
+  QT_QPA_PLATFORM: "offscreen"
+
+
 
 # command to install dependencies
 install:
@@ -12,4 +30,4 @@ install:
 
 # command to run tests
 script:
-  - python -m pytest cutevariant tests -vv
+  - python -m pytest tests -vv

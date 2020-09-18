@@ -8,7 +8,6 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-build/
 develop-eggs/
 dist/
 downloads/
@@ -103,6 +102,9 @@ venv.bak/
 # mypy
 .mypy_cache/
 
+# image 
+#*.png
+*.dot 
 
 # sublime text 
 *.sublime-project

@@ -1,62 +1,163 @@
 # Qt imports
-from PySide2.QtWidgets import QWidget
+from PySide2.QtWidgets import QWidget, QDialog
 from PySide2.QtCore import Signal
 
-# Custom imports
-from cutevariant.core import Query
+
+#  standard import
+from glob import glob
+import os
+import importlib
+import pkgutil
+
+#  cutevariant import
+from cutevariant.gui import settings
+
+DOCK_LOCATION = 1
+CENTRAL_LOCATION = 2
+FOOTER_LOCATION = 3
+
+
+def snake_to_camel(name: str) -> str:
+    """Convert snake case to camel case
+    
+    Args:
+        name (str): a snake string like : query_view
+    
+    Returns:
+        str: a camel string like: QueryView
+    """
+
+    return "".join([i.capitalize() for i in name.split("_")])
 
 
 class PluginWidget(QWidget):
-    """Handy class for common methods of QueryPluginWidget and VariantPluginWidget"""
+
+    LOCATION = DOCK_LOCATION
+    ENABLE = False
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.mainwindow = None
+        self.widget_location = DOCK_LOCATION
 
-    def objectName(self):
-        """Override: Return an object name based on windowTitle
+        self.refresh_groups = []  #  TODO
 
-        .. note:: Some plugins don't set objectName attribute and so their state
-            can't be saved with MainWindow's saveState function.
+    def on_register(self, mainwindow):
+        """This method is called when the mainwindow is build 
+        You should setup the mainwindow with your plugin from here.
+        
+        Args:
+            mainwindow (MainWindow): cutevariant Mainwindow 
         """
-        return self.windowTitle().lower()
+        pass
 
-
-class QueryPluginWidget(PluginWidget):
-    """Base class for all widgets which observe a Query
-
-    .. seealso:: queryrooter.py
-    """
-
-    # Signals
-    # When the query's widget changed
-    query_changed = Signal()
-    # When the widget emits a message to be displayed in the status bar
-    message = Signal(str)
-
-    @property
-    def query(self):
-        return self._query
-
-    @query.setter
-    def query(self, query: Query):
-        self._query = query
-        self.on_init_query()
-
-    def on_change_query(self):
-        """Called by the queryrouter each time a belong widget send a
-        query_changed signal
+    def on_open_project(self, conn):
+        """This method is called when a project open
+        
+        Args:
+            conn (sqlite3.connection): A connection to the sqlite project
         """
-        raise NotImplementedError(self.__class__.__name__)
+        pass
 
-    def on_init_query(self):
-        """Called by the queryrouter when query is set"""
-        raise NotImplementedError(self.__class__.__name__)
+    def on_close(self):
+        """This methods is called when the mainwindow close
+        """
+        pass
+
+    def on_refresh(self):
+        """This methods is called to refresh the gui 
+        
+        This is called by the mainwindow.controller::refresh methods 
+
+        """
+        pass
 
 
-class VariantPluginWidget(PluginWidget):
-    """Base class for all widgets which get variant data when clicking on it
-    from the main view
+class PluginDialog(QDialog):
+    ENABLE = False
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.mainwindow = None
+
+
+class PluginSettingsWidget(settings.GroupWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+    def on_refresh(self):
+        pass
+
+
+def find_plugins(path=None):
+    """find and returns plugin instance from a directory 
+    
+    Keyword Arguments:
+        path [str] -- the folder path where plugin are 
+        parent [type] -- the parent object of all instance. It must be the MainWindow
+    
+    Returns:
+        [Plugin] -- An instance of Plugin class 
     """
+    #  if path is None, return internal plugin path
+    if path is None:
+        plugin_path = os.path.join(os.path.dirname(__file__), "plugins")
+    else:
+        plugin_path = path
 
-    def set_variant(self, variant):
-        raise NotImplementedError(self.__class__.__name__)
+    # Loop over package in plugins directory
+    plugins = []
+    for package in pkgutil.iter_modules([plugin_path]):
+        package_path = os.path.join(plugin_path, package.name)
+        spec = importlib.util.spec_from_file_location(
+            package.name, os.path.join(package_path, "__init__.py")
+        )
+        module = spec.loader.load_module()
+
+        widget_class_name = snake_to_camel(package.name) + "Widget"
+        settings_class_name = snake_to_camel(package.name) + "SettingsWidget"
+        dialog_class_name = snake_to_camel(package.name)
+
+        item = {}
+        item["name"] = module.__name__
+        item["title"] = module.__title__
+        item["description"] = module.__description__
+        item["version"] = module.__version__
+
+        for sub_module_info in pkgutil.iter_modules([package_path]):
+
+            if sub_module_info.name in ("widgets", "settings", "dialogs"):
+
+                sub_module_path = os.path.join(
+                    sub_module_info.module_finder.path, sub_module_info.name + ".py"
+                )
+                spec = importlib.util.spec_from_file_location(
+                    sub_module_info.name, sub_module_path
+                )
+                sub_module = spec.loader.load_module()
+
+                if (
+                    widget_class_name in dir(sub_module)
+                    and sub_module_info.name == "widgets"
+                ):
+                    Widget = getattr(sub_module, widget_class_name)
+                    if "PluginWidget" in str(Widget.__bases__):
+                        item["widget"] = Widget
+
+                if (
+                    settings_class_name in dir(sub_module)
+                    and sub_module_info.name == "settings"
+                ):
+                    Widget = getattr(sub_module, settings_class_name)
+                    if "PluginSettingsWidget" in str(Widget.__bases__):
+                        item["setting"] = Widget
+
+                if (
+                    dialog_class_name in dir(sub_module)
+                    and sub_module_info.name == "dialogs"
+                ):
+                    Widget = getattr(sub_module, dialog_class_name)
+                    if "PluginDialog" in str(Widget.__bases__):
+                        item["dialog"] = Widget
+
+        yield item
