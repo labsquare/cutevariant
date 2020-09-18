@@ -202,11 +202,7 @@ class MainWindow(QMainWindow):
         )
         ### Recent projects
         self.recent_files_menu = self.file_menu.addMenu(self.tr("Open recent"))
-
         self.setup_recent_menu()
-
-        self.recent_files_menu.addSeparator()
-        self.recent_files_menu.addAction(self.tr("Clear"), self.clear_recent_projects)
 
         ## Export projects as
         self.export_action = self.file_menu.addAction(
@@ -357,10 +353,13 @@ class MainWindow(QMainWindow):
         self.setup_recent_menu()
 
     def setup_recent_menu(self):
-        """ Setup recent menu """
+        """Setup recent submenu with previously opened projects"""
         self.recent_files_menu.clear()
         for path in self.get_recent_projects():
             self.recent_files_menu.addAction(path, self.on_recent_project_clicked)
+
+        self.recent_files_menu.addSeparator()
+        self.recent_files_menu.addAction(self.tr("Clear"), self.clear_recent_projects)
 
     def on_recent_project_clicked(self):
         """Slot to load a recent project"""
