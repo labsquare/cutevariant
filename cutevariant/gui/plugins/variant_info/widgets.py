@@ -16,8 +16,10 @@ from PySide2.QtGui import QDesktopServices
 from cutevariant.gui.ficon import FIcon
 from cutevariant.gui.style import TYPE_COLORS
 from cutevariant.core import sql, get_sql_connexion
-
 from cutevariant.gui.plugin import PluginWidget
+from cutevariant import commons as cm
+
+LOGGER = cm.logger()
 
 
 class VariantInfoWidget(PluginWidget):
@@ -146,11 +148,10 @@ class VariantInfoWidget(PluginWidget):
 
         variant_id = self.current_variant["id"]
 
-        # Populate Variants
-
         font = QFont()
         font.setBold(True)
 
+        # Populate variant
         self.variant_view.clear()
         for key, value in sql.get_one_variant(self.conn, variant_id).items():
             item = QTreeWidgetItem()
@@ -160,7 +161,12 @@ class VariantInfoWidget(PluginWidget):
             item.setToolTip(1, "<font color=black>" + str(value) + "</font>")
 
             if key == "comment":
-                self.comment_input.setMarkdown(str(value))
+                try:
+                    self.comment_input.setMarkdown(str(value))
+                except AttributeError:
+                    LOGGER.warning("RichText in Markdown is supported starting PySide 5.14")
+                    # Fallback
+                    self.comment_input.setPlainText(str(value))
 
             self.variant_view.addTopLevelItem(item)
 
