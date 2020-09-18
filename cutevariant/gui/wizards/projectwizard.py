@@ -71,6 +71,7 @@ class ProjectPage(QWizardPage):
         self.project_path_edit.textChanged.connect(self.completeChanged)
         self.project_name_edit.textChanged.connect(self.completeChanged)
 
+    @Slot()
     def _browse(self):
         """Open a dialog box to set the directory where the project will be saved"""
         # Reload last directory used
@@ -130,6 +131,7 @@ class FilePage(QWizardPage):
         #  annotation ? should be an option or not ?
         self.registerField("annotation", self.anotation_detect_label, "text")
 
+    @Slot()
     def _browse(self):
         """Open a dialog box to set the data file
 
@@ -210,6 +212,7 @@ class SamplePage(QWizardPage):
         # read table and create a dict for setFields
         return True
 
+    @Slot()
     def on_import_clicked(self):
 
         filename, filetype = QFileDialog.getOpenFileName(
@@ -360,6 +363,7 @@ class ImportPage(QWizardPage):
         """ override """
         print(self.field("pedfile"))
 
+    @Slot()
     def progress_changed(self, value, message):
         """Update the progress bar
         Slot called when progress_changed is emitted by the thread
@@ -368,10 +372,12 @@ class ImportPage(QWizardPage):
         if message:
             self.log_edit.appendPlainText(message)
 
+    @Slot()
     def import_thread_finished(self):
         """Force the activation of the finish button after a successful import"""
         self.completeChanged.emit()
 
+    @Slot()
     def import_thread_finished_status(self, status):
         """Set the finished status of import thread
 
@@ -387,6 +393,7 @@ class ImportPage(QWizardPage):
             self.import_button.setText(self.text_buttons[0])
             self.log_edit.appendPlainText(self.tr("Stopped!"))
 
+    @Slot()
     def run(self):
         """Called when import button is clicked
         Launch the import in a separate thread
