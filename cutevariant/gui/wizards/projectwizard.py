@@ -182,7 +182,7 @@ class SamplePage(QWizardPage):
         self.setTitle(self.tr("Samples"))
         self.setSubTitle(self.tr("Add sample description or skip this step"))
         self.view = PedView()
-        self.import_button = QPushButton("Import ped file ...")
+        self.import_button = QPushButton(self.tr("Import ped file ..."))
         v_layout = QVBoxLayout()
         v_layout.addWidget(self.view)
         v_layout.addWidget(self.import_button)
@@ -216,7 +216,10 @@ class SamplePage(QWizardPage):
     def on_import_clicked(self):
 
         filename, filetype = QFileDialog.getOpenFileName(
-            self, "Open ped file", QDir.homePath(), "Ped files (*.ped *.tfam)"
+            self,
+            self.tr("Open ped file"),
+            QDir.homePath(),
+            self.tr("Ped files (*.ped *.tfam)")
         )
 
         with open(filename, "r") as file:
@@ -300,7 +303,7 @@ class ImportThread(QThread):
                 self.progress_changed.emit(value, message)
 
             # Import ped file
-            self.progress_changed.emit(100, "Import pedfile")
+            self.progress_changed.emit(100, self.tr("Import pedfile"))
 
         except BaseException as e:
             self.progress_changed.emit(0, str(e))
