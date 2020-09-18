@@ -3,57 +3,20 @@
 ViewQueryWidget class is added to a QTabWidget and is seen by the user;
 it uses QueryModel class as a model that handles records from the database.
 QueryDelegate class handles the aesthetic of the view.
+
+TODO:: update this
 """
 
-# Standard imports
-import copy
-import csv
-import sys
-import sqlite3
-import re
-
 # Qt imports
-from PySide2.QtWidgets import (
-    QStyledItemDelegate,
-    QTreeView,
-    QWidget,
-    QAction,
-    QToolBar,
-    QVBoxLayout,
-    QAbstractItemView,
-    QApplication,
-    QSizePolicy,
-    QLabel,
-    QLineEdit,
-    QFrame,
-    QStyle,
-    QInputDialog,
-)
 from PySide2.QtCore import (
     QAbstractTableModel,
-    QRect,
     Signal,
-    Slot,
     QModelIndex,
-    QSize,
     Qt,
-)
-from PySide2.QtGui import (
-    QPainter,
-    QContextMenuEvent,
-    QIntValidator,
-    QPalette,
-    QPen,
-    QBrush,
 )
 
 # Custom imports
-from cutevariant.gui.ficon import FIcon
-from cutevariant.core import sql
-from cutevariant.gui import style
-from cutevariant.gui.formatter import Formatter
 from cutevariant.commons import logger
-from cutevariant.commons import GENOTYPE_ICONS
 from cutevariant.core.command import SelectCommand, CountCommand, create_commands
 
 LOGGER = logger()
@@ -61,16 +24,18 @@ LOGGER = logger()
 
 class QueryModel(QAbstractTableModel):
     """
-    QueryModel is a Qt model class which contains variants datas from sql.VariantBuilder . 
+    QueryModel is a Qt model class which contains variants datas from sql.VariantBuilder .
     It loads paginated data from VariantBuilder and create an interface for a Qt view and controllers.
     The model can group variants by (chr,pos,ref,alt) into a tree thanks to VariantBuilder.tree().
-   
+
     See Qt model/view programming for more information
     https://doc.qt.io/qt-5/model-view-programming.html
 
-    Variants are stored internally as a list of variants. By default, there is only one transcript per row. 
-    When user expand the row, it will append duplicates variants as children. 
-    For example, this is a tree with 2 variants , each of them refer to many transcripts. 
+    Variants are stored internally as a list of variants. By default, there is only one transcript per row.
+    When user expand the row, it will append duplicates variants as children.
+    For example, this is a tree with 2 variants , each of them refer to many transcripts.
+
+    TODO:: update this
 
     """
 
@@ -146,25 +111,25 @@ class QueryModel(QAbstractTableModel):
         self.endResetModel()
 
     def rowCount(self, parent=QModelIndex()):
-        """Overrided : Return children count of index 
+        """Overrided : Return children count of index
         """
         #  If parent is root
 
         return len(self.variants)
 
     def columnCount(self, parent=QModelIndex()):
-        """Overrided: Return column count of parent . 
+        """Overrided: Return column count of parent .
 
-        Parent is not used here. 
+        Parent is not used here.
         """
         return len(self.headers)
 
     def data(self, index: QModelIndex(), role=Qt.DisplayRole):
         """ Overrided: return index data according role.
-        This method is called by the Qt view to get data to display according Qt role. 
-        
+        This method is called by the Qt view to get data to display according Qt role.
+
         Params:
-            index (QModelIndex): index from where your want to get data 
+            index (QModelIndex): index from where your want to get data
             role (Qt.ItemDataRole): https://doc.qt.io/qt-5/qt.html#ItemDataRole-enum
 
         Examples:
@@ -194,7 +159,7 @@ class QueryModel(QAbstractTableModel):
         return None
 
     def headerData(self, section, orientation, role=Qt.DisplayRole):
-        """Overrided: Return column name 
+        """Overrided: Return column name
         This method is called by the Qt view to display vertical or horizontal header data.
 
         Params:
@@ -203,7 +168,7 @@ class QueryModel(QAbstractTableModel):
             role (Qt.ItemDataRole): https://doc.qt.io/qt-5/qt.html#ItemDataRole-enum
 
         Examples:
-            # return 4th column name 
+            # return 4th column name
             column_name = model.headerData(4, Qt.Horizontal)
 
          """
@@ -287,10 +252,10 @@ class QueryModel(QAbstractTableModel):
         self.setPage(int(self.total / self.limit))
 
     def sort(self, column: int, order):
-        """Overrided: Sort data by specified column 
-        
-        column (int): column id 
-        order (Qt.SortOrder): Qt.AscendingOrder or Qt.DescendingOrder 
+        """Overrided: Sort data by specified column
+
+        column (int): column id
+        order (Qt.SortOrder): Qt.AscendingOrder or Qt.DescendingOrder
 
         """
         if column < self.columnCount():
