@@ -7,13 +7,8 @@ from PySide2.QtCore import (
     QDir,
     QSettings,
     QFile,
-    Qt,
-    QAbstractTableModel,
-    QModelIndex,
-    Property,
     Slot,
 )
-from PySide2.QtGui import QStandardItemModel, QStandardItem
 from PySide2.QtGui import QIcon
 
 # Custom imports
@@ -79,9 +74,7 @@ class ProjectPage(QWizardPage):
         last_directory = app_settings.value("last_directory", QDir.homePath())
 
         path = QFileDialog.getExistingDirectory(
-            self,
-            self.tr("Select a path for the project"),
-            last_directory
+            self, self.tr("Select a path for the project"), last_directory
         )
         if path:
             self.project_path_edit.setText(path)
@@ -219,7 +212,7 @@ class SamplePage(QWizardPage):
             self,
             self.tr("Open ped file"),
             QDir.homePath(),
-            self.tr("Ped files (*.ped *.tfam)")
+            self.tr("Ped files (*.ped *.tfam)"),
         )
 
         with open(filename, "r") as file:
