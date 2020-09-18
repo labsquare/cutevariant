@@ -42,7 +42,7 @@ class ProjectPage(QWizardPage):
         self.project_name_edit = QLineEdit()
         self.project_path_edit = QLineEdit()
         self.project_path_edit.setText(os.getcwd())
-        self.browse_button = QPushButton("Browse")
+        self.browse_button = QPushButton(self.tr("Browse"))
         self.reference = QComboBox()
 
         # Unused for now
@@ -72,8 +72,14 @@ class ProjectPage(QWizardPage):
 
     def _browse(self):
         """Open a dialog box to set the directory where the project will be saved"""
+        # Reload last directory used
+        app_settings = QSettings()
+        last_directory = app_settings.value("last_directory", QDir.homePath())
+
         path = QFileDialog.getExistingDirectory(
-            self, self.tr("Select a path for the project")
+            self,
+            self.tr("Select a path for the project"),
+            last_directory
         )
         if path:
             self.project_path_edit.setText(path)
