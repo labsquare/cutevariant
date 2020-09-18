@@ -1,3 +1,4 @@
+# Qt imports
 from PySide2.QtWidgets import (
     QTextEdit,
     QWidget,
@@ -12,19 +13,29 @@ from PySide2.QtWidgets import (
 )
 
 from PySide2.QtCore import Qt
-
 from PySide2.QtGui import QKeySequence, QIcon
 
+# Custom imports
 from cutevariant.gui.ficon import FIcon
+from cutevariant import commons as cm
+
+LOGGER = cm.logger()
 
 
 class MarkdownEditor(QWidget):
+    """Markdown editor used to add comments on variants
+
+    On PySide2 5.14+, comments can be edited in Markdown and previewed.
+
+    """
+
     def __init__(self, parent=None):
         super().__init__()
-        self.toolbar = QToolBar()
-        self.tabwidget = QTabWidget()
-        self.rich_edit = QTextEdit()
-        self.source_edit = QPlainTextEdit()
+
+        # Setup edit view
+        # self.tabwidget = QTabWidget()
+        self.rich_edit = QTextEdit()  # Rich text result
+        self.source_edit = QPlainTextEdit()  # Markdown content
         vlayout = QVBoxLayout()
         vlayout.setSpacing(1)
         vlayout.setContentsMargins(0, 0, 0, 0)
@@ -37,7 +48,8 @@ class MarkdownEditor(QWidget):
         self.rich_edit.setAcceptRichText(True)
         self.rich_edit.setAutoFormatting(QTextEdit.AutoAll)
 
-        #  Setup toolbar
+        # Setup toolbar
+        self.toolbar = QToolBar()
         self.act_undo = self.toolbar.addAction("undo", self.source_edit.undo)
         self.act_undo.setIcon(FIcon(0xF054C))
         self.act_undo.setShortcut(QKeySequence.Undo)
@@ -72,11 +84,18 @@ class MarkdownEditor(QWidget):
 
         self.setLayout(vlayout)
 
-        #  Depend PySide Qt5.14
+        # Update preview with Markdown content
         self.source_edit.textChanged.connect(self.update_rich_text)
 
     def update_rich_text(self):
-        self.rich_edit.setMarkdown(self.source_edit.toPlainText())
+        """Update preview with Markdown content
+
+        .. warning:: Depend PySide Qt5.14
+        """
+        try:
+            self.rich_edit.setMarkdown(self.source_edit.toPlainText())
+        except AttributeError:
+            LOGGER.warning("RichText in Markdown is supported starting PySide 5.14")
 
     def infix(self, prefix: str, suffix=None):
 
@@ -123,6 +142,10 @@ class MarkdownEditor(QWidget):
         pass
 
     def to_source(self):
+        """Get source text from the current comment
+
+        Used to save the comment in the database by variant_view plugin.
+        """
         return self.source_edit.toPlainText()
 
 
