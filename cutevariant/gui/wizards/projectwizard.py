@@ -11,6 +11,7 @@ from PySide2.QtCore import (
     QAbstractTableModel,
     QModelIndex,
     Property,
+    Slot,
 )
 from PySide2.QtGui import QStandardItemModel, QStandardItem
 from PySide2.QtGui import QIcon
@@ -347,6 +348,9 @@ class ImportPage(QWizardPage):
         self.thread.started.connect(
             lambda: self.log_edit.appendPlainText(self.tr("Started"))
         )
+
+        # Note: self.run is automatically launched when ImportPage is displayed
+        # See on_current_id_changed of ProjectWizard
         self.import_button.clicked.connect(self.run)
         self.thread.progress_changed.connect(self.progress_changed)
         self.thread.finished.connect(self.import_thread_finished)
@@ -444,6 +448,19 @@ class ProjectWizard(QWizard):
         self.addPage(FilePage())
         self.addPage(SamplePage())
         self.addPage(ImportPage())
+
+        self.currentIdChanged.connect(self.on_current_id_changed)
+
+    @Slot()
+    def on_current_id_changed(self, id):
+        """Launch import process if currentPage is ImportPage
+
+        Args:
+            id (int): Current page id
+        """
+        current_page = self.currentPage()
+        if isinstance(current_page, ImportPage):
+            current_page.run()
 
 
 if __name__ == "__main__":
