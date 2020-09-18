@@ -91,10 +91,10 @@ class MainWindow(QMainWindow):
         # Restores the state of this mainwindow's toolbars and dockwidgets
         self.read_settings()
 
+        # Auto open recent projects
         recent = self.get_recent_projects()
-        if recent:
-            if os.path.exists(recent[0]):
-                self.open(recent[0])
+        if recent and os.path.isfile(recent[0]):
+            self.open(recent[0])
 
     def setup_ui(self):
         # Setup menubar
@@ -319,15 +319,16 @@ class MainWindow(QMainWindow):
 
     def save_recent_project(self, path):
         """Save current project into QSettings
-        
+
         Args:
             path (str): path of project
         """
-        paths = list(self.get_recent_projects())
+        paths = self.get_recent_projects()
+        if path in paths:
+            paths.remove(path)
         paths.insert(0, path)
         app_settings = QSettings()
-        unique_paths = list(dict.fromkeys(paths))
-        app_settings.setValue("recent_projects", unique_paths[:MAX_RECENT_PROJECTS])
+        app_settings.setValue("recent_projects", paths[:MAX_RECENT_PROJECTS])
 
     def get_recent_projects(self):
         """Return the list of recent projects stored in settings
