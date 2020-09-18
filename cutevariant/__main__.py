@@ -37,9 +37,8 @@ import cutevariant.commons as cm
 from cutevariant import __version__
 
 
-def main(app: QApplication):
+def main():
     """The main routine."""
-
     # Define the names of the organization and the application
     # The value is used by the QSettings class when it is constructed using
     # the empty constructor. This saves having to repeat this information
@@ -50,6 +49,7 @@ def main(app: QApplication):
     QCoreApplication.setApplicationVersion(__version__)
 
     # Process command line arguments
+    app = QApplication(sys.argv)
     process_arguments(app)
 
     # Load app styles
@@ -66,6 +66,7 @@ def main(app: QApplication):
     # w = SettingsWidget()
     # w.show()
 
+    # Splash screen
     splash = QSplashScreen()
     splash.setPixmap(QPixmap(cm.DIR_ICONS + "splash.png"))
     splash.showMessage(f"Version {__version__}")
@@ -81,6 +82,7 @@ def main(app: QApplication):
 
     w.show()
     splash.finish(w)
+    app.exec_()
 
 
 def load_styles(app):
@@ -158,7 +160,6 @@ def process_arguments(app):
 
 
 if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    main(app)
+    main()
 
-    app.exec_()
+
