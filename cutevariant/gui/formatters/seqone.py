@@ -1,24 +1,14 @@
-from PySide2.QtGui import (
-    QColor,
-    QFont,
-    QBrush,
-    QFontMetrics,
-    QIcon,
-    QPalette,
-    QPixmap,
-    QPainter,
-    Qt,
-    QPen,
-    QFontMetrics,
-)
-from PySide2.QtCore import QModelIndex, QRect, QPoint
-from PySide2.QtWidgets import QApplication, QStyleOptionViewItem
-
-import functools
+# Standard imports
 import re
 
+# Qt imports
+from PySide2.QtGui import QColor, QFont, QBrush, QPainter, QPen, QFontMetrics
+from PySide2.QtCore import Qt, QModelIndex, QRect
+from PySide2.QtWidgets import QStyleOptionViewItem
+
+# Custom imports
 from cutevariant.gui.formatter import Formatter
-from cutevariant.gui import FIcon, style
+from cutevariant.gui import FIcon
 
 
 class SeqoneFormatter(Formatter):
@@ -47,8 +37,7 @@ class SeqoneFormatter(Formatter):
         "HIGH": "#ff4b5c",
         "LOW": "#056674",
         "MODERATE": "#ecad7d",
-        "MODIFIER": "#ecad7d"
-
+        "MODIFIER": "#ecad7d",
     }
 
     FAV_ICON = {0: FIcon(0xF00C3), 1: FIcon(0xF00C0)}
@@ -67,7 +56,6 @@ class SeqoneFormatter(Formatter):
         pen = QPen()
         font = QFont()
 
-
         field_name = self.field_name(index).lower()
         value = self.value(index)
 
@@ -83,14 +71,13 @@ class SeqoneFormatter(Formatter):
 
         if field_name == "classification":
             icon = self.ACMG_ICON.get(str(value), self.ACMG_ICON["0"])
-            self.draw_icon(painter, option.rect,icon)
+            self.draw_icon(painter, option.rect, icon)
             return
 
         if field_name == "favorite":
             icon = self.FAV_ICON.get(int(value), self.FAV_ICON[0])
-            self.draw_icon(painter, option.rect,icon)
+            self.draw_icon(painter, option.rect, icon)
             return
-
 
         if field_name == "hgvs_c":
             font.setBold(True)
@@ -104,20 +91,16 @@ class SeqoneFormatter(Formatter):
             if m:
                 value = m.group(1)
 
-
         if re.match(r"sample\..+\.gt", field_name):
             icon = self.GENOTYPE_ICONS.get(int(value), self.GENOTYPE_ICONS[0])
-            self.draw_icon(painter, option.rect,icon)          
+            self.draw_icon(painter, option.rect, icon)
             return
-
-
-
 
         if field_name == "consequence":
             values = str(self.value(index)).split("&")
             metrics = QFontMetrics(font)
             x = option.rect.x() + 5
-            y = option.rect.center().y()
+            # y = option.rect.center().y()
             for value in values:
                 width = metrics.width(value)
                 height = metrics.height()
