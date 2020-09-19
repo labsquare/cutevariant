@@ -712,7 +712,7 @@ class VariantViewWidget(plugin.PluginWidget):
 
         # checkable group action
         self.groupby_action = self.top_bar.addAction(
-            FIcon(0xF14E0), "Group by", self.on_group_changed
+            FIcon(0xF14E0), self.tr("Group by"), self.on_group_changed
         )
         self.groupby_action.setCheckable(True)
         self.groupby_action.setChecked(False)
@@ -729,8 +729,8 @@ class VariantViewWidget(plugin.PluginWidget):
         self.top_bar.addWidget(spacer)
         # Add formatters to combobox, a click on it will instantiate the class
         self.formatter_combo = QComboBox()
-        for i in formatter.find_formatters():
-            self.formatter_combo.addItem(i.__name__, i)
+        for obj in formatter.find_formatters():
+            self.formatter_combo.addItem(obj.__name__, obj)
         self.top_bar.addWidget(self.formatter_combo)
         self.formatter_combo.currentTextChanged.connect(self.on_formatter_changed)
 
