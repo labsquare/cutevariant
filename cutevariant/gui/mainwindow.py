@@ -4,6 +4,7 @@ import os
 import sys
 import importlib
 import glob
+from logging import DEBUG
 
 # Qt imports
 from PySide2.QtCore import Qt, QSettings, QByteArray, QDir, Slot
@@ -120,25 +121,39 @@ class MainWindow(QMainWindow):
         self.view_menu.addAction(dock.toggleViewAction())
 
     def register_plugins(self):
-        """add plugin to the application
+        """Dynamically load plugins to the window
+
+        Two types of plugins can be registered:
+        - widget: Added to the GUI,
+        - dialog: DialogBox accessible from the tool menu.
         """
 
-        LOGGER.info("register plugins")
+        LOGGER.debug("MainWindow:: Registering plugins...")
 
         for extension in plugin.find_plugins():
-            print("ext", extension)
+            LOGGER.debug("Extension: %s", extension)
+
             if "widget" in extension:
+                # New GUI widget
                 name = extension["name"]
                 plugin_widget_class = extension["widget"]
+
                 widget = plugin_widget_class()
-                if widget.ENABLE == True:
+                if widget.ENABLE:
+                    # Setup new widget
                     widget.mainwindow = self
-                    widget.setWindowTitle(extension.get("name"))
-                    widget.setToolTip(extension.get("description"))
+                    # Set title
+                    if LOGGER.getEffectiveLevel() == DEBUG:
+                        widget.setWindowTitle(name)
+                    else:
+                        widget.setWindowTitle(extension["title"])
+                    widget.setToolTip(extension.get("descriptions"))
                     widget.on_register(self)
-                    #  Add plugins
+
+                    # Add new plugin to plugins already registered
                     self.plugins[name] = widget
 
+                    # Set position on the GUI
                     if plugin_widget_class.LOCATION == plugin.DOCK_LOCATION:
                         self.add_panel(widget)
 
@@ -149,46 +164,47 @@ class MainWindow(QMainWindow):
                         self.footer_tab.addTab(widget, widget.windowTitle())
 
             if "dialog" in extension:
+                # New menu tool
                 name = extension["name"]
                 title = extension["title"]
                 plugin_dialog_class = extension["dialog"]
 
+                # Add plugin to Tools menu
                 dialog_action = self.tool_menu.addAction(title)
                 self.dialog_plugins[dialog_action] = plugin_dialog_class
                 dialog_action.triggered.connect(self.show_dialog)
 
-    def refresh_plugins(self, sender: plugin.PluginWidget = None):
-        """Refresh all plugins except_plugins 
-        
+    def refresh_plugins(self, sender: plugin.PluginWidget=None):
+        """Refresh all plugins except_plugins
+
         Args:
-            sender (PluginWidget): from a plugin, you can pass "self" as argument 
+            sender (PluginWidget): from a plugin, you can pass "self" as argument
         """
 
         print("sender", sender)
         for plugin in self.plugins.values():
-            if plugin is not sender:
-                if plugin.isVisible():
-
-                    try:
-                        plugin.on_refresh()
-                    except Exception as e:
-                        LOGGER.error("{}:{} {}".format(plugin, format(sys.exc_info()[-1].tb_lineno),  e))
-
-
+            if plugin is not sender and plugin.isVisible():
+                try:
+                    plugin.on_refresh()
+                except Exception as e:
+                    LOGGER.error("{}:{} {}".format(plugin, format(sys.exc_info()[-1].tb_lineno),  e))
 
     def refresh_plugin(self, plugin_name: str):
-        """Refresh a plugin identified by plugin_name 
-        It doesn't refresh the sender plugin 
-        
+        """Refresh a plugin identified by plugin_name
+        It doesn't refresh the sender plugin
+
         Args:
-            plugin_name (str): a plugin name. 
+            plugin_name (str): a plugin name.
         """
         if plugin_name in self.plugins:
             plugin = self.plugins[plugin_name]
             plugin.on_refresh()
 
     def setup_menubar(self):
-        """Menu bar setup: items and actions"""
+        """Menu bar setup: items and actions
+
+        .. note:: Setup tools menu that could be dynamically augmented by plugins.
+        """
         ## File Menu
         self.file_menu = self.menuBar().addMenu(self.tr("&File"))
         self.new_project_action = self.file_menu.addAction(

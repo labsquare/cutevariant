@@ -645,7 +645,7 @@ class VariantView(QWidget):
                 # Save in DB
                 self.model.update_variant(
                     index.row(),
-                    {"comment": editor.to_source()
+                    {"comment": editor.to_source()}
                 )
 
                 # Request a refresh of the variant_info plugin
