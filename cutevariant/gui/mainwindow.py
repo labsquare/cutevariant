@@ -183,7 +183,7 @@ class MainWindow(QMainWindow):
         Args:
             plugin_name (str): a plugin name. 
         """
-        if plugin_name in self._plugins:
+        if plugin_name in self.plugins:
             plugin = self.plugins[plugin_name]
             plugin.on_refresh()
 

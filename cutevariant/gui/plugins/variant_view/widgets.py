@@ -386,14 +386,15 @@ class VariantDelegate(QStyledItemDelegate):
 class VariantView(QWidget):
 
     """A Variant view with controller like pagination
-    
+
     """
 
     view_clicked = Signal()
 
     def __init__(self, parent=None):
-        super().__init__()
+        super().__init__(parent)
 
+        self.parent = parent
         self.view = QTableView()
         self.bottom_bar = QToolBar()
 
@@ -624,6 +625,7 @@ class VariantView(QWidget):
     #         self.model.update_variant(index.row(), update)
 
     def edit_comment(self, index: QModelIndex):
+        """Allow a user to add a comment for the selected variant"""
 
         if index.isValid():
             dialog = QDialog(self)
@@ -640,8 +642,15 @@ class VariantView(QWidget):
             dialog.setLayout(vlayout)
 
             if dialog.exec_() == QDialog.Accepted:
-                update = {"comment": editor.to_source()}
-                self.model.update_variant(index.row(), update)
+                # Save in DB
+                self.model.update_variant(
+                    index.row(),
+                    {"comment": editor.to_source()
+                )
+
+                # Request a refresh of the variant_info plugin
+                self.parent.mainwindow.refresh_plugin("variant_info")
+
 
     def copy_to_clipboard(self, index: QModelIndex):
 
@@ -678,9 +687,9 @@ class VariantViewWidget(plugin.PluginWidget):
 
         # Create 2 Pane
         self.splitter = QSplitter(Qt.Horizontal)
-        self.first_pane = VariantView()
+        self.first_pane = VariantView(self)
 
-        self.second_pane = VariantView()
+        self.second_pane = VariantView(self)
         self.second_pane.hide()
 
         self.splitter.addWidget(self.first_pane)
