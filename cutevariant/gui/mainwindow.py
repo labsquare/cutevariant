@@ -3,6 +3,7 @@
 import os
 import sys
 import sqlite3
+from pkg_resources import parse_version
 from logging import DEBUG
 
 # Qt imports
@@ -11,7 +12,7 @@ from PySide2.QtWidgets import *
 from PySide2.QtGui import QIcon, QKeySequence
 
 # Custom imports
-from cutevariant.core import get_sql_connexion
+from cutevariant.core import get_sql_connexion, get_metadatas
 from cutevariant.gui.ficon import FIcon
 from cutevariant.gui.state import State
 
@@ -30,7 +31,11 @@ from cutevariant.gui.widgets.aboutcutevariant import AboutCutevariant
 
 # from cutevariant.gui.chartquerywidget import ChartQueryWidget
 from cutevariant import commons as cm
-from cutevariant.commons import MAX_RECENT_PROJECTS, DIR_ICONS
+from cutevariant.commons import (
+    MAX_RECENT_PROJECTS,
+    DIR_ICONS,
+    MIN_AUTHORIZED_DB_VERSION,
+)
 
 from cutevariant.core.writer import CsvWriter
 
@@ -320,6 +325,20 @@ class MainWindow(QMainWindow):
         # Create connection
         self.conn = get_sql_connexion(filepath)
 
+        # DB file filter
+        db_version = get_metadatas(self.conn).get("cutevariant_version")
+        if db_version and parse_version(db_version) < parse_version(
+            MIN_AUTHORIZED_DB_VERSION
+        ):
+            # Refuse to open blacklisted DB versions
+            # Unversioned files are still accepted
+            QMessageBox.critical(
+                self,
+                "Error while opening project",
+                "File: {} is too old; please create a new project.".format(filepath),
+            )
+            return
+
         try:
             self.open_database(self.conn)
             self.save_recent_project(filepath)
@@ -333,9 +352,7 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(
                 self,
                 "Error while opening project",
-                "File: {}\nThe following exception occurred:\n{}".format(
-                    filepath, e
-                )
+                "File: {}\nThe following exception occurred:\n{}".format(filepath, e),
             )
 
     def open_database(self, conn):
