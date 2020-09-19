@@ -2,8 +2,6 @@
 # Standard imports
 import os
 import sys
-import importlib
-import glob
 from logging import DEBUG
 
 # Qt imports
@@ -12,7 +10,7 @@ from PySide2.QtWidgets import *
 from PySide2.QtGui import QIcon, QKeySequence
 
 # Custom imports
-from cutevariant.core import Query, get_sql_connexion
+from cutevariant.core import get_sql_connexion
 from cutevariant.gui.ficon import FIcon
 from cutevariant.gui.state import State
 
@@ -446,6 +444,7 @@ class MainWindow(QMainWindow):
         widget = SettingsWidget()
         widget.exec_()
 
+    @Slot()
     def show_dialog(self):
         """Show Plugin dialog
         """
