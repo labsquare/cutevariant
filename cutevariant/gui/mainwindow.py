@@ -2,6 +2,7 @@
 # Standard imports
 import os
 import sys
+import sqlite3
 from logging import DEBUG
 
 # Qt imports
@@ -322,8 +323,18 @@ class MainWindow(QMainWindow):
         # Create connection
         self.conn = get_sql_connexion(filepath)
 
-        self.open_database(self.conn)
-        self.save_recent_project(filepath)
+        try:
+            self.open_database(self.conn)
+            self.save_recent_project(filepath)
+        except sqlite3.OperationalError as e:
+            LOGGER.error("MainWindow:open:: %s", e)
+            QMessageBox.critical(
+                self,
+                "Error while opening project",
+                "File: {}\nThe following exception occurred:\n{}".format(
+                    filepath, e
+                )
+            )
 
     def open_database(self, conn):
         """Open the project file and populate widgets
