@@ -15,6 +15,10 @@ def async_import_reader(conn, reader: AbstractReader, pedfile=None, project={}):
 
     :param conn: sqlite connection
     :param reader: must be a AbstractReader base class
+    :param pedfile: PED file path
+    :param project: The reference genome and the name of the project.
+        Keys have to be at least "reference" and "project_name".
+    :type project: <dict>
     :return: yield progression and message
     :rtype: <generator <int>, <str>>
     """
@@ -54,6 +58,7 @@ def async_import_reader(conn, reader: AbstractReader, pedfile=None, project={}):
 
     # Get cases and control samples
 
+    # Import PED file
     if pedfile:
         yield 0, f"Import pedfile {pedfile}"
         import_pedfile(conn, pedfile)
@@ -64,7 +69,7 @@ def async_import_reader(conn, reader: AbstractReader, pedfile=None, project={}):
     yield 0, "Inserting fields..."
     insert_many_fields(conn, reader.get_extra_fields())
 
-    # Compute control andd cases samples
+    # Compute control and cases samples
 
     control_samples = [
         sample["name"] for sample in get_samples(conn) if sample["phenotype"] == 1
@@ -106,9 +111,13 @@ def async_import_file(conn, filename, pedfile=None, project={}):
 
     :param conn: sqlite connection
     :param filenaame: variant filename
+    :param pedfile: PED file path
+    :param project: The reference genome and the name of the project.
+        Keys have to be at least "reference" and "project_name".
+    :type project: <dict>
     :return: yield progression and message
     """
-    # Context manager that wraps the given file
+    # Context manager that wraps the given file and creates an apropriate reader
     with create_reader(filename) as reader:
         yield from async_import_reader(conn, reader, pedfile, project)
 
