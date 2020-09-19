@@ -295,9 +295,6 @@ class ImportThread(QThread):
                 # Send progression
                 self.progress_changed.emit(value, message)
 
-            # Import ped file
-            self.progress_changed.emit(100, self.tr("Import pedfile"))
-
         except BaseException as e:
             self.progress_changed.emit(0, str(e))
             self._stop = True
