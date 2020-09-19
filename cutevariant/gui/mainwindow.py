@@ -95,7 +95,7 @@ class MainWindow(QMainWindow):
         # recent = self.get_recent_projects()
         # if recent:
         #     if os.path.exists(recent[0]):
-        self.open("/home/sacha/Dev/cutevariant/test.db")
+        # self.open("/home/sacha/Dev/cutevariant/test.db")
 
     def setup_ui(self):
         # Setup menubar
