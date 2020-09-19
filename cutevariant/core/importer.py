@@ -98,13 +98,6 @@ def async_import_reader(conn, reader: AbstractReader, pedfile=None, project={}):
     create_indexes(conn)
     yield 100, "Indexes created."
 
-    conn.execute("PRAGMA auto_vacuum = FULL")
-    # conn.execute("PRAGMA main.cache_size=10000")
-    # conn.execute("PRAGMA main.locking_mode=EXCLUSIVE")
-    # conn.execute("PRAGMA main.synchronous=NORMAL")
-    # conn.execute("PRAGMA main.journal_mode=WAL")
-    # conn.execute("PRAGMA main.cache_size=5000")
-
     # session.add(Selection(name="favoris", description="favoris", count = 0))
 
 
@@ -138,7 +131,7 @@ def import_pedfile(conn, filename):
     data has the same structure of a fam file object
     https://www.cog-genomics.org/plink/1.9/formats#fam
 
-    the file is a tabular with the following column 
+    the file is a tabular with the following column
 
     Family String Id : "Fam"
     Sample String Id: "Boby"
@@ -146,7 +139,7 @@ def import_pedfile(conn, filename):
     Mother String Id
     Sex code:  (1 = male, 2 = female, 0 = unknown)
     Phenotype code: (1 = control, 2 = case, 0 = missing data if case/control)
-    
+
     Arguments:
         conn {[type]} -- [description]
         data {list} -- [description]
