@@ -1,10 +1,7 @@
 # Qt imports
 from PySide2.QtWidgets import QWidget, QDialog
-from PySide2.QtCore import Signal
-
 
 #  standard import
-from glob import glob
 import os
 import importlib
 import pkgutil
@@ -19,10 +16,10 @@ FOOTER_LOCATION = 3
 
 def snake_to_camel(name: str) -> str:
     """Convert snake case to camel case
-    
+
     Args:
         name (str): a snake string like : query_view
-    
+
     Returns:
         str: a camel string like: QueryView
     """
@@ -31,6 +28,11 @@ def snake_to_camel(name: str) -> str:
 
 
 class PluginWidget(QWidget):
+    """Model class for all widget plugins
+
+    .. note:: Please override the functions of this class as much as possible.
+
+    """
 
     LOCATION = DOCK_LOCATION
     ENABLE = False
@@ -43,37 +45,45 @@ class PluginWidget(QWidget):
         self.refresh_groups = []  #  TODO
 
     def on_register(self, mainwindow):
-        """This method is called when the mainwindow is build 
+        """Called when the mainwindow is build
+
         You should setup the mainwindow with your plugin from here.
-        
+        Don't forget to assign mainwindow attribute with the given argument.
+
         Args:
-            mainwindow (MainWindow): cutevariant Mainwindow 
+            mainwindow (MainWindow): cutevariant Mainwindow
         """
         pass
 
     def on_open_project(self, conn):
-        """This method is called when a project open
-        
+        """This method is called when a project is opened
+
+        You should use the sql connector if your plugin uses the SQL database.
+
         Args:
             conn (sqlite3.connection): A connection to the sqlite project
         """
         pass
 
     def on_close(self):
-        """This methods is called when the mainwindow close
-        """
+        """Called when the mainwindow is closed"""
         pass
 
     def on_refresh(self):
-        """This methods is called to refresh the gui 
-        
-        This is called by the mainwindow.controller::refresh methods 
+        """Called to refresh the GUI of the current plugin
 
+        This is called by the mainwindow.controller::refresh methods
         """
         pass
 
 
 class PluginDialog(QDialog):
+    """Model class for all tool menu plugins
+
+    These plugins are based on DialogBox; this means that they could be opened
+    from the tools menu.
+    """
+
     ENABLE = False
 
     def __init__(self, parent=None):
@@ -82,11 +92,16 @@ class PluginDialog(QDialog):
 
 
 class PluginSettingsWidget(settings.GroupWidget):
+    """Model class for settings plugins"""
+
     def __init__(self, parent=None):
         super().__init__(parent)
 
     def on_refresh(self):
         pass
+
+
+################################################################################
 
 
 def find_plugins(path=None):
@@ -117,6 +132,7 @@ def find_plugins(path=None):
         settings_class_name = snake_to_camel(package.name) + "SettingsWidget"
         dialog_class_name = snake_to_camel(package.name)
 
+        # Load __init__ file data of the module
         plugin_item = {
             "name": module.__name__,
             "title": module.__title__,
