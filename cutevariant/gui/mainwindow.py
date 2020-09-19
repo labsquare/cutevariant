@@ -306,7 +306,7 @@ class MainWindow(QMainWindow):
         :param filepath: Path of project file.
         :type filepath: <str>
         """
-        if not os.path.exists(filepath):
+        if not os.path.isfile(filepath):
             return
 
         # Show the project name in title and in status bar
