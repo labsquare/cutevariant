@@ -197,9 +197,15 @@ def get_metadatas(conn: sqlite3.Connection):
         conn (sqlite3.Connection): Description
     """
 
-    return dict(
-        [(rec["key"], rec["value"]) for rec in conn.execute("SELECT * FROM metadatas")]
-    )
+    try:
+        return dict(
+            [
+                (rec["key"], rec["value"])
+                for rec in conn.execute("SELECT * FROM metadatas")
+            ]
+        )
+    except:
+        return {}
 
 
 ## ================ SELECTION TABLE ===================================

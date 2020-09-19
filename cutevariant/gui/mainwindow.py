@@ -11,7 +11,8 @@ from PySide2.QtWidgets import *
 from PySide2.QtGui import QIcon, QKeySequence
 
 # Custom imports
-from cutevariant.core import Query, get_sql_connexion
+from cutevariant import __version__
+from cutevariant.core import Query, get_sql_connexion, sql
 from cutevariant.gui.ficon import FIcon
 from cutevariant.gui.state import State
 
@@ -91,10 +92,10 @@ class MainWindow(QMainWindow):
         # Restores the state of this mainwindow's toolbars and dockwidgets
         self.read_settings()
 
-        recent = self.get_recent_projects()
-        if recent:
-            if os.path.exists(recent[0]):
-                self.open(recent[0])
+        # recent = self.get_recent_projects()
+        # if recent:
+        #     if os.path.exists(recent[0]):
+        self.open("/home/sacha/Dev/cutevariant/test.db")
 
     def setup_ui(self):
         # Setup menubar
@@ -172,9 +173,11 @@ class MainWindow(QMainWindow):
                     try:
                         plugin.on_refresh()
                     except Exception as e:
-                        LOGGER.error("{}:{} {}".format(plugin, format(sys.exc_info()[-1].tb_lineno),  e))
-
-
+                        LOGGER.error(
+                            "{}:{} {}".format(
+                                plugin, format(sys.exc_info()[-1].tb_lineno), e
+                            )
+                        )
 
     def refresh_plugin(self, plugin_name: str):
         """Refresh a plugin identified by plugin_name 
@@ -297,6 +300,20 @@ class MainWindow(QMainWindow):
         if not os.path.exists(filepath):
             return
 
+        self.conn = get_sql_connexion(filepath)
+
+        from packaging import version
+
+        metadatas = sql.get_metadatas(self.conn)
+        #  Check version
+        db_version = metadatas.get("cutevariant", "0.0.0")
+
+        if version.parse(db_version) < version.parse(__version__):
+            QMessageBox.critical(
+                self, "error", f"Selected database {db_version} is not a good version"
+            )
+            return
+
         # Show the project name in title and in status bar
         self.setWindowTitle("Cutevariant - %s" % os.path.basename(filepath))
         self.status_bar.showMessage(self.tr("{} opened").format(filepath))
@@ -306,7 +323,6 @@ class MainWindow(QMainWindow):
         app_settings.setValue("last_directory", os.path.dirname(filepath))
 
         # Create connection
-        self.conn = get_sql_connexion(filepath)
 
         self.open_database(self.conn)
         self.save_recent_project(filepath)
