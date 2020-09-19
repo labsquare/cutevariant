@@ -313,10 +313,6 @@ class MainWindow(QMainWindow):
         if not os.path.isfile(filepath):
             return
 
-        # Show the project name in title and in status bar
-        self.setWindowTitle("Cutevariant - %s" % os.path.basename(filepath))
-        self.status_bar.showMessage(self.tr("{} opened").format(filepath))
-
         # Save directory
         app_settings = QSettings()
         app_settings.setValue("last_directory", os.path.dirname(filepath))
@@ -327,6 +323,11 @@ class MainWindow(QMainWindow):
         try:
             self.open_database(self.conn)
             self.save_recent_project(filepath)
+
+            # Show the project name in title and in status bar
+            self.setWindowTitle("Cutevariant - %s" % os.path.basename(filepath))
+            self.status_bar.showMessage(self.tr("{} opened").format(filepath))
+
         except sqlite3.OperationalError as e:
             LOGGER.error("MainWindow:open:: %s", e)
             QMessageBox.critical(
