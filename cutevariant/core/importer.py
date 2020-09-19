@@ -8,6 +8,7 @@ import logging
 from .reader.abstractreader import AbstractReader
 from .readerfactory import create_reader
 from .sql import *
+from cutevariant import __version__
 
 
 def async_import_reader(conn, reader: AbstractReader, pedfile=None, project={}):
@@ -30,8 +31,12 @@ def async_import_reader(conn, reader: AbstractReader, pedfile=None, project={}):
         reference=project.get("reference", "UKN"),
     )
 
+    # Create metadatas
     create_table_metadatas(conn)
-    insert_many_metadatas(conn, reader.get_metadatas())
+    metadatas = reader.get_metadatas()
+    # Database versioning
+    metadatas["cutevariant_version"] = __version__
+    insert_many_metadatas(conn, metadatas)
 
     yield 0, "Creating table shema..."
     # Create table fields
