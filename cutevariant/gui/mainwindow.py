@@ -187,7 +187,11 @@ class MainWindow(QMainWindow):
                 try:
                     plugin.on_refresh()
                 except Exception as e:
-                    LOGGER.error("{}:{} {}".format(plugin, format(sys.exc_info()[-1].tb_lineno),  e))
+                    LOGGER.error(
+                        "{}:{} {}".format(
+                            plugin, format(sys.exc_info()[-1].tb_lineno), e
+                        )
+                    )
 
     def refresh_plugin(self, plugin_name: str):
         """Refresh a plugin identified by plugin_name
@@ -324,6 +328,11 @@ class MainWindow(QMainWindow):
         self.save_recent_project(filepath)
 
     def open_database(self, conn):
+        """Open the project file and populate widgets
+
+        Args:
+            conn (sqlite3.Connection): Sqlite3 Connection
+        """
         self.conn = conn
 
         for plugin in self.plugins.values():
@@ -344,9 +353,9 @@ class MainWindow(QMainWindow):
 
     def get_recent_projects(self):
         """Return the list of recent projects stored in settings
-        
+
         Returns:
-            list: Return list of recent project path
+            list: Recent project paths
         """
 
         # Reload last projects opened
@@ -438,7 +447,7 @@ class MainWindow(QMainWindow):
         widget.exec_()
 
     def show_dialog(self):
-        """Show Plugin dialog 
+        """Show Plugin dialog
         """
         action = self.sender()
         if action in self.dialog_plugins:
@@ -485,9 +494,9 @@ class MainWindow(QMainWindow):
         super().closeEvent(event)
 
     def write_settings(self):
-        """ Store the state of this mainwindow. 
+        """ Store the state of this mainwindow.
 
-        .. note:: This methods is called by closeEvent 
+        .. note:: This methods is called by closeEvent
         """
         app_settings = QSettings()
 
