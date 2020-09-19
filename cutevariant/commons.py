@@ -52,7 +52,7 @@ WEBSITES_URLS = {"varsome": "https://varsome.com/variant/hg19/{chr}-{pos}-{ref}-
 
 # Logging
 LOGGER_NAME = "cutevariant"
-LOG_LEVEL = "NOTSET"
+LOG_LEVEL = "INFO"
 LOG_LEVELS = {
     "debug": logging.DEBUG,
     "info": logging.INFO,
