@@ -78,8 +78,8 @@ class MainWindow(QMainWindow):
         self.setup_ui()
 
         # Register plugins
-        self.plugins = {}
-        self.dialog_plugins = {}
+        self.plugins = {}  # dict of names as keys and widgets as values
+        self.dialog_plugins = {}  # dict of actions as keys and classes as values
         self.register_plugins()
 
         # Window geometry
@@ -129,6 +129,7 @@ class MainWindow(QMainWindow):
 
         LOGGER.debug("MainWindow:: Registering plugins...")
 
+        # Get classes of plugins
         for extension in plugin.find_plugins():
             LOGGER.debug("Extension: %s", extension)
 
@@ -181,8 +182,8 @@ class MainWindow(QMainWindow):
         """
 
         print("sender", sender)
-        for plugin in self.plugins.values():
-            if plugin is not sender and plugin.isVisible():
+        for plugin_obj in self.plugins.values():
+            if plugin_obj is not sender and plugin_obj.isVisible():
                 try:
                     plugin.on_refresh()
                 except Exception as e:

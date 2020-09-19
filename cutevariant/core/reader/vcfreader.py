@@ -326,7 +326,7 @@ class VcfReader(AbstractReader):
         return f"VCF Reader using {type(self.annotation_parser).__name__}"
 
     def get_metadatas(self):
-        """override from AbstractReaer """
+        """override from AbstractReader"""
         output = {}
         output["filename"] = self.device.name
 
