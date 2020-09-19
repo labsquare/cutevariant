@@ -179,7 +179,7 @@ class MainWindow(QMainWindow):
                 self.dialog_plugins[dialog_action] = plugin_dialog_class
                 dialog_action.triggered.connect(self.show_dialog)
 
-    def refresh_plugins(self, sender: plugin.PluginWidget=None):
+    def refresh_plugins(self, sender: plugin.PluginWidget = None):
         """Refresh all plugins except_plugins
 
         Args:

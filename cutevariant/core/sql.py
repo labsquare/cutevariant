@@ -163,7 +163,7 @@ def create_project(conn: sqlite3.Connection, name: str, reference: str):
 
 def create_table_metadatas(conn: sqlite3.Connection):
     """Create table metdata
-    
+
     Args:
         conn (sqlite3.Connection): Description
     """
@@ -173,8 +173,8 @@ def create_table_metadatas(conn: sqlite3.Connection):
 
 
 def insert_many_metadatas(conn: sqlite3.Connection, metadatas={}):
-    """Insert metadata 
-    
+    """Insert metadata
+
     Args:
         conn (sqlite3.Connection): Description
     """
@@ -405,10 +405,10 @@ def create_selection_from_bed(
     cur.execute(
         """CREATE TABLE bed_table (
 
-        id INTEGER PRIMARY KEY ASC, 
-        bin INTEGER DEFAULT 0, 
-        chr TEXT, 
-        start INTEGER, 
+        id INTEGER PRIMARY KEY ASC,
+        bin INTEGER DEFAULT 0,
+        chr TEXT,
+        start INTEGER,
         end INTEGER,
         name INTEGER )"""
     )
@@ -433,10 +433,10 @@ def create_selection_from_bed(
 
     query = (
         source_query
-        + """  
-                INNER JOIN bed_table ON 
-                variants.chr = bed_table.chr AND 
-                variants.pos >= bed_table.start AND 
+        + """
+                INNER JOIN bed_table ON
+                variants.chr = bed_table.chr AND
+                variants.pos >= bed_table.start AND
                 variants.pos <= bed_table.end """
     )
 
@@ -501,8 +501,8 @@ def edit_selection(conn: sqlite3.Connection, selection: dict):
 
 
 def create_table_sets(conn: sqlite3.Connection):
-    """Create the table "sets" 
-    
+    """Create the table "sets"
+
     This table stores variants selection saved by the user:
             - name: name of the set of variants
             - value: number of variants concerned by this set
@@ -515,7 +515,7 @@ def create_table_sets(conn: sqlite3.Connection):
     cursor.execute(
         """CREATE TABLE sets (
         id INTEGER PRIMARY KEY ASC,
-        name TEXT, 
+        name TEXT,
         value TEXT
         )"""
     )
