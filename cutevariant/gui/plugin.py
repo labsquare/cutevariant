@@ -90,14 +90,14 @@ class PluginSettingsWidget(settings.GroupWidget):
 
 
 def find_plugins(path=None):
-    """find and returns plugin instance from a directory 
-    
+    """Find and return plugin instance from a directory
+
     Keyword Arguments:
-        path [str] -- the folder path where plugin are 
+        path [str] -- the folder path where plugin are
         parent [type] -- the parent object of all instance. It must be the MainWindow
-    
+
     Returns:
-        [Plugin] -- An instance of Plugin class 
+        [generator [Plugin]] -- An instance of Plugin class
     """
     #  if path is None, return internal plugin path
     if path is None:
@@ -106,7 +106,6 @@ def find_plugins(path=None):
         plugin_path = path
 
     # Loop over package in plugins directory
-    plugins = []
     for package in pkgutil.iter_modules([plugin_path]):
         package_path = os.path.join(plugin_path, package.name)
         spec = importlib.util.spec_from_file_location(
@@ -118,46 +117,48 @@ def find_plugins(path=None):
         settings_class_name = snake_to_camel(package.name) + "SettingsWidget"
         dialog_class_name = snake_to_camel(package.name)
 
-        item = {}
-        item["name"] = module.__name__
-        item["title"] = module.__title__
-        item["description"] = module.__description__
-        item["version"] = module.__version__
+        plugin_item = {
+            "name": module.__name__,
+            "title": module.__title__,
+            "description": module.__description__,
+            "version": module.__version__,
+        }
 
         for sub_module_info in pkgutil.iter_modules([package_path]):
 
-            if sub_module_info.name in ("widgets", "settings", "dialogs"):
+            if sub_module_info.name not in ("widgets", "settings", "dialogs"):
+                continue
 
-                sub_module_path = os.path.join(
-                    sub_module_info.module_finder.path, sub_module_info.name + ".py"
-                )
-                spec = importlib.util.spec_from_file_location(
-                    sub_module_info.name, sub_module_path
-                )
-                sub_module = spec.loader.load_module()
+            sub_module_path = os.path.join(
+                sub_module_info.module_finder.path, sub_module_info.name + ".py"
+            )
+            spec = importlib.util.spec_from_file_location(
+                sub_module_info.name, sub_module_path
+            )
+            sub_module = spec.loader.load_module()
 
-                if (
-                    widget_class_name in dir(sub_module)
-                    and sub_module_info.name == "widgets"
-                ):
-                    Widget = getattr(sub_module, widget_class_name)
-                    if "PluginWidget" in str(Widget.__bases__):
-                        item["widget"] = Widget
+            if (
+                widget_class_name in dir(sub_module)
+                and sub_module_info.name == "widgets"
+            ):
+                Widget = getattr(sub_module, widget_class_name)
+                if "PluginWidget" in str(Widget.__bases__):
+                    plugin_item["widget"] = Widget
 
-                if (
-                    settings_class_name in dir(sub_module)
-                    and sub_module_info.name == "settings"
-                ):
-                    Widget = getattr(sub_module, settings_class_name)
-                    if "PluginSettingsWidget" in str(Widget.__bases__):
-                        item["setting"] = Widget
+            if (
+                settings_class_name in dir(sub_module)
+                and sub_module_info.name == "settings"
+            ):
+                Widget = getattr(sub_module, settings_class_name)
+                if "PluginSettingsWidget" in str(Widget.__bases__):
+                    plugin_item["setting"] = Widget
 
-                if (
-                    dialog_class_name in dir(sub_module)
-                    and sub_module_info.name == "dialogs"
-                ):
-                    Widget = getattr(sub_module, dialog_class_name)
-                    if "PluginDialog" in str(Widget.__bases__):
-                        item["dialog"] = Widget
+            if (
+                dialog_class_name in dir(sub_module)
+                and sub_module_info.name == "dialogs"
+            ):
+                Widget = getattr(sub_module, dialog_class_name)
+                if "PluginDialog" in str(Widget.__bases__):
+                    plugin_item["dialog"] = Widget
 
-        yield item
+        yield plugin_item
