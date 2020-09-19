@@ -190,6 +190,18 @@ def insert_many_metadatas(conn: sqlite3.Connection, metadatas={}):
         conn.commit()
 
 
+def get_metadatas(conn: sqlite3.Connection):
+    """Get metadata
+    
+    Args:
+        conn (sqlite3.Connection): Description
+    """
+
+    return dict(
+        [(rec["key"], rec["value"]) for rec in conn.execute("SELECT * FROM metadatas")]
+    )
+
+
 ## ================ SELECTION TABLE ===================================
 
 
