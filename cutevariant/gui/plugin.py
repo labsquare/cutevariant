@@ -109,7 +109,6 @@ def find_plugins(path=None):
 
     Keyword Arguments:
         path [str] -- the folder path where plugin are
-        parent [type] -- the parent object of all instance. It must be the MainWindow
 
     Returns:
         [generator [Plugin]] -- An instance of Plugin class
