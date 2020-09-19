@@ -36,6 +36,7 @@ class MarkdownEditor(QWidget):
 
         self.rich_edit.setAcceptRichText(True)
         self.rich_edit.setAutoFormatting(QTextEdit.AutoAll)
+        self.rich_edit.setReadOnly(True)
 
         #  Setup toolbar
         self.act_undo = self.toolbar.addAction("undo", self.source_edit.undo)
