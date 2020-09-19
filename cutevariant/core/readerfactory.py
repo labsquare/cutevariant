@@ -1,6 +1,5 @@
 # Standard imports
 import os
-import struct
 from contextlib import contextmanager
 import pathlib
 
