@@ -1,18 +1,19 @@
-import re
+# Standard imports
 import functools
-from cutevariant.core import command as cmd
-from cutevariant.core import vql
-import cutevariant.commons as cm
-
-from cutevariant.gui import plugin, FIcon
-from cutevariant.gui import formatter
-from cutevariant.gui.widgets import MarkdownEditor
-
 import math
 
+# Qt imports
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 from PySide2.QtGui import *
+
+# Custom imports
+from cutevariant.core import command as cmd
+from cutevariant.gui import plugin, FIcon
+from cutevariant.gui import formatter
+from cutevariant.gui.widgets import MarkdownEditor
+import cutevariant.commons as cm
+
 
 LOGGER = cm.logger()
 
@@ -49,16 +50,16 @@ LOGGER = cm.logger()
 
 class VariantModel(QAbstractTableModel):
     """
-    VariantModel is a Qt model class which contains variants datas from sql.VariantBuilder . 
+    VariantModel is a Qt model class which contains variants datas from sql.VariantBuilder .
     It loads paginated data from VariantBuilder and create an interface for a Qt view and controllers.
     The model can group variants by (chr,pos,ref,alt) into a tree thanks to VariantBuilder.tree().
-   
+
     See Qt model/view programming for more information
     https://doc.qt.io/qt-5/model-view-programming.html
 
-    Variants are stored internally as a list of variants. By default, there is only one transcript per row. 
-    When user expand the row, it will append duplicates variants as children. 
-    For example, this is a tree with 2 variants , each of them refer to many transcripts. 
+    Variants are stored internally as a list of variants. By default, there is only one transcript per row.
+    When user expand the row, it will append duplicates variants as children.
+    For example, this is a tree with 2 variants , each of them refer to many transcripts.
 
     """
 
@@ -106,25 +107,25 @@ class VariantModel(QAbstractTableModel):
         self.endResetModel()
 
     def rowCount(self, parent=QModelIndex()):
-        """Overrided : Return children count of index 
+        """Overrided : Return children count of index
         """
         #  If parent is root
 
         return len(self.variants)
 
     def columnCount(self, parent=QModelIndex()):
-        """Overrided: Return column count of parent . 
+        """Overrided: Return column count of parent .
 
-        Parent is not used here. 
+        Parent is not used here.
         """
         return len(self.headers)
 
     def data(self, index: QModelIndex(), role=Qt.DisplayRole):
         """ Overrided: return index data according role.
-        This method is called by the Qt view to get data to display according Qt role. 
-        
+        This method is called by the Qt view to get data to display according Qt role.
+
         Params:
-            index (QModelIndex): index from where your want to get data 
+            index (QModelIndex): index from where your want to get data
             role (Qt.ItemDataRole): https://doc.qt.io/qt-5/qt.html#ItemDataRole-enum
 
         Examples:
@@ -154,7 +155,7 @@ class VariantModel(QAbstractTableModel):
         return None
 
     def headerData(self, section, orientation, role=Qt.DisplayRole):
-        """Overrided: Return column name 
+        """Overrided: Return column name
         This method is called by the Qt view to display vertical or horizontal header data.
 
         Params:
@@ -163,7 +164,7 @@ class VariantModel(QAbstractTableModel):
             role (Qt.ItemDataRole): https://doc.qt.io/qt-5/qt.html#ItemDataRole-enum
 
         Examples:
-            # return 4th column name 
+            # return 4th column name
             column_name = model.headerData(4, Qt.Horizontal)
 
          """
@@ -175,8 +176,8 @@ class VariantModel(QAbstractTableModel):
         return None
 
     def update_variant(self, row: int, variant={}):
-        """Update a row 
-        
+        """Update a row
+
         Args:
             row (int): Description
         """
@@ -303,10 +304,10 @@ class VariantModel(QAbstractTableModel):
         return math.ceil(self.total / self.limit)
 
     def sort(self, column: int, order):
-        """Overrided: Sort data by specified column 
-        
-        column (int): column id 
-        order (Qt.SortOrder): Qt.AscendingOrder or Qt.DescendingOrder 
+        """Overrided: Sort data by specified column
+
+        column (int): column id
+        order (Qt.SortOrder): Qt.AscendingOrder or Qt.DescendingOrder
 
         """
         if column < self.columnCount():
@@ -544,7 +545,7 @@ class VariantView(QWidget):
             self.model.setPage(page)
 
     def load_page_box(self):
-        """Load Bottom toolbar with pagination 
+        """Load Bottom toolbar with pagination
         """
         self.page_box.clear()
         if self.model.pageCount() - 1 == 0:
@@ -643,14 +644,10 @@ class VariantView(QWidget):
 
             if dialog.exec_() == QDialog.Accepted:
                 # Save in DB
-                self.model.update_variant(
-                    index.row(),
-                    {"comment": editor.to_source()}
-                )
+                self.model.update_variant(index.row(), {"comment": editor.to_source()})
 
                 # Request a refresh of the variant_info plugin
                 self.parent.mainwindow.refresh_plugin("variant_info")
-
 
     def copy_to_clipboard(self, index: QModelIndex):
 
@@ -725,31 +722,30 @@ class VariantViewWidget(plugin.PluginWidget):
         self.groupbylist_action.setVisible(False)
         self.groupbylist_action.triggered.connect(self._show_group_dialog)
 
-        #  Formatter tools
+        # Formatter tools
         self.top_bar.addSeparator()
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         self.top_bar.addWidget(spacer)
+        # Add formatters to combobox, a click on it will instantiate the class
         self.formatter_combo = QComboBox()
         for i in formatter.find_formatters():
             self.formatter_combo.addItem(i.__name__, i)
         self.top_bar.addWidget(self.formatter_combo)
         self.formatter_combo.currentTextChanged.connect(self.on_formatter_changed)
 
-        #  setup layout
-        ## Build stack view
-
+        # Refresh UI button
         self.top_bar.addSeparator()
         self.top_bar.addAction(FIcon(0xF0450), "Refresh", self.on_refresh)
 
-        #   Setup layour
+        # Setup layout
         main_layout = QVBoxLayout()
         main_layout.addWidget(self.top_bar)
         main_layout.addWidget(self.splitter)
 
         self.setLayout(main_layout)
 
-        #  Make connection
+        # Make connection
         self.first_pane.view.selectionModel().currentRowChanged.connect(
             lambda x, _: self.on_variant_clicked(x)
         )
@@ -850,10 +846,10 @@ class VariantViewWidget(plugin.PluginWidget):
         #     plugin.on_refresh()
 
     def on_variant_clicked(self, index: QModelIndex):
-        """React on variant clicked 
+        """React on variant clicked
 
-        TODO : ugly... 
-        
+        TODO : ugly...
+
         Args:
             index (QModelIndex): Description
         """
