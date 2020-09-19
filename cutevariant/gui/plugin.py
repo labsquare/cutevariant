@@ -105,13 +105,13 @@ class PluginSettingsWidget(settings.GroupWidget):
 
 
 def find_plugins(path=None):
-    """Find and return plugin instance from a directory
+    """Find and return plugin classes from a directory
 
     Keyword Arguments:
         path [str] -- the folder path where plugin are
 
     Returns:
-        [generator [Plugin]] -- An instance of Plugin class
+        [generator [Plugin]] -- A Plugin class ready to be instantiated
     """
     #  if path is None, return internal plugin path
     if path is None:
