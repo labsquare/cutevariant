@@ -442,9 +442,13 @@ class MainWindow(QMainWindow):
                 raise
 
     def export_project(self):
+        """Export variants into CSV file"""
+        # Reload last directory used
+        app_settings = QSettings()
+        last_directory = app_settings.value("last_directory", QDir.homePath())
 
         filepath, _ = QFileDialog.getSaveFileName(
-            self, self.tr("Save project"), QDir.homePath(), self.tr("(*.csv)")
+            self, self.tr("Save project"), last_directory, self.tr("(*.csv)")
         )
 
         if filepath:
