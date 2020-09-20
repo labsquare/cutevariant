@@ -346,8 +346,8 @@ class MainWindow(QMainWindow):
         """
         self.conn = conn
 
-        for plugin in self.plugins.values():
-            plugin.on_open_project(self.conn)
+        for plugin_item in self.plugins.values():
+            plugin_item.on_open_project(self.conn)
 
     def save_recent_project(self, path):
         """Save current project into QSettings
