@@ -173,11 +173,11 @@ class MainWindow(QMainWindow):
         for plugin_obj in self.plugins.values():
             if plugin_obj is not sender and plugin_obj.isVisible():
                 try:
-                    plugin.on_refresh()
+                    plugin_obj.on_refresh()
                 except Exception as e:
                     LOGGER.error(
                         "{}:{} {}".format(
-                            plugin, format(sys.exc_info()[-1].tb_lineno), e
+                            plugin_obj, format(sys.exc_info()[-1].tb_lineno), e
                         )
                     )
 
