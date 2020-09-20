@@ -230,15 +230,15 @@ class MainWindow(QMainWindow):
         self.file_menu.addAction(self.tr("&Quit"), self.close, QKeySequence.Quit)
 
         ## Edit
-        self.edit_menu = self.menuBar().addMenu(self.tr("&Edit"))
-        self.edit_menu.addAction(FIcon(0xF018F), "&Copy", self.copy, QKeySequence.Copy)
-        self.edit_menu.addAction(
-            FIcon(0xF0192), "&Paste", self.paste, QKeySequence.Paste
-        )
-        self.edit_menu.addSeparator()
-        self.edit_menu.addAction(
-            FIcon(0xF0486), "Select all", self.select_all, QKeySequence.SelectAll
-        )
+        #self.edit_menu = self.menuBar().addMenu(self.tr("&Edit"))
+        #self.edit_menu.addAction(FIcon(0xF018F), "&Copy", self.copy, QKeySequence.Copy)
+        #self.edit_menu.addAction(
+        #    FIcon(0xF0192), "&Paste", self.paste, QKeySequence.Paste
+        #)
+        #self.edit_menu.addSeparator()
+        #self.edit_menu.addAction(
+        #    FIcon(0xF0486), "Select all", self.select_all, QKeySequence.SelectAll
+        #)
 
         ## View
         self.view_menu = self.menuBar().addMenu(self.tr("&View"))
