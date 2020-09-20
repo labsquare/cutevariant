@@ -206,11 +206,10 @@ def create_table_selections(conn: sqlite3.Connection):
     """Create the table "selections" and association table "selection_has_variant"
 
     This table stores variants selection saved by the user:
-            - name: name of the set of variants
-            - count: number of variants concerned by this set
-            - query: the SQL query which generated the set
 
-        :param conn: sqlite3.connect
+        - name: name of the set of variants
+        - count: number of variants concerned by this set
+        - query: the SQL query which generated the set
 
     Args:
         conn (sqlite3.Connection): Sqlite3 Connection
@@ -537,7 +536,6 @@ def insert_set_from_file(conn: sqlite3.Connection, name, filename):
 
 
 def get_sets(conn):
-    """ Get sets """
     for row in conn.execute(
         "SELECT name , COUNT(*) as 'count' FROM sets GROUP BY name"
     ):
@@ -545,7 +543,6 @@ def get_sets(conn):
 
 
 def get_words_set(conn, name):
-    """ Get word from sets """
     for row in conn.execute(f"SELECT DISTINCT value FROM sets WHERE name = '{name}'"):
         yield dict(row)["value"]
 
