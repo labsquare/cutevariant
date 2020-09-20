@@ -15,36 +15,19 @@ from PySide2.QtGui import QIcon, QKeySequence
 from cutevariant.core import get_sql_connexion, get_metadatas
 from cutevariant.gui.ficon import FIcon
 from cutevariant.gui.state import State
-
 from cutevariant.gui.wizards import ProjectWizard
 from cutevariant.gui.settings import SettingsWidget
-
-# from cutevariant.gui.querywidget import QueryWidget
-# from cutevariant.gui import plugin
-
+from cutevariant.gui.widgets.aboutcutevariant import AboutCutevariant
+from cutevariant.core.writer import CsvWriter
 #  Import plugins
 from cutevariant.gui import plugin
 
-# from cutevariant.gui.plugins.editor.plugin import EditorPlugin
-
-from cutevariant.gui.widgets.aboutcutevariant import AboutCutevariant
-
-# from cutevariant.gui.chartquerywidget import ChartQueryWidget
 from cutevariant import commons as cm
 from cutevariant.commons import (
     MAX_RECENT_PROJECTS,
     DIR_ICONS,
     MIN_AUTHORIZED_DB_VERSION,
 )
-
-from cutevariant.core.writer import CsvWriter
-
-
-# Proof of concept - testing only
-# from cutevariant.gui.webglquerywidget import WebGLQueryWidget
-# from cutevariant.gui.hpoquerywidget import HpoQueryWidget
-
-# from cutevariant.gui.omnibar import OmniBar
 
 
 LOGGER = cm.logger()
