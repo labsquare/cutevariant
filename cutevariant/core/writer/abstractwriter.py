@@ -1,9 +1,7 @@
-from cutevariant.core import sql
-
 
 class AbstractWriter(object):
     """Base class for all Writer required to export variants into a file or a database.
-    Subclass it if you want a new file writer .
+    Subclass it if you want a new file writer.
 
     Attributes:
         device: a file object typically returned by open("w")
