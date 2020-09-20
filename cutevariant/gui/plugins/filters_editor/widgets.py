@@ -43,10 +43,10 @@ class BaseField(QFrame):
         self.setBackgroundRole(QPalette.Highlight)
 
     def set_value(self, value):
-        raise NotImplemented()
+        raise NotImplementedError
 
     def get_value(self):
-        raise NotImplemented()
+        raise NotImplementedError
 
     def set_widget(self, widget):
         """Setup a layout with a widget

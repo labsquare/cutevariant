@@ -19,4 +19,4 @@ class AbstractWriter(object):
         self.device = device
 
     def save(self, conn) -> bool:
-        raise NotImplemented()
+        raise NotImplementedError()
