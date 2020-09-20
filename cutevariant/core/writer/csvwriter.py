@@ -1,12 +1,10 @@
-from cutevariant.core import sql
 from cutevariant.core import command
 from .abstractwriter import AbstractWriter
 import csv
 
 
 class CsvWriter(AbstractWriter):
-    """Base class for all Writer required to export variants into a file or a database.
-    Subclass it if you want a new file writer .
+    """Writer allowing to export variants of a project into a CSV file.
 
     Attributes:
         device: a file object typically returned by open("w")
@@ -20,13 +18,15 @@ class CsvWriter(AbstractWriter):
     def __init__(self, device):
         super(AbstractWriter, self).__init__()
         super().__init__(device)
-        self.delimiter = "\t"
-        self.quotechar = "|"
 
-    def save(self, conn) -> bool:
+    def save(self, conn, delimiter="\t") -> bool:
+        """Dump variants into CSV file
 
-        writer = csv.writer(
-            self.device, delimiter=self.delimiter, quotechar=self.quotechar
-        )
-        for row in command.execute(conn, "SELECT chr, pos, ref, alt FROM variants"):
-            writer.writerow(row.values())
+        .. TODO:: move SQL query into a dedicated place
+
+        :key delimiter: Delimiter char used in exported file; (default: "\t").
+        :type delimiter: <str>
+        """
+        writer = csv.writer(self.device, delimiter=self.delimiter)
+        g = (row.values() for row in command.execute(conn, "SELECT chr, pos, ref, alt FROM variants"))
+        writer.writerows(g)
