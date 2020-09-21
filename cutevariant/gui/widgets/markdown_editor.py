@@ -32,12 +32,19 @@ class MarkdownEditor(QWidget):
 
     """
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, default_text=""):
+        """Init Markdown editor
+
+        :param default_text: Populate source edit with previously defined comment in db.
+        :type default_text: <str>
+        """
         super().__init__()
 
         # Setup edit view
         self.rich_edit = QTextEdit()  # Rich text result
         self.source_edit = QPlainTextEdit()  # Markdown content
+        self.source_edit.setPlainText(default_text)
+
         vlayout = QVBoxLayout()
         vlayout.setSpacing(1)
         vlayout.setContentsMargins(0, 0, 0, 0)

@@ -270,25 +270,6 @@ class MainWindow(QMainWindow):
         # self.toolbar.addAction(FIcon(0xF40A),"Run", self.execute_vql).setShortcuts([Qt.CTRL + Qt.Key_R, QKeySequence.Refresh])
         self.toolbar.addSeparator()
 
-    # def add_tab_view(self, widget):
-    #     """Add the given widget to the current (QTabWidget),
-    #     and connect it to the query_dispatcher"""
-    #     self.central_tab.addTab(widget, widget.windowTitle())
-    #     # self.query_dispatcher.addWidget(widgePt)
-
-    # def current_tab_view(self):
-    #     """Get the page/tab currently being displayed by the tab dialog
-
-    #     :return: Return the current tab in the QTabWidget
-    #     :rtype: <QWidget>
-    #     """
-    #     # Get the index position of the current tab page
-    #     index = self.tab_view.currentIndex()
-    #     if index == -1:
-    #         # No tab in the widget
-    #         return None
-    #     return self.tab_view.currentWidget()
-
     def open(self, filepath):
         """Open the given db/project file
 
@@ -402,10 +383,6 @@ class MainWindow(QMainWindow):
         action = self.sender()
         self.open(action.text())
 
-    # def handle_plugin_message(self, message):
-    #     """Slot to display message from plugin in the status bar"""
-    #     self.status_bar.showMessage(message)
-
     def new_project(self):
         """Slot to allow creation of a project with the Wizard"""
         wizard = ProjectWizard()
@@ -487,16 +464,6 @@ class MainWindow(QMainWindow):
         # Restore docks
         app_settings = QSettings()
         self.restoreState(QByteArray(app_settings.value("windowState")))
-
-    def copy(self):
-        pass
-
-    def paste(self):
-        pass
-
-    def select_all(self):
-        """Select all elements in the current tab's view"""
-        self.current_tab_view().view.selectAll()
 
     def closeEvent(self, event):
         """Save the current state of this mainwindow's toolbars and dockwidgets
