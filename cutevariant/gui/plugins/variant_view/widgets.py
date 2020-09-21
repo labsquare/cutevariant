@@ -584,7 +584,7 @@ class VariantView(QWidget):
             copy_action.triggered.connect(on_copy)
 
             # Create favorite action
-            fav_action = menu.addAction("Mark as favorite")
+            fav_action = menu.addAction(self.tr("Mark as favorite"))
             fav_action.setCheckable(True)
             fav_action.setChecked(bool(full_variant["favorite"]))
             fav_action.toggled.connect(lambda x: self.update_favorite(current_index, x))
@@ -604,7 +604,7 @@ class VariantView(QWidget):
 
             #  Comment action
             on_edit = functools.partial(self.edit_comment, current_index)
-            menu.addAction("Edit comment ...", on_edit)
+            menu.addAction(self.tr("Edit comment ..."), on_edit)
 
             menu.exec_(event.globalPos())
 
@@ -736,7 +736,7 @@ class VariantViewWidget(plugin.PluginWidget):
 
         # Refresh UI button
         self.top_bar.addSeparator()
-        self.top_bar.addAction(FIcon(0xF0450), "Refresh", self.on_refresh)
+        self.top_bar.addAction(FIcon(0xF0450), self.tr("Refresh"), self.on_refresh)
 
         # Setup layout
         main_layout = QVBoxLayout()

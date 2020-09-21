@@ -79,7 +79,8 @@ class VqlEditorWidget(plugin.PluginWidget):
         Args:
             mainwindow (MainWindow): Mainwindow reference
         """
-        mainwindow.toolbar.addAction(FIcon(0xF040A), "Run", self.run_vql).setShortcuts(
+        self.run_action = mainwindow.toolbar.addAction(FIcon(0xF040A), self.tr("Run"), self.run_vql)
+        self.run_action.setShortcuts(
             [Qt.CTRL + Qt.Key_R, QKeySequence.Refresh]
         )
 

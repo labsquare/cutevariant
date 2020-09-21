@@ -267,7 +267,6 @@ class MainWindow(QMainWindow):
         self.toolbar.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
         self.toolbar.addAction(self.new_project_action)
         self.toolbar.addAction(self.open_project_action)
-        # self.toolbar.addAction(FIcon(0xF40A),"Run", self.execute_vql).setShortcuts([Qt.CTRL + Qt.Key_R, QKeySequence.Refresh])
         self.toolbar.addSeparator()
 
     def open(self, filepath):
@@ -289,7 +288,7 @@ class MainWindow(QMainWindow):
         # Create connection
         self.conn = get_sql_connexion(filepath)
 
-        # DB file filter
+        # DB version filter
         db_version = get_metadatas(self.conn).get("cutevariant_version")
         if db_version and parse_version(db_version) < parse_version(
             MIN_AUTHORIZED_DB_VERSION
@@ -327,8 +326,8 @@ class MainWindow(QMainWindow):
         """
         self.conn = conn
 
-        for plugin_item in self.plugins.values():
-            plugin_item.on_open_project(self.conn)
+        for plugin_obj in self.plugins.values():
+            plugin_obj.on_open_project(self.conn)
 
     def save_recent_project(self, path):
         """Save current project into QSettings

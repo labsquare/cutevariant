@@ -107,6 +107,24 @@ class PluginSettingsWidget(settings.GroupWidget):
 def find_plugins(path=None):
     """Find and return plugin classes from a directory
 
+    Three kinds of plugins can be returned:
+
+        - widget
+        - dialog
+        - setting
+
+    Example:
+
+        .. code-block:: javascript
+
+            {
+                'name': 'word_set',
+                'title': 'WordSet',
+                'description': ' A plugin to manage word set',
+                'version': '1.0.0',
+                'widget': <class 'widgets.WordSetWidget'>
+            }
+
     Keyword Arguments:
         path [str] -- the folder path where plugin are
 

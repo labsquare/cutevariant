@@ -40,6 +40,8 @@ class MarkdownEditor(QWidget):
         """
         super().__init__()
 
+        self.setWindowTitle("Cutevariant - " + self.tr("Comment editor"))
+
         # Setup edit view
         self.rich_edit = QTextEdit()  # Rich text result
         self.source_edit = QPlainTextEdit()  # Markdown content
