@@ -64,25 +64,25 @@ def select_cmd(
             order_desc (bool, optional): Descending or Ascending Order  
             limit (int, optional): record count 
             offset (int, optional): record count per page  
+            debug_sql: If True, return only sql statements
         
         Yields:
             list of variants   
         """
-    default_tables = dict([(i["name"], i["category"]) for i in sql.get_fields(conn)])
-    samples_ids = dict([(i["name"], i["id"]) for i in sql.get_samples(conn)])
-    query = build_query(
-        fields=fields,
-        source=source,
-        filters=filters,
-        order_by=order_by,
-        order_desc=order_desc,
-        limit=limit,
-        offset=offset,
-        group_by=group_by,
-        having=having,
-        default_tables=default_tables,
-        samples_ids=samples_ids,
+    query = build_complete_query(
+        conn,
+        fields,
+        source,
+        filters,
+        order_by,
+        order_desc,
+        group_by,
+        having,
+        limit,
+        offset,
+        **kwargs,
     )
+
     LOGGER.debug(query)
     for i in conn.execute(query):
         yield dict(i)
