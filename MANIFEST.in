@@ -10,6 +10,7 @@ prune .vscode
 prune exemples
 prune pocs
 prune tests
+include setup.py
 recursive-exclude cutevariant *.txt
 recursive-include cutevariant *.png
 recursive-include cutevariant *.py
