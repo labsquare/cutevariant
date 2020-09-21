@@ -644,7 +644,7 @@ class VariantView(QWidget):
 
             if dialog.exec_() == QDialog.Accepted:
                 # Save in DB
-                self.model.update_variant(index.row(), {"comment": editor.to_source()})
+                self.model.update_variant(index.row(), {"comment": editor.toPlainText()})
 
                 # Request a refresh of the variant_info plugin
                 self.parent.mainwindow.refresh_plugin("variant_info")

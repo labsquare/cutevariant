@@ -36,7 +36,6 @@ class MarkdownEditor(QWidget):
         super().__init__()
 
         # Setup edit view
-        # self.tabwidget = QTabWidget()
         self.rich_edit = QTextEdit()  # Rich text result
         self.source_edit = QPlainTextEdit()  # Markdown content
         vlayout = QVBoxLayout()
@@ -78,13 +77,13 @@ class MarkdownEditor(QWidget):
         self.act_heading.setShortcut(QKeySequence("CTRL+H"))
         self.act_heading.setIcon(FIcon(0xF0274))
 
-        self.act_unorder_list = self.toolbar.addAction("unorder_list", self.u_list)
+        self.act_unorder_list = self.toolbar.addAction("unorder_list", self.unorder_list)
         self.act_unorder_list.setIcon(FIcon(0xF0279))
 
-        self.act_quote = self.toolbar.addAction("quote")
+        self.act_quote = self.toolbar.addAction("quote", self.quote)
         self.act_quote.setIcon(FIcon(0xF027E))
 
-        self.act_link = self.toolbar.addAction("link")
+        self.act_link = self.toolbar.addAction("link", self.link)
         self.act_link.setIcon(FIcon(0xF0339))
 
         vlayout.addWidget(self.toolbar)
@@ -118,32 +117,60 @@ class MarkdownEditor(QWidget):
         cursor.insertText(prefix + text[start:end] + suffix)
 
     def heading(self):
+        """Add header tag before selected text"""
+        cursor = self.source_edit.textCursor()
 
-        if not self.source_edit.textCursor().hasSelection():
-            self.source_edit.textCursor().insertText(f"# Heading")
+        if not cursor.hasSelection():
+            cursor.insertText("# Heading")
             return
 
-        start = self.source_edit.textCursor().selectionStart()
-        cursor = self.source_edit.textCursor()
+        start = cursor.selectionStart()
         cursor.setPosition(start)
         cursor.insertText("# ")
 
-    def u_list(self):
-
-        if not self.source_edit.textCursor().hasSelection():
-            self.source_edit.textCursor().insertText(f"- List item")
-            return
-
-        start = self.source_edit.textCursor().selectionStart()
+    def unorder_list(self):
+        """Add list tag before selected text"""
         cursor = self.source_edit.textCursor()
 
+        if not cursor.hasSelection():
+            cursor.insertText("- List item")
+            return
+
+        start = cursor.selectionStart()
         cursor.setPosition(start)
         cursor.insertText("- ")
 
-    def on_return_pressed(self):
-        pass
+    def quote(self):
+        """Quote the selected text"""
+        cursor = self.source_edit.textCursor()
 
-    def to_source(self):
+        if not cursor.hasSelection():
+            cursor.insertText("> text")
+            return
+
+        start = cursor.selectionStart()
+        end = cursor.selectionEnd()
+
+        # must be made in 1 step to avoid flooding the history (do/undo)
+        text = self.source_edit.toPlainText()
+        cursor.insertText("\n> %s\n" % text[start:end])
+
+    def link(self):
+        """Format selected text into URL link"""
+        cursor = self.source_edit.textCursor()
+
+        if not cursor.hasSelection():
+            cursor.insertText("[text](url)")
+            return
+
+        start = cursor.selectionStart()
+        end = cursor.selectionEnd()
+
+        # must be made in 1 step to avoid flooding the history (do/undo)
+        text = self.source_edit.toPlainText()
+        cursor.insertText("[text](%s)" % text[start:end])
+
+    def toPlainText(self):
         """Get source text from the current comment
 
         Used to save the comment in the database by variant_view plugin.

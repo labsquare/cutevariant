@@ -139,7 +139,10 @@ class VariantInfoWidget(PluginWidget):
         self.populate()
 
     def populate(self):
-        """Show the current variant attributes on the TreeWidget"""
+        """Show the current variant attributes on the TreeWidget
+
+        .. note:: RichText in Markdown is supported starting PySide 5.14
+        """
         if not self.current_variant:
             return
 
@@ -164,7 +167,6 @@ class VariantInfoWidget(PluginWidget):
                 try:
                     self.comment_input.setMarkdown(str(value))
                 except AttributeError:
-                    LOGGER.warning("RichText in Markdown is supported starting PySide 5.14")
                     # Fallback
                     self.comment_input.setPlainText(str(value))
 
