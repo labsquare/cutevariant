@@ -1,3 +1,6 @@
+# Standard imports
+from pkg_resources import parse_version
+
 # Qt imports
 from PySide2.QtWidgets import (
     QTextEdit,
@@ -11,7 +14,7 @@ from PySide2.QtWidgets import (
     QAction,
     QTextBrowser,
 )
-
+from PySide2 import __version__ as pyside_version
 from PySide2.QtCore import Qt
 from PySide2.QtGui import QKeySequence, QIcon
 
@@ -43,10 +46,15 @@ class MarkdownEditor(QWidget):
 
         self.splitter = QSplitter(Qt.Horizontal)
         self.splitter.addWidget(self.source_edit)
-        self.splitter.addWidget(self.rich_edit)
 
-        self.rich_edit.setAcceptRichText(True)
-        self.rich_edit.setAutoFormatting(QTextEdit.AutoAll)
+        if parse_version(pyside_version) >= parse_version("5.14"):
+            # RichText in Markdown is supported starting PySide 5.14
+            self.splitter.addWidget(self.rich_edit)
+            self.rich_edit.setAcceptRichText(True)
+            self.rich_edit.setAutoFormatting(QTextEdit.AutoAll)
+
+            # Update preview with Markdown content
+            self.source_edit.textChanged.connect(self.update_rich_text)
 
         # Setup toolbar
         self.toolbar = QToolBar()
@@ -84,18 +92,12 @@ class MarkdownEditor(QWidget):
 
         self.setLayout(vlayout)
 
-        # Update preview with Markdown content
-        self.source_edit.textChanged.connect(self.update_rich_text)
-
     def update_rich_text(self):
         """Update preview with Markdown content
 
-        .. warning:: Depend PySide Qt5.14
+        .. warning:: Depends PySide Qt5.14
         """
-        try:
-            self.rich_edit.setMarkdown(self.source_edit.toPlainText())
-        except AttributeError:
-            LOGGER.warning("RichText in Markdown is supported starting PySide 5.14")
+        self.rich_edit.setMarkdown(self.source_edit.toPlainText())
 
     def infix(self, prefix: str, suffix=None):
         """Add tags before and after the selected text"""
