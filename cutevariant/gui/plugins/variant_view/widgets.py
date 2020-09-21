@@ -220,7 +220,7 @@ class VariantModel(QAbstractTableModel):
             if g not in self.fields:
                 self.fields.append(g)
 
-        #  Store SQL query for debugging purpose ( kwargs with debug_sql)
+        #  Store SQL query for debugging purpose
         self.debug_sql = build_complete_query(
             self.conn,
             fields=self.fields,
@@ -232,7 +232,6 @@ class VariantModel(QAbstractTableModel):
             order_by=self.order_by,
             group_by=self.group_by,
             having=self.having,
-            debug_sql=True,
         )
 
         #  Load variants
