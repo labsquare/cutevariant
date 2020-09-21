@@ -75,10 +75,10 @@ class AboutCutevariant(QDialog):
         self.resize(600, 400)
 
     def addTab(self, filename):
-        """Read the given text file and load it in a new tab"""
-        # Get file at the project's root directory
-        filepath = resource_filename(__name__, "../../.." + filename)
+        """Read the given text file and load it in a new tab
 
+        Files must be stored in `cutevariant/assets/`.
+        """
         text_edit = QPlainTextEdit()
         text_edit.setFrameShape(QFrame.NoFrame)
         text_edit.setReadOnly(True)
@@ -92,7 +92,7 @@ class AboutCutevariant(QDialog):
                 "General Public License v3.\n\n"
             )
 
-        with open(filepath, "r") as f_d:
+        with open(cm.DIR_ASSETS + filename, "r") as f_d:
             text_edit.setPlainText(text + f_d.read())
             self.tab_widget.addTab(text_edit, filename)
 
