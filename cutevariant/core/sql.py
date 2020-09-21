@@ -37,7 +37,7 @@ import logging
 LOGGER = cm.logger()
 
 
-## ================ Misc functions ====================================
+## Misc functions ==============================================================
 
 
 def get_sql_connexion(filepath):
@@ -136,7 +136,7 @@ def create_indexes(conn: sqlite3.Connection):
         LOGGER.debug("create_indexes:: sqlite3.%s: %s", e.__class__.__name__, str(e))
 
 
-## ================ PROJECT TABLE ===================================
+## project table ===============================================================
 
 
 def create_project(conn: sqlite3.Connection, name: str, reference: str):
@@ -160,6 +160,7 @@ def create_project(conn: sqlite3.Connection, name: str, reference: str):
     )
     conn.commit()
 
+## metadatas table =============================================================
 
 def create_table_metadatas(conn: sqlite3.Connection):
     """Create table metdata
@@ -199,8 +200,7 @@ def get_metadatas(conn: sqlite3.Connection):
     g = (dict(data) for data in conn.execute("""SELECT key, value FROM metadatas"""))
     return {data["key"]: data["value"] for data in g}
 
-## ================ SELECTION TABLE ===================================
-
+## selection table =============================================================
 
 def create_table_selections(conn: sqlite3.Connection):
     """Create the table "selections" and association table "selection_has_variant"
@@ -495,9 +495,7 @@ def edit_selection(conn: sqlite3.Connection, selection: dict):
     conn.commit()
     return cursor.rowcount
 
-
-## ================ Create sets tables =========================================
-
+## sets table ===============================================================
 
 def create_table_sets(conn: sqlite3.Connection):
     """Create the table "sets"
@@ -547,7 +545,7 @@ def get_words_set(conn, name):
         yield dict(row)["value"]
 
 
-## ================ Operations on sets of variants =============================
+## Operations on sets of variants ==============================================
 
 
 def get_query_columns(mode="variant"):
@@ -589,7 +587,7 @@ def subtract_variants(query1, query2, **kwargs):
     return f"""{query1} EXCEPT {query2}"""
 
 
-## ================ Fields functions ===========================================
+## Fields functions ============================================================
 
 
 def create_table_fields(conn):
@@ -769,7 +767,7 @@ def get_field_unique_values(conn, field_name: str, sample_name=None):
     return [i[field_name] for i in conn.execute(query)]
 
 
-## ================ Annotations functions ======================================
+## Annotations functions =======================================================
 
 
 def create_table_annotations(conn, fields):
@@ -818,7 +816,7 @@ def create_annotations_indexes(conn):
     conn.execute("""CREATE INDEX idx_annotations ON annotations (variant_id)""")
 
 
-## ================ Variants functions =========================================
+## Variants functions ==========================================================
 
 
 def create_table_variants(conn, fields):
@@ -1145,7 +1143,7 @@ def insert_many_variants(conn, data, **kwargs):
         pass
 
 
-## ================ Samples functions ==========================================
+## Samples functions ===========================================================
 
 
 def create_table_samples(conn, fields=None):
@@ -1277,6 +1275,3 @@ def count_query(conn, query):
     """ count from query """
     print(query)
     return conn.execute(f"SELECT COUNT(*) as count FROM ({query})").fetchone()[0]
-
-
-# ======================== execute commande ======================================
