@@ -1,24 +1,23 @@
 """ 
 This module contains the design pattern "COMMANDS" to execute VQL query . 
 
-Each VQL statement corresponds to a <name>_cmd() fonction and are construted by `create_command_from_obj()`.
-You can use `execute(conn, vql)` or `execute_one(conn,vql)` to run a specific VQL query.
+Each VQL statement corresponds to a <name>_cmd() fonction and is construted by `create_command_from_obj()`.
+You can use `execute(conn, vql)` or `execute_one(conn, vql)` to run a specific VQL query.
 
-Each command returns a json Array with a success status code. 
-
+Each command returns a JSON array with a success status code.
 """
-from cutevariant.core.querybuilder import *
-from cutevariant.core import sql, vql
+# Standard imports
 import sqlite3
 import networkx as nx
 import os
 import functools
 import csv
+# Pip install ( because functools doesnt work with unhachable)
+from memoization import cached
 
-from memoization import (
-    cached,
-)  # Pip install ( because functools doesnt work with unhachable)
-
+# Custom imports
+from cutevariant.core.querybuilder import *
+from cutevariant.core import sql, vql
 from cutevariant.commons import logger
 
 
@@ -313,41 +312,27 @@ def import_cmd(conn: sqlite3.Connection, feature=str, name=str, path=str, **kwar
 
 
 def create_command_from_obj(conn, vql_obj: dict):
+    """????
 
-    if vql_obj["cmd"] == "select_cmd":
-        return functools.partial(select_cmd, conn, **vql_obj)
+    :param conn: Sqlite3 connexion
+    :param vql_obj: Requested commands: select_cmd, create_cmd, set_cmd, bed_cmd, show_cmd, import_cmd, drop_cmd, count_cmd
+    :type conn: sqlite3.connexion
+    :return: Function object wrapping the given vql_object.
+    """
 
-    if vql_obj["cmd"] == "create_cmd":
-        return functools.partial(create_cmd, conn, **vql_obj)
-
-    if vql_obj["cmd"] == "set_cmd":
-        return functools.partial(set_cmd, conn, **vql_obj)
-
-    if vql_obj["cmd"] == "bed_cmd":
-        return functools.partial(bed_cmd, conn, **vql_obj)
-
-    if vql_obj["cmd"] == "show_cmd":
-        return functools.partial(show_cmd, conn, **vql_obj)
-
-    if vql_obj["cmd"] == "import_cmd":
-        return functools.partial(import_cmd, conn, **vql_obj)
-
-    if vql_obj["cmd"] == "drop_cmd":
-        return functools.partial(drop_cmd, conn, **vql_obj)
-
-    if vql_obj["cmd"] == "count_cmd":
-        return functools.partial(count_cmd, conn, **vql_obj)
-
-    return None
-
+    command = vql_obj["cmd"]
+    if command in globals():
+        return functools.partial(globals()[command], conn, **vql_obj)
 
 def execute(conn, vql_source: str):
+    """Never used"""
     vql_obj = vql.parse_one_vql(vql_source)
     cmd = create_command_from_obj(conn, vql_obj)
     return cmd()
 
 
 def execute_all(conn, vql_source: str):
+    """Never used"""
     for vql in vql.parse_vql(vql_source):
         cmd = create_command_from_obj(conn, vql)
         yield cmd()
