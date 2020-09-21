@@ -1,12 +1,12 @@
 # Qt imports
 from PySide2.QtWidgets import QWidget, QDialog
 
-#  standard import
+# standard import
 import os
 import importlib
 import pkgutil
 
-#  cutevariant import
+# cutevariant import
 from cutevariant.gui import settings
 
 DOCK_LOCATION = 1
@@ -42,7 +42,7 @@ class PluginWidget(QWidget):
         self.mainwindow = None
         self.widget_location = DOCK_LOCATION
 
-        self.refresh_groups = []  #  TODO
+        self.refresh_groups = []  # TODO
 
     def on_register(self, mainwindow):
         """Called when the mainwindow is build
@@ -131,7 +131,7 @@ def find_plugins(path=None):
     Returns:
         [generator [Plugin]] -- A Plugin class ready to be instantiated
     """
-    #  if path is None, return internal plugin path
+    # if path is None, return internal plugin path
     if path is None:
         plugin_path = os.path.join(os.path.dirname(__file__), "plugins")
     else:

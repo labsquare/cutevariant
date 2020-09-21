@@ -44,8 +44,8 @@ class MainWindow(QMainWindow):
         # Keep sqlite connection
         self.conn = None
 
-        #  State variable of application
-        #  Often changed by plugins
+        # State variable of application
+        # Often changed by plugins
         self.state = State()
 
         self.central_tab = QTabWidget()
@@ -227,7 +227,7 @@ class MainWindow(QMainWindow):
         self.file_menu.addSeparator()
         self.file_menu.addAction(self.tr("&Quit"), self.close, QKeySequence.Quit)
 
-        ## Edit
+        ##Edit
         #self.edit_menu = self.menuBar().addMenu(self.tr("&Edit"))
         #self.edit_menu.addAction(FIcon(0xF018F), "&Copy", self.copy, QKeySequence.Copy)
         #self.edit_menu.addAction(

@@ -147,10 +147,10 @@ class PedDelegate(QItemDelegate):
         if index.column() == 2 or index.column() == 3:  # father_id or mother_id
             widget.addItems(
                 [""] + index.model().get_data_list(0)
-            )  #  Fill with sample name
+            )  # Fill with sample name
             return widget
 
-        if index.column() == 4:  #  sexe
+        if index.column() == 4:  # sexe
             widget.addItem("Male", "1")
             widget.addItem("Female", "2")
             widget.addItem("", "0")

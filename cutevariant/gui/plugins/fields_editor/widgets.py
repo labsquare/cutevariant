@@ -127,7 +127,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self.model = FieldsModel(None)
         self.proxy_model = QSortFilterProxyModel()
 
-        #  setup proxy ( for search option )
+        # setup proxy ( for search option )
         self.proxy_model.setSourceModel(self.model)
         self.proxy_model.setRecursiveFilteringEnabled(True)
 
@@ -148,14 +148,14 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self.setLayout(layout)
         self.model.itemChanged.connect(self.on_fields_changed)
 
-        #  Setup toolbar
+        # Setup toolbar
         self.toolbar.setIconSize(QSize(16, 16))
         self.toolbar.addAction(
             FIcon(0xF0615), self.tr("collapse"), self.view.collapseAll
         )
         self.toolbar.addAction(FIcon(0xF0616), self.tr("Expand"), self.view.expandAll)
 
-        #  setup search edit
+        # setup search edit
         search_act = self.toolbar.addAction(FIcon(0xF0969), self.tr("Search ..."))
         search_act.setCheckable(True)
         search_act.toggled.connect(self.__on_search_pressed)
@@ -165,7 +165,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self.search_edit.textChanged.connect(self.proxy_model.setFilterRegExp)
 
         self._is_refreshing = (
-            False  #  Help to avoid loop between on_refresh and on_fields_changed
+            False  # Help to avoid loop between on_refresh and on_fields_changed
         )
 
     def __on_search_pressed(self, checked: bool):
@@ -185,9 +185,9 @@ class FieldsEditorWidget(plugin.PluginWidget):
     # def on_query_model_changed(self, model):
     #     """ Overrided from PluginWidget """
     #     self.columns = model.columns
-    #     # When you set columns, it means you check columns.
-    #     # This will trigger a signal itemChanged which cause an infinite loop
-    #     # That's why I blocked the signal from the model. So I need to update the view manually
+    #     #When you set columns, it means you check columns.
+    #     #This will trigger a signal itemChanged which cause an infinite loop
+    #     #That's why I blocked the signal from the model. So I need to update the view manually
     #     self.view.update()
     #     self.view.resizeColumnToContents(0)
 

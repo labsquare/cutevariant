@@ -129,13 +129,13 @@ def async_import_file(conn, filename, pedfile=None, project={}):
 
 def import_file(conn, filename, pedfile=None, project={}):
     for progress, message in async_import_file(conn, filename, pedfile, project):
-        #  don't show message
+        # don't show message
         pass
 
 
 def import_reader(conn, reader, pedfile=None, project={}):
     for progress, message in async_import_reader(conn, reader, pedfile, project):
-        #  don't show message
+        # don't show message
         pass
 
 

@@ -87,7 +87,7 @@ class FilterExpression(metaclass=model_class):
     @property
     def value(self):
         out = []
-        key = "AND"  #  By default
+        key = "AND"  # By default
         for i in self.op:
             if isinstance(i, str):
                 if i in ("AND", "OR"):
@@ -109,7 +109,7 @@ class SetExpression(metaclass=model_class):
 #     @property
 #     def value(self):
 #         out = []
-#         key = "AND"  #  By default
+#         key = "AND"  # By default
 #         for i in self.op:
 #             if isinstance(i, str):
 #                 if i in ("AND", "OR"):

@@ -180,7 +180,7 @@ class VqlEditorWidget(plugin.PluginWidget):
         Drop command will update selection plugin
         """
 
-        #  Check VQL syntax first
+        # Check VQL syntax first
         if not self.check_vql():
             return
 
@@ -201,12 +201,12 @@ class VqlEditorWidget(plugin.PluginWidget):
                 fct = command.create_command_from_obj(self.conn, cmd)
                 fct()
 
-                #  refresh source editor plugin
+                # refresh source editor plugin
                 if "source_editor" in self.mainwindow.plugins:
                     plugin = self.mainwindow.plugins["source_editor"]
                     plugin.on_refresh()
 
-                #  TODO : manage other request
+                # TODO : manage other request
 
     def set_message(self, message: str):
         """Show message error at the bottom of the view

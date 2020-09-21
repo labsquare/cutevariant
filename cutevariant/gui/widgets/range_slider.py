@@ -69,10 +69,10 @@ class RangeSlider(QWidget):
         else:
             self.opt.subControls = QStyle.SC_SliderGroove
 
-        #   Draw GROOVE
+        #  Draw GROOVE
         self.style().drawComplexControl(QStyle.CC_Slider, self.opt, painter)
 
-        #  Draw INTERVAL
+        # Draw INTERVAL
 
         color = self.palette().color(QPalette.Highlight)
         color.setAlpha(160)

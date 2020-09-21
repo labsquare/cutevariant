@@ -113,7 +113,7 @@ class QueryModel(QAbstractTableModel):
     def rowCount(self, parent=QModelIndex()):
         """Overrided : Return children count of index
         """
-        #  If parent is root
+        # If parent is root
 
         return len(self.variants)
 
@@ -145,7 +145,7 @@ class QueryModel(QAbstractTableModel):
 
             column_name = self.headers[index.column()]
 
-            #  ---- Display Role ----
+            # ---- Display Role ----
             if role == Qt.DisplayRole:
                 return str(self.variant(index.row())[column_name])
 
@@ -289,7 +289,7 @@ class QueryModel(QAbstractTableModel):
 
     #     Examples:
     #         variant = model.variant(index)
-    #         print(variant) # ["chr","242","A","T",.....]
+    #         print(variant) #["chr","242","A","T",.....]
 
     #     """
     #     if self.level(index) == 1:
@@ -298,7 +298,7 @@ class QueryModel(QAbstractTableModel):
     #     if self.level(index) == 2:
     #         return self.variants[index.parent().row()][
     #             index.row() + 1
-    #         ]  #  + 1 because the first element is the parent
+    #         ]  # + 1 because the first element is the parent
 
 
 # class QueryDelegate(QStyledItemDelegate):
@@ -336,16 +336,16 @@ class QueryModel(QAbstractTableModel):
 #         """
 
 #         palette = qApp.palette("QTreeView")
-#         #  get column name of the index
+#         # get column name of the index
 #         colname = index.model().headerData(index.column(), Qt.Horizontal)
 
-#         #  get value of the index
+#         # get value of the index
 #         value = index.data(Qt.DisplayRole)
 
 #         # get select sate
 #         select = option.state & QStyle.State_Selected
 
-#         #  draw selection if it is
+#         # draw selection if it is
 #         if not select:
 #             bg_brush = self.background_color_index(index)
 #         else:
@@ -361,7 +361,7 @@ class QueryModel(QAbstractTableModel):
 
 #         alignement = Qt.AlignLeft | Qt.AlignVCenter
 
-#         # # Add margin for first columns if index is first level
+#         # #Add margin for first columns if index is first level
 #         # if index.column() == 0 and index.parent() == QModelIndex():
 
 #         #     expanded = bool(option.state & QStyle.State_Open)
@@ -415,8 +415,8 @@ class QueryModel(QAbstractTableModel):
 #             rect.setX(option.rect.x())
 #             rect.setY(option.rect.center().y() - 5)
 
-#             #  Set background color according so terms
-#             #  Can be improve ... Just a copy past from c++ code
+#             # Set background color according so terms
+#             # Can be improve ... Just a copy past from c++ code
 #             bg = "#6D7981"
 #             for so in soTerms:
 #                 for i in style.SO_COLOR.keys():

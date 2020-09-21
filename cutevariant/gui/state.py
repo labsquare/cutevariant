@@ -5,12 +5,12 @@ class State(object):
 
     def __init__(self):
 
-        #  query
+        # query
         self.fields = ["favorite", "chr", "pos", "ref", "alt"]
         self.source = "variants"
         self.filters = {}
         self.group_by = []
         self.having = {}
 
-        #  selected variants
+        # selected variants
         self.current_variant = None

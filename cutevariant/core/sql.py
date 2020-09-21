@@ -13,7 +13,7 @@ Example::
     conn = sql.get_sql_connexion("project.db")
     sql.get_samples(conn)
 
-    # Build a variant query
+    #Build a variant query
     from cutevariant.core import sql
     conn = sql.get_sql_connexion("project.db")
     builder = QueryBuilder(conn)
@@ -334,7 +334,7 @@ def create_selection_from_sql(
     cursor = conn.cursor()
 
     # Compute query count
-    #  TODO : this can take a while .... need to compute only one from elsewhere
+    # TODO : this can take a while .... need to compute only one from elsewhere
     if not count:
         count = cursor.execute(f"SELECT COUNT(*) FROM ({query})").fetchone()[0]
 
@@ -399,7 +399,7 @@ def create_selection_from_bed(
 
     cur = conn.cursor()
 
-    #  Create temporary table
+    # Create temporary table
     cur.execute("DROP TABLE IF exists bed_table")
     cur.execute(
         """CREATE TABLE bed_table (
@@ -767,7 +767,7 @@ def get_field_unique_values(conn, field_name: str, sample_name=None):
     return [i[field_name] for i in conn.execute(query)]
 
 
-## Annotations functions =======================================================
+##Annotations functions =======================================================
 
 
 def create_table_annotations(conn, fields):
@@ -781,7 +781,7 @@ def create_table_annotations(conn, fields):
     schema = ",".join([f'`{field["name"]}` {field["type"]}' for field in fields])
 
     if not schema:
-        #  Create minimum annotation table... Can be use later for dynamic annotation.
+        # Create minimum annotation table... Can be use later for dynamic annotation.
         # TODO : we may want to fix annotation fields .
         schema = "gene TEXT, transcript TEXT"
         LOGGER.debug(
@@ -1040,7 +1040,7 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
         #    variant,
         # )
 
-        #  Create list of value to insert
+        # Create list of value to insert
         # ["chr",234234,"A","G"]
         default_values = defaultdict(str, variant)
         values = [default_values[col] for col in var_columns]
@@ -1238,13 +1238,13 @@ def update_sample(conn, sample: dict):
     """Update sample record
 
     sample = {
-        id : 3 # sample id
-        name : "Boby",  # Name of sample
+        id : 3 #sample id
+        name : "Boby",  #Name of sample
         fam : "fam", # familly identifier
-        father_id : 0, # father id, 0 if not
-        mother_id : 0, # mother id, 0 if not
-        sex : 0 # sex code ( 1 = male, 2 = female, 0 = unknown)
-        phenotype: 0 # ( 1 = control , 2 = case, 0 = unknown)
+        father_id : 0, #father id, 0 if not
+        mother_id : 0, #mother id, 0 if not
+        sex : 0 #sex code ( 1 = male, 2 = female, 0 = unknown)
+        phenotype: 0 #( 1 = control , 2 = case, 0 = unknown)
     }
 
     Args:

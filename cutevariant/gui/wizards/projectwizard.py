@@ -121,7 +121,7 @@ class FilePage(QWizardPage):
         self.file_path_edit.textChanged.connect(self.completeChanged)
 
         self.registerField("filename", self.file_path_edit, "text")
-        #  annotation ? should be an option or not ?
+        # annotation ? should be an option or not ?
         self.registerField("annotation", self.anotation_detect_label, "text")
 
     @Slot()
@@ -190,7 +190,7 @@ class SamplePage(QWizardPage):
         """ override """
 
         self.view.clear()
-        #  read samples
+        # read samples
         filename = self.field("filename")
         with create_reader(filename) as reader:
             samples = []

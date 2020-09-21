@@ -149,7 +149,7 @@ class Query:
         """
         samples = set()
         # Get function tuples
-        #  A function is a tuple with 3 elements.
+        # A function is a tuple with 3 elements.
         #  The second element is the sample name
         # TODO: is test on length usefull?
         functions = (col for col in columns if isinstance(col, tuple) and len(col) == 3)
@@ -278,8 +278,8 @@ class Query:
             INNER JOIN selections s ON s.id = sv.selection_id AND s.name = '{self.selection}'
             """
 
-        #  Add Join on sample_has_variant
-        #  This is done if genotype() function has been found in columns or filter,
+        # Add Join on sample_has_variant
+        # This is done if genotype() function has been found in columns or filter,
         # or filter only if specified.
         # _samples_to_join is a dict with sample_names as keys and sample_ids as values
         self.extract_samples_from_columns_and_filter(filter_only=filter_only)
@@ -318,7 +318,7 @@ class Query:
         """
         ## Build columns
         sql_columns = self.get_columns(do_not_add_default_things)
-        #  quotify
+        # quotify
         query = f"SELECT {','.join(sql_columns)} "
 
         ## Add FROM clause
@@ -479,7 +479,7 @@ class Query:
 
             # Process field
             if isinstance(field, tuple) and len(field) == 3:
-                #  Function ? ("genotype","sample","gt")
+                # Function ? ("genotype","sample","gt")
                 fct, arg, f = field
                 field = f"`gt_{arg}`.{f}"
 
@@ -595,7 +595,7 @@ class Query:
         """
 
         # TODO : move all VQL to VQLEDItor
-        #  DEGEU.. pour tester juste
+        # DEGEU.. pour tester juste
         _c = []
         for col in self.columns:
             if isinstance(col, tuple):

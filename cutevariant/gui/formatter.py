@@ -48,7 +48,7 @@ def find_formatters(path=None):
         [generator [Formatter]] -- A Formatter class ready to be instantiated
     """
 
-    #  if path is None, return internal plugin path
+    # if path is None, return internal plugin path
     if path is None:
         formatter_path = os.path.join(os.path.dirname(__file__), "formatters")
     else:

@@ -83,7 +83,7 @@ class DownloadDialog(QDialog):
         # open the file to write in
         if self._file.open(QIODevice.WriteOnly):
             print("open file", filepath)
-            #  Create a Qt Request
+            # Create a Qt Request
             request = QNetworkRequest()
             request.setUrl(self.source)
             self.time = QTime.currentTime()
@@ -118,7 +118,7 @@ class DownloadDialog(QDialog):
 
         self._file.write(self.reply.readAll())
 
-        #  compute speed
+        # compute speed
         duration = self.time.secsTo(QTime.currentTime()) + 1
         speed = read / duration
         remaining = (total - read) / speed
@@ -132,7 +132,7 @@ class DownloadDialog(QDialog):
             f"Time remaining {h_remaining} - {h_read} of {h_total} ({h_speed})"
         )
 
-        #  Set progression
+        # Set progression
         self.progress.setRange(0, total)
         self.progress.setValue(read)
 

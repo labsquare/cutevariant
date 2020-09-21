@@ -109,7 +109,7 @@ class VariantModel(QAbstractTableModel):
     def rowCount(self, parent=QModelIndex()):
         """Overrided : Return children count of index
         """
-        #  If parent is root
+        # If parent is root
 
         return len(self.variants)
 
@@ -141,7 +141,7 @@ class VariantModel(QAbstractTableModel):
 
             column_name = self.headers[index.column()]
 
-            #  ---- Display Role ----
+            # ---- Display Role ----
             if role == Qt.DisplayRole:
                 return str(self.variant(index.row())[column_name])
 
@@ -213,7 +213,7 @@ class VariantModel(QAbstractTableModel):
 
         self.variants.clear()
 
-        #  Add fields from group by
+        # Add fields from group by
 
         for g in self.group_by:
             if g not in self.fields:
@@ -242,7 +242,7 @@ class VariantModel(QAbstractTableModel):
         if self.variants:
             self.headers = list(self.variants[0].keys())
 
-        #  Compute total
+        # Compute total
         if emit_changed:
             self.changed.emit()
             # Probably need to compute total ==> >Must be async !
@@ -420,7 +420,7 @@ class VariantView(QWidget):
         self.delegate = VariantDelegate()
         self.view.setItemDelegate(self.delegate)
 
-        #  setup toolbar
+        # setup toolbar
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
 
@@ -602,7 +602,7 @@ class VariantView(QWidget):
                 )
                 action.triggered.connect(on_click)
 
-            #  Comment action
+            # Comment action
             on_edit = functools.partial(self.edit_comment, current_index)
             menu.addAction(self.tr("Edit comment ..."), on_edit)
 
@@ -840,7 +840,7 @@ class VariantViewWidget(plugin.PluginWidget):
         # self.mainwindow.state.group_by = checked_fields
         # self.on_refresh()
 
-        # #  refresh source editor plugin
+        # # refresh source editor plugin
         # if "vql_editor" in self.mainwindow.plugins:
         #     plugin = self.mainwindow.plugins["vql_editor"]
         #     plugin.on_refresh()
@@ -870,7 +870,7 @@ class VariantViewWidget(plugin.PluginWidget):
                 self.second_pane.load()
                 self.second_pane.load_page_box()
 
-            #  Refresh plugins when clicked
+            # Refresh plugins when clicked
             self.mainwindow.state.current_variant = variant
             self.mainwindow.refresh_plugins(sender=self)
 

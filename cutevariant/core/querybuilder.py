@@ -45,7 +45,7 @@ def filters_to_flat(filters: dict):
         
         filters = _flatten_filter(filters)
 
-        # filters is now [{'field': 'ref', 'operator': '=', 'value': "A"},{'field': 'alt', 'operator': '=', 'value': "C"}]] 
+        #filters is now [{'field': 'ref', 'operator': '=', 'value': "A"},{'field': 'alt', 'operator': '=', 'value': "C"}]] 
     """
 
     def recursive_generator(filters):
@@ -338,17 +338,17 @@ def build_query(
 
     sql_query = f"SELECT DISTINCT {','.join(sql_fields)} "
 
-    # # Add child count if grouped
+    # #Add child count if grouped
     # if grouped:
     #     sql_query += ", COUNT(*) as `children`"
 
-    #  Add source table
+    # Add source table
     sql_query += f"FROM variants"
 
     # Extract fields from filters
     fields_in_filters = [i["field"] for i in filters_to_flat(filters)]
 
-    #  Loop over fields and check is annotations is required
+    # Loop over fields and check is annotations is required
 
     annotation_fields = [i for i, v in default_tables.items() if v == "annotations"]
 
@@ -361,7 +361,7 @@ def build_query(
     if need_join_annotations:
         sql_query += " LEFT JOIN annotations ON annotations.variant_id = variants.id"
 
-    #  Add Join Selection
+    # Add Join Selection
     # TODO: set variants as global variables
     if source != "variants":
         sql_query += (
@@ -369,8 +369,8 @@ def build_query(
             f"INNER JOIN selections s ON s.id = sv.selection_id AND s.name = '{source}'"
         )
 
-    #  Add Join Samples
-    ## detect if fields contains function like (genotype,boby,gt) and save boby
+    # Add Join Samples
+    ##detect if fields contains function like (genotype,boby,gt) and save boby
 
     all_fields = set(fields_in_filters + fields)
 
@@ -388,20 +388,20 @@ def build_query(
     ## Create Sample Join
 
     for sample_name in samples:
-        #  Optimisation ?
+        # Optimisation ?
         # sample_id = self.cache_samples_ids[sample_name]
         if sample_name in samples_ids:
             sample_id = samples_ids[sample_name]
             sql_query += f" INNER JOIN sample_has_variant `{GENOTYPE_FUNC_NAME}_{sample_name}` ON `{GENOTYPE_FUNC_NAME}_{sample_name}`.variant_id = variants.id AND `{GENOTYPE_FUNC_NAME}_{sample_name}`.sample_id = {sample_id}"
 
-    #  Add Where Clause
+    # Add Where Clause
     if filters:
         where_clause = filters_to_sql(filters, default_tables)
         # TODO : filter_to_sql should returns empty instead of ()
         if where_clause and where_clause != "()":
             sql_query += " WHERE " + where_clause
 
-    #  Add Group By
+    # Add Group By
     if group_by:
         sql_query += " GROUP BY " + ",".join(group_by)
         if having:
@@ -409,7 +409,7 @@ def build_query(
             val = having["value"]
             sql_query += f" HAVING count {op} {val}"
 
-    #  Add Order By
+    # Add Order By
     if order_by:
         # TODO : sqlite escape field with quote
         orientation = "DESC" if order_desc else "ASC"

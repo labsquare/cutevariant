@@ -81,7 +81,7 @@ def main():
         args.db = os.environ["CUTEVARIANT_DB"]
         conn = sql.get_sql_connexion(args.db)
 
-    #  ====== CREATEDB ============================
+    # ====== CREATEDB ============================
     if args.subparser == "createdb":
         if args.output == None:
 
@@ -103,7 +103,7 @@ def main():
         # os.putenv("CUTEVARIANT_DB", args.output)
         # print("$CUTEVARIANT_DB has been set with ", args.output)
 
-    #  ====== SHOW ============================
+    # ====== SHOW ============================
     if args.subparser == "show":
         if args.table == "fields":
             print(
@@ -137,7 +137,7 @@ def main():
         for name in args.names:
             sql.delete_selection_by_name(conn, name)
 
-    #  ====== EXEC VQL ============================
+    # ====== EXEC VQL ============================
     if args.subparser == "exec":
         query = "".join(args.vql)
 
@@ -182,7 +182,7 @@ def main():
                 for v in selector.trees(grouped=args.group, limit=args.limit):
 
                     line = v[1]
-                    if args.group:  #  Add children count
+                    if args.group:  # Add children count
                         line.append(v[0])
                     variants.append(line)
 

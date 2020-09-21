@@ -11,10 +11,10 @@ PROXY_TYPES = {
 
 def get_network_manager():
 
-    #  Create network access manager
+    # Create network access manager
     network_manager = QNetworkAccessManager()
 
-    #  Get proxy settings data
+    # Get proxy settings data
     settings = QSettings("labsquare", "cutevariant")
     settings.beginGroup("proxy")
     p_type_index = settings.value("type")

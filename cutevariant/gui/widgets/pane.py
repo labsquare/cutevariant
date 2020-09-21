@@ -36,7 +36,7 @@ class Pane(QFrame):
         expand_button.setIconSize(QSize(14, 14))
         expand_button.clicked.connect(self.toggle_visible)
 
-        #  setup label
+        # setup label
         # self.label.setText(self.windowTitle())
         font = QFont()
         font.setBold(True)

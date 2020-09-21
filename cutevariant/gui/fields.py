@@ -278,7 +278,7 @@ class FieldFactory(QObject):
             print(field)
             unique_values = sql.get_field_unique_values(
                 self.conn, field["name"]
-            )  #  Can be huge ... How to use "like" ??
+            )  # Can be huge ... How to use "like" ??
             w.set_completer(QCompleter(unique_values))
             return w
 
@@ -303,15 +303,15 @@ class FilterItem(object):
     :Example:
 
     root = FilterItem() # Create rootItem
-    root.append(FilterItem()) # Append 2 children
+    root.append(FilterItem()) #Append 2 children
     root.append(FilterItem())
     root[0].append(FilterItem()) # Append 1 child to the first children
 
 
     """
 
-    LOGIC_TYPE = 0  #  Logic type is AND/OR/XOR
-    CONDITION_TYPE = 1  #  Condition type is (field, operator, value)
+    LOGIC_TYPE = 0  # Logic type is AND/OR/XOR
+    CONDITION_TYPE = 1  # Condition type is (field, operator, value)
 
     def __init__(self, data=None, parent=None):
         """FilterItem constructor with parent as FilterItem parent 
@@ -391,10 +391,10 @@ class FilterItem(object):
         Returns:
             LOGIC_TYPE or CONDITION_TYPE
         """
-        if isinstance(self.data, str):  #  Logic
+        if isinstance(self.data, str):  # Logic
             return self.LOGIC_TYPE
 
-        if isinstance(self.data, tuple):  #  condition
+        if isinstance(self.data, tuple):  # condition
             return self.CONDITION_TYPE
 
         return None
@@ -479,7 +479,7 @@ class FilterModel(QAbstractItemModel):
         # Add new item 
         model.add_logic_item(parent = view.currentIndex())
 
-        # Remove item 
+        #Remove item 
         model.remove_item(view.currentIndex())
 
     """
@@ -518,12 +518,12 @@ class FilterModel(QAbstractItemModel):
             return None
 
         if role == Qt.DisplayRole or role == Qt.EditRole:
-            #  Display data
+            # Display data
             item = self.item(index)
             return item.get_data(index.column())
 
         if role == Qt.TextAlignmentRole:
-            #  Adjust text alignement
+            # Adjust text alignement
             if index.column() == 0:
                 return int(Qt.AlignVCenter) + int(Qt.AlignLeft)
             if index.column() == 1:
@@ -532,7 +532,7 @@ class FilterModel(QAbstractItemModel):
                 return int(Qt.AlignVCenter) + int(Qt.AlignLeft)
 
         if role == Qt.FontRole:
-            #  Make LogicItem as bold
+            # Make LogicItem as bold
             if self.item(index).type() == FilterItem.LOGIC_TYPE:
                 font = QFont()
                 font.setBold(True)
@@ -589,7 +589,7 @@ class FilterModel(QAbstractItemModel):
         if not self.hasIndex(row, column, parent):
             return QModelIndex()
 
-        if not parent.isValid():  #  If no parent, then parent is the root item
+        if not parent.isValid():  # If no parent, then parent is the root item
             parent_item = self.root_item
 
         else:
@@ -644,7 +644,7 @@ class FilterModel(QAbstractItemModel):
 
     def to_item(self, data: dict) -> FilterItem:
         """ recursive function to build a nested FilterItem structure from dict data """
-        if len(data) == 1:  #  logic item
+        if len(data) == 1:  # logic item
             operator = list(data.keys())[0]
             item = FilterItem(operator)
             [item.append(self.to_item(k)) for k in data[operator]]
@@ -682,7 +682,7 @@ class FilterModel(QAbstractItemModel):
             parent (QModelIndex): parent index 
         """
 
-        #  Skip if parent is a condition type
+        # Skip if parent is a condition type
         if self.item(parent).type == FilterItem.CONDITION_TYPE:
             return
 
@@ -699,7 +699,7 @@ class FilterModel(QAbstractItemModel):
             parent (QModelIndex): Parent index
         """
 
-        #  Skip if parent is a condition type
+        # Skip if parent is a condition type
         if self.item(parent).type == FilterItem.CONDITION_TYPE:
             return
 
@@ -795,7 +795,7 @@ class FilterModel(QAbstractItemModel):
         parent_source_item = self.item(sourceParent)
         parent_destination_item = self.item(destinationParent)
 
-        #  if destination is - 1, it's mean we should append the item at the end of children
+        # if destination is - 1, it's mean we should append the item at the end of children
         if destinationChild < 0:
             if sourceParent == destinationParent:
                 return False
@@ -1013,7 +1013,7 @@ class FieldDialog(QDialog):
         self.field_box.setEditable(True)
         # self.field_operator.setEditable(True)
 
-        #  setup label
+        # setup label
         font = QFont()
         font.setBold(True)
         self.title_label.setFont(font)

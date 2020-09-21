@@ -7,8 +7,8 @@ from .annotationparser import VepParser, SnpEffParser
 from cutevariant.commons import logger
 
 
-#  Fixing PyVCF bug
-#  https://github.com/jamescasbon/PyVCF/pull/320
+# Fixing PyVCF bug
+# https://github.com/jamescasbon/PyVCF/pull/320
 def _map(self, func, iterable, bad=[".", "", "NA"]):
     """``map``, but make bad values None."""
     return [func(x) if x not in bad else None for x in iterable]
@@ -16,7 +16,7 @@ def _map(self, func, iterable, bad=[".", "", "NA"]):
 
 vcf.Reader._map = _map
 
-#  End fixing
+# End fixing
 
 
 LOGGER = logger()
@@ -168,7 +168,7 @@ class VcfReader(AbstractReader):
                         sample_data = {}
                         sample_data["name"] = sample.sample
 
-                        #  Load sample annotations
+                        # Load sample annotations
                         sample_ann = {}
                         for key in formats:
                             try:
@@ -264,7 +264,7 @@ class VcfReader(AbstractReader):
         self.device.seek(0)
         vcf_reader = vcf.VCFReader(self.device,strict_whitespace=True)
 
-        #  Reads VCF info
+        # Reads VCF info
         for key, info in vcf_reader.infos.items():
 
             # if key == "ANN": # Parse special annotation
