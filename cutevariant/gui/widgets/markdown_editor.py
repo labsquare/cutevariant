@@ -2,21 +2,18 @@
 from pkg_resources import parse_version
 
 # Qt imports
+from PySide2 import __version__ as pyside_version
+from PySide2.QtCore import Qt
+from PySide2.QtGui import QKeySequence
 from PySide2.QtWidgets import (
     QTextEdit,
     QWidget,
     QApplication,
     QVBoxLayout,
     QToolBar,
-    QTabWidget,
     QPlainTextEdit,
     QSplitter,
-    QAction,
-    QTextBrowser,
 )
-from PySide2 import __version__ as pyside_version
-from PySide2.QtCore import Qt
-from PySide2.QtGui import QKeySequence, QIcon
 
 # Custom imports
 from cutevariant.gui.ficon import FIcon

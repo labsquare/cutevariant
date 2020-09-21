@@ -13,6 +13,7 @@ from cutevariant.core import sql
 
 import sqlite3
 
+
 #  Metrics
 def get_variant_count(conn: sqlite3.Connection):
     return conn.execute(
@@ -106,7 +107,6 @@ class MetricDialog(PluginDialog):
         self.populate()
 
     def populate(self):
-
         self.model.clear()
 
         self.model.add_metrics("Variant count", get_variant_count(self.conn))
@@ -128,7 +128,6 @@ class MetricDialog(PluginDialog):
 
 
 if __name__ == "__main__":
-
     from PySide2.QtWidgets import QApplication
     import sys
 

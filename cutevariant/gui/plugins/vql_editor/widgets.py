@@ -74,21 +74,21 @@ class VqlEditorWidget(plugin.PluginWidget):
         self.setLayout(main_layout)
 
     def on_register(self, mainwindow):
-        """Override from PluginWidget : Do not call this methods 
-        
+        """Override from PluginWidget : Do not call this methods
+
         Args:
             mainwindow (MainWindow): Mainwindow reference
         """
-        self.run_action = mainwindow.toolbar.addAction(FIcon(0xF040A), self.tr("Run"), self.run_vql)
-        self.run_action.setShortcuts(
-            [Qt.CTRL + Qt.Key_R, QKeySequence.Refresh]
+        self.run_action = mainwindow.toolbar.addAction(
+            FIcon(0xF040A), self.tr("Run"), self.run_vql
         )
+        self.run_action.setShortcuts([Qt.CTRL + Qt.Key_R, QKeySequence.Refresh])
 
     def on_open_project(self, conn: sqlite3.Connection):
-        """overrided from PluginWidget : Do not call this methods 
-        
+        """overrided from PluginWidget : Do not call this methods
+
         Args:
-            conn (sqlite3.Connection): sqlite3 connection 
+            conn (sqlite3.Connection): sqlite3 connection
         """
         self.conn = conn
         self.text_edit.setCompleter(self.__create_completer())
@@ -96,8 +96,7 @@ class VqlEditorWidget(plugin.PluginWidget):
         self.on_refresh()
 
     def on_refresh(self):
-        """ overrided from PluginWidget 
-        """
+        """overrided from PluginWidget"""
 
         vql = build_vql_query(
             self.mainwindow.state.fields,
@@ -110,10 +109,10 @@ class VqlEditorWidget(plugin.PluginWidget):
         self.set_vql(vql)
 
     def set_vql(self, txt: str):
-        """Set vql source code without executed 
-        
+        """Set vql source code without executed
+
         Args:
-            txt (str): vql code 
+            txt (str): vql code
         """
         self.text_edit.blockSignals(True)
         self.text_edit.setPlainText(txt)
@@ -146,12 +145,12 @@ class VqlEditorWidget(plugin.PluginWidget):
 
     def check_vql(self) -> bool:
         """Check VQL statement; return True if OK, False when an error occurs
-        
+
         Notes:
             This function also sets the error message to the bottom of the view.
-        
+
         Returns:
-            bool: Status 
+            bool: Status
         """
 
         print("check vql")
@@ -175,10 +174,10 @@ class VqlEditorWidget(plugin.PluginWidget):
         return True
 
     def run_vql(self):
-        """Execute VQL code . 
-        Select command will update query view plugin 
-        Create command will update selection plugin 
-        Drop command will update selection plugin 
+        """Execute VQL code .
+        Select command will update query view plugin
+        Create command will update selection plugin
+        Drop command will update selection plugin
         """
 
         #  Check VQL syntax first

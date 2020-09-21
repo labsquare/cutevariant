@@ -13,22 +13,20 @@ from PySide2.QtGui import QIcon, QKeySequence
 
 # Custom imports
 from cutevariant.core import get_sql_connexion, get_metadatas
+from cutevariant.core.writer import CsvWriter
 from cutevariant.gui.ficon import FIcon
 from cutevariant.gui.state import State
 from cutevariant.gui.wizards import ProjectWizard
 from cutevariant.gui.settings import SettingsWidget
 from cutevariant.gui.widgets.aboutcutevariant import AboutCutevariant
-from cutevariant.core.writer import CsvWriter
-#  Import plugins
-from cutevariant.gui import plugin
-
 from cutevariant import commons as cm
 from cutevariant.commons import (
     MAX_RECENT_PROJECTS,
     DIR_ICONS,
     MIN_AUTHORIZED_DB_VERSION,
 )
-
+# Import plugins
+from cutevariant.gui import plugin
 
 LOGGER = cm.logger()
 
