@@ -98,22 +98,22 @@ class MarkdownEditor(QWidget):
             LOGGER.warning("RichText in Markdown is supported starting PySide 5.14")
 
     def infix(self, prefix: str, suffix=None):
-
+        """Add tags before and after the selected text"""
         if suffix is None:
             suffix = prefix
 
-        if not self.source_edit.textCursor().hasSelection():
-            self.source_edit.textCursor().insertText(f"{text}Text{text}")
+        cursor = self.source_edit.textCursor()
+
+        if not cursor.hasSelection():
+            cursor.insertText(f"{prefix}Text{suffix}")
             return
 
-        start = self.source_edit.textCursor().selectionStart()
-        end = self.source_edit.textCursor().selectionEnd()
+        start = cursor.selectionStart()
+        end = cursor.selectionEnd()
 
-        cursor = self.source_edit.textCursor()
-        cursor.setPosition(start)
-        cursor.insertText(text)
-        cursor.setPosition(end + len(text))
-        cursor.insertText(text)
+        # must be made in 1 step to avoid flooding the history (do/undo)
+        text = self.source_edit.toPlainText()
+        cursor.insertText(prefix + text[start:end] + suffix)
 
     def heading(self):
 
