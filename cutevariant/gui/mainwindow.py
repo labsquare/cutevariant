@@ -25,6 +25,7 @@ from cutevariant.commons import (
     DIR_ICONS,
     MIN_AUTHORIZED_DB_VERSION,
 )
+
 # Import plugins
 from cutevariant.gui import plugin
 
@@ -227,16 +228,16 @@ class MainWindow(QMainWindow):
         self.file_menu.addSeparator()
         self.file_menu.addAction(self.tr("&Quit"), self.close, QKeySequence.Quit)
 
-        ##Edit
-        #self.edit_menu = self.menuBar().addMenu(self.tr("&Edit"))
-        #self.edit_menu.addAction(FIcon(0xF018F), "&Copy", self.copy, QKeySequence.Copy)
-        #self.edit_menu.addAction(
+        ## Edit
+        # self.edit_menu = self.menuBar().addMenu(self.tr("&Edit"))
+        # self.edit_menu.addAction(FIcon(0xF018F), "&Copy", self.copy, QKeySequence.Copy)
+        # self.edit_menu.addAction(
         #    FIcon(0xF0192), "&Paste", self.paste, QKeySequence.Paste
-        #)
-        #self.edit_menu.addSeparator()
-        #self.edit_menu.addAction(
+        # )
+        # self.edit_menu.addSeparator()
+        # self.edit_menu.addAction(
         #    FIcon(0xF0486), "Select all", self.select_all, QKeySequence.SelectAll
-        #)
+        # )
 
         ## View
         self.view_menu = self.menuBar().addMenu(self.tr("&View"))
@@ -437,8 +438,7 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def show_dialog(self):
-        """Show Plugin dialog
-        """
+        """Show Plugin dialog"""
         action = self.sender()
         if action in self.dialog_plugins:
             DialogClass = self.dialog_plugins[action]
@@ -474,7 +474,7 @@ class MainWindow(QMainWindow):
         super().closeEvent(event)
 
     def write_settings(self):
-        """ Store the state of this mainwindow.
+        """Store the state of this mainwindow.
 
         .. note:: This methods is called by closeEvent
         """
