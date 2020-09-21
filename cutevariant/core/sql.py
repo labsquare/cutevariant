@@ -165,7 +165,7 @@ def create_table_metadatas(conn: sqlite3.Connection):
     """Create table metdata
 
     Args:
-        conn (sqlite3.Connection): Description
+        conn (sqlite3.Connection): Sqlite3 Connection
     """
     cursor = conn.execute(
         """CREATE TABLE metadatas (id INTEGER PRIMARY KEY, key TEXT, value TEXT)"""
@@ -176,7 +176,7 @@ def insert_many_metadatas(conn: sqlite3.Connection, metadatas={}):
     """Insert metadata
 
     Args:
-        conn (sqlite3.Connection): Description
+        conn (sqlite3.Connection): Sqlite3 Connection
     """
     if metadatas:
         conn.executemany(
