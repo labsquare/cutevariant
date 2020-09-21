@@ -64,7 +64,6 @@ def select_cmd(
             order_desc (bool, optional): Descending or Ascending Order  
             limit (int, optional): record count 
             offset (int, optional): record count per page  
-            debug_sql: If True, return only sql statements
         
         Yields:
             list of variants   
