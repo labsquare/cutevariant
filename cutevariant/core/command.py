@@ -1,12 +1,21 @@
 """Design pattern "COMMANDS" to execute VQL query .
 
-Each VQL statement corresponds to a <name>_cmd() fonction and is construted by
-`create_command_from_obj()`.
-You can use `execute(conn, vql)` or `execute_one(conn, vql)` to run a specific
+Each VQL statement corresponds to a <name>_cmd() function.
+You can use `execute(conn, vql)` or `execute_all(conn, vql)` to run a specific
 VQL query.
 
 Each command returns a JSON array with a success status code or with the
 expected result.
+
+Command module is usefull for CLI and for running VQL scripts.
+
+Example:
+
+    >>> conn = sqlite.Connection("project.db")
+    >>> for variant in execute(conn, "SELECT chr, pos FROM variants"):
+    ...     print(variant)
+    >>> # How many variants ?
+    >>> print(execute(conn, "COUNT FROM variants"))
 """
 # Standard imports
 import sqlite3
@@ -40,6 +49,11 @@ def select_cmd(
     **kwargs,
 ):
     """Select query Command
+
+    This following VQL command:
+        `SELECT chr,pos FROM variants WHERE pos > 3`
+    will execute :
+        `select_cmd(conn, ["chr", "pos"], variants", {"AND": [{"pos","=",3}]}))`
 
     Args:
         conn (sqlite3.Connection): sqlite3 connection
@@ -88,6 +102,11 @@ def count_cmd(
     **kwargs,
 ):
     """Count command
+
+    This following VQL command:
+        `COUNT FROM variants WHERE pos > 3`
+    will execute :
+        `count_cmd(conn, "variants", {"AND": [{"pos","=",3}]}))`
 
     Args:
         conn (sqlite3.Connection): sqlite3 connection
@@ -140,19 +159,26 @@ def count_cmd(
     return {"count": conn.execute(query).fetchone()[0]}
 
 
-def drop_cmd(conn: sqlite3.Connection, feature, name, **kwargs):
-    """
+def drop_cmd(conn: sqlite3.Connection, feature: str, name: str, **kwargs):
+    """Drop selection or set from database
+
+    This following VQL command:
+        `DROP selection boby`
+    will execute :
+        `drop_cmd(conn, "selections", "boby")`
 
     Args:
-        conn (sqlite3.Connection): sqlite3 connection
-        feature:
-        name:
+        conn (sqlite3.Connection): sqlite connection
+        feature (str): selection or set
+        name (str): name of the selection or the set
 
     Returns:
         dict: {"success": True}
         TODO: Use rowcount to return a non fixed success code...
-    """
 
+    Raises:
+        vql.VQLSyntaxError
+    """
     accept_features = ["selections", "sets"]
 
     if feature not in accept_features:
@@ -171,12 +197,29 @@ def drop_cmd(conn: sqlite3.Connection, feature, name, **kwargs):
 
 def create_cmd(
     conn: sqlite3.Connection,
-    target,
+    target: str,
     source="variants",
     filters=dict(),
     count=0,
     **kwargs,
 ):
+    """Create command
+
+    This following VQL command:
+        `CREATE boby FROM variants WHERE pos > 3`
+    will execute :
+        `create_cmd(conn, "boby", "variants", {"AND":[{"pos",">",3}]})`
+
+    Args:
+        conn (sqlite3.Connection): sqlite3 connection
+        target (str): target selection table
+        source (str): source selection table
+        filters (TYPE): filters query
+        count (int): precomputed variant count
+
+    Returns:
+        dict: {success: True}
+    """
     # Get {'favorite': 'variants', 'comment': 'variants', impact': 'annotations', ...}
     default_tables = {i["name"]: i["category"] for i in sql.get_fields(conn)}
     # Get {'NORMAL': 1, 'TUMOR': 2}
@@ -227,15 +270,22 @@ def create_cmd(
     return {}
 
 
-def set_cmd(conn: sqlite3.Connection, target, first, second, operator, **kwargs):
-    """
+def set_cmd(
+    conn: sqlite3.Connection, target: str, first: str, second: str, operator, **kwargs
+):
+    """Perform set operation like intersection, union and difference between two table selection
+
+    This following VQL command:
+        `CREATE boby = raymond & charles`
+    will execute :
+        `set_cmd(conn, "boby", "raymond", "charles", "&")`
 
     Args:
         conn (sqlite3.Connection): sqlite3 connection
-        target:
-        first:
-        second:
-        operator (+, -, &): Set operators
+        target (str): table selection target
+        first (str): first selection in operation
+        second (str): second selection in operation
+        operator (str): + (union), - (difference), & (intersection) Set operators
 
     Returns:
         (dict) with lastrowid (selection id) as key id, if lines have been
@@ -244,7 +294,6 @@ def set_cmd(conn: sqlite3.Connection, target, first, second, operator, **kwargs)
     Examples:
         {"id": 2}: 2 lines inserted
     """
-
     if target is None or first is None or second is None or operator is None:
         return {}
 
@@ -267,20 +316,27 @@ def set_cmd(conn: sqlite3.Connection, target, first, second, operator, **kwargs)
     return dict() if lastrowid is None else {"id": lastrowid}
 
 
-def bed_cmd(conn: sqlite3.Connection, path, target, source, **kwargs):
-    """
+def bed_cmd(conn: sqlite3.Connection, path: str, target: str, source: str, **kwargs):
+    """Create a new selection from a bed file
+
+    This following VQL command:
+        `CREATE boby FROM variant INTERSECT "path/to/file.bed"`
+    will execute :
+        `bed_cmd(conn, "path/to/file.bed", "boby", "source")`
 
     Args:
         conn (sqlite3.Connection): sqlite3 connection
-        path:
-        target:
-        source:
+        path (str): path to bedfile ( a 3 columns files with chr, start, end )
+        target (str): target selection table
+        source (str): source selection table
 
     Returns:
         (dict) with lastrowid as key id, if lines have been inserted;
         empty otherwise.
-    """
 
+    Raises:
+        vql.VQLSyntaxError
+    """
     if not os.path.isfile(path):
         raise vql.VQLSyntaxError(f"{path} doesn't exists")
 
@@ -306,17 +362,25 @@ def bed_cmd(conn: sqlite3.Connection, path, target, source, **kwargs):
 
 
 def show_cmd(conn: sqlite3.Connection, feature: str, **kwargs):
-    """
+    """Show command display information from a SHOW query
+
+    This following VQL command:
+        `SHOW variants`
+    will execute :
+        `show_cmd(conn, "variants")`
 
     Args:
         conn (sqlite3.Connection): sqlite3 connection
-        feature: Requested feature type of items
+        feature (str): Requested feature type of items;
+        can be: `"selections", "fields", "samples", "sets"`
 
-    Returns:
-        (generator): Yield items according to requested features (fields,
+    Yields:
+        (generator[dict]): Items according to requested features (fields,
         samples, selections, sets).
-    """
 
+    Raises:
+        vql.VQLSyntaxError
+    """
     accept_features = {
         "selections": sql.get_selections,
         "fields": sql.get_fields,
@@ -332,8 +396,27 @@ def show_cmd(conn: sqlite3.Connection, feature: str, **kwargs):
 
 
 def import_cmd(conn: sqlite3.Connection, feature=str, name=str, path=str, **kwargs):
+    """Import command
 
+    This following VQL command:
+        `IMPORT sets "gene.txt" AS boby`
+    will execute :
+        `import_cmd(conn, "sets", "gene.txt")`
+
+    Args:
+        conn (sqlite3.Connection): sqlite3 connection
+        feature (TYPE): "sets"
+        name (TYPE): name of the set
+        path (TYPE): a filepath
+
+    Returns:
+        dict: `{success: True}`
+
+    Raises:
+        vql.VQLSyntaxError
+    """
     accept_features = ("sets",)
+
     if feature not in accept_features:
         raise vql.VQLSyntaxError(f"option {feature} doesn't exists")
 
@@ -345,30 +428,62 @@ def import_cmd(conn: sqlite3.Connection, feature=str, name=str, path=str, **kwar
 
 
 def create_command_from_obj(conn, vql_obj: dict):
-    """????
+    """Create command function from vql object.
 
-    :param conn: Sqlite3 connexion
-    :param vql_obj: Requested commands: select_cmd, create_cmd, set_cmd, bed_cmd,
-    show_cmd, import_cmd, drop_cmd, count_cmd
-    :type conn: <sqlite3.connexion>
-    :return: Function object wrapping the given vql_object.
+    Warning:
+        Use command.execute instead.
+
+    Args:
+        conn (sqlite3.Connection): sqlite3.connection
+        vql_obj (dict): A VQL object with requested commands at "cmd" key:
+        select_cmd, create_cmd, set_cmd, bed_cmd, show_cmd, import_cmd,
+        drop_cmd, count_cmd. A VQL object is dictionary returned by vql.parse.
+
+    Returns:
+        (function): Function object wrapping the given vql_object.
     """
     command = vql_obj["cmd"]
     if command in globals():
         return functools.partial(globals()[command], conn, **vql_obj)
 
 
-def execute(conn, vql_source: str):
-    """Never used"""
+def execute(conn: sqlite3.Connection, vql_source: str):
+    """Execute a vql query
+
+    Examples:
+        >>> for variant in execute(conn,"SELECT chr from variants"):
+        >>>     print(variant)
+
+    Args:
+        conn (sqlite3.Connection): sqlite3 connection
+        vql_source (str): a VQL query
+
+    Returns:
+        dict: Return command output as a dict
+    """
     vql_obj = vql.parse_one_vql(vql_source)
     cmd = create_command_from_obj(conn, vql_obj)
     return cmd()
 
 
-def execute_all(conn, vql_source: str):
-    """Never used"""
-    for vql in vql.parse_vql(vql_source):
-        cmd = create_command_from_obj(conn, vql)
+def execute_all(conn: sqlite3.Connection, vql_source: str):
+    """Execute a vql script
+
+    Examples:
+        >>> execute_all(
+        ...     "CREATE boby FROM variants; CREATE raymon FROM variants;"
+        ...     "CREATE charles = boby - variants; COUNT(charles)"
+        ... )
+
+    Args:
+        conn (sqlite3.Connection): sqlite3 connection
+        vql_source (str): a VQL query
+
+    Yields:
+        (generator[dict]): Yield command outputs as a dicts
+    """
+    for vql_obj in vql.parse_vql(vql_source):
+        cmd = create_command_from_obj(conn, vql_obj)
         yield cmd()
 
 

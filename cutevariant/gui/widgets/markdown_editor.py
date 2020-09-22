@@ -57,6 +57,7 @@ class MarkdownEditor(QWidget):
             self.splitter.addWidget(self.rich_edit)
             self.rich_edit.setAcceptRichText(True)
             self.rich_edit.setAutoFormatting(QTextEdit.AutoAll)
+            self.rich_edit.setReadOnly(True)
 
             # Update preview with Markdown content
             self.source_edit.textChanged.connect(self.update_rich_text)

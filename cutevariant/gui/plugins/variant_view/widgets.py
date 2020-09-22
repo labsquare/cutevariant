@@ -8,12 +8,12 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 
 # Custom imports
+from cutevariant.core.querybuilder import build_complete_query
 from cutevariant.core import command as cmd
 from cutevariant.gui import plugin, FIcon
 from cutevariant.gui import formatter
 from cutevariant.gui.widgets import MarkdownEditor
 import cutevariant.commons as cm
-
 
 LOGGER = cm.logger()
 
@@ -82,6 +82,7 @@ class VariantModel(QAbstractTableModel):
         self.order_by = None
         self.order_desc = True
         self.formatter = None
+        self.debug_sql = None
         # Keep after all initialization
         self.conn = conn
 
@@ -219,6 +220,21 @@ class VariantModel(QAbstractTableModel):
             if g not in self.fields:
                 self.fields.append(g)
 
+        #  Store SQL query for debugging purpose
+        self.debug_sql = build_complete_query(
+            self.conn,
+            fields=self.fields,
+            source=self.source,
+            filters=self.filters,
+            limit=self.limit,
+            offset=offset,
+            order_desc=self.order_desc,
+            order_by=self.order_by,
+            group_by=self.group_by,
+            having=self.having,
+        )
+
+        #  Load variants
         self.variants = list(
             cmd.select_cmd(
                 self.conn,
@@ -432,6 +448,7 @@ class VariantView(QWidget):
 
         self.info_label = QLabel()
 
+        self.bottom_bar.addAction(FIcon(0xF0866), "show sql", self.on_show_sql)
         self.bottom_bar.addWidget(self.info_label)
         self.bottom_bar.addWidget(spacer)
         self.bottom_bar.setIconSize(QSize(16, 16))
@@ -544,9 +561,14 @@ class VariantView(QWidget):
             page = int(self.page_box.currentText())
             self.model.setPage(page)
 
+    def on_show_sql(self):
+        """Display debug sql query"""
+        msg_box = QMessageBox()
+        msg_box.setText(self.model.debug_sql)
+        msg_box.exec_()
+
     def load_page_box(self):
-        """Load Bottom toolbar with pagination
-        """
+        """Load Bottom toolbar with pagination"""
         self.page_box.clear()
         if self.model.pageCount() - 1 == 0:
             self.set_pagging_enabled(False)

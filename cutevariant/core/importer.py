@@ -7,8 +7,8 @@ import logging
 # Custom imports
 from .reader.abstractreader import AbstractReader
 from .readerfactory import create_reader
-from .sql import *
 from cutevariant import __version__
+from .sql import *
 
 
 def async_import_reader(conn, reader: AbstractReader, pedfile=None, project={}):

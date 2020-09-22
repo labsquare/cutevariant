@@ -422,3 +422,37 @@ def build_query(
         sql_query += f" LIMIT {limit} OFFSET {offset}"
 
     return sql_query
+
+
+def build_complete_query(
+    conn: sqlite3.Connection,
+    fields=["chr", "pos", "ref", "alt"],
+    source="variants",
+    filters=dict(),
+    order_by=None,
+    order_desc=True,
+    group_by=[],
+    having={},  # {"op":">", "value": 3  }
+    limit=50,
+    offset=0,
+    **kwargs,
+):
+
+    """ Build a complete select statements according data loaded from conn """
+    default_tables = dict([(i["name"], i["category"]) for i in sql.get_fields(conn)])
+    samples_ids = dict([(i["name"], i["id"]) for i in sql.get_samples(conn)])
+    query = build_query(
+        fields=fields,
+        source=source,
+        filters=filters,
+        order_by=order_by,
+        order_desc=order_desc,
+        limit=limit,
+        offset=offset,
+        group_by=group_by,
+        having=having,
+        default_tables=default_tables,
+        samples_ids=samples_ids,
+    )
+
+    return query
