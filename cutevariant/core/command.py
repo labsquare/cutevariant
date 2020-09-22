@@ -13,6 +13,7 @@ import sqlite3
 import os
 import functools
 import csv
+
 # Pip install ( because functools doesnt work with unhachable)
 from memoization import cached
 
@@ -38,21 +39,21 @@ def select_cmd(
     offset=0,
     **kwargs,
 ):
-    """Select query Command 
-        
-        Args:
-            conn (sqlite3.Connection): sqlite3 connection 
-            fields (list, optional): list of fields 
-            filters (dict, optional): nested tree of condition 
-            source (str, optional): virtual table source
-            order_by (list, optional): order by field name 
-            order_desc (bool, optional): Descending or Ascending Order  
-            limit (int, optional): record count 
-            offset (int, optional): record count per page  
-        
-        Yields:
-            variants (dict)
-        """
+    """Select query Command
+
+    Args:
+        conn (sqlite3.Connection): sqlite3 connection
+        fields (list, optional): list of fields
+        filters (dict, optional): nested tree of condition
+        source (str, optional): virtual table source
+        order_by (list, optional): order by field name
+        order_desc (bool, optional): Descending or Ascending Order
+        limit (int, optional): record count
+        offset (int, optional): record count per page
+
+    Yields:
+        variants (dict)
+    """
     # Get {'favorite': 'variants', 'comment': 'variants', impact': 'annotations', ...}
     default_tables = {i["name"]: i["category"] for i in sql.get_fields(conn)}
     # Get {'NORMAL': 1, 'TUMOR': 2}
@@ -86,13 +87,13 @@ def count_cmd(
     having={},
     **kwargs,
 ):
-    """Count command 
-    
+    """Count command
+
     Args:
         conn (sqlite3.Connection): sqlite3 connection
-        source (str, optional): virtual source table  
-        filters (dict, optional): nested tree of condition  
-    
+        source (str, optional): virtual source table
+        filters (dict, optional): nested tree of condition
+
     Returns:
         dict: Count of variants with "count" as a key
     """
@@ -259,7 +260,9 @@ def set_cmd(conn: sqlite3.Connection, target, first, second, operator, **kwargs)
     sql_query = func_query[operator](query_first, query_second)
     LOGGER.debug("command:set_cmd:: %s", sql_query)
 
-    lastrowid = sql.create_selection_from_sql(conn, sql_query, target, from_selection=False)
+    lastrowid = sql.create_selection_from_sql(
+        conn, sql_query, target, from_selection=False
+    )
 
     return dict() if lastrowid is None else {"id": lastrowid}
 
@@ -353,6 +356,7 @@ def create_command_from_obj(conn, vql_obj: dict):
     command = vql_obj["cmd"]
     if command in globals():
         return functools.partial(globals()[command], conn, **vql_obj)
+
 
 def execute(conn, vql_source: str):
     """Never used"""
