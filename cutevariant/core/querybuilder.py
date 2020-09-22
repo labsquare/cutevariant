@@ -317,11 +317,13 @@ def build_query(
         fields (list): List of fields 
         source (str): source of the virtual table ( see: selection ) 
         filters (dict): nested condition tree 
-        order_by (str): Order by field 
+        order_by (str/None): Order by field;
+        If None, order_desc is not required.
         order_desc (bool): Descending or Ascending order 
-        limit (int): limit record count 
-        offset (int): record count per page 
-        group_by (list): list of field you want to group
+        limit (int/None): limit record count;
+        If None, offset is not required.
+        offset (int): record count per page
+        group_by (list/None): list of field you want to group
         default_tables (dict): association map between fields and sql table origin 
         samples_ids (dict): association map between samples name and id 
 
