@@ -330,7 +330,9 @@ def create_selection_from_sql(
         query (str): VQL query
         name (str): Name of selection
         count (int, optional): Variant count
-        from_selection (bool, optional): selection name
+        from_selection (bool, optional): Used to get a different
+            field name for variants; `variant_id` if `from_selection` is `True`,
+            just `id` if `False`.
 
     Returns:
         lastrowid, if lines have been inserted; None otherwise.
@@ -395,7 +397,7 @@ def create_selection_from_bed(
         source (str): Selection name (source)
         target (str): Selection name (target)
         bed_intervals (list/generator [dict]): List of intervals
-        Each interval is a dict with the expected keys: (chr, start, end, name)
+            Each interval is a dict with the expected keys: (chr, start, end, name)
 
     Returns:
         lastrowid, if lines have been inserted; None otherwise.

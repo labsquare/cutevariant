@@ -240,34 +240,13 @@ def create_cmd(
         limit=None,
     )
 
-    count = sql.count_query(cursor, sql_query)
+    LOGGER.debug("command:create_cmd:: %s", sql_query)
 
-    selection_id = sql.insert_selection(cursor, sql_query, name=target, count=count)
+    lastrowid = sql.create_selection_from_sql(
+        conn, sql_query, target, from_selection=False
+    )
 
-    query = f"""
-    INSERT INTO selection_has_variant
-    SELECT DISTINCT id, {selection_id} FROM ({sql_query})
-    """
-
-    # DROP indexes
-    # For joints between selections and variants tables
-    try:
-        cursor.execute("""DROP INDEX idx_selection_has_variant""")
-    except sqlite3.OperationalError:
-        pass
-
-    LOGGER.debug("command:create_cmd:: %s", query)
-    cursor.execute(query)
-
-    # REBUILD INDEXES
-    # For joins between selections and variants tables
-    sql.create_selection_has_variant_indexes(cursor)
-
-    conn.commit()
-
-    if cursor.rowcount:
-        return {"id": cursor.lastrowid}
-    return {}
+    return dict() if lastrowid is None else {"id": lastrowid}
 
 
 def set_cmd(
