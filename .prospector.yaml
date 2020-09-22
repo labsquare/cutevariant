@@ -1,0 +1,20 @@
+diff --git a/.prospector.yaml b/.prospector.yaml
+deleted file mode 100644
+index b1ff499..0000000
+--- a/.prospector.yaml
++++ /dev/null
+@@ -1,14 +0,0 @@
+-doc-warnings: true
+-
+-pep257: 
+-  disable:
+-    - D213 # Multi-line docstring summary should start at the second line
+-    - D203 # 1 blank line required before class docstring (found 0)
+-    - D107 # Missing docstring in __init__
+-  enable:
+-    - D300
+-    - D101
+-    - D201
+-pyflakes: 
+-  disable:
+-    - F999
