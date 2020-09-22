@@ -1,14 +1,15 @@
-""" 
-This module contains the design pattern "COMMANDS" to execute VQL query . 
+"""Design pattern "COMMANDS" to execute VQL query .
 
-Each VQL statement corresponds to a <name>_cmd() fonction and is construted by `create_command_from_obj()`.
-You can use `execute(conn, vql)` or `execute_one(conn, vql)` to run a specific VQL query.
+Each VQL statement corresponds to a <name>_cmd() fonction and is construted by
+`create_command_from_obj()`.
+You can use `execute(conn, vql)` or `execute_one(conn, vql)` to run a specific
+VQL query.
 
-Each command returns a JSON array with a success status code.
+Each command returns a JSON array with a success status code or with the
+expected result.
 """
 # Standard imports
 import sqlite3
-import networkx as nx
 import os
 import functools
 import csv
@@ -26,9 +27,9 @@ LOGGER = logger()
 
 def select_cmd(
     conn: sqlite3.Connection,
-    fields=["chr", "pos", "ref", "alt"],
+    fields=("chr", "pos", "ref", "alt"),
     source="variants",
-    filters=dict(),
+    filters={},
     order_by=None,
     order_desc=True,
     group_by=[],
@@ -50,10 +51,13 @@ def select_cmd(
             offset (int, optional): record count per page  
         
         Yields:
-            list of variants   
+            variants (dict)
         """
-    default_tables = dict([(i["name"], i["category"]) for i in sql.get_fields(conn)])
-    samples_ids = dict([(i["name"], i["id"]) for i in sql.get_samples(conn)])
+    # Get {'favorite': 'variants', 'comment': 'variants', impact': 'annotations', ...}
+    default_tables = {i["name"]: i["category"] for i in sql.get_fields(conn)}
+    # Get {'NORMAL': 1, 'TUMOR': 2}
+    samples_ids = {i["name"]: i["id"] for i in sql.get_samples(conn)}
+
     query = build_query(
         fields=fields,
         source=source,
@@ -67,7 +71,7 @@ def select_cmd(
         default_tables=default_tables,
         samples_ids=samples_ids,
     )
-    LOGGER.debug(query)
+    LOGGER.debug("command:select_cmd:: %s", query)
     for i in conn.execute(query):
         yield dict(i)
 
@@ -75,7 +79,7 @@ def select_cmd(
 @cached(max_size=128)
 def count_cmd(
     conn: sqlite3.Connection,
-    fields=["chr", "pos", "ref", "alt"],
+    fields=("chr", "pos", "ref", "alt"),
     source="variants",
     filters={},
     group_by=[],
@@ -90,7 +94,7 @@ def count_cmd(
         filters (dict, optional): nested tree of condition  
     
     Returns:
-        dict : return count of variant with "count" as a key 
+        dict: Count of variants with "count" as a key
     """
 
     if not filters:
@@ -101,15 +105,17 @@ def count_cmd(
             ).fetchone()[0]
         }
 
-    default_tables = dict([(i["name"], i["category"]) for i in sql.get_fields(conn)])
-    samples_ids = dict([(i["name"], i["id"]) for i in sql.get_samples(conn)])
+    # Get {'favorite': 'variants', 'comment': 'variants', impact': 'annotations', ...}
+    default_tables = {i["name"]: i["category"] for i in sql.get_fields(conn)}
+    # Get {'NORMAL': 1, 'TUMOR': 2}
+    samples_ids = {i["name"]: i["id"] for i in sql.get_samples(conn)}
+
     query = build_query(
         fields=fields,
         source=source,
         filters=filters,
         limit=None,
         offset=None,
-        order_desc=None,
         order_by=None,
         group_by=group_by,
         having=having,
@@ -127,11 +133,24 @@ def count_cmd(
     #     )
     # else:
 
-    query = "SELECT COUNT (*) FROM (  " + query + ")"
+    query = "SELECT COUNT (*) FROM (" + query + ")"
+
+    LOGGER.debug("command:count_cmd:: %s", query)
     return {"count": conn.execute(query).fetchone()[0]}
 
 
 def drop_cmd(conn: sqlite3.Connection, feature, name, **kwargs):
+    """
+
+    Args:
+        conn (sqlite3.Connection): sqlite3 connection
+        feature:
+        name:
+
+    Returns:
+        dict: {"success": True}
+        TODO: Use rowcount to return a non fixed success code...
+    """
 
     accept_features = ["selections", "sets"]
 
@@ -144,8 +163,7 @@ def drop_cmd(conn: sqlite3.Connection, feature, name, **kwargs):
         return {"success": True}
 
     if feature == "sets":
-        print("delete")
-        res = conn.execute(f"DELETE FROM sets WHERE name = '{name}'")
+        conn.execute(f"DELETE FROM sets WHERE name = '{name}'")
         conn.commit()
         return {"success": True}
 
@@ -158,12 +176,15 @@ def create_cmd(
     count=0,
     **kwargs,
 ):
-    default_tables = dict([(i["name"], i["category"]) for i in sql.get_fields(conn)])
-    samples_ids = dict([(i["name"], i["id"]) for i in sql.get_samples(conn)])
+    # Get {'favorite': 'variants', 'comment': 'variants', impact': 'annotations', ...}
+    default_tables = {i["name"]: i["category"] for i in sql.get_fields(conn)}
+    # Get {'NORMAL': 1, 'TUMOR': 2}
+    samples_ids = {i["name"]: i["id"] for i in sql.get_samples(conn)}
 
     if target is None:
         return {}
 
+    # Get transaction cursor
     cursor = conn.cursor()
 
     sql_query = build_query(
@@ -175,11 +196,11 @@ def create_cmd(
         limit=None,
     )
 
-    count = sql.count_query(conn, sql_query)
+    count = sql.count_query(cursor, sql_query)
 
     selection_id = sql.insert_selection(cursor, sql_query, name=target, count=count)
 
-    q = f"""
+    query = f"""
     INSERT INTO selection_has_variant
     SELECT DISTINCT id, {selection_id} FROM ({sql_query})
     """
@@ -191,12 +212,11 @@ def create_cmd(
     except sqlite3.OperationalError:
         pass
 
-    cursor.execute(q)
+    LOGGER.debug("command:create_cmd:: %s", query)
+    cursor.execute(query)
 
-    LOGGER.debug(q)
-
-    # # REBUILD INDEXES
-    # # For joints between selections and variants tables
+    # REBUILD INDEXES
+    # For joins between selections and variants tables
     sql.create_selection_has_variant_indexes(cursor)
 
     conn.commit()
@@ -207,57 +227,65 @@ def create_cmd(
 
 
 def set_cmd(conn: sqlite3.Connection, target, first, second, operator, **kwargs):
+    """
+
+    Args:
+        conn (sqlite3.Connection): sqlite3 connection
+        target:
+        first:
+        second:
+        operator (+, -, &): Set operators
+
+    Returns:
+        (dict) with lastrowid (selection id) as key id, if lines have been
+        inserted; empty otherwise.
+
+    Examples:
+        {"id": 2}: 2 lines inserted
+    """
 
     if target is None or first is None or second is None or operator is None:
         return {}
 
-    cursor = conn.cursor()
-
     query_first = build_query(["id"], first, limit=None)
     query_second = build_query(["id"], second, limit=None)
 
-    if operator == "+":
-        sql_query = sql.union_variants(query_first, query_second)
+    func_query = {
+        "+": sql.union_variants,
+        "-": sql.subtract_variants,
+        "&": sql.intersect_variants,
+    }
 
-    if operator == "-":
-        sql_query = sql.subtract_variants(query_first, query_second)
+    sql_query = func_query[operator](query_first, query_second)
+    LOGGER.debug("command:set_cmd:: %s", sql_query)
 
-    if operator == "&":
-        sql_query = sql.intersect_variants(query_first, query_second)
+    lastrowid = sql.create_selection_from_sql(conn, sql_query, target, from_selection=False)
 
-    count = sql.count_query(conn, sql_query)
-    selection_id = sql.insert_selection(cursor, sql_query, name=target, count=count)
-
-    q = f"""
-    INSERT INTO selection_has_variant
-    SELECT DISTINCT id, {selection_id} FROM ({sql_query})
-    """
-
-    # DROP indexes
-    # For joints between selections and variants tables
-    try:
-        cursor.execute("""DROP INDEX idx_selection_has_variant""")
-    except sqlite3.OperationalError:
-        pass
-
-    cursor.execute(q)
-
-    # # REBUILD INDEXES
-    # # For joints between selections and variants tables
-    sql.create_selection_has_variant_indexes(cursor)
-
-    conn.commit()
-    if cursor.rowcount:
-        return {"id": cursor.lastrowid}
-    return {}
+    return dict() if lastrowid is None else {"id": lastrowid}
 
 
 def bed_cmd(conn: sqlite3.Connection, path, target, source, **kwargs):
+    """
 
-    if not os.path.exists(path):
+    Args:
+        conn (sqlite3.Connection): sqlite3 connection
+        path:
+        target:
+        source:
+
+    Returns:
+        (dict) with lastrowid as key id, if lines have been inserted;
+        empty otherwise.
+    """
+
+    if not os.path.isfile(path):
         raise vql.VQLSyntaxError(f"{path} doesn't exists")
 
     def read_bed():
+        """
+        Returns:
+            Yields dict of bed intervals with chr, start, end, name as keys
+        """
         with open(path) as file:
             reader = csv.reader(file, delimiter="\t")
             for line in reader:
@@ -269,45 +297,47 @@ def bed_cmd(conn: sqlite3.Connection, path, target, source, **kwargs):
                         "name": "",
                     }
 
-    selection_id = sql.create_selection_from_bed(conn, source, target, read_bed())
-    return {"id": selection_id}
+    # bed_intervals argument expects chr, start, end, name keys in each interval
+    lastrowid = sql.create_selection_from_bed(conn, source, target, read_bed())
+    return dict() if lastrowid is None else {"id": lastrowid}
 
 
 def show_cmd(conn: sqlite3.Connection, feature: str, **kwargs):
+    """
 
-    accept_features = ["selections", "fields", "samples", "sets"]
+    Args:
+        conn (sqlite3.Connection): sqlite3 connection
+        feature: Requested feature type of items
+
+    Returns:
+        (generator): Yield items according to requested features (fields,
+        samples, selections, sets).
+    """
+
+    accept_features = {
+        "selections": sql.get_selections,
+        "fields": sql.get_fields,
+        "samples": sql.get_samples,
+        "sets": sql.get_sets,
+    }
 
     if feature not in accept_features:
         raise vql.VQLSyntaxError(f"option {feature} doesn't exists")
 
-    if feature == "fields":
-        for field in sql.get_fields(conn):
-            yield field
-
-    if feature == "samples":
-        for sample in sql.get_samples(conn):
-            yield sample
-
-    if feature == "selections":
-        for selection in sql.get_selections(conn):
-            yield selection
-
-    if feature == "sets":
-        for item in sql.get_sets(conn):
-            yield item
+    for item in accept_features[feature](conn):
+        yield item
 
 
 def import_cmd(conn: sqlite3.Connection, feature=str, name=str, path=str, **kwargs):
 
-    accept_features = ["sets"]
+    accept_features = ("sets",)
     if feature not in accept_features:
         raise vql.VQLSyntaxError(f"option {feature} doesn't exists")
 
-    if os.path.exists(path):
-        sql.insert_set_from_file(conn, name, path)
-    else:
+    if not os.path.isfile(path):
         raise vql.VQLSyntaxError(f"{path} doesn't exists")
 
+    sql.insert_set_from_file(conn, name, path)
     return {"success": True}
 
 
@@ -315,11 +345,11 @@ def create_command_from_obj(conn, vql_obj: dict):
     """????
 
     :param conn: Sqlite3 connexion
-    :param vql_obj: Requested commands: select_cmd, create_cmd, set_cmd, bed_cmd, show_cmd, import_cmd, drop_cmd, count_cmd
-    :type conn: sqlite3.connexion
+    :param vql_obj: Requested commands: select_cmd, create_cmd, set_cmd, bed_cmd,
+    show_cmd, import_cmd, drop_cmd, count_cmd
+    :type conn: <sqlite3.connexion>
     :return: Function object wrapping the given vql_object.
     """
-
     command = vql_obj["cmd"]
     if command in globals():
         return functools.partial(globals()[command], conn, **vql_obj)
