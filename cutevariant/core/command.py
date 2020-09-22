@@ -27,7 +27,7 @@ import csv
 from memoization import cached
 
 # Custom imports
-from cutevariant.core.querybuilder import *
+from cutevariant.core.querybuilder import build_query
 from cutevariant.core import sql, vql
 from cutevariant.commons import logger
 
@@ -228,9 +228,6 @@ def create_cmd(
     if target is None:
         return {}
 
-    # Get transaction cursor
-    cursor = conn.cursor()
-
     sql_query = build_query(
         ["id"],
         source,
@@ -424,6 +421,7 @@ def create_command_from_obj(conn, vql_obj: dict):
     command = vql_obj["cmd"]
     if command in globals():
         return functools.partial(globals()[command], conn, **vql_obj)
+    raise vql.VQLSyntaxError(f"cmd {command} doesn't exists")
 
 
 def execute(conn: sqlite3.Connection, vql_source: str):
