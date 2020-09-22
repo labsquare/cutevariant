@@ -823,6 +823,7 @@ class VariantViewWidget(plugin.PluginWidget):
         self.groupby_action.blockSignals(False)
 
         if self._is_grouped():
+            self.second_pane.model.fields = self.first_pane.model.fields
             self.first_pane.model.fields = self.first_pane.model.group_by
             self.first_pane.load()
             self.second_pane.load()
