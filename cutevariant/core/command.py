@@ -200,7 +200,7 @@ def create_cmd(
     target: str,
     source="variants",
     filters=dict(),
-    count=0,
+    count=None,
     **kwargs,
 ):
     """Create command
@@ -240,7 +240,7 @@ def create_cmd(
     LOGGER.debug("command:create_cmd:: %s", sql_query)
 
     lastrowid = sql.create_selection_from_sql(
-        conn, sql_query, target, from_selection=False
+        conn, sql_query, target, count=count, from_selection=False
     )
 
     return dict() if lastrowid is None else {"id": lastrowid}

@@ -329,7 +329,7 @@ def create_selection_from_sql(
         conn (sqlite3.connexion): Sqlite3 connexion
         query (str): VQL query
         name (str): Name of selection
-        count (int, optional): Variant count
+        count (int/None, optional): Variant count
         from_selection (bool, optional): Used to get a different
             field name for variants; `variant_id` if `from_selection` is `True`,
             just `id` if `False`.
@@ -341,7 +341,7 @@ def create_selection_from_sql(
 
     # Compute query count
     # TODO : this can take a while .... need to compute only one from elsewhere
-    if not count:
+    if count is None:
         count = count_query(cursor, query)
 
     # Create selection
