@@ -271,7 +271,8 @@ def insert_selection(conn, query: str, name="no_name", count=0):
     """Insert one selection record
 
     Args:
-        conn (sqlite3.Connection): Sqlite3 Connection.It can be a cursor or a connection here...
+        conn (sqlite3.Connection): Sqlite3 Connection.
+        It can be a cursor or a connection here...
         query (str): a VQL query
         name (str, optional): Name of selection
         count (int, optional): Variant count of selection
@@ -330,19 +331,22 @@ def create_selection_from_sql(
         name (str): Name of selection
         count (int, optional): Variant count
         from_selection (bool, optional): selection name
+
+    Returns:
+        lastrowid, if lines have been inserted; None otherwise.
     """
     cursor = conn.cursor()
 
     # Compute query count
     # TODO : this can take a while .... need to compute only one from elsewhere
     if not count:
-        count = cursor.execute(f"SELECT COUNT(*) FROM ({query})").fetchone()[0]
+        count = count_query(cursor, query)
 
     # Create selection
     selection_id = insert_selection(cursor, query, name=name, count=count)
 
     # DROP indexes
-    # For joints between selections and variants tables
+    # For joins between selections and variants tables
     try:
         cursor.execute("""DROP INDEX idx_selection_has_variant""")
     except sqlite3.OperationalError:
@@ -390,11 +394,11 @@ def create_selection_from_bed(
         conn (sqlite3.connexion): Sqlite3 connexion
         source (str): Selection name (source)
         target (str): Selection name (target)
-        bed_intervals (list): List of interval (begin,end)
+        bed_intervals (list/generator [dict]): List of intervals
+        Each interval is a dict with the expected keys: (chr, start, end, name)
 
     Returns:
-        TYPE: Description
-
+        lastrowid, if lines have been inserted; None otherwise.
     """
 
     cur = conn.cursor()
@@ -1272,6 +1276,8 @@ def update_sample(conn, sample: dict):
 
 
 def count_query(conn, query):
-    """ count from query """
-    print(query)
+    """Count elements from query
+
+    TODO: memoization here
+    """
     return conn.execute(f"SELECT COUNT(*) as count FROM ({query})").fetchone()[0]
