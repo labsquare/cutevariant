@@ -133,7 +133,6 @@ class MainWindow(QMainWindow):
                 else:
                     # Setup new widget
                     widget = plugin_widget_class(parent=self)
-                    # widget.mainwindow = self # TODO
 
                     # Set title
                     if LOGGER.getEffectiveLevel() == DEBUG:
@@ -142,6 +141,14 @@ class MainWindow(QMainWindow):
                         widget.setWindowTitle(extension["title"])
                     widget.setToolTip(extension.get("description"))
                     widget.on_register(self)
+
+                    # Init via the constructor or on_register
+                    if widget.mainwindow != self:
+                        LOGGER.error(
+                            "Bad plugin implementation, <mainwindow> plugin attribute is not set."
+                        )
+                        widget.close()
+                        continue
 
                     # Add new plugin to plugins already registered
                     self.plugins[name] = widget
