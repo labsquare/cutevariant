@@ -140,7 +140,7 @@ class MainWindow(QMainWindow):
                         widget.setWindowTitle(name)
                     else:
                         widget.setWindowTitle(extension["title"])
-                    widget.setToolTip(extension.get("descriptions"))
+                    widget.setToolTip(extension.get("description"))
                     widget.on_register(self)
 
                     # Add new plugin to plugins already registered
@@ -193,8 +193,8 @@ class MainWindow(QMainWindow):
             plugin_name (str): a plugin name.
         """
         if plugin_name in self.plugins:
-            plugin = self.plugins[plugin_name]
-            plugin.on_refresh()
+            plugin_obj = self.plugins[plugin_name]
+            plugin_obj.on_refresh()
 
     def setup_menubar(self):
         """Menu bar setup: items and actions
