@@ -81,6 +81,9 @@ from PySide2.QtWidgets import QWidget, QDialog
 
 # Cutevariant import
 from cutevariant.gui import settings
+import cutevariant.commons as cm
+
+LOGGER = cm.logger()
 
 DOCK_LOCATION = 1
 CENTRAL_LOCATION = 2
@@ -107,8 +110,12 @@ class PluginWidget(QWidget):
     ENABLE = False
 
     def __init__(self, parent=None):
+        """
+        Keys:
+            mainwindow (QMainWindow): cutevariant Mainwindow
+        """
         super().__init__(parent)
-        self.mainwindow = None
+        self.mainwindow = parent
         self.widget_location = DOCK_LOCATION
 
         self.refresh_groups = []  # TODO
@@ -164,12 +171,17 @@ class PluginDialog(QDialog):
     ENABLE = False
 
     def __init__(self, parent=None):
+        """
+        Keys:
+            parent (QMainWindow): cutevariant Mainwindow
+        """
         super().__init__(parent)
-        self.mainwindow = None
 
 
 class PluginSettingsWidget(settings.GroupWidget):
     """Model class for settings plugins"""
+
+    ENABLE = False
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -197,8 +209,6 @@ def find_plugins(path=None):
 
     See Also: Docstring of this module. For structure of a plugin directory.
 
-    TODO: Dialog pour metrics...
-
     Example of yielded dict:
 
         .. code-block:: javascript
@@ -213,10 +223,10 @@ def find_plugins(path=None):
             }
 
     Keyword Arguments:
-        path [str] -- the folder path where plugin are
+        path(str): Folder path where plugin are
 
     Returns:
-        [generator [Plugin]] -- A Plugin class ready to be instantiated
+        (generator[dict]): A dict with classes ready to be instantiated
     """
     # if path is None, return internal plugin path
     if path is None:
@@ -224,19 +234,24 @@ def find_plugins(path=None):
     else:
         plugin_path = path
 
-    # Loop over package in plugins directory
+    # Loop over packages in plugins directory
     for package in pkgutil.iter_modules([plugin_path]):
         package_path = os.path.join(plugin_path, package.name)
+        LOGGER.debug("Loading plugin at <%s>", package_path)
+
         spec = importlib.util.spec_from_file_location(
             package.name, os.path.join(package_path, "__init__.py")
         )
-        module = spec.loader.load_module()
 
+        # TODO: maybe could use __title__ to build class names...
         widget_class_name = snake_to_camel(package.name) + "Widget"
         settings_class_name = snake_to_camel(package.name) + "SettingsWidget"
-        dialog_class_name = snake_to_camel(package.name)
+        dialog_class_name = snake_to_camel(package.name) + "Dialog"
 
         # Load __init__ file data of the module
+        # We expect to load a plugin per module found in a plugin directory
+        # This is the base dict of the item yielded from this function
+        module = spec.loader.load_module()
         plugin_item = {
             "name": module.__name__,
             "title": module.__title__,
@@ -244,41 +259,68 @@ def find_plugins(path=None):
             "version": module.__version__,
         }
 
-        for sub_module_info in pkgutil.iter_modules([package_path]):
+        authorized_module_classes = {
+            "widgets": widget_class_name,
+            "settings": settings_class_name,
+            "dialogs": dialog_class_name,
+        }
 
-            if sub_module_info.name not in ("widgets", "settings", "dialogs"):
+        authorized_base_clases = {
+            "widgets": PluginWidget,
+            "settings": PluginSettingsWidget,
+            "dialogs": PluginDialog,
+        }
+
+        # Loop over modules in each plugin
+        for sub_module_info in pkgutil.iter_modules([package_path]):
+            LOGGER.debug("Loading module <%s>", sub_module_info)
+            sub_module_type = sub_module_info.name
+
+            # Filter module filenames
+            if sub_module_type not in authorized_module_classes:
                 continue
 
+            # Dynamically load module
             sub_module_path = os.path.join(
-                sub_module_info.module_finder.path, sub_module_info.name + ".py"
+                sub_module_info.module_finder.path, sub_module_type + ".py"
             )
             spec = importlib.util.spec_from_file_location(
-                sub_module_info.name, sub_module_path
+                sub_module_type, sub_module_path
             )
             sub_module = spec.loader.load_module()
 
-            if (
-                widget_class_name in dir(sub_module)
-                and sub_module_info.name == "widgets"
-            ):
-                Widget = getattr(sub_module, widget_class_name)
-                if "PluginWidget" in str(Widget.__bases__):
-                    plugin_item["widget"] = Widget
+            ## Filter not wanted classes (search main classes of the module)
+            # Classes that don't have the module name in their name
+            class_name = authorized_module_classes[sub_module_type]
+            if class_name not in dir(sub_module):
+                LOGGER.error(
+                    "Plugin <%s.%s>, class <%s> not found!",
+                    module.__name__, sub_module_type, class_name
+                )
+                continue
 
-            if (
-                settings_class_name in dir(sub_module)
-                and sub_module_info.name == "settings"
-            ):
-                Widget = getattr(sub_module, settings_class_name)
-                if "PluginSettingsWidget" in str(Widget.__bases__):
-                    plugin_item["setting"] = Widget
+            class_item = getattr(sub_module, class_name)
+            # Purge disabled plugins
+            if not class_item.ENABLE:
+                LOGGER.debug(
+                    "Plugin <%s.%s> disabled",
+                    module.__name__,
+                    sub_module_type
+                )
+                continue
 
-            if (
-                dialog_class_name in dir(sub_module)
-                and sub_module_info.name == "dialogs"
-            ):
-                Widget = getattr(sub_module, dialog_class_name)
-                if "PluginDialog" in str(Widget.__bases__):
-                    plugin_item["dialog"] = Widget
+            # Classes that don't inherit of the expected Plugin class
+            # See cutevariant/gui/plugin.py
+            if authorized_base_clases[sub_module_type] not in class_item.__bases__:
+                LOGGER.error(
+                    "Plugin <%s.%s>, parent class <%s> not found!",
+                    module.__name__,
+                    sub_module_type,
+                    authorized_base_clases[sub_module_type].__name__
+                )
+                continue
+
+            # Remove the "s" from module name...
+            plugin_item[sub_module_type[:-1]] = class_item
 
         yield plugin_item

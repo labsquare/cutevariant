@@ -112,23 +112,29 @@ class MainWindow(QMainWindow):
         Two types of plugins can be registered:
         - widget: Added to the GUI,
         - dialog: DialogBox accessible from the tool menu.
+
+        `setting` type is handled separately in :meth:`cutevariant.gui.settings.load_plugins`
         """
 
         LOGGER.debug("MainWindow:: Registering plugins...")
 
         # Get classes of plugins
         for extension in plugin.find_plugins():
-            LOGGER.debug("Extension: %s", extension)
+            LOGGER.info("Extension: %s", extension)
 
             if "widget" in extension:
                 # New GUI widget
                 name = extension["name"]
                 plugin_widget_class = extension["widget"]
 
-                widget = plugin_widget_class()
-                if widget.ENABLE:
+                if plugin_widget_class.ENABLE == False:
+                    raise Exception
+                # TODO: delete this
+                else:
                     # Setup new widget
-                    widget.mainwindow = self
+                    widget = plugin_widget_class(parent=self)
+                    # widget.mainwindow = self # TODO
+
                     # Set title
                     if LOGGER.getEffectiveLevel() == DEBUG:
                         widget.setWindowTitle(name)
@@ -151,8 +157,7 @@ class MainWindow(QMainWindow):
                         self.footer_tab.addTab(widget, widget.windowTitle())
 
             if "dialog" in extension:
-                # New menu tool
-                name = extension["name"]
+                # New tool menu entry
                 title = extension["title"]
                 plugin_dialog_class = extension["dialog"]
 
@@ -436,15 +441,15 @@ class MainWindow(QMainWindow):
         widget = SettingsWidget()
         widget.exec_()
 
-    @Slot()
     def show_dialog(self):
-        """Show Plugin dialog"""
+        """Show Plugin dialog box after a click on the tool menu"""
         action = self.sender()
         if action in self.dialog_plugins:
-            DialogClass = self.dialog_plugins[action]
-            dialog = DialogClass()
-            dialog.mainwindow = self
-            dialog.conn = self.conn
+            # Get class object and instantiate it
+            dialog_class = self.dialog_plugins[action]
+            dialog = dialog_class()
+            # Send SQL connection
+            dialog.conn = self.conn # TODO
             dialog.on_refresh()
             dialog.exec_()
 
