@@ -127,41 +127,37 @@ class MainWindow(QMainWindow):
                 name = extension["name"]
                 plugin_widget_class = extension["widget"]
 
-                if plugin_widget_class.ENABLE == False:
-                    raise Exception
-                # TODO: delete this
+                # Setup new widget
+                widget = plugin_widget_class(parent=self)
+
+                # Set title
+                if LOGGER.getEffectiveLevel() == DEBUG:
+                    widget.setWindowTitle(name)
                 else:
-                    # Setup new widget
-                    widget = plugin_widget_class(parent=self)
+                    widget.setWindowTitle(extension["title"])
+                widget.setToolTip(extension.get("description"))
+                widget.on_register(self)
 
-                    # Set title
-                    if LOGGER.getEffectiveLevel() == DEBUG:
-                        widget.setWindowTitle(name)
-                    else:
-                        widget.setWindowTitle(extension["title"])
-                    widget.setToolTip(extension.get("description"))
-                    widget.on_register(self)
+                # Init via the constructor or on_register
+                if widget.mainwindow != self:
+                    LOGGER.error(
+                        "Bad plugin implementation, <mainwindow> plugin attribute is not set."
+                    )
+                    widget.close()
+                    continue
 
-                    # Init via the constructor or on_register
-                    if widget.mainwindow != self:
-                        LOGGER.error(
-                            "Bad plugin implementation, <mainwindow> plugin attribute is not set."
-                        )
-                        widget.close()
-                        continue
+                # Add new plugin to plugins already registered
+                self.plugins[name] = widget
 
-                    # Add new plugin to plugins already registered
-                    self.plugins[name] = widget
+                # Set position on the GUI
+                if plugin_widget_class.LOCATION == plugin.DOCK_LOCATION:
+                    self.add_panel(widget)
 
-                    # Set position on the GUI
-                    if plugin_widget_class.LOCATION == plugin.DOCK_LOCATION:
-                        self.add_panel(widget)
+                if plugin_widget_class.LOCATION == plugin.CENTRAL_LOCATION:
+                    self.central_tab.addTab(widget, widget.windowTitle())
 
-                    if plugin_widget_class.LOCATION == plugin.CENTRAL_LOCATION:
-                        self.central_tab.addTab(widget, widget.windowTitle())
-
-                    if plugin_widget_class.LOCATION == plugin.FOOTER_LOCATION:
-                        self.footer_tab.addTab(widget, widget.windowTitle())
+                if plugin_widget_class.LOCATION == plugin.FOOTER_LOCATION:
+                    self.footer_tab.addTab(widget, widget.windowTitle())
 
             if "dialog" in extension:
                 # New tool menu entry
