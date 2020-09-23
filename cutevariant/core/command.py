@@ -517,6 +517,14 @@ def execute_all(conn: sqlite3.Connection, vql_source: str):
         yield cmd()
 
 
+def clear_cache_cmd():
+    """Clear function cache by memoization module. 
+    This method must be called when new project is open 
+    """
+
+    count_cmd.cache_clear()
+
+
 # class CommandGraph(object):
 #     def __init__(self, conn):
 #         super().__init__()

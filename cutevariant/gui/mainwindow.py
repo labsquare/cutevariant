@@ -12,7 +12,7 @@ from PySide2.QtGui import QIcon, QKeySequence
 
 # Custom imports
 from cutevariant import __version__
-from cutevariant.core import get_sql_connexion, sql
+from cutevariant.core import get_sql_connexion, sql, command
 from cutevariant.gui.ficon import FIcon
 from cutevariant.gui.state import State
 
@@ -329,6 +329,9 @@ class MainWindow(QMainWindow):
     def open_database(self, conn):
         self.conn = conn
 
+        # Clear cache
+        command.clear_cache_cmd()
+
         for plugin in self.plugins.values():
             plugin.on_open_project(self.conn)
 
@@ -379,7 +382,7 @@ class MainWindow(QMainWindow):
     def on_recent_project_clicked(self):
         """Slot to load a recent project"""
         action = self.sender()
-        print(action.text())
+        LOGGER.debug(action.text())
         self.open(action.text())
 
     # def handle_plugin_message(self, message):
