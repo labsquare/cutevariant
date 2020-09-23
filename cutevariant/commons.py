@@ -72,7 +72,7 @@ def logger(name=LOGGER_NAME, logfilename=None):
     Equivalent of logging.getLogger() call.
     """
     logger = logging.getLogger(name)
-    FORMAT = "[%(filename)s:%(lineno)s:%(funcName)s() ]\n %(message)s"
+    FORMAT = "%(levelname)s: [%(filename)s:%(lineno)s:%(funcName)s()] %(message)s"
     logging.basicConfig(format=FORMAT)
     return logger
 
@@ -97,11 +97,11 @@ file_handler.setFormatter(formatter)
 _logger.addHandler(file_handler)
 
 # terminal log
-stream_handler = logging.StreamHandler()
-formatter = logging.Formatter("%(levelname)s: %(message)s")
-stream_handler.setFormatter(formatter)
-stream_handler.setLevel(LOG_LEVEL)
-_logger.addHandler(stream_handler)
+# stream_handler = logging.StreamHandler()
+# formatter = logging.Formatter("%(levelname)s: %(message)s")
+# stream_handler.setFormatter(formatter)
+# stream_handler.setLevel(LOG_LEVEL)
+# _logger.addHandler(stream_handler)
 
 
 def log_level(level):
