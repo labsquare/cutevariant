@@ -87,19 +87,6 @@ CENTRAL_LOCATION = 2
 FOOTER_LOCATION = 3
 
 
-def snake_to_camel(name: str) -> str:
-    """Convert snake case to camel case
-
-    Args:
-        name (str): a snake string like : query_view
-
-    Returns:
-        str: a camel string like: QueryView
-    """
-
-    return "".join([i.capitalize() for i in name.split("_")])
-
-
 class PluginWidget(QWidget):
     """Model class for all widget plugins
 
@@ -192,6 +179,17 @@ class PluginSettingsWidget(settings.GroupWidget):
 
 
 ################################################################################
+
+def snake_to_camel(name: str) -> str:
+    """Convert snake_case name to CamelCase name
+
+    Args:
+        name (str): a snake string like : query_view
+
+    Returns:
+        str: a camel string like: QueryView
+    """
+    return "".join([i.capitalize() for i in name.split("_")])
 
 
 def find_plugins(path=None):
