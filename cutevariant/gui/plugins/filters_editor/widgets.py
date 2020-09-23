@@ -1,4 +1,3 @@
-from cutevariant.gui.ficon import FIcon
 from cutevariant.gui.fields import *
 
 from PySide2.QtWidgets import *
@@ -15,8 +14,7 @@ from cutevariant.core import sql, get_sql_connexion
 
 
 def prepare_fields(conn):
-    """Prepares a list of columns on which filters can be applied
-    """
+    """Prepares a list of columns on which filters can be applied"""
     columns = []
     samples = [s["name"] for s in sql.get_samples(conn)]
     for field in sql.get_fields(conn):
@@ -126,7 +124,7 @@ class StrField(BaseField):
 
     def get_value(self):
         """Return quoted string
-            ..todo : check if quotes are required
+        ..todo : check if quotes are required
         """
         value = self.edit.text()
 
@@ -162,7 +160,7 @@ class ComboField(BaseField):
 
     def get_value(self):
         """Return quoted string
-            ..todo : check if quotes are required
+        ..todo : check if quotes are required
         """
         return self.edit.currentText()
 
@@ -237,8 +235,7 @@ class OperatorField(BaseField):
 
 class LogicField(BaseField):
 
-    """ Editor for logic field (And/Or)
-    """
+    """Editor for logic field (And/Or)"""
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -540,8 +537,7 @@ class FilterModel(QAbstractItemModel):
         self.load(filters)
 
     def __del__(self):
-        """Model destructor.
-        """
+        """Model destructor."""
         del self.root_item
 
     def data(self, index: QModelIndex, role):
@@ -714,8 +710,7 @@ class FilterModel(QAbstractItemModel):
         return self.createIndex(parent_item.row(), 0, parent_item)
 
     def clear(self):
-        """Clear Model
-        """
+        """Clear Model"""
         self.root_item.children.clear()
 
     def load(self, data: dict):
@@ -1392,8 +1387,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
             self.mainwindow.refresh_plugins(sender=self)
 
     def on_add_logic(self):
-        """Add logic item to the current selected index
-        """
+        """Add logic item to the current selected index"""
         index = self.view.currentIndex()
         if index:
             self.model.add_logic_item(parent=index)
@@ -1437,8 +1431,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
         #     self.view.setFirstColumnSpanned(0, index.parent(), True)
 
     def on_add_condition(self):
-        """Add condition item to the current selected index
-        """
+        """Add condition item to the current selected index"""
         index = self.view.currentIndex()
 
         if index.isValid():
@@ -1454,8 +1447,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self._update_view_geometry()
 
     def on_open_condition_dialog(self):
-        """Open the condition creation dialog
-        """
+        """Open the condition creation dialog"""
         dialog = FieldDialog(conn=self.conn, parent=self)
         if dialog.exec_() == dialog.Accepted:
             cond = dialog.get_condition()
@@ -1464,8 +1456,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
                 self.model.add_condition_item(parent=index, value=cond)
 
     def on_delete_item(self):
-        """Delete current item
-        """
+        """Delete current item"""
         ret = QMessageBox.question(
             self,
             "remove row",

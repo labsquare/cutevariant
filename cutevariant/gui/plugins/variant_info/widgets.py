@@ -219,8 +219,7 @@ class VariantInfoWidget(PluginWidget):
 
     @Slot()
     def on_transcript_changed(self):
-        """This method is triggered when transcript change from combobox
-        """
+        """This method is triggered when transcript change from combobox"""
         annotations = self.transcript_combo.currentData()
         font = QFont()
         font.setBold(True)
@@ -236,8 +235,7 @@ class VariantInfoWidget(PluginWidget):
 
     @Slot()
     def on_sample_changed(self):
-        """This method is triggered when sample change from combobox
-        """
+        """This method is triggered when sample change from combobox"""
         sample_id = self.sample_combo.currentData()
         variant_id = self.current_variant["id"]
         font = QFont()

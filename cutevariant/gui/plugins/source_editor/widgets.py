@@ -218,7 +218,7 @@ class SourceEditorWidget(plugin.PluginWidget):
 
     @Slot()
     def on_current_row_changed(self):
-        """ This methods trigger the signal for the view 
+        """This methods trigger the signal for the view
         Note:
             I don't broadcast the signal rowChanged to selectionChanged directly
             because I need to block signals for the view only

@@ -54,8 +54,7 @@ class FieldsModel(QStandardItemModel):
                 item.setCheckState(Qt.Checked)
 
     def load(self):
-        """Load all columns avaible into the model 
-        """
+        """Load all columns avaible into the model"""
         self.clear()
         self.checkable_items.clear()
 
@@ -108,12 +107,12 @@ class FieldsModel(QStandardItemModel):
 class FieldsEditorWidget(plugin.PluginWidget):
     """Display all fields according categorie
 
-    Usage: 
+    Usage:
 
      view = FieldsWidget
      (conn)
      view.columns = ["chr","pos"]
-    
+
     """
 
     ENABLE = True
@@ -205,7 +204,6 @@ class FieldsEditorWidget(plugin.PluginWidget):
 
 if __name__ == "__main__":
     import sys
-    import sqlite3
     from cutevariant.core.importer import import_reader
     from cutevariant.core.reader import FakeReader
 

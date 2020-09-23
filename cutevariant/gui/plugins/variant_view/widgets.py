@@ -108,8 +108,7 @@ class VariantModel(QAbstractTableModel):
         self.endResetModel()
 
     def rowCount(self, parent=QModelIndex()):
-        """Overrided : Return children count of index
-        """
+        """Overrided : Return children count of index"""
         # If parent is root
 
         return len(self.variants)
@@ -122,7 +121,7 @@ class VariantModel(QAbstractTableModel):
         return len(self.headers)
 
     def data(self, index: QModelIndex(), role=Qt.DisplayRole):
-        """ Overrided: return index data according role.
+        """Overrided: return index data according role.
         This method is called by the Qt view to get data to display according Qt role.
 
         Params:
@@ -168,7 +167,7 @@ class VariantModel(QAbstractTableModel):
             # return 4th column name
             column_name = model.headerData(4, Qt.Horizontal)
 
-         """
+        """
 
         # Display columns headers
         if orientation == Qt.Horizontal:
@@ -402,9 +401,7 @@ class VariantDelegate(QStyledItemDelegate):
 
 class VariantView(QWidget):
 
-    """A Variant view with controller like pagination
-
-    """
+    """A Variant view with controller like pagination"""
 
     view_clicked = Signal()
 
@@ -666,7 +663,9 @@ class VariantView(QWidget):
 
             if dialog.exec_() == QDialog.Accepted:
                 # Save in DB
-                self.model.update_variant(index.row(), {"comment": editor.toPlainText()})
+                self.model.update_variant(
+                    index.row(), {"comment": editor.toPlainText()}
+                )
 
                 # Request a refresh of the variant_info plugin
                 self.parent.mainwindow.refresh_plugin("variant_info")
@@ -808,8 +807,7 @@ class VariantViewWidget(plugin.PluginWidget):
         self.load()
 
     def _is_grouped(self) -> bool:
-        """Return if view is in grouped mode
-        """
+        """Return if view is in grouped mode"""
         return self.first_pane.model.group_by != []
 
     def load(self):
