@@ -56,7 +56,7 @@ def main():
     load_styles(app)
 
     # Set icons set
-    setFontPath(os.path.join(cm.DIR_FONTS, "materialdesignicons-webfont.ttf"))
+    setFontPath(cm.FONT_FILE)
 
     # Translations
     load_translations(app)

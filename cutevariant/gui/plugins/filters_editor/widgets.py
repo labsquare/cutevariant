@@ -1501,11 +1501,10 @@ if __name__ == "__main__":
 
     from cutevariant.core.importer import import_reader
     from cutevariant.core.reader import FakeReader
-    import os
-
+    import cutevariant.commons as cm
     from cutevariant.gui.ficon import FIcon, setFontPath
 
-    setFontPath(os.path.join("../../materialdesignicons-webfont.ttf"))
+    setFontPath(cm.FONT_FILE)
 
     conn = sql.get_sql_connexion(":memory:")
     import_reader(conn, FakeReader())

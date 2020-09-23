@@ -47,6 +47,7 @@ DIR_STYLES = DIR_ASSETS + "styles/"
 
 GENOTYPE_ICONS = {0: 0xF130, 1: 0xFAA0, 2: 0xFAA4, -1: 0xF625}
 
+FONT_FILE = DIR_FONTS + "materialdesignicons-webfont.ttf"
 
 # Websites and variant query
 WEBSITES_URLS = {"varsome": "https://varsome.com/variant/hg19/{chr}-{pos}-{ref}-{alt}"}

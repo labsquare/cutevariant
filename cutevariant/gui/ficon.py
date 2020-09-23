@@ -103,8 +103,17 @@ class FIconEngine(QIconEngine):
 class FIcon(QIcon):
     """Handy public class to load and use custom font in QIcons"""
 
-    def __init__(self, hex_character: int, color=None):
-        """Build an icon with the given character and color from the current font"""
+    def __init__(self, hex_character: int, color: QPalette = None):
+        """Build an icon with the given character and color from the current font
+
+        Args:
+            hex_character (int): Hexadecimal value of the wanted icon in the
+                font loaded in internal FIconEngine.
+                Please consult the web pages https://materialdesignicons.com/
+                and https://cdn.materialdesignicons.com/5.4.55/ for the mapping
+                between hex values and icons.
+            color (QPalette): Color palette to be used by the icon.
+        """
         self.engine = FIconEngine()
 
         if self.engine.font is None:  # Return empty QIcon

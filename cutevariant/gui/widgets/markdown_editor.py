@@ -188,10 +188,10 @@ class MarkdownEditor(QWidget):
 if __name__ == "__main__":
     import sys
     from cutevariant.gui.ficon import setFontPath
-
+    import cutevariant.commons as cm
     app = QApplication(sys.argv)
 
-    setFontPath("../../assets/fonts/materialdesignicons-webfont.ttf")
+    setFontPath(cm.FONT_FILE)
 
     edit = MarkdownEditor()
 
