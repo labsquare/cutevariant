@@ -108,6 +108,12 @@ class VqlEditorWidget(plugin.PluginWidget):
 
         self.set_vql(vql)
 
+    def on_close(self):
+        """Clean operations before closing"""
+        # Remove Run action in toolbar of MainWindow
+        self.mainwindow.toolbar.removeAction(self.run_action)
+        super().on_close()
+
     def set_vql(self, txt: str):
         """Set vql source code without executed
 
