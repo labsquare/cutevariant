@@ -77,11 +77,13 @@ class MetricModel(QAbstractTableModel):
         self.endInsertRows()
 
 
-class MetricDialog(PluginDialog):
+class MetricsDialog(PluginDialog):
+
+    ENABLE = True
+
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        # self.conn = self.mainwindow.conn
         self.view = QTableView()
         self.model = MetricModel()
         self.buttons = QDialogButtonBox(QDialogButtonBox.Ok)
