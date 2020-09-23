@@ -134,7 +134,6 @@ class VqlEditorWidget(plugin.PluginWidget):
                 for s in samples:
                     keywords.append("sample['{}'].{}".format(s, i["name"]))
             else:
-                print(i)
                 keywords.append(i["name"])
 
         keywords.extend(VqlSyntaxHighlighter.sql_keywords)
@@ -152,8 +151,6 @@ class VqlEditorWidget(plugin.PluginWidget):
         Returns:
             bool: Status 
         """
-
-        print("check vql")
 
         try:
             self.log_edit.hide()

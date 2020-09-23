@@ -490,7 +490,6 @@ class VariantView(QWidget):
         self.load_page_box()
 
     def set_formatter(self, formatter):
-        print("set formatter")
         self.delegate.formatter = formatter
         self.view.reset()
 

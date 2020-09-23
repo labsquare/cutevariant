@@ -12,7 +12,7 @@ from PySide2.QtGui import QIcon, QKeySequence
 
 # Custom imports
 from cutevariant import __version__
-from cutevariant.core import Query, get_sql_connexion, sql
+from cutevariant.core import get_sql_connexion, sql
 from cutevariant.gui.ficon import FIcon
 from cutevariant.gui.state import State
 
@@ -127,7 +127,6 @@ class MainWindow(QMainWindow):
         LOGGER.info("register plugins")
 
         for extension in plugin.find_plugins():
-            print("ext", extension)
             if "widget" in extension:
                 name = extension["name"]
                 plugin_widget_class = extension["widget"]
@@ -380,6 +379,7 @@ class MainWindow(QMainWindow):
     def on_recent_project_clicked(self):
         """Slot to load a recent project"""
         action = self.sender()
+        print(action.text())
         self.open(action.text())
 
     # def handle_plugin_message(self, message):
@@ -403,7 +403,7 @@ class MainWindow(QMainWindow):
                 raise
 
     def open_project(self):
-        """Slot to open an already existing project"""
+        """Slot to open an already existing project from a QFileDialog"""
         # Reload last directory used
         app_settings = QSettings()
         last_directory = app_settings.value("last_directory", QDir.homePath())
