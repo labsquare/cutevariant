@@ -98,9 +98,9 @@ class WordSetWidget(PluginWidget):
 
     ENABLE = True
 
-    def __init__(self, conn=None):
-        super().__init__()
-        self.conn = conn
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.conn = None
         self.setWindowTitle(self.tr("Word Set"))
         self.toolbar = QToolBar()
         self.view = QListWidget()

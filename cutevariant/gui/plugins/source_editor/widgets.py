@@ -160,6 +160,7 @@ class SourceEditorWidget(plugin.PluginWidget):
         super().__init__(parent)
 
         self.setWindowTitle(self.tr("Source editor"))
+        # conn is always None here but initialized in on_open_project()
         self.model = SourceModel(conn)
         self.view = QTableView()
         self.view.setModel(self.model)

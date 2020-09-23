@@ -110,15 +110,15 @@ class PluginWidget(QWidget):
     ENABLE = False
 
     def __init__(self, parent=None):
-        """
+        """Set parent window (mainwindow) to QWidget and to mainwindow attribute
+
         Keys:
-            mainwindow (QMainWindow): cutevariant Mainwindow
+            parent (QMainWindow): cutevariant Mainwindow
         """
         super().__init__(parent)
         self.mainwindow = parent
         self.widget_location = DOCK_LOCATION
-
-        self.refresh_groups = []  # TODO
+        self.conn = None
 
     def on_register(self, mainwindow):
         """Called when the mainwindow is build
@@ -184,6 +184,10 @@ class PluginSettingsWidget(settings.GroupWidget):
     ENABLE = False
 
     def __init__(self, parent=None):
+        """
+        Keys:
+            parent (QMainWindow): cutevariant window (mainly SettingsWidget)
+        """
         super().__init__(parent)
 
     def on_refresh(self):

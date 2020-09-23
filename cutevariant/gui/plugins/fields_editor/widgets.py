@@ -30,7 +30,7 @@ class FieldsModel(QStandardItemModel):
     @property
     def fields(self):
         """Return checked columns
-        
+
         Returns:
             list -- list of columns
         """
@@ -43,7 +43,7 @@ class FieldsModel(QStandardItemModel):
     @fields.setter
     def fields(self, columns):
         """Check items which name is in columns
-        
+
         Arguments:
             columns {list} -- list of columns
         """
@@ -118,13 +118,14 @@ class FieldsEditorWidget(plugin.PluginWidget):
 
     ENABLE = True
 
-    def __init__(self, parent=None):
-        super().__init__()
+    def __init__(self, conn=None, parent=None):
+        super().__init__(parent)
 
         self.setWindowTitle(self.tr("Columns"))
         self.view = QTreeView()
         self.toolbar = QToolBar()
-        self.model = FieldsModel(None)
+        # conn is always None here but initialized in on_open_project()
+        self.model = FieldsModel(conn)
         self.proxy_model = QSortFilterProxyModel()
 
         # setup proxy ( for search option )
@@ -171,10 +172,6 @@ class FieldsEditorWidget(plugin.PluginWidget):
     def __on_search_pressed(self, checked: bool):
         self.search_edit.setVisible(checked)
         self.search_edit.setFocus(Qt.MenuBarFocusReason)
-
-    def on_register(self, mainwindow):
-        """ Overrided from PluginWidget"""
-        pass
 
     def on_open_project(self, conn):
         """ Overrided from PluginWidget """

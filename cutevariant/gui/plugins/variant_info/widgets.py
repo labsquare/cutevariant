@@ -36,10 +36,8 @@ class VariantInfoWidget(PluginWidget):
 
     ENABLE = True
 
-    def __init__(self, conn=None):
-        super().__init__()
-
-        self.conn = conn
+    def __init__(self, parent=None):
+        super().__init__(parent)
 
         self.setWindowTitle(self.tr("Info variants"))
 

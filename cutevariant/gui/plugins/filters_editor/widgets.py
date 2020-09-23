@@ -526,7 +526,7 @@ class FilterModel(QAbstractItemModel):
 
     filtersChanged = Signal()
 
-    def __init__(self, conn, parent=None):
+    def __init__(self, conn=None, parent=None):
         super().__init__(parent)
         self.root_item = FilterItem("AND")
         self.conn = conn
@@ -1291,11 +1291,12 @@ class FiltersEditorWidget(plugin.PluginWidget):
     ENABLE = True
     changed = Signal()
 
-    def __init__(self, parent=None):
+    def __init__(self, conn=None, parent=None):
         super().__init__(parent)
         self.setWindowTitle(self.tr("Filter"))
         self.view = QTreeView()
-        self.model = FilterModel(None)
+        # conn is always None here but initialized in on_open_project()
+        self.model = FilterModel(conn)
         self.delegate = FilterDelegate()
         self.toolbar = QToolBar()
         self.toolbar.setIconSize(QSize(16, 16))

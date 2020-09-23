@@ -14,9 +14,8 @@ class AuragenFilterWidget(PluginWidget):
 
     ENABLE = False
 
-    def __init__(self, conn=None):
-        super().__init__()
-        self.conn = conn
+    def __init__(self, parent=None):
+        super().__init__(parent)
         self.editor = FiltersEditor()
 
         self.vlayout = QVBoxLayout()
