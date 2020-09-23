@@ -1,12 +1,85 @@
-# Qt imports
-from PySide2.QtWidgets import QWidget, QDialog
+"""Handle and define plugins
 
-# standard import
+Classes:
+
+    - PluginWidget
+    - PluginDialog
+    - PluginSettingsWidget
+
+Function to find and load plugins:
+    - find_plugins
+
+Plugin directory structure
+--------------------------
+
+Example:
+
+    plugin_name
+    ├── __init__.py
+    ├── widgets.py
+    └── dialogs.py
+
+A plugin directory must be named in snake_case. It contains modules whose will
+be described later and a __init__.py file which describes the plugin with the
+following mandatory variables:
+
+    .. code-block:: javascript
+
+        __title__ = "PluginName"
+        __description__ = "A plugin to cook variants"
+        __author__ = "E. Micron"
+        __version__ = "1.0.0"
+
+Note: __title__ will be used on the GUI.
+
+Plugin types
+------------
+
+Three kinds of plugins are supported, each one corresponds to a module in
+a plugin directory.
+
+    - Module named `widgets.py`:
+        `widget` type: Parent class `PluginWidget`;
+        Widget will be displayed on the main window according to the
+        attribute `widget_location` of `PluginWidget`.
+    - Module named `dialogs.py`:
+        `dialog` type: Parent class `PluginDialog`;
+        Dialog widget will be accessible from the tool menu of the UI.
+    - Module named `settings.py`:
+        `setting` type: Parent class `PluginSettingsWidget`;
+        Widget will be accessible from the settings of the app.
+
+That is, a plugin can support these 3 types simultaneously, but types must
+be unique (i.e. no multiple widgets, or dialogs, or settings).
+
+
+Module content
+--------------
+
+Instantiated classes of the modules will be those that inherit of the
+expected parent class associated to their types (widget, dialog, setting).
+In other words, each module **must** contains **one** class that inherits
+from `PluginWidget` or `PluginDialog` or `PluginSettingsWidget`.
+
+These classes **must** be named according to the name of the plugin directory
+followed by the corresponding type, in the CamelCase convention.
+
+Example:
+
+    A plugin `word_set` could contain one module named `widgets.py`.
+    This module contains almost one class named `WordSetWidget` that inherits
+    from `PluginWidget`.
+
+"""
+# Standard import
 import os
 import importlib
 import pkgutil
 
-# cutevariant import
+# Qt imports
+from PySide2.QtWidgets import QWidget, QDialog
+
+# Cutevariant import
 from cutevariant.gui import settings
 
 DOCK_LOCATION = 1
@@ -32,6 +105,15 @@ class PluginWidget(QWidget):
 
     .. note:: Please override the functions of this class as much as possible.
 
+    Class attributes:
+        - LOCATION: Location of the plugin in the interface (QMainWindow)
+            Can be: DOCK_LOCATION, CENTRAL_LOCATION, FOOTER_LOCATION
+        - ENABLE: If False, the plugin is disabled and will not be loaded;
+            (used for development purpose).
+
+    Attributes:
+        - mainwindow: Parent widget
+        - widget_location: Instance variable, equivalent to class variable LOCATION
     """
 
     LOCATION = DOCK_LOCATION
@@ -48,10 +130,12 @@ class PluginWidget(QWidget):
         """Called when the mainwindow is build
 
         You should setup the mainwindow with your plugin from here.
-        Don't forget to assign mainwindow attribute with the given argument.
+
+        Don't forget to assign mainwindow attribute with the given argument
+        if you didn't do it in the constructor. It's your last chance!
 
         Args:
-            mainwindow (MainWindow): cutevariant Mainwindow
+            mainwindow (QMainWindow): cutevariant Mainwindow
         """
         pass
 
@@ -66,8 +150,14 @@ class PluginWidget(QWidget):
         pass
 
     def on_close(self):
-        """Called when the mainwindow is closed"""
-        pass
+        """Called when the mainwindow is closed **or** when the plugin is reset.
+
+        In order to have a clean reset, please add routines to delete all
+        widgets added to the mainwindow (actions in toolbars, etc.).
+
+        .. seealso:: :meth:`cutevariant/gui/mainwindow.MainWindow.reset_ui`
+        """
+        self.close()
 
     def on_refresh(self):
         """Called to refresh the GUI of the current plugin
@@ -105,24 +195,23 @@ class PluginSettingsWidget(settings.GroupWidget):
 
 
 def find_plugins(path=None):
-    """Find and return plugin classes from a directory
+    """Find and return plugin descriptions from a directory
 
-    Three kinds of plugins can be returned:
+    See Also: Docstring of this module. For structure of a plugin directory.
 
-        - widget
-        - dialog
-        - setting
+    TODO: Dialog pour metrics...
 
-    Example:
+    Example of yielded dict:
 
         .. code-block:: javascript
 
             {
                 'name': 'word_set',
                 'title': 'WordSet',
-                'description': ' A plugin to manage word set',
+                'description': 'A plugin to manage word set',
                 'version': '1.0.0',
-                'widget': <class 'widgets.WordSetWidget'>
+                'widget': <class 'widgets.WordSetWidget'>,
+                'dialog': <class 'widgets.PluginDialog'>
             }
 
     Keyword Arguments:
