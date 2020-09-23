@@ -343,13 +343,13 @@ class SettingsWidget(QDialog):
         general_settings.setWindowIcon(FIcon(0xF0614))
 
         general_settings.add_settings_widget(TranslationSettingsWidget())
-        general_settings.add_settings_widget(ProxySettingsWidget())
+        #general_settings.add_settings_widget(ProxySettingsWidget())
         general_settings.add_settings_widget(StyleSettingsWidget())
 
         # Specialized widgets on panels
         self.addPanel(general_settings)
         self.addPanel(PluginsSettingsWidget())
-        self.addPanel(DatabaseSettingsWidget())
+        #self.addPanel(DatabaseSettingsWidget())
         self.load_plugins()
 
         self.resize(800, 400)
