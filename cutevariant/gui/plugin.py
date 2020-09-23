@@ -119,6 +119,7 @@ class PluginWidget(QWidget):
         self.mainwindow = parent
         self.widget_location = DOCK_LOCATION
         self.conn = None
+        self.dock = None
 
     def on_register(self, mainwindow):
         """Called when the mainwindow is build
@@ -176,6 +177,7 @@ class PluginDialog(QDialog):
             parent (QMainWindow): cutevariant Mainwindow
         """
         super().__init__(parent)
+        self.conn = None
 
 
 class PluginSettingsWidget(settings.GroupWidget):

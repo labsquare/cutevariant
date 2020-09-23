@@ -81,8 +81,9 @@ class MetricsDialog(PluginDialog):
 
     ENABLE = True
 
-    def __init__(self, parent=None):
+    def __init__(self, conn=None, parent=None):
         super().__init__(parent)
+        self.conn = conn
 
         self.view = QTableView()
         self.model = MetricModel()
