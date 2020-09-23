@@ -133,7 +133,9 @@ class LinkSettings(BaseWidget):
         del item  # Is it mandatory in Python ?
 
 
-class QueryViewSettingsWidget(PluginSettingsWidget):
+class VariantViewSettingsWidget(PluginSettingsWidget):
+    ENABLE = True
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowIcon(FIcon(0xF503))
