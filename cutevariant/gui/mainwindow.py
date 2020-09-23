@@ -263,7 +263,14 @@ class MainWindow(QMainWindow):
         ## Help
         self.help_menu = self.menuBar().addMenu(self.tr("Help"))
         self.help_menu.addAction(self.tr("About Qt"), qApp.aboutQt)
-        self.help_menu.addAction(self.tr("About Cutevariant"), self.aboutCutevariant)
+        self.help_menu.addAction(
+            QIcon(DIR_ICONS + "app.png"),
+            self.tr("About Cutevariant"),
+            self.aboutCutevariant,
+        )
+        self.help_menu.addAction(
+            FIcon(0xF02D6), self.tr("What's this"), QWhatsThis.enterWhatsThisMode
+        )
 
     def setup_toolbar(self):
         """Tool bar setup: items and actions
