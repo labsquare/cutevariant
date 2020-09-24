@@ -116,7 +116,6 @@ class MainWindow(QMainWindow):
 
         `setting` type is handled separately in :meth:`cutevariant.gui.settings.load_plugins`
         """
-
         LOGGER.debug("MainWindow:: Registering plugins...")
 
         # Get classes of plugins
@@ -136,10 +135,15 @@ class MainWindow(QMainWindow):
                     widget.setWindowTitle(name)
                 else:
                     widget.setWindowTitle(extension["title"])
-                widget.setToolTip(extension.get("description"))
+                # WhatsThis content
+                long_description = extension.get("long_description")
+                if not long_description:
+                    long_description = extension.get("description")
+                widget.setWhatsThis(long_description)
+                # Register (launch first init on some of them)
                 widget.on_register(self)
 
-                # Init via the constructor or on_register
+                # Init mainwindow via the constructor or on_register
                 if widget.mainwindow != self:
                     LOGGER.error(
                         "Bad plugin implementation, <mainwindow> plugin attribute is not set."

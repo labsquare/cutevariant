@@ -226,6 +226,7 @@ def find_plugins(path=None):
                 'name': 'word_set',
                 'title': 'WordSet',
                 'description': 'A plugin to manage word set',
+                'long_description': 'Long description used with WhatsThis help',
                 'version': '1.0.0',
                 'widget': <class 'widgets.WordSetWidget'>,
                 'dialog': <class 'widgets.PluginDialog'>
@@ -265,6 +266,7 @@ def find_plugins(path=None):
             "name": module.__name__,
             "title": module.__title__,
             "description": module.__description__,
+            "long_description": module.__long_description__,
             "version": module.__version__,
         }
 
