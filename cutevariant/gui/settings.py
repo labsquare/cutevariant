@@ -207,6 +207,12 @@ class StyleSettingsWidget(BaseWidget):
     """Allow to choose a style for the interface"""
 
     def __init__(self):
+        """Init StyleSettingsWidget
+
+        Args:
+            mainwindow (QMainWindow): Current main ui of cutevariant;
+                Used to refresh the plugins
+        """
         super().__init__()
         self.setWindowTitle(self.tr("Styles"))
         self.setWindowIcon(FIcon(0xF03D8))
@@ -222,23 +228,36 @@ class StyleSettingsWidget(BaseWidget):
     def save(self):
         """Save the selected style in config
         """
+        # Get previous style
+        old_style_name = self.settings.value("ui/style", "Dark")
+
         # Save style setting
         style_name = self.styles_combobox.currentText()
+        if old_style_name == style_name:
+            return
         self.settings.setValue("ui/style", style_name)
 
         # Change the style on the fly
         # TODO: Find a way to revert properly dark() palette and fill
         # style.bright() function.
 
-    #        if style_name == self.BASIC_STYLE:
-    #            # Bright version: Reset style
-    #            qApp.setStyleSheet("")
-    #            qApp.setPalette(QApplication.style().standardPalette())
-    #            # qApp.setStyle("fusion")
-    #        else:
-    #            # Apply selected style by calling on the method based on its name
-    #            # equivalent of style.dark(app)
-    #            getattr(style, style_name.lower())(qApp)
+        if style_name == self.BASIC_STYLE:
+            # Bright version: Reset style
+            qApp.setStyleSheet("")
+            qApp.setPalette(QApplication.style().standardPalette())
+        else:
+            # qApp.setStyle("fusion")
+            # Apply selected style by calling on the method in style module based on its
+            # name; equivalent of style.dark(app)
+            getattr(style, style_name.lower())(qApp)
+
+        # Clear pixmap cache
+        QPixmapCache.clear()
+
+        # Get the window for this widget,
+        # i.e. the next ancestor widget that has a window-system frame.
+        # And call refresh signal => reload the widgets
+        self.window().uiSettingsChanged.emit()
 
     def load(self):
         """Setup widgets in StyleSettingsWidget"""
@@ -250,11 +269,12 @@ class StyleSettingsWidget(BaseWidget):
             for file in glob.glob(cm.DIR_STYLES + "*.qss")
             if "frameless" not in file
         }
-        # Dark is the default style
+        # Display available styles
         available_styles = list(available_styles.keys()) + [self.BASIC_STYLE]
         self.styles_combobox.addItems(available_styles)
 
         # Display current style
+        # Dark is the default style
         style_name = self.settings.value("ui/style", "Dark")
         self.styles_combobox.setCurrentIndex(available_styles.index(style_name))
 
@@ -307,12 +327,18 @@ class SettingsWidget(QDialog):
 
     Subwidgets are intantiated on panels; a GroupWidget groups similar widgets
     in tabs.
-    """
 
-    def __init__(self):
-        super().__init__()
+    Signals:
+        uiSettingsChanged(Signal): Emitted when some settings of the GUI are
+            modified and need a reload of all widgets to take effect.
+    """
+    uiSettingsChanged = Signal()
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
         self.setWindowTitle(self.tr("Cutevariant - Settings"))
         self.setWindowIcon(QIcon(cm.DIR_ICONS + "app.png"))
+
         self.widgets = []
 
         self.list_widget = QListWidget()

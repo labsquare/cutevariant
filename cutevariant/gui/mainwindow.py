@@ -451,7 +451,8 @@ class MainWindow(QMainWindow):
 
     def show_settings(self):
         """Slot to show settings window"""
-        widget = SettingsWidget()
+        widget = SettingsWidget(parent=self)
+        widget.uiSettingsChanged.connect(self.reload_ui)
         widget.exec_()
 
     def show_dialog(self):
