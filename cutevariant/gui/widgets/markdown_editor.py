@@ -33,7 +33,7 @@ class MarkdownEditor(QDialog):
     def __init__(self, parent=None, default_text=""):
         """Init Markdown editor
 
-        :param default_text: Populate source edit with previously defined comment in db.
+        :param default_text: Populate source edit with current comment in db.
         :type default_text: <str>
         """
         super().__init__(parent)
@@ -68,6 +68,8 @@ class MarkdownEditor(QDialog):
 
             # Update preview with Markdown content
             self.source_edit.textChanged.connect(self.update_rich_text)
+            # Auto refresh rich text content now
+            self.update_rich_text()
 
         # Setup toolbar
         self.toolbar = QToolBar()

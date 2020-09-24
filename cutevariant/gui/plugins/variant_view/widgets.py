@@ -645,13 +645,17 @@ class VariantView(QWidget):
     #         self.model.update_variant(index.row(), update)
 
     def edit_comment(self, index: QModelIndex):
-        """Allow a user to add a comment for the selected variant
-        TODO: reload previous comment
-        """
+        """Allow a user to add a comment for the selected variant"""
         if not index.isValid():
             return
 
-        editor = MarkdownEditor(default_text="")
+        # Get comment from DB
+        variant_data = sql.get_one_variant(
+            self.model.conn, self.model.variant(index.row())["id"]
+        )
+        comment = variant_data["comment"] if variant_data["comment"] else ""
+
+        editor = MarkdownEditor(default_text=comment)
         if editor.exec_() == QDialog.Accepted:
             # Save in DB
             self.model.update_variant(
