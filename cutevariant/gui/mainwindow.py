@@ -230,9 +230,9 @@ class MainWindow(QMainWindow):
         ## Edit
         self.edit_menu = self.menuBar().addMenu(self.tr("&Edit"))
         self.edit_menu.addAction(FIcon(0xF018F), "&Copy", self.copy, QKeySequence.Copy)
-        self.edit_menu.addAction(
-            FIcon(0xF0192), "&Paste", self.paste, QKeySequence.Paste
-        )
+        # self.edit_menu.addAction(
+        #     FIcon(0xF0192), "&Paste", self.paste, QKeySequence.Paste
+        # )
         self.edit_menu.addSeparator()
         self.edit_menu.addAction(
             FIcon(0xF0486), "Select all", self.select_all, QKeySequence.SelectAll
@@ -467,14 +467,13 @@ class MainWindow(QMainWindow):
         self.restoreState(QByteArray(app_settings.value("windowState")))
 
     def copy(self):
-        pass
-
-    def paste(self):
-        pass
+        if "variant_view" in self.plugins:
+            self.plugins["variant_view"].copy()
 
     def select_all(self):
         """Select all elements in the current tab's view"""
-        self.current_tab_view().view.selectAll()
+        if "variant_view" in self.plugins:
+            self.plugins["variant_view"].select_all()
 
     def closeEvent(self, event):
         """Save the current state of this mainwindow's toolbars and dockwidgets

@@ -422,7 +422,7 @@ class VariantView(QWidget):
 
         self.view.setSortingEnabled(True)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.view.setSelectionMode(QAbstractItemView.ContiguousSelection)
+        self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
         ## self.view.setIndentation(0)
         self.view.setIconSize(QSize(22, 22))
         self.view.horizontalHeader().setSectionsMovable(True)
@@ -789,6 +789,20 @@ class VariantViewWidget(plugin.PluginWidget):
         self.second_pane.conn = self.conn
 
         self.on_refresh()
+
+    def select_all(self):
+        if not self._is_grouped():
+            self.first_pane.view.selectAll()
+
+    def copy(self):
+        if not self._is_grouped():
+            rows = []
+            for index in self.first_pane.view.selectionModel().selectedRows():
+                variant = self.first_pane.model.variant(index.row())
+                rows.append("\t".join(str(v) for v in variant.values()))
+
+            text = "\n".join(rows)
+            qApp.clipboard().setText(text)
 
     def on_refresh(self):
         """ override """
