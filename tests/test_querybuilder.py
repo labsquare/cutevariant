@@ -23,6 +23,13 @@ def test_filter_to_flat():
         ]
     }
 
+    flaty = querybuilder.filters_to_flat(filters)
+
+    assert flaty == [
+        {"field": "ref", "operator": "=", "value": "A"},
+        {"field": "alt", "operator": "=", "value": "C"},
+    ]
+
 
 def test_field_function_to_sql():
     assert (
@@ -229,9 +236,7 @@ QUERY_TESTS = [
         ),
         "SELECT chr,pos FROM variants WHERE sample['TUMOR'].gt = 1",
     ),
-
-
-    # Test genotype with 2 filters 
+    # Test genotype with 2 filters
     (
         {
             "fields": ["chr", "pos"],
@@ -239,8 +244,7 @@ QUERY_TESTS = [
             "filters": {
                 "AND": [
                     {"field": ("sample", "TUMOR", "gt"), "operator": "=", "value": 1},
-                    {"field": ("sample", "TUMOR", "dp"), "operator": ">", "value": 10}
-
+                    {"field": ("sample", "TUMOR", "dp"), "operator": ">", "value": 10},
                 ]
             },
         },
@@ -252,11 +256,6 @@ QUERY_TESTS = [
         ),
         "SELECT chr,pos FROM variants WHERE sample['TUMOR'].gt = 1 AND sample['TUMOR'].dp > 10",
     ),
-
-
-
-
-
     #   Test genotype in both filters and fields
     (
         {
@@ -276,25 +275,20 @@ QUERY_TESTS = [
         ),
         "SELECT chr,pos,sample['TUMOR'].gt FROM variants WHERE sample['TUMOR'].gt = 1",
     ),
-
-    # Test IN SET   
+    # Test IN SET
     (
-
         {
-        "fields": ["chr"],
-        "source": "variants",
-        "filters": {
-            "AND": [
-                {"field": "chr", "operator":"IN", "value": ("SET","name")}
-            ]
-        }
-        }, 
+            "fields": ["chr"],
+            "source": "variants",
+            "filters": {
+                "AND": [{"field": "chr", "operator": "IN", "value": ("SET", "name")}]
+            },
+        },
         (
-        "SELECT DISTINCT `variants`.`id`,`variants`.`chr` FROM variants WHERE `variants`.`chr` IN (SELECT value FROM sets WHERE name = 'name') LIMIT 50 OFFSET 0"
+            "SELECT DISTINCT `variants`.`id`,`variants`.`chr` FROM variants WHERE `variants`.`chr` IN (SELECT value FROM sets WHERE name = 'name') LIMIT 50 OFFSET 0"
         ),
-
-        "SELECT chr FROM variants WHERE chr IN SET['name']"
-    )
+        "SELECT chr FROM variants WHERE chr IN SET['name']",
+    ),
 ]
 
 
