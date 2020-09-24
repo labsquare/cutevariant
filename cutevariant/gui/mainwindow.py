@@ -466,6 +466,15 @@ class MainWindow(QMainWindow):
         dialog_window = AboutCutevariant()
         dialog_window.exec_()
 
+    def reload_ui(self):
+        """Reload *without* reset the positions of the widgets"""
+        geometry = self.saveGeometry()
+        ui_state = self.saveState()
+        self.reset_ui()
+        # Reload positions
+        self.restoreGeometry(geometry)
+        self.restoreState(ui_state)
+
     def reset_ui(self):
         """Reset the positions of docks (and their widgets) to the default state
 
