@@ -33,10 +33,7 @@ from PySide2.QtNetwork import *
 # Custom imports
 import cutevariant.commons as cm
 from cutevariant.gui.ficon import FIcon
-from cutevariant.gui import network
-
-
-# from cutevariant.gui import style
+from cutevariant.gui import network, style
 
 
 class BaseWidget(QWidget):

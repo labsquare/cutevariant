@@ -61,8 +61,10 @@ class MainWindow(QMainWindow):
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
 
-        # Setup UI
-        self.setup_ui()
+        # Setup menubar
+        self.setup_menubar()
+        # Setup toobar under the menu bar
+        self.setup_toolbar()
 
         # Register plugins
         self.plugins = {}  # dict of names as keys and widgets as values
@@ -75,6 +77,8 @@ class MainWindow(QMainWindow):
 
         self.setTabPosition(Qt.AllDockWidgetAreas, QTabWidget.North)
 
+        # If True, the GUI settings are deleted when the app is closed
+        self.requested_reset_ui = False
         # Restores the state of this mainwindow's toolbars and dockwidgets
         self.read_settings()
 
@@ -399,18 +403,20 @@ class MainWindow(QMainWindow):
     def new_project(self):
         """Slot to allow creation of a project with the Wizard"""
         wizard = ProjectWizard()
-        if wizard.exec_():
-            db_filename = (
-                wizard.field("project_path")
-                + QDir.separator()
-                + wizard.field("project_name")
-                + ".db"
-            )
-            try:
-                self.open(db_filename)
-            except Exception as e:
-                self.status_bar.showMessage(e.__class__.__name__ + ": " + str(e))
-                raise
+        if not wizard.exec_():
+            return
+
+        db_filename = (
+            wizard.field("project_path")
+            + QDir.separator()
+            + wizard.field("project_name")
+            + ".db"
+        )
+        try:
+            self.open(db_filename)
+        except Exception as e:
+            self.status_bar.showMessage(e.__class__.__name__ + ": " + str(e))
+            raise
 
     def open_project(self):
         """Slot to open an already existing project"""

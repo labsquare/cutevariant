@@ -104,6 +104,9 @@ class PluginWidget(QWidget):
     Attributes:
         - mainwindow: Parent widget
         - widget_location: Instance variable, equivalent to class variable LOCATION
+        - conn (sqlite3.connection): A connection to the sqlite project
+        - dock (None, optional): Keep the attached dock to allow further clean
+            deletion
     """
 
     LOCATION = DOCK_LOCATION
