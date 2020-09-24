@@ -98,6 +98,8 @@ class MainWindow(QMainWindow):
         dock.setWindowTitle(widget.windowTitle())
         dock.setWidget(widget)
         dock.setStyleSheet("QDockWidget { font: bold }")
+        # Keep the attached dock to allow further clean deletion
+        widget.dock = dock
 
         # Set the objectName for a correct restoration after saveState
         dock.setObjectName(str(widget.__class__))
@@ -253,12 +255,7 @@ class MainWindow(QMainWindow):
 
         ## View
         self.view_menu = self.menuBar().addMenu(self.tr("&View"))
-        # self.view_menu.addAction(self.tr("Reset widgets positions"), self.reset_ui)
-        # console_action = self.view_menu.addAction(FIcon(0xf18d),self.tr("Show console"))
-        # console_action.setCheckable(True)
-        # console_action.setShortcuts([Qt.CTRL + Qt.Key_T])
-        # console_action.toggled.connect(self.editor.setVisible)
-
+        self.view_menu.addAction(self.tr("Reset widgets positions"), self.reset_ui)
         self.view_menu.addSeparator()
 
         ## Tools
@@ -474,13 +471,54 @@ class MainWindow(QMainWindow):
         dialog_window.exec_()
 
     def reset_ui(self):
-        """Slot to reset the position of docks to the state of the previous launch"""
+        """Reset the positions of docks (and their widgets) to the default state
+
+        All the widgets are deleted and reinstantiated on the GUI.
+        GUI settings via QSettings are also reset.
+        """
         # Set reset ui boolean (used by closeEvent)
         self.requested_reset_ui = True
+        # Reset settings
+        self.write_settings()
 
-        # Restore docks
-        app_settings = QSettings()
-        self.restoreState(QByteArray(app_settings.value("windowState")))
+        # Remove widgets in QTabWidgets
+        self.central_tab.removeTab(0)
+        self.footer_tab.removeTab(0)
+
+        # Remove view menu actions linked to the widget plugins (enable/disable)
+        for action in self.view_menu.actions():
+            if action.text() in self.plugins:
+                # LOGGER.debug("Remove action <%s>", action.text())
+                self.view_menu.removeAction(action)
+                action.deleteLater()
+
+        # Remove tool menu actions linked to the dialog plugins
+        for action in self.tool_menu.actions():
+            if action in self.dialog_plugins:
+                # LOGGER.debug("Remove action <%s>", action.text())
+                self.tool_menu.removeAction(action)
+                action.deleteLater()
+
+        # Purge widgets and related docks
+        for plugin_obj in self.plugins.values():
+            # LOGGER.debug("Remove plugin <%s>", plugin_obj)
+            if plugin_obj.dock is not None:
+                # Some plugins are not in docks (like central/footer tabs)
+                self.removeDockWidget(plugin_obj.dock)
+                plugin_obj.dock.close()
+                plugin_obj.dock.deleteLater()
+
+            plugin_obj.on_close()
+            plugin_obj.deleteLater()
+
+        # Clean registered plugins
+        self.plugins = {}
+        self.dialog_plugins = {}
+        # Register new plugins
+        self.register_plugins()
+        self.open_database(self.conn)
+        # Allow a user to save further modifications
+        self.requested_reset_ui = False
 
     def closeEvent(self, event):
         """Save the current state of this mainwindow's toolbars and dockwidgets
