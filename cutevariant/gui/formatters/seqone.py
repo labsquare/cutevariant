@@ -13,10 +13,12 @@ from cutevariant.gui import FIcon
 
 class SeqoneFormatter(Formatter):
 
+    DISPLAY_NAME = "Challenger"
+
     BASE_COLOR = {"A": "green", "C": "red", "G": "black", "T": "red"}
 
     SO_COLOR = {
-        # https://www.google.com/url?sa=i&url=https%3A%2F%2Fnatsukis.livejournal.com%2F2048.html&psig=AOvVaw11r2D9gwnmLeORQjAMr35V&ust=1599144498880000&source=images&cd=vfe&ved=0CAIQjRxqFwoTCPCI_qrNyusCFQAAAAAdAAAAABAD
+        # https://natsukis.livejournal.com/2048.html
         "missense_variant": "#bb96ff",
         "synonymous_variant": "#67eebd",
         "stop_gained": "#ed6d79",
@@ -44,9 +46,8 @@ class SeqoneFormatter(Formatter):
 
     GENOTYPE_ICONS = {0: FIcon(0xF0766), 1: FIcon(0xF0AA1), 2: FIcon(0xF0AA5), -1: FIcon(0xF10D3)}
 
-
     def __init__(self):
-        return super().__init__()
+        super().__init__()
 
     def paint(
         self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex

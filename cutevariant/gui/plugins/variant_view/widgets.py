@@ -748,12 +748,11 @@ class VariantViewWidget(plugin.PluginWidget):
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         self.top_bar.addWidget(spacer)
-        # Add formatters to combobox, a click on it will instantiate the class
+
+        # Add formatters to combobox
         self.formatter_combo = QComboBox()
-        for obj in formatter.find_formatters():
-            self.formatter_combo.addItem(obj.__name__, obj)
-        self.top_bar.addWidget(self.formatter_combo)
-        self.formatter_combo.currentTextChanged.connect(self.on_formatter_changed)
+        self.settings = QSettings()
+        self.add_available_formatters()
 
         # Refresh UI button
         self.top_bar.addSeparator()
@@ -777,14 +776,41 @@ class VariantViewWidget(plugin.PluginWidget):
 
         self.last_group = ["chr"]
 
-    def on_formatter_changed(self):
+    def add_available_formatters(self):
+        """Populate the formatters
 
-        Formatter = self.formatter_combo.currentData()
-        self.first_pane.set_formatter(Formatter())
-        self.second_pane.set_formatter(Formatter())
+        Also recall previously selected formatters via config file.
+        Default formatter is "SeqoneFormatter".
+        """
+        # Get previously selected formatter
+        formatter_name = self.settings.value("ui/formatter", "SeqoneFormatter")
+
+        # Add formatters to combobox, a click on it will instantiate the class
+        selected_formatter_index = 0
+        for index, obj in enumerate(formatter.find_formatters()):
+            self.formatter_combo.addItem(obj.DISPLAY_NAME, obj)
+            if obj.__name__ == formatter_name:
+                selected_formatter_index = index
+
+        self.top_bar.addWidget(self.formatter_combo)
+        self.formatter_combo.currentTextChanged.connect(self.on_formatter_changed)
+
+        # Set the previously used/default formatter
+        self.formatter_combo.setCurrentIndex(selected_formatter_index)
+
+    def on_formatter_changed(self):
+        """Activate the selected formatter
+
+        Called when the current formatter is modified
+        """
+        formatter_class = self.formatter_combo.currentData()
+        self.first_pane.set_formatter(formatter_class())
+        self.second_pane.set_formatter(formatter_class())
+        # Save formatter setting
+        self.settings.setValue("ui/formatter", formatter_class.__name__)
 
     def on_open_project(self, conn):
-        """override """
+        """Overrided from PluginWidget"""
         self.conn = conn
         self.first_pane.conn = self.conn
         self.second_pane.conn = self.conn
@@ -792,8 +818,7 @@ class VariantViewWidget(plugin.PluginWidget):
         self.on_refresh()
 
     def on_refresh(self):
-        """ override """
-
+        """Overrided from PluginWidget"""
         self.save_fields = self.mainwindow.state.fields
         self.first_pane.fields = self.mainwindow.state.fields
         self.first_pane.source = self.mainwindow.state.source

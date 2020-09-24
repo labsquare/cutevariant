@@ -3,5 +3,8 @@ from cutevariant.gui.formatter import Formatter
 
 
 class DefaultFormatter(Formatter):
+
+    DISPLAY_NAME = "Basic"
+
     def __init__(self):
-        return super().__init__()
+        super().__init__()

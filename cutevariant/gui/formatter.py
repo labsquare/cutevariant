@@ -13,7 +13,11 @@ from PySide2.QtGui import QIcon, QPainter
 class Formatter(object):
     """Helper to customize cell style from QueryModel.
     You can set the font, background, foreground and decoration (QIcon)
+
+    Class attributes:
+        - DISPLAY_NAME: Name of the formatter displayed on the GUI.
     """
+    DISPLAY_NAME = ""
 
     def __init__(self):
         super().__init__()
@@ -40,6 +44,8 @@ class Formatter(object):
 
 def find_formatters(path=None):
     """Find and return formatter classes from a directory
+
+    Formatters must be found in `cutevariant/gui/formatters/`
 
     Keyword Arguments:
         path [str] -- the folder path where plugin are
