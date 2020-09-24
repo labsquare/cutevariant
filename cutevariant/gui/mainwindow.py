@@ -7,7 +7,7 @@ from pkg_resources import parse_version
 from logging import DEBUG
 
 # Qt imports
-from PySide2.QtCore import Qt, QSettings, QByteArray, QDir, Slot
+from PySide2.QtCore import Qt, QSettings, QByteArray, QDir
 from PySide2.QtWidgets import *
 from PySide2.QtGui import QIcon, QKeySequence
 
@@ -86,11 +86,6 @@ class MainWindow(QMainWindow):
         recent = self.get_recent_projects()
         if recent and os.path.isfile(recent[0]):
             self.open(recent[0])
-
-    def setup_ui(self):
-        # Setup menubar
-        self.setup_menubar()
-        self.setup_toolbar()
 
     def add_panel(self, widget, area=Qt.LeftDockWidgetArea):
         """Add given widget to a new QDockWidget and to view menu in menubar"""

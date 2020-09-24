@@ -100,8 +100,8 @@ def load_styles(app):
     # Display current style
     style_name = app_settings.value("ui/style", "Dark")
 
-    # Apply selected style by calling on the method based on its name
-    # equivalent of style.dark(app)
+    # Apply selected style by calling on the method in style module based on its
+    # name; equivalent of style.dark(app)
     getattr(style, style_name.lower())(app)
 
 
