@@ -1,4 +1,5 @@
 __title__ = "Editor"
 __description__ = "A Vql editor"
+__long_description__ = ""
 __author__ = "Sacha schutz"
 __version__ = "1.0.0"

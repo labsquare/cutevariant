@@ -1,4 +1,5 @@
 __title__ = "InfoVariant"
 __description__ = "A plugin to display variant info"
+__long_description__ = ""
 __author__ = "Sacha schutz"
 __version__ = "1.0.0"
