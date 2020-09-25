@@ -148,12 +148,12 @@ def test_create_command_from_obj(conn):
     )
     assert partial_fct.func == command.select_cmd
 
-    #  etc ...
+    # etc ...
 
 
 def test_execute(conn):
 
-    #  Select variant with ref = C
+    # Select variant with ref = C
     result = command.execute(conn, "CREATE setA FROM variants WHERE ref='C'")
 
     assert "id" in result
@@ -161,7 +161,7 @@ def test_execute(conn):
     for variant in command.execute(conn, "SELECT chr, pos, ref, alt FROM setA"):
         assert variant["ref"] == "C"
 
-    #  Select variants with alt = A
+    # Select variants with alt = A
     result = command.execute(conn, "CREATE setB FROM variants WHERE alt ='A'")
     assert "id" in result
     for variant in command.execute(conn, "SELECT chr, pos, ref, alt FROM setB"):
@@ -173,7 +173,7 @@ def test_execute(conn):
     for variant in command.execute(conn, "SELECT chr, pos, ref, alt FROM set_inter"):
         assert variant["alt"] == "A" and variant["ref"] == "C"
 
-    #   Create bedfile
+    #  Create bedfile
     BEDFILE = "examples/test.bed"
     result = command.execute(
         conn, f"CREATE set_bed FROM variants INTERSECT '{BEDFILE}' "

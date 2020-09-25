@@ -56,7 +56,7 @@ VQL_TO_TREE_CASES = {
         "having": {},
         "source": "variants",
     },
-    #  Test 4bis GROUP BY
+    # Test 4bis GROUP BY
     "SELECT chr, pos, ref, alt FROM variants GROUP BY chr,pos": {
         "cmd": "select_cmd",
         "fields": ["chr", "pos", "ref", "alt"],
@@ -65,7 +65,7 @@ VQL_TO_TREE_CASES = {
         "group_by": ["chr", "pos"],
         "having": {},
     },
-    #  Test 4bis GROUP BY HAVING
+    # Test 4bis GROUP BY HAVING
     "SELECT chr, pos, ref, alt FROM variants GROUP BY chr HAVING count > 3": {
         "cmd": "select_cmd",
         "fields": ["chr", "pos", "ref", "alt"],
@@ -122,22 +122,22 @@ VQL_TO_TREE_CASES = {
         "operator": "+",
         "target": "denovo",
     },
-    #  Test 9
+    # Test 9
     'CREATE subset FROM variants INTERSECT "/home/sacha/test.bed"': {
         "cmd": "bed_cmd",
         "target": "subset",
         "source": "variants",
         "path": "/home/sacha/test.bed",
     },
-    #  Test 10
+    # Test 10
     "COUNT FROM variants": {"cmd": "count_cmd", "source": "variants", "filters": {}},
-    #  Test 110
+    # Test 110
     "COUNT FROM variants WHERE a = 3": {
         "cmd": "count_cmd",
         "source": "variants",
         "filters": {"AND": [{"field": "a", "operator": "=", "value": 3}]},
     },
-    #  Test 110
+    # Test 110
     "DROP selections subset": {
         "cmd": "drop_cmd",
         "feature": "selections",

@@ -162,7 +162,7 @@ def test_get_sample_annotations(conn):
 
 
 def test_get_fields(conn):
-    #  Test if fields returns
+    # Test if fields returns
     for index, f in enumerate(sql.get_fields(conn)):
         rowid = f.pop("id")
         assert f == FIELDS[index]
@@ -173,7 +173,7 @@ def test_get_samples(conn):
     assert [sample["name"] for sample in sql.get_samples(conn)] == SAMPLES
     first_sample = list(sql.get_samples(conn))[0]
 
-    #  test default value
+    # test default value
     assert first_sample["name"] == "sacha"
     assert first_sample["fam"] == "fam"
     assert first_sample["father_id"] == 0
@@ -187,7 +187,7 @@ def test_update_samples(conn):
 
     assert previous_sample["name"] == "sacha"
     assert previous_sample["id"] == 1
-    #  Update with info
+    # Update with info
     previous_sample["name"] = "maco"
     previous_sample["fam"] = "fam2"
     previous_sample["father_id"] = 1
@@ -283,11 +283,11 @@ def test_selection_operation(conn):
     """test set operations on selections
     PS: try to handle precedence of operators"""
 
-    #  Select all
+    # Select all
     query = """SELECT variants.id,chr,pos,ref,alt FROM variants"""
     id_all = sql.create_selection_from_sql(conn, query, "all", count=None)
 
-    #  Select only ref = C (4 variants)
+    # Select only ref = C (4 variants)
     query = """SELECT variants.id,chr,pos,ref,alt FROM variants WHERE ref='C'"""
     id_A = sql.create_selection_from_sql(conn, query, "setA", count=None,)
 
@@ -363,7 +363,7 @@ def test_selection_operation(conn):
     # assert expected_number == 2
 
 
-#  ============ TEST VARIANTS QUERY
+# ============ TEST VARIANTS QUERY
 
 
 def test_select_variant_items(conn):
@@ -373,7 +373,7 @@ def test_select_variant_items(conn):
     # args = {"filters": filters}
     # assert len(list(sql.get_variants(conn, **args))) == 1
 
-    #  TODO more test
+    # TODO more test
 
 
 def test_selection_from_bedfile(conn):
@@ -436,7 +436,7 @@ def test_selection_from_bedfile_and_subselection(conn):
 
 # bedtool = BedTool(larger_string)
 
-#  Create now a sub selection
+# Create now a sub selection
 
 # query = """SELECT variants.id,chr,pos,ref,alt FROM variants WHERE ref='C'"""
 # set_A_id = sql.create_selection_from_sql(conn, query, "setA", count=None)
@@ -457,7 +457,7 @@ def test_selection_from_bedfile_and_subselection(conn):
 
 # def test_selection_operation(conn):
 
-#     #  Prepare base
+#     # Prepare base
 #     prepare_base(conn)
 #     cursor = conn.cursor()
 
@@ -467,14 +467,14 @@ def test_selection_from_bedfile_and_subselection(conn):
 #     assert all_selection[0] == "all"
 #     assert all_selection[1] == len(variants)
 
-#     #  Create a selection from sql
+#     # Create a selection from sql
 #     query = "SELECT chr, pos FROM variants where alt = 'A' "
 #     sql.create_selection_from_sql(conn, "test", query)
 
 #     # check if selection has been created
 #     assert "test" in [record["name"] for record in sql.get_selections(conn)]
 
-#     #  Check if selection of variants returns same data than selection query
+#     # Check if selection of variants returns same data than selection query
 #     selection_id = 2
 #     insert_data = cursor.execute(query).fetchall()
 
@@ -522,7 +522,7 @@ def test_variants(conn):
     """Test that we have all inserted variants in the DB"""
 
     # for i, record in enumerate(conn.execute("SELECT * FROM variants")):
-    #     record = list(record) # omit id
+    #     record = list(record) #omit id
     #     expected_variant = variants[i]
     #     del expected_variant["annotations"]
 

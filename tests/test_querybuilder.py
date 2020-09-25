@@ -144,13 +144,13 @@ QUERY_TESTS = [
         "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants GROUP BY chr LIMIT 50 OFFSET 0",
         "SELECT chr,pos FROM variants GROUP BY chr",
     ),
-    #  Test limit offset
+    # Test limit offset
     (
         {"fields": ["chr", "pos"], "source": "variants", "limit": 10, "offset": 4},
         "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants LIMIT 10 OFFSET 4",
         "SELECT chr,pos FROM variants",
     ),
-    #  Test order by
+    # Test order by
     (
         {
             "fields": ["chr", "pos"],
@@ -200,7 +200,7 @@ QUERY_TESTS = [
         ),
         "SELECT chr,pos FROM other",
     ),
-    #  Test genotype fields
+    # Test genotype fields
     (
         {"fields": ["chr", "pos", ("sample", "TUMOR", "gt")], "source": "variants"},
         (
@@ -210,7 +210,7 @@ QUERY_TESTS = [
         ),
         "SELECT chr,pos,sample['TUMOR'].gt FROM variants",
     ),
-    #  Test genotype in filters
+    # Test genotype in filters
     (
         {
             "fields": ["chr", "pos"],
@@ -257,7 +257,7 @@ QUERY_TESTS = [
 
 
 
-    #   Test genotype in both filters and fields
+    # Test genotype in both filters and fields
     (
         {
             "fields": ["chr", "pos", ("sample", "TUMOR", "gt")],
@@ -312,9 +312,9 @@ def test_build_query(test_input, test_output, vql):
 
     assert query == test_output
 
-    #  Test VQL query builder
+    # Test VQL query builder
 
-    #  Ugly .. make it better
+    # Ugly .. make it better
     query = querybuilder.build_vql_query(
         fields=test_input["fields"],
         source=test_input["source"],
@@ -333,7 +333,7 @@ def test_build_query(test_input, test_output, vql):
     # conn.execute(query)
 
 
-## Test VQL
+##Test VQL
 
 
 # def test_fields_to_vql():

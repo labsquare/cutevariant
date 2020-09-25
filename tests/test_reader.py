@@ -35,7 +35,7 @@ def test_fields(reader):
     for field in fields:
         check_field_schema(field)
 
-    # Test if fields are unique per categories 
+    #Test if fields are unique per categories 
     field_with_categories = [f["name"]+f["category"] for f in fields]
     assert len(field_with_categories) == len(set(field_with_categories))
 
@@ -91,7 +91,7 @@ def test_create_db(reader):
 
     sql.insert_many_variants(conn, reader.get_variants())
 
-    #  count variant with annotation
+    # count variant with annotation
     variant_count = 0
     for variant in reader.get_variants():
         variant_count += 1
