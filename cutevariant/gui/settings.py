@@ -28,7 +28,6 @@ from abc import abstractmethod
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *  # qApp
 from PySide2.QtGui import *  # QIcon, QPalette
-from PySide2.QtNetwork import *
 
 # Custom imports
 import cutevariant.commons as cm
@@ -280,6 +279,8 @@ class StyleSettingsWidget(BaseWidget):
 
 
 class PluginsSettingsWidget(BaseWidget):
+    """Display a list of found plugin and their status (enabled/disabled)"""
+
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Plugins"))
@@ -296,6 +297,10 @@ class PluginsSettingsWidget(BaseWidget):
         pass
 
     def load(self):
+        """Display the plugins and their status
+
+        .. TODO:: ability to enable/disable a plugin from GUI
+        """
         self.view.clear()
         from cutevariant.gui import plugin
 
@@ -304,8 +309,17 @@ class PluginsSettingsWidget(BaseWidget):
             item.setText(0, extension["name"])
             item.setText(1, extension["description"])
             item.setText(2, extension["version"])
-            item.setCheckState(0, Qt.Checked)
-            item.setDisabled(True)
+
+            # Is an extension enabled ?
+            is_enabled = False
+            for sub_extension_type in {"widget", "dialog", "setting"} & extension.keys():
+                if extension[sub_extension_type].ENABLE:
+                    is_enabled = True
+                    break
+
+            item.setCheckState(0, Qt.Checked if is_enabled else Qt.Unchecked)
+            # Only disabled plugins can be reactivated by the user
+            item.setDisabled(is_enabled)
             self.view.addTopLevelItem(item)
 
 
