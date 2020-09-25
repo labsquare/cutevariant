@@ -24,10 +24,8 @@ Example::
 
 # Standard imports
 import sqlite3
-import sys
 from collections import defaultdict
 from pkg_resources import parse_version
-from functools import lru_cache
 import re
 
 # Custom imports
@@ -259,7 +257,7 @@ def create_selection_has_variant_indexes(conn: sqlite3.Connection):
         * insert_selection()
 
     Args:
-        conn (sqlite3.Connection): Sqlite3 connection
+        conn (sqlite3.Connection/sqlite3.Cursor): Sqlite3 connection
     """
     #
     conn.execute(
@@ -271,7 +269,7 @@ def insert_selection(conn, query: str, name="no_name", count=0):
     """Insert one selection record
 
     Args:
-        conn (sqlite3.Connection): Sqlite3 Connection.
+        conn (sqlite3.Connection/sqlite3.Cursor): Sqlite3 Connection.
         It can be a cursor or a connection here...
         query (str): a VQL query
         name (str, optional): Name of selection
@@ -327,11 +325,11 @@ def create_selection_from_sql(
 
     Args:
         conn (sqlite3.connexion): Sqlite3 connexion
-        query (str): VQL query
+        query (str): SQL query that select all variant ids. See `from_selection`
         name (str): Name of selection
         count (int/None, optional): Variant count
-        from_selection (bool, optional): Used to get a different
-            field name for variants; `variant_id` if `from_selection` is `True`,
+        from_selection (bool, optional): Use a different
+            field name for variants ids; `variant_id` if `from_selection` is `True`,
             just `id` if `False`.
 
     Returns:
@@ -409,40 +407,35 @@ def create_selection_from_bed(
     cur.execute("DROP TABLE IF exists bed_table")
     cur.execute(
         """CREATE TABLE bed_table (
-
         id INTEGER PRIMARY KEY ASC,
         bin INTEGER DEFAULT 0,
         chr TEXT,
         start INTEGER,
         end INTEGER,
-        name INTEGER )"""
+        name INTEGER)"""
     )
-
     for interval in bed_intervals:
-
         cur.execute(
             "INSERT INTO bed_table (bin, chr, start, end, name) VALUES (?,?,?,?,?)",
             (0, interval["chr"], interval["start"], interval["end"], interval["name"]),
         )
 
     if source == "variants":
-        source_query = "SELECT variants.id as variant_id FROM variants"
+        source_query = "SELECT variants.id AS variant_id FROM variants"
     else:
-        source_query = """
-        SELECT variants.id as variant_id FROM variants
-        INNER JOIN selections ON selections.name = '{}'
-        INNER JOIN selection_has_variant sv ON sv.variant_id = variants.id AND sv.selection_id = selections.id
-        """.format(
-            source
-        )
+        source_query = f"""
+        SELECT variants.id AS variant_id FROM variants
+        INNER JOIN selections ON selections.name = '{source}'
+        INNER JOIN selection_has_variant AS sv ON sv.selection_id = selections.id AND sv.variant_id = variants.id 
+        """
 
     query = (
-        source_query
-        + """
-                INNER JOIN bed_table ON
-                variants.chr = bed_table.chr AND
-                variants.pos >= bed_table.start AND
-                variants.pos <= bed_table.end """
+        source_query +
+        """
+        INNER JOIN bed_table ON
+        variants.chr = bed_table.chr AND
+        variants.pos >= bed_table.start AND
+        variants.pos <= bed_table.end"""
     )
 
     return create_selection_from_sql(conn, query, target, from_selection=True)
@@ -907,7 +900,19 @@ def get_one_variant(conn, id: int):
 
 
 def update_variant(conn, variant: dict):
-    """ Update variant data """
+    """Update variant data
+
+    Used by widgets to save various modifications in a variant.
+
+    Args:
+        variant (dict): Fields as keys; values as values.
+            'id' key is expected to set the variant.
+
+    Raises:
+        KeyError if 'id' key is not in the given variant
+    """
+    if "id" not in variant:
+        raise KeyError("'id' key is not in the given variant <%s>" % variant)
 
     sql_set = []
     sql_val = []
@@ -954,7 +959,7 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
 
     :param conn: sqlite3.connect
     :param data: list of variant dictionnary which contains same number of key than fields numbers.
-    :param variant_count: total variant count, to compute progression
+    :param total_variant_count: total variant count, to compute progression
     :return: Yield a tuple with progression and message.
         Progression is 0 if total_variant_count is not set.
     :rtype: <generator <tuple <int>, <str>>
@@ -1006,7 +1011,6 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
     samples_id_mapping = {
         name: rowid for name, rowid in conn.execute("SELECT name, id FROM samples")
     }
-    samples_names = samples_id_mapping.keys()
 
     # Check SQLite version and build insertion queries for variants
     # Old version doesn't support ON CONFLICT ..target.. DO ... statements
