@@ -518,12 +518,15 @@ def test_selection_from_bedfile_and_subselection(conn):
 
 
 def test_variants(conn):
-    pass
     """Test that we have all inserted variants in the DB"""
 
-    # for i, record in enumerate(conn.execute("SELECT * FROM variants")):
-    #     record = list(record) #omit id
-    #     expected_variant = variants[i]
-    #     del expected_variant["annotations"]
+    for i, record in enumerate(conn.execute("SELECT * FROM variants")):
+        record = list(record)[1:]  # omit id
+        expected_variant = VARIANTS[i]
 
-    #     assert tuple(record[1:]) == tuple(expected_variant.values())
+        # Check only variants, not annotations or samples
+        for not_wanted_key in ("annotations", "samples"):
+            if not_wanted_key in expected_variant:
+                del expected_variant[not_wanted_key]
+
+        assert tuple(record) == tuple(expected_variant.values())
