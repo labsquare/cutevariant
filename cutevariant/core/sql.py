@@ -27,6 +27,7 @@ import sqlite3
 from collections import defaultdict
 from pkg_resources import parse_version
 import re
+from functools import partial
 
 # Custom imports
 import cutevariant.commons as cm
@@ -198,6 +199,31 @@ def get_metadatas(conn: sqlite3.Connection):
     g = (dict(data) for data in conn.execute("""SELECT key, value FROM metadatas"""))
     return {data["key"]: data["value"] for data in g}
 
+## selections & sets tables ====================================================
+
+
+def delete_by_name(conn: sqlite3.Connection, name: str, table_name: str = None):
+    """Delete selection or gene set from name
+
+    Args:
+        conn (sqlit3.Connection): sqlite3 connection
+        name (str): selection name
+        table_name (str):
+    Returns:
+        int: Number of rows affected
+    """
+    if table_name is None:
+        raise ValueError("Please specify a table name")
+
+    if table_name == "selections" and name == "variants":
+        LOGGER.error("Cannot remove the default selection 'variants'")
+        return
+
+    cursor = conn.cursor()
+    cursor.execute(f"DELETE FROM selections WHERE name = ?", (name,))
+    conn.commit()
+    return cursor.rowcount
+
 ## selection table =============================================================
 
 def create_table_selections(conn: sqlite3.Connection):
@@ -298,24 +324,8 @@ def insert_selection(conn, query: str, name="no_name", count=0):
     return cursor.lastrowid
 
 
-def delete_selection_by_name(conn: sqlite3.Connection, name: str):
-    """Delete selection from name
-
-    Args:
-        conn (sqlit3.Connection): sqlite3 connection
-        name (str): selection name
-
-    Returns:
-        TYPE: Description
-    """
-
-    if name == "variants":
-        LOGGER.error("Cannot remove variants")
-        return
-
-    cursor = conn.cursor()
-    cursor.execute(f"DELETE FROM selections WHERE name = ?", (name,))
-    conn.commit()
+# Delete selections by name
+delete_selection_by_name = partial(delete_by_name, table_name="selections")
 
 
 def create_selection_from_sql(
@@ -473,7 +483,7 @@ def delete_selection(conn: sqlite3.Connection, selection_id: int):
         selection_id (int): id from selection table
 
     Returns:
-        int: last rowid
+        int: Number of rows affected
     """
     cursor = conn.cursor()
     cursor.execute("DELETE FROM selections WHERE rowid = ?", (selection_id,))
@@ -536,6 +546,11 @@ def insert_set_from_file(conn: sqlite3.Connection, name, filename):
     conn.commit()
     if cursor.rowcount:
         return cursor.lastrowid
+
+
+# Delete set by name
+delete_set_by_name = partial(delete_by_name, table_name="sets")
+
 
 def get_sets(conn):
     for row in conn.execute(

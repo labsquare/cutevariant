@@ -21,7 +21,6 @@ Example:
 import sqlite3
 import os
 import functools
-import csv
 
 # Pip install ( because functools doesnt work with unhachable)
 from memoization import cached
@@ -173,26 +172,18 @@ def drop_cmd(conn: sqlite3.Connection, feature: str, name: str, **kwargs):
         name (str): name of the selection or the set
 
     Returns:
-        dict: {"success": True}
-        TODO: Use rowcount to return a non fixed success code...
+        dict: {"success": <boolean>}; True if deletion is ok, False otherwise.
 
     Raises:
         vql.VQLSyntaxError
     """
-    accept_features = ["selections", "sets"]
+    accept_features = ("selections", "sets")
 
     if feature not in accept_features:
         raise vql.VQLSyntaxError(f"{feature} doesn't exists")
 
-    if feature == "selections":
-        conn.execute(f"DELETE FROM selections WHERE name = '{name}'")
-        conn.commit()
-        return {"success": True}
-
-    if feature == "sets":
-        conn.execute(f"DELETE FROM sets WHERE name = '{name}'")
-        conn.commit()
-        return {"success": True}
+    affected_lines = sql.delete_by_name(conn, name, table_name=feature)
+    return {"success": (affected_lines > 0)}
 
 
 def create_cmd(
@@ -203,7 +194,7 @@ def create_cmd(
     count=None,
     **kwargs,
 ):
-    """Create command
+    """Create a selection table from the given source, filtered by filters
 
     This following VQL command:
         `CREATE boby FROM variants WHERE pos > 3`
@@ -218,7 +209,8 @@ def create_cmd(
         count (int): precomputed variant count
 
     Returns:
-        dict: {success: True}
+        dict: {"id": lastrowid} if lines have been inserted,
+            or empty dict in case of error
     """
     # Get {'favorite': 'variants', 'comment': 'variants', impact': 'annotations', ...}
     default_tables = {i["name"]: i["category"] for i in sql.get_fields(conn)}
@@ -264,8 +256,8 @@ def set_cmd(
         operator (str): + (union), - (difference), & (intersection) Set operators
 
     Returns:
-        (dict) with lastrowid (selection id) as key id, if lines have been
-        inserted; empty otherwise.
+        dict: {"id": selection_id} if lines have been inserted,
+            or empty dict in case of error
 
     Examples:
         {"id": 2}: 2 lines inserted
@@ -288,7 +280,6 @@ def set_cmd(
     lastrowid = sql.create_selection_from_sql(
         conn, sql_query, target, from_selection=False
     )
-
     return dict() if lastrowid is None else {"id": lastrowid}
 
 
@@ -307,8 +298,8 @@ def bed_cmd(conn: sqlite3.Connection, path: str, target: str, source: str, **kwa
         source (str): source selection table
 
     Returns:
-        (dict) with lastrowid as key id, if lines have been inserted;
-        empty otherwise.
+        dict: {"id": selection_id} if lines have been inserted,
+            or empty dict in case of error
 
     Raises:
         vql.VQLSyntaxError
@@ -337,7 +328,7 @@ def show_cmd(conn: sqlite3.Connection, feature: str, **kwargs):
 
     Yields:
         (generator[dict]): Items according to requested features (fields,
-        samples, selections, sets).
+            samples, selections, sets).
 
     Raises:
         vql.VQLSyntaxError
@@ -357,7 +348,7 @@ def show_cmd(conn: sqlite3.Connection, feature: str, **kwargs):
 
 
 def import_cmd(conn: sqlite3.Connection, feature=str, name=str, path=str, **kwargs):
-    """Import command
+    """Import command for sets only
 
     This following VQL command:
         `IMPORT sets "gene.txt" AS boby`
@@ -371,7 +362,7 @@ def import_cmd(conn: sqlite3.Connection, feature=str, name=str, path=str, **kwar
         path (str): a filepath
 
     Returns:
-        dict: `{success: True or False}`
+        dict: `{success: <boolean>}`
 
     Raises:
         vql.VQLSyntaxError
@@ -385,11 +376,22 @@ def import_cmd(conn: sqlite3.Connection, feature=str, name=str, path=str, **kwar
         raise vql.VQLSyntaxError(f"{path} doesn't exists")
 
     lastrowid = sql.insert_set_from_file(conn, name, path)
-    return {"success": False} if lastrowid is None else {"success": True}
+    return {"success": (lastrowid is not None)}
 
 
 def create_command_from_obj(conn, vql_obj: dict):
-    """Create command function from vql object.
+    """Create command function from vql object according to its "cmd" key
+
+    cmd authorized:
+
+        - select_cmd
+        - count_cmd
+        - drop_cmd
+        - create_cmd
+        - set_cmd
+        - bed_cmd
+        - show_cmd
+        - import_cmd
 
     Warning:
         Use command.execute instead.
