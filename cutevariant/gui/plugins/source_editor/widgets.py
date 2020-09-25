@@ -196,12 +196,6 @@ class SourceEditorWidget(plugin.PluginWidget):
         self.view.selectionModel().currentRowChanged.connect(
             self.on_current_row_changed
         )
-
-        #  Setup actions
-        self.edit_action = self.toolbar.addAction(
-            FIcon(0xF0900), self.tr("Edit"), self.edit_selection
-        )
-
         self.toolbar.addAction(FIcon(0xF0453), "reload", self.load)
 
     def on_open_project(self, conn):
