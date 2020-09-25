@@ -1355,7 +1355,7 @@ class FieldDialog(QDialog):
 
     @Slot(int)
     def on_field_changed(self, index):
-        """This method is trigger when a field has changed
+        """This method is triggered when a field has changed
 
         Args:
             index (int): current index from self.field_box

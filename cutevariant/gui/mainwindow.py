@@ -181,8 +181,6 @@ class MainWindow(QMainWindow):
         Args:
             sender (PluginWidget): from a plugin, you can pass "self" as argument
         """
-
-        print("sender", sender)
         for plugin_obj in self.plugins.values():
             if plugin_obj is not sender and plugin_obj.isVisible():
                 try:

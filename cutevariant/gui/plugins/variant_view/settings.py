@@ -12,7 +12,7 @@ from PySide2.QtWidgets import *
 class LinkSettings(BaseWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle(self.tr("Link"))
+        self.setWindowTitle(self.tr("Cross databases links"))
         self.setWindowIcon(FIcon(0xF070F))
 
         help_label = QLabel(self.tr(
