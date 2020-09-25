@@ -40,8 +40,6 @@ class LinkSettings(BaseWidget):
         main_layout.addLayout(h_layout)
         self.setLayout(main_layout)
 
-        self.load()
-
         # Signals
         self.add_button.clicked.connect(self.add_url)
         self.edit_button.clicked.connect(self.edit_item)
