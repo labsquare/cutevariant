@@ -13,7 +13,13 @@ class LinkSettings(BaseWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Link"))
-        self.setWindowIcon(FIcon(0xF339))
+        self.setWindowIcon(FIcon(0xF070F))
+
+        help_label = QLabel(self.tr(
+            "Allow to set predefined masks for urls pointing in various databases of variants.\n"
+            "Shortcuts will be visible from contextual menu over current variant."
+        ))
+
         self.view = QListWidget()
         self.add_button = QPushButton(self.tr("Add"))
         self.edit_button = QPushButton(self.tr("Edit"))
@@ -25,11 +31,16 @@ class LinkSettings(BaseWidget):
         v_layout.addStretch()
         v_layout.addWidget(self.remove_button)
 
-        main_layout = QHBoxLayout()
-        main_layout.addWidget(self.view)
-        main_layout.addLayout(v_layout)
+        h_layout = QHBoxLayout()
+        h_layout.addWidget(self.view)
+        h_layout.addLayout(v_layout)
 
+        main_layout = QVBoxLayout()
+        main_layout.addWidget(help_label)
+        main_layout.addLayout(h_layout)
         self.setLayout(main_layout)
+
+        self.load()
 
         # Signals
         self.add_button.clicked.connect(self.add_url)
@@ -38,11 +49,11 @@ class LinkSettings(BaseWidget):
         self.remove_button.clicked.connect(self.remove_item)
 
     def save(self):
-        """Override from BaseSettings """
+        """Override from BaseWidget"""
         settings = QSettings()
 
-        settings.remove("plugins/query_view/links")
-        settings.beginGroup("plugins/query_view/links")
+        settings.remove("plugins/variant_view/links")
+        settings.beginGroup("plugins/variant_view/links")
         for i in range(self.view.count()):
             item = self.view.item(i)
             name = item.text()
@@ -51,9 +62,9 @@ class LinkSettings(BaseWidget):
         settings.endGroup()
 
     def load(self):
-        """Override from BaseSettings """
+        """Override from BaseWidget"""
         settings = QSettings()
-        settings.beginGroup("plugins/query_view/links")
+        settings.beginGroup("plugins/variant_view/links")
         self.view.clear()
         for key in settings.childKeys():
             self.add_list_widget_item(key, settings.value(key))
@@ -78,7 +89,7 @@ class LinkSettings(BaseWidget):
         """Allow the user to insert and save custom database URL"""
         # Display dialog box to let the user enter it's own url
         dialog = QDialog()
-        title = QLabel("example: http://url_with_columns{chr}{pos}{ref}{alt}")
+        title = QLabel("Example: http://url_with_columns{chr}{pos}{ref}{alt}")
         name = QLineEdit()
         url = QLineEdit()
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
@@ -87,7 +98,7 @@ class LinkSettings(BaseWidget):
         layout = QFormLayout()
         layout.addWidget(title)
         layout.addRow(self.tr("Name"), name)
-        layout.addRow(self.tr("Url"), url)
+        layout.addRow(self.tr("Url mask"), url)
         layout.addWidget(buttons)
 
         dialog.setLayout(layout)
