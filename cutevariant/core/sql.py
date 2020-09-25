@@ -504,8 +504,8 @@ def create_table_sets(conn: sqlite3.Connection):
     """Create the table "sets"
 
     This table stores variants selection saved by the user:
-            - name: name of the set of variants
-            - value: number of variants concerned by this set
+        - name: name of the set of variants
+        - value: number of variants concerned by this set
 
     Args:
         conn (sqlite3.Connection): Sqlite3 Connection
@@ -534,7 +534,8 @@ def insert_set_from_file(conn: sqlite3.Connection, name, filename):
         )
 
     conn.commit()
-
+    if cursor.rowcount:
+        return cursor.lastrowid
 
 def get_sets(conn):
     for row in conn.execute(

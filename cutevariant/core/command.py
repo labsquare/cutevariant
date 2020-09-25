@@ -366,12 +366,12 @@ def import_cmd(conn: sqlite3.Connection, feature=str, name=str, path=str, **kwar
 
     Args:
         conn (sqlite3.Connection): sqlite3 connection
-        feature (TYPE): "sets"
-        name (TYPE): name of the set
-        path (TYPE): a filepath
+        feature (str): "sets"
+        name (str): name of the set
+        path (str): a filepath
 
     Returns:
-        dict: `{success: True}`
+        dict: `{success: True or False}`
 
     Raises:
         vql.VQLSyntaxError
@@ -384,8 +384,8 @@ def import_cmd(conn: sqlite3.Connection, feature=str, name=str, path=str, **kwar
     if not os.path.isfile(path):
         raise vql.VQLSyntaxError(f"{path} doesn't exists")
 
-    sql.insert_set_from_file(conn, name, path)
-    return {"success": True}
+    lastrowid = sql.insert_set_from_file(conn, name, path)
+    return {"success": False} if lastrowid is None else {"success": True}
 
 
 def create_command_from_obj(conn, vql_obj: dict):
