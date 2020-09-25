@@ -156,7 +156,13 @@ class SourceEditorWidget(plugin.PluginWidget):
 
     ENABLE = True
 
-    def __init__(self, conn=None, parent=None):
+    def __init__(self, parent=None, conn=None):
+        """
+        Args:
+            parent (QMainWindow): Mainwindow of Cutevariant, passed during
+                plugin initialization.
+            conn (sqlite3.connexion): Sqlite3 connexion
+        """
         super().__init__(parent)
 
         self.setWindowTitle(self.tr("Source editor"))
@@ -197,10 +203,6 @@ class SourceEditorWidget(plugin.PluginWidget):
         )
 
         self.toolbar.addAction(FIcon(0xF0453), "reload", self.load)
-        self.conn = conn
-
-    def on_register(self, mainwindow):
-        pass
 
     def on_open_project(self, conn):
         self.model.conn = conn
@@ -357,7 +359,7 @@ class SourceEditorWidget(plugin.PluginWidget):
         set_internal_id = action.data()
 
         # Init class attribute
-        sql.Selection.conn = self.conn
+        sql.Selection.conn = self.model.conn
 
         # Get the records and extract their database id to build 2 Selections objects
         record_1 = self.model.record(self.view.selectionModel().currentIndex())
@@ -439,7 +441,7 @@ class SourceEditorWidget(plugin.PluginWidget):
             # TODO : create a sql.selection_exists(name) to check if selection already exists
             if target:
                 sql.create_selection_from_bed(
-                    self.query.conn, source, target, intervals
+                    self.model.conn, source, target, intervals
                 )
                 self.model.load()
 

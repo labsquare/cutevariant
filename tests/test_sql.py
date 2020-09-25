@@ -73,6 +73,10 @@ VARIANTS = [
         ],
     },
     {
+        "chr": "chr1", "pos": 50, "ref": "C", "alt": "C", "extra1": 20, "extra2": 100,
+        "annotations": [{"gene": "gene1", "transcript": "transcript1"},]
+     },
+    {
         "chr": "chr1",
         "pos": 45,
         "ref": "G",
@@ -383,30 +387,35 @@ def test_selection_from_bedfile(conn):
         chr1 50   60   feature2  0 -
         chr1 51 59 another_feature 0 +
     """
-    # 1: chr1, pos 1 to 10 => 2 variants
-    # 2: chr1, pos 50 to 60 => 2 variants
+    # According to VARIANTS global variable with 3 variants (pos 10, 50 and 45)
+    # 1: chr1, pos 1 to 10 => 1 variant concerned (pos 10)
+    # 2: chr1, pos 50 to 60 => 1 variant concerned (pos 50)
     # 3: chr1, pos 51 to 59 => 0 variants
 
-    #  bedtool = BedTool(larger_string)
+    bedtool = BedTool(larger_string)
 
     # Create a new selection (a second one, since there is a default one during DB creation)
-    # ret = sql.create_selection_from_bed(conn,"variants", "bedname", bedtool)
+    selection_name = "bedname"
+    ret = sql.create_selection_from_bed(conn,"variants", selection_name, bedtool)
 
-    # # Test last id of the selection
-    # assert ret == 2
+    # Test last id of the selection
+    assert ret == 2
 
-    # # Query the association table (variant_id, selection_id)
-    # data = conn.execute("SELECT * FROM selection_has_variant WHERE selection_id = ?", (ret,))
-    # # 4 variants (see above)
-    # expected = ((1, ret), (2, ret), (6, ret), (7, ret))
-    # record = tuple([tuple(i) for i in data])
+    # Query the association table (variant_id, selection_id)
+    data = conn.execute("SELECT * FROM selection_has_variant WHERE selection_id = ?", (ret,))
+    # 2 variants (see above)
+    # format: [(id variant, id selection),]
+    expected = ((1, ret), (2, ret))
+    record = tuple([tuple(i) for i in data])
 
-    # # Is the association table 'selection_has_variant' ok ?
-    # assert record == expected
+    # Is the association table 'selection_has_variant' ok ?
+    print("record:", record)
+    assert record == expected
 
-    # bed_selection  = [s for s in sql.get_selections(conn) if s["name"] == "bedname"][0]
-    # assert bed_selection["name"] == "bedname"
-    # assert bed_selection["count"] == 4
+    bed_selection = [s for s in sql.get_selections(conn) if s["name"] == selection_name][0]
+    print("selection content", bed_selection)
+    assert bed_selection["name"] == selection_name
+    assert bed_selection["count"] == 2  # 2 variants retrieved
 
 
 def test_selection_from_bedfile_and_subselection(conn):

@@ -30,7 +30,7 @@ from memoization import cached
 from cutevariant.core.querybuilder import build_query
 from cutevariant.core import sql, vql
 from cutevariant.commons import logger
-
+from cutevariant.core.reader.bedreader import BedTool
 
 LOGGER = logger()
 
@@ -316,24 +316,9 @@ def bed_cmd(conn: sqlite3.Connection, path: str, target: str, source: str, **kwa
     if not os.path.isfile(path):
         raise vql.VQLSyntaxError(f"{path} doesn't exists")
 
-    def read_bed():
-        """
-        Returns:
-            Yields dict of bed intervals with chr, start, end, name as keys
-        """
-        with open(path) as file:
-            reader = csv.reader(file, delimiter="\t")
-            for line in reader:
-                if len(line) >= 3:
-                    yield {
-                        "chr": line[0],
-                        "start": int(line[1]),
-                        "end": int(line[2]),
-                        "name": "",
-                    }
-
-    # bed_intervals argument expects chr, start, end, name keys in each interval
-    lastrowid = sql.create_selection_from_bed(conn, source, target, read_bed())
+    # bed_intervals: chrom, start, end, name, etc. keys in each interval
+    # see also cutevariant/core/reader/bedreader.py
+    lastrowid = sql.create_selection_from_bed(conn, source, target, BedTool(path))
     return dict() if lastrowid is None else {"id": lastrowid}
 
 

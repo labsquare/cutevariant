@@ -390,12 +390,16 @@ def create_selection_from_bed(
 ):
     """Create a new selection based on the given intervals taken from a BED file
 
+    Variants whose positions are contained in the intervals specified by the
+    BED file will be referenced into the table selection_has_variant under
+    a new selection.
+
     Args:
         conn (sqlite3.connexion): Sqlite3 connexion
-        source (str): Selection name (source)
+        source (str): Selection name (source); Ex: "variants" (default)
         target (str): Selection name (target)
         bed_intervals (list/generator [dict]): List of intervals
-            Each interval is a dict with the expected keys: (chr, start, end, name)
+            Each interval is a dict with the expected keys: (chrom, start, end, name)
 
     Returns:
         lastrowid, if lines have been inserted; None otherwise.
@@ -417,7 +421,7 @@ def create_selection_from_bed(
     for interval in bed_intervals:
         cur.execute(
             "INSERT INTO bed_table (bin, chr, start, end, name) VALUES (?,?,?,?,?)",
-            (0, interval["chr"], interval["start"], interval["end"], interval["name"]),
+            (0, interval["chrom"], interval["start"], interval["end"], interval["name"]),
         )
 
     if source == "variants":
