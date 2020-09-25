@@ -4,7 +4,7 @@ from pkg_resources import parse_version
 # Qt imports
 from PySide2 import __version__ as pyside_version
 from PySide2.QtCore import Qt
-from PySide2.QtGui import QKeySequence
+from PySide2.QtGui import QKeySequence, QIcon
 from PySide2.QtWidgets import (
     QTextEdit,
     QDialog,
@@ -13,7 +13,7 @@ from PySide2.QtWidgets import (
     QToolBar,
     QPlainTextEdit,
     QSplitter,
-    QDialogButtonBox
+    QDialogButtonBox,
 )
 
 # Custom imports
@@ -39,6 +39,7 @@ class MarkdownEditor(QDialog):
         super().__init__(parent)
 
         self.setWindowTitle("Cutevariant - " + self.tr("Comment editor"))
+        self.setWindowIcon(QIcon(cm.DIR_ICONS + "app.png"))
 
         main_vlayout = QVBoxLayout()
         main_vlayout.setContentsMargins(0, 0, 0, 0)

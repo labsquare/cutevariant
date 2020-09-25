@@ -50,8 +50,8 @@ class AboutCutevariant(QDialog):
         twitter_button = self.button_box.addButton("Twitter", QDialogButtonBox.HelpRole)
 
         self.button_box.addButton(QDialogButtonBox.Ok)
-        github_button.setIcon(FIcon(0xF2A4))
-        twitter_button.setIcon(FIcon(0xF546))
+        github_button.setIcon(FIcon(0xF02A4))
+        twitter_button.setIcon(FIcon(0xF0544))
 
         vLayout = QVBoxLayout()
         vLayout.addWidget(self.header_lbl)

@@ -4,17 +4,14 @@ VariantInfoWidget is showed on the GUI, it uses VariantPopupMenu to display a
 contextual menu about the variant which is selected.
 VariantPopupMenu is also used in viewquerywidget for the same purpose.
 """
-# Standard imports
-from functools import partial
-
 # Qt imports
 from PySide2.QtCore import Qt, QPoint, QSettings, QUrl, Slot
 from PySide2.QtWidgets import *
-from PySide2.QtGui import QDesktopServices
+# from PySide2.QtGui import QDesktopServices
 
 # Custom imports
 from cutevariant.gui.ficon import FIcon
-from cutevariant.gui.style import TYPE_COLORS
+# from cutevariant.gui.style import TYPE_COLORS
 from cutevariant.core import sql, get_sql_connexion
 from cutevariant.gui.plugin import PluginWidget
 from cutevariant import commons as cm
@@ -41,9 +38,13 @@ class VariantInfoWidget(PluginWidget):
 
         self.setWindowTitle(self.tr("Info variants"))
 
-        self.view = QTabWidget()
-        # Editor
+        # Current variant => set by on_refresh and on_open_project
+        self.current_variant = None
 
+        self.view = QTabWidget()
+
+        # Editor
+        # TODO: edit comment on variant is disabled
         self.comment_input = QTextBrowser()
         self.comment_input.setAlignment(Qt.AlignTop | Qt.AlignLeft)
         self.comment_input.setOpenExternalLinks(True)
@@ -54,7 +55,7 @@ class VariantInfoWidget(PluginWidget):
         self.toolbar = QToolBar()
         self.toolbar.setIconSize(QSize(16, 16))
 
-        sub_edit_layout = QFormLayout()
+        # sub_edit_layout = QFormLayout()
         # editor_layout.setRowWrapPolicy(QFormLayout.WrapAllRows)
         # sub_edit_layout.addWidget(self.comment_input)
         # sub_edit_layout.addWidget(self.save_button)
@@ -133,6 +134,7 @@ class VariantInfoWidget(PluginWidget):
         self.on_refresh()
 
     def on_refresh(self):
+        """Set the current variant by the variant displayed in the GUI"""
         self.current_variant = self.mainwindow.state.current_variant
         self.populate()
 
@@ -141,10 +143,7 @@ class VariantInfoWidget(PluginWidget):
 
         .. note:: RichText in Markdown is supported starting PySide 5.14
         """
-        if not self.current_variant:
-            return
-
-        if "id" not in self.current_variant:
+        if not self.current_variant or "id" not in self.current_variant:
             return
 
         variant_id = self.current_variant["id"]
@@ -165,7 +164,7 @@ class VariantInfoWidget(PluginWidget):
                 try:
                     self.comment_input.setMarkdown(str(value))
                 except AttributeError:
-                    # Fallback
+                    # Fallback Qt 5.14-
                     self.comment_input.setPlainText(str(value))
 
             self.variant_view.addTopLevelItem(item)

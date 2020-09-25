@@ -134,10 +134,16 @@ class LinkSettings(BaseWidget):
 
 
 class VariantViewSettingsWidget(PluginSettingsWidget):
+    """Instantiated plugin in the settings panel of Cutevariant
+
+    Allow users to set predefined masks for urls pointing in various databases
+    of variants.
+    """
+
     ENABLE = True
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowIcon(FIcon(0xF503))
+        self.setWindowIcon(FIcon(0xF035C))
         self.setWindowTitle("Variant view")
         self.add_settings_widget(LinkSettings())
