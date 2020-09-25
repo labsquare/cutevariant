@@ -146,6 +146,7 @@ def test_get_columns(conn):
     sql.get_columns(conn, "variants") == [
         i["name"] for i in FIELDS if i["category"] == "variants"
     ]
+    raise NotImplementedError
 
 
 def test_get_annotations(conn):
@@ -157,7 +158,6 @@ def test_get_annotations(conn):
     # TODO: CHECK
 
 def test_get_sample_annotations(conn):
-    # TODO
     raise NotImplementedError
 
 
@@ -208,6 +208,7 @@ def test_update_samples(conn):
 
 
 def test_update_variant(conn):
+    """exception si pas id, ajout comment"""
 
     updated = {"id": 1, "ref": "A", "chr": "chrX"}
     sql.update_variant(conn, updated)
@@ -277,6 +278,7 @@ def test_selections(conn):
     # assert conn.in_transaction == True
     # conn.commit()
     # assert conn.in_transaction == False
+    raise NotImplementedError
 
 
 def test_selection_operation(conn):
@@ -294,6 +296,7 @@ def test_selection_operation(conn):
     # Select only alt = C (2 variants among setA)
     query = """SELECT variants.id,chr,pos,ref,alt FROM variants WHERE alt='C'"""
     id_B = sql.create_selection_from_sql(conn, query, "setB", count=None)
+    raise NotImplementedError
 
     # assert all((id_all, id_A, id_B))
 
@@ -374,6 +377,7 @@ def test_select_variant_items(conn):
     # assert len(list(sql.get_variants(conn, **args))) == 1
 
     # TODO more test
+    raise NotImplementedError
 
 
 def test_selection_from_bedfile(conn):
@@ -423,7 +427,7 @@ def test_selection_from_bedfile_and_subselection(conn):
 
     .. note:: Please note that the bedreader **is not** tested here!
     """
-
+    raise NotImplementedError
     larger_string = """
         chr1 1    10   feature1  0 +
         chr1 50   60   feature2  0 -
@@ -455,7 +459,8 @@ def test_selection_from_bedfile_and_subselection(conn):
 # assert record == expected
 
 
-# def test_selection_operation(conn):
+def test_selection_operation(conn):
+    raise NotImplementedError
 
 #     # Prepare base
 #     prepare_base(conn)
