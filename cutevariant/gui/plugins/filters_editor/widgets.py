@@ -1,15 +1,15 @@
-from cutevariant.gui.fields import *
-
-from PySide2.QtWidgets import *
-from PySide2.QtCore import *
-from PySide2.QtGui import *
+# Standard imports
 import sys
-from cutevariant.gui import style, plugin
 import pickle
 import uuid
 
-# Some fields editors
+# Qt imports
+from PySide2.QtWidgets import *
+from PySide2.QtCore import *
+from PySide2.QtGui import *
 
+# Custom imports
+from cutevariant.gui import style, plugin
 from cutevariant.core import sql, get_sql_connexion
 
 
@@ -1281,6 +1281,105 @@ class FilterDelegate(QStyledItemDelegate):
         super().updateEditorGeometry(editor, option, index)
 
 
+class FieldDialog(QDialog):
+    def __init__(self, conn=None, parent=None):
+        super().__init__(parent)
+        self.title_label = QLabel("Non title")
+        self.description_label = QLabel("Description")
+        self.btn_box = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+
+        self.field_box = QComboBox()
+        self.field_operator = OperatorField()
+
+        # setup combobox
+        self.field_box.setEditable(True)
+        # self.field_operator.setEditable(True)
+
+        # setup label
+        font = QFont()
+        font.setBold(True)
+        self.title_label.setFont(font)
+        self.description_label.setWordWrap(True)
+
+        v_layout = QVBoxLayout()
+        v_layout.addWidget(self.title_label)
+        v_layout.addWidget(self.description_label)
+        v_layout.addSpacing(10)
+        self.form_layout = QFormLayout()
+
+        self.form_layout.addRow("Field", self.field_box)
+        self.form_layout.addRow("Operator", self.field_operator)
+        self.form_layout.addRow("Value", QSpinBox())
+
+        v_layout.addLayout(self.form_layout)
+        v_layout.addStretch(True)
+        v_layout.addWidget(self.btn_box)
+
+        self.setLayout(v_layout)
+
+        self.setFixedSize(500, 300)
+
+        self.field_box.currentIndexChanged.connect(self.on_field_changed)
+
+        self.conn = conn
+
+        self.btn_box.accepted.connect(self.accept)
+        self.btn_box.rejected.connect(self.reject)
+
+    @property
+    def conn(self):
+        return self._conn
+
+    @conn.setter
+    def conn(self, conn):
+        self._conn = conn
+        if self._conn:
+            self.load_fields()
+
+    def load_fields(self):
+        """Load sql fields into combobox
+        """
+        for field in sql.get_field_by_category(self.conn, "variants"):
+            self.field_box.addItem(field["name"], field)
+
+    def load_value_editor(self, sql_field):
+        """Create a field widget according sql field name
+
+        Args:
+            sql_field (str): field name from sql field table
+        """
+        self.form_layout.removeRow(2)
+        widget = FieldFactory(conn).create(sql_field)
+        self.form_layout.addRow("value", widget)
+
+    @Slot(int)
+    def on_field_changed(self, index):
+        """This method is trigger when a field has changed
+
+        Args:
+            index (int): current index from self.field_box
+        """
+        field = self.field_box.itemData(index)
+        self.title_label.setText("{name} ({category})".format(**field))
+        self.description_label.setText(field["description"])
+        self.load_value_editor(field["name"])
+
+    def get_condition(self):
+        """Return current condition as a dictionnary
+
+        Returns:
+            Dictionnary exemple {"field":"chr", "operator":"=", value:5}
+
+        """
+        field = self.field_box.currentText()
+        operator = self.field_operator.get_value()
+        widget = self.form_layout.itemAt(5).widget()
+        value = widget.get_value()
+
+        return {"field": field, "operator": operator, "value": value}
+
+
 class FiltersEditorWidget(plugin.PluginWidget):
 
     ENABLE = True
@@ -1503,6 +1602,12 @@ if __name__ == "__main__":
     from cutevariant.core.reader import FakeReader
     import cutevariant.commons as cm
     from cutevariant.gui.ficon import FIcon, setFontPath
+
+    conn = get_sql_connexion("/home/schutz/Dev/cutevariant/examples/test.db")
+
+    d = FieldDialog(conn)
+    d.show()
+    # ---
 
     setFontPath(cm.FONT_FILE)
 
