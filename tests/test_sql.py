@@ -110,7 +110,7 @@ def conn():
     conn = sql.get_sql_connexion(":memory:")
 
     sql.create_project(conn, "test", "hg19")
-    assert table_exists(conn, "projects"), "cannot create table fields"
+    assert table_exists(conn, "projects"), "cannot create table projects"
 
     sql.create_table_fields(conn)
     assert table_exists(conn, "fields"), "cannot create table fields"
