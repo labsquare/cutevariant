@@ -139,7 +139,7 @@ def conn():
 
 
 def test_create_connexion(conn):
-    assert conn != None
+    assert conn is not None
 
 
 def test_get_columns(conn):
@@ -154,11 +154,11 @@ def test_get_annotations(conn):
         del read_tx["variant_id"]
         expected_tx = VARIANTS[id]["annotations"][0]
         assert read_tx == expected_tx
-
+    # TODO: CHECK
 
 def test_get_sample_annotations(conn):
     # TODO
-    pass
+    raise NotImplementedError
 
 
 def test_get_fields(conn):

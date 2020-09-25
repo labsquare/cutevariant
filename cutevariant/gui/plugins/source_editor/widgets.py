@@ -420,10 +420,13 @@ class SourceEditorWidget(plugin.PluginWidget):
             self.model.edit_record(current_index, old_record)
 
     def create_selection_from_bed(self):
-        """ Ask user for a bed file and create a new selection from it """
+        """Ask user for a bed file and create a new selection from it """
+        # Reload last directory used
+        app_settings = QSettings()
+        last_directory = app_settings.value("last_directory", QDir.homePath())
 
         result = QFileDialog.getOpenFileName(
-            self, "Open bed file", QDir.homePath(), "Bed File (*.bed)"
+            self, self.tr("Open bed file"), last_directory, self.tr("Bed File (*.bed)")
         )
 
         if result:
@@ -435,7 +438,7 @@ class SourceEditorWidget(plugin.PluginWidget):
             current_selection = self.model.record(current_index)
             source = current_selection["name"]
             target = QInputDialog.getText(
-                self, "selection  name", "Get a selection name"
+                self, self.tr("selection name"), self.tr("Get a selection name")
             )[0]
 
             # TODO : create a sql.selection_exists(name) to check if selection already exists
@@ -454,9 +457,7 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
-    conn = sqlite3.connect("examples/test.snpeff.vcf.db")
-
-    view = SourceEditorWidget(conn)
+    view = SourceEditorWidget(conn=sqlite3.connect("examples/test.snpeff.vcf.db"))
     view.show()
 
     app.exec_()

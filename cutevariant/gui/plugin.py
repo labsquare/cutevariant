@@ -116,7 +116,8 @@ class PluginWidget(QWidget):
         """Set parent window (mainwindow) to QWidget and to mainwindow attribute
 
         Keys:
-            parent (QMainWindow): cutevariant Mainwindow
+            parent (QMainWindow): Mainwindow of Cutevariant, passed during
+                plugin initialization.
         """
         super().__init__(parent)
         self.mainwindow = parent

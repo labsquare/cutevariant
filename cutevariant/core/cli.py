@@ -8,8 +8,7 @@ import logging
 from columnar import columnar
 
 from cutevariant.core.importer import import_file, async_import_file
-from cutevariant.core import sql
-from cutevariant.core import vql
+from cutevariant.core import sql, vql
 
 
 def main():
