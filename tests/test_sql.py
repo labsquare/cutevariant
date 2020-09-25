@@ -220,16 +220,21 @@ def test_update_variant(conn):
 
 
 def test_insert_set_from_file(conn):
+    """Test the insertion of gene names from file into the database
 
-    import tempfile
-
+    TODO: simulate much more problematic data from biologists please!
+    """
     filename = tempfile.mkstemp()[1]
     data = ["GJB2", "CFTR", "KRAS", "BRCA1"]
+
+    # Simulate a file with a list of genes (1 per line)
     with open(filename, "w") as fp:
         fp.write("\n".join(data))
 
     sql.insert_set_from_file(conn, "test", filename)
 
+    # TODO: for now the one to many relation is not implemented
+    # All records have the name of the set... awesome
     for record in conn.execute("SELECT * FROM sets").fetchall():
         record = dict(record)
         assert record["name"] == "test"
