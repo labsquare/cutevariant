@@ -425,13 +425,11 @@ class SourceEditorWidget(plugin.PluginWidget):
         app_settings = QSettings()
         last_directory = app_settings.value("last_directory", QDir.homePath())
 
-        result = QFileDialog.getOpenFileName(
+        filepath, _ = QFileDialog.getOpenFileName(
             self, self.tr("Open bed file"), last_directory, self.tr("Bed File (*.bed)")
         )
-
-        if result:
-            bed_file = result[0]
-            bedtool = BedTool(bed_file)
+        if filepath:
+            bedtool = BedTool(filepath)
             intervals = tuple(bedtool)
 
             current_index = self.view.selectionModel().currentIndex()
