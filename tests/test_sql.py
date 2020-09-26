@@ -1,4 +1,5 @@
 import pytest
+import tempfile
 
 from cutevariant.core import sql
 from cutevariant.core.reader import BedReader
@@ -75,7 +76,7 @@ VARIANTS = [
     {
         "chr": "chr1", "pos": 50, "ref": "C", "alt": "C", "extra1": 20, "extra2": 100,
         "annotations": [{"gene": "gene1", "transcript": "transcript1"},]
-     },
+    },
     {
         "chr": "chr1",
         "pos": 45,
@@ -450,7 +451,7 @@ def test_selection_from_bedfile_and_subselection(conn):
     assert set_A_id == 2
     assert "setA" in list(s["name"] for s in sql.get_selections(conn))
 
-    # 1: chr1, pos 1 to 10 => 1 variant
+    # 1: chr1, pos 1 to 10 => 1 remaining variant
     # 2: chr1, pos 50 to 60 => 0 variant
     # 3: chr1, pos 51 to 59 => 0 variant
     ret = sql.create_selection_from_bed(conn, "setA", "sub_bedname", bedtool)
