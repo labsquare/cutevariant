@@ -1,4 +1,4 @@
-""" 
+"""
 This module contains all functions to build a complex SQL Select statement to query variant.
 In te most of the case, you will only use build_query function.
 
@@ -32,20 +32,20 @@ def filters_to_flat(filters: dict):
         filter (dict): a nested tree of condition. @See example
 
     Returns:
-        Return (list): all field are now inside a a list 
+        Return (list): all field are now inside a a list
 
     Todo:
-        Move to vql ? 
+        Move to vql ?
 
     Examples:
-        filters = {'AND': 
+        filters = {'AND':
         [{'field': 'ref', 'operator': '=', 'value': "A"},
         {'field': 'alt', 'operator': '=', 'value': "C"}]
         }
-        
+
         filters = _flatten_filter(filters)
 
-        #filters is now [{'field': 'ref', 'operator': '=', 'value': "A"},{'field': 'alt', 'operator': '=', 'value': "C"}]] 
+        #filters is now [{'field': 'ref', 'operator': '=', 'value': "A"},{'field': 'alt', 'operator': '=', 'value': "C"}]]
     """
 
     def recursive_generator(filters):
@@ -64,11 +64,11 @@ def filters_to_flat(filters: dict):
 
 
 def field_function_to_sql(field_function: tuple, use_as=False):
-    """ Convert VQL function to a a jointure field name 
-       
+    """Convert VQL function to a a jointure field name
+
     Examples:
 
-        field = ("genotype", "boby","gt") # which correspond to genotype(boby).GT in VQL 
+        field = ("genotype", "boby","gt") # which correspond to genotype(boby).GT in VQL
         field_function_to_sql(field) == `genotype_boby`.GT
 
     """
@@ -87,11 +87,11 @@ def field_function_to_sql(field_function: tuple, use_as=False):
 
 
 def set_function_to_sql(field_function: tuple):
-    """ Replace a set_function by a select statement 
-    
-    Set_functions is used from VQL to filter annotation within a set of word. 
-    For instance : " SELECT ... WHERE gene IN SET("boby") " 
-    will be replaced by "SELECT ... WHERE gene IN ( SELECT value FROM sets WHERE name = 'boby') 
+    """Replace a set_function by a select statement
+
+    Set_functions is used from VQL to filter annotation within a set of word.
+    For instance : " SELECT ... WHERE gene IN SET("boby") "
+    will be replaced by "SELECT ... WHERE gene IN ( SELECT value FROM sets WHERE name = 'boby')
 
     """
     func_name, arg_name = field_function
@@ -111,17 +111,17 @@ def fields_to_vql(field):
 
 def fields_to_sql(field, default_tables={}, use_as=False):
     """
-    Return field as sql syntax . 
-    
-    Args:
-        field (str or tuple): Column name from a table 
-        default_tables (dict, optional): association between field name and table origin 
-    
-    Returns:
-        str: Sql field 
+    Return field as sql syntax .
 
-    Examples: 
-        fields_to_sql("chr", {"chr":variants})  => `variants`.`chr` 
+    Args:
+        field (str or tuple): Column name from a table
+        default_tables (dict, optional): association between field name and table origin
+
+    Returns:
+        str: Sql field
+
+    Examples:
+        fields_to_sql("chr", {"chr":variants})  => `variants`.`chr`
     """
 
     if isinstance(field, tuple):
@@ -147,21 +147,21 @@ def fields_to_sql(field, default_tables={}, use_as=False):
 def filters_to_sql(filters, default_tables={}):
 
     """
-    Return filters as sql syntax . 
-    
+    Return filters as sql syntax .
+
     Args:
-        filters (dict): Nested tree of condition 
-        default_tables (dict, optional): association between field name and table origin 
+        filters (dict): Nested tree of condition
+        default_tables (dict, optional): association between field name and table origin
 
     Returns:
-        str: SQL WHERE expression 
+        str: SQL WHERE expression
 
-    Examples: 
+    Examples:
         filters_to_sql({"AND": [("pos",">",34), ("af", "==", 10]}) == 'pos > 34 AND af = 10
-   
-    Note: 
-        There is a recursive function inside to parse the nested tree of condition 
-   """
+
+    Note:
+        There is a recursive function inside to parse the nested tree of condition
+    """
 
     def is_field(node):
         return True if len(node) == 3 else False
@@ -271,10 +271,10 @@ def filters_to_vql(filters):
 
 
 def build_vql_query(fields, source="variants", filters={}, group_by=[], having={}):
-    """Build VQL query 
+    """Build VQL query
 
     TODO : harmonize name with build_query => build_sql
-    
+
     Args:
         fields (TYPE): Description
         source (str, optional): Description
@@ -311,25 +311,23 @@ def build_query(
 ):
 
     """
-    Build SQL SELECT query on variants tables 
+    Build SQL SELECT query on variants tables
 
     Args:
-        fields (list): List of fields 
-        source (str): source of the virtual table ( see: selection ) 
-        filters (dict): nested condition tree 
+        fields (list): List of fields
+        source (str): source of the virtual table ( see: selection )
+        filters (dict): nested condition tree
         order_by (str/None): Order by field;
         If None, order_desc is not required.
-        order_desc (bool): Descending or Ascending order 
+        order_desc (bool): Descending or Ascending order
         limit (int/None): limit record count;
         If None, offset is not required.
         offset (int): record count per page
         group_by (list/None): list of field you want to group
-        default_tables (dict): association map between fields and sql table origin 
-        samples_ids (dict): association map between samples name and id 
+        default_tables (dict): association map between fields and sql table origin
+        samples_ids (dict): association map between samples name and id
 
     """
-
-    sql_query = ""
     # Create fields
     sql_fields = ["`variants`.`id`"] + [
         fields_to_sql(col, default_tables, use_as=True) for col in fields if col != "id"
