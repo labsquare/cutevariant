@@ -432,7 +432,6 @@ def test_selection_from_bedfile_and_subselection(conn):
 
     .. note:: Please note that the bedreader **is not** tested here!
     """
-    raise NotImplementedError
     larger_string = """
         chr1 1    10   feature1  0 +
         chr1 50   60   feature2  0 -
@@ -442,27 +441,26 @@ def test_selection_from_bedfile_and_subselection(conn):
     # 1: chr1, pos 1 to 10 => 1 variant concerned (pos 10)
     # 2: chr1, pos 50 to 60 => 1 variant concerned (pos 50)
     # 3: chr1, pos 51 to 59 => 0 variants
+    bedtool = BedReader(larger_string)
 
+    # Create now a sub selection => 2 variants (pos 10, 45)
+    query = "SELECT variants.id,chr,pos,ref,alt FROM variants WHERE ref='G'"
+    set_A_id = sql.create_selection_from_sql(conn, query, "setA", count=None)
+    # 2nd selection (1st is the default "variants")
+    assert set_A_id == 2
+    assert "setA" in list(s["name"] for s in sql.get_selections(conn))
 
-# bedtool = BedReader(larger_string)
+    # 1: chr1, pos 1 to 10 => 1 variant
+    # 2: chr1, pos 50 to 60 => 0 variant
+    # 3: chr1, pos 51 to 59 => 0 variant
+    ret = sql.create_selection_from_bed(conn, "setA", "sub_bedname", bedtool)
+    # id of selection
+    assert ret == 3
 
-# Create now a sub selection
-
-# query = """SELECT variants.id,chr,pos,ref,alt FROM variants WHERE ref='C'"""
-# set_A_id = sql.create_selection_from_sql(conn, query, "setA", count=None)
-
-# assert "setA" in list(s["name"] for s in sql.get_selections(conn))
-
-# # 1: chr1, pos 1 to 10 => 1 variants
-# # 2: chr1, pos 50 to 60 => 2 variants
-# # 3: chr1, pos 51 to 59 => 2 variants
-
-# ret = sql.create_selection_from_bed(conn,"setA", "sub_bedname", bedtool)
-
-# data = conn.execute("SELECT * FROM selection_has_variant WHERE selection_id = ?", (ret,))
-# expected = ((2, ret), (6, ret), (7, ret))
-# record = tuple([tuple(i) for i in data])
-# assert record == expected
+    data = conn.execute("SELECT * FROM selection_has_variant WHERE selection_id = ?", (ret,))
+    expected = ((1, ret),)
+    record = tuple([tuple(i) for i in data])
+    assert record == expected
 
 
 def test_selection_operation(conn):
