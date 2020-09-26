@@ -194,7 +194,7 @@ def create_cmd(
     count=None,
     **kwargs,
 ):
-    """Create a selection table from the given source, filtered by filters
+    """Create a selection from the given source, filtered by filters
 
     This following VQL command:
         `CREATE boby FROM variants WHERE pos > 3`
@@ -209,7 +209,7 @@ def create_cmd(
         count (int): precomputed variant count
 
     Returns:
-        dict: {"id": lastrowid} if lines have been inserted,
+        dict: {"id": selection_id} if lines have been inserted,
             or empty dict in case of error
     """
     # Get {'favorite': 'variants', 'comment': 'variants', impact': 'annotations', ...}
@@ -230,12 +230,10 @@ def create_cmd(
     )
 
     LOGGER.debug("command:create_cmd:: %s", sql_query)
-
-    lastrowid = sql.create_selection_from_sql(
+    selection_id = sql.create_selection_from_sql(
         conn, sql_query, target, count=count, from_selection=False
     )
-
-    return dict() if lastrowid is None else {"id": lastrowid}
+    return dict() if selection_id is None else {"id": selection_id}
 
 
 def set_cmd(
@@ -277,10 +275,10 @@ def set_cmd(
     sql_query = func_query[operator](query_first, query_second)
     LOGGER.debug("command:set_cmd:: %s", sql_query)
 
-    lastrowid = sql.create_selection_from_sql(
+    selection_id = sql.create_selection_from_sql(
         conn, sql_query, target, from_selection=False
     )
-    return dict() if lastrowid is None else {"id": lastrowid}
+    return dict() if selection_id is None else {"id": selection_id}
 
 
 def bed_cmd(conn: sqlite3.Connection, path: str, target: str, source: str, **kwargs):
@@ -298,7 +296,7 @@ def bed_cmd(conn: sqlite3.Connection, path: str, target: str, source: str, **kwa
         source (str): source selection table
 
     Returns:
-        dict: {"id": selection_id} if lines have been inserted,
+        dict: {"id": id of last line inserted} if lines have been inserted,
             or empty dict in case of error
 
     Raises:
@@ -309,8 +307,8 @@ def bed_cmd(conn: sqlite3.Connection, path: str, target: str, source: str, **kwa
 
     # bed_intervals: chrom, start, end, name, etc. keys in each interval
     # see also cutevariant/core/reader/bedreader.py
-    lastrowid = sql.create_selection_from_bed(conn, source, target, BedTool(path))
-    return dict() if lastrowid is None else {"id": lastrowid}
+    selection_id = sql.create_selection_from_bed(conn, source, target, BedTool(path))
+    return dict() if selection_id is None else {"id": selection_id}
 
 
 def show_cmd(conn: sqlite3.Connection, feature: str, **kwargs):
@@ -375,8 +373,8 @@ def import_cmd(conn: sqlite3.Connection, feature=str, name=str, path=str, **kwar
     if not os.path.isfile(path):
         raise vql.VQLSyntaxError(f"{path} doesn't exists")
 
-    lastrowid = sql.insert_set_from_file(conn, name, path)
-    return {"success": (lastrowid is not None)}
+    affected_rows = sql.insert_set_from_file(conn, name, path)
+    return {"success": (affected_rows is not None)}
 
 
 def create_command_from_obj(conn, vql_obj: dict):

@@ -343,7 +343,7 @@ def create_selection_from_sql(
             just `id` if `False`.
 
     Returns:
-        lastrowid, if lines have been inserted; None otherwise.
+        selection_id, if lines have been inserted; None otherwise (rollback).
     """
     cursor = conn.cursor()
 
@@ -384,14 +384,16 @@ def create_selection_from_sql(
         """
 
     cursor.execute(q)
+    affected_rows = cursor.rowcount
 
     # REBUILD INDEXES
     # For joints between selections and variants tables
     create_selection_has_variant_indexes(cursor)
 
-    conn.commit()
-    if cursor.rowcount:
-        return cursor.lastrowid
+    if affected_rows:
+        conn.commit()
+        return selection_id
+    conn.rollback()
     return None
 
 
@@ -544,8 +546,7 @@ def insert_set_from_file(conn: sqlite3.Connection, name, filename):
         )
 
     conn.commit()
-    if cursor.rowcount:
-        return cursor.lastrowid
+    return cursor.rowcount
 
 
 # Delete set by name
