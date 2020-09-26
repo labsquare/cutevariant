@@ -80,13 +80,17 @@ def test_drop_cmd(conn):
 
 def test_bed_cmd(conn):
     """Test bed file insertion as selection"""
-    ret = command.bed_cmd(conn, source="variants", target="test", path="examples/test.bed")
+    ret = command.bed_cmd(
+        conn, source="variants", target="test", path="examples/test.bed"
+    )
     # Number of selections = id of last selection
     selection_number = conn.execute("SELECT COUNT(*) from selections").fetchone()[0]
     assert ret["id"] == selection_number
 
     # Test data in association table
-    variants_in_selection = conn.execute("SELECT COUNT(*) from selection_has_variant").fetchone()[0]
+    variants_in_selection = conn.execute(
+        "SELECT COUNT(*) from selection_has_variant"
+    ).fetchone()[0]
     # 3 variants are concerned by the bed intervals
     expected = 3
     assert variants_in_selection == expected
@@ -115,7 +119,9 @@ def test_set_cmd(conn):
     selection_C = command.set_cmd(conn, target="C", first="A", second="B", operator="+")
     selection_C_id = selection_C["id"]
     print(selection_C_id)
-    variants_in_selection = conn.execute(f"SELECT DISTINCT COUNT(*) from selection_has_variant WHERE selection_id = {selection_C_id}").fetchone()[0]
+    variants_in_selection = conn.execute(
+        f"SELECT DISTINCT COUNT(*) from selection_has_variant WHERE selection_id = {selection_C_id}"
+    ).fetchone()[0]
 
     expected = 11
     assert variants_in_selection == expected
@@ -211,7 +217,9 @@ def test_execute(conn):
     # Create intersection (3 in common)
     result = command.execute(conn, "CREATE set_inter = setB & setA")
     assert "id" in result
-    for found, variant in enumerate(command.execute(conn, "SELECT chr, pos, ref, alt FROM set_inter"), 1):
+    for found, variant in enumerate(
+        command.execute(conn, "SELECT chr, pos, ref, alt FROM set_inter"), 1
+    ):
         assert variant["alt"] == "A" and variant["ref"] == "C"
 
     print("Expected number of variants:", found)
