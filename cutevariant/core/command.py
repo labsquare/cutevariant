@@ -203,9 +203,9 @@ def create_cmd(
 
     Args:
         conn (sqlite3.Connection): sqlite3 connection
-        target (str): target selection table
-        source (str): source selection table
-        filters (TYPE): filters query
+        target (str): target selection name
+        source (str): source selection name
+        filters (dict): filters used to select the variants from source
         count (int): precomputed variant count
 
     Returns:
@@ -392,7 +392,17 @@ def create_command_from_obj(conn, vql_obj: dict):
         - import_cmd
 
     Warning:
-        Use command.execute instead.
+        Use command.execute instead, that is a wrapper to this function.
+
+    Examples:
+        If you want to create a select_cmd function, pass a vql_obj like this one:
+
+            {
+                "cmd": "select_cmd",
+                "fields": ["chr", "pos"],
+                "source": "variants",
+                "filters": {},
+            }
 
     Args:
         conn (sqlite3.Connection): sqlite3.connection
@@ -423,7 +433,9 @@ def execute(conn: sqlite3.Connection, vql_source: str):
     Returns:
         dict: Return command output as a dict
     """
+    # Convert VQL string into VQL object
     vql_obj = vql.parse_one_vql(vql_source)
+    # Convert VQL object into wrapped SQL query
     cmd = create_command_from_obj(conn, vql_obj)
     return cmd()
 

@@ -393,6 +393,7 @@ def create_selection_from_sql(
     if affected_rows:
         conn.commit()
         return selection_id
+    # Must alert a user because no selection is created here
     conn.rollback()
     return None
 
