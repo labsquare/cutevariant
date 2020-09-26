@@ -47,6 +47,7 @@ class MainWindow(QMainWindow):
         self.conn = None
 
         # State variable of application
+        # store fields, source, filters, group_by, having data
         # Often changed by plugins
         self.state = State()
 

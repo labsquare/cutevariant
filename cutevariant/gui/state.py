@@ -1,7 +1,5 @@
 class State(object):
-
-    """This class store application state variable 
-    """
+    """Store application state variable"""
 
     def __init__(self):
 
