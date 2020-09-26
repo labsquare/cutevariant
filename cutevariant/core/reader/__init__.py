@@ -2,4 +2,5 @@
 from .vcfreader import VcfReader
 from .csvreader import CsvReader
 from .fakereader import FakeReader
+from .bedreader import BedReader
 from .abstractreader import check_field_schema, check_variant_schema

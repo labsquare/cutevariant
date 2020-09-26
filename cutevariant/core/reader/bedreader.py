@@ -12,7 +12,7 @@ import cutevariant.commons as cm
 LOGGER = cm.logger()
 
 
-class BedTool:
+class BedReader:
     """BED file parser
 
     It is a substitution to pybedtools that is a (too) big black box to make lots
@@ -32,18 +32,18 @@ class BedTool:
     .. seealso:: BED specs: https://www.ensembl.org/info/website/upload/bed.html
 
     How to use:
-        intervals = BedTool("myfile.bed.gz)
+        intervals = BedReader("myfile.bed.gz)
         generator = iter(intervals)
         first_interval = next(generator)
 
-        intervals = BedTool("myfile.bed)
+        intervals = BedReader("myfile.bed)
 
         large_string = \"""
             chr1 1    10   feature1  0 +
             chr1 50   60   feature2  0 -
             chr1 51 59 another_feature 0 +
         \"""
-        intervals = BedTool(large_string)
+        intervals = BedReader(large_string)
 
         for interval in intervals:
             print(interval)
@@ -186,7 +186,7 @@ def parse_bed_file(filepath):
 
     .. seealso:: https://www.ensembl.org/info/website/upload/bed.html
     """
-    bedtool = BedTool(filepath)
+    bedtool = BedReader(filepath)
 
     for interval in bedtool:
         # Remove 'chr' prefix from the chromosome name

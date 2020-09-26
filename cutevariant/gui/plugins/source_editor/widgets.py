@@ -10,7 +10,7 @@ from PySide2.QtGui import *
 
 # Custom imports
 from cutevariant.core import sql
-from cutevariant.core.reader.bedreader import BedTool
+from cutevariant.core.reader import BedReader
 from cutevariant.gui import plugin, FIcon
 from cutevariant.commons import logger, DEFAULT_SELECTION_NAME
 
@@ -423,7 +423,7 @@ class SourceEditorWidget(plugin.PluginWidget):
             self, self.tr("Open bed file"), last_directory, self.tr("Bed File (*.bed)")
         )
         if filepath:
-            bedtool = BedTool(filepath)
+            bedtool = BedReader(filepath)
             intervals = tuple(bedtool)
 
             current_index = self.view.selectionModel().currentIndex()

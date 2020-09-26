@@ -29,7 +29,7 @@ from memoization import cached
 from cutevariant.core.querybuilder import build_query
 from cutevariant.core import sql, vql
 from cutevariant.commons import logger
-from cutevariant.core.reader.bedreader import BedTool
+from cutevariant.core.reader import BedReader
 
 LOGGER = logger()
 
@@ -307,7 +307,7 @@ def bed_cmd(conn: sqlite3.Connection, path: str, target: str, source: str, **kwa
 
     # bed_intervals: chrom, start, end, name, etc. keys in each interval
     # see also cutevariant/core/reader/bedreader.py
-    selection_id = sql.create_selection_from_bed(conn, source, target, BedTool(path))
+    selection_id = sql.create_selection_from_bed(conn, source, target, BedReader(path))
     return dict() if selection_id is None else {"id": selection_id}
 
 

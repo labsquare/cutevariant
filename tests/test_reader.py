@@ -5,7 +5,7 @@ from collections import OrderedDict
 
 # Custom imports
 from cutevariant.core.reader import VcfReader, FakeReader
-from cutevariant.core.reader.bedreader import BedTool
+from cutevariant.core.reader import BedReader
 from cutevariant.core.reader import check_variant_schema, check_field_schema
 from cutevariant.core import sql
 
@@ -104,7 +104,7 @@ def test_bedreader_from_string():
         chr1 50   60   feature2  0 -
         chr1 51 59 another_feature 0 +
     """
-    intervals = tuple(BedTool(large_string))
+    intervals = tuple(BedReader(large_string))
     expected = (
         OrderedDict(
             [
@@ -165,7 +165,7 @@ def test_bedreader_from_empty_string():
         browser position chr7:127471196-127495720
     """
 
-    bedtool = BedTool(large_string)
+    bedtool = BedReader(large_string)
     intervals = tuple(bedtool)
 
     assert intervals == tuple()
@@ -173,7 +173,7 @@ def test_bedreader_from_empty_string():
 
     large_string = ""
 
-    bedtool = BedTool(large_string)
+    bedtool = BedReader(large_string)
     intervals = tuple(bedtool)
 
     assert intervals == tuple()
@@ -183,7 +183,7 @@ def test_bedreader_from_empty_string():
 def test_bedreader_from_file():
     """Test bed data in gz and uncompressed files"""
 
-    bedtool = BedTool("examples/test.bed.gz")
+    bedtool = BedReader("examples/test.bed.gz")
     intervals = tuple(bedtool)
     expected = (
         OrderedDict(
@@ -255,7 +255,7 @@ def test_bedreader_from_file():
     assert intervals == expected
     assert bedtool.count == 4
 
-    bedtool = BedTool("examples/test_with_headers.bed")
+    bedtool = BedReader("examples/test_with_headers.bed")
     intervals = tuple(bedtool)
 
     assert intervals == expected
