@@ -469,67 +469,76 @@ def test_selection_from_bedfile_and_subselection(conn):
     assert record == expected
 
 
-def test_selection_operation(conn):
-    raise NotImplementedError
+def test_sql_selection_operation(conn):
 
-#     # Prepare base
-#     prepare_base(conn)
-#     cursor = conn.cursor()
+    cursor = conn.cursor()
 
-#     all_selection = cursor.execute("SELECT * FROM selections").fetchone()
+    # Query the first default selection
+    all_selection = cursor.execute("SELECT * FROM selections").fetchone()
 
-#     print("all", all_selection)
-#     assert all_selection[0] == "all"
-#     assert all_selection[1] == len(variants)
+    # {'id': 1, 'name': 'variants', 'count': 3, 'query': ''}
+    print("all", dict(all_selection))
+    # index 0: id in db
+    assert all_selection[1] == "variants"
+    assert all_selection[2] == len(VARIANTS)
 
-#     # Create a selection from sql
-#     query = "SELECT chr, pos FROM variants where alt = 'A' "
-#     sql.create_selection_from_sql(conn, "test", query)
+    # Create a selection from sql
+    query = "SELECT id, chr, pos FROM variants where alt = 'A' "
+    sql.create_selection_from_sql(conn, query, "test")
 
-#     # check if selection has been created
-#     assert "test" in [record["name"] for record in sql.get_selections(conn)]
+    # check if selection has been created
+    assert "test" in [record["name"] for record in sql.get_selections(conn)]
 
-#     # Check if selection of variants returns same data than selection query
-#     selection_id = 2
-#     insert_data = cursor.execute(query).fetchall()
+    # Check if selection of variants returns same data than selection query
+    selection_id = 2
+    insert_data = cursor.execute(query).fetchall()
 
-#     read_data = cursor.execute(
-#         f"""
-#         SELECT variants.chr, variants.pos FROM variants
-#         INNER JOIN selection_has_variant sv ON variants.rowid = sv.variant_id AND sv.selection_id = {selection_id}
-#         """
-#     ).fetchall()
+    read_data = cursor.execute(
+        f"""
+        SELECT variants.id, variants.chr, variants.pos FROM variants
+        INNER JOIN selection_has_variant sv ON variants.rowid = sv.variant_id AND sv.selection_id = {selection_id}
+        """
+    ).fetchall()
 
-#     # set because, it can contains duplicate variants
-#     assert set(read_data) == set(insert_data)
+    # set because, it can contains duplicate variants
+    assert set(read_data) == set(insert_data)
 
-#     # TEST Unions
-#     query1 = "SELECT chr, pos FROM variants where alt = 'G' "
-#     query2 = "SELECT chr, pos FROM variants where alt = 'T' "
+    # TEST Unions
+    query1 = "SELECT id, chr, pos FROM variants where alt = 'A' "  # 2 variants
+    query2 = "SELECT id, chr, pos FROM variants where alt = 'C' "  # 1 variant
 
-#     union_query = sql.union_variants(query1, query2)
-#     print(union_query)
-#     sql.create_selection_from_sql(conn, "union_GT", union_query)
-#     record = cursor.execute(
-#         f"SELECT rowid, name FROM selections WHERE name = 'union_GT'"
-#     ).fetchone()
-#     selection_id = record[0]
-#     selection_name = record[1]
-#     assert selection_id == 3  # test if selection id equal 2 ( the first is "variants")
-#     assert selection_name == "union_GT"
+    union_query = sql.union_variants(query1, query2)
+    print(union_query)
+    selection_id = sql.create_selection_from_sql(conn, union_query, "union_GT")
+    print("union_GT selection id: ", selection_id)
+    assert selection_id is not None
+    record = cursor.execute(
+        f"SELECT id, name FROM selections WHERE name = 'union_GT'"
+    ).fetchone()
+    print("Found record:", dict(record))
+    selection_id = record[0]
+    selection_name = record[1]
+    assert selection_id == 3  # test if selection id equal 2 ( the first is "variants")
+    assert selection_name == "union_GT"
 
-#     # Select statement from union_GT selection must contains only variant.alt G or T
-#     records = cursor.execute(
-#         f"""
-#         SELECT variants.chr, variants.pos, variants.ref, variants.alt FROM variants
-#         INNER JOIN selection_has_variant sv ON variants.rowid = sv.variant_id AND sv.selection_id = {selection_id}
-#         """
-#     ).fetchall()
+    # Select statement from union_GT selection must contains only variant.alt G or T
+    records = cursor.execute(
+        f"""
+        SELECT variants.chr, variants.pos, variants.ref, variants.alt FROM variants
+        INNER JOIN selection_has_variant sv ON variants.rowid = sv.variant_id AND sv.selection_id = {selection_id}
+        """
+    ).fetchall()
 
-#     for record in records:
-#         assert record[3] in ("G", "T")
+    # {'chr': 'chr1', 'pos': 10, 'ref': 'G', 'alt': 'A'}
+    # {'chr': 'chr1', 'pos': 50, 'ref': 'C', 'alt': 'C'}
+    # {'chr': 'chr1', 'pos': 45, 'ref': 'G', 'alt': 'A'}
+    for found_variants, record in enumerate(records, 1):
+        print(dict(record))
+        assert record["alt"] in ("A", "C")
 
-#     # Todo : test intersect and expect
+    assert found_variants == 3
+
+    # Todo : test intersect and expect
 
 
 def test_variants(conn):

@@ -116,6 +116,7 @@ def test_set_cmd(conn):
     selection_number = conn.execute("SELECT COUNT(*) from selections").fetchone()[0]
     assert selection_number == 3
 
+    # C = A | B
     selection_C = command.set_cmd(conn, target="C", first="A", second="B", operator="+")
     selection_C_id = selection_C["id"]
     print(selection_C_id)
