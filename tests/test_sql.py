@@ -144,19 +144,25 @@ def test_create_connexion(conn):
 
 
 def test_get_columns(conn):
-    sql.get_columns(conn, "variants") == [
-        i["name"] for i in FIELDS if i["category"] == "variants"
-    ]
-    raise NotImplementedError
+    """Test getting columns of variants and annotations"""
+    variant_cols = set(sql.get_columns(conn, "variants"))
+    expected_cols = {i["name"] for i in FIELDS if i["category"] == "variants"}
+    assert variant_cols == expected_cols
+
+    annot_cols = set(sql.get_columns(conn, "annotations"))
+    expected_cols = {i["name"] for i in FIELDS if i["category"] == "annotations"}
+    expected_cols.add("variant_id")
+    # {'gene', 'transcript', 'variant_id'}
+    assert annot_cols == expected_cols
 
 
 def test_get_annotations(conn):
-    for id, variant in enumerate(VARIANTS):
-        read_tx = list(sql.get_annotations(conn, id + 1))[0]
+    for index, variant in enumerate(VARIANTS):
+        # Compare annotations from DB with expected annotations for each variant
+        read_tx = list(sql.get_annotations(conn, index + 1))[0]
         del read_tx["variant_id"]
-        expected_tx = VARIANTS[id]["annotations"][0]
+        expected_tx = VARIANTS[index]["annotations"][0]
         assert read_tx == expected_tx
-    # TODO: CHECK
 
 def test_get_sample_annotations(conn):
     raise NotImplementedError
@@ -251,40 +257,39 @@ def test_selections(conn):
     # Create a selection that contains all 8 variants in the DB
     # (no filter on this list, via annotation table because this table is not
     # initialized here)
-    query = """SELECT variants.id,chr,pos,ref,alt FROM variants"""
-    #    LEFT JOIN annotations
-    #     ON annotations.variant_id = variants.rowid"""
+    query = """SELECT variants.id,chr,pos,ref,alt FROM variants
+       LEFT JOIN annotations
+        ON annotations.variant_id = variants.rowid"""
 
     # Create a new selection (a second one, since there is a default one during DB creation)
-    # ret = sql.create_selection_from_sql(conn, query, "selection_name", count=None)
-    # assert ret == 2
+    ret = sql.create_selection_from_sql(conn, query, "selection_name", count=None)
+    assert ret == 2
 
-    # # Query the association table (variant_id, selection_id)
-    # data = conn.execute("SELECT * FROM selection_has_variant")
-    # expected = ((1, ret), (2, ret), (3, ret), (4, ret), (5, ret), (6, ret), (7, ret), (8, ret))
-    # record = tuple([tuple(i) for i in data])
+    # Query the association table (variant_id, selection_id)
+    data = conn.execute("SELECT * FROM selection_has_variant")
+    expected = ((1, ret), (2, ret), (3, ret))
+    record = tuple([tuple(i) for i in data])
 
-    # # Is the association table 'selection_has_variant' ok ?
-    # assert record == expected
+    # Is the association table 'selection_has_variant' ok ?
+    assert record == expected
 
-    # # Test ON CASCADE deletion
-    # cursor = conn.cursor()
-    # cursor.execute("DELETE FROM selections WHERE rowid = ?", str(ret))
+    # Test ON CASCADE deletion
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM selections WHERE rowid = ?", str(ret))
 
-    # assert cursor.rowcount == 1
+    assert cursor.rowcount == 1
 
-    # # Now the table must be empty
-    # data = conn.execute("SELECT * FROM selection_has_variant")
-    # expected = tuple()
-    # record = tuple([tuple(i) for i in data])
+    # Now the table must be empty
+    data = conn.execute("SELECT * FROM selection_has_variant")
+    expected = tuple()
+    record = tuple([tuple(i) for i in data])
 
-    # assert record == expected
+    assert record == expected
 
-    # # Extra tests on transactions states
-    # assert conn.in_transaction == True
-    # conn.commit()
-    # assert conn.in_transaction == False
-    raise NotImplementedError
+    # Extra tests on transactions states
+    assert conn.in_transaction
+    conn.commit()
+    assert not conn.in_transaction
 
 
 def test_selection_operation(conn):
