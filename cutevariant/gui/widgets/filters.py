@@ -218,7 +218,6 @@ class FiltersEditor(QTabWidget):
     def mousePressEvent(self, event):
 
         # HACK for testing...
-        print(self.get_filters())
         self.changed.emit()
 
 

@@ -91,7 +91,7 @@ SetIdentifier: 'SET[' arg=ARGS ']';
 
 BoolOperator: "AND"|"OR";
 SetOperator: "+"|"-"|"&"|"^";
-MathOperator: />=|<=|!=|=|>|<|!~|~|is|like|has|in/;
+MathOperator: />=|<=|!=|=|>|<|!~|~|is|like|not like|has|not in|in/;
 Tuple: '(' items+=ValueIdentifier[','] ')';
 
 

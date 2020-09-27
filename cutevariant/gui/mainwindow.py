@@ -12,7 +12,7 @@ from PySide2.QtWidgets import *
 from PySide2.QtGui import QIcon, QKeySequence
 
 # Custom imports
-from cutevariant.core import get_sql_connexion, get_metadatas
+from cutevariant.core import get_sql_connexion, get_metadatas, command
 from cutevariant.core.writer import CsvWriter
 from cutevariant.gui.ficon import FIcon
 from cutevariant.gui.state import State
@@ -118,11 +118,11 @@ class MainWindow(QMainWindow):
 
         `setting` type is handled separately in :meth:`cutevariant.gui.settings.load_plugins`
         """
-        LOGGER.debug("MainWindow:: Registering plugins...")
+        LOGGER.info("MainWindow:: Registering plugins...")
 
         # Get classes of plugins
         for extension in plugin.find_plugins():
-            LOGGER.info("Extension: %s", extension)
+            LOGGER.debug("Extension: %s", extension)
 
             if "widget" in extension:
                 # New GUI widget
@@ -242,15 +242,15 @@ class MainWindow(QMainWindow):
         self.file_menu.addAction(self.tr("&Quit"), self.close, QKeySequence.Quit)
 
         ## Edit
-        # self.edit_menu = self.menuBar().addMenu(self.tr("&Edit"))
-        # self.edit_menu.addAction(FIcon(0xF018F), "&Copy", self.copy, QKeySequence.Copy)
+        self.edit_menu = self.menuBar().addMenu(self.tr("&Edit"))
+        self.edit_menu.addAction(FIcon(0xF018F), "&Copy", self.copy, QKeySequence.Copy)
         # self.edit_menu.addAction(
-        #    FIcon(0xF0192), "&Paste", self.paste, QKeySequence.Paste
+        #     FIcon(0xF0192), "&Paste", self.paste, QKeySequence.Paste
         # )
-        # self.edit_menu.addSeparator()
-        # self.edit_menu.addAction(
-        #    FIcon(0xF0486), "Select all", self.select_all, QKeySequence.SelectAll
-        # )
+        self.edit_menu.addSeparator()
+        self.edit_menu.addAction(
+            FIcon(0xF0486), "Select all", self.select_all, QKeySequence.SelectAll
+        )
 
         ## View
         self.view_menu = self.menuBar().addMenu(self.tr("&View"))
@@ -340,6 +340,9 @@ class MainWindow(QMainWindow):
         """
         self.conn = conn
 
+        # Clear memoization cache for count_cmd
+        command.clear_cache_cmd()
+
         for plugin_obj in self.plugins.values():
             plugin_obj.on_open_project(self.conn)
 
@@ -394,6 +397,7 @@ class MainWindow(QMainWindow):
     def on_recent_project_clicked(self):
         """Slot to load a recent project"""
         action = self.sender()
+        LOGGER.debug(action.text())
         self.open(action.text())
 
     def new_project(self):
@@ -415,7 +419,7 @@ class MainWindow(QMainWindow):
             raise
 
     def open_project(self):
-        """Slot to open an already existing project"""
+        """Slot to open an already existing project from a QFileDialog"""
         # Reload last directory used
         app_settings = QSettings()
         last_directory = app_settings.value("last_directory", QDir.homePath())
@@ -528,6 +532,15 @@ class MainWindow(QMainWindow):
         self.open_database(self.conn)
         # Allow a user to save further modifications
         self.requested_reset_ui = False
+
+    def copy(self):
+        if "variant_view" in self.plugins:
+            self.plugins["variant_view"].copy()
+
+    def select_all(self):
+        """Select all elements in the current tab's view"""
+        if "variant_view" in self.plugins:
+            self.plugins["variant_view"].select_all()
 
     def closeEvent(self, event):
         """Save the current state of this mainwindow's toolbars and dockwidgets
