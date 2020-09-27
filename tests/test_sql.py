@@ -307,14 +307,14 @@ def test_selection_operation(conn):
     # Select only alt = C (2 variants among setA)
     query = """SELECT variants.id,chr,pos,ref,alt FROM variants WHERE alt='C'"""
     id_B = sql.create_selection_from_sql(conn, query, "setB", count=None)
+
+    assert all((id_all, id_A, id_B))
+
+    selections = [selection["name"] for selection in sql.get_selections(conn)]
+
+    assert "setA" in selections
+    assert "setB" in selections
     raise NotImplementedError
-
-    # assert all((id_all, id_A, id_B))
-
-    # selections = [selection["name"] for selection in sql.get_selections(conn)]
-
-    # assert "setA" in selections
-    # assert "setB" in selections
 
     # sql.Selection.conn = conn
 
@@ -470,7 +470,11 @@ def test_selection_from_bedfile_and_subselection(conn):
 
 
 def test_sql_selection_operation(conn):
+    """Test set operations on selections using SQL API
 
+    .. Todo:: Only union is tested here test intersect and expect
+        (intersect is tested in test_command)
+    """
     cursor = conn.cursor()
 
     # Query the first default selection
@@ -537,8 +541,6 @@ def test_sql_selection_operation(conn):
         assert record["alt"] in ("A", "C")
 
     assert found_variants == 3
-
-    # Todo : test intersect and expect
 
 
 def test_variants(conn):
