@@ -1,4 +1,4 @@
-from cutevariant.core import command, sql
+from cutevariant.core import command, sql, vql
 from cutevariant.core.reader import VcfReader
 from cutevariant.core.importer import import_reader
 import pytest
@@ -131,6 +131,7 @@ def test_set_cmd(conn):
 def test_import_cmd(conn):
     # TODO: Rewrite this import method from hasardous files
 
+    # Test import of word set
     test_file = "examples/gene.txt"
     name = "boby"
 
@@ -145,54 +146,78 @@ def test_import_cmd(conn):
         item = dict(record)
         assert item["name"] == name
 
-    # assert type(cmd) == command.SelectCommand
-    # assert cmd.fields == ["chr","pos"]
-    # assert cmd.source == "variants"
-
-    # cmd = command.create_command_from_vql_objet(conn,  next(vql.execute_vql("CREATE denovo FROM variants")))
-    # assert type(cmd) == command.CreateCommand
-    # assert cmd.source == "variants"
-    # assert cmd.target == "denovo"
-
-    # cmd = command.create_command_from_vql_objet(conn,  next(vql.execute_vql("CREATE denovo = a + b ")))
-    # assert type(cmd) == command.SetCommand
-    # assert cmd.target == "denovo"
-    # assert cmd.first == "a"
-    # assert cmd.second == "b"
-
-    # cmd = command.create_command_from_vql_objet(conn,  next(vql.execute_vql("CREATE denovo FROM variants INTERSECT 'test.bed' ")))
-    # assert type(cmd) == command.BedCommand
-    # assert cmd.source == "variants"
-    # assert cmd.target == "denovo"
-    # assert cmd.bedfile == "test.bed"
-
 
 def test_create_command_from_obj(conn):
+    """Test create_command_from_obj
 
+    - Test from VQL Query
+    - Test from VQL Object
+    """
+    ## From VQL Query ##########################################################
+    cmd = command.create_command_from_obj(
+        conn, next(vql.execute_vql("CREATE denovo FROM variants"))
+    )
+    expected_kwargs = {
+        "cmd": "create_cmd",
+        "source": "variants",
+        "filters": {},
+        "target": "denovo",
+    }
+    print(cmd.keywords)
+    assert cmd.keywords == expected_kwargs
+
+    cmd = command.create_command_from_obj(
+        conn, next(vql.execute_vql("CREATE denovo = a + b "))
+    )
+    print(cmd.keywords)
+    expected_kwargs = {
+        "cmd": "set_cmd",
+        "target": "denovo",
+        "first": "a",
+        "operator": "+",
+        "second": "b",
+    }
+    assert cmd.keywords == expected_kwargs
+
+    cmd = command.create_command_from_obj(
+        conn, next(vql.execute_vql("CREATE denovo FROM variants INTERSECT 'test.bed' "))
+    )
+    # Keywords of partial function
+    expected_kwargs = {
+        "cmd": "bed_cmd",
+        "target": "denovo",
+        "source": "variants",
+        "path": "test.bed",
+    }
+    assert cmd.keywords == expected_kwargs
+
+    ## From VQL objects ########################################################
+    expected_kwargs = {
+        "cmd": "create_cmd",
+        "fields": ["chr", "pos"],
+        "target": "test",
+        "source": "variants",
+        "filters": {},
+    }
     partial_fct = command.create_command_from_obj(
         conn,
-        {
-            "cmd": "create_cmd",
-            "fields": ["chr", "pos"],
-            "target": "test",
-            "source": "variants",
-            "filters": {},
-        },
+        expected_kwargs,
     )
-    assert partial_fct.func == command.create_cmd
+    print(partial_fct.keywords)
+    assert partial_fct.keywords == expected_kwargs
 
+    expected_kwargs = {
+        "cmd": "select_cmd",
+        "fields": ["chr", "pos"],
+        "source": "variants",
+        "filters": {},
+    }
     partial_fct = command.create_command_from_obj(
         conn,
-        {
-            "cmd": "select_cmd",
-            "fields": ["chr", "pos"],
-            "source": "variants",
-            "filters": {},
-        },
+        expected_kwargs,
     )
-    assert partial_fct.func == command.select_cmd
-
-    # etc ...
+    print(partial_fct.keywords)
+    assert partial_fct.keywords == expected_kwargs
 
 
 def test_execute(conn):
