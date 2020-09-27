@@ -75,7 +75,7 @@ VARIANTS = [
     },
     {
         "chr": "chr1", "pos": 50, "ref": "C", "alt": "C", "extra1": 20, "extra2": 100,
-        "annotations": [{"gene": "gene1", "transcript": "transcript1"},]
+        "annotations": [{"gene": "gene1", "transcript": "transcript1"}],
     },
     {
         "chr": "chr1",
@@ -406,7 +406,7 @@ def test_selection_from_bedfile(conn):
 
     # Create a new selection (a second one, since there is a default one during DB creation)
     selection_name = "bedname"
-    ret = sql.create_selection_from_bed(conn,"variants", selection_name, bedtool)
+    ret = sql.create_selection_from_bed(conn, "variants", selection_name, bedtool)
 
     # Test last id of the selection
     assert ret == 2
