@@ -911,13 +911,13 @@ def create_variants_indexes(conn):
     conn.execute("""CREATE INDEX idx_variants_ref_alt ON variants (ref, alt)""")
 
 
-def get_one_variant(conn, id: int):
+def get_one_variant(conn, variant_id: int):
     """Get the variant with the given id"""
     # Use row_factory here
     conn.row_factory = sqlite3.Row
     # Cast sqlite3.Row object to dict because later, we use items() method.
     return dict(
-        conn.execute(f"""SELECT * FROM variants WHERE variants.id = {id}""").fetchone()
+        conn.execute(f"""SELECT * FROM variants WHERE variants.id = {variant_id}""").fetchone()
     )
 
 
@@ -950,25 +950,24 @@ def update_variant(conn, variant: dict):
     conn.commit()
 
 
-def get_annotations(conn, id: int):
-    """ Get variant annotation with the given id """
+def get_annotations(conn, variant_id: int):
+    """Get variant annotation for the variant with the given id"""
     conn.row_factory = sqlite3.Row
     for annotation in conn.execute(
-        f"""SELECT * FROM annotations WHERE variant_id = {id}"""
+        f"""SELECT * FROM annotations WHERE variant_id = {variant_id}"""
     ):
         yield dict(annotation)
 
 
 def get_sample_annotations(conn, variant_id: int, sample_id: int):
-    """ Get variant annotation for a given sample """
+    """Get samples for given sample id and variant id"""
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    q = f"""SELECT * FROM sample_has_variant WHERE variant_id = {variant_id} and sample_id = {sample_id}"""
-    result = cursor.execute(
-        f"""SELECT * FROM sample_has_variant WHERE variant_id = {variant_id} and sample_id = {sample_id}"""
-    ).fetchone()
-
-    return dict(result)
+    return dict(
+        cursor.execute(
+            f"""SELECT * FROM sample_has_variant WHERE variant_id = {variant_id} and sample_id = {sample_id}"""
+        ).fetchone()
+    )
 
 
 def get_variants_count(conn):
