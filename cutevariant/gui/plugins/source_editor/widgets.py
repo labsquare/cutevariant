@@ -9,7 +9,7 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 
 # Custom imports
-from cutevariant.core import sql
+from cutevariant.core import sql, command
 from cutevariant.core.reader import BedReader
 from cutevariant.gui import plugin, FIcon
 from cutevariant.commons import logger, DEFAULT_SELECTION_NAME
@@ -37,7 +37,7 @@ class SourceModel(QAbstractTableModel):
 
     def columnCount(self, parent=QModelIndex()):
         """Overrided from QAbstractTableModel"""
-        return 2  #  value and count
+        return 2  # value and count
 
     def data(self, index: QModelIndex(), role=Qt.DisplayRole):
         """Return the data stored under the given role for the item referred
@@ -192,6 +192,16 @@ class SourceEditorWidget(plugin.PluginWidget):
 
         self.setLayout(layout)
 
+        # Used to block signals during the insertions (if set to True)
+        self.is_loading = False
+
+        # Map the operations of context menu with an internal id not visible
+        # from the user
+        # This id is used by _create_set_operation_menu
+        # Keys: user text; values: set operators
+        # See menu_setup()
+        self.set_operations_mapping = dict()
+
         # call on_current_row_changed when item selection changed
         self.view.selectionModel().currentRowChanged.connect(
             self.on_current_row_changed
@@ -203,8 +213,6 @@ class SourceEditorWidget(plugin.PluginWidget):
         self.on_refresh()
 
     def on_refresh(self):
-        # self.model.source = self.mainwindow.state.source
-
         self.view.selectionModel().blockSignals(True)
         self.model.load()
         self.source = self.mainwindow.state.source
@@ -229,6 +237,7 @@ class SourceEditorWidget(plugin.PluginWidget):
     def menu_setup(self, locked_selection=False):
         """Setup popup menu
         :key locked_selection: Allow to mask edit/remove actions (default False)
+            Used on special selections like the default one (named variants).
         :type locked_selection: <boolean>
         """
         menu = QMenu()
@@ -246,9 +255,9 @@ class SourceEditorWidget(plugin.PluginWidget):
         # Set operations on selections: create mapping and actions
         set_icons_ids = (0xF0779, 0xF077C, 0xF0778)
         set_texts = (self.tr("Intersect"), self.tr("Difference"), self.tr("Union"))
-        set_internal_ids = ("intersect", "difference", "union")
+        set_internal_ids = ("&", "-", "+")
         # Map the operations with an internal id not visible for the user
-        # This id is used by _create_set_operation_menu and _make_set_operation
+        # This id is used by _create_set_operation_menu
         # Keys: user text; values: internal ids
         self.set_operations_mapping = dict(zip(set_texts, set_internal_ids))
 
@@ -281,8 +290,11 @@ class SourceEditorWidget(plugin.PluginWidget):
 
         self.is_loading = False
 
-    def save_current_query(self):
-        """Open a dialog box to save the current query into a selection"""
+    def ask_and_check_selection_name(self):
+        """Get from the user a selection name validated or None
+
+        TODO : create a sql.selection_exists(name) to check if selection already exists
+        """
         name, success = QInputDialog.getText(
             self,
             self.tr("Type a name for selection"),
@@ -297,16 +309,36 @@ class SourceEditorWidget(plugin.PluginWidget):
                 "SourceEditorWidget:save_current_query:: '%s' is a reserved name for a selection.",
                 name,
             )
-            self.message.emit(
+            self.mainwindow.status_bar.showMessage(
                 self.tr("'%s' is a reserved name for a selection!") % name
+            )
+            QMessageBox.critical(
+                self,
+                self.tr("Error while creating the selection"),
+                self.tr("'%s' is a reserved name for a selection!") % name,
             )
         elif name in {record["name"] for record in self.model.records}:
             LOGGER.error(
-                "SourceEditorWidget:save_current_query:: '%s' is a already used.", name
+                "SourceEditorWidget:save_current_query:: '%s' is already used!",
+                name
             )
-            self.message.emit(self.tr("'%s' is a already used for a selection!") % name)
+            self.mainwindow.status_bar.showMessage(
+                self.tr("'%s' is already used for a selection!") % name)
+            QMessageBox.critical(
+                self,
+                self.tr("Error while creating the selection"),
+                self.tr("'%s' is already used for a selection!") % name,
+            )
         else:
-            self.model.save_current_query(name)
+            return name
+
+    def save_current_query(self):
+        """Open a dialog box to save the current query into a selection
+        TODO: désactivé?
+        """
+        selection_name = self.ask_and_check_selection_name()
+        if selection_name:
+            self.model.save_current_query(selection_name)
 
     def contextMenuEvent(self, event: QContextMenuEvent):
         """Overrided: Show popup menu at the cursor position"""
@@ -349,46 +381,37 @@ class SourceEditorWidget(plugin.PluginWidget):
         """
         action = self.sender()
 
-        # Get menu id to know which set operation to do
-        set_internal_id = action.data()
+        selection_name = self.ask_and_check_selection_name()
+        if not selection_name:
+            return
 
-        # Init class attribute
-        sql.Selection.conn = self.model.conn
+        # Get the action's internal data to know which set operation to do
+        # See setData()
+        set_operator = action.data()
 
         # Get the records and extract their database id to build 2 Selections objects
+        # {'id': 2, 'name': 'dqzdezd', 'count': 3, 'query': 'SELECT variants.id ...}
+        # {'id': 1, 'name': 'variants', 'count': 11, 'query': ''}
         record_1 = self.model.record(self.view.selectionModel().currentIndex())
         record_2 = self.model.record(self.model.find_record(action.text()))
-        # TODO: handle modes for creation of selections
-        selection_1 = sql.Selection.from_selection_id(record_1["id"])
-        selection_2 = sql.Selection.from_selection_id(record_2["id"])
 
-        new_selection_name, success = QInputDialog.getText(
-            self, self.tr("Type a name for selection"), self.tr("Selection name:")
-        )
-        if not success:
+        ret = command.set_cmd(self.model.conn, selection_name, record_1["name"], record_2["name"], set_operator)
+        if not ret:
+            QMessageBox.critical(
+                self,
+                self.tr("Error while creating the selection"),
+                self.tr("Error while creating the selection, please check the logs"),
+            )
+            self.mainwindow.status_bar.showMessage(
+                self.tr("Fail to create the selection!")
+            )
             return
 
-        # Do set operation and create new selection
-        if set_internal_id == "union":
-            selection_3 = selection_1 + selection_2
-        if set_internal_id == "difference":
-            selection_3 = selection_1 - selection_2
-        if set_internal_id == "intersect":
-            selection_3 = selection_1 & selection_2
-
-        LOGGER.debug(
-            "Query:_make_set_operation:: New selection query: %s", selection_3.sql_query
-        )
-
-        if not selection_3.save(new_selection_name):
-            self.message.emit(self.tr("Fail to create the selection!"))
-            return
-        # Reload the model
-        self.model.load()
+        self.load()
 
     def remove_selection(self):
         """Remove a selection from the database"""
-        msg = QMessageBox()
+        msg = QMessageBox(icon=QMessageBox.Warning)
         msg.setText(self.tr("Are you sure you want to remove this selection?"))
         msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
 
@@ -396,21 +419,19 @@ class SourceEditorWidget(plugin.PluginWidget):
             for index in self.view.selectionModel().selectedRows():
                 self.model.remove_record(index)
 
+            # Reload the UI, otherwise, the old selection is still in popup menu
+            self.load()
+
     def edit_selection(self):
         """Update a selection in the database
         .. note:: We do not reload all the UI for this
         """
         current_index = self.view.selectionModel().currentIndex()
-        new_name, success = QInputDialog.getText(
-            self,
-            self.tr("Type a new name"),
-            self.tr("Selection name:"),
-            QLineEdit.Normal,
-            self.model.record(current_index)["name"],
-        )
-        if success and current_index and new_name:
+
+        selection_name = self.ask_and_check_selection_name()
+        if current_index and selection_name:
             old_record = self.model.record(current_index)
-            old_record["name"] = new_name
+            old_record["name"] = selection_name
             self.model.edit_record(current_index, old_record)
 
     def create_selection_from_bed(self):
@@ -422,23 +443,24 @@ class SourceEditorWidget(plugin.PluginWidget):
         filepath, _ = QFileDialog.getOpenFileName(
             self, self.tr("Open bed file"), last_directory, self.tr("Bed File (*.bed)")
         )
-        if filepath:
-            bedtool = BedReader(filepath)
-            intervals = tuple(bedtool)
+        if not filepath:
+            return
 
-            current_index = self.view.selectionModel().currentIndex()
-            current_selection = self.model.record(current_index)
-            source = current_selection["name"]
-            target = QInputDialog.getText(
-                self, self.tr("selection name"), self.tr("Get a selection name")
-            )[0]
+        selection_name = self.ask_and_check_selection_name()
+        if not selection_name:
+            return
 
-            # TODO : create a sql.selection_exists(name) to check if selection already exists
-            if target:
-                sql.create_selection_from_bed(
-                    self.model.conn, source, target, intervals
-                )
-                self.model.load()
+        current_index = self.view.selectionModel().currentIndex()
+        current_selection = self.model.record(current_index)
+        source = current_selection["name"]
+
+        # Open bed intervals & create selection
+        intervals = BedReader(filepath)
+        sql.create_selection_from_bed(
+            self.model.conn, source, selection_name, intervals
+        )
+        # Refresh UI
+        self.model.load()
 
 
 if __name__ == "__main__":
