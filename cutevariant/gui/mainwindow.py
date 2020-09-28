@@ -311,8 +311,8 @@ class MainWindow(QMainWindow):
             # Unversioned files are still accepted
             QMessageBox.critical(
                 self,
-                "Error while opening project",
-                "File: {} is too old; please create a new project.".format(filepath),
+                self.tr("Error while opening project"),
+                self.tr("File: {} is too old; please create a new project.").format(filepath),
             )
             return
 
@@ -328,8 +328,8 @@ class MainWindow(QMainWindow):
             LOGGER.error("MainWindow:open:: %s", e)
             QMessageBox.critical(
                 self,
-                "Error while opening project",
-                "File: {}\nThe following exception occurred:\n{}".format(filepath, e),
+                self.tr("Error while opening project"),
+                self.tr("File: {}\nThe following exception occurred:\n{}").format(filepath, e),
             )
 
     def open_database(self, conn):
