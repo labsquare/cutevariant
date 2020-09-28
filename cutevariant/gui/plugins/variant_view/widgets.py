@@ -584,8 +584,7 @@ class VariantView(QWidget):
             action.setEnabled(active)
 
     def contextMenuEvent(self, event: QContextMenuEvent):
-        """ override :  Show Menu """
-
+        """Override: Show contextual menu over the current variant"""
         menu = QMenu(self)
         pos = self.view.viewport().mapFromGlobal(event.globalPos())
         current_index = self.view.indexAt(pos)

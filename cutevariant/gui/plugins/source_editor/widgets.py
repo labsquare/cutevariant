@@ -319,11 +319,11 @@ class SourceEditorWidget(plugin.PluginWidget):
             )
         elif name in {record["name"] for record in self.model.records}:
             LOGGER.error(
-                "SourceEditorWidget:save_current_query:: '%s' is already used!",
-                name
+                "SourceEditorWidget:save_current_query:: '%s' is already used!", name
             )
             self.mainwindow.status_bar.showMessage(
-                self.tr("'%s' is already used for a selection!") % name)
+                self.tr("'%s' is already used for a selection!") % name
+            )
             QMessageBox.critical(
                 self,
                 self.tr("Error while creating the selection"),
@@ -395,7 +395,13 @@ class SourceEditorWidget(plugin.PluginWidget):
         record_1 = self.model.record(self.view.selectionModel().currentIndex())
         record_2 = self.model.record(self.model.find_record(action.text()))
 
-        ret = command.set_cmd(self.model.conn, selection_name, record_1["name"], record_2["name"], set_operator)
+        ret = command.set_cmd(
+            self.model.conn,
+            selection_name,
+            record_1["name"],
+            record_2["name"],
+            set_operator,
+        )
         if not ret:
             QMessageBox.critical(
                 self,
