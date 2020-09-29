@@ -1,6 +1,8 @@
 # Standard imports
 import functools
 import math
+import csv
+import io
 
 # Qt imports
 from PySide2.QtWidgets import *
@@ -593,12 +595,12 @@ class VariantView(QWidget):
         if current_index.isValid():
 
             full_variant = sql.get_one_variant(self.conn, current_variant["id"])
-            # Copy action
 
+            # Copy action
             copy_action = menu.addAction(
                 "{chr}:{pos}-{ref}-{alt}".format(**full_variant)
             )
-            on_copy = functools.partial(self.copy_to_clipboard, current_index)
+            on_copy = functools.partial(self.copy_ref_to_clipboard, current_index)
             copy_action.triggered.connect(on_copy)
 
             # Create favorite action
@@ -622,8 +624,16 @@ class VariantView(QWidget):
 
             # Comment action
             on_edit = functools.partial(self.edit_comment, current_index)
-            menu.addAction(self.tr("Edit comment ..."), on_edit)
+            menu.addAction(self.tr("&Edit comment ..."), on_edit)
 
+            # Edit menu
+            menu.addSeparator()
+            menu.addAction(FIcon(0xF018F), "&Copy", self.copy_to_clipboard, QKeySequence.Copy)
+            menu.addAction(
+                FIcon(0xF0486), "&Select all", self.select_all, QKeySequence.SelectAll
+            )
+
+            # Display
             menu.exec_(event.globalPos())
 
     def update_favorite(self, index: QModelIndex, value=1):
@@ -664,8 +674,34 @@ class VariantView(QWidget):
             # Request a refresh of the variant_info plugin
             self.parent.mainwindow.refresh_plugin("variant_info")
 
-    def copy_to_clipboard(self, index: QModelIndex):
+    def select_all(self):
+        self.view.selectAll()
 
+    def copy_to_clipboard(self):
+        """Copy the selected variant(s) into the clipboard
+
+        The output data is formated in CSV (delimiter is `\t`)
+        """
+        # In memory file
+        output = io.StringIO()
+        # Use CSV to securely format the data
+        writer = csv.DictWriter(output, delimiter="\t", fieldnames=self.model.fields)
+        writer.writeheader()
+        for index in self.view.selectionModel().selectedRows():
+            # id col is not wanted
+            variant = dict(self.model.variant(index.row()))
+            if "id" in variant:
+                del variant["id"]
+            writer.writerow(variant)
+
+        qApp.clipboard().setText(output.getvalue())
+        output.close()
+
+    def copy_ref_to_clipboard(self, index: QModelIndex):
+        """Copy the variant reference ID in to the clipboard
+
+        TODO rétablir formatage reposant sur les données du plugin
+        """
         if index.isValid():
             variant = self.model.variant(index.row())
             QApplication.instance().clipboard().setText(
