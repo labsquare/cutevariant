@@ -20,36 +20,6 @@ import cutevariant.commons as cm
 LOGGER = cm.logger()
 
 
-# class VariantCounter(QThread):
-
-#     countChanged = Signal(int)
-
-#     def __init__(self):
-
-#         super().__init__()
-
-#         self.conn = None
-#         self.fields = None
-#         self.source = None
-#         self.filters = None
-#         self.group_by = None
-#         self.total = 0
-
-#     def run(self):
-#         """ override """
-
-#         print("RUN ")
-#         self.total = cmd.count_cmd(
-#             self.conn,
-#             fields=self.fields,
-#             source=self.source,
-#             filters=self.filters,
-#             group_by=self.group_by,
-#         )["count"]
-
-#         self.countChanged.emit(self.total)
-
-
 class VariantModel(QAbstractTableModel):
     """
     VariantModel is a Qt model class which contains variants datas from sql.VariantBuilder .
@@ -137,7 +107,7 @@ class VariantModel(QAbstractTableModel):
 
         # Avoid error
         if not index.isValid():
-            return None
+            return
 
         if self.variants and self.headers:
 
@@ -154,9 +124,7 @@ class VariantModel(QAbstractTableModel):
                     + "</font>"
                 )
 
-        return None
-
-    def headerData(self, section, orientation, role=Qt.DisplayRole):
+    def headerData(self, section, orientation=Qt.Horizontal, role=Qt.DisplayRole):
         """Overrided: Return column name
         This method is called by the Qt view to display vertical or horizontal header data.
 
@@ -169,13 +137,14 @@ class VariantModel(QAbstractTableModel):
             # return 4th column name
             column_name = model.headerData(4, Qt.Horizontal)
 
+        Warnings:
+            Return nothing if orientation is != from Qt.Horizontal,
+            and role != Qt.DisplayRole
         """
-
         # Display columns headers
         if orientation == Qt.Horizontal:
             if role == Qt.DisplayRole:
                 return self.headers[section]
-        return None
 
     def update_variant(self, row: int, variant={}):
         """Update a row
@@ -282,9 +251,9 @@ class VariantModel(QAbstractTableModel):
                 self.fields = vql_object["fields"]
                 self.source = vql_object["source"]
                 self.filters = vql_object["filters"]
-        except:
-            pass
-        else:
+        except Exception as e:
+            raise e
+        finally:
             self.load()
 
     def hasPage(self, page: int) -> bool:
@@ -391,7 +360,6 @@ class VariantDelegate(QStyledItemDelegate):
             bg = QPalette.Disabled
 
         if option.state & QStyle.State_Selected:
-            is_selected = True
             painter.fillRect(option.rect, option.palette.color(bg, QPalette.Highlight))
 
         # Draw formatters
@@ -402,7 +370,6 @@ class VariantDelegate(QStyledItemDelegate):
 
 
 class VariantView(QWidget):
-
     """A Variant view with controller like pagination"""
 
     view_clicked = Signal()
@@ -598,7 +565,11 @@ class VariantView(QWidget):
 
             # Copy action: Copy the variant reference ID in to the clipboard
             formatted_variant = "{chr}:{pos}-{ref}-{alt}".format(**full_variant)
-            menu.addAction(FIcon(0xF014C), formatted_variant, functools.partial(qApp.clipboard().setText, formatted_variant))
+            menu.addAction(
+                FIcon(0xF014C),
+                formatted_variant,
+                functools.partial(qApp.clipboard().setText, formatted_variant),
+            )
 
             # Create favorite action
             fav_action = menu.addAction(self.tr("&Mark as favorite"))
@@ -625,7 +596,9 @@ class VariantView(QWidget):
 
             # Edit menu
             menu.addSeparator()
-            menu.addAction(FIcon(0xF018F), "&Copy", self.copy_to_clipboard, QKeySequence.Copy)
+            menu.addAction(
+                FIcon(0xF018F), "&Copy", self.copy_to_clipboard, QKeySequence.Copy
+            )
             menu.addAction(
                 FIcon(0xF0486), "&Select all", self.select_all, QKeySequence.SelectAll
             )
@@ -659,9 +632,7 @@ class VariantView(QWidget):
         editor = MarkdownEditor(default_text=comment)
         if editor.exec_() == QDialog.Accepted:
             # Save in DB
-            self.model.update_variant(
-                index.row(), {"comment": editor.toPlainText()}
-            )
+            self.model.update_variant(index.row(), {"comment": editor.toPlainText()})
 
             # Request a refresh of the variant_info plugin
             self.parent.mainwindow.refresh_plugin("variant_info")
