@@ -816,20 +816,6 @@ class VariantViewWidget(plugin.PluginWidget):
 
         self.on_refresh()
 
-    def select_all(self):
-        if not self._is_grouped():
-            self.first_pane.view.selectAll()
-
-    def copy(self):
-        if not self._is_grouped():
-            rows = []
-            for index in self.first_pane.view.selectionModel().selectedRows():
-                variant = self.first_pane.model.variant(index.row())
-                rows.append("\t".join(str(v) for v in variant.values()))
-
-            text = "\n".join(rows)
-            qApp.clipboard().setText(text)
-
     def on_refresh(self):
         """Overrided from PluginWidget"""
         self.save_fields = self.mainwindow.state.fields
@@ -987,6 +973,20 @@ class VariantViewWidget(plugin.PluginWidget):
             self.mainwindow.state.group_by = self.first_pane.model.group_by
             plugin = self.mainwindow.plugins["vql_editor"]
             plugin.on_refresh()
+
+    def copy(self):
+        """Copy the selected variant(s) into the clipboard
+
+        See Also: VariantView.copy_to_clipboard
+        """
+        self.first_pane.copy_to_clipboard()
+
+    def select_all(self):
+        """Select all variants in the view
+
+        See Also: VariantView.select_all
+        """
+        self.first_pane.select_all()
 
 
 if __name__ == "__main__":

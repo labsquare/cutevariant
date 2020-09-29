@@ -242,14 +242,15 @@ class MainWindow(QMainWindow):
         self.file_menu.addAction(self.tr("&Quit"), self.close, QKeySequence.Quit)
 
         ## Edit
+        # TODO: if variant_view plugin is not loaded, disable this menu entries...
         self.edit_menu = self.menuBar().addMenu(self.tr("&Edit"))
-        self.edit_menu.addAction(FIcon(0xF018F), "&Copy", self.copy, QKeySequence.Copy)
+        self.edit_menu.addAction(FIcon(0xF018F), "&Copy variants", self.copy_variants_to_clipboard, QKeySequence.Copy)
         # self.edit_menu.addAction(
         #     FIcon(0xF0192), "&Paste", self.paste, QKeySequence.Paste
         # )
         self.edit_menu.addSeparator()
         self.edit_menu.addAction(
-            FIcon(0xF0486), "Select all", self.select_all, QKeySequence.SelectAll
+            FIcon(0xF0486), "Select all variants", self.select_all_variants, QKeySequence.SelectAll
         )
 
         ## View
@@ -533,11 +534,11 @@ class MainWindow(QMainWindow):
         # Allow a user to save further modifications
         self.requested_reset_ui = False
 
-    def copy(self):
+    def copy_variants_to_clipboard(self):
         if "variant_view" in self.plugins:
             self.plugins["variant_view"].copy()
 
-    def select_all(self):
+    def select_all_variants(self):
         """Select all elements in the current tab's view"""
         if "variant_view" in self.plugins:
             self.plugins["variant_view"].select_all()
