@@ -596,12 +596,9 @@ class VariantView(QWidget):
 
             full_variant = sql.get_one_variant(self.conn, current_variant["id"])
 
-            # Copy action
-            copy_action = menu.addAction(
-                "{chr}:{pos}-{ref}-{alt}".format(**full_variant)
-            )
-            on_copy = functools.partial(self.copy_ref_to_clipboard, current_index)
-            copy_action.triggered.connect(on_copy)
+            # Copy action: Copy the variant reference ID in to the clipboard
+            formatted_variant = "{chr}:{pos}-{ref}-{alt}".format(**full_variant)
+            menu.addAction(FIcon(0xF014C), formatted_variant, functools.partial(qApp.clipboard().setText, formatted_variant))
 
             # Create favorite action
             fav_action = menu.addAction(self.tr("&Mark as favorite"))
@@ -670,6 +667,7 @@ class VariantView(QWidget):
             self.parent.mainwindow.refresh_plugin("variant_info")
 
     def select_all(self):
+        """Select all variants in the view"""
         self.view.selectAll()
 
     def copy_to_clipboard(self):
@@ -691,17 +689,6 @@ class VariantView(QWidget):
 
         qApp.clipboard().setText(output.getvalue())
         output.close()
-
-    def copy_ref_to_clipboard(self, index: QModelIndex):
-        """Copy the variant reference ID in to the clipboard
-
-        TODO rétablir formatage reposant sur les données du plugin
-        """
-        if index.isValid():
-            variant = self.model.variant(index.row())
-            QApplication.instance().clipboard().setText(
-                "{chr}:{pos}-{ref}-{alt}".format(**variant)
-            )
 
 
 class VariantViewWidget(plugin.PluginWidget):
