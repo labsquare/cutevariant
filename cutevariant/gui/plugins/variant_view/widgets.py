@@ -604,7 +604,7 @@ class VariantView(QWidget):
             copy_action.triggered.connect(on_copy)
 
             # Create favorite action
-            fav_action = menu.addAction(self.tr("Mark as favorite"))
+            fav_action = menu.addAction(self.tr("&Mark as favorite"))
             fav_action.setCheckable(True)
             fav_action.setChecked(bool(full_variant["favorite"]))
             fav_action.toggled.connect(lambda x: self.update_favorite(current_index, x))
@@ -647,11 +647,6 @@ class VariantView(QWidget):
         if index.isValid():
             update = {"classification": int(value)}
             self.model.update_variant(index.row(), update)
-
-    # def update_comments(self, index: QModelIndex, value=""):
-    #     if index.isValid():
-    #         update = {"classification": int(value)}
-    #         self.model.update_variant(index.row(), update)
 
     def edit_comment(self, index: QModelIndex):
         """Allow a user to add a comment for the selected variant"""
@@ -707,19 +702,6 @@ class VariantView(QWidget):
             QApplication.instance().clipboard().setText(
                 "{chr}:{pos}-{ref}-{alt}".format(**variant)
             )
-
-        # classification = self.classification_box.currentIndex()
-        # favorite = self.favorite_checkbox.isChecked()
-        # comment = self.comment_input.toPlainText()
-
-        # updated = {
-        #     "id": self.current_variant["id"],
-        #     "classification": classification,
-        #     "favorite": favorite,
-        #     "comment": comment,
-        # }
-
-        # sql.update_variant(self.conn, updated)
 
 
 class VariantViewWidget(plugin.PluginWidget):
