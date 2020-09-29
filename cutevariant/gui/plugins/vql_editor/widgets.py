@@ -10,20 +10,14 @@ import sqlite3
 # Qt imports
 from PySide2.QtCore import Qt, QRegularExpression, QStringListModel, Signal
 from PySide2.QtWidgets import (
-    QTextEdit,
+    QToolBar,
     QCompleter,
     QVBoxLayout,
     QLabel,
     QFrame,
-    QWidget,
     QApplication,
 )
 from PySide2.QtGui import (
-    QSyntaxHighlighter,
-    QFont,
-    QPalette,
-    QTextCharFormat,
-    QTextCursor,
     QKeySequence,
 )
 
@@ -52,6 +46,14 @@ class VqlEditorWidget(plugin.PluginWidget):
         super().__init__(parent)
         self.setWindowTitle(self.tr("Vql Editor"))
 
+        # Top toolbar
+        self.top_bar = QToolBar()
+        self.top_bar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        self.run_action = self.top_bar.addAction(
+            FIcon(0xF040A), self.tr("Run"), self.run_vql
+        )
+        self.run_action.setShortcuts([Qt.CTRL + Qt.Key_R, QKeySequence.Refresh])
+
         # Syntax highlighter and autocompletion
         self.text_edit = VqlEditor()
         self.log_edit = QLabel()
@@ -67,22 +69,12 @@ class VqlEditorWidget(plugin.PluginWidget):
 
         self.log_edit.setFrameStyle(QFrame.StyledPanel | QFrame.Raised)
         main_layout = QVBoxLayout()
+        main_layout.addWidget(self.top_bar)
         main_layout.addWidget(self.text_edit)
         main_layout.addWidget(self.log_edit)
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
         self.setLayout(main_layout)
-
-    def on_register(self, mainwindow):
-        """Override from PluginWidget : Do not call this methods
-
-        Args:
-            mainwindow (MainWindow): Mainwindow reference
-        """
-        self.run_action = mainwindow.toolbar.addAction(
-            FIcon(0xF040A), self.tr("Run"), self.run_vql
-        )
-        self.run_action.setShortcuts([Qt.CTRL + Qt.Key_R, QKeySequence.Refresh])
 
     def on_open_project(self, conn: sqlite3.Connection):
         """overrided from PluginWidget : Do not call this methods
@@ -107,12 +99,6 @@ class VqlEditorWidget(plugin.PluginWidget):
         )
 
         self.set_vql(vql)
-
-    def on_close(self):
-        """Clean operations before closing"""
-        # Remove Run action in toolbar of MainWindow
-        self.mainwindow.toolbar.removeAction(self.run_action)
-        super().on_close()
 
     def set_vql(self, txt: str):
         """Set vql source code without executed
@@ -177,10 +163,9 @@ class VqlEditorWidget(plugin.PluginWidget):
         return True
 
     def run_vql(self):
-        """Execute VQL code .
-        Select command will update query view plugin
-        Create command will update selection plugin
-        Drop command will update selection plugin
+        """Execute VQL code
+
+        TODO: old doc deleted
         """
 
         # Check VQL syntax first
