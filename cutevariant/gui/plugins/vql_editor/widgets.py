@@ -90,7 +90,7 @@ class VqlEditorWidget(plugin.PluginWidget):
     def on_refresh(self):
         """overrided from PluginWidget"""
 
-        vql = build_vql_query(
+        vql_obj = build_vql_query(
             self.mainwindow.state.fields,
             self.mainwindow.state.source,
             self.mainwindow.state.filters,
@@ -98,7 +98,7 @@ class VqlEditorWidget(plugin.PluginWidget):
             self.mainwindow.state.having,
         )
 
-        self.set_vql(vql)
+        self.set_vql(vql_obj)
 
     def set_vql(self, txt: str):
         """Set vql source code without executed
