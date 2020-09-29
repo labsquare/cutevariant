@@ -675,27 +675,27 @@ class VariantViewWidget(plugin.PluginWidget):
 
         # Create 2 Pane
         self.splitter = QSplitter(Qt.Horizontal)
-        self.first_pane = VariantView(self)
+        self.main_right_pane = VariantView(self)
 
-        self.second_pane = VariantView(self)
-        self.second_pane.hide()
+        self.groupby_left_pane = VariantView(self)
+        self.groupby_left_pane.hide()
 
-        self.splitter.addWidget(self.first_pane)
-        self.splitter.addWidget(self.second_pane)
+        self.splitter.addWidget(self.main_right_pane)
+        self.splitter.addWidget(self.groupby_left_pane)
 
         # Make resizable TODO : ugly ... Make it nicer
         # def _resize1_section(l, o, n):
-        #     self.second_pane.view.horizontalHeader().resizeSection(l, n)
+        #     self.groupby_left_pane.view.horizontalHeader().resizeSection(l, n)
 
         # def _resize2_section(l, o, n):
-        #     self.first_pane.view.horizontalHeader().resizeSection(l, n)
+        #     self.main_right_pane.view.horizontalHeader().resizeSection(l, n)
 
-        # self.first_pane.view.horizontalHeader().sectionResized.connect(_resize1_section)
-        # self.second_pane.view.horizontalHeader().sectionResized.connect(
+        # self.main_right_pane.view.horizontalHeader().sectionResized.connect(_resize1_section)
+        # self.groupby_left_pane.view.horizontalHeader().sectionResized.connect(
         #     _resize2_section
         # )
 
-        # self.second_pane.view.setHorizontalHeader(self.first_pane.view.horizontalHeader())
+        # self.groupby_left_pane.view.setHorizontalHeader(self.main_right_pane.view.horizontalHeader())
 
         # Top toolbar
         self.top_bar = QToolBar()
@@ -736,11 +736,11 @@ class VariantViewWidget(plugin.PluginWidget):
         self.setLayout(main_layout)
 
         # Make connection
-        self.first_pane.view.selectionModel().currentRowChanged.connect(
+        self.main_right_pane.view.selectionModel().currentRowChanged.connect(
             lambda x, _: self.on_variant_clicked(x)
         )
 
-        self.second_pane.view.selectionModel().currentRowChanged.connect(
+        self.groupby_left_pane.view.selectionModel().currentRowChanged.connect(
             lambda x, _: self.on_variant_clicked(x)
         )
 
@@ -774,42 +774,42 @@ class VariantViewWidget(plugin.PluginWidget):
         Called when the current formatter is modified
         """
         formatter_class = self.formatter_combo.currentData()
-        self.first_pane.set_formatter(formatter_class())
-        self.second_pane.set_formatter(formatter_class())
+        self.main_right_pane.set_formatter(formatter_class())
+        self.groupby_left_pane.set_formatter(formatter_class())
         # Save formatter setting
         self.settings.setValue("ui/formatter", formatter_class.__name__)
 
     def on_open_project(self, conn):
         """Overrided from PluginWidget"""
         self.conn = conn
-        self.first_pane.conn = self.conn
-        self.second_pane.conn = self.conn
+        self.main_right_pane.conn = self.conn
+        self.groupby_left_pane.conn = self.conn
 
         self.on_refresh()
 
     def on_refresh(self):
         """Overrided from PluginWidget"""
         self.save_fields = self.mainwindow.state.fields
-        self.first_pane.fields = self.mainwindow.state.fields
-        self.first_pane.source = self.mainwindow.state.source
-        self.first_pane.filters = self.mainwindow.state.filters
-        #        self.first_pane.group_by = self.mainwindow.state.group_by
+        self.main_right_pane.fields = self.mainwindow.state.fields
+        self.main_right_pane.source = self.mainwindow.state.source
+        self.main_right_pane.filters = self.mainwindow.state.filters
+        #        self.main_right_pane.group_by = self.mainwindow.state.group_by
 
         self._set_groups(self.mainwindow.state.group_by)
 
-        self.first_pane.model.formatter = next(formatter.find_formatters())()
-        self.second_pane.model.formatter = next(formatter.find_formatters())()
+        self.main_right_pane.model.formatter = next(formatter.find_formatters())()
+        self.groupby_left_pane.model.formatter = next(formatter.find_formatters())()
         self.load()
 
     def _is_grouped(self) -> bool:
         """Return if view is in grouped mode"""
-        return self.first_pane.model.group_by != []
+        return self.main_right_pane.model.group_by != []
 
     def load(self):
         """ load all view """
 
         is_grouped = self._is_grouped()
-        self.second_pane.setVisible(is_grouped)
+        self.groupby_left_pane.setVisible(is_grouped)
         self.groupbylist_action.setVisible(is_grouped)
 
         self.groupby_action.blockSignals(True)
@@ -817,13 +817,13 @@ class VariantViewWidget(plugin.PluginWidget):
         self.groupby_action.blockSignals(False)
 
         if self._is_grouped():
-            self.second_pane.model.fields = self.first_pane.model.fields
-            self.first_pane.model.fields = self.first_pane.model.group_by
-            self.first_pane.load()
-            self.second_pane.load()
+            self.groupby_left_pane.model.fields = self.main_right_pane.model.fields
+            self.main_right_pane.model.fields = self.main_right_pane.model.group_by
+            self.main_right_pane.load()
+            self.groupby_left_pane.load()
         else:
-            self.first_pane.model.fields = self.save_fields
-            self.first_pane.load()
+            self.main_right_pane.model.fields = self.save_fields
+            self.main_right_pane.load()
 
     def on_group_changed(self):
 
@@ -831,7 +831,7 @@ class VariantViewWidget(plugin.PluginWidget):
         if is_checked and not self._is_grouped():
             self._set_groups(self.last_group)
         else:
-            self.last_group = self.first_pane.model.group_by
+            self.last_group = self.main_right_pane.model.group_by
 
         if not is_checked:
             self._set_groups([])
@@ -870,28 +870,28 @@ class VariantViewWidget(plugin.PluginWidget):
             index (QModelIndex): Description
         """
 
-        if index.model() == self.first_pane.view.model():
-            variant = self.first_pane.model.variant(index.row())
+        if index.model() == self.main_right_pane.view.model():
+            variant = self.main_right_pane.model.variant(index.row())
 
             if self._is_grouped():
-                self.second_pane.fields = self.save_fields
-                self.second_pane.source = self.first_pane.model.source
+                self.groupby_left_pane.fields = self.save_fields
+                self.groupby_left_pane.source = self.main_right_pane.model.source
 
                 and_list = []
-                for i in self.first_pane.group_by:
+                for i in self.main_right_pane.group_by:
                     and_list.append({"field": i, "operator": "=", "value": variant[i]})
 
-                self.second_pane.filters = {"AND": and_list}
+                self.groupby_left_pane.filters = {"AND": and_list}
 
-                self.second_pane.load()
-                self.second_pane.load_page_box()
+                self.groupby_left_pane.load()
+                self.groupby_left_pane.load_page_box()
 
             # Refresh plugins when clicked
             self.mainwindow.state.current_variant = variant
             self.mainwindow.refresh_plugins(sender=self)
 
-        if index.model() == self.second_pane.view.model():
-            variant = self.second_pane.model.variant(index.row())
+        if index.model() == self.groupby_left_pane.view.model():
+            variant = self.groupby_left_pane.model.variant(index.row())
             self.mainwindow.state.current_variant = variant
             self.mainwindow.refresh_plugins(sender=self)
 
@@ -911,7 +911,7 @@ class VariantViewWidget(plugin.PluginWidget):
         for field in self.save_fields:
             item = QListWidgetItem()
             item.setText(field)
-            if field in self.first_pane.model.group_by and type(field) == str:
+            if field in self.main_right_pane.model.group_by and type(field) == str:
                 item.setCheckState(Qt.Checked)
             else:
                 item.setCheckState(Qt.Unchecked)
@@ -936,12 +936,12 @@ class VariantViewWidget(plugin.PluginWidget):
             self._refresh_vql_editor()
 
     def _set_groups(self, fields):
-        self.first_pane.model.group_by = fields
+        self.main_right_pane.model.group_by = fields
         self.groupbylist_action.setText(",".join(fields))
 
     def _refresh_vql_editor(self):
         if "vql_editor" in self.mainwindow.plugins:
-            self.mainwindow.state.group_by = self.first_pane.model.group_by
+            self.mainwindow.state.group_by = self.main_right_pane.model.group_by
             plugin = self.mainwindow.plugins["vql_editor"]
             plugin.on_refresh()
 
@@ -950,14 +950,14 @@ class VariantViewWidget(plugin.PluginWidget):
 
         See Also: VariantView.copy_to_clipboard
         """
-        self.first_pane.copy_to_clipboard()
+        self.main_right_pane.copy_to_clipboard()
 
     def select_all(self):
         """Select all variants in the view
 
         See Also: VariantView.select_all
         """
-        self.first_pane.select_all()
+        self.main_right_pane.select_all()
 
 
 if __name__ == "__main__":
@@ -978,8 +978,8 @@ if __name__ == "__main__":
     w = VariantViewWidget()
 
     w.conn = conn
-    w.first_pane.model.conn = conn
-    w.first_pane.load()
+    w.main_right_pane.model.conn = conn
+    w.main_right_pane.load()
     # w.main_view.model.group_by = ["chr","pos","ref","alt"]
     # w.on_refresh()
 
