@@ -673,9 +673,9 @@ class VariantViewWidget(plugin.PluginWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        # Create 2 Pane
+        # Create 2 Panes
         self.splitter = QSplitter(Qt.Horizontal)
-        self.main_right_pane = VariantView(self)
+        self.main_right_pane = VariantView(parent=self)
 
         self.groupby_left_pane = VariantView(self)
         self.groupby_left_pane.hide()
@@ -745,6 +745,9 @@ class VariantViewWidget(plugin.PluginWidget):
         )
 
         self.last_group = ["chr"]
+        # Save fields between group/ungroup
+        self.save_fields = list()
+
 
     def add_available_formatters(self):
         """Populate the formatters
@@ -789,26 +792,29 @@ class VariantViewWidget(plugin.PluginWidget):
 
     def on_refresh(self):
         """Overrided from PluginWidget"""
+        # Save default data
         self.save_fields = self.mainwindow.state.fields
         self.main_right_pane.fields = self.mainwindow.state.fields
         self.main_right_pane.source = self.mainwindow.state.source
         self.main_right_pane.filters = self.mainwindow.state.filters
-        #        self.main_right_pane.group_by = self.mainwindow.state.group_by
-
+        # self.main_right_pane.group_by = self.mainwindow.state.group_by
         self._set_groups(self.mainwindow.state.group_by)
 
-        self.main_right_pane.model.formatter = next(formatter.find_formatters())()
-        self.groupby_left_pane.model.formatter = next(formatter.find_formatters())()
+        # Set formatter
+        formatter_class = next(formatter.find_formatters())
+        self.main_right_pane.model.formatter = formatter_class()
+        self.groupby_left_pane.model.formatter = formatter_class()
+        # Load ui
         self.load()
 
     def _is_grouped(self) -> bool:
-        """Return if view is in grouped mode"""
+        """Return grouped mode status of the view"""
         return self.main_right_pane.model.group_by != []
 
     def load(self):
-        """ load all view """
-
+        """Load all view"""
         is_grouped = self._is_grouped()
+        # Left pane and groupbylist are visible in group mode
         self.groupby_left_pane.setVisible(is_grouped)
         self.groupbylist_action.setVisible(is_grouped)
 
@@ -816,13 +822,16 @@ class VariantViewWidget(plugin.PluginWidget):
         self.groupby_action.setChecked(is_grouped)
         self.groupby_action.blockSignals(False)
 
-        if self._is_grouped():
+        if is_grouped:
             self.groupby_left_pane.model.fields = self.main_right_pane.model.fields
             self.main_right_pane.model.fields = self.main_right_pane.model.group_by
+            # Refresh models
             self.main_right_pane.load()
             self.groupby_left_pane.load()
         else:
+            # Restore fields
             self.main_right_pane.model.fields = self.save_fields
+            # Refresh model
             self.main_right_pane.load()
 
     def on_group_changed(self):
@@ -874,6 +883,7 @@ class VariantViewWidget(plugin.PluginWidget):
             variant = self.main_right_pane.model.variant(index.row())
 
             if self._is_grouped():
+                # Restore fields
                 self.groupby_left_pane.fields = self.save_fields
                 self.groupby_left_pane.source = self.main_right_pane.model.source
 
@@ -935,9 +945,10 @@ class VariantViewWidget(plugin.PluginWidget):
             self.load()
             self._refresh_vql_editor()
 
-    def _set_groups(self, fields):
-        self.main_right_pane.model.group_by = fields
-        self.groupbylist_action.setText(",".join(fields))
+    def _set_groups(self, grouped_fields):
+        """Set fields on main_right_pane and refresh text on groupby action"""
+        self.main_right_pane.model.group_by = grouped_fields
+        self.groupbylist_action.setText(",".join(grouped_fields))
 
     def _refresh_vql_editor(self):
         if "vql_editor" in self.mainwindow.plugins:
