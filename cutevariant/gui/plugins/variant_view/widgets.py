@@ -304,47 +304,20 @@ class VariantModel(QAbstractTableModel):
             self.load(emit_changed=False)
 
     def variant(self, row: int) -> dict:
-        #     """ Return variant data according index
-
+        """Return variant data according index"""
         return self.variants[row]
-
-        # class QueryDelegate(QStyledItemDelegate):
-
-        # pass
-        # """
-        # This class specify the aesthetic of the view
-        # styles and color of each variant displayed in the view are setup here
-
-        # """
-
-        # def background_color_index(self, index):
-        # """ return background color of index """
-
-        # base_brush = qApp.palette("QTableView").brush(QPalette.Base)
-        # alternate_brush = qApp.palette("QTableView").brush(QPalette.AlternateBase)
-
-        # if index.parent() == QModelIndex():
-        # if index.row() % 2:
-        # return base_brush
-        # else:
-        # return alternate_brush
-
-        # if index.parent().parent() == QModelIndex():
-        # return self.background_color_index(index.parent())
-
-        # return base_brush     self.vertical_view_action = self.top_bar.addAction(FIcon())
-
-        # def paint(self, painter, option, index):
-        self.vertical_view_action = self.top_bar.addAction(FIcon())
 
 
 class VariantDelegate(QStyledItemDelegate):
+    """Specify the aesthetic (style and color) of variants displayed on a view"""
+
     def __init__(self, parent=None):
         super().__init__(parent)
 
         self.formatter = None
 
     def paint(self, painter, option, index):
+        """Paint with formatter if defined"""
 
         if self.formatter is None:
             return super().paint(painter, option, index)
