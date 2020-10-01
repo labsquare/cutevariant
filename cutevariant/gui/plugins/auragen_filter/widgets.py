@@ -6,6 +6,7 @@ from cutevariant.gui.widgets.filters import (
     FiltersEditor,
     StringFilterWidget,
     ChoiceFilterWidget,
+    IntegerFilterWidget,
 )
 
 
@@ -33,7 +34,7 @@ class AuragenFilterWidget(PluginWidget):
                                 {
                                     "name": "chr",
                                     "description": "editeur de truc",
-                                    "widget": StringFilterWidget("chr"),
+                                    "widget": IntegerFilterWidget("chr"),
                                 },
                                 {
                                     "name": "gene",
