@@ -121,10 +121,11 @@ class MainWindow(QMainWindow):
         LOGGER.info("MainWindow:: Registering plugins...")
 
         # Get classes of plugins
+        # Don't forget to skip disabled plugins
         for extension in plugin.find_plugins():
             LOGGER.debug("Extension: %s", extension)
 
-            if "widget" in extension:
+            if "widget" in extension and extension["widget"].ENABLE:
                 # New GUI widget
                 name = extension["name"]
                 plugin_widget_class = extension["widget"]
@@ -166,7 +167,7 @@ class MainWindow(QMainWindow):
                 if plugin_widget_class.LOCATION == plugin.FOOTER_LOCATION:
                     self.footer_tab.addTab(widget, widget.windowTitle())
 
-            if "dialog" in extension:
+            if "dialog" in extension and extension["dialog"].ENABLE:
                 # New tool menu entry
                 title = extension["title"]
                 plugin_dialog_class = extension["dialog"]

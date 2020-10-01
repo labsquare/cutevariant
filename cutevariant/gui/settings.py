@@ -431,6 +431,10 @@ class SettingsWidget(QDialog):
 
             if "setting" in extension:
                 settings_widget_class = extension["setting"]
+                if not settings_widget_class.ENABLE:
+                    # Skip disabled plugins
+                    continue
+
                 widget = settings_widget_class()
 
                 if not widget.windowTitle():

@@ -312,14 +312,14 @@ def find_plugins(path=None):
                 continue
 
             class_item = getattr(sub_module, class_name)
-            # Purge disabled plugins
-            if not class_item.ENABLE:
-                LOGGER.debug(
-                    "Plugin <%s.%s> disabled",
-                    module.__name__,
-                    sub_module_type
-                )
-                continue
+            # # Purge disabled plugins
+            # if not class_item.ENABLE:
+            #     LOGGER.debug(
+            #         "Plugin <%s.%s> disabled",
+            #         module.__name__,
+            #         sub_module_type
+            #     )
+            #     continue
 
             # Classes that don't inherit of the expected Plugin class
             # See cutevariant/gui/plugin.py
