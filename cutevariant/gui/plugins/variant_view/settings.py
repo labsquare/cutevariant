@@ -73,7 +73,7 @@ class LinkSettings(BaseWidget):
         """Add an item to the QListWidget of the current view"""
         # Key is the name of the database, value is its url
         item = QListWidgetItem(db_name)
-        item.setIcon(FIcon(0xF339))
+        item.setIcon(FIcon(0xF0866))
         item.setData(Qt.UserRole, str(url))
         item.setToolTip(str(url))
         self.view.addItem(item)

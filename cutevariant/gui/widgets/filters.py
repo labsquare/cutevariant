@@ -6,6 +6,7 @@ from PySide2.QtWidgets import (
     QVBoxLayout,
     QListView,
     QFormLayout,
+    QSpinBox,
 )
 from PySide2.QtCore import QStringListModel, Signal
 

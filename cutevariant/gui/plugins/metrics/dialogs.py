@@ -1,5 +1,4 @@
 from PySide2.QtWidgets import (
-    QLabel,
     QVBoxLayout,
     QTableView,
     QDialogButtonBox,
@@ -138,7 +137,7 @@ if __name__ == "__main__":
 
     conn = sql.get_sql_connexion("test.db")
 
-    dialog = MetricDialog()
+    dialog = MetricsDialog()
     dialog.conn = conn
     dialog.populate()
 

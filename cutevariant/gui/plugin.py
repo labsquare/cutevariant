@@ -106,7 +106,7 @@ class PluginWidget(QWidget):
         - widget_location: Instance variable, equivalent to class variable LOCATION
         - conn (sqlite3.connection): A connection to the sqlite project
         - dock (None, optional): Keep the attached dock to allow further clean
-            deletion
+            deletion.
     """
 
     LOCATION = DOCK_LOCATION
@@ -197,6 +197,10 @@ class PluginSettingsWidget(settings.GroupWidget):
         super().__init__(parent)
 
     def on_refresh(self):
+        """Called to refresh the GUI of the current plugin
+
+        This is called by the mainwindow.controller::refresh methods
+        """
         pass
 
 
@@ -301,7 +305,8 @@ def find_plugins(path=None):
             )
             sub_module = spec.loader.load_module()
 
-            ## Filter not wanted classes (search main classes of the module)
+            # Filter not wanted classes (search main classes of the module)
+
             # Classes that don't have the module name in their name
             class_name = authorized_module_classes[sub_module_type]
             if class_name not in dir(sub_module):

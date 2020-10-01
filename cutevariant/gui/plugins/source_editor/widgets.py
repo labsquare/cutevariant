@@ -269,7 +269,7 @@ class SourceEditorWidget(plugin.PluginWidget):
 
         if not locked_selection:
             menu.addSeparator()
-            menu.addAction(FIcon(0xF0413), self.tr("Remove"), self.remove_selection)
+            menu.addAction(FIcon(0xF0A7A), self.tr("Remove"), self.remove_selection)
         return menu
 
     def load(self):

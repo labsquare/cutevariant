@@ -5,9 +5,9 @@ contextual menu about the variant which is selected.
 VariantPopupMenu is also used in viewquerywidget for the same purpose.
 """
 # Qt imports
-from PySide2.QtCore import Qt, QPoint, QSettings, QUrl, Slot
+from PySide2.QtCore import Qt, QPoint, QSettings, QUrl, Slot, QSize
 from PySide2.QtWidgets import *
-# from PySide2.QtGui import QDesktopServices
+from PySide2.QtGui import QFont
 
 # Custom imports
 from cutevariant.gui.ficon import FIcon
@@ -30,6 +30,13 @@ class VariantInfoWidget(PluginWidget):
         ("Classe 4", "Probably Pathogen"),
         ("Classe 5", "Pathogen"),
     ]
+
+    GENOTYPES = {
+        "-1": FIcon(0xF10D3),
+        "0": FIcon(0xF0766),
+        "1": FIcon(0xF0AA1),
+        "2": FIcon(0xF0AA5),
+    }
 
     ENABLE = True
 
@@ -190,18 +197,10 @@ class VariantInfoWidget(PluginWidget):
         self.genotype_view.clear()
         q = f"SELECT samples.name, sv.gt FROM samples LEFT JOIN sample_has_variant sv ON samples.id = sv.sample_id AND sv.variant_id = {variant_id}"
 
-        # TODO : move somewhere else
-        GENOTYPES = {
-            "-1": FIcon(0xF10D3),
-            "0": FIcon(0xF0766),
-            "1": FIcon(0xF0AA1),
-            "2": FIcon(0xF0AA5),
-        }
-
         for row in self.conn.execute(q):
             item = QListWidgetItem()
             genotype = str(row[1])
-            icon = GENOTYPES.get(genotype, GENOTYPES["-1"])
+            icon = self.GENOTYPES.get(genotype, self.GENOTYPES["-1"])
 
             item.setText(str(row[0]))
             item.setIcon(icon)
