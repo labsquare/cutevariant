@@ -3,6 +3,7 @@ import functools
 import math
 import csv
 import io
+import copy
 
 # Qt imports
 from PySide2.QtWidgets import *
@@ -241,6 +242,7 @@ class VariantModel(QAbstractTableModel):
                 group_by=self.group_by,
             )["count"]
 
+        #print(self.fields, self.filters, self.group_by)
         self.endResetModel()
 
     def load_from_vql(self, vql):
@@ -743,6 +745,7 @@ class VariantViewWidget(plugin.PluginWidget):
 
         # Save fields between group/ungroup
         self.save_fields = list()
+        self.save_filters = list()
 
     def add_available_formatters(self):
         """Populate the formatters
@@ -790,6 +793,8 @@ class VariantViewWidget(plugin.PluginWidget):
         # Save default data with current query attributes
         # See load(), we use this attr to restore fields after grouping
         self.save_fields = self.mainwindow.state.fields
+        self.save_filters = self.mainwindow.state.filters
+
         self.main_right_pane.fields = self.mainwindow.state.fields
         self.main_right_pane.source = self.mainwindow.state.source
         self.main_right_pane.filters = self.mainwindow.state.filters
@@ -826,21 +831,32 @@ class VariantViewWidget(plugin.PluginWidget):
         self.groupby_action.blockSignals(False)
 
         if is_grouped:
+            # TODO: model. => . direct
+            # Ungrouped => grouped
             # Groupby fields become left pane fields
             self.groupby_left_pane.model.fields = self.groupby_left_pane.model.group_by
             # Prune right fields with left fields => avoid redundancy of information
             self.main_right_pane.model.fields = [
-                field for field in self.main_right_pane.model.fields
+                field for field in self.save_fields
                 if field not in self.groupby_left_pane.model.group_by
             ]
+            self.groupby_left_pane.model.filters = self.main_right_pane.model.filters
+
             # Refresh models
-            self.main_right_pane.load()  # useless, except if we modify fields
+            self.main_right_pane.load()  # useless, except if we modify fields like above
             self.groupby_left_pane.load()
+
+            # Select the first row if grouped => refresh the right pane
+            self.groupby_left_pane.select_row(0)
         else:
+            # Grouped => ungrouped
             # Restore fields
             self.main_right_pane.model.fields = self.save_fields
+            # Restore filters
+            self.main_right_pane.filters = self.save_filters
             # Refresh model
             self.main_right_pane.load()
+            # print("saved right:", self.save_fields)
 
     def on_group_changed(self):
         """Set group by fields when group by button is clicked"""
@@ -862,14 +878,8 @@ class VariantViewWidget(plugin.PluginWidget):
         self.load()
         self._refresh_vql_editor()
 
-        if not is_grouped:
-            # Select the first row if grouped => refresh the right pane
-            self.groupby_left_pane.select_row(0)
-
     def on_variant_clicked(self, index: QModelIndex):
         """React on variant clicked
-
-        TODO : ugly...
 
         Args:
             index (QModelIndex): index into item models derived from
@@ -886,11 +896,26 @@ class VariantViewWidget(plugin.PluginWidget):
                 # self.groupby_left_pane.fields = self.save_fields
                 self.groupby_left_pane.source = self.main_right_pane.model.source # laissé
 
-                and_list = []
-                for i in self.groupby_left_pane.group_by:
-                    and_list.append({"field": i, "operator": "=", "value": variant[i]})
+                # Forge a special filter to display the current variant
+                # print("variant clicked", variant)
+                and_list = [
+                    {"field": i, "operator": "=", "value": variant[i]}
+                    for i in self.groupby_left_pane.group_by
+                ]
 
-                self.main_right_pane.filters = {"AND": and_list}
+                if self.save_filters:
+                    # Keep and update previous filter
+                    filters = copy.deepcopy(self.save_filters)
+
+                    if "AND" in self.save_filters:
+                        filters["AND"] += and_list
+                    else:
+                        filters["AND"] = and_list
+                else:
+                    # New filter
+                    filters = {"AND": and_list}
+
+                self.main_right_pane.filters = filters
 
                 # Update right pane only
                 self.main_right_pane.load()
@@ -939,12 +964,11 @@ class VariantViewWidget(plugin.PluginWidget):
             if not selected_fields:
                 selected_fields = ["chr"]
 
+            # Set current group_by to left pane
             self._set_groups(selected_fields)
+            # Reload ui
             self.load()
             self._refresh_vql_editor()
-
-            # Auto select first item of group by
-            self.groupby_left_pane.select_row(0)
 
     def _set_groups(self, grouped_fields):
         """Set fields on groupby_left_pane and refresh text on groupby action"""
