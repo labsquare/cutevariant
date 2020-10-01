@@ -812,7 +812,7 @@ class VariantViewWidget(plugin.PluginWidget):
         # print("is grouped ?")
         # print("left", self.groupby_left_pane.model.group_by)
         # print("right", self.main_right_pane.model.group_by)
-        return self.groupby_left_pane.model.group_by != []
+        return self.groupby_left_pane.group_by != []
 
     def load(self):
         """Load all view
@@ -830,17 +830,16 @@ class VariantViewWidget(plugin.PluginWidget):
         self.groupby_action.blockSignals(False)
 
         if is_grouped:
-            # TODO: model. => . direct
             # Ungrouped => grouped
             # Groupby fields become left pane fields
-            self.groupby_left_pane.model.fields = self.groupby_left_pane.model.group_by
+            self.groupby_left_pane.fields = self.groupby_left_pane.group_by
             # Prune right fields with left fields => avoid redundancy of information
-            self.main_right_pane.model.fields = [
+            self.main_right_pane.fields = [
                 field
                 for field in self.save_fields
-                if field not in self.groupby_left_pane.model.group_by
+                if field not in self.groupby_left_pane.group_by
             ]
-            self.groupby_left_pane.model.filters = self.main_right_pane.model.filters
+            self.groupby_left_pane.filters = self.main_right_pane.filters
 
             # Refresh models
             self.main_right_pane.load()  # useless, except if we modify fields like above
@@ -851,7 +850,7 @@ class VariantViewWidget(plugin.PluginWidget):
         else:
             # Grouped => ungrouped
             # Restore fields
-            self.main_right_pane.model.fields = self.save_fields
+            self.main_right_pane.fields = self.save_fields
             # Restore filters
             self.main_right_pane.filters = self.save_filters
             # Refresh model
@@ -870,7 +869,7 @@ class VariantViewWidget(plugin.PluginWidget):
         else:
             # Ungroup
             # Save current group
-            self.last_group = self.groupby_left_pane.model.group_by
+            self.last_group = self.groupby_left_pane.group_by
         if not is_checked:
             # Reset to default group (chr set in _show_group_dialog)
             self._set_groups([])
@@ -894,7 +893,7 @@ class VariantViewWidget(plugin.PluginWidget):
             if self._is_grouped():
                 # Restore fields
                 # self.groupby_left_pane.fields = self.save_fields
-                self.groupby_left_pane.source = self.main_right_pane.model.source
+                self.groupby_left_pane.source = self.main_right_pane.source
 
                 # Forge a special filter to display the current variant
                 # print("variant clicked", variant)
@@ -944,7 +943,7 @@ class VariantViewWidget(plugin.PluginWidget):
         for field in self.save_fields:
             item = QListWidgetItem()
             item.setText(field)
-            if field in self.groupby_left_pane.model.group_by and type(field) == str:
+            if field in self.groupby_left_pane.group_by and type(field) == str:
                 item.setCheckState(Qt.Checked)
             else:
                 item.setCheckState(Qt.Unchecked)
@@ -972,13 +971,13 @@ class VariantViewWidget(plugin.PluginWidget):
 
     def _set_groups(self, grouped_fields):
         """Set fields on groupby_left_pane and refresh text on groupby action"""
-        self.groupby_left_pane.model.group_by = grouped_fields
+        self.groupby_left_pane.group_by = grouped_fields
         self.groupbylist_action.setText(",".join(grouped_fields))
 
     def _refresh_vql_editor(self):
         """Force refresh of vql_editor if loaded"""
         if "vql_editor" in self.mainwindow.plugins:
-            self.mainwindow.state.group_by = self.groupby_left_pane.model.group_by
+            self.mainwindow.state.group_by = self.groupby_left_pane.group_by
             plugin_obj = self.mainwindow.plugins["vql_editor"]
             plugin_obj.on_refresh()
 
