@@ -191,7 +191,7 @@ class VariantModel(QAbstractTableModel):
             if g not in self.fields:
                 self.fields.append(g)
 
-        #  Store SQL query for debugging purpose
+        # Store SQL query for debugging purpose
         self.debug_sql = build_complete_query(
             self.conn,
             fields=self.fields,
@@ -205,7 +205,7 @@ class VariantModel(QAbstractTableModel):
             having=self.having,
         )
 
-        #  Load variants
+        # Load variants
         self.variants = list(
             cmd.select_cmd(
                 self.conn,
@@ -242,7 +242,7 @@ class VariantModel(QAbstractTableModel):
                 group_by=self.group_by,
             )["count"]
 
-        #print(self.fields, self.filters, self.group_by)
+        # print(self.fields, self.filters, self.group_by)
         self.endResetModel()
 
     def load_from_vql(self, vql):
@@ -632,8 +632,7 @@ class VariantView(QWidget):
         """Select the column with the given index"""
         index = self.view.model().index(row, 0)
         self.view.selectionModel().setCurrentIndex(
-            index,
-            QItemSelectionModel.SelectCurrent | QItemSelectionModel.Rows
+            index, QItemSelectionModel.SelectCurrent | QItemSelectionModel.Rows
         )
 
     def copy_to_clipboard(self):
@@ -811,8 +810,8 @@ class VariantViewWidget(plugin.PluginWidget):
     def _is_grouped(self) -> bool:
         """Return grouped mode status of the view"""
         # print("is grouped ?")
-        #print("left", self.groupby_left_pane.model.group_by)
-        #print("right", self.main_right_pane.model.group_by)
+        # print("left", self.groupby_left_pane.model.group_by)
+        # print("right", self.main_right_pane.model.group_by)
         return self.groupby_left_pane.model.group_by != []
 
     def load(self):
@@ -837,7 +836,8 @@ class VariantViewWidget(plugin.PluginWidget):
             self.groupby_left_pane.model.fields = self.groupby_left_pane.model.group_by
             # Prune right fields with left fields => avoid redundancy of information
             self.main_right_pane.model.fields = [
-                field for field in self.save_fields
+                field
+                for field in self.save_fields
                 if field not in self.groupby_left_pane.model.group_by
             ]
             self.groupby_left_pane.model.filters = self.main_right_pane.model.filters
@@ -894,7 +894,7 @@ class VariantViewWidget(plugin.PluginWidget):
             if self._is_grouped():
                 # Restore fields
                 # self.groupby_left_pane.fields = self.save_fields
-                self.groupby_left_pane.source = self.main_right_pane.model.source # laissé
+                self.groupby_left_pane.source = self.main_right_pane.model.source
 
                 # Forge a special filter to display the current variant
                 # print("variant clicked", variant)
