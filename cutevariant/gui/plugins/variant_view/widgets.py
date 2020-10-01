@@ -374,10 +374,19 @@ class VariantView(QWidget):
 
     view_clicked = Signal()
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, show_popup_menu=True):
+        """
+        Args:
+            parent: parent widget
+            show_popup_menu (boolean, optional: If False, disable the context menu
+                over variants. For example the group pane should be disable
+                in order to avoid partial/false informations to be displayed
+                in this menu.
+        """
         super().__init__(parent)
 
         self.parent = parent
+        self.show_popup_menu = show_popup_menu
         self.view = QTableView()
         self.bottom_bar = QToolBar()
 
@@ -554,6 +563,9 @@ class VariantView(QWidget):
 
     def contextMenuEvent(self, event: QContextMenuEvent):
         """Override: Show contextual menu over the current variant"""
+        if not self.show_popup_menu:
+            return
+
         menu = QMenu(self)
         pos = self.view.viewport().mapFromGlobal(event.globalPos())
         current_index = self.view.indexAt(pos)
@@ -641,6 +653,14 @@ class VariantView(QWidget):
         """Select all variants in the view"""
         self.view.selectAll()
 
+    def select_row(self, row):
+        """Select the column with the given index"""
+        index = self.view.model().index(row, 0)
+        self.view.selectionModel().setCurrentIndex(
+            index,
+            QItemSelectionModel.SelectCurrent | QItemSelectionModel.Rows
+        )
+
     def copy_to_clipboard(self):
         """Copy the selected variant(s) into the clipboard
 
@@ -677,11 +697,12 @@ class VariantViewWidget(plugin.PluginWidget):
         self.splitter = QSplitter(Qt.Horizontal)
         self.main_right_pane = VariantView(parent=self)
 
-        self.groupby_left_pane = VariantView(self)
+        # No popup menu on this one
+        self.groupby_left_pane = VariantView(parent=self, show_popup_menu=False)
         self.groupby_left_pane.hide()
 
-        self.splitter.addWidget(self.main_right_pane)
         self.splitter.addWidget(self.groupby_left_pane)
+        self.splitter.addWidget(self.main_right_pane)
 
         # Make resizable TODO : ugly ... Make it nicer
         # def _resize1_section(l, o, n):
@@ -744,10 +765,11 @@ class VariantViewWidget(plugin.PluginWidget):
             lambda x, _: self.on_variant_clicked(x)
         )
 
+        # Default group
         self.last_group = ["chr"]
+
         # Save fields between group/ungroup
         self.save_fields = list()
-
 
     def add_available_formatters(self):
         """Populate the formatters
@@ -792,12 +814,13 @@ class VariantViewWidget(plugin.PluginWidget):
 
     def on_refresh(self):
         """Overrided from PluginWidget"""
-        # Save default data
+        # Save default data with current query attributes
+        # See load(), we use this attr to restore fields after grouping
         self.save_fields = self.mainwindow.state.fields
         self.main_right_pane.fields = self.mainwindow.state.fields
         self.main_right_pane.source = self.mainwindow.state.source
         self.main_right_pane.filters = self.mainwindow.state.filters
-        # self.main_right_pane.group_by = self.mainwindow.state.group_by
+        # Set current group_by to left pane
         self._set_groups(self.mainwindow.state.group_by)
 
         # Set formatter
@@ -809,10 +832,17 @@ class VariantViewWidget(plugin.PluginWidget):
 
     def _is_grouped(self) -> bool:
         """Return grouped mode status of the view"""
-        return self.main_right_pane.model.group_by != []
+        # print("is grouped ?")
+        #print("left", self.groupby_left_pane.model.group_by)
+        #print("right", self.main_right_pane.model.group_by)
+        return self.groupby_left_pane.model.group_by != []
 
     def load(self):
-        """Load all view"""
+        """Load all view
+
+        Called by on_refresh, on_group_changed, and _show_group_dialog
+        Display/hide groupby_left_pane on user demand.
+        """
         is_grouped = self._is_grouped()
         # Left pane and groupbylist are visible in group mode
         self.groupby_left_pane.setVisible(is_grouped)
@@ -823,10 +853,15 @@ class VariantViewWidget(plugin.PluginWidget):
         self.groupby_action.blockSignals(False)
 
         if is_grouped:
-            self.groupby_left_pane.model.fields = self.main_right_pane.model.fields
-            self.main_right_pane.model.fields = self.main_right_pane.model.group_by
+            # Groupby fields become left pane fields
+            self.groupby_left_pane.model.fields = self.groupby_left_pane.model.group_by
+            # Prune right fields with left fields => avoid redundancy of information
+            self.main_right_pane.model.fields = [
+                field for field in self.main_right_pane.model.fields
+                if field not in self.groupby_left_pane.model.group_by
+            ]
             # Refresh models
-            self.main_right_pane.load()
+            self.main_right_pane.load()  # useless, except if we modify fields
             self.groupby_left_pane.load()
         else:
             # Restore fields
@@ -835,40 +870,28 @@ class VariantViewWidget(plugin.PluginWidget):
             self.main_right_pane.load()
 
     def on_group_changed(self):
+        """Set group by fields when group by button is clicked"""
 
         is_checked = self.groupby_action.isChecked()
-        if is_checked and not self._is_grouped():
+        is_grouped = self._is_grouped()
+        if is_checked and not is_grouped:
+            # Group
+            # Recall previous/default group
             self._set_groups(self.last_group)
         else:
-            self.last_group = self.main_right_pane.model.group_by
-
+            # Ungroup
+            # Save current group
+            self.last_group = self.groupby_left_pane.model.group_by
         if not is_checked:
+            # Reset to default group (chr set in _show_group_dialog)
             self._set_groups([])
-
-        # self.mainwindow.state.group_by = checked_fields
 
         self.load()
         self._refresh_vql_editor()
 
-        # if is_checked:
-        #     checked_fields = [
-        #         action.text() for action in self.groupby_actions if action.isChecked()
-        #     ]
-
-        #     if not checked_fields:  # By default, add one groupby
-        #         checked_fields = [self.groupby_actions[0].text()]
-
-        # else:
-        #     checked_fields = []
-        #     self.reset()
-
-        # self.mainwindow.state.group_by = checked_fields
-        # self.on_refresh()
-
-        # # refresh source editor plugin
-        # if "vql_editor" in self.mainwindow.plugins:
-        #     plugin = self.mainwindow.plugins["vql_editor"]
-        #     plugin.on_refresh()
+        if not is_grouped:
+            # Select the first row if grouped => refresh the right pane
+            self.groupby_left_pane.select_row(0)
 
     def on_variant_clicked(self, index: QModelIndex):
         """React on variant clicked
@@ -876,38 +899,39 @@ class VariantViewWidget(plugin.PluginWidget):
         TODO : ugly...
 
         Args:
-            index (QModelIndex): Description
+            index (QModelIndex): index into item models derived from
+                QAbstractItemModel. U used by item views, delegates, and
+                selection models to locate an item in the model.
         """
 
-        if index.model() == self.main_right_pane.view.model():
-            variant = self.main_right_pane.model.variant(index.row())
+        if index.model() == self.groupby_left_pane.view.model():
+            # Variant clicked on left pane => refresh the right pane
+            variant = self.groupby_left_pane.model.variant(index.row())
 
             if self._is_grouped():
                 # Restore fields
-                self.groupby_left_pane.fields = self.save_fields
-                self.groupby_left_pane.source = self.main_right_pane.model.source
+                # self.groupby_left_pane.fields = self.save_fields
+                self.groupby_left_pane.source = self.main_right_pane.model.source # laissé
 
                 and_list = []
-                for i in self.main_right_pane.group_by:
+                for i in self.groupby_left_pane.group_by:
                     and_list.append({"field": i, "operator": "=", "value": variant[i]})
 
-                self.groupby_left_pane.filters = {"AND": and_list}
+                self.main_right_pane.filters = {"AND": and_list}
 
-                self.groupby_left_pane.load()
-                self.groupby_left_pane.load_page_box()
+                # Update right pane only
+                self.main_right_pane.load()
 
-            # Refresh plugins when clicked
-            self.mainwindow.state.current_variant = variant
-            self.mainwindow.refresh_plugins(sender=self)
+        if index.model() == self.main_right_pane.view.model():
+            # Variant clicked on right pane
+            variant = self.main_right_pane.model.variant(index.row())
 
-        if index.model() == self.groupby_left_pane.view.model():
-            variant = self.groupby_left_pane.model.variant(index.row())
-            self.mainwindow.state.current_variant = variant
-            self.mainwindow.refresh_plugins(sender=self)
+        # Refresh the current variant of mainwindow and plugins
+        self.mainwindow.state.current_variant = variant
+        self.mainwindow.refresh_plugins(sender=self)
 
     def _show_group_dialog(self):
-        """ Show a dialog to select group fields """
-
+        """Show a dialog window to select group fields"""
         dialog = QDialog(self)
 
         view = QListWidget()
@@ -918,10 +942,11 @@ class VariantViewWidget(plugin.PluginWidget):
         buttons.accepted.connect(dialog.accept)
         buttons.rejected.connect(dialog.reject)
 
+        # Populate the list of fields with their check status
         for field in self.save_fields:
             item = QListWidgetItem()
             item.setText(field)
-            if field in self.main_right_pane.model.group_by and type(field) == str:
+            if field in self.groupby_left_pane.model.group_by and type(field) == str:
                 item.setCheckState(Qt.Checked)
             else:
                 item.setCheckState(Qt.Unchecked)
@@ -937,24 +962,28 @@ class VariantViewWidget(plugin.PluginWidget):
                 if item.checkState() == Qt.Checked:
                     selected_fields.append(item.text())
 
-            # if no group
-            if selected_fields == []:
+            # if no group force chr
+            if not selected_fields:
                 selected_fields = ["chr"]
 
             self._set_groups(selected_fields)
             self.load()
             self._refresh_vql_editor()
 
+            # Auto select first item of group by
+            self.groupby_left_pane.select_row(0)
+
     def _set_groups(self, grouped_fields):
-        """Set fields on main_right_pane and refresh text on groupby action"""
-        self.main_right_pane.model.group_by = grouped_fields
+        """Set fields on groupby_left_pane and refresh text on groupby action"""
+        self.groupby_left_pane.model.group_by = grouped_fields
         self.groupbylist_action.setText(",".join(grouped_fields))
 
     def _refresh_vql_editor(self):
+        """Force refresh of vql_editor if loaded"""
         if "vql_editor" in self.mainwindow.plugins:
-            self.mainwindow.state.group_by = self.main_right_pane.model.group_by
-            plugin = self.mainwindow.plugins["vql_editor"]
-            plugin.on_refresh()
+            self.mainwindow.state.group_by = self.groupby_left_pane.model.group_by
+            plugin_obj = self.mainwindow.plugins["vql_editor"]
+            plugin_obj.on_refresh()
 
     def copy(self):
         """Copy the selected variant(s) into the clipboard
