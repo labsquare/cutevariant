@@ -9,7 +9,7 @@ run:
 
 fix_notepad:
 	# Remove non breaking spaces inserted by notepad.exe IDE
-	find . -type f -print0 | xargs -0 sed -i 's/\xc2\xa0//g'
+	find ./cutevariant/ ./tests/ -type f -print0 | xargs -0 sed -i 's/\xc2\xa0//g'
 
 black:
 	black cutevariant
