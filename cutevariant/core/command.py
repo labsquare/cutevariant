@@ -115,9 +115,9 @@ def count_cmd(
     Returns:
         dict: Count of variants with "count" as a key
     """
-
-    if not filters:
+    if not filters and not group_by:
         # Returned stored cache variant
+        LOGGER.debug("command:count_cmd:: cached from selections table")
         return {
             "count": conn.execute(
                 f"SELECT count FROM selections WHERE name = '{source}'"
