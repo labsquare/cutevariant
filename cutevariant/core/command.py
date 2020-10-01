@@ -151,11 +151,8 @@ def count_cmd(
     #         + ")"
     #     )
     # else:
-
-    query = "SELECT COUNT (*) FROM (" + query + ")"
-
     LOGGER.debug("command:count_cmd:: %s", query)
-    return {"count": conn.execute(query).fetchone()[0]}
+    return {"count": sql.count_query(conn, query)}
 
 
 def drop_cmd(conn: sqlite3.Connection, feature: str, name: str, **kwargs):
