@@ -22,7 +22,7 @@ install:
   - pyinstaller -i icon.ico --name="cutevariant" --add-data cutevariant;cutevariant cutevariant\__main__.py
   #- copy sqlite3.dll C:\Miniconda3\envs\test-environment\DLLs\
   #- python make_a_blob.py build_exe
-  # - copy sqlite3.dll C:\Miniconda3\envs\test-environment\DLLs\
+  #- copy sqlite3.dll C:\Miniconda3\envs\test-environment\DLLs\
 
   #- python make_a_blob.py build_exe
 
