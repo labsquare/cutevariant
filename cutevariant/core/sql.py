@@ -972,7 +972,7 @@ def get_sample_annotations(conn, variant_id: int, sample_id: int):
 
 def get_variants_count(conn):
     """Get the number of variants in the "variants" table"""
-    return conn.execute("""SELECT COUNT(*) FROM variants""").fetchone()[0]
+    return count_query(conn, "variants")
 
 
 def async_insert_many_variants(conn, data, total_variant_count=None, yield_every=3000):
@@ -1303,7 +1303,7 @@ def update_sample(conn, sample: dict):
 
 
 def count_query(conn, query):
-    """Count elements from query
+    """Count elements from the given query or table
 
     TODO: memoization here
     """
