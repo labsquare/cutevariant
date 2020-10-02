@@ -1416,7 +1416,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.view.header().hide()
 
         self.combo = QComboBox()
-        self.combo.addItem("")
+        self.combo.addItem(self.tr("Current not saved filter..."))
         self.combo.setMinimumHeight(30)
         self.combo.currentTextChanged.connect(self.on_combo_changed)
         self.save_button = QToolButton()
@@ -1439,12 +1439,11 @@ class FiltersEditorWidget(plugin.PluginWidget):
         # self.model.filterChanged.connect(self.on_filter_changed)
 
         # setup Menu
-
-        self.toolbar.addAction(FIcon(0xF0415), "Add Condition", self.on_add_condition)
+        self.toolbar.addAction(FIcon(0xF0415), self.tr("Add Condition"), self.on_add_condition)
 
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        # self.toolbar.addAction(FIcon(0xF5E8), "delete", self.on_delete_item)
+        self.toolbar.addAction(FIcon(0xF0A7A), self.tr("Delete filter"), self.on_delete_item)
 
         # self.view.selectionModel().currentChanged.connect(self.on_filters_changed)
         self.model.filtersChanged.connect(self.on_filters_changed)
@@ -1497,7 +1496,9 @@ class FiltersEditorWidget(plugin.PluginWidget):
     def on_save_filters(self):
 
         # TODO : MANAGE PLUGINS SETTINGS
-        name, _ = QInputDialog.getText(self, "Filter name", "Filter Name")
+        name, _ = QInputDialog.getText(
+            self, self.tr("Type a name for the filter"), self.tr("Filter Name:")
+        )
         self.combo.addItem(name, self.filters)
 
     def on_combo_changed(self):
@@ -1546,7 +1547,9 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self._update_view_geometry()
 
     def on_open_condition_dialog(self):
-        """Open the condition creation dialog"""
+        """Open the condition creation dialog
+        TODO: not used anymore
+        """
         dialog = FieldDialog(conn=self.conn, parent=self)
         if dialog.exec_() == dialog.Accepted:
             cond = dialog.get_condition()
@@ -1555,11 +1558,16 @@ class FiltersEditorWidget(plugin.PluginWidget):
                 self.model.add_condition_item(parent=index, value=cond)
 
     def on_delete_item(self):
-        """Delete current item"""
+        """Delete current item
+
+        TODO:
+        - if filter is saved => delete filter
+        - if filter is not saved => clear
+        """
         ret = QMessageBox.question(
             self,
-            "remove row",
-            "Are you to remove this item ? ",
+            self.tr("Filter deletion"),
+            self.tr("Do you want to remove this item?"),
             QMessageBox.Yes | QMessageBox.No,
         )
 
@@ -1585,8 +1593,8 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
             item = self.model.item(index)
             if item.type() == FilterItem.LOGIC_TYPE:
-                menu.addAction("Add condition", self.on_add_condition)
-                menu.addAction("Add group", self.on_add_logic)
+                menu.addAction(self.tr("Add condition"), self.on_add_condition)
+                menu.addAction(self.tr("Add subfilter"), self.on_add_logic)
 
             menu.exec_(event.globalPos())
 
