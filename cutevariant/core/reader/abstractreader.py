@@ -1,14 +1,18 @@
-from abc import ABC, abstractclassmethod
+from abc import ABC, abstractmethod
 import os
 from collections import Counter
 import cutevariant.commons as cm
 
+LOGGER = cm.logger()
+
 
 class AbstractReader(ABC):
     """Base class for all Readers required to import variants into the database.
+
     Subclass it if you want a new file parser .
 
     Attributes:
+
         device: a file object typically returned by open()
         file_size: file size in bytes
         read_bytes: current bytes readed (progression = read_bytes / file_size)
@@ -26,54 +30,58 @@ class AbstractReader(ABC):
 
         self.file_size = self.compute_total_size()
         self.read_bytes = 0
+        self.samples = list()
 
-    @abstractclassmethod
-    def get_variants(self):
+    @classmethod
+    @abstractmethod
+    def get_variants(cls):
         """Abstract method must return variants as an iterable of dictionnaries.
 
-            Variant dictionnary has 4 mandatory fields `chr`, `pos`, `ref`, `alt`.
-            Other fields are optionnal
-            For instance: 
-                [
-                    {"chr": "chr3","pos": 3244,"ref": "A","alt":"C", "qual": 30},
-                    {"chr": "chr4","pos": 3244,"ref": "A","alt":"C","qual": 20},
-                    {"chr": "chr5","pos": 3244,"ref": "A","alt":"C","qual": 10 },
+        Variant dictionnary has 4 mandatory fields `chr`, `pos`, `ref`, `alt`.
+        Other fields are optionnal
+        For instance:
+            [
+                {"chr": "chr3","pos": 3244,"ref": "A","alt":"C", "qual": 30},
+                {"chr": "chr4","pos": 3244,"ref": "A","alt":"C","qual": 20},
+                {"chr": "chr5","pos": 3244,"ref": "A","alt":"C","qual": 10 },
+            ]
+
+        Annotations and Samples objects can be embbeded into a variant dictionnaries.
+        Annotations describes several annotations for one variant.
+        In the most of the case, those are relative to transcripts.
+        Samples describes information relative to a variant with a sample,
+        like genotype (gt). This is a mandatory field.
+
+            [{
+                "chr": "chr3",
+                "pos": 3244,
+                "ref": "A",
+                "alt":"C",
+                "field_n": "value_n",
+                "annotations": [
+                    {"gene": "GJB2", "transcripts": "NM_00232.1", "field_n": "value_n"},
+                    {"gene": "GJB2", "transcripts": "NM_00232.2", "field_n": "value_n"}
+                ],
+                "samples": [
+                    {"name":"boby", "genotype": 1, "field_n":"value_n"},
+                    {"name":"kevin", "genotype": 1, "field_n":"value_n"}
                 ]
-        
-            Annotations and Samples objects can be embbeded into a variant dictionnaries. 
-            Annotations describes several annotations for one variant. In the most of the case, those are relative to transcripts.
-            Samples describes information relative to a variant with a sample, like genotype (gt). This is a mandatory field.
+            },]
 
-                [{
-                    "chr": "chr3",
-                    "pos": 3244,
-                    "ref": "A",
-                    "alt":"C",
-                    "field_n": "value_n",
-                    "annotations": [
-                        {"gene": "GJB2", "transcripts": "NM_00232.1", "field_n": "value_n"},
-                        {"gene": "GJB2", "transcripts": "NM_00232.2", "field_n": "value_n"}
-                    ],
-                    "samples": [
-                        {"name":"boby", "genotype": 1, "field_n":"value_n"},
-                        {"name":"kevin", "genotype": 1, "field_n":"value_n"}
-                    ]
-                },]      
-
-        Yields: 
-            dict: variant dictionnary 
+        Yields:
+            dict: variant dictionnary
 
         Examples:
             >>> for variant in reader.get_variants():
                 print(variant["chr"], variant["pos"])
 
         """
-        raise NotImplementedError(self.__class__.__name__)
+        raise NotImplementedError(cls.__class__.__name__)
 
-    @abstractclassmethod
-    def get_fields(self):
-        """Abstract method hat must return fields description 
-
+    @classmethod
+    @abstractmethod
+    def get_fields(cls):
+        """Abstract method hat must return fields description
 
         Full output:
         ============
@@ -89,31 +97,29 @@ class AbstractReader(ABC):
 
         Yields:
             dict: field dictionnary
- 
+
         Examples:
             >>> for field in reader.get_fields():
                     print(field["name"], field["description"])
-
-
-
        """
-        raise NotImplementedError(self.__class__.__name__)
+        raise NotImplementedError(cls.__class__.__name__)
 
     def get_samples(self) -> list:
-        """Return list of samples.
+        """Return list of samples
+
         Override this method to have samples in sqlite database.
         """
         return []
 
     def get_metadatas(self) -> dict:
-        """ Get meta data 
-        Override this method to have meta data in sqlite database 
+        """Get meta data
+
+        Override this method to have meta data in sqlite database
         """
         return {}
 
     def get_extra_fields(self):
-        """Yield fields with extra mandatory fields like 'comment' and 'score'
-        """
+        """Yield fields with extra mandatory fields like 'comment' and 'score'"""
         yield {
             "name": "favorite",
             "type": "bool",
@@ -276,8 +282,6 @@ class AbstractReader(ABC):
             duplicates.add(field["name"])
 
     def get_extra_variants(self, **kwargs):
-        """Yield fields with extra mandatory value like comment and score
-        """
         for variant in self.get_variants():
             variant["favorite"] = False
             variant["comment"] = ""
@@ -355,14 +359,14 @@ class AbstractReader(ABC):
         return (field for field in self.get_fields() if field["category"] == category)
 
     def get_variants_count(self) -> int:
-        """Get variant count from the device.
+        """Get variant count from the device
+
         Override this method to make it faster
         """
         return len(tuple(self.get_variants()))
 
     def compute_total_size(self) -> int:
-        """ Compute file size int bytes """
-
+        """Compute file size int bytes"""
         if not self.device:
             return 0
 
@@ -370,9 +374,7 @@ class AbstractReader(ABC):
 
         if cm.is_gz_file(filename):
             return cm.get_uncompressed_size(filename)
-
-        else:
-            return os.path.getsize(filename)
+        return os.path.getsize(filename)
 
 
 def check_variant_schema(variant: dict):
@@ -448,4 +450,5 @@ def check_field_schema(field: dict):
 
 def sanitize_field_name(field: str):
     # TODO
+    LOGGER.warning("NOT implemented function!!")
     return field
