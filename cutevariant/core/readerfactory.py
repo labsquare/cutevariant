@@ -2,23 +2,24 @@
 import os
 from contextlib import contextmanager
 import pathlib
+import vcf
 
 # Custom imports
-from .reader import *
+from cutevariant.core.reader import VcfReader, CsvReader
 import cutevariant.commons as cm
-import vcf
+
 
 LOGGER = cm.logger()
 
 
 def detect_vcf_annotation(filepath):
     """Return the name of the annotation parser to be used on the given file
+
     Called: In the importer and in the project wizard to display the detected
     annotations.
 
     :return: "vep", "snpeff", None
     """
-
     if cm.is_gz_file(filepath):
         # Open .gz files in binary mode (See #84)
         device = open(filepath, "rb")
@@ -52,7 +53,6 @@ def create_reader(filepath):
         - vcf: snpeff, vep
         - csv, tsv, txt: vep
     """
-
     path = pathlib.Path(filepath)
 
     LOGGER.debug(
