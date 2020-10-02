@@ -9,7 +9,6 @@ BaseWidget: Abstract class for settings widgets.
         require internet connection
         - StyleSettingsWidget
         - PluginsSettingsWidget
-        - DatabaseSettingsWidget
         - VariantSettingsWidget: Allow to add personal templates to search a
         variant in a third-party database
 
@@ -386,7 +385,6 @@ class SettingsWidget(QDialog):
         # Specialized widgets on panels
         self.addPanel(general_settings)
         self.addPanel(PluginsSettingsWidget())
-        #self.addPanel(DatabaseSettingsWidget())
         self.load_plugins()
 
         self.resize(800, 400)
