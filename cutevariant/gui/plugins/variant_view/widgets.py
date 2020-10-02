@@ -544,59 +544,60 @@ class VariantView(QWidget):
         menu = QMenu(self)
         pos = self.view.viewport().mapFromGlobal(event.globalPos())
         current_index = self.view.indexAt(pos)
+
+        if not current_index.isValid():
+            return
+
         current_variant = self.model.variant(current_index.row())
+        full_variant = sql.get_one_variant(self.conn, current_variant["id"])
 
-        if current_index.isValid():
+        # Copy action: Copy the variant reference ID in to the clipboard
+        formatted_variant = "{chr}:{pos}-{ref}-{alt}".format(**full_variant)
+        menu.addAction(
+            FIcon(0xF014C),
+            formatted_variant,
+            functools.partial(qApp.clipboard().setText, formatted_variant),
+        )
 
-            full_variant = sql.get_one_variant(self.conn, current_variant["id"])
+        # Create favorite action
+        fav_action = menu.addAction(
+            self.tr("&Unmark favorite")
+            if bool(full_variant["favorite"])
+            else self.tr("&Mark as favorite")
+        )
+        fav_action.setCheckable(True)
+        fav_action.setChecked(bool(full_variant["favorite"]))
+        fav_action.toggled.connect(self.update_favorites)
+        # fav_action.toggled.connect(lambda checked: self.update_favorite(current_index, checked))
 
-            # Copy action: Copy the variant reference ID in to the clipboard
-            formatted_variant = "{chr}:{pos}-{ref}-{alt}".format(**full_variant)
-            menu.addAction(
-                FIcon(0xF014C),
-                formatted_variant,
-                functools.partial(qApp.clipboard().setText, formatted_variant),
+        # Create classication action
+        class_menu = menu.addMenu("Classification")
+        for key, value in cm.CLASSIFICATION.items():
+
+            action = class_menu.addAction(
+                FIcon(cm.CLASSIFICATION_ICONS[key]), value
             )
-
-            # Create favorite action
-            fav_action = menu.addAction(
-                self.tr("&Unmark favorite")
-                if bool(full_variant["favorite"])
-                else self.tr("&Mark as favorite")
+            action.setData(key)
+            on_click = functools.partial(
+                self.update_classification, current_index, key
             )
-            fav_action.setCheckable(True)
-            fav_action.setChecked(bool(full_variant["favorite"]))
-            fav_action.toggled.connect(self.update_favorites)
-            # fav_action.toggled.connect(lambda checked: self.update_favorite(current_index, checked))
+            action.triggered.connect(on_click)
 
-            # Create classication action
-            class_menu = menu.addMenu("Classification")
-            for key, value in cm.CLASSIFICATION.items():
+        # Comment action
+        on_edit = functools.partial(self.edit_comment, current_index)
+        menu.addAction(self.tr("&Edit comment ..."), on_edit)
 
-                action = class_menu.addAction(
-                    FIcon(cm.CLASSIFICATION_ICONS[key]), value
-                )
-                action.setData(key)
-                on_click = functools.partial(
-                    self.update_classification, current_index, key
-                )
-                action.triggered.connect(on_click)
+        # Edit menu
+        menu.addSeparator()
+        menu.addAction(
+            FIcon(0xF018F), self.tr("&Copy"), self.copy_to_clipboard, QKeySequence.Copy
+        )
+        menu.addAction(
+            FIcon(0xF0486), self.tr("&Select all"), self.select_all, QKeySequence.SelectAll
+        )
 
-            # Comment action
-            on_edit = functools.partial(self.edit_comment, current_index)
-            menu.addAction(self.tr("&Edit comment ..."), on_edit)
-
-            # Edit menu
-            menu.addSeparator()
-            menu.addAction(
-                FIcon(0xF018F), self.tr("&Copy"), self.copy_to_clipboard, QKeySequence.Copy
-            )
-            menu.addAction(
-                FIcon(0xF0486), self.tr("&Select all"), self.select_all, QKeySequence.SelectAll
-            )
-
-            # Display
-            menu.exec_(event.globalPos())
+        # Display
+        menu.exec_(event.globalPos())
 
     def update_favorite(self, index: QModelIndex, checked: bool):
         """Update favorite status of the variant at the given index"""
