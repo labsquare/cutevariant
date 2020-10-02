@@ -1,6 +1,6 @@
-"""
-This module contains all functions to build a complex SQL Select statement to query variant.
-In te most of the case, you will only use build_query function.
+"""Functions to build a complex SQL Select statement to query variant.
+
+In the most of cases, you will only use build_query function.
 
 Examples:
 
@@ -9,12 +9,12 @@ Examples:
     conn.execute(query)
 
 """
-
-
-from cutevariant.core import sql
+# Standard imports
 import sqlite3
 import re
 
+# Custom imports
+from cutevariant.core import sql
 
 # Function name used from VQL
 # sample("boby").gt
@@ -38,16 +38,21 @@ def filters_to_flat(filters: dict):
         Move to vql ?
 
     Examples:
-        filters = {'AND':
-        [{'field': 'ref', 'operator': '=', 'value': "A"},
-        {'field': 'alt', 'operator': '=', 'value': "C"}]
+        filters = {
+            'AND': [
+                {'field': 'ref', 'operator': '=', 'value': "A"},
+                {'field': 'alt', 'operator': '=', 'value': "C"}
+            ]
         }
 
         filters = _flatten_filter(filters)
 
-        #filters is now [{'field': 'ref', 'operator': '=', 'value': "A"},{'field': 'alt', 'operator': '=', 'value': "C"}]]
+        filters is now:
+        [
+            {'field': 'ref', 'operator': '=', 'value': "A"},
+            {'field': 'alt', 'operator': '=', 'value': "C"}
+        ]
     """
-
     def recursive_generator(filters):
         if isinstance(filters, dict) and len(filters) == 3:
             yield filters
@@ -68,11 +73,11 @@ def field_function_to_sql(field_function: tuple, use_as=False):
 
     Examples:
 
-        field = ("genotype", "boby","gt") # which correspond to genotype(boby).GT in VQL
+        # which correspond to genotype(boby).GT in VQL
+        field = ("genotype", "boby","gt")
         field_function_to_sql(field) == `genotype_boby`.GT
 
     """
-
     func_name, arg_name, field_name = field_function
 
     if use_as:
@@ -82,8 +87,7 @@ def field_function_to_sql(field_function: tuple, use_as=False):
 
     if field_name:
         return f"`{func_name}_{arg_name}`.`{field_name}`" + suffix
-    else:
-        return f"`{func_name}_{arg_name}`" + suffix
+    return f"`{func_name}_{arg_name}`" + suffix
 
 
 def set_function_to_sql(field_function: tuple):
@@ -93,25 +97,25 @@ def set_function_to_sql(field_function: tuple):
     For instance : " SELECT ... WHERE gene IN SET("boby") "
     will be replaced by "SELECT ... WHERE gene IN ( SELECT value FROM sets WHERE name = 'boby')
 
+    Returns:
+        (str): Query statement
     """
     func_name, arg_name = field_function
-    q = f"(SELECT value FROM sets WHERE name = '{arg_name}')"
-    return q
+    return f"(SELECT value FROM sets WHERE name = '{arg_name}')"
 
 
 def fields_to_vql(field):
 
-    if type(field) == str:
+    if isinstance(field, str):
         return field
 
-    if type(field) == tuple:
+    if isinstance(field, tuple):
         if field[0] == GENOTYPE_FUNC_NAME and len(field) == 3:
             return f"{field[0]}['{field[1]}'].{field[2]}"
 
 
 def fields_to_sql(field, default_tables={}, use_as=False):
-    """
-    Return field as sql syntax .
+    """Return field as sql syntax
 
     Args:
         field (str or tuple): Column name from a table
@@ -123,7 +127,6 @@ def fields_to_sql(field, default_tables={}, use_as=False):
     Examples:
         fields_to_sql("chr", {"chr":variants})  => `variants`.`chr`
     """
-
     if isinstance(field, tuple):
 
         # If it is "genotype.name.truc then it is is field function"
@@ -145,9 +148,7 @@ def fields_to_sql(field, default_tables={}, use_as=False):
 
 
 def filters_to_sql(filters, default_tables={}):
-
-    """
-    Return filters as sql syntax .
+    """Return filters as sql syntax
 
     Args:
         filters (dict): Nested tree of condition
@@ -160,11 +161,10 @@ def filters_to_sql(filters, default_tables={}):
         filters_to_sql({"AND": [("pos",">",34), ("af", "==", 10]}) == 'pos > 34 AND af = 10
 
     Note:
-        There is a recursive function inside to parse the nested tree of condition
+        There is a recursive function inside to parse the nested tree of conditions
     """
-
     def is_field(node):
-        return True if len(node) == 3 else False
+        return len(node) == 3
 
     def recursive(node):
         if not node:
@@ -207,33 +207,35 @@ def filters_to_sql(filters, default_tables={}):
 
             # There must be spaces between these strings because of strings operators (IN, etc.)
             return "%s %s %s" % (field, operator, value)
-        else:
-            # Not a field: 1 key only: the logical operator
-            logic_op = list(node.keys())[0]
-            # Recursive call for each field in the list associated to the
-            # logical operator.
-            # node:
-            # {'AND': [
-            #   {'field': 'ref', 'operator': 'IN', 'value': "('A', 'T', 'G', 'C')"},
-            #   {'field': 'alt', 'operator': 'IN', 'value': "('A', 'T', 'G', 'C')"}
-            # ]}
-            # Wanted: ref IN ('A', 'T', 'G', 'C') AND alt IN ('A', 'T', 'G', 'C')
-            out = [recursive(child) for child in node[logic_op]]
-            # print("OUT", out, "LOGIC", logic_op)
-            # OUT ["refIN'('A', 'T', 'G', 'C')'", "altIN'('A', 'T', 'G', 'C')'"]
-            if len(out) == 1:
-                return f" {logic_op} ".join(out)
-            else:
-                return "(" + f" {logic_op} ".join(out) + ")"
+
+
+        # Not a field: 1 key only: the logical operator
+        logic_op = list(node.keys())[0]
+        # Recursive call for each field in the list associated to the
+        # logical operator.
+        # node:
+        # {'AND': [
+        #   {'field': 'ref', 'operator': 'IN', 'value': "('A', 'T', 'G', 'C')"},
+        #   {'field': 'alt', 'operator': 'IN', 'value': "('A', 'T', 'G', 'C')"}
+        # ]}
+        # Wanted: ref IN ('A', 'T', 'G', 'C') AND alt IN ('A', 'T', 'G', 'C')
+        out = [recursive(child) for child in node[logic_op]]
+        # print("OUT", out, "LOGIC", logic_op)
+        # OUT ["refIN'('A', 'T', 'G', 'C')'", "altIN'('A', 'T', 'G', 'C')'"]
+        if len(out) == 1:
+            return f" {logic_op} ".join(out)
+        return "(" + f" {logic_op} ".join(out) + ")"
 
     return recursive(filters)
 
 
 def filters_to_vql(filters):
-    """ Same than filters_to_sql but generate a VQL expression. It means no SQL transformations are made """
+    """Same than filters_to_sql but generates a VQL expression
 
+    It means no SQL transformations are made
+    """
     def is_field(node):
-        return True if len(node) == 3 else False
+        return len(node) == 3
 
     def recursive(node):
         if not node:
@@ -244,26 +246,27 @@ def filters_to_vql(filters):
             value = node["value"]
             operator = node["operator"]
 
-            if type(value) == str:
+            if isinstance(value, str):
                 value = f"'{value}'"
 
-            if type(value) == tuple:
+            if isinstance(value, tuple):
                 # if set   ["set", "name"]
                 if len(value) == 2 and value[0] == SET_FUNC_NAME:
                     value = "{}['{}']".format(SET_FUNC_NAME, value[1])
 
             return "%s %s %s" % (field, operator, value)
 
-        else:
-            logic_op = list(node.keys())[0]
 
-            out = [recursive(child) for child in node[logic_op]]
-            # print("OUT", out, "LOGIC", logic_op)
-            # OUT ["refIN'('A', 'T', 'G', 'C')'", "altIN'('A', 'T', 'G', 'C')'"]
-            # if len(out) == 1:
-            #     return f" {logic_op} ".join(out)
-            # else:
-            return "(" + f" {logic_op} ".join(out) + ")"
+        # Not a field: 1 key only: the logical operator
+        logic_op = list(node.keys())[0]
+
+        out = [recursive(child) for child in node[logic_op]]
+        # print("OUT", out, "LOGIC", logic_op)
+        # OUT ["refIN'('A', 'T', 'G', 'C')'", "altIN'('A', 'T', 'G', 'C')'"]
+        # if len(out) == 1:
+        #     return f" {logic_op} ".join(out)
+        # else:
+        return "(" + f" {logic_op} ".join(out) + ")"
 
     query = recursive(filters)[1:-1]
 
@@ -280,7 +283,6 @@ def build_vql_query(fields, source="variants", filters={}, group_by=[], having={
         source (str, optional): Description
         filters (dict, optional): Description
     """
-
     query = "SELECT " + ",".join([fields_to_vql(i) for i in fields]) + " FROM " + source
     if filters:
         query += " WHERE " + filters_to_vql(filters)
@@ -289,9 +291,9 @@ def build_vql_query(fields, source="variants", filters={}, group_by=[], having={
         query += " GROUP BY " + ",".join(group_by)
 
         if having:
-            op = having["op"]
+            operator = having["op"]
             value = having["value"]
-            query += f" HAVING count {op} {value}"
+            query += f" HAVING count {operator} {value}"
 
     return query
 
@@ -309,9 +311,7 @@ def build_query(
     default_tables={},
     samples_ids={},
 ):
-
-    """
-    Build SQL SELECT query on variants tables
+    """Build SQL SELECT query on variants tables
 
     Args:
         fields (list): List of fields
@@ -326,7 +326,6 @@ def build_query(
         group_by (list/None): list of field you want to group
         default_tables (dict): association map between fields and sql table origin
         samples_ids (dict): association map between samples name and id
-
     """
     # Create fields
     sql_fields = ["`variants`.`id`"] + [
@@ -343,7 +342,7 @@ def build_query(
     #     sql_query += ", COUNT(*) as `children`"
 
     # Add source table
-    sql_query += f"FROM variants"
+    sql_query += "FROM variants"
 
     # Extract fields from filters
     fields_in_filters = [i["field"] for i in filters_to_flat(filters)]
@@ -392,7 +391,7 @@ def build_query(
         # sample_id = self.cache_samples_ids[sample_name]
         if sample_name in samples_ids:
             sample_id = samples_ids[sample_name]
-            sql_query += f" INNER JOIN sample_has_variant `{GENOTYPE_FUNC_NAME}_{sample_name}` ON `{GENOTYPE_FUNC_NAME}_{sample_name}`.variant_id = variants.id AND `{GENOTYPE_FUNC_NAME}_{sample_name}`.sample_id = {sample_id}"
+            sql_query += f"""INNER JOIN sample_has_variant `{GENOTYPE_FUNC_NAME}_{sample_name}` ON `{GENOTYPE_FUNC_NAME}_{sample_name}`.variant_id = variants.id AND `{GENOTYPE_FUNC_NAME}_{sample_name}`.sample_id = {sample_id}"""
 
     # Add Where Clause
     if filters:
@@ -405,9 +404,9 @@ def build_query(
     if group_by:
         sql_query += " GROUP BY " + ",".join(group_by)
         if having:
-            op = having["op"]
+            operator = having["op"]
             val = having["value"]
-            sql_query += f" HAVING count {op} {val}"
+            sql_query += f" HAVING count {operator} {val}"
 
     # Add Order By
     if order_by:
@@ -435,10 +434,9 @@ def build_complete_query(
     offset=0,
     **kwargs,
 ):
-
-    """ Build a complete select statements according data loaded from conn """
-    default_tables = dict([(i["name"], i["category"]) for i in sql.get_fields(conn)])
-    samples_ids = dict([(i["name"], i["id"]) for i in sql.get_samples(conn)])
+    """Build a complete select statements according data loaded from conn"""
+    default_tables = {i["name"]: i["category"] for i in sql.get_fields(conn)}
+    samples_ids = {i["name"]: i["id"] for i in sql.get_samples(conn)}
     query = build_query(
         fields=fields,
         source=source,
@@ -452,5 +450,4 @@ def build_complete_query(
         default_tables=default_tables,
         samples_ids=samples_ids,
     )
-
     return query
