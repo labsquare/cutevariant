@@ -16,7 +16,7 @@ class LinkSettings(BaseWidget):
         self.setWindowIcon(FIcon(0xF070F))
 
         help_label = QLabel(self.tr(
-            "Allow to set predefined masks for urls pointing in various databases of variants.\n"
+            "Allow to set predefined masks for urls pointing to various databases of variants.\n"
             "Shortcuts will be visible from contextual menu over current variant."
         ))
 
@@ -87,7 +87,7 @@ class LinkSettings(BaseWidget):
         """Allow the user to insert and save custom database URL"""
         # Display dialog box to let the user enter it's own url
         dialog = QDialog()
-        title = QLabel("Example: http://url_with_columns{chr}{pos}{ref}{alt}")
+        title = QLabel(self.tr("Example: http://url_with_columns{chr}{pos}{ref}{alt}"))
         name = QLineEdit()
         url = QLineEdit()
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)

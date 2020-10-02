@@ -528,7 +528,7 @@ class VariantView(QWidget):
             self.set_pagging_enabled(True)
 
         self.info_label.setText(
-            "{} row(s) {} page(s)".format(self.model.total, self.model.pageCount())
+            self.tr("{} row(s) {} page(s)").format(self.model.total, self.model.pageCount())
         )
 
     def set_pagging_enabled(self, active=True):
@@ -589,10 +589,10 @@ class VariantView(QWidget):
             # Edit menu
             menu.addSeparator()
             menu.addAction(
-                FIcon(0xF018F), "&Copy", self.copy_to_clipboard, QKeySequence.Copy
+                FIcon(0xF018F), self.tr("&Copy"), self.copy_to_clipboard, QKeySequence.Copy
             )
             menu.addAction(
-                FIcon(0xF0486), "&Select all", self.select_all, QKeySequence.SelectAll
+                FIcon(0xF0486), self.tr("&Select all"), self.select_all, QKeySequence.SelectAll
             )
 
             # Display

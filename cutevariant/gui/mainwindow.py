@@ -241,13 +241,13 @@ class MainWindow(QMainWindow):
         ## Edit
         # TODO: if variant_view plugin is not loaded, disable this menu entries...
         self.edit_menu = self.menuBar().addMenu(self.tr("&Edit"))
-        self.edit_menu.addAction(FIcon(0xF018F), "&Copy variants", self.copy_variants_to_clipboard, QKeySequence.Copy)
+        self.edit_menu.addAction(FIcon(0xF018F), self.tr("&Copy variants"), self.copy_variants_to_clipboard, QKeySequence.Copy)
         # self.edit_menu.addAction(
         #     FIcon(0xF0192), "&Paste", self.paste, QKeySequence.Paste
         # )
         self.edit_menu.addSeparator()
         self.edit_menu.addAction(
-            FIcon(0xF0486), "Select all variants", self.select_all_variants, QKeySequence.SelectAll
+            FIcon(0xF0486), self.tr("&Select all variants"), self.select_all_variants, QKeySequence.SelectAll
         )
 
         ## View

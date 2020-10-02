@@ -151,12 +151,12 @@ class FieldsEditorWidget(plugin.PluginWidget):
         # Setup toolbar
         self.toolbar.setIconSize(QSize(16, 16))
         self.toolbar.addAction(
-            FIcon(0xF0615), self.tr("collapse"), self.view.collapseAll
+            FIcon(0xF0615), self.tr("Collapse"), self.view.collapseAll
         )
         self.toolbar.addAction(FIcon(0xF0616), self.tr("Expand"), self.view.expandAll)
 
         # setup search edit
-        search_act = self.toolbar.addAction(FIcon(0xF0969), self.tr("Search ..."))
+        search_act = self.toolbar.addAction(FIcon(0xF0969), self.tr("Search fields by keywords ..."))
         search_act.setCheckable(True)
         search_act.toggled.connect(self.__on_search_pressed)
         self.search_edit.setVisible(False)
