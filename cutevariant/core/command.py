@@ -460,9 +460,9 @@ def execute_all(conn: sqlite3.Connection, vql_source: str):
 
 def clear_cache_cmd():
     """Clear function cache by memoization module.
+
     This method must be called when new project is open
     """
-
     count_cmd.cache_clear()
 
 
