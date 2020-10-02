@@ -78,6 +78,7 @@ def async_import_reader(conn, reader: AbstractReader, pedfile=None, project={}):
     # Get cases and control samples
 
     # Import PED file
+    # TODO: PED files are ALWAYS imported; WTF ?
     if pedfile:
         yield 0, f"Import pedfile {pedfile}"
         import_pedfile(conn, pedfile)
@@ -98,8 +99,8 @@ def async_import_reader(conn, reader: AbstractReader, pedfile=None, project={}):
     ]
 
     yield 0, "Compute case / control"
-    yield 0, "controls are " + ",".join(control_samples)
-    yield 0, "cases are " + ",".join(case_samples)
+    yield 0, "controls are " + ",".join(control_samples) # TODO; WTF ?
+    yield 0, "cases are " + ",".join(case_samples) # TODO; WTF ?
 
     # Insert variants, link them to annotations and samples
     yield 0, "Inserting variants..."
