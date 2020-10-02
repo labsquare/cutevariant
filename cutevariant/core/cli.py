@@ -1,13 +1,12 @@
 import argparse
 import os
 import progressbar
-import pprint
 import sys
 import logging
 
 from columnar import columnar
 
-from cutevariant.core.importer import import_file, async_import_file
+from cutevariant.core.importer import async_import_file
 from cutevariant.core import sql, vql
 
 
@@ -82,7 +81,7 @@ def main():
 
     # ====== CREATEDB ============================
     if args.subparser == "createdb":
-        if args.output == None:
+        if args.output is None:
 
             args.output = args.input + ".db"
 
