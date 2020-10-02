@@ -63,14 +63,26 @@ class AuragenFilterWidget(PluginWidget):
         self.editor.changed.connect(self.on_changed)
 
     def on_open_project(self, conn):
+        """This method is called when a project is opened
+
+        You should use the sql connector if your plugin uses the SQL database.
+
+        Args:
+            conn (sqlite3.connection): A connection to the sqlite project
+        """
         self.conn = conn
         self.editor.setup(self.conn)
         self.on_refresh()
 
     def on_refresh(self):
+        """Called to refresh the GUI of the current plugin
+
+        This is called by the mainwindow.controller::refresh methods
+        """
         self.editor.reset()
 
     def on_changed(self):
+        """Send current filters to mainwindow and apply them by refreshing the plugins"""
         self.mainwindow.state.filters = self.editor.get_filters()
         self.mainwindow.refresh_plugins(sender=self)
 
