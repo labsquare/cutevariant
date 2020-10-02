@@ -188,11 +188,7 @@ class MainWindow(QMainWindow):
                 try:
                     plugin_obj.on_refresh()
                 except Exception as e:
-                    LOGGER.error(
-                        "{}:{} {}".format(
-                            plugin_obj, format(sys.exc_info()[-1].tb_lineno), e
-                        )
-                    )
+                    LOGGER.exception(e)
 
     def refresh_plugin(self, plugin_name: str):
         """Refresh a plugin identified by plugin_name
