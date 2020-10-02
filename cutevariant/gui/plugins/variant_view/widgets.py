@@ -559,10 +559,15 @@ class VariantView(QWidget):
             )
 
             # Create favorite action
-            fav_action = menu.addAction(self.tr("&Mark as favorite"))
+            fav_action = menu.addAction(
+                self.tr("&Unmark favorite")
+                if bool(full_variant["favorite"])
+                else self.tr("&Mark as favorite")
+            )
             fav_action.setCheckable(True)
             fav_action.setChecked(bool(full_variant["favorite"]))
-            fav_action.toggled.connect(lambda x: self.update_favorite(current_index, x))
+            fav_action.toggled.connect(self.update_favorites)
+            # fav_action.toggled.connect(lambda checked: self.update_favorite(current_index, checked))
 
             # Create classication action
             class_menu = menu.addMenu("Classification")
@@ -593,14 +598,22 @@ class VariantView(QWidget):
             # Display
             menu.exec_(event.globalPos())
 
-    def update_favorite(self, index: QModelIndex, value=1):
-
+    def update_favorite(self, index: QModelIndex, checked: bool):
+        """Update favorite status of the variant at the given index"""
         if index.isValid():
-            update = {"favorite": int(value)}
+            update = {"favorite": int(checked)}
             self.model.update_variant(index.row(), update)
 
-    def update_classification(self, index: QModelIndex, value=3):
+    def update_favorites(self, checked: bool):
+        """Update favorite status of multiple selected variants"""
+        update_data = {"favorite": int(checked)}
 
+        for index in self.view.selectionModel().selectedRows():
+            if index.isValid():
+                self.model.update_variant(index.row(), update_data)
+
+    def update_classification(self, index: QModelIndex, value=3):
+        """Update classification level of the variant at the given index"""
         if index.isValid():
             update = {"classification": int(value)}
             self.model.update_variant(index.row(), update)
