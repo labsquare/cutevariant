@@ -391,7 +391,7 @@ def build_query(
         # sample_id = self.cache_samples_ids[sample_name]
         if sample_name in samples_ids:
             sample_id = samples_ids[sample_name]
-            sql_query += f"""INNER JOIN sample_has_variant `{GENOTYPE_FUNC_NAME}_{sample_name}` ON `{GENOTYPE_FUNC_NAME}_{sample_name}`.variant_id = variants.id AND `{GENOTYPE_FUNC_NAME}_{sample_name}`.sample_id = {sample_id}"""
+            sql_query += f""" INNER JOIN sample_has_variant `{GENOTYPE_FUNC_NAME}_{sample_name}` ON `{GENOTYPE_FUNC_NAME}_{sample_name}`.variant_id = variants.id AND `{GENOTYPE_FUNC_NAME}_{sample_name}`.sample_id = {sample_id}"""
 
     # Add Where Clause
     if filters:
