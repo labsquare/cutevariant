@@ -62,7 +62,7 @@ class WordListDialog(QDialog):
         self.setLayout(hlayout)
 
         self.add_button.pressed.connect(self.on_add)
-        self.del_button.pressed.connect(self.on_rem)
+        self.del_button.pressed.connect(self.on_remove)
         self.add_file_button.pressed.connect(self.on_load_file)
 
         self.cancel_button.pressed.connect(self.reject)
@@ -73,7 +73,7 @@ class WordListDialog(QDialog):
         data.append("<double click to edit>")
         self.model.setStringList(data)
 
-    def on_rem(self):
+    def on_remove(self):
 
         while len(self.view.selectionModel().selectedRows()) > 0:
             indexes = self.view.selectionModel().selectedRows()
@@ -110,7 +110,7 @@ class WordSetWidget(PluginWidget):
         # setup tool bar
         self.toolbar.setIconSize(QSize(16, 16))
         self.toolbar.addAction(FIcon(0xF0415), "Add", self.add_wordset)
-        self.toolbar.addAction(FIcon(0xF0A7A), "Rem", self.rem_wordset)
+        self.toolbar.addAction(FIcon(0xF0A7A), "Remove", self.remove_wordset)
 
         v_layout = QVBoxLayout()
         v_layout.setContentsMargins(0, 0, 0, 0)
@@ -136,7 +136,7 @@ class WordSetWidget(PluginWidget):
                 import_cmd(self.conn, "sets", name, filename)
                 self.populate()
 
-    def rem_wordset(self):
+    def remove_wordset(self):
 
         # if selection is empty
         if len(self.view.selectedItems()) == 0:
