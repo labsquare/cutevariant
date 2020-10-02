@@ -1,10 +1,12 @@
-"""This Modules bringing together all the SQL related functions
-to read and write the sqlite database with the schema describe here.
-Each method refer to a CRUD operation using following prefixes:
-``get_``, ``insert_``, ``update_``, ``remove_`` and take a sqlite connexion as ``conn`` attribut.
+"""Module to bring together all the SQL related functions
 
-The module contains also QueryBuilder class to build complexe variant query based on
-filters,columns and selection.
+To read and write the sqlite database with the schema described here.
+Each method refers to a CRUD operation using following prefixes:
+``get_``, ``insert_``, ``update_``, ``remove_`` and takes a sqlite connexion
+as ``conn`` attribute.
+
+The module contains also QueryBuilder class to build complexe variant query based
+on filters, columns and selections.
 
 Example::
 
@@ -13,7 +15,7 @@ Example::
     conn = sql.get_sql_connexion("project.db")
     sql.get_samples(conn)
 
-    #Build a variant query
+    # Build a variant query
     from cutevariant.core import sql
     conn = sql.get_sql_connexion("project.db")
     builder = QueryBuilder(conn)
@@ -25,13 +27,13 @@ Example::
 # Standard imports
 import sqlite3
 from collections import defaultdict
-from pkg_resources import parse_version
 import re
+import logging
+from pkg_resources import parse_version
 from functools import partial
 
 # Custom imports
 import cutevariant.commons as cm
-import logging
 
 LOGGER = cm.logger()
 
@@ -124,7 +126,6 @@ def create_indexes(conn: sqlite3.Connection):
         You should use this function instead of individual functions.
 
     """
-
     create_variants_indexes(conn)
     create_selections_indexes(conn)
 
@@ -167,10 +168,9 @@ def create_table_metadatas(conn: sqlite3.Connection):
     Args:
         conn (sqlite3.Connection): Sqlite3 Connection
     """
-    cursor = conn.execute(
+    conn.execute(
         """CREATE TABLE metadatas (id INTEGER PRIMARY KEY, key TEXT, value TEXT)"""
     )
-
 
 def insert_many_metadatas(conn: sqlite3.Connection, metadatas={}):
     """Insert metadata
@@ -220,7 +220,7 @@ def delete_by_name(conn: sqlite3.Connection, name: str, table_name: str = None):
         return
 
     cursor = conn.cursor()
-    cursor.execute(f"DELETE FROM selections WHERE name = ?", (name,))
+    cursor.execute("DELETE FROM selections WHERE name = ?", (name,))
     conn.commit()
     return cursor.rowcount
 
@@ -276,7 +276,8 @@ def create_selections_indexes(conn: sqlite3.Connection):
 
 def create_selection_has_variant_indexes(conn: sqlite3.Connection):
     """Create indexes on "selection_has_variant" table
-    For joints between selections and variants tables
+
+    For joins between selections and variants tables
 
     Reference:
         * create_selections_indexes()
@@ -285,7 +286,6 @@ def create_selection_has_variant_indexes(conn: sqlite3.Connection):
     Args:
         conn (sqlite3.Connection/sqlite3.Cursor): Sqlite3 connection
     """
-    #
     conn.execute(
         """CREATE INDEX idx_selection_has_variant ON selection_has_variant (selection_id)"""
     )
@@ -571,6 +571,7 @@ def get_words_set(conn, name):
 
 def get_query_columns(mode="variant"):
     """(DEPRECATED FOR NOW, NOT USED)
+
     Handy func to get columns to be queried according to the group by argument
 
     .. note:: Used by intersect_variants, union_variants, subtract_variants
@@ -588,7 +589,8 @@ def get_query_columns(mode="variant"):
 
 def intersect_variants(query1, query2, **kwargs):
     """Get the variants obtained by the intersection of 2 queries
-    Try to handl precedence of operators.
+
+    Try to handle precedence of operators.
     - The precedence of UNION and EXCEPT are similar, they are processed from
     left to right.
     - Both of the operations are fulfilled before INTERSECT operation,
@@ -704,24 +706,23 @@ def get_fields(conn):
 
 
 def get_field_by_category(conn, category):
-    """ Get fields within a category
+    """Get fields within a category
 
     :param conn: sqlite3.connect
-     :return: Generator of dictionnaries with as many keys as there are columns
+    :return: Generator of dictionnaries with as many keys as there are columns
         in the table.
     :rtype: <generator <dict>>
     """
-
     return [field for field in get_fields(conn) if field["category"] == category]
 
 
 def get_field_by_name(conn, field_name: str):
-    """ Return field by his name
+    """Return field by his name
 
     .. seealso:: get_fields
 
     :param conn: sqlite3.connect
-    :param field_name (str): field name
+    :param field_name: field name
     :return: field record
     :rtype: <dict>
     """
@@ -734,11 +735,11 @@ def get_field_by_name(conn, field_name: str):
 
 
 def get_field_range(conn, field_name: str, sample_name=None):
-    """ Return (min,max) of field_name records .
+    """Return (min,max) of field_name records
 
     :param conn: sqlite3.connect
-    :param field_name (str): field name
-    :param sample_name (str): sample name. mandatory for fields in the "samples" categories
+    :param field_name: field name
+    :param sample_name: sample name. mandatory for fields in the "samples" categories
     :return: (min, max)
     :rtype: tuple
     """
@@ -765,11 +766,11 @@ def get_field_range(conn, field_name: str, sample_name=None):
 
 
 def get_field_unique_values(conn, field_name: str, sample_name=None):
-    """ Return unique record value for a field name
+    """Return unique record value for a field name
 
     :param conn: sqlite3.connect
-    :param field_name (str): field_name
-    :param sample_name (str): sample name. mandatory for fields in the "samples" categories
+    :param field_name: field_name
+    :param sample_name: sample name. Mandatory for fields in the "samples" categories
     :return: list of unique values
     :rtype: list
     """
@@ -832,7 +833,6 @@ def create_annotations_indexes(conn):
         GROUP BY chr,pos
         LIMIT 100
     """
-
     # Allow search on variant_id
     conn.execute("""CREATE INDEX idx_annotations ON annotations (variant_id)""")
 
@@ -901,7 +901,6 @@ def create_variants_indexes(conn):
         GROUP BY chr,pos
         LIMIT 100
     """
-
     # Complementary index of the primary key (sample_id, variant_id)
     conn.execute(
         """CREATE INDEX idx_sample_has_variant ON sample_has_variant (variant_id)"""
@@ -1005,10 +1004,8 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
             a NOT NULL constraint.
         => This is not recommended
     """
-
     def build_columns_and_placeholders(table_name):
-        """Build a tuple of columns and "?" placeholders for INSERT queries
-        """
+        """Build a tuple of columns and "?" placeholders for INSERT queries"""
         # Get columns description from the given table
         cols = get_columns(conn, table_name)
         # Build dynamic insert query
@@ -1029,9 +1026,7 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
 
     # Get samples with samples names as keys and sqlite rowid as values
     # => used as a mapping for samples ids
-    samples_id_mapping = {
-        name: rowid for name, rowid in conn.execute("SELECT name, id FROM samples")
-    }
+    samples_id_mapping = dict(conn.execute("SELECT name, id FROM samples"))
 
     # Check SQLite version and build insertion queries for variants
     # Old version doesn't support ON CONFLICT ..target.. DO ... statements
@@ -1170,6 +1165,7 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
 
 
 def insert_many_variants(conn, data, **kwargs):
+    """Wrapper for debugging purpose"""
     for _, _ in async_insert_many_variants(conn, data, kwargs):
         pass
 
@@ -1254,9 +1250,9 @@ def insert_many_samples(conn, samples: list):
 
 
 def get_samples(conn):
-    """"Get samples from sample table
+    """Get samples from sample table
 
-    :param con: sqlite3.conn
+    :param conn: sqlite3.conn
     :return: Generator of dictionnaries with as sample fields as values.
         :Example: ({'id': <unique_id>, 'name': <sample_name>})
     :rtype: <generator <dict>>
@@ -1282,7 +1278,6 @@ def update_sample(conn, sample: dict):
         conn (sqlite.connection): sqlite connection
         sample (dict): data
     """
-
     if "id" not in sample:
         logging.debug("sample id is required")
         return
