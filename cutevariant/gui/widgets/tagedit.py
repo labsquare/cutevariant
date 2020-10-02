@@ -6,7 +6,7 @@ from functools import partial
 
 class FlowLayout(QLayout):
     def __init__(self, parent=None, margin=0, spacing=-1):
-        super(FlowLayout, self).__init__(parent)
+        super().__init__(parent)
 
         if parent is not None:
             self.setMargin(margin)
@@ -49,7 +49,7 @@ class FlowLayout(QLayout):
         return height
 
     def setGeometry(self, rect):
-        super(FlowLayout, self).setGeometry(rect)
+        super().setGeometry(rect)
         self._doLayout(rect, False)
 
     def sizeHint(self):
