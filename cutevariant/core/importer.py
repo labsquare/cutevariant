@@ -1,14 +1,28 @@
+"""File importer and project creation"""
 # Standard imports
-import os
 import csv
-import sqlite3
-import logging
 
 # Custom imports
+from cutevariant import __version__
 from .reader.abstractreader import AbstractReader
 from .readerfactory import create_reader
-from cutevariant import __version__
-from .sql import *
+from .sql import (
+    create_project,
+    create_table_metadatas,
+    insert_many_metadatas,
+    create_table_fields,
+    create_table_annotations,
+    create_table_variants,
+    create_table_samples,
+    create_table_selections,
+    create_table_sets,
+    insert_many_samples,
+    get_samples,
+    insert_many_fields,
+    async_insert_many_variants,
+    create_indexes,
+    update_sample,
+)
 
 
 def async_import_reader(conn, reader: AbstractReader, pedfile=None, project={}):
@@ -115,7 +129,7 @@ def async_import_file(conn, filename, pedfile=None, project={}):
     """Import filename into SQLite database
 
     :param conn: sqlite connection
-    :param filenaame: variant filename
+    :param filename: variant filename
     :param pedfile: PED file path
     :param project: The reference genome and the name of the project.
         Keys have to be at least "reference" and "project_name".
@@ -128,26 +142,34 @@ def async_import_file(conn, filename, pedfile=None, project={}):
 
 
 def import_file(conn, filename, pedfile=None, project={}):
+    """Wrapper for debugging purpose
+
+    TODO: to be deleted
+    """
     for progress, message in async_import_file(conn, filename, pedfile, project):
         # don't show message
         pass
 
 
 def import_reader(conn, reader, pedfile=None, project={}):
+    """Wrapper for debugging purpose
+
+    TODO: to be deleted
+    """
     for progress, message in async_import_reader(conn, reader, pedfile, project):
         # don't show message
         pass
 
 
 def import_pedfile(conn, filename):
-    """import *.fam file into sample table
+    """Import *.fam file into sample table
 
     data has the same structure of a fam file object
     https://www.cog-genomics.org/plink/1.9/formats#fam
 
     the file is a tabular with the following column
 
-    Family String Id : "Fam"
+    Family String Id: "Fam"
     Sample String Id: "Boby"
     Father String Id
     Mother String Id
@@ -158,13 +180,10 @@ def import_pedfile(conn, filename):
         conn {[type]} -- [description]
         data {list} -- [description]
     """
-
     with open(filename) as file:
         reader = csv.reader(file, delimiter="\t")
 
-        sample_map = dict(
-            [(sample["name"], sample["id"]) for sample in get_samples(conn)]
-        )
+        sample_map = {sample["name"]: sample["id"] for sample in get_samples(conn)}
         sample_names = list(sample_map.keys())
 
         for line in reader:
