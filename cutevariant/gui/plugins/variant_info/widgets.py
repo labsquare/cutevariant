@@ -127,13 +127,11 @@ class VariantInfoWidget(PluginWidget):
         self.setLayout(v_layout)
 
         # # Create menu
+        # TODO: restore this
         # self.context_menu = VariantPopupMenu()
         # # Ability to trigger the menu
         # self.view.setContextMenuPolicy(Qt.CustomContextMenu)
         # self.view.customContextMenuRequested.connect(self.show_menu)
-
-        # self._variant = dict()
-
         # self.add_tab("variants")
 
     def on_open_project(self, conn):
@@ -270,9 +268,9 @@ class VariantInfoWidget(PluginWidget):
 
     def show_menu(self, pos: QPoint):
         """Show context menu associated to the current variant"""
-        if not self._variant:
+        if not self.current_variant:
             return
-        self.context_menu.popup(self._variant, self.view.mapToGlobal(pos))
+        self.context_menu.popup(self.current_variant, self.view.mapToGlobal(pos))
 
 
 if __name__ == "__main__":
