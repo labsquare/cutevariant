@@ -19,7 +19,6 @@ class CsvWriter(AbstractWriter):
     """
 
     def __init__(self, device):
-        super(AbstractWriter, self).__init__()
         super().__init__(device)
 
     def save(self, conn, delimiter="\t", **kwargs) -> bool:

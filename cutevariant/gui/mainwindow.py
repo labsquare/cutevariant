@@ -35,7 +35,7 @@ LOGGER = cm.logger()
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
 
-        super(MainWindow, self).__init__()
+        super().__init__(parent)
 
         self.setWindowTitle("Cutevariant")
         self.toolbar = self.addToolBar("maintoolbar")
