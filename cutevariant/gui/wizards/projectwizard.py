@@ -35,9 +35,13 @@ class ProjectPage(QWizardPage):
             self.tr("This wizard will guide you to create a cutevariant project.")
         )
 
+        # Reload last directory used
+        app_settings = QSettings()
+        self.last_directory = app_settings.value("last_directory", QDir.homePath())
+
         self.project_name_edit = QLineEdit()
         self.project_path_edit = QLineEdit()
-        self.project_path_edit.setText(os.getcwd())
+        self.project_path_edit.setText(self.last_directory)
         self.browse_button = QPushButton(self.tr("Browse"))
         self.reference = QComboBox()
 
@@ -69,12 +73,8 @@ class ProjectPage(QWizardPage):
     @Slot()
     def _browse(self):
         """Open a dialog box to set the directory where the project will be saved"""
-        # Reload last directory used
-        app_settings = QSettings()
-        last_directory = app_settings.value("last_directory", QDir.homePath())
-
         path = QFileDialog.getExistingDirectory(
-            self, self.tr("Select a path for the project"), last_directory
+            self, self.tr("Select a path for the project"), self.last_directory
         )
         if path:
             self.project_path_edit.setText(path)
