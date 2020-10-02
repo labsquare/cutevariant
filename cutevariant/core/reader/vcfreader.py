@@ -55,6 +55,8 @@ class VcfReader(AbstractReader):
         self.annotation_parser = None
         self.metadata = vcf_reader.metadata
         self._set_annotation_parser(annotation_parser)
+        # Fields descriptions
+        self.fields = None
 
     def get_fields(self):
         """Get full fields descriptions
@@ -74,7 +76,7 @@ class VcfReader(AbstractReader):
             .. seealso parse_fields() for basic default fields.
         :rtype: <tuple <dict>>
         """
-        if not hasattr(self, "fields"):
+        if self.fields is None:
 
             # Sanitize fields names
             # PS: annotations fields names are sanitized by the annotation_parser
@@ -102,7 +104,7 @@ class VcfReader(AbstractReader):
         :rtype: <generator <dict>>
         """
 
-        if not hasattr(self, "fields"):
+        if self.fields is None:
             # This is a bad caching code ....
             self.get_fields()
 
@@ -122,14 +124,13 @@ class VcfReader(AbstractReader):
         """
         # loop over record
         self.device.seek(0)
-        vcf_reader = vcf.VCFReader(self.device,strict_whitespace=True)
-        import sys
+        vcf_reader = vcf.VCFReader(self.device, strict_whitespace=True)
 
         # TODO : ugly for testing progression .. see #60
         self.read_bytes = self._init_read_bytes(vcf_reader)
 
         # Genotype format
-        formats = [i for i in vcf_reader.formats]
+        formats = list(vcf_reader.formats)
 
         for record in vcf_reader:
 
@@ -165,26 +166,25 @@ class VcfReader(AbstractReader):
                 if record.samples:
                     variant["samples"] = []
                     for sample in record.samples:
-                        sample_data = {}
-                        sample_data["name"] = sample.sample
+                        sample_data = {"name": sample.sample}
 
                         # Load sample annotations
                         sample_ann = {}
                         for key in formats:
                             try:
                                 value = sample[key]
-                                if type(value) == list:
+                                if isinstance(value, list):
                                     value = ",".join([str(i) for i in value])
                                 sample_ann[str.lower(key)] = value
-                            except:
+                            except AttributeError:
                                 LOGGER.debug(
-                                    f"VCFReader::parse: {key} not defined in genotype "
+                                    "VCFReader::parse: alt index %s; %s not defined in genotype ", index, key
                                 )
 
                         sample_data.update(sample_ann)
 
                         sample_data["gt"] = (
-                            -1 if sample.gt_type == None else sample.gt_type
+                            -1 if sample.gt_type is None else sample.gt_type
                         )
                         variant["samples"].append(sample_data)
 
@@ -262,7 +262,7 @@ class VcfReader(AbstractReader):
 
         # Reads VCF INFO
         self.device.seek(0)
-        vcf_reader = vcf.VCFReader(self.device,strict_whitespace=True)
+        vcf_reader = vcf.VCFReader(self.device, strict_whitespace=True)
 
         # Reads VCF info
         for key, info in vcf_reader.infos.items():
@@ -327,8 +327,7 @@ class VcfReader(AbstractReader):
 
     def get_metadatas(self):
         """override from AbstractReader"""
-        output = {}
-        output["filename"] = self.device.name
+        output = {"filename": self.device.name}
 
         for key, value in self.metadata.items():
             output[key] = str(value)

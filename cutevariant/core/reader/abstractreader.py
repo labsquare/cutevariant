@@ -101,7 +101,7 @@ class AbstractReader(ABC):
         Examples:
             >>> for field in reader.get_fields():
                     print(field["name"], field["description"])
-       """
+        """
         raise NotImplementedError(cls.__class__.__name__)
 
     def get_samples(self) -> list:

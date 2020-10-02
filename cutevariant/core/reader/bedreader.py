@@ -117,11 +117,10 @@ class BedReader:
                 or len(line.strip()) == 0
             ):
                 # Header detected
-                print("comment", line)
+                LOGGER.debug("comment: %s", line)
                 skipped_header_line += 1
                 continue
-            else:
-                break
+            break
 
         # Quick tests on the first line of data...
         # Delimiters can only be '\t' or ' ' since
@@ -162,7 +161,7 @@ class BedReader:
         )
 
         for line_number, interval in enumerate(csv_reader, 1):
-            print(interval)
+            # print(interval)
             yield interval
 
         self.count = line_number

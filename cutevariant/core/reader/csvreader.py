@@ -70,6 +70,9 @@ class CsvReader(AbstractReader):
             "used_ref",
         )
 
+        # Fields descriptions
+        self.fields = None
+
         LOGGER.debug(
             "CsvReader::init: CSV fields found: %s", self.csv_reader.fieldnames
         )
@@ -117,6 +120,7 @@ class CsvReader(AbstractReader):
         return []
 
     def parse_fields(self):
+        """See :meth:`get_fields`"""
         yield {
             "name": "chr",
             "category": "variants",
@@ -184,14 +188,15 @@ class CsvReader(AbstractReader):
                 # Set
                 variant["annotations"] = [annotation]
 
-        if not hasattr(self.annotation_parser, "annotation_field_name"):
-            raise Exception("Cannot parse variant without parsing first fields")
+        if self.annotation_parser.annotation_field_name is None:
+            raise Exception("Cannot parse variant without parsing fields first")
 
         variants = dict()
-        for i, row in enumerate(self.csv_reader, 1):
+        transcript_idx = 0
+        for transcript_idx, row in enumerate(self.csv_reader, 1):
 
             # Build primary key by mapping existing fields in the original file
-            chr, pos = self.location_to_chr_pos(row["Location"])
+            chrom, pos = self.location_to_chr_pos(row["Location"])
             ref = row["GIVEN_REF"]
             alt = row["Allele"]
 
@@ -199,7 +204,7 @@ class CsvReader(AbstractReader):
                 # Check consistency
                 assert row["GIVEN_REF"] == row["USED_REF"], "GIVEN_REF != USED_REF"
 
-            primary_key = (chr, pos, ref, alt)
+            primary_key = (chrom, pos, ref, alt)
             # Get previous variant with same primary key (previous transcript)
             variant = variants.get(primary_key, dict())
 
@@ -247,7 +252,8 @@ class CsvReader(AbstractReader):
             variants[primary_key] = variant
 
         LOGGER.info(
-            "CsvReader::parse_variants: transcripts %s, variants %s", i, len(variants)
+            "CsvReader::parse_variants: transcripts %s, variants %s",
+            transcript_idx, len(variants)
         )
 
         for variant in variants.values():
@@ -269,9 +275,9 @@ class CsvReader(AbstractReader):
         :return: Tuple of chr and pos data.
         :rtype: <tuple <str>, <str>>
         """
-        chr, positions = location.split(":")
+        chrom, positions = location.split(":")
         pos = positions.split("-")[0]
-        return chr, pos
+        return chrom, pos
 
     def __repr__(self):
         return f"VEP Reader using {type(self.annotation_parser).__name__}"

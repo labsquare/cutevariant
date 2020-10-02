@@ -2,7 +2,7 @@
 import re
 
 # Custom imports
-from .abstractreader import AbstractReader, sanitize_field_name
+from .abstractreader import sanitize_field_name
 from cutevariant.commons import logger
 
 LOGGER = logger()
@@ -190,8 +190,7 @@ VEP_ANNOTATION_DEFAULT_FIELDS = {
 
 
 class BaseParser:
-    """Base class that brings together common functions of VepParser and SnpEffParser
-    """
+    """Base class that brings together common functions of VepParser and SnpEffParser"""
 
     def __init__(self):
 
@@ -205,6 +204,12 @@ class BaseParser:
         # BaseParser.handle_descriptions(), it will not be yielded and thus not
         # used by the program.
         self.variant_field_names = set()
+
+        # About self.annotation_field_name
+        # The value of this attribute is deliberately None from the base
+        # class because it is created when fields are parsed and it is an
+        # insurance that the fields have been processed before variants.
+        self.annotation_field_name = None
 
     def handle_descriptions(self, raw_fields: list):
         """Construct annotation_field_name with the fields of the file, and
@@ -377,7 +382,7 @@ class VepParser(BaseParser):
         :return: Generator of full variants with "annotations" key.
         :rtype: <generator <dict>>
         """
-        if not hasattr(self, "annotation_field_name"):
+        if self.annotation_field_name is None:
             raise Exception("Cannot parse variant without parsing first fields")
 
         for variant in variants:
@@ -485,7 +490,7 @@ class SnpEffParser(BaseParser):
         :return: Generator of full variants with "annotations" key.
         :rtype: <generator <dict>>
         """
-        if not hasattr(self, "annotation_field_name"):
+        if self.annotation_field_name is None:
             raise Exception("Cannot parse variant without parsing first fields")
 
         for variant in variants:
