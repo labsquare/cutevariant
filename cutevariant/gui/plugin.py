@@ -78,6 +78,7 @@ import pkgutil
 
 # Qt imports
 from PySide2.QtWidgets import QWidget, QDialog
+from PySide2.QtCore import QSettings
 
 # Cutevariant import
 from cutevariant.gui import settings
@@ -349,5 +350,11 @@ def find_plugins(path=None):
 
             # Remove the "s" from module name...
             plugin_item[sub_module_type[:-1]] = class_item
+
+            # Fix plugin status by user decision via app settings
+            if not class_item.ENABLE:
+                class_item.ENABLE = QSettings().value(
+                    f"plugins/{plugin_item['name']}/status", False
+                ) == "true"
 
         yield plugin_item
