@@ -4,6 +4,7 @@ import math
 import csv
 import io
 import copy
+import string
 
 # Qt imports
 from PySide2.QtWidgets import *
@@ -365,6 +366,8 @@ class VariantView(QWidget):
         self.view = QTableView()
         self.bottom_bar = QToolBar()
 
+        self.settings = QSettings()
+
         # self.view.setFrameStyle(QFrame.NoFrame)
         self.view.setAlternatingRowColors(True)
         self.view.horizontalHeader().setStretchLastSection(True)
@@ -550,6 +553,8 @@ class VariantView(QWidget):
 
         current_variant = self.model.variant(current_index.row())
         full_variant = sql.get_one_variant(self.conn, current_variant["id"])
+        # Update variant with currently displayed fields (not in variants table)
+        full_variant.update(current_variant)
 
         # Copy action: Copy the variant reference ID in to the clipboard
         formatted_variant = "{chr}:{pos}-{ref}-{alt}".format(**full_variant)
@@ -582,6 +587,25 @@ class VariantView(QWidget):
                 self.update_classification, current_index, key
             )
             action.triggered.connect(on_click)
+
+        # Create external links
+        links_menu = menu.addMenu(self.tr("External links"))
+        self.settings.beginGroup("plugins/variant_view/links")
+        # Display only external links with placeholders that can be mapped
+        for key in self.settings.childKeys():
+            format_string = self.settings.value(key)
+            # Get placeholders
+            field_names = {name for text, name, spec, conv in string.Formatter().parse(format_string)}
+            if field_names & full_variant.keys():
+                # Full or partial mapping => accepted link
+                links_menu.addAction(
+                    key,
+                    functools.partial(
+                        QDesktopServices.openUrl,
+                        QUrl(format_string.format(**full_variant), QUrl.TolerantMode)
+                    )
+                )
+        self.settings.endGroup()
 
         # Comment action
         on_edit = functools.partial(self.edit_comment, current_index)

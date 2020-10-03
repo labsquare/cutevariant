@@ -1,12 +1,14 @@
 ## ================= Settings widgets ===================
-
-from cutevariant.gui.plugin import PluginSettingsWidget
-from cutevariant.gui.settings import BaseWidget
-from cutevariant.gui import FIcon
-
+# Qt imports
 from PySide2.QtCore import *
 from PySide2.QtGui import *
 from PySide2.QtWidgets import *
+
+# Custom imports
+from cutevariant.gui.plugin import PluginSettingsWidget
+from cutevariant.gui.settings import BaseWidget
+from cutevariant.gui import FIcon
+import cutevariant.commons as cm
 
 
 class LinkSettings(BaseWidget):
@@ -23,12 +25,14 @@ class LinkSettings(BaseWidget):
         self.view = QListWidget()
         self.add_button = QPushButton(self.tr("Add"))
         self.edit_button = QPushButton(self.tr("Edit"))
+        self.set_default_button = QPushButton(self.tr("Set default"))
         self.remove_button = QPushButton(self.tr("Remove"))
 
         v_layout = QVBoxLayout()
         v_layout.addWidget(self.add_button)
         v_layout.addWidget(self.edit_button)
         v_layout.addStretch()
+        v_layout.addWidget(self.set_default_button)
         v_layout.addWidget(self.remove_button)
 
         h_layout = QHBoxLayout()
@@ -44,6 +48,7 @@ class LinkSettings(BaseWidget):
         self.add_button.clicked.connect(self.add_url)
         self.edit_button.clicked.connect(self.edit_item)
         self.view.itemDoubleClicked.connect(self.add_url)
+        self.set_default_button.clicked.connect(self.load_default_external_links)
         self.remove_button.clicked.connect(self.remove_item)
 
     def save(self):
@@ -140,6 +145,16 @@ class LinkSettings(BaseWidget):
         # Delete the item
         self.view.takeItem(self.view.row(item))
         del item  # Is it mandatory in Python ?
+
+    def load_default_external_links(self):
+        """Load default external DB links"""
+        settings = QSettings()
+        settings.beginGroup("plugins/variant_view/links")
+
+        for db_name, db_url in cm.WEBSITES_URLS.items():
+            self.add_list_widget_item(db_name, db_url)
+
+        settings.endGroup()
 
 
 class VariantViewSettingsWidget(PluginSettingsWidget):
