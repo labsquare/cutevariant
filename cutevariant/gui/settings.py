@@ -158,33 +158,31 @@ class ProxySettingsWidget(BaseWidget):
 
     def save(self):
         """Save settings under "proxy" group"""
-        settings = QSettings()
-        settings.beginGroup("proxy")
-        settings.setValue("type", self.combo_box.currentIndex())
-        settings.setValue("host", self.host_edit.text())
-        settings.setValue("port", self.port_edit.value())
-        settings.setValue("username", self.user_edit.text())
-        settings.setValue("password", self.user_edit.text())
-        settings.endGroup()
+        self.settings.beginGroup("proxy")
+        self.settings.setValue("type", self.combo_box.currentIndex())
+        self.settings.setValue("host", self.host_edit.text())
+        self.settings.setValue("port", self.port_edit.value())
+        self.settings.setValue("username", self.user_edit.text())
+        self.settings.setValue("password", self.user_edit.text())
+        self.settings.endGroup()
 
     def load(self):
         """Load "proxy" group settings"""
-        settings = QSettings()
-        settings.beginGroup("proxy")
+        self.settings.beginGroup("proxy")
 
-        s_type = settings.value("type", 0)
+        s_type = self.settings.value("type", 0)
         if s_type:
             self.combo_box.setCurrentIndex(int(s_type))
 
-        self.host_edit.setText(settings.value("host"))
+        self.host_edit.setText(self.settings.value("host"))
 
-        s_port = settings.value("port", 0)
+        s_port = self.settings.value("port", 0)
         if s_port:
             self.port_edit.setValue(int(s_port))
 
-        self.user_edit.setText(settings.value("username"))
-        self.pass_edit.setText(settings.value("password"))
-        settings.endGroup()
+        self.user_edit.setText(self.settings.value("username"))
+        self.pass_edit.setText(self.settings.value("password"))
+        self.settings.endGroup()
 
     def on_combo_changed(self, index):
         """ disable formular when No proxy """
