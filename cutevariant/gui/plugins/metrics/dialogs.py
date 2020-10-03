@@ -97,7 +97,7 @@ class MetricsDialog(PluginDialog):
 
         self.buttons.accepted.connect(self.accept)
 
-        self.setWindowTitle("Metrics Plugin")
+        self.setWindowTitle(self.tr("Project metrics"))
 
         v_layout = QVBoxLayout()
         v_layout.addWidget(self.view)

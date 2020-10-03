@@ -576,7 +576,7 @@ class VariantView(QWidget):
         # fav_action.toggled.connect(lambda checked: self.update_favorite(current_index, checked))
 
         # Create classication action
-        class_menu = menu.addMenu("Classification")
+        class_menu = menu.addMenu(self.tr("Classification"))
         for key, value in cm.CLASSIFICATION.items():
 
             action = class_menu.addAction(

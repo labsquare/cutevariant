@@ -5,13 +5,12 @@ contextual menu about the variant which is selected.
 VariantPopupMenu is also used in viewquerywidget for the same purpose.
 """
 # Qt imports
-from PySide2.QtCore import Qt, QPoint, QSettings, QUrl, Slot, QSize
+from PySide2.QtCore import Qt, QPoint, Slot, QSize
 from PySide2.QtWidgets import *
 from PySide2.QtGui import QFont
 
 # Custom imports
 from cutevariant.gui.ficon import FIcon
-# from cutevariant.gui.style import TYPE_COLORS
 from cutevariant.core import sql, get_sql_connexion
 from cutevariant.gui.plugin import PluginWidget
 from cutevariant import commons as cm

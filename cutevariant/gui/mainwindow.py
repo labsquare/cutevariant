@@ -180,6 +180,8 @@ class MainWindow(QMainWindow):
     def refresh_plugins(self, sender: plugin.PluginWidget = None):
         """Refresh all plugins except_plugins
 
+        It doesn't refresh the sender plugin
+
         Args:
             sender (PluginWidget): from a plugin, you can pass "self" as argument
         """
@@ -192,6 +194,7 @@ class MainWindow(QMainWindow):
 
     def refresh_plugin(self, plugin_name: str):
         """Refresh a plugin identified by plugin_name
+
         It doesn't refresh the sender plugin
 
         Args:
@@ -241,10 +244,7 @@ class MainWindow(QMainWindow):
         ## Edit
         # TODO: if variant_view plugin is not loaded, disable this menu entries...
         self.edit_menu = self.menuBar().addMenu(self.tr("&Edit"))
-        self.edit_menu.addAction(FIcon(0xF018F), self.tr("&Copy variants"), self.copy_variants_to_clipboard, QKeySequence.Copy)
-        # self.edit_menu.addAction(
-        #     FIcon(0xF0192), "&Paste", self.paste, QKeySequence.Paste
-        # )
+        self.edit_menu.addAction(FIcon(0xF018F), self.tr("&Copy selected variants"), self.copy_variants_to_clipboard, QKeySequence.Copy)
         self.edit_menu.addSeparator()
         self.edit_menu.addAction(
             FIcon(0xF0486), self.tr("&Select all variants"), self.select_all_variants, QKeySequence.SelectAll
