@@ -100,15 +100,9 @@ class MainWindow(QMainWindow):
         dock.setStyleSheet("QDockWidget { font: bold }")
         # Keep the attached dock to allow further clean deletion
         widget.dock = dock
-
         # Set the objectName for a correct restoration after saveState
         dock.setObjectName(str(widget.__class__))
-        if not widget.objectName():
-            LOGGER.debug(
-                "MainWindow:add_panel:: widget '%s' has no objectName attribute"
-                "and will not be saved/restored",
-                widget.windowTitle(),
-            )
+
         self.addDockWidget(area, dock)
         self.view_menu.addAction(dock.toggleViewAction())
 
@@ -153,6 +147,14 @@ class MainWindow(QMainWindow):
 
             # Setup new widget
             widget = plugin_widget_class(parent=self)
+            if not widget.objectName():
+                LOGGER.debug(
+                    "widget '%s' has no objectName attribute"
+                    "and will be badly saved/restored",
+                    widget.windowTitle(),
+                )
+            else:
+                widget.setObjectName(name)
 
             # Set title
             widget.setWindowTitle(displayed_title)
