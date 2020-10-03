@@ -491,34 +491,23 @@ class MainWindow(QMainWindow):
         self.write_settings()
 
         # Remove widgets in QTabWidgets
-        self.central_tab.removeTab(0)
-        self.footer_tab.removeTab(0)
+        for index in range(self.central_tab.count()):
+            self.central_tab.removeTab(index)
 
-        # Remove view menu actions linked to the widget plugins (enable/disable)
-        for action in self.view_menu.actions():
-            if action.text() in self.plugins:
-                # LOGGER.debug("Remove action <%s>", action.text())
-                self.view_menu.removeAction(action)
-                action.deleteLater()
+        for index in range(self.footer_tab.count()):
+            self.footer_tab.removeTab(index)
 
         # Remove tool menu actions linked to the dialog plugins
-        for action in self.tool_menu.actions():
-            if action in self.dialog_plugins:
-                # LOGGER.debug("Remove action <%s>", action.text())
-                self.tool_menu.removeAction(action)
-                action.deleteLater()
+        for action in self.dialog_plugins:
+            # LOGGER.debug("Remove action <%s>", action.text())
+            self.tool_menu.removeAction(action)
+            action.deleteLater()
 
-        # Purge widgets and related docks
+        # Purge widgets (central/footer and others) and related docks
         for plugin_obj in self.plugins.values():
             # LOGGER.debug("Remove plugin <%s>", plugin_obj)
-            if plugin_obj.dock is not None:
-                # Some plugins are not in docks (like central/footer tabs)
-                self.removeDockWidget(plugin_obj.dock)
-                plugin_obj.dock.close()
-                plugin_obj.dock.deleteLater()
-
+            self.removeDockWidget(plugin_obj.dock)
             plugin_obj.on_close()
-            plugin_obj.deleteLater()
 
         # Clean registered plugins
         self.plugins = {}

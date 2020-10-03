@@ -154,9 +154,19 @@ class PluginWidget(QWidget):
         In order to have a clean reset, please add routines to delete all
         widgets added to the mainwindow (actions in toolbars, etc.).
 
+        Warnings:
+            This routine **IS** important; if you override it, please don't forget
+            to call `super().on_close()` at the end!
+
         .. seealso:: :meth:`cutevariant/gui/mainwindow.MainWindow.reset_ui`
         """
         self.close()
+        self.deleteLater()
+        LOGGER.debug("delete plugin... %s", self)
+        if self.dock is not None:
+            LOGGER.debug("delete its dock... %s")
+            self.dock.close()
+            self.dock.deleteLater()
 
     def on_refresh(self):
         """Called to refresh the GUI of the current plugin
