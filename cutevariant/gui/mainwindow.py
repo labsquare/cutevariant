@@ -122,7 +122,6 @@ class MainWindow(QMainWindow):
         # Get classes of plugins
         # Don't forget to skip disabled plugins
         for extension in plugin.find_plugins():
-            LOGGER.debug("Extension: %s", extension)
             self.register_plugin(extension)
 
     def register_plugin(self, extension):
@@ -137,6 +136,8 @@ class MainWindow(QMainWindow):
         Args:
             extension (dict): Extension dict. See :meth:`cutevariant.gui.plugin.find_plugins`
         """
+        LOGGER.debug("Extension: %s", extension)
+
         name = extension["name"]
         title = extension["title"]
         displayed_title = name if LOGGER.getEffectiveLevel() == DEBUG else title
