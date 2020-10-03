@@ -534,6 +534,37 @@ class MainWindow(QMainWindow):
         # Allow a user to save further modifications
         self.requested_reset_ui = False
 
+    def deregister_plugin(self, extension):
+        """Delete plugin from the UI
+
+        - dialogs plugins: Remove action from tool menu
+        - widgets plugins: Delete widget and its dock if available via its
+            on_close() method.
+
+        Args:
+            extension (dict): Extension dict. See :meth:`cutevariant.gui.plugin.find_plugins`
+        """
+        name = extension["name"]
+        title = extension["title"]
+        displayed_title = name if LOGGER.getEffectiveLevel() == DEBUG else title
+
+        # Remove tool menu actions linked to the dialog plugins
+        for action in self.dialog_plugins:
+            if action.text() == displayed_title:
+                # LOGGER.debug("Remove action <%s>", action.text())
+                self.tool_menu.removeAction(action)
+                action.deleteLater()
+                del self.dialog_plugins[action]
+                break
+
+        # Purge widgets and related docks
+        if name in self.plugins:
+            plugin_obj = self.plugins[name]
+            # LOGGER.debug("Remove plugin <%s>", plugin_obj)
+            self.removeDockWidget(plugin_obj.dock)
+            plugin_obj.on_close()
+            del self.plugins[name]
+
     def copy_variants_to_clipboard(self):
         if "variant_view" in self.plugins:
             self.plugins["variant_view"].copy()
