@@ -115,6 +115,8 @@ class MainWindow(QMainWindow):
     def register_plugins(self):
         """Dynamically load plugins to the window
 
+        Wrapper of :meth:`register_plugin`
+
         Two types of plugins can be registered:
         - widget: Added to the GUI,
         - dialog: DialogBox accessible from the tool menu.
@@ -127,36 +129,49 @@ class MainWindow(QMainWindow):
         # Don't forget to skip disabled plugins
         for extension in plugin.find_plugins():
             LOGGER.debug("Extension: %s", extension)
+            self.register_plugin(extension)
 
-            if "widget" in extension and extension["widget"].ENABLE:
-                # New GUI widget
-                name = extension["name"]
-                plugin_widget_class = extension["widget"]
+    def register_plugin(self, extension):
+        """Dynamically load plugins to the window
 
-                # Setup new widget
-                widget = plugin_widget_class(parent=self)
+        Two types of plugins can be registered:
+        - widget: Added to the GUI,
+        - dialog: DialogBox accessible from the tool menu.
 
-                # Set title
-                if LOGGER.getEffectiveLevel() == DEBUG:
-                    widget.setWindowTitle(name)
-                else:
-                    widget.setWindowTitle(extension["title"])
-                # WhatsThis content
-                long_description = extension.get("long_description")
-                if not long_description:
-                    long_description = extension.get("description")
-                widget.setWhatsThis(long_description)
-                # Register (launch first init on some of them)
-                widget.on_register(self)
+        `setting` type is handled separately in :meth:`cutevariant.gui.settings.load_plugins`
 
-                # Init mainwindow via the constructor or on_register
-                if widget.mainwindow != self:
-                    LOGGER.error(
-                        "Bad plugin implementation, <mainwindow> plugin attribute is not set."
-                    )
-                    widget.close()
-                    continue
+        Args:
+            extension (dict): Extension dict. See :meth:`cutevariant.gui.plugin.find_plugins`
+        """
+        name = extension["name"]
+        title = extension["title"]
+        displayed_title = name if LOGGER.getEffectiveLevel() == DEBUG else title
 
+        if "widget" in extension and extension["widget"].ENABLE:
+            # New GUI widget
+            plugin_widget_class = extension["widget"]
+
+            # Setup new widget
+            widget = plugin_widget_class(parent=self)
+
+            # Set title
+            widget.setWindowTitle(displayed_title)
+
+            # WhatsThis content
+            long_description = extension.get("long_description")
+            if not long_description:
+                long_description = extension.get("description")
+            widget.setWhatsThis(long_description)
+            # Register (launch first init on some of them)
+            widget.on_register(self)
+
+            # Init mainwindow via the constructor or on_register
+            if widget.mainwindow != self:
+                LOGGER.error(
+                    "Bad plugin implementation, <mainwindow> plugin attribute is not set."
+                )
+                widget.on_close()
+            else:
                 # Add new plugin to plugins already registered
                 self.plugins[name] = widget
 
@@ -170,15 +185,14 @@ class MainWindow(QMainWindow):
                 if plugin_widget_class.LOCATION == plugin.FOOTER_LOCATION:
                     self.footer_tab.addTab(widget, widget.windowTitle())
 
-            if "dialog" in extension and extension["dialog"].ENABLE:
-                # New tool menu entry
-                title = extension["title"]
-                plugin_dialog_class = extension["dialog"]
+        if "dialog" in extension and extension["dialog"].ENABLE:
+            # New tool menu entry
+            plugin_dialog_class = extension["dialog"]
 
-                # Add plugin to Tools menu
-                dialog_action = self.tool_menu.addAction(title)
-                self.dialog_plugins[dialog_action] = plugin_dialog_class
-                dialog_action.triggered.connect(self.show_dialog)
+            # Add plugin to Tools menu
+            dialog_action = self.tool_menu.addAction(displayed_title)
+            self.dialog_plugins[dialog_action] = plugin_dialog_class
+            dialog_action.triggered.connect(self.show_dialog)
 
     def refresh_plugins(self, sender: plugin.PluginWidget = None):
         """Refresh all plugins except_plugins
