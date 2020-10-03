@@ -1,6 +1,5 @@
 import csv
 
-from cutevariant.core import command
 from .abstractwriter import AbstractWriter
 
 
@@ -26,6 +25,12 @@ class CsvWriter(AbstractWriter):
 
         .. TODO:: move SQL query into a dedicated place
 
+        Examples:
+
+            chr pos	    ref alt
+            11  10000   G   T
+            11  120000  G   T
+
         Args:
 
             delimiter (str, optional): Delimiter char used in exported file;
@@ -33,6 +38,7 @@ class CsvWriter(AbstractWriter):
             **kwargs (dict, optional): Arguments can be given to override
                 individual formatting parameters in the current dialect.
         """
-        writer = csv.writer(self.device, delimiter=delimiter, **kwargs)
-        g = (row.values() for row in command.execute(conn, "SELECT chr, pos, ref, alt FROM variants"))
+        writer = csv.DictWriter(self.device, delimiter=delimiter, fieldnames=["chr", "pos", "ref", "alt"], **kwargs)
+        writer.writeheader()
+        g = (dict(row) for row in conn.execute("SELECT chr, pos, ref, alt FROM variants"))
         writer.writerows(g)
