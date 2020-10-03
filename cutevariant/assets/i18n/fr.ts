@@ -311,7 +311,7 @@ Ce programme est distribué selon les termes de la Licence Publique Générale G
 <context>
     <name>LinkSettings</name>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/settings.py" line="15"/>
+        <location filename="cutevariant/gui/plugins/variant_view/settings.py" line="17"/>
         <source>Cross databases links</source>
         <translation>Liens vers bases de données externes</translation>
     </message>
@@ -323,82 +323,87 @@ Shortcuts will be visible from contextual menu over current variant.</source>
 Les raccourcis seront visibles à partir du menu contextuel affiché au-dessus d&apos;un variant.</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/settings.py" line="24"/>
+        <location filename="cutevariant/gui/plugins/variant_view/settings.py" line="26"/>
         <source>Add</source>
         <translation>Ajouter</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/settings.py" line="25"/>
+        <location filename="cutevariant/gui/plugins/variant_view/settings.py" line="27"/>
         <source>Edit</source>
         <translation>Éditer</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/settings.py" line="26"/>
+        <location filename="cutevariant/gui/plugins/variant_view/settings.py" line="29"/>
         <source>Remove</source>
         <translation>Supprimer</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/settings.py" line="98"/>
+        <location filename="cutevariant/gui/plugins/variant_view/settings.py" line="103"/>
         <source>Name</source>
         <translation>Nom</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/settings.py" line="99"/>
+        <location filename="cutevariant/gui/plugins/variant_view/settings.py" line="104"/>
         <source>Url mask</source>
         <translation>Masque d&apos;url</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/settings.py" line="90"/>
+        <location filename="cutevariant/gui/plugins/variant_view/settings.py" line="95"/>
         <source>Example: http://url_with_columns{chr}{pos}{ref}{alt}</source>
         <translation>Exemple -: http://url_with_columns{chr}{pos}{ref}{alt}</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/settings.py" line="18"/>
+        <location filename="cutevariant/gui/plugins/variant_view/settings.py" line="20"/>
         <source>Allow to set predefined masks for urls pointing to various databases of variants.
 Shortcuts will be visible from contextual menu over current variant.</source>
         <translation>Permet de configurer des masques prédéfinis pour des urls pointant vers diverses bases de données de variants.
 Les raccourcis seront visibles à partir du menu contextuel affiché au-dessus d&apos;un variant.</translation>
     </message>
+    <message>
+        <location filename="cutevariant/gui/plugins/variant_view/settings.py" line="28"/>
+        <source>Set default</source>
+        <translation>Restaurer</translation>
+    </message>
 </context>
 <context>
     <name>MainWindow</name>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="225"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="227"/>
         <source>&amp;File</source>
         <translation>&amp;Fichier</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="226"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="228"/>
         <source>&amp;New project</source>
         <translation>&amp;Nouveau projet</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="229"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="231"/>
         <source>&amp;Open project ...</source>
         <translation>&amp;Ouvrir un projet...</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="245"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="247"/>
         <source>Settings ...</source>
         <translation>Paramètres...</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="254"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="256"/>
         <source>&amp;Quit</source>
         <translation>&amp;Quitter</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="269"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="268"/>
         <source>&amp;View</source>
         <translation>&amp;Vue</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="277"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="276"/>
         <source>Help</source>
         <translation>Aide</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="278"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="277"/>
         <source>About Qt</source>
         <translation>À propos de Qt</translation>
     </message>
@@ -408,12 +413,12 @@ Les raccourcis seront visibles à partir du menu contextuel affiché au-dessus d
         <translation type="obsolete">Enregistrer la requête</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="440"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="439"/>
         <source>Open project</source>
         <translation>Ouvrir un fichier de projet</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="440"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="439"/>
         <source>Cutevariant project (*.db)</source>
         <translation>Projet Cutevariant (*.db)</translation>
     </message>
@@ -423,27 +428,27 @@ Les raccourcis seront visibles à partir du menu contextuel affiché au-dessus d
         <translation type="obsolete">ouvert</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="236"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="238"/>
         <source>Open recent</source>
         <translation>Récemment ouvert(s) </translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="408"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="407"/>
         <source>Clear</source>
         <translation>Effacer la liste</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="258"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="260"/>
         <source>&amp;Edit</source>
         <translation>&amp;Éditer</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="270"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="269"/>
         <source>Reset widgets positions</source>
         <translation>Réinitialiser les positions des widgets</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="279"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="278"/>
         <source>About Cutevariant</source>
         <translation>À propos de Cutevariant</translation>
     </message>
@@ -468,61 +473,66 @@ Les raccourcis seront visibles à partir du menu contextuel affiché au-dessus d
         <translation type="obsolete">Enregistrer la requête</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="338"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="337"/>
         <source>{} opened</source>
         <translation>{} ouvert</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="240"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="242"/>
         <source>Export as csv</source>
         <translation>Exporter en tant que CSV </translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="274"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="273"/>
         <source>&amp;Tools</source>
         <translation>&amp;Outils</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="284"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="283"/>
         <source>What&apos;s this</source>
         <translation>Qu&apos;est-ce que c&apos;est ?</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="342"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="341"/>
         <source>Error while opening project</source>
         <translation>Erreur durant l&apos;ouverture du projet</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="325"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="324"/>
         <source>File: {} is too old; please create a new project.</source>
         <translation>Le fichier: {} est trop ancien; veuillez créer un nouveau projet.</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="342"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="341"/>
         <source>File: {}
 The following exception occurred:
 {}</source>
         <translation>Fichier {}; L&apos;exception suivante a eu lieu: {}</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="459"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="458"/>
         <source>Save project</source>
         <translation>Enregistrer le projet</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="459"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="458"/>
         <source>(*.csv)</source>
         <translation>(*.csv)</translation>
     </message>
     <message>
         <location filename="cutevariant/gui/mainwindow.py" line="259"/>
         <source>&amp;Copy variants</source>
-        <translation>&amp;Copier les variants</translation>
+        <translation type="obsolete">&amp;Copier les variants</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="264"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="263"/>
         <source>&amp;Select all variants</source>
         <translation>&amp;Sélectionner tous les variants</translation>
+    </message>
+    <message>
+        <location filename="cutevariant/gui/mainwindow.py" line="261"/>
+        <source>&amp;Copy selected variants</source>
+        <translation>&amp;Copier les variants sélectionnés</translation>
     </message>
 </context>
 <context>
@@ -571,6 +581,14 @@ The following exception occurred:
         <location filename="cutevariant/gui/widgets/markdown_editor.py" line="103"/>
         <source>insert link</source>
         <translation>Insérer un lien hypertexte</translation>
+    </message>
+</context>
+<context>
+    <name>MetricsDialog</name>
+    <message>
+        <location filename="cutevariant/gui/plugins/metrics/dialogs.py" line="100"/>
+        <source>Project metrics</source>
+        <translation>Métriques du projet</translation>
     </message>
 </context>
 <context>
@@ -927,7 +945,7 @@ The following exception occurred:
 <context>
     <name>VariantInfoWidget</name>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_info/widgets.py" line="46"/>
+        <location filename="cutevariant/gui/plugins/variant_info/widgets.py" line="45"/>
         <source>Info variants</source>
         <translation>Information sur le variant</translation>
     </message>
@@ -996,45 +1014,55 @@ The following exception occurred:
 <context>
     <name>VariantView</name>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="562"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="568"/>
         <source>&amp;Unmark favorite</source>
         <translation>&amp;Ne plus afficher en favori</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="562"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="568"/>
         <source>&amp;Mark as favorite</source>
         <translation>&amp;Marquer en tant que favori</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="587"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="612"/>
         <source>&amp;Edit comment ...</source>
         <translation>&amp;Éditer le commentaire</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="591"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="616"/>
         <source>&amp;Copy</source>
         <translation>&amp;Copier</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="594"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="619"/>
         <source>&amp;Select all</source>
         <translation>&amp;Sélectionner tout</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="530"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="533"/>
         <source>{} row(s) {} page(s)</source>
         <translation>{} ligne(s) {} page(s)</translation>
+    </message>
+    <message>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="579"/>
+        <source>Classification</source>
+        <translation>Classification</translation>
+    </message>
+    <message>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="592"/>
+        <source>External links</source>
+        <translation>Liens externes</translation>
     </message>
 </context>
 <context>
     <name>VariantViewWidget</name>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="714"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="739"/>
         <source>Group by</source>
         <translation>Grouper</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="738"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="763"/>
         <source>Refresh</source>
         <translation>Rafraîchir</translation>
     </message>
@@ -1134,12 +1162,12 @@ The following exception occurred:
 <context>
     <name>main</name>
     <message>
-        <location filename="cutevariant/__main__.py" line="133"/>
+        <location filename="cutevariant/__main__.py" line="148"/>
         <source>Display the version of Cutevariant and exit.</source>
         <translation>Affiche la version de Cutevariant et quitte.</translation>
     </message>
     <message>
-        <location filename="cutevariant/__main__.py" line="141"/>
+        <location filename="cutevariant/__main__.py" line="156"/>
         <source>Modify verbosity.</source>
         <translation>Modifie le niveau de verbosité.</translation>
     </message>
