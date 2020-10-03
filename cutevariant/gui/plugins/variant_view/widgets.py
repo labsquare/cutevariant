@@ -624,7 +624,7 @@ class VariantView(QWidget):
         menu.exec_(event.globalPos())
 
     def update_favorite(self, index: QModelIndex, checked: bool):
-        """Update favorite status of the variant at the given index"""
+        """Update favorite status of the variant at the given index (DEPRECATED)"""
         if index.isValid():
             update = {"favorite": int(checked)}
             self.model.update_variant(index.row(), update)
