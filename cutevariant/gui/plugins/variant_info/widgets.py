@@ -265,11 +265,11 @@ class VariantInfoWidget(PluginWidget):
 
     # sql.update_variant(self.conn, updated)
 
-    def show_menu(self, pos: QPoint):
-        """Show context menu associated to the current variant"""
-        if not self.current_variant:
-            return
-        self.context_menu.popup(self.current_variant, self.view.mapToGlobal(pos))
+    # def show_menu(self, pos: QPoint):
+    #     """Show context menu associated to the current variant"""
+    #     if not self.current_variant:
+    #         return
+    #     self.context_menu.popup(self.current_variant, self.view.mapToGlobal(pos))
 
 
 if __name__ == "__main__":
