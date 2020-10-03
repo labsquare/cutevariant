@@ -72,7 +72,7 @@ class MainWindow(QMainWindow):
         self.setup_toolbar()
 
         # Register plugins
-        self.plugins = {}  # dict of names as keys and widgets as values
+        self.plugins = {}  # dict of names (not titles) as keys and widgets as values
         self.dialog_plugins = {}  # dict of actions as keys and classes as values
         self.register_plugins()
 
@@ -197,7 +197,7 @@ class MainWindow(QMainWindow):
             dialog_action.triggered.connect(self.show_dialog)
 
     def refresh_plugins(self, sender: plugin.PluginWidget = None):
-        """Refresh all plugins except_plugins
+        """Refresh all widget plugins
 
         It doesn't refresh the sender plugin
 
@@ -212,12 +212,12 @@ class MainWindow(QMainWindow):
                     LOGGER.exception(e)
 
     def refresh_plugin(self, plugin_name: str):
-        """Refresh a plugin identified by plugin_name
+        """Refresh a widget plugin identified by plugin_name
 
         It doesn't refresh the sender plugin
 
         Args:
-            plugin_name (str): a plugin name.
+            plugin_name (str): Name of the plugin to be refreshed
         """
         if plugin_name in self.plugins:
             plugin_obj = self.plugins[plugin_name]
