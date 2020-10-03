@@ -114,7 +114,7 @@ class VariantInfoWidget(PluginWidget):
         self.genotype_view.setIconSize(QSize(20, 20))
         self.view.addTab(self.genotype_view, "Genotypes")
 
-        self.view.addTab(self.editor, "Comments")
+        self.view.addTab(self.editor, self.tr("Comments"))
 
         # self.view.setColumnCount(2)
         # Set title of columns
