@@ -267,7 +267,7 @@ class MainWindow(QMainWindow):
         self.help_menu.addAction(
             QIcon(DIR_ICONS + "app.png"),
             self.tr("About Cutevariant"),
-            self.aboutCutevariant,
+            self.about_cutevariant,
         )
         self.help_menu.addAction(
             FIcon(0xF02D6), self.tr("What's this"), QWhatsThis.enterWhatsThisMode
@@ -465,9 +465,9 @@ class MainWindow(QMainWindow):
             dialog.on_refresh()
             dialog.exec_()
 
-    def aboutCutevariant(self):
+    def about_cutevariant(self):
         """Slot to show about window"""
-        dialog_window = AboutCutevariant()
+        dialog_window = AboutCutevariant(self)
         dialog_window.exec_()
 
     def reload_ui(self):
