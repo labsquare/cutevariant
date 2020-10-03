@@ -319,27 +319,25 @@ class MainWindow(QMainWindow):
         # Create connection
         self.conn = get_sql_connexion(filepath)
 
-        # DB version filter
-        db_version = get_metadatas(self.conn).get("cutevariant_version")
-        if db_version and parse_version(db_version) < parse_version(
-            MIN_AUTHORIZED_DB_VERSION
-        ):
-            # Refuse to open blacklisted DB versions
-            # Unversioned files are still accepted
-            QMessageBox.critical(
-                self,
-                self.tr("Error while opening project"),
-                self.tr("File: {} is too old; please create a new project.").format(filepath),
-            )
-            return
-
         try:
+            # DB version filter
+            db_version = get_metadatas(self.conn).get("cutevariant_version")
+            if db_version and parse_version(db_version) < parse_version(
+                    MIN_AUTHORIZED_DB_VERSION
+            ):
+                # Refuse to open blacklisted DB versions
+                # Unversioned files are still accepted
+                QMessageBox.critical(
+                    self,
+                    self.tr("Error while opening project"),
+                    self.tr(
+                        "File: {} is too old; please create a new project.").format(
+                        filepath),
+                )
+                return
+
             self.open_database(self.conn)
             self.save_recent_project(filepath)
-
-            # Show the project name in title and in status bar
-            self.setWindowTitle("Cutevariant - %s" % os.path.basename(filepath))
-            self.status_bar.showMessage(self.tr("{} opened").format(filepath))
 
         except sqlite3.OperationalError as e:
             LOGGER.error("MainWindow:open:: %s", e)
@@ -348,6 +346,11 @@ class MainWindow(QMainWindow):
                 self.tr("Error while opening project"),
                 self.tr("File: {}\nThe following exception occurred:\n{}").format(filepath, e),
             )
+            return
+
+        # Show the project name in title and in status bar
+        self.setWindowTitle("Cutevariant - %s" % os.path.basename(filepath))
+        self.status_bar.showMessage(self.tr("{} opened").format(filepath))
 
     def open_database(self, conn):
         """Open the project file and populate widgets
