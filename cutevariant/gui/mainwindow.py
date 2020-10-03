@@ -46,6 +46,9 @@ class MainWindow(QMainWindow):
         # Keep sqlite connection
         self.conn = None
 
+        # App settings
+        self.app_settings = QSettings()
+
         # State variable of application
         # store fields, source, filters, group_by, having data
         # Often changed by plugins
@@ -294,8 +297,7 @@ class MainWindow(QMainWindow):
             return
 
         # Save directory
-        app_settings = QSettings()
-        app_settings.setValue("last_directory", os.path.dirname(filepath))
+        self.app_settings.setValue("last_directory", os.path.dirname(filepath))
 
         # Create connection
         self.conn = get_sql_connexion(filepath)
@@ -354,8 +356,8 @@ class MainWindow(QMainWindow):
         if path in paths:
             paths.remove(path)
         paths.insert(0, path)
-        app_settings = QSettings()
-        app_settings.setValue("recent_projects", paths[:MAX_RECENT_PROJECTS])
+
+        self.app_settings.setValue("recent_projects", paths[:MAX_RECENT_PROJECTS])
 
     def get_recent_projects(self):
         """Return the list of recent projects stored in settings
@@ -365,8 +367,7 @@ class MainWindow(QMainWindow):
         """
 
         # Reload last projects opened
-        app_settings = QSettings()
-        recent_projects = app_settings.value("recent_projects", list())
+        recent_projects = self.app_settings.value("recent_projects", list())
 
         # Check if recent_projects is a list() (as expected)
         if isinstance(recent_projects, str):
@@ -379,8 +380,7 @@ class MainWindow(QMainWindow):
 
     def clear_recent_projects(self):
         """Slot to clear the list of recent projects"""
-        app_settings = QSettings()
-        app_settings.remove("recent_projects")
+        self.app_settings.remove("recent_projects")
         self.setup_recent_menu()
 
     def setup_recent_menu(self):
@@ -419,8 +419,7 @@ class MainWindow(QMainWindow):
     def open_project(self):
         """Slot to open an already existing project from a QFileDialog"""
         # Reload last directory used
-        app_settings = QSettings()
-        last_directory = app_settings.value("last_directory", QDir.homePath())
+        last_directory = self.app_settings.value("last_directory", QDir.homePath())
 
         filepath, _ = QFileDialog.getOpenFileName(
             self,
@@ -438,8 +437,7 @@ class MainWindow(QMainWindow):
     def export_project(self):
         """Export variants into CSV file"""
         # Reload last directory used
-        app_settings = QSettings()
-        last_directory = app_settings.value("last_directory", QDir.homePath())
+        last_directory = self.app_settings.value("last_directory", QDir.homePath())
 
         filepath, _ = QFileDialog.getSaveFileName(
             self, self.tr("Save project"), last_directory, self.tr("(*.csv)")
@@ -556,15 +554,13 @@ class MainWindow(QMainWindow):
 
         .. note:: This methods is called by closeEvent
         """
-        app_settings = QSettings()
-
         if self.requested_reset_ui:
             # Delete window state setting
-            app_settings.remove("windowState")
+            self.app_settings.remove("windowState")
         else:
-            app_settings.setValue("geometry", self.saveGeometry())
+            self.app_settings.setValue("geometry", self.saveGeometry())
             #  TODO: handle UI changes by passing UI_VERSION to saveState()
-            app_settings.setValue("windowState", self.saveState())
+            self.app_settings.setValue("windowState", self.saveState())
 
     def read_settings(self):
         """Restore the state of this mainwindow's toolbars and dockwidgets
@@ -574,16 +570,15 @@ class MainWindow(QMainWindow):
         # Init reset ui boolean
         self.requested_reset_ui = False
 
-        app_settings = QSettings()
-        self.restoreGeometry(QByteArray(app_settings.value("geometry")))
+        self.restoreGeometry(QByteArray(self.app_settings.value("geometry")))
         #  TODO: handle UI changes by passing UI_VERSION to saveState()
-        window_state = app_settings.value("windowState")
+        window_state = self.app_settings.value("windowState")
         if window_state:
             self.restoreState(QByteArray(window_state))
         else:
             # Setting has been deleted: set the current default state
             #  TODO: handle UI changes by passing UI_VERSION to saveState()
-            app_settings.setValue("windowState", self.saveState())
+            self.app_settings.setValue("windowState", self.saveState())
 
     # @Slot()
     # def on_query_model_changed(self):
