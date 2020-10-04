@@ -75,22 +75,17 @@ def async_import_reader(conn, reader: AbstractReader, pedfile=None, project={}):
     yield 0, "Inserting samples..."
     insert_many_samples(conn, reader.get_samples())
 
-    # Get cases and control samples
-
     # Import PED file
     # TODO: PED files are ALWAYS imported; WTF ?
     if pedfile:
+        # TODO: Attention ceci est systématiquement appelé et vient
+        #  écraser/mettre à jour les samples donnés avec le fichier de variants
         yield 0, f"Import pedfile {pedfile}"
         import_pedfile(conn, pedfile)
 
-    print(list(get_samples(conn)))
-
-    # Insert fields
-    yield 0, "Inserting fields..."
-    insert_many_fields(conn, reader.get_extra_fields())
-
+    # TODO: most of the time these lists are empty, are they tied to pedfile indentation ?
+    # TODO: can you document the code in get_extra_variants plz?
     # Compute control and cases samples
-
     control_samples = [
         sample["name"] for sample in get_samples(conn) if sample["phenotype"] == 1
     ]
@@ -98,12 +93,19 @@ def async_import_reader(conn, reader: AbstractReader, pedfile=None, project={}):
         sample["name"] for sample in get_samples(conn) if sample["phenotype"] == 2
     ]
 
-    yield 0, "Compute case / control"
-    yield 0, "controls are " + ",".join(control_samples) # TODO; WTF ?
-    yield 0, "cases are " + ",".join(case_samples) # TODO; WTF ?
+    yield 0, "Compute phenotypes: case/control"
+    yield 0, "- controls are [" + ",".join(control_samples) + "]"
+    yield 0, "- cases are [" + ",".join(case_samples) + "]"
+
+    print(list(get_samples(conn)))
+
+    # Insert fields
+    yield 0, "Inserting fields..."
+    insert_many_fields(conn, reader.get_extra_fields())
 
     # Insert variants, link them to annotations and samples
     yield 0, "Inserting variants..."
+    # TODO: can you document the code in get_extra_variants plz?
     percent = 0
     variants = reader.get_extra_variants(control=control_samples, case=case_samples)
     for value, message in async_insert_many_variants(conn, variants):
