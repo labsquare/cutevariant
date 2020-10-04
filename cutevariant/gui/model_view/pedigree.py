@@ -1,3 +1,5 @@
+import tempfile
+
 from PySide2.QtCore import (
     Qt,
     QAbstractTableModel,
@@ -14,7 +16,7 @@ from PySide2.QtWidgets import (
     QComboBox,
 )
 
-import tempfile
+from cutevariant.core.reader import PedReader
 
 
 class PedModel(QAbstractTableModel):
@@ -55,21 +57,17 @@ class PedModel(QAbstractTableModel):
         self.endResetModel()
 
     def from_pedfile(self, filename: str):
-        samples = []
+        samples = dict()
         self.beginResetModel()
         self.samples_data.clear()
-        with open(filename, "r") as file:
-            for line in file:
-                row = line.strip().split("\t")
-                self.samples_data.append(row)
-
+        self.samples_data = list(PedReader(filename, samples))
         self.endResetModel()
 
     def to_pedfile(self, filename: str):
 
         with open(filename, "w") as file:
             for sample in self.samples_data:
-                file.write("\t".join(sample) + "\n")
+                file.write("\t".join(map(str,sample)) + "\n")
 
     def set_samples(self, samples: list):
         """ fill model """
