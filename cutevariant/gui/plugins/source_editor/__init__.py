@@ -1,4 +1,4 @@
-__title__ = "Selection"
+__title__ = "Selections"
 __description__ = "A plugin to display selections"
 __long_description__ = """
 It is a plugin allowing to work on a subset of variants.<br>
