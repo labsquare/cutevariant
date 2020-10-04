@@ -11,18 +11,23 @@ class PedReader:
 
     Data has the same structure of a fam file object
     https://www.cog-genomics.org/plink/1.9/formats#fam
+    http://zzz.bwh.harvard.edu/plink/data.shtml
 
     Format description:
-        A tabular text file with no header line, and one line per sample with the
-        following six fields:
+        A tabular/white space separated text file with no header line, and one
+        line per sample with the following six fields:
 
         - Family ID (str): ('FID'); ex: "Valse"
         - Within-family ID (str): ('IID'; cannot be '0'); ex: "Emmanuel"
         - Within-family ID of father (str): ('0' if father isn't in dataset)
         - Within-family ID of mother (str): ('0' if mother isn't in dataset)
-        - Sex code (int): ('1' = male, '2' = female, '0' = unknown)
+        - Sex code (int): ('1' = male, '2' = female, '0' or other = unknown)
         - Phenotype value (int): ('1' = control, '2' = case, '-9'/'0'/non-numeric = missing data if case/control)
             We expect '0' for this last one.
+
+    Notes:
+        Comments are lines starting with a # character.
+        The rest of that line will be ignored.
 
     Recall, DB structure:
         - id INTEGER PRIMARY KEY ASC,
@@ -32,29 +37,49 @@ class PedReader:
         - mother_id INTEGER DEFAULT 0,
         - sex INTEGER DEFAULT 0,
         - phenotype INTEGER DEFAULT 0
+
+    TODO:
+        Detect if an individual has unknown sex but appears in mother_id or
+        father_id of a family.
     """
 
-    def __init__(self, filepath, samples, *args, **kwargs):
+    def __init__(self, filepath: str, samples: dict, raw_samples=True, *args, **kwargs):
         """
 
         Args:
-            filepath: PED filepath
-            samples: Database current samples
+            filepath (str): PED filepath
+            samples (dict): Database current samples. Each key is a field
+                of the table named "samples". We use this dict to apply unicity
+                constraints over family_id vs individual_id, father_id and
+                mother_id.
+                Must be not empty if `raw_samples` is `False`.
+            raw_samples (boolean):
+                - If raw_samples are activated (default), samples are lists of fields.
+                - If raw_samples are not activated, samples are dict of fields
+                ready to be inserted in the database according to the given samples.
+
         """
         assert os.path.isfile(filepath)
+        assert (samples and not raw_samples) or raw_samples, \
+            "If raw_samples are deactivated, database samples must be given"
 
         self.filepath = filepath
         self.samples = samples
+        self.raw_samples = raw_samples
 
     def __iter__(self):
         """Generator on PED file
 
-        PED file is opened as a tabulated file.
+        PED file is opened as a tabulated or white space separated file.
         """
         with open(self.filepath, "r") as stream:
+            # Sniff dialect of CSV file
+            dialect = csv.Sniffer().sniff(stream.read(10000), delimiters="\t ")
+            stream.seek(0)
+
             reader = csv.reader(
-                stream,
-                delimiter="\t",
+                (row for row in stream if not row.startswith('#')),  # Remove comments
+                dialect
             )
 
             yield from self.get_samples(reader)
