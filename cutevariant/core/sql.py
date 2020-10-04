@@ -1252,6 +1252,8 @@ def insert_many_samples(conn, samples: list):
 def get_samples(conn):
     """Get samples from sample table
 
+    See Also: :meth:`update_sample`
+
     :param conn: sqlite3.conn
     :return: Generator of dictionnaries with as sample fields as values.
         :Example: ({'id': <unique_id>, 'name': <sample_name>})

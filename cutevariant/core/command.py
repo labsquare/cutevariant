@@ -141,16 +141,6 @@ def count_cmd(
         default_tables=default_tables,
         samples_ids=samples_ids,
     )
-    # #    print("ICI", query, query[from_pos:])
-
-    # print("ICI", filters)
-    # if distinct:
-    #     query = (
-    #         "SELECT COUNT (*) FROM (SELECT DISTINCT variants.id "
-    #         + query[from_pos:]
-    #         + ")"
-    #     )
-    # else:
     LOGGER.debug("command:count_cmd:: %s", query)
     return {"count": sql.count_query(conn, query)}
 

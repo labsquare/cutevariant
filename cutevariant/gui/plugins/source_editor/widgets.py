@@ -248,7 +248,7 @@ class SourceEditorWidget(plugin.PluginWidget):
         #  Create action for bed
         menu.addAction(
             FIcon(0xF0219),
-            "Intersect with bed file ...",
+            self.tr("Intersect with BED file ..."),
             self.create_selection_from_bed,
         )
 
@@ -447,7 +447,7 @@ class SourceEditorWidget(plugin.PluginWidget):
         last_directory = app_settings.value("last_directory", QDir.homePath())
 
         filepath, _ = QFileDialog.getOpenFileName(
-            self, self.tr("Open bed file"), last_directory, self.tr("Bed File (*.bed)")
+            self, self.tr("Open BED file"), last_directory, self.tr("BED - Browser Extensible Data (*.bed)")
         )
         if not filepath:
             return
