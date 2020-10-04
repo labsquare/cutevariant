@@ -354,7 +354,7 @@ def find_plugins(path=None):
             # Fix plugin status by user decision via app settings
             if not class_item.ENABLE:
                 class_item.ENABLE = QSettings().value(
-                    f"plugins/{plugin_item['name']}/status", False
+                    f"plugins/{plugin_item['name']}/status"
                 ) == "true"
 
         yield plugin_item
