@@ -87,8 +87,25 @@ class PedReader:
     def get_samples(self, reader):
         """Yield samples from PED file
 
+        Notes:
+            The following problems with samples are detected:
+            - Not digit sex/phenotype: Exception raised
+            - Sex/phenotype not expected (0,1,2): Individual skipped
+            - Unknown individual_id: Individual skipped
+            - If samples are given, not found family_id, individual_id couple: Individual skipped.
+            i.e.: And individual not already in DB is skipped.
+            - If samples are given, not found family_id, father_id/mother_id:
+                Added as unknown.
+
         Returns:
-            (generator): Generator of samples
+            (generator[dict/list]): Generator of samples.
+                - If raw_samples are activated (default), samples are lists of fields.
+                - If raw_samples are not activated, samples are dict of fields
+                ready to be inserted in the database according to the given samples.
+
+                `[family_id, individual_id, father_id, mother_id, sex, phenotype]`
+                Or
+                `["id": _, "fam": _, "father_id": _, "mother_id": _, "sex": _, "phenotype": ]`
         """
         samples_mapping = {
             (sample["fam"], sample["name"]): sample["id"] for sample in self.samples
@@ -134,7 +151,8 @@ class PedReader:
                 continue
 
             # Test presence of sample in DB
-            if (family_id, individual_id) not in samples_mapping.keys():
+            individual_key = (family_id, individual_id)
+            if samples_mapping and individual_key not in samples_mapping.keys():
                 LOGGER.error(
                     "PED file conformity line <%s>; sample <fam:%s>, <individual_id:%s> not found in database",
                     index, family_id, individual_id,
@@ -144,7 +162,7 @@ class PedReader:
             # Test presence of parents in DB
             father_key = (family_id, father_id)
             mother_key = (family_id, mother_id)
-            if {father_key, mother_key} - samples_mapping.keys():
+            if samples_mapping and {father_key, mother_key} - samples_mapping.keys():
                 # If set not empty: 1 tuple is not found in DB
                 # => will be replaced by 0 (unknown)
                 LOGGER.warning(
@@ -152,14 +170,26 @@ class PedReader:
                     index, father_key, mother_key,
                 )
 
-            new_sample = {
-                "id": samples_mapping[(family_id, individual_id)],  # Get DB sample id
-                "fam": family_id,
-                "father_id": samples_mapping.get(father_key, 0),
-                "mother_id": samples_mapping.get(mother_key, 0),
-                "sex": sex,
-                "phenotype": phenotype,
-            }
+            if self.raw_samples:
+                new_sample = [
+                    family_id,
+                    individual_id,
+                    father_id,
+                    mother_id,
+                    sex,
+                    phenotype,
+                ]
+
+            else:
+
+                new_sample = {
+                    "id": samples_mapping[individual_key],  # Get DB sample id
+                    "fam": family_id,
+                    "father_id": samples_mapping.get(father_key, 0),
+                    "mother_id": samples_mapping.get(mother_key, 0),
+                    "sex": sex,
+                    "phenotype": phenotype,
+                }
 
             # print(new_sample)
             yield new_sample
