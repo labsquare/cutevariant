@@ -297,13 +297,31 @@ class PluginsSettingsWidget(BaseWidget):
         self.setLayout(main_layout)
 
     def save(self):
-        """Save the check status of enabled plugins in app settings"""
+        """Save the check status of enabled plugins in app settings and update UI
+
+        Emit a `register_plugin` or `deregister_plugin` signal for the mainwindow.
+
+        Notes:
+            Called only if the user clicks on "save all" button.
+        """
         for iterator in QTreeWidgetItemIterator(self.view, QTreeWidgetItemIterator.Enabled):
             item = iterator.value()
+            # Get extension and check state
             extension = item.data(0, Qt.UserRole)
             check_state = item.checkState(0) == Qt.Checked
             # Save status
             self.settings.setValue(f"plugins/{extension['name']}/status", check_state)
+
+            # Set the enable status of the extension
+            for sub_extension_type in {"widget", "dialog", "setting"} & extension.keys():
+                extension[sub_extension_type].ENABLE = check_state
+
+            if check_state:
+                # Register plugin in UI
+                self.registerPlugin.emit(extension)
+            else:
+                # Deregister plugin in UI
+                self.deregisterPlugin.emit(extension)
 
     def load(self):
         """Display the plugins and their status"""
@@ -342,31 +360,6 @@ class PluginsSettingsWidget(BaseWidget):
             item.setData(0, Qt.UserRole, extension)
 
             self.view.addTopLevelItem(item)
-
-        self.view.itemChanged.connect(self.on_item_check_changed)
-
-    def on_item_check_changed(self, item: QTreeWidgetItem, column: int):
-        """Received when the check status of enabled plugin has changed
-
-        Emit a `register_plugin` or `deregister_plugin` signal for the mainwindow.
-
-        Notes:
-            The check status is saved only if the user clicks on "save all" button.
-            However, the check status is directly applied to the UI.
-        """
-        extension = item.data(0, Qt.UserRole)
-        check_state = item.checkState(0) == Qt.Checked
-
-        # Set the enable status of the extension
-        for sub_extension_type in {"widget", "dialog", "setting"} & extension.keys():
-            extension[sub_extension_type].ENABLE = check_state
-
-        if check_state:
-            # Register plugin in UI
-            self.registerPlugin.emit(extension)
-        else:
-            # Deregister plugin in UI
-            self.deregisterPlugin.emit(extension)
 
 
 class SettingsWidget(QDialog):
