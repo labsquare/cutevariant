@@ -30,7 +30,12 @@ following mandatory variables:
         __author__ = "E. Micron"
         __version__ = "1.0.0"
 
-Note: __title__ will be used on the GUI.
+Note:
+    - `__title__` will be used on the GUI for the name of the plugin.
+    - `__long_description__` can be used to provide high quality helper text via
+        tooltip or What's This functionality (question mark button on top of all
+        windows). It can be written in html.
+        If it is not specified, the variable `__description__` will be used instead.
 
 Plugin types
 ------------
@@ -61,7 +66,7 @@ expected parent class associated to their types (widget, dialog, setting).
 In other words, each module **must** contains **one** class that inherits
 from `PluginWidget` or `PluginDialog` or `PluginSettingsWidget`.
 
-These classes **must** be named according to the name of the plugin directory
+These classes **must** be named in accordance to the name of the plugin directory
 followed by the corresponding type, in the CamelCase convention.
 
 Example:
