@@ -184,6 +184,19 @@ class VariantModel(QAbstractTableModel):
         self.is_loading = active
         self.loading.emit(active)
 
+    def _find_row_from_id(self, id: int) -> int:
+        """Find all row with the same variant _id
+
+        Args:
+            id (int): Variant sql record id
+        """
+        rows = []
+        for row, variant in enumerate(self.variants):
+            if variant["id"] == id:
+                rows.append(row)
+
+        return rows
+
     def load(self, emit_changed=True, reset_page=False):
         """Load variant data into the model from query attributes
 
@@ -549,7 +562,7 @@ class VariantView(QWidget):
     def loaded(self):
         self.load_page_box()
         if LOGGER.getEffectiveLevel() != logging.DEBUG:
-            self.view.setColumnHidden(0,True)
+            self.view.setColumnHidden(0, True)
 
     def set_formatter(self, formatter):
         self.delegate.formatter = formatter
@@ -734,8 +747,11 @@ class VariantView(QWidget):
     def update_favorite(self, index: QModelIndex, checked: bool):
         """Update favorite status of the variant at the given index (DEPRECATED)"""
         if index.isValid():
-            update = {"favorite": int(checked)}
-            self.model.update_variant(index.row(), update)
+
+            variant_id = self.model.variants[index.row()]["id"]
+            for row in self.model._find_row_from_id(variant_id):
+                update = {"favorite": int(checked)}
+                self.model.update_variant(row, update)
 
     def update_favorites(self, checked: bool):
         """Update favorite status of multiple selected variants"""

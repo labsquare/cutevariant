@@ -22,3 +22,11 @@ class State:
 
         # selected variants
         self.current_variant = None
+
+    def reset(self):
+        self.fields = ["favorite", "chr", "pos", "ref", "alt"]
+        self.source = "variants"
+        self.filters = {}
+        self.group_by = []
+        self.having = {}
+        self.current_variant = None

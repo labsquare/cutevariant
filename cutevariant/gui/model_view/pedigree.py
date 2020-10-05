@@ -12,6 +12,7 @@ from PySide2.QtWidgets import (
     QWidget,
     QStyleOptionViewItem,
     QComboBox,
+    QAbstractItemView,
 )
 
 import tempfile
@@ -185,6 +186,7 @@ class PedView(QTableView):
         self.setAlternatingRowColors(True)
         self.verticalHeader().hide()
         self.setItemDelegate(self.delegate)
+        self.setEditTriggers(QAbstractItemView.CurrentChanged)
 
     def clear(self):
         self.model.clear()
