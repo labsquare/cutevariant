@@ -1,5 +1,6 @@
 import pytest
 import tempfile
+import copy
 
 from cutevariant.core import sql
 from cutevariant.core.reader import BedReader
@@ -108,6 +109,7 @@ FILTERS = {
 
 @pytest.fixture
 def conn():
+    """Initialize a memory DB with test data and return a connexion on this DB"""
     conn = sql.get_sql_connexion(":memory:")
 
     sql.create_project(conn, "test", "hg19")
@@ -139,6 +141,12 @@ def conn():
     return conn
 
 
+@pytest.fixture
+def variants_data():
+    """Secured variants that will not be modified from a test to another"""
+    return copy.deepcopy(VARIANTS)
+
+
 def test_create_connexion(conn):
     assert conn is not None
 
@@ -157,29 +165,34 @@ def test_get_columns(conn):
 
 
 def test_get_annotations(conn):
+    """Compare annotations from DB with expected annotations for each variant
+
+    Interrogation of `annotations` table.
+    """
     for index, variant in enumerate(VARIANTS):
-        # Compare annotations from DB with expected annotations for each variant
         read_tx = list(sql.get_annotations(conn, index + 1))[0]
         del read_tx["variant_id"]
         expected_tx = VARIANTS[index]["annotations"][0]
         assert read_tx == expected_tx
 
 
-def test_get_sample_annotations(conn):
+def test_get_sample_annotations(conn, variants_data):
+    """Compare sample annotations from DB with expected samples annotations
 
-    for variant_id, variant in enumerate(VARIANTS):
+    Interrogation of `sample_has_variant` table
+    """
+    for variant_id, variant in enumerate(variants_data):
         if "samples" in variant:
             for sample_id, sample in enumerate(variant["samples"]):
-                sample = dict(sample)
                 result = sql.get_sample_annotations(conn, variant_id + 1, sample_id + 1)
                 del result["sample_id"]
                 del result["variant_id"]
-                del sample["name"]
+                del sample["name"]  # This field is in samples table
                 assert result == sample
 
 
 def test_get_fields(conn):
-    # Test if fields returns
+    """Test the correct insertion of fields in DB"""
     for index, f in enumerate(sql.get_fields(conn)):
         rowid = f.pop("id")
         assert f == FIELDS[index]
@@ -187,6 +200,7 @@ def test_get_fields(conn):
 
 
 def test_get_samples(conn):
+    """Test default values of samples"""
     assert [sample["name"] for sample in sql.get_samples(conn)] == SAMPLES
     first_sample = list(sql.get_samples(conn))[0]
 
@@ -200,6 +214,7 @@ def test_get_samples(conn):
 
 
 def test_update_samples(conn):
+    """Test update procedure of a sample in DB (modify some of its field values)"""
     previous_sample = list(sql.get_samples(conn))[0]
 
     assert previous_sample["name"] == "sacha"
@@ -212,21 +227,21 @@ def test_update_samples(conn):
     previous_sample["sex"] = 2
     previous_sample["phenotype"] = 2
 
+    # Update the sample
     sql.update_sample(conn, previous_sample)
 
+    # Get the updated sample
     edit_sample = list(sql.get_samples(conn))[0]
-
-    assert edit_sample["name"] == "maco"
-    assert edit_sample["fam"] == "fam2"
-    assert edit_sample["father_id"] == 1
-    assert edit_sample["mother_id"] == 1
-    assert edit_sample["sex"] == 2
-    assert edit_sample["phenotype"] == 2
+    # The sample in DB must be the same than the sample we modified above
+    assert previous_sample == edit_sample
 
 
 def test_update_variant(conn):
-    """exception si pas id, ajout comment"""
+    """Test update procedure of a variant in DB (modify some of its field values)
 
+    .. note:: exception si pas id, ajout comment
+    """
+    # Update the first variant data
     updated = {"id": 1, "ref": "A", "chr": "chrX"}
     sql.update_variant(conn, updated)
 
@@ -394,11 +409,11 @@ def test_get_one_variant(conn):
     """Test getting variant from variant_id
 
     .. note:: annotations and samples returns which are optionnal are not tested here
-    
+
     """
-    for variant_id, variant in enumerate(VARIANTS):
-        data = sql.get_one_variant(conn, variant_id + 1)
-        assert data["id"] == variant_id + 1
+    for variant_id, variant in enumerate(VARIANTS, 1):
+        data = sql.get_one_variant(conn, variant_id)
+        assert data["id"] == variant_id
 
         for k, v in variant.items():
             assert k in data
