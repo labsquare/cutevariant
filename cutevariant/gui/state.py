@@ -1,4 +1,4 @@
-class State():
+class State:
     """Store application state variable
 
     Settings are mostly related to the display of variants.
