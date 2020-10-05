@@ -15,7 +15,7 @@ class SeqoneFormatter(Formatter):
 
     DISPLAY_NAME = "Challenger"
 
-    BASE_COLOR = {"A": "green", "C": "red", "G": "black", "T": "red"}
+    BASE_COLOR = {"A": "green", "C": "red", "T": "red"}
 
     SO_COLOR = {
         # https://natsukis.livejournal.com/2048.html
@@ -57,20 +57,22 @@ class SeqoneFormatter(Formatter):
     def paint(
         self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex
     ):
-
+        """Apply graphical formatting to each item in each displayed column in the view"""
         brush = QBrush()
         pen = QPen()
         font = QFont()
 
+        # Default theme color
         pen.setColor(option.palette.color(QPalette.WindowText))
 
         field_name = self.field_name(index).lower()
         value = self.value(index)
 
-        # if field_name == "ref" or field_name == "alt" and value in ("A", "C", "G", "T"):
-        #     pen.setColor(
-        #         self.BASE_COLOR.get(value, option.palette.color(QPalette.WindowText))
-        #     )
+        # Colour bases (default color is the one of the current theme)
+        if field_name == "ref" or field_name == "alt" and value in ("A", "C", "G", "T"):
+            pen.setColor(
+                self.BASE_COLOR.get(value, option.palette.color(QPalette.WindowText))
+            )
 
         if field_name == "impact":
             font.setBold(True)
