@@ -1,11 +1,12 @@
+import pytest
+import tempfile
+
 from PySide2.QtCore import QThreadPool
 
 from cutevariant.gui.sql_runnable import SqlRunnable
 from cutevariant.core import sql, importer
 from cutevariant.core.reader import VcfReader
 from cutevariant.core.command import count_cmd
-import pytest
-import tempfile
 
 
 @pytest.fixture
@@ -18,10 +19,22 @@ def conn():
 
 
 def test_query(qtbot, conn):
-
+    """Test asynchrone count query"""
+    # Fill with a function that will be executed in a separated thread
     runnable = SqlRunnable(
         conn,
-        lambda conn: list(conn.execute("SELECT COUNT(*) FROM variants").fetchone())[0],
+        sql.get_variants_count,
+    )
+
+    with qtbot.waitSignal(runnable.signals.finished, timeout=10000) as blocker:
+        QThreadPool.globalInstance().start(runnable)
+
+    assert runnable.results == 11
+
+    # Same Query but via VQL wrapper
+    runnable = SqlRunnable(
+        conn,
+        count_cmd,
     )
 
     with qtbot.waitSignal(runnable.signals.finished, timeout=10000) as blocker:
