@@ -181,10 +181,10 @@ def test_get_sample_annotations(conn, variants_data):
 
     Interrogation of `sample_has_variant` table
     """
-    for variant_id, variant in enumerate(variants_data):
+    for variant_id, variant in enumerate(variants_data, 1):
         if "samples" in variant:
-            for sample_id, sample in enumerate(variant["samples"]):
-                result = sql.get_sample_annotations(conn, variant_id + 1, sample_id + 1)
+            for sample_id, sample in enumerate(variant["samples"], 1):
+                result = sql.get_sample_annotations(conn, variant_id, sample_id)
                 del result["sample_id"]
                 del result["variant_id"]
                 del sample["name"]  # This field is in samples table
