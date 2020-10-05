@@ -29,7 +29,8 @@ def test_query(qtbot, conn):
     with qtbot.waitSignal(runnable.signals.finished, timeout=10000) as blocker:
         QThreadPool.globalInstance().start(runnable)
 
-    assert runnable.results == 11
+    expected = 11
+    assert expected == runnable.results
 
     # Same Query but via VQL wrapper
     runnable = SqlRunnable(
@@ -40,4 +41,5 @@ def test_query(qtbot, conn):
     with qtbot.waitSignal(runnable.signals.finished, timeout=10000) as blocker:
         QThreadPool.globalInstance().start(runnable)
 
-    assert runnable.results == 11
+    expected = {"count": 11}
+    assert expected == runnable.results
