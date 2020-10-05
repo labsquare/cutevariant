@@ -26,7 +26,7 @@ def test_query(qtbot, conn):
         sql.get_variants_count,
     )
 
-    with qtbot.waitSignal(runnable.signals.finished, timeout=10000) as blocker:
+    with qtbot.waitSignal(runnable.finished, timeout=10000) as blocker:
         QThreadPool.globalInstance().start(runnable)
 
     expected = 11
@@ -38,7 +38,7 @@ def test_query(qtbot, conn):
         count_cmd,
     )
 
-    with qtbot.waitSignal(runnable.signals.finished, timeout=10000) as blocker:
+    with qtbot.waitSignal(runnable.finished, timeout=10000) as blocker:
         QThreadPool.globalInstance().start(runnable)
 
     expected = {"count": 11}

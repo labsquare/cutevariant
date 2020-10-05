@@ -250,10 +250,10 @@ class VariantModel(QAbstractTableModel):
         self.variant_runnable = SqlRunnable(
             self.conn, lambda conn: list(load_func(conn))
         )
-        self.variant_runnable.signals.finished.connect(self.loaded)
+        self.variant_runnable.finished.connect(self.loaded)
 
         self.count_runnable = SqlRunnable(self.conn, count_function)
-        self.count_runnable.signals.finished.connect(self.loaded)
+        self.count_runnable.finished.connect(self.loaded)
 
         self.pool.start(self.variant_runnable)
         self.pool.start(self.count_runnable)
