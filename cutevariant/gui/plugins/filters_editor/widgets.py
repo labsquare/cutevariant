@@ -1208,6 +1208,7 @@ class FilterDelegate(QStyledItemDelegate):
             check_icon = self.eye_on if item.checked else self.eye_off
             rect = QRect(0, 0, self.icon_size.width(), self.icon_size.height())
             rect.moveCenter(option.rect.center())
+            rect.setX(4)
             painter.drawPixmap(rect.x(), rect.y(), check_icon.pixmap(self.icon_size))
 
         if index.column() > self.COLUMN_CHECKBOX:
@@ -1286,8 +1287,7 @@ class FieldDialog(QDialog):
         super().__init__(parent)
         self.title_label = QLabel("Non title")
         self.description_label = QLabel("Description")
-        self.btn_box = QDialogButtonBox(
-            QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        self.btn_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
 
         self.field_box = QComboBox()
         self.field_operator = OperatorField()
@@ -1611,7 +1611,7 @@ if __name__ == "__main__":
     import cutevariant.commons as cm
     from cutevariant.gui.ficon import FIcon, setFontPath
 
-    conn = get_sql_connexion("/home/schutz/Dev/cutevariant/examples/test.db")
+    conn = get_sql_connexion("test.db")
 
     d = FieldDialog(conn)
     d.show()

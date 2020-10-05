@@ -164,8 +164,18 @@ def test_get_annotations(conn):
         expected_tx = VARIANTS[index]["annotations"][0]
         assert read_tx == expected_tx
 
+
 def test_get_sample_annotations(conn):
-    raise NotImplementedError
+
+    for variant_id, variant in enumerate(VARIANTS):
+        if "samples" in variant:
+            for sample_id, sample in enumerate(variant["samples"]):
+                sample = dict(sample)
+                result = sql.get_sample_annotations(conn, variant_id + 1, sample_id + 1)
+                del result["sample_id"]
+                del result["variant_id"]
+                del sample["name"]
+                assert result == sample
 
 
 def test_get_fields(conn):
@@ -380,15 +390,20 @@ def test_selection_operation(conn):
 # ============ TEST VARIANTS QUERY
 
 
-def test_select_variant_items(conn):
-    args = {}
-    # assert len(list(sql.SelectVariant(conn, **args).items())) == len(VARIANTS)
+def test_get_one_variant(conn):
+    """Test getting variant from variant_id
 
-    # args = {"filters": filters}
-    # assert len(list(sql.get_variants(conn, **args))) == 1
+    .. note:: annotations and samples returns which are optionnal are not tested here
+    
+    """
+    for variant_id, variant in enumerate(VARIANTS):
+        data = sql.get_one_variant(conn, variant_id + 1)
+        assert data["id"] == variant_id + 1
 
-    # TODO more test
-    raise NotImplementedError
+        for k, v in variant.items():
+            assert k in data
+            if k not in ("annotations", "samples"):
+                assert data[k] == variant[k]
 
 
 def test_selection_from_bedfile(conn):

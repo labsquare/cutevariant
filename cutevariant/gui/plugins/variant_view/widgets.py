@@ -13,12 +13,15 @@ from PySide2.QtGui import *
 
 # Custom imports
 from cutevariant.core.querybuilder import build_complete_query
+from cutevariant.core import vql
 from cutevariant.core import command as cmd
 from cutevariant.gui import plugin, FIcon
+from cutevariant.gui.sql_runnable import SqlRunnable
 from cutevariant.gui import formatter
 from cutevariant.gui.widgets import MarkdownEditor
 import cutevariant.commons as cm
 
+import logging
 LOGGER = cm.logger()
 
 
@@ -38,6 +41,9 @@ class VariantModel(QAbstractTableModel):
     """
 
     changed = Signal()
+
+    loading = Signal(bool)  # emit when data start or stop loading
+    load_finished = Signal()  # Emit when data is loaded
 
     def __init__(self, conn=None, parent=None):
         super().__init__()
@@ -59,6 +65,9 @@ class VariantModel(QAbstractTableModel):
         self.debug_sql = None
         # Keep after all initialization
         self.conn = conn
+
+        self.pool = QThreadPool()
+        self.is_loading = False
 
     @property
     def conn(self):
@@ -93,6 +102,11 @@ class VariantModel(QAbstractTableModel):
         Parent is not used here.
         """
         return len(self.headers)
+
+    def clear(self):
+        self.beginResetModel()
+        self.variants.clear()
+        self.endResetModel()
 
     def data(self, index: QModelIndex(), role=Qt.DisplayRole):
         """Overrided: return index data according role.
@@ -166,6 +180,10 @@ class VariantModel(QAbstractTableModel):
             self.variants[row].update(variant)
             self.dataChanged.emit(left, right)
 
+    def _set_loading(self, active=True):
+        self.is_loading = active
+        self.loading.emit(active)
+
     def load(self, emit_changed=True, reset_page=False):
         """Load variant data into the model from query attributes
 
@@ -180,17 +198,16 @@ class VariantModel(QAbstractTableModel):
         if self.conn is None:
             return
 
-        self.beginResetModel()
+        self._set_loading(True)
+        LOGGER.info("Start loading")
 
         offset = self.page * self.limit
 
-        self.variants.clear()
-
         # Add fields from group by
+        # self.clear()  # Assume variant = []
+        self.total = 0
 
-        for g in self.group_by:
-            if g not in self.fields:
-                self.fields.append(g)
+        LOGGER.debug("page:" + str(self.page))
 
         # Store SQL query for debugging purpose
         self.debug_sql = build_complete_query(
@@ -206,45 +223,77 @@ class VariantModel(QAbstractTableModel):
             having=self.having,
         )
 
-        # Load variants
-        self.variants = list(
-            cmd.select_cmd(
-                self.conn,
-                fields=self.fields,
-                source=self.source,
-                filters=self.filters,
-                limit=self.limit,
-                offset=offset,
-                order_desc=self.order_desc,
-                order_by=self.order_by,
-                group_by=self.group_by,
-                having=self.having,
-            )
+        # Create load_func to run asynchronously: load variants
+        load_func = functools.partial(
+            cmd.select_cmd,
+            fields=self.fields,
+            source=self.source,
+            filters=self.filters,
+            limit=self.limit,
+            offset=offset,
+            order_desc=self.order_desc,
+            order_by=self.order_by,
+            group_by=self.group_by,
+            having=self.having,
         )
 
-        # # Keep favorite and remove vrom data
-        # self.favorite = [i["favorite"] for i in self.variants]
-        # for i in self.variants:
-        #     i.pop("favorite")
+        # Create count_func to run asynchronously: count variants
+        count_function = functools.partial(
+            cmd.count_cmd,
+            fields=self.fields,
+            source=self.source,
+            filters=self.filters,
+            group_by=self.group_by,
+        )
+
+        # self.sql_thread.terminate()
+        self.variant_runnable = SqlRunnable(
+            self.conn, lambda conn: list(load_func(conn))
+        )
+        self.variant_runnable.signals.finished.connect(self.loaded)
+
+        self.count_runnable = SqlRunnable(self.conn, count_function)
+        self.count_runnable.signals.finished.connect(self.loaded)
+
+        self.pool.start(self.variant_runnable)
+        self.pool.start(self.count_runnable)
+
+    def loaded(self):
+
+        if not hasattr(self, "variant_runnable") or not hasattr(self, "count_runnable"):
+            return
+
+        if not self.variant_runnable.done or not self.count_runnable.done:
+            # One of the runner has not finished his job
+            return
+
+        LOGGER.info("received load data")
+
+        self.beginResetModel()
+        self.variants.clear()
+
+        # Add fields from group by
+        for g in self.group_by:
+            if g not in self.fields:
+                self.fields.append(g)
+
+        # Load variants
+        self.variants = self.variant_runnable.results
+
 
         if self.variants:
             self.headers = list(self.variants[0].keys())
 
-        # Compute total
-        if emit_changed:
-            self.changed.emit()
-            # Probably need to compute total ==> >Must be async !
-            # But sqlite cannot be async ? Does it ?
-            self.total = cmd.count_cmd(
-                self.conn,
-                fields=self.fields,
-                source=self.source,
-                filters=self.filters,
-                group_by=self.group_by,
-            )["count"]
+        # print(self.count_runnable.results["count"])
+        self.total = self.count_runnable.results["count"]
+
+        del self.variant_runnable
+        del self.count_runnable
 
         # print(self.fields, self.filters, self.group_by)
         self.endResetModel()
+        self._set_loading(False)
+        self.load_finished.emit()
 
     def load_from_vql(self, vql):
 
@@ -345,6 +394,37 @@ class VariantDelegate(QStyledItemDelegate):
         self.formatter.paint(painter, option, index)
 
 
+class LoadingTableView(QTableView):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.movie = QMovie(cm.DIR_ICONS + "loading.gif")
+
+        self.movie.frameChanged.connect(self.update)
+
+    def paintEvent(self, event: QPainter):
+
+        if self.is_loading():
+            painter = QPainter(self.viewport())
+            rect = self.movie.currentPixmap().rect()
+            rect.moveCenter(self.viewport().rect().center())
+            painter.drawPixmap(rect.x(), rect.y(), self.movie.currentPixmap())
+            self.viewport().update()
+        else:
+            super().paintEvent(event)
+
+    def start_loading(self):
+        self.movie.start()
+        self.viewport().update()
+
+    def stop_loading(self):
+        self.movie.stop()
+        self.viewport().update()
+
+    def is_loading(self):
+        return self.movie.state() == QMovie.Running
+
+
 class VariantView(QWidget):
     """A Variant view with controller like pagination"""
 
@@ -363,7 +443,7 @@ class VariantView(QWidget):
 
         self.parent = parent
         self.show_popup_menu = show_popup_menu
-        self.view = QTableView()
+        self.view = LoadingTableView()
         self.bottom_bar = QToolBar()
 
         self.settings = QSettings()
@@ -400,6 +480,10 @@ class VariantView(QWidget):
         self.page_box.setValidator(QIntValidator())
 
         self.info_label = QLabel()
+        self.loading_label = QLabel()
+        self.loading_label.setMovie(QMovie(cm.DIR_ICONS + "/loading.gif"))
+        self.loading_label.movie().setScaledSize(QSize(20, 20))
+        self.loading_label.movie().start()
 
         # TODO: display on debug mode
         self.bottom_bar.addAction(FIcon(0xF0866), "show sql", self.on_show_sql)
@@ -436,13 +520,36 @@ class VariantView(QWidget):
 
         # broadcast focus signal
 
+        self.model.loading.connect(self._set_loading)
+        self.model.load_finished.connect(self.loaded)
+
+    def _set_loading(self, active=True):
+        self.setDisabled(active)
+        if active:
+            QTimer.singleShot(1000, self.start_loading_after_delay)
+        else:
+            self.view.stop_loading()
+
+    def start_loading_after_delay(self):
+        self.setDisabled(self.model.is_loading)
+
+        if self.model.is_loading:
+            self.view.start_loading()
+        else:
+            self.view.stop_loading()
+
     def setModel(self, model: VariantModel):
         self.model = model
         self.view.setModel(model)
 
     def load(self):
+        self.model.page = 0
         self.model.load()
+
+    def loaded(self):
         self.load_page_box()
+        if LOGGER.getEffectiveLevel() != logging.DEBUG:
+            self.view.setColumnHidden(0,True)
 
     def set_formatter(self, formatter):
         self.delegate.formatter = formatter
@@ -528,6 +635,7 @@ class VariantView(QWidget):
         else:
             # self.page_box.addItems([str(i) for i in range(self.model.pageCount())])
             self.page_box.validator().setRange(0, self.model.pageCount() - 1)
+            self.page_box.setCurrentText(str(self.model.page))
             self.set_pagging_enabled(True)
 
         self.info_label.setText(
@@ -1043,20 +1151,25 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
-    conn = sql.get_sql_connexion(":memory:")
-    reader = VcfReader(
-        open("/home/sacha/Dev/cutevariant/examples/test.snpeff.vcf"), "snpeff"
-    )
-    import_reader(conn, reader)
-
-    w = VariantViewWidget()
-
-    w.conn = conn
-    w.main_right_pane.model.conn = conn
-    w.main_right_pane.load()
-    # w.main_view.model.group_by = ["chr","pos","ref","alt"]
-    # w.on_refresh()
-
+    m = QStringListModel()
+    m.setStringList(["salut", "sach"])
+    w = LoadingTableView()
+    w.setModel(m)
     w.show()
+
+    # conn = sql.get_sql_connexion(":memory:")
+    # reader = VcfReader(
+    #     open("/home/sacha/Dev/cutevariant/examples/test.snpeff.vcf"), "snpeff"
+    # )
+    # import_reader(conn, reader)
+
+    # w = VariantViewWidget()
+    # w.conn = conn
+    # w.main_right_pane.model.conn = conn
+    # w.main_right_pane.load()
+    # # w.main_view.model.group_by = ["chr","pos","ref","alt"]
+    # # w.on_refresh()
+
+    # w.show()
 
     app.exec_()

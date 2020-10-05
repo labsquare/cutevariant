@@ -2,7 +2,7 @@
 import re
 
 # Qt imports
-from PySide2.QtGui import QColor, QFont, QBrush, QPainter, QPen, QFontMetrics
+from PySide2.QtGui import QColor, QFont, QBrush, QPainter, QPen, QFontMetrics, QPalette
 from PySide2.QtCore import Qt, QModelIndex, QRect
 from PySide2.QtWidgets import QStyleOptionViewItem
 
@@ -44,7 +44,12 @@ class SeqoneFormatter(Formatter):
 
     FAV_ICON = {0: FIcon(0xF00C3), 1: FIcon(0xF00C0)}
 
-    GENOTYPE_ICONS = {0: FIcon(0xF0766), 1: FIcon(0xF0AA1), 2: FIcon(0xF0AA5), -1: FIcon(0xF10D3)}
+    GENOTYPE_ICONS = {
+        0: FIcon(0xF0766),
+        1: FIcon(0xF0AA1),
+        2: FIcon(0xF0AA5),
+        -1: FIcon(0xF10D3),
+    }
 
     def __init__(self):
         super().__init__()
@@ -57,11 +62,15 @@ class SeqoneFormatter(Formatter):
         pen = QPen()
         font = QFont()
 
+        pen.setColor(option.palette.color(QPalette.WindowText))
+
         field_name = self.field_name(index).lower()
         value = self.value(index)
 
-        if field_name == "ref" or field_name == "alt" and value in ("A", "C", "G", "T"):
-            pen.setColor(self.BASE_COLOR.get(value, "black"))
+        # if field_name == "ref" or field_name == "alt" and value in ("A", "C", "G", "T"):
+        #     pen.setColor(
+        #         self.BASE_COLOR.get(value, option.palette.color(QPalette.WindowText))
+        #     )
 
         if field_name == "impact":
             font.setBold(True)

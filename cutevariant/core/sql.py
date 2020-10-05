@@ -160,7 +160,9 @@ def create_project(conn: sqlite3.Connection, name: str, reference: str):
     )
     conn.commit()
 
+
 ## metadatas table =============================================================
+
 
 def create_table_metadatas(conn: sqlite3.Connection):
     """Create table metdata
@@ -189,6 +191,7 @@ def insert_many_metadatas(conn: sqlite3.Connection, metadatas={}):
 
         conn.commit()
 
+
 def get_metadatas(conn: sqlite3.Connection):
     """Return a dictionary of metadatas
 
@@ -198,6 +201,7 @@ def get_metadatas(conn: sqlite3.Connection):
     conn.row_factory = sqlite3.Row
     g = (dict(data) for data in conn.execute("""SELECT key, value FROM metadatas"""))
     return {data["key"]: data["value"] for data in g}
+
 
 ## selections & sets tables ====================================================
 
@@ -224,7 +228,9 @@ def delete_by_name(conn: sqlite3.Connection, name: str, table_name: str = None):
     conn.commit()
     return cursor.rowcount
 
+
 ## selection table =============================================================
+
 
 def create_table_selections(conn: sqlite3.Connection):
     """Create the table "selections" and association table "selection_has_variant"
@@ -447,8 +453,8 @@ def create_selection_from_bed(
         """
 
     query = (
-        source_query +
-        """
+        source_query
+        + """
         INNER JOIN bed_table ON
         variants.chr = bed_table.chr AND
         variants.pos >= bed_table.start AND
@@ -511,7 +517,9 @@ def edit_selection(conn: sqlite3.Connection, selection: dict):
     conn.commit()
     return cursor.rowcount
 
+
 ## sets table ===============================================================
+
 
 def create_table_sets(conn: sqlite3.Connection):
     """Create the table "sets"
@@ -910,14 +918,55 @@ def create_variants_indexes(conn):
     conn.execute("""CREATE INDEX idx_variants_ref_alt ON variants (ref, alt)""")
 
 
-def get_one_variant(conn, variant_id: int):
-    """Get the variant with the given id"""
-    # Use row_factory here
+def get_one_variant(
+    conn: sqlite3.Connection, variant_id: int, with_annotations=True, with_samples=True
+):
+    """Get the variant with the given id
+
+    Args:
+        conn (sqlite3.Connection): sqlite3 connection
+        variant_id (int): Database id of the variant
+        with_annotations (bool, optional): Add annotations items. Default is True
+        with_samples (bool, optional): add samples items. Default is True
+
+    Returns:
+        dict: A variant item with all fields in "variants" table;
+            + all fields of annotations table if with_annotations is True
+            + all fields of sample_has_variant associated to all samples if
+            with_samples is True.
+            Example:
+                {
+                    variant fields as keys...,
+                    "annotations": dict of annotations fields as keys...,
+                    "samples": dict of samples fields as keys...,
+                }
+
+    """
     conn.row_factory = sqlite3.Row
     # Cast sqlite3.Row object to dict because later, we use items() method.
-    return dict(
-        conn.execute(f"""SELECT * FROM variants WHERE variants.id = {variant_id}""").fetchone()
+    variant = dict(
+        conn.execute(
+            f"""SELECT * FROM variants WHERE variants.id = {variant_id}"""
+        ).fetchone()
     )
+
+    if with_annotations:
+        variant["annotations"] = dict(
+            conn.execute(
+                f"""SELECT * FROM annotations WHERE variant_id = {variant_id}"""
+            ).fetchone()
+        )
+
+    if with_samples:
+        variant["samples"] = []
+        for sample in conn.execute(
+            f"""SELECT samples.name, sample_has_variant.* FROM sample_has_variant
+            LEFT JOIN samples on samples.id = sample_has_variant.sample_id
+            WHERE variant_id = {variant_id} """
+        ):
+            variant["samples"].append(dict(sample))
+
+    return variant
 
 
 def update_variant(conn, variant: dict):

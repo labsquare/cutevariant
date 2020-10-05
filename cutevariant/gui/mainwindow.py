@@ -41,7 +41,11 @@ class MainWindow(QMainWindow):
         self.toolbar = self.addToolBar("maintoolbar")
         self.toolbar.setObjectName("maintoolbar")  # For window saveState
         self.setWindowIcon(QIcon(DIR_ICONS + "app.png"))
-        self.setWindowFlags(Qt.WindowContextHelpButtonHint)
+        self.setWindowFlags(
+            Qt.WindowContextHelpButtonHint
+            | Qt.WindowCloseButtonHint
+            | Qt.WindowMinMaxButtonsHint
+        )
 
         # Keep sqlite connection
         self.conn = None
@@ -344,7 +348,9 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(
                 self,
                 self.tr("Error while opening project"),
-                self.tr("File: {}\nThe following exception occurred:\n{}").format(filepath, e),
+                self.tr("File: {}\nThe following exception occurred:\n{}").format(
+                    filepath, e
+                ),
             )
             return
 
