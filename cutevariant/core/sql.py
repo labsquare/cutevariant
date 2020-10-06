@@ -993,7 +993,8 @@ def update_variant(conn, variant: dict):
     query = (
         "UPDATE variants SET " + ",".join(placeholders) + f" WHERE id = {variant['id']}"
     )
-    conn.execute(query, sql_val)
+    cursor = conn.cursor()
+    cursor.execute(query, values)
     conn.commit()
 
 
@@ -1009,9 +1010,8 @@ def get_annotations(conn, variant_id: int):
 def get_sample_annotations(conn, variant_id: int, sample_id: int):
     """Get samples for given sample id and variant id"""
     conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
     return dict(
-        cursor.execute(
+        conn.execute(
             f"""SELECT * FROM sample_has_variant WHERE variant_id = {variant_id} and sample_id = {sample_id}"""
         ).fetchone()
     )
