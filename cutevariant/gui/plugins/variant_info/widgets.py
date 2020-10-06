@@ -5,7 +5,7 @@ contextual menu about the variant which is selected.
 VariantPopupMenu is also used in viewquerywidget for the same purpose.
 """
 # Qt imports
-from PySide2.QtCore import Qt, QPoint, Slot, QSize
+from PySide2.QtCore import Qt, Slot, QSize
 from PySide2.QtWidgets import *
 from PySide2.QtGui import QFont
 
@@ -133,9 +133,18 @@ class VariantInfoWidget(PluginWidget):
         # self.view.customContextMenuRequested.connect(self.show_menu)
         # self.add_tab("variants")
 
+        # Cache all database fields and their descriptions for tooltips
+        # Field names as keys, descriptions as values
+        self.fields_descriptions = None
+
     def on_open_project(self, conn):
         self.conn = conn
         self.on_refresh()
+        # Cache DB fields descriptions
+        self.fields_descriptions = {
+            field["name"]: field["description"]
+            for field in sql.get_fields(self.conn)
+        }
 
     def on_refresh(self):
         """Set the current variant by the variant displayed in the GUI"""
@@ -162,7 +171,7 @@ class VariantInfoWidget(PluginWidget):
             item.setText(0, field_name)
             item.setFont(0, font)
             item.setText(1, str(value))
-            item.setToolTip(1, "<font color=black>" + str(value) + "</font>")
+            item.setToolTip(1, self.fields_descriptions.get(field_name, ""))
 
             if field_name == "comment":
                 try:
