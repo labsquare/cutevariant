@@ -742,29 +742,36 @@ class VariantView(QWidget):
         # Display
         menu.exec_(event.globalPos())
 
-    def update_favorite(self, index: QModelIndex, checked: bool):
-        """Update favorite status of the variant at the given index (DEPRECATED)"""
-        if not index.isValid():
-            return
-
-        update_data = {"favorite": int(checked)}
-
-        variant_id = self.model.variants[index.row()]["id"]
-        for row_id in self.model.find_row_id_from_variant_id(variant_id):
-            self.model.update_variant(row_id, update_data)
-
     def update_favorites(self, checked: bool):
-        """Update favorite status of multiple selected variants"""
+        """Update favorite status of multiple selected variants
+
+        Warnings:
+            BE CAREFUL with this code, we try to limit useless SQL queries as
+            much as possible.
+        """
         update_data = {"favorite": int(checked)}
+
+        # Do not update the same variant multiple times
+        unique_ids = set()
 
         for index in self.view.selectionModel().selectedRows():
             if not index.isValid():
                 continue
 
             # Get variant id
-            variant_id = self.model.variants[index.row()]["id"]
+            variant = self.model.variants[index.row()]
+            variant_id = variant["id"]
+
+            if variant_id in unique_ids:
+                continue
+            unique_ids.add(variant_id)
+
+            # Update GUI + DB
+            self.model.update_variant(index.row(), update_data)
+
+            # JUST update the GUI
             for row_id in self.model.find_row_id_from_variant_id(variant_id):
-                self.model.update_variant(row_id, update_data)
+                self.model.variants[row_id].update(update_data)
 
     def update_classification(self, index: QModelIndex, value=3):
         """Update classification level of the variant at the given index"""
