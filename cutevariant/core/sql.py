@@ -717,21 +717,20 @@ def get_field_by_category(conn, category):
 
 
 def get_field_by_name(conn, field_name: str):
-    """Return field by his name
+    """Return field by its name
 
     .. seealso:: get_fields
 
     :param conn: sqlite3.connect
     :param field_name: field name
-    :return: field record
-    :rtype: <dict>
+    :return: field record or None if not found.
+    :rtype: <dict> or None
     """
     conn.row_factory = sqlite3.Row
-    return dict(
-        conn.execute(
-            """SELECT * FROM fields WHERE name = ? """, (field_name,)
-        ).fetchone()
-    )
+    field_data = conn.execute(
+        """SELECT * FROM fields WHERE name = ? """, (field_name,)
+    ).fetchone()
+    return dict(field_data) if field_data else None
 
 
 def get_field_range(conn, field_name: str, sample_name=None):
@@ -740,10 +739,13 @@ def get_field_range(conn, field_name: str, sample_name=None):
     :param conn: sqlite3.connect
     :param field_name: field name
     :param sample_name: sample name. mandatory for fields in the "samples" categories
-    :return: (min, max)
-    :rtype: tuple
+    :return: (min, max) or None if the field can't be processed with mix/max functions.
+    :rtype: tuple or None
     """
     field = get_field_by_name(conn, field_name)
+    if not field:
+        return None
+
     table = field["category"]  # variants, or annotations or samples
     if table == "samples":
         if not sample_name:
@@ -757,24 +759,24 @@ def get_field_range(conn, field_name: str, sample_name=None):
         query = f"""SELECT min({field_name}), max({field_name}) FROM {table}"""
 
     result = tuple(conn.execute(query).fetchone())
-    if result == (None, None):
-        return None
-    if result == ("", ""):
+    if result in ((None, None), ("", "")):
         return None
 
     return result
 
 
 def get_field_unique_values(conn, field_name: str, sample_name=None):
-    """Return unique record value for a field name
+    """Return unique record values for a field name
 
     :param conn: sqlite3.connect
-    :param field_name: field_name
+    :param field_name: Name of the field in DB.
     :param sample_name: sample name. Mandatory for fields in the "samples" categories
-    :return: list of unique values
+    :return: list of unique values (can be empty if the field is not found)
     :rtype: list
     """
     field = get_field_by_name(conn, field_name)
+    if not field:
+        return []
     table = field["category"]  # variants, or annotations or samples
     if table == "samples":
         if not sample_name:
