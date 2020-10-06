@@ -157,14 +157,14 @@ class VariantInfoWidget(PluginWidget):
 
         # Populate variant
         self.variant_view.clear()
-        for key, value in sql.get_one_variant(self.conn, variant_id).items():
+        for field_name, value in sql.get_one_variant(self.conn, variant_id).items():
             item = QTreeWidgetItem()
-            item.setText(0, key)
+            item.setText(0, field_name)
             item.setFont(0, font)
             item.setText(1, str(value))
             item.setToolTip(1, "<font color=black>" + str(value) + "</font>")
 
-            if key == "comment":
+            if field_name == "comment":
                 try:
                     self.comment_input.setMarkdown(str(value))
                 except AttributeError:
