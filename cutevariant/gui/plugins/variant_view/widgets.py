@@ -40,8 +40,6 @@ class VariantModel(QAbstractTableModel):
 
     """
 
-    changed = Signal()
-
     loading = Signal(bool)  # emit when data start or stop loading
     load_finished = Signal()  # Emit when data is loaded
 
@@ -78,7 +76,6 @@ class VariantModel(QAbstractTableModel):
     def conn(self, conn):
         """ Set sqlite connection """
         self._conn = conn
-        self.emit_changed = True
 
     @property
     def formatter(self):
@@ -196,17 +193,13 @@ class VariantModel(QAbstractTableModel):
         """
         return [row_id for row_id, variant in enumerate(self.variants) if variant["id"] == variant_id]
 
-    def load(self, emit_changed=True, reset_page=False):
+    def load(self):
         """Load variant data into the model from query attributes
-
-        Args:
-            emit_changed (bool): emit the signal changed()
 
         Called by:
             - on_change_query() from the view.
             - sort() and setPage() by the model.
         """
-
         if self.conn is None:
             return
 
@@ -328,7 +321,7 @@ class VariantModel(QAbstractTableModel):
         """ set the page of the model """
         if self.hasPage(page):
             self.page = page
-            self.load(emit_changed=False)
+            self.load()
 
     def nextPage(self):
         """ Set model to the next page """
@@ -365,7 +358,7 @@ class VariantModel(QAbstractTableModel):
 
             self.order_by = colname
             self.order_desc = order == Qt.DescendingOrder
-            self.load(emit_changed=False)
+            self.load()
 
     def variant(self, row: int) -> dict:
         """Return variant data according index"""
