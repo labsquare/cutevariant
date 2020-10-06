@@ -42,9 +42,7 @@ class MainWindow(QMainWindow):
         self.toolbar.setObjectName("maintoolbar")  # For window saveState
         self.setWindowIcon(QIcon(DIR_ICONS + "app.png"))
         self.setWindowFlags(
-            Qt.WindowContextHelpButtonHint
-            | Qt.WindowCloseButtonHint
-            | Qt.WindowMinMaxButtonsHint
+            Qt.WindowContextHelpButtonHint | self.windowFlags()
         )
 
         # Keep sqlite connection
