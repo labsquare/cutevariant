@@ -919,9 +919,11 @@ def create_variants_indexes(conn):
 
 
 def get_one_variant(
-    conn: sqlite3.Connection, variant_id: int, with_annotations=True, with_samples=True
+    conn: sqlite3.Connection, variant_id: int, with_annotations=False, with_samples=False
 ):
     """Get the variant with the given id
+
+    TODO: with_annotations, with_samples are quite useless and not used for now
 
     Args:
         conn (sqlite3.Connection): sqlite3 connection
