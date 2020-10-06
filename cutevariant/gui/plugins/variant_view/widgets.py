@@ -162,19 +162,21 @@ class VariantModel(QAbstractTableModel):
             if role == Qt.DisplayRole:
                 return self.headers[section]
 
-    def update_variant(self, row: int, variant={}):
-        """Update a row
+    def update_variant(self, row: int, variant: dict):
+        """Update a variant at the given row with given content
+
+        Update the variant in the GUI AND in the DB.
 
         Args:
-            row (int): Description
+            row (int): Row id of the variant that will be modified
+            variant (dict): Dict of fields to be updated
         """
-
         # Update in database
         left = self.index(row, 0)
         right = self.index(row, self.columnCount() - 1)
 
         if left.isValid() and right.isValid():
-            # Set id
+            # Get database id of the variant to allow its update operation
             variant["id"] = self.variants[row]["id"]
             sql.update_variant(self.conn, variant)
             self.variants[row].update(variant)
@@ -184,18 +186,15 @@ class VariantModel(QAbstractTableModel):
         self.is_loading = active
         self.loading.emit(active)
 
-    def _find_row_from_id(self, id: int) -> int:
-        """Find all row with the same variant _id
+    def find_row_id_from_variant_id(self, variant_id: int) -> list:
+        """Find the ids of all rows with the same given variant_id
 
         Args:
-            id (int): Variant sql record id
+            variant_id (int): Variant sql record id
+        Returns:
+            (list[int]): ids of rows
         """
-        rows = []
-        for row, variant in enumerate(self.variants):
-            if variant["id"] == id:
-                rows.append(row)
-
-        return rows
+        return [row_id for row_id, variant in enumerate(self.variants) if variant["id"] == variant_id]
 
     def load(self, emit_changed=True, reset_page=False):
         """Load variant data into the model from query attributes
@@ -694,7 +693,6 @@ class VariantView(QWidget):
         fav_action.setCheckable(True)
         fav_action.setChecked(bool(full_variant["favorite"]))
         fav_action.toggled.connect(self.update_favorites)
-        # fav_action.toggled.connect(lambda checked: self.update_favorite(current_index, checked))
 
         # Create classication action
         class_menu = menu.addMenu(self.tr("Classification"))
@@ -746,26 +744,33 @@ class VariantView(QWidget):
 
     def update_favorite(self, index: QModelIndex, checked: bool):
         """Update favorite status of the variant at the given index (DEPRECATED)"""
-        if index.isValid():
+        if not index.isValid():
+            return
 
-            variant_id = self.model.variants[index.row()]["id"]
-            for row in self.model._find_row_from_id(variant_id):
-                update = {"favorite": int(checked)}
-                self.model.update_variant(row, update)
+        update_data = {"favorite": int(checked)}
+
+        variant_id = self.model.variants[index.row()]["id"]
+        for row_id in self.model.find_row_id_from_variant_id(variant_id):
+            self.model.update_variant(row_id, update_data)
 
     def update_favorites(self, checked: bool):
         """Update favorite status of multiple selected variants"""
         update_data = {"favorite": int(checked)}
 
         for index in self.view.selectionModel().selectedRows():
-            if index.isValid():
-                self.model.update_variant(index.row(), update_data)
+            if not index.isValid():
+                continue
+
+            # Get variant id
+            variant_id = self.model.variants[index.row()]["id"]
+            for row_id in self.model.find_row_id_from_variant_id(variant_id):
+                self.model.update_variant(row_id, update_data)
 
     def update_classification(self, index: QModelIndex, value=3):
         """Update classification level of the variant at the given index"""
         if index.isValid():
-            update = {"classification": int(value)}
-            self.model.update_variant(index.row(), update)
+            update_data = {"classification": int(value)}
+            self.model.update_variant(index.row(), update_data)
 
     def edit_comment(self, index: QModelIndex):
         """Allow a user to add a comment for the selected variant"""
