@@ -478,8 +478,7 @@ class VariantView(QWidget):
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
 
-        self.page_box = QComboBox()
-        self.page_box.setEditable(True)
+        self.page_box = QLineEdit()
         self.page_box.setValidator(QIntValidator())
         self.page_box.setFixedWidth(50)
         self.page_box.setValidator(QIntValidator())
@@ -514,7 +513,7 @@ class VariantView(QWidget):
         )
         # self.page_box.returnPressed.connect()
 
-        self.page_box.currentTextChanged.connect(self.on_page_changed)
+        self.page_box.returnPressed.connect(self.on_page_changed)
 
         main_layout = QVBoxLayout()
         main_layout.setContentsMargins(0, 0, 0, 0)
@@ -619,11 +618,15 @@ class VariantView(QWidget):
         fct()
         self.view.scrollToTop()
 
-        self.page_box.setCurrentText(str(self.model.page))
+        self.page_box.setText(str(self.model.page))
 
     def on_page_changed(self):
-        if self.page_box.currentText() != "":
-            page = int(self.page_box.currentText())
+        """Slot called when page_box is modified and the user has pressed return key
+
+        The validator is ok if this slot is called.
+        """
+        if self.page_box.text():
+            page = int(self.page_box.text())
             self.model.setPage(page)
 
     def on_show_sql(self):
@@ -640,7 +643,7 @@ class VariantView(QWidget):
         else:
             # self.page_box.addItems([str(i) for i in range(self.model.pageCount())])
             self.page_box.validator().setRange(0, self.model.pageCount() - 1)
-            self.page_box.setCurrentText(str(self.model.page))
+            self.page_box.setText(str(self.model.page))
             self.set_pagging_enabled(True)
 
         self.info_label.setText(
