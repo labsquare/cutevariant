@@ -342,7 +342,6 @@ class MainWindow(QMainWindow):
 
             self.open_database(self.conn)
             self.save_recent_project(filepath)
-            self.refresh_plugins()
 
         except sqlite3.OperationalError as e:
             LOGGER.error("MainWindow:open:: %s", e)
