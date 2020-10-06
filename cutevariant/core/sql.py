@@ -993,6 +993,10 @@ def update_variant(conn, variant: dict):
     query = (
         "UPDATE variants SET " + ",".join(placeholders) + f" WHERE id = {variant['id']}"
     )
+    # LOGGER.info(
+    #     "Update variant %s: placeholders: %s; values %s",
+    #     variant["id"], placeholders, values
+    # )
     cursor = conn.cursor()
     cursor.execute(query, values)
     conn.commit()
