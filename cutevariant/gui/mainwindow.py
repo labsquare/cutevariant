@@ -301,6 +301,9 @@ class MainWindow(QMainWindow):
         self.toolbar.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
         self.toolbar.addAction(self.new_project_action)
         self.toolbar.addAction(self.open_project_action)
+        self.toolbar.addAction(
+            FIcon(0xF02D7), self.tr("Aide"), QWhatsThis.enterWhatsThisMode
+        )
         self.toolbar.addSeparator()
 
     def open(self, filepath):
