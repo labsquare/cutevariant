@@ -984,15 +984,14 @@ def update_variant(conn, variant: dict):
     if "id" not in variant:
         raise KeyError("'id' key is not in the given variant <%s>" % variant)
 
-    sql_set = []
-    sql_val = []
-    for key, value in variant.items():
-        if key != "id":
-            sql_set.append(f"`{key}` = ? ")
-            sql_val.append(value)
+    unzip = lambda l: list(zip(*l))
 
+    # Get fields and values in separated lists
+    placeholders, values = unzip(
+        [(f"`{key}` = ? ", value) for key, value in variant.items() if key != "id"]
+    )
     query = (
-        "UPDATE variants SET " + ",".join(sql_set) + " WHERE id = " + str(variant["id"])
+        "UPDATE variants SET " + ",".join(placeholders) + f" WHERE id = {variant['id']}"
     )
     conn.execute(query, sql_val)
     conn.commit()
