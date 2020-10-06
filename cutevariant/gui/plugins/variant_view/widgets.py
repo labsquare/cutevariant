@@ -13,7 +13,6 @@ from PySide2.QtGui import *
 
 # Custom imports
 from cutevariant.core.querybuilder import build_complete_query
-from cutevariant.core import vql
 from cutevariant.core import command as cmd
 from cutevariant.gui import plugin, FIcon
 from cutevariant.gui.sql_runnable import SqlRunnable
