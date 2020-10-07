@@ -290,6 +290,8 @@ class VariantModel(QAbstractTableModel):
         # Load variants
         self.variants = self.variant_runnable.results
 
+        # print("ALL", self.variants)
+
         if self.variants:
             self.headers = list(self.variants[0].keys())
 
@@ -1080,7 +1082,7 @@ class VariantViewWidget(plugin.PluginWidget):
                 # print([i for i in self.groupby_left_pane.group_by])
 
                 and_list = [
-                    {"field": i, "operator": "=", "value": variant[i]}
+                    {"field": i, "operator": "=", "value": variant[fields_to_vql(i)]}
                     for i in self.groupby_left_pane.group_by
                 ]
 
@@ -1095,6 +1097,8 @@ class VariantViewWidget(plugin.PluginWidget):
                 else:
                     # New filter
                     filters = {"AND": and_list}
+
+                print(filters)
 
                 self.main_right_pane.filters = filters
 

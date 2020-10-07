@@ -103,7 +103,7 @@ class SeqoneFormatter(Formatter):
             if m:
                 value = m.group(1)
 
-        if re.match(r"sample\..+\.gt", field_name):
+        if re.match(r"sample\[.+\]\.gt", field_name):
             icon = self.GENOTYPE_ICONS.get(int(value), self.GENOTYPE_ICONS[0])
             self.draw_icon(painter, option.rect, icon)
             return
