@@ -823,7 +823,7 @@ class VariantView(QWidget):
         # In memory file
         output = io.StringIO()
         # Use CSV to securely format the data
-        writer = csv.DictWriter(output, delimiter="\t", fieldnames=self.model.fields)
+        writer = csv.DictWriter(output, delimiter="\t", fieldnames=self.model.headers)
         writer.writeheader()
         for index in self.view.selectionModel().selectedRows():
             # id col is not wanted
