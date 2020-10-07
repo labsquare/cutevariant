@@ -12,6 +12,10 @@ from PySide2.QtGui import *
 from cutevariant.gui import style, plugin
 from cutevariant.core import sql, get_sql_connexion
 
+import cutevariant.commons as cm
+
+LOGGER = cm.logger()
+
 
 def prepare_fields(conn):
     """Prepares a list of columns on which filters can be applied"""
@@ -20,11 +24,30 @@ def prepare_fields(conn):
     for field in sql.get_fields(conn):
         if field["category"] == "samples":
             for sample in samples:
-                field["name"] = "samples['{}'].{}".format(sample, field["name"])
-                columns.append(field)
+                f = field.copy()
+                f["name"] = ("sample", sample, field["name"])
+                columns.append(f)
+
         else:
             columns.append(field)
     return columns
+
+
+def field_to_string(field) -> str:
+    """ Convert a tuple to string 
+    This is intended to display a tuple in the view from self.data()  
+
+    Examples: 
+        field_function = ("sample", "sacha", "gt") ==> sample["sacha"].gt
+    """
+
+    if type(field) == tuple:
+        if len(field) == 3:
+            key, sample, field_name = field
+            return f"{key}['{sample}'].{field_name}"
+
+    # If other ...
+    return str(field)
 
 
 class BaseField(QFrame):
@@ -162,7 +185,7 @@ class ComboField(BaseField):
         """Return quoted string
         ..todo : check if quotes are required
         """
-        return self.edit.currentText()
+        return self.edit.currentData()
 
     def addItems(self, words: list):
         """ set a completer to autocomplete value """
@@ -560,7 +583,8 @@ class FilterModel(QAbstractItemModel):
 
             if index.column() == 1:
                 if item.type() == FilterItem.CONDITION_TYPE:
-                    return str(item.get_field())
+                    return field_to_string(item.get_field())
+
                 if item.type() == FilterItem.LOGIC_TYPE:
                     return str(item.get_value())
 
@@ -1064,7 +1088,12 @@ class FilterDelegate(QStyledItemDelegate):
 
             if item.type() == FilterItem.CONDITION_TYPE:
                 w = ComboField(parent)
-                w.addItems([i["name"] for i in prepare_fields(conn)])
+                # Add items
+                for i in prepare_fields(conn):
+                    text = field_to_string(i["name"])
+                    data = i["name"]
+                    w.edit.addItem(text, data)
+
                 return w
 
         if index.column() == 2:
@@ -1439,11 +1468,15 @@ class FiltersEditorWidget(plugin.PluginWidget):
         # self.model.filterChanged.connect(self.on_filter_changed)
 
         # setup Menu
-        self.toolbar.addAction(FIcon(0xF0415), self.tr("Add Condition"), self.on_add_condition)
+        self.toolbar.addAction(
+            FIcon(0xF0415), self.tr("Add Condition"), self.on_add_condition
+        )
 
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.toolbar.addAction(FIcon(0xF0A7A), self.tr("Delete filter"), self.on_delete_item)
+        self.toolbar.addAction(
+            FIcon(0xF0A7A), self.tr("Delete filter"), self.on_delete_item
+        )
 
         # self.view.selectionModel().currentChanged.connect(self.on_filters_changed)
         self.model.filtersChanged.connect(self.on_filters_changed)
