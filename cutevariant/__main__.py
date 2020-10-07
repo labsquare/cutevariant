@@ -101,7 +101,7 @@ def load_styles(app):
     # Load style from settings if exists
     app_settings = QSettings()
     # Display current style
-    style_name = app_settings.value("ui/style", "Dark")
+    style_name = app_settings.value("ui/style", cm.BASIC_STYLE)
 
     # Apply selected style by calling on the method in style module based on its
     # name; equivalent of style.dark(app)
