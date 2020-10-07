@@ -42,7 +42,7 @@ class MarkdownEditor(QDialog):
         self.setWindowIcon(QIcon(cm.DIR_ICONS + "app.png"))
 
         main_vlayout = QVBoxLayout()
-        main_vlayout.setContentsMargins(0, 0, 0, 0)
+        # main_vlayout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(main_vlayout)
 
         # Setup edit view
@@ -82,19 +82,27 @@ class MarkdownEditor(QDialog):
         self.act_redo.setIcon(FIcon(0xF044E))
         self.act_redo.setShortcut(QKeySequence.Redo)
 
-        self.act_bold = self.toolbar.addAction(self.tr("bold"), lambda: self.infix("**"))
+        self.act_bold = self.toolbar.addAction(
+            self.tr("bold"), lambda: self.infix("**")
+        )
         self.act_bold.setIcon(FIcon(0xF0264))
         self.act_bold.setShortcut(QKeySequence("CTRL+B"))
 
-        self.act_italic = self.toolbar.addAction(self.tr("italic"), lambda: self.infix("*"))
+        self.act_italic = self.toolbar.addAction(
+            self.tr("italic"), lambda: self.infix("*")
+        )
         self.act_italic.setIcon(FIcon(0xF0277))
         self.act_italic.setShortcut(QKeySequence("CTRL+I"))
 
-        self.act_heading = self.toolbar.addAction(self.tr("insert title"), lambda: self.heading())
+        self.act_heading = self.toolbar.addAction(
+            self.tr("insert title"), lambda: self.heading()
+        )
         self.act_heading.setShortcut(QKeySequence("CTRL+H"))
         self.act_heading.setIcon(FIcon(0xF0274))
 
-        self.act_unorder_list = self.toolbar.addAction(self.tr("insert list item"), self.unorder_list)
+        self.act_unorder_list = self.toolbar.addAction(
+            self.tr("insert list item"), self.unorder_list
+        )
         self.act_unorder_list.setIcon(FIcon(0xF0279))
 
         self.act_quote = self.toolbar.addAction(self.tr("quote"), self.quote)
@@ -203,6 +211,7 @@ if __name__ == "__main__":
     import sys
     from cutevariant.gui.ficon import setFontPath
     import cutevariant.commons as cm
+
     app = QApplication(sys.argv)
 
     setFontPath(cm.FONT_FILE)
