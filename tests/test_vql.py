@@ -74,6 +74,15 @@ VQL_TO_TREE_CASES = {
         "group_by": ["chr"],
         "having": {"op": ">", "value": 3},
     },
+    # Test 4bisbis GROUP BY on genotypes
+    "SELECT chr, pos, sample['sacha'].gt FROM variants GROUP BY sample['sacha'].gt": {
+        "cmd": "select_cmd",
+        "fields": ["chr", "pos", ("sample", "sacha", "gt")],
+        "filters": {},
+        "source": "variants",
+        "group_by": [("sample", "sacha", "gt")],
+        "having": {},
+    },
     # Test 5
     "SELECT chr FROM variants WHERE some_field IN ('one', 'two')": {
         "cmd": "select_cmd",
@@ -85,19 +94,16 @@ VQL_TO_TREE_CASES = {
             "AND": [{"field": "some_field", "operator": "IN", "value": ("one", "two")}]
         },
     },
-
-
     "SELECT chr FROM variants WHERE gene IN SET['test']": {
-        "cmd" : "select_cmd",
+        "cmd": "select_cmd",
         "fields": ["chr"],
-        "source":"variants",
+        "source": "variants",
         "group_by": [],
         "having": {},
         "filters": {
-        "AND": [{"field": "gene", "operator": "IN", "value": ("SET", "test")}]
-        }
+            "AND": [{"field": "gene", "operator": "IN", "value": ("SET", "test")}]
+        },
     },
-
     # Test 6
     "CREATE denovo FROM variants": {
         "cmd": "create_cmd",
@@ -143,15 +149,13 @@ VQL_TO_TREE_CASES = {
         "feature": "selections",
         "name": "subset",
     },
-
-    #  Test Import 
-    "IMPORT set '/home/truc/test.txt' AS boby" : 
-    {
-    "cmd": "import_cmd",
-    "feature": "set",
-    "path": "/home/truc/test.txt",
-    "name": "boby"
-    }
+    #  Test Import
+    "IMPORT set '/home/truc/test.txt' AS boby": {
+        "cmd": "import_cmd",
+        "feature": "set",
+        "path": "/home/truc/test.txt",
+        "name": "boby",
+    },
 }
 
 
