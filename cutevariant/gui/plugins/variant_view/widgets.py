@@ -12,7 +12,8 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 
 # Custom imports
-from cutevariant.core.querybuilder import build_complete_query
+from cutevariant.core.querybuilder import build_complete_query, fields_to_vql
+
 from cutevariant.core import command as cmd
 from cutevariant.gui import plugin, FIcon
 from cutevariant.gui.sql_runnable import SqlRunnable
@@ -21,6 +22,7 @@ from cutevariant.gui.widgets import MarkdownEditor
 import cutevariant.commons as cm
 
 import logging
+
 LOGGER = cm.logger()
 
 
@@ -190,7 +192,11 @@ class VariantModel(QAbstractTableModel):
         Returns:
             (list[int]): ids of rows
         """
-        return [row_id for row_id, variant in enumerate(self.variants) if variant["id"] == variant_id]
+        return [
+            row_id
+            for row_id, variant in enumerate(self.variants)
+            if variant["id"] == variant_id
+        ]
 
     def load(self):
         """Load variant data into the model from query attributes
@@ -283,7 +289,6 @@ class VariantModel(QAbstractTableModel):
 
         # Load variants
         self.variants = self.variant_runnable.results
-
 
         if self.variants:
             self.headers = list(self.variants[0].keys())
@@ -646,7 +651,9 @@ class VariantView(QWidget):
             self.set_pagging_enabled(True)
 
         self.info_label.setText(
-            self.tr("{} row(s) {} page(s)").format(self.model.total, self.model.pageCount())
+            self.tr("{} row(s) {} page(s)").format(
+                self.model.total, self.model.pageCount()
+            )
         )
 
     def set_pagging_enabled(self, active=True):
@@ -693,13 +700,9 @@ class VariantView(QWidget):
         class_menu = menu.addMenu(self.tr("Classification"))
         for key, value in cm.CLASSIFICATION.items():
 
-            action = class_menu.addAction(
-                FIcon(cm.CLASSIFICATION_ICONS[key]), value
-            )
+            action = class_menu.addAction(FIcon(cm.CLASSIFICATION_ICONS[key]), value)
             action.setData(key)
-            on_click = functools.partial(
-                self.update_classification, current_index, key
-            )
+            on_click = functools.partial(self.update_classification, current_index, key)
             action.triggered.connect(on_click)
 
         # Create external links
@@ -709,15 +712,18 @@ class VariantView(QWidget):
         for key in self.settings.childKeys():
             format_string = self.settings.value(key)
             # Get placeholders
-            field_names = {name for text, name, spec, conv in string.Formatter().parse(format_string)}
+            field_names = {
+                name
+                for text, name, spec, conv in string.Formatter().parse(format_string)
+            }
             if field_names & full_variant.keys():
                 # Full or partial mapping => accepted link
                 links_menu.addAction(
                     key,
                     functools.partial(
                         QDesktopServices.openUrl,
-                        QUrl(format_string.format(**full_variant), QUrl.TolerantMode)
-                    )
+                        QUrl(format_string.format(**full_variant), QUrl.TolerantMode),
+                    ),
                 )
         self.settings.endGroup()
 
@@ -731,7 +737,10 @@ class VariantView(QWidget):
             FIcon(0xF018F), self.tr("&Copy"), self.copy_to_clipboard, QKeySequence.Copy
         )
         menu.addAction(
-            FIcon(0xF0486), self.tr("&Select all"), self.select_all, QKeySequence.SelectAll
+            FIcon(0xF0486),
+            self.tr("&Select all"),
+            self.select_all,
+            QKeySequence.SelectAll,
         )
 
         # Display
@@ -1066,6 +1075,10 @@ class VariantViewWidget(plugin.PluginWidget):
 
                 # Forge a special filter to display the current variant
                 # print("variant clicked", variant)
+
+                # print(variant)
+                # print([i for i in self.groupby_left_pane.group_by])
+
                 and_list = [
                     {"field": i, "operator": "=", "value": variant[i]}
                     for i in self.groupby_left_pane.group_by
@@ -1111,8 +1124,9 @@ class VariantViewWidget(plugin.PluginWidget):
         # Populate the list of fields with their check status
         for field in self.save_fields:
             item = QListWidgetItem()
-            item.setText(field)
-            if field in self.groupby_left_pane.group_by and type(field) == str:
+            item.setText(fields_to_vql(field))
+            item.setData(Qt.UserRole, field)
+            if field in self.groupby_left_pane.group_by:
                 item.setCheckState(Qt.Checked)
             else:
                 item.setCheckState(Qt.Unchecked)
@@ -1126,7 +1140,7 @@ class VariantViewWidget(plugin.PluginWidget):
             for i in range(view.count()):
                 item = view.item(i)
                 if item.checkState() == Qt.Checked:
-                    selected_fields.append(item.text())
+                    selected_fields.append(item.data(Qt.UserRole))
 
             # if no group force chr
             if not selected_fields:
@@ -1141,7 +1155,9 @@ class VariantViewWidget(plugin.PluginWidget):
     def _set_groups(self, grouped_fields):
         """Set fields on groupby_left_pane and refresh text on groupby action"""
         self.groupby_left_pane.group_by = grouped_fields
-        self.groupbylist_action.setText(",".join(grouped_fields))
+        self.groupbylist_action.setText(
+            ",".join([fields_to_vql(field) for field in grouped_fields])
+        )
 
     def _refresh_vql_editor(self):
         """Force refresh of vql_editor if loaded"""

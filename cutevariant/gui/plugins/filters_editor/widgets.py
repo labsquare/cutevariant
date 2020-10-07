@@ -11,6 +11,7 @@ from PySide2.QtGui import *
 # Custom imports
 from cutevariant.gui import style, plugin
 from cutevariant.core import sql, get_sql_connexion
+from cutevariant.core.querybuilder import fields_to_vql
 
 import cutevariant.commons as cm
 
@@ -31,23 +32,6 @@ def prepare_fields(conn):
         else:
             columns.append(field)
     return columns
-
-
-def field_to_string(field) -> str:
-    """ Convert a tuple to string 
-    This is intended to display a tuple in the view from self.data()  
-
-    Examples: 
-        field_function = ("sample", "sacha", "gt") ==> sample["sacha"].gt
-    """
-
-    if type(field) == tuple:
-        if len(field) == 3:
-            key, sample, field_name = field
-            return f"{key}['{sample}'].{field_name}"
-
-    # If other ...
-    return str(field)
 
 
 class BaseField(QFrame):
@@ -583,7 +567,7 @@ class FilterModel(QAbstractItemModel):
 
             if index.column() == 1:
                 if item.type() == FilterItem.CONDITION_TYPE:
-                    return field_to_string(item.get_field())
+                    return fields_to_vql(item.get_field())
 
                 if item.type() == FilterItem.LOGIC_TYPE:
                     return str(item.get_value())
@@ -1090,7 +1074,7 @@ class FilterDelegate(QStyledItemDelegate):
                 w = ComboField(parent)
                 # Add items
                 for i in prepare_fields(conn):
-                    text = field_to_string(i["name"])
+                    text = fields_to_vql(i["name"])
                     data = i["name"]
                     w.edit.addItem(text, data)
 

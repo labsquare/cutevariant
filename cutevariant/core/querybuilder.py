@@ -53,6 +53,7 @@ def filters_to_flat(filters: dict):
             {'field': 'alt', 'operator': '=', 'value': "C"}
         ]
     """
+
     def recursive_generator(filters):
         if isinstance(filters, dict) and len(filters) == 3:
             yield filters
@@ -163,6 +164,7 @@ def filters_to_sql(filters, default_tables={}):
     Note:
         There is a recursive function inside to parse the nested tree of conditions
     """
+
     def is_field(node):
         return len(node) == 3
 
@@ -208,7 +210,6 @@ def filters_to_sql(filters, default_tables={}):
             # There must be spaces between these strings because of strings operators (IN, etc.)
             return "%s %s %s" % (field, operator, value)
 
-
         # Not a field: 1 key only: the logical operator
         logic_op = list(node.keys())[0]
         # Recursive call for each field in the list associated to the
@@ -234,6 +235,7 @@ def filters_to_vql(filters):
 
     It means no SQL transformations are made
     """
+
     def is_field(node):
         return len(node) == 3
 
@@ -255,7 +257,6 @@ def filters_to_vql(filters):
                     value = "{}['{}']".format(SET_FUNC_NAME, value[1])
 
             return "%s %s %s" % (field, operator, value)
-
 
         # Not a field: 1 key only: the logical operator
         logic_op = list(node.keys())[0]
@@ -402,7 +403,9 @@ def build_query(
 
     # Add Group By
     if group_by:
-        sql_query += " GROUP BY " + ",".join(group_by)
+        sql_query += " GROUP BY " + ",".join(
+            [fields_to_sql(g, default_tables, use_as=False) for g in group_by]
+        )
         if having:
             operator = having["op"]
             val = having["value"]
