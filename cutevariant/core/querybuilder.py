@@ -294,7 +294,7 @@ def build_vql_query(fields, source="variants", filters={}, group_by=[], having={
         query += " WHERE " + filters_to_vql(filters)
 
     if group_by:
-        query += " GROUP BY " + ",".join(group_by)
+        query += " GROUP BY " + ",".join((fields_to_vql(i) for i in group_by))
 
         if having:
             operator = having["op"]

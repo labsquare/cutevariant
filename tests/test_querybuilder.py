@@ -41,8 +41,8 @@ def test_field_function_to_sql():
         == "`phenotype_sacha`"
     )
     assert (
-        querybuilder.field_function_to_sql(("genotype", "sacha", "gt"), use_as=True)
-        == "`genotype_sacha`.`gt` AS 'genotype.sacha.gt'"
+        querybuilder.field_function_to_sql(("sample", "sacha", "gt"), use_as=True)
+        == "`sample_sacha`.`gt` AS \"sample('sacha').gt\""
     )
 
 
@@ -148,7 +148,7 @@ QUERY_TESTS = [
     (
         # Test GROUPBY
         {"fields": ["chr", "pos"], "source": "variants", "group_by": ["chr"]},
-        "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants GROUP BY chr LIMIT 50 OFFSET 0",
+        "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants GROUP BY `variants`.`chr` LIMIT 50 OFFSET 0",
         "SELECT chr,pos FROM variants GROUP BY chr",
     ),
     # Test limit offset
@@ -211,7 +211,7 @@ QUERY_TESTS = [
     (
         {"fields": ["chr", "pos", ("sample", "TUMOR", "gt")], "source": "variants"},
         (
-            "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`sample_TUMOR`.`gt` AS 'sample.TUMOR.gt' FROM variants"
+            "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`sample_TUMOR`.`gt` AS \"sample('TUMOR').gt\" FROM variants"
             " INNER JOIN sample_has_variant `sample_TUMOR` ON `sample_TUMOR`.variant_id = variants.id AND `sample_TUMOR`.sample_id = 1"
             " LIMIT 50 OFFSET 0"
         ),
@@ -268,7 +268,7 @@ QUERY_TESTS = [
             },
         },
         (
-            "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`sample_TUMOR`.`gt` AS 'sample.TUMOR.gt' FROM variants"
+            "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`sample_TUMOR`.`gt` AS \"sample('TUMOR').gt\" FROM variants"
             " INNER JOIN sample_has_variant `sample_TUMOR` ON `sample_TUMOR`.variant_id = variants.id AND `sample_TUMOR`.sample_id = 1"
             " WHERE `sample_TUMOR`.`gt` = 1"
             " LIMIT 50 OFFSET 0"
