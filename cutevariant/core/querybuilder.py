@@ -82,7 +82,12 @@ def field_function_to_sql(field_function: tuple, use_as=False):
     func_name, arg_name, field_name = field_function
 
     if use_as:
-        suffix = f" AS '{func_name}.{arg_name}.{field_name}'"
+        # THIS IS INSANE... SQLITE DOESNT RETURN ALIAS NAME WITH SQUARE BRACKET....
+        # I HAVE TO replace [] by () and go back after...
+        # TODO : Change VQL Syntax from [] to () would be a good alternative
+        # See : https://stackoverflow.com/questions/41538952/issue-cursor-description-never-returns-square-bracket-in-column-name-python-2-7-sqlite3-alias
+        alias_name = fields_to_vql(field_function).replace("[", "(").replace("]", ")")
+        suffix = ' AS "{}"'.format(alias_name)
     else:
         suffix = ""
 

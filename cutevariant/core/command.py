@@ -87,7 +87,12 @@ def select_cmd(
     )
     LOGGER.debug("command:select_cmd:: %s", query)
     for i in conn.execute(query):
-        yield dict(i)
+        # THIS IS INSANE... SQLITE DOESNT RETURN ALIAS NAME WITH SQUARE BRACKET....
+        # I HAVE TO replace [] by () and go back after...
+        # TODO : Change VQL Syntax from [] to () would be a good alternative
+        # @See QUERYBUILDER
+        # See : https://stackoverflow.com/questions/41538952/issue-cursor-description-never-returns-square-bracket-in-column-name-python-2-7-sqlite3-alias
+        yield {k.replace("(", "[").replace(")", "]"): v for k, v in dict(i).items()}
 
 
 @cached(max_size=128)
