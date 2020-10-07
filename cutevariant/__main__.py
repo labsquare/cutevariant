@@ -20,7 +20,6 @@
 
 # Standard imports
 import sys
-import os
 from PySide2.QtCore import (
     QCoreApplication,
     QSettings,
