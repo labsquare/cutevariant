@@ -1,14 +1,7 @@
 # Standard imports
 import os
 from PySide2.QtWidgets import *
-from PySide2.QtCore import (
-    QThread,
-    Signal,
-    QDir,
-    QSettings,
-    QFile,
-    Slot,
-)
+from PySide2.QtCore import QThread, Signal, QDir, QSettings, QFile, Slot
 from PySide2.QtGui import QIcon
 
 # Custom imports
@@ -356,6 +349,8 @@ class ImportPage(QWizardPage):
         """ override """
         print(self.field("pedfile"))
 
+        self.run()
+
     @Slot()
     def progress_changed(self, value, message):
         """Update the progress bar
@@ -448,19 +443,6 @@ class ProjectWizard(QWizard):
         self.addPage(FilePage())
         self.addPage(SamplePage())
         self.addPage(ImportPage())
-
-        self.currentIdChanged.connect(self.on_current_id_changed)
-
-    @Slot()
-    def on_current_id_changed(self, id):
-        """Launch import process if currentPage is ImportPage
-
-        Args:
-            id (int): Current page id
-        """
-        current_page = self.currentPage()
-        if isinstance(current_page, ImportPage):
-            current_page.run()
 
 
 if __name__ == "__main__":
