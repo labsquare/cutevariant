@@ -171,7 +171,10 @@ class VariantInfoWidget(PluginWidget):
             item.setText(0, field_name)
             item.setFont(0, font)
             item.setText(1, str(value))
-            item.setToolTip(1, self.fields_descriptions.get(field_name, ""))
+            # Tooltips on header AND field => easier for user
+            tooltip = self.fields_descriptions.get(field_name, "")
+            item.setToolTip(0, tooltip)
+            item.setToolTip(1, tooltip)
 
             if field_name == "comment":
                 try:
