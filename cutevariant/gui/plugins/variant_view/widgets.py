@@ -876,6 +876,11 @@ class VariantViewWidget(plugin.PluginWidget):
         self.top_bar = QToolBar()
         self.top_bar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
 
+        # Save selection
+        self.save_action = self.top_bar.addAction(
+            FIcon(0xF0193), self.tr("Save selection"), self.on_save_selection
+        )
+
         # checkable group action
         self.groupby_action = self.top_bar.addAction(
             FIcon(0xF14E0), self.tr("Group by"), self.on_group_changed
@@ -986,6 +991,25 @@ class VariantViewWidget(plugin.PluginWidget):
         self.groupby_left_pane.model.formatter = formatter_class()
         # Load ui
         self.load()
+
+    def on_save_selection(self):
+        """Triggered on 'save_selection' button 
+        This action will create a new selection (aka source) from the current state.
+        """
+
+        name, accept = QInputDialog.getText(self, "selection name", "selection _name")
+
+        if accept and name:
+            result = cmd.create_cmd(
+                self.conn,
+                name,
+                source=self.mainwindow.state.source,
+                filters=self.mainwindow.state.filters,
+                count=self.main_right_pane.model.total,
+            )
+
+            if result:
+                self.mainwindow.refresh_plugin("source_editor")
 
     def _is_grouped(self) -> bool:
         """Return grouped mode status of the view"""
