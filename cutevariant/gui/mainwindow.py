@@ -19,6 +19,7 @@ from cutevariant.gui.state import State
 from cutevariant.gui.wizards import ProjectWizard
 from cutevariant.gui.settings import SettingsWidget
 from cutevariant.gui.widgets.aboutcutevariant import AboutCutevariant
+from cutevariant.gui.plugin import FOOTER_LOCATION
 from cutevariant import commons as cm
 from cutevariant.commons import (
     MAX_RECENT_PROJECTS,
@@ -41,9 +42,7 @@ class MainWindow(QMainWindow):
         self.toolbar = self.addToolBar("maintoolbar")
         self.toolbar.setObjectName("maintoolbar")  # For window saveState
         self.setWindowIcon(QIcon(DIR_ICONS + "app.png"))
-        self.setWindowFlags(
-            Qt.WindowContextHelpButtonHint | self.windowFlags()
-        )
+        self.setWindowFlags(Qt.WindowContextHelpButtonHint | self.windowFlags())
 
         # Keep sqlite connection
         self.conn = None
@@ -59,10 +58,10 @@ class MainWindow(QMainWindow):
         self.central_tab = QTabWidget()
         self.footer_tab = QTabWidget()
 
-        vsplit = QSplitter(Qt.Vertical)
-        vsplit.addWidget(self.central_tab)
-        vsplit.addWidget(self.footer_tab)
-        self.setCentralWidget(vsplit)
+        self.vsplit = QSplitter(Qt.Vertical)
+        self.vsplit.addWidget(self.central_tab)
+        self.vsplit.addWidget(self.footer_tab)
+        self.setCentralWidget(self.vsplit)
 
         # Status Bar
         self.status_bar = QStatusBar()
@@ -266,16 +265,28 @@ class MainWindow(QMainWindow):
         ## Edit
         # TODO: if variant_view plugin is not loaded, disable this menu entries...
         self.edit_menu = self.menuBar().addMenu(self.tr("&Edit"))
-        self.edit_menu.addAction(FIcon(0xF018F), self.tr("&Copy selected variants"), self.copy_variants_to_clipboard, "ctrl+shift+c")
+        self.edit_menu.addAction(
+            FIcon(0xF018F),
+            self.tr("&Copy selected variants"),
+            self.copy_variants_to_clipboard,
+            "ctrl+shift+c",
+        )
         self.edit_menu.addSeparator()
         self.edit_menu.addAction(
-            FIcon(0xF0486), self.tr("&Select all variants"), self.select_all_variants, QKeySequence.SelectAll
+            FIcon(0xF0486),
+            self.tr("&Select all variants"),
+            self.select_all_variants,
+            QKeySequence.SelectAll,
         )
 
         ## View
         self.view_menu = self.menuBar().addMenu(self.tr("&View"))
         self.view_menu.addAction(self.tr("Reset widgets positions"), self.reset_ui)
         self.view_menu.addSeparator()
+        self.show_vql_action = self.view_menu.addAction(self.tr("vql editor"))
+        self.show_vql_action.setCheckable(True)
+        self.show_vql_action.setChecked(True)
+        self.show_vql_action.toggled.connect(self.show_footer)
 
         ## Tools
         self.tool_menu = self.menuBar().addMenu(self.tr("&Tools"))
@@ -328,16 +339,16 @@ class MainWindow(QMainWindow):
             # DB version filter
             db_version = get_metadatas(self.conn).get("cutevariant_version")
             if db_version and parse_version(db_version) < parse_version(
-                    MIN_AUTHORIZED_DB_VERSION
+                MIN_AUTHORIZED_DB_VERSION
             ):
                 # Refuse to open blacklisted DB versions
                 # Unversioned files are still accepted
                 QMessageBox.critical(
                     self,
                     self.tr("Error while opening project"),
-                    self.tr(
-                        "File: {} is too old; please create a new project.").format(
-                        filepath),
+                    self.tr("File: {} is too old; please create a new project.").format(
+                        filepath
+                    ),
                 )
                 return
 
@@ -349,7 +360,9 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(
                 self,
                 self.tr("Error while opening project"),
-                self.tr("File: {}\nThe following exception occurred:\n{}").format(filepath, e),
+                self.tr("File: {}\nThe following exception occurred:\n{}").format(
+                    filepath, e
+                ),
             )
             return
 
@@ -627,6 +640,13 @@ class MainWindow(QMainWindow):
             # Setting has been deleted: set the current default state
             #  TODO: handle UI changes by passing UI_VERSION to saveState()
             self.app_settings.setValue("windowState", self.saveState())
+
+    def show_footer(self, visible=True):
+        self.footer_tab.setVisible(visible)
+        # refresh bottom plugins
+        for _, plugin in self.plugins.items():
+            if plugin.LOCATION == FOOTER_LOCATION and visible is True:
+                plugin.on_refresh()
 
     # @Slot()
     # def on_query_model_changed(self):

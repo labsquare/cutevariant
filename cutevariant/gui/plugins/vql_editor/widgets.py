@@ -17,9 +17,7 @@ from PySide2.QtWidgets import (
     QFrame,
     QApplication,
 )
-from PySide2.QtGui import (
-    QKeySequence,
-)
+from PySide2.QtGui import QKeySequence
 
 # Custom imports
 from cutevariant.core import vql, sql

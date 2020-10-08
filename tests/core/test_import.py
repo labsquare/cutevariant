@@ -7,7 +7,7 @@ from cutevariant.core.importer import import_reader, import_pedfile, async_impor
 from cutevariant.core.reader import VcfReader, FakeReader
 from cutevariant.core import sql
 import os
-from .utils import table_exists
+from tests.utils import table_exists
 import csv
 
 READERS = [
