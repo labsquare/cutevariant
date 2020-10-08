@@ -40,7 +40,7 @@ class VariantModel(QAbstractTableModel):
     """
 
     loading = Signal(bool)  # emit when data start or stop loading
-    load_finished = Signal()  # Emit when data is loaded
+    load_finished = Signal()  # Emit when data is loaded and ready to be used
 
     def __init__(self, conn=None, parent=None):
         super().__init__()
@@ -67,8 +67,11 @@ class VariantModel(QAbstractTableModel):
         # Keep after all initialization
         self.conn = conn
 
+        # Async stuff
         self.pool = QThreadPool()
         self.is_loading = False
+        self.variant_runnable = None
+        self.count_runnable = None
 
     @property
     def conn(self):
@@ -191,6 +194,13 @@ class VariantModel(QAbstractTableModel):
             self.dataChanged.emit(left, right)
 
     def _set_loading(self, active=True):
+        """Emit the loading status of async queries
+
+        Called before async queries and after their end.
+
+        Signal emitted: loading(bool), captured by VariantView to start/stop
+        movie animation.
+        """
         self.is_loading = active
         self.loading.emit(active)
 
@@ -209,7 +219,7 @@ class VariantModel(QAbstractTableModel):
 
         Called by:
             - on_change_query() from the view.
-            - sort() and setPage() by the model.
+            - load_from_vql(), sort() and setPage() by the model.
         """
         if self.conn is None:
             return
@@ -275,10 +285,17 @@ class VariantModel(QAbstractTableModel):
         self.pool.start(self.count_runnable)
 
     def loaded(self):
+        """Called when SQL async queries are done
 
-        if not hasattr(self, "variant_runnable") or not hasattr(self, "count_runnable"):
+        - We wait until the 2 requests (variant and count rennable) have finished.
+        - self.variants, self.total are set
+
+        Signals:
+            - self._is_loading() si called at the end and so loading(true) is emitted
+            - load_finished (captured by VariantView to load page_box)
+        """
+        if not self.variant_runnable or not self.count_runnable:
             return
-
         if not self.variant_runnable.done or not self.count_runnable.done:
             # One of the runner has not finished his job
             return
@@ -295,16 +312,15 @@ class VariantModel(QAbstractTableModel):
 
         # Load variants
         self.variants = self.variant_runnable.results
-
-
         if self.variants:
+            # Set headers of the view
             self.headers = list(self.variants[0].keys())
 
         # print(self.count_runnable.results["count"])
         self.total = self.count_runnable.results["count"]
 
-        del self.variant_runnable
-        del self.count_runnable
+        # Reset for next run
+        self.variant_runnable = self.count_runnable = None
 
         # print(self.fields, self.filters, self.group_by)
         self.endResetModel()
@@ -319,10 +335,10 @@ class VariantModel(QAbstractTableModel):
                 self.fields = vql_object["fields"]
                 self.source = vql_object["source"]
                 self.filters = vql_object["filters"]
-        except Exception as e:
-            raise e
-        finally:
             self.load()
+        except Exception as e:
+            LOGGER.exception(e)
+            raise e
 
     def hasPage(self, page: int) -> bool:
         """ Return True if <page> exists otherwise return False """
@@ -411,6 +427,9 @@ class VariantDelegate(QStyledItemDelegate):
 
 
 class LoadingTableView(QTableView):
+    """Movie animation displayed on VariantView for long SQL queries executed
+    in background.
+    """
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -496,7 +515,7 @@ class VariantView(QWidget):
 
         self.info_label = QLabel()
         self.loading_label = QLabel()
-        self.loading_label.setMovie(QMovie(cm.DIR_ICONS + "/loading.gif"))
+        self.loading_label.setMovie(QMovie(cm.DIR_ICONS + "loading.gif"))
         self.loading_label.movie().setScaledSize(QSize(20, 20))
         self.loading_label.movie().start()
 
@@ -534,11 +553,19 @@ class VariantView(QWidget):
         self.setLayout(main_layout)
 
         # broadcast focus signal
-
+        # Get the status of async load: started/finished
         self.model.loading.connect(self._set_loading)
+        # Queries are finished (yes its redundant with loading signal...)
         self.model.load_finished.connect(self.loaded)
 
     def _set_loading(self, active=True):
+        """Slot to obtain the status of async load: started/finished
+
+        Start/Stop the movie animation on the view.
+
+        Keyword Args:
+            active (bool): True if loaded, False if finished
+        """
         self.setDisabled(active)
         if active:
             QTimer.singleShot(1000, self.start_loading_after_delay)
@@ -562,6 +589,9 @@ class VariantView(QWidget):
         self.model.load()
 
     def loaded(self):
+        """Slot called when async queries from the model are finished
+        (especially count of variants for page box).
+        """
         self.load_page_box()
         if LOGGER.getEffectiveLevel() != logging.DEBUG:
             self.view.setColumnHidden(0, True)
