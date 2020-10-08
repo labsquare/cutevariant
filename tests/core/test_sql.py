@@ -4,7 +4,7 @@ import copy
 
 from cutevariant.core import sql
 from cutevariant.core.reader import BedReader
-from .utils import table_exists, table_count
+from tests.utils import table_exists, table_count
 
 
 FIELDS = [
@@ -75,7 +75,12 @@ VARIANTS = [
         ],
     },
     {
-        "chr": "chr1", "pos": 50, "ref": "C", "alt": "C", "extra1": 20, "extra2": 100,
+        "chr": "chr1",
+        "pos": 50,
+        "ref": "C",
+        "alt": "C",
+        "extra1": 20,
+        "extra2": 100,
         "annotations": [{"gene": "gene1", "transcript": "transcript1"}],
     },
     {
@@ -339,7 +344,7 @@ def test_selection_operation(conn):
 
     assert "setA" in selections
     assert "setB" in selections
-    raise NotImplementedError
+    # raise NotImplementedError
 
     # sql.Selection.conn = conn
 
@@ -447,7 +452,9 @@ def test_selection_from_bedfile(conn):
     assert ret == 2
 
     # Query the association table (variant_id, selection_id)
-    data = conn.execute("SELECT * FROM selection_has_variant WHERE selection_id = ?", (ret,))
+    data = conn.execute(
+        "SELECT * FROM selection_has_variant WHERE selection_id = ?", (ret,)
+    )
     # 2 variants (see above)
     # format: [(id variant, id selection),]
     expected = ((1, ret), (2, ret))
@@ -457,7 +464,9 @@ def test_selection_from_bedfile(conn):
     print("record:", record)
     assert record == expected
 
-    bed_selection = [s for s in sql.get_selections(conn) if s["name"] == selection_name][0]
+    bed_selection = [
+        s for s in sql.get_selections(conn) if s["name"] == selection_name
+    ][0]
     print("selection content", bed_selection)
     assert bed_selection["name"] == selection_name
     assert bed_selection["count"] == 2  # 2 variants retrieved
@@ -493,7 +502,9 @@ def test_selection_from_bedfile_and_subselection(conn):
     # id of selection
     assert ret == 3
 
-    data = conn.execute("SELECT * FROM selection_has_variant WHERE selection_id = ?", (ret,))
+    data = conn.execute(
+        "SELECT * FROM selection_has_variant WHERE selection_id = ?", (ret,)
+    )
     expected = ((1, ret),)
     record = tuple([tuple(i) for i in data])
     assert record == expected
