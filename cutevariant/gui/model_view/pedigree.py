@@ -57,6 +57,7 @@ class PedModel(QAbstractTableModel):
         self.endResetModel()
 
     def from_pedfile(self, filename: str):
+        """Fill model with NEW samples from PED file"""
         samples = dict()
         self.beginResetModel()
         self.samples_data.clear()
@@ -70,11 +71,10 @@ class PedModel(QAbstractTableModel):
                 file.write("\t".join(map(str,sample)) + "\n")
 
     def set_samples(self, samples: list):
-        """ fill model """
+        """Fill model with NEW samples"""
         self.beginResetModel()
         self.samples_data.clear()
-        for sample in samples:
-            self.samples_data.append(sample)
+        self.samples_data = list(samples)
         self.endResetModel()
 
     def data(self, index: QModelIndex, role=Qt.DisplayRole):
