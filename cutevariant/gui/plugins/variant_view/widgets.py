@@ -881,7 +881,7 @@ class VariantViewWidget(plugin.PluginWidget):
         self.groupby_action.blockSignals(False)
 
         if is_grouped:
-            # Ungrouped => grouped
+            # Ungrouped => grouped or already grouped
             # Groupby fields become left pane fields
             self.groupby_left_pane.fields = self.groupby_left_pane.group_by
             # Prune right fields with left fields => avoid redundancy of information
@@ -890,7 +890,7 @@ class VariantViewWidget(plugin.PluginWidget):
                 for field in self.save_fields
                 if field not in self.groupby_left_pane.group_by
             ]
-            self.groupby_left_pane.filters = self.main_right_pane.filters
+            self.groupby_left_pane.filters = self.save_filters
 
             # Refresh models
             self.main_right_pane.load()  # useless, except if we modify fields like above
