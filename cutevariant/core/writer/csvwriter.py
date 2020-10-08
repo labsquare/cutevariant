@@ -27,7 +27,7 @@ class CsvWriter(AbstractWriter):
 
         Examples:
 
-            chr pos	    ref alt
+            chr pos     ref alt
             11  10000   G   T
             11  120000  G   T
 
@@ -38,7 +38,15 @@ class CsvWriter(AbstractWriter):
             **kwargs (dict, optional): Arguments can be given to override
                 individual formatting parameters in the current dialect.
         """
-        writer = csv.DictWriter(self.device, delimiter=delimiter, fieldnames=["chr", "pos", "ref", "alt"], **kwargs)
+        writer = csv.DictWriter(
+            self.device,
+            delimiter=delimiter,
+            lineterminator="\n",
+            fieldnames=["chr", "pos", "ref", "alt"],
+            **kwargs
+        )
         writer.writeheader()
-        g = (dict(row) for row in conn.execute("SELECT chr, pos, ref, alt FROM variants"))
+        g = (
+            dict(row) for row in conn.execute("SELECT chr, pos, ref, alt FROM variants")
+        )
         writer.writerows(g)
