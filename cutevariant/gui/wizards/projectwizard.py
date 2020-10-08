@@ -169,35 +169,49 @@ class FilePage(QWizardPage):
 
 
 class SamplePage(QWizardPage):
+    """Gather additional information on sequenced individuals and their families
+
+    PED file is facultative, a user can manually fill the data in the dynamic view.
+
+    See Also:
+        :meth:`gui.model_view.pedigree.PedView`
+    """
     def __init__(self):
         super().__init__()
 
         self.setTitle(self.tr("Samples"))
         self.setSubTitle(self.tr("Add sample description or skip this step"))
         self.view = PedView()
-        self.import_button = QPushButton(self.tr("Import ped file ..."))
+        self.import_button = QPushButton(self.tr("Import PED file (facultative)"))
         v_layout = QVBoxLayout()
         v_layout.addWidget(self.view)
         v_layout.addWidget(self.import_button)
-
         self.setLayout(v_layout)
+
+        self.vcf_samples = list()
 
         self.import_button.clicked.connect(self.on_import_clicked)
 
         self.registerField("pedfile", self.view, "pedfile")
 
     def initializePage(self):
-        """ override """
+        """Overrided: Prepare the page just before it is shown
 
+        We open variant file (vcf, etc.) to get the current samples that will
+        be eventualy associated to a PED file later.
+        """
         self.view.clear()
-        # read samples
+        # Open project file
         filename = self.field("filename")
         with create_reader(filename) as reader:
-            samples = []
+            # Get samples of the project
             self.vcf_samples = reader.get_samples()
 
-            for name in self.vcf_samples:
-                samples.append(["fam", name, "0", "0", "0", "0", "0"])
+            samples = [
+                # family_id, individual_id, father_id, mother_id, sex, genotype
+                ["fam", name, "0", "0", "0", "0", "0"]
+                for name in self.vcf_samples
+            ]
             self.view.set_samples(samples)
 
     def validatePage(self):
@@ -207,15 +221,22 @@ class SamplePage(QWizardPage):
 
     @Slot()
     def on_import_clicked(self):
+        """Slot called when import PED file is clicked
 
-        filename, filetype = QFileDialog.getOpenFileName(
+        We open PED file (ped, tfam) to get the their samples that will
+        be associated to the current samples of the project.
+        """
+        filepath, filetype = QFileDialog.getOpenFileName(
             self,
             self.tr("Open ped file"),
             QDir.homePath(),
-            self.tr("Ped files (*.ped *.tfam)"),
+            self.tr("PED files (*.ped *.tfam)"),
         )
 
-        with open(filename, "r") as file:
+        if not filepath:
+            return
+
+        with open(filepath, "r") as file:
             samples = []
             for line in file:
                 line = line.strip().split("\t")
