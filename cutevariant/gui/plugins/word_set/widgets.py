@@ -80,10 +80,22 @@ class WordListDialog(QDialog):
             self.model.removeRows(indexes[0].row(), 1)
 
     def on_load_file(self):
-
         filename, _ = QFileDialog.getOpenFileName(self, "file", "", "Text file (*.txt)")
 
         if filename:
+            self.load_file()
+
+    def load_file(self, filename: str):
+        """Load file into the view 
+
+        A simple file with a list a word 
+
+        TODO : Do some Check as @ysard suggest 
+        
+        Args:
+            filename (str): a text file 
+        """
+        if os.path.exists(filename):
             data = []
             with open(filename, "r") as file:
                 for line in file:
