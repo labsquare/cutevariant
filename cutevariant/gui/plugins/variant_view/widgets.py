@@ -552,7 +552,9 @@ class VariantView(QWidget):
         main_layout.addWidget(self.bottom_bar)
         self.setLayout(main_layout)
 
+        # Async stuff
         # broadcast focus signal
+        self.to_be_selected = None
         # Get the status of async load: started/finished
         self.model.loading.connect(self._set_loading)
         # Queries are finished (yes its redundant with loading signal...)
@@ -592,6 +594,9 @@ class VariantView(QWidget):
         """Slot called when async queries from the model are finished
         (especially count of variants for page box).
         """
+        if self.to_be_selected is not None:
+            self.select_row(0)
+
         self.load_page_box()
         if LOGGER.getEffectiveLevel() != logging.DEBUG:
             self.view.setColumnHidden(0, True)
@@ -840,7 +845,11 @@ class VariantView(QWidget):
         self.view.selectAll()
 
     def select_row(self, row):
-        """Select the column with the given index"""
+        """Select the column with the given index
+        TODO: move function to better place
+        """
+        print("SELECT_ROW called")
+        self.to_be_selected = row
         index = self.view.model().index(row, 0)
         self.view.selectionModel().setCurrentIndex(
             index, QItemSelectionModel.SelectCurrent | QItemSelectionModel.Rows
@@ -1056,6 +1065,7 @@ class VariantViewWidget(plugin.PluginWidget):
             # Refresh models
             self.main_right_pane.load()  # useless, except if we modify fields like above
             self.groupby_left_pane.load()
+            print("FIN LOAD => SELECT")
 
             # Select the first row if grouped => refresh the right pane
             self.groupby_left_pane.select_row(0)
@@ -1109,10 +1119,12 @@ class VariantViewWidget(plugin.PluginWidget):
 
                 # Forge a special filter to display the current variant
                 # print("variant clicked", variant)
+                print("plop", variant)
                 and_list = [
                     {"field": i, "operator": "=", "value": variant[i]}
                     for i in self.groupby_left_pane.group_by
                 ]
+                print("coucou")
 
                 if self.save_filters:
                     # Keep and update previous filter
