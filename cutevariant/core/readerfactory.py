@@ -64,8 +64,7 @@ def create_reader(filepath):
     if ".vcf" in path.suffixes and ".gz" in path.suffixes:
         annotation_detected = detect_vcf_annotation(filepath)
         device = open(filepath, "rb")
-        reader = VcfReader(device, annotation_detected)
-        reader.file_size = cm.get_uncompressed_size(filepath)
+        reader = VcfReader(device, annotation_parser=annotation_detected)
         yield reader
         device.close()
         return
@@ -73,8 +72,7 @@ def create_reader(filepath):
     if ".vcf" in path.suffixes:
         annotation_detected = detect_vcf_annotation(filepath)
         device = open(filepath, "r")
-        reader = VcfReader(device, annotation_detected)
-        reader.file_size = os.path.getsize(filepath)
+        reader = VcfReader(device, annotation_parser=annotation_detected)
         yield reader
         device.close()
         return
@@ -82,7 +80,6 @@ def create_reader(filepath):
     if {".tsv", ".csv", ".txt"} & set(path.suffixes):
         device = open(filepath, "r")
         reader = CsvReader(device)
-        reader.file_size = os.path.getsize(filepath)
         yield reader
         device.close()
         return
