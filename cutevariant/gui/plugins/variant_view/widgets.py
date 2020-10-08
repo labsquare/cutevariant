@@ -48,6 +48,10 @@ class VariantModel(QAbstractTableModel):
         self.headers = []
         self.formatter = None
 
+        # Cache all database fields and their descriptions for tooltips
+        # Field names as keys, descriptions as values
+        self.fields_descriptions = None
+
         self.fields = ["chr", "pos", "ref", "alt"]
         self.filters = dict()
         self.source = "variants"
@@ -70,6 +74,13 @@ class VariantModel(QAbstractTableModel):
         """ Set sqlite connection """
         self._conn = conn
         self.emit_changed = True
+        if conn:
+            # Note: model is initialized with None connection during start
+            # Cache DB fields descriptions
+            self.fields_descriptions = {
+                field["name"]: field["description"]
+                for field in sql.get_fields(self.conn)
+            }
 
     @property
     def formatter(self):
@@ -119,15 +130,9 @@ class VariantModel(QAbstractTableModel):
             if role == Qt.DisplayRole:
                 return str(self.variant(index.row())[column_name])
 
-            if role == Qt.ToolTipRole:
-                return (
-                    "<font>"
-                    + str(self.variant(index.row())[column_name]).replace(",", " ")
-                    + "</font>"
-                )
-
     def headerData(self, section, orientation=Qt.Horizontal, role=Qt.DisplayRole):
-        """Overrided: Return column name
+        """Overrided: Return column name and display tooltips on headers
+
         This method is called by the Qt view to display vertical or horizontal header data.
 
         Params:
@@ -147,6 +152,13 @@ class VariantModel(QAbstractTableModel):
         if orientation == Qt.Horizontal:
             if role == Qt.DisplayRole:
                 return self.headers[section]
+
+            if role == Qt.ToolTipRole:
+                # Field descriptions on headers
+                # Note: fields are set in load()
+                if self.fields_descriptions and section != 0:
+                    field_name = self.fields[section - 1]
+                    return self.fields_descriptions.get(field_name)
 
     def update_variant(self, row: int, variant={}):
         """Update a row
@@ -820,6 +832,7 @@ class VariantViewWidget(plugin.PluginWidget):
     def on_open_project(self, conn):
         """Overrided from PluginWidget"""
         self.conn = conn
+        # Set connections of models
         self.main_right_pane.conn = self.conn
         self.groupby_left_pane.conn = self.conn
 
