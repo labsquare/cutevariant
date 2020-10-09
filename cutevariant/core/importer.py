@@ -175,4 +175,7 @@ def import_pedfile(conn, filename):
         conn {[type]} -- [description]
         data {list} -- [description]
     """
-    [update_sample(conn, sample) for sample in PedReader(filename, get_samples(conn), raw_samples=False)]
+    [
+        update_sample(conn, sample)
+        for sample in PedReader(filename, get_samples(conn), raw_samples=False)
+    ]
