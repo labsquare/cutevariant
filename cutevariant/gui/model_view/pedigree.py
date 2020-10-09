@@ -65,10 +65,17 @@ class PedModel(QAbstractTableModel):
         self.endResetModel()
 
     def to_pedfile(self, filename: str):
+        """Export the model to a tabulated PED file
 
+        Notes:
+            Replace None or empty strings to 0 (unknown PED ID)
+        """
         with open(filename, "w") as file:
             for sample in self.samples_data:
-                file.write("\t".join(map(str,sample)) + "\n")
+                # Replace None or empty strings to 0 (unknown PED ID)
+                clean_sample = [item if item else 0 for item in sample]
+                # Convert all items to string
+                file.write("\t".join(map(str, clean_sample)) + "\n")
 
     def set_samples(self, samples: list):
         """Fill model with NEW samples"""
