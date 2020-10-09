@@ -92,10 +92,10 @@ class PedModel(QAbstractTableModel):
         if role == Qt.DisplayRole or role == Qt.EditRole:
             value = self.samples_data[index.row()][index.column()]
 
-            if index.column() == 3 or index.column() == 2:  # parent
+            if index.column() == 2 or index.column() == 3:  # father_id, mother_id
                 return value if value != "0" else ""
 
-            if index.column() == 4:  # Sexe
+            if index.column() == 4:  # Sex
                 return self.sex_map.get(value, "")
 
             if index.column() == 5:  # Phenotype
@@ -149,19 +149,22 @@ class PedDelegate(QItemDelegate):
             return super().createEditor(parent, option, index)
 
         widget = QComboBox(parent)
-        if index.column() == 2 or index.column() == 3:  # father_id or mother_id
+        if index.column() == 2 or index.column() == 3:
+            # father_id or mother_id columns
             widget.addItems(
-                [""] + index.model().get_data_list(0)
-            )  # Fill with sample name
+                [""] + index.model().get_data_list(1)
+            )
             return widget
 
-        if index.column() == 4:  # sexe
+        if index.column() == 4:
+            # Sex column
             widget.addItem("Male", "1")
             widget.addItem("Female", "2")
             widget.addItem("", "0")
             return widget
 
         if index.column() == 5:
+            # Genotype column
             widget.addItem("Unaffected", "1")
             widget.addItem("Affected", "2")
             widget.addItem("", "0")
