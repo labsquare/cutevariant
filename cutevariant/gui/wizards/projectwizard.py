@@ -180,7 +180,8 @@ class SamplePage(QWizardPage):
         super().__init__()
 
         self.setTitle(self.tr("Samples"))
-        self.setSubTitle(self.tr("Add sample description or skip this step"))
+        self.setSubTitle(self.tr("Add sample descriptions or skip this step."))
+        # TODO ADD help text in QLabel here
         self.view = PedView()
         self.import_button = QPushButton(self.tr("Import PED file (facultative)"))
         v_layout = QVBoxLayout()
@@ -192,6 +193,7 @@ class SamplePage(QWizardPage):
 
         self.import_button.clicked.connect(self.on_import_clicked)
 
+        # Share PedView.pedfile accross Wizard pages
         self.registerField("pedfile", self.view, "pedfile")
 
     def initializePage(self):
@@ -201,7 +203,7 @@ class SamplePage(QWizardPage):
         be eventualy associated to a PED file later.
         """
         self.view.clear()
-        # Open project file
+        # Open variant file of the project and read its headers
         filename = self.field("filename")
         with create_reader(filename) as reader:
             # Get samples of the project
@@ -212,7 +214,7 @@ class SamplePage(QWizardPage):
                 ["fam", name, "0", "0", "0", "0", "0"]
                 for name in self.vcf_samples
             ]
-            self.view.set_samples(samples)
+            self.view.samples = samples
 
     def validatePage(self):
         """ override """
@@ -268,23 +270,24 @@ class ImportThread(QThread):
         self.filename = ""
         # Project's filepath
         self.db_filename = ""
-        self.pedfile = ""
+        # Facultative PED file
+        self.pedfile = None
         self.project_settings = dict()
 
     def set_importer_settings(
-        self, filename, pedfile, db_filename, project_settings={}
+        self, filename, db_filename, pedfile=None, project_settings={}
     ):
         """Init settings of the importer
 
         :param filename: File to be opened.
         :param db_filename: Filepath of the new project.
+        :key pedfile: PED file to be opened.
         :key project_settings: The reference genome and the name of the project.
             Keys have to be at least "reference" and "project_name".
         :type filename: <str>
+        :type pedfile: <str>
         :type db_filename: <str>
         :type project_settings: <dict>
-        :type sample_data: <dict>
-
         """
         # File top open
         self.filename = filename
@@ -311,7 +314,10 @@ class ImportThread(QThread):
         try:
             # Import the file
             for value, message in async_import_file(
-                self.conn, self.filename, self.pedfile, self.project_settings
+                self.conn,
+                self.filename,
+                pedfile=self.pedfile,
+                project=self.project_settings
             ):
                 if self._stop == True:
                     self.conn.close()
@@ -376,10 +382,6 @@ class ImportPage(QWizardPage):
         self.thread.finished.connect(self.import_thread_finished)
         self.thread.finished_status.connect(self.import_thread_finished_status)
 
-    def initializePage(self):
-        """ override """
-        print(self.field("pedfile"))
-
     @Slot()
     def progress_changed(self, value, message):
         """Update the progress bar
@@ -427,7 +429,6 @@ class ImportPage(QWizardPage):
             self.thread.set_importer_settings(
                 # File to open
                 filename=self.field("filename"),
-                pedfile=self.field("pedfile"),
                 # Project's filepath
                 db_filename=(
                     self.field("project_path")
@@ -435,6 +436,8 @@ class ImportPage(QWizardPage):
                     + self.field("project_name")
                     + ".db"
                 ),
+                # PED file to use with samples
+                pedfile=self.field("pedfile"),
                 # Project's settings
                 project_settings={
                     # Reference genome
