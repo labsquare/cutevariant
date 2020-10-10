@@ -5,6 +5,7 @@ import csv
 import io
 import copy
 import string
+from logging import DEBUG
 
 # Qt imports
 from PySide2.QtWidgets import *
@@ -20,7 +21,7 @@ from cutevariant.gui import formatter
 from cutevariant.gui.widgets import MarkdownEditor
 import cutevariant.commons as cm
 
-import logging
+
 LOGGER = cm.logger()
 
 
@@ -225,7 +226,7 @@ class VariantModel(QAbstractTableModel):
             return
 
         self._set_loading(True)
-        LOGGER.info("Start loading")
+        LOGGER.debug("Start loading")
 
         offset = self.page * self.limit
 
@@ -233,7 +234,7 @@ class VariantModel(QAbstractTableModel):
         # self.clear()  # Assume variant = []
         self.total = 0
 
-        LOGGER.debug("page:" + str(self.page))
+        LOGGER.debug("page: %s", self.page)
 
         # Store SQL query for debugging purpose
         self.debug_sql = build_complete_query(
@@ -300,7 +301,7 @@ class VariantModel(QAbstractTableModel):
             # One of the runner has not finished his job
             return
 
-        LOGGER.info("received load data")
+        LOGGER.debug("received load data")
 
         self.beginResetModel()
         self.variants.clear()
@@ -609,7 +610,7 @@ class VariantView(QWidget):
             self.select_row(0)
 
         self.load_page_box()
-        if LOGGER.getEffectiveLevel() != logging.DEBUG:
+        if LOGGER.getEffectiveLevel() != DEBUG:
             self.view.setColumnHidden(0, True)
 
     def set_formatter(self, formatter):
