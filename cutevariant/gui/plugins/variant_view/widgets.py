@@ -431,6 +431,7 @@ class LoadingTableView(QTableView):
     """Movie animation displayed on VariantView for long SQL queries executed
     in background.
     """
+
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -752,13 +753,9 @@ class VariantView(QWidget):
         class_menu = menu.addMenu(self.tr("Classification"))
         for key, value in cm.CLASSIFICATION.items():
 
-            action = class_menu.addAction(
-                FIcon(cm.CLASSIFICATION_ICONS[key]), value
-            )
+            action = class_menu.addAction(FIcon(cm.CLASSIFICATION_ICONS[key]), value)
             action.setData(key)
-            on_click = functools.partial(
-                self.update_classification, current_index, key
-            )
+            on_click = functools.partial(self.update_classification, current_index, key)
             action.triggered.connect(on_click)
 
         # Create external links
@@ -768,15 +765,18 @@ class VariantView(QWidget):
         for key in self.settings.childKeys():
             format_string = self.settings.value(key)
             # Get placeholders
-            field_names = {name for text, name, spec, conv in string.Formatter().parse(format_string)}
+            field_names = {
+                name
+                for text, name, spec, conv in string.Formatter().parse(format_string)
+            }
             if field_names & full_variant.keys():
                 # Full or partial mapping => accepted link
                 links_menu.addAction(
                     key,
                     functools.partial(
                         QDesktopServices.openUrl,
-                        QUrl(format_string.format(**full_variant), QUrl.TolerantMode)
-                    )
+                        QUrl(format_string.format(**full_variant), QUrl.TolerantMode),
+                    ),
                 )
         self.settings.endGroup()
 
@@ -1126,7 +1126,6 @@ class VariantViewWidget(plugin.PluginWidget):
                 self.groupby_left_pane.source = self.main_right_pane.source
 
                 # Forge a special filter to display the current variant
-                # TODO: for key in.. pas for i
                 and_list = [
                     {"field": field, "operator": "=", "value": variant[field]}
                     for field in self.groupby_left_pane.group_by
