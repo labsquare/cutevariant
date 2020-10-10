@@ -292,29 +292,29 @@ def test_selections(conn):
     assert not conn.in_transaction
 
 
-def test_selection_operation(conn):
-    """test set operations on selections
-    PS: try to handle precedence of operators"""
-
-    # Select all
-    query = """SELECT variants.id,chr,pos,ref,alt FROM variants"""
-    id_all = sql.create_selection_from_sql(conn, query, "all", count=None)
-
-    # Select only ref = C (4 variants)
-    query = """SELECT variants.id,chr,pos,ref,alt FROM variants WHERE ref='C'"""
-    id_A = sql.create_selection_from_sql(conn, query, "setA", count=None,)
-
-    # Select only alt = C (2 variants among setA)
-    query = """SELECT variants.id,chr,pos,ref,alt FROM variants WHERE alt='C'"""
-    id_B = sql.create_selection_from_sql(conn, query, "setB", count=None)
-
-    assert all((id_all, id_A, id_B))
-
-    selections = [selection["name"] for selection in sql.get_selections(conn)]
-
-    assert "setA" in selections
-    assert "setB" in selections
-    raise NotImplementedError
+#def test_selection_operation(conn):
+#    """test set operations on selections
+#    PS: try to handle precedence of operators"""
+#
+#    # Select all
+#    query = """SELECT variants.id,chr,pos,ref,alt FROM variants"""
+#    id_all = sql.create_selection_from_sql(conn, query, "all", count=None)
+#
+#    # Select only ref = C (4 variants)
+#    query = """SELECT variants.id,chr,pos,ref,alt FROM variants WHERE ref='C'"""
+#    id_A = sql.create_selection_from_sql(conn, query, "setA", count=None,)
+#
+#    # Select only alt = C (2 variants among setA)
+#    query = """SELECT variants.id,chr,pos,ref,alt FROM variants WHERE alt='C'"""
+#    id_B = sql.create_selection_from_sql(conn, query, "setB", count=None)
+#
+#    assert all((id_all, id_A, id_B))
+#
+#    selections = [selection["name"] for selection in sql.get_selections(conn)]
+#
+#    assert "setA" in selections
+#    assert "setB" in selections
+#    raise NotImplementedError
 
     # sql.Selection.conn = conn
 
