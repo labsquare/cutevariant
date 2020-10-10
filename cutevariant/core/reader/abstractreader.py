@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-import os
+import io
+import gzip
 from collections import Counter
 import cutevariant.commons as cm
 
@@ -13,23 +14,33 @@ class AbstractReader(ABC):
 
     Attributes:
 
-        device: a file object typically returned by open()
-        file_size: file size in bytes
-        read_bytes: current bytes readed (progression = read_bytes / file_size)
-        samples: list of samples in the file (default: empty)
+        device: A file object typically returned by open(); Can be None if
+            FakeReader type is instanciated.
+        file_size: File size in bytes
+            See Also: :meth:`self.get_total_file_size`
+        number_lines: Number of lines in the file (compressed or not).
+            See Also: :meth:`self.compute_number_lines`
+        read_bytes: Current bytes readed (progression = read_bytes / file_size)
+            It's a fallback if number_lines can't be computed.
+        samples: List of samples in the file (default: empty)
 
     Example:
         with open(filename,"r") as file:
-            reader = Reader()
+            reader = Reader(file)
             reader.get_variants()
     """
 
     def __init__(self, device):
+        print(device, type(device))
         self.device = device
-
-        self.file_size = self.compute_total_size()
+        self.number_lines = None
         self.read_bytes = 0
         self.samples = list()
+
+        self.file_size = self.get_total_file_size()
+        self.compute_number_lines()
+        # Rewind the file to be sure...
+        self.device.seek(0)
 
     @classmethod
     @abstractmethod
@@ -364,8 +375,9 @@ class AbstractReader(ABC):
         """
         return len(tuple(self.get_variants()))
 
-    def compute_total_size(self) -> int:
+    def get_total_file_size(self) -> int:
         """Compute file size int bytes"""
+        # FakeReader is used ?
         if not self.device:
             return 0
 
@@ -373,7 +385,61 @@ class AbstractReader(ABC):
 
         if cm.is_gz_file(filename):
             return cm.get_uncompressed_size(filename)
-        return os.path.getsize(filename)
+        # Go to EOF and get position in bytes
+        size = self.device.seek(0, 2)
+        # Rewind the file
+        self.device.seek(0)
+        return size
+
+    def compute_number_lines(self):
+        """Get a sample of lines in file if possible and if the end of file is
+        not reached compute an evaluation of the global number of lines.
+
+        Returns:
+            Nothing but sets `self.number_lines` attribute.
+        """
+        def find_lines_in_text_file(text_file_handler):
+            """Get first 15000 lines
+
+            PS: don't care of headers (# lines), the influence is marginal on big
+            files and also on small files (so quick to insert that the wrong number
+            of lines is invisible).
+            """
+            first_lines = []
+            for _ in range(15000):
+                try:
+                    first_lines.append(len(next(text_file_handler)))
+                except StopIteration:
+                    # EOF: exact number of lines is known
+                    self.number_lines = len(first_lines)
+                    break
+
+            if self.number_lines is None:
+                self.number_lines = int(
+                    self.file_size / (sum(first_lines) / len(first_lines)))
+
+            LOGGER.debug(
+                "nb lines evaluated: %s; size: %s; lines used: %s",
+                self.number_lines, self.file_size, len(first_lines)
+            )
+
+        # FakeReader is used ?
+        if not self.device:
+            return 0
+
+        # Detect type of file handler
+        if isinstance(self.device, (io.RawIOBase, io.BufferedIOBase)):
+            # Binary opened file => assert that it is a vcf.gz file
+            with gzip.open(self.device.name, "rb") as file_obj:
+                find_lines_in_text_file(file_obj)
+        elif isinstance(self.device, io.TextIOBase):
+            find_lines_in_text_file(self.device)
+        else:
+            LOGGER.error("Unknown file handler type: %s", type(self.device))
+            raise TypeError("Unknown file handler type: %s" % type(self.device))
+
+        # Rewind the file
+        self.device.seek(0)
 
 
 def check_variant_schema(variant: dict):

@@ -104,21 +104,12 @@ def async_import_reader(conn, reader: AbstractReader, pedfile=None, project={}):
     insert_many_fields(conn, reader.get_extra_fields())
 
     # Insert variants, link them to annotations and samples
-    yield 0, "Inserting variants..."
+    yield 0, "Insertings variants..."
     # TODO: can you document the code in get_extra_variants plz?
     percent = 0
     variants = reader.get_extra_variants(control=control_samples, case=case_samples)
-    for value, message in async_insert_many_variants(conn, variants):
-
-        if reader.file_size:
-            percent = reader.read_bytes / reader.file_size * 100
-
-        else:
-            # Fallback
-            # TODO: useless for now because we don't give the total of variants
-            # to async_insert_many_variants()
-            percent = value
-        yield percent, message
+    for value, message in async_insert_many_variants(conn, variants, total_variant_count=reader.number_lines):
+        yield value, message
 
     # Create indexes
     yield 99, "Creating indexes..."
