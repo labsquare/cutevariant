@@ -4,8 +4,6 @@ import logging
 import datetime as dt
 import tempfile
 from pkg_resources import resource_filename
-import gzip
-import io
 
 # Misc
 MAX_RECENT_PROJECTS = 5
