@@ -39,8 +39,6 @@ class AbstractReader(ABC):
 
         self.file_size = self.get_total_file_size()
         self.compute_number_lines()
-        # Rewind the file to be sure...
-        self.device.seek(0)
 
     @classmethod
     @abstractmethod
