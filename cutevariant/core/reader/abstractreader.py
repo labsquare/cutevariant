@@ -31,7 +31,6 @@ class AbstractReader(ABC):
     """
 
     def __init__(self, device):
-        print(device, type(device))
         self.device = device
         self.number_lines = None
         self.read_bytes = 0
@@ -451,9 +450,9 @@ def check_variant_schema(variant: dict):
     try:
         from schema import Schema, And, Or, Use, Optional, Regex
     except ImportError as e:
-        print("You should install optional package 'schema' via:")
-        print("\t - pypi: pip install cutevariant[dev]")
-        print("\t - git repo in editable mode: pip -e . [dev]")
+        LOGGER.warning("You should install optional package 'schema' via:")
+        LOGGER.warning("\t - pypi: pip install cutevariant[dev]")
+        LOGGER.warning("\t - git repo in editable mode: pip -e . [dev]")
         raise e
 
     checker = Schema(
@@ -493,9 +492,9 @@ def check_field_schema(field: dict):
     try:
         from schema import Schema, And, Use, Optional
     except ImportError as e:
-        print("You should install optional package 'schema' via:")
-        print("\t - pypi: pip install cutevariant[dev]")
-        print("\t - git repo in editable mode: pip -e . [dev]")
+        LOGGER.warning("You should install optional package 'schema' via:")
+        LOGGER.warning("\t - pypi: pip install cutevariant[dev]")
+        LOGGER.warning("\t - git repo in editable mode: pip -e . [dev]")
         raise e
 
     checker = Schema(
