@@ -226,10 +226,14 @@ class SamplePage(QWizardPage):
         We open PED file (ped, tfam) to get the their samples that will
         be associated to the current samples of the project.
         """
+        # Reload last directory used
+        app_settings = QSettings()
+        last_directory = app_settings.value("last_directory", QDir.homePath())
+
         filepath, filetype = QFileDialog.getOpenFileName(
             self,
             self.tr("Open ped file"),
-            QDir.homePath(),
+            last_directory,
             self.tr("PED files (*.ped *.tfam)"),
         )
 
