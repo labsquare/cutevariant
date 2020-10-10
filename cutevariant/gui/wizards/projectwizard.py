@@ -79,6 +79,11 @@ class ProjectPage(QWizardPage):
         if path:
             self.project_path_edit.setText(path)
 
+    def initializePage(self):
+        """Overrided: Prepare the page just before it is shown"""
+        # Adjust the focus of project name field
+        self.project_name_edit.setFocus()
+
     def isComplete(self):
         """Conditions to unlock next button"""
         return (
