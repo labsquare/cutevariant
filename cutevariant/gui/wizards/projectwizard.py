@@ -86,15 +86,11 @@ class ProjectPage(QWizardPage):
 
     def isComplete(self):
         """Conditions to unlock next button"""
-        return (
-            True
-            if (
-                QDir(self.project_path_edit.text()).exists()
-                and self.project_path_edit.text()
-                and self.project_name_edit.text()
-            )
-            else False
-        )
+        return True if (
+            QDir(self.project_path_edit.text()).exists()
+            and self.project_path_edit.text()
+            and self.project_name_edit.text()
+        ) else False
 
 
 class FilePage(QWizardPage):
