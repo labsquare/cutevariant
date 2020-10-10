@@ -461,7 +461,15 @@ class LoadingTableView(QTableView):
 
 
 class VariantView(QWidget):
-    """A Variant view with controller like pagination"""
+    """A Variant view with controller like pagination
+
+    Attributes:
+
+        row_to_be_selected (int/None): (optional) Left groupby pane only:
+            At the end of the :meth:`loaded` method, the first line is selected
+            in order to refresh the current variant in the other pane.
+            TL,DR: Select the first row if in grouped mode => refresh the right pane.
+    """
 
     view_clicked = Signal()
 
@@ -554,7 +562,7 @@ class VariantView(QWidget):
 
         # Async stuff
         # broadcast focus signal
-        self.to_be_selected = None
+        self.row_to_be_selected = None
         # Get the status of async load: started/finished
         self.model.loading.connect(self._set_loading)
         # Queries are finished (yes its redundant with loading signal...)
@@ -594,7 +602,10 @@ class VariantView(QWidget):
         """Slot called when async queries from the model are finished
         (especially count of variants for page box).
         """
-        if self.to_be_selected is not None:
+        if self.row_to_be_selected is not None:
+            # Left groupby pane only:
+            # Select by default the first line in order to refresh the
+            # current variant in the other panef
             self.select_row(0)
 
         self.load_page_box()
@@ -845,11 +856,10 @@ class VariantView(QWidget):
         self.view.selectAll()
 
     def select_row(self, row):
-        """Select the column with the given index
-        TODO: move function to better place
+        """Select the row with the given index
+
+        Called for left pane by :meth:`loaded`.
         """
-        print("SELECT_ROW called")
-        self.to_be_selected = row
         index = self.view.model().index(row, 0)
         self.view.selectionModel().setCurrentIndex(
             index, QItemSelectionModel.SelectCurrent | QItemSelectionModel.Rows
@@ -894,6 +904,8 @@ class VariantViewWidget(plugin.PluginWidget):
         # No popup menu on this one
         self.groupby_left_pane = VariantView(parent=self, show_popup_menu=False)
         self.groupby_left_pane.hide()
+        # Force selection of first item after refresh
+        self.groupby_left_pane.row_to_be_selected = 0
 
         self.splitter.addWidget(self.groupby_left_pane)
         self.splitter.addWidget(self.main_right_pane)
@@ -1065,10 +1077,6 @@ class VariantViewWidget(plugin.PluginWidget):
             # Refresh models
             self.main_right_pane.load()  # useless, except if we modify fields like above
             self.groupby_left_pane.load()
-            print("FIN LOAD => SELECT")
-
-            # Select the first row if grouped => refresh the right pane
-            self.groupby_left_pane.select_row(0)
         else:
             # Grouped => ungrouped
             # Restore fields
@@ -1114,17 +1122,14 @@ class VariantViewWidget(plugin.PluginWidget):
 
             if self._is_grouped():
                 # Restore fields
-                # self.groupby_left_pane.fields = self.save_fields
                 self.groupby_left_pane.source = self.main_right_pane.source
 
                 # Forge a special filter to display the current variant
-                # print("variant clicked", variant)
-                print("plop", variant)
+                # TODO: for key in.. pas for i
                 and_list = [
-                    {"field": i, "operator": "=", "value": variant[i]}
-                    for i in self.groupby_left_pane.group_by
+                    {"field": field, "operator": "=", "value": variant[field]}
+                    for field in self.groupby_left_pane.group_by
                 ]
-                print("coucou")
 
                 if self.save_filters:
                     # Keep and update previous filter
@@ -1167,7 +1172,7 @@ class VariantViewWidget(plugin.PluginWidget):
         for field in self.save_fields:
             item = QListWidgetItem()
             item.setText(field)
-            if field in self.groupby_left_pane.group_by and type(field) == str:
+            if field in self.groupby_left_pane.group_by and isinstance(field, str):
                 item.setCheckState(Qt.Checked)
             else:
                 item.setCheckState(Qt.Unchecked)
