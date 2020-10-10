@@ -16,7 +16,7 @@ from cutevariant.core.importer import async_import_file
 from cutevariant.core import get_sql_connexion
 import cutevariant.commons as cm
 from cutevariant.core.readerfactory import detect_vcf_annotation, create_reader
-
+from cutevariant.core.reader import PedReader
 from cutevariant.gui.model_view import PedView
 
 LOGGER = cm.logger()
@@ -240,15 +240,14 @@ class SamplePage(QWizardPage):
         if not filepath:
             return
 
-        with open(filepath, "r") as file:
-            samples = []
-            for line in file:
-                line = line.strip().split("\t")
-                if len(line) == 6 and line[1] in self.vcf_samples:
-                    # Check if ped file name is in vcf samples
-                    samples.append(line)
+        LOGGER.info("vcf samples: %s", self.vcf_samples)
 
-            self.view.set_samples(samples)
+        # Get samples of individual_ids that are already on the VCF file
+        self.view.samples = [
+            # samples argument is empty dict since its not
+            sample for sample in PedReader(filepath, dict())
+            if sample[1] in self.vcf_samples
+        ]
 
 
 class ImportThread(QThread):
