@@ -6,6 +6,7 @@ import csv
 from cutevariant import __version__
 from .reader.abstractreader import AbstractReader
 from .readerfactory import create_reader
+from cutevariant.core.reader.pedreader import PedReader
 from .sql import (
     create_project,
     create_table_metadatas,
@@ -156,54 +157,16 @@ def import_reader(conn, reader, pedfile=None, project={}):
 
 
 def import_pedfile(conn, filename):
-    """Import *.fam file into sample table
+    """Import *.fam file (PLINK sample information file) into samples table
 
-    data has the same structure of a fam file object
-    https://www.cog-genomics.org/plink/1.9/formats#fam
-
-    the file is a tabular with the following column
-
-    Family String Id: "Fam"
-    Sample String Id: "Boby"
-    Father String Id
-    Mother String Id
-    Sex code:  (1 = male, 2 = female, 0 = unknown)
-    Phenotype code: (1 = control, 2 = case, 0 = missing data if case/control)
+    See Also:
+        :meth:`cutevariant.core.reader.pedreader.PedReader`
 
     Arguments:
         conn {[type]} -- [description]
         data {list} -- [description]
     """
-    with open(filename) as file:
-        reader = csv.reader(file, delimiter="\t")
-
-        sample_map = {sample["name"]: sample["id"] for sample in get_samples(conn)}
-        sample_names = list(sample_map.keys())
-
-        for line in reader:
-            if len(line) >= 6:
-                fam = line[0]
-                name = line[1]
-                father = line[2]
-                mother = line[3]
-                sexe = line[4]
-                phenotype = line[5]
-
-                sexe = int(sexe) if sexe.isdigit() else 0
-                phenotype = int(phenotype) if phenotype.isdigit() else 0
-
-                if name in sample_names:
-                    edit_sample = {
-                        "id": sample_map[name],
-                        "fam": fam,
-                        "sex": sexe,
-                        "phenotype": phenotype,
-                    }
-
-                    if father in sample_names:
-                        edit_sample["father_id"] = sample_map[father]
-
-                    if mother in sample_names:
-                        edit_sample["mother_id"] = sample_map[mother]
-
-                    update_sample(conn, edit_sample)
+    [
+        update_sample(conn, sample)
+        for sample in PedReader(filename, get_samples(conn), raw_samples=False)
+    ]
