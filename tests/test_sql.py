@@ -408,17 +408,40 @@ def test_selections(conn):
 def test_get_one_variant(conn):
     """Test getting variant from variant_id
 
-    .. note:: annotations and samples returns which are optionnal are not tested here
-
+    .. note:: annotations and samples which are optional are not tested here
+        => see :meth:`test_advanced_get_one_variant`
     """
-    for variant_id, variant in enumerate(VARIANTS, 1):
-        data = sql.get_one_variant(conn, variant_id)
-        assert data["id"] == variant_id
+    for variant_id, expected_variant in enumerate(VARIANTS, 1):
+        found_variant = sql.get_one_variant(conn, variant_id)
 
-        for k, v in variant.items():
-            assert k in data
+        print("found variant", found_variant)
+        assert found_variant["id"] == variant_id
+
+        for k, v in expected_variant.items():
             if k not in ("annotations", "samples"):
-                assert data[k] == variant[k]
+                assert found_variant[k] == expected_variant[k]
+
+def test_advanced_get_one_variant(conn):
+    """Test getting variant from variant_id
+
+    .. note:: annotations and samples which are optional ARE tested here
+    """
+    for variant_id, expected_variant in enumerate(VARIANTS, 1):
+        found_variant = sql.get_one_variant(conn, variant_id, with_annotations=True, with_samples=True)
+
+        print("found variant", found_variant)
+
+        for extra_field in ("annotations", "samples"):
+
+            print("Extra field", found_variant[extra_field])
+            assert isinstance(found_variant[extra_field], list), "Type not expected"
+
+            for item in found_variant[extra_field]:
+                # Remove variant_id key from sample/annotation before test
+                if "variant_id" in item:
+                    del item["variant_id"]
+
+            assert found_variant[extra_field] == expected_variant[extra_field]
 
 
 def test_selection_from_bedfile(conn):
