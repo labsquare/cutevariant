@@ -1037,13 +1037,12 @@ class VariantViewWidget(plugin.PluginWidget):
             # Ungrouped => grouped
             # Groupby fields become left pane fields
             self.groupby_left_pane.fields = self.groupby_left_pane.group_by
-            self.main_right_pane.fields = self.save_fields
-            # # Prune right fields with left fields => avoid redundancy of information
-            # self.main_right_pane.fields = [
-            #     field
-            #     for field in self.save_fields
-            #     if field not in self.groupby_left_pane.group_by
-            # ]
+            # Prune right fields with left fields => avoid redundancy of information
+            self.main_right_pane.fields = [
+                field
+                for field in self.save_fields
+                if field not in self.groupby_left_pane.group_by
+            ]
             self.groupby_left_pane.filters = self.main_right_pane.filters
 
             # Refresh models
