@@ -7,7 +7,6 @@ from PySide2.QtCore import (
     QAbstractTableModel,
     QAbstractItemModel,
     QModelIndex,
-    Property,
 )
 
 from PySide2.QtWidgets import (
