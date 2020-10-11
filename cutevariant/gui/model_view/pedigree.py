@@ -1,3 +1,7 @@
+# Standard imports
+import tempfile
+
+# Qt imports
 from PySide2.QtCore import (
     Qt,
     QAbstractTableModel,
@@ -14,10 +18,21 @@ from PySide2.QtWidgets import (
     QComboBox,
 )
 
-import tempfile
+# Custom imports
+from cutevariant.core.reader import PedReader
 
 
 class PedModel(QAbstractTableModel):
+    """
+    Attributes:
+
+        samples_data (list[list]): List of samples; Each sample is composed of
+            the following terms:
+
+            `[family_id, individual_id, father_id, mother_id, sex, genotype]`
+
+    """
+
     def __init__(self):
         super().__init__()
 
@@ -47,7 +62,16 @@ class PedModel(QAbstractTableModel):
         return 0
 
     def get_data_list(self, column: int):
-        return list(set([i[column] for i in self.samples_data]))
+        """Get unique list of items at the given column of all samples
+
+        Notes:
+            `samples_data` is composed of the following terms:
+            `[family_id, individual_id, father_id, mother_id, sex, genotype]`
+
+        Examples:
+            If column 1 is given, we return a list of unique individual_ids.
+        """
+        return list({sample[column] for sample in self.samples_data})
 
     def clear(self):
         self.beginResetModel()
@@ -55,42 +79,49 @@ class PedModel(QAbstractTableModel):
         self.endResetModel()
 
     def from_pedfile(self, filename: str):
-        samples = []
+        """Fill model with NEW samples from PED file"""
+        samples = dict()
         self.beginResetModel()
         self.samples_data.clear()
-        with open(filename, "r") as file:
-            for line in file:
-                row = line.strip().split("\t")
-                self.samples_data.append(row)
-
+        self.samples_data = list(PedReader(filename, samples))
         self.endResetModel()
 
     def to_pedfile(self, filename: str):
+        """Export the model to a tabulated PED file
 
+        Notes:
+            Replace None or empty strings to 0 (unknown PED ID)
+        """
         with open(filename, "w") as file:
             for sample in self.samples_data:
-                file.write("\t".join(sample) + "\n")
+                # Replace None or empty strings to 0 (unknown PED ID)
+                clean_sample = [item if item else 0 for item in sample]
+                # Convert all items to string
+                file.write("\t".join(map(str, clean_sample)) + "\n")
 
     def set_samples(self, samples: list):
-        """ fill model """
+        """Fill model with NEW samples
+
+        Example:
+            samples = [family_id, individual_id, father_id, mother_id, sex, genotype]
+        """
         self.beginResetModel()
         self.samples_data.clear()
-        for sample in samples:
-            self.samples_data.append(sample)
+        self.samples_data = list(samples)
         self.endResetModel()
 
     def data(self, index: QModelIndex, role=Qt.DisplayRole):
         """ overrided """
         if not index.isValid():
-            return None
+            return
 
         if role == Qt.DisplayRole or role == Qt.EditRole:
             value = self.samples_data[index.row()][index.column()]
 
-            if index.column() == 3 or index.column() == 2:  # parent
+            if index.column() == 2 or index.column() == 3:  # father_id, mother_id
                 return value if value != "0" else ""
 
-            if index.column() == 4:  # Sexe
+            if index.column() == 4:  # Sex
                 return self.sex_map.get(value, "")
 
             if index.column() == 5:  # Phenotype
@@ -98,7 +129,7 @@ class PedModel(QAbstractTableModel):
 
             return value
 
-        return None
+        return
 
     def setData(self, index: QModelIndex, value, role=Qt.EditRole):
         """ overrided """
@@ -144,19 +175,20 @@ class PedDelegate(QItemDelegate):
             return super().createEditor(parent, option, index)
 
         widget = QComboBox(parent)
-        if index.column() == 2 or index.column() == 3:  # father_id or mother_id
-            widget.addItems(
-                [""] + index.model().get_data_list(0)
-            )  # Fill with sample name
+        if index.column() == 2 or index.column() == 3:
+            # father_id or mother_id columns
+            widget.addItems([""] + index.model().get_data_list(1))
             return widget
 
-        if index.column() == 4:  # sexe
+        if index.column() == 4:
+            # Sex column
             widget.addItem("Male", "1")
             widget.addItem("Female", "2")
             widget.addItem("", "0")
             return widget
 
         if index.column() == 5:
+            # Genotype column
             widget.addItem("Unaffected", "1")
             widget.addItem("Affected", "2")
             widget.addItem("", "0")
@@ -168,7 +200,7 @@ class PedDelegate(QItemDelegate):
         self, editor: QWidget, model: QAbstractItemModel, index: QModelIndex
     ):
 
-        if type(editor) == QComboBox:
+        if isinstance(editor, QComboBox):
             model.setData(index, editor.currentData())
             return
 
@@ -176,6 +208,15 @@ class PedDelegate(QItemDelegate):
 
 
 class PedView(QTableView):
+    """View to display a PED file content
+
+    Expose properties binding for QWizardPage.registerFields
+
+    Attributes:
+        samples(list): List of PED fields
+        pedfile(str): PED filepath
+    """
+
     def __init__(self):
         super().__init__()
         self.model = PedModel()
@@ -185,21 +226,35 @@ class PedView(QTableView):
         self.setAlternatingRowColors(True)
         self.verticalHeader().hide()
         self.setItemDelegate(self.delegate)
+        # PED file for the model
+        self.outfile = None
 
     def clear(self):
         self.model.clear()
 
-    def set_samples(self, data):
-        self.model.set_samples(data)
-
-    def get_samples(self):
+    @property
+    def samples(self):
+        """Get samples (list of PED fields)"""
         return self.model.samples_data
 
-    def get_pedfile(self):
-        outfile = tempfile.mkstemp(suffix=".ped", text=True)[1]
-        self.model.to_pedfile(outfile)
-        return outfile
+    @samples.setter
+    def samples(self, samples):
+        """Set samples
 
-    # Create property binding for QWizardPage.registerFields
-    samples = Property(list, get_samples, set_samples)
-    pedfile = Property(str, get_pedfile)
+        Args:
+            samples(list): PED fields
+        """
+        self.model.set_samples(samples)
+
+    @property
+    def pedfile(self):
+        """Return the filepath of the PED file associated to the current model"""
+        if not self.get_samples():
+            return
+
+        if not self.outfile:
+            # Same file but reused at each call
+            self.outfile = tempfile.mkstemp(suffix=".ped", text=True)[1]
+        # Export the PED data
+        self.model.to_pedfile(self.outfile)
+        return self.outfile
