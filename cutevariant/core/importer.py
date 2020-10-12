@@ -6,6 +6,7 @@ import csv
 from cutevariant import __version__
 from .reader.abstractreader import AbstractReader
 from .readerfactory import create_reader
+from cutevariant.core.reader.pedreader import PedReader
 from .sql import (
     create_project,
     create_table_metadatas,
@@ -104,21 +105,12 @@ def async_import_reader(conn, reader: AbstractReader, pedfile=None, project={}):
     insert_many_fields(conn, reader.get_extra_fields())
 
     # Insert variants, link them to annotations and samples
-    yield 0, "Inserting variants..."
+    yield 0, "Insertings variants..."
     # TODO: can you document the code in get_extra_variants plz?
     percent = 0
     variants = reader.get_extra_variants(control=control_samples, case=case_samples)
-    for value, message in async_insert_many_variants(conn, variants):
-
-        if reader.file_size:
-            percent = reader.read_bytes / reader.file_size * 100
-
-        else:
-            # Fallback
-            # TODO: useless for now because we don't give the total of variants
-            # to async_insert_many_variants()
-            percent = value
-        yield percent, message
+    for value, message in async_insert_many_variants(conn, variants, total_variant_count=reader.number_lines):
+        yield value, message
 
     # Create indexes
     yield 99, "Creating indexes..."
@@ -165,54 +157,16 @@ def import_reader(conn, reader, pedfile=None, project={}):
 
 
 def import_pedfile(conn, filename):
-    """Import *.fam file into sample table
+    """Import *.fam file (PLINK sample information file) into samples table
 
-    data has the same structure of a fam file object
-    https://www.cog-genomics.org/plink/1.9/formats#fam
-
-    the file is a tabular with the following column
-
-    Family String Id: "Fam"
-    Sample String Id: "Boby"
-    Father String Id
-    Mother String Id
-    Sex code:  (1 = male, 2 = female, 0 = unknown)
-    Phenotype code: (1 = control, 2 = case, 0 = missing data if case/control)
+    See Also:
+        :meth:`cutevariant.core.reader.pedreader.PedReader`
 
     Arguments:
         conn {[type]} -- [description]
         data {list} -- [description]
     """
-    with open(filename) as file:
-        reader = csv.reader(file, delimiter="\t")
-
-        sample_map = {sample["name"]: sample["id"] for sample in get_samples(conn)}
-        sample_names = list(sample_map.keys())
-
-        for line in reader:
-            if len(line) >= 6:
-                fam = line[0]
-                name = line[1]
-                father = line[2]
-                mother = line[3]
-                sexe = line[4]
-                phenotype = line[5]
-
-                sexe = int(sexe) if sexe.isdigit() else 0
-                phenotype = int(phenotype) if phenotype.isdigit() else 0
-
-                if name in sample_names:
-                    edit_sample = {
-                        "id": sample_map[name],
-                        "fam": fam,
-                        "sex": sexe,
-                        "phenotype": phenotype,
-                    }
-
-                    if father in sample_names:
-                        edit_sample["father_id"] = sample_map[father]
-
-                    if mother in sample_names:
-                        edit_sample["mother_id"] = sample_map[mother]
-
-                    update_sample(conn, edit_sample)
+    [
+        update_sample(conn, sample)
+        for sample in PedReader(filename, get_samples(conn), raw_samples=False)
+    ]

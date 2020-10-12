@@ -4,8 +4,6 @@ import logging
 import datetime as dt
 import tempfile
 from pkg_resources import resource_filename
-import gzip
-import io
 
 # Misc
 MAX_RECENT_PROJECTS = 5
@@ -46,7 +44,7 @@ DIR_ICONS = DIR_ASSETS + "icons/"
 DIR_STYLES = DIR_ASSETS + "styles/"
 
 GENOTYPE_ICONS = {0: 0xF130, 1: 0xFAA0, 2: 0xFAA4, -1: 0xF625}
-
+BASIC_STYLE = "Bright"
 FONT_FILE = DIR_FONTS + "materialdesignicons-webfont.ttf"
 
 # Websites and variant query
@@ -136,5 +134,6 @@ def get_uncompressed_size(filepath):
     """Get the size of the given compressed file
     This size is stored in the last 4 bytes of the file.
     """
-    with gzip.open(filepath, "rb") as file_obj:
-        return file_obj.seek(0, io.SEEK_END)
+    with open(filepath, "rb") as file_obj:
+        file_obj.seek(-4, 2)
+        return int.from_bytes(file_obj.read(4), byteorder='little')

@@ -42,14 +42,18 @@ class VcfReader(AbstractReader):
     def __init__(self, device, annotation_parser: str = None):
         """Construct a VCF Reader
 
+        .. note::
+            Number of lines `number_lines` AND `file_size` is computed in
+            AbstractReader class.
+
         :param device: File device handler returned by open.
         :key annotation_parser (str): "vep" or "snpeff"
             This argument forces the reader to use a specific parser for
             the annotations. By default it's None: no parser will be used,
             annotations will not be taken into account.
         """
+        # Note: number of lines is computed in parent class
         super().__init__(device)
-
         vcf_reader = vcf.VCFReader(device, strict_whitespace=True)
         self.samples = vcf_reader.samples
         self.annotation_parser = None
@@ -116,26 +120,17 @@ class VcfReader(AbstractReader):
     def parse_variants(self):
         """Read file and parse variants
 
-        .. note:: An estimation of the progression is made here by updating
-            self.read_bytes attribute.
-
         :return: Generator of variants.
         :rtype: <generator <dict>>
         """
         # loop over record
         self.device.seek(0)
-        vcf_reader = vcf.VCFReader(self.device, strict_whitespace=True)
-
-        # TODO : ugly for testing progression .. see #60
-        self.read_bytes = self._init_read_bytes(vcf_reader)
+        vcf_reader = vcf.VCFReader(self.device, strict_whitespace=True) # TODO use class attr
 
         # Genotype format
         formats = list(vcf_reader.formats)
 
         for record in vcf_reader:
-
-            # elf.read_bytes += sys.getsizeof(record)
-            self.read_bytes += self._get_record_size(record)
 
             # split row with multiple alt
             for index, alt in enumerate(record.ALT):
@@ -288,7 +283,7 @@ class VcfReader(AbstractReader):
             }
 
     def get_samples(self):
-        """Return list of samples."""
+        """Return samples (individual/family data) of the file (empty list for this reader)"""
         return self.samples
 
     def _set_annotation_parser(self, parser: str):
@@ -299,28 +294,30 @@ class VcfReader(AbstractReader):
         if parser == "snpeff":
             self.annotation_parser = SnpEffParser()
 
-    def _get_record_size(self, rec):
-        """Approximate record size in bytes"""
-        # TODO : ugly .. For testing progression
+    def _get_record_size(self, record):
+        """Approximate record size in bytes (DEPRECATED)
+
+        An estimation of the progression can be made by updating
+        self.read_bytes attribute.
+
+        .. warning:: ugly .. For testing progression
+            Now we use
+        """
         return (
             len(
-                str(rec.CHROM)
-                + str(rec.POS)
-                + str(rec.ID)
-                + str(rec.REF)
-                + str(rec.ALT)
-                + str(rec.QUAL)
-                + str(rec.FILTER)
-                + str(rec.INFO)
-                + str(rec.FORMAT)
-                + str(rec.samples)
+                str(record.CHROM)
+                + str(record.POS)
+                + str(record.ID)
+                + str(record.REF)
+                + str(record.ALT)
+                + str(record.QUAL)
+                + str(record.FILTER)
+                + str(record.INFO)
+                + str(record.FORMAT)
+                + str(record.samples)
             )
             - 10
         )
-
-    def _init_read_bytes(self, reader):
-        """Init read bytes : It's the size in bytes of header data file"""
-        return 0
 
     def __repr__(self):
         return f"VCF Reader using {type(self.annotation_parser).__name__}"

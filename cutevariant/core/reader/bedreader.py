@@ -128,7 +128,7 @@ class BedReader:
 
         # Rewind the stream
         stream.seek(0)
-        [next(stream) for line in range(skipped_header_line)]
+        [next(stream) for _ in range(skipped_header_line)]
         try:
             # If there is no data at all or after the header
             data_line = next(stream)
@@ -140,7 +140,7 @@ class BedReader:
 
         # Rewind the stream
         stream.seek(0)
-        [next(stream) for line in range(skipped_header_line)]
+        [next(stream) for _ in range(skipped_header_line)]
         # Build a csv reader
         bed_fieldnames = (
             "chrom",
@@ -160,6 +160,7 @@ class BedReader:
             stream, fieldnames=bed_fieldnames, restkey="misc", dialect=csv_dialect
         )
 
+        line_number = 0
         for line_number, interval in enumerate(csv_reader, 1):
             # print(interval)
             yield interval

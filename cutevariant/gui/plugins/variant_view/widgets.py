@@ -5,6 +5,7 @@ import csv
 import io
 import copy
 import string
+from logging import DEBUG
 
 # Qt imports
 from PySide2.QtWidgets import *
@@ -20,8 +21,6 @@ from cutevariant.gui.sql_runnable import SqlRunnable
 from cutevariant.gui import formatter
 from cutevariant.gui.widgets import MarkdownEditor
 import cutevariant.commons as cm
-
-import logging
 
 LOGGER = cm.logger()
 
@@ -42,7 +41,7 @@ class VariantModel(QAbstractTableModel):
     """
 
     loading = Signal(bool)  # emit when data start or stop loading
-    load_finished = Signal()  # Emit when data is loaded
+    load_finished = Signal()  # Emit when data is loaded and ready to be used
 
     def __init__(self, conn=None, parent=None):
         super().__init__()
@@ -52,6 +51,10 @@ class VariantModel(QAbstractTableModel):
         self.variants = []
         self.headers = []
         self.formatter = None
+
+        # Cache all database fields and their descriptions for tooltips
+        # Field names as keys, descriptions as values
+        self.fields_descriptions = None
 
         self.fields = ["chr", "pos", "ref", "alt"]
         self.filters = dict()
@@ -65,8 +68,11 @@ class VariantModel(QAbstractTableModel):
         # Keep after all initialization
         self.conn = conn
 
+        # Async stuff
         self.pool = QThreadPool()
         self.is_loading = False
+        self.variant_runnable = None
+        self.count_runnable = None
 
     @property
     def conn(self):
@@ -77,6 +83,13 @@ class VariantModel(QAbstractTableModel):
     def conn(self, conn):
         """ Set sqlite connection """
         self._conn = conn
+        if conn:
+            # Note: model is initialized with None connection during start
+            # Cache DB fields descriptions
+            self.fields_descriptions = {
+                field["name"]: field["description"]
+                for field in sql.get_fields(self.conn)
+            }
 
     @property
     def formatter(self):
@@ -131,15 +144,9 @@ class VariantModel(QAbstractTableModel):
             if role == Qt.DisplayRole:
                 return str(self.variant(index.row())[column_name])
 
-            if role == Qt.ToolTipRole:
-                return (
-                    "<font>"
-                    + str(self.variant(index.row())[column_name]).replace(",", " ")
-                    + "</font>"
-                )
-
     def headerData(self, section, orientation=Qt.Horizontal, role=Qt.DisplayRole):
-        """Overrided: Return column name
+        """Overrided: Return column name and display tooltips on headers
+
         This method is called by the Qt view to display vertical or horizontal header data.
 
         Params:
@@ -159,6 +166,13 @@ class VariantModel(QAbstractTableModel):
         if orientation == Qt.Horizontal:
             if role == Qt.DisplayRole:
                 return self.headers[section]
+
+            if role == Qt.ToolTipRole:
+                # Field descriptions on headers
+                # Note: fields are set in load()
+                if self.fields_descriptions and section != 0:
+                    field_name = self.fields[section - 1]
+                    return self.fields_descriptions.get(field_name)
 
     def update_variant(self, row: int, variant: dict):
         """Update a variant at the given row with given content
@@ -181,6 +195,13 @@ class VariantModel(QAbstractTableModel):
             self.dataChanged.emit(left, right)
 
     def _set_loading(self, active=True):
+        """Emit the loading status of async queries
+
+        Called before async queries and after their end.
+
+        Signal emitted: loading(bool), captured by VariantView to start/stop
+        movie animation.
+        """
         self.is_loading = active
         self.loading.emit(active)
 
@@ -203,13 +224,13 @@ class VariantModel(QAbstractTableModel):
 
         Called by:
             - on_change_query() from the view.
-            - sort() and setPage() by the model.
+            - load_from_vql(), sort() and setPage() by the model.
         """
         if self.conn is None:
             return
 
         self._set_loading(True)
-        LOGGER.info("Start loading")
+        LOGGER.debug("Start loading")
 
         offset = self.page * self.limit
 
@@ -217,7 +238,7 @@ class VariantModel(QAbstractTableModel):
         # self.clear()  # Assume variant = []
         self.total = 0
 
-        LOGGER.debug("page:" + str(self.page))
+        LOGGER.debug("page: %s", self.page)
 
         # Store SQL query for debugging purpose
         self.debug_sql = build_complete_query(
@@ -269,15 +290,22 @@ class VariantModel(QAbstractTableModel):
         self.pool.start(self.count_runnable)
 
     def loaded(self):
+        """Called when SQL async queries are done
 
-        if not hasattr(self, "variant_runnable") or not hasattr(self, "count_runnable"):
+        - We wait until the 2 requests (variant and count rennable) have finished.
+        - self.variants, self.total are set
+
+        Signals:
+            - self._is_loading() si called at the end and so loading(true) is emitted
+            - load_finished (captured by VariantView to load page_box)
+        """
+        if not self.variant_runnable or not self.count_runnable:
             return
-
         if not self.variant_runnable.done or not self.count_runnable.done:
             # One of the runner has not finished his job
             return
 
-        LOGGER.info("received load data")
+        LOGGER.debug("received load data")
 
         self.beginResetModel()
         self.variants.clear()
@@ -289,17 +317,15 @@ class VariantModel(QAbstractTableModel):
 
         # Load variants
         self.variants = self.variant_runnable.results
-
-        # print("ALL", self.variants)
-
         if self.variants:
+            # Set headers of the view
             self.headers = list(self.variants[0].keys())
 
         # print(self.count_runnable.results["count"])
         self.total = self.count_runnable.results["count"]
 
-        del self.variant_runnable
-        del self.count_runnable
+        # Reset for next run
+        self.variant_runnable = self.count_runnable = None
 
         # print(self.fields, self.filters, self.group_by)
         self.endResetModel()
@@ -314,10 +340,10 @@ class VariantModel(QAbstractTableModel):
                 self.fields = vql_object["fields"]
                 self.source = vql_object["source"]
                 self.filters = vql_object["filters"]
-        except Exception as e:
-            raise e
-        finally:
             self.load()
+        except Exception as e:
+            LOGGER.exception(e)
+            raise e
 
     def hasPage(self, page: int) -> bool:
         """ Return True if <page> exists otherwise return False """
@@ -406,6 +432,10 @@ class VariantDelegate(QStyledItemDelegate):
 
 
 class LoadingTableView(QTableView):
+    """Movie animation displayed on VariantView for long SQL queries executed
+    in background.
+    """
+
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -437,7 +467,15 @@ class LoadingTableView(QTableView):
 
 
 class VariantView(QWidget):
-    """A Variant view with controller like pagination"""
+    """A Variant view with controller like pagination
+
+    Attributes:
+
+        row_to_be_selected (int/None): (optional) Left groupby pane only:
+            At the end of the :meth:`loaded` method, the first line is selected
+            in order to refresh the current variant in the other pane.
+            TL,DR: Select the first row if in grouped mode => refresh the right pane.
+    """
 
     view_clicked = Signal()
 
@@ -491,7 +529,7 @@ class VariantView(QWidget):
 
         self.info_label = QLabel()
         self.loading_label = QLabel()
-        self.loading_label.setMovie(QMovie(cm.DIR_ICONS + "/loading.gif"))
+        self.loading_label.setMovie(QMovie(cm.DIR_ICONS + "loading.gif"))
         self.loading_label.movie().setScaledSize(QSize(20, 20))
         self.loading_label.movie().start()
 
@@ -528,12 +566,22 @@ class VariantView(QWidget):
         main_layout.addWidget(self.bottom_bar)
         self.setLayout(main_layout)
 
+        # Async stuff
         # broadcast focus signal
-
+        self.row_to_be_selected = None
+        # Get the status of async load: started/finished
         self.model.loading.connect(self._set_loading)
+        # Queries are finished (yes its redundant with loading signal...)
         self.model.load_finished.connect(self.loaded)
 
     def _set_loading(self, active=True):
+        """Slot to obtain the status of async load: started/finished
+
+        Start/Stop the movie animation on the view.
+
+        Keyword Args:
+            active (bool): True if loaded, False if finished
+        """
         self.setDisabled(active)
         if active:
             QTimer.singleShot(1000, self.start_loading_after_delay)
@@ -557,8 +605,17 @@ class VariantView(QWidget):
         self.model.load()
 
     def loaded(self):
+        """Slot called when async queries from the model are finished
+        (especially count of variants for page box).
+        """
+        if self.row_to_be_selected is not None:
+            # Left groupby pane only:
+            # Select by default the first line in order to refresh the
+            # current variant in the other panef
+            self.select_row(0)
+
         self.load_page_box()
-        if LOGGER.getEffectiveLevel() != logging.DEBUG:
+        if LOGGER.getEffectiveLevel() != DEBUG:
             self.view.setColumnHidden(0, True)
 
     def set_formatter(self, formatter):
@@ -809,7 +866,10 @@ class VariantView(QWidget):
         self.view.selectAll()
 
     def select_row(self, row):
-        """Select the column with the given index"""
+        """Select the row with the given index
+
+        Called for left pane by :meth:`loaded`.
+        """
         index = self.view.model().index(row, 0)
         self.view.selectionModel().setCurrentIndex(
             index, QItemSelectionModel.SelectCurrent | QItemSelectionModel.Rows
@@ -854,6 +914,8 @@ class VariantViewWidget(plugin.PluginWidget):
         # No popup menu on this one
         self.groupby_left_pane = VariantView(parent=self, show_popup_menu=False)
         self.groupby_left_pane.hide()
+        # Force selection of first item after refresh
+        self.groupby_left_pane.row_to_be_selected = 0
 
         self.splitter.addWidget(self.groupby_left_pane)
         self.splitter.addWidget(self.main_right_pane)
@@ -968,6 +1030,7 @@ class VariantViewWidget(plugin.PluginWidget):
     def on_open_project(self, conn):
         """Overrided from PluginWidget"""
         self.conn = conn
+        # Set connections of models
         self.main_right_pane.conn = self.conn
         self.groupby_left_pane.conn = self.conn
 
@@ -1040,7 +1103,7 @@ class VariantViewWidget(plugin.PluginWidget):
         self.groupby_action.blockSignals(False)
 
         if is_grouped:
-            # Ungrouped => grouped
+            # Ungrouped => grouped or already grouped
             # Groupby fields become left pane fields
             self.groupby_left_pane.fields = self.groupby_left_pane.group_by
             # Prune right fields with left fields => avoid redundancy of information
@@ -1049,14 +1112,11 @@ class VariantViewWidget(plugin.PluginWidget):
                 for field in self.save_fields
                 if field not in self.groupby_left_pane.group_by
             ]
-            self.groupby_left_pane.filters = self.main_right_pane.filters
+            self.groupby_left_pane.filters = self.save_filters
 
             # Refresh models
             self.main_right_pane.load()  # useless, except if we modify fields like above
             self.groupby_left_pane.load()
-
-            # Select the first row if grouped => refresh the right pane
-            self.groupby_left_pane.select_row(0)
         else:
             # Grouped => ungrouped
             # Restore fields
@@ -1102,18 +1162,12 @@ class VariantViewWidget(plugin.PluginWidget):
 
             if self._is_grouped():
                 # Restore fields
-                # self.groupby_left_pane.fields = self.save_fields
                 self.groupby_left_pane.source = self.main_right_pane.source
 
                 # Forge a special filter to display the current variant
-                # print("variant clicked", variant)
-
-                # print(variant)
-                # print([i for i in self.groupby_left_pane.group_by])
-
                 and_list = [
-                    {"field": i, "operator": "=", "value": variant[fields_to_vql(i)]}
-                    for i in self.groupby_left_pane.group_by
+                    {"field": field, "operator": "=", "value": variant[fields_to_vql(field)]}
+                    for field in self.groupby_left_pane.group_by
                 ]
 
                 if self.save_filters:

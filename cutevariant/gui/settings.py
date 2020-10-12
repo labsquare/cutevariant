@@ -222,13 +222,11 @@ class StyleSettingsWidget(BaseWidget):
 
         self.setLayout(mainLayout)
 
-        self.BASIC_STYLE = "Bright"
-
     def save(self):
         """Save the selected style in config
         """
         # Get previous style
-        old_style_name = self.settings.value("ui/style", "Dark")
+        old_style_name = self.settings.value("ui/style", cm.BASIC_STYLE)
 
         # Save style setting
         style_name = self.styles_combobox.currentText()
@@ -240,7 +238,7 @@ class StyleSettingsWidget(BaseWidget):
         # TODO: Find a way to revert properly dark() palette and fill
         # style.bright() function.
 
-        if style_name == self.BASIC_STYLE:
+        if style_name == cm.BASIC_STYLE:
             # Bright version: Reset style
             qApp.setStyleSheet("")
             qApp.setPalette(QApplication.style().standardPalette())
@@ -269,12 +267,12 @@ class StyleSettingsWidget(BaseWidget):
             if "frameless" not in file
         }
         # Display available styles
-        available_styles = list(available_styles.keys()) + [self.BASIC_STYLE]
+        available_styles = list(available_styles.keys()) + [cm.BASIC_STYLE]
         self.styles_combobox.addItems(available_styles)
 
         # Display current style
         # Dark is the default style
-        style_name = self.settings.value("ui/style", "Dark")
+        style_name = self.settings.value("ui/style", cm.BASIC_STYLE)
         self.styles_combobox.setCurrentIndex(available_styles.index(style_name))
 
 

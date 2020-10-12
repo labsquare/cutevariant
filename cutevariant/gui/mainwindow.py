@@ -313,7 +313,7 @@ class MainWindow(QMainWindow):
         self.toolbar.addAction(self.new_project_action)
         self.toolbar.addAction(self.open_project_action)
         self.toolbar.addAction(
-            FIcon(0xF02D7), self.tr("Aide"), QWhatsThis.enterWhatsThisMode
+            FIcon(0xF02D7), self.tr("Help"), QWhatsThis.enterWhatsThisMode
         )
         self.toolbar.addSeparator()
 

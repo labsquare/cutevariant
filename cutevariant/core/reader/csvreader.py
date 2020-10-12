@@ -37,6 +37,7 @@ class CsvReader(AbstractReader):
     """
 
     def __init__(self, device):
+        # Note: number of lines is computed in parent class
         super().__init__(device)
 
         # Quick tests on the input file...
@@ -116,7 +117,7 @@ class CsvReader(AbstractReader):
         yield from self.parse_variants()
 
     def get_samples(self):
-        """???????"""
+        """Return samples (individual/family data) of the file (empty list for this reader)"""
         return []
 
     def parse_fields(self):
@@ -163,9 +164,6 @@ class CsvReader(AbstractReader):
 
     def parse_variants(self):
         """Read file and parse variants
-
-        .. todo:: An estimation of the progression is made here by updating
-            self.read_bytes attribute.
 
         .. todo: Handle samples
 

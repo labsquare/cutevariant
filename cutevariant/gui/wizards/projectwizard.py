@@ -9,7 +9,7 @@ from cutevariant.core.importer import async_import_file
 from cutevariant.core import get_sql_connexion
 import cutevariant.commons as cm
 from cutevariant.core.readerfactory import detect_vcf_annotation, create_reader
-
+from cutevariant.core.reader import PedReader
 from cutevariant.gui.model_view import PedView
 
 LOGGER = cm.logger()
@@ -72,17 +72,18 @@ class ProjectPage(QWizardPage):
         if path:
             self.project_path_edit.setText(path)
 
+    def initializePage(self):
+        """Overridden: Prepare the page just before it is shown"""
+        # Adjust the focus of project name field
+        self.project_name_edit.setFocus()
+
     def isComplete(self):
         """Conditions to unlock next button"""
-        return (
-            True
-            if (
-                QDir(self.project_path_edit.text()).exists()
-                and self.project_path_edit.text()
-                and self.project_name_edit.text()
-            )
-            else False
-        )
+        return True if (
+            QDir(self.project_path_edit.text()).exists()
+            and self.project_path_edit.text()
+            and self.project_name_edit.text()
+        ) else False
 
 
 class FilePage(QWizardPage):
@@ -162,61 +163,87 @@ class FilePage(QWizardPage):
 
 
 class SamplePage(QWizardPage):
+    """Gather additional information on sequenced individuals and their families
+
+    PED file is facultative, a user can manually fill the data in the dynamic view.
+
+    See Also:
+        :meth:`gui.model_view.pedigree.PedView`
+    """
     def __init__(self):
         super().__init__()
 
         self.setTitle(self.tr("Samples"))
-        self.setSubTitle(self.tr("Add sample description or skip this step"))
+        self.setSubTitle(self.tr("Add sample descriptions or skip this step."))
+        # TODO ADD help text in QLabel here
         self.view = PedView()
-        self.import_button = QPushButton(self.tr("Import ped file ..."))
+        self.import_button = QPushButton(self.tr("Import PED file (facultative)"))
         v_layout = QVBoxLayout()
         v_layout.addWidget(self.view)
         v_layout.addWidget(self.import_button)
-
         self.setLayout(v_layout)
+
+        self.vcf_samples = list()
 
         self.import_button.clicked.connect(self.on_import_clicked)
 
+        # Share PedView.pedfile accross Wizard pages
         self.registerField("pedfile", self.view, "pedfile")
 
     def initializePage(self):
-        """ override """
+        """Overridden: Prepare the page just before it is shown
 
+        We open variant file (vcf, etc.) to get the current samples that will
+        be eventually associated to a PED file later.
+        """
         self.view.clear()
-        # read samples
+        # Open variant file of the project and read its headers
         filename = self.field("filename")
         with create_reader(filename) as reader:
-            samples = []
+            # Get samples of the project
             self.vcf_samples = reader.get_samples()
 
-            for name in self.vcf_samples:
-                samples.append(["fam", name, "0", "0", "0", "0", "0"])
-            self.view.set_samples(samples)
+            samples = [
+                # family_id, individual_id, father_id, mother_id, sex, genotype
+                ["fam", name, "0", "0", "0", "0", "0"]
+                for name in self.vcf_samples
+            ]
+            self.view.samples = samples
 
     def validatePage(self):
-        """ override """
+        """Overridden"""
         # read table and create a dict for setFields
         return True
 
     @Slot()
     def on_import_clicked(self):
+        """Slot called when import PED file is clicked
 
-        filename, filetype = QFileDialog.getOpenFileName(
+        We open PED file (ped, tfam) to get the their samples that will
+        be associated to the current samples of the project.
+        """
+        # Reload last directory used
+        app_settings = QSettings()
+        last_directory = app_settings.value("last_directory", QDir.homePath())
+
+        filepath, filetype = QFileDialog.getOpenFileName(
             self,
             self.tr("Open ped file"),
-            QDir.homePath(),
-            self.tr("Ped files (*.ped *.tfam)"),
+            last_directory,
+            self.tr("PED files (*.ped *.tfam)"),
         )
 
-        with open(filename, "r") as file:
-            samples = []
-            for line in file:
-                line = line.strip().split("\t")
-                if len(line) == 6 and line[1] in self.vcf_samples:
-                    # Check if ped file name is in vcf samples
-                    samples.append(line)
+        if not filepath:
+            return
 
-            self.view.set_samples(samples)
+        LOGGER.info("vcf samples: %s", self.vcf_samples)
+
+        # Get samples of individual_ids that are already on the VCF file
+        self.view.samples = [
+            # samples argument is empty dict since its not
+            sample for sample in PedReader(filepath, dict())
+            if sample[1] in self.vcf_samples
+        ]
 
 
 class ImportThread(QThread):
@@ -237,23 +264,24 @@ class ImportThread(QThread):
         self.filename = ""
         # Project's filepath
         self.db_filename = ""
-        self.pedfile = ""
+        # Facultative PED file
+        self.pedfile = None
         self.project_settings = dict()
 
     def set_importer_settings(
-        self, filename, pedfile, db_filename, project_settings={}
+        self, filename, db_filename, pedfile=None, project_settings={}
     ):
         """Init settings of the importer
 
         :param filename: File to be opened.
         :param db_filename: Filepath of the new project.
+        :key pedfile: PED file to be opened.
         :key project_settings: The reference genome and the name of the project.
             Keys have to be at least "reference" and "project_name".
         :type filename: <str>
+        :type pedfile: <str>
         :type db_filename: <str>
         :type project_settings: <dict>
-        :type sample_data: <dict>
-
         """
         # File top open
         self.filename = filename
@@ -280,7 +308,10 @@ class ImportThread(QThread):
         try:
             # Import the file
             for value, message in async_import_file(
-                self.conn, self.filename, self.pedfile, self.project_settings
+                self.conn,
+                self.filename,
+                pedfile=self.pedfile,
+                project=self.project_settings
             ):
                 if self._stop == True:
                     self.conn.close()
@@ -346,9 +377,11 @@ class ImportPage(QWizardPage):
         self.thread.finished_status.connect(self.import_thread_finished_status)
 
     def initializePage(self):
-        """ override """
-        print(self.field("pedfile"))
+        """Overridden: Prepare the page just before it is shown
 
+        Launch import process if currentPage is ImportPage
+        """
+        print("Current PED file", self.field("pedfile"))
         self.run()
 
     @Slot()
@@ -398,7 +431,6 @@ class ImportPage(QWizardPage):
             self.thread.set_importer_settings(
                 # File to open
                 filename=self.field("filename"),
-                pedfile=self.field("pedfile"),
                 # Project's filepath
                 db_filename=(
                     self.field("project_path")
@@ -406,6 +438,8 @@ class ImportPage(QWizardPage):
                     + self.field("project_name")
                     + ".db"
                 ),
+                # PED file to use with samples
+                pedfile=self.field("pedfile"),
                 # Project's settings
                 project_settings={
                     # Reference genome
