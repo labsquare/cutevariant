@@ -15,6 +15,9 @@ import re
 
 # Custom imports
 from cutevariant.core import sql
+from cutevariant.commons import logger
+
+LOGGER = logger()
 
 # Function name used from VQL
 # sample("boby").gt
@@ -111,6 +114,11 @@ def set_function_to_sql(field_function: tuple):
 
 
 def fields_to_vql(field):
+
+    LOGGER.info(
+        "BONJOUR c'est pour quoi faire ça ?"
+        "Tests, documentation, index magiques de field pour genotype ?"
+    )
 
     if isinstance(field, str):
         return field
