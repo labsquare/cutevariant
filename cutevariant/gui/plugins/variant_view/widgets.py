@@ -876,11 +876,6 @@ class VariantViewWidget(plugin.PluginWidget):
         self.top_bar = QToolBar()
         self.top_bar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
 
-        # Save selection
-        self.save_action = self.top_bar.addAction(
-            FIcon(0xF0193), self.tr("Save selection"), self.on_save_selection
-        )
-
         # checkable group action
         self.groupby_action = self.top_bar.addAction(
             FIcon(0xF14E0), self.tr("Group by"), self.on_group_changed
@@ -907,6 +902,12 @@ class VariantViewWidget(plugin.PluginWidget):
         # Refresh UI button
         self.top_bar.addSeparator()
         self.top_bar.addAction(FIcon(0xF0450), self.tr("Refresh"), self.on_refresh)
+
+        # Save selection
+        self.save_action = self.top_bar.addAction(
+            FIcon(0xF0193), self.tr("Save selection"), self.on_save_selection
+        )
+        self.save_action.setToolTip(self.tr("Save the variants into new selection"))
 
         # Setup layout
         main_layout = QVBoxLayout()
@@ -993,11 +994,16 @@ class VariantViewWidget(plugin.PluginWidget):
         self.load()
 
     def on_save_selection(self):
-        """Triggered on 'save_selection' button 
-        This action will create a new selection (aka source) from the current state.
-        """
+        """Triggered on 'save_selection' button
 
-        name, accept = QInputDialog.getText(self, "selection name", "selection _name")
+        - This slot creates a new selection (aka source) from the current state.
+        - `source_editor` plugin will be refreshed.
+        """
+        name, accept = QInputDialog.getText(
+            self,
+            self.tr("Create a new selection"),
+            self.tr("Name of the new selection:")
+        )
 
         if accept and name:
             result = cmd.create_cmd(
