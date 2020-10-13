@@ -17,7 +17,7 @@ from PySide2.QtWidgets import (
     QPushButton,
     QInputDialog,
 )
-from PySide2.QtCore import QStringListModel, QSize, QDir
+from PySide2.QtCore import QStringListModel, QSize, QDir, QSettings
 # Custom imports
 from cutevariant.gui.plugin import PluginWidget
 from cutevariant.core.sql import get_sql_connexion, get_sets, get_words_set
@@ -92,7 +92,7 @@ class WordListDialog(QDialog):
             :meth:`load_file`
         """
         # Reload last directory used
-        last_directory = self.app_settings.value("last_directory", QDir.homePath())
+        last_directory = QSettings().value("last_directory", QDir.homePath())
 
         filepath, _ = QFileDialog.getOpenFileName(
             self,
