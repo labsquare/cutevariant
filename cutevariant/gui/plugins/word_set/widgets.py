@@ -65,12 +65,21 @@ class WordListDialog(QDialog):
         self.save_button.pressed.connect(self.accept)
 
     def on_add(self):
+        """Allow to manually add a word to the list
+
+        Notes:
+            A user must click on save for the changes to take effect.
+        """
         data = self.model.stringList()
-        data.append("<double click to edit>")
+        data.append(self.tr("<double click to edit>"))
         self.model.setStringList(data)
 
     def on_remove(self):
+        """Remove the selected rows of the list
 
+        Notes:
+            A user must click on save for the changes to take effect.
+        """
         while len(self.view.selectionModel().selectedRows()) > 0:
             indexes = self.view.selectionModel().selectedRows()
             self.model.removeRows(indexes[0].row(), 1)
@@ -135,6 +144,8 @@ class WordSetWidget(PluginWidget):
 
     def import_wordset(self, words, wordset_name):
         """Import given words into a new wordset in database
+
+        TODO: There is NO CHECK on users inputs!
 
         Args:
             words(list): List of words to be inserted
@@ -234,6 +245,7 @@ class WordSetWidget(PluginWidget):
         self.populate()
 
     def populate(self):
+        """Actualize the list of word sets"""
         self.view.clear()
         for data in get_sets(self.conn):
             item = QListWidgetItem()
