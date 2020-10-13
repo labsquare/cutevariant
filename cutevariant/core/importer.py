@@ -1,7 +1,4 @@
 """File importer and project creation"""
-# Standard imports
-import csv
-
 # Custom imports
 from cutevariant import __version__
 from .reader.abstractreader import AbstractReader
@@ -98,7 +95,7 @@ def async_import_reader(conn, reader: AbstractReader, pedfile=None, project={}):
     yield 0, "- controls are [" + ",".join(control_samples) + "]"
     yield 0, "- cases are [" + ",".join(case_samples) + "]"
 
-    print(list(get_samples(conn)))
+    print("get samples:", list(get_samples(conn)))
 
     # Insert fields
     yield 0, "Inserting fields..."
