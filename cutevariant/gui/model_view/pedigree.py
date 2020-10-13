@@ -247,10 +247,10 @@ class PedView(QTableView):
         """
         self.model.set_samples(samples)
 
-    @property
+    @Property(str)  # Qt property for QWizardPage.registerFields
     def pedfile(self):
         """Return the filepath of the PED file associated to the current model"""
-        if not self.get_samples():
+        if not self.samples:
             return
 
         if not self.outfile:
