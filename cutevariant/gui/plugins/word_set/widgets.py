@@ -1,6 +1,7 @@
 # Standard imports
 import os
 import tempfile
+import re
 # Qt imports
 from PySide2.QtWidgets import (
     QToolBar,
@@ -101,32 +102,48 @@ class WordListDialog(QDialog):
         )
 
         if filepath:
-            self.load_file()
+            self.load_file(filepath)
 
     def load_file(self, filename: str):
         """Load file into the view
 
-        A simple file with a list a word
+        Args:
+            filename(str): A simple file with a list of words
 
-        TODO : Do some Check as @ysard suggest
+        Current data filtering:
+            - Strip trailing spaces and EOL characters
+            - Skip lines with whitespaces characters (`[ \t\n\r\f\v]`)
+
+        Examples:
+            - The following line will be skipped:
+            `"abc  def\tghi\t  \r\n"`
+            - The following line will be cleaned:
+            `"abc\r\n"`
 
         Args:
             filename (str): a text file
         """
-        if os.path.exists(filename):
-            data = []
-            with open(filename, "r") as file:
-                for line in file:
-                    line = line.strip()
-                    data.append(str(line))
+        if not os.path.exists(filename):
+            return
 
-            self.model.setStringList(data)
+        # Search whitespaces
+        expr = re.compile("[\t\n\r\f\v]")
+        data = list()
+        with open(filename, "r") as f_h:
+            for line in f_h:
+                striped_line = line.strip()
+
+                if expr.findall(striped_line):
+                    # Skip lines with whitespaces
+                    continue
+                data.append(striped_line)
+
+        self.model.setStringList(data)
 
 
 class WordSetWidget(PluginWidget):
     """Plugin to show handle gene/word sets from user and gather matching variants
     as a new selection.
-
     """
 
     ENABLE = True
@@ -158,7 +175,7 @@ class WordSetWidget(PluginWidget):
     def import_wordset(self, words, wordset_name):
         """Import given words into a new wordset in database
 
-        TODO: There is NO CHECK on users inputs!
+        TODO: There is NO CHECK on user's inputs!
 
         Args:
             words(list): List of words to be inserted
