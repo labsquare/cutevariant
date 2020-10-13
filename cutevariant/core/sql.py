@@ -211,8 +211,8 @@ def delete_by_name(conn: sqlite3.Connection, name: str, table_name: str = None):
 
     Args:
         conn (sqlit3.Connection): sqlite3 connection
-        name (str): selection name
-        table_name (str):
+        name (str): Selection/set name
+        table_name (str): Name of the table concerned by the deletion
     Returns:
         int: Number of rows affected
     """
@@ -224,7 +224,7 @@ def delete_by_name(conn: sqlite3.Connection, name: str, table_name: str = None):
         return
 
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM selections WHERE name = ?", (name,))
+    cursor.execute(f"DELETE FROM `{table_name}` WHERE name = ?", (name,))
     conn.commit()
     return cursor.rowcount
 
