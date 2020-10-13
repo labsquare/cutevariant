@@ -86,7 +86,7 @@ def async_import_reader(conn, reader: AbstractReader, pedfile=None, project={}):
 
     # TODO: most of the time these lists are empty, are they tied to pedfile indentation ?
     # Compute control and cases samples
-    samples = get_samples(conn)
+    samples = tuple(get_samples(conn))
     LOGGER.debug("Check found samples in DB after PED import: %s", samples)
     control_samples = [
         sample["name"] for sample in samples if sample["phenotype"] == 1
