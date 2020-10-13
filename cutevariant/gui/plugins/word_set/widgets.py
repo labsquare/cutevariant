@@ -86,14 +86,14 @@ class WordListDialog(QDialog):
             self.load_file()
 
     def load_file(self, filename: str):
-        """Load file into the view 
+        """Load file into the view
 
-        A simple file with a list a word 
+        A simple file with a list a word
 
-        TODO : Do some Check as @ysard suggest 
-        
+        TODO : Do some Check as @ysard suggest
+
         Args:
-            filename (str): a text file 
+            filename (str): a text file
         """
         if os.path.exists(filename):
             data = []
@@ -106,23 +106,27 @@ class WordListDialog(QDialog):
 
 
 class WordSetWidget(PluginWidget):
-    """Plugin to show all annotations of a selected variant"""
+    """Plugin to show handle gene/word sets from user and gather matching variants
+    as a new selection.
+
+    """
 
     ENABLE = True
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.conn = None
-        self.setWindowTitle(self.tr("Word Set"))
+        self.setWindowTitle(self.tr("Word Sets"))
         self.toolbar = QToolBar()
         self.view = QListWidget()
         self.view.setIconSize(QSize(20, 20))
         self.view.itemDoubleClicked.connect(self.open_wordset)
+        self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
 
         # setup tool bar
         self.toolbar.setIconSize(QSize(16, 16))
-        self.toolbar.addAction(FIcon(0xF0415), "Add", self.add_wordset)
-        self.toolbar.addAction(FIcon(0xF0A7A), "Remove", self.remove_wordset)
+        self.toolbar.addAction(FIcon(0xF0415), self.tr("Add Word set"), self.add_wordset)
+        self.toolbar.addAction(FIcon(0xF0A7A), self.tr("Remove Word set"), self.remove_wordset)
 
         v_layout = QVBoxLayout()
         v_layout.setContentsMargins(0, 0, 0, 0)
@@ -134,39 +138,57 @@ class WordSetWidget(PluginWidget):
         self.setLayout(v_layout)
 
     def add_wordset(self):
+        """Display a window to allow to add/edit/remove word sets
 
+        The set is then imported in database.
+        """
         dialog = WordListDialog()
 
         if dialog.exec_() == QDialog.Accepted:
-            name, _ = QInputDialog.getText(self, "Set name", "Set name")
+            name, _ = QInputDialog.getText(
+                self,
+                self.tr("Create a new set"),
+                self.tr("Name of the new set:")
+            )
             if name:
+                # Dump the list in a temporary file
                 _, filename = tempfile.mkstemp()
                 with open(filename, "w") as file:
                     for word in dialog.model.stringList():
                         file.write(word + "\n")
 
+                # Import the content of the temp file in DB
                 import_cmd(self.conn, "sets", name, filename)
                 self.populate()
 
     def remove_wordset(self):
-
-        # if selection is empty
+        """Delete word set from database"""
         if len(self.view.selectedItems()) == 0:
+            # if selection is empty
             return
 
         reply = QMessageBox.question(
             self,
-            "Drop word set",
-            "Are you sure you want to remove selected elements ?",
+            self.tr("Drop word set"),
+            self.tr("Are you sure you want to remove the selected set(s)?"),
             QMessageBox.Yes | QMessageBox.No,
         )
-        print(reply)
-        if reply == QMessageBox.Yes:
-            for i in self.view.selectedItems():
-                result = drop_cmd(self.conn, "sets", i.text())
-                LOGGER.debug(result)
+        if reply != QMessageBox.Yes:
+            return
 
-            self.populate()
+        # Delete all selected sets
+        for i in self.view.selectedItems():
+            result = drop_cmd(self.conn, "sets", i.text())
+
+            if not result["success"]:
+                LOGGER.error(result)
+                QMessageBox.critical(
+                    self,
+                    self.tr("Error while deleting set"),
+                    self.tr("Error while deleting set '%s'") % i.text(),
+                )
+
+        self.populate()
 
     def open_wordset(self):
 
@@ -214,12 +236,8 @@ if __name__ == "__main__":
     conn = get_sql_connexion("C:/sacha/Dev/cutevariant/test.db")
 
     # import_cmd(conn, "sets", "boby", "examples/gene.txt")
-
     w = WordSetWidget()
     w.conn = conn
-
     w.populate()
-
     w.show()
-
     app.exec_()
