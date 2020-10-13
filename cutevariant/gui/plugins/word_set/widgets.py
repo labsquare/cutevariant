@@ -16,7 +16,7 @@ from PySide2.QtWidgets import (
     QPushButton,
     QInputDialog,
 )
-from PySide2.QtCore import QStringListModel, QSize
+from PySide2.QtCore import QStringListModel, QSize, QDir
 # Custom imports
 from cutevariant.gui.plugin import PluginWidget
 from cutevariant.core.sql import get_sql_connexion, get_sets, get_words_set
@@ -85,9 +85,22 @@ class WordListDialog(QDialog):
             self.model.removeRows(indexes[0].row(), 1)
 
     def on_load_file(self):
-        filename, _ = QFileDialog.getOpenFileName(self, "file", "", "Text file (*.txt)")
+        """Allow to automatically add words from a file
 
-        if filename:
+        See Also:
+            :meth:`load_file`
+        """
+        # Reload last directory used
+        last_directory = self.app_settings.value("last_directory", QDir.homePath())
+
+        filepath, _ = QFileDialog.getOpenFileName(
+            self,
+            self.tr("Open Word set"),
+            last_directory,
+            self.tr("Text file (*.txt)"),
+        )
+
+        if filepath:
             self.load_file()
 
     def load_file(self, filename: str):
