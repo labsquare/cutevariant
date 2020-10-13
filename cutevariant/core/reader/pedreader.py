@@ -154,8 +154,8 @@ class PedReader:
             individual_key = (family_id, individual_id)
             if samples_mapping and individual_key not in samples_mapping.keys():
                 LOGGER.error(
-                    "PED file conformity line <%s>; sample "
-                    "<fam:%s>, <individual_id:%s> not found in database",
+                    "PED file conformity line <%s>; sample (family_id, individual_id):"
+                    "<%s, %s> not found in database",
                     index, family_id, individual_id,
                 )
                 continue
@@ -167,8 +167,8 @@ class PedReader:
                 # If set not empty: 1 tuple is not found in DB
                 # => will be replaced by 0 (unknown)
                 LOGGER.warning(
-                    "PED file conformity line <%s>; parents (father_id, mother_id): "
-                    "<%s> or <%s> not found in database",
+                    "PED file conformity line <%s>; parent sample (family_id, parent_id),"
+                    "father: <%s> or mother: <%s> not found in database",
                     index, father_key, mother_key,
                 )
 
