@@ -137,6 +137,33 @@ class WordSetWidget(PluginWidget):
 
         self.setLayout(v_layout)
 
+    def import_wordset(self, words, wordset_name):
+        """Import given words into a new wordset in database
+
+        Args:
+            words(list): List of words to be inserted
+            wordset_name(str): Name of the word set
+
+        Returns:
+            (boolean): Status of the wordset creation
+        """
+        # Dump the list in a temporary file
+        _, filename = tempfile.mkstemp()
+        with open(filename, "w") as file:
+            [file.write(word + "\n") for word in words]
+
+        # Import the content of the temp file in DB
+        result = import_cmd(self.conn, "sets", wordset_name, filename)
+
+        if not result["success"]:
+            LOGGER.error(result)
+            QMessageBox.critical(
+                self,
+                self.tr("Error while importing set"),
+                self.tr("Error while importing set '%s'") % wordset_name,
+            )
+        return result["success"]
+
     def add_wordset(self):
         """Display a window to allow to add/edit/remove word sets
 
@@ -145,20 +172,13 @@ class WordSetWidget(PluginWidget):
         dialog = WordListDialog()
 
         if dialog.exec_() == QDialog.Accepted:
-            name, _ = QInputDialog.getText(
+            wordset_name, _ = QInputDialog.getText(
                 self,
                 self.tr("Create a new set"),
                 self.tr("Name of the new set:")
             )
-            if name:
-                # Dump the list in a temporary file
-                _, filename = tempfile.mkstemp()
-                with open(filename, "w") as file:
-                    for word in dialog.model.stringList():
-                        file.write(word + "\n")
-
-                # Import the content of the temp file in DB
-                import_cmd(self.conn, "sets", name, filename)
+            if wordset_name:
+                self.import_wordset(dialog.model.stringList(), wordset_name)
                 self.populate()
 
     def remove_wordset(self):
@@ -191,22 +211,21 @@ class WordSetWidget(PluginWidget):
         self.populate()
 
     def open_wordset(self):
+        """Display a window to allow to edit the selected word set
 
-        name = self.view.currentItem().text()
+        The previous set is dropped and the new is then imported in database.
+        """
+        wordset_name = self.view.currentItem().text()
         dialog = WordListDialog()
 
         # populate dialog
-        dialog.model.setStringList(list(get_words_set(self.conn, name)))
+        dialog.model.setStringList(list(get_words_set(self.conn, wordset_name)))
 
         if dialog.exec_() == QDialog.Accepted:
-            #  Drop previous
-            drop_cmd(self.conn, "sets", name)
-            _, filename = tempfile.mkstemp()
-            with open(filename, "w") as file:
-                for word in dialog.model.stringList():
-                    file.write(word + "\n")
-
-            import_cmd(self.conn, "sets", name, filename)
+            # Drop previous
+            drop_cmd(self.conn, "sets", wordset_name)
+            # Import new
+            self.import_wordset(dialog.model.stringList(), wordset_name)
             self.populate()
 
     def on_open_project(self, conn):
