@@ -228,7 +228,7 @@ class SamplePage(QWizardPage):
 
         filepath, filetype = QFileDialog.getOpenFileName(
             self,
-            self.tr("Open ped file"),
+            self.tr("Open PED file"),
             last_directory,
             self.tr("PED files (*.ped *.tfam)"),
         )
