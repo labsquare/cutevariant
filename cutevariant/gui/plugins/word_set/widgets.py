@@ -1,10 +1,7 @@
-from cutevariant.gui.plugin import PluginWidget
-from cutevariant.core.sql import get_sql_connexion, get_sets, get_words_set
-from cutevariant.core.command import import_cmd, import_cmd, drop_cmd
-from cutevariant import commons as cm
-from cutevariant.gui.ficon import FIcon
-
+# Standard imports
 import os
+import tempfile
+# Qt imports
 from PySide2.QtWidgets import (
     QToolBar,
     QListWidget,
@@ -15,18 +12,17 @@ from PySide2.QtWidgets import (
     QHBoxLayout,
     QFileDialog,
     QMessageBox,
-    QDialogButtonBox,
     QDialog,
     QPushButton,
     QInputDialog,
 )
-
-
-from PySide2.QtCore import QStringListModel, Qt, QDir, QSize
-from PySide2.QtGui import QIcon
-
-import tempfile
-
+from PySide2.QtCore import QStringListModel, QSize
+# Custom imports
+from cutevariant.gui.plugin import PluginWidget
+from cutevariant.core.sql import get_sql_connexion, get_sets, get_words_set
+from cutevariant.core.command import import_cmd, drop_cmd
+from cutevariant import commons as cm
+from cutevariant.gui.ficon import FIcon
 
 LOGGER = cm.logger()
 
