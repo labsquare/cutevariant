@@ -22,6 +22,7 @@ def test_csv_writer(writer):
     - Headers: chr, pos, ref, alt (no id column)
     """
     conn = sqlite3.connect(":memory:")
+    conn.row_factory = sqlite3.Row
     import_reader(conn, FakeReader())
     writer.save(conn)
 
