@@ -103,7 +103,7 @@ Ce programme est distribué selon les termes de la Licence Publique Générale G
 <context>
     <name>FilePage</name>
     <message>
-        <location filename="cutevariant/gui/wizards/projectwizard.py" line="97"/>
+        <location filename="cutevariant/gui/wizards/projectwizard.py" line="100"/>
         <source>Select a file</source>
         <translation>Sélectionner un fichier</translation>
     </message>
@@ -113,12 +113,12 @@ Ce programme est distribué selon les termes de la Licence Publique Générale G
         <translation type="obsolete">Les fichiers vcf et vcf.gz sont supportés.</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/wizards/projectwizard.py" line="103"/>
+        <location filename="cutevariant/gui/wizards/projectwizard.py" line="106"/>
         <source>Browse</source>
         <translation>Parcourir</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/wizards/projectwizard.py" line="131"/>
+        <location filename="cutevariant/gui/wizards/projectwizard.py" line="134"/>
         <source>Open a file</source>
         <translation>Ouvrir un fichier</translation>
     </message>
@@ -133,12 +133,12 @@ Ce programme est distribué selon les termes de la Licence Publique Générale G
         <translation type="obsolete">Fichier VCF (*.vcf *.vcf.gz) </translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/wizards/projectwizard.py" line="98"/>
+        <location filename="cutevariant/gui/wizards/projectwizard.py" line="101"/>
         <source>Supported file are vcf, vcf.gz, vep.txt.</source>
         <translation>Les fichiers vcf, vcf.gz, vep.txt sont supportés.</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/wizards/projectwizard.py" line="131"/>
+        <location filename="cutevariant/gui/wizards/projectwizard.py" line="134"/>
         <source>VCF file (*.vcf *.vcf.gz);; CSV file (*.csv *.tsv *.txt)</source>
         <translation>Fichier VCF (*.vcf *.vcf.gz);; Fichier CSV (*.csv *.tsv *.txt) </translation>
     </message>
@@ -148,12 +148,12 @@ Ce programme est distribué selon les termes de la Licence Publique Générale G
         <translation type="obsolete">annotations détectées!&lt;/b&gt;</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/wizards/projectwizard.py" line="149"/>
+        <location filename="cutevariant/gui/wizards/projectwizard.py" line="152"/>
         <source>&lt;b&gt;No annotation data has been detected!&lt;/b&gt;</source>
         <translation>&lt;b&gt;Aucune donnée d&apos;annotation n&apos;a été détectée&lt;/b&gt;</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/wizards/projectwizard.py" line="147"/>
+        <location filename="cutevariant/gui/wizards/projectwizard.py" line="150"/>
         <source>&lt;b&gt;%s annotations detected!&lt;/b&gt;</source>
         <translation>&lt;b&gt;Annotations de type %s détectées!&lt;/b&gt;</translation>
     </message>
@@ -245,42 +245,42 @@ Ce programme est distribué selon les termes de la Licence Publique Générale G
 <context>
     <name>ImportPage</name>
     <message>
-        <location filename="cutevariant/gui/wizards/projectwizard.py" line="349"/>
+        <location filename="cutevariant/gui/wizards/projectwizard.py" line="372"/>
         <source>Import file</source>
         <translation>Importer un fichier</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/wizards/projectwizard.py" line="350"/>
+        <location filename="cutevariant/gui/wizards/projectwizard.py" line="373"/>
         <source>Please click on Import/Stop to start or stop the process.</source>
         <translation>Veuillez cliquer sur le bouton Importer/Arrêter pour démarrer ou arrêter le processus.</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/wizards/projectwizard.py" line="353"/>
+        <location filename="cutevariant/gui/wizards/projectwizard.py" line="376"/>
         <source>Import</source>
         <translation>Importer</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/wizards/projectwizard.py" line="353"/>
+        <location filename="cutevariant/gui/wizards/projectwizard.py" line="376"/>
         <source>Stop</source>
         <translation>Arrêter</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/wizards/projectwizard.py" line="461"/>
+        <location filename="cutevariant/gui/wizards/projectwizard.py" line="497"/>
         <source>Import </source>
         <translation>Importer</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/wizards/projectwizard.py" line="377"/>
+        <location filename="cutevariant/gui/wizards/projectwizard.py" line="403"/>
         <source>Started</source>
         <translation>Démarrage</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/wizards/projectwizard.py" line="420"/>
+        <location filename="cutevariant/gui/wizards/projectwizard.py" line="467"/>
         <source>Done</source>
         <translation>Terminé</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/wizards/projectwizard.py" line="424"/>
+        <location filename="cutevariant/gui/wizards/projectwizard.py" line="471"/>
         <source>Stopped!</source>
         <translation>Arrêté!</translation>
     </message>
@@ -597,6 +597,14 @@ The following exception occurred:
     </message>
 </context>
 <context>
+    <name>PedDelegate</name>
+    <message>
+        <location filename="cutevariant/gui/model_view/pedigree.py" line="254"/>
+        <source>&lt;b&gt;Same father and mother for sample &apos;{}&apos;&lt;/b&gt;</source>
+        <translation>&lt;b&gt;Père et mère identiques pour le sample &apos;{}&apos;&lt;/b</translation>
+    </message>
+</context>
+<context>
     <name>PluginsSettingsWidget</name>
     <message>
         <location filename="cutevariant/gui/settings.py" line="287"/>
@@ -607,37 +615,37 @@ The following exception occurred:
 <context>
     <name>ProjectPage</name>
     <message>
-        <location filename="cutevariant/gui/wizards/projectwizard.py" line="26"/>
+        <location filename="cutevariant/gui/wizards/projectwizard.py" line="29"/>
         <source>Project creation</source>
         <translation>Création d&apos;un nouveau projet</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/wizards/projectwizard.py" line="27"/>
+        <location filename="cutevariant/gui/wizards/projectwizard.py" line="30"/>
         <source>This wizard will guide you to create a cutevariant project.</source>
         <translation>Cet assitant vous aidera à créer un projet Cutevariant.</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/wizards/projectwizard.py" line="56"/>
+        <location filename="cutevariant/gui/wizards/projectwizard.py" line="59"/>
         <source>Reference genom</source>
         <translation>Génome de référence</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/wizards/projectwizard.py" line="57"/>
+        <location filename="cutevariant/gui/wizards/projectwizard.py" line="60"/>
         <source>Project Name</source>
         <translation>Nom du projet</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/wizards/projectwizard.py" line="58"/>
+        <location filename="cutevariant/gui/wizards/projectwizard.py" line="61"/>
         <source>Create in</source>
         <translation>Créer dans</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/wizards/projectwizard.py" line="69"/>
+        <location filename="cutevariant/gui/wizards/projectwizard.py" line="72"/>
         <source>Select a path for the project</source>
         <translation>Sélectionner un dossier pour le projet</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/wizards/projectwizard.py" line="38"/>
+        <location filename="cutevariant/gui/wizards/projectwizard.py" line="41"/>
         <source>Browse</source>
         <translation>Parcourir</translation>
     </message>
@@ -645,7 +653,7 @@ The following exception occurred:
 <context>
     <name>ProjectWizard</name>
     <message>
-        <location filename="cutevariant/gui/wizards/projectwizard.py" line="482"/>
+        <location filename="cutevariant/gui/wizards/projectwizard.py" line="527"/>
         <source>Cutevariant - Project creation wizard</source>
         <translation>Cutevariant - Assistant de création de projet</translation>
     </message>
@@ -702,29 +710,40 @@ The following exception occurred:
 <context>
     <name>SamplePage</name>
     <message>
-        <location filename="cutevariant/gui/wizards/projectwizard.py" line="176"/>
+        <location filename="cutevariant/gui/wizards/projectwizard.py" line="179"/>
         <source>Samples</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/wizards/projectwizard.py" line="177"/>
+        <location filename="cutevariant/gui/wizards/projectwizard.py" line="180"/>
         <source>Add sample descriptions or skip this step.</source>
         <translation>Éditez les samples du projet ou sauter cette étape.</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/wizards/projectwizard.py" line="180"/>
+        <location filename="cutevariant/gui/wizards/projectwizard.py" line="188"/>
         <source>Import PED file (facultative)</source>
         <translation>Importer un fichier PED (facultatif)</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/wizards/projectwizard.py" line="236"/>
+        <location filename="cutevariant/gui/wizards/projectwizard.py" line="251"/>
         <source>Open PED file</source>
         <translation>Ouvrir un fichier PED</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/wizards/projectwizard.py" line="236"/>
+        <location filename="cutevariant/gui/wizards/projectwizard.py" line="251"/>
         <source>PED files (*.ped *.tfam)</source>
         <translation>Fichier PED (*.ped *.tfam)</translation>
+    </message>
+    <message>
+        <location filename="cutevariant/gui/wizards/projectwizard.py" line="181"/>
+        <source>You can edit the relationships between genomes found in the VCF
+manually or via a PED/PLINK file (sample pedigree information and genotype calls).
+By default the fields are those found in the VCF; the unknown fields are empty.
+Double click to edit them.</source>
+        <translation>Vous pouvez éditer les relations entre génomes trouvés dans le VCF
+manuellement ou via un fichier PED/PLINK (sample pedigree information and genotype calls);
+Par défaut les champs sont ceux trouvés dans le VCF, les champs inconnus sont vides.
+Doublez-cliquez pour les éditer.</translation>
     </message>
 </context>
 <context>
