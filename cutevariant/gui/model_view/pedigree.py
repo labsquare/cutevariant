@@ -179,9 +179,14 @@ class PedDelegate(QItemDelegate):
 
         widget = QComboBox(parent)
         if index.column() == 2 or index.column() == 3:
+            # Get individual_id of the current row/sample
+            current_individual_id = index.model().samples_data[index.row()][1]
+            # Remove current individual_id from propositions
+            individual_ids = set(index.model().get_data_list(1))
+            individual_ids.remove(current_individual_id)
             # father_id or mother_id columns
             widget.addItem("", "0")
-            for individual_id in index.model().get_data_list(1):
+            for individual_id in individual_ids:
                 widget.addItem(individual_id, individual_id)
 
             return widget
