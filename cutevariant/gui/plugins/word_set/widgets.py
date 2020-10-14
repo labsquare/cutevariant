@@ -23,7 +23,7 @@ from PySide2.QtGui import QIcon
 
 # Custom imports
 from cutevariant.gui.plugin import PluginWidget
-from cutevariant.core.sql import get_sql_connexion, get_sets, get_words_set
+from cutevariant.core.sql import get_sql_connexion, get_sets, get_words_set, sanitize_words
 from cutevariant.core.command import import_cmd, drop_cmd
 from cutevariant import commons as cm
 from cutevariant.gui.ficon import FIcon
@@ -147,17 +147,9 @@ class WordListDialog(QDialog):
         if not os.path.exists(filename):
             return
 
-        # Search whitespaces
-        expr = re.compile("[\t\n\r\f\v]")
-        data = set()
+        # Sanitize words
         with open(filename, "r") as f_h:
-            for line in f_h:
-                striped_line = line.strip()
-
-                if expr.findall(striped_line):
-                    # Skip lines with whitespaces
-                    continue
-                data.add(striped_line)
+            data = sanitize_words(f_h)
 
         data.update(self.model.stringList())
         self.model.setStringList(list(data))
@@ -217,7 +209,8 @@ class WordSetWidget(PluginWidget):
     def import_wordset(self, words, wordset_name):
         """Import given words into a new wordset in database
 
-        TODO: There is NO CHECK on manual user's inputs!
+        Warnings:
+            There is NO CHECK on manual user's inputs! Except during DB insertion.
 
         Args:
             words(list): List of words to be inserted

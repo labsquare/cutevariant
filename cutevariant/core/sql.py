@@ -546,6 +546,27 @@ def create_table_sets(conn: sqlite3.Connection):
     conn.commit()
 
 
+def sanitize_words(words):
+    """Return a set of cleaned words
+
+    See Also:
+        - :meth:`insert_set_from_file`
+        - :meth:`cutevariant.gui.plugins.word_set.widgets.WordListDialog.load_file`
+    """
+    # Search whitespaces
+    expr = re.compile("[ \t\n\r\f\v]")
+    data = set()
+
+    for line in words:
+        striped_line = line.strip()
+
+        if expr.findall(striped_line):
+            # Skip lines with whitespaces
+            continue
+        data.add(striped_line)
+    return data
+
+
 def insert_set_from_file(conn: sqlite3.Connection, wordset_name, filename):
     """Create Word set from the given file
 
@@ -555,6 +576,7 @@ def insert_set_from_file(conn: sqlite3.Connection, wordset_name, filename):
 
     Returns:
         Number of rows affected during insertion (number of words inserted).
+        None if 0 word can be inserted.
 
     Current data filtering (same as in the word_set plugin):
         - Strip trailing spaces and EOL characters
@@ -567,16 +589,11 @@ def insert_set_from_file(conn: sqlite3.Connection, wordset_name, filename):
         `"abc\r\n"`
     """
     # Search whitespaces
-    expr = re.compile("[\t\n\r\f\v]")
-    data = set()
     with open(filename, "r") as f_h:
-        for line in f_h:
-            striped_line = line.strip()
+        data = sanitize_words(f_h)
 
-            if expr.findall(striped_line):
-                # Skip lines with whitespaces
-                continue
-            data.add(striped_line)
+    if not data:
+        return
 
     # Insertion
     cursor = conn.cursor()
