@@ -177,6 +177,7 @@ class WordSetWidget(PluginWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.conn = None
+        self.set_names = list()
         self.setWindowTitle(self.tr("Word Sets"))
         self.toolbar = QToolBar()
         self.view = QListWidget()
@@ -251,13 +252,29 @@ class WordSetWidget(PluginWidget):
         """
         dialog = WordListDialog()
 
-        if dialog.exec_() == QDialog.Accepted:
+        if dialog.exec_() != QDialog.Accepted:
+            return
+
+        wordset_name = None
+        while not wordset_name:
             wordset_name, _ = QInputDialog.getText(
                 self, self.tr("Create a new set"), self.tr("Name of the new set:")
             )
-            if wordset_name:
-                self.import_wordset(dialog.model.stringList(), wordset_name)
-                self.populate()
+            if not wordset_name:
+                return
+
+            if wordset_name in self.set_names:
+                # Name already used
+                QMessageBox.critical(
+                    self,
+                    self.tr("Error while creating set"),
+                    self.tr("Error while creating set '%s'; Name is already used") % wordset_name,
+                )
+                wordset_name = None
+
+        # Import & update view
+        self.import_wordset(dialog.model.stringList(), wordset_name)
+        self.populate()
 
     def remove_wordset(self):
         """Delete word set from database"""
@@ -318,11 +335,14 @@ class WordSetWidget(PluginWidget):
     def populate(self):
         """Actualize the list of word sets"""
         self.view.clear()
+        self.set_names = list()
         for data in get_sets(self.conn):
+            set_name = data["name"]
             item = QListWidgetItem()
-            item.setText(data["name"])
+            item.setText(set_name)
             item.setIcon(FIcon(0xF0A38))
             self.view.addItem(item)
+            self.set_names.append(set_name)
 
 
 if __name__ == "__main__":
