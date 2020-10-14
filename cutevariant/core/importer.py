@@ -84,19 +84,21 @@ def async_import_reader(conn, reader: AbstractReader, pedfile=None, project={}):
         yield 0, f"Import pedfile {pedfile}"
         import_pedfile(conn, pedfile)
 
-    # TODO: most of the time these lists are empty, are they tied to pedfile indentation ?
-    # Compute control and cases samples
-    samples = tuple(get_samples(conn))
-    LOGGER.debug("Check found samples in DB after PED import: %s", samples)
-    control_samples = [
-        sample["name"] for sample in samples if sample["phenotype"] == 1
-    ]
-    case_samples = [
-        sample["name"] for sample in samples if sample["phenotype"] == 2
-    ]
-    yield 0, "Compute phenotypes from samples:"
-    yield 0, "- Found controls are: [" + ",".join(control_samples) + "]"
-    yield 0, "- Found cases are: [" + ",".join(case_samples) + "]"
+        # Compute control and cases samples
+        samples = tuple(get_samples(conn))
+        LOGGER.debug("Check found samples in DB after PED import: %s", samples)
+        control_samples = [
+            sample["name"] for sample in samples if sample["phenotype"] == 1
+        ]
+        case_samples = [
+            sample["name"] for sample in samples if sample["phenotype"] == 2
+        ]
+        yield 0, "Compute phenotypes from samples:"
+        yield 0, "- Found controls are: [" + ",".join(control_samples) + "]"
+        yield 0, "- Found cases are: [" + ",".join(case_samples) + "]"
+    else:
+        control_samples = list()
+        case_samples = list()
 
     # Insert fields
     yield 0, "Inserting fields..."

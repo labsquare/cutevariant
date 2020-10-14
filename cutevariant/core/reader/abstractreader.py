@@ -289,6 +289,9 @@ class AbstractReader(ABC):
             duplicates.add(field["name"])
 
     def get_extra_variants(self, **kwargs):
+
+        LOGGER.error("fonction non documentée; que se passe t-il si pas de control/case ?"
+                     "son appel est-il obligatoire ?")
         for variant in self.get_variants():
             variant["favorite"] = False
             variant["comment"] = ""

@@ -183,7 +183,10 @@ class SamplePage(QWizardPage):
         v_layout.addWidget(self.import_button)
         self.setLayout(v_layout)
 
-        self.vcf_samples = list()
+        self.vcf_samples = list()  # Raw individual_ids from VCF
+        # PED data built from VCF ids (other fields than individual_id are default)
+        # used as a reference to detect user changes
+        self.vcf_default_ped_samples = list()
 
         self.import_button.clicked.connect(self.on_import_clicked)
 
@@ -200,19 +203,23 @@ class SamplePage(QWizardPage):
         # Open variant file of the project and read its headers
         filename = self.field("filename")
         with create_reader(filename) as reader:
-            # Get samples of the project
+            # Get samples of the vcf project
             self.vcf_samples = reader.get_samples()
 
-            samples = [
+            self.vcf_default_ped_samples = [
                 # family_id, individual_id, father_id, mother_id, sex, genotype
                 ["fam", name, "0", "0", "0", "0", "0"]
                 for name in self.vcf_samples
             ]
-            self.view.samples = samples
+            self.view.samples = self.vcf_default_ped_samples
 
     def validatePage(self):
-        """Overridden"""
-        # read table and create a dict for setFields
+        """Overrided: Called when a user clicks on next button"""
+        # Check if PedView contains the same default data
+        if set(map(tuple, self.vcf_default_ped_samples)) == set(map(tuple, self.view.samples)):
+            # Reset samples => will set pedfile field to None
+            self.view.samples = list()
+
         return True
 
     @Slot()
