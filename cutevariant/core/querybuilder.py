@@ -8,6 +8,43 @@ Examples:
     query = build_query(["chr","pos"])
     conn.execute(query)
 
+
+A variant query can be understood from 3 points of view :  
+
+## The SQL statements: 
+This is the raw sqlite query.
+
+    "SELECT `variants`.`chr`, `variants`.`pos` FROM `variants` WHERE `variants`.`ref` == 'A' "
+
+## The VQL statements: 
+This is a domain specific language . Check the vql module for more information
+
+    SELECT chr, pos FROM variants WHERE ref == 'A'
+
+## The Python statemets : 
+The representation of the query as a dictionnary. 
+
+    query = {
+        "fields": ["chr","pos"],
+        "source": "variants", 
+        "filters": {
+        "AND": 
+            [
+                {"name":"ref", "operator":"==","value":"A"}
+            ]
+        }
+    }
+
+The following module contains several functions to make easy conversion from python statements to VQL or SQL statements . 
+
+In the most of the case, you only need to use : 
+
+build_vql_query => to create a VQL query from python statements 
+build_query => to create a SQL query from python statements 
+
+TODO: rename build_query to build_sql_query for more coherence .
+
+
 """
 # Standard imports
 import sqlite3
@@ -113,12 +150,21 @@ def set_function_to_sql(field_function: tuple):
     return f"(SELECT value FROM sets WHERE name = '{arg_name}')"
 
 
-def fields_to_vql(field):
+def fields_to_vql(field) -> str:
+    """Return field as vql syntax
+    
+    This is used to convert tuple field and create a VQL query 
+    Examples:
+        field = ("sample","boby", "gt")
+        field_to_vql(field) # sample['boby'].gt
 
-    LOGGER.info(
-        "BONJOUR c'est pour quoi faire ça ?"
-        "Tests, documentation, index magiques de field pour genotype ?"
-    )
+    Args:
+        field(str or tuple): a Field  
+    
+    Returns:
+        str: fields for vql query
+    
+    """
 
     if isinstance(field, str):
         return field
@@ -128,7 +174,7 @@ def fields_to_vql(field):
             return f"{field[0]}['{field[1]}'].{field[2]}"
 
 
-def fields_to_sql(field, default_tables={}, use_as=False):
+def fields_to_sql(field, default_tables={}, use_as=False) -> str:
     """Return field as sql syntax
 
     Args:

@@ -147,13 +147,6 @@ class AbstractReader(ABC):
         }
 
         yield {
-            "name": "is_major",
-            "type": "bool",
-            "category": "annotations",
-            "description": "is a major transcript",
-        }
-
-        yield {
             "name": "count_hom",
             "type": "int",
             "category": "variants",
@@ -289,9 +282,41 @@ class AbstractReader(ABC):
             duplicates.add(field["name"])
 
     def get_extra_variants(self, **kwargs):
+        """Yield variants with extra information computed.
+        The following information are added. See get_extra_fields 
 
-        LOGGER.error("fonction non documentée; que se passe t-il si pas de control/case ?"
-                     "son appel est-il obligatoire ?")
+        - favorite (bool) 
+        - comment (str)
+        - classification (int
+        - count_hom (int) : How many variants are mutant homozygous within samples 
+        - count_het (int): How many variants are heterozygous within samples
+        - count_ref (int): How many variants are wild homozygous with samples
+        - is_indel (bool): Is the variation an insertion / deletion 
+        - is_snp (bool): Is the variation an single nucleotide variation
+
+        If case/control are avaible from a pedfile, Counting from case and control are also computed.  
+        In this case, it is necessary to pass samples names in "case" and "control" to kwargs .
+
+            kwargs["case"] = ["boby", "raymond"]
+            kwargs["control"] = ["lucas", "pierre"]  
+
+        - case_count_hom (int): How many variant are mutant homzygous within case samples
+        - case_count_het (int): How many variant are heterozygous within case samples
+        - case_count_ref (int): How many variant are wild heterozygous within case samples
+        - control_count_hom (int): How many variant are mutant homzygous within control samples
+        - control_count_het (int): How many variant are heterozygous within control samples
+        - control_count_ref (int): How many variant are wild heterozygous within control samples
+
+        Args:
+            **kwargs (optional): case and control 
+        
+        Yields:
+            <generator>: variants
+        """
+        LOGGER.error(
+            "fonction non documentée; que se passe t-il si pas de control/case ?"
+            "son appel est-il obligatoire ?"
+        )
         for variant in self.get_variants():
             variant["favorite"] = False
             variant["comment"] = ""
@@ -300,12 +325,6 @@ class AbstractReader(ABC):
             # For now set the first annotation as a major transcripts
             if "annotations" in variant:
                 variant["annotation_count"] = len(variant["annotations"])
-                for index, ann in enumerate(variant["annotations"]):
-                    if "is_major" not in ann:
-                        if index == 0:
-                            ann["is_major"] = True
-                        else:
-                            ann["is_major"] = False
 
             # Count genotype by control and case
             genotype_counter = Counter()
@@ -398,6 +417,7 @@ class AbstractReader(ABC):
         Returns:
             Nothing but sets `self.number_lines` attribute.
         """
+
         def find_lines_in_text_file(text_file_handler):
             """Get first 15000 lines
 
@@ -416,11 +436,14 @@ class AbstractReader(ABC):
 
             if self.number_lines is None:
                 self.number_lines = int(
-                    self.file_size / (sum(first_lines) / len(first_lines)))
+                    self.file_size / (sum(first_lines) / len(first_lines))
+                )
 
             LOGGER.debug(
                 "nb lines evaluated: %s; size: %s; lines used: %s",
-                self.number_lines, self.file_size, len(first_lines)
+                self.number_lines,
+                self.file_size,
+                len(first_lines),
             )
 
         # FakeReader is used ?
