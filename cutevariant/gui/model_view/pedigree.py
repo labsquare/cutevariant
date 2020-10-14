@@ -8,6 +8,7 @@ from PySide2.QtCore import (
     QAbstractItemModel,
     QModelIndex,
     Property,
+    Signal,
 )
 
 from PySide2.QtWidgets import (
@@ -167,6 +168,20 @@ class PedModel(QAbstractTableModel):
 
 
 class PedDelegate(QItemDelegate):
+    """Allow the way items of data are rendered and edited to be customized
+
+    Signals:
+        parthenogenesis_detected(str): Emit message about the sample that has
+            the same father and mother ids.
+    """
+
+    parthenogenesis_detected = Signal(str)
+
+    def __init__(self):
+        super().__init__()
+        # Keep the rows of erroneous samples (same father/mother ids)
+        self.erroneous_samples = set()
+
     def createEditor(
         self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex
     ):
@@ -183,6 +198,7 @@ class PedDelegate(QItemDelegate):
 
         widget = QComboBox(parent)
         if index.column() == 2 or index.column() == 3:
+            # Forge a list of available individual ids except the current one
             # Get individual_id of the current row/sample
             current_individual_id = index.model().samples_data[index.row()][1]
             # Remove current individual_id from propositions
@@ -219,6 +235,27 @@ class PedDelegate(QItemDelegate):
         """
         if isinstance(editor, QComboBox):
             model.setData(index, editor.currentData())
+
+            if index.column() == 2 or index.column() == 3:
+                row = index.row()
+                model = index.model()
+                # Detect parthenogenesis: same mother and father
+                father_id = model.samples_data[row][2]
+                # Only for not unknown parents
+                if father_id != "0" and father_id == model.samples_data[row][3]:
+                    self.erroneous_samples.add(row)
+                elif row in self.erroneous_samples:
+                    # Reset interface
+                    self.parthenogenesis_detected.emit("")
+                    self.erroneous_samples.remove(row)
+
+            for row in self.erroneous_samples:
+                self.parthenogenesis_detected.emit(
+                    self.tr(
+                        "<b>Same father and mother for sample '{}'</b>").format(
+                        model.samples_data[row][1]
+                    )
+                )
             return
 
         # Basic text not editable
@@ -235,6 +272,8 @@ class PedView(QTableView):
         pedfile(str): PED filepath
     """
 
+    message = Signal(str)
+
     def __init__(self):
         super().__init__()
         self.model = PedModel()
@@ -245,6 +284,7 @@ class PedView(QTableView):
         self.verticalHeader().hide()
         self.setItemDelegate(self.delegate)
         self.setEditTriggers(QAbstractItemView.CurrentChanged)
+        self.delegate.parthenogenesis_detected.connect(self.message)
         # PED file for the model
         self.outfile = None
 

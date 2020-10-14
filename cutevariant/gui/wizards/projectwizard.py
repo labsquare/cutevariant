@@ -181,9 +181,11 @@ class SamplePage(QWizardPage):
         # TODO ADD help text in QLabel here
         self.view = PedView()
         self.import_button = QPushButton(self.tr("Import PED file (facultative)"))
+        self.ped_message = QLabel()
         v_layout = QVBoxLayout()
         v_layout.addWidget(self.view)
         v_layout.addWidget(self.import_button)
+        v_layout.addWidget(self.ped_message)
         self.setLayout(v_layout)
 
         self.vcf_samples = list()  # Raw individual_ids from VCF
@@ -192,6 +194,7 @@ class SamplePage(QWizardPage):
         self.vcf_default_ped_samples = list()
 
         self.import_button.clicked.connect(self.on_import_clicked)
+        self.view.message.connect(self.on_display_message)
 
         # Share PedView.pedfile accross Wizard pages
         self.registerField("pedfile", self.view, "pedfile")
@@ -257,6 +260,10 @@ class SamplePage(QWizardPage):
             sample for sample in PedReader(filepath, dict())
             if sample[1] in self.vcf_samples
         ]
+
+    def on_display_message(self, message):
+        """Display messages about data validation from the delegate"""
+        self.ped_message.setText(message)
 
 
 class ImportThread(QThread):
