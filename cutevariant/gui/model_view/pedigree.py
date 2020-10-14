@@ -159,7 +159,8 @@ class PedModel(QAbstractTableModel):
         if not index.isValid():
             return None
 
-        if index.column() > 0:
+        if index.column() > 1:
+            # Family ids & Individual ids are NOT editable (we must fit with the VCF file)
             return Qt.ItemIsSelectable | Qt.ItemIsEditable | Qt.ItemIsEnabled
 
         return Qt.ItemIsSelectable | Qt.ItemIsEnabled
@@ -169,16 +170,24 @@ class PedDelegate(QItemDelegate):
     def createEditor(
         self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex
     ):
+        """Return editor widget for columns of PedView
 
-        # index.model refer to SampleModel
+        Notes:
+            Family ids & Individual ids are NOT editable (we must fit with the VCF file)
+        """
+        # PS: index.model refer to SampleModel
 
         if index.column() < 2:
-            return super().createEditor(parent, option, index)
+            # Family ids & Individual ids are NOT editable (we must fit with the VCF file)
+            return
 
         widget = QComboBox(parent)
         if index.column() == 2 or index.column() == 3:
             # father_id or mother_id columns
-            widget.addItems([""] + index.model().get_data_list(1))
+            widget.addItem("", "0")
+            for individual_id in index.model().get_data_list(1):
+                widget.addItem(individual_id, individual_id)
+
             return widget
 
         if index.column() == 4:
@@ -200,11 +209,14 @@ class PedDelegate(QItemDelegate):
     def setModelData(
         self, editor: QWidget, model: QAbstractItemModel, index: QModelIndex
     ):
-
+        """Set the data for the item at the given index in the model to the
+        contents of the given editor.
+        """
         if isinstance(editor, QComboBox):
             model.setData(index, editor.currentData())
             return
 
+        # Basic text not editable
         return super().setModelData(editor, model, index)
 
 
