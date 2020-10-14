@@ -1,5 +1,8 @@
 # Standard imports
 import os
+import copy
+
+# Qt imports
 from PySide2.QtWidgets import *
 from PySide2.QtCore import QThread, Signal, QDir, QSettings, QFile, Slot
 from PySide2.QtGui import QIcon
@@ -211,11 +214,14 @@ class SamplePage(QWizardPage):
                 ["fam", name, "0", "0", "0", "0", "0"]
                 for name in self.vcf_samples
             ]
-            self.view.samples = self.vcf_default_ped_samples
+            # Deepcopy to avoid further modifications of this list of reference
+            self.view.samples = copy.deepcopy(self.vcf_default_ped_samples)
 
     def validatePage(self):
         """Overrided: Called when a user clicks on next button"""
         # Check if PedView contains the same default data
+        # print("default", self.vcf_default_ped_samples)
+        # print("vs", self.view.samples)
         if set(map(tuple, self.vcf_default_ped_samples)) == set(map(tuple, self.view.samples)):
             # Reset samples => will set pedfile field to None
             self.view.samples = list()
