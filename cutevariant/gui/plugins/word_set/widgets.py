@@ -132,7 +132,7 @@ class WordListDialog(QDialog):
         """Load file into the view
 
         Args:
-            filename(str): A simple file with a list of words
+            filename(str): A simple file with a list of words (1 per line)
 
         Current data filtering:
             - Strip trailing spaces and EOL characters
@@ -143,16 +143,13 @@ class WordListDialog(QDialog):
             `"abc  def\tghi\t  \r\n"`
             - The following line will be cleaned:
             `"abc\r\n"`
-
-        Args:
-            filename (str): a text file
         """
         if not os.path.exists(filename):
             return
 
         # Search whitespaces
         expr = re.compile("[\t\n\r\f\v]")
-        data = list()
+        data = set()
         with open(filename, "r") as f_h:
             for line in f_h:
                 striped_line = line.strip()
@@ -160,9 +157,10 @@ class WordListDialog(QDialog):
                 if expr.findall(striped_line):
                     # Skip lines with whitespaces
                     continue
-                data.append(striped_line)
+                data.add(striped_line)
 
-        self.model.setStringList(list(set(self.model.stringList() + data)))
+        data.update(self.model.stringList())
+        self.model.setStringList(list(data))
         # Simulate signal... TODO: check the syntax...
         self.model.rowsInserted.emit(0, 0, 0)
 
