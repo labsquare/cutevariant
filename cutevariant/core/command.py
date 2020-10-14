@@ -345,7 +345,7 @@ def show_cmd(conn: sqlite3.Connection, feature: str, **kwargs):
 
 
 def import_cmd(conn: sqlite3.Connection, feature=str, name=str, path=str, **kwargs):
-    """Import command for sets only
+    """Import command for word sets only
 
     This following VQL command:
         `IMPORT sets "gene.txt" AS boby`

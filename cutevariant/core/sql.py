@@ -31,6 +31,8 @@ import re
 import logging
 from pkg_resources import parse_version
 from functools import partial
+import itertools as it
+
 
 # Custom imports
 import cutevariant.commons as cm
@@ -211,8 +213,8 @@ def delete_by_name(conn: sqlite3.Connection, name: str, table_name: str = None):
 
     Args:
         conn (sqlit3.Connection): sqlite3 connection
-        name (str): selection name
-        table_name (str):
+        name (str): Selection/set name
+        table_name (str): Name of the table concerned by the deletion
     Returns:
         int: Number of rows affected
     """
@@ -224,7 +226,7 @@ def delete_by_name(conn: sqlite3.Connection, name: str, table_name: str = None):
         return
 
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM selections WHERE name = ?", (name,))
+    cursor.execute(f"DELETE FROM `{table_name}` WHERE name = ?", (name,))
     conn.commit()
     return cursor.rowcount
 
@@ -544,16 +546,61 @@ def create_table_sets(conn: sqlite3.Connection):
     conn.commit()
 
 
-def insert_set_from_file(conn: sqlite3.Connection, name, filename):
+def sanitize_words(words):
+    """Return a set of cleaned words
 
+    See Also:
+        - :meth:`insert_set_from_file`
+        - :meth:`cutevariant.gui.plugins.word_set.widgets.WordListDialog.load_file`
+    """
+    # Search whitespaces
+    expr = re.compile("[ \t\n\r\f\v]")
+    data = set()
+
+    for line in words:
+        striped_line = line.strip()
+
+        if expr.findall(striped_line):
+            # Skip lines with whitespaces
+            continue
+        data.add(striped_line)
+    return data
+
+
+def insert_set_from_file(conn: sqlite3.Connection, wordset_name, filename):
+    """Create Word set from the given file
+
+    Args:
+        wordset_name: Name of the Word set
+        filename: File to be imported, we expect 1 word per line.
+
+    Returns:
+        Number of rows affected during insertion (number of words inserted).
+        None if 0 word can be inserted.
+
+    Current data filtering (same as in the word_set plugin):
+        - Strip trailing spaces and EOL characters
+        - Skip lines with whitespaces characters (`[ \t\n\r\f\v]`)
+
+    Examples:
+        - The following line will be skipped:
+        `"abc  def\tghi\t  \r\n"`
+        - The following line will be cleaned:
+        `"abc\r\n"`
+    """
+    # Search whitespaces
+    with open(filename, "r") as f_h:
+        data = sanitize_words(f_h)
+
+    if not data:
+        return
+
+    # Insertion
     cursor = conn.cursor()
-    # TODO ignore duplicate
-    with open(filename) as file:
-        cursor.executemany(
-            """INSERT INTO sets (name, value) VALUES (?,?)""",
-            ((name, i.strip()) for i in file),
-        )
-
+    cursor.executemany(
+        """INSERT INTO sets (name, value) VALUES (?,?)""",
+        it.zip_longest(tuple(), data, fillvalue=wordset_name),
+    )
     conn.commit()
     return cursor.rowcount
 
@@ -563,14 +610,24 @@ delete_set_by_name = partial(delete_by_name, table_name="sets")
 
 
 def get_sets(conn):
+    """Return names and number of words in all sets stored in DB
+
+    Returns:
+        generator[dict]: Yield dictionaries with `name` and `count` keys.
+    """
     for row in conn.execute(
-        "SELECT name , COUNT(*) as 'count' FROM sets GROUP BY name"
+        "SELECT name, COUNT(*) as 'count' FROM sets GROUP BY name"
     ):
         yield dict(row)
 
 
-def get_words_set(conn, name):
-    for row in conn.execute(f"SELECT DISTINCT value FROM sets WHERE name = '{name}'"):
+def get_words_set(conn, wordset_name):
+    """Return generator of words in the given word set
+
+    Returns:
+        generator[str]: Yield words of the word set.
+    """
+    for row in conn.execute("SELECT DISTINCT value FROM sets WHERE name = ?", (wordset_name,)):
         yield dict(row)["value"]
 
 

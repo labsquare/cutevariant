@@ -125,14 +125,14 @@ class CsvReader(AbstractReader):
         yield {
             "name": "chr",
             "category": "variants",
-            "description": "chromosom",
+            "description": "chromosome",
             "type": "str",
             "constraint": "NOT NULL",
         }
         yield {
             "name": "pos",
             "category": "variants",
-            "description": "position",
+            "description": "Reference position, with the 1st base having position 1",
             "type": "int",
             "constraint": "NOT NULL",
         }

@@ -211,14 +211,14 @@ class VcfReader(AbstractReader):
         yield {
             "name": "chr",
             "category": "variants",
-            "description": "chromosom",
+            "description": "chromosome",
             "type": "str",
             "constraint": "NOT NULL",
         }
         yield {
             "name": "pos",
             "category": "variants",
-            "description": "position",
+            "description": "Reference position, with the 1st base having position 1",
             "type": "int",
             "constraint": "NOT NULL",
         }
@@ -239,19 +239,20 @@ class VcfReader(AbstractReader):
         yield {
             "name": "rsid",
             "category": "variants",
-            "description": "rsid",
+            "description": "rsid unique identifier (see dbSNP)",
             "type": "str",
         }
         yield {
             "name": "qual",
             "category": "variants",
-            "description": "quality",
+            "description": "Phred-scaled quality score for the assertion made in ALT:"
+                           "−10log10 prob(call in ALT is wrong).",
             "type": "int",
         }
         yield {
             "name": "filter",
             "category": "variants",
-            "description": "filter",
+            "description": "Filter status: PASS if this position has passed all filters.",
             "type": "str",
         }
 
@@ -293,31 +294,6 @@ class VcfReader(AbstractReader):
 
         if parser == "snpeff":
             self.annotation_parser = SnpEffParser()
-
-    def _get_record_size(self, record):
-        """Approximate record size in bytes (DEPRECATED)
-
-        An estimation of the progression can be made by updating
-        self.read_bytes attribute.
-
-        .. warning:: ugly .. For testing progression
-            Now we use
-        """
-        return (
-            len(
-                str(record.CHROM)
-                + str(record.POS)
-                + str(record.ID)
-                + str(record.REF)
-                + str(record.ALT)
-                + str(record.QUAL)
-                + str(record.FILTER)
-                + str(record.INFO)
-                + str(record.FORMAT)
-                + str(record.samples)
-            )
-            - 10
-        )
 
     def __repr__(self):
         return f"VCF Reader using {type(self.annotation_parser).__name__}"

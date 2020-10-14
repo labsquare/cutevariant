@@ -131,13 +131,13 @@ class AbstractReader(ABC):
             "name": "favorite",
             "type": "bool",
             "category": "variants",
-            "description": "is favorite",
+            "description": "Tag status as favorite",
         }
         yield {
             "name": "comment",
             "type": "str",
             "category": "variants",
-            "description": "Variant comment",
+            "description": "Variant comment written by user",
         }
         yield {
             "name": "classification",
@@ -175,7 +175,7 @@ class AbstractReader(ABC):
             "name": "count_var",
             "type": "int",
             "category": "variants",
-            "description": "Count number of variant ( not 0/0)",
+            "description": "Count number of variant (not 0/0)",
         }
 
         yield {
@@ -217,7 +217,7 @@ class AbstractReader(ABC):
             "name": "case_count_ref",
             "type": "int",
             "category": "variants",
-            "description": "Count number of homozygous ( 0/0) in case",
+            "description": "Count number of homozygous (0/0) in case",
         }
 
         yield {
