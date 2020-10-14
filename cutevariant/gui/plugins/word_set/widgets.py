@@ -243,6 +243,8 @@ class WordSetWidget(PluginWidget):
                 self.tr("Error while importing set"),
                 self.tr("Error while importing set '%s'") % wordset_name,
             )
+
+        os.remove(filename)
         return result["success"]
 
     def add_wordset(self):
