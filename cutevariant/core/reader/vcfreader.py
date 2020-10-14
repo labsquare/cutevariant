@@ -211,14 +211,14 @@ class VcfReader(AbstractReader):
         yield {
             "name": "chr",
             "category": "variants",
-            "description": "chromosom",
+            "description": "chromosome",
             "type": "str",
             "constraint": "NOT NULL",
         }
         yield {
             "name": "pos",
             "category": "variants",
-            "description": "position",
+            "description": "Reference position, with the 1st base having position 1",
             "type": "int",
             "constraint": "NOT NULL",
         }
@@ -239,19 +239,20 @@ class VcfReader(AbstractReader):
         yield {
             "name": "rsid",
             "category": "variants",
-            "description": "rsid",
+            "description": "rsid unique identifier (see dbSNP)",
             "type": "str",
         }
         yield {
             "name": "qual",
             "category": "variants",
-            "description": "quality",
+            "description": "Phred-scaled quality score for the assertion made in ALT:"
+                           "−10log10 prob(call in ALT is wrong).",
             "type": "int",
         }
         yield {
             "name": "filter",
             "category": "variants",
-            "description": "filter",
+            "description": "Filter status: PASS if this position has passed all filters.",
             "type": "str",
         }
 
