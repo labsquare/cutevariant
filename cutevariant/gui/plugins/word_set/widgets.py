@@ -2,6 +2,7 @@
 import os
 import tempfile
 import re
+
 # Qt imports
 from PySide2.QtWidgets import (
     QToolBar,
@@ -19,6 +20,7 @@ from PySide2.QtWidgets import (
 )
 from PySide2.QtCore import QStringListModel, QSize, QDir, QSettings
 from PySide2.QtGui import QIcon
+
 # Custom imports
 from cutevariant.gui.plugin import PluginWidget
 from cutevariant.core.sql import get_sql_connexion, get_sets, get_words_set
@@ -184,7 +186,9 @@ class WordSetWidget(PluginWidget):
 
         # setup tool bar
         self.toolbar.setIconSize(QSize(16, 16))
-        self.toolbar.addAction(FIcon(0xF0415), self.tr("Add Word set"), self.add_wordset)
+        self.toolbar.addAction(
+            FIcon(0xF0415), self.tr("Add Word set"), self.add_wordset
+        )
         self.edit_action = self.toolbar.addAction(
             FIcon(0xF0DC9), self.tr("Edit Word set"), self.open_wordset
         )
@@ -249,9 +253,7 @@ class WordSetWidget(PluginWidget):
 
         if dialog.exec_() == QDialog.Accepted:
             wordset_name, _ = QInputDialog.getText(
-                self,
-                self.tr("Create a new set"),
-                self.tr("Name of the new set:")
+                self, self.tr("Create a new set"), self.tr("Name of the new set:")
             )
             if wordset_name:
                 self.import_wordset(dialog.model.stringList(), wordset_name)
