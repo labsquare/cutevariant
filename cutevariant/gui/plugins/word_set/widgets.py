@@ -214,7 +214,7 @@ class WordSetWidget(PluginWidget):
     def import_wordset(self, words, wordset_name):
         """Import given words into a new wordset in database
 
-        TODO: There is NO CHECK on user's inputs!
+        TODO: There is NO CHECK on manual user's inputs!
 
         Args:
             words(list): List of words to be inserted
