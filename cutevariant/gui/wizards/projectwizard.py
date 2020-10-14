@@ -178,11 +178,17 @@ class SamplePage(QWizardPage):
 
         self.setTitle(self.tr("Samples"))
         self.setSubTitle(self.tr("Add sample descriptions or skip this step."))
-        # TODO ADD help text in QLabel here
+        self.help_text = QLabel(self.tr(
+            "You can edit the relationships between genomes found in the VCF\n"
+            "manually or via a PED/PLINK file (sample pedigree information and "
+            "genotype calls).\nBy default the fields are those found in the VCF; "
+            "the unknown fields are empty.\nDouble click to edit them."
+        ))
         self.view = PedView()
         self.import_button = QPushButton(self.tr("Import PED file (facultative)"))
         self.ped_message = QLabel()
         v_layout = QVBoxLayout()
+        v_layout.addWidget(self.help_text)
         v_layout.addWidget(self.view)
         v_layout.addWidget(self.import_button)
         v_layout.addWidget(self.ped_message)
