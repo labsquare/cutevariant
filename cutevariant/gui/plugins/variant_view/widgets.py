@@ -936,11 +936,15 @@ class VariantViewWidget(plugin.PluginWidget):
 
         # Top toolbar
         self.top_bar = QToolBar()
+        # PS: Actions with QAction::LowPriority will not show the text labels
         self.top_bar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
 
         # checkable group action
         self.groupby_action = self.top_bar.addAction(
             FIcon(0xF14E0), self.tr("Group by"), self.on_group_changed
+        )
+        self.groupby_action.setToolTip(
+            self.tr("Group variants according to columns")
         )
         self.groupby_action.setCheckable(True)
         self.groupby_action.setChecked(False)
@@ -963,13 +967,19 @@ class VariantViewWidget(plugin.PluginWidget):
 
         # Refresh UI button
         self.top_bar.addSeparator()
-        self.top_bar.addAction(FIcon(0xF0450), self.tr("Refresh"), self.on_refresh)
+        action = self.top_bar.addAction(
+            FIcon(0xF0450), self.tr("Refresh"), self.on_refresh
+        )
+        action.setPriority(QAction.LowPriority)
 
         # Save selection
         self.save_action = self.top_bar.addAction(
             FIcon(0xF0193), self.tr("Save selection"), self.on_save_selection
         )
-        self.save_action.setToolTip(self.tr("Save the variants into new selection"))
+        self.save_action.setToolTip(
+            self.tr("Save the current variants into a new selection")
+        )
+        self.save_action.setPriority(QAction.LowPriority)
 
         # Setup layout
         main_layout = QVBoxLayout()
@@ -1129,15 +1139,18 @@ class VariantViewWidget(plugin.PluginWidget):
 
     def on_group_changed(self):
         """Set group by fields when group by button is clicked"""
-
         is_checked = self.groupby_action.isChecked()
         is_grouped = self._is_grouped()
         if is_checked and not is_grouped:
-            # Group
+            # Group it
+            self.groupby_action.setIcon(FIcon(0xF14E1))
+            self.groupby_action.setToolTip(self.tr("Ungroup variants"))
             # Recall previous/default group
             self._set_groups(self.last_group)
         else:
-            # Ungroup
+            # Ungroup it
+            self.groupby_action.setIcon(FIcon(0xF14E0))
+            self.groupby_action.setToolTip(self.tr("Group variants according to columns"))
             # Save current group
             self.last_group = self.groupby_left_pane.group_by
         if not is_checked:

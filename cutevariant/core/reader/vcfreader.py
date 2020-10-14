@@ -283,7 +283,7 @@ class VcfReader(AbstractReader):
             }
 
     def get_samples(self):
-        """Return samples (individual/family data) of the file (empty list for this reader)"""
+        """Return list of samples (individual ids)."""
         return self.samples
 
     def _set_annotation_parser(self, parser: str):
