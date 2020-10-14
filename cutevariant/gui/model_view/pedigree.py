@@ -43,7 +43,7 @@ class PedModel(QAbstractTableModel):
             "Sample",
             "Father_id",
             "Mother_id",
-            "Sexe",
+            "Sex",
             "Phenotype",
         )
 
@@ -112,7 +112,11 @@ class PedModel(QAbstractTableModel):
         self.endResetModel()
 
     def data(self, index: QModelIndex, role=Qt.DisplayRole):
-        """ overrided """
+        """Overrided
+
+        Notes:
+            Default values of different sample fields are empty strings
+        """
         if not index.isValid():
             return
 
