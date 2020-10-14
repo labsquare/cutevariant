@@ -9,7 +9,7 @@ Examples:
     conn.execute(query)
 
 
-An SQL query can be understood from 3 point of view :  
+A variant query can be understood from 3 points of view :  
 
 ## The SQL statements: 
 This is the raw sqlite query.
