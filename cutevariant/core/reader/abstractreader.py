@@ -147,13 +147,6 @@ class AbstractReader(ABC):
         }
 
         yield {
-            "name": "is_major",
-            "type": "bool",
-            "category": "annotations",
-            "description": "is a major transcript",
-        }
-
-        yield {
             "name": "count_hom",
             "type": "int",
             "category": "variants",
@@ -332,12 +325,6 @@ class AbstractReader(ABC):
             # For now set the first annotation as a major transcripts
             if "annotations" in variant:
                 variant["annotation_count"] = len(variant["annotations"])
-                for index, ann in enumerate(variant["annotations"]):
-                    if "is_major" not in ann:
-                        if index == 0:
-                            ann["is_major"] = True
-                        else:
-                            ann["is_major"] = False
 
             # Count genotype by control and case
             genotype_counter = Counter()
