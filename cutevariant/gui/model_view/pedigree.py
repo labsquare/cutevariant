@@ -130,13 +130,11 @@ class PedModel(QAbstractTableModel):
 
             return value
 
-        return
-
     def setData(self, index: QModelIndex, value, role=Qt.EditRole):
         """ overrided """
 
         if not index.isValid():
-            return None
+            return
 
         if role == Qt.EditRole:
             self.samples_data[index.row()][index.column()] = value
@@ -152,12 +150,10 @@ class PedModel(QAbstractTableModel):
             if role == Qt.DisplayRole:
                 return self.headers[section]
 
-        return None
-
     def flags(self, index: QModelIndex):
         """ overrided """
         if not index.isValid():
-            return None
+            return
 
         if index.column() > 1:
             # Family ids & Individual ids are NOT editable (we must fit with the VCF file)
