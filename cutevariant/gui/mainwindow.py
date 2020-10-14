@@ -151,11 +151,10 @@ class MainWindow(QMainWindow):
             widget = plugin_widget_class(parent=self)
             if not widget.objectName():
                 LOGGER.debug(
-                    "widget '%s' has no objectName attribute"
-                    "and will be badly saved/restored",
-                    widget.windowTitle(),
+                    "widget '%s' has no objectName attribute; "
+                    "=> fallback to extension name",
+                    displayed_title,
                 )
-            else:
                 widget.setObjectName(name)
 
             # Set title
