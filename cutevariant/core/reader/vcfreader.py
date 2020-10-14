@@ -294,31 +294,6 @@ class VcfReader(AbstractReader):
         if parser == "snpeff":
             self.annotation_parser = SnpEffParser()
 
-    def _get_record_size(self, record):
-        """Approximate record size in bytes (DEPRECATED)
-
-        An estimation of the progression can be made by updating
-        self.read_bytes attribute.
-
-        .. warning:: ugly .. For testing progression
-            Now we use
-        """
-        return (
-            len(
-                str(record.CHROM)
-                + str(record.POS)
-                + str(record.ID)
-                + str(record.REF)
-                + str(record.ALT)
-                + str(record.QUAL)
-                + str(record.FILTER)
-                + str(record.INFO)
-                + str(record.FORMAT)
-                + str(record.samples)
-            )
-            - 10
-        )
-
     def __repr__(self):
         return f"VCF Reader using {type(self.annotation_parser).__name__}"
 
