@@ -320,7 +320,7 @@ class ImportThread(QThread):
                 pedfile=self.pedfile,
                 project=self.project_settings
             ):
-                if self._stop == True:
+                if self._stop:
                     self.conn.close()
                     break
                 # Send progression
@@ -329,17 +329,21 @@ class ImportThread(QThread):
         except BaseException as e:
             self.progress_changed.emit(0, str(e))
             self._stop = True
+            LOGGER.exception(e)
             raise e
         finally:
             # Send status (Send True when there is no error)
             self.finished_status.emit(not self._stop)
 
     def stop(self):
+        """Stop the import process"""
         self._stop = True
 
 
 class ImportPage(QWizardPage):
     """Page: Creation of the database"""
+
+    completeChanged = Signal()
 
     def __init__(self):
         super().__init__()
@@ -350,7 +354,8 @@ class ImportPage(QWizardPage):
         )
         self.text_buttons = [self.tr("Import"), self.tr("Stop")]
 
-        self.thread_finished = False
+        # Async stuff
+        self.thread_finished = False  # True if import process is correctly finished
         self.thread = ImportThread()
         self.progress = QProgressBar()
         self.import_button = QPushButton(self.text_buttons[0])
@@ -371,13 +376,15 @@ class ImportPage(QWizardPage):
 
         # File to open
         self.log_edit.appendPlainText(self.field("filename"))
+        # Database filename; see initializePage()
+        self.db_filename = None
 
         self.thread.started.connect(
             lambda: self.log_edit.appendPlainText(self.tr("Started"))
         )
 
         # Note: self.run is automatically launched when ImportPage is displayed
-        # See on_current_id_changed of ProjectWizard
+        # See initializePage()
         self.import_button.clicked.connect(self.run)
         self.thread.progress_changed.connect(self.progress_changed)
         self.thread.finished.connect(self.import_thread_finished)
@@ -388,8 +395,24 @@ class ImportPage(QWizardPage):
 
         Launch import process if currentPage is ImportPage
         """
-        print("Current PED file", self.field("pedfile"))
+        # print("Current PED file", self.field("pedfile"))
+        self.db_filename = (
+            self.field("project_path")
+            + QDir.separator()
+            + self.field("project_name")
+            + ".db"
+        )
         self.run()
+        self.import_button.setDisabled(False)
+
+    def cleanupPage(self):
+        """Called when back button is clicked: stop the import thread"""
+        self.thread_stop()
+
+        if self.thread_finished:
+            # The import process is not finished corretly
+            # Delete file
+            os.remove(self.db_filename)
 
     @Slot()
     def progress_changed(self, value, message):
@@ -403,7 +426,12 @@ class ImportPage(QWizardPage):
     @Slot()
     def import_thread_finished(self):
         """Force the activation of the finish button after a successful import"""
-        self.completeChanged.emit()
+        try:
+            self.completeChanged.emit()
+        except RuntimeError:
+            # When closing the wizard, the thread is stopped via cleanupPage()
+            # and finished signal is emitted after the deletion of the wizard.
+            pass
 
     @Slot()
     def import_thread_finished_status(self, status):
@@ -427,24 +455,13 @@ class ImportPage(QWizardPage):
         Launch the import in a separate thread
         """
         if self.thread.isRunning():
-            LOGGER.debug("ImportPage:run: stop thread")
-            self.import_button.setDisabled(True)
-            self.thread.stop()
-            self.progress.setValue(0)
-            self.import_button.setDisabled(False)
-            self.import_button.setText(self.text_buttons[0])
-
+            self.thread_stop()
         else:
             self.thread.set_importer_settings(
                 # File to open
                 filename=self.field("filename"),
                 # Project's filepath
-                db_filename=(
-                    self.field("project_path")
-                    + QDir.separator()
-                    + self.field("project_name")
-                    + ".db"
-                ),
+                db_filename=self.db_filename,
                 # PED file to use with samples
                 pedfile=self.field("pedfile"),
                 # Project's settings
@@ -460,6 +477,15 @@ class ImportPage(QWizardPage):
             # display stop on the button
             self.import_button.setText(self.text_buttons[1])
             self.thread.start()
+
+    def thread_stop(self):
+        """Stop the thread and refresh the UI"""
+        LOGGER.debug("ImportPage:run: stop thread")
+        self.import_button.setDisabled(True)
+        self.thread.stop()
+        self.progress.setValue(0)
+        self.import_button.setDisabled(False)
+        self.import_button.setText(self.text_buttons[0])
 
     def isComplete(self):
         """Conditions to unlock finish button"""
