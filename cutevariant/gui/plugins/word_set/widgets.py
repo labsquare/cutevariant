@@ -17,7 +17,8 @@ from PySide2.QtWidgets import (
     QPushButton,
     QInputDialog,
 )
-from PySide2.QtCore import QStringListModel, QSize, QDir, QSettings
+from PySide2.QtCore import QStringListModel, QSize, QDir, QSettings, QModelIndex
+from PySide2.QtGui import QIcon
 # Custom imports
 from cutevariant.gui.plugin import PluginWidget
 from cutevariant.core.sql import get_sql_connexion, get_sets, get_words_set
@@ -29,16 +30,23 @@ LOGGER = cm.logger()
 
 
 class WordListDialog(QDialog):
+    """Window to handle the edition of words in a word set"""
+
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        box = QVBoxLayout()
-        self.add_button = QPushButton("Add")
-        self.del_button = QPushButton("Remove")
-        self.add_file_button = QPushButton("From file ...")
+        self.setWindowTitle(self.tr("Edit Word set"))
+        self.setWindowIcon(QIcon(cm.DIR_ICONS + "app.png"))
 
-        self.save_button = QPushButton("Save")
-        self.cancel_button = QPushButton("Cancel")
+        box = QVBoxLayout()
+        self.add_button = QPushButton(self.tr("Add"))
+        self.add_file_button = QPushButton(self.tr("Add from file..."))
+        self.del_button = QPushButton(self.tr("Remove"))
+        self.del_button.setDisabled(True)
+
+        self.save_button = QPushButton(self.tr("Save"))
+        self.save_button.setDisabled(True)
+        self.cancel_button = QPushButton(self.tr("Cancel"))
 
         box.addWidget(self.add_button)
         box.addWidget(self.del_button)
@@ -64,6 +72,20 @@ class WordListDialog(QDialog):
 
         self.cancel_button.pressed.connect(self.reject)
         self.save_button.pressed.connect(self.accept)
+        # Item selected in view
+        self.view.selectionModel().selectionChanged.connect(self.on_item_selected)
+        # Data changed in model
+        self.model.dataChanged.connect(self.on_data_changed)
+        self.model.rowsInserted.connect(self.on_data_changed)
+        self.model.rowsRemoved.connect(self.on_data_changed)
+
+    def on_item_selected(self, *args):
+        """Enable the remove button when an item is selected"""
+        self.del_button.setEnabled(True)
+
+    def on_data_changed(self, *args):
+        """Enable the save button when data in model is changed"""
+        self.save_button.setEnabled(True)
 
     def on_add(self):
         """Allow to manually add a word to the list
@@ -138,11 +160,13 @@ class WordListDialog(QDialog):
                     continue
                 data.append(striped_line)
 
-        self.model.setStringList(data)
+        self.model.setStringList(list(set(self.model.stringList() + data)))
+        # Simulate signal... TODO: check the syntax...
+        self.model.rowsInserted.emit(0, 0, 0)
 
 
 class WordSetWidget(PluginWidget):
-    """Plugin to show handle gene/word sets from user and gather matching variants
+    """Plugin to show handle word sets from user and gather matching variants
     as a new selection.
     """
 
@@ -161,7 +185,14 @@ class WordSetWidget(PluginWidget):
         # setup tool bar
         self.toolbar.setIconSize(QSize(16, 16))
         self.toolbar.addAction(FIcon(0xF0415), self.tr("Add Word set"), self.add_wordset)
-        self.toolbar.addAction(FIcon(0xF0A7A), self.tr("Remove Word set"), self.remove_wordset)
+        self.edit_action = self.toolbar.addAction(
+            FIcon(0xF0DC9), self.tr("Edit Word set"), self.open_wordset
+        )
+        self.remove_action = self.toolbar.addAction(
+            FIcon(0xF0A7A), self.tr("Remove Word set"), self.remove_wordset
+        )
+        self.edit_action.setEnabled(False)
+        self.remove_action.setEnabled(False)
 
         v_layout = QVBoxLayout()
         v_layout.setContentsMargins(0, 0, 0, 0)
@@ -171,6 +202,14 @@ class WordSetWidget(PluginWidget):
         v_layout.addWidget(self.toolbar)
 
         self.setLayout(v_layout)
+
+        # Item selected in view
+        self.view.selectionModel().selectionChanged.connect(self.on_item_selected)
+
+    def on_item_selected(self, *args):
+        """Enable the remove button when an item is selected"""
+        self.edit_action.setEnabled(True)
+        self.remove_action.setEnabled(True)
 
     def import_wordset(self, words, wordset_name):
         """Import given words into a new wordset in database
