@@ -17,7 +17,7 @@ from PySide2.QtWidgets import (
     QPushButton,
     QInputDialog,
 )
-from PySide2.QtCore import QStringListModel, QSize, QDir, QSettings, QModelIndex
+from PySide2.QtCore import QStringListModel, QSize, QDir, QSettings
 from PySide2.QtGui import QIcon
 # Custom imports
 from cutevariant.gui.plugin import PluginWidget
