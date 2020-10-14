@@ -203,8 +203,12 @@ class WordSetWidget(PluginWidget):
 
     def on_item_selected(self, *args):
         """Enable the remove button when an item is selected"""
-        self.edit_action.setEnabled(True)
-        self.remove_action.setEnabled(True)
+        if self.view.selectionModel().selectedIndexes():
+            self.edit_action.setEnabled(True)
+            self.remove_action.setEnabled(True)
+        else:
+            self.edit_action.setEnabled(False)
+            self.remove_action.setEnabled(False)
 
     def import_wordset(self, words, wordset_name):
         """Import given words into a new wordset in database
