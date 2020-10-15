@@ -4,12 +4,13 @@ import os
 import sys
 import sqlite3
 from pkg_resources import parse_version
+from functools import partial
 from logging import DEBUG
 
 # Qt imports
-from PySide2.QtCore import Qt, QSettings, QByteArray, QDir
+from PySide2.QtCore import Qt, QSettings, QByteArray, QDir, QUrl
 from PySide2.QtWidgets import *
-from PySide2.QtGui import QIcon, QKeySequence
+from PySide2.QtGui import QIcon, QKeySequence, QDesktopServices
 
 # Custom imports
 from cutevariant.core import get_sql_connexion, get_metadatas, command
@@ -304,6 +305,13 @@ class MainWindow(QMainWindow):
         )
         self.help_menu.addAction(
             FIcon(0xF02D6), self.tr("What's this"), QWhatsThis.enterWhatsThisMode
+        )
+        self.help_menu.addAction(
+            FIcon(0xF0A30), self.tr("Report a bug"),
+            partial(
+                QDesktopServices.openUrl,
+                QUrl("https://github.com/labsquare/cutevariant/issues/new", QUrl.TolerantMode),
+            )
         )
 
     def setup_toolbar(self):
