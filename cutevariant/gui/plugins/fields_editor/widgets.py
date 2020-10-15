@@ -125,11 +125,15 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self.toolbar = QToolBar()
         # conn is always None here but initialized in on_open_project()
         self.model = FieldsModel(conn)
-        self.proxy_model = QSortFilterProxyModel()
 
         # setup proxy ( for search option )
+        self.proxy_model = QSortFilterProxyModel()
         self.proxy_model.setSourceModel(self.model)
         self.proxy_model.setRecursiveFilteringEnabled(True)
+        # Search is case insensitive
+        self.proxy_model.setFilterCaseSensitivity(Qt.CaseInsensitive)
+        # Search in all columns
+        self.proxy_model.setFilterKeyColumn(-1)
 
         self.view.setModel(self.proxy_model)
         self.view.setIconSize(QSize(16, 16))
@@ -159,7 +163,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
         # setup search edit
         search_act = self.toolbar.addAction(FIcon(0xF0969), self.tr("Search fields by keywords ..."))
         search_act.setCheckable(True)
-        search_act.toggled.connect(self.__on_search_pressed)
+        search_act.toggled.connect(self.on_search_pressed)
         self.search_edit.setVisible(False)
         self.search_edit.setPlaceholderText(self.tr("Search by keywords ... "))
 
@@ -169,7 +173,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
             False  # Help to avoid loop between on_refresh and on_fields_changed
         )
 
-    def __on_search_pressed(self, checked: bool):
+    def on_search_pressed(self, checked: bool):
         self.search_edit.setVisible(checked)
         self.search_edit.setFocus(Qt.MenuBarFocusReason)
 
