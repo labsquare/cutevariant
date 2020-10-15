@@ -1,6 +1,5 @@
-import pytest
 from pprint import pprint
-from cutevariant.core.vql import execute_vql, VQLSyntaxError
+from cutevariant.core.vql import execute_vql
 
 # Test valid VQL cases
 VQL_TO_TREE_CASES = {
