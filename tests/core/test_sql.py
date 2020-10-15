@@ -1,6 +1,7 @@
 import pytest
 import tempfile
 import copy
+import os
 
 from cutevariant.core import sql
 from cutevariant.core.reader import BedReader
@@ -152,6 +153,41 @@ def variants_data():
     return copy.deepcopy(VARIANTS)
 
 
+def kindly_wordset():
+    """Return filepath + expected data of a word set that contains 4 genes"""
+    _, filepath = tempfile.mkstemp()
+    data = ["gene1", "gene2", "KRAS", "BRCA1"]
+
+    # Simulate a file with a list of genes (1 per line)
+    with open(filepath, "w") as f_h:
+        f_h.write("\n".join(data))
+
+    return filepath, data
+
+
+def hasardous_wordset():
+    """Return filepath + expected data of a word set that contains 1 gene
+    and malformed biologistic data.
+
+    Notes:
+        Empty lines, whitespaces in line
+    """
+    _, filepath = tempfile.mkstemp()
+    data = ["gene2", "E.Micron", "xyz\r\n", "abc  def\tghi\t  \r\n"]
+
+    # Simulate a file with a list of genes (1 per line)
+    with open(filepath, "w") as f_h:
+        f_h.write("\n".join(data))
+
+    return filepath, data[:2] + ["xyz"]
+
+
+WORDSETS = [
+    kindly_wordset(),
+    hasardous_wordset(),
+]
+
+
 def test_create_connexion(conn):
     assert conn is not None
 
@@ -256,26 +292,29 @@ def test_update_variant(conn):
     assert inserted["chr"] == updated["chr"]
 
 
-def test_insert_set_from_file(conn):
+@pytest.mark.parametrize(
+    "wordset", WORDSETS, ids=["kindly_wordset", "hasardous_wordset"]
+)
+def test_insert_set_from_file(conn, wordset):
     """Test the insertion of gene names from file into the database
 
-    TODO: simulate much more problematic data from biologists please!
+    Simulation of problematic data from biologists is made via hasardous_wordset
     """
-    filename = tempfile.mkstemp()[1]
-    data = ["GJB2", "CFTR", "KRAS", "BRCA1"]
+    wordset_file, expected_data = wordset
 
-    # Simulate a file with a list of genes (1 per line)
-    with open(filename, "w") as fp:
-        fp.write("\n".join(data))
+    print("Expected data:", expected_data)
 
-    sql.insert_set_from_file(conn, "test", filename)
+    sql.insert_set_from_file(conn, "test_wordset", wordset_file)
 
     # TODO: for now the one to many relation is not implemented
     # All records have the name of the set... awesome
     for record in conn.execute("SELECT * FROM sets").fetchall():
         record = dict(record)
-        assert record["name"] == "test"
-        assert record["value"] in data
+        print("Found record:", record)
+        assert record["name"] == "test_wordset"
+        assert record["value"] in expected_data
+
+    os.remove(wordset_file)
 
 
 def test_selections(conn):
