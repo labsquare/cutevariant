@@ -23,38 +23,6 @@ Ce programme est distribué selon les termes de la Licence Publique Générale G
     </message>
 </context>
 <context>
-    <name>BrowseFileEdit</name>
-    <message>
-        <location filename="cutevariant/gui/widgets.py" line="9"/>
-        <source>Browse</source>
-        <translation type="obsolete">Parcourir</translation>
-    </message>
-</context>
-<context>
-    <name>ChartQueryWidget</name>
-    <message>
-        <location filename="cutevariant/gui/chartquerywidget.py" line="26"/>
-        <source>Charts</source>
-        <translation type="obsolete">Graphiques</translation>
-    </message>
-</context>
-<context>
-    <name>ColumnQueryWidget</name>
-    <message>
-        <location filename="cutevariant/gui/columnquerywidget.py" line="96"/>
-        <source>Columns</source>
-        <translation type="obsolete">Colonnes</translation>
-    </message>
-</context>
-<context>
-    <name>DatabaseSettingsWidget</name>
-    <message>
-        <location filename="cutevariant/gui/settings.py" line="258"/>
-        <source>database</source>
-        <translation type="obsolete">Base de données</translation>
-    </message>
-</context>
-<context>
     <name>DownloadDialog</name>
     <message>
         <location filename="cutevariant/gui/widgets/downloaddialog.py" line="54"/>
@@ -70,29 +38,9 @@ Ce programme est distribué selon les termes de la Licence Publique Générale G
         <translation>Colonnes</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/fields_editor/widgets.py" line="153"/>
-        <source>collapse</source>
-        <translation type="obsolete">Replier</translation>
-    </message>
-    <message>
         <location filename="cutevariant/gui/plugins/fields_editor/widgets.py" line="161"/>
         <source>Expand</source>
         <translation>Déplier</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/plugins/fields_editor/widgets.py" line="159"/>
-        <source>Search ...</source>
-        <translation type="obsolete">Recherche...</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/plugins/fields_editor/widgets.py" line="163"/>
-        <source>Search by keywords ... </source>
-        <translation type="obsolete">Recherche par mots clés...</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/plugins/fields_editor/widgets.py" line="159"/>
-        <source>Search fields by keywords ...</source>
-        <translation type="obsolete">Rechercher un champ à l&apos;aide de mots-clés...</translation>
     </message>
     <message>
         <location filename="cutevariant/gui/plugins/fields_editor/widgets.py" line="158"/>
@@ -118,11 +66,6 @@ Ce programme est distribué selon les termes de la Licence Publique Générale G
         <translation>Sélectionner un fichier</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/wizard/projetwizard.py" line="74"/>
-        <source>Supported file are vcf and vcf.gz.</source>
-        <translation type="obsolete">Les fichiers vcf et vcf.gz sont supportés.</translation>
-    </message>
-    <message>
         <location filename="cutevariant/gui/wizards/projectwizard.py" line="106"/>
         <source>Browse</source>
         <translation>Parcourir</translation>
@@ -131,16 +74,6 @@ Ce programme est distribué selon les termes de la Licence Publique Générale G
         <location filename="cutevariant/gui/wizards/projectwizard.py" line="134"/>
         <source>Open a file</source>
         <translation>Ouvrir un fichier</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/wizard/projetwizard.py" line="90"/>
-        <source>VCF file (*.vcf, *.vcf.gz)</source>
-        <translation type="obsolete">Fichier VCF (*.vcf, *.vcf.gz)</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/wizard/projetwizard.py" line="103"/>
-        <source>VCF file (*.vcf *.vcf.gz)</source>
-        <translation type="obsolete">Fichier VCF (*.vcf *.vcf.gz) </translation>
     </message>
     <message>
         <location filename="cutevariant/gui/wizards/projectwizard.py" line="101"/>
@@ -153,11 +86,6 @@ Ce programme est distribué selon les termes de la Licence Publique Générale G
         <translation>Fichier VCF (*.vcf *.vcf.gz);; Fichier CSV (*.csv *.tsv *.txt) </translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/wizard/projetwizard.py" line="134"/>
-        <source>annotations detected!&lt;/b&gt;</source>
-        <translation type="obsolete">annotations détectées!&lt;/b&gt;</translation>
-    </message>
-    <message>
         <location filename="cutevariant/gui/wizards/projectwizard.py" line="152"/>
         <source>&lt;b&gt;No annotation data has been detected!&lt;/b&gt;</source>
         <translation>&lt;b&gt;Aucune donnée d&apos;annotation n&apos;a été détectée&lt;/b&gt;</translation>
@@ -166,24 +94,6 @@ Ce programme est distribué selon les termes de la Licence Publique Générale G
         <location filename="cutevariant/gui/wizards/projectwizard.py" line="150"/>
         <source>&lt;b&gt;%s annotations detected!&lt;/b&gt;</source>
         <translation>&lt;b&gt;Annotations de type %s détectées!&lt;/b&gt;</translation>
-    </message>
-</context>
-<context>
-    <name>FilterQueryWidget</name>
-    <message>
-        <location filename="cutevariant/gui/filterquerywidget.py" line="131"/>
-        <source>Filter</source>
-        <translation type="obsolete">Filtre</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/filterquerywidget.py" line="172"/>
-        <source>add condition</source>
-        <translation type="obsolete">Ajouter une condition</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/filterquerywidget.py" line="174"/>
-        <source>Remove</source>
-        <translation type="obsolete">Supprimer</translation>
     </message>
 </context>
 <context>
@@ -240,19 +150,6 @@ Ce programme est distribué selon les termes de la Licence Publique Générale G
     </message>
 </context>
 <context>
-    <name>GeneralSettingsWidget</name>
-    <message>
-        <location filename="cutevariant/gui/settings.py" line="56"/>
-        <source>&amp;Choose a locale:</source>
-        <translation type="obsolete">&amp;Choisissez une langue:</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/settings.py" line="25"/>
-        <source>General</source>
-        <translation type="obsolete">Général</translation>
-    </message>
-</context>
-<context>
     <name>ImportPage</name>
     <message>
         <location filename="cutevariant/gui/wizards/projectwizard.py" line="372"/>
@@ -296,41 +193,11 @@ Ce programme est distribué selon les termes de la Licence Publique Générale G
     </message>
 </context>
 <context>
-    <name>InfoVariantWidget</name>
-    <message>
-        <location filename="cutevariant/gui/infovariantwidget.py" line="132"/>
-        <source>Attributes</source>
-        <translation type="obsolete">Attributs</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/infovariantwidget.py" line="132"/>
-        <source>Values</source>
-        <translation type="obsolete">Valeurs</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/infovariantwidget.py" line="59"/>
-        <source>Search the variant on {}</source>
-        <translation type="obsolete">Chercher le variant sur {}</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/infovariantwidget.py" line="66"/>
-        <source>Copy variant to clipboard</source>
-        <translation type="obsolete">Copier le variant dans le presse-papier</translation>
-    </message>
-</context>
-<context>
     <name>LinkSettings</name>
     <message>
         <location filename="cutevariant/gui/plugins/variant_view/settings.py" line="17"/>
         <source>Cross databases links</source>
         <translation>Liens vers bases de données externes</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/plugins/variant_view/settings.py" line="18"/>
-        <source>Allow to set predefined masks for urls pointing in various databases of variants.
-Shortcuts will be visible from contextual menu over current variant.</source>
-        <translation type="obsolete">Permet de configurer des masques prédéfinis pour des urls pointant vers diverses bases de données de variants.
-Les raccourcis seront visibles à partir du menu contextuel affiché au-dessus d&apos;un variant.</translation>
     </message>
     <message>
         <location filename="cutevariant/gui/plugins/variant_view/settings.py" line="26"/>
@@ -418,11 +285,6 @@ Les raccourcis seront visibles à partir du menu contextuel affiché au-dessus d
         <translation>À propos de Qt</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="354"/>
-        <source>save query</source>
-        <translation type="obsolete">Enregistrer la requête</translation>
-    </message>
-    <message>
         <location filename="cutevariant/gui/mainwindow.py" line="468"/>
         <source>Open project</source>
         <translation>Ouvrir un fichier de projet</translation>
@@ -431,11 +293,6 @@ Les raccourcis seront visibles à partir du menu contextuel affiché au-dessus d
         <location filename="cutevariant/gui/mainwindow.py" line="468"/>
         <source>Cutevariant project (*.db)</source>
         <translation>Projet Cutevariant (*.db)</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="152"/>
-        <source>opened</source>
-        <translation type="obsolete">ouvert</translation>
     </message>
     <message>
         <location filename="cutevariant/gui/mainwindow.py" line="244"/>
@@ -461,26 +318,6 @@ Les raccourcis seront visibles à partir du menu contextuel affiché au-dessus d
         <location filename="cutevariant/gui/mainwindow.py" line="300"/>
         <source>About Cutevariant</source>
         <translation>À propos de Cutevariant</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="235"/>
-        <source>Save query</source>
-        <translation type="obsolete">Enregistrer la requête</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="239"/>
-        <source>Run</source>
-        <translation type="obsolete">Exécuter</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="280"/>
-        <source>{filepath} opened</source>
-        <translation type="obsolete">{filepath} ouvert</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="233"/>
-        <source>Save the query</source>
-        <translation type="obsolete">Enregistrer la requête</translation>
     </message>
     <message>
         <location filename="cutevariant/gui/mainwindow.py" line="374"/>
@@ -530,11 +367,6 @@ The following exception occurred:
         <translation>(*.csv)</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="259"/>
-        <source>&amp;Copy variants</source>
-        <translation type="obsolete">&amp;Copier les variants</translation>
-    </message>
-    <message>
         <location filename="cutevariant/gui/mainwindow.py" line="278"/>
         <source>&amp;Select all variants</source>
         <translation>&amp;Sélectionner tous les variants</translation>
@@ -553,11 +385,6 @@ The following exception occurred:
         <location filename="cutevariant/gui/mainwindow.py" line="252"/>
         <source>Export pedigree PED/PLINK</source>
         <translation>Exporter un pedigree PED/PLINK</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="501"/>
-        <source>(*.tfam)</source>
-        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -679,47 +506,6 @@ The following exception occurred:
     </message>
 </context>
 <context>
-    <name>ProjetPage</name>
-    <message>
-        <location filename="cutevariant/gui/wizard/projetwizard.py" line="24"/>
-        <source>Project creation</source>
-        <translation type="obsolete">Création d&apos;un nouveau projet</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/wizard/projetwizard.py" line="25"/>
-        <source>This wizard will guide you to create a cutevariant project.</source>
-        <translation type="obsolete">Cet assitant vous aidera à créer un projet Cutevariant.</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/wizard/projetwizard.py" line="47"/>
-        <source>Reference genom</source>
-        <translation type="obsolete">Génome de référence</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/wizard/projetwizard.py" line="48"/>
-        <source>Project Name</source>
-        <translation type="obsolete">Nom du projet</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/wizard/projetwizard.py" line="49"/>
-        <source>Create in</source>
-        <translation type="obsolete">Créer dans</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/wizard/projetwizard.py" line="59"/>
-        <source>Select a path for the project</source>
-        <translation type="obsolete">Sélectionner un dossier pour le projet</translation>
-    </message>
-</context>
-<context>
-    <name>ProjetWizard</name>
-    <message>
-        <location filename="cutevariant/gui/wizard/projetwizard.py" line="349"/>
-        <source>Cutevariant - Project creation wizard</source>
-        <translation type="obsolete">Cutevariant - Assistant de création de projet</translation>
-    </message>
-</context>
-<context>
     <name>ProxySettingsWidget</name>
     <message>
         <location filename="cutevariant/gui/settings.py" line="135"/>
@@ -764,94 +550,6 @@ Double click to edit them.</source>
 manuellement ou via un fichier PED/PLINK (sample pedigree information and genotype calls);
 Par défaut les champs sont ceux trouvés dans le VCF, les champs inconnus sont vides.
 Doublez-cliquez pour les éditer.</translation>
-    </message>
-</context>
-<context>
-    <name>SelectionQueryWidget</name>
-    <message>
-        <location filename="cutevariant/gui/selectionquerywidget.py" line="173"/>
-        <source>Selections</source>
-        <translation type="obsolete">Sélections</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/selectionquerywidget.py" line="226"/>
-        <source>Remove</source>
-        <translation type="obsolete">Supprimer</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/selectionquerywidget.py" line="288"/>
-        <source>Are you sure you want to remove this selection ? </source>
-        <translation type="obsolete">Êtes-vous sûr de vouloir supprimer cette sélection ?</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/selectionquerywidget.py" line="207"/>
-        <source>Edit</source>
-        <translation type="obsolete">Éditer</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/selectionquerywidget.py" line="204"/>
-        <source>intersect</source>
-        <translation type="obsolete">Intersection</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/selectionquerywidget.py" line="204"/>
-        <source>difference</source>
-        <translation type="obsolete">Différence</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/selectionquerywidget.py" line="204"/>
-        <source>union</source>
-        <translation type="obsolete">Union</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/selectionquerywidget.py" line="346"/>
-        <source>Type a name for selection</source>
-        <translation type="obsolete">Entrez le nom de la sélection</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/selectionquerywidget.py" line="385"/>
-        <source>Selection name:</source>
-        <translation type="obsolete">Nom :</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/selectionquerywidget.py" line="373"/>
-        <source>Are you sure you want to remove this selection?</source>
-        <translation type="obsolete">Êtes-vous sûr de vouloir supprimer cette sélection ?</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/selectionquerywidget.py" line="385"/>
-        <source>Type a new name</source>
-        <translation type="obsolete">Entrez un nouveau nom</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/selectionquerywidget.py" line="211"/>
-        <source>Intersect</source>
-        <translation type="obsolete">Intersection</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/selectionquerywidget.py" line="211"/>
-        <source>Difference</source>
-        <translation type="obsolete">Différence</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/selectionquerywidget.py" line="211"/>
-        <source>Union</source>
-        <translation type="obsolete">Union</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/selectionquerywidget.py" line="280"/>
-        <source>&apos;%s&apos; is a reserved name for a selection!</source>
-        <translation type="obsolete">&apos;%s&apos; est un nom de sélection réservé !</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/selectionquerywidget.py" line="288"/>
-        <source>&apos;%s&apos; is a already used for a selection!</source>
-        <translation type="obsolete">&apos;%s&apos; est un nom déjà utilisé !</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/selectionquerywidget.py" line="365"/>
-        <source>Fail to create the selection!</source>
-        <translation type="obsolete">Échec de création de la sélection !</translation>
     </message>
 </context>
 <context>
@@ -945,16 +643,6 @@ Doublez-cliquez pour les éditer.</translation>
         <translation>Êtes-vous sûr de vouloir supprimer cette sélection ?</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/source_editor/widgets.py" line="449"/>
-        <source>Open bed file</source>
-        <translation type="obsolete">Ouvrir un fichier bed</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/plugins/source_editor/widgets.py" line="449"/>
-        <source>Bed File (*.bed)</source>
-        <translation type="obsolete">Fichiers bed (*.bed)</translation>
-    </message>
-    <message>
         <location filename="cutevariant/gui/plugins/source_editor/widgets.py" line="249"/>
         <source>Intersect with BED file ...</source>
         <translation>Intersection avec un fichier BED ...</translation>
@@ -982,11 +670,6 @@ Doublez-cliquez pour les éditer.</translation>
         <source>&amp;Choose a style:</source>
         <translation>&amp;Choisissez un style :</translation>
     </message>
-    <message>
-        <location filename="cutevariant/gui/settings.py" line="200"/>
-        <source>Bright</source>
-        <translation type="obsolete">Clair</translation>
-    </message>
 </context>
 <context>
     <name>TranslationSettingsWidget</name>
@@ -1012,67 +695,6 @@ Doublez-cliquez pour les éditer.</translation>
         <location filename="cutevariant/gui/plugins/variant_info/widgets.py" line="117"/>
         <source>Comments</source>
         <translation>Commentaires</translation>
-    </message>
-</context>
-<context>
-    <name>VariantPopupMenu</name>
-    <message>
-        <location filename="cutevariant/gui/infovariantwidget.py" line="37"/>
-        <source>Add to Favorite</source>
-        <translation type="obsolete">Ajouter aux favoris</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/infovariantwidget.py" line="38"/>
-        <source>Copy genomic location</source>
-        <translation type="obsolete">Copier la position génomique</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/infovariantwidget.py" line="43"/>
-        <source>Open With</source>
-        <translation type="obsolete">Ouvrir avec</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/infovariantwidget.py" line="79"/>
-        <source>Edit ...</source>
-        <translation type="obsolete">Éditer ...</translation>
-    </message>
-</context>
-<context>
-    <name>VariantSettingsWidget</name>
-    <message>
-        <location filename="cutevariant/gui/settings.py" line="234"/>
-        <source>Variant</source>
-        <translation type="obsolete">Variant</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/settings.py" line="281"/>
-        <source>Add</source>
-        <translation type="obsolete">Ajouter</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/settings.py" line="282"/>
-        <source>Edit</source>
-        <translation type="obsolete">Éditer</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/settings.py" line="283"/>
-        <source>Remove</source>
-        <translation type="obsolete">Supprimer</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/settings.py" line="349"/>
-        <source>Name</source>
-        <translation type="obsolete">Nom</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/settings.py" line="350"/>
-        <source>Url</source>
-        <translation type="obsolete">Url</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/settings.py" line="277"/>
-        <source>Variants</source>
-        <translation type="obsolete">Variants</translation>
     </message>
 </context>
 <context>
@@ -1159,72 +781,6 @@ Doublez-cliquez pour les éditer.</translation>
         <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="1148"/>
         <source>Ungroup variants</source>
         <translation>Dégrouper les variants</translation>
-    </message>
-</context>
-<context>
-    <name>ViewQueryWidget</name>
-    <message>
-        <location filename="cutevariant/gui/viewquerywidget.py" line="594"/>
-        <source>Variants</source>
-        <translation type="obsolete">Variants</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/viewquerywidget.py" line="271"/>
-        <source>save</source>
-        <translation type="obsolete">Enregistrer</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/viewquerywidget.py" line="769"/>
-        <source>No query to show</source>
-        <translation type="obsolete">Pas de requête à afficher</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/viewquerywidget.py" line="622"/>
-        <source>Export variants</source>
-        <translation type="obsolete">Exporter les variants</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/viewquerywidget.py" line="649"/>
-        <source>See SQL query</source>
-        <translation type="obsolete">Afficher la requête SQL</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/viewquerywidget.py" line="730"/>
-        <source>Export variants of the current view</source>
-        <translation type="obsolete">Exporter les variants de la vue actuelle</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/viewquerywidget.py" line="730"/>
-        <source>CSV (Comma-separated values) (*.csv)</source>
-        <translation type="obsolete">CSV (Séparateur: virgule) (*.csv)</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/viewquerywidget.py" line="496"/>
-        <source>{}-{} of {}</source>
-        <translation type="obsolete">{}-{} sur {}</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/viewquerywidget.py" line="507"/>
-        <source>Group by method:</source>
-        <translation type="obsolete">Méthode de regroupement :</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/viewquerywidget.py" line="697"/>
-        <source>{} variant(s)  {}-{} of {}</source>
-        <translation type="obsolete">{} variant(s)  {}-{} sur {}</translation>
-    </message>
-</context>
-<context>
-    <name>VqlEditor</name>
-    <message>
-        <location filename="cutevariant/gui/vqleditor.py" line="153"/>
-        <source>Columns</source>
-        <translation type="obsolete">Colonnes</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/vqleditor.py" line="216"/>
-        <source>VQLSyntaxError: &apos;%s&apos; at position %s</source>
-        <translation type="obsolete">VQLSyntaxError: &apos;%s&apos; à la position %s</translation>
     </message>
 </context>
 <context>
