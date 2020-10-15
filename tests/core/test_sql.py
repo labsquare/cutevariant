@@ -152,6 +152,10 @@ def variants_data():
     """Secured variants that will not be modified from a test to another"""
     return copy.deepcopy(VARIANTS)
 
+@pytest.fixture
+def kindly_wordset_fixture():
+    """Yes its ugly but i don't know how to use a fixture in parametrize"""
+    return kindly_wordset()
 
 def kindly_wordset():
     """Return filepath + expected data of a word set that contains 4 genes"""
@@ -187,6 +191,7 @@ WORDSETS = [
     hasardous_wordset(),
 ]
 
+################################################################################
 
 def test_create_connexion(conn):
     assert conn is not None
@@ -315,6 +320,23 @@ def test_insert_set_from_file(conn, wordset):
         assert record["value"] in expected_data
 
     os.remove(wordset_file)
+
+
+def test_get_sets(conn, kindly_wordset_fixture):
+    """Test get_sets: Word set group by results"""
+    wordset_file, _ = kindly_wordset_fixture
+
+    sql.insert_set_from_file(conn, "test_wordset", wordset_file)
+
+    expected = [
+        {
+            "name": "test_wordset",
+            "count": 4,
+        }
+    ]
+    found = list(sql.get_sets(conn))
+
+    assert expected == found
 
 
 def test_selections(conn):
