@@ -56,3 +56,29 @@ class PedWriter(AbstractWriter):
             sample["father_id"] = individual_ids_mapping[sample["father_id"]]
             sample["mother_id"] = individual_ids_mapping[sample["mother_id"]]
         writer.writerows(g)
+
+    def save_from_list(self, samples, delimiter="\t", **kwargs):
+        """Dump samples into a tabular file
+
+        Args:
+            samples(list): Iterable of samples; each sample is a list itself.
+                => It's up to the user to give field in the correct order.
+            delimiter (str, optional): Delimiter char used in exported file;
+                (default: "\t").
+            **kwargs (dict, optional): Arguments can be given to override
+                individual formatting parameters in the current dialect.
+
+        Notes:
+            Replace None or empty strings to 0 (unknown PED ID)
+        """
+        writer = csv.writer(
+            self.device,
+            delimiter=delimiter,
+            lineterminator="\n",
+            **kwargs
+        )
+        # Replace None or empty strings to 0 (unknown PED ID)
+        clean_samples = (
+            [item if item else 0 for item in sample] for sample in samples
+        )
+        writer.writerows(clean_samples)

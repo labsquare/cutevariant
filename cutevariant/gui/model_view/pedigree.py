@@ -22,6 +22,7 @@ from PySide2.QtWidgets import (
 
 # Custom imports
 from cutevariant.core.reader import PedReader
+from cutevariant.core.writer import PedWriter
 
 
 class PedModel(QAbstractTableModel):
@@ -95,11 +96,8 @@ class PedModel(QAbstractTableModel):
             Replace None or empty strings to 0 (unknown PED ID)
         """
         with open(filename, "w") as file:
-            for sample in self.samples_data:
-                # Replace None or empty strings to 0 (unknown PED ID)
-                clean_sample = [item if item else 0 for item in sample]
-                # Convert all items to string
-                file.write("\t".join(map(str, clean_sample)) + "\n")
+            writer = PedWriter(file)
+            writer.save_from_list(self.samples_data)
 
     def set_samples(self, samples: list):
         """Fill model with NEW samples
