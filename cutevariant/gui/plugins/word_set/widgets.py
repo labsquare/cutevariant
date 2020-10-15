@@ -136,6 +136,7 @@ class WordListDialog(QDialog):
 
         Current data filtering:
             - Strip trailing spaces and EOL characters
+            - Skip empty lines
             - Skip lines with whitespaces characters (`[ \t\n\r\f\v]`)
 
         Examples:

@@ -567,7 +567,7 @@ def sanitize_words(words):
     for line in words:
         striped_line = line.strip()
 
-        if expr.findall(striped_line):
+        if not striped_line or expr.findall(striped_line):
             # Skip lines with whitespaces
             continue
         data.add(striped_line)
@@ -587,6 +587,7 @@ def insert_set_from_file(conn: sqlite3.Connection, wordset_name, filename):
 
     Current data filtering (same as in the word_set plugin):
         - Strip trailing spaces and EOL characters
+        - Skip empty lines
         - Skip lines with whitespaces characters (`[ \t\n\r\f\v]`)
 
     Examples:
