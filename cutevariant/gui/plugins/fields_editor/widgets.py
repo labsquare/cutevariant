@@ -135,6 +135,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self.view.setIconSize(QSize(16, 16))
         self.view.header().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.view.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.search_edit = QLineEdit()
         # self.view.setIndentation(0)
         self.view.header().setVisible(False)
