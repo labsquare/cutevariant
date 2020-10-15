@@ -7,9 +7,9 @@ LOGGER = cm.logger()
 
 
 class PedReader:
-    """PED *.fam file (PLINK sample information file) parser
+    """PED *.tfam file (PLINK sample information file) parser
 
-    Data has the same structure of a fam file object
+    Data has the same structure of a tfam file object
     https://www.cog-genomics.org/plink/1.9/formats#fam
     http://zzz.bwh.harvard.edu/plink/data.shtml
 

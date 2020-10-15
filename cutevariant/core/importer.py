@@ -155,7 +155,7 @@ def import_reader(conn, reader, pedfile=None, project={}):
 
 
 def import_pedfile(conn, filename):
-    """Import *.fam file (PLINK sample information file) into samples table
+    """Import *.tfam file (PLINK sample information file) into samples table
 
     See Also:
         :meth:`cutevariant.core.reader.pedreader.PedReader`

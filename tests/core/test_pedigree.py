@@ -25,7 +25,7 @@ def test_import(reader):
 
 
 def test_import_pedfile():
-    """Test import of samples from .fam PED file"""
+    """Test import of samples from .tfam PED file"""
     reader = VcfReader(open("examples/test.snpeff.vcf"), "snpeff")
     conn = sqlite3.connect(":memory:")
     import_reader(conn, reader)
