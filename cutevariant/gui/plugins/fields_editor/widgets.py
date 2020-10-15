@@ -161,11 +161,14 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self.toolbar.addAction(FIcon(0xF0616), self.tr("Expand"), self.view.expandAll)
 
         # setup search edit
-        search_act = self.toolbar.addAction(FIcon(0xF0969), self.tr("Search fields by keywords ..."))
+        search_act = self.toolbar.addAction(
+            FIcon(0xF0969), self.tr("Search fields by keywords...")
+        )
         search_act.setCheckable(True)
         search_act.toggled.connect(self.on_search_pressed)
+        search_act.setShortcut(QKeySequence.Find)
         self.search_edit.setVisible(False)
-        self.search_edit.setPlaceholderText(self.tr("Search by keywords ... "))
+        self.search_edit.setPlaceholderText(self.tr("Search by keywords... "))
 
         self.search_edit.textChanged.connect(self.proxy_model.setFilterRegExp)
 
