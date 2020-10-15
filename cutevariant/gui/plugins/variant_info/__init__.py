@@ -5,10 +5,10 @@ __long_description__ = """
 variant in the main Variant view window.
 </p>
 <p>Where the main window and the fields editor selector apply to the variants as
-a whole, this plugin targets only one variant.<br>
+a whole, this plugin targets only one variant.
 </p>
 <p>You will find the data of transcripts, samples, genotypes as well as manually
-written comments added by right-clicking on the variant in the main window.<br>
+written comments added by right-clicking on the variant in the main window.
 </p>
 Data is read-only!
 """
