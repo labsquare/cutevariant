@@ -13,7 +13,7 @@ from PySide2.QtGui import QIcon, QKeySequence
 
 # Custom imports
 from cutevariant.core import get_sql_connexion, get_metadatas, command
-from cutevariant.core.writer import CsvWriter
+from cutevariant.core.writer import CsvWriter, PedWriter
 from cutevariant.gui.ficon import FIcon
 from cutevariant.gui.state import State
 from cutevariant.gui.wizards import ProjectWizard
@@ -245,8 +245,12 @@ class MainWindow(QMainWindow):
         self.setup_recent_menu()
 
         ## Export projects as
-        self.export_action = self.file_menu.addAction(
-            self.tr("Export as csv"), self.export_project
+        self.export_csv_action = self.file_menu.addAction(
+            self.tr("Export as csv"), self.export_as_csv
+        )
+
+        self.export_ped_action = self.file_menu.addAction(
+            self.tr("Export pedigree PED/PLINK"), self.export_ped
         )
 
         self.file_menu.addSeparator()
@@ -474,7 +478,7 @@ class MainWindow(QMainWindow):
                 self.status_bar.showMessage(e.__class__.__name__ + ": " + str(e))
                 raise
 
-    def export_project(self):
+    def export_as_csv(self):
         """Export variants into CSV file"""
         # Reload last directory used
         last_directory = self.app_settings.value("last_directory", QDir.homePath())
@@ -486,6 +490,23 @@ class MainWindow(QMainWindow):
         if filepath:
             with open(filepath, "w") as file:
                 writer = CsvWriter(file)
+                writer.save(self.conn)
+
+    def export_ped(self):
+        """Export samples into PED/PLINK file"""
+        # Reload last directory used
+        last_directory = self.app_settings.value("last_directory", QDir.homePath())
+
+        # noinspection PyCallByClass
+        filepath, _ = QFileDialog.getSaveFileName(
+            self, self.tr("Save project"), last_directory, self.tr("(*.tfam)")
+        )
+
+        if filepath:
+            filepath = filepath if filepath.endswith(".tfam") else filepath + ".tfam"
+
+            with open(filepath, "w") as file:
+                writer = PedWriter(file)
                 writer.save(self.conn)
 
     def show_settings(self):
