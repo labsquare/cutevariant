@@ -137,11 +137,6 @@ def test_import_cmd(conn):
     test_file = "examples/gene.txt"
     wordset_name = "boby"
 
-    excepted_word = []
-    with open(test_file, "r") as file:
-        for word in file:
-            excepted_word.append(word.strip())
-
     command.import_cmd(conn, "sets", wordset_name, test_file)
 
     for record in conn.execute("SELECT * FROM sets"):
