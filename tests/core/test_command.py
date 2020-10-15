@@ -129,22 +129,24 @@ def test_set_cmd(conn):
 
 
 def test_import_cmd(conn):
-    # TODO: Rewrite this import method from hasardous files
+    """Test import word set from file (import_cmd is for word sets only FOR NOW)
 
+    Import from a kindly external file with 2 genes.
+    """
     # Test import of word set
     test_file = "examples/gene.txt"
-    name = "boby"
+    wordset_name = "boby"
 
     excepted_word = []
     with open(test_file, "r") as file:
         for word in file:
             excepted_word.append(word.strip())
 
-    command.import_cmd(conn, "sets", name, test_file)
+    command.import_cmd(conn, "sets", wordset_name, test_file)
 
     for record in conn.execute("SELECT * FROM sets"):
         item = dict(record)
-        assert item["name"] == name
+        assert item["name"] == wordset_name
 
 
 def test_create_command_from_obj(conn):

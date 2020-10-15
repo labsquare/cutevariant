@@ -51,6 +51,8 @@ def get_sql_connexion(filepath):
 
     Returns:
         sqlite3.Connection: Sqlite3 Connection
+            The connection is initialized with `row_factory = Row`.
+            So all results are accessible via indexes or keys.
     """
     connexion = sqlite3.connect(filepath)
     # Activate Foreign keys
@@ -533,6 +535,8 @@ def create_table_sets(conn: sqlite3.Connection):
     TODO: Denormalization of this table **WILL** BE a problem in the future...
         But i'm fed up of these practices.
 
+    TODO: for now the one to many relation is not implemented
+
     Args:
         conn (sqlite3.Connection): Sqlite3 Connection
     """
@@ -613,7 +617,7 @@ delete_set_by_name = partial(delete_by_name, table_name="sets")
 
 
 def get_sets(conn):
-    """Return names and number of words in all sets stored in DB
+    """Return the number of words per word set stored in DB
 
     Returns:
         generator[dict]: Yield dictionaries with `name` and `count` keys.
