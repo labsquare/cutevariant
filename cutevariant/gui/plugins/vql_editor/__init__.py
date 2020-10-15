@@ -1,17 +1,18 @@
 __title__ = "Editor"
 __description__ = "A Vql editor"
 __long_description__ = """
-This plugin allows you to manage most of the work that can be done in a Cutevariant project by writing and executing VQL queries.<br>
-<br>
-VQL is a <i>Domain Specific Language</i>, its main purpose is to filter variants
- in the same fashion as a SQL query.<br>
-The VQL language can be run from the user interface via this plugin or directly
- via the command line of Cutevariant.<br>
-<br>
-Although the plugin offers auto-completion and syntax highlighting, if you want
- to have more details on how to write your own VQL queries, as well as the keywords of the language,
-please see the project wiki page:<br>
-<br>
+<p>This plugin allows you to manage most of the work that can be done in a 
+Cutevariant project by writing and executing VQL queries.</p>
+
+<p>VQL is a <i>Domain Specific Language</i>, its main purpose is to filter variants
+in the same fashion as a SQL query.</p>
+<p>The VQL language can be run from the user interface via this plugin or directly
+via the command line of Cutevariant.</p>
+
+<p>Although the plugin offers auto-completion and syntax highlighting, if you want
+to have more details on how to write your own VQL queries, as well as the keywords 
+of the language, please see the project wiki page:</p>
+
 <a href="https://github.com/labsquare/cutevariant/wiki/VQL-language">
 https://github.com/labsquare/cutevariant/wiki/VQL-language</a>
 """
