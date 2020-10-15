@@ -54,7 +54,16 @@ def test_csv_writer(conn, csvwriter):
 
 
 def test_ped_writer(conn, pedwriter):
+    """Test export of PED file
 
+    2 methods are tested here:
+        - Save from connection
+        - Save from list
+
+    Args:
+        conn(sqlite3.Connection): sqlite3 connection
+        pedwriter(PedWriter): Instance of writer pointing to a temp file.
+    """
     reader = VcfReader(open("examples/test.snpeff.vcf"), "snpeff")
     import_reader(conn, reader)
     import_pedfile(conn, "examples/test.snpeff.pedigree.tfam")
