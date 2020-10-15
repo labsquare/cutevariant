@@ -507,7 +507,7 @@ class MainWindow(QMainWindow):
 
         # noinspection PyCallByClass
         filepath, _ = QFileDialog.getSaveFileName(
-            self, self.tr("Save project"), last_directory, self.tr("(*.tfam)")
+            self, self.tr("Save project"), last_directory, "(*.tfam)"
         )
 
         if filepath:
