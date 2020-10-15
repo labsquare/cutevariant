@@ -339,6 +339,25 @@ def test_get_sets(conn, kindly_wordset_fixture):
     assert expected == found
 
 
+@pytest.mark.parametrize(
+    "wordset", WORDSETS, ids=["kindly_wordset", "hasardous_wordset"]
+)
+def test_get_words_in_set(conn, wordset):
+    """Test the query of gene names stored into a word set in DB
+
+    Simulation of problematic data from biologists is made via hasardous_wordset
+    """
+    wordset_file, expected_data = wordset
+
+    print("Expected data:", expected_data)
+
+    sql.insert_set_from_file(conn, "test_wordset", wordset_file)
+
+    found = set(sql.get_words_set(conn, "test_wordset"))
+
+    assert set(expected_data) == found
+
+
 def test_selections(conn):
     """Test the creation of a full selection in "selection_has_variant"
     and "selections" tables; Test also the ON CASCADE deletion of rows in
