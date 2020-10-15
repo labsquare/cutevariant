@@ -21,7 +21,7 @@ class PedWriter(AbstractWriter):
     def __init__(self, device):
         super().__init__(device)
 
-    def save(self, conn, delimiter="\t", **kwargs) -> bool:
+    def save(self, conn, delimiter="\t", **kwargs):
         r"""Dump samples into a tabular file
 
         Notes:
@@ -32,7 +32,7 @@ class PedWriter(AbstractWriter):
             `family_id\tindividual_id\tfather_id\tmother_id\tsex\tphenotype`
 
         Args:
-
+            conn (sqlite.connection): sqlite connection
             delimiter (str, optional): Delimiter char used in exported file;
                 (default: "\t").
             **kwargs (dict, optional): Arguments can be given to override
@@ -42,11 +42,17 @@ class PedWriter(AbstractWriter):
             self.device,
             delimiter=delimiter,
             lineterminator="\n",
-            fieldnames=["name", "fam", "father_id", "mother_id", "sex", "phenotype"],
+            fieldnames=["fam", "name", "father_id", "mother_id", "sex", "phenotype"],
             extrasaction="ignore",
             **kwargs
         )
-        g = (
-            dict(row) for row in get_samples(conn)
-        )
+        g = list(get_samples(conn))
+        # Map DB ids with individual_ids
+        individual_ids_mapping = {sample["id"]: sample["name"] for sample in g}
+        # Add default value
+        individual_ids_mapping[0] = 0
+        # Replace DB ids
+        for sample in g:
+            sample["father_id"] = individual_ids_mapping[sample["father_id"]]
+            sample["mother_id"] = individual_ids_mapping[sample["mother_id"]]
         writer.writerows(g)
