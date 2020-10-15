@@ -186,11 +186,6 @@ def hasardous_wordset():
     return filepath, data[:2] + ["xyz"]
 
 
-WORDSETS = [
-    kindly_wordset(),
-    hasardous_wordset(),
-]
-
 ################################################################################
 
 def test_create_connexion(conn):
@@ -298,7 +293,7 @@ def test_update_variant(conn):
 
 
 @pytest.mark.parametrize(
-    "wordset", WORDSETS, ids=["kindly_wordset", "hasardous_wordset"]
+    "wordset", (kindly_wordset(), hasardous_wordset()), ids=["kindly_wordset", "hasardous_wordset"]
 )
 def test_insert_set_from_file(conn, wordset):
     """Test the insertion of gene names from file into the database
@@ -338,9 +333,11 @@ def test_get_sets(conn, kindly_wordset_fixture):
 
     assert expected == found
 
+    os.remove(wordset_file)
+
 
 @pytest.mark.parametrize(
-    "wordset", WORDSETS, ids=["kindly_wordset", "hasardous_wordset"]
+    "wordset", (kindly_wordset(), hasardous_wordset()), ids=["kindly_wordset", "hasardous_wordset"]
 )
 def test_get_words_in_set(conn, wordset):
     """Test the query of gene names stored into a word set in DB
@@ -356,6 +353,8 @@ def test_get_words_in_set(conn, wordset):
     found = set(sql.get_words_set(conn, "test_wordset"))
 
     assert set(expected_data) == found
+
+    os.remove(wordset_file)
 
 
 def test_selections(conn):
