@@ -247,7 +247,7 @@ def test_get_samples(conn):
 
     # test default value
     assert first_sample["name"] == "sacha"
-    assert first_sample["fam"] == "fam"
+    assert first_sample["family_id"] == "fam"
     assert first_sample["father_id"] == 0
     assert first_sample["mother_id"] == 0
     assert first_sample["sex"] == 0
@@ -262,7 +262,7 @@ def test_update_samples(conn):
     assert previous_sample["id"] == 1
     # Update with info
     previous_sample["name"] = "maco"
-    previous_sample["fam"] = "fam2"
+    previous_sample["family_id"] = "fam2"
     previous_sample["father_id"] = 1
     previous_sample["mother_id"] = 1
     previous_sample["sex"] = 2

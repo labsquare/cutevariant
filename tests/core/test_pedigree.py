@@ -37,7 +37,7 @@ def test_import_pedfile():
     expected_first_sample = {
         "id": 1,
         "name": "NORMAL",
-        "fam": "fam",
+        "family_id": "fam",
         "father_id": 2,
         "mother_id": 1,
         "sex": 2,
@@ -46,7 +46,7 @@ def test_import_pedfile():
     expected_second_sample = {
         "id": 2,
         "name": "TUMOR",
-        "fam": "fam",
+        "family_id": "fam",
         "father_id": 0,
         "mother_id": 0,
         "sex": 1,

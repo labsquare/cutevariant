@@ -42,7 +42,7 @@ class PedWriter(AbstractWriter):
             self.device,
             delimiter=delimiter,
             lineterminator="\n",
-            fieldnames=["fam", "name", "father_id", "mother_id", "sex", "phenotype"],
+            fieldnames=["family_id", "name", "father_id", "mother_id", "sex", "phenotype"],
             extrasaction="ignore",
             **kwargs
         )

@@ -32,7 +32,7 @@ class PedReader:
     Recall, DB structure:
         - id INTEGER PRIMARY KEY ASC,
         - name TEXT,
-        - fam TEXT DEFAULT 'fam',
+        - family_id TEXT DEFAULT 'fam',
         - father_id INTEGER DEFAULT 0,
         - mother_id INTEGER DEFAULT 0,
         - sex INTEGER DEFAULT 0,
@@ -105,10 +105,10 @@ class PedReader:
 
                 `[family_id, individual_id, father_id, mother_id, sex, phenotype]`
                 Or
-                `["id": _, "fam": _, "father_id": _, "mother_id": _, "sex": _, "phenotype": ]`
+                `["id": _, "family_id": _, "father_id": _, "mother_id": _, "sex": _, "phenotype": ]`
         """
         samples_mapping = {
-            (sample["fam"], sample["name"]): sample["id"] for sample in self.samples
+            (sample["family_id"], sample["name"]): sample["id"] for sample in self.samples
         }
 
         for index, line in enumerate(reader, 1):
@@ -186,7 +186,7 @@ class PedReader:
 
                 new_sample = {
                     "id": samples_mapping[individual_key],  # Get DB sample id
-                    "fam": family_id,
+                    "family_id": family_id,
                     "father_id": samples_mapping.get(father_key, 0),
                     "mother_id": samples_mapping.get(mother_key, 0),
                     "sex": sex,

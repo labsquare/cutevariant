@@ -1305,7 +1305,7 @@ def create_table_samples(conn, fields=None):
         """CREATE TABLE samples (
         id INTEGER PRIMARY KEY ASC,
         name TEXT,
-        fam TEXT DEFAULT 'fam',
+        family_id TEXT DEFAULT 'fam',
         father_id INTEGER DEFAULT 0,
         mother_id INTEGER DEFAULT 0,
         sex INTEGER DEFAULT 0,
@@ -1390,7 +1390,7 @@ def update_sample(conn, sample: dict):
     sample = {
         id : 3 #sample id
         name : "Boby",  #Name of sample
-        fam : "fam", # familly identifier
+        family_id : "fam", # familly identifier
         father_id : 0, #father id, 0 if not
         mother_id : 0, #mother id, 0 if not
         sex : 0 #sex code ( 1 = male, 2 = female, 0 = unknown)
