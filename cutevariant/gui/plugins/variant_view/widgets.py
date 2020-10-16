@@ -708,7 +708,7 @@ class VariantView(QWidget):
             self.set_pagging_enabled(True)
 
         self.info_label.setText(
-            self.tr("{} row(s) {} page(s)").format(
+            self.tr("{} variant(s) {} page(s)").format(
                 self.model.total, self.model.pageCount()
             )
         )
