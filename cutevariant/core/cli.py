@@ -2,7 +2,6 @@
 import argparse
 import os
 import sys
-import logging
 
 # Custom imports
 import progressbar
@@ -10,11 +9,10 @@ from columnar import columnar
 from cutevariant.core.importer import async_import_file
 from cutevariant.core import sql, vql
 from cutevariant.core.querybuilder import *
+from cutevariant.commons import log_level
 
 
 def main():
-    logger = logging.getLogger()
-    logger.setLevel(logging.CRITICAL)
     # noinspection PyTypeChecker
     parser = argparse.ArgumentParser(
         formatter_class=lambda prog: argparse.RawDescriptionHelpFormatter(prog),
@@ -29,6 +27,15 @@ the arguments.""",
     $ export CUTEVARIANT_DB=my_database.db
     $ cutevariant-cli show samples""",
     )
+    # Default log level: critical
+    parser.add_argument(
+        "-vv",
+        "--verbose",
+        nargs="?",
+        default="critical",
+        choices=["debug", "info", "critical", "error", "warning"],
+    )
+
     sub_parser = parser.add_subparsers(dest="subparser")
 
     # Common parser: Database file requirement #################################
@@ -101,6 +108,10 @@ the arguments.""",
     if len(sys.argv) == 1:
         parser.print_help(sys.stderr)
         sys.exit(1)
+
+    # Set log level
+    # _logger.setLevel(logging.DEBUG)
+    log_level(args.verbose)
 
     # Create DB parser #########################################################
     if args.subparser == "createdb":
