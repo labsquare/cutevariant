@@ -21,15 +21,6 @@ LOGGER = cm.logger()
 class VariantInfoWidget(PluginWidget):
     """Plugin to show all annotations of a selected variant"""
 
-    ACMG_CLASSIFICATION = [
-        ("Classe 0", "Unclassed"),
-        ("Classe 1", "Benin"),
-        ("Classe 2", "Likely benin"),
-        ("Classe 3", "Unsignificant variant"),
-        ("Classe 4", "Probably Pathogen"),
-        ("Classe 5", "Pathogen"),
-    ]
-
     GENOTYPES = {
         "-1": FIcon(0xF10D3),
         "0": FIcon(0xF0766),
@@ -215,14 +206,6 @@ class VariantInfoWidget(PluginWidget):
             item.setIcon(icon)
 
             self.genotype_view.addItem(item)
-
-        # cur = self.conn.cursor()
-        # cur.execute(q)
-
-        # for sample in sql.get_samples(self.conn):
-        #     item = QTreeWidgetItem()
-        #     item.setText(0, sample["name"])
-        #     self.genotype_view.addTopLevelItem(item)
 
     @Slot()
     def on_transcript_changed(self):

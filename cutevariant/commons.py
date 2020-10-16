@@ -13,8 +13,7 @@ DEFAULT_SELECTION_NAME = "variants"
 MIN_AUTHORIZED_DB_VERSION = "0.1.12.dev0"
 
 
-# Classification
-
+# ACMG Classification
 CLASSIFICATION = {
     0: "Unclassified",
     1: "Benin",

@@ -555,8 +555,6 @@ class VariantView(QWidget):
         self.pagging_actions.append(
             self.bottom_bar.addAction(FIcon(0xF0601), ">>", self.on_page_clicked)
         )
-        # self.page_box.returnPressed.connect()
-
         self.page_box.returnPressed.connect(self.on_page_changed)
 
         main_layout = QVBoxLayout()
