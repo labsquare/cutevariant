@@ -102,26 +102,18 @@ the arguments.""",
         parser.print_help(sys.stderr)
         sys.exit(1)
 
-    # Init SQL connection
-    if "CUTEVARIANT_DB" in os.environ and args.subparser != "createdb":
-        args.db = os.environ["CUTEVARIANT_DB"]
-    elif not args.db:
-        print("You must specify a database file via $CUTEVARIANT_DB or --db argument")
-        exit()
-
-    conn = sql.get_sql_connexion(args.db)
-
-    # ====== CREATEDB ============================
+    # Create DB parser #########################################################
     if args.subparser == "createdb":
-        if args.output is None:
+        if not args.db:
+            # Database file is not set:
+            # The output file will be based on the name of the VCF one
+            args.db = args.input + ".db"
 
-            args.output = args.input + ".db"
+        if os.path.exists(args.db):
+            # Remove existing file
+            os.remove(args.db)
 
-            if os.path.exists(args.output):
-                os.remove(args.output)
-
-        conn = sql.get_sql_connexion(args.output)
-
+        conn = sql.get_sql_connexion(args.db)
         if conn:
             # TODO: bug ... max is not 100...
             for i, message in progressbar.progressbar(
@@ -133,7 +125,17 @@ the arguments.""",
         # os.putenv("CUTEVARIANT_DB", args.output)
         # print("$CUTEVARIANT_DB has been set with ", args.output)
 
-    # ====== SHOW ============================
+    # Prepare SQL connection on DB file
+    if "CUTEVARIANT_DB" in os.environ and args.subparser != "createdb":
+        args.db = os.environ["CUTEVARIANT_DB"]
+    elif not args.db:
+        print("You must specify a database file via $CUTEVARIANT_DB or --db argument")
+        exit()
+
+    # Init SQL connection
+    conn = sql.get_sql_connexion(args.db)
+
+    # Show parser ##############################################################
     if args.subparser == "show":
         if args.table == "fields":
             print(
@@ -162,12 +164,12 @@ the arguments.""",
                 )
             )
 
-    # ======= REMOVE =========================
+    # Remove parser ############################################################
     if args.subparser == "remove":
         for name in args.names:
             sql.delete_selection_by_name(conn, name)
 
-    # ====== EXEC VQL ============================
+    # VQL parser ###############################################################
     if args.subparser == "exec":
         query = "".join(args.vql)
 
