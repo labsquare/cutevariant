@@ -67,16 +67,17 @@ class VariantInfoWidget(PluginWidget):
         self.variant_view = QTreeWidget()
         self.variant_view.setColumnCount(2)
         self.variant_view.setAlternatingRowColors(True)
-        self.variant_view.setHeaderLabels(["Field", "Value"])
-        self.view.addTab(self.variant_view, "Variants")
+        # self.variant_view.setHeaderLabels(["Field", "Value"])
+        self.variant_view.header().setVisible(False)
+        self.view.addTab(self.variant_view, "Variant")
 
         # build transcript tab
         self.transcript_combo = QComboBox()
         self.transcript_view = QTreeWidget()
         self.transcript_view.setColumnCount(2)
         self.transcript_view.setAlternatingRowColors(True)
-
-        self.transcript_view.setHeaderLabels(["Field", "Value"])
+        # self.transcript_view.setHeaderLabels(["Field", "Value"])
+        self.transcript_view.header().setVisible(False)
         tx_layout = QVBoxLayout()
         tx_layout.addWidget(self.transcript_combo)
         tx_layout.addWidget(self.transcript_view)
@@ -91,7 +92,8 @@ class VariantInfoWidget(PluginWidget):
         self.sample_view.setAlternatingRowColors(True)
 
         self.sample_view.setColumnCount(2)
-        self.sample_view.setHeaderLabels(["Field", "Value"])
+        # self.sample_view.setHeaderLabels(["Field", "Value"])
+        self.sample_view.header().setVisible(False)
         tx_layout = QVBoxLayout()
         tx_layout.addWidget(self.sample_combo)
         tx_layout.addWidget(self.sample_view)
