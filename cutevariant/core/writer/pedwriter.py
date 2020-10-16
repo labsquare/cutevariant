@@ -72,13 +72,8 @@ class PedWriter(AbstractWriter):
             Replace None or empty strings to 0 (unknown PED ID)
         """
         writer = csv.writer(
-            self.device,
-            delimiter=delimiter,
-            lineterminator="\n",
-            **kwargs
+            self.device, delimiter=delimiter, lineterminator="\n", **kwargs
         )
         # Replace None or empty strings to 0 (unknown PED ID)
-        clean_samples = (
-            [item if item else 0 for item in sample] for sample in samples
-        )
+        clean_samples = ([item if item else 0 for item in sample] for sample in samples)
         writer.writerows(clean_samples)
