@@ -258,11 +258,6 @@ class MainWindow(QMainWindow):
         self.file_menu.addAction(
             FIcon(0xF0493), self.tr("Settings ..."), self.show_settings
         )
-
-        self.file_menu.addSeparator()
-
-        self.file_menu.addSeparator()
-
         self.file_menu.addSeparator()
         self.file_menu.addAction(self.tr("&Quit"), self.close, QKeySequence.Quit)
 
@@ -286,11 +281,12 @@ class MainWindow(QMainWindow):
         ## View
         self.view_menu = self.menuBar().addMenu(self.tr("&View"))
         self.view_menu.addAction(self.tr("Reset widgets positions"), self.reset_ui)
+        # Set toggle footer visibility action
+        show_action = self.view_menu.addAction(self.tr("Hide bottom toolbar"))
+        show_action.setCheckable(True)
+        show_action.setChecked(True)
+        show_action.toggled.connect(self.toggle_footer_visibility)
         self.view_menu.addSeparator()
-        self.show_vql_action = self.view_menu.addAction(self.tr("vql editor"))
-        self.show_vql_action.setCheckable(True)
-        self.show_vql_action.setChecked(True)
-        self.show_vql_action.toggled.connect(self.show_footer)
 
         ## Tools
         self.tool_menu = self.menuBar().addMenu(self.tr("&Tools"))
@@ -315,7 +311,7 @@ class MainWindow(QMainWindow):
         )
 
     def setup_toolbar(self):
-        """Tool bar setup: items and actions
+        """Top tool bar setup: items and actions
 
         .. note:: Require selection_widget and some actions of Menubar
         """
@@ -417,7 +413,6 @@ class MainWindow(QMainWindow):
         Returns:
             list: Recent project paths
         """
-
         # Reload last projects opened
         recent_projects = self.app_settings.value("recent_projects", list())
 
@@ -669,8 +664,8 @@ class MainWindow(QMainWindow):
             #  TODO: handle UI changes by passing UI_VERSION to saveState()
             self.app_settings.setValue("windowState", self.saveState())
 
-    def show_footer(self, visible=True):
-        self.footer_tab.setVisible(visible)
+    def toggle_footer_visibility(self, visibility):
+        self.footer_tab.setVisible(visibility)
         # refresh bottom plugins
         for _, plugin in self.plugins.items():
             if plugin.LOCATION == FOOTER_LOCATION and visible is True:
