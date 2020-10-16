@@ -234,6 +234,8 @@ class VariantInfoWidget(PluginWidget):
         ann = sql.get_sample_annotations(self.conn, variant_id, sample_id)
         if ann:
             for key, value in ann.items():
+                if key in ("variant_id", "sample_id"):
+                    continue
                 item = QTreeWidgetItem()
                 item.setText(0, key)
                 item.setFont(0, font)
