@@ -38,28 +38,28 @@ the arguments.""",
         "-o", "--output", help="cutevariant sqlite database path"
     )
 
+    # Common parser: Database file requirement
+    parent_parser = argparse.ArgumentParser(add_help=False)
+    parent_parser.add_argument(
+        "--db", help="SQLite database. By default, $CUTEVARIANT_DB is used."
+    )
+
     # show parser
-    show_parser = sub_parser.add_parser("show", help="Display table content")
-    show_parser.add_argument(
-        "table", choices=["fields", "selections", "samples"], help="Name of tables"
+    show_parser = sub_parser.add_parser(
+        "show", help="Display table content", parents=[parent_parser]
     )
     show_parser.add_argument(
-        "--db", help="sqlite database. By default, $CUTEVARIANT_DB is used"
+        "table", choices=["fields", "selections", "samples"], help="Possible names of tables"
     )
+
 
     # remove parser
-    remove_parser = sub_parser.add_parser("remove", help="remove selection")
+    remove_parser = sub_parser.add_parser("remove", help="remove selection", parents=[parent_parser])
     remove_parser.add_argument("names", nargs="+", help="list of selection's name")
-    remove_parser.add_argument(
-        "--db", help="sqlite database. By default, $CUTEVARIANT_DB is used"
-    )
 
     # exec parser
-    select_parser = sub_parser.add_parser("exec", help="Execute VQL statement")
+    select_parser = sub_parser.add_parser("exec", help="Execute VQL statement", parents=[parent_parser])
     select_parser.add_argument("vql", help="A vql statement")
-    select_parser.add_argument(
-        "--db", help="sqlite database. By default, $CUTEVARIANT_DB is used"
-    )
     select_parser.add_argument(
         "-l", "--limit", help="limit output to line number", type=int, default=100
     )
