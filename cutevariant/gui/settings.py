@@ -132,7 +132,7 @@ class ProxySettingsWidget(BaseWidget):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle(self.tr("Proxy"))
+        self.setWindowTitle(self.tr("Network"))
         self.setWindowIcon(FIcon(0xF0484))
 
         self.combo_box = QComboBox()
@@ -149,11 +149,11 @@ class ProxySettingsWidget(BaseWidget):
         self.pass_edit.setEchoMode(QLineEdit.PasswordEchoOnEdit)
 
         f_layout = QFormLayout()
-        f_layout.addRow("Type", self.combo_box)
-        f_layout.addRow("Proxy host", self.host_edit)
-        f_layout.addRow("Proxy Port", self.port_edit)
-        f_layout.addRow("Username", self.user_edit)
-        f_layout.addRow("Password", self.pass_edit)
+        f_layout.addRow(self.tr("Type"), self.combo_box)
+        f_layout.addRow(self.tr("Proxy host"), self.host_edit)
+        f_layout.addRow(self.tr("Proxy Port"), self.port_edit)
+        f_layout.addRow(self.tr("Username"), self.user_edit)
+        f_layout.addRow(self.tr("Password"), self.pass_edit)
 
         self.combo_box.currentIndexChanged.connect(self.on_combo_changed)
 
@@ -404,7 +404,7 @@ class SettingsWidget(QDialog):
         general_settings.setWindowIcon(FIcon(0xF0614))
 
         general_settings.add_settings_widget(TranslationSettingsWidget())
-        #general_settings.add_settings_widget(ProxySettingsWidget())
+        general_settings.add_settings_widget(ProxySettingsWidget())
         general_settings.add_settings_widget(StyleSettingsWidget())
 
         # Activation status of plugins
