@@ -75,9 +75,14 @@ def main():
         parser.print_help(sys.stderr)
         sys.exit(1)
 
+    # Init SQL connection
     if "CUTEVARIANT_DB" in os.environ and args.subparser != "createdb":
         args.db = os.environ["CUTEVARIANT_DB"]
-        conn = sql.get_sql_connexion(args.db)
+    elif not args.db:
+        print("You must specify a database file via $CUTEVARIANT_DB or --db argument")
+        exit()
+
+    conn = sql.get_sql_connexion(args.db)
 
     # ====== CREATEDB ============================
     if args.subparser == "createdb":
