@@ -99,9 +99,8 @@ the arguments.""",
         "-s", "--to-selection", help="Save SELECT query into a selection name."
     )
 
-    # #Set parser
-    # set_parser = sub_parser.add_parser("set", help="Set variable")
-    # set_parser.add_argument("--db", help="Set $CUTEVARIANT_DB env variable ",type=str)
+    # Set parser ###############################################################
+    # set_parser = sub_parser.add_parser("set", help="Set variable", parents=[parent_parser])
 
     args = parser.parse_args()
 
