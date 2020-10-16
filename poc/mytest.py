@@ -31,7 +31,7 @@ print(filters_to_vql(filters))
 # import_reader(conn, reader)
 
 
-# sql.insert_set_from_file(conn, "sacha",  "examples/gene.txt")
+# sql.import_wordset_from_file(conn, "sacha",  "examples/gene.txt")
 # for variant in cmd.execute(conn, "SELECT chr, pos, gene FROM variants WHERE gene IN SET['sacha'] "):
 # 	print(variant)
 

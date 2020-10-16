@@ -557,7 +557,7 @@ def sanitize_words(words):
     """Return a set of cleaned words
 
     See Also:
-        - :meth:`insert_set_from_file`
+        - :meth:`import_wordset_from_file`
         - :meth:`cutevariant.gui.plugins.word_set.widgets.WordListDialog.load_file`
     """
     # Search whitespaces
@@ -574,7 +574,7 @@ def sanitize_words(words):
     return data
 
 
-def insert_set_from_file(conn: sqlite3.Connection, wordset_name, filename):
+def import_wordset_from_file(conn: sqlite3.Connection, wordset_name, filename):
     """Create Word set from the given file
 
     Args:
@@ -617,7 +617,7 @@ def insert_set_from_file(conn: sqlite3.Connection, wordset_name, filename):
 delete_set_by_name = partial(delete_by_name, table_name="sets")
 
 
-def get_sets(conn):
+def get_wordsets(conn):
     """Return the number of words per word set stored in DB
 
     Returns:
@@ -629,7 +629,7 @@ def get_sets(conn):
         yield dict(row)
 
 
-def get_words_set(conn, wordset_name):
+def get_words_in_set(conn, wordset_name):
     """Return generator of words in the given word set
 
     Returns:

@@ -92,8 +92,9 @@ class PedReader:
             - Not digit sex/phenotype: Exception raised
             - Sex/phenotype not expected (0,1,2): Individual skipped
             - Unknown individual_id: Individual skipped
-            - If samples are given, not found family_id, individual_id couple: Individual skipped.
-            i.e.: And individual not already in DB is skipped.
+            - If samples are given, not found family_id, individual_id couple:
+                Individual skipped.
+                i.e.: And individual not already in DB is skipped.
             - If samples are given, not found family_id, father_id/mother_id:
                 Added as unknown.
 

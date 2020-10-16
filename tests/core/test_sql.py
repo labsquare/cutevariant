@@ -304,7 +304,7 @@ def test_insert_set_from_file(conn, wordset):
 
     print("Expected data:", expected_data)
 
-    sql.insert_set_from_file(conn, "test_wordset", wordset_file)
+    sql.import_wordset_from_file(conn, "test_wordset", wordset_file)
 
     # TODO: for now the one to many relation is not implemented
     # All records have the name of the set... awesome
@@ -318,10 +318,10 @@ def test_insert_set_from_file(conn, wordset):
 
 
 def test_get_sets(conn, kindly_wordset_fixture):
-    """Test get_sets: Word set group by results"""
+    """Test get_wordsets: Word set group by results"""
     wordset_file, _ = kindly_wordset_fixture
 
-    sql.insert_set_from_file(conn, "test_wordset", wordset_file)
+    sql.import_wordset_from_file(conn, "test_wordset", wordset_file)
 
     expected = [
         {
@@ -329,7 +329,7 @@ def test_get_sets(conn, kindly_wordset_fixture):
             "count": 4,
         }
     ]
-    found = list(sql.get_sets(conn))
+    found = list(sql.get_wordsets(conn))
 
     assert expected == found
 
@@ -348,9 +348,9 @@ def test_get_words_in_set(conn, wordset):
 
     print("Expected data:", expected_data)
 
-    sql.insert_set_from_file(conn, "test_wordset", wordset_file)
+    sql.import_wordset_from_file(conn, "test_wordset", wordset_file)
 
-    found = set(sql.get_words_set(conn, "test_wordset"))
+    found = set(sql.get_words_in_set(conn, "test_wordset"))
 
     assert set(expected_data) == found
 

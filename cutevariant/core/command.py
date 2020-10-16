@@ -334,7 +334,7 @@ def show_cmd(conn: sqlite3.Connection, feature: str, **kwargs):
         "selections": sql.get_selections,
         "fields": sql.get_fields,
         "samples": sql.get_samples,
-        "sets": sql.get_sets,
+        "sets": sql.get_wordsets,
     }
 
     if feature not in accept_features:
@@ -372,7 +372,7 @@ def import_cmd(conn: sqlite3.Connection, feature=str, name=str, path=str, **kwar
     if not os.path.isfile(path):
         raise vql.VQLSyntaxError(f"{path} doesn't exists")
 
-    affected_rows = sql.insert_set_from_file(conn, name, path)
+    affected_rows = sql.import_wordset_from_file(conn, name, path)
     return {"success": (affected_rows is not None)}
 
 
