@@ -1206,7 +1206,8 @@ class VariantViewWidget(plugin.PluginWidget):
 
         # Refresh the current variant of mainwindow and plugins
         self.mainwindow.state.current_variant = variant
-        self.mainwindow.refresh_plugins(sender=self)
+        # Request a refresh of the variant_info plugin
+        self.mainwindow.refresh_plugin("variant_info")
 
     def _show_group_dialog(self):
         """Show a dialog window to select group fields"""
@@ -1262,8 +1263,8 @@ class VariantViewWidget(plugin.PluginWidget):
         """Force refresh of vql_editor if loaded"""
         if "vql_editor" in self.mainwindow.plugins:
             self.mainwindow.state.group_by = self.groupby_left_pane.group_by
-            plugin_obj = self.mainwindow.plugins["vql_editor"]
-            plugin_obj.on_refresh()
+            # Request a refresh of the vql_editor plugin
+            self.mainwindow.refresh_plugin("vql_editor")
 
     def copy(self):
         """Copy the selected variant(s) into the clipboard
