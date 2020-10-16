@@ -4,6 +4,8 @@ VariantInfoWidget is showed on the GUI, it uses VariantPopupMenu to display a
 contextual menu about the variant which is selected.
 VariantPopupMenu is also used in viewquerywidget for the same purpose.
 """
+from logging import DEBUG
+
 # Qt imports
 from PySide2.QtCore import Qt, Slot, QSize
 from PySide2.QtWidgets import *
@@ -39,29 +41,8 @@ class VariantInfoWidget(PluginWidget):
         self.current_variant = None
 
         self.view = QTabWidget()
-
-        # Editor
-        # TODO: edit comment on variant is disabled
-        self.comment_input = QTextBrowser()
-        self.comment_input.setAlignment(Qt.AlignTop | Qt.AlignLeft)
-        self.comment_input.setOpenExternalLinks(True)
-
-        self.editor = QWidget()
-        self.editor_layout = QVBoxLayout()
-
         self.toolbar = QToolBar()
         self.toolbar.setIconSize(QSize(16, 16))
-
-        # sub_edit_layout = QFormLayout()
-        # editor_layout.setRowWrapPolicy(QFormLayout.WrapAllRows)
-        # sub_edit_layout.addWidget(self.comment_input)
-        # sub_edit_layout.addWidget(self.save_button)
-
-        self.editor_layout.addWidget(self.comment_input)
-        # self.editor_layout.addWidget(self.save_button)
-
-        self.editor.setLayout(self.editor_layout)
-        # self.save_button.clicked.connect(self.on_save_clicked)
 
         # Build variant tab
         self.variant_view = QTreeWidget()
@@ -71,7 +52,7 @@ class VariantInfoWidget(PluginWidget):
         self.variant_view.header().setVisible(False)
         self.view.addTab(self.variant_view, "Variant")
 
-        # build transcript tab
+        # Build transcript tab
         self.transcript_combo = QComboBox()
         self.transcript_view = QTreeWidget()
         self.transcript_view.setColumnCount(2)
@@ -86,11 +67,10 @@ class VariantInfoWidget(PluginWidget):
         self.view.addTab(tx_widget, "Transcripts")
         self.transcript_combo.currentIndexChanged.connect(self.on_transcript_changed)
 
-        # build Samples tab
+        # Build Samples tab
         self.sample_combo = QComboBox()
         self.sample_view = QTreeWidget()
         self.sample_view.setAlternatingRowColors(True)
-
         self.sample_view.setColumnCount(2)
         # self.sample_view.setHeaderLabels(["Field", "Value"])
         self.sample_view.header().setVisible(False)
@@ -102,16 +82,28 @@ class VariantInfoWidget(PluginWidget):
         self.view.addTab(tx_widget, "Samples")
         self.sample_combo.currentIndexChanged.connect(self.on_sample_changed)
 
-        # Build genotype tabs
+        # Build genotype tab
         self.genotype_view = QListWidget()
         self.genotype_view.setIconSize(QSize(20, 20))
         self.view.addTab(self.genotype_view, "Genotypes")
 
+        # Build comments tab
+        # Build Editor
+        # TODO: edit comment on variant is disabled
+        self.comment_input = QTextBrowser()
+        self.comment_input.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+        self.comment_input.setOpenExternalLinks(True)
+        self.editor = QWidget()
+        self.editor_layout = QVBoxLayout()
+        # Save comment functionality
+        # sub_edit_layout = QFormLayout()
+        # editor_layout.setRowWrapPolicy(QFormLayout.WrapAllRows)
+        # sub_edit_layout.addWidget(self.comment_input)
+        # sub_edit_layout.addWidget(self.save_button)
+        # self.save_button.clicked.connect(self.on_save_clicked)
+        self.editor_layout.addWidget(self.comment_input)
+        self.editor.setLayout(self.editor_layout)
         self.view.addTab(self.editor, self.tr("Comments"))
-
-        # self.view.setColumnCount(2)
-        # Set title of columns
-        # self.view.setHeaderLabels([self.tr("Attributes"), self.tr("Values")])
 
         v_layout = QVBoxLayout()
         v_layout.setContentsMargins(0, 0, 0, 0)
@@ -154,29 +146,11 @@ class VariantInfoWidget(PluginWidget):
 
         variant_id = self.current_variant["id"]
 
-        font = QFont()
-        font.setBold(True)
-
         # Populate variant
-        self.variant_view.clear()
-        for field_name, value in sql.get_one_variant(self.conn, variant_id).items():
-            item = QTreeWidgetItem()
-            item.setText(0, field_name)
-            item.setFont(0, font)
-            item.setText(1, str(value))
-            # Tooltips on header AND field => easier for user
-            tooltip = self.fields_descriptions.get(field_name, "")
-            item.setToolTip(0, tooltip)
-            item.setToolTip(1, tooltip)
-
-            if field_name == "comment":
-                try:
-                    self.comment_input.setMarkdown(str(value))
-                except AttributeError:
-                    # Fallback Qt 5.14-
-                    self.comment_input.setPlainText(str(value))
-
-            self.variant_view.addTopLevelItem(item)
+        self.populate_tree_widget(
+            self.variant_view,
+            sql.get_one_variant(self.conn, variant_id)
+        )
 
         # Populate annotations
         self.transcript_combo.blockSignals(True)
@@ -195,11 +169,13 @@ class VariantInfoWidget(PluginWidget):
         self.on_sample_changed()
         self.sample_combo.blockSignals(False)
 
-        # Populate genotype
+        # Populate genotypes for samples
         self.genotype_view.clear()
-        q = f"SELECT samples.name, sv.gt FROM samples LEFT JOIN sample_has_variant sv ON samples.id = sv.sample_id AND sv.variant_id = {variant_id}"
+        query = f"""SELECT samples.name, sv.gt FROM samples 
+                 LEFT JOIN sample_has_variant sv ON samples.id = sv.sample_id 
+                 AND sv.variant_id = {variant_id}"""
 
-        for row in self.conn.execute(q):
+        for row in self.conn.execute(query):
             item = QListWidgetItem()
             genotype = str(row[1])
             icon = self.GENOTYPES.get(genotype, self.GENOTYPES["-1"])
@@ -211,38 +187,70 @@ class VariantInfoWidget(PluginWidget):
 
     @Slot()
     def on_transcript_changed(self):
-        """This method is triggered when transcript change from combobox"""
-        annotations = self.transcript_combo.currentData()
-        font = QFont()
-        font.setBold(True)
-        self.transcript_view.clear()
-        if annotations:
-            for key, val in annotations.items():
-                item = QTreeWidgetItem()
-                item.setFont(0, font)
-                item.setText(0, key)
-                item.setText(1, str(val))
+        """This method is triggered when transcript change from combobox
 
-                self.transcript_view.addTopLevelItem(item)
+        Fill fields & values for selected transcript.
+        """
+        annotations = self.transcript_combo.currentData()
+        self.populate_tree_widget(self.transcript_view, annotations)
 
     @Slot()
     def on_sample_changed(self):
-        """This method is triggered when sample change from combobox"""
+        """This method is triggered when sample change from combobox
+
+        Fill fields & values for selected sample.
+        """
         sample_id = self.sample_combo.currentData()
         variant_id = self.current_variant["id"]
+
+        self.populate_tree_widget(
+            self.sample_view,
+            sql.get_sample_annotations(self.conn, variant_id, sample_id),
+        )
+
+    def populate_tree_widget(self, treewidget, data):
+        """Add the content of data to the given treewidget
+
+        Args:
+            treewidget(QTreeWidget): A widget in a tab of the main view of this
+                plugin: Variant, Transcripts, Samples.
+            data(dict): Dictionary with field names as keys and content as values.
+                Fields will be displayed in the left column; Values will be
+                displayed in the right column.
+        """
         font = QFont()
         font.setBold(True)
-        self.sample_view.clear()
-        ann = sql.get_sample_annotations(self.conn, variant_id, sample_id)
-        if ann:
-            for key, value in ann.items():
-                if key in ("variant_id", "sample_id"):
-                    continue
-                item = QTreeWidgetItem()
-                item.setText(0, key)
-                item.setFont(0, font)
-                item.setText(1, str(value))
-                self.sample_view.addTopLevelItem(item)
+        treewidget.clear()
+        if not data:
+            return
+
+        for key, value in data.items():
+            if key in ("variant_id", "sample_id") and LOGGER.getEffectiveLevel() != DEBUG:
+                # "variant_id", "sample_id": For Samples tab
+                # "id": For Variant tab
+                continue
+
+            if key == "comment":
+                # For Variant tab
+                try:
+                    self.comment_input.setMarkdown(str(value))
+                except AttributeError:
+                    # Fallback Qt 5.14-
+                    self.comment_input.setPlainText(str(value))
+
+            item = QTreeWidgetItem()
+            item.setText(0, key)
+            item.setFont(0, font)
+            item.setText(1, str(value))
+
+            # Tooltips on header AND field => easier for user
+            tooltip = self.fields_descriptions.get(key, "")
+            item.setToolTip(0, tooltip)
+            item.setToolTip(1, tooltip)
+
+            treewidget.addTopLevelItem(item)
+
+        treewidget.resizeColumnToContents(0)
 
     # @Slot()
     # def on_save_clicked(self):
