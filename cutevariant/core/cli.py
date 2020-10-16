@@ -1,13 +1,15 @@
+# Standard imports
 import argparse
 import os
-import progressbar
 import sys
 import logging
 
+# Custom imports
+import progressbar
 from columnar import columnar
-
 from cutevariant.core.importer import async_import_file
 from cutevariant.core import sql, vql
+from cutevariant.core.querybuilder import *
 
 
 def main():
@@ -25,52 +27,69 @@ the arguments.""",
     $ cutevariant-cli show --db my_database.db samples
     or
     $ export CUTEVARIANT_DB=my_database.db
-    $ cutevariant-cli show samples"""
+    $ cutevariant-cli show samples""",
     )
     sub_parser = parser.add_subparsers(dest="subparser")
 
-    # createdb parser
-    createdb_parser = sub_parser.add_parser(
-        "createdb", help="Build a sqlite database from a vcf file"
-    )
-    createdb_parser.add_argument("-i", "--input", help="VCF file path", required=True)
-    createdb_parser.add_argument(
-        "-o", "--output", help="cutevariant sqlite database path"
-    )
-
-    # Common parser: Database file requirement
+    # Common parser: Database file requirement #################################
     parent_parser = argparse.ArgumentParser(add_help=False)
     parent_parser.add_argument(
         "--db", help="SQLite database. By default, $CUTEVARIANT_DB is used."
     )
 
-    # show parser
+    # Create DB parser #########################################################
+    createdb_parser = sub_parser.add_parser(
+        "createdb",
+        help="Build a SQLite database from a vcf file",
+        parents=[parent_parser],
+    )
+    createdb_parser.add_argument("-i", "--input", help="VCF file path", required=True)
+
+    # Show parser ##############################################################
     show_parser = sub_parser.add_parser(
         "show", help="Display table content", parents=[parent_parser]
     )
     show_parser.add_argument(
-        "table", choices=["fields", "selections", "samples"], help="Possible names of tables"
+        "table",
+        choices=["fields", "selections", "samples"],
+        help="Possible names of tables.",
     )
 
+    # Remove parser ############################################################
+    remove_parser = sub_parser.add_parser(
+        "remove", help="remove selection", parents=[parent_parser]
+    )
+    remove_parser.add_argument("names", nargs="+", help="Name(s) of selection(s).")
 
-    # remove parser
-    remove_parser = sub_parser.add_parser("remove", help="remove selection", parents=[parent_parser])
-    remove_parser.add_argument("names", nargs="+", help="list of selection's name")
+    # VQL parser ###############################################################
+    select_parser = sub_parser.add_parser(
+        "exec",
+        help="Execute a VQL statement.",
+        parents=[parent_parser],
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""Examples:
 
-    # exec parser
-    select_parser = sub_parser.add_parser("exec", help="Execute VQL statement", parents=[parent_parser])
-    select_parser.add_argument("vql", help="A vql statement")
+    $ cutevariant-cli exec "SELECT favorite,chr,pos,ref,alt FROM variants"
+    or
+    $ cutevariant-cli exec -g ??????? "????" 
+    """,
+    )
+    select_parser.add_argument("vql", help="A VQL statement.")
     select_parser.add_argument(
-        "-l", "--limit", help="limit output to line number", type=int, default=100
+        "-l",
+        "--limit",
+        help="Limit the number of lines in output.",
+        type=int,
+        default=100,
     )
     select_parser.add_argument(
         "-g",
         "--group",
         action="store_true",
-        help="Group Select query by (chr,pos,ref,alt)",
+        help="Group SELECT query by...(chr,pos,ref,alt).",
     )
     select_parser.add_argument(
-        "-s", "--to-selection", help="Save Select query into a selection name"
+        "-s", "--to-selection", help="Save SELECT query into a selection name."
     )
 
     # #Set parser
