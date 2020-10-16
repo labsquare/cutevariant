@@ -13,11 +13,19 @@ from cutevariant.core import sql, vql
 def main():
     logger = logging.getLogger()
     logger.setLevel(logging.CRITICAL)
+    # noinspection PyTypeChecker
     parser = argparse.ArgumentParser(
+        formatter_class=lambda prog: argparse.RawDescriptionHelpFormatter(prog),
         description="""
-    Cutevariant cli mode helps your to run actions directly from command-line
-    You can use the env variable $CUTEVARIANT_DB to define a database instead arguments
-    """
+Cutevariant cli mode helps to run actions directly from command-line.\n
+The env variable $CUTEVARIANT_DB can be used to define a database instead of
+the arguments.""",
+        epilog="""Examples:
+
+    $ cutevariant-cli show --db my_database.db samples
+    or
+    $ export CUTEVARIANT_DB=my_database.db
+    $ cutevariant-cli show samples"""
     )
     sub_parser = parser.add_subparsers(dest="subparser")
 
