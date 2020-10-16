@@ -78,7 +78,7 @@ the arguments.""",
 
     $ cutevariant-cli exec "SELECT favorite,chr,pos,ref,alt FROM variants"
     or
-    $ cutevariant-cli exec -g ??????? "????" 
+    $ cutevariant-cli exec -g ??????? "????"
     """,
     )
     select_parser.add_argument("vql", help="A VQL statement.")
