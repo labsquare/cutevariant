@@ -131,9 +131,8 @@ the arguments.""",
             ):
                 print(message)
 
-        # TODO: It doesn't set the env to the parent shell
-        # os.putenv("CUTEVARIANT_DB", args.output)
-        # print("$CUTEVARIANT_DB has been set with ", args.output)
+        print("The database is successfully created!")
+        exit()
 
     # Prepare SQL connection on DB file
     if "CUTEVARIANT_DB" in os.environ and args.subparser != "createdb":
