@@ -1,14 +1,19 @@
-"""Exposes VqlEditor class used in the MainWindow to show SQL statements.
+"""Exposes VqlEditor class used in the MainWindow to show VQL statements.
 VqlEditor uses:
     - VqlSyntaxHighlighter as a syntax highlighter
     - VqlEdit for the support of autocompletion
+
+Warnings:
+    When you add a VQL command in the language, please update
+    :meth:`VqlEditorWidget.run_vql` method in consequence. Otherwise no command
+    will be executed.
 """
 # Standard imports
 from textx.exceptions import TextXSyntaxError
 import sqlite3
 
 # Qt imports
-from PySide2.QtCore import Qt, QRegularExpression, QStringListModel, Signal
+from PySide2.QtCore import Qt, QStringListModel
 from PySide2.QtWidgets import (
     QToolBar,
     QCompleter,
@@ -23,13 +28,10 @@ from PySide2.QtGui import QKeySequence
 from cutevariant.core import vql, sql
 from cutevariant.gui import style, plugin, FIcon
 from cutevariant.core.vql import VQLSyntaxError
-from cutevariant.commons import logger
 from cutevariant.core import command
-
 from cutevariant.core.querybuilder import build_vql_query
-
-
 from cutevariant.gui.widgets import VqlEditor, VqlSyntaxHighlighter
+from cutevariant.commons import logger
 
 LOGGER = logger()
 
@@ -42,7 +44,7 @@ class VqlEditorWidget(plugin.PluginWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle(self.tr("Vql Editor"))
+        self.setWindowTitle(self.tr("VQL Editor"))
 
         # Top toolbar
         self.top_bar = QToolBar()
@@ -165,36 +167,62 @@ class VqlEditorWidget(plugin.PluginWidget):
     def run_vql(self):
         """Execute VQL code
 
-        TODO: old doc deleted
-        """
+        Suported commands and the plugins that need to be refreshed in consequence:
+            - select_cmd: main ui (all plugins in fact)
+            - count_cmd: ?
+            - drop_cmd: selections & wordsets
+            - create_cmd: selections
+            - set_cmd: selections
+            - bed_cmd: selections
+            - show_cmd: ?
+            - import_cmd: wordsets
 
+        TODO: manage unsupported requests
+        """
         # Check VQL syntax first
         if not self.check_vql():
             return
 
         for cmd in vql.parse_vql(self.text_edit.toPlainText()):
 
+            LOGGER.debug("VQL command %s", cmd)
+            cmd_type = cmd["cmd"]
+
             #  If command is a select kind
-            if cmd["cmd"] == "select_cmd":
-                self.mainwindow.state.fields = cmd[
-                    "fields"
-                ]  # columns from variant table
-                self.mainwindow.state.source = cmd["source"]  # name of the variant set
+            if cmd_type == "select_cmd":
+                # columns from variant table
+                self.mainwindow.state.fields = cmd["fields"]
+                # name of the variant selection
+                self.mainwindow.state.source = cmd["source"]
                 self.mainwindow.state.filters = cmd["filters"]
                 self.mainwindow.state.group_by = cmd["group_by"]
                 self.mainwindow.state.having = cmd["having"]
+                # Refresh all plugins
                 self.mainwindow.refresh_plugins(sender=self)
+                continue
 
-            if cmd["cmd"] in ("create_cmd", "set_cmd", "drop_cmd"):
-                fct = command.create_command_from_obj(self.conn, cmd)
-                fct()
+            try:
+                command.create_command_from_obj(self.conn, cmd)()
+            except sqlite3.DatabaseError as e:
+                self.set_message(str(e))
+                LOGGER.exception(e)
+                continue
 
-                # refresh source editor plugin
-                if "source_editor" in self.mainwindow.plugins:
-                    plugin = self.mainwindow.plugins["source_editor"]
-                    plugin.on_refresh()
+            # Selections related commands
+            if cmd_type in ("create_cmd", "set_cmd", "bed_cmd"):
+                # refresh source editor plugin for selections
+                self.mainwindow.refresh_plugin("source_editor")
+                continue
 
-                # TODO : manage other request
+            if cmd_type == "drop_cmd":
+                # refresh source editor plugin for selections
+                self.mainwindow.refresh_plugin("source_editor")
+                # refresh wordset plugin
+                self.mainwindow.refresh_plugin("word_set")
+
+            if cmd_type == "import_cmd":
+                # refresh wordset plugin
+                self.mainwindow.refresh_plugin("word_set")
 
     def set_message(self, message: str):
         """Show message error at the bottom of the view
