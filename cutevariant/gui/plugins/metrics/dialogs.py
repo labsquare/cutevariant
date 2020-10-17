@@ -22,13 +22,25 @@ def get_variant_count(conn: sqlite3.Connection):
 
 def get_variant_transition(conn: sqlite3.Connection):
     return conn.execute(
-        "SELECT COUNT(*) as `count` FROM variants WHERE (ref == 'A' AND alt == 'G') OR (ref == 'G' AND alt == 'A') OR (ref == 'C' AND alt == 'T') OR (ref == 'T' AND alt == 'C') "
+        """SELECT COUNT(*) AS `count` FROM variants
+        WHERE (ref == 'A' AND alt == 'G')
+        OR (ref == 'G' AND alt == 'A')
+        OR (ref == 'C' AND alt == 'T')
+        OR (ref == 'T' AND alt == 'C')"""
     ).fetchone()["count"]
 
 
 def get_variant_transversion(conn: sqlite3.Connection):
     return conn.execute(
-        "SELECT COUNT(*) as `count` FROM variants WHERE (ref == 'A' AND alt == 'C') OR (ref == 'C' AND alt == 'A') OR (ref == 'G' AND alt == 'T') OR (ref == 'T' AND alt == 'G') OR (ref == 'G' AND alt == 'C') OR (ref == 'C' AND alt == 'G') OR (ref == 'A' AND alt == 'T')OR (ref == 'T' AND alt == 'A')      "
+        """SELECT COUNT(*) AS `count` FROM variants
+        WHERE (ref == 'A' AND alt == 'C')
+        OR (ref == 'C' AND alt == 'A')
+        OR (ref == 'G' AND alt == 'T')
+        OR (ref == 'T' AND alt == 'G')
+        OR (ref == 'G' AND alt == 'C')
+        OR (ref == 'C' AND alt == 'G')
+        OR (ref == 'A' AND alt == 'T')
+        OR (ref == 'T' AND alt == 'A')"""
     ).fetchone()["count"]
 
 
@@ -38,7 +50,7 @@ def get_sample_count(conn: sqlite3.Connection):
 
 def get_snp_count(conn: sqlite3.Connection):
     return conn.execute(
-        "SELECT COUNT(*)  as `count` FROM variants WHERE is_snp = 1"
+        "SELECT COUNT(*) AS `count` FROM variants WHERE is_snp = 1"
     ).fetchone()["count"]
 
 
@@ -52,8 +64,6 @@ class MetricModel(QAbstractTableModel):
         """ override """
         if parent == QModelIndex():
             return 2
-        else:
-            return None
 
     def rowCount(self, parent=QModelIndex()) -> int:
         return len(self.items)
@@ -62,7 +72,6 @@ class MetricModel(QAbstractTableModel):
 
         if role == Qt.DisplayRole:
             return self.items[index.row()][index.column()]
-        return None
 
     def clear(self):
         self.beginResetModel()
