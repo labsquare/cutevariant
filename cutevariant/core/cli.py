@@ -183,7 +183,7 @@ the arguments.""",
         query = "".join(args.vql)
 
         try:
-            cmd = next(vql.execute_vql(query))
+            cmd = next(vql.parse_vql(query))
 
         except vql.textx.TextXSyntaxError as e:
             # Available attributes: e.message, e.line, e.col

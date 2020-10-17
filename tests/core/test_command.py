@@ -152,7 +152,7 @@ def test_create_command_from_obj(conn):
     """
     ## From VQL Query ##########################################################
     cmd = command.create_command_from_obj(
-        conn, next(vql.execute_vql("CREATE denovo FROM variants"))
+        conn, next(vql.parse_vql("CREATE denovo FROM variants"))
     )
     expected_kwargs = {
         "cmd": "create_cmd",
@@ -164,7 +164,7 @@ def test_create_command_from_obj(conn):
     assert cmd.keywords == expected_kwargs
 
     cmd = command.create_command_from_obj(
-        conn, next(vql.execute_vql("CREATE denovo = a + b "))
+        conn, next(vql.parse_vql("CREATE denovo = a + b "))
     )
     print(cmd.keywords)
     expected_kwargs = {
@@ -177,7 +177,7 @@ def test_create_command_from_obj(conn):
     assert cmd.keywords == expected_kwargs
 
     cmd = command.create_command_from_obj(
-        conn, next(vql.execute_vql("CREATE denovo FROM variants INTERSECT 'test.bed' "))
+        conn, next(vql.parse_vql("CREATE denovo FROM variants INTERSECT 'test.bed' "))
     )
     # Keywords of partial function
     expected_kwargs = {

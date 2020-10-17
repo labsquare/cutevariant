@@ -1,9 +1,9 @@
 """Proof of concept for the VQL DSL.
 
 From this module, you only need to use parse_vql or parse_one_vql.
-For instance : 
+For instance :
 
-cmd = parse_one_vql("SELECT chr, pos FROM variants") 
+cmd = parse_one_vql("SELECT chr, pos FROM variants")
 
 print(cmd)
 
@@ -263,23 +263,6 @@ METAMODEL = textx.metamodel_from_str(
     debug=False,
     ignore_case=True,
 )
-
-
-def execute_vql(raw_vql: str) -> list:
-    """DEPRECETED : USE parse_vql 
-
-    RENAME 
-    Execute multiline VQL statement separated by ";"
-
-    :return: yield 1 dictionnary per command
-        .. example :: {'cmd': 'select_cmd', 'columns': ['chr','pos'], 'source':'variants', 'filter': 'None'}
-    """
-    try:
-        raw_model = METAMODEL.model_from_str(raw_vql)
-    except textx.exceptions.TextXSyntaxError as err:
-        raise VQLSyntaxError(*error_message_from_err(err, raw_vql))
-
-    yield from (command.value for command in raw_model.commands)
 
 
 def parse_vql(raw_vql: str) -> list:

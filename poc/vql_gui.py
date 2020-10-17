@@ -1,11 +1,11 @@
-from PySide2.QtWidgets import * 
-from PySide2.QtCore import * 
-from PySide2.QtGui import * 
+from PySide2.QtWidgets import *
+from PySide2.QtCore import *
+from PySide2.QtGui import *
 
-import sys 
+import sys
 import json
 
-from cutevariant.core.vql import execute_vql
+from cutevariant.core.vql import parse_vql
 from qjsonmodel import QJsonModel
 
 
@@ -21,7 +21,7 @@ class MyTextEdit(QTextEdit):
 		if event.key() == Qt.Key_Return:
 			self.returnPressed.emit()
 
-		
+
 		super().keyPressEvent(event)
 
 class Editor(QWidget):
@@ -47,11 +47,11 @@ class Editor(QWidget):
 		self.resize(1600, 400)
 
 	def compile(self):
-		source = self.a.toPlainText() 
+		source = self.a.toPlainText()
 		datas = []
-		for req in execute_vql(source):
+		for req in parse_vql(source):
 			datas.append(req)
-		
+
 
 		datas = json.dumps(datas)
 		datas = json.loads(datas)
@@ -70,7 +70,7 @@ w.show()
 app.exec_()
 
 
-a = execute_vql("CREATE a = b + c ")
+a = parse_vql("CREATE a = b + c ")
 
 i = next(a)
 

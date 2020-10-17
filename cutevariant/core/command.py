@@ -492,6 +492,6 @@ def clear_cache_cmd():
 
 #     def set_source(self, source):
 #         self.graph.clear()
-#         for vql_obj in vql.execute_vql(source):
+#         for vql_obj in vql.parse_vql(source):
 #             cmd = create_command_from_vql_objet(self.conn, vql_obj)
 #             self.add_command(cmd)
