@@ -5,9 +5,9 @@ from PySide2.QtWidgets import (
     QAbstractItemView,
     QHeaderView,
 )
-from PySide2.QtCore import Qt, QAbstractTableModel, QModelIndex
+from PySide2.QtCore import Qt, QAbstractTableModel, QModelIndex, QThreadPool
 from cutevariant.gui.plugin import PluginDialog
-
+from cutevariant.gui.sql_runnable import SqlRunnable
 from cutevariant.core import sql
 
 import sqlite3
@@ -113,22 +113,47 @@ class MetricsDialog(PluginDialog):
         v_layout.addWidget(self.buttons)
         self.setLayout(v_layout)
 
+        # Async stuff
+        self.metrics_thread = None
         self.populate()
+        print("CONSTR")
 
     def populate(self):
+
+        def compute_metrics(conn):
+
+            return {
+                "variants": get_variant_count(conn),
+                "snps": get_snp_count(conn),
+                "transitions": get_variant_transition(conn),
+                "transversions": get_variant_transversion(conn),
+                "samples": get_sample_count(conn),
+            }
+
+        self.metrics_thread = SqlRunnable(
+            self.conn, compute_metrics
+        )
+        self.metrics_thread.finished.connect(self.loaded)
+        pool = QThreadPool()
+        pool.start(self.metrics_thread)
+        print("ICI")
+
+    def loaded(self):
+        print("LA")
+
+        assert self.metrics_thread.done
+
+        results = self.metrics_thread.results
+
         self.model.clear()
+        ratio = results["transitions"] / results["transversions"]
 
-        self.model.add_metrics("Variant count", get_variant_count(self.conn))
-        self.model.add_metrics("Snp count", get_snp_count(self.conn))
-
-        transition = get_variant_transition(self.conn)
-        transversion = get_variant_transversion(self.conn)
-        ratio = transition / transversion
-
-        self.model.add_metrics("Transition count", transition)
-        self.model.add_metrics("Transversion count", transversion)
+        self.model.add_metrics("Variant count", results["variants"])
+        self.model.add_metrics("Snp count", results["snps"])
+        self.model.add_metrics("Transition count", results["transitions"])
+        self.model.add_metrics("Transversion count", results["transversions"])
         self.model.add_metrics("Tr/tv ratio", ratio)
-        self.model.add_metrics("Samples count", get_sample_count(self.conn))
+        self.model.add_metrics("Sample count", results["variants"])
 
         self.view.horizontalHeader().setSectionResizeMode(
             0, QHeaderView.ResizeToContents
