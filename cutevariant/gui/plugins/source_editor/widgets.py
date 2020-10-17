@@ -210,6 +210,7 @@ class SourceEditorWidget(plugin.PluginWidget):
 
     def on_open_project(self, conn):
         self.model.conn = conn
+        self.conn = conn
         self.on_refresh()
 
     def on_refresh(self):

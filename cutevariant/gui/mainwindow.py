@@ -665,11 +665,8 @@ class MainWindow(QMainWindow):
             self.app_settings.setValue("windowState", self.saveState())
 
     def toggle_footer_visibility(self, visibility):
+        """Toggle visibility of the bottom toolbar and all its plugins"""
         self.footer_tab.setVisible(visibility)
-        # refresh bottom plugins
-        for _, plugin in self.plugins.items():
-            if plugin.LOCATION == FOOTER_LOCATION and visible is True:
-                plugin.on_refresh()
 
     # @Slot()
     # def on_query_model_changed(self):

@@ -181,6 +181,22 @@ class PluginWidget(QWidget):
         """
         pass
 
+    def showEvent(self, event):
+        """Event called when a plugin is shown on the UI
+
+        This is used to sync a plugin with the UI after it has been hidden.
+
+        Note:
+            Is also shown at the initialization => Test the SQL connection to
+            avoid surprises due to an early call of `on_refresh`.
+
+        Args:
+            event(PySide2.QtGui.QShowEvent):
+        """
+        LOGGER.debug("Show event %s", self)
+        if self.conn:
+            self.on_refresh()
+
 
 class PluginDialog(QDialog):
     """Model class for all tool menu plugins

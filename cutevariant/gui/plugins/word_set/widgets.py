@@ -328,7 +328,8 @@ class WordSetWidget(PluginWidget):
 
     def on_refresh(self):
         """ override """
-        self.populate()
+        if self.conn:
+            self.populate()
 
     def populate(self):
         """Actualize the list of word sets"""
