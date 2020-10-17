@@ -365,7 +365,7 @@ class MainWindow(QMainWindow):
             self.save_recent_project(filepath)
 
         except sqlite3.OperationalError as e:
-            LOGGER.error("MainWindow:open:: %s", e)
+            LOGGER.exception(e)
             QMessageBox.critical(
                 self,
                 self.tr("Error while opening project"),
