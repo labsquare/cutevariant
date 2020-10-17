@@ -186,15 +186,6 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self.model.load()
         self.on_refresh()
 
-    # def on_query_model_changed(self, model):
-    #     """ Overrided from PluginWidget """
-    #     self.columns = model.columns
-    #     #When you set columns, it means you check columns.
-    #     #This will trigger a signal itemChanged which cause an infinite loop
-    #     #That's why I blocked the signal from the model. So I need to update the view manually
-    #     self.view.update()
-    #     self.view.resizeColumnToContents(0)
-
     def on_refresh(self):
         """ overrided from PluginWidget """
         self._is_refreshing = True
