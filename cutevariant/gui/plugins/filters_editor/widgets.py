@@ -314,18 +314,19 @@ class FieldFactory(QObject):
 
 class FilterItem(object):
     """FilterItem is a recursive class which represent item for a FilterModel
-    A tree of FilterItem can be store by adding FilterItem recursively as children.
+    A tree of FilterItems can be stored by adding FilterItems recursively as children.
     Each FilterItem has a parent and a list of children.
     see https://doc.qt.io/qt-5/qtwidgets-itemviews-simpletreemodel-example.html
 
-    :Attributes:
-        parent (FilterItem)
-        children (list of FilterItem)
-    :Example:
-    root = FilterItem() # Create rootItem
-    root.append(FilterItem()) # Append 2 children
-    root.append(FilterItem())
-    root[0].append(FilterItem()) # Append 1 child to the first children
+    Attributes:
+        parent(FilterItem): item's parent
+        children(list[FilterItem]): list of children
+
+    Examples:
+        root = FilterItem() # Create rootItem
+        root.append(FilterItem()) # Append 2 children
+        root.append(FilterItem())
+        root[0].append(FilterItem()) # Append 1 child to the first children
     """
 
     LOGIC_TYPE = 0  #  Logic type is AND/OR/XOR
@@ -335,9 +336,8 @@ class FilterItem(object):
         """FilterItem constructor with parent as FilterItem parent
 
         Args:
-            data (any): str (logicType) or tuple (ConditionType).
+            data(any): str (logicType) or tuple (ConditionType).
             parent (FilterItem): item's parent
-            children(list<FilterItem>): list of children
         """
         self.parent = parent
         self.children = []
@@ -797,11 +797,10 @@ class FilterModel(QAbstractItemModel):
         """Add condition item
 
         Args:
-            value (tuple): tuple (field, operator, value)
+            value (tuple): Condition data (field, operator, value)
             parent (QModelIndex): Parent index
         """
-
-        #  Skip if parent is a condition type
+        # Skip if parent is a condition type
         if self.item(parent).type == FilterItem.CONDITION_TYPE:
             return
 
@@ -814,6 +813,7 @@ class FilterModel(QAbstractItemModel):
 
     def remove_item(self, index):
         """Remove Item
+
         Args:
             index (QModelIndex): item index
         """
@@ -992,8 +992,6 @@ class FilterModel(QAbstractItemModel):
 
         if not indexes:
             return
-        else:
-            index = indexes[0]
 
         serialization = QByteArray(pickle.dumps(self.item(indexes[0])))
         data.setData(self._MIMEDATA, serialization)
@@ -1296,6 +1294,7 @@ class FilterDelegate(QStyledItemDelegate):
 
 
 class FieldDialog(QDialog):
+    # TODO: not used anymore
     def __init__(self, conn=None, parent=None):
         super().__init__(parent)
         self.title_label = QLabel("Non title")
@@ -1407,7 +1406,6 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.delegate = FilterDelegate()
         self.toolbar = QToolBar()
         self.toolbar.setIconSize(QSize(16, 16))
-        # self.toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
 
         self.view.setModel(self.model)
         self.view.setItemDelegate(self.delegate)
@@ -1417,8 +1415,6 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.view.setDragDropMode(QAbstractItemView.InternalMove)
         self.view.setAlternatingRowColors(True)
         self.view.setIndentation(0)
-        # self.view.setItemsExpandable(False)
-        # self.view.setRootIsDecorated(False)
 
         self.view.header().setSectionResizeMode(0, QHeaderView.ResizeToContents)
         self.view.header().setSectionResizeMode(1, QHeaderView.Stretch)
@@ -1449,16 +1445,14 @@ class FiltersEditorWidget(plugin.PluginWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(1)
         self.setLayout(layout)
-        # self.model.filterChanged.connect(self.on_filter_changed)
 
         # setup Menu
-        self.toolbar.addAction(
+        self.add_button = self.toolbar.addAction(
             FIcon(0xF0415), self.tr("Add Condition"), self.on_add_condition
         )
-
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.toolbar.addAction(
+        self.del_button = self.toolbar.addAction(
             FIcon(0xF0A7A), self.tr("Delete filter"), self.on_delete_item
         )
 
@@ -1479,10 +1473,6 @@ class FiltersEditorWidget(plugin.PluginWidget):
     def filters(self, filters):
         self.model.filters = filters
 
-    def on_register(self, mainwindow):
-        """ Overrided from PluginWidget """
-        pass
-
     def on_open_project(self, conn):
         """ Overrided from PluginWidget """
         self.model.conn = conn
@@ -1495,9 +1485,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self._update_view_geometry()
 
     def on_filters_changed(self):
-
-        """ triggered when filter has changed """
-
+        """Triggered when filter has changed"""
         if self.mainwindow:
             self.mainwindow.state.filters = self.model.filters
             self.mainwindow.refresh_plugins(sender=self)
@@ -1509,7 +1497,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
             self.model.add_logic_item(parent=index)
             # self.view.setFirstColumnSpanned(0, index.parent(), True)
 
-        self._update_view_geometry()
+            self._update_view_geometry()
 
     def on_save_filters(self):
 
@@ -1525,10 +1513,9 @@ class FiltersEditorWidget(plugin.PluginWidget):
         if data:
             self.filters = data
             self.on_filters_changed()
-            self._update_view_geometry()
         else:
             self.model.clear()
-            self._update_view_geometry()
+        self._update_view_geometry()
 
     def _update_view_geometry(self):
         """Set column Spanned to True for all Logic Item
@@ -1549,15 +1536,20 @@ class FiltersEditorWidget(plugin.PluginWidget):
         #     self.view.setFirstColumnSpanned(0, index.parent(), True)
 
     def on_add_condition(self):
-        """Add condition item to the current selected index"""
+        """Add new condition item
+
+        - Add condition item to the current selected operator
+        - Or add new operator and new condition item on a new filter
+        """
         index = self.view.currentIndex()
 
         if index.isValid():
             if self.model.item(index).type() == FilterItem.LOGIC_TYPE:
+                # Add condition item to existing logic operator
                 self.model.add_condition_item(parent=index)
-
         else:
             if self.model.rowCount() == 0:
+                # Full new logic operator and condition item
                 self.model.add_logic_item(parent=QModelIndex())
                 gpindex = self.model.index(0, 0, QModelIndex())
                 self.model.add_condition_item(parent=gpindex)
@@ -1593,8 +1585,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
             self.model.remove_item(self.view.currentIndex())
 
     def on_selection_changed(self):
-        """ Enable/Disable add button depending item type """
-
+        """Enable/Disable add button depending item type"""
         index = self.view.currentIndex()
         if self.model.item(index).type() == FilterItem.CONDITION_TYPE:
             self.add_button.setDisabled(True)
