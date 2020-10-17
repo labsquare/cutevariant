@@ -36,6 +36,9 @@ class SqlRunnable(QObject, QRunnable):
         Examples:
 
             >>> runnable = SqlRunnable(conn, lambda conn : conn.execute("query"))
+            >>> def my_func(conn):
+            ...     return conn.execute("query")
+            >>> runnable = SqlRunnable(conn, my_func)
 
         Args:
             conn (sqlite3.Connection): sqlite3 Connexion
