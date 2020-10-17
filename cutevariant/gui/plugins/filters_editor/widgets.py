@@ -272,12 +272,15 @@ class FieldFactory(QObject):
     Attributes:
         conn (sqlite3.connection)
 
+    TODO: used only in FieldDialog => not used anymore
     """
 
     def __init__(self, conn):
+        super().__init__()
         self.conn = conn
 
     def create(self, sql_field):
+        """Get FieldWidget according to type key of the given sql_field"""
         # sample fields are stored as tuples
         # if type(sql_field) is tuple:
         #     sample = sql_field[1]
@@ -302,12 +305,10 @@ class FieldFactory(QObject):
             return w
 
         if field["type"] == "str":
-            w = StrField()
-            return w
+            return StrField()
 
         if field["type"] == "bool":
-            w = BoolField()
-            return w
+            return BoolField()
 
         return StrField()
 
@@ -321,6 +322,9 @@ class FilterItem(object):
     Attributes:
         parent(FilterItem): item's parent
         children(list[FilterItem]): list of children
+        data(any): str (logicType) or tuple/list (ConditionType).
+        uuid(str):
+        checked(boolean):
 
     Examples:
         root = FilterItem() # Create rootItem
@@ -336,12 +340,12 @@ class FilterItem(object):
         """FilterItem constructor with parent as FilterItem parent
 
         Args:
-            data(any): str (logicType) or tuple (ConditionType).
+            data(any): str (logicType) or tuple/list (ConditionType).
             parent (FilterItem): item's parent
         """
         self.parent = parent
         self.children = []
-        self.data = data
+        self.data = list(data) if isinstance(data, (tuple, list)) else data
         self.uuid = str(uuid.uuid1())
         self.checked = True
 
@@ -417,22 +421,24 @@ class FilterItem(object):
         if isinstance(self.data, str):  #  Logic
             return self.LOGIC_TYPE
 
-        if isinstance(self.data, tuple):  #  condition
+        if isinstance(self.data, (tuple, list)):  #  Condition
             return self.CONDITION_TYPE
-
-        return None
 
     def get_field(self):
         if self.type() == self.CONDITION_TYPE:
             return self.data[0]
-        return None
 
     def get_operator(self):
         if self.type() == self.CONDITION_TYPE:
             return self.data[1]
-        return None
 
     def get_value(self):
+        """Get value
+
+        Returns:
+            - If item is a LOGIC_FIELD, return the operator AND/OR/XOR.
+            - If item is a CONDITION_TYPE, return the value of the condition.
+        """
         if self.type() == self.CONDITION_TYPE:
             return self.data[2]
 
@@ -465,37 +471,34 @@ class FilterItem(object):
     #     #     if self.type() == self.CONDITION_TYPE:
     #     #         return self.data[column - 1]
 
-    def set_field(self, data):
+    def set_field(self, value):
+        """Set field part of CONDITION_TYPE item"""
         if self.type() == self.CONDITION_TYPE:
-            tmp = list(self.data)
-            tmp[0] = data
-            self.data = tuple(tmp)
+            self.data[0] = value
 
-    def set_operator(self, data):
+    def set_operator(self, value):
+        """Set operator part of CONDITION_TYPE item"""
         if self.type() == self.CONDITION_TYPE:
-            tmp = list(self.data)
-            tmp[1] = data
-            self.data = tuple(tmp)
+            self.data[1] = value
 
-    def set_value(self, data):
+    def set_value(self, value):
+        """Set value part of CONDITION_TYPE item or value of LOGIC_TYPE item"""
         if self.type() == self.CONDITION_TYPE:
-            tmp = list(self.data)
-            tmp[2] = data
-            self.data = tuple(tmp)
+            self.data[2] = value
+            return
 
-        if self.type() == self.LOGIC_TYPE:
-            self.data = data
+        # self.LOGIC_TYPE:
+        self.data = data
 
 
 class FilterModel(QAbstractItemModel):
-
     """Model to display filter from Query.filter.
     The model store Query filter as a nested tree of FilterItem.
     You can access data from self.item() and edit model using self.set_data() and helper method like
     self.add_logic_item, self.add_condition_item and remove_item.
+
     Attributes:
         conn (sqlite3.connection): sqlite3 connection
-        filterChanged (Signal): signal emited when model is edited.
         root_item (FilterItem): RootItem (invisible) to store recursive item=
 
     Examples:
@@ -572,13 +575,14 @@ class FilterModel(QAbstractItemModel):
                 if item.type() == FilterItem.LOGIC_TYPE:
                     return str(item.get_value())
 
+            if item.type() != FilterItem.CONDITION_TYPE:
+                return
+
             if index.column() == 2:
-                if item.type() == FilterItem.CONDITION_TYPE:
-                    return str(item.get_operator())
+                return str(item.get_operator())
 
             if index.column() == 3:
-                if item.type() == FilterItem.CONDITION_TYPE:
-                    return str(item.get_value())
+                return str(item.get_value())
 
         if role == FilterModel.TypeRole:
             # Return item type
@@ -1393,13 +1397,14 @@ class FieldDialog(QDialog):
 
 
 class FiltersEditorWidget(plugin.PluginWidget):
+    """Displayed widget plugin to allow creation/edition/deletion of filters"""
 
     ENABLE = True
     changed = Signal()
 
     def __init__(self, conn=None, parent=None):
         super().__init__(parent)
-        self.setWindowTitle(self.tr("Filter"))
+        self.setWindowTitle(self.tr("Filters"))
         self.view = QTreeView()
         # conn is always None here but initialized in on_open_project()
         self.model = FilterModel(conn)
@@ -1556,6 +1561,8 @@ class FiltersEditorWidget(plugin.PluginWidget):
                 self.model.add_condition_item(parent=gpindex)
 
         self._update_view_geometry()
+        # Nothing is selected => disable add button
+        self.add_button.setDisabled(True)
 
     def on_open_condition_dialog(self):
         """Open the condition creation dialog
