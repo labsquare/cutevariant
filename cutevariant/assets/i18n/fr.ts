@@ -101,7 +101,7 @@ Ce programme est distribué selon les termes de la Licence Publique Générale G
     <message>
         <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1404"/>
         <source>Filter</source>
-        <translation type="unfinished">Filtre</translation>
+        <translation>Filtre</translation>
     </message>
     <message>
         <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1433"/>
@@ -119,32 +119,32 @@ Ce programme est distribué selon les termes de la Licence Publique Générale G
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1517"/>
+        <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1518"/>
         <source>Type a name for the filter</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1517"/>
+        <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1518"/>
         <source>Filter Name:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1585"/>
+        <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1586"/>
         <source>Filter deletion</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1585"/>
+        <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1586"/>
         <source>Do you want to remove this item?</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1614"/>
+        <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1615"/>
         <source>Add condition</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1615"/>
+        <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1616"/>
         <source>Add subfilter</source>
         <translation type="unfinished"></translation>
     </message>
@@ -245,37 +245,37 @@ Les raccourcis seront visibles à partir du menu contextuel affiché au-dessus d
 <context>
     <name>MainWindow</name>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="233"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="236"/>
         <source>&amp;File</source>
         <translation>&amp;Fichier</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="234"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="237"/>
         <source>&amp;New project</source>
         <translation>&amp;Nouveau projet</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="237"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="240"/>
         <source>&amp;Open project ...</source>
         <translation>&amp;Ouvrir un projet...</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="257"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="261"/>
         <source>Settings ...</source>
         <translation>Paramètres...</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="266"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="265"/>
         <source>&amp;Quit</source>
         <translation>&amp;Quitter</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="286"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="285"/>
         <source>&amp;View</source>
         <translation>&amp;Vue</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="318"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="324"/>
         <source>Help</source>
         <translation>Aide</translation>
     </message>
@@ -285,32 +285,32 @@ Les raccourcis seront visibles à partir du menu contextuel affiché au-dessus d
         <translation>À propos de Qt</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="468"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="471"/>
         <source>Open project</source>
         <translation>Ouvrir un fichier de projet</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="468"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="471"/>
         <source>Cutevariant project (*.db)</source>
         <translation>Projet Cutevariant (*.db)</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="244"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="247"/>
         <source>Open recent</source>
         <translation>Récemment ouvert(s) </translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="437"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="440"/>
         <source>Clear</source>
         <translation>Effacer la liste</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="270"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="269"/>
         <source>&amp;Edit</source>
         <translation>&amp;Éditer</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="287"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="286"/>
         <source>Reset widgets positions</source>
         <translation>Réinitialiser les positions des widgets</translation>
     </message>
@@ -320,12 +320,12 @@ Les raccourcis seront visibles à partir du menu contextuel affiché au-dessus d
         <translation>À propos de Cutevariant</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="374"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="380"/>
         <source>{} opened</source>
         <translation>{} ouvert</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="248"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="251"/>
         <source>Export as csv</source>
         <translation>Exporter en tant que CSV </translation>
     </message>
@@ -340,51 +340,56 @@ Les raccourcis seront visibles à partir du menu contextuel affiché au-dessus d
         <translation>Qu&apos;est-ce que c&apos;est ?</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="363"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="369"/>
         <source>Error while opening project</source>
         <translation>Erreur durant l&apos;ouverture du projet</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="349"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="355"/>
         <source>File: {} is too old; please create a new project.</source>
         <translation>Le fichier: {} est trop ancien; veuillez créer un nouveau projet.</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="363"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="369"/>
         <source>File: {}
 The following exception occurred:
 {}</source>
         <translation>Fichier {}; L&apos;exception suivante a eu lieu: {}</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="501"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="504"/>
         <source>Save project</source>
         <translation>Enregistrer le projet</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="486"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="489"/>
         <source>(*.csv)</source>
         <translation>(*.csv)</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="278"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="277"/>
         <source>&amp;Select all variants</source>
         <translation>&amp;Sélectionner tous les variants</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="271"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="270"/>
         <source>&amp;Copy selected variants</source>
         <translation>&amp;Copier les variants sélectionnés</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="289"/>
-        <source>vql editor</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="252"/>
+        <location filename="cutevariant/gui/mainwindow.py" line="255"/>
         <source>Export pedigree PED/PLINK</source>
         <translation>Exporter un pedigree PED/PLINK</translation>
+    </message>
+    <message>
+        <location filename="cutevariant/gui/mainwindow.py" line="288"/>
+        <source>Hide bottom toolbar</source>
+        <translation>Cacher la zone inférieure</translation>
+    </message>
+    <message>
+        <location filename="cutevariant/gui/mainwindow.py" line="308"/>
+        <source>Report a bug</source>
+        <translation>Signaler un bug</translation>
     </message>
 </context>
 <context>
@@ -510,7 +515,37 @@ The following exception occurred:
     <message>
         <location filename="cutevariant/gui/settings.py" line="135"/>
         <source>Proxy</source>
-        <translation>Proxy</translation>
+        <translation type="obsolete">Proxy</translation>
+    </message>
+    <message>
+        <location filename="cutevariant/gui/settings.py" line="135"/>
+        <source>Network</source>
+        <translation>Réseau</translation>
+    </message>
+    <message>
+        <location filename="cutevariant/gui/settings.py" line="152"/>
+        <source>Type</source>
+        <translation>Type</translation>
+    </message>
+    <message>
+        <location filename="cutevariant/gui/settings.py" line="153"/>
+        <source>Proxy host</source>
+        <translation>Proxy hôte</translation>
+    </message>
+    <message>
+        <location filename="cutevariant/gui/settings.py" line="154"/>
+        <source>Proxy Port</source>
+        <translation>Port</translation>
+    </message>
+    <message>
+        <location filename="cutevariant/gui/settings.py" line="155"/>
+        <source>Username</source>
+        <translation>Nom d&apos;utilisateur</translation>
+    </message>
+    <message>
+        <location filename="cutevariant/gui/settings.py" line="156"/>
+        <source>Password</source>
+        <translation>Mot de passe</translation>
     </message>
 </context>
 <context>
@@ -578,82 +613,82 @@ Doublez-cliquez pour les éditer.</translation>
         <translation>Recharger la liste</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/source_editor/widgets.py" line="246"/>
+        <location filename="cutevariant/gui/plugins/source_editor/widgets.py" line="247"/>
         <source>Edit</source>
         <translation>Éditer</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/source_editor/widgets.py" line="257"/>
+        <location filename="cutevariant/gui/plugins/source_editor/widgets.py" line="258"/>
         <source>Intersect</source>
         <translation>Intersection</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/source_editor/widgets.py" line="257"/>
+        <location filename="cutevariant/gui/plugins/source_editor/widgets.py" line="258"/>
         <source>Difference</source>
         <translation>Différence</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/source_editor/widgets.py" line="257"/>
+        <location filename="cutevariant/gui/plugins/source_editor/widgets.py" line="258"/>
         <source>Union</source>
         <translation>Union</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/source_editor/widgets.py" line="272"/>
+        <location filename="cutevariant/gui/plugins/source_editor/widgets.py" line="273"/>
         <source>Remove</source>
         <translation>Supprimer</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/source_editor/widgets.py" line="298"/>
+        <location filename="cutevariant/gui/plugins/source_editor/widgets.py" line="299"/>
         <source>Type a name for selection</source>
         <translation>Entrez le nom de la sélection</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/source_editor/widgets.py" line="298"/>
+        <location filename="cutevariant/gui/plugins/source_editor/widgets.py" line="299"/>
         <source>Selection name:</source>
         <translation>Nom :</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/source_editor/widgets.py" line="315"/>
+        <location filename="cutevariant/gui/plugins/source_editor/widgets.py" line="316"/>
         <source>&apos;%s&apos; is a reserved name for a selection!</source>
         <translation>&apos;%s&apos; est un nom de sélection réservé !</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/source_editor/widgets.py" line="406"/>
+        <location filename="cutevariant/gui/plugins/source_editor/widgets.py" line="407"/>
         <source>Error while creating the selection</source>
         <translation>Erreur rencontrée durant la création de la sélection</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/source_editor/widgets.py" line="327"/>
+        <location filename="cutevariant/gui/plugins/source_editor/widgets.py" line="328"/>
         <source>&apos;%s&apos; is already used for a selection!</source>
         <translation>&apos;%s&apos; est déjà utilisé pour une sélection !</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/source_editor/widgets.py" line="406"/>
+        <location filename="cutevariant/gui/plugins/source_editor/widgets.py" line="407"/>
         <source>Error while creating the selection, please check the logs</source>
         <translation>Erreur rencontrée durant la création de la sélection, veuillez vérifier les logs</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/source_editor/widgets.py" line="411"/>
+        <location filename="cutevariant/gui/plugins/source_editor/widgets.py" line="412"/>
         <source>Fail to create the selection!</source>
         <translation>Échec de création de la sélection !</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/source_editor/widgets.py" line="421"/>
+        <location filename="cutevariant/gui/plugins/source_editor/widgets.py" line="422"/>
         <source>Are you sure you want to remove this selection?</source>
         <translation>Êtes-vous sûr de vouloir supprimer cette sélection ?</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/source_editor/widgets.py" line="249"/>
+        <location filename="cutevariant/gui/plugins/source_editor/widgets.py" line="250"/>
         <source>Intersect with BED file ...</source>
         <translation>Intersection avec un fichier BED ...</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/source_editor/widgets.py" line="449"/>
+        <location filename="cutevariant/gui/plugins/source_editor/widgets.py" line="450"/>
         <source>Open BED file</source>
         <translation>Ouvrir un fichier BED</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/source_editor/widgets.py" line="449"/>
+        <location filename="cutevariant/gui/plugins/source_editor/widgets.py" line="450"/>
         <source>BED - Browser Extensible Data (*.bed)</source>
         <translation>Fichiers BED - Browser Extensible Data (*.bed)</translation>
     </message>
@@ -687,12 +722,12 @@ Doublez-cliquez pour les éditer.</translation>
 <context>
     <name>VariantInfoWidget</name>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_info/widgets.py" line="45"/>
+        <location filename="cutevariant/gui/plugins/variant_info/widgets.py" line="38"/>
         <source>Info variants</source>
         <translation>Information sur le variant</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_info/widgets.py" line="117"/>
+        <location filename="cutevariant/gui/plugins/variant_info/widgets.py" line="106"/>
         <source>Comments</source>
         <translation>Commentaires</translation>
     </message>
@@ -700,87 +735,102 @@ Doublez-cliquez pour les éditer.</translation>
 <context>
     <name>VariantView</name>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="749"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="747"/>
         <source>&amp;Unmark favorite</source>
         <translation>&amp;Ne plus afficher en favori</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="749"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="747"/>
         <source>&amp;Mark as favorite</source>
         <translation>&amp;Marquer en tant que favori</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="791"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="789"/>
         <source>&amp;Edit comment ...</source>
         <translation>&amp;Éditer le commentaire</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="795"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="793"/>
         <source>&amp;Copy</source>
         <translation>&amp;Copier</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="798"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="796"/>
         <source>&amp;Select all</source>
         <translation>&amp;Sélectionner tout</translation>
     </message>
     <message>
         <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="712"/>
         <source>{} row(s) {} page(s)</source>
-        <translation>{} ligne(s) {} page(s)</translation>
+        <translation type="obsolete">{} ligne(s) {} page(s)</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="759"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="757"/>
         <source>Classification</source>
         <translation>Classification</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="768"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="766"/>
         <source>External links</source>
         <translation>Liens externes</translation>
+    </message>
+    <message>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="710"/>
+        <source>{} variant(s) {} page(s)</source>
+        <translation>{} variant(s) {} page(s)</translation>
     </message>
 </context>
 <context>
     <name>VariantViewWidget</name>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="944"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="942"/>
         <source>Group by</source>
         <translation>Grouper</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="971"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="969"/>
         <source>Refresh</source>
         <translation>Rafraîchir</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="977"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="975"/>
         <source>Save selection</source>
         <translation>Sauvegarder la sélection</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="1076"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="1075"/>
         <source>Create a new selection</source>
         <translation>Créer une nouvelle sélection</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="1076"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="1075"/>
         <source>Name of the new selection:</source>
         <translation>Nom de la nouvelle sélection:</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="1154"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="1167"/>
         <source>Group variants according to columns</source>
         <translation>Grouper les variants d&apos;après les colonnes</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="980"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="978"/>
         <source>Save the current variants into a new selection</source>
         <translation>Sauvegarder les variants affichés dans une nouvelle sélection</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="1148"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="1161"/>
         <source>Ungroup variants</source>
         <translation>Dégrouper les variants</translation>
+    </message>
+    <message>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="1098"/>
+        <source>Error while creating selection</source>
+        <translation>Erreur durant la création de la sélection</translation>
+    </message>
+    <message>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="1098"/>
+        <source>Error while creating selection &apos;%s&apos;; Name is already used</source>
+        <translation>Erreur durant la création de la sélection &apos;%s&apos;; Le nom est déjà utilisé</translation>
     </message>
 </context>
 <context>
@@ -788,22 +838,32 @@ Doublez-cliquez pour les éditer.</translation>
     <message>
         <location filename="cutevariant/gui/plugins/vql_editor/widgets.py" line="45"/>
         <source>Vql Editor</source>
-        <translation>Éditeur VQL</translation>
+        <translation type="obsolete">Éditeur VQL</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/vql_editor/widgets.py" line="50"/>
+        <location filename="cutevariant/gui/plugins/vql_editor/widgets.py" line="52"/>
         <source>Run</source>
         <translation>Exécuter</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/vql_editor/widgets.py" line="157"/>
+        <location filename="cutevariant/gui/plugins/vql_editor/widgets.py" line="160"/>
         <source>VQLSyntaxError: &apos;%s&apos; at position %s</source>
         <translation>VQLSyntaxError: &apos;%s&apos; à la position %s</translation>
     </message>
     <message>
         <location filename="cutevariant/gui/plugins/vql_editor/widgets.py" line="53"/>
         <source>Run VQL query</source>
-        <translation>Éxécuter la requête VQL</translation>
+        <translation type="obsolete">Éxécuter la requête VQL</translation>
+    </message>
+    <message>
+        <location filename="cutevariant/gui/plugins/vql_editor/widgets.py" line="47"/>
+        <source>VQL Editor</source>
+        <translation>Éditeur VQL</translation>
+    </message>
+    <message>
+        <location filename="cutevariant/gui/plugins/vql_editor/widgets.py" line="56"/>
+        <source>Run VQL query (F5)</source>
+        <translation>Éxécuter la requête VQL (F5)</translation>
     </message>
 </context>
 <context>
@@ -857,72 +917,72 @@ Doublez-cliquez pour les éditer.</translation>
 <context>
     <name>WordSetWidget</name>
     <message>
-        <location filename="cutevariant/gui/plugins/word_set/widgets.py" line="171"/>
+        <location filename="cutevariant/gui/plugins/word_set/widgets.py" line="172"/>
         <source>Word Sets</source>
         <translation>Listes de mots</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/word_set/widgets.py" line="180"/>
+        <location filename="cutevariant/gui/plugins/word_set/widgets.py" line="181"/>
         <source>Add Word set</source>
         <translation>Ajouter une liste de mots</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/word_set/widgets.py" line="186"/>
+        <location filename="cutevariant/gui/plugins/word_set/widgets.py" line="187"/>
         <source>Remove Word set</source>
         <translation>Supprimer une liste de mots</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/word_set/widgets.py" line="236"/>
+        <location filename="cutevariant/gui/plugins/word_set/widgets.py" line="237"/>
         <source>Error while importing set</source>
         <translation>Erreur durant l&apos;import de la liste</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/word_set/widgets.py" line="236"/>
+        <location filename="cutevariant/gui/plugins/word_set/widgets.py" line="237"/>
         <source>Error while importing set &apos;%s&apos;</source>
         <translation>Erreur durant l&apos;import de la liste &apos;%s&apos;</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/word_set/widgets.py" line="257"/>
+        <location filename="cutevariant/gui/plugins/word_set/widgets.py" line="258"/>
         <source>Create a new set</source>
         <translation>Créer une nouvelle liste</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/word_set/widgets.py" line="257"/>
+        <location filename="cutevariant/gui/plugins/word_set/widgets.py" line="258"/>
         <source>Name of the new set:</source>
         <translation>Nom de la nouvelle liste:</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/word_set/widgets.py" line="282"/>
+        <location filename="cutevariant/gui/plugins/word_set/widgets.py" line="283"/>
         <source>Drop word set</source>
         <translation>Supprimer une liste</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/word_set/widgets.py" line="282"/>
+        <location filename="cutevariant/gui/plugins/word_set/widgets.py" line="283"/>
         <source>Are you sure you want to remove the selected set(s)?</source>
         <translation>Êtes-vous certain de vouloir supprimer les items sélectionnés ?</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/word_set/widgets.py" line="297"/>
+        <location filename="cutevariant/gui/plugins/word_set/widgets.py" line="298"/>
         <source>Error while deleting set</source>
         <translation>Erreur durant la suppression de la liste</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/word_set/widgets.py" line="297"/>
+        <location filename="cutevariant/gui/plugins/word_set/widgets.py" line="298"/>
         <source>Error while deleting set &apos;%s&apos;</source>
         <translation>Erreur durant la suppression de la liste &apos;%s&apos;</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/word_set/widgets.py" line="183"/>
+        <location filename="cutevariant/gui/plugins/word_set/widgets.py" line="184"/>
         <source>Edit Word set</source>
         <translation>Éditer la liste de mots</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/word_set/widgets.py" line="265"/>
+        <location filename="cutevariant/gui/plugins/word_set/widgets.py" line="266"/>
         <source>Error while creating set</source>
         <translation>Erreur durant la création de la liste</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/word_set/widgets.py" line="265"/>
+        <location filename="cutevariant/gui/plugins/word_set/widgets.py" line="266"/>
         <source>Error while creating set &apos;%s&apos;; Name is already used</source>
         <translation>Erreur durant la création de la liste &apos;%s&apos;; Le nom est déjà utilisé</translation>
     </message>
