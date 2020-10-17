@@ -45,10 +45,15 @@ def get_variant_transversion(conn: sqlite3.Connection):
 
 
 def get_sample_count(conn: sqlite3.Connection):
-    return conn.execute("SELECT COUNT(*)  as `count` FROM samples").fetchone()["count"]
+    return conn.execute("SELECT COUNT(*) AS `count` FROM samples").fetchone()["count"]
 
 
 def get_snp_count(conn: sqlite3.Connection):
+    """Get the number of variants that are SNP
+
+    Notes:
+        This query is currently not covered by an index.
+    """
     return conn.execute(
         "SELECT COUNT(*) AS `count` FROM variants WHERE is_snp = 1"
     ).fetchone()["count"]
