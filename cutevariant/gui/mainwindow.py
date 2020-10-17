@@ -305,8 +305,7 @@ class MainWindow(QMainWindow):
         self.help_menu.addAction(
             FIcon(0xF0A30), self.tr("Report a bug"),
             partial(
-                QDesktopServices.openUrl,
-                QUrl("https://github.com/labsquare/cutevariant/issues/new", QUrl.TolerantMode),
+                QDesktopServices.openUrl, QUrl(cm.REPORT_BUG_URL, QUrl.TolerantMode),
             )
         )
 

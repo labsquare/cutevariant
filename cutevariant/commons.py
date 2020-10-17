@@ -53,6 +53,7 @@ WEBSITES_URLS = {
     "Varsome - Variants": "https://varsome.com/variant/hg19/{chr}-{pos}-{ref}-{alt}",
 }
 
+REPORT_BUG_URL = "https://github.com/labsquare/cutevariant/issues/new"
 
 # Logging
 LOGGER_NAME = "cutevariant"
