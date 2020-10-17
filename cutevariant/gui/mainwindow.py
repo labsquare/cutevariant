@@ -20,7 +20,6 @@ from cutevariant.gui.state import State
 from cutevariant.gui.wizards import ProjectWizard
 from cutevariant.gui.settings import SettingsWidget
 from cutevariant.gui.widgets.aboutcutevariant import AboutCutevariant
-from cutevariant.gui.plugin import FOOTER_LOCATION
 from cutevariant import commons as cm
 from cutevariant.commons import (
     MAX_RECENT_PROJECTS,
@@ -285,7 +284,9 @@ class MainWindow(QMainWindow):
         self.view_menu = self.menuBar().addMenu(self.tr("&View"))
         self.view_menu.addAction(self.tr("Reset widgets positions"), self.reset_ui)
         # Set toggle footer visibility action
-        show_action = self.view_menu.addAction(self.tr("Hide bottom toolbar"))
+        show_action = self.view_menu.addAction(
+            FIcon(0xF018D), self.tr("Show bottom toolbar")
+        )
         show_action.setCheckable(True)
         show_action.setChecked(True)
         show_action.toggled.connect(self.toggle_footer_visibility)
