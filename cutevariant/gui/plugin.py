@@ -170,7 +170,7 @@ class PluginWidget(QWidget):
         self.deleteLater()
         LOGGER.debug("delete plugin... %s", self)
         if self.dock is not None:
-            LOGGER.debug("delete its dock... %s")
+            LOGGER.debug("delete its dock...")
             self.dock.close()
             self.dock.deleteLater()
 

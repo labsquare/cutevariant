@@ -35,6 +35,8 @@ LOGGER = cm.logger()
 
 
 class MainWindow(QMainWindow):
+    """Main window of Cutevariant"""
+
     def __init__(self, parent=None):
 
         super().__init__(parent)
@@ -56,9 +58,9 @@ class MainWindow(QMainWindow):
         # Often changed by plugins
         self.state = State()
 
+        # Central workspace
         self.central_tab = QTabWidget()
         self.footer_tab = QTabWidget()
-
         self.vsplit = QSplitter(Qt.Vertical)
         self.vsplit.addWidget(self.central_tab)
         self.vsplit.addWidget(self.footer_tab)
@@ -201,7 +203,7 @@ class MainWindow(QMainWindow):
     def refresh_plugins(self, sender: plugin.PluginWidget = None):
         """Refresh all widget plugins
 
-        It doesn't refresh the sender plugin
+        It doesn't refresh the sender plugin, and not visible plugins.
 
         Args:
             sender (PluginWidget): from a plugin, you can pass "self" as argument
@@ -245,7 +247,7 @@ class MainWindow(QMainWindow):
         self.recent_files_menu = self.file_menu.addMenu(self.tr("Open recent"))
         self.setup_recent_menu()
 
-        ## Export projects as
+        ### Export projects as
         self.export_csv_action = self.file_menu.addAction(
             self.tr("Export as csv"), self.export_as_csv
         )
@@ -255,6 +257,7 @@ class MainWindow(QMainWindow):
         )
 
         self.file_menu.addSeparator()
+        ### Misc
         self.file_menu.addAction(
             FIcon(0xF0493), self.tr("Settings ..."), self.show_settings
         )
@@ -419,10 +422,8 @@ class MainWindow(QMainWindow):
         if isinstance(recent_projects, str):
             recent_projects = [recent_projects]
 
-        # Check if file exists
-        recent_projects = [p for p in recent_projects if os.path.exists(p)]
-
-        return recent_projects
+        # Return only existing project files
+        return [p for p in recent_projects if os.path.exists(p)]
 
     def clear_recent_projects(self):
         """Slot to clear the list of recent projects"""
@@ -582,7 +583,7 @@ class MainWindow(QMainWindow):
         self.requested_reset_ui = False
 
     def deregister_plugin(self, extension):
-        """Delete plugin from the UI
+        """Delete plugin from the UI; Called from app settings when a plugin is disabled.
 
         - dialogs plugins: Remove action from tool menu
         - widgets plugins: Delete widget and its dock if available via its
