@@ -1070,23 +1070,38 @@ class VariantViewWidget(plugin.PluginWidget):
         - This slot creates a new selection (aka source) from the current state.
         - `source_editor` plugin will be refreshed.
         """
-        name, accept = QInputDialog.getText(
+
+        selection_name, accept = QInputDialog.getText(
             self,
             self.tr("Create a new selection"),
             self.tr("Name of the new selection:")
         )
 
-        if accept and name:
+        if not accept or not selection_name:
+            return
+
+        try:
             result = cmd.create_cmd(
                 self.conn,
-                name,
+                selection_name,
                 source=self.mainwindow.state.source,
                 filters=self.mainwindow.state.filters,
                 count=self.main_right_pane.model.total,
             )
-
             if result:
                 self.mainwindow.refresh_plugin("source_editor")
+        except Exception as e:
+            LOGGER.exception(e)
+
+            # Name already used
+            QMessageBox.critical(
+                self,
+                self.tr("Error while creating selection"),
+                self.tr(
+                    "Error while creating selection '%s'; Name is already used") % selection_name,
+            )
+            # Retry
+            self.on_save_selection()
 
     def _is_grouped(self) -> bool:
         """Return grouped mode status of the view"""
