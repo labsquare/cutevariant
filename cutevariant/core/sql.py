@@ -211,7 +211,7 @@ def get_metadatas(conn: sqlite3.Connection):
         [dict]: matadata fieldname as keys
     """
     conn.row_factory = sqlite3.Row
-    g = (dict(data) for data in conn.execute("SELECT key, value FROM metadatas)"))
+    g = (dict(data) for data in conn.execute("SELECT key, value FROM metadatas"))
     return {data["key"]: data["value"] for data in g}
 
 
