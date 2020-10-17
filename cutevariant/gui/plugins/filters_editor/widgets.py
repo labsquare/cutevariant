@@ -204,7 +204,7 @@ class OperatorField(BaseField):
     """Editor for Logic Value (less, greater, more than etc ...)
 
     Attributes:
-        combo_box (QComboBox
+        combo_box (QComboBox): Combobox to allow a suer to select operators.
     """
 
     SYMBOL = (
@@ -234,10 +234,10 @@ class OperatorField(BaseField):
         return self.combo_box.currentData()
 
     def _fill(self):
-        """ Fill QComboBox with SYMBOL """
+        """Init QComboBox with all supported operators"""
         self.combo_box.clear()
-        for s in self.SYMBOL:
-            self.combo_box.addItem(s[0], s[1])
+        for symbol in self.SYMBOL:
+            self.combo_box.addItem(symbol[0], symbol[1])
 
 
 class LogicField(BaseField):
@@ -333,7 +333,7 @@ class FilterItem(object):
         root[0].append(FilterItem()) # Append 1 child to the first children
     """
 
-    LOGIC_TYPE = 0  #  Logic type is AND/OR/XOR
+    LOGIC_TYPE = 0  #  Logic type is AND/OR
     CONDITION_TYPE = 1  #  Condition type is (field, operator, value)
 
     def __init__(self, data=None, parent=None):
@@ -436,7 +436,7 @@ class FilterItem(object):
         """Get value
 
         Returns:
-            - If item is a LOGIC_FIELD, return the operator AND/OR/XOR.
+            - If item is a LOGIC_FIELD, return the operator AND/OR.
             - If item is a CONDITION_TYPE, return the value of the condition.
         """
         if self.type() == self.CONDITION_TYPE:
@@ -992,11 +992,10 @@ class FilterModel(QAbstractItemModel):
             QMimeData
             ..see: self.dropMimeData
         """
-        data = QMimeData(self._MIMEDATA)
-
         if not indexes:
             return
 
+        data = QMimeData(self._MIMEDATA)
         serialization = QByteArray(pickle.dumps(self.item(indexes[0])))
         data.setData(self._MIMEDATA, serialization)
         return data
@@ -1070,21 +1069,23 @@ class FilterDelegate(QStyledItemDelegate):
 
         if index.column() == 1:
             if item.type() == FilterItem.LOGIC_TYPE:
+                # AND/OR logic operators
                 return LogicField(parent)
 
             if item.type() == FilterItem.CONDITION_TYPE:
-                w = ComboField(parent)
+                # Display all fields of the database
+                widget = ComboField(parent)
                 # Add items
-                for i in prepare_fields(conn):
-                    text = fields_to_vql(i["name"])
-                    data = i["name"]
-                    w.edit.addItem(text, data)
+                for field in prepare_fields(conn):
+                    # Cast ('sample', 'HG001', 'gt') to sample['HG001'].gt
+                    # Leave "chr" to "chr"
+                    text = fields_to_vql(field["name"])
+                    widget.edit.addItem(text, field["name"])
 
-                return w
+                return widget
 
         if index.column() == 2:
-            w = OperatorField(parent)
-            return w
+            return OperatorField(parent)
 
         if index.column() == 3:
             return StrField(parent)
