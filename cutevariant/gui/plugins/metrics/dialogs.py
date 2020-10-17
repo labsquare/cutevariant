@@ -104,8 +104,6 @@ class MetricsDialog(PluginDialog):
         v_layout.addWidget(self.buttons)
         self.setLayout(v_layout)
 
-    def on_refresh(self):
-        """ override """
         self.populate()
 
     def populate(self):

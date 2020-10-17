@@ -524,9 +524,8 @@ class MainWindow(QMainWindow):
         if action in self.dialog_plugins:
             # Get class object and instantiate it
             dialog_class = self.dialog_plugins[action]
-            dialog = dialog_class(conn=self.conn)
             # Send SQL connection
-            dialog.on_refresh()
+            dialog = dialog_class(conn=self.conn)
             dialog.exec_()
 
     def about_cutevariant(self):
