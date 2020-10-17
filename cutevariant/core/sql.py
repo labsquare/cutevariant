@@ -195,7 +195,8 @@ def insert_many_metadatas(conn: sqlite3.Connection, metadatas={}):
         conn (sqlite3.Connection): Sqlite3 Connection
     """
     if metadatas:
-        conn.executemany(
+        cursor = conn.cursor()
+        cursor.executemany(
             "INSERT INTO metadatas (key,value) VALUES (?,?)",
             list(metadatas.items()),
         )
