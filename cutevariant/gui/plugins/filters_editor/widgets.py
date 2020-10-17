@@ -1421,7 +1421,8 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.view.header().setSectionResizeMode(2, QHeaderView.ResizeToContents)
         self.view.header().setSectionResizeMode(3, QHeaderView.Stretch)
         self.view.header().setSectionResizeMode(4, QHeaderView.ResizeToContents)
-
+        # Item selected in view
+        self.view.selectionModel().selectionChanged.connect(self.on_selection_changed)
         self.view.header().hide()
 
         self.combo = QComboBox()
