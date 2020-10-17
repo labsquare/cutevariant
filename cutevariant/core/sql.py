@@ -140,6 +140,16 @@ def create_indexes(conn: sqlite3.Connection):
         LOGGER.debug("create_indexes:: sqlite3.%s: %s", e.__class__.__name__, str(e))
 
 
+def count_query(conn, query):
+    """Count elements from the given query or table
+
+    Notes about memoization here:
+        Not implemented here, we should be able to clear cache when
+        the current project is changed.
+    """
+    return conn.execute(f"SELECT COUNT(*) as count FROM ({query})").fetchone()[0]
+
+
 ## project table ===============================================================
 
 
@@ -211,7 +221,7 @@ def get_metadatas(conn: sqlite3.Connection):
 
 
 def delete_by_name(conn: sqlite3.Connection, name: str, table_name: str = None):
-    """Delete selection or gene set from name
+    """Delete data in "selections" or "sets" tables with the given name
 
     Args:
         conn (sqlit3.Connection): sqlite3 connection
@@ -683,7 +693,7 @@ def subtract_variants(query1, query2, **kwargs):
     return f"""{query1} EXCEPT {query2}"""
 
 
-## Fields functions ============================================================
+## fields table ================================================================
 
 
 def create_table_fields(conn):
@@ -864,7 +874,7 @@ def get_field_unique_values(conn, field_name: str, sample_name=None):
     return [i[field_name] for i in conn.execute(query)]
 
 
-##Annotations functions =======================================================
+## annotations table ===========================================================
 
 
 def create_table_annotations(conn, fields):
@@ -912,7 +922,16 @@ def create_annotations_indexes(conn):
     conn.execute("""CREATE INDEX idx_annotations ON annotations (variant_id)""")
 
 
-## Variants functions ==========================================================
+def get_annotations(conn, variant_id: int):
+    """Get variant annotation for the variant with the given id"""
+    conn.row_factory = sqlite3.Row
+    for annotation in conn.execute(
+        f"""SELECT * FROM annotations WHERE variant_id = {variant_id}"""
+    ):
+        yield dict(annotation)
+
+
+## variants table ==============================================================
 
 
 def create_table_variants(conn, fields):
@@ -1069,25 +1088,6 @@ def update_variant(conn, variant: dict):
     cursor = conn.cursor()
     cursor.execute(query, values)
     conn.commit()
-
-
-def get_annotations(conn, variant_id: int):
-    """Get variant annotation for the variant with the given id"""
-    conn.row_factory = sqlite3.Row
-    for annotation in conn.execute(
-        f"""SELECT * FROM annotations WHERE variant_id = {variant_id}"""
-    ):
-        yield dict(annotation)
-
-
-def get_sample_annotations(conn, variant_id: int, sample_id: int):
-    """Get samples for given sample id and variant id"""
-    conn.row_factory = sqlite3.Row
-    return dict(
-        conn.execute(
-            f"""SELECT * FROM sample_has_variant WHERE variant_id = {variant_id} and sample_id = {sample_id}"""
-        ).fetchone()
-    )
 
 
 def get_variants_count(conn):
@@ -1291,7 +1291,7 @@ def insert_many_variants(conn, data, **kwargs):
         pass
 
 
-## Samples functions ===========================================================
+## samples table ===============================================================
 
 
 def create_table_samples(conn, fields=None):
@@ -1384,6 +1384,16 @@ def get_samples(conn):
     return (dict(data) for data in conn.execute("""SELECT * FROM samples"""))
 
 
+def get_sample_annotations(conn, variant_id: int, sample_id: int):
+    """Get samples for given sample id and variant id"""
+    conn.row_factory = sqlite3.Row
+    return dict(
+        conn.execute(
+            f"""SELECT * FROM sample_has_variant WHERE variant_id = {variant_id} and sample_id = {sample_id}"""
+        ).fetchone()
+    )
+
+
 def update_sample(conn, sample: dict):
     """Update sample record
 
@@ -1418,11 +1428,3 @@ def update_sample(conn, sample: dict):
     )
     conn.execute(query, sql_val)
     conn.commit()
-
-
-def count_query(conn, query):
-    """Count elements from the given query or table
-
-    TODO: memoization here
-    """
-    return conn.execute(f"SELECT COUNT(*) as count FROM ({query})").fetchone()[0]
