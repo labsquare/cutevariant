@@ -167,10 +167,10 @@ def create_project(conn: sqlite3.Connection, name: str, reference: str):
     """
     cursor = conn.cursor()
     cursor.execute(
-        """CREATE TABLE projects (id INTEGER PRIMARY KEY, name TEXT, reference TEXT)"""
+        "CREATE TABLE projects (id INTEGER PRIMARY KEY, name TEXT, reference TEXT)"
     )
     cursor.execute(
-        """INSERT INTO projects (name, reference) VALUES (?, ?)""", (name, reference)
+        "INSERT INTO projects (name, reference) VALUES (?, ?)", (name, reference)
     )
     conn.commit()
 
@@ -185,7 +185,7 @@ def create_table_metadatas(conn: sqlite3.Connection):
         conn (sqlite3.Connection): Sqlite3 Connection
     """
     conn.execute(
-        """CREATE TABLE metadatas (id INTEGER PRIMARY KEY, key TEXT, value TEXT)"""
+        "CREATE TABLE metadatas (id INTEGER PRIMARY KEY, key TEXT, value TEXT)"
     )
 
 def insert_many_metadatas(conn: sqlite3.Connection, metadatas={}):
@@ -196,10 +196,7 @@ def insert_many_metadatas(conn: sqlite3.Connection, metadatas={}):
     """
     if metadatas:
         conn.executemany(
-            """
-            INSERT INTO metadatas (key,value)
-            VALUES (?,?)
-            """,
+            "INSERT INTO metadatas (key,value) VALUES (?,?)",
             list(metadatas.items()),
         )
 
@@ -213,7 +210,7 @@ def get_metadatas(conn: sqlite3.Connection):
         [dict]: matadata fieldname as keys
     """
     conn.row_factory = sqlite3.Row
-    g = (dict(data) for data in conn.execute("""SELECT key, value FROM metadatas"""))
+    g = (dict(data) for data in conn.execute("SELECT key, value FROM metadatas))
     return {data["key"]: data["value"] for data in g}
 
 
@@ -291,7 +288,7 @@ def create_selections_indexes(conn: sqlite3.Connection):
         * This function should be called after batch insertions.
         * This function ensures the unicity of selections names.
     """
-    conn.execute("""CREATE UNIQUE INDEX idx_selections ON selections (name)""")
+    conn.execute("CREATE UNIQUE INDEX idx_selections ON selections (name)")
 
 
 def create_selection_has_variant_indexes(conn: sqlite3.Connection):
@@ -307,7 +304,7 @@ def create_selection_has_variant_indexes(conn: sqlite3.Connection):
         conn (sqlite3.Connection/sqlite3.Cursor): Sqlite3 connection
     """
     conn.execute(
-        """CREATE INDEX idx_selection_has_variant ON selection_has_variant (selection_id)"""
+        "CREATE INDEX idx_selection_has_variant ON selection_has_variant (selection_id)"
     )
 
 
@@ -335,7 +332,7 @@ def insert_selection(conn, query: str, name="no_name", count=0):
     cursor = conn.cursor() if isinstance(conn, sqlite3.Connection) else conn
 
     cursor.execute(
-        """INSERT INTO selections (name, count, query) VALUES (?,?,?)""",
+        "INSERT INTO selections (name, count, query) VALUES (?,?,?)",
         (name, count, query),
     )
     if isinstance(conn, sqlite3.Connection):
@@ -492,7 +489,7 @@ def get_selections(conn: sqlite3.Connection):
 
     """
     conn.row_factory = sqlite3.Row
-    return (dict(data) for data in conn.execute("""SELECT * FROM selections"""))
+    return (dict(data) for data in conn.execute("SELECT * FROM selections"))
 
 
 def delete_selection(conn: sqlite3.Connection, selection_id: int):
@@ -616,7 +613,7 @@ def import_wordset_from_file(conn: sqlite3.Connection, wordset_name, filename):
     # Insertion
     cursor = conn.cursor()
     cursor.executemany(
-        """INSERT INTO sets (name, value) VALUES (?,?)""",
+        "INSERT INTO sets (name, value) VALUES (?,?)",
         it.zip_longest(tuple(), data, fillvalue=wordset_name),
     )
     conn.commit()
@@ -741,9 +738,7 @@ def insert_field(
     """
     cursor = conn.cursor()
     cursor.execute(
-        """
-        INSERT INTO fields VALUES (?, ?, ?, ?)
-        """,
+        "INSERT INTO fields VALUES (?, ?, ?, ?)",
         (name, category, type, description),
     )
     conn.commit()
@@ -785,7 +780,7 @@ def get_fields(conn):
     :rtype: <generator <dict>>
     """
     conn.row_factory = sqlite3.Row
-    return (dict(data) for data in conn.execute("""SELECT * FROM fields"""))
+    return (dict(data) for data in conn.execute("SELECT * FROM fields"))
 
 
 def get_field_by_category(conn, category):
@@ -811,7 +806,7 @@ def get_field_by_name(conn, field_name: str):
     """
     conn.row_factory = sqlite3.Row
     field_data = conn.execute(
-        """SELECT * FROM fields WHERE name = ? """, (field_name,)
+        "SELECT * FROM fields WHERE name = ? ", (field_name,)
     ).fetchone()
     return dict(field_data) if field_data else None
 
@@ -839,7 +834,7 @@ def get_field_range(conn, field_name: str, sample_name=None):
         WHERE samples.name='{sample_name}'
         """
     else:
-        query = f"""SELECT min({field_name}), max({field_name}) FROM {table}"""
+        query = f"SELECT min({field_name}), max({field_name}) FROM {table}"
 
     result = tuple(conn.execute(query).fetchone())
     if result in ((None, None), ("", "")):
@@ -870,7 +865,7 @@ def get_field_unique_values(conn, field_name: str, sample_name=None):
         WHERE samples.name='{sample_name}'
         """
     else:
-        query = f"""SELECT DISTINCT `{field_name}` FROM {table}"""
+        query = f"SELECT DISTINCT `{field_name}` FROM {table}"
     return [i[field_name] for i in conn.execute(query)]
 
 
@@ -900,7 +895,7 @@ def create_table_annotations(conn, fields):
     # TODO: no primary key/unique index for this table?
 
     cursor.execute(
-        f"""CREATE TABLE annotations (variant_id INTEGER NOT NULL, {schema})"""
+        f"CREATE TABLE annotations (variant_id INTEGER NOT NULL, {schema})"
     )
 
     conn.commit()
@@ -919,14 +914,14 @@ def create_annotations_indexes(conn):
         LIMIT 100
     """
     # Allow search on variant_id
-    conn.execute("""CREATE INDEX idx_annotations ON annotations (variant_id)""")
+    conn.execute("CREATE INDEX idx_annotations ON annotations (variant_id)")
 
 
 def get_annotations(conn, variant_id: int):
     """Get variant annotation for the variant with the given id"""
     conn.row_factory = sqlite3.Row
     for annotation in conn.execute(
-        f"""SELECT * FROM annotations WHERE variant_id = {variant_id}"""
+        f"SELECT * FROM annotations WHERE variant_id = {variant_id}"
     ):
         yield dict(annotation)
 
@@ -997,11 +992,11 @@ def create_variants_indexes(conn):
     """
     # Complementary index of the primary key (sample_id, variant_id)
     conn.execute(
-        """CREATE INDEX idx_sample_has_variant ON sample_has_variant (variant_id)"""
+        "CREATE INDEX idx_sample_has_variant ON sample_has_variant (variant_id)"
     )
 
-    conn.execute("""CREATE INDEX idx_variants_pos ON variants (pos)""")
-    conn.execute("""CREATE INDEX idx_variants_ref_alt ON variants (ref, alt)""")
+    conn.execute("CREATE INDEX idx_variants_pos ON variants (pos)")
+    conn.execute("CREATE INDEX idx_variants_ref_alt ON variants (ref, alt)")
 
 
 def get_one_variant(
@@ -1034,14 +1029,14 @@ def get_one_variant(
     # Cast sqlite3.Row object to dict because later, we use items() method.
     variant = dict(
         conn.execute(
-            f"""SELECT * FROM variants WHERE variants.id = {variant_id}"""
+            f"SELECT * FROM variants WHERE variants.id = {variant_id}"
         ).fetchone()
     )
 
     if with_annotations:
         variant["annotations"] = dict(
             conn.execute(
-                f"""SELECT * FROM annotations WHERE variant_id = {variant_id}"""
+                f"SELECT * FROM annotations WHERE variant_id = {variant_id}"
             ).fetchone()
         )
 
@@ -1264,7 +1259,7 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
 
             placeholder = ",".join(["?"] * len(sample_columns))
 
-            q = f"""INSERT INTO sample_has_variant VALUES ({placeholder})"""
+            q = f"INSERT INTO sample_has_variant VALUES ({placeholder})"
             cursor.executemany(q, samples)
 
         # Yield progression
@@ -1351,7 +1346,7 @@ def insert_sample(conn, name="no_name"):
     :rtype: <int>
     """
     cursor = conn.cursor()
-    cursor.execute("""INSERT INTO samples (name) VALUES (?)""", [name])
+    cursor.execute("INSERT INTO samples (name) VALUES (?)", [name])
     conn.commit()
     return cursor.lastrowid
 
@@ -1365,7 +1360,7 @@ def insert_many_samples(conn, samples: list):
     """
     cursor = conn.cursor()
     cursor.executemany(
-        """INSERT INTO samples (name) VALUES (?)""", ((sample,) for sample in samples)
+        "INSERT INTO samples (name) VALUES (?)", ((sample,) for sample in samples)
     )
     conn.commit()
 
@@ -1381,7 +1376,7 @@ def get_samples(conn):
     :rtype: <generator <dict>>
     """
     conn.row_factory = sqlite3.Row
-    return (dict(data) for data in conn.execute("""SELECT * FROM samples"""))
+    return (dict(data) for data in conn.execute("SELECT * FROM samples"))
 
 
 def get_sample_annotations(conn, variant_id: int, sample_id: int):
@@ -1389,7 +1384,7 @@ def get_sample_annotations(conn, variant_id: int, sample_id: int):
     conn.row_factory = sqlite3.Row
     return dict(
         conn.execute(
-            f"""SELECT * FROM sample_has_variant WHERE variant_id = {variant_id} and sample_id = {sample_id}"""
+            f"SELECT * FROM sample_has_variant WHERE variant_id = {variant_id} and sample_id = {sample_id}"
         ).fetchone()
     )
 
