@@ -49,7 +49,7 @@ def test_field_function_to_sql():
 def test_wordset_function_to_sql():
     assert (
         querybuilder.wordset_function_to_sql(("WORDSET", "sacha"))
-        == "(SELECT value FROM sets WHERE name = 'sacha')"
+        == "(SELECT value FROM wordsets WHERE name = 'sacha')"
     )
 
 
@@ -287,7 +287,7 @@ QUERY_TESTS = [
             },
         },
         (
-            "SELECT DISTINCT `variants`.`id`,`variants`.`chr` FROM variants WHERE `variants`.`chr` IN (SELECT value FROM sets WHERE name = 'name') LIMIT 50 OFFSET 0"
+            "SELECT DISTINCT `variants`.`id`,`variants`.`chr` FROM variants WHERE `variants`.`chr` IN (SELECT value FROM wordsets WHERE name = 'name') LIMIT 50 OFFSET 0"
         ),
         "SELECT chr FROM variants WHERE chr IN WORDSET['name']",
     ),

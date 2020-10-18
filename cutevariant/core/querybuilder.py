@@ -147,7 +147,7 @@ def wordset_function_to_sql(field_function: tuple):
         (str): Query statement
     """
     func_name, arg_name = field_function
-    return f"(SELECT value FROM sets WHERE name = '{arg_name}')"
+    return f"(SELECT value FROM wordsets WHERE name = '{arg_name}')"
 
 
 def fields_to_vql(field) -> str:

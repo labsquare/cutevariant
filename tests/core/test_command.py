@@ -28,9 +28,11 @@ def test_select_cmd_with_set(conn):
     # Import fake words (gene) as a new set called "test"
     geneSets = ["CHID1", "AP2A2"]
     for gene in geneSets:
-        conn.execute(f"INSERT INTO sets (name,value) VALUES ('test', '{gene}') ")
+        conn.execute(f"INSERT INTO wordsets (name,value) VALUES ('test', '{gene}') ")
 
-    filters = {"AND": [{"field": "gene", "operator": "IN", "value": ("SET", "test")}]}
+    filters = {
+        "AND": [{"field": "gene", "operator": "IN", "value": ("WORDSET", "test")}]
+    }
 
     for variant in command.select_cmd(
         conn, fields=["chr", "ref", "alt", "gene"], source="variants", filters=filters
@@ -137,9 +139,9 @@ def test_import_cmd(conn):
     test_file = "examples/gene.txt"
     wordset_name = "boby"
 
-    command.import_cmd(conn, "sets", wordset_name, test_file)
+    command.import_cmd(conn, "wordsets", wordset_name, test_file)
 
-    for record in conn.execute("SELECT * FROM sets"):
+    for record in conn.execute("SELECT * FROM wordsets"):
         item = dict(record)
         assert item["name"] == wordset_name
 
@@ -196,10 +198,7 @@ def test_create_command_from_obj(conn):
         "source": "variants",
         "filters": {},
     }
-    partial_fct = command.create_command_from_obj(
-        conn,
-        expected_kwargs,
-    )
+    partial_fct = command.create_command_from_obj(conn, expected_kwargs)
     print(partial_fct.keywords)
     assert partial_fct.keywords == expected_kwargs
 
@@ -209,10 +208,7 @@ def test_create_command_from_obj(conn):
         "source": "variants",
         "filters": {},
     }
-    partial_fct = command.create_command_from_obj(
-        conn,
-        expected_kwargs,
-    )
+    partial_fct = command.create_command_from_obj(conn, expected_kwargs)
     print(partial_fct.keywords)
     assert partial_fct.keywords == expected_kwargs
 
@@ -263,9 +259,8 @@ def test_execute(conn):
             file.seek(0)
             for line in reader:
                 if len(line) == 3:
-                    if (
-                        str(line[0]) == str(variant["chr"])
-                        and int(line[1]) <= int(variant["pos"]) <= int(line[2])
-                    ):
+                    if str(line[0]) == str(variant["chr"]) and int(line[1]) <= int(
+                        variant["pos"]
+                    ) <= int(line[2]):
                         is_in = True
             assert is_in
