@@ -281,7 +281,7 @@ class PedView(QTableView):
         self.setAlternatingRowColors(True)
         self.verticalHeader().hide()
         self.setItemDelegate(self.delegate)
-        self.setEditTriggers(QAbstractItemView.CurrentChanged)
+        self.setEditTriggers(QAbstractItemView.CurrentChanged | QAbstractItemView.DoubleClicked)
         self.delegate.parthenogenesis_detected.connect(self.message)
         # PED file for the model
         self.outfile = None
