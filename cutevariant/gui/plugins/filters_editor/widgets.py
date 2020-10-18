@@ -1477,6 +1477,11 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.view.header().setSectionResizeMode(2, QHeaderView.ResizeToContents)
         self.view.header().setSectionResizeMode(3, QHeaderView.Stretch)
         self.view.header().setSectionResizeMode(4, QHeaderView.ResizeToContents)
+        self.view.setEditTriggers(
+            QAbstractItemView.CurrentChanged  # whenever current item changes.
+            | QAbstractItemView.SelectedClicked  # when clicking on an already selected item (slow)
+            | QAbstractItemView.DoubleClicked  # item is double clicked.
+        )
         # Item selected in view
         self.view.selectionModel().selectionChanged.connect(self.on_selection_changed)
         self.view.header().hide()
