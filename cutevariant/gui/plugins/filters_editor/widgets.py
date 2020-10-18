@@ -1543,6 +1543,16 @@ class FiltersEditorWidget(plugin.PluginWidget):
     def on_refresh(self):
         """ Overrided """
         self.model.filters = self.mainwindow.state.filters
+
+        # Buttons:
+        # Nothing is selected here:
+        # - del button should be disabled
+        # - add button should be enabled only if there is no filter
+        if len(self.model.filters):
+            self.add_button.setDisabled(True)
+        else:
+            self.add_button.setDisabled(False)
+        self.del_button.setDisabled(True)
         self._update_view_geometry()
 
     def on_filters_changed(self):
@@ -1616,8 +1626,14 @@ class FiltersEditorWidget(plugin.PluginWidget):
                 self.model.add_condition_item(parent=gpindex)
 
         self._update_view_geometry()
-        # Nothing is selected => disable add button
-        self.add_button.setDisabled(True)
+
+        if not self.view.currentIndex().isValid():
+            # Nothing is selected => disable add/del button
+            self.add_button.setDisabled(True)
+            self.del_button.setDisabled(True)
+        else:
+            # Something is selected, lets handle this by:
+            self.on_selection_changed()
 
     def on_open_condition_dialog(self):
         """Open the condition creation dialog
@@ -1648,11 +1664,26 @@ class FiltersEditorWidget(plugin.PluginWidget):
             self.model.remove_item(self.view.currentIndex())
 
     def on_selection_changed(self):
-        """Enable/Disable add button depending item type"""
+        """Enable/Disable add button depending item type
+
+        Notes:
+            Disable Add button on CONDITION_TYPE
+        """
         index = self.view.currentIndex()
+        # print("selected rows", self.view.selectionModel().selectedRows())
+        # print(index.row(), self.model.rowCount(index))
+
+        # Del button
+        if not index.isValid():
+            self.del_button.setDisabled(True)
+        else:
+            self.del_button.setDisabled(False)
+
+        # Add button
         if self.model.item(index).type() == FilterItem.CONDITION_TYPE:
             self.add_button.setDisabled(True)
         else:
+            # item is LOGIC_TYPE or there is no item selected (because of deletion)
             self.add_button.setDisabled(False)
 
     def contextMenuEvent(self, event: QContextMenuEvent):
