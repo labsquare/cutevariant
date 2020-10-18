@@ -646,34 +646,31 @@ class FilterModel(QAbstractItemModel):
             return False
 
         if role == Qt.EditRole:
-            if index.isValid():
-                item = self.item(index)
+            item = self.item(index)
 
-                if index.column() == 0:
-                    item.checked = bool(value)
+            if index.column() == 0:
+                item.checked = bool(value)
 
-                if index.column() == 1:
-                    if item.type() == FilterItem.LOGIC_TYPE:
-                        item.set_value(value)
-
-                    if item.type() == FilterItem.CONDITION_TYPE:
-                        item.set_field(value)
-
-                if index.column() == 2 and item.type() == FilterItem.CONDITION_TYPE:
-                    item.set_operator(value)
-
-                if index.column() == 3 and item.type() == FilterItem.CONDITION_TYPE:
+            if index.column() == 1:
+                if item.type() == FilterItem.LOGIC_TYPE:
                     item.set_value(value)
 
-                self.filtersChanged.emit()
-                return True
+                if item.type() == FilterItem.CONDITION_TYPE:
+                    item.set_field(value)
+
+            if index.column() == 2 and item.type() == FilterItem.CONDITION_TYPE:
+                item.set_operator(value)
+
+            if index.column() == 3 and item.type() == FilterItem.CONDITION_TYPE:
+                item.set_value(value)
+
+            self.filtersChanged.emit()
+            return True
 
         if role == Qt.CheckStateRole:
-            if index.isValid():
-                self.setRecursiveChecked(index, bool(value))
-                self.filtersChanged.emit()
-
-                return True
+            self.setRecursiveChecked(index, bool(value))
+            self.filtersChanged.emit()
+            return True
 
         return False
 
