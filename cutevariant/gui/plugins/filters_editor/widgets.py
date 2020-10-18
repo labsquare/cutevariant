@@ -206,17 +206,18 @@ class OperatorField(BaseField):
         combo_box (QComboBox): Combobox to allow a suer to select operators.
     """
 
-    SYMBOL = (
-        ("less", "<"),
-        ("less or equal", "<="),
-        ("greater", ">"),
-        ("greater or equal", ">="),
-        ("equal", "="),
-        ("not equal", "!="),
-        ("like", "LIKE"),
-        ("regex", "~"),
-        ("in", "IN"),
-    )
+    # Symbols used in VQL vs text descriptions
+    SYMBOLS = {
+        "<": "less",
+        "<=": "less or equal",
+        ">": "greater",
+        ">=": "greater or equal",
+        "=": "equal",
+        "!=": "not equal",
+        "LIKE": "like",
+        "~": "regex",
+        "IN": "in",
+    }
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -227,7 +228,8 @@ class OperatorField(BaseField):
         self._fill()
 
     def set_value(self, value: str):
-        self.combo_box.setCurrentText(value)
+        assert value in self.SYMBOLS
+        self.combo_box.setCurrentText(self.SYMBOLS[value])
 
     def get_value(self) -> str:
         return self.combo_box.currentData()
@@ -235,12 +237,11 @@ class OperatorField(BaseField):
     def _fill(self):
         """Init QComboBox with all supported operators"""
         self.combo_box.clear()
-        for symbol in self.SYMBOL:
-            self.combo_box.addItem(symbol[0], symbol[1])
+        for symbol, text in self.SYMBOLS.items():
+            self.combo_box.addItem(text, symbol)
 
 
 class LogicField(BaseField):
-
     """Editor for logic field (And/Or)"""
 
     def __init__(self, parent=None):
