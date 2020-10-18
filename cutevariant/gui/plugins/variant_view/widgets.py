@@ -386,9 +386,8 @@ class VariantModel(QAbstractTableModel):
 
         """
         if column < self.columnCount():
-            colname = self.headers[column]
-
-            self.order_by = colname
+            field = self.fields[column - 1]
+            self.order_by = field
             self.order_desc = order == Qt.DescendingOrder
             self.load()
 
