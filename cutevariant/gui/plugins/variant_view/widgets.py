@@ -439,31 +439,28 @@ class LoadingTableView(QTableView):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.movie = QMovie(cm.DIR_ICONS + "loading.gif")
-
-        self.movie.frameChanged.connect(self.update)
+        self._is_loading = False
 
     def paintEvent(self, event: QPainter):
 
         if self.is_loading():
             painter = QPainter(self.viewport())
-            rect = self.movie.currentPixmap().rect()
-            rect.moveCenter(self.viewport().rect().center())
-            painter.drawPixmap(rect.x(), rect.y(), self.movie.currentPixmap())
-            self.viewport().update()
+
+            painter.drawText(self.viewport().rect(), Qt.AlignCenter, "Loading ...")
+
         else:
             super().paintEvent(event)
 
     def start_loading(self):
-        self.movie.start()
+        self._is_loading = True
         self.viewport().update()
 
     def stop_loading(self):
-        self.movie.stop()
+        self._is_loading = False
         self.viewport().update()
 
     def is_loading(self):
-        return self.movie.state() == QMovie.Running
+        return self._is_loading
 
 
 class VariantView(QWidget):
@@ -941,9 +938,7 @@ class VariantViewWidget(plugin.PluginWidget):
         self.groupby_action = self.top_bar.addAction(
             FIcon(0xF14E0), self.tr("Group by"), self.on_group_changed
         )
-        self.groupby_action.setToolTip(
-            self.tr("Group variants according to columns")
-        )
+        self.groupby_action.setToolTip(self.tr("Group variants according to columns"))
         self.groupby_action.setCheckable(True)
         self.groupby_action.setChecked(False)
 
@@ -1074,7 +1069,7 @@ class VariantViewWidget(plugin.PluginWidget):
         selection_name, accept = QInputDialog.getText(
             self,
             self.tr("Create a new selection"),
-            self.tr("Name of the new selection:")
+            self.tr("Name of the new selection:"),
         )
 
         if not accept or not selection_name:
@@ -1097,8 +1092,8 @@ class VariantViewWidget(plugin.PluginWidget):
             QMessageBox.critical(
                 self,
                 self.tr("Error while creating selection"),
-                self.tr(
-                    "Error while creating selection '%s'; Name is already used") % selection_name,
+                self.tr("Error while creating selection '%s'; Name is already used")
+                % selection_name,
             )
             # Retry
             self.on_save_selection()
@@ -1163,7 +1158,9 @@ class VariantViewWidget(plugin.PluginWidget):
         else:
             # Ungroup it
             self.groupby_action.setIcon(FIcon(0xF14E0))
-            self.groupby_action.setToolTip(self.tr("Group variants according to columns"))
+            self.groupby_action.setToolTip(
+                self.tr("Group variants according to columns")
+            )
             # Save current group
             self.last_group = self.groupby_left_pane.group_by
         if not is_checked:
@@ -1192,7 +1189,11 @@ class VariantViewWidget(plugin.PluginWidget):
 
                 # Forge a special filter to display the current variant
                 and_list = [
-                    {"field": field, "operator": "=", "value": variant[fields_to_vql(field)]}
+                    {
+                        "field": field,
+                        "operator": "=",
+                        "value": variant[fields_to_vql(field)],
+                    }
                     for field in self.groupby_left_pane.group_by
                 ]
 
