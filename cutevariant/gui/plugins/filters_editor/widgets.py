@@ -159,7 +159,7 @@ class ComboField(BaseField):
         super().__init__(parent)
         self.edit = QComboBox()
         self.edit.setEditable(True)
-        self.edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.edit.setSizeAdjustPolicy(QComboBox.AdjustToContents)
         self.set_widget(self.edit)
 
     def set_value(self, value: str):
@@ -172,9 +172,8 @@ class ComboField(BaseField):
         return self.edit.currentData()
 
     def addItems(self, words: list):
-        """ set a completer to autocomplete value """
+        """Set a completer to autocomplete value"""
         self.edit.clear()
-
         self.edit.addItems(words)
 
 
@@ -315,6 +314,7 @@ class FieldFactory(QObject):
 
 class FilterItem(object):
     """FilterItem is a recursive class which represent item for a FilterModel
+
     A tree of FilterItems can be stored by adding FilterItems recursively as children.
     Each FilterItem has a parent and a list of children.
     see https://doc.qt.io/qt-5/qtwidgets-itemviews-simpletreemodel-example.html
@@ -333,8 +333,8 @@ class FilterItem(object):
         root[0].append(FilterItem()) # Append 1 child to the first children
     """
 
-    LOGIC_TYPE = 0  #  Logic type is AND/OR
-    CONDITION_TYPE = 1  #  Condition type is (field, operator, value)
+    LOGIC_TYPE = 0  # Logic type is AND/OR
+    CONDITION_TYPE = 1  # Condition type is (field, operator, value)
 
     def __init__(self, data=None, parent=None):
         """FilterItem constructor with parent as FilterItem parent
@@ -350,14 +350,14 @@ class FilterItem(object):
         self.checked = True
 
     def __del__(self):
-        """ FilterItem destructor """
+        """Clear children (list[FilterItem])"""
         self.children.clear()
 
     def __repr__(self):
         return f"Filter Item {self.data}"
 
     def __getitem__(self, row):
-        """Return child
+        """Return FilterItem at the given index
 
         Args:
             row (int): child position
@@ -368,7 +368,7 @@ class FilterItem(object):
         return self.children[row]
 
     def append(self, item):
-        """Append child
+        """Append FilterItem child
 
         Args:
             item (FilterItem)
@@ -377,7 +377,7 @@ class FilterItem(object):
         self.children.append(item)
 
     def insert(self, row: int, item):
-        """insert child at a specific location
+        """Insert FilterItem child at a specific location
 
         Args:
             row (int): child index
@@ -387,15 +387,16 @@ class FilterItem(object):
         self.children.insert(row, item)
 
     def remove(self, row: int):
-        """Remove child from a specific position
+        """Remove FilterItem child from a specific position
 
         Args:
-            index (int): child index
+            row (int): child index
         """
         del self.children[row]
 
     def row(self) -> int:
         """Return item location from his parent.
+
         If the item has no parent, it returns 0
 
         Returns:
@@ -403,7 +404,6 @@ class FilterItem(object):
         """
         if self.parent is not None:
             return self.parent.children.index(self)
-
         return 0
 
     def setRecursiveChecked(self, checked=True):
@@ -418,10 +418,10 @@ class FilterItem(object):
         Returns:
             LOGIC_TYPE or CONDITION_TYPE
         """
-        if isinstance(self.data, str):  #  Logic
+        if isinstance(self.data, str):  # LOGIC_TYPE
             return self.LOGIC_TYPE
 
-        if isinstance(self.data, (tuple, list)):  #  Condition
+        if isinstance(self.data, (tuple, list)):  # CONDITION_TYPE
             return self.CONDITION_TYPE
 
     def get_field(self):
@@ -487,8 +487,8 @@ class FilterItem(object):
             self.data[2] = value
             return
 
-        # self.LOGIC_TYPE:
-        self.data = data
+        # LOGIC_TYPE:
+        self.data = value
 
 
 class FilterModel(QAbstractItemModel):
@@ -630,7 +630,8 @@ class FilterModel(QAbstractItemModel):
 
     def setData(self, index, value, role=Qt.EditRole):
         """Overrided Qt methods: Set data according index and value.
-        This methods is called from FilterDelegate when edition has been done
+
+        This method is called from FilterDelegate when edition has been done.
 
         Args:
             index (QModelIndex)
@@ -640,6 +641,8 @@ class FilterModel(QAbstractItemModel):
         Returns:
             bool: Return True if success otherwise return False
         """
+        if not index.isValid():
+            return False
 
         if role == Qt.EditRole:
             if index.isValid():
@@ -688,15 +691,13 @@ class FilterModel(QAbstractItemModel):
             if orientation == Qt.Horizontal:
                 return self._HEADERS[section]
 
-        return None
-
     def index(self, row, column, parent=QModelIndex()) -> QModelIndex:
         """ Overrided Qt methods: create index according row, column and parent """
 
         if not self.hasIndex(row, column, parent):
             return QModelIndex()
 
-        if not parent.isValid():  #  If no parent, then parent is the root item
+        if not parent.isValid():  # If no parent, then parent is the root item
             parent_item = self.root_item
 
         else:
@@ -748,7 +749,7 @@ class FilterModel(QAbstractItemModel):
 
     def to_item(self, data: dict) -> FilterItem:
         """ recursive function to build a nested FilterItem structure from dict data """
-        if len(data) == 1:  #  logic item
+        if len(data) == 1:  # logic item
             operator = list(data.keys())[0]
             item = FilterItem(operator)
             [item.append(self.to_item(k)) for k in data[operator]]
@@ -825,17 +826,16 @@ class FilterModel(QAbstractItemModel):
             self.beginRemoveRows(index.parent(), index.row(), index.row())
             self.item(index).parent.remove(index.row())
             self.endRemoveRows()
-            self.filtersChanged.emit()
+            # self.filtersChanged.emit()
+            self.dataChanged.emit(index, index)
 
     def rowCount(self, parent=QModelIndex()) -> int:
-        """ Overrided Qt methods: return row count according parent """
-
+        """Overrided Qt methods: return row count according parent """
         if parent.column() > 0:
             return 0
 
         if not parent.isValid():
             parent_item = self.root_item
-
         else:
             parent_item = parent.internalPointer()
 
@@ -846,7 +846,7 @@ class FilterModel(QAbstractItemModel):
 
         return 5
 
-    def flags(super, index) -> Qt.ItemFlags:
+    def flags(self, index) -> Qt.ItemFlags:
         """ Overrided Qt methods: return Qt flags to make item editable and selectable """
 
         if not index.isValid():
@@ -957,7 +957,6 @@ class FilterModel(QAbstractItemModel):
         Returns:
             bool: return True if success otherwise return False
         """
-
         if action != Qt.MoveAction:
             return False
 
@@ -1001,7 +1000,7 @@ class FilterModel(QAbstractItemModel):
         return data
 
     def setRecursiveChecked(self, index, checked=True):
-
+        """Recursive check of all subfilters"""
         if not index.isValid():
             return
 
@@ -1011,6 +1010,7 @@ class FilterModel(QAbstractItemModel):
         start = self.index(index.row(), 0, index.parent())
         end = self.index(index.row(), self.columnCount() - 1, index.parent())
 
+        # Update specific changed item
         self.dataChanged.emit(start, end)
 
         for row in range(self.rowCount(index)):
@@ -1019,12 +1019,25 @@ class FilterModel(QAbstractItemModel):
 
 
 class FilterDelegate(QStyledItemDelegate):
-
     """FilterDelegate is used to create widget editor for the model inside the view.
-    Without a delegate, the view cannot display editor when user double clicked on a cell
 
-    Based editor are created from self.createEditor.
-    FilterModel data are readed and writeed from setEditorData and setModelData
+    Notes:
+        Without a delegate, the view cannot display editor when user double clicks
+        on a cell.
+
+        Editors are created from self.createEditor.
+        FilterModel data are read and written respectively with setEditorData and
+        setModelData.
+
+        The view has 5 columns, enumerated with the following names:
+
+        - COLUMN_CHECKBOX = 0
+        - COLUMN_FIELD = 1
+        - COLUMN_LOGIC = 1
+        - COLUMN_OPERATOR = 2
+        - COLUMN_VALUE = 3
+        - COLUMN_REMOVE = 4
+
     Examples:
         view = QTreeView()
         model = FilterModel()
@@ -1093,7 +1106,13 @@ class FilterDelegate(QStyledItemDelegate):
         return super().createEditor(parent, option, index)
 
     def setEditorData(self, editor: QWidget, index: QModelIndex):
-        """Overrided from Qt. Read data from model and set editor data
+        """Overrided from Qt: Read data from model and set editor data
+
+        TL;DR: populate the editor with the data from the model.
+
+        Sets the contents of the given editor, with the data of the item at the
+        given index.
+
         Actually, it calls BaseEditor.set_value() methods
 
         Args:
@@ -1101,9 +1120,18 @@ class FilterDelegate(QStyledItemDelegate):
             index (QModelindex)
         """
         editor.set_value(index.data(Qt.EditRole))
-        # super().setEditorData(editor, index)
 
     def editorEvent(self, event: QEvent, model, option, index: QModelIndex):
+        """
+
+        When editing of an item starts, this function is called with the event
+        that triggered the editing, the model, the index of the item, and the
+        option used for rendering the item.
+
+        Mouse events are sent to editorEvent() even if they don't start editing
+        of the item.
+
+        This is used here to act on COLUMN_CHECKBOX and COLUMN_REMOVE
 
         if not index.isValid():
             return False
@@ -1127,7 +1155,8 @@ class FilterDelegate(QStyledItemDelegate):
         return super().editorEvent(event, model, option, index)
 
     def setModelData(self, editor, model, index):
-        """Overrided from Qt. Read data from editor and set the model data
+        """Overrided from Qt: Update the model with data from the editor.
+
         Actually, it calls editor.set_value()
 
         Args:
