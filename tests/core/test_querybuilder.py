@@ -46,9 +46,9 @@ def test_field_function_to_sql():
     )
 
 
-def test_set_function_to_sql():
+def test_wordset_function_to_sql():
     assert (
-        querybuilder.set_function_to_sql(("SET", "sacha"))
+        querybuilder.wordset_function_to_sql(("WORDSET", "sacha"))
         == "(SELECT value FROM sets WHERE name = 'sacha')"
     )
 
@@ -281,13 +281,15 @@ QUERY_TESTS = [
             "fields": ["chr"],
             "source": "variants",
             "filters": {
-                "AND": [{"field": "chr", "operator": "IN", "value": ("SET", "name")}]
+                "AND": [
+                    {"field": "chr", "operator": "IN", "value": ("WORDSET", "name")}
+                ]
             },
         },
         (
             "SELECT DISTINCT `variants`.`id`,`variants`.`chr` FROM variants WHERE `variants`.`chr` IN (SELECT value FROM sets WHERE name = 'name') LIMIT 50 OFFSET 0"
         ),
-        "SELECT chr FROM variants WHERE chr IN SET['name']",
+        "SELECT chr FROM variants WHERE chr IN WORDSET['name']",
     ),
 ]
 

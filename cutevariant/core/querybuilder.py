@@ -313,8 +313,8 @@ def filters_to_vql(filters):
 
             if isinstance(value, tuple):
                 # if set   ["set", "name"]
-                if len(value) == 2 and value[0] == SET_FUNC_NAME:
-                    value = "{}['{}']".format(SET_FUNC_NAME, value[1])
+                if len(value) == 2 and value[0] == WORDSET_FUNC_NAME:
+                    value = "{}['{}']".format(WORDSET_FUNC_NAME, value[1])
 
             return "%s %s %s" % (field, operator, value)
 
