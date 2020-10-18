@@ -1,7 +1,6 @@
 # Standard imports
 import os
 import tempfile
-import re
 
 # Qt imports
 from PySide2.QtWidgets import (

@@ -1,5 +1,4 @@
 # Standard imports
-import os
 from contextlib import contextmanager
 import pathlib
 import vcf

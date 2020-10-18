@@ -1,7 +1,5 @@
 # Qt imports
-
 from PySide2.QtCore import Qt, QRect, QPoint, QBuffer, QByteArray
-
 from PySide2.QtGui import (
     QIconEngine,
     QColor,
@@ -13,7 +11,6 @@ from PySide2.QtGui import (
     QPixmap,
     QPen,
 )
-
 from PySide2.QtWidgets import QApplication
 
 # Custom imports

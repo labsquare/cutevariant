@@ -6,8 +6,7 @@ from PySide2.QtWidgets import (
     QAbstractSpinBox,
     QSpinBox,
 )
-from PySide2.QtCore import Qt, QRect, QSize, Signal
-from PySide2.QtGui import QPainter, QPaintEvent, QMouseEvent, QPalette, QBrush, QPen
+from PySide2.QtCore import Qt
 
 import sys
 

@@ -1,3 +1,5 @@
+import sqlite3
+
 from PySide2.QtWidgets import (
     QWidget,
     QTabWidget,
@@ -11,12 +13,6 @@ from PySide2.QtWidgets import (
 from PySide2.QtCore import QStringListModel, Signal
 
 from cutevariant.gui.widgets.pane import PanelListWidget, Pane
-from cutevariant.gui.widgets.edit_slider import EditSlider
-from cutevariant.gui.widgets.range_slider import RangeSlider
-
-from cutevariant.core import sql
-
-import sqlite3
 
 
 class AbstractFilterWidget(QWidget):
