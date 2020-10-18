@@ -366,7 +366,7 @@ def import_cmd(conn: sqlite3.Connection, feature=str, name=str, path=str, **kwar
     """
     accept_features = ("wordsets",)
 
-    if feature not in accept_features:
+    if feature.lower() not in accept_features:
         raise vql.VQLSyntaxError(f"option {feature} doesn't exists")
 
     if not os.path.isfile(path):
