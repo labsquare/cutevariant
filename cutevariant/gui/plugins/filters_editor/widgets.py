@@ -2,6 +2,7 @@
 import sys
 import pickle
 import uuid
+from functools import lru_cache
 
 # Qt imports
 from PySide2.QtWidgets import *
@@ -17,7 +18,7 @@ import cutevariant.commons as cm
 
 LOGGER = cm.logger()
 
-
+@lru_cache()
 def prepare_fields(conn):
     """Prepares a list of columns on which filters can be applied"""
     columns = []
@@ -1097,6 +1098,7 @@ class FilterDelegate(QStyledItemDelegate):
             if item.type() == FilterItem.CONDITION_TYPE:
                 # Display all fields of the database
                 widget = ComboField(parent)
+                # LOGGER.debug(prepare_fields.cache_info())
                 # Add items
                 for field in prepare_fields(conn):
                     # Cast ('sample', 'HG001', 'gt') to sample['HG001'].gt
@@ -1538,6 +1540,10 @@ class FiltersEditorWidget(plugin.PluginWidget):
         """ Overrided from PluginWidget """
         self.model.conn = conn
         self.conn = conn
+
+        # Clear lru_cache
+        prepare_fields.cache_clear()
+
         self.on_refresh()
 
     def on_refresh(self):
