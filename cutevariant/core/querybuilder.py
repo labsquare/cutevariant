@@ -62,7 +62,7 @@ LOGGER = logger()
 GENOTYPE_FUNC_NAME = "sample"
 
 # set("truc")
-SET_FUNC_NAME = "SET"
+WORDSET_FUNC_NAME = "WORDSET"
 
 
 def filters_to_flat(filters: dict):
@@ -136,7 +136,7 @@ def field_function_to_sql(field_function: tuple, use_as=False):
     return f"`{func_name}_{arg_name}`" + suffix
 
 
-def set_function_to_sql(field_function: tuple):
+def wordset_function_to_sql(field_function: tuple):
     """Replace a set_function by a select statement
 
     Set_functions is used from VQL to filter annotation within a set of word.
@@ -241,8 +241,9 @@ def filters_to_sql(filters, default_tables={}):
                 value = f"'{value}'"
 
             if isinstance(value, tuple):
-                if value[0] == SET_FUNC_NAME:
-                    value = set_function_to_sql(value)
+                #  If value is a WORDSET["salut"] aka ('WORDSET','salut')
+                if value[0] == WORDSET_FUNC_NAME:
+                    value = wordset_function_to_sql(value)
 
             if operator == "~":
                 operator = "REGEXP"
