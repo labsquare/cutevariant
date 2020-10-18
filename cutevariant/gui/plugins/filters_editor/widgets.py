@@ -18,28 +18,40 @@ import cutevariant.commons as cm
 
 LOGGER = cm.logger()
 
+
 @lru_cache()
 def prepare_fields(conn):
     """Prepares a list of columns on which filters can be applied"""
     columns = []
-    samples = [s["name"] for s in sql.get_samples(conn)]
+    samples = [sample["name"] for sample in sql.get_samples(conn)]
+
     for field in sql.get_fields(conn):
         if field["category"] == "samples":
+            # Replace the name for samples with:
+            # ("sample", <individual_id>, <field_name>)
+            # Ex: with a "name" equal to "ps":
+            # {'id': 48, 'name': ('sample', 'HG001', 'ps'), 'category': 'samples',
+            # 'type': 'str', 'description': ''}
             for sample in samples:
-                f = field.copy()
-                f["name"] = ("sample", sample, field["name"])
-                columns.append(f)
-
+                temp_field = field.copy()
+                temp_field["name"] = ("sample", sample, field["name"])
+                columns.append(temp_field)
         else:
             columns.append(field)
     return columns
 
 
 class BaseField(QFrame):
-    """Base class for all editor widgets. Editor widgets are used in FilterDelegate to display different kind of editor according field type.
-    Inherit from this class if you want a custom field editor by overriding  set_value and get_value.
-        ..note: I don't want to use @property for value. It doesn't suitable for POO in my point of view
-        ..see: FilterDelegate
+    """Base class for all editor widgets.
+
+    Editor widgets are used in FilterDelegate to display different kind of
+    editors according to field type.
+
+    Inherit from this class if you want a custom field editor by overriding
+    `set_value` and `get_value`.
+
+    See Also:
+         :meth:`FilterDelegate`
     """
 
     def __init__(self, parent=None):
@@ -56,6 +68,10 @@ class BaseField(QFrame):
 
     def set_widget(self, widget):
         """Setup a layout with a widget
+
+        Typically, it is used to add user input widget to the item
+        (QSpinBox, QComboBox, etc.)
+
         Args:
             widget (QWidget)
         """
@@ -1075,7 +1091,11 @@ class FilterDelegate(QStyledItemDelegate):
         self.icon_size = QSize(16, 16)
 
     def createEditor(self, parent, option, index: QModelIndex) -> QWidget:
-        """Overrided from Qt. Create an editor
+        """Overrided from Qt. Create an editor for the selected column.
+
+        The editor is based on the selected column and on the type of FilterItem
+        (LOGIC_TYPE or CONDITION_TYPE). It is also based on the selected SQL field,
+        and on the SQL operator.
 
         Args:
             parent (QWidget): widget's parent
@@ -1085,9 +1105,9 @@ class FilterDelegate(QStyledItemDelegate):
         Returns:
             QWidget: a editor with set_value and get_value methods
         """
-        # return super().createEditor(parent,option,index)
         model = index.model()
         item = model.item(index)
+        # Get current sql connection
         conn = model.conn
 
         if index.column() == 1:
@@ -1158,7 +1178,7 @@ class FilterDelegate(QStyledItemDelegate):
             return False
 
         if event.type() == QEvent.MouseButtonPress:
-
+           # print("mouse pressed on", index.column(), event.button())
             item = model.item(index)
 
             if index.column() == self.COLUMN_CHECKBOX and self._check_rect(
