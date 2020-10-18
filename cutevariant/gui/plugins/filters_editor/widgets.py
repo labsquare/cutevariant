@@ -500,7 +500,10 @@ class FilterModel(QAbstractItemModel):
 
     Attributes:
         conn (sqlite3.connection): sqlite3 connection
-        root_item (FilterItem): RootItem (invisible) to store recursive item=
+        root_item (FilterItem): RootItem (invisible) to store recursive item.
+
+    Signals:
+        filtersChanged: Emitted when model data (filters) is changed.
 
     Examples:
         data = {"AND": [
@@ -665,11 +668,15 @@ class FilterModel(QAbstractItemModel):
                 item.set_value(value)
 
             self.filtersChanged.emit()
+            # just one item is changed
+            self.dataChanged.emit(index, index, role)
             return True
 
         if role == Qt.CheckStateRole:
             self.setRecursiveChecked(index, bool(value))
             self.filtersChanged.emit()
+            # just one item is changed
+            self.dataChanged.emit(index, index, role)
             return True
 
         return False
@@ -690,8 +697,13 @@ class FilterModel(QAbstractItemModel):
                 return self._HEADERS[section]
 
     def index(self, row, column, parent=QModelIndex()) -> QModelIndex:
-        """ Overrided Qt methods: create index according row, column and parent """
+        """Overrided Qt methods: create index according row, column and parent
 
+        Usefull for dataChanged signal
+
+        Returns:
+            QModelIndex
+        """
         if not self.hasIndex(row, column, parent):
             return QModelIndex()
 
@@ -824,8 +836,7 @@ class FilterModel(QAbstractItemModel):
             self.beginRemoveRows(index.parent(), index.row(), index.row())
             self.item(index).parent.remove(index.row())
             self.endRemoveRows()
-            # self.filtersChanged.emit()
-            self.dataChanged.emit(index, index)
+            self.filtersChanged.emit()
 
     def rowCount(self, parent=QModelIndex()) -> int:
         """Overrided Qt methods: return row count according parent """
@@ -981,7 +992,7 @@ class FilterModel(QAbstractItemModel):
 
     def mimeData(self, indexes) -> QMimeData:
         """Serialize item from indexes into a QMimeData
-        Actually, it serializes only the first index from t he list.
+        Currently, it serializes only the first index from t he list.
         Args:
             indexes (list<QModelIndex>)
 
@@ -1111,7 +1122,7 @@ class FilterDelegate(QStyledItemDelegate):
         Sets the contents of the given editor, with the data of the item at the
         given index.
 
-        Actually, it calls BaseEditor.set_value() methods
+        Currently, it calls BaseEditor.set_value() methods
 
         Args:
             editor (QWidget)
@@ -1131,6 +1142,16 @@ class FilterDelegate(QStyledItemDelegate):
 
         This is used here to act on COLUMN_CHECKBOX and COLUMN_REMOVE
 
+        Args:
+            event:
+            model:
+            option:
+            index:
+
+        Returns:
+            (boolean): True if event is accepted; False otherwise.
+
+        """
         if not index.isValid():
             return False
 
@@ -1150,12 +1171,13 @@ class FilterDelegate(QStyledItemDelegate):
                 model.remove_item(index)
                 return True
 
-        return super().editorEvent(event, model, option, index)
+        # Default implementation of base method
+        return False
 
     def setModelData(self, editor, model, index):
         """Overrided from Qt: Update the model with data from the editor.
 
-        Actually, it calls editor.set_value()
+        Currently, it calls editor.set_value()
 
         Args:
             editor (QWidget): editor
@@ -1440,6 +1462,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.toolbar = QToolBar()
         self.toolbar.setIconSize(QSize(16, 16))
 
+        # Drag & drop
         self.view.setModel(self.model)
         self.view.setItemDelegate(self.delegate)
         self.view.setDragEnabled(True)
@@ -1490,7 +1513,6 @@ class FiltersEditorWidget(plugin.PluginWidget):
             FIcon(0xF0A7A), self.tr("Delete filter"), self.on_delete_item
         )
 
-        # self.view.selectionModel().currentChanged.connect(self.on_filters_changed)
         self.model.filtersChanged.connect(self.on_filters_changed)
 
     def set_add_icon(self, icon: QIcon):
