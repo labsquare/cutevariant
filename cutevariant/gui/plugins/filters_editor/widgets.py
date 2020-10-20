@@ -297,35 +297,43 @@ class FieldFactory(QObject):
         super().__init__()
         self.conn = conn
 
+        self.field_types_mapping = {
+            field["name"]: field["type"] for field in prepare_fields(conn)
+        }
+
     def create(self, sql_field):
         """Get FieldWidget according to type key of the given sql_field"""
         # sample fields are stored as tuples
         # if type(sql_field) is tuple:
-        #     sample = sql_field[1]
-        #     sql_field = sql_field[2]
+        # sample = sql_field[1]
+        # sql_field = sql_field[2]
         # else:
-        #     # Passing sample has no effect for non-sample fields
-        #     sample = None
+        # # Passing sample has no effect for non-sample fields
+        # sample = None
 
-        field = sql.get_field_by_name(self.conn, sql_field)
+        # Get field data by its name in DB
+        # Don't work anymore because some fields (samples related)
+        # have a tuple structure.
+        # See prepare_fields()
+        # field_type = sql.get_field_by_name(self.conn, sql_field)
 
-        # if field["name"] == "gt":
-        #     w = GenotypeField()
-        #     return w
-        if field["type"] == "int":
+        field_type = self.field_types_mapping.get(sql_field)
+        assert field_type
+
+        if field_type == "int":
             w = IntegerField()
             # w.set_range(*sql.get_field_range(self.conn, sql_field, sample))
             return w
 
-        if field["type"] == "float":
+        if field_type == "float":
             w = FloatField()
             # w.set_range(*sql.get_field_range(self.conn, sql_field, sample))
             return w
 
-        if field["type"] == "str":
+        if field_type == "str":
             return StrField()
 
-        if field["type"] == "bool":
+        if field_type == "bool":
             return BoolField()
 
         return StrField()
