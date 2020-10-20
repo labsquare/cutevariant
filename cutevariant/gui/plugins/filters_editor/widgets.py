@@ -234,6 +234,7 @@ class OperatorField(BaseField):
         "LIKE": "like",
         "~": "regex",
         "IN": "in",
+        "NOT IN": "not in",
     }
 
     def __init__(self, parent=None):
