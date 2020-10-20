@@ -294,7 +294,7 @@ class WordSetWidget(PluginWidget):
 
         # Delete all selected sets
         for i in self.view.selectedItems():
-            result = drop_cmd(self.conn, "sets", i.text())
+            result = drop_cmd(self.conn, "wordsets", i.text())
 
             if not result["success"]:
                 LOGGER.error(result)
@@ -319,7 +319,7 @@ class WordSetWidget(PluginWidget):
 
         if dialog.exec_() == QDialog.Accepted:
             # Drop previous
-            drop_cmd(self.conn, "sets", wordset_name)
+            drop_cmd(self.conn, "wordsets", wordset_name)
             # Import new
             self.import_wordset(dialog.model.stringList(), wordset_name)
             self.populate()

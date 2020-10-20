@@ -118,7 +118,7 @@ def count_cmd(
         filters (dict, optional): nested tree of condition
 
     Returns:
-        dict: Count of variants with "count" as a key
+        dict: Count of variants wgstith "count" as a key
     """
 
     #  TODO : Check if fields has annotations
@@ -179,7 +179,7 @@ def drop_cmd(conn: sqlite3.Connection, feature: str, name: str, **kwargs):
     Raises:
         vql.VQLSyntaxError
     """
-    accept_features = ("selections", "sets")
+    accept_features = ("selections", "wordsets")
 
     if feature not in accept_features:
         raise vql.VQLSyntaxError(f"{feature} doesn't exists")
