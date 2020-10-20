@@ -23,7 +23,12 @@ from PySide2.QtGui import QIcon
 
 # Custom imports
 from cutevariant.gui.plugin import PluginWidget
-from cutevariant.core.sql import get_sql_connexion, get_wordsets, get_words_in_set, sanitize_words
+from cutevariant.core.sql import (
+    get_sql_connexion,
+    get_wordsets,
+    get_words_in_set,
+    sanitize_words,
+)
 from cutevariant.core.command import import_cmd, drop_cmd
 from cutevariant import commons as cm
 from cutevariant.gui.ficon import FIcon
@@ -119,10 +124,7 @@ class WordListDialog(QDialog):
         last_directory = QSettings().value("last_directory", QDir.homePath())
 
         filepath, _ = QFileDialog.getOpenFileName(
-            self,
-            self.tr("Open Word set"),
-            last_directory,
-            self.tr("Text file (*.txt)"),
+            self, self.tr("Open Word set"), last_directory, self.tr("Text file (*.txt)")
         )
 
         if filepath:
@@ -230,7 +232,7 @@ class WordSetWidget(PluginWidget):
             [file.write(word + "\n") for word in words]
 
         # Import the content of the temp file in DB
-        result = import_cmd(self.conn, "sets", wordset_name, filename)
+        result = import_cmd(self.conn, "wordsets", wordset_name, filename)
 
         if not result["success"]:
             LOGGER.error(result)
@@ -266,7 +268,8 @@ class WordSetWidget(PluginWidget):
                 QMessageBox.critical(
                     self,
                     self.tr("Error while creating set"),
-                    self.tr("Error while creating set '%s'; Name is already used") % wordset_name,
+                    self.tr("Error while creating set '%s'; Name is already used")
+                    % wordset_name,
                 )
                 wordset_name = None
 
