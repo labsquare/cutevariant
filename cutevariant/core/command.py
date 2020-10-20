@@ -98,7 +98,7 @@ def select_cmd(
 @cached(max_size=128)
 def count_cmd(
     conn: sqlite3.Connection,
-    fields=("chr", "pos", "ref", "alt"),
+    fields=["chr", "pos", "ref", "alt"],
     source="variants",
     filters={},
     group_by=[],
