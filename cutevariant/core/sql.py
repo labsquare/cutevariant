@@ -1042,15 +1042,15 @@ def get_one_variant(
         ).fetchone()
     )
 
+    variant["annotations"] = []
     if with_annotations:
-        variant["annotations"] = dict(
-            conn.execute(
-                f"SELECT * FROM annotations WHERE variant_id = {variant_id}"
-            ).fetchone()
-        )
+        for annotation in conn.execute(
+            f"SELECT * FROM annotations WHERE variant_id = {variant_id}"
+        ):
+            variant["annotations"].append(dict(annotation))
 
+    variant["samples"] = []
     if with_samples:
-        variant["samples"] = []
         for sample in conn.execute(
             f"""SELECT samples.name, sample_has_variant.* FROM sample_has_variant
             LEFT JOIN samples on samples.id = sample_has_variant.sample_id

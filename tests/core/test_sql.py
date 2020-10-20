@@ -518,19 +518,20 @@ def test_advanced_get_one_variant(conn):
             conn, variant_id, with_annotations=True, with_samples=True
         )
 
-        print("found variant", found_variant)
-
         for extra_field in ("annotations", "samples"):
 
-            print("Extra field", found_variant[extra_field])
             assert isinstance(found_variant[extra_field], list), "Type not expected"
 
             for item in found_variant[extra_field]:
-                # Remove variant_id key from sample/annotation before test
+                # Remove variant_id and sample_id from sample/annotation before test
                 if "variant_id" in item:
                     del item["variant_id"]
 
-            assert found_variant[extra_field] == expected_variant[extra_field]
+                if "sample_id" in item:
+                    del item["sample_id"]
+
+            if extra_field in found_variant and extra_field in expected_variant:
+                assert found_variant[extra_field] == expected_variant[extra_field]
 
 
 def test_selection_from_bedfile(conn):
