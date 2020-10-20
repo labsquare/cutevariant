@@ -120,14 +120,17 @@ def count_cmd(
     Returns:
         dict: Count of variants with "count" as a key
     """
-    if not filters and not group_by:
-        # Returned stored cache variant
-        LOGGER.debug("command:count_cmd:: cached from selections table")
-        return {
-            "count": conn.execute(
-                f"SELECT count FROM selections WHERE name = '{source}'"
-            ).fetchone()[0]
-        }
+
+    #  TODO : Check if fields has annotations
+
+    # if not filters and not group_by:
+    #     # Returned stored cache variant
+    #     LOGGER.debug("command:count_cmd:: cached from selections table")
+    #     return {
+    #         "count": conn.execute(
+    #             f"SELECT count FROM selections WHERE name = '{source}'"
+    #         ).fetchone()[0]
+    #     }
 
     # Get {'favorite': 'variants', 'comment': 'variants', impact': 'annotations', ...}
     default_tables = {i["name"]: i["category"] for i in sql.get_fields(conn)}
