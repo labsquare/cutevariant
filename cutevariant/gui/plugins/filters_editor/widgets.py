@@ -1584,6 +1584,8 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
     def on_filters_changed(self):
         """Triggered when filter has changed"""
+        if not self.view.selectionModel().selectedRows():
+            self.add_button.setDisabled(False)
         if self.mainwindow:
             self.mainwindow.state.filters = self.model.filters
             self.mainwindow.refresh_plugins(sender=self)
