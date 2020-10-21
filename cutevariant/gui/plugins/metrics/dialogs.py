@@ -1,3 +1,7 @@
+# Standard imports
+import sqlite3
+
+# Qt imports
 from PySide2.QtWidgets import (
     QVBoxLayout,
     QTableView,
@@ -5,15 +9,15 @@ from PySide2.QtWidgets import (
     QAbstractItemView,
     QHeaderView,
 )
-from PySide2.QtCore import Qt, QAbstractTableModel, QModelIndex
-from cutevariant.gui.plugin import PluginDialog
+from PySide2.QtCore import Qt, QAbstractTableModel, QModelIndex, QThreadPool
 
+# Custom imports
+from cutevariant.gui.plugin import PluginDialog
+from cutevariant.gui.sql_runnable import SqlRunnable
 from cutevariant.core import sql
 
-import sqlite3
 
-
-#  Metrics
+# SQL functions
 def get_variant_count(conn: sqlite3.Connection):
     return conn.execute(
         "SELECT `count` FROM selections WHERE name = 'variants'"
@@ -118,22 +122,45 @@ class MetricsDialog(PluginDialog):
         v_layout.addWidget(self.buttons)
         self.setLayout(v_layout)
 
+        # Async stuff
+        self.metrics_runnable = None
         self.populate()
 
     def populate(self):
+        """Async implementation to populate the view
+
+        Notes:
+            When closing the dialog window, the thread is not stopped.
+        """
+        def compute_metrics(conn):
+            """Async function"""
+            return {
+                "variants": get_variant_count(conn),
+                "snps": get_snp_count(conn),
+                "transitions": get_variant_transition(conn),
+                "transversions": get_variant_transversion(conn),
+                "samples": get_sample_count(conn),
+            }
+
+        self.model.add_metrics(self.tr("Loading..."), self.tr("data..."))
+
+        self.metrics_runnable = SqlRunnable(self.conn, compute_metrics)
+        self.metrics_runnable.finished.connect(self.loaded)
+        QThreadPool.globalInstance().start(self.metrics_runnable)
+
+    def loaded(self):
+        """Called at the end of the thread and populate data"""
+        results = self.metrics_runnable.results
+
         self.model.clear()
+        ratio = results["transitions"] / results["transversions"]
 
-        self.model.add_metrics("Variant count", get_variant_count(self.conn))
-        self.model.add_metrics("Snp count", get_snp_count(self.conn))
-
-        transition = get_variant_transition(self.conn)
-        transversion = get_variant_transversion(self.conn)
-        ratio = transition / transversion
-
-        self.model.add_metrics("Transition count", transition)
-        self.model.add_metrics("Transversion count", transversion)
+        self.model.add_metrics("Variant count", results["variants"])
+        self.model.add_metrics("Snp count", results["snps"])
+        self.model.add_metrics("Transition count", results["transitions"])
+        self.model.add_metrics("Transversion count", results["transversions"])
         self.model.add_metrics("Tr/tv ratio", ratio)
-        self.model.add_metrics("Samples count", get_sample_count(self.conn))
+        self.model.add_metrics("Sample count", results["variants"])
 
         self.view.horizontalHeader().setSectionResizeMode(
             0, QHeaderView.ResizeToContents
@@ -146,13 +173,6 @@ if __name__ == "__main__":
     import sys
 
     app = QApplication(sys.argv)
-
     conn = sql.get_sql_connexion("test.db")
-
-    dialog = MetricsDialog()
-    dialog.conn = conn
-    dialog.populate()
-
-    dialog.show()
-
+    dialog = MetricsDialog(conn=conn)
     app.exec_()
