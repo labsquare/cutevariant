@@ -114,14 +114,17 @@ class MetricsDialog(PluginDialog):
         self.setLayout(v_layout)
 
         # Async stuff
-        self.metrics_thread = None
+        self.metrics_runnable = None
         self.populate()
-        print("CONSTR")
 
     def populate(self):
+        """Async implementation to populate the view
 
+        Notes:
+            When closing the dialog window, the thread is not stopped.
+        """
         def compute_metrics(conn):
-
+            """Async function"""
             return {
                 "variants": get_variant_count(conn),
                 "snps": get_snp_count(conn),
@@ -130,20 +133,15 @@ class MetricsDialog(PluginDialog):
                 "samples": get_sample_count(conn),
             }
 
-        self.metrics_thread = SqlRunnable(
-            self.conn, compute_metrics
-        )
-        self.metrics_thread.finished.connect(self.loaded)
-        pool = QThreadPool()
-        pool.start(self.metrics_thread)
-        print("ICI")
+        self.model.add_metrics(self.tr("Loading..."), self.tr("data..."))
+
+        self.metrics_runnable = SqlRunnable(self.conn, compute_metrics)
+        self.metrics_runnable.finished.connect(self.loaded)
+        QThreadPool.globalInstance().start(self.metrics_runnable)
 
     def loaded(self):
-        print("LA")
-
-        assert self.metrics_thread.done
-
-        results = self.metrics_thread.results
+        """Called at the end of the thread and populate data"""
+        results = self.metrics_runnable.results
 
         self.model.clear()
         ratio = results["transitions"] / results["transversions"]
@@ -166,13 +164,6 @@ if __name__ == "__main__":
     import sys
 
     app = QApplication(sys.argv)
-
     conn = sql.get_sql_connexion("test.db")
-
-    dialog = MetricsDialog()
-    dialog.conn = conn
-    dialog.populate()
-
-    dialog.show()
-
+    dialog = MetricsDialog(conn=conn)
     app.exec_()
