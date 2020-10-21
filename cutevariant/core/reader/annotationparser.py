@@ -14,6 +14,18 @@ LOGGER = logger()
 # PS: Consequences/annotation_impac/impacts are standardized here:
 # https://www.ensembl.org/info/genome/variation/prediction/predicted_data.html#consequences
 SNPEFF_ANNOTATION_DEFAULT_FIELDS = {
+    "allele": {
+        "name": "allele",
+        "category": "annotations",
+        "description": "Variant allele used to calculate the consequence",
+        "type": "str",
+    },
+    "feature_type": {
+        "name": "feature_type",
+        "category": "annotations",
+        "description": "Type of feature. Currently one of Transcript, RegulatoryFeature, MotifFeature.",
+        "type": "str",
+    },
     "annotation": {
         "name": "consequence",
         "category": "annotations",
@@ -230,7 +242,7 @@ class BaseParser:
             information is returned:
             {
                 "name": <field_name>,
-                "description": "None",
+                "description": "",
                 "type":"str",
                 "category":"annotations"
             }
@@ -252,7 +264,7 @@ class BaseParser:
                 raw_field_name = sanitize_field_name(raw_field_name)
                 _f = {
                     "name": raw_field_name,
-                    "description": "None",
+                    "description": "",
                     "type": "str",
                     "category": "annotations",
                 }
