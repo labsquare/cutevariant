@@ -1626,17 +1626,24 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
         self.combo = QComboBox()
         self.combo.addItem(self.tr("Current not saved filter..."))
-        self.combo.setMinimumHeight(30)
+        # self.combo.setMinimumHeight(30)
         self.combo.currentTextChanged.connect(self.on_combo_changed)
         self.save_button = QToolButton()
         self.save_button.setIcon(FIcon(0xF0193))
-        # self.save_button.setAutoRaise(True)
-        self.save_button.setMinimumHeight(30)
+        self.save_button.setToolTip(self.tr("Save the current filter"))
+        # self.save_button.setMinimumHeight(30)
         self.save_button.clicked.connect(self.on_save_filters)
+
+        self.del_button = QToolButton()
+        self.del_button.setDefaultAction(QAction(
+            FIcon(0xF0A7A), self.tr("Delete filter")
+        ))
+        self.del_button.clicked.connect(self.on_delete_item)
 
         hlayout = QHBoxLayout()
         hlayout.addWidget(self.combo)
         hlayout.addWidget(self.save_button)
+        hlayout.addWidget(self.del_button)
 
         layout = QVBoxLayout()
         layout.addLayout(hlayout)
@@ -1652,17 +1659,11 @@ class FiltersEditorWidget(plugin.PluginWidget):
         )
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.del_button = self.toolbar.addAction(
-            FIcon(0xF0A7A), self.tr("Delete filter"), self.on_delete_item
-        )
+        # self.del_button = self.toolbar.addAction(
+        #     FIcon(0xF0A7A), self.tr("Delete filter"), self.on_delete_item
+        # )
 
         self.model.filtersChanged.connect(self.on_filters_changed)
-
-    def set_add_icon(self, icon: QIcon):
-        self.delegate.add_icon = icon
-
-    def set_rem_icon(self, icon: QIcon):
-        self.delegate.rem_icon = icon
 
     @property
     def filters(self):
@@ -1673,7 +1674,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.model.filters = filters
 
     def on_open_project(self, conn):
-        """ Overrided from PluginWidget """
+        """Overrided from PluginWidget"""
         self.model.conn = conn
         self.conn = conn
 
@@ -1683,25 +1684,53 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.on_refresh()
 
     def on_refresh(self):
-        """ Overrided """
-        self.model.filters = self.mainwindow.state.filters
+        """Overrided"""
+        if self.filters == self.mainwindow.state.filters:
+            # No change in filters = no refresh
+            return
 
-        # Buttons:
-        # Nothing is selected here:
-        # - del button should be disabled
-        # - add button should be enabled only if there is no filter
-        if len(self.model.filters):
-            self.add_button.setDisabled(True)
-        else:
-            self.add_button.setDisabled(False)
-        self.del_button.setDisabled(True)
+        # Filters changed: Update UserRole of default filter and select it
+        self.combo.setItemData(0, self.mainwindow.state.filters)
+        self.combo.setCurrentIndex(0)
+
+        self.refresh_buttons()
         self._update_view_geometry()
 
+    def refresh_buttons(self):
+        """Actualize the enable states of Add/Del buttons"""
+        if self.filters:
+            # Data
+            # Deletion/clear is always possible
+            self.del_button.setEnabled(True)
+
+            # Add button: Is an item selected ?
+            index = self.view.currentIndex()
+            if index.isValid() and self.model.item(index).type() == FilterItem.LOGIC_TYPE:
+                self.add_button.setEnabled(True)
+            else:
+                # item is CONDITION_TYPE or there is no item selected (because of deletion)
+                self.add_button.setEnabled(False)
+        else:
+            # Empty
+            self.add_button.setEnabled(True)
+
+            current_index = self.combo.currentIndex()
+            if current_index == 0:
+                # Not saved filter => useless to delete it
+                self.del_button.setEnabled(False)
+            else:
+                # Saved filter => allow its deletion
+                self.del_button.setEnabled(True)
+
     def on_filters_changed(self):
-        """Triggered when filter has changed"""
-        if not self.view.selectionModel().selectedRows():
-            self.add_button.setDisabled(False)
-        if self.mainwindow:
+        """Triggered when filters changed FROM THIS plugin
+
+        Set the filters of the mainwindow and trigger a refresh of all plugins.
+        """
+        self.refresh_buttons()
+
+        if self.mainwindow and self.mainwindow.state.filters != self.model.filters:
+            # Refresh other plugins only if the filters are modified
             self.mainwindow.state.filters = self.model.filters
             self.mainwindow.refresh_plugins(sender=self)
 
@@ -1716,25 +1745,32 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
     def on_save_filters(self):
 
-        # TODO : MANAGE PLUGINS SETTINGS
-        name, _ = QInputDialog.getText(
+        filter_name, _ = QInputDialog.getText(
             self, self.tr("Type a name for the filter"), self.tr("Filter Name:")
         )
-        self.combo.addItem(name, self.filters)
+        if not filter_name:
+            return
+
+        # Save current filters in UserRole of a new ComboBox item
+        self.combo.addItem(filter_name, self.filters)
+        self.combo.setCurrentIndex(self.combo.findText(filter_name))
 
     def on_combo_changed(self):
-
-        data = self.combo.currentData()
-        if data:
-            self.filters = data
+        """Called when a new item is selected in the ComboBox (programatically or not)"""
+        filters = self.combo.currentData()
+        if filters:
+            self.filters = filters
             self.on_filters_changed()
         else:
+            # Empty filter
             self.model.clear()
         self._update_view_geometry()
+        self.refresh_buttons()
 
     def _update_view_geometry(self):
         """Set column Spanned to True for all Logic Item
-        This allows Logic Item Editor to take all the space inside the row
+
+        Allow Logic Item Editor to take all the space inside the row
         """
         self.view.expandAll()
 
@@ -1770,14 +1806,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
                 self.model.add_condition_item(parent=gpindex)
 
         self._update_view_geometry()
-
-        if not self.view.currentIndex().isValid():
-            # Nothing is selected => disable add/del button
-            self.add_button.setDisabled(True)
-            self.del_button.setDisabled(True)
-        else:
-            # Something is selected, lets handle this by:
-            self.on_selection_changed()
+        self.refresh_buttons()
 
     def on_open_condition_dialog(self):
         """Open the condition creation dialog
@@ -1793,19 +1822,25 @@ class FiltersEditorWidget(plugin.PluginWidget):
     def on_delete_item(self):
         """Delete current item
 
-        TODO:
         - if filter is saved => delete filter
         - if filter is not saved => clear
         """
         ret = QMessageBox.question(
             self,
             self.tr("Filter deletion"),
-            self.tr("Do you want to remove this item?"),
+            self.tr("Do you want to remove this filter?"),
             QMessageBox.Yes | QMessageBox.No,
         )
 
         if ret == QMessageBox.Yes:
-            self.model.remove_item(self.view.currentIndex())
+            current_index = self.combo.currentIndex()
+            if current_index == 0:
+                # Not saved filter
+                self.model.clear()
+            else:
+                # Saved filter
+                self.combo.removeItem(current_index)
+            self.refresh_buttons()
 
     def on_selection_changed(self):
         """Enable/Disable add button depending item type
@@ -1813,22 +1848,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
         Notes:
             Disable Add button on CONDITION_TYPE
         """
-        index = self.view.currentIndex()
-        # print("selected rows", self.view.selectionModel().selectedRows())
-        # print(index.row(), self.model.rowCount(index))
-
-        # Del button
-        if not index.isValid():
-            self.del_button.setDisabled(True)
-        else:
-            self.del_button.setDisabled(False)
-
-        # Add button
-        if self.model.item(index).type() == FilterItem.CONDITION_TYPE:
-            self.add_button.setDisabled(True)
-        else:
-            # item is LOGIC_TYPE or there is no item selected (because of deletion)
-            self.add_button.setDisabled(False)
+        self.refresh_buttons()
 
     def contextMenuEvent(self, event: QContextMenuEvent):
 
@@ -1885,9 +1905,6 @@ if __name__ == "__main__":
     view.model.load(data)
 
     view._update_view_geometry()
-
-    view.set_add_icon(FIcon(0xF0419))
-    view.set_rem_icon(FIcon(0xF0419))
     view.show()
 
     # view = QTreeView()
