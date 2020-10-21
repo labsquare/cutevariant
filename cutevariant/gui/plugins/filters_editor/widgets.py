@@ -230,7 +230,19 @@ class ComboField(BaseField):
         self.set_widget(self.edit)
 
     def set_value(self, value: str):
-        self.edit.setCurrentText(str(value))
+        """Set text of lineEdit in ComboBox"""
+        # items = [self.edit.itemText(i) for i in range(self.edit.count())]
+
+        # Set text of lineEdit via the index of the required text
+        # Here we use an editable combobox with a lineEdit.
+        # => Use setCurrentIndex instead of setCurrentText.
+        # The last one doesn't refresh the index and thus the currentData.
+        # In this case, get_value will return the currentData of the first item
+        # in ComboBox regardless the item in the lineEdit.
+        index = self.edit.findText(value)
+        if index != -1:
+            self.edit.setCurrentIndex(index)
+        # Don't do this only: self.edit.setCurrentText(value)
 
     def get_value(self):
         """Return quoted string
