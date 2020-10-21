@@ -70,6 +70,7 @@ class FieldsModel(QStandardItemModel):
         for sample in sql.get_samples(self.conn):
             sample_item = self.load_fields("samples", parent_name=sample["name"])
             sample_item.setText(sample["name"])
+            sample_item.setIcon(FIcon(0xF0B9C))
             samples_items.appendRow(sample_item)
 
         self.appendRow(samples_items)
