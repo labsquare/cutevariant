@@ -123,7 +123,7 @@ class FloatField(BaseField):
     def set_value(self, value: int):
         self.spin_box.setValue(value)
 
-    def get_value(self) -> int:
+    def get_value(self) -> float:
         return self.spin_box.value()
 
     def set_range(self, min_, max_):
@@ -143,10 +143,10 @@ class StrField(BaseField):
         self.edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.set_widget(self.edit)
 
-    def set_value(self, value: str):
+    def set_value(self, value: Any):
         self.edit.setText(str(value))
 
-    def get_value(self):
+    def get_value(self) -> Any:
         """Return quoted string
         ..todo : check if quotes are required
         """
@@ -157,7 +157,6 @@ class StrField(BaseField):
 
         if value.isdecimal():
             return float(value)
-
         return value
 
     def set_completer(self, completer: QCompleter):
@@ -167,6 +166,9 @@ class StrField(BaseField):
 
 class ComboField(BaseField):
     """Editor for string value
+
+    Notes:
+        Items are added in FilterDelegate.createEditor()
 
     Attributes:
         edit (QLineEdit)
@@ -436,7 +438,7 @@ class FilterItem(object):
     def setRecursiveChecked(self, checked=True):
         self.checked = checked
         for child in self.children:
-            child.setRecursiveChecked(checked)
+            child.set_recursive_check_state(checked)
 
     def type(self):
         """Return item type.
@@ -464,9 +466,14 @@ class FilterItem(object):
 
         Returns:
             - If item is a LOGIC_FIELD, return the operator AND/OR.
-            - If item is a CONDITION_TYPE, return the value of the condition.
+            - If item is a CONDITION_TYPE, return the value of the condition (last field).
+
+        Examples:
+            For a CONDITION_TYPE FilterItem: `("chr", "IN", (10, 11))`,
+            this function will return `(10, 11)`.
         """
         if self.type() == self.CONDITION_TYPE:
+            # print("filteritem, get value: type", type(self.data[2]))
             return self.data[2]
 
         if self.type() == self.LOGIC_TYPE:
@@ -509,7 +516,10 @@ class FilterItem(object):
             self.data[1] = value
 
     def set_value(self, value):
-        """Set value part of CONDITION_TYPE item or value of LOGIC_TYPE item"""
+        """Set value part of CONDITION_TYPE item or value of LOGIC_TYPE item
+
+        Called when a user validates the editor.
+        """
         if self.type() == self.CONDITION_TYPE:
             self.data[2] = value
             return
@@ -527,6 +537,10 @@ class FilterModel(QAbstractItemModel):
     Attributes:
         conn (sqlite3.connection): sqlite3 connection
         root_item (FilterItem): RootItem (invisible) to store recursive item.
+
+    Additional roles:
+        TypeRole: Items types (LOGIC_TYPE or CONDITION_TYPE)
+        UniqueIdRole: Uuid of items.
 
     Signals:
         filtersChanged: Emitted when model data (filters) is changed.
@@ -699,7 +713,7 @@ class FilterModel(QAbstractItemModel):
             return True
 
         if role == Qt.CheckStateRole:
-            self.setRecursiveChecked(index, bool(value))
+            self.set_recursive_check_state(index, bool(value))
             self.filtersChanged.emit()
             # just one item is changed
             self.dataChanged.emit(index, index, role)
@@ -779,7 +793,7 @@ class FilterModel(QAbstractItemModel):
         """
         self.beginResetModel()
         self.clear()
-        if len(data):
+        if data:
             self.root_item.append(self.to_item(data))
         self.endResetModel()
 
@@ -1034,7 +1048,7 @@ class FilterModel(QAbstractItemModel):
         data.setData(self._MIMEDATA, serialization)
         return data
 
-    def setRecursiveChecked(self, index, checked=True):
+    def set_recursive_check_state(self, index, checked=True):
         """Recursive check of all subfilters"""
         if not index.isValid():
             return
@@ -1050,7 +1064,7 @@ class FilterModel(QAbstractItemModel):
 
         for row in range(self.rowCount(index)):
             cindex = self.index(row, 0, index)
-            self.setRecursiveChecked(cindex, checked)
+            self.set_recursive_check_state(cindex, checked)
 
 
 class FilterDelegate(QStyledItemDelegate):
@@ -1146,7 +1160,7 @@ class FilterDelegate(QStyledItemDelegate):
         return super().createEditor(parent, option, index)
 
     def setEditorData(self, editor: QWidget, index: QModelIndex):
-        """Overrided from Qt: Read data from model and set editor data
+        """Overrided from Qt: Read data from model (FilterItem) and set editor data
 
         TL;DR: populate the editor with the data from the model.
 
@@ -1187,18 +1201,20 @@ class FilterDelegate(QStyledItemDelegate):
             return False
 
         if event.type() == QEvent.MouseButtonPress:
-           # print("mouse pressed on", index.column(), event.button())
+            # print("mouse pressed on", index.column(), event.button())
             item = model.item(index)
 
             if index.column() == self.COLUMN_CHECKBOX and self._check_rect(
                 option.rect
             ).contains(event.pos()):
-                model.setData(index, not item.checked, Qt.CheckStateRole)
+                # Invert check state
+                model.setData(index, not item.checked, role=Qt.CheckStateRole)
                 return True
 
             if index.column() == self.COLUMN_REMOVE and self._check_rect(
                 option.rect
             ).contains(event.pos()):
+                # Remove item
                 model.remove_item(index)
                 return True
 
