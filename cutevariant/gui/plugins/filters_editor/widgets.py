@@ -370,7 +370,7 @@ class FieldFactory(QObject):
             field["name"]: field["type"] for field in prepare_fields(conn)
         }
 
-    def create(self, sql_field):
+    def create(self, sql_field, parent=None):
         """Get FieldWidget according to type key of the given sql_field"""
         # sample fields are stored as tuples
         # if type(sql_field) is tuple:
@@ -390,25 +390,25 @@ class FieldFactory(QObject):
         assert field_type
 
         if field_type == "int":
-            w = IntegerField()
+            w = IntegerField(parent)
             # w.set_range(*sql.get_field_range(self.conn, sql_field, sample))
             return w
 
         if field_type == "float":
-            w = FloatField()
+            w = FloatField(parent)
             # w.set_range(*sql.get_field_range(self.conn, sql_field, sample))
             return w
 
         if field_type == "str":
-            return StrField()
+            return StrField(parent)
 
         if field_type == "bool":
-            return BoolField()
+            return BoolField(parent)
 
-        return StrField()
+        return StrField(parent)
 
 
-class FilterItem(object):
+class FilterItem:
     """FilterItem is a recursive class which represent item for a FilterModel
 
     A tree of FilterItems can be stored by adding FilterItems recursively as children.
@@ -1231,6 +1231,8 @@ class FilterDelegate(QStyledItemDelegate):
                 return IterableField(parent)
             # Basic string or int or float
             return StrField(parent)
+            # Dynamic field according to database type
+            # return FieldFactory(conn).create(model.item(index).get_field(), parent=parent)
 
         return super().createEditor(parent, option, index)
 
