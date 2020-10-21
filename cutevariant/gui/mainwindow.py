@@ -20,7 +20,6 @@ from cutevariant.gui.state import State
 from cutevariant.gui.wizards import ProjectWizard
 from cutevariant.gui.settings import SettingsWidget
 from cutevariant.gui.widgets.aboutcutevariant import AboutCutevariant
-from cutevariant.gui.plugin import FOOTER_LOCATION
 from cutevariant import commons as cm
 from cutevariant.commons import (
     MAX_RECENT_PROJECTS,
