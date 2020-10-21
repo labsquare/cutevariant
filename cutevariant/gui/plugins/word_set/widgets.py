@@ -60,7 +60,7 @@ class WordListDialog(QDialog):
         self.view = QListView()
         self.model = QStringListModel()
         self.view.setModel(self.model)
-        self.view.setSelectionMode(QAbstractItemView.ContiguousSelection)
+        self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
 
         hlayout = QHBoxLayout()
         hlayout.addWidget(self.view)
@@ -105,9 +105,12 @@ class WordListDialog(QDialog):
         Notes:
             A user must click on save for the changes to take effect.
         """
-        while len(self.view.selectionModel().selectedRows()) > 0:
-            indexes = self.view.selectionModel().selectedRows()
+        indexes = self.view.selectionModel().selectedRows()
+        while indexes:
             self.model.removeRows(indexes[0].row(), 1)
+            indexes = self.view.selectionModel().selectedRows()
+
+        self.del_button.setDisabled(True)
 
     def on_load_file(self):
         """Allow to automatically add words from a file
