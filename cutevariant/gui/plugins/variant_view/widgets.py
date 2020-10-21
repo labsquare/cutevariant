@@ -484,9 +484,10 @@ class VariantView(QWidget):
         Args:
             parent: parent widget
             show_popup_menu (boolean, optional: If False, disable the context menu
-                over variants. For example the group pane should be disable
+                over variants. For example the group pane should be disabled
                 in order to avoid partial/false informations to be displayed
                 in this menu.
+                Hacky Note: also used to rename variants to groups in the page box...
         """
         super().__init__(parent)
 
@@ -707,8 +708,14 @@ class VariantView(QWidget):
             self.page_box.setText(str(self.model.page))
             self.set_pagging_enabled(True)
 
+        if not self.show_popup_menu:
+            # Yes it's hacky... but left pane doesn't show variants
+            text = self.tr("{} group(s) {} page(s)")
+        else:
+            text = self.tr("{} variant(s) {} page(s)")
+
         self.info_label.setText(
-            self.tr("{} variant(s) {} page(s)").format(
+            text.format(
                 self.model.total, self.model.pageCount()
             )
         )
