@@ -1,3 +1,7 @@
+# Standard imports
+import sqlite3
+
+# Qt imports
 from PySide2.QtWidgets import (
     QVBoxLayout,
     QTableView,
@@ -6,14 +10,14 @@ from PySide2.QtWidgets import (
     QHeaderView,
 )
 from PySide2.QtCore import Qt, QAbstractTableModel, QModelIndex, QThreadPool
+
+# Custom imports
 from cutevariant.gui.plugin import PluginDialog
 from cutevariant.gui.sql_runnable import SqlRunnable
 from cutevariant.core import sql
 
-import sqlite3
 
-
-#  Metrics
+# SQL functions
 def get_variant_count(conn: sqlite3.Connection):
     return conn.execute(
         "SELECT `count` FROM selections WHERE name = 'variants'"
