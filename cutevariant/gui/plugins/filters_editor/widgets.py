@@ -2,7 +2,9 @@
 import sys
 import pickle
 import uuid
+from ast import literal_eval
 from functools import lru_cache
+from typing import Any, Iterable
 
 # Qt imports
 from PySide2.QtWidgets import *
@@ -162,6 +164,52 @@ class StrField(BaseField):
     def set_completer(self, completer: QCompleter):
         """ set a completer to autocomplete value """
         self.edit.setCompleter(completer)
+
+
+class IterableField(StrField):
+    """Editor for iterables in string form.
+
+    Attributes:
+        edit (QLineEdit)
+    """
+
+    def set_value(self, value: Iterable):
+        print("Iterable field set value ?", value, type(value))
+        # self.edit.setText(",".join(value))
+        # self.edit.setText(value)
+        super().set_value(value)
+
+    def get_value(self) -> tuple:
+        """Return the value of the field in tuple type
+
+        Notes:
+            Try to cast the follwing terms into tuples:
+            - 'a, b' => ('a', 'b')
+            - 'a,b' => ...
+            - '(a, b' => ...
+            - 'a,b)" => ...
+            - ('a', 'b') => ...
+            - (1, 2) => (1, 2)
+
+        Returns:
+            (tuple): Casted from string
+        """
+        value = self.edit.text()
+
+        try:
+            if "," in value and ("(" not in value or ")" not in value):
+                value = value.replace("(", "").replace(")", "").replace(", ", ",")
+                value = tuple(value.split(","))
+                # print("splitted value", value)
+                return value
+
+            # Cast proper tuple
+            return literal_eval(value)
+        except ValueError:
+            pass
+        # Cast to str
+        return value
+        # return super().get_value()
 
 
 class ComboField(BaseField):
@@ -1155,6 +1203,10 @@ class FilterDelegate(QStyledItemDelegate):
             return OperatorField(parent)
 
         if index.column() == 3:
+            if model.item(index).get_operator() in ("IN", "NOT IN"):
+                # Tuple value is expecitem required
+                return IterableField(parent)
+            # Basic string or int or float
             return StrField(parent)
 
         return super().createEditor(parent, option, index)
