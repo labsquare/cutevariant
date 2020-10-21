@@ -248,6 +248,7 @@ class ComboField(BaseField):
         """Return quoted string
         ..todo : check if quotes are required
         """
+        # Return UserRole
         return self.edit.currentData()
 
     def addItems(self, words: list):
@@ -266,6 +267,7 @@ class BoolField(BaseField):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.box = QComboBox()
+        # DisplayRole, UserRole
         self.box.addItem("False", False)
         self.box.addItem("True", True)
         self.set_widget(self.box)
@@ -275,6 +277,7 @@ class BoolField(BaseField):
         self.box.setCurrentIndex(int(value))
 
     def get_value(self) -> bool:
+        # Return UserRole
         return self.box.currentData()
 
 
@@ -312,12 +315,14 @@ class OperatorField(BaseField):
         self.combo_box.setCurrentText(self.SYMBOLS[value])
 
     def get_value(self) -> str:
+        # Return UserRole
         return self.combo_box.currentData()
 
     def _fill(self):
         """Init QComboBox with all supported operators"""
         self.combo_box.clear()
         for symbol, text in self.SYMBOLS.items():
+            # DisplayRole, UserRole
             self.combo_box.addItem(text, symbol)
 
 
@@ -328,6 +333,7 @@ class LogicField(BaseField):
         super().__init__(parent)
         self.box = QComboBox()
 
+        # DisplayRole, UserRole
         self.box.addItem("AND", "AND")
         self.box.addItem("OR", "OR")
 
@@ -343,6 +349,7 @@ class LogicField(BaseField):
             self.box.setCurrentIndex(0)
 
     def get_value(self) -> str:
+        # Return UserRole
         return self.box.currentData()
 
 
@@ -654,7 +661,7 @@ class FilterModel(QAbstractItemModel):
         """Model destructor."""
         del self.root_item
 
-    def data(self, index: QModelIndex, role):
+    def data(self, index: QModelIndex, role=Qt.EditRole):
         """Overrided Qt methods : Return model's data according index and role
 
         Args:
@@ -667,33 +674,37 @@ class FilterModel(QAbstractItemModel):
         if not index.isValid():
             return None
 
-        if role == Qt.DisplayRole or role == Qt.EditRole:
-            item = self.item(index)
+        item = self.item(index)
+
+        if role in (Qt.DisplayRole, Qt.EditRole, Qt.UserRole):
             if index.column() == 0:
-                return str(item.checked)
+                return item.checked if role == Qt.UserRole else str(item.checked)
 
             if index.column() == 1:
                 if item.type() == FilterItem.CONDITION_TYPE:
                     return fields_to_vql(item.get_field())
 
                 if item.type() == FilterItem.LOGIC_TYPE:
-                    return str(item.get_value())
+                    val = item.get_value()
+                    return val if role == Qt.UserRole else str(val)
 
             if item.type() != FilterItem.CONDITION_TYPE:
                 return
 
             if index.column() == 2:
-                return str(item.get_operator())
+                operator = item.get_operator()
+                return operator if role == Qt.UserRole else str(operator)
 
             if index.column() == 3:
-                return str(item.get_value())
+                val = item.get_value()
+                return val if role == Qt.UserRole else str(val)
 
         if role == FilterModel.TypeRole:
             # Return item type
-            return self.item(index).type()
+            return item.type()
 
         if role == FilterModel.UniqueIdRole:
-            return self.item(index).uuid
+            return item.uuid
 
         return None
 
@@ -732,15 +743,15 @@ class FilterModel(QAbstractItemModel):
         #         font.setBold(True)
         #         return font
 
-    def setData(self, index, value, role=Qt.EditRole):
-        """Overrided Qt methods: Set data according index and value.
+    def setData(self, index, value, role=Qt.UserRole):
+        """Overrided Qt methods: Set value of FilterItem present at the given index.
 
         This method is called from FilterDelegate when edition has been done.
 
         Args:
             index (QModelIndex)
             value (any): new value
-            role (Qt.Role)
+            role (Qt.ItemDataRole): Qt.UserRole or Qt.CheckStateRole
 
         Returns:
             bool: Return True if success otherwise return False
@@ -748,7 +759,7 @@ class FilterModel(QAbstractItemModel):
         if not index.isValid():
             return False
 
-        if role == Qt.EditRole:
+        if role == Qt.UserRole:
             item = self.item(index)
 
             if index.column() == 0:
@@ -1237,7 +1248,15 @@ class FilterDelegate(QStyledItemDelegate):
             editor (QWidget)
             index (QModelindex)
         """
-        editor.set_value(index.data(Qt.EditRole))
+        # print("SET editor val from model:")
+        # roles = (Qt.UserRole, Qt.EditRole, Qt.DisplayRole)
+        # print("user, edit, display")
+        # print(";".join(str(index.data(role)) for role in roles))
+        # print(";".join(str(type(index.data(role))) for role in roles))
+
+        # Set editor data from the model (from the selected FilterItem)
+        # Editors expect typed values, so don't forget to use UserRole, not EditRole
+        editor.set_value(index.data(role=Qt.UserRole))
 
     def editorEvent(self, event: QEvent, model, option, index: QModelIndex):
         """
@@ -1295,6 +1314,12 @@ class FilterDelegate(QStyledItemDelegate):
             model (FilterModel)
             index (QModelindex)
         """
+        # val = editor.get_value()
+        # print("SET data model from editor:", val, type(val))
+        # Get typed data from the editor (i.e. not a string)
+        # Then set this data to the FilterItem (in the corresponding attribute)
+        # via its set_value() function.
+        # Default: UserRole
         model.setData(index, editor.get_value())
 
         # super().setModelData(editor, model, index)
