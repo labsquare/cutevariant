@@ -1,5 +1,5 @@
-__title__ = "Editor"
-__description__ = "A Vql editor"
+__title__ = "VQL Editor"
+__description__ = "A VQL editor"
 __long_description__ = """
 <p>This plugin allows you to manage most of the work that can be done in a 
 Cutevariant project by writing and executing VQL queries.</p>
