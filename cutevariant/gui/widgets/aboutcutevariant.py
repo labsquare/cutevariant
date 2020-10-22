@@ -1,7 +1,4 @@
 """Expose AboutCutevariant class to show information about the project"""
-# Standard imports
-from pkg_resources import resource_filename
-
 # Qt imports
 from PySide2.QtCore import Qt, QRect, QUrl
 from PySide2.QtWidgets import (

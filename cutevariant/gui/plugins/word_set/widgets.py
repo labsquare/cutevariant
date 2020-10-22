@@ -1,7 +1,6 @@
 # Standard imports
 import os
 import tempfile
-import re
 
 # Qt imports
 from PySide2.QtWidgets import (
@@ -209,6 +208,7 @@ class WordSetWidget(PluginWidget):
 
     def on_item_selected(self, *args):
         """Enable the remove button when an item is selected"""
+        # Get list of all selected model item indexes
         if self.view.selectionModel().selectedIndexes():
             self.edit_action.setEnabled(True)
             self.remove_action.setEnabled(True)

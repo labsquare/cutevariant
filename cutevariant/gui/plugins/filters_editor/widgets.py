@@ -2,6 +2,9 @@
 import sys
 import pickle
 import uuid
+from ast import literal_eval
+from functools import lru_cache
+from typing import Any, Iterable
 
 # Qt imports
 from PySide2.QtWidgets import *
@@ -18,27 +21,39 @@ import cutevariant.commons as cm
 LOGGER = cm.logger()
 
 
+@lru_cache()
 def prepare_fields(conn):
     """Prepares a list of columns on which filters can be applied"""
     columns = []
-    samples = [s["name"] for s in sql.get_samples(conn)]
+    samples = [sample["name"] for sample in sql.get_samples(conn)]
+
     for field in sql.get_fields(conn):
         if field["category"] == "samples":
+            # Replace the name for samples with:
+            # ("sample", <individual_id>, <field_name>)
+            # Ex: with a "name" equal to "ps":
+            # {'id': 48, 'name': ('sample', 'HG001', 'ps'), 'category': 'samples',
+            # 'type': 'str', 'description': ''}
             for sample in samples:
-                f = field.copy()
-                f["name"] = ("sample", sample, field["name"])
-                columns.append(f)
-
+                temp_field = field.copy()
+                temp_field["name"] = ("sample", sample, field["name"])
+                columns.append(temp_field)
         else:
             columns.append(field)
     return columns
 
 
 class BaseField(QFrame):
-    """Base class for all editor widgets. Editor widgets are used in FilterDelegate to display different kind of editor according field type.
-    Inherit from this class if you want a custom field editor by overriding  set_value and get_value.
-        ..note: I don't want to use @property for value. It doesn't suitable for POO in my point of view
-        ..see: FilterDelegate
+    """Base class for all editor widgets.
+
+    Editor widgets are used in FilterDelegate to display different kind of
+    editors according to field type.
+
+    Inherit from this class if you want a custom field editor by overriding
+    `set_value` and `get_value`.
+
+    See Also:
+         :meth:`FilterDelegate`
     """
 
     def __init__(self, parent=None):
@@ -55,6 +70,10 @@ class BaseField(QFrame):
 
     def set_widget(self, widget):
         """Setup a layout with a widget
+
+        Typically, it is used to add user input widget to the item
+        (QSpinBox, QComboBox, etc.)
+
         Args:
             widget (QWidget)
         """
@@ -106,7 +125,7 @@ class FloatField(BaseField):
     def set_value(self, value: int):
         self.spin_box.setValue(value)
 
-    def get_value(self) -> int:
+    def get_value(self) -> float:
         return self.spin_box.value()
 
     def set_range(self, min_, max_):
@@ -126,10 +145,10 @@ class StrField(BaseField):
         self.edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.set_widget(self.edit)
 
-    def set_value(self, value: str):
+    def set_value(self, value: Any):
         self.edit.setText(str(value))
 
-    def get_value(self):
+    def get_value(self) -> Any:
         """Return quoted string
         ..todo : check if quotes are required
         """
@@ -140,7 +159,6 @@ class StrField(BaseField):
 
         if value.isdecimal():
             return float(value)
-
         return value
 
     def set_completer(self, completer: QCompleter):
@@ -148,8 +166,57 @@ class StrField(BaseField):
         self.edit.setCompleter(completer)
 
 
+class IterableField(StrField):
+    """Editor for iterables in string form.
+
+    Attributes:
+        edit (QLineEdit)
+    """
+
+    def set_value(self, value: Iterable):
+        print("Iterable field set value ?", value, type(value))
+        # self.edit.setText(",".join(value))
+        # self.edit.setText(value)
+        super().set_value(value)
+
+    def get_value(self) -> tuple:
+        """Return the value of the field in tuple type
+
+        Notes:
+            Try to cast the follwing terms into tuples:
+            - 'a, b' => ('a', 'b')
+            - 'a,b' => ...
+            - '(a, b' => ...
+            - 'a,b)" => ...
+            - ('a', 'b') => ...
+            - (1, 2) => (1, 2)
+
+        Returns:
+            (tuple): Casted from string
+        """
+        value = self.edit.text()
+
+        try:
+            if "," in value and ("(" not in value or ")" not in value):
+                value = value.replace("(", "").replace(")", "").replace(", ", ",")
+                value = tuple(value.split(","))
+                # print("splitted value", value)
+                return value
+
+            # Cast proper tuple
+            return literal_eval(value)
+        except ValueError:
+            pass
+        # Cast to str
+        return value
+        # return super().get_value()
+
+
 class ComboField(BaseField):
     """Editor for string value
+
+    Notes:
+        Items are added in FilterDelegate.createEditor()
 
     Attributes:
         edit (QLineEdit)
@@ -159,22 +226,34 @@ class ComboField(BaseField):
         super().__init__(parent)
         self.edit = QComboBox()
         self.edit.setEditable(True)
-        self.edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.edit.setSizeAdjustPolicy(QComboBox.AdjustToContents)
         self.set_widget(self.edit)
 
     def set_value(self, value: str):
-        self.edit.setCurrentText(str(value))
+        """Set text of lineEdit in ComboBox"""
+        # items = [self.edit.itemText(i) for i in range(self.edit.count())]
+
+        # Set text of lineEdit via the index of the required text
+        # Here we use an editable combobox with a lineEdit.
+        # => Use setCurrentIndex instead of setCurrentText.
+        # The last one doesn't refresh the index and thus the currentData.
+        # In this case, get_value will return the currentData of the first item
+        # in ComboBox regardless the item in the lineEdit.
+        index = self.edit.findText(value)
+        if index != -1:
+            self.edit.setCurrentIndex(index)
+        # Don't do this only: self.edit.setCurrentText(value)
 
     def get_value(self):
         """Return quoted string
         ..todo : check if quotes are required
         """
+        # Return UserRole
         return self.edit.currentData()
 
     def addItems(self, words: list):
-        """ set a completer to autocomplete value """
+        """Set a completer to autocomplete value"""
         self.edit.clear()
-
         self.edit.addItems(words)
 
 
@@ -188,6 +267,7 @@ class BoolField(BaseField):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.box = QComboBox()
+        # DisplayRole, UserRole
         self.box.addItem("False", False)
         self.box.addItem("True", True)
         self.set_widget(self.box)
@@ -197,6 +277,7 @@ class BoolField(BaseField):
         self.box.setCurrentIndex(int(value))
 
     def get_value(self) -> bool:
+        # Return UserRole
         return self.box.currentData()
 
 
@@ -204,20 +285,22 @@ class OperatorField(BaseField):
     """Editor for Logic Value (less, greater, more than etc ...)
 
     Attributes:
-        combo_box (QComboBox
+        combo_box (QComboBox): Combobox to allow a suer to select operators.
     """
 
-    SYMBOL = (
-        ("less", "<"),
-        ("less or equal", "<="),
-        ("greater", ">"),
-        ("greater or equal", ">="),
-        ("equal", "="),
-        ("not equal", "!="),
-        ("like", "LIKE"),
-        ("regex", "~"),
-        ("in", "IN"),
-    )
+    # Symbols used in VQL vs text descriptions
+    SYMBOLS = {
+        "<": "less",
+        "<=": "less or equal",
+        ">": "greater",
+        ">=": "greater or equal",
+        "=": "equal",
+        "!=": "not equal",
+        "LIKE": "like",
+        "~": "regex",
+        "IN": "in",
+        "NOT IN": "not in",
+    }
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -228,26 +311,29 @@ class OperatorField(BaseField):
         self._fill()
 
     def set_value(self, value: str):
-        self.combo_box.setCurrentText(value)
+        assert value in self.SYMBOLS
+        self.combo_box.setCurrentText(self.SYMBOLS[value])
 
     def get_value(self) -> str:
+        # Return UserRole
         return self.combo_box.currentData()
 
     def _fill(self):
-        """ Fill QComboBox with SYMBOL """
+        """Init QComboBox with all supported operators"""
         self.combo_box.clear()
-        for s in self.SYMBOL:
-            self.combo_box.addItem(s[0], s[1])
+        for symbol, text in self.SYMBOLS.items():
+            # DisplayRole, UserRole
+            self.combo_box.addItem(text, symbol)
 
 
 class LogicField(BaseField):
-
     """Editor for logic field (And/Or)"""
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.box = QComboBox()
 
+        # DisplayRole, UserRole
         self.box.addItem("AND", "AND")
         self.box.addItem("OR", "OR")
 
@@ -263,6 +349,7 @@ class LogicField(BaseField):
             self.box.setCurrentIndex(0)
 
     def get_value(self) -> str:
+        # Return UserRole
         return self.box.currentData()
 
 
@@ -272,88 +359,101 @@ class FieldFactory(QObject):
     Attributes:
         conn (sqlite3.connection)
 
+    TODO: used only in FieldDialog => not used anymore
     """
 
     def __init__(self, conn):
+        super().__init__()
         self.conn = conn
 
-    def create(self, sql_field):
+        self.field_types_mapping = {
+            field["name"]: field["type"] for field in prepare_fields(conn)
+        }
+
+    def create(self, sql_field, parent=None):
+        """Get FieldWidget according to type key of the given sql_field"""
         # sample fields are stored as tuples
         # if type(sql_field) is tuple:
-        #     sample = sql_field[1]
-        #     sql_field = sql_field[2]
+        # sample = sql_field[1]
+        # sql_field = sql_field[2]
         # else:
-        #     # Passing sample has no effect for non-sample fields
-        #     sample = None
+        # # Passing sample has no effect for non-sample fields
+        # sample = None
 
-        field = sql.get_field_by_name(self.conn, sql_field)
+        # Get field data by its name in DB
+        # Don't work anymore because some fields (samples related)
+        # have a tuple structure.
+        # See prepare_fields()
+        # field_type = sql.get_field_by_name(self.conn, sql_field)
 
-        # if field["name"] == "gt":
-        #     w = GenotypeField()
-        #     return w
-        if field["type"] == "int":
-            w = IntegerField()
+        field_type = self.field_types_mapping.get(sql_field)
+        assert field_type
+
+        if field_type == "int":
+            w = IntegerField(parent)
             # w.set_range(*sql.get_field_range(self.conn, sql_field, sample))
             return w
 
-        if field["type"] == "float":
-            w = FloatField()
+        if field_type == "float":
+            w = FloatField(parent)
             # w.set_range(*sql.get_field_range(self.conn, sql_field, sample))
             return w
 
-        if field["type"] == "str":
-            w = StrField()
-            return w
+        if field_type == "str":
+            return StrField(parent)
 
-        if field["type"] == "bool":
-            w = BoolField()
-            return w
+        if field_type == "bool":
+            return BoolField(parent)
 
-        return StrField()
+        return StrField(parent)
 
 
-class FilterItem(object):
+class FilterItem:
     """FilterItem is a recursive class which represent item for a FilterModel
-    A tree of FilterItem can be store by adding FilterItem recursively as children.
+
+    A tree of FilterItems can be stored by adding FilterItems recursively as children.
     Each FilterItem has a parent and a list of children.
     see https://doc.qt.io/qt-5/qtwidgets-itemviews-simpletreemodel-example.html
 
-    :Attributes:
-        parent (FilterItem)
-        children (list of FilterItem)
-    :Example:
-    root = FilterItem() # Create rootItem
-    root.append(FilterItem()) # Append 2 children
-    root.append(FilterItem())
-    root[0].append(FilterItem()) # Append 1 child to the first children
+    Attributes:
+        parent(FilterItem): item's parent
+        children(list[FilterItem]): list of children
+        data(any): str (logicType) or tuple/list (ConditionType).
+        uuid(str):
+        checked(boolean):
+
+    Examples:
+        root = FilterItem() # Create rootItem
+        root.append(FilterItem()) # Append 2 children
+        root.append(FilterItem())
+        root[0].append(FilterItem()) # Append 1 child to the first children
     """
 
-    LOGIC_TYPE = 0  #  Logic type is AND/OR/XOR
-    CONDITION_TYPE = 1  #  Condition type is (field, operator, value)
+    LOGIC_TYPE = 0  # Logic type is AND/OR
+    CONDITION_TYPE = 1  # Condition type is (field, operator, value)
 
     def __init__(self, data=None, parent=None):
         """FilterItem constructor with parent as FilterItem parent
 
         Args:
-            data (any): str (logicType) or tuple (ConditionType).
+            data(any): str (logicType) or tuple/list (ConditionType).
             parent (FilterItem): item's parent
-            children(list<FilterItem>): list of children
         """
         self.parent = parent
         self.children = []
-        self.data = data
+        self.data = list(data) if isinstance(data, (tuple, list)) else data
         self.uuid = str(uuid.uuid1())
         self.checked = True
 
     def __del__(self):
-        """ FilterItem destructor """
+        """Clear children (list[FilterItem])"""
         self.children.clear()
 
     def __repr__(self):
         return f"Filter Item {self.data}"
 
     def __getitem__(self, row):
-        """Return child
+        """Return FilterItem at the given index
 
         Args:
             row (int): child position
@@ -364,7 +464,7 @@ class FilterItem(object):
         return self.children[row]
 
     def append(self, item):
-        """Append child
+        """Append FilterItem child
 
         Args:
             item (FilterItem)
@@ -373,7 +473,7 @@ class FilterItem(object):
         self.children.append(item)
 
     def insert(self, row: int, item):
-        """insert child at a specific location
+        """Insert FilterItem child at a specific location
 
         Args:
             row (int): child index
@@ -383,15 +483,16 @@ class FilterItem(object):
         self.children.insert(row, item)
 
     def remove(self, row: int):
-        """Remove child from a specific position
+        """Remove FilterItem child from a specific position
 
         Args:
-            index (int): child index
+            row (int): child index
         """
         del self.children[row]
 
     def row(self) -> int:
         """Return item location from his parent.
+
         If the item has no parent, it returns 0
 
         Returns:
@@ -399,13 +500,12 @@ class FilterItem(object):
         """
         if self.parent is not None:
             return self.parent.children.index(self)
-
         return 0
 
     def setRecursiveChecked(self, checked=True):
         self.checked = checked
         for child in self.children:
-            child.setRecursiveChecked(checked)
+            child.set_recursive_check_state(checked)
 
     def type(self):
         """Return item type.
@@ -414,26 +514,33 @@ class FilterItem(object):
         Returns:
             LOGIC_TYPE or CONDITION_TYPE
         """
-        if isinstance(self.data, str):  #  Logic
+        if isinstance(self.data, str):  # LOGIC_TYPE
             return self.LOGIC_TYPE
 
-        if isinstance(self.data, tuple):  #  condition
+        if isinstance(self.data, (tuple, list)):  # CONDITION_TYPE
             return self.CONDITION_TYPE
-
-        return None
 
     def get_field(self):
         if self.type() == self.CONDITION_TYPE:
             return self.data[0]
-        return None
 
     def get_operator(self):
         if self.type() == self.CONDITION_TYPE:
             return self.data[1]
-        return None
 
     def get_value(self):
+        """Get value
+
+        Returns:
+            - If item is a LOGIC_FIELD, return the operator AND/OR.
+            - If item is a CONDITION_TYPE, return the value of the condition (last field).
+
+        Examples:
+            For a CONDITION_TYPE FilterItem: `("chr", "IN", (10, 11))`,
+            this function will return `(10, 11)`.
+        """
         if self.type() == self.CONDITION_TYPE:
+            # print("filteritem, get value: type", type(self.data[2]))
             return self.data[2]
 
         if self.type() == self.LOGIC_TYPE:
@@ -465,38 +572,45 @@ class FilterItem(object):
     #     #     if self.type() == self.CONDITION_TYPE:
     #     #         return self.data[column - 1]
 
-    def set_field(self, data):
+    def set_field(self, value):
+        """Set field part of CONDITION_TYPE item"""
         if self.type() == self.CONDITION_TYPE:
-            tmp = list(self.data)
-            tmp[0] = data
-            self.data = tuple(tmp)
+            self.data[0] = value
 
-    def set_operator(self, data):
+    def set_operator(self, value):
+        """Set operator part of CONDITION_TYPE item"""
         if self.type() == self.CONDITION_TYPE:
-            tmp = list(self.data)
-            tmp[1] = data
-            self.data = tuple(tmp)
+            self.data[1] = value
 
-    def set_value(self, data):
+    def set_value(self, value):
+        """Set value part of CONDITION_TYPE item or value of LOGIC_TYPE item
+
+        Called when a user validates the editor.
+        """
         if self.type() == self.CONDITION_TYPE:
-            tmp = list(self.data)
-            tmp[2] = data
-            self.data = tuple(tmp)
+            self.data[2] = value
+            return
 
-        if self.type() == self.LOGIC_TYPE:
-            self.data = data
+        # LOGIC_TYPE:
+        self.data = value
 
 
 class FilterModel(QAbstractItemModel):
-
     """Model to display filter from Query.filter.
     The model store Query filter as a nested tree of FilterItem.
     You can access data from self.item() and edit model using self.set_data() and helper method like
     self.add_logic_item, self.add_condition_item and remove_item.
+
     Attributes:
         conn (sqlite3.connection): sqlite3 connection
-        filterChanged (Signal): signal emited when model is edited.
-        root_item (FilterItem): RootItem (invisible) to store recursive item=
+        root_item (FilterItem): RootItem (invisible) to store recursive item.
+
+    Additional roles:
+        TypeRole: Items types (LOGIC_TYPE or CONDITION_TYPE)
+        UniqueIdRole: Uuid of items.
+
+    Signals:
+        filtersChanged: Emitted when model data (filters) is changed.
 
     Examples:
         data = {"AND": [
@@ -547,7 +661,7 @@ class FilterModel(QAbstractItemModel):
         """Model destructor."""
         del self.root_item
 
-    def data(self, index: QModelIndex, role):
+    def data(self, index: QModelIndex, role=Qt.EditRole):
         """Overrided Qt methods : Return model's data according index and role
 
         Args:
@@ -560,32 +674,37 @@ class FilterModel(QAbstractItemModel):
         if not index.isValid():
             return None
 
-        if role == Qt.DisplayRole or role == Qt.EditRole:
-            item = self.item(index)
+        item = self.item(index)
+
+        if role in (Qt.DisplayRole, Qt.EditRole, Qt.UserRole):
             if index.column() == 0:
-                return str(item.checked)
+                return item.checked if role == Qt.UserRole else str(item.checked)
 
             if index.column() == 1:
                 if item.type() == FilterItem.CONDITION_TYPE:
                     return fields_to_vql(item.get_field())
 
                 if item.type() == FilterItem.LOGIC_TYPE:
-                    return str(item.get_value())
+                    val = item.get_value()
+                    return val if role == Qt.UserRole else str(val)
+
+            if item.type() != FilterItem.CONDITION_TYPE:
+                return
 
             if index.column() == 2:
-                if item.type() == FilterItem.CONDITION_TYPE:
-                    return str(item.get_operator())
+                operator = item.get_operator()
+                return operator if role == Qt.UserRole else str(operator)
 
             if index.column() == 3:
-                if item.type() == FilterItem.CONDITION_TYPE:
-                    return str(item.get_value())
+                val = item.get_value()
+                return val if role == Qt.UserRole else str(val)
 
         if role == FilterModel.TypeRole:
             # Return item type
-            return self.item(index).type()
+            return item.type()
 
         if role == FilterModel.UniqueIdRole:
-            return self.item(index).uuid
+            return item.uuid
 
         return None
 
@@ -624,48 +743,52 @@ class FilterModel(QAbstractItemModel):
         #         font.setBold(True)
         #         return font
 
-    def setData(self, index, value, role=Qt.EditRole):
-        """Overrided Qt methods: Set data according index and value.
-        This methods is called from FilterDelegate when edition has been done
+    def setData(self, index, value, role=Qt.UserRole):
+        """Overrided Qt methods: Set value of FilterItem present at the given index.
+
+        This method is called from FilterDelegate when edition has been done.
 
         Args:
             index (QModelIndex)
             value (any): new value
-            role (Qt.Role)
+            role (Qt.ItemDataRole): Qt.UserRole or Qt.CheckStateRole
 
         Returns:
             bool: Return True if success otherwise return False
         """
+        if not index.isValid():
+            return False
 
-        if role == Qt.EditRole:
-            if index.isValid():
-                item = self.item(index)
+        if role == Qt.UserRole:
+            item = self.item(index)
 
-                if index.column() == 0:
-                    item.checked = bool(value)
+            if index.column() == 0:
+                item.checked = bool(value)
 
-                if index.column() == 1:
-                    if item.type() == FilterItem.LOGIC_TYPE:
-                        item.set_value(value)
-
-                    if item.type() == FilterItem.CONDITION_TYPE:
-                        item.set_field(value)
-
-                if index.column() == 2 and item.type() == FilterItem.CONDITION_TYPE:
-                    item.set_operator(value)
-
-                if index.column() == 3 and item.type() == FilterItem.CONDITION_TYPE:
+            if index.column() == 1:
+                if item.type() == FilterItem.LOGIC_TYPE:
                     item.set_value(value)
 
-                self.filtersChanged.emit()
-                return True
+                if item.type() == FilterItem.CONDITION_TYPE:
+                    item.set_field(value)
+
+            if index.column() == 2 and item.type() == FilterItem.CONDITION_TYPE:
+                item.set_operator(value)
+
+            if index.column() == 3 and item.type() == FilterItem.CONDITION_TYPE:
+                item.set_value(value)
+
+            self.filtersChanged.emit()
+            # just one item is changed
+            self.dataChanged.emit(index, index, role)
+            return True
 
         if role == Qt.CheckStateRole:
-            if index.isValid():
-                self.setRecursiveChecked(index, bool(value))
-                self.filtersChanged.emit()
-
-                return True
+            self.set_recursive_check_state(index, bool(value))
+            self.filtersChanged.emit()
+            # just one item is changed
+            self.dataChanged.emit(index, index, role)
+            return True
 
         return False
 
@@ -684,15 +807,18 @@ class FilterModel(QAbstractItemModel):
             if orientation == Qt.Horizontal:
                 return self._HEADERS[section]
 
-        return None
-
     def index(self, row, column, parent=QModelIndex()) -> QModelIndex:
-        """ Overrided Qt methods: create index according row, column and parent """
+        """Overrided Qt methods: create index according row, column and parent
 
+        Usefull for dataChanged signal
+
+        Returns:
+            QModelIndex
+        """
         if not self.hasIndex(row, column, parent):
             return QModelIndex()
 
-        if not parent.isValid():  #  If no parent, then parent is the root item
+        if not parent.isValid():  # If no parent, then parent is the root item
             parent_item = self.root_item
 
         else:
@@ -738,13 +864,13 @@ class FilterModel(QAbstractItemModel):
         """
         self.beginResetModel()
         self.clear()
-        if len(data):
+        if data:
             self.root_item.append(self.to_item(data))
         self.endResetModel()
 
     def to_item(self, data: dict) -> FilterItem:
         """ recursive function to build a nested FilterItem structure from dict data """
-        if len(data) == 1:  #  logic item
+        if len(data) == 1:  # logic item
             operator = list(data.keys())[0]
             item = FilterItem(operator)
             [item.append(self.to_item(k)) for k in data[operator]]
@@ -797,11 +923,10 @@ class FilterModel(QAbstractItemModel):
         """Add condition item
 
         Args:
-            value (tuple): tuple (field, operator, value)
+            value (tuple): Condition data (field, operator, value)
             parent (QModelIndex): Parent index
         """
-
-        #  Skip if parent is a condition type
+        # Skip if parent is a condition type
         if self.item(parent).type == FilterItem.CONDITION_TYPE:
             return
 
@@ -814,6 +939,7 @@ class FilterModel(QAbstractItemModel):
 
     def remove_item(self, index):
         """Remove Item
+
         Args:
             index (QModelIndex): item index
         """
@@ -824,14 +950,12 @@ class FilterModel(QAbstractItemModel):
             self.filtersChanged.emit()
 
     def rowCount(self, parent=QModelIndex()) -> int:
-        """ Overrided Qt methods: return row count according parent """
-
+        """Overrided Qt methods: return row count according parent """
         if parent.column() > 0:
             return 0
 
         if not parent.isValid():
             parent_item = self.root_item
-
         else:
             parent_item = parent.internalPointer()
 
@@ -842,7 +966,7 @@ class FilterModel(QAbstractItemModel):
 
         return 5
 
-    def flags(super, index) -> Qt.ItemFlags:
+    def flags(self, index) -> Qt.ItemFlags:
         """ Overrided Qt methods: return Qt flags to make item editable and selectable """
 
         if not index.isValid():
@@ -953,7 +1077,6 @@ class FilterModel(QAbstractItemModel):
         Returns:
             bool: return True if success otherwise return False
         """
-
         if action != Qt.MoveAction:
             return False
 
@@ -980,7 +1103,7 @@ class FilterModel(QAbstractItemModel):
 
     def mimeData(self, indexes) -> QMimeData:
         """Serialize item from indexes into a QMimeData
-        Actually, it serializes only the first index from t he list.
+        Currently, it serializes only the first index from t he list.
         Args:
             indexes (list<QModelIndex>)
 
@@ -988,19 +1111,16 @@ class FilterModel(QAbstractItemModel):
             QMimeData
             ..see: self.dropMimeData
         """
-        data = QMimeData(self._MIMEDATA)
-
         if not indexes:
             return
-        else:
-            index = indexes[0]
 
+        data = QMimeData(self._MIMEDATA)
         serialization = QByteArray(pickle.dumps(self.item(indexes[0])))
         data.setData(self._MIMEDATA, serialization)
         return data
 
-    def setRecursiveChecked(self, index, checked=True):
-
+    def set_recursive_check_state(self, index, checked=True):
+        """Recursive check of all subfilters"""
         if not index.isValid():
             return
 
@@ -1010,20 +1130,34 @@ class FilterModel(QAbstractItemModel):
         start = self.index(index.row(), 0, index.parent())
         end = self.index(index.row(), self.columnCount() - 1, index.parent())
 
+        # Update specific changed item
         self.dataChanged.emit(start, end)
 
         for row in range(self.rowCount(index)):
             cindex = self.index(row, 0, index)
-            self.setRecursiveChecked(cindex, checked)
+            self.set_recursive_check_state(cindex, checked)
 
 
 class FilterDelegate(QStyledItemDelegate):
-
     """FilterDelegate is used to create widget editor for the model inside the view.
-    Without a delegate, the view cannot display editor when user double clicked on a cell
 
-    Based editor are created from self.createEditor.
-    FilterModel data are readed and writeed from setEditorData and setModelData
+    Notes:
+        Without a delegate, the view cannot display editor when user double clicks
+        on a cell.
+
+        Editors are created from self.createEditor.
+        FilterModel data are read and written respectively with setEditorData and
+        setModelData.
+
+        The view has 5 columns, enumerated with the following names:
+
+        - COLUMN_CHECKBOX = 0
+        - COLUMN_FIELD = 1
+        - COLUMN_LOGIC = 1
+        - COLUMN_OPERATOR = 2
+        - COLUMN_VALUE = 3
+        - COLUMN_REMOVE = 4
+
     Examples:
         view = QTreeView()
         model = FilterModel()
@@ -1051,7 +1185,11 @@ class FilterDelegate(QStyledItemDelegate):
         self.icon_size = QSize(16, 16)
 
     def createEditor(self, parent, option, index: QModelIndex) -> QWidget:
-        """Overrided from Qt. Create an editor
+        """Overrided from Qt. Create an editor for the selected column.
+
+        The editor is based on the selected column and on the type of FilterItem
+        (LOGIC_TYPE or CONDITION_TYPE). It is also based on the selected SQL field,
+        and on the SQL operator.
 
         Args:
             parent (QWidget): widget's parent
@@ -1061,77 +1199,129 @@ class FilterDelegate(QStyledItemDelegate):
         Returns:
             QWidget: a editor with set_value and get_value methods
         """
-        # return super().createEditor(parent,option,index)
         model = index.model()
         item = model.item(index)
+        # Get current sql connection
         conn = model.conn
 
         if index.column() == 1:
             if item.type() == FilterItem.LOGIC_TYPE:
+                # AND/OR logic operators
                 return LogicField(parent)
 
             if item.type() == FilterItem.CONDITION_TYPE:
-                w = ComboField(parent)
+                # Display all fields of the database
+                widget = ComboField(parent)
+                # LOGGER.debug(prepare_fields.cache_info())
                 # Add items
-                for i in prepare_fields(conn):
-                    text = fields_to_vql(i["name"])
-                    data = i["name"]
-                    w.edit.addItem(text, data)
+                for field in prepare_fields(conn):
+                    # Cast ('sample', 'HG001', 'gt') to sample['HG001'].gt
+                    # Leave "chr" to "chr"
+                    text = fields_to_vql(field["name"])
+                    widget.edit.addItem(text, field["name"])
 
-                return w
+                return widget
 
         if index.column() == 2:
-            w = OperatorField(parent)
-            return w
+            return OperatorField(parent)
 
         if index.column() == 3:
+            if model.item(index).get_operator() in ("IN", "NOT IN"):
+                # Tuple value is expecitem required
+                return IterableField(parent)
+            # Basic string or int or float
             return StrField(parent)
+            # Dynamic field according to database type
+            # return FieldFactory(conn).create(model.item(index).get_field(), parent=parent)
 
         return super().createEditor(parent, option, index)
 
     def setEditorData(self, editor: QWidget, index: QModelIndex):
-        """Overrided from Qt. Read data from model and set editor data
-        Actually, it calls BaseEditor.set_value() methods
+        """Overrided from Qt: Read data from model (FilterItem) and set editor data
+
+        TL;DR: populate the editor with the data from the model.
+
+        Sets the contents of the given editor, with the data of the item at the
+        given index.
+
+        Currently, it calls BaseEditor.set_value() methods
 
         Args:
             editor (QWidget)
             index (QModelindex)
         """
-        editor.set_value(index.data(Qt.EditRole))
-        # super().setEditorData(editor, index)
+        # print("SET editor val from model:")
+        # roles = (Qt.UserRole, Qt.EditRole, Qt.DisplayRole)
+        # print("user, edit, display")
+        # print(";".join(str(index.data(role)) for role in roles))
+        # print(";".join(str(type(index.data(role))) for role in roles))
+
+        # Set editor data from the model (from the selected FilterItem)
+        # Editors expect typed values, so don't forget to use UserRole, not EditRole
+        editor.set_value(index.data(role=Qt.UserRole))
 
     def editorEvent(self, event: QEvent, model, option, index: QModelIndex):
+        """
 
+        When editing of an item starts, this function is called with the event
+        that triggered the editing, the model, the index of the item, and the
+        option used for rendering the item.
+
+        Mouse events are sent to editorEvent() even if they don't start editing
+        of the item.
+
+        This is used here to act on COLUMN_CHECKBOX and COLUMN_REMOVE
+
+        Args:
+            event:
+            model:
+            option:
+            index:
+
+        Returns:
+            (boolean): True if event is accepted; False otherwise.
+
+        """
         if not index.isValid():
             return False
 
         if event.type() == QEvent.MouseButtonPress:
-
+            # print("mouse pressed on", index.column(), event.button())
             item = model.item(index)
 
             if index.column() == self.COLUMN_CHECKBOX and self._check_rect(
                 option.rect
             ).contains(event.pos()):
-                model.setData(index, not item.checked, Qt.CheckStateRole)
+                # Invert check state
+                model.setData(index, not item.checked, role=Qt.CheckStateRole)
                 return True
 
             if index.column() == self.COLUMN_REMOVE and self._check_rect(
                 option.rect
             ).contains(event.pos()):
+                # Remove item
                 model.remove_item(index)
                 return True
 
-        return super().editorEvent(event, model, option, index)
+        # Default implementation of base method
+        return False
 
     def setModelData(self, editor, model, index):
-        """Overrided from Qt. Read data from editor and set the model data
-        Actually, it calls editor.set_value()
+        """Overrided from Qt: Update the model with data from the editor.
+
+        Currently, it calls editor.set_value()
 
         Args:
             editor (QWidget): editor
             model (FilterModel)
             index (QModelindex)
         """
+        # val = editor.get_value()
+        # print("SET data model from editor:", val, type(val))
+        # Get typed data from the editor (i.e. not a string)
+        # Then set this data to the FilterItem (in the corresponding attribute)
+        # via its set_value() function.
+        # Default: UserRole
         model.setData(index, editor.get_value())
 
         # super().setModelData(editor, model, index)
@@ -1296,6 +1486,7 @@ class FilterDelegate(QStyledItemDelegate):
 
 
 class FieldDialog(QDialog):
+    # TODO: not used anymore
     def __init__(self, conn=None, parent=None):
         super().__init__(parent)
         self.title_label = QLabel("Non title")
@@ -1394,21 +1585,22 @@ class FieldDialog(QDialog):
 
 
 class FiltersEditorWidget(plugin.PluginWidget):
+    """Displayed widget plugin to allow creation/edition/deletion of filters"""
 
     ENABLE = True
     changed = Signal()
 
     def __init__(self, conn=None, parent=None):
         super().__init__(parent)
-        self.setWindowTitle(self.tr("Filter"))
+        self.setWindowTitle(self.tr("Filters"))
         self.view = QTreeView()
         # conn is always None here but initialized in on_open_project()
         self.model = FilterModel(conn)
         self.delegate = FilterDelegate()
         self.toolbar = QToolBar()
         self.toolbar.setIconSize(QSize(16, 16))
-        # self.toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
 
+        # Drag & drop
         self.view.setModel(self.model)
         self.view.setItemDelegate(self.delegate)
         self.view.setDragEnabled(True)
@@ -1417,30 +1609,42 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.view.setDragDropMode(QAbstractItemView.InternalMove)
         self.view.setAlternatingRowColors(True)
         self.view.setIndentation(0)
-        # self.view.setItemsExpandable(False)
-        # self.view.setRootIsDecorated(False)
 
         self.view.header().setSectionResizeMode(0, QHeaderView.ResizeToContents)
         self.view.header().setSectionResizeMode(1, QHeaderView.Stretch)
         self.view.header().setSectionResizeMode(2, QHeaderView.ResizeToContents)
         self.view.header().setSectionResizeMode(3, QHeaderView.Stretch)
         self.view.header().setSectionResizeMode(4, QHeaderView.ResizeToContents)
-
+        self.view.setEditTriggers(
+            QAbstractItemView.CurrentChanged  # whenever current item changes.
+            | QAbstractItemView.SelectedClicked  # when clicking on an already selected item (slow)
+            | QAbstractItemView.DoubleClicked  # item is double clicked.
+        )
+        # Item selected in view
+        self.view.selectionModel().selectionChanged.connect(self.on_selection_changed)
         self.view.header().hide()
 
         self.combo = QComboBox()
         self.combo.addItem(self.tr("Current not saved filter..."))
-        self.combo.setMinimumHeight(30)
         self.combo.currentTextChanged.connect(self.on_combo_changed)
         self.save_button = QToolButton()
         self.save_button.setIcon(FIcon(0xF0193))
-        # self.save_button.setAutoRaise(True)
-        self.save_button.setMinimumHeight(30)
+        self.save_button.setToolTip(self.tr("Save the current filter"))
         self.save_button.clicked.connect(self.on_save_filters)
+        self.del_button = QToolButton()
+        self.del_button.setDefaultAction(QAction(
+            FIcon(0xF0A7A), self.tr("Delete the filter")
+        ))
+        self.del_button.clicked.connect(self.on_delete_item)
+        # Adjust heights
+        # self.combo.setMinimumHeight(30)
+        # self.save_button.setMinimumHeight(30)
+        # self.del_button.setMinimumHeight(30)
 
         hlayout = QHBoxLayout()
         hlayout.addWidget(self.combo)
         hlayout.addWidget(self.save_button)
+        hlayout.addWidget(self.del_button)
 
         layout = QVBoxLayout()
         layout.addLayout(hlayout)
@@ -1449,27 +1653,15 @@ class FiltersEditorWidget(plugin.PluginWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(1)
         self.setLayout(layout)
-        # self.model.filterChanged.connect(self.on_filter_changed)
 
         # setup Menu
-        self.toolbar.addAction(
+        self.add_button = self.toolbar.addAction(
             FIcon(0xF0415), self.tr("Add Condition"), self.on_add_condition
         )
-
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.toolbar.addAction(
-            FIcon(0xF0A7A), self.tr("Delete filter"), self.on_delete_item
-        )
 
-        # self.view.selectionModel().currentChanged.connect(self.on_filters_changed)
         self.model.filtersChanged.connect(self.on_filters_changed)
-
-    def set_add_icon(self, icon: QIcon):
-        self.delegate.add_icon = icon
-
-    def set_rem_icon(self, icon: QIcon):
-        self.delegate.rem_icon = icon
 
     @property
     def filters(self):
@@ -1479,28 +1671,78 @@ class FiltersEditorWidget(plugin.PluginWidget):
     def filters(self, filters):
         self.model.filters = filters
 
-    def on_register(self, mainwindow):
-        """ Overrided from PluginWidget """
-        pass
-
     def on_open_project(self, conn):
-        """ Overrided from PluginWidget """
+        """Overrided from PluginWidget"""
         self.model.conn = conn
         self.conn = conn
+
+        # Clear lru_cache
+        prepare_fields.cache_clear()
+
         self.on_refresh()
 
     def on_refresh(self):
-        """ Overrided """
-        self.model.filters = self.mainwindow.state.filters
+        """Overrided"""
+        if self.filters == self.mainwindow.state.filters:
+            # No change in filters = no refresh
+            return
+
+        # Filters changed: Update UserRole of default filter and select it
+        self.combo.setItemData(0, self.mainwindow.state.filters)
+        self.combo.setCurrentIndex(0)
+
+        self.refresh_buttons()
         self._update_view_geometry()
 
+    def refresh_buttons(self):
+        """Actualize the enable states of Add/Del buttons"""
+        if self.filters:
+            # Data
+            # Deletion/clear is always possible
+            self.del_button.setEnabled(True)
+
+            # Add button: Is an item selected ?
+            index = self.view.currentIndex()
+            if index.isValid() and self.model.item(index).type() == FilterItem.LOGIC_TYPE:
+                self.add_button.setEnabled(True)
+            else:
+                # item is CONDITION_TYPE or there is no item selected (because of deletion)
+                self.add_button.setEnabled(False)
+        else:
+            # Empty
+            self.add_button.setEnabled(True)
+
+            current_index = self.combo.currentIndex()
+            if current_index == 0:
+                # Not saved filter => useless to delete it
+                self.del_button.setEnabled(False)
+            else:
+                # Saved filter => allow its deletion
+                self.del_button.setEnabled(True)
+
     def on_filters_changed(self):
+        """Triggered when filters changed FROM THIS plugin
 
-        """ triggered when filter has changed """
-
-        if self.mainwindow:
-            self.mainwindow.state.filters = self.model.filters
+        Set the filters of the mainwindow and trigger a refresh of all plugins.
+        """
+        if self.mainwindow and self.filters != self.mainwindow.state.filters:
+            # Refresh other plugins only if the filters are modified
+            self.mainwindow.state.filters = self.filters
             self.mainwindow.refresh_plugins(sender=self)
+
+        # Filters changed:
+        # - item in combobox has been changed
+        # - filters in current filter has been changed
+        # Filters are read only, so we must go to the unsaved one.
+        current_index = self.combo.currentIndex()
+        if current_index != 0 and self.combo.currentData() != self.filters:
+            # Update UserRole of default no saved filter and select it
+            self.combo.blockSignals(True)
+            self.combo.setItemData(0, self.filters)
+            self.combo.setCurrentIndex(0)
+            self.combo.blockSignals(False)
+
+        self.refresh_buttons()
 
     def on_add_logic(self):
         """Add logic item to the current selected index"""
@@ -1509,30 +1751,36 @@ class FiltersEditorWidget(plugin.PluginWidget):
             self.model.add_logic_item(parent=index)
             # self.view.setFirstColumnSpanned(0, index.parent(), True)
 
-        self._update_view_geometry()
+            self._update_view_geometry()
 
     def on_save_filters(self):
 
-        # TODO : MANAGE PLUGINS SETTINGS
-        name, _ = QInputDialog.getText(
+        filter_name, _ = QInputDialog.getText(
             self, self.tr("Type a name for the filter"), self.tr("Filter Name:")
         )
-        self.combo.addItem(name, self.filters)
+        if not filter_name:
+            return
+
+        # Save current filters in UserRole of a new ComboBox item
+        self.combo.addItem(filter_name, self.filters)
+        self.combo.setCurrentIndex(self.combo.findText(filter_name))
 
     def on_combo_changed(self):
-
-        data = self.combo.currentData()
-        if data:
-            self.filters = data
-            self.on_filters_changed()
-            self._update_view_geometry()
+        """Called when a new item is selected in the ComboBox (programatically or not)"""
+        filters = self.combo.currentData()
+        if filters:
+            self.filters = filters
         else:
+            # Empty filter
             self.model.clear()
-            self._update_view_geometry()
+
+        self._update_view_geometry()
+        self.on_filters_changed()
 
     def _update_view_geometry(self):
         """Set column Spanned to True for all Logic Item
-        This allows Logic Item Editor to take all the space inside the row
+
+        Allow Logic Item Editor to take all the space inside the row
         """
         self.view.expandAll()
 
@@ -1549,20 +1797,26 @@ class FiltersEditorWidget(plugin.PluginWidget):
         #     self.view.setFirstColumnSpanned(0, index.parent(), True)
 
     def on_add_condition(self):
-        """Add condition item to the current selected index"""
+        """Add new condition item
+
+        - Add condition item to the current selected operator
+        - Or add new operator and new condition item on a new filter
+        """
         index = self.view.currentIndex()
 
         if index.isValid():
             if self.model.item(index).type() == FilterItem.LOGIC_TYPE:
+                # Add condition item to existing logic operator
                 self.model.add_condition_item(parent=index)
-
         else:
             if self.model.rowCount() == 0:
+                # Full new logic operator and condition item
                 self.model.add_logic_item(parent=QModelIndex())
                 gpindex = self.model.index(0, 0, QModelIndex())
                 self.model.add_condition_item(parent=gpindex)
 
         self._update_view_geometry()
+        self.refresh_buttons()
 
     def on_open_condition_dialog(self):
         """Open the condition creation dialog
@@ -1578,28 +1832,33 @@ class FiltersEditorWidget(plugin.PluginWidget):
     def on_delete_item(self):
         """Delete current item
 
-        TODO:
         - if filter is saved => delete filter
         - if filter is not saved => clear
         """
         ret = QMessageBox.question(
             self,
             self.tr("Filter deletion"),
-            self.tr("Do you want to remove this item?"),
+            self.tr("Do you want to remove this filter?"),
             QMessageBox.Yes | QMessageBox.No,
         )
 
         if ret == QMessageBox.Yes:
-            self.model.remove_item(self.view.currentIndex())
+            current_index = self.combo.currentIndex()
+            if current_index == 0:
+                # Not saved filter
+                self.model.clear()
+            else:
+                # Saved filter
+                self.combo.removeItem(current_index)
+            self.refresh_buttons()
 
     def on_selection_changed(self):
-        """ Enable/Disable add button depending item type """
+        """Enable/Disable add button depending item type
 
-        index = self.view.currentIndex()
-        if self.model.item(index).type() == FilterItem.CONDITION_TYPE:
-            self.add_button.setDisabled(True)
-        else:
-            self.add_button.setDisabled(False)
+        Notes:
+            Disable Add button on CONDITION_TYPE
+        """
+        self.refresh_buttons()
 
     def contextMenuEvent(self, event: QContextMenuEvent):
 
@@ -1656,9 +1915,6 @@ if __name__ == "__main__":
     view.model.load(data)
 
     view._update_view_geometry()
-
-    view.set_add_icon(FIcon(0xF0419))
-    view.set_rem_icon(FIcon(0xF0419))
     view.show()
 
     # view = QTreeView()

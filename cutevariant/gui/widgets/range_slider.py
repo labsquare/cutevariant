@@ -1,3 +1,5 @@
+import sys
+
 from PySide2.QtWidgets import (
     QWidget,
     QSlider,
@@ -7,9 +9,7 @@ from PySide2.QtWidgets import (
     QStyle,
 )
 from PySide2.QtCore import Qt, QRect, QSize, Signal
-from PySide2.QtGui import QPainter, QPaintEvent, QMouseEvent, QPalette, QBrush, QPen
-
-import sys
+from PySide2.QtGui import QPainter, QPaintEvent, QMouseEvent, QPalette, QBrush
 
 
 class RangeSlider(QWidget):
