@@ -1725,12 +1725,24 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
         Set the filters of the mainwindow and trigger a refresh of all plugins.
         """
-        self.refresh_buttons()
-
-        if self.mainwindow and self.mainwindow.state.filters != self.model.filters:
+        if self.mainwindow and self.filters != self.mainwindow.state.filters:
             # Refresh other plugins only if the filters are modified
-            self.mainwindow.state.filters = self.model.filters
+            self.mainwindow.state.filters = self.filters
             self.mainwindow.refresh_plugins(sender=self)
+
+        # Filters changed:
+        # - item in combobox has been changed
+        # - filters in current filter has been changed
+        # Filters are read only, so we must go to the unsaved one.
+        current_index = self.combo.currentIndex()
+        if current_index != 0 and self.combo.currentData() != self.filters:
+            # Update UserRole of default no saved filter and select it
+            self.combo.blockSignals(True)
+            self.combo.setItemData(0, self.filters)
+            self.combo.setCurrentIndex(0)
+            self.combo.blockSignals(False)
+
+        self.refresh_buttons()
 
     def on_add_logic(self):
         """Add logic item to the current selected index"""
@@ -1758,12 +1770,12 @@ class FiltersEditorWidget(plugin.PluginWidget):
         filters = self.combo.currentData()
         if filters:
             self.filters = filters
-            self.on_filters_changed()
         else:
             # Empty filter
             self.model.clear()
+
         self._update_view_geometry()
-        self.refresh_buttons()
+        self.on_filters_changed()
 
     def _update_view_geometry(self):
         """Set column Spanned to True for all Logic Item
