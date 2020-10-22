@@ -141,8 +141,8 @@ def conn():
     assert table_exists(conn, "variants"), "cannot create table variants"
     sql.insert_many_variants(conn, VARIANTS)
 
-    sql.create_table_sets(conn)
-    assert table_exists(conn, "sets"), "cannot create table sets"
+    sql.create_table_wordsets(conn)
+    assert table_exists(conn, "wordsets"), "cannot create table sets"
 
     return conn
 
@@ -152,10 +152,12 @@ def variants_data():
     """Secured variants that will not be modified from a test to another"""
     return copy.deepcopy(VARIANTS)
 
+
 @pytest.fixture
 def kindly_wordset_fixture():
     """Yes its ugly but i don't know how to use a fixture in parametrize"""
     return kindly_wordset()
+
 
 def kindly_wordset():
     """Return filepath + expected data of a word set that contains 4 genes"""
@@ -187,6 +189,7 @@ def hasardous_wordset():
 
 
 ################################################################################
+
 
 def test_create_connexion(conn):
     assert conn is not None
@@ -293,7 +296,9 @@ def test_update_variant(conn):
 
 
 @pytest.mark.parametrize(
-    "wordset", (kindly_wordset(), hasardous_wordset()), ids=["kindly_wordset", "hasardous_wordset"]
+    "wordset",
+    (kindly_wordset(), hasardous_wordset()),
+    ids=["kindly_wordset", "hasardous_wordset"],
 )
 def test_insert_set_from_file(conn, wordset):
     """Test the insertion of gene names from file into the database
@@ -308,7 +313,7 @@ def test_insert_set_from_file(conn, wordset):
 
     # TODO: for now the one to many relation is not implemented
     # All records have the name of the set... awesome
-    for record in conn.execute("SELECT * FROM sets").fetchall():
+    for record in conn.execute("SELECT * FROM wordsets").fetchall():
         record = dict(record)
         print("Found record:", record)
         assert record["name"] == "test_wordset"
@@ -323,12 +328,7 @@ def test_get_sets(conn, kindly_wordset_fixture):
 
     sql.import_wordset_from_file(conn, "test_wordset", wordset_file)
 
-    expected = [
-        {
-            "name": "test_wordset",
-            "count": 4,
-        }
-    ]
+    expected = [{"name": "test_wordset", "count": 4}]
     found = list(sql.get_wordsets(conn))
 
     assert expected == found
@@ -337,7 +337,9 @@ def test_get_sets(conn, kindly_wordset_fixture):
 
 
 @pytest.mark.parametrize(
-    "wordset", (kindly_wordset(), hasardous_wordset()), ids=["kindly_wordset", "hasardous_wordset"]
+    "wordset",
+    (kindly_wordset(), hasardous_wordset()),
+    ids=["kindly_wordset", "hasardous_wordset"],
 )
 def test_get_words_in_set(conn, wordset):
     """Test the query of gene names stored into a word set in DB
@@ -401,7 +403,7 @@ def test_selections(conn):
     assert not conn.in_transaction
 
 
-#def test_selection_operation(conn):
+# def test_selection_operation(conn):
 #    """test set operations on selections
 #    PS: try to handle precedence of operators"""
 #
@@ -425,65 +427,65 @@ def test_selections(conn):
 #    assert "setB" in selections
 #    raise NotImplementedError
 
-    # sql.Selection.conn = conn
+# sql.Selection.conn = conn
 
-    # All = sql.Selection.from_selection_id(id_all)
-    # A = sql.Selection.from_selection_id(id_A)
-    # B = sql.Selection.from_selection_id(id_B)
+# All = sql.Selection.from_selection_id(id_all)
+# A = sql.Selection.from_selection_id(id_A)
+# B = sql.Selection.from_selection_id(id_B)
 
-    # # 8 - (4 & 2) = 8 - 2 = 6
-    # C = All - (B&A)
-    # # Query:
-    # # SELECT variant_id
-    # #    FROM selection_has_variant sv
-    # #     WHERE sv.selection_id = 2 EXCEPT SELECT * FROM (SELECT variant_id
-    # #    FROM selection_has_variant sv
-    # #     WHERE sv.selection_id = 4 INTERSECT SELECT variant_id
-    # #    FROM selection_has_variant sv
-    # #     WHERE sv.selection_id = 3)
+# # 8 - (4 & 2) = 8 - 2 = 6
+# C = All - (B&A)
+# # Query:
+# # SELECT variant_id
+# #    FROM selection_has_variant sv
+# #     WHERE sv.selection_id = 2 EXCEPT SELECT * FROM (SELECT variant_id
+# #    FROM selection_has_variant sv
+# #     WHERE sv.selection_id = 4 INTERSECT SELECT variant_id
+# #    FROM selection_has_variant sv
+# #     WHERE sv.selection_id = 3)
 
-    # C.save("newset")
+# C.save("newset")
 
-    # print(A.sql_query)
-    # expected_number = 0
-    # for expected_number, variant in enumerate(conn.execute(A.sql_query), 1):
-    #     print(dict(variant))
+# print(A.sql_query)
+# expected_number = 0
+# for expected_number, variant in enumerate(conn.execute(A.sql_query), 1):
+#     print(dict(variant))
 
-    # assert expected_number == 4
+# assert expected_number == 4
 
-    # print(B.sql_query)
-    # expected_number = 0
-    # for expected_number, variant in enumerate(conn.execute(B.sql_query), 1):
-    #     print(dict(variant))
+# print(B.sql_query)
+# expected_number = 0
+# for expected_number, variant in enumerate(conn.execute(B.sql_query), 1):
+#     print(dict(variant))
 
-    # assert expected_number == 2
+# assert expected_number == 2
 
-    # print(C.sql_query)
-    # expected_number = 0
-    # for expected_number, variant in enumerate(conn.execute(C.sql_query), 1):
-    #     print(dict(variant))
+# print(C.sql_query)
+# expected_number = 0
+# for expected_number, variant in enumerate(conn.execute(C.sql_query), 1):
+#     print(dict(variant))
 
-    # assert expected_number == 6
+# assert expected_number == 6
 
-    # selections = [selection["name"] for selection in sql.get_selections(conn)]
-    # "newset" in selections
+# selections = [selection["name"] for selection in sql.get_selections(conn)]
+# "newset" in selections
 
-    # # (8 - 2) & 4 = 2
-    # C = (All - B) & A
-    # # Query:
-    # # SELECT * FROM (SELECT variant_id
-    # #        FROM selection_has_variant sv
-    # #         WHERE sv.selection_id = 2 EXCEPT SELECT variant_id
-    # #        FROM selection_has_variant sv
-    # #         WHERE sv.selection_id = 4 INTERSECT SELECT variant_id
-    # #        FROM selection_has_variant sv
-    # #         WHERE sv.selection_id = 3)
-    # print(C.sql_query)
-    # expected_number = 0
-    # for expected_number, variant in enumerate(conn.execute(C.sql_query), 1):
-    #     print(dict(variant))
+# # (8 - 2) & 4 = 2
+# C = (All - B) & A
+# # Query:
+# # SELECT * FROM (SELECT variant_id
+# #        FROM selection_has_variant sv
+# #         WHERE sv.selection_id = 2 EXCEPT SELECT variant_id
+# #        FROM selection_has_variant sv
+# #         WHERE sv.selection_id = 4 INTERSECT SELECT variant_id
+# #        FROM selection_has_variant sv
+# #         WHERE sv.selection_id = 3)
+# print(C.sql_query)
+# expected_number = 0
+# for expected_number, variant in enumerate(conn.execute(C.sql_query), 1):
+#     print(dict(variant))
 
-    # assert expected_number == 2
+# assert expected_number == 2
 
 
 # ============ TEST VARIANTS QUERY
@@ -505,27 +507,31 @@ def test_get_one_variant(conn):
             if k not in ("annotations", "samples"):
                 assert found_variant[k] == expected_variant[k]
 
+
 def test_advanced_get_one_variant(conn):
     """Test getting variant from variant_id
 
     .. note:: annotations and samples which are optional ARE tested here
     """
     for variant_id, expected_variant in enumerate(VARIANTS, 1):
-        found_variant = sql.get_one_variant(conn, variant_id, with_annotations=True, with_samples=True)
-
-        print("found variant", found_variant)
+        found_variant = sql.get_one_variant(
+            conn, variant_id, with_annotations=True, with_samples=True
+        )
 
         for extra_field in ("annotations", "samples"):
 
-            print("Extra field", found_variant[extra_field])
             assert isinstance(found_variant[extra_field], list), "Type not expected"
 
             for item in found_variant[extra_field]:
-                # Remove variant_id key from sample/annotation before test
+                # Remove variant_id and sample_id from sample/annotation before test
                 if "variant_id" in item:
                     del item["variant_id"]
 
-            assert found_variant[extra_field] == expected_variant[extra_field]
+                if "sample_id" in item:
+                    del item["sample_id"]
+
+            if extra_field in found_variant and extra_field in expected_variant:
+                assert found_variant[extra_field] == expected_variant[extra_field]
 
 
 def test_selection_from_bedfile(conn):

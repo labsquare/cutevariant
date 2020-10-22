@@ -125,10 +125,10 @@ class Tuple(metaclass=model_class):
         return tuple(self.items)
 
 
-class SetIdentifier(metaclass=model_class):
+class WordSetIdentifier(metaclass=model_class):
     @property
     def value(self):
-        return ("SET", self.arg)
+        return ("WORDSET", self.arg)
 
 
 class SelectCmd(metaclass=model_class):

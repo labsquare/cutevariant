@@ -98,7 +98,7 @@ def select_cmd(
 @cached(max_size=128)
 def count_cmd(
     conn: sqlite3.Connection,
-    fields=("chr", "pos", "ref", "alt"),
+    fields=["chr", "pos", "ref", "alt"],
     source="variants",
     filters={},
     group_by=[],
@@ -118,16 +118,19 @@ def count_cmd(
         filters (dict, optional): nested tree of condition
 
     Returns:
-        dict: Count of variants with "count" as a key
+        dict: Count of variants wgstith "count" as a key
     """
-    if not filters and not group_by:
-        # Returned stored cache variant
-        LOGGER.debug("command:count_cmd:: cached from selections table")
-        return {
-            "count": conn.execute(
-                f"SELECT count FROM selections WHERE name = '{source}'"
-            ).fetchone()[0]
-        }
+
+    #  TODO : Check if fields has annotations
+
+    # if not filters and not group_by:
+    #     # Returned stored cache variant
+    #     LOGGER.debug("command:count_cmd:: cached from selections table")
+    #     return {
+    #         "count": conn.execute(
+    #             f"SELECT count FROM selections WHERE name = '{source}'"
+    #         ).fetchone()[0]
+    #     }
 
     # Get {'favorite': 'variants', 'comment': 'variants', impact': 'annotations', ...}
     default_tables = {i["name"]: i["category"] for i in sql.get_fields(conn)}
@@ -176,7 +179,7 @@ def drop_cmd(conn: sqlite3.Connection, feature: str, name: str, **kwargs):
     Raises:
         vql.VQLSyntaxError
     """
-    accept_features = ("selections", "sets")
+    accept_features = ("selections", "wordsets")
 
     if feature not in accept_features:
         raise vql.VQLSyntaxError(f"{feature} doesn't exists")
@@ -364,9 +367,9 @@ def import_cmd(conn: sqlite3.Connection, feature=str, name=str, path=str, **kwar
     Raises:
         vql.VQLSyntaxError
     """
-    accept_features = ("sets",)
+    accept_features = ("wordsets",)
 
-    if feature not in accept_features:
+    if feature.lower() not in accept_features:
         raise vql.VQLSyntaxError(f"option {feature} doesn't exists")
 
     if not os.path.isfile(path):

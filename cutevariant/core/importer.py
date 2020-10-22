@@ -13,7 +13,7 @@ from .sql import (
     create_table_variants,
     create_table_samples,
     create_table_selections,
-    create_table_sets,
+    create_table_wordsets,
     insert_many_samples,
     get_samples,
     insert_many_fields,
@@ -70,7 +70,7 @@ def async_import_reader(conn, reader: AbstractReader, pedfile=None, project={}):
     create_table_selections(conn)
 
     # Create table sets
-    create_table_sets(conn)
+    create_table_wordsets(conn)
 
     # Insert samples
     yield 0, "Inserting samples..."
@@ -108,7 +108,9 @@ def async_import_reader(conn, reader: AbstractReader, pedfile=None, project={}):
     yield 0, "Insertings variants..."
     # TODO: can you document the code in get_extra_variants plz?
     variants = reader.get_extra_variants(control=control_samples, case=case_samples)
-    yield from async_insert_many_variants(conn, variants, total_variant_count=reader.number_lines)
+    yield from async_insert_many_variants(
+        conn, variants, total_variant_count=reader.number_lines
+    )
 
     # Create indexes
     yield 99, "Creating indexes..."

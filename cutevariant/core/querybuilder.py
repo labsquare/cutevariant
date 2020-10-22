@@ -62,7 +62,7 @@ LOGGER = logger()
 GENOTYPE_FUNC_NAME = "sample"
 
 # set("truc")
-SET_FUNC_NAME = "SET"
+WORDSET_FUNC_NAME = "WORDSET"
 
 
 def filters_to_flat(filters: dict):
@@ -136,7 +136,7 @@ def field_function_to_sql(field_function: tuple, use_as=False):
     return f"`{func_name}_{arg_name}`" + suffix
 
 
-def set_function_to_sql(field_function: tuple):
+def wordset_function_to_sql(field_function: tuple):
     """Replace a set_function by a select statement
 
     Set_functions is used from VQL to filter annotation within a set of word.
@@ -147,7 +147,7 @@ def set_function_to_sql(field_function: tuple):
         (str): Query statement
     """
     func_name, arg_name = field_function
-    return f"(SELECT value FROM sets WHERE name = '{arg_name}')"
+    return f"(SELECT value FROM wordsets WHERE name = '{arg_name}')"
 
 
 def fields_to_vql(field) -> str:
@@ -241,8 +241,9 @@ def filters_to_sql(filters, default_tables={}):
                 value = f"'{value}'"
 
             if isinstance(value, tuple):
-                if value[0] == SET_FUNC_NAME:
-                    value = set_function_to_sql(value)
+                #  If value is a WORDSET["salut"] aka ('WORDSET','salut')
+                if value[0] == WORDSET_FUNC_NAME:
+                    value = wordset_function_to_sql(value)
 
             if operator == "~":
                 operator = "REGEXP"
@@ -312,8 +313,8 @@ def filters_to_vql(filters):
 
             if isinstance(value, tuple):
                 # if set   ["set", "name"]
-                if len(value) == 2 and value[0] == SET_FUNC_NAME:
-                    value = "{}['{}']".format(SET_FUNC_NAME, value[1])
+                if len(value) == 2 and value[0] == WORDSET_FUNC_NAME:
+                    value = "{}['{}']".format(WORDSET_FUNC_NAME, value[1])
 
             return "%s %s %s" % (field, operator, value)
 
@@ -474,6 +475,7 @@ def build_query(
     if order_by:
         # TODO : sqlite escape field with quote
         orientation = "DESC" if order_desc else "ASC"
+        print("DEBUGH", order_by)
         order_by = fields_to_sql(order_by, default_tables)
         sql_query += f" ORDER BY {order_by} {orientation}"
 

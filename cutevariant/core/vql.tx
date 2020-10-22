@@ -84,10 +84,10 @@ Comment: /\#.*$/;
 
 FieldId:/[^\d\W](\w*\.)?\w*\b/;
 FieldIdentifier: Function|FieldId;
-ValueIdentifier: (NUMBER|STRING|BOOL|Tuple|SetIdentifier);
+ValueIdentifier: (NUMBER|STRING|BOOL|Tuple|WordSetIdentifier);
 ARGS: STRING;
 Function: func=ID '[' arg=ARGS ']' ('.' extra=ID)?;
-SetIdentifier: 'SET[' arg=ARGS ']';
+WordSetIdentifier: 'WORDSET[' arg=ARGS ']';
 
 BoolOperator: "AND"|"OR";
 SetOperator: "+"|"-"|"&"|"^";
