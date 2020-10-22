@@ -1044,19 +1044,21 @@ def get_one_variant(
 
     variant["annotations"] = []
     if with_annotations:
-        for annotation in conn.execute(
-            f"SELECT * FROM annotations WHERE variant_id = {variant_id}"
-        ):
-            variant["annotations"].append(dict(annotation))
+        variant["annotations"] = [
+            dict(annotation) for annotation in conn.execute(
+                f"SELECT * FROM annotations WHERE variant_id = {variant_id}"
+            )
+        ]
 
     variant["samples"] = []
     if with_samples:
-        for sample in conn.execute(
-            f"""SELECT samples.name, sample_has_variant.* FROM sample_has_variant
-            LEFT JOIN samples on samples.id = sample_has_variant.sample_id
-            WHERE variant_id = {variant_id} """
-        ):
-            variant["samples"].append(dict(sample))
+        variant["samples"] = [
+            dict(sample) for sample in conn.execute(
+                f"""SELECT samples.name, sample_has_variant.* FROM sample_has_variant
+                LEFT JOIN samples on samples.id = sample_has_variant.sample_id
+                WHERE variant_id = {variant_id}"""
+            )
+        ]
 
     return variant
 
