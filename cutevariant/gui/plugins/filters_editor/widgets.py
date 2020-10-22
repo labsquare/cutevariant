@@ -1626,19 +1626,20 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
         self.combo = QComboBox()
         self.combo.addItem(self.tr("Current not saved filter..."))
-        # self.combo.setMinimumHeight(30)
         self.combo.currentTextChanged.connect(self.on_combo_changed)
         self.save_button = QToolButton()
         self.save_button.setIcon(FIcon(0xF0193))
         self.save_button.setToolTip(self.tr("Save the current filter"))
-        # self.save_button.setMinimumHeight(30)
         self.save_button.clicked.connect(self.on_save_filters)
-
         self.del_button = QToolButton()
         self.del_button.setDefaultAction(QAction(
-            FIcon(0xF0A7A), self.tr("Delete filter")
+            FIcon(0xF0A7A), self.tr("Delete the filter")
         ))
         self.del_button.clicked.connect(self.on_delete_item)
+        # Adjust heights
+        # self.combo.setMinimumHeight(30)
+        # self.save_button.setMinimumHeight(30)
+        # self.del_button.setMinimumHeight(30)
 
         hlayout = QHBoxLayout()
         hlayout.addWidget(self.combo)
@@ -1659,9 +1660,6 @@ class FiltersEditorWidget(plugin.PluginWidget):
         )
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        # self.del_button = self.toolbar.addAction(
-        #     FIcon(0xF0A7A), self.tr("Delete filter"), self.on_delete_item
-        # )
 
         self.model.filtersChanged.connect(self.on_filters_changed)
 
