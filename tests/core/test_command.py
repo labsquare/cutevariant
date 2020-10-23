@@ -68,8 +68,12 @@ def test_count_cmd(conn):
 
 
 def test_drop_cmd(conn):
-    """Test drop command on selections table"""
+    """Test drop command of VQL language
 
+    The following tables are tested:
+    - selections
+    - wordsets
+    """
     # Create a selection named "subset"
     conn.execute("INSERT INTO selections (name) VALUES ('subset')")
     assert "subset" in [
@@ -80,6 +84,17 @@ def test_drop_cmd(conn):
         i["name"] for i in conn.execute("SELECT name FROM selections").fetchall()
     ]
     assert ret["success"]
+
+    # Create wordset
+    test_file = "examples/gene.txt"
+    wordset_name = "bouzniouf"
+    command.import_cmd(conn, "wordsets", wordset_name, test_file)
+    command.drop_cmd(conn, feature="wordsets", name=wordset_name)
+
+    assert wordset_name not in [
+        i["name"] for i in
+        conn.execute("SELECT name FROM wordsets").fetchall()
+    ]
 
 
 def test_bed_cmd(conn):
