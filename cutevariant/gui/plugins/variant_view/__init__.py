@@ -4,7 +4,7 @@ __description__ = "The default view for variants DB"
 __long_description__ = qApp.translate("variant_view", """
 <p>This window is the main window of Cutevariant. Here you will find the variants
 and their related data presented in the various columns selected from the
-<em>Filters Editor</em> plugin.</p>
+<em>Columns selector</em> plugin.</p>
 
 You can:
 

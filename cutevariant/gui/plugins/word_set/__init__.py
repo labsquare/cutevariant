@@ -2,7 +2,7 @@ from PySide2.QtCore import qApp
 __title__ = "WordSets"
 __description__ = "A plugin to manage word sets"
 __long_description__ = qApp.translate("word_sets", """
-<p>This plugin allows to create sets of words that can be matched with the 
+<p>This plugin allows to create sets of words that can be matched with the
 attributes of the project's variants.</p>
 <p>
 Once the addition of a word set is started, a manual addition one by one of the
@@ -19,10 +19,10 @@ He therefore creates a word set and then makes a selection via:</i>
 
 <ul>
 <li>the <em>Filters Editor</em> plugin with a filter of the type:
-<pre>gene IN ('SET', 'my_word_set')</pre></li>
+<pre>gene IN ('WORDSET', 'my_word_set')</pre></li>
 
 <li>the <em>VQL Editor</em> plugin with a VQL request of the type:
-<pre>SELECT chr,pos,ref,alt,gene FROM variants WHERE gene IN SET['my_word_set']</pre></li>
+<pre>SELECT chr,pos,ref,alt,gene FROM variants WHERE gene IN WORDSET['my_word_set']</pre></li>
 </ul>
 """)
 __author__ = "Sacha schutz"
