@@ -55,7 +55,6 @@ class VqlEditorWidget(plugin.PluginWidget):
         self.run_action.setShortcuts([Qt.CTRL + Qt.Key_R, QKeySequence.Refresh])
         self.run_action.setToolTip(self.tr("Run VQL query (F5)"))
 
-
         # Syntax highlighter and autocompletion
         self.text_edit = VqlEditor()
         self.log_edit = QLabel()
@@ -148,7 +147,7 @@ class VqlEditorWidget(plugin.PluginWidget):
 
         try:
             self.log_edit.hide()
-            [i for i in vql.parse_vql(self.text_edit.toPlainText())]
+            _ = [i for i in vql.parse_vql(self.text_edit.toPlainText())]
 
         except TextXSyntaxError as e:
             # Available attributes: e.message, e.line, e.col
