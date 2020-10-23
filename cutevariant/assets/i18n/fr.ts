@@ -106,57 +106,57 @@ Ce programme est distribué selon les termes de la Licence Publique Générale G
     <message>
         <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1629"/>
         <source>Current not saved filter...</source>
-        <translation type="unfinished"></translation>
+        <translation>Filtre non enregistré...</translation>
     </message>
     <message>
         <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1659"/>
         <source>Add Condition</source>
-        <translation type="unfinished"></translation>
+        <translation>Ajouter une condition</translation>
     </message>
     <message>
         <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1759"/>
         <source>Type a name for the filter</source>
-        <translation type="unfinished"></translation>
+        <translation>Entrez un nom pour le filtre</translation>
     </message>
     <message>
         <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1759"/>
         <source>Filter Name:</source>
-        <translation type="unfinished"></translation>
+        <translation>Nom du filtre:</translation>
     </message>
     <message>
         <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1839"/>
         <source>Filter deletion</source>
-        <translation type="unfinished"></translation>
+        <translation>Suppression du filtre</translation>
     </message>
     <message>
         <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1874"/>
         <source>Add condition</source>
-        <translation type="unfinished"></translation>
+        <translation>Ajouter une condition</translation>
     </message>
     <message>
         <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1875"/>
         <source>Add subfilter</source>
-        <translation type="unfinished"></translation>
+        <translation>Ajouter une sous-condition</translation>
     </message>
     <message>
         <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1596"/>
         <source>Filters</source>
-        <translation type="unfinished"></translation>
+        <translation>Filtres</translation>
     </message>
     <message>
         <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1633"/>
         <source>Save the current filter</source>
-        <translation type="unfinished"></translation>
+        <translation>Enregistrer le filtre actuel</translation>
     </message>
     <message>
         <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1636"/>
         <source>Delete the filter</source>
-        <translation type="unfinished"></translation>
+        <translation>Supprimer le filtre</translation>
     </message>
     <message>
         <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1839"/>
         <source>Do you want to remove this filter?</source>
-        <translation type="unfinished"></translation>
+        <translation>Êtes-vous sûr de vouloir supprimer le filtre ?</translation>
     </message>
 </context>
 <context>
@@ -465,12 +465,12 @@ The following exception occurred:
     <message>
         <location filename="cutevariant/gui/plugins/metrics/dialogs.py" line="145"/>
         <source>Loading...</source>
-        <translation type="unfinished"></translation>
+        <translation>Chargement...</translation>
     </message>
     <message>
         <location filename="cutevariant/gui/plugins/metrics/dialogs.py" line="145"/>
         <source>data...</source>
-        <translation type="unfinished"></translation>
+        <translation>des données...</translation>
     </message>
 </context>
 <context>
@@ -720,7 +720,7 @@ Doublez-cliquez pour les éditer.</translation>
     <message>
         <location filename="cutevariant/gui/plugins/source_editor/widgets.py" line="209"/>
         <source>Reload</source>
-        <translation type="unfinished"></translation>
+        <translation>Recharger</translation>
     </message>
 </context>
 <context>
@@ -832,7 +832,7 @@ Doublez-cliquez pour les éditer.</translation>
     <message>
         <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="709"/>
         <source>{} group(s) {} page(s)</source>
-        <translation type="unfinished"></translation>
+        <translation>{} groupe(s) {} page(s)</translation>
     </message>
 </context>
 <context>
@@ -1074,6 +1074,111 @@ Les champs sont répartis en 3 grandes catégories:
 
 &lt;p&gt;Étant donné que le nombre de champs est important, il peut être intéressant d&apos;utiliser le bouton de recherche par mots-clés pour
 trouver rapidement ceux qui sont pertinents dans une étude.&lt;/p&gt;</translation>
+    </message>
+</context>
+<context>
+    <name>filters_editor</name>
+    <message>
+        <location filename="cutevariant/gui/plugins/filters_editor/__init__.py" line="4"/>
+        <source>
+&lt;p&gt;This plugin is used to filter (show/hide) the variants displayed in the main window.&lt;/p&gt;
+
+&lt;p&gt;Start by clicking on the &lt;em&gt;&quot;+&quot;&lt;/em&gt; button (Add Condition), an example is displayed.&lt;/p&gt;
+
+A filter is composed of 2 types of elements:
+
+&lt;ul&gt;
+&lt;li&gt;&lt;b&gt;Logical/Boolean operators&lt;/b&gt; (&lt;em&gt;OR/AND&lt;/em&gt;) containing sub-filters.&lt;/li&gt;
+&lt;li&gt;&lt;b&gt;Sub-filters&lt;/b&gt; each applying to a field available in Cutevariant.&lt;/li&gt;
+&lt;/ul&gt;
+
+The conditions represent the most important part of a filter, they are composed of
+of 3 interactive fields:
+
+&lt;ul&gt;
+&lt;li&gt;the &lt;b&gt;field&lt;/b&gt; available for filtering on which the filter will be applied;&lt;/li&gt;
+&lt;li&gt;the &lt;b&gt;comparison operator&lt;/b&gt; to keep or exclude variants;&lt;/li&gt;
+&lt;li&gt;the &lt;b&gt;value&lt;/b&gt; of the field that will be compared to the value in the database.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;It is possible to work with several values with the operators &lt;em&gt;IN/NOT IN&lt;/em&gt; by
+separating values with commas, or by using wordsets managed with the &lt;em&gt;WordSets plugin&lt;/em&gt;.&lt;/p&gt;
+
+Example of syntax:
+
+&lt;ul&gt;
+&lt;li&gt;gene in my_gene1, my_gene2&lt;/li&gt;
+&lt;li&gt;gene in WORDSET, my_word_set&lt;/li&gt;
+&lt;li&gt;chr in (&apos;10&apos;, &apos;X&apos;)&lt;/li&gt;
+&lt;li&gt;chr not in 10, 11&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;You can delete or save a filter to retrieve it later by clicking on the &quot;save&quot;
+or &quot;delete&quot; buttons.&lt;/p&gt;
+
+&lt;br&gt;&lt;br&gt;&lt;br&gt;
+Additional information:
+
+&lt;ul&gt;
+&lt;li&gt;the result of a filter can be saved as a selection by clicking on the save
+button on the main window;&lt;/li&gt;
+&lt;li&gt;you can temporarily hide an item by clicking on the &quot;eye&quot; icon;&lt;/li&gt;
+&lt;li&gt;each item can be removed by clicking on the cross button on its right;&lt;/li&gt;
+&lt;li&gt;you can work with several logical operators to form complex filters;&lt;/li&gt;
+To do so, simply right-click on the first item of your filter (&lt;em&gt;AND&lt;/em&gt;
+by default) and select &quot;Add condition&quot;;&lt;/li&gt;
+&lt;li&gt;each subcondition can be dragged and dropped from one logical group to another.&lt;/li&gt;
+&lt;/ul&gt;
+</source>
+        <translation>&lt;p&gt;Ce plugin est utilisé pour filtrer (afficher/masquer) les variants affichés dans la fenêtre principale.&lt;/p&gt;
+
+&lt;p&gt;Commencez par cliquer sur le bouton &lt;em&gt;&quot;+&quot;&lt;/em&gt; (Ajouter une condition), un exemple s&apos;affiche.&lt;/p&gt;
+
+Un filtre est composé de 2 types d&apos;éléments:
+
+&lt;ul&gt;
+&lt;li&gt;les &lt;b&gt;opérateurs logiques/booléens&lt;/b&gt; (&lt;em&gt;OR/AND&lt;/em&gt;) contenant des sous-conditions;&lt;/li&gt;
+&lt;li&gt;les &lt;b&gt;sous-conditions&lt;/b&gt; s&apos;appliquant chacune à un champ disponible dans Cutevariant.&lt;/li&gt;
+&lt;/ul&gt;
+
+Les conditions représentent la partie la plus importante d&apos;un filtre, elles sont composées
+de 3 champs interactifs:
+
+&lt;ul&gt;
+&lt;li&gt;le &lt;b&gt;champ&lt;/b&gt; disponible au filtrage sur lequel s&apos;appliquera le filtre;&lt;/li&gt;
+&lt;li&gt;l&apos;&lt;b&gt;opérateur de comparaison&lt;/b&gt; pour conserver ou exclure les variants;&lt;/li&gt;
+&lt;li&gt;la &lt;b&gt;valeur&lt;/b&gt; du champ qui sera comparée à celle de la base de données.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Il est possible de travailler avec plusieurs valeurs avec les opérateurs &lt;em&gt;IN/NOT IN&lt;/em&gt; en
+séparant les valeurs avec des virgules, ou en faisant appel aux wordsets gérés à l&apos;aide du plugin &lt;em&gt;WordSets&lt;/em&gt;.&lt;/p&gt;
+
+Exemple de syntaxes:
+
+&lt;ul&gt;
+&lt;li&gt;gene in my_gene1, my_gene2&lt;/li&gt;
+&lt;li&gt;gene in WORDSET, my_word_set&lt;/li&gt;
+&lt;li&gt;chr in (&apos;10&apos;, &apos;X&apos;)&lt;/li&gt;
+&lt;li&gt;chr not in 10, 11&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Vous pouvez supprimer ou sauvegarder un filtre pour le retrouver ultérieurement
+en cliquant sur les boutons &quot;Sauvegarder&quot; ou &quot;Supprimer&quot;.&lt;/p&gt;
+
+
+&lt;br&gt;&lt;br&gt;&lt;br&gt;
+Informations additionnelles:
+
+&lt;ul&gt;
+&lt;li&gt;Le résulat d&apos;un filtre peut être conservé sous forme de sélection en cliquant sur le bouton de sauvegarde
+sur la fenêtre principale.&lt;/li&gt;
+&lt;li&gt;Vous pouvez masquer temporairement un item en cliquant sur l&apos;icône &quot;oeil&quot;;&lt;/li&gt;
+&lt;li&gt;Chaque item peut être supprimé en cliquant sur la croix à sa droite;&lt;/li&gt;
+&lt;li&gt;Vous pouvez travailler avec plusieurs opérateurs logiques afin de former des filtres complexes.&lt;/li&gt;
+Pour cela il suffit de faire un clic droit sur le premier item de votre filtre (&lt;em&gt;AND&lt;/em&gt; par défaut)
+puis de sélectionner &quot;Ajouter une condition&quot;.&lt;/li&gt;
+&lt;li&gt;Chaque sous-condition peut être déplacée par glisser/déposer d&apos;un groupe logique à un autre.&lt;/li&gt;
+&lt;/ul&gt;</translation>
     </message>
 </context>
 <context>
