@@ -39,6 +39,9 @@ class VQLSyntaxError(ValueError):
         self.message = message
         self.col = col
 
+    def __repr__(self):
+        return "VQLSyntaxError: '%s' at position %s" % (self.message, self.col)
+
 
 # ============ Error handle ==================================
 def error_message_from_err(
