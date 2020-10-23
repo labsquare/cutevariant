@@ -1,6 +1,7 @@
+from PySide2.QtCore import qApp
 __title__ = "Selections"
 __description__ = "A plugin to display selections"
-__long_description__ = """
+__long_description__ = qApp.translate("source_editor", """
 <p>It is a plugin allowing to work on a subset of variants.<br>
 A subset of variants is called selection or source.
 </p>
@@ -26,6 +27,6 @@ whose intervals will be used to filter the variants of the starting selection;</
 <em>Filters Editor</em> plugin;</li>
 <li>Via custom filters, from the <em>Filters Editor</em> plugin.</li>
 </ul>
-"""
+""")
 __author__ = "Sacha schutz"
 __version__ = "1.0.0"

@@ -1,6 +1,7 @@
+from PySide2.QtCore import qApp
 __title__ = "Variants"
 __description__ = "The default view for variants DB"
-__long_description__ = """
+__long_description__ = qApp.translate("variant_view", """
 <p>This window is the main window of Cutevariant. Here you will find the variants
 and their related data presented in the various columns selected from the
 <em>Filters Editor</em> plugin.</p>
@@ -34,6 +35,6 @@ time from the <em>Filters Editor</em> plugin or from a VQL query from the
 <p>Each subset of variants thus obtained can be saved as a selection using the
 <em>Save variants</em> button.
 The selections are listed in the <em>Source Editor</em> plugin.</p>
-"""
+""")
 __author__ = "Sacha schutz"
 __version__ = "1.0.0"
