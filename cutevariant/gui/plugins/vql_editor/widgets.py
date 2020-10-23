@@ -144,23 +144,16 @@ class VqlEditorWidget(plugin.PluginWidget):
         Returns:
             bool: Status
         """
-
         try:
             self.log_edit.hide()
             _ = [i for i in vql.parse_vql(self.text_edit.toPlainText())]
-
-        except TextXSyntaxError as e:
-            # Available attributes: e.message, e.line, e.col
-            self.set_message("TextXSyntaxError: %s, col: %d" % (e.message, e.col))
-            return False
-
-        except VQLSyntaxError as e:
+        except (TextXSyntaxError, VQLSyntaxError) as e:
             # Show the error message on the ui
+            # Available attributes: e.message, e.line, e.col
             self.set_message(
-                self.tr("VQLSyntaxError: '%s' at position %s") % (e.message, e.col)
+                "%s: %s, col: %d" % (e.__class__.__name__, e.message, e.col)
             )
             return False
-
         return True
 
     def run_vql(self):
