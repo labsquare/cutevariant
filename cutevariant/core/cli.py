@@ -182,69 +182,19 @@ the arguments.""",
     if args.subparser == "exec":
         query = "".join(args.vql)
 
+        # Test the VQL query
         try:
             cmd = next(vql.parse_vql(query))
-
-        except vql.textx.TextXSyntaxError as e:
+        except (vql.textx.TextXSyntaxError, vql.VQLSyntaxError) as e:
             # Available attributes: e.message, e.line, e.col
-            print(
-                "==================================== ERRORS ===================================="
-            )
-            print("TextXSyntaxError: %s, col: %d" % (e.message, e.col))
-            print(" ")
-            print(query)
-            print("_" * (e.col - 1) + "^\n")
+            print("%s: %s, col: %d" % (e.__class__.__name__, e.message, e.col))
+            print("For query:", query)
             exit(0)
 
-        except vql.VQLSyntaxError as e:
-            # Available attributes: e.message, e.line, e.col
-            print(
-                "==================================== ERRORS ===================================="
-            )
-            print("TextXSyntaxError: %s, col: %d" % (e.message, e.col))
-            print(" ")
-            print(query)
-            print("_" * (e.col - 1) + "^ \n")
-            exit(0)
+        # Select command
+        # if cmd["cmd"] == "select_cmd":
 
-        ## ********************** SELECT STATEMENT **************************************
-        if cmd["cmd"] == "select_cmd":
-            selector = sql.QueryBuilder(conn)
-
-            selector.selection = cmd.get("source")
-            selector.columns = cmd.get("columns")
-            selector.filters = cmd.get("filter")
-
-            if args.to_selection:
-                selector.save(args.to_selection)
-
-            else:
-                variants = []
-                for v in selector.trees(grouped=args.group, limit=args.limit):
-
-                    line = v[1]
-                    if args.group:  # Add children count
-                        line.append(v[0])
-                    variants.append(line)
-
-                headers = list(selector.headers())
-                if args.group:
-                    headers.append("group size")
-
-                print(columnar(variants, headers=headers, no_borders=True))
-
-        ## ********************** SELECT STATEMENT **************************************
-        if cmd["cmd"] == "create_cmd":
-            selector = sql.QueryBuilder(conn)
-            selector.filters = cmd.get("filter")
-            selector.selection = cmd.get("source")
-            target = cmd.get("target")
-
-            selector.save(target)
-
-        ## ********************** SELECT STATEMENT **************************************
-        if cmd["cmd"] == "set_cmd":
-            print(cmd)
+        print("Work in progress...")
 
 
 if __name__ == "__main__":
