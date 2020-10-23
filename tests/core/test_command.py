@@ -148,7 +148,7 @@ def test_set_cmd(conn):
 
 
 def test_import_cmd(conn):
-    """Test import word set from file (import_cmd is for word sets only FOR NOW)
+    """Test import wordset from file (import_cmd is for word sets only FOR NOW)
 
     Import from a kindly external file with 2 genes.
     """
@@ -198,6 +198,7 @@ def test_create_command_from_obj(conn):
     cmd = command.create_command_from_obj(
         conn, next(vql.parse_vql("CREATE denovo FROM variants INTERSECT 'test.bed' "))
     )
+    print(cmd.keywords)
     # Keywords of partial function
     expected_kwargs = {
         "cmd": "bed_cmd",
