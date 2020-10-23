@@ -26,7 +26,7 @@ import functools
 from memoization import cached
 
 # Custom imports
-from cutevariant.core.querybuilder import build_query
+from cutevariant.core.querybuilder import build_sql_query
 from cutevariant.core import sql, vql
 from cutevariant.commons import logger
 from cutevariant.core.reader import BedReader
@@ -72,7 +72,7 @@ def select_cmd(
     # Get {'NORMAL': 1, 'TUMOR': 2}
     samples_ids = {i["name"]: i["id"] for i in sql.get_samples(conn)}
 
-    query = build_query(
+    query = build_sql_query(
         fields=fields,
         source=source,
         filters=filters,
@@ -137,7 +137,7 @@ def count_cmd(
     # Get {'NORMAL': 1, 'TUMOR': 2}
     samples_ids = {i["name"]: i["id"] for i in sql.get_samples(conn)}
 
-    query = build_query(
+    query = build_sql_query(
         fields=fields,
         source=source,
         filters=filters,
@@ -227,7 +227,7 @@ def create_cmd(
     if target is None:
         return {}
 
-    sql_query = build_query(
+    sql_query = build_sql_query(
         ["id"],
         source,
         filters,
@@ -270,8 +270,8 @@ def set_cmd(
     if target is None or first is None or second is None or operator is None:
         return {}
 
-    query_first = build_query(["id"], first, limit=None)
-    query_second = build_query(["id"], second, limit=None)
+    query_first = build_sql_query(["id"], first, limit=None)
+    query_second = build_sql_query(["id"], second, limit=None)
 
     func_query = {
         "+": sql.union_variants,

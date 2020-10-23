@@ -302,7 +302,7 @@ QUERY_TESTS = [
 def test_build_query(test_input, test_output, vql):
 
     # Test SQL query builder
-    query = querybuilder.build_query(
+    query = querybuilder.build_sql_query(
         **test_input, default_tables=DEFAULT_TABLES, samples_ids=SAMPLES_ID
     )
 

@@ -1,11 +1,11 @@
 """Functions to build a complex SQL Select statement to query variant.
 
-In the most of cases, you will only use build_query function.
+In the most of cases, you will only use build_sql_query function.
 
 Examples:
 
     conn = sqlite3.Connection("::memory::")
-    query = build_query(["chr","pos"])
+    query = build_sql_query(["chr","pos"])
     conn.execute(query)
 
 
@@ -40,11 +40,7 @@ The following module contains several functions to make easy conversion from pyt
 In the most of the case, you only need to use :
 
 build_vql_query => to create a VQL query from python statements
-build_query => to create a SQL query from python statements
-
-TODO: rename build_query to build_sql_query for more coherence .
-
-
+build_sql_query => to create a SQL query from python statements
 """
 # Standard imports
 import sqlite3
@@ -337,8 +333,6 @@ def filters_to_vql(filters):
 def build_vql_query(fields, source="variants", filters={}, group_by=[], having={}):
     """Build VQL query
 
-    TODO : harmonize name with build_query => build_sql
-
     Args:
         fields (TYPE): Description
         source (str, optional): Description
@@ -359,7 +353,7 @@ def build_vql_query(fields, source="variants", filters={}, group_by=[], having={
     return query
 
 
-def build_query(
+def build_sql_query(
     fields,
     source="variants",
     filters={},
@@ -501,7 +495,7 @@ def build_complete_query(
     """Build a complete select statements according data loaded from conn"""
     default_tables = {i["name"]: i["category"] for i in sql.get_fields(conn)}
     samples_ids = {i["name"]: i["id"] for i in sql.get_samples(conn)}
-    query = build_query(
+    query = build_sql_query(
         fields=fields,
         source=source,
         filters=filters,
