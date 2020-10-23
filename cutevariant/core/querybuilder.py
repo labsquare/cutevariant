@@ -373,10 +373,10 @@ def build_sql_query(
         source (str): source of the virtual table ( see: selection )
         filters (dict): nested condition tree
         order_by (str/None): Order by field;
-        If None, order_desc is not required.
+            If None, order_desc is not required.
         order_desc (bool): Descending or Ascending order
         limit (int/None): limit record count;
-        If None, offset is not required.
+            If None, offset is not required.
         offset (int): record count per page
         group_by (list/None): list of field you want to group
         default_tables (dict): association map between fields and sql table origin
@@ -400,14 +400,15 @@ def build_sql_query(
     sql_query += "FROM variants"
 
     # Extract fields from filters
-    fields_in_filters = [i["field"] for i in filters_to_flat(filters)]
+    fields_in_filters = {i["field"] for i in filters_to_flat(filters)}
 
     # Loop over fields and check is annotations is required
-
-    annotation_fields = [i for i, v in default_tables.items() if v == "annotations"]
+    annotation_fields = {i for i, v in default_tables.items() if v == "annotations"}
 
     need_join_annotations = False
-    for col in sql_fields + fields_in_filters:
+    for col in set(sql_fields) | fields_in_filters:
+        # Example of field:
+        # '`annotations`.`gene`'
         if "annotations" in col or col in annotation_fields:
             need_join_annotations = True
             break
@@ -424,9 +425,9 @@ def build_sql_query(
         )
 
     # Add Join Samples
-    ##detect if fields contains function like (genotype,boby,gt) and save boby
-
-    all_fields = set(fields_in_filters + fields)
+    ## detect if fields contains function like (genotype,boby,gt) and save boby
+    all_fields = set(fields_in_filters)
+    all_fields.update(fields)
 
     samples = []
     for col in all_fields:
@@ -440,7 +441,6 @@ def build_sql_query(
     samples = set(samples)
 
     ## Create Sample Join
-
     for sample_name in samples:
         # Optimisation ?
         # sample_id = self.cache_samples_ids[sample_name]
