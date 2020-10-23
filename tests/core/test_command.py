@@ -1,8 +1,10 @@
+# Standard imports
+import pytest
+import csv
+# Custom imports
 from cutevariant.core import command, sql, vql
 from cutevariant.core.reader import VcfReader
 from cutevariant.core.importer import import_reader
-import pytest
-import csv
 
 
 @pytest.fixture
