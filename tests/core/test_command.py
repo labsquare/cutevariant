@@ -230,6 +230,68 @@ def test_create_command_from_obj(conn):
     assert partial_fct.keywords == expected_kwargs
 
 
+def test_show_cmd(conn):
+    """Test SHOW command of VQL language
+
+    Test the following tables:
+    - samples
+    - selections
+    - fields
+    - wordsets
+    - WORDSETS (UPPER CASE name)
+    - truc (wrong table) => VQLSyntaxError expected
+    """
+    # Test samples
+    result = list(command.execute(conn, "SHOW samples"))
+    print("Found samples:", result)
+    assert len(result) == 2
+
+    found_sample_names = {sample["name"] for sample in result}
+    expected_sample_names = {"NORMAL", "TUMOR"}
+    assert expected_sample_names == found_sample_names
+
+    # Test selections
+    # Create a selection
+    command.create_cmd(conn, source="variants", target="A")
+    result = list(command.execute(conn, "SHOW selections"))
+    print("Found selections:", result)
+    assert len(result) == 2
+
+    # Test fields
+    result = list(command.execute(conn, "SHOW fields"))
+    print("Found fields:", result)
+    # Just test keys of the first item
+    assert result[0].keys() == {'id', 'name', 'category', 'type', 'description'}
+
+    # Test wordsets
+    # Create a wordset
+    # Test import of word set
+    test_file = "examples/gene.txt"
+    wordset_name = "bouzniouf"
+    command.import_cmd(conn, "wordsets", wordset_name, test_file)
+    result = list(command.execute(conn, "SHOW wordsets"))
+    print("Found wordsets in lower case:", result)
+    assert len(result) == 1
+
+    expected_wordset = {'name': 'bouzniouf', 'count': 2}
+    assert expected_wordset == result[0]
+
+    # Test WORDSETS
+    result = list(command.execute(conn, "SHOW WORDSETS"))
+    print("Found WORDSETS in upper case:", result)
+    assert len(result) == 1
+
+    expected_wordset = {'name': 'bouzniouf', 'count': 2}
+    assert expected_wordset == result[0]
+
+    # Test wrong table
+    # Exception is expected
+    with pytest.raises(
+            vql.VQLSyntaxError, match=r".*truc doesn't exists.*"
+    ):
+        list(command.execute(conn, "SHOW truc"))
+
+
 def test_execute(conn):
     """Test the wrapper of create_command_from_obj()
 
@@ -260,6 +322,11 @@ def test_execute(conn):
 
     print("Expected number of variants:", found)
     assert found == 3
+
+    # Show samples table (See test_show_cmd for more tests of this function)
+    result = list(command.execute(conn, "SHOW samples"))
+    print("Found samples:", result)
+    assert len(result) == 2
 
     #  Create bedfile
     bed_file = "examples/test.bed"
