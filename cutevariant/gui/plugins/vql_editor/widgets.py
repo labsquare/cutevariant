@@ -203,7 +203,7 @@ class VqlEditorWidget(plugin.PluginWidget):
 
             try:
                 command.create_command_from_obj(self.conn, cmd)()
-            except sqlite3.DatabaseError as e:
+            except (sqlite3.DatabaseError, VQLSyntaxError) as e:
                 self.set_message(str(e))
                 LOGGER.exception(e)
                 continue
