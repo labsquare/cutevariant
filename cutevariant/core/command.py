@@ -163,15 +163,17 @@ def count_cmd(
 def drop_cmd(conn: sqlite3.Connection, feature: str, name: str, **kwargs):
     """Drop selection or set from database
 
-    This following VQL command:
-        `DROP selection boby`
+    This following VQL commands:
+        `DROP selections boby`
+        `DROP wordsets mygene`
     will execute :
         `drop_cmd(conn, "selections", "boby")`
-
+        `drop_cmd(conn, "wordsets", "boby")`
     Args:
         conn (sqlite3.Connection): sqlite connection
-        feature (str): selection or set
-        name (str): name of the selection or the set
+        feature (str): selections or wordsets (Names of the SQL tables).
+            Lower case features are also accepted.
+        name (str): name of the selection or name of the wordset
 
     Returns:
         dict: {"success": <boolean>}; True if deletion is ok, False otherwise.
@@ -180,6 +182,9 @@ def drop_cmd(conn: sqlite3.Connection, feature: str, name: str, **kwargs):
         vql.VQLSyntaxError
     """
     accept_features = ("selections", "wordsets")
+
+    # Cast to lower case
+    feature = feature.lower()
 
     if feature not in accept_features:
         raise vql.VQLSyntaxError(f"{feature} doesn't exists")
@@ -323,41 +328,44 @@ def show_cmd(conn: sqlite3.Connection, feature: str, **kwargs):
 
     Args:
         conn (sqlite3.Connection): sqlite3 connection
-        feature (str): Requested feature type of items;
-        can be: `"selections", "fields", "samples", "sets"`
+        feature (str): Requested feature type of items (Name of the SQL table);
+            Lower case features are also accepted.
+        can be: `"selections", "fields", "samples", "wordsets"`
 
     Yields:
-        (generator[dict]): Items according to requested features (fields,
-            samples, selections, sets).
+        (generator[dict]): Items according to requested feature.
 
     Raises:
         vql.VQLSyntaxError
     """
-    accept_features = {
+    accepted_features = {
         "selections": sql.get_selections,
         "fields": sql.get_fields,
         "samples": sql.get_samples,
-        "sets": sql.get_wordsets,
+        "wordsets": sql.get_wordsets,
     }
 
-    if feature not in accept_features:
+    # Cast in lower case
+    feature = feature.lower()
+
+    if feature not in accepted_features:
         raise vql.VQLSyntaxError(f"option {feature} doesn't exists")
 
-    for item in accept_features[feature](conn):
+    for item in accepted_features[feature](conn):
         yield item
 
 
 def import_cmd(conn: sqlite3.Connection, feature=str, name=str, path=str, **kwargs):
-    """Import command for word sets only
+    """Import command for wordsets only
 
     This following VQL command:
-        `IMPORT sets "gene.txt" AS boby`
+        `IMPORT WORDSETS "gene.txt" AS boby`
     will execute :
-        `import_cmd(conn, "sets", "gene.txt")`
+        `import_cmd(conn, "WORDSETS", "gene.txt")`
 
     Args:
         conn (sqlite3.Connection): sqlite3 connection
-        feature (str): "sets"
+        feature (str): "WORDSETS" (Name of the SQL table)
         name (str): name of the set
         path (str): a filepath
 
@@ -367,9 +375,9 @@ def import_cmd(conn: sqlite3.Connection, feature=str, name=str, path=str, **kwar
     Raises:
         vql.VQLSyntaxError
     """
-    accept_features = ("wordsets",)
+    accepted_features = ("wordsets",)
 
-    if feature.lower() not in accept_features:
+    if feature.lower() not in accepted_features:
         raise vql.VQLSyntaxError(f"option {feature} doesn't exists")
 
     if not os.path.isfile(path):
