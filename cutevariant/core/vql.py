@@ -40,7 +40,12 @@ class VQLSyntaxError(ValueError):
         self.col = col
 
     def __repr__(self):
-        return "VQLSyntaxError: '%s' at position %s" % (self.message, self.col)
+        if self.col:
+            return "VQLSyntaxError: '%s' at position %s" % (self.message, self.col)
+        return "VQLSyntaxError: '%s'" % self.message
+
+    def __str__(self):
+        return self.__repr__()
 
 
 # ============ Error handle ==================================
