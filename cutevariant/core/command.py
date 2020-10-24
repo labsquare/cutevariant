@@ -292,7 +292,7 @@ def bed_cmd(conn: sqlite3.Connection, path: str, target: str, source: str, **kwa
     """Create a new selection from a bed file
 
     This following VQL command:
-        `CREATE boby FROM variant INTERSECT "path/to/file.bed"`
+        `CREATE boby FROM variants INTERSECT "path/to/file.bed"`
     will execute :
         `bed_cmd(conn, "path/to/file.bed", "boby", "source")`
 
