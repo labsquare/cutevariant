@@ -525,11 +525,6 @@ class VariantView(QWidget):
         self.page_box.setValidator(QIntValidator())
 
         self.info_label = QLabel()
-        self.loading_label = QLabel()
-        self.loading_label.setMovie(QMovie(cm.DIR_ICONS + "loading.gif"))
-        self.loading_label.movie().setScaledSize(QSize(20, 20))
-        self.loading_label.movie().start()
-
         # TODO: display on debug mode
         self.bottom_bar.addAction(FIcon(0xF0866), "show sql", self.on_show_sql)
         self.bottom_bar.addWidget(self.info_label)
