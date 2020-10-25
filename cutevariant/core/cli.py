@@ -79,6 +79,10 @@ the arguments.""",
         "createdb",
         help="Build a SQLite database from a vcf file",
         parents=[parent_parser],
+        epilog="""Examples:
+
+        $ cutevariant-cli createdb -i "examples/test.snpeff.vcf"
+        """
     )
     createdb_parser.add_argument("-i", "--input", help="VCF file path", required=True)
 
@@ -108,7 +112,7 @@ the arguments.""",
 
     $ cutevariant-cli exec "SELECT favorite,chr,pos,ref,alt FROM variants"
     or
-    cutevariant-cli exec "SELECT chr,ref,alt FROM variants" -s myselection
+    $ cutevariant-cli exec "SELECT chr,ref,alt FROM variants" -s myselection
     or
     $ cutevariant-cli exec "IMPORT WORDSETs 'examples/gene.txt' AS mygenes"
     or
