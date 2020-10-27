@@ -55,7 +55,6 @@ class VqlEditorWidget(plugin.PluginWidget):
         self.run_action.setShortcuts([Qt.CTRL + Qt.Key_R, QKeySequence.Refresh])
         self.run_action.setToolTip(self.tr("Run VQL query (F5)"))
 
-
         # Syntax highlighter and autocompletion
         self.text_edit = VqlEditor()
         self.log_edit = QLabel()
@@ -145,23 +144,16 @@ class VqlEditorWidget(plugin.PluginWidget):
         Returns:
             bool: Status
         """
-
         try:
             self.log_edit.hide()
-            [i for i in vql.parse_vql(self.text_edit.toPlainText())]
-
-        except TextXSyntaxError as e:
-            # Available attributes: e.message, e.line, e.col
-            self.set_message("TextXSyntaxError: %s, col: %d" % (e.message, e.col))
-            return False
-
-        except VQLSyntaxError as e:
+            _ = [i for i in vql.parse_vql(self.text_edit.toPlainText())]
+        except (TextXSyntaxError, VQLSyntaxError) as e:
             # Show the error message on the ui
+            # Available attributes: e.message, e.line, e.col
             self.set_message(
-                self.tr("VQLSyntaxError: '%s' at position %s") % (e.message, e.col)
+                "%s: %s, col: %d" % (e.__class__.__name__, e.message, e.col)
             )
             return False
-
         return True
 
     def run_vql(self):
@@ -203,7 +195,7 @@ class VqlEditorWidget(plugin.PluginWidget):
 
             try:
                 command.create_command_from_obj(self.conn, cmd)()
-            except sqlite3.DatabaseError as e:
+            except (sqlite3.DatabaseError, VQLSyntaxError) as e:
                 self.set_message(str(e))
                 LOGGER.exception(e)
                 continue

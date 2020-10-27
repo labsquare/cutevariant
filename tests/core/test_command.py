@@ -1,8 +1,10 @@
+# Standard imports
+import pytest
+import csv
+# Custom imports
 from cutevariant.core import command, sql, vql
 from cutevariant.core.reader import VcfReader
 from cutevariant.core.importer import import_reader
-import pytest
-import csv
 
 
 @pytest.fixture
@@ -28,9 +30,11 @@ def test_select_cmd_with_set(conn):
     # Import fake words (gene) as a new set called "test"
     geneSets = ["CHID1", "AP2A2"]
     for gene in geneSets:
-        conn.execute(f"INSERT INTO sets (name,value) VALUES ('test', '{gene}') ")
+        conn.execute(f"INSERT INTO wordsets (name,value) VALUES ('test', '{gene}') ")
 
-    filters = {"AND": [{"field": "gene", "operator": "IN", "value": ("SET", "test")}]}
+    filters = {
+        "AND": [{"field": "gene", "operator": "IN", "value": ("WORDSET", "test")}]
+    }
 
     for variant in command.select_cmd(
         conn, fields=["chr", "ref", "alt", "gene"], source="variants", filters=filters
@@ -64,8 +68,12 @@ def test_count_cmd(conn):
 
 
 def test_drop_cmd(conn):
-    """Test drop command on selections table"""
+    """Test drop command of VQL language
 
+    The following tables are tested:
+    - selections
+    - wordsets
+    """
     # Create a selection named "subset"
     conn.execute("INSERT INTO selections (name) VALUES ('subset')")
     assert "subset" in [
@@ -76,6 +84,17 @@ def test_drop_cmd(conn):
         i["name"] for i in conn.execute("SELECT name FROM selections").fetchall()
     ]
     assert ret["success"]
+
+    # Create wordset
+    test_file = "examples/gene.txt"
+    wordset_name = "bouzniouf"
+    command.import_cmd(conn, "wordsets", wordset_name, test_file)
+    command.drop_cmd(conn, feature="wordsets", name=wordset_name)
+
+    assert wordset_name not in [
+        i["name"] for i in
+        conn.execute("SELECT name FROM wordsets").fetchall()
+    ]
 
 
 def test_bed_cmd(conn):
@@ -129,7 +148,7 @@ def test_set_cmd(conn):
 
 
 def test_import_cmd(conn):
-    """Test import word set from file (import_cmd is for word sets only FOR NOW)
+    """Test import wordset from file (import_cmd is for word sets only FOR NOW)
 
     Import from a kindly external file with 2 genes.
     """
@@ -137,9 +156,9 @@ def test_import_cmd(conn):
     test_file = "examples/gene.txt"
     wordset_name = "boby"
 
-    command.import_cmd(conn, "sets", wordset_name, test_file)
+    command.import_cmd(conn, "wordsets", wordset_name, test_file)
 
-    for record in conn.execute("SELECT * FROM sets"):
+    for record in conn.execute("SELECT * FROM wordsets"):
         item = dict(record)
         assert item["name"] == wordset_name
 
@@ -179,6 +198,7 @@ def test_create_command_from_obj(conn):
     cmd = command.create_command_from_obj(
         conn, next(vql.parse_vql("CREATE denovo FROM variants INTERSECT 'test.bed' "))
     )
+    print(cmd.keywords)
     # Keywords of partial function
     expected_kwargs = {
         "cmd": "bed_cmd",
@@ -196,10 +216,7 @@ def test_create_command_from_obj(conn):
         "source": "variants",
         "filters": {},
     }
-    partial_fct = command.create_command_from_obj(
-        conn,
-        expected_kwargs,
-    )
+    partial_fct = command.create_command_from_obj(conn, expected_kwargs)
     print(partial_fct.keywords)
     assert partial_fct.keywords == expected_kwargs
 
@@ -209,12 +226,71 @@ def test_create_command_from_obj(conn):
         "source": "variants",
         "filters": {},
     }
-    partial_fct = command.create_command_from_obj(
-        conn,
-        expected_kwargs,
-    )
+    partial_fct = command.create_command_from_obj(conn, expected_kwargs)
     print(partial_fct.keywords)
     assert partial_fct.keywords == expected_kwargs
+
+
+def test_show_cmd(conn):
+    """Test SHOW command of VQL language
+
+    Test the following tables:
+    - samples
+    - selections
+    - fields
+    - wordsets
+    - WORDSETS (UPPER CASE name)
+    - truc (wrong table) => VQLSyntaxError expected
+    """
+    # Test samples
+    result = list(command.execute(conn, "SHOW samples"))
+    print("Found samples:", result)
+    assert len(result) == 2
+
+    found_sample_names = {sample["name"] for sample in result}
+    expected_sample_names = {"NORMAL", "TUMOR"}
+    assert expected_sample_names == found_sample_names
+
+    # Test selections
+    # Create a selection
+    command.create_cmd(conn, source="variants", target="A")
+    result = list(command.execute(conn, "SHOW selections"))
+    print("Found selections:", result)
+    assert len(result) == 2
+
+    # Test fields
+    result = list(command.execute(conn, "SHOW fields"))
+    print("Found fields:", result)
+    # Just test keys of the first item
+    assert result[0].keys() == {'id', 'name', 'category', 'type', 'description'}
+
+    # Test wordsets
+    # Create a wordset
+    # Test import of word set
+    test_file = "examples/gene.txt"
+    wordset_name = "bouzniouf"
+    command.import_cmd(conn, "wordsets", wordset_name, test_file)
+    result = list(command.execute(conn, "SHOW wordsets"))
+    print("Found wordsets in lower case:", result)
+    assert len(result) == 1
+
+    expected_wordset = {'name': 'bouzniouf', 'count': 2}
+    assert expected_wordset == result[0]
+
+    # Test WORDSETS
+    result = list(command.execute(conn, "SHOW WORDSETS"))
+    print("Found WORDSETS in upper case:", result)
+    assert len(result) == 1
+
+    expected_wordset = {'name': 'bouzniouf', 'count': 2}
+    assert expected_wordset == result[0]
+
+    # Test wrong table
+    # Exception is expected
+    with pytest.raises(
+            vql.VQLSyntaxError, match=r".*truc doesn't exists.*"
+    ):
+        list(command.execute(conn, "SHOW truc"))
 
 
 def test_execute(conn):
@@ -248,6 +324,11 @@ def test_execute(conn):
     print("Expected number of variants:", found)
     assert found == 3
 
+    # Show samples table (See test_show_cmd for more tests of this function)
+    result = list(command.execute(conn, "SHOW samples"))
+    print("Found samples:", result)
+    assert len(result) == 2
+
     #  Create bedfile
     bed_file = "examples/test.bed"
     result = command.execute(
@@ -263,9 +344,8 @@ def test_execute(conn):
             file.seek(0)
             for line in reader:
                 if len(line) == 3:
-                    if (
-                        str(line[0]) == str(variant["chr"])
-                        and int(line[1]) <= int(variant["pos"]) <= int(line[2])
-                    ):
+                    if str(line[0]) == str(variant["chr"]) and int(line[1]) <= int(
+                        variant["pos"]
+                    ) <= int(line[2]):
                         is_in = True
             assert is_in

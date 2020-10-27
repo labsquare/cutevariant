@@ -2,14 +2,44 @@
 import argparse
 import os
 import sys
+from functools import partial
 
 # Custom imports
 import progressbar
 from columnar import columnar
 from cutevariant.core.importer import async_import_file
-from cutevariant.core import sql, vql
+from cutevariant.core import sql, vql, command
 from cutevariant.core.querybuilder import *
 from cutevariant.commons import log_level
+
+
+def display_sql_results(data, headers, *args, **kwargs):
+    """Display SQL results in the console in tabulated format"""
+    print(
+        columnar(
+            data,
+            headers=headers,
+            no_borders=True,
+            **kwargs,
+        )
+    )
+
+
+def display_query_status(query_result):
+    """Display error status of a valid and executed VQL query
+
+    Supported results of VQL commands: drop/import; create/set/bed
+
+    Args:
+        query_result(dict)
+    """
+    # Success for drop/import; id present for create/set/bed
+    if query_result.get("success") or ("id" in query_result):
+        print("Done")
+    else:
+        print(
+            "An error occured, there is no result, or there is nothing to do.")
+    exit(1)
 
 
 def main():
@@ -32,7 +62,7 @@ the arguments.""",
         "-vv",
         "--verbose",
         nargs="?",
-        default="critical",
+        default="error",
         choices=["debug", "info", "critical", "error", "warning"],
     )
 
@@ -49,6 +79,10 @@ the arguments.""",
         "createdb",
         help="Build a SQLite database from a vcf file",
         parents=[parent_parser],
+        epilog="""Examples:
+
+        $ cutevariant-cli createdb -i "examples/test.snpeff.vcf"
+        """
     )
     createdb_parser.add_argument("-i", "--input", help="VCF file path", required=True)
 
@@ -58,7 +92,7 @@ the arguments.""",
     )
     show_parser.add_argument(
         "table",
-        choices=["fields", "selections", "samples"],
+        choices=["fields", "selections", "samples", "wordsets"],
         help="Possible names of tables.",
     )
 
@@ -78,7 +112,17 @@ the arguments.""",
 
     $ cutevariant-cli exec "SELECT favorite,chr,pos,ref,alt FROM variants"
     or
-    $ cutevariant-cli exec -g ??????? "????"
+    $ cutevariant-cli exec "SELECT chr,ref,alt FROM variants" -s myselection
+    or
+    $ cutevariant-cli exec "IMPORT WORDSETs 'examples/gene.txt' AS mygenes"
+    or
+    $ cutevariant-cli exec "DROP WORDSETS mygenes"
+    or
+    $ cutevariant-cli exec "CREATE myselection1 FROM variants WHERE gene = 'CHID1'"
+    $ cutevariant-cli exec "CREATE myselection2 FROM variants WHERE gene = 'CICP23'"
+    $ cutevariant-cli exec "CREATE myselection3 = myselection2 | myselection2"
+    or
+    $ cutevariant-cli exec "CREATE boby FROM variants INTERSECT 'examples/test.bed'"
     """,
     )
     select_parser.add_argument("vql", help="A VQL statement.")
@@ -89,12 +133,12 @@ the arguments.""",
         type=int,
         default=100,
     )
-    select_parser.add_argument(
-        "-g",
-        "--group",
-        action="store_true",
-        help="Group SELECT query by...(chr,pos,ref,alt).",
-    )
+    # select_parser.add_argument(
+    #     "-g",
+    #     "--group",
+    #     action="store_true",
+    #     help="Group SELECT query by...(chr,pos,ref,alt).",
+    # )
     select_parser.add_argument(
         "-s", "--to-selection", help="Save SELECT query into a selection name."
     )
@@ -147,30 +191,27 @@ the arguments.""",
     # Show parser ##############################################################
     if args.subparser == "show":
         if args.table == "fields":
-            print(
-                columnar(
-                    [i.values() for i in sql.get_fields(conn)],
-                    headers=["id", "Name", "table", "type", "description"],
-                    no_borders=True,
-                )
+            display_sql_results(
+                (i.values() for i in sql.get_fields(conn)),
+                ["id", "name", "table", "type", "description"]
             )
 
         if args.table == "samples":
-            print(
-                columnar(
-                    [i.values() for i in sql.get_samples(conn)],
-                    headers=["id", "Name"],
-                    no_borders=True,
-                )
+            display_sql_results(
+                (i.values() for i in sql.get_samples(conn)),
+                ["id", "name"]
             )
 
         if args.table == "selections":
-            print(
-                columnar(
-                    [i.values() for i in sql.get_selections(conn)],
-                    headers=["id", "Name", "Count"],
-                    no_borders=True,
-                )
+            display_sql_results(
+                (i.values() for i in sql.get_selections(conn)),
+                ["id", "name", "variant_count"]
+            )
+
+        if args.table == "wordsets":
+            display_sql_results(
+                (i.values() for i in sql.get_wordsets(conn)),
+                ["id", "word_count"]
             )
 
     # Remove parser ############################################################
@@ -181,70 +222,53 @@ the arguments.""",
     # VQL parser ###############################################################
     if args.subparser == "exec":
         query = "".join(args.vql)
+        vql_command = None
 
+        # Test the VQL query
         try:
             cmd = next(vql.parse_vql(query))
-
-        except vql.textx.TextXSyntaxError as e:
+        except (vql.textx.TextXSyntaxError, vql.VQLSyntaxError) as e:
             # Available attributes: e.message, e.line, e.col
-            print(
-                "==================================== ERRORS ===================================="
-            )
-            print("TextXSyntaxError: %s, col: %d" % (e.message, e.col))
-            print(" ")
-            print(query)
-            print("_" * (e.col - 1) + "^\n")
+            print("%s: %s, col: %d" % (e.__class__.__name__, e.message, e.col))
+            print("For query:", query)
             exit(0)
 
-        except vql.VQLSyntaxError as e:
-            # Available attributes: e.message, e.line, e.col
-            print(
-                "==================================== ERRORS ===================================="
+        # Select command with redirection to selection
+        if cmd["cmd"] == "select_cmd" and args.to_selection:
+            vql_command = partial(
+                command.create_cmd,
+                conn,
+                args.to_selection,
+                source=cmd["source"],
+                filters=cmd["filters"],
             )
-            print("TextXSyntaxError: %s, col: %d" % (e.message, e.col))
-            print(" ")
-            print(query)
-            print("_" * (e.col - 1) + "^ \n")
-            exit(0)
 
-        ## ********************** SELECT STATEMENT **************************************
-        if cmd["cmd"] == "select_cmd":
-            selector = sql.QueryBuilder(conn)
-
-            selector.selection = cmd.get("source")
-            selector.columns = cmd.get("columns")
-            selector.filters = cmd.get("filter")
-
-            if args.to_selection:
-                selector.save(args.to_selection)
-
+        try:
+            # Is it redundant with check_vql ?
+            # No because we also execute SQL statement here
+            if vql_command:
+                ret = vql_command()
             else:
-                variants = []
-                for v in selector.trees(grouped=args.group, limit=args.limit):
+                ret = command.create_command_from_obj(conn, cmd)()
+            if not isinstance(ret, dict):
+                # For drop_cmd, import_cmd,
+                ret = list(ret)
+        except (sqlite3.DatabaseError, vql.VQLSyntaxError) as e:
+            LOGGER.exception(e)
+            exit(0)
 
-                    line = v[1]
-                    if args.group:  # Add children count
-                        line.append(v[0])
-                    variants.append(line)
+        LOGGER.debug("SQL result: %s", ret)
+        LOGGER.debug("VQL command: %s", cmd["cmd"])
+        # Note: show_cmd is supported in a separated command option
 
-                headers = list(selector.headers())
-                if args.group:
-                    headers.append("group size")
+        # Select command
+        if cmd["cmd"] in ("select_cmd",) and not args.to_selection:
+            display_sql_results((i.values() for i in ret), ["id"] + cmd["fields"])
+            exit(1)
 
-                print(columnar(variants, headers=headers, no_borders=True))
-
-        ## ********************** SELECT STATEMENT **************************************
-        if cmd["cmd"] == "create_cmd":
-            selector = sql.QueryBuilder(conn)
-            selector.filters = cmd.get("filter")
-            selector.selection = cmd.get("source")
-            target = cmd.get("target")
-
-            selector.save(target)
-
-        ## ********************** SELECT STATEMENT **************************************
-        if cmd["cmd"] == "set_cmd":
-            print(cmd)
+        if cmd["cmd"] in ("drop_cmd", "import_cmd", "create_cmd", "set_cmd", "bed_cmd") or args.to_selection:
+            # PS: to_selection is used to detect select_cmd with selection creation
+            display_query_status(ret)
 
 
 if __name__ == "__main__":

@@ -39,6 +39,14 @@ class VQLSyntaxError(ValueError):
         self.message = message
         self.col = col
 
+    def __repr__(self):
+        if self.col:
+            return "VQLSyntaxError: '%s' at position %s" % (self.message, self.col)
+        return "VQLSyntaxError: '%s'" % self.message
+
+    def __str__(self):
+        return self.__repr__()
+
 
 # ============ Error handle ==================================
 def error_message_from_err(
@@ -105,20 +113,6 @@ class SetExpression(metaclass=model_class):
         return "test"
 
 
-# class FilterExpression(metaclass=model_class):
-#     @property
-#     def value(self):
-#         out = []
-#         key = "AND"  # By default
-#         for i in self.op:
-#             if isinstance(i, str):
-#                 if i in ("AND", "OR"):
-#                     key = i
-#                 else:
-#                     out.append(i)
-#             else:
-#                 out.append(i.value)
-#         return {key: out}
 class FilterOperand(metaclass=model_class):
     @property
     def value(self):
@@ -139,10 +133,10 @@ class Tuple(metaclass=model_class):
         return tuple(self.items)
 
 
-class SetIdentifier(metaclass=model_class):
+class WordSetIdentifier(metaclass=model_class):
     @property
     def value(self):
-        return ("SET", self.arg)
+        return ("WORDSET", self.arg)
 
 
 class SelectCmd(metaclass=model_class):
@@ -163,7 +157,7 @@ class SelectCmd(metaclass=model_class):
 
         if self.group_by:
             output["group_by"] = [
-                i.value if type(i) == Function else i for i in self.group_by
+                i.value if isinstance(i, Function) else i for i in self.group_by
             ]
 
         else:

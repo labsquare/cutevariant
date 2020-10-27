@@ -1,11 +1,11 @@
 """Functions to build a complex SQL Select statement to query variant.
 
-In the most of cases, you will only use build_query function.
+In the most of cases, you will only use build_sql_query function.
 
 Examples:
 
     conn = sqlite3.Connection("::memory::")
-    query = build_query(["chr","pos"])
+    query = build_sql_query(["chr","pos"])
     conn.execute(query)
 
 
@@ -40,11 +40,7 @@ The following module contains several functions to make easy conversion from pyt
 In the most of the case, you only need to use :
 
 build_vql_query => to create a VQL query from python statements
-build_query => to create a SQL query from python statements
-
-TODO: rename build_query to build_sql_query for more coherence .
-
-
+build_sql_query => to create a SQL query from python statements
 """
 # Standard imports
 import sqlite3
@@ -62,7 +58,7 @@ LOGGER = logger()
 GENOTYPE_FUNC_NAME = "sample"
 
 # set("truc")
-SET_FUNC_NAME = "SET"
+WORDSET_FUNC_NAME = "WORDSET"
 
 
 def filters_to_flat(filters: dict):
@@ -136,7 +132,7 @@ def field_function_to_sql(field_function: tuple, use_as=False):
     return f"`{func_name}_{arg_name}`" + suffix
 
 
-def set_function_to_sql(field_function: tuple):
+def wordset_function_to_sql(field_function: tuple):
     """Replace a set_function by a select statement
 
     Set_functions is used from VQL to filter annotation within a set of word.
@@ -147,7 +143,7 @@ def set_function_to_sql(field_function: tuple):
         (str): Query statement
     """
     func_name, arg_name = field_function
-    return f"(SELECT value FROM sets WHERE name = '{arg_name}')"
+    return f"(SELECT value FROM wordsets WHERE name = '{arg_name}')"
 
 
 def fields_to_vql(field) -> str:
@@ -241,8 +237,9 @@ def filters_to_sql(filters, default_tables={}):
                 value = f"'{value}'"
 
             if isinstance(value, tuple):
-                if value[0] == SET_FUNC_NAME:
-                    value = set_function_to_sql(value)
+                #  If value is a WORDSET["salut"] aka ('WORDSET','salut')
+                if value[0] == WORDSET_FUNC_NAME:
+                    value = wordset_function_to_sql(value)
 
             if operator == "~":
                 operator = "REGEXP"
@@ -312,8 +309,8 @@ def filters_to_vql(filters):
 
             if isinstance(value, tuple):
                 # if set   ["set", "name"]
-                if len(value) == 2 and value[0] == SET_FUNC_NAME:
-                    value = "{}['{}']".format(SET_FUNC_NAME, value[1])
+                if len(value) == 2 and value[0] == WORDSET_FUNC_NAME:
+                    value = "{}['{}']".format(WORDSET_FUNC_NAME, value[1])
 
             return "%s %s %s" % (field, operator, value)
 
@@ -336,8 +333,6 @@ def filters_to_vql(filters):
 def build_vql_query(fields, source="variants", filters={}, group_by=[], having={}):
     """Build VQL query
 
-    TODO : harmonize name with build_query => build_sql
-
     Args:
         fields (TYPE): Description
         source (str, optional): Description
@@ -358,7 +353,7 @@ def build_vql_query(fields, source="variants", filters={}, group_by=[], having={
     return query
 
 
-def build_query(
+def build_sql_query(
     fields,
     source="variants",
     filters={},
@@ -378,10 +373,10 @@ def build_query(
         source (str): source of the virtual table ( see: selection )
         filters (dict): nested condition tree
         order_by (str/None): Order by field;
-        If None, order_desc is not required.
+            If None, order_desc is not required.
         order_desc (bool): Descending or Ascending order
         limit (int/None): limit record count;
-        If None, offset is not required.
+            If None, offset is not required.
         offset (int): record count per page
         group_by (list/None): list of field you want to group
         default_tables (dict): association map between fields and sql table origin
@@ -405,14 +400,15 @@ def build_query(
     sql_query += "FROM variants"
 
     # Extract fields from filters
-    fields_in_filters = [i["field"] for i in filters_to_flat(filters)]
+    fields_in_filters = {i["field"] for i in filters_to_flat(filters)}
 
     # Loop over fields and check is annotations is required
-
-    annotation_fields = [i for i, v in default_tables.items() if v == "annotations"]
+    annotation_fields = {i for i, v in default_tables.items() if v == "annotations"}
 
     need_join_annotations = False
-    for col in sql_fields + fields_in_filters:
+    for col in set(sql_fields) | fields_in_filters:
+        # Example of field:
+        # '`annotations`.`gene`'
         if "annotations" in col or col in annotation_fields:
             need_join_annotations = True
             break
@@ -429,9 +425,9 @@ def build_query(
         )
 
     # Add Join Samples
-    ##detect if fields contains function like (genotype,boby,gt) and save boby
-
-    all_fields = set(fields_in_filters + fields)
+    ## detect if fields contains function like (genotype,boby,gt) and save boby
+    all_fields = set(fields_in_filters)
+    all_fields.update(fields)
 
     samples = []
     for col in all_fields:
@@ -445,7 +441,6 @@ def build_query(
     samples = set(samples)
 
     ## Create Sample Join
-
     for sample_name in samples:
         # Optimisation ?
         # sample_id = self.cache_samples_ids[sample_name]
@@ -474,6 +469,7 @@ def build_query(
     if order_by:
         # TODO : sqlite escape field with quote
         orientation = "DESC" if order_desc else "ASC"
+        print("DEBUGH", order_by)
         order_by = fields_to_sql(order_by, default_tables)
         sql_query += f" ORDER BY {order_by} {orientation}"
 
@@ -499,7 +495,7 @@ def build_complete_query(
     """Build a complete select statements according data loaded from conn"""
     default_tables = {i["name"]: i["category"] for i in sql.get_fields(conn)}
     samples_ids = {i["name"]: i["id"] for i in sql.get_samples(conn)}
-    query = build_query(
+    query = build_sql_query(
         fields=fields,
         source=source,
         filters=filters,

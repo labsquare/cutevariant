@@ -26,6 +26,7 @@ from PySide2.QtCore import (
     QTranslator,
     QCommandLineParser,
     QCommandLineOption,
+    QLibraryInfo,
 )
 from PySide2.QtWidgets import QApplication, QSplashScreen
 from PySide2.QtGui import QPixmap
@@ -112,13 +113,24 @@ def load_translations(app):
 
     .. note:: Init ui/locale setting
     """
-
     # Load locale setting if exists
     # English is the default language
     app_settings = QSettings()
     locale_name = app_settings.value("ui/locale", "en")
-    app_translator = QTranslator(app)
 
+    lib_info = QLibraryInfo.location(QLibraryInfo.TranslationsPath)
+
+    # Qt translations
+    qt_translator = QTranslator(app)
+    if qt_translator.load("qt_" + locale_name, directory=lib_info):
+        app.installTranslator(qt_translator)
+
+    # qtbase_translator = QTranslator(app)
+    # if qtbase_translator.load("qtbase_" + locale_name, directory=lib_info):
+    #     app.installTranslator(qtbase_translator)
+
+    # App translations
+    app_translator = QTranslator(app)
     if app_translator.load(locale_name, directory=cm.DIR_TRANSLATIONS):
         app.installTranslator(app_translator)
     else:

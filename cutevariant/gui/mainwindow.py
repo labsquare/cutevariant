@@ -169,6 +169,10 @@ class MainWindow(QMainWindow):
             widget.setWhatsThis(long_description)
             # Register (launch first init on some of them)
             widget.on_register(self)
+            if self.conn:
+                # If register occurs after a project is loaded we must set its
+                # connection attribute
+                widget.on_open_project(self.conn)
 
             # Init mainwindow via the constructor or on_register
             if widget.mainwindow != self:

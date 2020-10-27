@@ -386,9 +386,8 @@ class VariantModel(QAbstractTableModel):
 
         """
         if column < self.columnCount():
-            colname = self.headers[column]
-
-            self.order_by = colname
+            field = self.fields[column - 1]
+            self.order_by = field
             self.order_desc = order == Qt.DescendingOrder
             self.load()
 
@@ -439,31 +438,28 @@ class LoadingTableView(QTableView):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.movie = QMovie(cm.DIR_ICONS + "loading.gif")
-
-        self.movie.frameChanged.connect(self.update)
+        self._is_loading = False
 
     def paintEvent(self, event: QPainter):
 
         if self.is_loading():
             painter = QPainter(self.viewport())
-            rect = self.movie.currentPixmap().rect()
-            rect.moveCenter(self.viewport().rect().center())
-            painter.drawPixmap(rect.x(), rect.y(), self.movie.currentPixmap())
-            self.viewport().update()
+
+            painter.drawText(self.viewport().rect(), Qt.AlignCenter, "Loading ...")
+
         else:
             super().paintEvent(event)
 
     def start_loading(self):
-        self.movie.start()
+        self._is_loading = True
         self.viewport().update()
 
     def stop_loading(self):
-        self.movie.stop()
+        self._is_loading = False
         self.viewport().update()
 
     def is_loading(self):
-        return self.movie.state() == QMovie.Running
+        return self._is_loading
 
 
 class VariantView(QWidget):
@@ -484,9 +480,10 @@ class VariantView(QWidget):
         Args:
             parent: parent widget
             show_popup_menu (boolean, optional: If False, disable the context menu
-                over variants. For example the group pane should be disable
+                over variants. For example the group pane should be disabled
                 in order to avoid partial/false informations to be displayed
                 in this menu.
+                Hacky Note: also used to rename variants to groups in the page box...
         """
         super().__init__(parent)
 
@@ -527,14 +524,13 @@ class VariantView(QWidget):
         self.page_box.setFixedWidth(50)
         self.page_box.setValidator(QIntValidator())
 
+        if LOGGER.getEffectiveLevel() == DEBUG:
+            # Display SQL query on debug mode only
+            self.bottom_bar.addAction(
+                FIcon(0xF0866), self.tr("Show SQL query"), self.on_show_sql
+            )
+        # Display nb of variants/groups and pages
         self.info_label = QLabel()
-        self.loading_label = QLabel()
-        self.loading_label.setMovie(QMovie(cm.DIR_ICONS + "loading.gif"))
-        self.loading_label.movie().setScaledSize(QSize(20, 20))
-        self.loading_label.movie().start()
-
-        # TODO: display on debug mode
-        self.bottom_bar.addAction(FIcon(0xF0866), "show sql", self.on_show_sql)
         self.bottom_bar.addWidget(self.info_label)
         self.bottom_bar.addWidget(spacer)
         self.bottom_bar.setIconSize(QSize(16, 16))
@@ -707,8 +703,14 @@ class VariantView(QWidget):
             self.page_box.setText(str(self.model.page))
             self.set_pagging_enabled(True)
 
+        if not self.show_popup_menu:
+            # Yes it's hacky... but left pane doesn't show variants
+            text = self.tr("{} group(s) {} page(s)")
+        else:
+            text = self.tr("{} variant(s) {} page(s)")
+
         self.info_label.setText(
-            self.tr("{} variant(s) {} page(s)").format(
+            text.format(
                 self.model.total, self.model.pageCount()
             )
         )
@@ -941,9 +943,7 @@ class VariantViewWidget(plugin.PluginWidget):
         self.groupby_action = self.top_bar.addAction(
             FIcon(0xF14E0), self.tr("Group by"), self.on_group_changed
         )
-        self.groupby_action.setToolTip(
-            self.tr("Group variants according to columns")
-        )
+        self.groupby_action.setToolTip(self.tr("Group variants according to columns"))
         self.groupby_action.setCheckable(True)
         self.groupby_action.setChecked(False)
 
@@ -1074,7 +1074,7 @@ class VariantViewWidget(plugin.PluginWidget):
         selection_name, accept = QInputDialog.getText(
             self,
             self.tr("Create a new selection"),
-            self.tr("Name of the new selection:")
+            self.tr("Name of the new selection:"),
         )
 
         if not accept or not selection_name:
@@ -1097,8 +1097,8 @@ class VariantViewWidget(plugin.PluginWidget):
             QMessageBox.critical(
                 self,
                 self.tr("Error while creating selection"),
-                self.tr(
-                    "Error while creating selection '%s'; Name is already used") % selection_name,
+                self.tr("Error while creating selection '%s'; Name is already used")
+                % selection_name,
             )
             # Retry
             self.on_save_selection()
@@ -1163,7 +1163,9 @@ class VariantViewWidget(plugin.PluginWidget):
         else:
             # Ungroup it
             self.groupby_action.setIcon(FIcon(0xF14E0))
-            self.groupby_action.setToolTip(self.tr("Group variants according to columns"))
+            self.groupby_action.setToolTip(
+                self.tr("Group variants according to columns")
+            )
             # Save current group
             self.last_group = self.groupby_left_pane.group_by
         if not is_checked:
@@ -1192,7 +1194,11 @@ class VariantViewWidget(plugin.PluginWidget):
 
                 # Forge a special filter to display the current variant
                 and_list = [
-                    {"field": field, "operator": "=", "value": variant[fields_to_vql(field)]}
+                    {
+                        "field": field,
+                        "operator": "=",
+                        "value": variant[fields_to_vql(field)],
+                    }
                     for field in self.groupby_left_pane.group_by
                 ]
 

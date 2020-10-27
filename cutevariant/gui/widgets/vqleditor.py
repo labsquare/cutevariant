@@ -40,6 +40,7 @@ class VqlSyntaxHighlighter(QSyntaxHighlighter):
         "NULL",
         "COUNT",
         "IMPORT",
+        "WORDSET",
         "INTERSECT",
     )
 

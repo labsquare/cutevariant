@@ -26,7 +26,7 @@ import functools
 from memoization import cached
 
 # Custom imports
-from cutevariant.core.querybuilder import build_query
+from cutevariant.core.querybuilder import build_sql_query
 from cutevariant.core import sql, vql
 from cutevariant.commons import logger
 from cutevariant.core.reader import BedReader
@@ -72,7 +72,7 @@ def select_cmd(
     # Get {'NORMAL': 1, 'TUMOR': 2}
     samples_ids = {i["name"]: i["id"] for i in sql.get_samples(conn)}
 
-    query = build_query(
+    query = build_sql_query(
         fields=fields,
         source=source,
         filters=filters,
@@ -98,7 +98,7 @@ def select_cmd(
 @cached(max_size=128)
 def count_cmd(
     conn: sqlite3.Connection,
-    fields=("chr", "pos", "ref", "alt"),
+    fields=["chr", "pos", "ref", "alt"],
     source="variants",
     filters={},
     group_by=[],
@@ -118,23 +118,26 @@ def count_cmd(
         filters (dict, optional): nested tree of condition
 
     Returns:
-        dict: Count of variants with "count" as a key
+        dict: Count of variants wgstith "count" as a key
     """
-    if not filters and not group_by:
-        # Returned stored cache variant
-        LOGGER.debug("command:count_cmd:: cached from selections table")
-        return {
-            "count": conn.execute(
-                f"SELECT count FROM selections WHERE name = '{source}'"
-            ).fetchone()[0]
-        }
+
+    #  TODO : Check if fields has annotations
+
+    # if not filters and not group_by:
+    #     # Returned stored cache variant
+    #     LOGGER.debug("command:count_cmd:: cached from selections table")
+    #     return {
+    #         "count": conn.execute(
+    #             f"SELECT count FROM selections WHERE name = '{source}'"
+    #         ).fetchone()[0]
+    #     }
 
     # Get {'favorite': 'variants', 'comment': 'variants', impact': 'annotations', ...}
     default_tables = {i["name"]: i["category"] for i in sql.get_fields(conn)}
     # Get {'NORMAL': 1, 'TUMOR': 2}
     samples_ids = {i["name"]: i["id"] for i in sql.get_samples(conn)}
 
-    query = build_query(
+    query = build_sql_query(
         fields=fields,
         source=source,
         filters=filters,
@@ -160,15 +163,17 @@ def count_cmd(
 def drop_cmd(conn: sqlite3.Connection, feature: str, name: str, **kwargs):
     """Drop selection or set from database
 
-    This following VQL command:
-        `DROP selection boby`
+    This following VQL commands:
+        `DROP selections boby`
+        `DROP wordsets mygene`
     will execute :
         `drop_cmd(conn, "selections", "boby")`
-
+        `drop_cmd(conn, "wordsets", "boby")`
     Args:
         conn (sqlite3.Connection): sqlite connection
-        feature (str): selection or set
-        name (str): name of the selection or the set
+        feature (str): selections or wordsets (Names of the SQL tables).
+            Lower case features are also accepted.
+        name (str): name of the selection or name of the wordset
 
     Returns:
         dict: {"success": <boolean>}; True if deletion is ok, False otherwise.
@@ -176,7 +181,10 @@ def drop_cmd(conn: sqlite3.Connection, feature: str, name: str, **kwargs):
     Raises:
         vql.VQLSyntaxError
     """
-    accept_features = ("selections", "sets")
+    accept_features = ("selections", "wordsets")
+
+    # Cast to lower case
+    feature = feature.lower()
 
     if feature not in accept_features:
         raise vql.VQLSyntaxError(f"{feature} doesn't exists")
@@ -219,7 +227,7 @@ def create_cmd(
     if target is None:
         return {}
 
-    sql_query = build_query(
+    sql_query = build_sql_query(
         ["id"],
         source,
         filters,
@@ -262,8 +270,8 @@ def set_cmd(
     if target is None or first is None or second is None or operator is None:
         return {}
 
-    query_first = build_query(["id"], first, limit=None)
-    query_second = build_query(["id"], second, limit=None)
+    query_first = build_sql_query(["id"], first, limit=None)
+    query_second = build_sql_query(["id"], second, limit=None)
 
     func_query = {
         "+": sql.union_variants,
@@ -284,7 +292,7 @@ def bed_cmd(conn: sqlite3.Connection, path: str, target: str, source: str, **kwa
     """Create a new selection from a bed file
 
     This following VQL command:
-        `CREATE boby FROM variant INTERSECT "path/to/file.bed"`
+        `CREATE boby FROM variants INTERSECT "path/to/file.bed"`
     will execute :
         `bed_cmd(conn, "path/to/file.bed", "boby", "source")`
 
@@ -320,41 +328,44 @@ def show_cmd(conn: sqlite3.Connection, feature: str, **kwargs):
 
     Args:
         conn (sqlite3.Connection): sqlite3 connection
-        feature (str): Requested feature type of items;
-        can be: `"selections", "fields", "samples", "sets"`
+        feature (str): Requested feature type of items (Name of the SQL table);
+            Lower case features are also accepted.
+        can be: `"selections", "fields", "samples", "wordsets"`
 
     Yields:
-        (generator[dict]): Items according to requested features (fields,
-            samples, selections, sets).
+        (generator[dict]): Items according to requested feature.
 
     Raises:
         vql.VQLSyntaxError
     """
-    accept_features = {
+    accepted_features = {
         "selections": sql.get_selections,
         "fields": sql.get_fields,
         "samples": sql.get_samples,
-        "sets": sql.get_wordsets,
+        "wordsets": sql.get_wordsets,
     }
 
-    if feature not in accept_features:
+    # Cast in lower case
+    feature = feature.lower()
+
+    if feature not in accepted_features:
         raise vql.VQLSyntaxError(f"option {feature} doesn't exists")
 
-    for item in accept_features[feature](conn):
+    for item in accepted_features[feature](conn):
         yield item
 
 
 def import_cmd(conn: sqlite3.Connection, feature=str, name=str, path=str, **kwargs):
-    """Import command for word sets only
+    """Import command for wordsets only
 
     This following VQL command:
-        `IMPORT sets "gene.txt" AS boby`
+        `IMPORT WORDSETS "gene.txt" AS boby`
     will execute :
-        `import_cmd(conn, "sets", "gene.txt")`
+        `import_cmd(conn, "WORDSETS", "gene.txt")`
 
     Args:
         conn (sqlite3.Connection): sqlite3 connection
-        feature (str): "sets"
+        feature (str): "WORDSETS" (Name of the SQL table)
         name (str): name of the set
         path (str): a filepath
 
@@ -364,9 +375,9 @@ def import_cmd(conn: sqlite3.Connection, feature=str, name=str, path=str, **kwar
     Raises:
         vql.VQLSyntaxError
     """
-    accept_features = ("sets",)
+    accepted_features = ("wordsets",)
 
-    if feature not in accept_features:
+    if feature.lower() not in accepted_features:
         raise vql.VQLSyntaxError(f"option {feature} doesn't exists")
 
     if not os.path.isfile(path):

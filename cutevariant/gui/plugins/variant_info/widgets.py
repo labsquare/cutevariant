@@ -50,7 +50,7 @@ class VariantInfoWidget(PluginWidget):
         self.variant_view.setAlternatingRowColors(True)
         # self.variant_view.setHeaderLabels(["Field", "Value"])
         self.variant_view.header().setVisible(False)
-        self.view.addTab(self.variant_view, "Variant")
+        self.view.addTab(self.variant_view, self.tr("Variant"))
 
         # Build transcript tab
         self.transcript_combo = QComboBox()
@@ -64,7 +64,7 @@ class VariantInfoWidget(PluginWidget):
         tx_layout.addWidget(self.transcript_view)
         tx_widget = QWidget()
         tx_widget.setLayout(tx_layout)
-        self.view.addTab(tx_widget, "Transcripts")
+        self.view.addTab(tx_widget, self.tr("Transcripts"))
         self.transcript_combo.currentIndexChanged.connect(self.on_transcript_changed)
 
         # Build Samples tab
@@ -79,13 +79,13 @@ class VariantInfoWidget(PluginWidget):
         tx_layout.addWidget(self.sample_view)
         tx_widget = QWidget()
         tx_widget.setLayout(tx_layout)
-        self.view.addTab(tx_widget, "Samples")
+        self.view.addTab(tx_widget, self.tr("Samples"))
         self.sample_combo.currentIndexChanged.connect(self.on_sample_changed)
 
         # Build genotype tab
         self.genotype_view = QListWidget()
         self.genotype_view.setIconSize(QSize(20, 20))
-        self.view.addTab(self.genotype_view, "Genotypes")
+        self.view.addTab(self.genotype_view, self.tr("Genotypes"))
 
         # Build comments tab
         # Build Editor

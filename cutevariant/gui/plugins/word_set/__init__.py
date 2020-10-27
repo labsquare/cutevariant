@@ -1,4 +1,4 @@
-__title__ = "WordSet"
+__title__ = "WordSets"
 __description__ = "A plugin to manage word sets"
 __long_description__ = """
 <p>This plugin allows to create sets of words that can be matched with the 

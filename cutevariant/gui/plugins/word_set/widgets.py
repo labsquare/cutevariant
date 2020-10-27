@@ -22,7 +22,12 @@ from PySide2.QtGui import QIcon
 
 # Custom imports
 from cutevariant.gui.plugin import PluginWidget
-from cutevariant.core.sql import get_sql_connexion, get_wordsets, get_words_in_set, sanitize_words
+from cutevariant.core.sql import (
+    get_sql_connexion,
+    get_wordsets,
+    get_words_in_set,
+    sanitize_words,
+)
 from cutevariant.core.command import import_cmd, drop_cmd
 from cutevariant import commons as cm
 from cutevariant.gui.ficon import FIcon
@@ -59,7 +64,7 @@ class WordListDialog(QDialog):
         self.view = QListView()
         self.model = QStringListModel()
         self.view.setModel(self.model)
-        self.view.setSelectionMode(QAbstractItemView.ContiguousSelection)
+        self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
 
         hlayout = QHBoxLayout()
         hlayout.addWidget(self.view)
@@ -104,9 +109,12 @@ class WordListDialog(QDialog):
         Notes:
             A user must click on save for the changes to take effect.
         """
-        while len(self.view.selectionModel().selectedRows()) > 0:
-            indexes = self.view.selectionModel().selectedRows()
+        indexes = self.view.selectionModel().selectedRows()
+        while indexes:
             self.model.removeRows(indexes[0].row(), 1)
+            indexes = self.view.selectionModel().selectedRows()
+
+        self.del_button.setDisabled(True)
 
     def on_load_file(self):
         """Allow to automatically add words from a file
@@ -118,10 +126,7 @@ class WordListDialog(QDialog):
         last_directory = QSettings().value("last_directory", QDir.homePath())
 
         filepath, _ = QFileDialog.getOpenFileName(
-            self,
-            self.tr("Open Word set"),
-            last_directory,
-            self.tr("Text file (*.txt)"),
+            self, self.tr("Open Word set"), last_directory, self.tr("Text file (*.txt)")
         )
 
         if filepath:
@@ -230,7 +235,7 @@ class WordSetWidget(PluginWidget):
             [file.write(word + "\n") for word in words]
 
         # Import the content of the temp file in DB
-        result = import_cmd(self.conn, "sets", wordset_name, filename)
+        result = import_cmd(self.conn, "wordsets", wordset_name, filename)
 
         if not result["success"]:
             LOGGER.error(result)
@@ -266,7 +271,8 @@ class WordSetWidget(PluginWidget):
                 QMessageBox.critical(
                     self,
                     self.tr("Error while creating set"),
-                    self.tr("Error while creating set '%s'; Name is already used") % wordset_name,
+                    self.tr("Error while creating set '%s'; Name is already used")
+                    % wordset_name,
                 )
                 wordset_name = None
 
@@ -291,7 +297,7 @@ class WordSetWidget(PluginWidget):
 
         # Delete all selected sets
         for i in self.view.selectedItems():
-            result = drop_cmd(self.conn, "sets", i.text())
+            result = drop_cmd(self.conn, "wordsets", i.text())
 
             if not result["success"]:
                 LOGGER.error(result)
@@ -316,7 +322,7 @@ class WordSetWidget(PluginWidget):
 
         if dialog.exec_() == QDialog.Accepted:
             # Drop previous
-            drop_cmd(self.conn, "sets", wordset_name)
+            drop_cmd(self.conn, "wordsets", wordset_name)
             # Import new
             self.import_wordset(dialog.model.stringList(), wordset_name)
             self.populate()

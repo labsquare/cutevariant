@@ -289,6 +289,7 @@ class PluginsSettingsWidget(BaseWidget):
         self.view = QTreeWidget()
         self.view.setColumnCount(3)
         self.view.setHeaderLabels(["Name", "Description", "Version"])
+        self.view.header().setSectionResizeMode(QHeaderView.ResizeToContents)
 
         main_layout = QVBoxLayout()
         main_layout.addWidget(self.view)

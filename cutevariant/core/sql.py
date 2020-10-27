@@ -188,6 +188,7 @@ def create_table_metadatas(conn: sqlite3.Connection):
         "CREATE TABLE metadatas (id INTEGER PRIMARY KEY, key TEXT, value TEXT)"
     )
 
+
 def insert_many_metadatas(conn: sqlite3.Connection, metadatas={}):
     """Insert metadata
 
@@ -197,8 +198,7 @@ def insert_many_metadatas(conn: sqlite3.Connection, metadatas={}):
     if metadatas:
         cursor = conn.cursor()
         cursor.executemany(
-            "INSERT INTO metadatas (key,value) VALUES (?,?)",
-            list(metadatas.items()),
+            "INSERT INTO metadatas (key,value) VALUES (?,?)", list(metadatas.items())
         )
 
         conn.commit()
@@ -452,7 +452,13 @@ def create_selection_from_bed(
     for interval in bed_intervals:
         cur.execute(
             "INSERT INTO bed_table (bin, chr, start, end, name) VALUES (?,?,?,?,?)",
-            (0, interval["chrom"], interval["start"], interval["end"], interval["name"]),
+            (
+                0,
+                interval["chrom"],
+                interval["start"],
+                interval["end"],
+                interval["name"],
+            ),
         )
 
     if source == "variants":
@@ -530,10 +536,10 @@ def edit_selection(conn: sqlite3.Connection, selection: dict):
     return cursor.rowcount
 
 
-## sets table ===============================================================
+## wordsets table ===============================================================
 
 
-def create_table_sets(conn: sqlite3.Connection):
+def create_table_wordsets(conn: sqlite3.Connection):
     """Create the table "sets"
 
     This table stores variants selection saved by the user:
@@ -550,7 +556,7 @@ def create_table_sets(conn: sqlite3.Connection):
     """
     cursor = conn.cursor()
     cursor.execute(
-        """CREATE TABLE sets (
+        """CREATE TABLE wordsets (
         id INTEGER PRIMARY KEY ASC,
         name TEXT,
         value TEXT,
@@ -614,7 +620,7 @@ def import_wordset_from_file(conn: sqlite3.Connection, wordset_name, filename):
     # Insertion
     cursor = conn.cursor()
     cursor.executemany(
-        "INSERT INTO sets (name, value) VALUES (?,?)",
+        "INSERT INTO wordsets (name, value) VALUES (?,?)",
         it.zip_longest(tuple(), data, fillvalue=wordset_name),
     )
     conn.commit()
@@ -622,7 +628,7 @@ def import_wordset_from_file(conn: sqlite3.Connection, wordset_name, filename):
 
 
 # Delete set by name
-delete_set_by_name = partial(delete_by_name, table_name="sets")
+delete_set_by_name = partial(delete_by_name, table_name="wordsets")
 
 
 def get_wordsets(conn):
@@ -632,7 +638,7 @@ def get_wordsets(conn):
         generator[dict]: Yield dictionaries with `name` and `count` keys.
     """
     for row in conn.execute(
-        "SELECT name, COUNT(*) as 'count' FROM sets GROUP BY name"
+        "SELECT name, COUNT(*) as 'count' FROM wordsets GROUP BY name"
     ):
         yield dict(row)
 
@@ -643,7 +649,9 @@ def get_words_in_set(conn, wordset_name):
     Returns:
         generator[str]: Yield words of the word set.
     """
-    for row in conn.execute("SELECT DISTINCT value FROM sets WHERE name = ?", (wordset_name,)):
+    for row in conn.execute(
+        "SELECT DISTINCT value FROM wordsets WHERE name = ?", (wordset_name,)
+    ):
         yield dict(row)["value"]
 
 
@@ -739,8 +747,7 @@ def insert_field(
     """
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO fields VALUES (?, ?, ?, ?)",
-        (name, category, type, description),
+        "INSERT INTO fields VALUES (?, ?, ?, ?)", (name, category, type, description)
     )
     conn.commit()
     return cursor.lastrowid
@@ -895,9 +902,7 @@ def create_table_annotations(conn, fields):
     cursor = conn.cursor()
     # TODO: no primary key/unique index for this table?
 
-    cursor.execute(
-        f"CREATE TABLE annotations (variant_id INTEGER NOT NULL, {schema})"
-    )
+    cursor.execute(f"CREATE TABLE annotations (variant_id INTEGER NOT NULL, {schema})")
 
     conn.commit()
 
@@ -1001,7 +1006,10 @@ def create_variants_indexes(conn):
 
 
 def get_one_variant(
-    conn: sqlite3.Connection, variant_id: int, with_annotations=False, with_samples=False
+    conn: sqlite3.Connection,
+    variant_id: int,
+    with_annotations=False,
+    with_samples=False,
 ):
     """Get the variant with the given id
 
@@ -1034,21 +1042,23 @@ def get_one_variant(
         ).fetchone()
     )
 
+    variant["annotations"] = []
     if with_annotations:
-        variant["annotations"] = dict(
-            conn.execute(
+        variant["annotations"] = [
+            dict(annotation) for annotation in conn.execute(
                 f"SELECT * FROM annotations WHERE variant_id = {variant_id}"
-            ).fetchone()
-        )
+            )
+        ]
 
+    variant["samples"] = []
     if with_samples:
-        variant["samples"] = []
-        for sample in conn.execute(
-            f"""SELECT samples.name, sample_has_variant.* FROM sample_has_variant
-            LEFT JOIN samples on samples.id = sample_has_variant.sample_id
-            WHERE variant_id = {variant_id} """
-        ):
-            variant["samples"].append(dict(sample))
+        variant["samples"] = [
+            dict(sample) for sample in conn.execute(
+                f"""SELECT samples.name, sample_has_variant.* FROM sample_has_variant
+                LEFT JOIN samples on samples.id = sample_has_variant.sample_id
+                WHERE variant_id = {variant_id}"""
+            )
+        ]
 
     return variant
 
@@ -1121,6 +1131,7 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
             a NOT NULL constraint.
         => This is not recommended
     """
+
     def build_columns_and_placeholders(table_name):
         """Build a tuple of columns and "?" placeholders for INSERT queries"""
         # Get columns description from the given table

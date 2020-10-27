@@ -70,6 +70,7 @@ class FieldsModel(QStandardItemModel):
         for sample in sql.get_samples(self.conn):
             sample_item = self.load_fields("samples", parent_name=sample["name"])
             sample_item.setText(sample["name"])
+            sample_item.setIcon(FIcon(0xF0B9C))
             samples_items.appendRow(sample_item)
 
         self.appendRow(samples_items)
@@ -84,22 +85,22 @@ class FieldsModel(QStandardItemModel):
         type_icons = {"int": 0xF03A0, "str": 0xF100D, "float": 0xF03A0, "bool": 0xF023B}
 
         for field in sql.get_field_by_category(self.conn, category):
-            item1 = QStandardItem(field["name"])
-            item2 = QStandardItem(field["description"])
-            item2.setToolTip(field["description"])
+            field_name = QStandardItem(field["name"])
+            descr = QStandardItem(field["description"])
+            descr.setToolTip(field["description"])
 
-            item1.setCheckable(True)
+            field_name.setCheckable(True)
 
             if field["type"] in type_icons.keys():
-                item1.setIcon(FIcon(type_icons[field["type"]]))
+                field_name.setIcon(FIcon(type_icons[field["type"]]))
 
-            root_item.appendRow([item1, item2])
-            self.checkable_items.append(item1)
+            root_item.appendRow([field_name, descr])
+            self.checkable_items.append(field_name)
 
             if category == "samples":
-                item1.setData({"name": ("sample", parent_name, field["name"])})
+                field_name.setData({"name": ("sample", parent_name, field["name"])})
             else:
-                item1.setData(field)
+                field_name.setData(field)
 
         return root_item
 
