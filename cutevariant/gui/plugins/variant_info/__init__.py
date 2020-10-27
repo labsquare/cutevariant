@@ -1,6 +1,7 @@
+from PySide2.QtCore import qApp
 __title__ = "InfoVariant"
 __description__ = "A plugin to display variant info"
-__long_description__ = """
+__long_description__ = qApp.translate("variant_info", """
 <p>This plugin allows you to view all the data attached to the currently selected
 variant in the main Variant view window.
 </p>
@@ -11,6 +12,6 @@ a whole, this plugin targets only one variant.
 written comments added by right-clicking on the variant in the main window.
 </p>
 Data is read-only!
-"""
+""")
 __author__ = "Sacha schutz"
 __version__ = "1.0.0"
