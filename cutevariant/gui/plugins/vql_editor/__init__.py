@@ -1,6 +1,7 @@
+from PySide2.QtCore import qApp
 __title__ = "VQL Editor"
 __description__ = "A VQL editor"
-__long_description__ = """
+__long_description__ = qApp.translate("vql_editor", """
 <p>This plugin allows you to manage most of the work that can be done in a 
 Cutevariant project by writing and executing VQL queries.</p>
 
@@ -15,6 +16,6 @@ of the language, please see the project wiki page:</p>
 
 <a href="https://github.com/labsquare/cutevariant/wiki/VQL-language">
 https://github.com/labsquare/cutevariant/wiki/VQL-language</a>
-"""
+""")
 __author__ = "Sacha schutz"
 __version__ = "1.0.0"
