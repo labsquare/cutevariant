@@ -1,7 +1,7 @@
 from PySide2.QtWidgets import QVBoxLayout
 
 from cutevariant.gui.plugin import PluginWidget
-from cutevariant.core.sql import get_sql_connexion
+from cutevariant.core.sql import get_sql_connection
 from cutevariant.gui.widgets.filters import (
     FiltersEditor,
     StringFilterWidget,
@@ -92,7 +92,7 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
-    conn = get_sql_connexion("test.db")
+    conn = get_sql_connection("test.db")
 
     w = AuragenFilterWidget()
     w.conn = conn

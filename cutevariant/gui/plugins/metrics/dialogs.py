@@ -173,6 +173,6 @@ if __name__ == "__main__":
     import sys
 
     app = QApplication(sys.argv)
-    conn = sql.get_sql_connexion("test.db")
+    conn = sql.get_sql_connection("test.db")
     dialog = MetricsDialog(conn=conn)
     app.exec_()

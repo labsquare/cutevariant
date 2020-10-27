@@ -324,7 +324,7 @@ def test_build_query(test_input, test_output, vql):
     # from cutevariant.core import sql
     # from cutevariant.core.importer import import_reader
     # from cutevariant.core.reader import VcfReader
-    # conn = sql.get_sql_connexion(":memory:")
+    # conn = sql.get_sql_connection(":memory:")
     # import_reader(conn, VcfReader(open("examples/test.snpeff.vcf"),"snpeff"))
     # conn.execute(query)
 

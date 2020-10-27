@@ -6,7 +6,7 @@ from typing import Callable
 from PySide2.QtCore import QRunnable, QObject, Signal
 
 # Custom imports
-from cutevariant.core.sql import get_sql_connexion
+from cutevariant.core.sql import get_sql_connection
 
 
 class SqlRunnable(QObject, QRunnable):
@@ -74,7 +74,7 @@ class SqlRunnable(QObject, QRunnable):
             When the job is finished, `done` is set to True.
         """
         # Create a new connection to be thread safe
-        self.async_conn = get_sql_connexion(self.db_file)
+        self.async_conn = get_sql_connection(self.db_file)
         # Connection must be established
         assert self.async_conn
 

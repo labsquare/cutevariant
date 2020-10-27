@@ -2,7 +2,7 @@
 
 To read and write the sqlite database with the schema described here.
 Each method refers to a CRUD operation using following prefixes:
-``get_``, ``insert_``, ``update_``, ``remove_`` and takes a sqlite connexion
+``get_``, ``insert_``, ``update_``, ``remove_`` and takes a sqlite connection
 as ``conn`` attribute.
 
 The module contains also QueryBuilder class to build complexe variant query based
@@ -12,12 +12,12 @@ Example::
 
     # Read sample table information
     from cutevariant.core import sql
-    conn = sql.get_sql_connexion("project.db")
+    conn = sql.get_sql_connection("project.db")
     sql.get_samples(conn)
 
     # Build a variant query
     from cutevariant.core import sql
-    conn = sql.get_sql_connexion("project.db")
+    conn = sql.get_sql_connection("project.db")
     builder = QueryBuilder(conn)
     builder.columns = ["chr","pos","ref","alt"]
     print(builder.sql())
@@ -43,8 +43,8 @@ LOGGER = cm.logger()
 ## Misc functions ==============================================================
 
 
-def get_sql_connexion(filepath):
-    """Open a SQLite database and return the connexion object
+def get_sql_connection(filepath):
+    """Open a SQLite database and return the connection object
 
     Args:
         filepath (str): sqlite filepath
@@ -59,7 +59,7 @@ def get_sql_connexion(filepath):
     connection.execute("PRAGMA foreign_keys = ON")
     connection.row_factory = sqlite3.Row
     foreign_keys_status = connection.execute("PRAGMA foreign_keys").fetchone()[0]
-    LOGGER.debug("get_sql_connexion:: foreign_keys state: %s", foreign_keys_status)
+    LOGGER.debug("get_sql_connection:: foreign_keys state: %s", foreign_keys_status)
     assert foreign_keys_status == 1, "Foreign keys can't be activated :("
 
     # Create function for SQLite
@@ -76,7 +76,7 @@ def drop_table(conn, table_name):
     """Drop the given table
 
     Args:
-        conn (sqlite3.connexion): Sqlite3 connexion
+        conn (sqlite3.connection): Sqlite3 connection
         table_name (str): sqlite table name
     """
     cursor = conn.cursor()
@@ -348,7 +348,7 @@ def create_selection_from_sql(
     """Create a selection record from sql variant query
 
     Args:
-        conn (sqlite3.connexion): Sqlite3 connexion
+        conn (sqlite3.connection): Sqlite3 connection
         query (str): SQL query that select all variant ids. See `from_selection`
         name (str): Name of selection
         count (int/None, optional): Variant count
@@ -422,7 +422,7 @@ def create_selection_from_bed(
     a new selection.
 
     Args:
-        conn (sqlite3.connexion): Sqlite3 connexion
+        conn (sqlite3.connection): Sqlite3 connection
         source (str): Selection name (source); Ex: "variants" (default)
         target (str): Selection name (target)
         bed_intervals (list/generator [dict]): List of intervals
@@ -482,7 +482,7 @@ def get_selections(conn: sqlite3.Connection):
     """Get selections in "selections" table
 
     Args:
-        conn (sqlite3.connexion): Sqlite3 connexion
+        conn (sqlite3.connection): Sqlite3 connection
 
     Yield:
         Dictionnaries with as many keys as there are columnsin the table.

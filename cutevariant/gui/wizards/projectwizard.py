@@ -9,7 +9,7 @@ from PySide2.QtGui import QIcon
 
 # Custom imports
 from cutevariant.core.importer import async_import_file
-from cutevariant.core import get_sql_connexion
+from cutevariant.core import get_sql_connection
 import cutevariant.commons as cm
 from cutevariant.core.readerfactory import detect_vcf_annotation, create_reader
 from cutevariant.core.reader import PedReader
@@ -329,7 +329,7 @@ class ImportThread(QThread):
 
         if os.path.exists(self.db_filename):
             os.remove(self.db_filename)
-        self.conn = get_sql_connexion(self.db_filename)
+        self.conn = get_sql_connection(self.db_filename)
 
         try:
             # Import the file

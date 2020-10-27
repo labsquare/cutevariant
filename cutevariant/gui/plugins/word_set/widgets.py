@@ -23,7 +23,7 @@ from PySide2.QtGui import QIcon
 # Custom imports
 from cutevariant.gui.plugin import PluginWidget
 from cutevariant.core.sql import (
-    get_sql_connexion,
+    get_sql_connection,
     get_wordsets,
     get_words_in_set,
     sanitize_words,
@@ -356,7 +356,7 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
-    conn = get_sql_connexion("C:/sacha/Dev/cutevariant/test.db")
+    conn = get_sql_connection("C:/sacha/Dev/cutevariant/test.db")
 
     # import_cmd(conn, "sets", "boby", "examples/gene.txt")
     w = WordSetWidget()

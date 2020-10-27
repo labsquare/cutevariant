@@ -116,7 +116,7 @@ FILTERS = {
 @pytest.fixture
 def conn():
     """Initialize a memory DB with test data and return a connexion on this DB"""
-    conn = sql.get_sql_connexion(":memory:")
+    conn = sql.get_sql_connection(":memory:")
 
     sql.create_project(conn, "test", "hg19")
     assert table_exists(conn, "projects"), "cannot create table projects"

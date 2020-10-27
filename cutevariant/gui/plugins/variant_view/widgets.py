@@ -1304,7 +1304,7 @@ if __name__ == "__main__":
     w.setModel(m)
     w.show()
 
-    # conn = sql.get_sql_connexion(":memory:")
+    # conn = sql.get_sql_connection(":memory:")
     # reader = VcfReader(
     #     open("/home/sacha/Dev/cutevariant/examples/test.snpeff.vcf"), "snpeff"
     # )

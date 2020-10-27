@@ -226,7 +226,7 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
-    conn = sql.get_sql_connexion("C:/sacha/Dev/cutevariant/exome.db")
+    conn = sql.get_sql_connection("C:/sacha/Dev/cutevariant/exome.db")
 
     all_w = FiltersEditor()
 

@@ -13,7 +13,7 @@ from PySide2.QtGui import *
 
 # Custom imports
 from cutevariant.gui import style, plugin
-from cutevariant.core import sql, get_sql_connexion
+from cutevariant.core import sql, get_sql_connection
 from cutevariant.core.querybuilder import fields_to_vql
 
 import cutevariant.commons as cm
@@ -1888,7 +1888,7 @@ if __name__ == "__main__":
     import cutevariant.commons as cm
     from cutevariant.gui.ficon import FIcon, setFontPath
 
-    conn = get_sql_connexion("test.db")
+    conn = get_sql_connection("test.db")
 
     d = FieldDialog(conn)
     d.show()
@@ -1896,7 +1896,7 @@ if __name__ == "__main__":
 
     setFontPath(cm.FONT_FILE)
 
-    conn = sql.get_sql_connexion(":memory:")
+    conn = sql.get_sql_connection(":memory:")
     import_reader(conn, FakeReader())
 
     data = {
