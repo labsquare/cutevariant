@@ -54,22 +54,22 @@ def get_sql_connexion(filepath):
             The connection is initialized with `row_factory = Row`.
             So all results are accessible via indexes or keys.
     """
-    connexion = sqlite3.connect(filepath)
+    connection = sqlite3.connect(filepath)
     # Activate Foreign keys
-    connexion.execute("PRAGMA foreign_keys = ON")
-    connexion.row_factory = sqlite3.Row
-    foreign_keys_status = connexion.execute("PRAGMA foreign_keys").fetchone()[0]
+    connection.execute("PRAGMA foreign_keys = ON")
+    connection.row_factory = sqlite3.Row
+    foreign_keys_status = connection.execute("PRAGMA foreign_keys").fetchone()[0]
     LOGGER.debug("get_sql_connexion:: foreign_keys state: %s", foreign_keys_status)
     assert foreign_keys_status == 1, "Foreign keys can't be activated :("
 
-    # Create function for sqlite
+    # Create function for SQLite
     def regexp(expr, item):
         reg = re.compile(expr)
         return reg.search(item) is not None
 
-    connexion.create_function("REGEXP", 2, regexp)
+    connection.create_function("REGEXP", 2, regexp)
 
-    return connexion
+    return connection
 
 
 def drop_table(conn, table_name):
