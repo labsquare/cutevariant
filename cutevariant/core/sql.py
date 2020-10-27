@@ -96,7 +96,7 @@ def clear_table(conn: sqlite3.Connection, table_name):
     conn.commit()
 
 
-def get_columns(conn: sqlite3.Connection, table_name):
+def get_table_columns(conn: sqlite3.Connection, table_name):
     """Return the list of columns for the given table
 
     Args:
@@ -109,10 +109,6 @@ def get_columns(conn: sqlite3.Connection, table_name):
 
     References:
         used by async_insert_many_variants() to build queries with placeholders
-
-    Todo:
-        Rename to get_table_columns
-
     """
     return [
         c[1] for c in conn.execute(f"pragma table_info({table_name})") if c[1] != "id"
@@ -1135,7 +1131,7 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
     def build_columns_and_placeholders(table_name):
         """Build a tuple of columns and "?" placeholders for INSERT queries"""
         # Get columns description from the given table
-        cols = get_columns(conn, table_name)
+        cols = get_table_columns(conn, table_name)
         # Build dynamic insert query
         # INSERT INTO variant qcol1, qcol2.... VALUES ?, ?
         tb_cols = ",".join([f"`{col}`" for col in cols])
@@ -1148,9 +1144,9 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
     var_cols, var_places = build_columns_and_placeholders("variants")
     ann_cols, ann_places = build_columns_and_placeholders("annotations")
 
-    var_columns = get_columns(conn, "variants")
-    ann_columns = get_columns(conn, "annotations")
-    sample_columns = get_columns(conn, "sample_has_variant")
+    var_columns = get_table_columns(conn, "variants")
+    ann_columns = get_table_columns(conn, "annotations")
+    sample_columns = get_table_columns(conn, "sample_has_variant")
 
     # Get samples with samples names as keys and sqlite rowid as values
     # => used as a mapping for samples ids

@@ -197,11 +197,11 @@ def test_create_connexion(conn):
 
 def test_get_columns(conn):
     """Test getting columns of variants and annotations"""
-    variant_cols = set(sql.get_columns(conn, "variants"))
+    variant_cols = set(sql.get_table_columns(conn, "variants"))
     expected_cols = {i["name"] for i in FIELDS if i["category"] == "variants"}
     assert variant_cols == expected_cols
 
-    annot_cols = set(sql.get_columns(conn, "annotations"))
+    annot_cols = set(sql.get_table_columns(conn, "annotations"))
     expected_cols = {i["name"] for i in FIELDS if i["category"] == "annotations"}
     expected_cols.add("variant_id")
     # {'gene', 'transcript', 'variant_id'}
