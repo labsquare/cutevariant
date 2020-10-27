@@ -224,7 +224,7 @@ class VariantModel(QAbstractTableModel):
 
         Called by:
             - on_change_query() from the view.
-            - load_from_vql(), sort() and setPage() by the model.
+            - sort() and setPage() by the model.
         """
         if self.conn is None:
             return
@@ -331,19 +331,6 @@ class VariantModel(QAbstractTableModel):
         self.endResetModel()
         self._set_loading(False)
         self.load_finished.emit()
-
-    def load_from_vql(self, vql):
-
-        try:
-            vql_object = vql.parse_one_vql(vql)
-            if "select_cmd" in vql_object:
-                self.fields = vql_object["fields"]
-                self.source = vql_object["source"]
-                self.filters = vql_object["filters"]
-            self.load()
-        except Exception as e:
-            LOGGER.exception(e)
-            raise e
 
     def hasPage(self, page: int) -> bool:
         """ Return True if <page> exists otherwise return False """
