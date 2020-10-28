@@ -76,6 +76,18 @@ def test_fields_to_sql():
 
 # Structure: (filter dict, expected SQL, expected VQL)
 FILTERS_VS_SQL_VQL = [
+    # Empty filter
+    (
+        {},
+        "",
+        ""
+    ),
+    # Empty filter
+    (
+        {"AND": []},
+        "",
+        ""
+    ),
     # Standard not nested filter
     (
         {
