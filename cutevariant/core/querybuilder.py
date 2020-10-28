@@ -393,8 +393,13 @@ def filters_to_vql(filters):
 
 
 def build_vql_query(fields, source="variants", filters={}, group_by=[], having={}):
-    """Build VQL query
-    TODO: doc...
+    """Build VQL SELECT query
+
+    Args:
+        fields (list): List of fields
+        source (str): source of the virtual table ( see: selection )
+        filters (dict): nested condition tree
+        group_by (list/None): list of field you want to group
     """
     query = "SELECT " + ",".join([fields_to_vql(i) for i in fields]) + " FROM " + source
     if filters:
@@ -426,7 +431,7 @@ def build_sql_query(
     default_tables={},
     samples_ids={},
 ):
-    """Build SQL SELECT query on variants tables
+    """Build SQL SELECT query
 
     Args:
         fields (list): List of fields
