@@ -74,118 +74,116 @@ def test_fields_to_sql():
     )
 
 
-def test_filters_to_sql():
+# Structure: (filter dict, expected SQL, expected VQL)
+FILTERS_VS_SQL_VQL = [
+    # Standard not nested filter
+    (
+        {
+            "AND": [
+                {"field": "ref", "operator": "=", "value": "A"},
+                {"field": "alt", "operator": "=", "value": "C"},
+            ]
+        },
+        "(`variants`.`ref` = 'A' AND `variants`.`alt` = 'C')",
+        "ref = 'A' AND alt = 'C'",
+    ),
+    # Test composite field
+    (
+        {
+            "AND": [
+                {"field": ("sample", "sacha", "gt"), "operator": "=",
+                 "value": 4},
+                {"field": "alt", "operator": "=", "value": "C"},
+            ]
+        },
+        "(`sample_sacha`.`gt` = 4 AND `variants`.`alt` = 'C')",
+        "sample['sacha'].gt = 4 AND alt = 'C'",
+    ),
+    # Test nested filters
+    (
+        {
+            "AND": [
+                {"field": "ref", "operator": "=", "value": "A"},
+                {
+                    "OR": [
+                        {"field": "alt", "operator": "=", "value": "C"},
+                        {"field": "alt", "operator": "=", "value": "C"},
+                    ]
+                },
+            ]
+        },
+        "(`variants`.`ref` = 'A' AND (`variants`.`alt` = 'C' OR `variants`.`alt` = 'C'))",
+        "ref = 'A' AND (alt = 'C' OR alt = 'C')",
+    ),
+    # Test IN
+    (
+        {'field': 'chr', 'operator': 'in', 'value': (11.0,)},
+        "`variants`.`chr` IN (11.0)",
+        "chr IN (11.0)",
+    ),
+    # Test IN: conservation of not mixed types in the tuple
+    (
+        {'field': 'chr', 'operator': 'in', 'value': (10.0, 11.0)},
+        '`variants`.`chr` IN (10.0,11.0)',
+        'chr IN (10.0, 11.0)',
+    ),
+    # Test IN: conservation of not mixed types in a tuple with str type
+    # => Cast via literal_eval
+    (
+        {'field': 'chr', 'operator': 'in', 'value': '(10.0, 11.0)'},
+        '`variants`.`chr` IN (10.0,11.0)',
+        'chr IN (10.0, 11.0)',
+    ),
+    # Test IN: conservation of mixed types in the tuple
+    (
+        {'field': 'gene', 'operator': 'in', 'value': ('CICP23', 2.0)},
+        '`annotations`.`gene` IN ("CICP23",2.0)',
+        "gene IN ('CICP23', 2.0)",
+    ),
+    # Test IN: conservation of mixed types in a tuple with str type
+    # => Cast via literal_eval
+    (
+        {'field': 'gene', 'operator': 'in', 'value': "('CICP23', 2.0)"},
+        '`annotations`.`gene` IN ("CICP23",2.0)',
+        "gene IN ('CICP23', 2.0)",
+    ),
+    # Test IN: Just elements separated by comas
+    (
+        {'field': 'chr', 'operator': 'in', 'value': '100, 11'},
+        '`variants`.`chr` IN (100,11)',
+        "chr IN (100, 11)",
+    ),
+    # Test normal operator (not IN) with tuple
+    (
+        {'field': 'chr', 'operator': '<', 'value': '(10.0, 11.0)'},
+        "`variants`.`chr` < '(10.0, 11.0)'",
+        "chr < '(10.0, 11.0)'",
+    ),
+    # Test WORDSET function
+    (
+        {'field': 'gene', 'operator': 'in', 'value': ('WORDSET', 'coucou')},
+        "`annotations`.`gene` IN (SELECT value FROM wordsets WHERE name = 'coucou')",
+        "gene IN WORDSET['coucou']"
+    ),
+]
 
 
-    data = [
-        # Standard not nested filter
-        (
-             {
-                "AND": [
-                    {"field": "ref", "operator": "=", "value": "A"},
-                    {"field": "alt", "operator": "=", "value": "C"},
-                ]
-            },
-             "(`variants`.`ref` = 'A' AND `variants`.`alt` = 'C')"
-        ),
-        # Test composite field
-        (
-            {
-                "AND": [
-                    {"field": ("sample", "sacha", "gt"), "operator": "=", "value": 4},
-                    {"field": "alt", "operator": "=", "value": "C"},
-                ]
-            },
-            "(`sample_sacha`.`gt` = 4 AND `variants`.`alt` = 'C')"
-        ),
-        # Test nested filters
-        (
-            {
-                "AND": [
-                    {"field": "ref", "operator": "=", "value": "A"},
-                    {
-                        "OR": [
-                            {"field": "alt", "operator": "=", "value": "C"},
-                            {"field": "alt", "operator": "=", "value": "C"},
-                        ]
-                    },
-                ]
-            },
-            "(`variants`.`ref` = 'A' AND (`variants`.`alt` = 'C' OR `variants`.`alt` = 'C'))"
-        ),
-        # Test IN
-        (
-            {'field': 'chr', 'operator': 'in', 'value': (11.0,)},
-            "`variants`.`chr` IN (11.0)"
-        ),
-        # Test IN: conservation of not mixed types in the tuple
-        (
-            {'field': 'chr', 'operator': 'in', 'value': (10.0, 11.0)},
-            '`variants`.`chr` IN (10.0,11.0)'
-        ),
-        # Test IN: conservation of not mixed types in a tuple with str type
-        # => Cast via literal_eval
-        (
-            {'field': 'chr', 'operator': 'in', 'value': '(10.0, 11.0)'},
-            '`variants`.`chr` IN (10.0,11.0)'
-        ),
-        # Test IN: conservation of mixed types in the tuple
-        (
-            {'field': 'gene', 'operator': 'in', 'value': ('CICP23', 2.0)},
-            '`annotations`.`gene` IN ("CICP23",2.0)'
-        ),
-        # Test IN: conservation of mixed types in a tuple with str type
-        # => Cast via literal_eval
-        (
-            {'field': 'gene', 'operator': 'in', 'value': "('CICP23', 2.0)"},
-            '`annotations`.`gene` IN ("CICP23",2.0)'
-        ),
-        # Test IN: Just elements separated by comas
-        (
-            {'field': 'chr', 'operator': 'in', 'value': '100, 11'},
-            '`variants`.`chr` IN (100,11)'
-        ),
-        # Test normal operator (not IN) with tuple
-        (
-            {'field': 'chr', 'operator': '<', 'value': '(10.0, 11.0)'},
-            "`variants`.`chr` < '(10.0, 11.0)'"
-        ),
-        # Test WORDSET function
-        (
-            {'field': 'gene', 'operator': 'in', 'value': ('WORDSET', 'coucou')},
-            "`annotations`.`gene` IN (SELECT value FROM wordsets WHERE name = 'coucou')"
-        ),
-    ]
-    for filter_in, expected in data:
-        assert querybuilder.filters_to_sql(filter_in, DEFAULT_TABLES) == expected
+@pytest.mark.parametrize(
+    "filter_in, expected_sql, expected_vql",
+    FILTERS_VS_SQL_VQL,
+    ids=[str(i) for i in range(len(FILTERS_VS_SQL_VQL))],
+)
+def test_filters_to_sql(filter_in, expected_sql, expected_vql):
+    assert querybuilder.filters_to_sql(filter_in, DEFAULT_TABLES) == expected_sql
 
 
-def test_filters_to_vql():
-    filter_in = {
-        "AND": [
-            {"field": "ref", "operator": "=", "value": "A"},
-            {"field": "alt", "operator": "=", "value": "C"},
-        ]
-    }
-
-    assert querybuilder.filters_to_vql(filter_in) == "ref = 'A' AND alt = 'C'"
-
-    filter_in = {
-        "AND": [
-            {"field": "ref", "operator": "=", "value": "A"},
-            {
-                "OR": [
-                    {"field": "alt", "operator": "=", "value": "C"},
-                    {"field": "alt", "operator": "=", "value": "C"},
-                ]
-            },
-        ]
-    }
-
-    assert (
-        querybuilder.filters_to_vql(filter_in)
-        == "ref = 'A' AND (alt = 'C' OR alt = 'C')"
-    )
+@pytest.mark.parametrize(
+    "filter_in, expected_sql, expected_vql",
+    FILTERS_VS_SQL_VQL,
+    ids=[str(i) for i in range(len(FILTERS_VS_SQL_VQL))],
+)
+def test_filters_to_vql(filter_in, expected_sql, expected_vql):
+    assert querybuilder.filters_to_vql(filter_in) == expected_vql
 
 
 QUERY_TESTS = [
