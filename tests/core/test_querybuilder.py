@@ -239,13 +239,12 @@ QUERY_TESTS = [
             "source": "variants",
             "filters": {
                 "AND": [
-                    {"field": "ref", "operator": "has", "value": "A"},
                     {"field": "alt", "operator": "~", "value": "C"},
                 ]
             },
         },
-        "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants WHERE (`variants`.`ref` LIKE '%A%' AND `variants`.`alt` REGEXP 'C') LIMIT 50 OFFSET 0",
-        "SELECT chr,pos FROM variants WHERE ref has 'A' AND alt ~ 'C'",
+        "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants WHERE `variants`.`alt` REGEXP 'C' LIMIT 50 OFFSET 0",
+        "SELECT chr,pos FROM variants WHERE alt ~ 'C'",
     ),
     # Test different source
     (
