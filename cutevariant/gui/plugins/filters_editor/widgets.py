@@ -524,7 +524,7 @@ class FilterItem:
             return self.data[1].upper()
 
     def get_value(self):
-        """Get value
+        """Get value of condition or operator value
 
         Returns:
             - If item is a LOGIC_FIELD, return the operator AND/OR.
@@ -535,7 +535,6 @@ class FilterItem:
             this function will return `(10, 11)`.
         """
         if self.type() == self.CONDITION_TYPE:
-            # print("filteritem, get value: type", type(self.data[2]))
             return self.data[2]
 
         if self.type() == self.LOGIC_TYPE:
@@ -659,6 +658,12 @@ class FilterModel(QAbstractItemModel):
     def data(self, index: QModelIndex, role=Qt.EditRole):
         """Overrided Qt methods : Return model's data according index and role
 
+        Warning:
+            FilterDelegate.createEditor and setEditorData must use UserRole!
+            The displayed elements are displayed from FilterItem with DisplayRole!
+            Field* take ONLY UserRoles and convert them into something that can be
+            showed to a user.
+
         Args:
             index (QModelIndex): index of item
             role (Qt.Role)
@@ -742,6 +747,12 @@ class FilterModel(QAbstractItemModel):
         """Overrided Qt methods: Set value of FilterItem present at the given index.
 
         This method is called from FilterDelegate when edition has been done.
+
+        Warning:
+            FilterDelegate.createEditor and setEditorData must use UserRole!
+            The displayed elements are displayed from FilterItem with DisplayRole!
+            Field* take ONLY UserRoles and convert them into something that can be
+            showed to a user.
 
         Args:
             index (QModelIndex)
@@ -866,7 +877,7 @@ class FilterModel(QAbstractItemModel):
         self.endResetModel()
 
     def to_item(self, data: dict) -> FilterItem:
-        """ recursive function to build a nested FilterItem structure from dict data """
+        """Recursive function to build a nested FilterItem structure from dict data"""
         if len(data) == 1:  # logic item
             operator = list(data.keys())[0]
             item = FilterItem(operator)
@@ -876,7 +887,11 @@ class FilterModel(QAbstractItemModel):
         return item
 
     def to_dict(self, item=None) -> dict:
-        """ recursive function to build a nested dictionnary from FilterItem structure"""
+        """Recursive function to build a nested dictionnary from FilterItem structure
+
+        Notes:
+            We use data from FilterItems; i.e. the equivalent of UserRole data.
+        """
 
         if len(self.root_item.children) == 0:
             return {}
@@ -1254,6 +1269,8 @@ class FilterDelegate(QStyledItemDelegate):
         # print("user, edit, display")
         # print(";".join(str(index.data(role)) for role in roles))
         # print(";".join(str(type(index.data(role))) for role in roles))
+        # print("VAL:", index.data(role=Qt.UserRole))
+        # print("editor type", type(editor))
 
         # Set editor data from the model (from the selected FilterItem)
         # Editors expect typed values, so don't forget to use UserRole, not EditRole
