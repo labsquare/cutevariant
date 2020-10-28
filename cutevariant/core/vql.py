@@ -262,8 +262,17 @@ METAMODEL = textx.metamodel_from_str(
 def parse_vql(raw_vql: str) -> list:
     """Execute multiline VQL statement separated by ";"
 
-    :return: yield 1 dictionnary per command
-        .. example :: {'cmd': 'select_cmd', 'columns': ['chr','pos'], 'source':'variants', 'filter': 'None'}
+    Returns:
+         (generator[dict]): yield 1 VQL object (a dictionnary) per command
+
+    Examples:
+        VQL object:
+        `{
+            'cmd': 'select_cmd',
+            'columns': ['chr','pos'],
+            'source':'variants',
+            'filter': 'None'
+        }`
     """
     try:
         raw_model = METAMODEL.model_from_str(raw_vql)
@@ -274,4 +283,18 @@ def parse_vql(raw_vql: str) -> list:
 
 
 def parse_one_vql(raw_vql: str) -> dict:
+    """Execute 1 VQL statement
+
+    Returns:
+        (dict): 1 VQL object
+
+    Examples:
+        VQL object:
+        `{
+            'cmd': 'select_cmd',
+            'columns': ['chr','pos'],
+            'source':'variants',
+            'filter': 'None'
+        }`
+    """
     return next(parse_vql(raw_vql))
