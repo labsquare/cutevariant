@@ -48,7 +48,7 @@ def test_field_function_to_sql():
 
 def test_wordset_function_to_sql():
     assert (
-        querybuilder.wordset_function_to_sql(("WORDSET", "sacha"))
+        querybuilder.wordset_data_to_sql(("WORDSET", "sacha"))
         == "(SELECT value FROM wordsets WHERE name = 'sacha')"
     )
 

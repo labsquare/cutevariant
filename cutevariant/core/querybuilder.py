@@ -134,7 +134,7 @@ def field_function_to_sql(field_function: tuple, use_as=False):
     return f"`{func_name}_{arg_name}`" + suffix
 
 
-def wordset_function_to_sql(wordset_expr: tuple):
+def wordset_data_to_sql(wordset_expr: tuple):
     """Get the SQL version of a Wordset expression (`(WORDSET', 'boby')`)
 
     Wordset function is used in VQL to filter fields within a set of words.
@@ -145,7 +145,7 @@ def wordset_function_to_sql(wordset_expr: tuple):
         `SELECT ... WHERE gene IN (SELECT value FROM sets WHERE name = 'boby')`
 
         We return only the sub SELECT statement here:
-        >>> wordset_function_to_sql("WORDSET", "boby")
+        >>> wordset_data_to_sql(("WORDSET", "boby"))
         "SELECT value FROM sets WHERE name = 'boby'"
 
     Args:
@@ -155,8 +155,25 @@ def wordset_function_to_sql(wordset_expr: tuple):
         (str): Query statement
     """
     func_name, arg_name = wordset_expr
-    assert func_name == "WORDSET"
+    assert func_name == WORDSET_FUNC_NAME
     return f"(SELECT value FROM wordsets WHERE name = '{arg_name}')"
+
+
+def wordset_data_to_vql(wordset_expr: tuple):
+    """Get the VQL version of a Wordset expression (`(WORDSET', 'boby')`)
+
+    Example:
+
+        >>> wordset_data_to_vql(("WORDSET", "boby"))
+        "WORDSET['boby']"
+
+    Args:
+        wordset_expr (tuple): Tuple of 2 items: First one is "WORDSET",
+            second one is the name of the queried wordset.
+    Returns:
+        (str): Query statement
+    """
+    return "{}['{}']".format(*wordset_expr)
 
 
 def fields_to_vql(field) -> str:
@@ -266,7 +283,7 @@ def filters_to_sql(filters, default_tables={}):
                 # If value is a WORDSET["salut"] aka ('WORDSET', 'salut')
                 # => Get SQL statement
                 if value[0] == WORDSET_FUNC_NAME:
-                    value = wordset_function_to_sql(value)
+                    value = wordset_data_to_sql(value)
                 elif len(value) == 1:
                     # Remove last comma in tuple with 1 element ("xxx",)
                     value = f"({value[0]})"
@@ -334,7 +351,7 @@ def filters_to_vql(filters):
                 # If value is ('WORDSET', 'salut') aka WORDSET["salut"]
                 # => Get VQL statement
                 if len(value) == 2 and value[0] == WORDSET_FUNC_NAME:
-                    value = "{}['{}']".format(WORDSET_FUNC_NAME, value[1])
+                    value = wordset_data_to_vql(value)
                 elif len(value) == 1:
                     # Remove last comma in tuple with 1 element ("xxx",)
                     value = f"({value[0]})"
