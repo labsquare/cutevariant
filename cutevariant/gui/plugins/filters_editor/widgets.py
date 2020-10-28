@@ -297,6 +297,7 @@ class OperatorField(BaseField):
         "=": "equal",
         "!=": "not equal",
         "LIKE": "like",
+        "NOT LIKE": "not like",
         "~": "regex",
         "IN": "in",
         "NOT IN": "not in",
