@@ -149,9 +149,7 @@ class StrField(BaseField):
         self.edit.setText(str(value))
 
     def get_value(self) -> Any:
-        """Return quoted string
-        ..todo : check if quotes are required
-        """
+        """Return string or float/int for numeric values"""
         value = self.edit.text()
 
         if value.isdigit():
@@ -162,7 +160,7 @@ class StrField(BaseField):
         return value
 
     def set_completer(self, completer: QCompleter):
-        """ set a completer to autocomplete value """
+        """Set a completer to autocomplete value"""
         self.edit.setCompleter(completer)
 
 
@@ -232,7 +230,6 @@ class ComboField(BaseField):
     def set_value(self, value: str):
         """Set text of lineEdit in ComboBox"""
         # items = [self.edit.itemText(i) for i in range(self.edit.count())]
-
         # Set text of lineEdit via the index of the required text
         # Here we use an editable combobox with a lineEdit.
         # => Use setCurrentIndex instead of setCurrentText.
@@ -242,12 +239,10 @@ class ComboField(BaseField):
         index = self.edit.findText(value)
         if index != -1:
             self.edit.setCurrentIndex(index)
-        # Don't do this only: self.edit.setCurrentText(value)
+            # /!\ Don't do this only: self.edit.setCurrentText(value) (see above)
 
     def get_value(self):
-        """Return quoted string
-        ..todo : check if quotes are required
-        """
+        """Return UserRole string"""
         # Return UserRole
         return self.edit.currentData()
 
@@ -760,7 +755,7 @@ class FilterModel(QAbstractItemModel):
         if not index.isValid():
             return False
 
-        if role == Qt.UserRole:
+        if role in (Qt.DisplayRole, Qt.EditRole, Qt.UserRole):
             item = self.item(index)
 
             if index.column() == 0:
@@ -773,11 +768,13 @@ class FilterModel(QAbstractItemModel):
                 if item.type() == FilterItem.CONDITION_TYPE:
                     item.set_field(value)
 
-            if index.column() == 2 and item.type() == FilterItem.CONDITION_TYPE:
-                item.set_operator(value)
+            if item.type() == FilterItem.CONDITION_TYPE:
 
-            if index.column() == 3 and item.type() == FilterItem.CONDITION_TYPE:
-                item.set_value(value)
+                if index.column() == 2:
+                    item.set_operator(value)
+
+                if index.column() == 3:
+                    item.set_value(value)
 
             self.filtersChanged.emit()
             # just one item is changed
@@ -1247,6 +1244,9 @@ class FilterDelegate(QStyledItemDelegate):
 
         Currently, it calls BaseEditor.set_value() methods
 
+        See Also:
+            :meth:`setModelData` for the opposite function (set model data)
+
         Args:
             editor (QWidget)
             index (QModelindex)
@@ -1310,7 +1310,10 @@ class FilterDelegate(QStyledItemDelegate):
     def setModelData(self, editor, model, index):
         """Overrided from Qt: Update the model with data from the editor.
 
-        Currently, it calls editor.set_value()
+        Currently, it calls model.setData()
+
+        See Also:
+            :meth:`setModelData` for the opposite function (set editor data)
 
         Args:
             editor (QWidget): editor
