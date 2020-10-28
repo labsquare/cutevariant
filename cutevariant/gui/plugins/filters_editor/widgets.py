@@ -207,7 +207,6 @@ class IterableField(StrField):
             pass
         # Cast to str
         return value
-        # return super().get_value()
 
 
 class ComboField(BaseField):
@@ -668,7 +667,7 @@ class FilterModel(QAbstractItemModel):
             Any type: Return value
         """
         if not index.isValid():
-            return None
+            return
 
         item = self.item(index)
 
@@ -702,7 +701,7 @@ class FilterModel(QAbstractItemModel):
         if role == FilterModel.UniqueIdRole:
             return item.uuid
 
-        return None
+        return
 
         # if role == Qt.DisplayRole and index.column() == 1:
         #     data = self.item(index).get_data(index.column())
@@ -872,10 +871,9 @@ class FilterModel(QAbstractItemModel):
             operator = list(data.keys())[0]
             item = FilterItem(operator)
             [item.append(self.to_item(k)) for k in data[operator]]
-            return item
         else:  # condition item
             item = FilterItem((data["field"], data["operator"], data["value"]))
-            return item
+        return item
 
     def to_dict(self, item=None) -> dict:
         """ recursive function to build a nested dictionnary from FilterItem structure"""
