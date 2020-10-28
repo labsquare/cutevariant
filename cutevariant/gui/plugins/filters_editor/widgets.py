@@ -14,7 +14,7 @@ from PySide2.QtGui import *
 # Custom imports
 from cutevariant.gui import style, plugin
 from cutevariant.core import sql, get_sql_connection
-from cutevariant.core.querybuilder import fields_to_vql
+from cutevariant.core.querybuilder import fields_to_vql, wordset_data_to_vql, WORDSET_FUNC_NAME
 
 import cutevariant.commons as cm
 
@@ -146,11 +146,40 @@ class StrField(BaseField):
         self.set_widget(self.edit)
 
     def set_value(self, value: Any):
+        """Set displayed value in the lineEdit of the editor
+
+        Notes: TODO: TO be updated/removed if WORDSET is a real operator
+            For the following query:
+            SELECT favorite,chr,pos,ref,alt FROM variants where gene IN WORDSET['aa']
+
+            We need to show to the user only "WORDSET['aa']"; not the internal
+            representation: ("WORDSET", "aa"). This must be done in
+            the model that return one representation or the other according to
+            DisplayRole or UserRole.
+
+            Here we get the internal representation (tuple) from the UserRole
+            of the model.
+            So we need to cast it via wordset_data_to_vql().
+
+            The opposite is made in get_value() that MUST return internal
+            representation.
+        """
+        # TODO: ugly cast to handle tuple corresponding to (WORDSET, name)
+        if isinstance(value, tuple) and value[0] == WORDSET_FUNC_NAME:
+            value = wordset_data_to_vql(value)
+
         self.edit.setText(str(value))
 
     def get_value(self) -> Any:
         """Return string or float/int for numeric values"""
         value = self.edit.text()
+
+        # TODO: ugly cast to return tuple corresponding to (WORDSET, name)
+        # Please just leave pass in this section if WORDSET is converted to normal operator
+        import re
+        match = re.search(r"WORDSET\[['\"](.*)['\"]\]", value)
+        if match:
+            return "WORDSET", match[1]
 
         if value.isdigit():
             return int(value)
@@ -172,9 +201,8 @@ class IterableField(StrField):
     """
 
     def set_value(self, value: Iterable):
+        """Set displayed value in the lineEdit of the editor"""
         print("Iterable field set value ?", value, type(value))
-        # self.edit.setText(",".join(value))
-        # self.edit.setText(value)
         super().set_value(value)
 
     def get_value(self) -> tuple:
@@ -206,7 +234,7 @@ class IterableField(StrField):
         except ValueError:
             pass
         # Cast to str
-        return value
+        return super().get_value()
 
 
 class ComboField(BaseField):
@@ -697,6 +725,11 @@ class FilterModel(QAbstractItemModel):
 
             if index.column() == 3:
                 val = item.get_value()
+                # TODO: WORDSET handling here. To be modified if WORDSET is a real operator
+                # Same way that for fields formatting in VQL form for column 1
+                if role in (Qt.EditRole, Qt.DisplayRole) and val[0] == WORDSET_FUNC_NAME:
+                    return wordset_data_to_vql(val)
+
                 return val if role == Qt.UserRole else str(val)
 
         if role == FilterModel.TypeRole:
