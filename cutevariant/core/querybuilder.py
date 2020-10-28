@@ -272,10 +272,13 @@ def filters_to_sql(filters, default_tables={}):
                 # node: {'field': 'ref', 'operator': 'IN', 'value': "('A', 'T', 'G', 'C')"}
                 # wanted: "ref IN ('A', 'T', 'G', 'C')"
                 # Try to cast string to tuple
-                temp_val = literal_eval(value)
-                value = temp_val
+                try:
+                    temp_val = literal_eval(value)
+                    value = temp_val
+                except ValueError:
+                    pass
 
-            if isinstance(value, str):
+            elif isinstance(value, str):
                 # enclose string with quotes
                 value = f"'{value}'"
 
@@ -341,10 +344,13 @@ def filters_to_vql(filters):
                 # node: {'field': 'ref', 'operator': 'IN', 'value': "('A', 'T', 'G', 'C')"}
                 # wanted: "ref IN ('A', 'T', 'G', 'C')"
                 # Try to cast string to tuple
-                temp_val = literal_eval(value)
-                value = temp_val
+                try:
+                    temp_val = literal_eval(value)
+                    value = temp_val
+                except ValueError:
+                    pass
 
-            if isinstance(value, str):
+            elif isinstance(value, str):
                 value = f"'{value}'"
 
             if isinstance(value, tuple):
