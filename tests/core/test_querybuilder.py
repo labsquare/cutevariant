@@ -48,7 +48,7 @@ def test_field_function_to_sql():
 
 def test_wordset_function_to_sql():
     assert (
-        querybuilder.wordset_function_to_sql(("WORDSET", "sacha"))
+        querybuilder.wordset_data_to_sql(("WORDSET", "sacha"))
         == "(SELECT value FROM wordsets WHERE name = 'sacha')"
     )
 
@@ -58,84 +58,149 @@ def test_fields_to_sql():
     assert (
         querybuilder.fields_to_sql("variants.chr", DEFAULT_TABLES) == "`variants`.`chr`"
     )
+    # Find the table
     assert querybuilder.fields_to_sql("gene", DEFAULT_TABLES) == "`annotations`.`gene`"
+    # Find the table for non existing field
+    assert querybuilder.fields_to_sql("coucou", DEFAULT_TABLES) == "`coucou`"
+    # Don't care of the existence of a field in a table
     assert (
         querybuilder.fields_to_sql("annotations.gene", DEFAULT_TABLES)
         == "`annotations`.`gene`"
     )
-
+    # Idem (gene is not in variants)
     assert (
         querybuilder.fields_to_sql("variants.gene", DEFAULT_TABLES)
         == "`variants`.`gene`"
     )
+    # Cast composite fields
     assert (
         querybuilder.fields_to_sql(("sample", "sacha", "gt"), DEFAULT_TABLES)
         == "`sample_sacha`.`gt`"
     )
 
 
-def test_filters_to_sql():
+# Structure: (filter dict, expected SQL, expected VQL)
+FILTERS_VS_SQL_VQL = [
+    # Empty filter
+    (
+        {},
+        "",
+        ""
+    ),
+    # Empty filter
+    (
+        {"AND": []},
+        "",
+        ""
+    ),
+    # Standard not nested filter
+    (
+        {
+            "AND": [
+                {"field": "ref", "operator": "=", "value": "A"},
+                {"field": "alt", "operator": "=", "value": "C"},
+            ]
+        },
+        "(`variants`.`ref` = 'A' AND `variants`.`alt` = 'C')",
+        "ref = 'A' AND alt = 'C'",
+    ),
+    # Test composite field
+    (
+        {
+            "AND": [
+                {"field": ("sample", "sacha", "gt"), "operator": "=",
+                 "value": 4},
+                {"field": "alt", "operator": "=", "value": "C"},
+            ]
+        },
+        "(`sample_sacha`.`gt` = 4 AND `variants`.`alt` = 'C')",
+        "sample['sacha'].gt = 4 AND alt = 'C'",
+    ),
+    # Test nested filters
+    (
+        {
+            "AND": [
+                {"field": "ref", "operator": "=", "value": "A"},
+                {
+                    "OR": [
+                        {"field": "alt", "operator": "=", "value": "C"},
+                        {"field": "alt", "operator": "=", "value": "C"},
+                    ]
+                },
+            ]
+        },
+        "(`variants`.`ref` = 'A' AND (`variants`.`alt` = 'C' OR `variants`.`alt` = 'C'))",
+        "ref = 'A' AND (alt = 'C' OR alt = 'C')",
+    ),
+    # Test IN
+    (
+        {'field': 'chr', 'operator': 'in', 'value': (11.0,)},
+        "`variants`.`chr` IN (11.0)",
+        "chr IN (11.0)",
+    ),
+    # Test IN: conservation of not mixed types in the tuple
+    (
+        {'field': 'chr', 'operator': 'in', 'value': (10.0, 11.0)},
+        '`variants`.`chr` IN (10.0, 11.0)',
+        'chr IN (10.0, 11.0)',
+    ),
+    # Test IN: conservation of not mixed types in a tuple with str type
+    # => Cast via literal_eval
+    (
+        {'field': 'chr', 'operator': 'in', 'value': '(10.0, 11.0)'},
+        '`variants`.`chr` IN (10.0, 11.0)',
+        'chr IN (10.0, 11.0)',
+    ),
+    # Test IN: conservation of mixed types in the tuple
+    (
+        {'field': 'gene', 'operator': 'in', 'value': ('CICP23', 2.0)},
+        "`annotations`.`gene` IN ('CICP23', 2.0)",
+        "gene IN ('CICP23', 2.0)",
+    ),
+    # Test IN: conservation of mixed types in a tuple with str type
+    # => Cast via literal_eval
+    (
+        {'field': 'gene', 'operator': 'in', 'value': "('CICP23', 2.0)"},
+        "`annotations`.`gene` IN ('CICP23', 2.0)",
+        "gene IN ('CICP23', 2.0)",
+    ),
+    # Test IN: Just elements separated by comas
+    (
+        {'field': 'chr', 'operator': 'in', 'value': '100, 11'},
+        '`variants`.`chr` IN (100, 11)',
+        "chr IN (100, 11)",
+    ),
+    # Test normal operator (not IN) with tuple
+    (
+        {'field': 'chr', 'operator': '<', 'value': '(10.0, 11.0)'},
+        "`variants`.`chr` < '(10.0, 11.0)'",
+        "chr < '(10.0, 11.0)'",
+    ),
+    # Test WORDSET function
+    (
+        {'field': 'gene', 'operator': 'in', 'value': ('WORDSET', 'coucou')},
+        "`annotations`.`gene` IN (SELECT value FROM wordsets WHERE name = 'coucou')",
+        "gene IN WORDSET['coucou']"
+    ),
+]
 
-    filter_in = {
-        "AND": [
-            {"field": "ref", "operator": "=", "value": "A"},
-            {"field": "alt", "operator": "=", "value": "C"},
-        ]
-    }
-    filter_out = "(`variants`.`ref` = 'A' AND `variants`.`alt` = 'C')"
-    assert querybuilder.filters_to_sql(filter_in, DEFAULT_TABLES) == filter_out
 
-    filter_in = {
-        "AND": [
-            {"field": ("sample", "sacha", "gt"), "operator": "=", "value": 4},
-            {"field": "alt", "operator": "=", "value": "C"},
-        ]
-    }
-    filter_out = "(`sample_sacha`.`gt` = 4 AND `variants`.`alt` = 'C')"
-    assert querybuilder.filters_to_sql(filter_in, DEFAULT_TABLES) == filter_out
-
-    filter_in = {
-        "AND": [
-            {"field": "ref", "operator": "=", "value": "A"},
-            {
-                "OR": [
-                    {"field": "alt", "operator": "=", "value": "C"},
-                    {"field": "alt", "operator": "=", "value": "C"},
-                ]
-            },
-        ]
-    }
-
-    filter_out = "(`variants`.`ref` = 'A' AND (`variants`.`alt` = 'C' OR `variants`.`alt` = 'C'))"
-    assert querybuilder.filters_to_sql(filter_in, DEFAULT_TABLES) == filter_out
+@pytest.mark.parametrize(
+    "filter_in, expected_sql, expected_vql",
+    FILTERS_VS_SQL_VQL,
+    ids=[str(i) for i in range(len(FILTERS_VS_SQL_VQL))],
+)
+def test_filters_to_sql(filter_in, expected_sql, expected_vql):
+    assert querybuilder.filters_to_sql(filter_in, DEFAULT_TABLES) == expected_sql
 
 
-def test_filters_to_vql():
-    filter_in = {
-        "AND": [
-            {"field": "ref", "operator": "=", "value": "A"},
-            {"field": "alt", "operator": "=", "value": "C"},
-        ]
-    }
-
-    assert querybuilder.filters_to_vql(filter_in) == "ref = 'A' AND alt = 'C'"
-
-    filter_in = {
-        "AND": [
-            {"field": "ref", "operator": "=", "value": "A"},
-            {
-                "OR": [
-                    {"field": "alt", "operator": "=", "value": "C"},
-                    {"field": "alt", "operator": "=", "value": "C"},
-                ]
-            },
-        ]
-    }
-
-    assert (
-        querybuilder.filters_to_vql(filter_in)
-        == "ref = 'A' AND (alt = 'C' OR alt = 'C')"
-    )
+@pytest.mark.parametrize(
+    "filter_in, expected_sql, expected_vql",
+    FILTERS_VS_SQL_VQL,
+    ids=[str(i) for i in range(len(FILTERS_VS_SQL_VQL))],
+)
+def test_filters_to_vql(filter_in, expected_sql, expected_vql):
+    assert querybuilder.filters_to_vql(filter_in) == expected_vql
 
 
 QUERY_TESTS = [
@@ -189,13 +254,12 @@ QUERY_TESTS = [
             "source": "variants",
             "filters": {
                 "AND": [
-                    {"field": "ref", "operator": "has", "value": "A"},
                     {"field": "alt", "operator": "~", "value": "C"},
                 ]
             },
         },
-        "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants WHERE (`variants`.`ref` LIKE '%A%' AND `variants`.`alt` REGEXP 'C') LIMIT 50 OFFSET 0",
-        "SELECT chr,pos FROM variants WHERE ref has 'A' AND alt ~ 'C'",
+        "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants WHERE `variants`.`alt` REGEXP 'C' LIMIT 50 OFFSET 0",
+        "SELECT chr,pos FROM variants WHERE alt ~ 'C'",
     ),
     # Test different source
     (
@@ -295,7 +359,7 @@ QUERY_TESTS = [
 
 
 @pytest.mark.parametrize(
-    "test_input, test_output,vql",
+    "test_input, test_output, vql",
     QUERY_TESTS,
     ids=[str(i) for i in range(len(QUERY_TESTS))],
 )
@@ -324,7 +388,7 @@ def test_build_query(test_input, test_output, vql):
     # from cutevariant.core import sql
     # from cutevariant.core.importer import import_reader
     # from cutevariant.core.reader import VcfReader
-    # conn = sql.get_sql_connexion(":memory:")
+    # conn = sql.get_sql_connection(":memory:")
     # import_reader(conn, VcfReader(open("examples/test.snpeff.vcf"),"snpeff"))
     # conn.execute(query)
 

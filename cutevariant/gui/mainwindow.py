@@ -13,7 +13,7 @@ from PySide2.QtWidgets import *
 from PySide2.QtGui import QIcon, QKeySequence, QDesktopServices
 
 # Custom imports
-from cutevariant.core import get_sql_connexion, get_metadatas, command
+from cutevariant.core import get_sql_connection, get_metadatas, command
 from cutevariant.core.writer import CsvWriter, PedWriter
 from cutevariant.gui.ficon import FIcon
 from cutevariant.gui.state import State
@@ -347,7 +347,7 @@ class MainWindow(QMainWindow):
         self.app_settings.setValue("last_directory", os.path.dirname(filepath))
 
         # Create connection
-        self.conn = get_sql_connexion(filepath)
+        self.conn = get_sql_connection(filepath)
 
         try:
             # DB version filter

@@ -2,7 +2,7 @@
 
 To read and write the sqlite database with the schema described here.
 Each method refers to a CRUD operation using following prefixes:
-``get_``, ``insert_``, ``update_``, ``remove_`` and takes a sqlite connexion
+``get_``, ``insert_``, ``update_``, ``remove_`` and takes a sqlite connection
 as ``conn`` attribute.
 
 The module contains also QueryBuilder class to build complexe variant query based
@@ -12,12 +12,12 @@ Example::
 
     # Read sample table information
     from cutevariant.core import sql
-    conn = sql.get_sql_connexion("project.db")
+    conn = sql.get_sql_connection("project.db")
     sql.get_samples(conn)
 
     # Build a variant query
     from cutevariant.core import sql
-    conn = sql.get_sql_connexion("project.db")
+    conn = sql.get_sql_connection("project.db")
     builder = QueryBuilder(conn)
     builder.columns = ["chr","pos","ref","alt"]
     print(builder.sql())
@@ -43,8 +43,8 @@ LOGGER = cm.logger()
 ## Misc functions ==============================================================
 
 
-def get_sql_connexion(filepath):
-    """Open a SQLite database and return the connexion object
+def get_sql_connection(filepath):
+    """Open a SQLite database and return the connection object
 
     Args:
         filepath (str): sqlite filepath
@@ -54,29 +54,33 @@ def get_sql_connexion(filepath):
             The connection is initialized with `row_factory = Row`.
             So all results are accessible via indexes or keys.
     """
-    connexion = sqlite3.connect(filepath)
+    connection = sqlite3.connect(filepath)
     # Activate Foreign keys
-    connexion.execute("PRAGMA foreign_keys = ON")
-    connexion.row_factory = sqlite3.Row
-    foreign_keys_status = connexion.execute("PRAGMA foreign_keys").fetchone()[0]
-    LOGGER.debug("get_sql_connexion:: foreign_keys state: %s", foreign_keys_status)
+    connection.execute("PRAGMA foreign_keys = ON")
+    connection.row_factory = sqlite3.Row
+    foreign_keys_status = connection.execute("PRAGMA foreign_keys").fetchone()[0]
+    LOGGER.debug("get_sql_connection:: foreign_keys state: %s", foreign_keys_status)
     assert foreign_keys_status == 1, "Foreign keys can't be activated :("
 
-    # Create function for sqlite
+    # Create function for SQLite
     def regexp(expr, item):
-        reg = re.compile(expr)
-        return reg.search(item) is not None
+        # Need to cast item to str... costly
+        return re.search(expr, str(item)) is not None
 
-    connexion.create_function("REGEXP", 2, regexp)
+    connection.create_function("REGEXP", 2, regexp)
 
-    return connexion
+    if LOGGER.getEffectiveLevel() == logging.DEBUG:
+        # Enable tracebacks from custom functions in DEBUG mode only
+        sqlite3.enable_callback_tracebacks(True)
+
+    return connection
 
 
 def drop_table(conn, table_name):
     """Drop the given table
 
     Args:
-        conn (sqlite3.connexion): Sqlite3 connexion
+        conn (sqlite3.connection): Sqlite3 connection
         table_name (str): sqlite table name
     """
     cursor = conn.cursor()
@@ -96,7 +100,7 @@ def clear_table(conn: sqlite3.Connection, table_name):
     conn.commit()
 
 
-def get_columns(conn: sqlite3.Connection, table_name):
+def get_table_columns(conn: sqlite3.Connection, table_name):
     """Return the list of columns for the given table
 
     Args:
@@ -109,10 +113,6 @@ def get_columns(conn: sqlite3.Connection, table_name):
 
     References:
         used by async_insert_many_variants() to build queries with placeholders
-
-    Todo:
-        Rename to get_table_columns
-
     """
     return [
         c[1] for c in conn.execute(f"pragma table_info({table_name})") if c[1] != "id"
@@ -352,7 +352,7 @@ def create_selection_from_sql(
     """Create a selection record from sql variant query
 
     Args:
-        conn (sqlite3.connexion): Sqlite3 connexion
+        conn (sqlite3.connection): Sqlite3 connection
         query (str): SQL query that select all variant ids. See `from_selection`
         name (str): Name of selection
         count (int/None, optional): Variant count
@@ -426,7 +426,7 @@ def create_selection_from_bed(
     a new selection.
 
     Args:
-        conn (sqlite3.connexion): Sqlite3 connexion
+        conn (sqlite3.connection): Sqlite3 connection
         source (str): Selection name (source); Ex: "variants" (default)
         target (str): Selection name (target)
         bed_intervals (list/generator [dict]): List of intervals
@@ -486,7 +486,7 @@ def get_selections(conn: sqlite3.Connection):
     """Get selections in "selections" table
 
     Args:
-        conn (sqlite3.connexion): Sqlite3 connexion
+        conn (sqlite3.connection): Sqlite3 connection
 
     Yield:
         Dictionnaries with as many keys as there are columnsin the table.
@@ -1135,7 +1135,7 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
     def build_columns_and_placeholders(table_name):
         """Build a tuple of columns and "?" placeholders for INSERT queries"""
         # Get columns description from the given table
-        cols = get_columns(conn, table_name)
+        cols = get_table_columns(conn, table_name)
         # Build dynamic insert query
         # INSERT INTO variant qcol1, qcol2.... VALUES ?, ?
         tb_cols = ",".join([f"`{col}`" for col in cols])
@@ -1148,9 +1148,9 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
     var_cols, var_places = build_columns_and_placeholders("variants")
     ann_cols, ann_places = build_columns_and_placeholders("annotations")
 
-    var_columns = get_columns(conn, "variants")
-    ann_columns = get_columns(conn, "annotations")
-    sample_columns = get_columns(conn, "sample_has_variant")
+    var_columns = get_table_columns(conn, "variants")
+    ann_columns = get_table_columns(conn, "annotations")
+    sample_columns = get_table_columns(conn, "sample_has_variant")
 
     # Get samples with samples names as keys and sqlite rowid as values
     # => used as a mapping for samples ids

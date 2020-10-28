@@ -1,7 +1,7 @@
 
 
 from cutevariant.gui.plugin import PluginWidget
-from cutevariant.core.sql import get_sql_connexion
+from cutevariant.core.sql import get_sql_connection
 
 class WordSetWidget(PluginWidget):
     """Plugin to show all annotations of a selected variant"""
@@ -20,7 +20,7 @@ class WordSetWidget(PluginWidget):
 
     def on_refresh(self):
         print("refresh")
-  
+
 
 if __name__ == "__main__":
     import sys
@@ -28,7 +28,7 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
-    conn = get_sql_connexion("test.db")
+    conn = get_sql_connection("test.db")
 
     w = WordSetWidget()
     w.conn = conn

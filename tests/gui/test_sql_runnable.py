@@ -13,7 +13,7 @@ from cutevariant.core.command import count_cmd
 def conn():
     # Do not use ":memory:" ! SqlThread open the file
     tempdb = tempfile.mkstemp(suffix=".db")[1]
-    conn = sql.get_sql_connexion(tempdb)
+    conn = sql.get_sql_connection(tempdb)
     importer.import_reader(conn, VcfReader(open("examples/test.snpeff.vcf"), "snpeff"))
     return conn
 

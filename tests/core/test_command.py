@@ -9,7 +9,7 @@ from cutevariant.core.importer import import_reader
 
 @pytest.fixture
 def conn():
-    conn = sql.get_sql_connexion(":memory:")
+    conn = sql.get_sql_connection(":memory:")
     import_reader(conn, VcfReader(open("examples/test.snpeff.vcf"), "snpeff"))
     return conn
 

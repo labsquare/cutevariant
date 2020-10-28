@@ -209,7 +209,7 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
-    conn = sql.get_sql_connexion(":memory:")
+    conn = sql.get_sql_connection(":memory:")
     import_reader(conn, FakeReader())
     # import_file(conn, "examples/test.snpeff.vcf")
 

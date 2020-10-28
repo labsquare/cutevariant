@@ -142,7 +142,7 @@ class VqlEditorWidget(plugin.PluginWidget):
             This function also sets the error message to the bottom of the view.
 
         Returns:
-            bool: Status
+            bool: Status of VQL query (True if valid, False otherwise).
         """
         try:
             self.log_edit.hide()

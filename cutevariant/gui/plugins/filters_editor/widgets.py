@@ -13,8 +13,8 @@ from PySide2.QtGui import *
 
 # Custom imports
 from cutevariant.gui import style, plugin
-from cutevariant.core import sql, get_sql_connexion
-from cutevariant.core.querybuilder import fields_to_vql
+from cutevariant.core import sql, get_sql_connection
+from cutevariant.core.querybuilder import fields_to_vql, wordset_data_to_vql, WORDSET_FUNC_NAME
 
 import cutevariant.commons as cm
 
@@ -146,13 +146,40 @@ class StrField(BaseField):
         self.set_widget(self.edit)
 
     def set_value(self, value: Any):
+        """Set displayed value in the lineEdit of the editor
+
+        Notes: TODO: TO be updated/removed if WORDSET is a real operator
+            For the following query:
+            SELECT favorite,chr,pos,ref,alt FROM variants where gene IN WORDSET['aa']
+
+            We need to show to the user only "WORDSET['aa']"; not the internal
+            representation: ("WORDSET", "aa"). This must be done in
+            the model that return one representation or the other according to
+            DisplayRole or UserRole.
+
+            Here we get the internal representation (tuple) from the UserRole
+            of the model.
+            So we need to cast it via wordset_data_to_vql().
+
+            The opposite is made in get_value() that MUST return internal
+            representation.
+        """
+        # TODO: ugly cast to handle tuple corresponding to (WORDSET, name)
+        if isinstance(value, tuple) and value[0] == WORDSET_FUNC_NAME:
+            value = wordset_data_to_vql(value)
+
         self.edit.setText(str(value))
 
     def get_value(self) -> Any:
-        """Return quoted string
-        ..todo : check if quotes are required
-        """
+        """Return string or float/int for numeric values"""
         value = self.edit.text()
+
+        # TODO: ugly cast to return tuple corresponding to (WORDSET, name)
+        # Please just leave pass in this section if WORDSET is converted to normal operator
+        import re
+        match = re.search(r"WORDSET\[['\"](.*)['\"]\]", value)
+        if match:
+            return "WORDSET", match[1]
 
         if value.isdigit():
             return int(value)
@@ -162,7 +189,7 @@ class StrField(BaseField):
         return value
 
     def set_completer(self, completer: QCompleter):
-        """ set a completer to autocomplete value """
+        """Set a completer to autocomplete value"""
         self.edit.setCompleter(completer)
 
 
@@ -174,9 +201,8 @@ class IterableField(StrField):
     """
 
     def set_value(self, value: Iterable):
+        """Set displayed value in the lineEdit of the editor"""
         print("Iterable field set value ?", value, type(value))
-        # self.edit.setText(",".join(value))
-        # self.edit.setText(value)
         super().set_value(value)
 
     def get_value(self) -> tuple:
@@ -208,8 +234,7 @@ class IterableField(StrField):
         except ValueError:
             pass
         # Cast to str
-        return value
-        # return super().get_value()
+        return super().get_value()
 
 
 class ComboField(BaseField):
@@ -232,7 +257,6 @@ class ComboField(BaseField):
     def set_value(self, value: str):
         """Set text of lineEdit in ComboBox"""
         # items = [self.edit.itemText(i) for i in range(self.edit.count())]
-
         # Set text of lineEdit via the index of the required text
         # Here we use an editable combobox with a lineEdit.
         # => Use setCurrentIndex instead of setCurrentText.
@@ -242,12 +266,10 @@ class ComboField(BaseField):
         index = self.edit.findText(value)
         if index != -1:
             self.edit.setCurrentIndex(index)
-        # Don't do this only: self.edit.setCurrentText(value)
+            # /!\ Don't do this only: self.edit.setCurrentText(value) (see above)
 
     def get_value(self):
-        """Return quoted string
-        ..todo : check if quotes are required
-        """
+        """Return UserRole string"""
         # Return UserRole
         return self.edit.currentData()
 
@@ -297,6 +319,7 @@ class OperatorField(BaseField):
         "=": "equal",
         "!=": "not equal",
         "LIKE": "like",
+        "NOT LIKE": "not like",
         "~": "regex",
         "IN": "in",
         "NOT IN": "not in",
@@ -311,8 +334,8 @@ class OperatorField(BaseField):
         self._fill()
 
     def set_value(self, value: str):
-        assert value in self.SYMBOLS
-        self.combo_box.setCurrentText(self.SYMBOLS[value])
+        assert value.upper() in self.SYMBOLS
+        self.combo_box.setCurrentText(self.SYMBOLS[value.upper()])
 
     def get_value(self) -> str:
         # Return UserRole
@@ -421,6 +444,7 @@ class FilterItem:
         data(any): str (logicType) or tuple/list (ConditionType).
         uuid(str):
         checked(boolean):
+        type(FilterItem.LOGIC_TYPE/FilterItem.CONDITION_TYPE): Type of filter item.
 
     Examples:
         root = FilterItem() # Create rootItem
@@ -439,9 +463,14 @@ class FilterItem:
             data(any): str (logicType) or tuple/list (ConditionType).
             parent (FilterItem): item's parent
         """
+        # Item Type handling
+        is_tuple = isinstance(data, (tuple, list))
+        assert is_tuple or isinstance(data, str)
+        self.data = list(data) if is_tuple else data
+        self.type = self.CONDITION_TYPE if is_tuple else self.LOGIC_TYPE
+        # Misc
         self.parent = parent
         self.children = []
-        self.data = list(data) if isinstance(data, (tuple, list)) else data
         self.uuid = str(uuid.uuid1())
         self.checked = True
 
@@ -507,29 +536,16 @@ class FilterItem:
         for child in self.children:
             child.set_recursive_check_state(checked)
 
-    def type(self):
-        """Return item type.
-            ..todo : maybe create subclass for each types ?
-
-        Returns:
-            LOGIC_TYPE or CONDITION_TYPE
-        """
-        if isinstance(self.data, str):  # LOGIC_TYPE
-            return self.LOGIC_TYPE
-
-        if isinstance(self.data, (tuple, list)):  # CONDITION_TYPE
-            return self.CONDITION_TYPE
-
     def get_field(self):
-        if self.type() == self.CONDITION_TYPE:
+        if self.type == self.CONDITION_TYPE:
             return self.data[0]
 
     def get_operator(self):
-        if self.type() == self.CONDITION_TYPE:
-            return self.data[1]
+        if self.type == self.CONDITION_TYPE:
+            return self.data[1].upper()
 
     def get_value(self):
-        """Get value
+        """Get value of condition or operator value
 
         Returns:
             - If item is a LOGIC_FIELD, return the operator AND/OR.
@@ -539,11 +555,10 @@ class FilterItem:
             For a CONDITION_TYPE FilterItem: `("chr", "IN", (10, 11))`,
             this function will return `(10, 11)`.
         """
-        if self.type() == self.CONDITION_TYPE:
-            # print("filteritem, get value: type", type(self.data[2]))
+        if self.type == self.CONDITION_TYPE:
             return self.data[2]
 
-        if self.type() == self.LOGIC_TYPE:
+        if self.type == self.LOGIC_TYPE:
             return self.data
 
     # def get_data(self, column=0):
@@ -566,28 +581,28 @@ class FilterItem:
     #         return self.checked
 
     #     # if column == 1 or column == 2 or column == 3:
-    #     #     if self.type() == self.LOGIC_TYPE:
+    #     #     if self.type == self.LOGIC_TYPE:
     #     #         return self.data
 
-    #     #     if self.type() == self.CONDITION_TYPE:
+    #     #     if self.type == self.CONDITION_TYPE:
     #     #         return self.data[column - 1]
 
     def set_field(self, value):
         """Set field part of CONDITION_TYPE item"""
-        if self.type() == self.CONDITION_TYPE:
+        if self.type == self.CONDITION_TYPE:
             self.data[0] = value
 
     def set_operator(self, value):
         """Set operator part of CONDITION_TYPE item"""
-        if self.type() == self.CONDITION_TYPE:
-            self.data[1] = value
+        if self.type == self.CONDITION_TYPE:
+            self.data[1] = value.upper()
 
     def set_value(self, value):
         """Set value part of CONDITION_TYPE item or value of LOGIC_TYPE item
 
         Called when a user validates the editor.
         """
-        if self.type() == self.CONDITION_TYPE:
+        if self.type == self.CONDITION_TYPE:
             self.data[2] = value
             return
 
@@ -596,10 +611,11 @@ class FilterItem:
 
 
 class FilterModel(QAbstractItemModel):
-    """Model to display filter from Query.filter.
+    """Model to display filter
+
     The model store Query filter as a nested tree of FilterItem.
-    You can access data from self.item() and edit model using self.set_data() and helper method like
-    self.add_logic_item, self.add_condition_item and remove_item.
+    You can access data from self.item(), edit model using self.set_data()
+    and helper methods like: add_logic_item, add_condition_item and remove_item.
 
     Attributes:
         conn (sqlite3.connection): sqlite3 connection
@@ -638,7 +654,7 @@ class FilterModel(QAbstractItemModel):
     _HEADERS = ["c", "field", "operator", "value", "op"]
     _MIMEDATA = "application/x-qabstractitemmodeldatalist"
 
-    # Custom type to get FilterItem.type(). See self.data()
+    # Custom type to get FilterItem.type. See self.data()
     TypeRole = Qt.UserRole + 1
     UniqueIdRole = Qt.UserRole + 2
 
@@ -664,6 +680,12 @@ class FilterModel(QAbstractItemModel):
     def data(self, index: QModelIndex, role=Qt.EditRole):
         """Overrided Qt methods : Return model's data according index and role
 
+        Warning:
+            FilterDelegate.createEditor and setEditorData must use UserRole!
+            The displayed elements are displayed from FilterItem with DisplayRole!
+            Field* take ONLY UserRoles and convert them into something that can be
+            showed to a user.
+
         Args:
             index (QModelIndex): index of item
             role (Qt.Role)
@@ -672,7 +694,7 @@ class FilterModel(QAbstractItemModel):
             Any type: Return value
         """
         if not index.isValid():
-            return None
+            return
 
         item = self.item(index)
 
@@ -681,14 +703,14 @@ class FilterModel(QAbstractItemModel):
                 return item.checked if role == Qt.UserRole else str(item.checked)
 
             if index.column() == 1:
-                if item.type() == FilterItem.CONDITION_TYPE:
+                if item.type == FilterItem.CONDITION_TYPE:
                     return fields_to_vql(item.get_field())
 
-                if item.type() == FilterItem.LOGIC_TYPE:
+                if item.type == FilterItem.LOGIC_TYPE:
                     val = item.get_value()
                     return val if role == Qt.UserRole else str(val)
 
-            if item.type() != FilterItem.CONDITION_TYPE:
+            if item.type != FilterItem.CONDITION_TYPE:
                 return
 
             if index.column() == 2:
@@ -697,16 +719,21 @@ class FilterModel(QAbstractItemModel):
 
             if index.column() == 3:
                 val = item.get_value()
+                # TODO: WORDSET handling here. To be modified if WORDSET is a real operator
+                # Same way that for fields formatting in VQL form for column 1
+                if role in (Qt.EditRole, Qt.DisplayRole) and val[0] == WORDSET_FUNC_NAME:
+                    return wordset_data_to_vql(val)
+
                 return val if role == Qt.UserRole else str(val)
 
         if role == FilterModel.TypeRole:
             # Return item type
-            return item.type()
+            return item.type
 
         if role == FilterModel.UniqueIdRole:
             return item.uuid
 
-        return None
+        return
 
         # if role == Qt.DisplayRole and index.column() == 1:
         #     data = self.item(index).get_data(index.column())
@@ -738,7 +765,7 @@ class FilterModel(QAbstractItemModel):
 
         # if role == Qt.FontRole:
         #     #  Make LogicItem as bold
-        #     if self.item(index).type() == FilterItem.LOGIC_TYPE:
+        #     if self.item(index).type == FilterItem.LOGIC_TYPE:
         #         font = QFont()
         #         font.setBold(True)
         #         return font
@@ -747,6 +774,12 @@ class FilterModel(QAbstractItemModel):
         """Overrided Qt methods: Set value of FilterItem present at the given index.
 
         This method is called from FilterDelegate when edition has been done.
+
+        Warning:
+            FilterDelegate.createEditor and setEditorData must use UserRole!
+            The displayed elements are displayed from FilterItem with DisplayRole!
+            Field* take ONLY UserRoles and convert them into something that can be
+            showed to a user.
 
         Args:
             index (QModelIndex)
@@ -759,24 +792,26 @@ class FilterModel(QAbstractItemModel):
         if not index.isValid():
             return False
 
-        if role == Qt.UserRole:
+        if role in (Qt.DisplayRole, Qt.EditRole, Qt.UserRole):
             item = self.item(index)
 
             if index.column() == 0:
                 item.checked = bool(value)
 
             if index.column() == 1:
-                if item.type() == FilterItem.LOGIC_TYPE:
+                if item.type == FilterItem.LOGIC_TYPE:
                     item.set_value(value)
 
-                if item.type() == FilterItem.CONDITION_TYPE:
+                if item.type == FilterItem.CONDITION_TYPE:
                     item.set_field(value)
 
-            if index.column() == 2 and item.type() == FilterItem.CONDITION_TYPE:
-                item.set_operator(value)
+            if item.type == FilterItem.CONDITION_TYPE:
 
-            if index.column() == 3 and item.type() == FilterItem.CONDITION_TYPE:
-                item.set_value(value)
+                if index.column() == 2:
+                    item.set_operator(value)
+
+                if index.column() == 3:
+                    item.set_value(value)
 
             self.filtersChanged.emit()
             # just one item is changed
@@ -869,18 +904,21 @@ class FilterModel(QAbstractItemModel):
         self.endResetModel()
 
     def to_item(self, data: dict) -> FilterItem:
-        """ recursive function to build a nested FilterItem structure from dict data """
+        """Recursive function to build a nested FilterItem structure from dict data"""
         if len(data) == 1:  # logic item
             operator = list(data.keys())[0]
             item = FilterItem(operator)
             [item.append(self.to_item(k)) for k in data[operator]]
-            return item
         else:  # condition item
             item = FilterItem((data["field"], data["operator"], data["value"]))
-            return item
+        return item
 
     def to_dict(self, item=None) -> dict:
-        """ recursive function to build a nested dictionnary from FilterItem structure"""
+        """Recursive function to build a nested dictionnary from FilterItem structure
+
+        Notes:
+            We use data from FilterItems; i.e. the equivalent of UserRole data.
+        """
 
         if len(self.root_item.children) == 0:
             return {}
@@ -888,14 +926,14 @@ class FilterModel(QAbstractItemModel):
         if item is None:
             item = self.root_item[0]
 
-        if item.type() == FilterItem.LOGIC_TYPE and item.checked is True:
+        if item.type == FilterItem.LOGIC_TYPE and item.checked is True:
             # Return dict with operator as key and item as value
             operator_data = [
                 self.to_dict(child) for child in item.children if child.checked is True
             ]
             return {item.get_value(): operator_data}
 
-        if item.type() == FilterItem.CONDITION_TYPE:
+        if item.type == FilterItem.CONDITION_TYPE:
             return {
                 "field": item.get_field(),
                 "operator": item.get_operator(),
@@ -977,10 +1015,10 @@ class FilterModel(QAbstractItemModel):
         if index.column() == 0 or index.column() == 4:
             return Qt.ItemIsSelectable | Qt.ItemIsEnabled
 
-        if item.type() == FilterItem.LOGIC_TYPE and index.column() != 1:
+        if item.type == FilterItem.LOGIC_TYPE and index.column() != 1:
             return Qt.ItemIsSelectable | Qt.ItemIsEnabled
 
-        if item.type() == FilterItem.LOGIC_TYPE and index.column() == 1:
+        if item.type == FilterItem.LOGIC_TYPE and index.column() == 1:
             return (
                 Qt.ItemIsSelectable
                 | Qt.ItemIsEditable
@@ -989,7 +1027,7 @@ class FilterModel(QAbstractItemModel):
                 | Qt.ItemIsDropEnabled
             )
 
-        if item.type() == FilterItem.CONDITION_TYPE:
+        if item.type == FilterItem.CONDITION_TYPE:
             return (
                 Qt.ItemIsSelectable
                 | Qt.ItemIsEditable
@@ -1205,11 +1243,11 @@ class FilterDelegate(QStyledItemDelegate):
         conn = model.conn
 
         if index.column() == 1:
-            if item.type() == FilterItem.LOGIC_TYPE:
+            if item.type == FilterItem.LOGIC_TYPE:
                 # AND/OR logic operators
                 return LogicField(parent)
 
-            if item.type() == FilterItem.CONDITION_TYPE:
+            if item.type == FilterItem.CONDITION_TYPE:
                 # Display all fields of the database
                 widget = ComboField(parent)
                 # LOGGER.debug(prepare_fields.cache_info())
@@ -1246,6 +1284,9 @@ class FilterDelegate(QStyledItemDelegate):
 
         Currently, it calls BaseEditor.set_value() methods
 
+        See Also:
+            :meth:`setModelData` for the opposite function (set model data)
+
         Args:
             editor (QWidget)
             index (QModelindex)
@@ -1255,6 +1296,8 @@ class FilterDelegate(QStyledItemDelegate):
         # print("user, edit, display")
         # print(";".join(str(index.data(role)) for role in roles))
         # print(";".join(str(type(index.data(role))) for role in roles))
+        # print("VAL:", index.data(role=Qt.UserRole))
+        # print("editor type", type(editor))
 
         # Set editor data from the model (from the selected FilterItem)
         # Editors expect typed values, so don't forget to use UserRole, not EditRole
@@ -1285,7 +1328,7 @@ class FilterDelegate(QStyledItemDelegate):
         if not index.isValid():
             return False
 
-        if event.type() == QEvent.MouseButtonPress:
+        if event.type == QEvent.MouseButtonPress:
             # print("mouse pressed on", index.column(), event.button())
             item = model.item(index)
 
@@ -1309,7 +1352,10 @@ class FilterDelegate(QStyledItemDelegate):
     def setModelData(self, editor, model, index):
         """Overrided from Qt: Update the model with data from the editor.
 
-        Currently, it calls editor.set_value()
+        Currently, it calls model.setData()
+
+        See Also:
+            :meth:`setModelData` for the opposite function (set editor data)
 
         Args:
             editor (QWidget): editor
@@ -1423,7 +1469,7 @@ class FilterDelegate(QStyledItemDelegate):
                 QPalette.HighlightedText if is_selected else QPalette.WindowText,
             )
 
-            if item.type() == FilterItem.LOGIC_TYPE:
+            if item.type == FilterItem.LOGIC_TYPE:
                 font.setBold(True)
 
             if index.column() == self.COLUMN_FIELD:
@@ -1451,7 +1497,7 @@ class FilterDelegate(QStyledItemDelegate):
         # if index.column() == 3:
         #     painter.drawPixmap(self._icon_rect(option), self.rem_icon.pixmap(self.icon_size))
 
-        # if index.column() == 3 and item.type() == FilterItem.LOGIC_TYPE:
+        # if index.column() == 3 and item.type == FilterItem.LOGIC_TYPE:
         #     x = option.rect.right() - 20
         #     y = option.rect.center().y() - self.icon_size.height() / 2
         #     painter.drawPixmap(QRect(x,y,self.icon_size.width(), self.icon_size.height()), self.add_icon.pixmap(self.icon_size))
@@ -1703,7 +1749,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
             # Add button: Is an item selected ?
             index = self.view.currentIndex()
-            if index.isValid() and self.model.item(index).type() == FilterItem.LOGIC_TYPE:
+            if index.isValid() and self.model.item(index).type == FilterItem.LOGIC_TYPE:
                 self.add_button.setEnabled(True)
             else:
                 # item is CONDITION_TYPE or there is no item selected (because of deletion)
@@ -1805,7 +1851,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
         index = self.view.currentIndex()
 
         if index.isValid():
-            if self.model.item(index).type() == FilterItem.LOGIC_TYPE:
+            if self.model.item(index).type == FilterItem.LOGIC_TYPE:
                 # Add condition item to existing logic operator
                 self.model.add_condition_item(parent=index)
         else:
@@ -1869,7 +1915,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
             menu = QMenu(self)
 
             item = self.model.item(index)
-            if item.type() == FilterItem.LOGIC_TYPE:
+            if item.type == FilterItem.LOGIC_TYPE:
                 menu.addAction(self.tr("Add condition"), self.on_add_condition)
                 menu.addAction(self.tr("Add subfilter"), self.on_add_logic)
 
@@ -1888,7 +1934,7 @@ if __name__ == "__main__":
     import cutevariant.commons as cm
     from cutevariant.gui.ficon import FIcon, setFontPath
 
-    conn = get_sql_connexion("test.db")
+    conn = get_sql_connection("test.db")
 
     d = FieldDialog(conn)
     d.show()
@@ -1896,7 +1942,7 @@ if __name__ == "__main__":
 
     setFontPath(cm.FONT_FILE)
 
-    conn = sql.get_sql_connexion(":memory:")
+    conn = sql.get_sql_connection(":memory:")
     import_reader(conn, FakeReader())
 
     data = {

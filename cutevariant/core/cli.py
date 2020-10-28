@@ -167,7 +167,7 @@ the arguments.""",
             # Remove existing file
             os.remove(args.db)
 
-        conn = sql.get_sql_connexion(args.db)
+        conn = sql.get_sql_connection(args.db)
         if conn:
             # TODO: bug ... max is not 100...
             for i, message in progressbar.progressbar(
@@ -186,7 +186,7 @@ the arguments.""",
         exit()
 
     # Init SQL connection
-    conn = sql.get_sql_connexion(args.db)
+    conn = sql.get_sql_connection(args.db)
 
     # Show parser ##############################################################
     if args.subparser == "show":

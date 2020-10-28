@@ -13,7 +13,7 @@ from PySide2.QtGui import QFont
 
 # Custom imports
 from cutevariant.gui.ficon import FIcon
-from cutevariant.core import sql, get_sql_connexion
+from cutevariant.core import sql, get_sql_connection
 from cutevariant.gui.plugin import PluginWidget
 from cutevariant import commons as cm
 
@@ -284,7 +284,7 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
-    conn = get_sql_connexion("/home/schutz/Dev/cutevariant/examples/test.db")
+    conn = get_sql_connection("/home/schutz/Dev/cutevariant/examples/test.db")
 
     w = VariantInfoWidget()
     w.conn = conn
