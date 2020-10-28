@@ -21,7 +21,7 @@ This is a domain specific language . Check the vql module for more information
 
     SELECT chr, pos FROM variants WHERE ref == 'A'
 
-## The Python statemets :
+## The Python statements:
 The representation of the query as a dictionnary.
 
     query = {
@@ -35,16 +35,18 @@ The representation of the query as a dictionnary.
         }
     }
 
-The following module contains several functions to make easy conversion from python statements to VQL or SQL statements .
+The following module contains several functions to make easy conversion from
+Python statements to VQL or SQL statements .
 
 In the most of the case, you only need to use :
 
-build_vql_query => to create a VQL query from python statements
-build_sql_query => to create a SQL query from python statements
+- :meth:`build_vql_query`: to create a VQL query from python statements
+- :meth:`build_sql_query`: to create a SQL query from python statements
 """
 # Standard imports
 import sqlite3
 import re
+from ast import literal_eval
 
 # Custom imports
 from cutevariant.core import sql
@@ -52,12 +54,11 @@ from cutevariant.commons import logger
 
 LOGGER = logger()
 
-# Function name used from VQL
-# sample("boby").gt
-# TODO : can be move somewhere else . In common ?
+# TODO : can be move somewhere else ? In common ?
+# Function names used in VQL
+# sample["boby"].gt
 GENOTYPE_FUNC_NAME = "sample"
-
-# set("truc")
+# WORDSET["truc"]
 WORDSET_FUNC_NAME = "WORDSET"
 
 
@@ -65,10 +66,10 @@ def filters_to_flat(filters: dict):
     """Recursive function to convert the filter hierarchical dictionnary into a list of fields
 
     Args:
-        filter (dict): a nested tree of condition. @See example
+        filters (dict): a nested tree of condition. @See example
 
     Returns:
-        Return (list): all field are now inside a a list
+        (list): all fields are now inside a a list
 
     Todo:
         Move to vql ?
@@ -89,9 +90,9 @@ def filters_to_flat(filters: dict):
             {'field': 'alt', 'operator': '=', 'value': "C"}
         ]
     """
-
     def recursive_generator(filters):
         if isinstance(filters, dict) and len(filters) == 3:
+            # length = 3 to skip AND/OR levels
             yield filters
 
         if isinstance(filters, dict):
@@ -110,10 +111,10 @@ def field_function_to_sql(field_function: tuple, use_as=False):
 
     Examples:
 
-        # which correspond to genotype(boby).GT in VQL
-        field = ("genotype", "boby","gt")
-        field_function_to_sql(field) == `genotype_boby`.GT
-
+        >>> # which correspond to genotype(boby).GT in VQL
+        >>> field = ("genotype", "boby", "gt")
+        >>> field_function_to_sql(field)
+        "`genotype_boby`.`gt`"
     """
     func_name, arg_name, field_name = field_function
 
@@ -132,17 +133,28 @@ def field_function_to_sql(field_function: tuple, use_as=False):
     return f"`{func_name}_{arg_name}`" + suffix
 
 
-def wordset_function_to_sql(field_function: tuple):
-    """Replace a set_function by a select statement
+def wordset_function_to_sql(wordset_expr: tuple):
+    """Get the SQL version of a Wordset expression (`(WORDSET', 'boby')`)
 
-    Set_functions is used from VQL to filter annotation within a set of word.
-    For instance : " SELECT ... WHERE gene IN SET("boby") "
-    will be replaced by "SELECT ... WHERE gene IN ( SELECT value FROM sets WHERE name = 'boby')
+    Wordset function is used in VQL to filter fields within a set of words.
 
+    Example:
+        `SELECT ... WHERE gene IN WORDSET('boby')`,
+        will be replaced by:
+        `SELECT ... WHERE gene IN (SELECT value FROM sets WHERE name = 'boby')`
+
+        We return only the sub SELECT statement here:
+        >>> wordset_function_to_sql("WORDSET", "boby")
+        "SELECT value FROM sets WHERE name = 'boby'"
+
+    Args:
+        wordset_expr (tuple): Tuple of 2 items: First one is "WORDSET",
+            second one is the name of the queried wordset.
     Returns:
         (str): Query statement
     """
-    func_name, arg_name = field_function
+    func_name, arg_name = wordset_expr
+    assert func_name == "WORDSET"
     return f"(SELECT value FROM wordsets WHERE name = '{arg_name}')"
 
 
@@ -162,12 +174,11 @@ def fields_to_vql(field) -> str:
     Returns:
         str: fields for vql query
     """
-    if isinstance(field, str):
-        return field
-
     if isinstance(field, tuple):
         if field[0] == GENOTYPE_FUNC_NAME and len(field) == 3:
             return f"{field[0]}['{field[1]}'].{field[2]}"
+    # str
+    return field
 
 
 def fields_to_sql(field, default_tables={}, use_as=False) -> str:
@@ -181,14 +192,16 @@ def fields_to_sql(field, default_tables={}, use_as=False) -> str:
         str: Sql field
 
     Examples:
-        fields_to_sql("chr", {"chr":variants})  => `variants`.`chr`
+
+        >>> fields_to_sql("chr", default_tables={"chr": "variants", "alt": "variants"})
+        "`variants`.`chr`"
     """
     if isinstance(field, tuple):
-
-        # If it is "genotype.name.truc then it is is field function"
+        # If it is "genotype.name.truc then it is field function"
+        # ("genotype", "boby", "gt") => `genotype_boby`.GT
         return field_function_to_sql(field, use_as)
 
-    # extract variants.chr  ==> (variant, chr)
+    # extract variants.chr => (variants, chr) => `variants`.`chr`
     match = re.match(r"^(\w+)\.(\w+)", field)
 
     if match:
@@ -332,11 +345,7 @@ def filters_to_vql(filters):
 
 def build_vql_query(fields, source="variants", filters={}, group_by=[], having={}):
     """Build VQL query
-
-    Args:
-        fields (TYPE): Description
-        source (str, optional): Description
-        filters (dict, optional): Description
+    TODO: doc...
     """
     query = "SELECT " + ",".join([fields_to_vql(i) for i in fields]) + " FROM " + source
     if filters:
