@@ -342,7 +342,7 @@ QUERY_TESTS = [
 
 
 @pytest.mark.parametrize(
-    "test_input, test_output,vql",
+    "test_input, test_output, vql",
     QUERY_TESTS,
     ids=[str(i) for i in range(len(QUERY_TESTS))],
 )
