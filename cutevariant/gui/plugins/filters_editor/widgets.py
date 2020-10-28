@@ -311,8 +311,8 @@ class OperatorField(BaseField):
         self._fill()
 
     def set_value(self, value: str):
-        assert value in self.SYMBOLS
-        self.combo_box.setCurrentText(self.SYMBOLS[value])
+        assert value.upper() in self.SYMBOLS
+        self.combo_box.setCurrentText(self.SYMBOLS[value.upper()])
 
     def get_value(self) -> str:
         # Return UserRole
@@ -526,7 +526,7 @@ class FilterItem:
 
     def get_operator(self):
         if self.type() == self.CONDITION_TYPE:
-            return self.data[1]
+            return self.data[1].upper()
 
     def get_value(self):
         """Get value
@@ -580,7 +580,7 @@ class FilterItem:
     def set_operator(self, value):
         """Set operator part of CONDITION_TYPE item"""
         if self.type() == self.CONDITION_TYPE:
-            self.data[1] = value
+            self.data[1] = value.upper()
 
     def set_value(self, value):
         """Set value part of CONDITION_TYPE item or value of LOGIC_TYPE item
