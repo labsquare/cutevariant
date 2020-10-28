@@ -64,10 +64,14 @@ def get_sql_connection(filepath):
 
     # Create function for SQLite
     def regexp(expr, item):
-        reg = re.compile(expr)
-        return reg.search(item) is not None
+        # Need to cast item to str... costly
+        return re.search(expr, str(item)) is not None
 
     connection.create_function("REGEXP", 2, regexp)
+
+    if LOGGER.getEffectiveLevel() == logging.DEBUG:
+        # Enable tracebacks from custom functions in DEBUG mode only
+        sqlite3.enable_callback_tracebacks(True)
 
     return connection
 
