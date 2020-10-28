@@ -76,38 +76,88 @@ def test_fields_to_sql():
 
 def test_filters_to_sql():
 
-    filter_in = {
-        "AND": [
-            {"field": "ref", "operator": "=", "value": "A"},
-            {"field": "alt", "operator": "=", "value": "C"},
-        ]
-    }
-    filter_out = "(`variants`.`ref` = 'A' AND `variants`.`alt` = 'C')"
-    assert querybuilder.filters_to_sql(filter_in, DEFAULT_TABLES) == filter_out
 
-    filter_in = {
-        "AND": [
-            {"field": ("sample", "sacha", "gt"), "operator": "=", "value": 4},
-            {"field": "alt", "operator": "=", "value": "C"},
-        ]
-    }
-    filter_out = "(`sample_sacha`.`gt` = 4 AND `variants`.`alt` = 'C')"
-    assert querybuilder.filters_to_sql(filter_in, DEFAULT_TABLES) == filter_out
-
-    filter_in = {
-        "AND": [
-            {"field": "ref", "operator": "=", "value": "A"},
-            {
-                "OR": [
-                    {"field": "alt", "operator": "=", "value": "C"},
+    data = [
+        # Standard not nested filter
+        (
+             {
+                "AND": [
+                    {"field": "ref", "operator": "=", "value": "A"},
                     {"field": "alt", "operator": "=", "value": "C"},
                 ]
             },
-        ]
-    }
-
-    filter_out = "(`variants`.`ref` = 'A' AND (`variants`.`alt` = 'C' OR `variants`.`alt` = 'C'))"
-    assert querybuilder.filters_to_sql(filter_in, DEFAULT_TABLES) == filter_out
+             "(`variants`.`ref` = 'A' AND `variants`.`alt` = 'C')"
+        ),
+        # Test composite field
+        (
+            {
+                "AND": [
+                    {"field": ("sample", "sacha", "gt"), "operator": "=", "value": 4},
+                    {"field": "alt", "operator": "=", "value": "C"},
+                ]
+            },
+            "(`sample_sacha`.`gt` = 4 AND `variants`.`alt` = 'C')"
+        ),
+        # Test nested filters
+        (
+            {
+                "AND": [
+                    {"field": "ref", "operator": "=", "value": "A"},
+                    {
+                        "OR": [
+                            {"field": "alt", "operator": "=", "value": "C"},
+                            {"field": "alt", "operator": "=", "value": "C"},
+                        ]
+                    },
+                ]
+            },
+            "(`variants`.`ref` = 'A' AND (`variants`.`alt` = 'C' OR `variants`.`alt` = 'C'))"
+        ),
+        # Test IN
+        (
+            {'field': 'chr', 'operator': 'in', 'value': (11.0,)},
+            "`variants`.`chr` IN (11.0)"
+        ),
+        # Test IN: conservation of not mixed types in the tuple
+        (
+            {'field': 'chr', 'operator': 'in', 'value': (10.0, 11.0)},
+            '`variants`.`chr` IN (10.0,11.0)'
+        ),
+        # Test IN: conservation of not mixed types in a tuple with str type
+        # => Cast via literal_eval
+        (
+            {'field': 'chr', 'operator': 'in', 'value': '(10.0, 11.0)'},
+            '`variants`.`chr` IN (10.0,11.0)'
+        ),
+        # Test IN: conservation of mixed types in the tuple
+        (
+            {'field': 'gene', 'operator': 'in', 'value': ('CICP23', 2.0)},
+            '`annotations`.`gene` IN ("CICP23",2.0)'
+        ),
+        # Test IN: conservation of mixed types in a tuple with str type
+        # => Cast via literal_eval
+        (
+            {'field': 'gene', 'operator': 'in', 'value': "('CICP23', 2.0)"},
+            '`annotations`.`gene` IN ("CICP23",2.0)'
+        ),
+        # Test IN: Just elements separated by comas
+        (
+            {'field': 'chr', 'operator': 'in', 'value': '100, 11'},
+            '`variants`.`chr` IN (100,11)'
+        ),
+        # Test normal operator (not IN) with tuple
+        (
+            {'field': 'chr', 'operator': '<', 'value': '(10.0, 11.0)'},
+            "`variants`.`chr` < '(10.0, 11.0)'"
+        ),
+        # Test WORDSET function
+        (
+            {'field': 'gene', 'operator': 'in', 'value': ('WORDSET', 'coucou')},
+            "`annotations`.`gene` IN (SELECT value FROM wordsets WHERE name = 'coucou')"
+        ),
+    ]
+    for filter_in, expected in data:
+        assert querybuilder.filters_to_sql(filter_in, DEFAULT_TABLES) == expected
 
 
 def test_filters_to_vql():
