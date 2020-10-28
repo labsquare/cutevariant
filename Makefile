@@ -23,7 +23,7 @@ doc-deploy:
 fullrelease:
 	fullrelease
 install_deps:
-	python -c "import configparser; c = configparser.ConfigParser(); c.read('setup.cfg'); print(c['options']['install_requires']); print(c['options.extras_require']['dev'])" | xargs pip install -U
+	python -c "import configparser; c = configparser.ConfigParser(); c.read('setup.cfg'); print(c['options']['install_requires']); print(c['options.extras_require']['dev'])" | xargs -0 pip install -U
 install:
 	@# Replacement for python setup.py develop which doesn't support extra_require keyword.
 	@# Install a project in editable mode.
