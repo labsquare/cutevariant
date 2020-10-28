@@ -90,6 +90,7 @@ def filters_to_flat(filters: dict):
             {'field': 'alt', 'operator': '=', 'value': "C"}
         ]
     """
+
     def recursive_generator(filters):
         if isinstance(filters, dict) and len(filters) == 3:
             # length = 3 to skip AND/OR levels
@@ -233,6 +234,7 @@ def filters_to_sql(filters, default_tables={}):
     Note:
         There is a recursive function inside to parse the nested tree of conditions
     """
+
     def is_field(node):
         return len(node) == 3
 
@@ -304,6 +306,7 @@ def filters_to_vql(filters):
     Returns:
         str: VQL WHERE expression
     """
+
     def is_field(node):
         return len(node) == 3
 

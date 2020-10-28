@@ -20,7 +20,7 @@ class WordSetWidget(PluginWidget):
 
     def on_refresh(self):
         print("refresh")
-  
+
 
 if __name__ == "__main__":
     import sys
