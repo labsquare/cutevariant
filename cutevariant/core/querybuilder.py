@@ -349,7 +349,9 @@ def build_vql_query(fields, source="variants", filters={}, group_by=[], having={
     """
     query = "SELECT " + ",".join([fields_to_vql(i) for i in fields]) + " FROM " + source
     if filters:
-        query += " WHERE " + filters_to_vql(filters)
+        where_clause = filters_to_vql(filters)
+        if where_clause:
+            query += " WHERE " + where_clause
 
     if group_by:
         query += " GROUP BY " + ",".join((fields_to_vql(i) for i in group_by))
@@ -460,8 +462,7 @@ def build_sql_query(
     # Add Where Clause
     if filters:
         where_clause = filters_to_sql(filters, default_tables)
-        # TODO : filter_to_sql should returns empty instead of ()
-        if where_clause and where_clause != "()":
+        if where_clause:
             sql_query += " WHERE " + where_clause
 
     # Add Group By
