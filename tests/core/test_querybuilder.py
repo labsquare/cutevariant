@@ -124,33 +124,33 @@ FILTERS_VS_SQL_VQL = [
     # Test IN: conservation of not mixed types in the tuple
     (
         {'field': 'chr', 'operator': 'in', 'value': (10.0, 11.0)},
-        '`variants`.`chr` IN (10.0,11.0)',
+        '`variants`.`chr` IN (10.0, 11.0)',
         'chr IN (10.0, 11.0)',
     ),
     # Test IN: conservation of not mixed types in a tuple with str type
     # => Cast via literal_eval
     (
         {'field': 'chr', 'operator': 'in', 'value': '(10.0, 11.0)'},
-        '`variants`.`chr` IN (10.0,11.0)',
+        '`variants`.`chr` IN (10.0, 11.0)',
         'chr IN (10.0, 11.0)',
     ),
     # Test IN: conservation of mixed types in the tuple
     (
         {'field': 'gene', 'operator': 'in', 'value': ('CICP23', 2.0)},
-        '`annotations`.`gene` IN ("CICP23",2.0)',
+        "`annotations`.`gene` IN ('CICP23', 2.0)",
         "gene IN ('CICP23', 2.0)",
     ),
     # Test IN: conservation of mixed types in a tuple with str type
     # => Cast via literal_eval
     (
         {'field': 'gene', 'operator': 'in', 'value': "('CICP23', 2.0)"},
-        '`annotations`.`gene` IN ("CICP23",2.0)',
+        "`annotations`.`gene` IN ('CICP23', 2.0)",
         "gene IN ('CICP23', 2.0)",
     ),
     # Test IN: Just elements separated by comas
     (
         {'field': 'chr', 'operator': 'in', 'value': '100, 11'},
-        '`variants`.`chr` IN (100,11)',
+        '`variants`.`chr` IN (100, 11)',
         "chr IN (100, 11)",
     ),
     # Test normal operator (not IN) with tuple
