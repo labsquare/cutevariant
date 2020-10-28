@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE TS>
-<TS version="2.1" language="fr_FR">
+<!DOCTYPE TS><TS version="2.0" language="fr_FR" sourcelanguage="">
 <context>
     <name>AboutCutevariant</name>
     <message>
@@ -99,62 +98,57 @@ Ce programme est distribué selon les termes de la Licence Publique Générale G
 <context>
     <name>FiltersEditorWidget</name>
     <message>
-        <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1404"/>
-        <source>Filter</source>
-        <translation type="obsolete">Filtre</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1629"/>
+        <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1636"/>
         <source>Current not saved filter...</source>
         <translation>Filtre non enregistré...</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1659"/>
+        <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1666"/>
         <source>Add Condition</source>
         <translation>Ajouter une condition</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1759"/>
+        <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1766"/>
         <source>Type a name for the filter</source>
         <translation>Entrez un nom pour le filtre</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1759"/>
+        <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1766"/>
         <source>Filter Name:</source>
         <translation>Nom du filtre:</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1839"/>
+        <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1846"/>
         <source>Filter deletion</source>
         <translation>Suppression du filtre</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1874"/>
+        <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1881"/>
         <source>Add condition</source>
         <translation>Ajouter une condition</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1875"/>
+        <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1882"/>
         <source>Add subfilter</source>
         <translation>Ajouter une sous-condition</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1596"/>
+        <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1603"/>
         <source>Filters</source>
         <translation>Filtres</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1633"/>
+        <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1640"/>
         <source>Save the current filter</source>
         <translation>Enregistrer le filtre actuel</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1636"/>
+        <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1643"/>
         <source>Delete the filter</source>
         <translation>Supprimer le filtre</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1839"/>
+        <location filename="cutevariant/gui/plugins/filters_editor/widgets.py" line="1846"/>
         <source>Do you want to remove this filter?</source>
         <translation>Êtes-vous sûr de vouloir supprimer le filtre ?</translation>
     </message>
@@ -392,11 +386,6 @@ The following exception occurred:
         <translation>Exporter un pedigree PED/PLINK</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/mainwindow.py" line="288"/>
-        <source>Hide bottom toolbar</source>
-        <translation type="obsolete">Cacher la zone inférieure</translation>
-    </message>
-    <message>
         <location filename="cutevariant/gui/mainwindow.py" line="313"/>
         <source>Report a bug</source>
         <translation>Signaler un bug</translation>
@@ -539,11 +528,6 @@ The following exception occurred:
     <name>ProxySettingsWidget</name>
     <message>
         <location filename="cutevariant/gui/settings.py" line="135"/>
-        <source>Proxy</source>
-        <translation type="obsolete">Proxy</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/settings.py" line="135"/>
         <source>Network</source>
         <translation>Réseau</translation>
     </message>
@@ -631,11 +615,6 @@ Doublez-cliquez pour les éditer.</translation>
         <location filename="cutevariant/gui/plugins/source_editor/widgets.py" line="168"/>
         <source>Source editor</source>
         <translation>Éditeur de sources</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/plugins/source_editor/widgets.py" line="209"/>
-        <source>reload</source>
-        <translation type="obsolete">Recharger la liste</translation>
     </message>
     <message>
         <location filename="cutevariant/gui/plugins/source_editor/widgets.py" line="247"/>
@@ -785,105 +764,105 @@ Doublez-cliquez pour les éditer.</translation>
 <context>
     <name>VariantView</name>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="750"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="736"/>
         <source>&amp;Unmark favorite</source>
         <translation>&amp;Ne plus afficher en favori</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="750"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="736"/>
         <source>&amp;Mark as favorite</source>
         <translation>&amp;Marquer en tant que favori</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="792"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="778"/>
         <source>&amp;Edit comment ...</source>
         <translation>&amp;Éditer le commentaire</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="796"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="782"/>
         <source>&amp;Copy</source>
         <translation>&amp;Copier</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="799"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="785"/>
         <source>&amp;Select all</source>
         <translation>&amp;Sélectionner tout</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="712"/>
-        <source>{} row(s) {} page(s)</source>
-        <translation type="obsolete">{} ligne(s) {} page(s)</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="760"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="746"/>
         <source>Classification</source>
         <translation>Classification</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="769"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="755"/>
         <source>External links</source>
         <translation>Liens externes</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="711"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="697"/>
         <source>{} variant(s) {} page(s)</source>
         <translation>{} variant(s) {} page(s)</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="709"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="695"/>
         <source>{} group(s) {} page(s)</source>
         <translation>{} groupe(s) {} page(s)</translation>
+    </message>
+    <message>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="516"/>
+        <source>Show SQL query</source>
+        <translation>Afficher la requête SQL</translation>
     </message>
 </context>
 <context>
     <name>VariantViewWidget</name>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="945"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="931"/>
         <source>Group by</source>
         <translation>Grouper</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="970"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="956"/>
         <source>Refresh</source>
         <translation>Rafraîchir</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="976"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="962"/>
         <source>Save selection</source>
         <translation>Sauvegarder la sélection</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="1076"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="1062"/>
         <source>Create a new selection</source>
         <translation>Créer une nouvelle sélection</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="1076"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="1062"/>
         <source>Name of the new selection:</source>
         <translation>Nom de la nouvelle sélection:</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="1168"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="1154"/>
         <source>Group variants according to columns</source>
         <translation>Grouper les variants d&apos;après les colonnes</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="979"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="965"/>
         <source>Save the current variants into a new selection</source>
         <translation>Sauvegarder les variants affichés dans une nouvelle sélection</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="1162"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="1148"/>
         <source>Ungroup variants</source>
         <translation>Dégrouper les variants</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="1099"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="1085"/>
         <source>Error while creating selection</source>
         <translation>Erreur durant la création de la sélection</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="1099"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="1085"/>
         <source>Error while creating selection &apos;%s&apos;; Name is already used</source>
         <translation>Erreur durant la création de la sélection &apos;%s&apos;; Le nom est déjà utilisé</translation>
     </message>
@@ -891,24 +870,9 @@ Doublez-cliquez pour les éditer.</translation>
 <context>
     <name>VqlEditorWidget</name>
     <message>
-        <location filename="cutevariant/gui/plugins/vql_editor/widgets.py" line="45"/>
-        <source>Vql Editor</source>
-        <translation type="obsolete">Éditeur VQL</translation>
-    </message>
-    <message>
         <location filename="cutevariant/gui/plugins/vql_editor/widgets.py" line="52"/>
         <source>Run</source>
         <translation>Exécuter</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/plugins/vql_editor/widgets.py" line="160"/>
-        <source>VQLSyntaxError: &apos;%s&apos; at position %s</source>
-        <translation type="obsolete">VQLSyntaxError: &apos;%s&apos; à la position %s</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/plugins/vql_editor/widgets.py" line="53"/>
-        <source>Run VQL query</source>
-        <translation type="obsolete">Éxécuter la requête VQL</translation>
     </message>
     <message>
         <location filename="cutevariant/gui/plugins/vql_editor/widgets.py" line="47"/>
@@ -1107,10 +1071,12 @@ separating values with commas, or by using wordsets managed with the &lt;em&gt;W
 Example of syntax:
 
 &lt;ul&gt;
-&lt;li&gt;gene in my_gene1, my_gene2&lt;/li&gt;
-&lt;li&gt;gene in WORDSET, my_word_set&lt;/li&gt;
-&lt;li&gt;chr in (&apos;10&apos;, &apos;X&apos;)&lt;/li&gt;
-&lt;li&gt;chr not in 10, 11&lt;/li&gt;
+&lt;li&gt;&lt;em&gt;gene in my_gene1, my_gene2&lt;/em&gt;: Only the &apos;my_gene1&apos; or &apos;my_gene2&apos; genes&lt;/li&gt;
+&lt;li&gt;&lt;em&gt;gene in WORDSET, my_word_set&lt;/em&gt;: All genes contained in the wordset &apos;my_word_set&apos;&lt;/li&gt;
+&lt;li&gt;&lt;em&gt;gene in WORDSET [&apos;my_word_set&apos;]&lt;/em&gt;: idem &lt;/li&gt;
+&lt;li&gt;&lt;em&gt;gene LIKE &quot;C%&quot;&lt;/em&gt;: All genes whose name begins with &apos;C&apos;&lt;/li&gt;
+&lt;li&gt;&lt;em&gt;chr in (&apos;10&apos;, &apos;X&apos;)&lt;/em&gt;: Only chromosomes 10 or X&lt;/li&gt;
+&lt;li&gt;&lt;em&gt;chr not in 10, 11&lt;/em&gt;: The chromosomes other than 10 and 11&lt;/li&gt;
 &lt;/ul&gt;
 
 &lt;p&gt;You can delete or save a filter to retrieve it later by clicking on the &quot;save&quot;
@@ -1156,10 +1122,12 @@ séparant les valeurs avec des virgules, ou en faisant appel aux wordsets géré
 Exemple de syntaxes:
 
 &lt;ul&gt;
-&lt;li&gt;gene in my_gene1, my_gene2&lt;/li&gt;
-&lt;li&gt;gene in WORDSET, my_word_set&lt;/li&gt;
-&lt;li&gt;chr in (&apos;10&apos;, &apos;X&apos;)&lt;/li&gt;
-&lt;li&gt;chr not in 10, 11&lt;/li&gt;
+&lt;li&gt;&lt;em&gt;gene in my_gene1, my_gene2&lt;/em&gt;: Uniquement les gènes &apos;my_gene1&apos; ou &apos;my_gene2&apos;&lt;/li&gt;
+&lt;li&gt;&lt;em&gt;gene in WORDSET, my_word_set&lt;/em&gt;: Tous les gènes contenus dans le wordset &apos;my_word_set&apos;&lt;/li&gt;
+&lt;li&gt;&lt;em&gt;gene in WORDSET[&apos;my_word_set&apos;]&lt;/em&gt;: idem&lt;/li&gt;
+&lt;li&gt;&lt;em&gt;gene LIKE &quot;C%&quot;&lt;/em&gt;: Tous les gènes dont le nom commence par &apos;C&apos; &lt;/li&gt;
+&lt;li&gt;&lt;em&gt;chr in (&apos;10&apos;, &apos;X&apos;)&lt;/em&gt;: Uniquement les chromosomes 10 ou X&lt;/li&gt;
+&lt;li&gt;&lt;em&gt;chr not in 10, 11&lt;/em&gt;: Les chromosomes différents de 10 et 11&lt;/li&gt;
 &lt;/ul&gt;
 
 &lt;p&gt;Vous pouvez supprimer ou sauvegarder un filtre pour le retrouver ultérieurement
@@ -1289,70 +1257,6 @@ rédigés manuellement et ajoutés en faisant un clic droit sur le variant dans 
         <source>
 &lt;p&gt;This window is the main window of Cutevariant. Here you will find the variants
 and their related data presented in the various columns selected from the
-&lt;em&gt;Filters Editor&lt;/em&gt; plugin.&lt;/p&gt;
-
-You can:
-
-&lt;ul&gt;
-&lt;li&gt;&lt;b&gt;Group the variants&lt;/b&gt; according to the columns of your choice.
-This function is interesting if you display the data of sometimes numerous
-annotations for the same variant.
-You will find all the annotations grouped for each variant.&lt;/li&gt;
-
-&lt;li&gt;&lt;b&gt;Set the ACMG score&lt;/b&gt; of a variant in 2 clicks via the context menu.&lt;/li&gt;
-
-&lt;li&gt;&lt;b&gt;Mark one or more variants as favorite(s)&lt;/b&gt; so that you can easily find
-them later.&lt;/li&gt;
-
-&lt;li&gt;Edit/add comments.&lt;/li&gt;
-
-&lt;li&gt;&lt;b&gt;Consult external databases&lt;/b&gt; referencing each selected variant to
-quickly obtain additional information.&lt;/li&gt;
-
-&lt;li&gt;&lt;b&gt;Copy&lt;/b&gt; one or more variants into a format that can be used directly in
-a Calc/Excel spreadsheet.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;The displayed variants can be &lt;b&gt;controlled by filters&lt;/b&gt; modified in real
-time from the &lt;em&gt;Filters Editor&lt;/em&gt; plugin or from a VQL query from the 
-&lt;em&gt;VQL Editor&lt;/em&gt; plugin.&lt;/p&gt;
-
-&lt;p&gt;Each subset of variants thus obtained can be saved as a selection using the
-&lt;em&gt;Save variants&lt;/em&gt; button.
-The selections are listed in the &lt;em&gt;Source Editor&lt;/em&gt; plugin.&lt;/p&gt;
-</source>
-        <translation type="obsolete">&lt;p&gt;Cette fenêtre est la fenêtre principale de Cutevariant. Vous y trouverez les variants et leurs données liées
-présentées dans les diverses colonnes sélectionnées depuis le plugin &lt;em&gt;Sélecteur de colonnes&lt;/em&gt;.&lt;/p&gt;
-
-Vous pouvez:
-
-&lt;ul&gt;
-&lt;li&gt;Grouper les variants selon les colonnes de votre choix.
-Cette fonction est intéressante dans le cas où vous affichez les données d&apos;annotations parfois nombreuses pour un même variant.
-Vous retrouverez donc toutes les annotations groupées pour chaque variant.&lt;/li&gt;
-
-&lt;li&gt;&lt;b&gt;Corriger le score ACMG&lt;/b&gt; d&apos;un variant en 2 clics via le menu contextuel.&lt;/li&gt;
-
-&lt;li&gt;&lt;b&gt;Marquer un ou plusieurs variants en tant que favoris&lt;/b&gt; pour les retrouver aisément plus tard.&lt;/li&gt;
-
-&lt;li&gt;Éditer/ajouter des commentaires.&lt;/li&gt;
-
-&lt;li&gt;&lt;b&gt;Consulter des bases de données externes&lt;/b&gt; référençant chaque variant sélectionné pour obtenir rapidement un complément d&apos;information.&lt;/li&gt;
-
-&lt;li&gt;&lt;b&gt;Copier&lt;/b&gt; un ou plusieurs variants dans un format utilisable directement dans un tableur Calc/Excel&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;Les variants affichés peuvent être contrôlés par des filtres modifiés en temps réel depuis le plugin &lt;em&gt;Filtres&lt;/em&gt;
-ou depuis une requête VQL depuis le plugin &lt;em&gt;Éditeur VQL&lt;/em&gt;.&lt;/p&gt;
-
-&lt;p&gt;Chaque sous ensemble de variants ainsi obtenu peut être sauvegardé en tant que sélection à l&apos;aide du bouton &quot;Save variants&quot;.
-Les sélections sont listées dans le plugin &lt;em&gt;Sélections&lt;/em&gt;.&lt;/p&gt;</translation>
-    </message>
-    <message>
-        <location filename="cutevariant/gui/plugins/variant_view/__init__.py" line="4"/>
-        <source>
-&lt;p&gt;This window is the main window of Cutevariant. Here you will find the variants
-and their related data presented in the various columns selected from the
 &lt;em&gt;Columns selector&lt;/em&gt; plugin.&lt;/p&gt;
 
 You can:
@@ -1453,52 +1357,6 @@ https://github.com/labsquare/cutevariant/wiki/VQL-language&lt;/a&gt;</translatio
 </context>
 <context>
     <name>word_sets</name>
-    <message>
-        <location filename="cutevariant/gui/plugins/word_set/__init__.py" line="4"/>
-        <source>
-&lt;p&gt;This plugin allows to create sets of words that can be matched with the 
-attributes of the project&apos;s variants.&lt;/p&gt;
-&lt;p&gt;
-Once the addition of a word set is started, a manual addition one by one of the
-words is possible; for practical reasons it is however advisable to directly
-import a text file containing merely 1 word per line.&lt;/p&gt;
-
-The set can be reworked at any time via an editor.&lt;br&gt;
-&lt;br&gt;
-&lt;i&gt;Example of use:&lt;/i&gt;&lt;br&gt;
-&lt;br&gt;
-&lt;i&gt;A user wishes to quickly filter all variants of a project related to a set of
-relevant genes for him.
-He therefore creates a word set and then makes a selection via:&lt;/i&gt;
-
-&lt;ul&gt;
-&lt;li&gt;the &lt;em&gt;Filters Editor&lt;/em&gt; plugin with a filter of the type:
-&lt;pre&gt;gene IN (&apos;SET&apos;, &apos;my_word_set&apos;)&lt;/pre&gt;&lt;/li&gt;
-
-&lt;li&gt;the &lt;em&gt;VQL Editor&lt;/em&gt; plugin with a VQL request of the type:
-&lt;pre&gt;SELECT chr,pos,ref,alt,gene FROM variants WHERE gene IN SET[&apos;my_word_set&apos;]&lt;/pre&gt;&lt;/li&gt;
-&lt;/ul&gt;
-</source>
-        <translation type="obsolete">&lt;p&gt;Ce plugin permet de créer des ensembles de mots pouvant être croisés avec les attributs des variants du projet.&lt;/p&gt;
-
-&lt;p&gt;Une fois l&apos;ajout d&apos;un ensemble débuté, un ajout manuel un à un des mots est possible;
-pour des raisons pratiques il est toutefois conseillé d&apos;importer directement un fichier texte contenant simplement 1 mot par ligne.&lt;/p&gt;
-
-&lt;p&gt;Le remaniement de l&apos;ensemble est possible à tout moment via un éditeur.&lt;/p&gt;&lt;br&gt;
-&lt;br&gt;
-&lt;i&gt;Exemple d&apos;usage:&lt;/i&gt;
-
-&lt;i&gt;Un utilisateur souhaite filtrer rapidement tous les variants liés à un ensemble de gènes qui l&apos;intéressent.
-Il créé un word set puis y fait appel au choix via :&lt;/i&gt;
-
-&lt;ul&gt;
-&lt;li&gt;le plugin filter editor avec un filtre du type:
-&lt;pre&gt;gene IN (&apos;WORDSET&apos;, &apos;my_word_set&apos;)&lt;/pre&gt;&lt;/li&gt;
-
-&lt;li&gt;le plugin VQL editor avec une requête VQL du type:
-&lt;pre&gt;SELECT chr,pos,ref,alt,gene FROM variants WHERE gene IN WORDSET[&apos;my_word_set&apos;]&lt;/pre&gt;&lt;/li&gt;
-&lt;/ul&gt;</translation>
-    </message>
     <message>
         <location filename="cutevariant/gui/plugins/word_set/__init__.py" line="4"/>
         <source>

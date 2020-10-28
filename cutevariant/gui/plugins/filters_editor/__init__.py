@@ -28,10 +28,12 @@ separating values with commas, or by using wordsets managed with the <em>WordSet
 Example of syntax:
 
 <ul>
-<li>gene in my_gene1, my_gene2</li>
-<li>gene in WORDSET, my_word_set</li>
-<li>chr in ('10', 'X')</li>
-<li>chr not in 10, 11</li>
+<li><em>gene in my_gene1, my_gene2</em>: Only the 'my_gene1' or 'my_gene2' genes</li>
+<li><em>gene in WORDSET, my_word_set</em>: All genes contained in the wordset 'my_word_set'</li>
+<li><em>gene in WORDSET ['my_word_set']</em>: idem </li>
+<li><em>gene LIKE "C%"</em>: All genes whose name begins with 'C'</li>
+<li><em>chr in ('10', 'X')</em>: Only chromosomes 10 or X</li>
+<li><em>chr not in 10, 11</em>: The chromosomes other than 10 and 11</li>
 </ul>
 
 <p>You can delete or save a filter to retrieve it later by clicking on the "save"
