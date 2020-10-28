@@ -1,5 +1,5 @@
 from pprint import pprint
-from cutevariant.core.vql import parse_vql
+from cutevariant.core.vql import parse_one_vql
 
 # Test valid VQL cases
 VQL_TO_TREE_CASES = {
@@ -163,7 +163,7 @@ def template_test_case(vql_expr: str, expected: dict) -> callable:
 
     def test_function():
         print("EXPECTED:", ", ".join(sorted(tuple(expected.keys()))))
-        found = next(parse_vql(vql_expr))
+        found = parse_one_vql(vql_expr)
         print("FOUND:", ", ".join(sorted(tuple(found.keys()))))
         pprint(expected)
         print()
