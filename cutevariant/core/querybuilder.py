@@ -211,8 +211,13 @@ def fields_to_sql(field, default_tables={}, use_as=False) -> str:
 
     Examples:
 
-        >>> fields_to_sql("chr", default_tables={"chr": "variants", "alt": "variants"})
+        >>> default_tables = {"variants.chr": "variants", "alt": "variants"}
+        >>> fields_to_sql("chr", default_tables=default_tables)
         "`variants`.`chr`"
+        >>> fields_to_sql("gene", default_tables=default_tables)
+        "`annotations`.`gene`"
+        >>> fields_to_sql("coucou", default_tables=default_tables)
+        "`coucou`"
     """
     if isinstance(field, tuple):
         # If it is "genotype.name.truc then it is field function"
@@ -227,8 +232,10 @@ def fields_to_sql(field, default_tables={}, use_as=False) -> str:
         field = match[2]
     else:
         if field in default_tables.keys():
+            # Set the table
             table = default_tables[field]
         else:
+            # Unknown table, just return the field
             return f"`{field}`"
 
     return f"`{table}`.`{field}`"

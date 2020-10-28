@@ -58,16 +58,21 @@ def test_fields_to_sql():
     assert (
         querybuilder.fields_to_sql("variants.chr", DEFAULT_TABLES) == "`variants`.`chr`"
     )
+    # Find the table
     assert querybuilder.fields_to_sql("gene", DEFAULT_TABLES) == "`annotations`.`gene`"
+    # Find the table for non existing field
+    assert querybuilder.fields_to_sql("coucou", DEFAULT_TABLES) == "`coucou`"
+    # Don't care of the existence of a field in a table
     assert (
         querybuilder.fields_to_sql("annotations.gene", DEFAULT_TABLES)
         == "`annotations`.`gene`"
     )
-
+    # Idem (gene is not in variants)
     assert (
         querybuilder.fields_to_sql("variants.gene", DEFAULT_TABLES)
         == "`variants`.`gene`"
     )
+    # Cast composite fields
     assert (
         querybuilder.fields_to_sql(("sample", "sacha", "gt"), DEFAULT_TABLES)
         == "`sample_sacha`.`gt`"
