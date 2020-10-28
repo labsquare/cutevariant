@@ -444,6 +444,7 @@ class FilterItem:
         data(any): str (logicType) or tuple/list (ConditionType).
         uuid(str):
         checked(boolean):
+        type(FilterItem.LOGIC_TYPE/FilterItem.CONDITION_TYPE): Type of filter item.
 
     Examples:
         root = FilterItem() # Create rootItem
@@ -462,9 +463,14 @@ class FilterItem:
             data(any): str (logicType) or tuple/list (ConditionType).
             parent (FilterItem): item's parent
         """
+        # Item Type handling
+        is_tuple = isinstance(data, (tuple, list))
+        assert is_tuple or isinstance(data, str)
+        self.data = list(data) if is_tuple else data
+        self.type = self.CONDITION_TYPE if is_tuple else self.LOGIC_TYPE
+        # Misc
         self.parent = parent
         self.children = []
-        self.data = list(data) if isinstance(data, (tuple, list)) else data
         self.uuid = str(uuid.uuid1())
         self.checked = True
 
@@ -530,25 +536,12 @@ class FilterItem:
         for child in self.children:
             child.set_recursive_check_state(checked)
 
-    def type(self):
-        """Return item type.
-            ..todo : maybe create subclass for each types ?
-
-        Returns:
-            LOGIC_TYPE or CONDITION_TYPE
-        """
-        if isinstance(self.data, str):  # LOGIC_TYPE
-            return self.LOGIC_TYPE
-
-        if isinstance(self.data, (tuple, list)):  # CONDITION_TYPE
-            return self.CONDITION_TYPE
-
     def get_field(self):
-        if self.type() == self.CONDITION_TYPE:
+        if self.type == self.CONDITION_TYPE:
             return self.data[0]
 
     def get_operator(self):
-        if self.type() == self.CONDITION_TYPE:
+        if self.type == self.CONDITION_TYPE:
             return self.data[1].upper()
 
     def get_value(self):
@@ -562,10 +555,10 @@ class FilterItem:
             For a CONDITION_TYPE FilterItem: `("chr", "IN", (10, 11))`,
             this function will return `(10, 11)`.
         """
-        if self.type() == self.CONDITION_TYPE:
+        if self.type == self.CONDITION_TYPE:
             return self.data[2]
 
-        if self.type() == self.LOGIC_TYPE:
+        if self.type == self.LOGIC_TYPE:
             return self.data
 
     # def get_data(self, column=0):
@@ -588,20 +581,20 @@ class FilterItem:
     #         return self.checked
 
     #     # if column == 1 or column == 2 or column == 3:
-    #     #     if self.type() == self.LOGIC_TYPE:
+    #     #     if self.type == self.LOGIC_TYPE:
     #     #         return self.data
 
-    #     #     if self.type() == self.CONDITION_TYPE:
+    #     #     if self.type == self.CONDITION_TYPE:
     #     #         return self.data[column - 1]
 
     def set_field(self, value):
         """Set field part of CONDITION_TYPE item"""
-        if self.type() == self.CONDITION_TYPE:
+        if self.type == self.CONDITION_TYPE:
             self.data[0] = value
 
     def set_operator(self, value):
         """Set operator part of CONDITION_TYPE item"""
-        if self.type() == self.CONDITION_TYPE:
+        if self.type == self.CONDITION_TYPE:
             self.data[1] = value.upper()
 
     def set_value(self, value):
@@ -609,7 +602,7 @@ class FilterItem:
 
         Called when a user validates the editor.
         """
-        if self.type() == self.CONDITION_TYPE:
+        if self.type == self.CONDITION_TYPE:
             self.data[2] = value
             return
 
@@ -660,7 +653,7 @@ class FilterModel(QAbstractItemModel):
     _HEADERS = ["c", "field", "operator", "value", "op"]
     _MIMEDATA = "application/x-qabstractitemmodeldatalist"
 
-    # Custom type to get FilterItem.type(). See self.data()
+    # Custom type to get FilterItem.type. See self.data()
     TypeRole = Qt.UserRole + 1
     UniqueIdRole = Qt.UserRole + 2
 
@@ -709,14 +702,14 @@ class FilterModel(QAbstractItemModel):
                 return item.checked if role == Qt.UserRole else str(item.checked)
 
             if index.column() == 1:
-                if item.type() == FilterItem.CONDITION_TYPE:
+                if item.type == FilterItem.CONDITION_TYPE:
                     return fields_to_vql(item.get_field())
 
-                if item.type() == FilterItem.LOGIC_TYPE:
+                if item.type == FilterItem.LOGIC_TYPE:
                     val = item.get_value()
                     return val if role == Qt.UserRole else str(val)
 
-            if item.type() != FilterItem.CONDITION_TYPE:
+            if item.type != FilterItem.CONDITION_TYPE:
                 return
 
             if index.column() == 2:
@@ -734,7 +727,7 @@ class FilterModel(QAbstractItemModel):
 
         if role == FilterModel.TypeRole:
             # Return item type
-            return item.type()
+            return item.type
 
         if role == FilterModel.UniqueIdRole:
             return item.uuid
@@ -771,7 +764,7 @@ class FilterModel(QAbstractItemModel):
 
         # if role == Qt.FontRole:
         #     #  Make LogicItem as bold
-        #     if self.item(index).type() == FilterItem.LOGIC_TYPE:
+        #     if self.item(index).type == FilterItem.LOGIC_TYPE:
         #         font = QFont()
         #         font.setBold(True)
         #         return font
@@ -805,13 +798,13 @@ class FilterModel(QAbstractItemModel):
                 item.checked = bool(value)
 
             if index.column() == 1:
-                if item.type() == FilterItem.LOGIC_TYPE:
+                if item.type == FilterItem.LOGIC_TYPE:
                     item.set_value(value)
 
-                if item.type() == FilterItem.CONDITION_TYPE:
+                if item.type == FilterItem.CONDITION_TYPE:
                     item.set_field(value)
 
-            if item.type() == FilterItem.CONDITION_TYPE:
+            if item.type == FilterItem.CONDITION_TYPE:
 
                 if index.column() == 2:
                     item.set_operator(value)
@@ -932,14 +925,14 @@ class FilterModel(QAbstractItemModel):
         if item is None:
             item = self.root_item[0]
 
-        if item.type() == FilterItem.LOGIC_TYPE and item.checked is True:
+        if item.type == FilterItem.LOGIC_TYPE and item.checked is True:
             # Return dict with operator as key and item as value
             operator_data = [
                 self.to_dict(child) for child in item.children if child.checked is True
             ]
             return {item.get_value(): operator_data}
 
-        if item.type() == FilterItem.CONDITION_TYPE:
+        if item.type == FilterItem.CONDITION_TYPE:
             return {
                 "field": item.get_field(),
                 "operator": item.get_operator(),
@@ -1021,10 +1014,10 @@ class FilterModel(QAbstractItemModel):
         if index.column() == 0 or index.column() == 4:
             return Qt.ItemIsSelectable | Qt.ItemIsEnabled
 
-        if item.type() == FilterItem.LOGIC_TYPE and index.column() != 1:
+        if item.type == FilterItem.LOGIC_TYPE and index.column() != 1:
             return Qt.ItemIsSelectable | Qt.ItemIsEnabled
 
-        if item.type() == FilterItem.LOGIC_TYPE and index.column() == 1:
+        if item.type == FilterItem.LOGIC_TYPE and index.column() == 1:
             return (
                 Qt.ItemIsSelectable
                 | Qt.ItemIsEditable
@@ -1033,7 +1026,7 @@ class FilterModel(QAbstractItemModel):
                 | Qt.ItemIsDropEnabled
             )
 
-        if item.type() == FilterItem.CONDITION_TYPE:
+        if item.type == FilterItem.CONDITION_TYPE:
             return (
                 Qt.ItemIsSelectable
                 | Qt.ItemIsEditable
@@ -1249,11 +1242,11 @@ class FilterDelegate(QStyledItemDelegate):
         conn = model.conn
 
         if index.column() == 1:
-            if item.type() == FilterItem.LOGIC_TYPE:
+            if item.type == FilterItem.LOGIC_TYPE:
                 # AND/OR logic operators
                 return LogicField(parent)
 
-            if item.type() == FilterItem.CONDITION_TYPE:
+            if item.type == FilterItem.CONDITION_TYPE:
                 # Display all fields of the database
                 widget = ComboField(parent)
                 # LOGGER.debug(prepare_fields.cache_info())
@@ -1334,7 +1327,7 @@ class FilterDelegate(QStyledItemDelegate):
         if not index.isValid():
             return False
 
-        if event.type() == QEvent.MouseButtonPress:
+        if event.type == QEvent.MouseButtonPress:
             # print("mouse pressed on", index.column(), event.button())
             item = model.item(index)
 
@@ -1475,7 +1468,7 @@ class FilterDelegate(QStyledItemDelegate):
                 QPalette.HighlightedText if is_selected else QPalette.WindowText,
             )
 
-            if item.type() == FilterItem.LOGIC_TYPE:
+            if item.type == FilterItem.LOGIC_TYPE:
                 font.setBold(True)
 
             if index.column() == self.COLUMN_FIELD:
@@ -1503,7 +1496,7 @@ class FilterDelegate(QStyledItemDelegate):
         # if index.column() == 3:
         #     painter.drawPixmap(self._icon_rect(option), self.rem_icon.pixmap(self.icon_size))
 
-        # if index.column() == 3 and item.type() == FilterItem.LOGIC_TYPE:
+        # if index.column() == 3 and item.type == FilterItem.LOGIC_TYPE:
         #     x = option.rect.right() - 20
         #     y = option.rect.center().y() - self.icon_size.height() / 2
         #     painter.drawPixmap(QRect(x,y,self.icon_size.width(), self.icon_size.height()), self.add_icon.pixmap(self.icon_size))
@@ -1755,7 +1748,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
             # Add button: Is an item selected ?
             index = self.view.currentIndex()
-            if index.isValid() and self.model.item(index).type() == FilterItem.LOGIC_TYPE:
+            if index.isValid() and self.model.item(index).type == FilterItem.LOGIC_TYPE:
                 self.add_button.setEnabled(True)
             else:
                 # item is CONDITION_TYPE or there is no item selected (because of deletion)
@@ -1857,7 +1850,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
         index = self.view.currentIndex()
 
         if index.isValid():
-            if self.model.item(index).type() == FilterItem.LOGIC_TYPE:
+            if self.model.item(index).type == FilterItem.LOGIC_TYPE:
                 # Add condition item to existing logic operator
                 self.model.add_condition_item(parent=index)
         else:
@@ -1921,7 +1914,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
             menu = QMenu(self)
 
             item = self.model.item(index)
-            if item.type() == FilterItem.LOGIC_TYPE:
+            if item.type == FilterItem.LOGIC_TYPE:
                 menu.addAction(self.tr("Add condition"), self.on_add_condition)
                 menu.addAction(self.tr("Add subfilter"), self.on_add_logic)
 
