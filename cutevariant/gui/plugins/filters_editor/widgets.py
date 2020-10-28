@@ -611,10 +611,11 @@ class FilterItem:
 
 
 class FilterModel(QAbstractItemModel):
-    """Model to display filter from Query.filter.
+    """Model to display filter
+
     The model store Query filter as a nested tree of FilterItem.
-    You can access data from self.item() and edit model using self.set_data() and helper method like
-    self.add_logic_item, self.add_condition_item and remove_item.
+    You can access data from self.item(), edit model using self.set_data()
+    and helper methods like: add_logic_item, add_condition_item and remove_item.
 
     Attributes:
         conn (sqlite3.connection): sqlite3 connection
