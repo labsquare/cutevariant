@@ -1,10 +1,9 @@
+import pytest
 from PySide2.QtWidgets import QMainWindow
 
 from cutevariant.gui.state import State
 from cutevariant.gui import plugin
-
 from tests import utils
-import pytest
 
 
 @pytest.fixture

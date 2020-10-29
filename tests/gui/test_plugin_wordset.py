@@ -1,10 +1,16 @@
-from PySide2 import QtCore, QtWidgets, QtGui
-
-from tests import utils
-
-from cutevariant.gui.plugins.word_set import widgets
-import time
+# Standard imports
 import pytest
+
+# Qt imports
+from PySide2 import QtCore, QtWidgets
+# Mandatory step to init qApp global variable...
+# Needed in cutevariant.gui.plugins.word_set.__init__.py
+QtWidgets.QApplication()
+
+# Custom imports
+from tests import utils
+from cutevariant.gui.plugins.word_set import widgets
+
 
 WORD_FILE = "examples/gene.txt"
 
