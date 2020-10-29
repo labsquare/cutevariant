@@ -4,7 +4,7 @@ Model:
 ;
 
 
-// Keep orders 
+// Keep orders
 Command:
     SelectCmd|CreateCmd|SetCmd|BedCmd|CopyCmd|CountCmd|DropCmd|ShowCmd|ImportCmd
 ;
@@ -53,7 +53,7 @@ ImportCmd:
 //################################## Set Operation ###################
 
 SetExpression:
- op=SetOperand (op=SetOperator op=SetOperand)* 
+ op=SetOperand (op=SetOperator op=SetOperand)*
 ;
 
 
@@ -66,7 +66,7 @@ op= ID | ('(' op=SetExpression ')')
 //################################## Filter Expression ################
 
 FilterExpression:
- op=FilterOperand (op=BoolOperator op=FilterOperand)* 
+ op=FilterOperand (op=BoolOperator op=FilterOperand)*
 ;
 
 
