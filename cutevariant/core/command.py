@@ -26,7 +26,7 @@ import functools
 from memoization import cached
 
 # Custom imports
-from cutevariant.core.querybuilder import build_sql_query, build_complete_query
+from cutevariant.core.querybuilder import build_sql_query, build_full_sql_query
 from cutevariant.core import sql, vql
 from cutevariant.commons import logger
 from cutevariant.core.reader import BedReader
@@ -67,7 +67,7 @@ def select_cmd(
     Yields:
         variants (dict)
     """
-    query = build_complete_query(
+    query = build_full_sql_query(
         conn,
         fields=fields,
         source=source,
@@ -126,7 +126,7 @@ def count_cmd(
     #         ).fetchone()[0]
     #     }
 
-    query = build_complete_query(
+    query = build_full_sql_query(
         conn,
         fields=fields,
         source=source,
@@ -209,7 +209,7 @@ def create_cmd(
     if target is None:
         return {}
 
-    sql_query = build_complete_query(
+    sql_query = build_full_sql_query(
         conn,
         fields=["id"],
         source=source,

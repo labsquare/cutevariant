@@ -543,7 +543,7 @@ def build_sql_query(
     return sql_query
 
 
-def build_complete_query(
+def build_full_sql_query(
     conn: sqlite3.Connection,
     fields=["chr", "pos", "ref", "alt"],
     source="variants",
