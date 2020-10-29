@@ -132,11 +132,17 @@ FILTERS_VS_SQL_VQL = [
         "(`variants`.`ref` = 'A' AND (`variants`.`alt` = 'C' OR `variants`.`alt` = 'C'))",
         "ref = 'A' AND (alt = 'C' OR alt = 'C')",
     ),
-    # Test IN
+    # Test IN with numeric tuple
     (
         {'field': 'chr', 'operator': 'in', 'value': (11.0,)},
         "`variants`.`chr` IN (11.0)",
         "chr IN (11.0)",
+    ),
+    # Test IN with string tuple
+    (
+        {'field': 'chr', 'operator': 'in', 'value': ("XXX",)},
+        "`variants`.`chr` IN ('XXX')",
+        "chr IN ('XXX')",
     ),
     # Test IN: conservation of not mixed types in the tuple
     (

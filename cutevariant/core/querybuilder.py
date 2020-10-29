@@ -295,8 +295,8 @@ def filters_to_sql(filters, default_tables={}):
                 if value[0] == WORDSET_FUNC_NAME:
                     value = wordset_data_to_sql(value)
                 elif len(value) == 1:
-                    # Remove last comma in tuple with 1 element ("xxx",)
-                    value = f"({value[0]})"
+                    # Remove trailing comma in tuple with 1 element ("xxx",)
+                    value = str(value).replace(",", "")
 
             # Strings must be space separated because of operators (IN, etc.)
             return "%s %s %s" % (field, operator, value)
@@ -366,8 +366,8 @@ def filters_to_vql(filters):
                 if len(value) == 2 and value[0] == WORDSET_FUNC_NAME:
                     value = wordset_data_to_vql(value)
                 elif len(value) == 1:
-                    # Remove last comma in tuple with 1 element ("xxx",)
-                    value = f"({value[0]})"
+                    # Remove trailing comma in tuple with 1 element ("xxx",)
+                    value = str(value).replace(",", "")
 
             # Strings must be space separated because of operators (IN, etc.)
             return "%s %s %s" % (field, operator, value)
