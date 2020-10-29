@@ -165,7 +165,9 @@ class SourceEditorWidget(plugin.PluginWidget):
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setSelectionMode(QAbstractItemView.SingleSelection)
         self.view.horizontalHeader().show()
-        self.view.horizontalHeader().setStretchLastSection(True)
+        self.view.horizontalHeader().setStretchLastSection(False)
+        self.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        self.view.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
         self.view.horizontalHeader().hide()
 
         self.toolbar = QToolBar()
@@ -269,14 +271,10 @@ class SourceEditorWidget(plugin.PluginWidget):
         """Load selection model and update the view"""
         # Block signals during the insertions
         self.is_loading = True
-
         self.model.load()
-        self.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
-        self.view.horizontalHeader().setSectionResizeMode(
-            1, QHeaderView.ResizeToContents
-        )
 
         # Select record according to query.selection
+        current_index = 0
         if self.source:
             current_index = self.model.find_record(self.source)
         self.view.setCurrentIndex(current_index)
