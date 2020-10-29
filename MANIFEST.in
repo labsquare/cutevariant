@@ -17,5 +17,6 @@ recursive-include cutevariant *.py
 recursive-include cutevariant *.tx
 recursive-include cutevariant *.ttf
 recursive-include cutevariant *.qss
+recursive-include cutevariant/gui/plugins/ *.json
 include cutevariant/assets/i18n/*.qm
 include cutevariant/assets/LICENSE
