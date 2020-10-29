@@ -90,7 +90,7 @@ Function: func=ID '[' arg=ARGS ']' ('.' extra=ID)?;
 WordSetIdentifier: 'WORDSET[' arg=ARGS ']';
 
 BoolOperator: "AND"|"OR";
-SetOperator: "+"|"-"|"&"|"^";
+SetOperator: "|"|"-"|"&";
 MathOperator: />=|<=|!=|=|>|<|!~|~|is|like|not like|has|not in|in/;
 Tuple: '(' items+=ValueIdentifier[','] ')';
 

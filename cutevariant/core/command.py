@@ -255,7 +255,7 @@ def set_cmd(
     query_second = build_sql_query(["id"], second, limit=None)
 
     func_query = {
-        "+": sql.union_variants,
+        "|": sql.union_variants,
         "-": sql.subtract_variants,
         "&": sql.intersect_variants,
     }
