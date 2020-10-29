@@ -119,12 +119,12 @@ VQL_TO_TREE_CASES = {
             "AND": [{"field": "some_field", "operator": "IN", "value": ("one", "two")}]
         },
     },
-    # Test 8
-    "CREATE denovo = A + B ": {
+    # Test 12
+    "CREATE denovo = A | B ": {
         "cmd": "set_cmd",
         "first": "A",
         "second": "B",
-        "operator": "+",
+        "operator": "|",
         "target": "denovo",
     },
     # Test 9

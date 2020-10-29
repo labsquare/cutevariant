@@ -136,7 +136,7 @@ def test_set_cmd(conn):
     assert selection_number == 3
 
     # C = A | B
-    selection_C = command.set_cmd(conn, target="C", first="A", second="B", operator="+")
+    selection_C = command.set_cmd(conn, target="C", first="A", second="B", operator="|")
     selection_C_id = selection_C["id"]
     print(selection_C_id)
     variants_in_selection = conn.execute(
@@ -183,14 +183,14 @@ def test_create_command_from_obj(conn):
     assert cmd.keywords == expected_kwargs
 
     cmd = command.create_command_from_obj(
-        conn, vql.parse_one_vql("CREATE denovo = a + b ")
+        conn, vql.parse_one_vql("CREATE denovo = a | b ")
     )
     print(cmd.keywords)
     expected_kwargs = {
         "cmd": "set_cmd",
         "target": "denovo",
         "first": "a",
-        "operator": "+",
+        "operator": "|",
         "second": "b",
     }
     assert cmd.keywords == expected_kwargs
