@@ -1332,7 +1332,7 @@ class FilterDelegate(QStyledItemDelegate):
         if not index.isValid():
             return False
 
-        if event.type == QEvent.MouseButtonPress:
+        if event.type() == QEvent.MouseButtonPress:
             # print("mouse pressed on", index.column(), event.button())
             item = model.item(index)
 
