@@ -114,8 +114,11 @@ def count_cmd(
     Returns:
         dict: Count of variants wgstith "count" as a key
     """
-
-    # TODO : Check if fields has annotations
+    # TODO : See #177: Check if fields has annotations
+    # If an annotation field is selected, the variant count stored in the selection
+    # table (count without taking account of annotations) is different.
+    # This leads to a fault in the pagination hiding the latest variants if
+    # more than 50 must be displayed.
 
     # if not filters and not group_by:
     #     # Returned stored cache variant
