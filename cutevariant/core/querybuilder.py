@@ -295,8 +295,8 @@ def filters_to_sql(filters, default_tables={}):
                 if value[0] == WORDSET_FUNC_NAME:
                     value = wordset_data_to_sql(value)
                 elif len(value) == 1:
-                    # Remove last comma in tuple with 1 element ("xxx",)
-                    value = f"({value[0]})"
+                    # Remove trailing comma in tuple with 1 element ("xxx",)
+                    value = str(value).replace(",", "")
 
             # Strings must be space separated because of operators (IN, etc.)
             return "%s %s %s" % (field, operator, value)
@@ -366,8 +366,8 @@ def filters_to_vql(filters):
                 if len(value) == 2 and value[0] == WORDSET_FUNC_NAME:
                     value = wordset_data_to_vql(value)
                 elif len(value) == 1:
-                    # Remove last comma in tuple with 1 element ("xxx",)
-                    value = f"({value[0]})"
+                    # Remove trailing comma in tuple with 1 element ("xxx",)
+                    value = str(value).replace(",", "")
 
             # Strings must be space separated because of operators (IN, etc.)
             return "%s %s %s" % (field, operator, value)
@@ -393,8 +393,13 @@ def filters_to_vql(filters):
 
 
 def build_vql_query(fields, source="variants", filters={}, group_by=[], having={}):
-    """Build VQL query
-    TODO: doc...
+    """Build VQL SELECT query
+
+    Args:
+        fields (list): List of fields
+        source (str): source of the virtual table ( see: selection )
+        filters (dict): nested condition tree
+        group_by (list/None): list of field you want to group
     """
     query = "SELECT " + ",".join([fields_to_vql(i) for i in fields]) + " FROM " + source
     if filters:
@@ -426,7 +431,7 @@ def build_sql_query(
     default_tables={},
     samples_ids={},
 ):
-    """Build SQL SELECT query on variants tables
+    """Build SQL SELECT query
 
     Args:
         fields (list): List of fields
@@ -538,7 +543,7 @@ def build_sql_query(
     return sql_query
 
 
-def build_complete_query(
+def build_full_sql_query(
     conn: sqlite3.Connection,
     fields=["chr", "pos", "ref", "alt"],
     source="variants",
@@ -551,9 +556,30 @@ def build_complete_query(
     offset=0,
     **kwargs,
 ):
-    """Build a complete select statements according data loaded from conn"""
+    """Build a complete SQL SELECT statement according to the data loaded from DB
+
+    You don't have to give the association map between fields and sql table origin
+    nor the association map between samples name and id.
+    In exchange SQL connection is mandatory.
+
+    Args:
+        conn (sqlite3.Connection): SQL connection
+        fields (list): List of fields
+        source (str): source of the virtual table ( see: selection )
+        filters (dict): nested condition tree
+        order_by (str/None): Order by field;
+            If None, order_desc is not required.
+        order_desc (bool): Descending or Ascending order
+        limit (int/None): limit record count;
+            If None, offset is not required.
+        offset (int): record count per page
+        group_by (list/None): list of field you want to group
+    """
+    # Get {'favorite': 'variants', 'comment': 'variants', impact': 'annotations', ...}
     default_tables = {i["name"]: i["category"] for i in sql.get_fields(conn)}
+    # Get {'NORMAL': 1, 'TUMOR': 2}
     samples_ids = {i["name"]: i["id"] for i in sql.get_samples(conn)}
+
     query = build_sql_query(
         fields=fields,
         source=source,

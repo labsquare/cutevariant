@@ -226,7 +226,7 @@ the arguments.""",
 
         # Test the VQL query
         try:
-            cmd = next(vql.parse_vql(query))
+            cmd = vql.parse_one_vql(query)
         except (vql.textx.TextXSyntaxError, vql.VQLSyntaxError) as e:
             # Available attributes: e.message, e.line, e.col
             print("%s: %s, col: %d" % (e.__class__.__name__, e.message, e.col))

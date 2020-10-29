@@ -1,5 +1,7 @@
 # Standard imports
 import sys
+import json
+import os
 import pickle
 import uuid
 from ast import literal_eval
@@ -14,8 +16,10 @@ from PySide2.QtGui import *
 # Custom imports
 from cutevariant.gui import style, plugin
 from cutevariant.core import sql, get_sql_connection
-from cutevariant.core.querybuilder import fields_to_vql, wordset_data_to_vql, WORDSET_FUNC_NAME
-
+from cutevariant.core.vql import parse_one_vql
+from cutevariant.core.querybuilder import (
+    build_vql_query, fields_to_vql, wordset_data_to_vql, WORDSET_FUNC_NAME
+)
 import cutevariant.commons as cm
 
 LOGGER = cm.logger()
@@ -721,7 +725,11 @@ class FilterModel(QAbstractItemModel):
                 val = item.get_value()
                 # TODO: WORDSET handling here. To be modified if WORDSET is a real operator
                 # Same way that for fields formatting in VQL form for column 1
-                if role in (Qt.EditRole, Qt.DisplayRole) and val[0] == WORDSET_FUNC_NAME:
+                if (
+                    role in (Qt.EditRole, Qt.DisplayRole)
+                    and isinstance(val, tuple)
+                    and val[0] == WORDSET_FUNC_NAME
+                ):
                     return wordset_data_to_vql(val)
 
                 return val if role == Qt.UserRole else str(val)
@@ -1328,7 +1336,7 @@ class FilterDelegate(QStyledItemDelegate):
         if not index.isValid():
             return False
 
-        if event.type == QEvent.MouseButtonPress:
+        if event.type() == QEvent.MouseButtonPress:
             # print("mouse pressed on", index.column(), event.button())
             item = model.item(index)
 
@@ -1639,6 +1647,8 @@ class FiltersEditorWidget(plugin.PluginWidget):
     def __init__(self, conn=None, parent=None):
         super().__init__(parent)
         self.setWindowTitle(self.tr("Filters"))
+
+        self.settings = QSettings()
         self.view = QTreeView()
         # conn is always None here but initialized in on_open_project()
         self.model = FilterModel(conn)
@@ -1673,6 +1683,8 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.combo = QComboBox()
         self.combo.addItem(self.tr("Current not saved filter..."))
         self.combo.currentTextChanged.connect(self.on_combo_changed)
+        self.load_predefined_filters()
+
         self.save_button = QToolButton()
         self.save_button.setIcon(FIcon(0xF0193))
         self.save_button.setToolTip(self.tr("Save the current filter"))
@@ -1726,6 +1738,39 @@ class FiltersEditorWidget(plugin.PluginWidget):
         prepare_fields.cache_clear()
 
         self.on_refresh()
+
+    def load_predefined_filters(self):
+        """Load user and software defined filters)
+
+        - Software defined filters are loaded from "filter.json" embedded
+            in the current plugin folder.
+        - User defined filters are loaded from app settings, under the key
+            `plugins/filters_editor/filters`.
+        """
+        json_file_path = os.path.join(os.path.dirname(__file__), "filters.json")
+
+        filters = dict()
+        # Open from embedded JSON and load software filters
+        if os.path.isfile(json_file_path):
+            with open(json_file_path, encoding="utf8") as f_d:
+                try:
+                    filters = json.loads(f_d.read())
+                except json.decoder.JSONDecodeError as e:
+                    LOGGER.exception(e)
+            LOGGER.debug("Loaded predefined filters:", filters)
+
+        # Overwrite software filters with user defined filters
+        self.settings.beginGroup("plugins/filters_editor/filters")
+        filters.update({
+            filter_name: self.settings.value(filter_name)
+            for filter_name in self.settings.childKeys()
+        })
+        self.settings.endGroup()
+
+        # Load in combobox
+        for filter_name, filter_query in filters.items():
+            vql_obj = parse_one_vql(filter_query)
+            self.combo.addItem(filter_name, vql_obj["filters"])
 
     def on_refresh(self):
         """Overrided"""
@@ -1800,7 +1845,15 @@ class FiltersEditorWidget(plugin.PluginWidget):
             self._update_view_geometry()
 
     def on_save_filters(self):
+        """Called when Save button is clicked
 
+        Save the current filter into a new independent filter:
+            - In the combobox
+            - In user defined filters (in app settings, under the key
+                `plugins/filters_editor/filters`);
+                Note that such filters are removed when a user clicks on
+                del_button.
+        """
         filter_name, _ = QInputDialog.getText(
             self, self.tr("Type a name for the filter"), self.tr("Filter Name:")
         )
@@ -1810,6 +1863,19 @@ class FiltersEditorWidget(plugin.PluginWidget):
         # Save current filters in UserRole of a new ComboBox item
         self.combo.addItem(filter_name, self.filters)
         self.combo.setCurrentIndex(self.combo.findText(filter_name))
+
+        # Convert current query into VQL query and save it in app settings
+        vql_query = build_vql_query(
+            self.mainwindow.state.fields,
+            self.mainwindow.state.source,
+            self.mainwindow.state.filters,
+            self.mainwindow.state.group_by,
+            self.mainwindow.state.having,
+        )
+
+        self.settings.beginGroup("plugins/filters_editor/filters")
+        self.settings.setValue(filter_name, vql_query)
+        self.settings.endGroup()
 
     def on_combo_changed(self):
         """Called when a new item is selected in the ComboBox (programatically or not)"""
@@ -1895,7 +1961,14 @@ class FiltersEditorWidget(plugin.PluginWidget):
                 self.model.clear()
             else:
                 # Saved filter
+                # Delete from app settings
+                self.settings.beginGroup("plugins/filters_editor/filters")
+                self.settings.remove(self.combo.currentText())
+                self.settings.endGroup()
+
+                # Delete from combobox
                 self.combo.removeItem(current_index)
+
             self.refresh_buttons()
 
     def on_selection_changed(self):

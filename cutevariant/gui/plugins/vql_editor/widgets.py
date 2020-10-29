@@ -84,14 +84,14 @@ class VqlEditorWidget(plugin.PluginWidget):
             conn (sqlite3.Connection): sqlite3 connection
         """
         self.conn = conn
-        self.text_edit.setCompleter(self.__create_completer())
+        self.text_edit.setCompleter(self._create_completer())
 
         self.on_refresh()
 
     def on_refresh(self):
         """overrided from PluginWidget"""
 
-        vql_obj = build_vql_query(
+        vql_query = build_vql_query(
             self.mainwindow.state.fields,
             self.mainwindow.state.source,
             self.mainwindow.state.filters,
@@ -99,19 +99,19 @@ class VqlEditorWidget(plugin.PluginWidget):
             self.mainwindow.state.having,
         )
 
-        self.set_vql(vql_obj)
+        self.set_vql(vql_query)
 
-    def set_vql(self, txt: str):
+    def set_vql(self, text: str):
         """Set vql source code without executed
 
         Args:
-            txt (str): vql code
+            text (str): VQL query
         """
         self.text_edit.blockSignals(True)
-        self.text_edit.setPlainText(txt)
+        self.text_edit.setPlainText(text)
         self.text_edit.blockSignals(False)
 
-    def __create_completer(self):
+    def _create_completer(self):
         """Create Completer with his model"""
         model = QStringListModel()
         completer = QCompleter()

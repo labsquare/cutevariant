@@ -13,7 +13,7 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 
 # Custom imports
-from cutevariant.core.querybuilder import build_complete_query, fields_to_vql
+from cutevariant.core.querybuilder import build_full_sql_query, fields_to_vql
 
 from cutevariant.core import command as cmd
 from cutevariant.gui import plugin, FIcon
@@ -241,7 +241,7 @@ class VariantModel(QAbstractTableModel):
         LOGGER.debug("page: %s", self.page)
 
         # Store SQL query for debugging purpose
-        self.debug_sql = build_complete_query(
+        self.debug_sql = build_full_sql_query(
             self.conn,
             fields=self.fields,
             source=self.source,
