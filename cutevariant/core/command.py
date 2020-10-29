@@ -26,7 +26,7 @@ import functools
 from memoization import cached
 
 # Custom imports
-from cutevariant.core.querybuilder import build_sql_query
+from cutevariant.core.querybuilder import build_sql_query, build_complete_query
 from cutevariant.core import sql, vql
 from cutevariant.commons import logger
 from cutevariant.core.reader import BedReader
@@ -67,12 +67,8 @@ def select_cmd(
     Yields:
         variants (dict)
     """
-    # Get {'favorite': 'variants', 'comment': 'variants', impact': 'annotations', ...}
-    default_tables = {i["name"]: i["category"] for i in sql.get_fields(conn)}
-    # Get {'NORMAL': 1, 'TUMOR': 2}
-    samples_ids = {i["name"]: i["id"] for i in sql.get_samples(conn)}
-
-    query = build_sql_query(
+    query = build_complete_query(
+        conn,
         fields=fields,
         source=source,
         filters=filters,
@@ -82,8 +78,6 @@ def select_cmd(
         offset=offset,
         group_by=group_by,
         having=having,
-        default_tables=default_tables,
-        samples_ids=samples_ids,
     )
     LOGGER.debug("command:select_cmd:: %s", query)
     for i in conn.execute(query):
@@ -132,12 +126,8 @@ def count_cmd(
     #         ).fetchone()[0]
     #     }
 
-    # Get {'favorite': 'variants', 'comment': 'variants', impact': 'annotations', ...}
-    default_tables = {i["name"]: i["category"] for i in sql.get_fields(conn)}
-    # Get {'NORMAL': 1, 'TUMOR': 2}
-    samples_ids = {i["name"]: i["id"] for i in sql.get_samples(conn)}
-
-    query = build_sql_query(
+    query = build_complete_query(
+        conn,
         fields=fields,
         source=source,
         filters=filters,
@@ -146,8 +136,6 @@ def count_cmd(
         order_by=None,
         group_by=group_by,
         having=having,
-        default_tables=default_tables,
-        samples_ids=samples_ids,
     )
 
     # THIS IS INSANE... SQLITE DOESNT RETURN ALIAS NAME WITH SQUARE BRACKET....
@@ -155,7 +143,6 @@ def count_cmd(
     # TODO : Change VQL Syntax from [] to () would be a good alternative
     # @See QUERYBUILDER
     # See : https://stackoverflow.com/questions/41538952/issue-cursor-description-never-returns-square-bracket-in-column-name-python-2-7-sqlite3-alias
-
     LOGGER.debug("command:count_cmd:: %s", query)
     return {"count": sql.count_query(conn, query)}
 
@@ -219,20 +206,14 @@ def create_cmd(
         dict: {"id": selection_id} if lines have been inserted,
             or empty dict in case of error
     """
-    # Get {'favorite': 'variants', 'comment': 'variants', impact': 'annotations', ...}
-    default_tables = {i["name"]: i["category"] for i in sql.get_fields(conn)}
-    # Get {'NORMAL': 1, 'TUMOR': 2}
-    samples_ids = {i["name"]: i["id"] for i in sql.get_samples(conn)}
-
     if target is None:
         return {}
 
-    sql_query = build_sql_query(
-        ["id"],
-        source,
-        filters,
-        default_tables=default_tables,
-        samples_ids=samples_ids,
+    sql_query = build_complete_query(
+        conn,
+        fields=["id"],
+        source=source,
+        filters=filters,
         limit=None,
     )
 
