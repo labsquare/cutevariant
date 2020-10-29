@@ -137,14 +137,6 @@ class SourceModel(QAbstractTableModel):
         self.records = list(sql.get_selections(self.conn))
         self.endResetModel()
 
-    def save_current_query(self, name):
-        """Save current query as a new selection and reload the model"""
-        # TODO: just get the id of the created selection and add a new record
-        # instead of reloading all the model...
-        # if self.query.create_selection(name):
-        #     self.load()
-        pass
-
 
 # =================== SELECTION VIEW ===========================
 
@@ -333,13 +325,13 @@ class SourceEditorWidget(plugin.PluginWidget):
         else:
             return name
 
-    def save_current_query(self):
-        """Open a dialog box to save the current query into a selection
-        TODO: désactivé?
-        """
-        selection_name = self.ask_and_check_selection_name()
-        if selection_name:
-            self.model.save_current_query(selection_name)
+    # def save_current_query(self):
+    #     """Open a dialog box to save the current query into a selection
+    #     TODO: désactivé?
+    #     """
+    #     selection_name = self.ask_and_check_selection_name()
+    #     if selection_name:
+    #         self.model.save_current_query(selection_name)
 
     def contextMenuEvent(self, event: QContextMenuEvent):
         """Overrided: Show popup menu at the cursor position"""
