@@ -18,7 +18,10 @@ from cutevariant.gui import style, plugin
 from cutevariant.core import sql, get_sql_connection
 from cutevariant.core.vql import parse_one_vql
 from cutevariant.core.querybuilder import (
-    build_vql_query, fields_to_vql, wordset_data_to_vql, WORDSET_FUNC_NAME
+    build_vql_query,
+    fields_to_vql,
+    wordset_data_to_vql,
+    WORDSET_FUNC_NAME,
 )
 import cutevariant.commons as cm
 
@@ -1596,8 +1599,7 @@ class FieldDialog(QDialog):
             self.load_fields()
 
     def load_fields(self):
-        """Load sql fields into combobox
-        """
+        """Load sql fields into combobox"""
         for field in sql.get_field_by_category(self.conn, "variants"):
             self.field_box.addItem(field["name"], field)
 
@@ -1690,9 +1692,9 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.save_button.setToolTip(self.tr("Save the current filter"))
         self.save_button.clicked.connect(self.on_save_filters)
         self.del_button = QToolButton()
-        self.del_button.setDefaultAction(QAction(
-            FIcon(0xF0A7A), self.tr("Delete the filter")
-        ))
+        self.del_button.setDefaultAction(
+            QAction(FIcon(0xF0A7A), self.tr("Delete the filter"))
+        )
         self.del_button.clicked.connect(self.on_delete_item)
         # Adjust heights
         # self.combo.setMinimumHeight(30)
@@ -1761,10 +1763,12 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
         # Overwrite software filters with user defined filters
         self.settings.beginGroup("plugins/filters_editor/filters")
-        filters.update({
-            filter_name: self.settings.value(filter_name)
-            for filter_name in self.settings.childKeys()
-        })
+        filters.update(
+            {
+                filter_name: self.settings.value(filter_name)
+                for filter_name in self.settings.childKeys()
+            }
+        )
         self.settings.endGroup()
 
         # Load in combobox
