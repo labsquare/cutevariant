@@ -55,7 +55,7 @@ VQL_TO_TREE_CASES = {
         "having": {},
         "source": "variants",
     },
-    # Test 4bis GROUP BY
+    # Test 5 - 4bis GROUP BY
     "SELECT chr, pos, ref, alt FROM variants GROUP BY chr,pos": {
         "cmd": "select_cmd",
         "fields": ["chr", "pos", "ref", "alt"],
@@ -64,7 +64,7 @@ VQL_TO_TREE_CASES = {
         "group_by": ["chr", "pos"],
         "having": {},
     },
-    # Test 4bis GROUP BY HAVING
+    # Test 6 - 4ter GROUP BY HAVING
     "SELECT chr, pos, ref, alt FROM variants GROUP BY chr HAVING count > 3": {
         "cmd": "select_cmd",
         "fields": ["chr", "pos", "ref", "alt"],
@@ -73,7 +73,7 @@ VQL_TO_TREE_CASES = {
         "group_by": ["chr"],
         "having": {"op": ">", "value": 3},
     },
-    # Test 4bisbis GROUP BY on genotypes
+    # Test 7 - 4quater GROUP BY on genotypes
     "SELECT chr, pos, sample['sacha'].gt FROM variants GROUP BY sample['sacha'].gt": {
         "cmd": "select_cmd",
         "fields": ["chr", "pos", ("sample", "sacha", "gt")],
@@ -82,7 +82,7 @@ VQL_TO_TREE_CASES = {
         "group_by": [("sample", "sacha", "gt")],
         "having": {},
     },
-    # Test 5
+    # Test 8
     "SELECT chr FROM variants WHERE some_field IN ('one', 'two')": {
         "cmd": "select_cmd",
         "fields": ["chr"],
@@ -93,6 +93,7 @@ VQL_TO_TREE_CASES = {
             "AND": [{"field": "some_field", "operator": "IN", "value": ("one", "two")}]
         },
     },
+    # Test 9
     "SELECT chr FROM variants WHERE gene IN WORDSET['test']": {
         "cmd": "select_cmd",
         "fields": ["chr"],
@@ -103,14 +104,14 @@ VQL_TO_TREE_CASES = {
             "AND": [{"field": "gene", "operator": "IN", "value": ("WORDSET", "test")}]
         },
     },
-    # Test 6
+    # Test 10
     "CREATE denovo FROM variants": {
         "cmd": "create_cmd",
         "source": "variants",
         "filters": {},
         "target": "denovo",
     },
-    # Test 7
+    # Test 11
     "CREATE denovo FROM variants WHERE some_field IN ('one', 'two')": {
         "cmd": "create_cmd",
         "source": "variants",
@@ -127,28 +128,28 @@ VQL_TO_TREE_CASES = {
         "operator": "|",
         "target": "denovo",
     },
-    # Test 9
+    # Test 13
     'CREATE subset FROM variants INTERSECT "/home/sacha/test.bed"': {
         "cmd": "bed_cmd",
         "target": "subset",
         "source": "variants",
         "path": "/home/sacha/test.bed",
     },
-    # Test 10
+    # Test 14
     "COUNT FROM variants": {"cmd": "count_cmd", "source": "variants", "filters": {}},
-    # Test 110
+    # Test 15
     "COUNT FROM variants WHERE a = 3": {
         "cmd": "count_cmd",
         "source": "variants",
         "filters": {"AND": [{"field": "a", "operator": "=", "value": 3}]},
     },
-    # Test 110
+    # Test 16
     "DROP selections subset": {
         "cmd": "drop_cmd",
         "feature": "selections",
         "name": "subset",
     },
-    #  Test Import
+    # Test 17 Test Import
     "IMPORT set '/home/truc/test.txt' AS boby": {
         "cmd": "import_cmd",
         "feature": "set",
