@@ -115,7 +115,7 @@ def count_cmd(
         dict: Count of variants wgstith "count" as a key
     """
 
-    #  TODO : Check if fields has annotations
+    # TODO : Check if fields has annotations
 
     # if not filters and not group_by:
     #     # Returned stored cache variant
