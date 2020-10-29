@@ -250,7 +250,7 @@ class SourceEditorWidget(plugin.PluginWidget):
         # Set operations on selections: create mapping and actions
         set_icons_ids = (0xF0779, 0xF077C, 0xF0778)
         set_texts = (self.tr("Intersect"), self.tr("Difference"), self.tr("Union"))
-        set_internal_ids = ("&", "-", "+")
+        set_internal_ids = ("&", "-", "|")
         # Map the operations with an internal id not visible for the user
         # This id is used by _create_set_operation_menu
         # Keys: user text; values: internal ids
