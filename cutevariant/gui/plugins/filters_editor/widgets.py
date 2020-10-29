@@ -721,7 +721,11 @@ class FilterModel(QAbstractItemModel):
                 val = item.get_value()
                 # TODO: WORDSET handling here. To be modified if WORDSET is a real operator
                 # Same way that for fields formatting in VQL form for column 1
-                if role in (Qt.EditRole, Qt.DisplayRole) and val[0] == WORDSET_FUNC_NAME:
+                if (
+                    role in (Qt.EditRole, Qt.DisplayRole)
+                    and isinstance(val, tuple)
+                    and val[0] == WORDSET_FUNC_NAME
+                ):
                     return wordset_data_to_vql(val)
 
                 return val if role == Qt.UserRole else str(val)
