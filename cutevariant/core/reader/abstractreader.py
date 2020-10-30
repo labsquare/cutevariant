@@ -283,22 +283,22 @@ class AbstractReader(ABC):
 
     def get_extra_variants(self, **kwargs):
         """Yield variants with extra information computed.
-        The following information are added. See get_extra_fields 
+        The following information are added. See get_extra_fields
 
-        - favorite (bool) 
+        - favorite (bool)
         - comment (str)
         - classification (int
-        - count_hom (int) : How many variants are mutant homozygous within samples 
+        - count_hom (int) : How many variants are mutant homozygous within samples
         - count_het (int): How many variants are heterozygous within samples
         - count_ref (int): How many variants are wild homozygous with samples
-        - is_indel (bool): Is the variation an insertion / deletion 
+        - is_indel (bool): Is the variation an insertion / deletion
         - is_snp (bool): Is the variation an single nucleotide variation
 
-        If case/control are avaible from a pedfile, Counting from case and control are also computed.  
+        If case/control are avaible from a pedfile, Counting from case and control are also computed.
         In this case, it is necessary to pass samples names in "case" and "control" to kwargs .
 
             kwargs["case"] = ["boby", "raymond"]
-            kwargs["control"] = ["lucas", "pierre"]  
+            kwargs["control"] = ["lucas", "pierre"]
 
         - case_count_hom (int): How many variant are mutant homzygous within case samples
         - case_count_het (int): How many variant are heterozygous within case samples
@@ -308,8 +308,8 @@ class AbstractReader(ABC):
         - control_count_ref (int): How many variant are wild heterozygous within control samples
 
         Args:
-            **kwargs (optional): case and control 
-        
+            **kwargs (optional): case and control
+
         Yields:
             <generator>: variants
         """
