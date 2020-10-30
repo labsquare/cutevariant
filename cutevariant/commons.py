@@ -57,7 +57,7 @@ REPORT_BUG_URL = "https://github.com/labsquare/cutevariant/issues/new"
 
 # Logging
 LOGGER_NAME = "cutevariant"
-LOG_LEVEL = "DEBUG"
+LOG_LEVEL = "INFO"
 LOG_LEVELS = {
     "debug": logging.DEBUG,
     "info": logging.INFO,
