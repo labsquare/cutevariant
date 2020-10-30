@@ -313,10 +313,6 @@ class AbstractReader(ABC):
         Yields:
             <generator>: variants
         """
-        LOGGER.error(
-            "fonction non documentée; que se passe t-il si pas de control/case ?"
-            "son appel est-il obligatoire ?"
-        )
         for variant in self.get_variants():
             variant["favorite"] = False
             variant["comment"] = ""
