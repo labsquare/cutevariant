@@ -109,7 +109,7 @@ class FIcon(QIcon):
                 Please consult the web pages https://materialdesignicons.com/
                 and https://cdn.materialdesignicons.com/5.4.55/ for the mapping
                 between hex values and icons.
-            color (QPalette): Color palette to be used by the icon.
+            color (QPalette/str): Color palette to be used by the icon.
         """
         self.engine = FIconEngine()
 

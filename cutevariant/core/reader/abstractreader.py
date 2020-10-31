@@ -80,7 +80,7 @@ class AbstractReader(ABC):
 
         Examples:
             >>> for variant in reader.get_variants():
-                print(variant["chr"], variant["pos"])
+            ...     print(variant["chr"], variant["pos"])
 
         """
         raise NotImplementedError(cls.__class__.__name__)
@@ -107,7 +107,7 @@ class AbstractReader(ABC):
 
         Examples:
             >>> for field in reader.get_fields():
-                    print(field["name"], field["description"])
+            ...     print(field["name"], field["description"])
         """
         raise NotImplementedError(cls.__class__.__name__)
 
@@ -294,24 +294,30 @@ class AbstractReader(ABC):
         - is_indel (bool): Is the variation an insertion / deletion
         - is_snp (bool): Is the variation an single nucleotide variation
 
-        If case/control are avaible from a pedfile, Counting from case and control are also computed.
-        In this case, it is necessary to pass samples names in "case" and "control" to kwargs .
+        If case/control are available from a pedfile, counting from case and
+        control is also computed.
+        In this case, it is necessary to give sample names in "case" and
+        "control" keys in kwargs .
 
-            kwargs["case"] = ["boby", "raymond"]
-            kwargs["control"] = ["lucas", "pierre"]
+        Example of supported kwargs:
 
-        - case_count_hom (int): How many variant are mutant homzygous within case samples
-        - case_count_het (int): How many variant are heterozygous within case samples
-        - case_count_ref (int): How many variant are wild heterozygous within case samples
-        - control_count_hom (int): How many variant are mutant homzygous within control samples
-        - control_count_het (int): How many variant are heterozygous within control samples
-        - control_count_ref (int): How many variant are wild heterozygous within control samples
+            {
+                "case": ["boby", "raymond"],
+                "control": ["lucas", "pierre"]
+            }
+
+        - case_count_hom (int): How many variants are mutant homzygous within case samples
+        - case_count_het (int): How many variants are heterozygous within case samples
+        - case_count_ref (int): How many variants are wild heterozygous within case samples
+        - control_count_hom (int): How many variants are mutant homzygous within control samples
+        - control_count_het (int): How many variants are heterozygous within control samples
+        - control_count_ref (int): How many variants are wild heterozygous within control samples
 
         Args:
-            **kwargs (optional): case and control
+            **kwargs (optional): case and control sample names
 
         Yields:
-            <generator>: variants
+            (generator[dict]): variants. See also: :meth:`get_variants`.
         """
         for variant in self.get_variants():
             variant["favorite"] = False
