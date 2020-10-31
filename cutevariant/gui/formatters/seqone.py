@@ -9,6 +9,7 @@ from PySide2.QtWidgets import QStyleOptionViewItem
 # Custom imports
 from cutevariant.gui.formatter import Formatter
 from cutevariant.gui import FIcon
+import cutevariant.commons as cm
 
 
 class SeqoneFormatter(Formatter):
@@ -44,12 +45,9 @@ class SeqoneFormatter(Formatter):
 
     FAV_ICON = {0: FIcon(0xF00C3), 1: FIcon(0xF00C0)}
 
-    GENOTYPE_ICONS = {
-        0: FIcon(0xF0766),
-        1: FIcon(0xF0AA1),
-        2: FIcon(0xF0AA5),
-        -1: FIcon(0xF10D3),
-    }
+    # Cache genotype icons
+    # Values in gt field as keys (str), FIcon as values
+    GENOTYPE_ICONS = {key: FIcon(val) for key, val in cm.GENOTYPE_ICONS.items()}
 
     def __init__(self):
         super().__init__()
@@ -104,7 +102,7 @@ class SeqoneFormatter(Formatter):
                 value = m.group(1)
 
         if re.match(r"sample\[.+\]\.gt", field_name):
-            icon = self.GENOTYPE_ICONS.get(int(value), self.GENOTYPE_ICONS[0])
+            icon = self.GENOTYPE_ICONS.get(int(value), self.GENOTYPE_ICONS[-1])
             self.draw_icon(painter, option.rect, icon)
             return
 

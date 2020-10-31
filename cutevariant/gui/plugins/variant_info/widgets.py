@@ -23,13 +23,6 @@ LOGGER = cm.logger()
 class VariantInfoWidget(PluginWidget):
     """Plugin to show all annotations of a selected variant"""
 
-    GENOTYPES = {
-        "-1": FIcon(0xF10D3),
-        "0": FIcon(0xF0766),
-        "1": FIcon(0xF0AA1),
-        "2": FIcon(0xF0AA5),
-    }
-
     ENABLE = True
 
     def __init__(self, parent=None):
@@ -122,6 +115,12 @@ class VariantInfoWidget(PluginWidget):
         # Field names as keys, descriptions as values
         self.fields_descriptions = None
 
+        # Cache genotype icons
+        # Values in gt field as keys (str), FIcon as values
+        self.genotype_icons = {
+            key: FIcon(val) for key, val in cm.GENOTYPE_ICONS.items()
+        }
+
     def on_open_project(self, conn):
         self.conn = conn
         self.on_refresh()
@@ -175,12 +174,11 @@ class VariantInfoWidget(PluginWidget):
                  LEFT JOIN sample_has_variant sv ON samples.id = sv.sample_id 
                  AND sv.variant_id = {variant_id}"""
 
-        for row in self.conn.execute(query):
+        for sample_name, genotype in self.conn.execute(query):
             item = QListWidgetItem()
-            genotype = str(row[1])
-            icon = self.GENOTYPES.get(genotype, self.GENOTYPES["-1"])
+            icon = self.genotype_icons.get(genotype, self.genotype_icons[-1])
 
-            item.setText(str(row[0]))
+            item.setText(sample_name)
             item.setIcon(icon)
 
             self.genotype_view.addItem(item)

@@ -32,6 +32,13 @@ CLASSIFICATION_ICONS = {
     5: 0xF03B1,
 }
 
+# Genotypes
+GENOTYPE_ICONS = {
+    -1: 0xF10D3,
+    0: 0xF0766,
+    1: 0xF0AA1,
+    2: 0xF0AA5,
+}
 
 # Paths
 DIR_LOGS = tempfile.gettempdir() + "/"
@@ -42,7 +49,6 @@ DIR_FONTS = DIR_ASSETS + "fonts/"
 DIR_ICONS = DIR_ASSETS + "icons/"
 DIR_STYLES = DIR_ASSETS + "styles/"
 
-GENOTYPE_ICONS = {0: 0xF130, 1: 0xFAA0, 2: 0xFAA4, -1: 0xF625}
 BASIC_STYLE = "Bright"
 FONT_FILE = DIR_FONTS + "materialdesignicons-webfont.ttf"
 
