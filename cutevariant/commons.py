@@ -40,6 +40,13 @@ GENOTYPE_ICONS = {
     2: 0xF0AA5,
 }
 
+GENOTYPE_DESC = {
+    -1: "Unknown genotype",
+    0: "Homozygous wild",
+    1: "Heterozygous",
+    2: "Homozygous muted",
+}
+
 # Paths
 DIR_LOGS = tempfile.gettempdir() + "/"
 

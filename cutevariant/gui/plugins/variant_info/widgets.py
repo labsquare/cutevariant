@@ -180,6 +180,7 @@ class VariantInfoWidget(PluginWidget):
 
             item.setText(sample_name)
             item.setIcon(icon)
+            item.setToolTip(cm.GENOTYPE_DESC.get(genotype, -1))
 
             self.genotype_view.addItem(item)
 
