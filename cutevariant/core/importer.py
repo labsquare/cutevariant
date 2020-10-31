@@ -77,10 +77,7 @@ def async_import_reader(conn, reader: AbstractReader, pedfile=None, project={}):
     insert_many_samples(conn, reader.get_samples())
 
     # Import PED file
-    # TODO: PED files are ALWAYS imported; WTF ?
     if pedfile:
-        # TODO: Attention ceci est systématiquement appelé et vient
-        #  écraser/mettre à jour les samples donnés avec le fichier de variants
         yield 0, f"Import pedfile {pedfile}"
         import_pedfile(conn, pedfile)
 
@@ -106,7 +103,6 @@ def async_import_reader(conn, reader: AbstractReader, pedfile=None, project={}):
 
     # Insert variants, link them to annotations and samples
     yield 0, "Insertings variants..."
-    # TODO: can you document the code in get_extra_variants plz?
     variants = reader.get_extra_variants(control=control_samples, case=case_samples)
     yield from async_insert_many_variants(
         conn, variants, total_variant_count=reader.number_lines

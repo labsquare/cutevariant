@@ -1256,8 +1256,10 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
             # [{'name': 'NORMAL', 'gt': 1, 'AD': '64,0', 'AF': 0.0, ...}]
             # Insertion only if the current sample name is in samples_names
             # (authorized sample names already in the database)
-            # TODO: is this test usefull since samples that are in the database
+            #
+            # Is this test usefull since samples that are in the database
             # have been inserted from the same source file (or it is not the case ?) ?
+            # => yes, we can use external ped file
             # Retrieve the id of the sample to build the association in
             # "sample_has_variant" table carrying the data "gt" (genotype)
 
