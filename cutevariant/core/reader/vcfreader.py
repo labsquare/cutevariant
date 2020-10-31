@@ -277,25 +277,31 @@ class VcfReader(AbstractReader):
         vcf_reader = vcf.VCFReader(self.device, strict_whitespace=True)
 
         # Read VCF INFO fields
-        for key, info in vcf_reader.infos.items():
+        for field_name, info in vcf_reader.infos.items():
 
             # if key == "ANN": # Parse special annotation
             #     yield from self.parser.parse_fields(info.desc)
             # else:
 
             yield {
-                "name": key.lower(),
+                "name": field_name.lower(),
                 "category": "variants",
                 "description": info.desc,
                 "type": VCF_TYPE_MAPPING[info.type],
             }
 
         # Read VCF FORMAT fields
-        for key, info in vcf_reader.formats.items():
+        for field_name, info in vcf_reader.formats.items():
+            description = info.desc
+
+            if field_name == "GT":
+                # Edit description of Genotype field
+                description += " (0: homozygous_ref, 1: heterozygous, 2: homozygous_alt)"
+
             yield {
-                "name": key.lower(),
+                "name": field_name.lower(),
                 "category": "samples",
-                "description": info.desc,
+                "description": description,
                 "type": VCF_TYPE_MAPPING[info.type],
             }
 
