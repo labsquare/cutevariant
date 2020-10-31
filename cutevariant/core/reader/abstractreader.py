@@ -245,12 +245,14 @@ class AbstractReader(ABC):
 
     def get_extra_variants(self, **kwargs):
         """Yield variants with extra information computed.
+
         The following information are added. See get_extra_fields
 
-        - favorite (bool)
-        - comment (str)
-        - classification (int
-        - count_hom (int) : How many variants are mutant homozygous within samples
+        - favorite (bool): (Default: False)
+        - comment (str): (Default: "")
+        - classification (int): ACMG score (Default: 3 (uncertain significance)
+        - count_var (int): Number of variants (not 0/0)
+        - count_hom (int): How many variants are mutant homozygous within samples
         - count_het (int): How many variants are heterozygous within samples
         - count_ref (int): How many variants are wild homozygous with samples
         - is_indel (bool): Is the variation an insertion / deletion
@@ -283,7 +285,18 @@ class AbstractReader(ABC):
 
         Yields:
             (generator[dict]): variants. See also: :meth:`get_variants`.
+
+        Raises:
+            AssertionError: If sample(s) are both in cases and controls.
         """
+        case_and_control_samples_found = False
+        if "case" in kwargs and "control" in kwargs:
+            # Samples can't be both in cases and controls
+            case_samples = kwargs["case"]
+            control_samples = kwargs["control"]
+            assert not set(case_samples) & set(control_samples), "Found both in cases and controls!"
+            case_and_control_samples_found = True
+
         for variant in self.get_variants():
             variant["favorite"] = False
             variant["comment"] = ""
@@ -302,26 +315,27 @@ class AbstractReader(ABC):
             variant["count_hom"] = genotype_counter[2]
             variant["count_het"] = genotype_counter[1]
             variant["count_ref"] = genotype_counter[0]
+            # Number of variants (not 0/0)
             variant["count_var"] = genotype_counter[1] + genotype_counter[2]
 
             variant["is_indel"] = len(variant["ref"]) != len(variant["alt"])
             variant["is_snp"] = len(variant["ref"]) == len(variant["alt"])
 
             # Count genotype by control and case
-            if "case" in kwargs and "control" in kwargs:
-
-                case_samples = kwargs["case"]
-                control_samples = kwargs["control"]
+            if case_and_control_samples_found:
 
                 case_counter = Counter()
                 control_counter = Counter()
 
                 if "samples" in variant:
+                    # Note: No garantee that samples from DB are all qualified
+                    # by PED data.
+                    # So some samples from variants may not be in case/control samples.
                     for sample in variant["samples"]:
                         if sample["name"] in case_samples:
                             case_counter[sample["gt"]] += 1
 
-                        if sample["name"] in control_samples:
+                        elif sample["name"] in control_samples:
                             control_counter[sample["gt"]] += 1
 
                 variant["case_count_hom"] = case_counter[2]
