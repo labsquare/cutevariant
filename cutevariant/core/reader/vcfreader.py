@@ -211,7 +211,7 @@ class VcfReader(AbstractReader):
         yield {
             "name": "chr",
             "category": "variants",
-            "description": "chromosome",
+            "description": "Chromosome",
             "type": "str",
             "constraint": "NOT NULL",
         }
@@ -225,14 +225,14 @@ class VcfReader(AbstractReader):
         yield {
             "name": "ref",
             "category": "variants",
-            "description": "reference base",
+            "description": "Reference base",
             "type": "str",
             "constraint": "NOT NULL",
         }
         yield {
             "name": "alt",
             "category": "variants",
-            "description": "alternative base",
+            "description": "Alternative base",
             "type": "str",
             "constraint": "NOT NULL",
         }

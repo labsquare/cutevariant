@@ -150,39 +150,39 @@ class AbstractReader(ABC):
             "name": "count_hom",
             "type": "int",
             "category": "variants",
-            "description": "Count number of homozygous genotypes (1/1)",
+            "description": "Number of homozygous genotypes (1/1)",
         }
         yield {
             "name": "count_het",
             "type": "int",
             "category": "variants",
-            "description": "Count number of heterozygous genotypes (0/1)",
+            "description": "Number of heterozygous genotypes (0/1)",
         }
         yield {
             "name": "count_ref",
             "type": "int",
             "category": "variants",
-            "description": "Count number of homozygous genotypes (0/0)",
+            "description": "Number of homozygous genotypes (0/0)",
         }
         yield {
             "name": "count_var",
             "type": "int",
             "category": "variants",
-            "description": "Count number of variant (not 0/0)",
+            "description": "Number of variants (not 0/0)",
         }
 
         yield {
             "name": "is_indel",
             "type": "bool",
             "category": "variants",
-            "description": "True is variant is an indel",
+            "description": "True if variant is an indel",
         }
 
         yield {
             "name": "is_snp",
             "type": "bool",
             "category": "variants",
-            "description": "True is variant is a snp",
+            "description": "True if variant is a snp",
         }
 
         yield {
@@ -196,81 +196,43 @@ class AbstractReader(ABC):
             "name": "case_count_hom",
             "type": "int",
             "category": "variants",
-            "description": "Count number of homozygous genotypes (1/1) in case",
+            "description": "Number of homozygous genotypes (1/1) in case",
         }
 
         yield {
             "name": "case_count_het",
             "type": "int",
             "category": "variants",
-            "description": "Count number of heterozygous genotypes (1/0) in case",
+            "description": "Number of heterozygous genotypes (1/0) in case",
         }
 
         yield {
             "name": "case_count_ref",
             "type": "int",
             "category": "variants",
-            "description": "Count number of homozygous (0/0) in case",
+            "description": "Number of homozygous genotypes (0/0) in case",
         }
 
         yield {
             "name": "control_count_hom",
             "type": "int",
             "category": "variants",
-            "description": "Count number of homozygous genotypes (1/1) in control",
+            "description": "Number of homozygous genotypes (1/1) in control",
         }
 
         yield {
             "name": "control_count_het",
             "type": "int",
             "category": "variants",
-            "description": "Count number of heterozygous genotypes (1/0) in control",
+            "description": "Number of heterozygous genotypes (1/0) in control",
         }
 
         yield {
             "name": "control_count_ref",
             "type": "int",
             "category": "variants",
-            "description": "Count number of homozygous (0/0) in control",
+            "description": "Number of homozygous genotypes (0/0) in control",
         }
-
-        # yield {
-        #     "name": "case_count_hom",
-        #     "type": "int",
-        #     "category": "variants",
-        #     "description": "Count number of homozygous genotypes (1/1)",
-        # }
-        # yield {
-        #     "name": "case_count_het",
-        #     "type": "int",
-        #     "category": "variants",
-        #     "description": "Count number of heterozygous genotypes (0/1)",
-        # }
-        # yield {
-        #     "name": "case_count_ref",
-        #     "type": "int",
-        #     "category": "variants",
-        #     "description": "Count number of homozygous genotypes (0/0)",
-        # }
-
-        # yield {
-        #     "name": "control_count_hom",
-        #     "type": "int",
-        #     "category": "variants",
-        #     "description": "Count number of homozygous genotypes (1/1)",
-        # }
-        # yield {
-        #     "name": "control_count_het",
-        #     "type": "int",
-        #     "category": "variants",
-        #     "description": "Count number of heterozygous genotypes (0/1)",
-        # }
-        # yield {
-        #     "name": "control_count_ref",
-        #     "type": "int",
-        #     "category": "variants",
-        #     "description": "Count number of homozygous genotypes (0/0)",
-        # }
 
         # avoid duplicates fields ...
         duplicates = set()
