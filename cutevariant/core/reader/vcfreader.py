@@ -120,6 +120,28 @@ class VcfReader(AbstractReader):
     def parse_variants(self):
         """Read file and parse variants
 
+        1 variant is created for each alternative allele detected for each record.
+        For each variant we add the corresponding genotype of each sample under
+        the key "samples".
+
+        Examples:
+            For a record: `"REF": "A", "ALT": ["T", "C"]` with 2 samples with the
+            following genotypes: 0/0 and 0/1 (ref/ref and ref/alt).
+            We create 2 variants (because of the 2 alternative alleles),
+            each with 2 samples with the following genotypes: 0 and 1.
+
+            Where homozygous_ref = 0, heterozygous = 1, homozygous_alt = 2.
+
+            We don't track which alternative allele is in the genotype of the
+            sample.
+
+        See Also:
+            https://pyvcf.readthedocs.io/en/v0.4.6/INTRO.html
+            https://pyvcf.readthedocs.io/en/latest/API.html#vcf.model._Call.gt_type
+
+        See Also:
+            :meth:`cutevariant.core.reader.abstractreader.AbstractReader.get_extra_variants`
+
         :return: Generator of variants.
         :rtype: <generator <dict>>
         """
@@ -127,8 +149,10 @@ class VcfReader(AbstractReader):
         self.device.seek(0)
         vcf_reader = vcf.VCFReader(self.device, strict_whitespace=True) # TODO use class attr
 
-        # Genotype format
-        formats = list(vcf_reader.formats)
+        # Genotype format fields
+        format_fields = set(map(str.lower, vcf_reader.formats))
+        # Remove gt field (added manually later)
+        format_fields.discard("gt")
 
         for record in vcf_reader:
 
@@ -157,43 +181,35 @@ class VcfReader(AbstractReader):
                         else:
                             variant[name.lower()] = record.INFO[name]
 
-                # parse sample
+                # Parse sample(s)
                 if record.samples:
                     variant["samples"] = []
                     for sample in record.samples:
-                        sample_data = {"name": sample.sample}
+                        # New sample data
+                        sample_data = {
+                            "name": sample.sample,
+                            "gt": -1 if sample.gt_type is None else sample.gt_type
+                        }
 
-                        # Load sample annotations
-                        sample_ann = {}
-                        for key in formats:
+                        # Load sample fields
+                        # 1 genotype field per format
+                        # In theory: All same fields for each sample
+                        for gt_field in format_fields:
                             try:
-                                value = sample[key]
+                                value = sample[gt_field]
                                 if isinstance(value, list):
-                                    value = ",".join([str(i) for i in value])
-                                sample_ann[str.lower(key)] = value
+                                    value = ",".join(str(i) for i in value)
+                                sample_data[gt_field] = value
                             except AttributeError:
-                                LOGGER.debug(
-                                    "VCFReader::parse: alt index %s; %s not defined in genotype ", index, key
-                                )
-
-                        sample_data.update(sample_ann)
-
-                        sample_data["gt"] = (
-                            -1 if sample.gt_type is None else sample.gt_type
-                        )
+                                # Some fields defined in VCF header by FORMAT data
+                                # are not in genotype fields of records...
+                                # LOGGER.debug(
+                                #     "VCFReader::parse: alt index %s; %s not defined in genotype ", index, gt_field
+                                # )
+                                pass
                         variant["samples"].append(sample_data)
 
                 yield variant
-
-                #     # #PARSE Annotation
-                #     # if category == "annotation": #=== PARSE Special Annotation ===
-                #     #     # each variant can have multiple annotation. Create then many variants
-                #     #     variant["annotation"] = []
-                #     #     annotations = record.INFO["ANN"]
-                #     #     for annotation in annotations:
-                #     #         variant["annotation"].append(
-                #     #             self.parser.parse_variant(annotation)
-                #     #         )
 
     def parse_fields(self):
         """Extract fields informations from VCF fields
