@@ -1271,9 +1271,9 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
                 sample_value += [default_values[i] for i in sample_columns[2:]]
                 samples.append(sample_value)
 
-            placeholder = ",".join(["?"] * len(sample_columns))
+            placeholders = ",".join(["?"] * len(sample_columns))
 
-            q = f"INSERT INTO sample_has_variant VALUES ({placeholder})"
+            q = f"INSERT INTO sample_has_variant VALUES ({placeholders})"
             cursor.executemany(q, samples)
 
         # Yield progression

@@ -102,7 +102,7 @@ class VcfReader(AbstractReader):
         "annotations" key is added here with the list of annotations if
         they exist in the file.
 
-        .. seealso:: parse_variant()
+        .. seealso:: parse_variants()
 
         :return: Generator of full variants with "annotations" key.
         :rtype: <generator <dict>>
@@ -256,11 +256,11 @@ class VcfReader(AbstractReader):
             "type": "str",
         }
 
-        # Reads VCF INFO
+        # Read VCF
         self.device.seek(0)
         vcf_reader = vcf.VCFReader(self.device, strict_whitespace=True)
 
-        # Reads VCF info
+        # Read VCF INFO fields
         for key, info in vcf_reader.infos.items():
 
             # if key == "ANN": # Parse special annotation
@@ -274,7 +274,7 @@ class VcfReader(AbstractReader):
                 "type": VCF_TYPE_MAPPING[info.type],
             }
 
-        # Reads VCF FORMAT
+        # Read VCF FORMAT fields
         for key, info in vcf_reader.formats.items():
             yield {
                 "name": key.lower(),

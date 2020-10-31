@@ -268,12 +268,15 @@ class AbstractReader(ABC):
                 "control": ["lucas", "pierre"]
             }
 
-        - case_count_hom (int): How many variants are mutant homzygous within case samples
+        - case_count_hom (int): How many variants are mutant homozygous within case samples
         - case_count_het (int): How many variants are heterozygous within case samples
         - case_count_ref (int): How many variants are wild heterozygous within case samples
-        - control_count_hom (int): How many variants are mutant homzygous within control samples
+        - control_count_hom (int): How many variants are mutant homozygous within control samples
         - control_count_het (int): How many variants are heterozygous within control samples
         - control_count_ref (int): How many variants are wild heterozygous within control samples
+
+        See Also:
+            `cutevariant.core.reader.vcfreader.VcfReader.parse_variants`
 
         Args:
             **kwargs (optional): case and control sample names
