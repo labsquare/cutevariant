@@ -1189,6 +1189,7 @@ class VariantViewWidget(plugin.PluginWidget):
                 if field not in self.groupby_left_pane.group_by
             ]
             self.groupby_left_pane.filters = self.save_filters
+            self.groupby_left_pane.source = self.main_right_pane.source
 
             # Refresh models
             # right pane: Useless, except if we modify fields like above
