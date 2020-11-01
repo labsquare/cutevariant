@@ -744,11 +744,7 @@ class VariantView(QWidget):
         else:
             text = self.tr("{} variant(s) {} page(s)")
 
-        self.info_label.setText(
-            text.format(
-                self.model.total, self.model.pageCount()
-            )
-        )
+        self.info_label.setText(text.format(self.model.total, self.model.pageCount()))
 
     def set_pagging_enabled(self, active=True):
         self.page_box.setEnabled(active)
