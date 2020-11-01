@@ -30,7 +30,7 @@ from collections import defaultdict
 import re
 import logging
 from pkg_resources import parse_version
-from functools import partial
+from functools import partial, lru_cache
 import itertools as it
 
 
@@ -777,6 +777,7 @@ def insert_many_fields(conn, data: list):
     conn.commit()
 
 
+@lru_cache()
 def get_fields(conn):
     """Get fields as list of dictionnary
 
@@ -791,6 +792,7 @@ def get_fields(conn):
     return tuple(dict(data) for data in conn.execute("SELECT * FROM fields"))
 
 
+@lru_cache()
 def get_field_by_category(conn, category):
     """Get fields within a category
 
