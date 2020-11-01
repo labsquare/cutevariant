@@ -33,6 +33,9 @@ class SqlRunnable(QObject, QRunnable):
         - started: Emitted when the threaded function is started.
         - finished(int): Emitted when the function has finished its execution.
             The emitted argument is the unique ID of the executed query.
+        - error(str): Emitted when the function has encountered an error during
+            its execution. The message is formatted with the type and the
+            message of the exception.
 
     Notes:
         AutoDelete flag of such objects is set to False.
