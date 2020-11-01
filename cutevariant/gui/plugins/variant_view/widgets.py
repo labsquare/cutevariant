@@ -18,9 +18,8 @@ from PySide2.QtGui import *
 from cutevariant.core.querybuilder import build_full_sql_query, fields_to_vql
 
 from cutevariant.core import command as cmd
-from cutevariant.gui import plugin, FIcon
+from cutevariant.gui import plugin, FIcon, formatter, style
 from cutevariant.gui.sql_runnable import SqlRunnable
-from cutevariant.gui import formatter
 from cutevariant.gui.widgets import MarkdownEditor
 import cutevariant.commons as cm
 
@@ -42,10 +41,16 @@ class VariantModel(QAbstractTableModel):
     Duplicated variants will be displayed in this case. It is advised to use the
     button "group" in the GUI to easily split between specific fields and common
     fields.
+
+    Signals:
+        loading (bool): Emit when data start or stop loading
+        load_finished: Emit when data is loaded and ready to be used
+        runnable_exception (str): Emit message when async runnables encounter errors
     """
 
-    loading = Signal(bool)  # emit when data start or stop loading
-    load_finished = Signal()  # Emit when data is loaded and ready to be used
+    loading = Signal(bool)
+    load_finished = Signal()
+    runnable_exception = Signal(str)
 
     def __init__(self, conn=None, parent=None):
         super().__init__()
@@ -115,6 +120,8 @@ class VariantModel(QAbstractTableModel):
             self.count_runnable = SqlRunnable(self.conn)
             self.variant_runnable.finished.connect(self.loaded)
             self.count_runnable.finished.connect(self.loaded)
+            self.variant_runnable.error.connect(self.runnable_exception)
+            self.count_runnable.error.connect(self.runnable_exception)
 
     @property
     def formatter(self):
@@ -495,9 +502,12 @@ class VariantView(QWidget):
             At the end of the :meth:`loaded` method, the first line is selected
             in order to refresh the current variant in the other pane.
             TL,DR: Select the first row if in grouped mode => refresh the right pane.
+
+    Signals:
+        runnable_exception (str): Emit message when async runnables encounter errors
     """
 
-    view_clicked = Signal()
+    runnable_exception = Signal(str)
 
     def __init__(self, parent=None, show_popup_menu=True):
         """
@@ -591,6 +601,8 @@ class VariantView(QWidget):
         self.model.loading.connect(self._set_loading)
         # Queries are finished (yes its redundant with loading signal...)
         self.model.load_finished.connect(self.loaded)
+        # Connect errors from async runnables
+        self.model.runnable_exception.connect(self.runnable_exception)
 
     def _set_loading(self, active=True):
         """Slot to obtain the status of async load: started/finished
@@ -1005,10 +1017,22 @@ class VariantViewWidget(plugin.PluginWidget):
         )
         self.save_action.setPriority(QAction.LowPriority)
 
+        # Error handling
+        self.log_edit = QLabel()
+        self.log_edit.setMaximumHeight(30)
+        self.log_edit.setStyleSheet(
+            "QWidget{{background-color:'{}'; color:'{}'}}".format(
+                style.WARNING_BACKGROUND_COLOR, style.WARNING_TEXT_COLOR
+            )
+        )
+        self.log_edit.hide()
+        self.log_edit.setFrameStyle(QFrame.StyledPanel | QFrame.Raised)
+
         # Setup layout
         main_layout = QVBoxLayout()
         main_layout.addWidget(self.top_bar)
         main_layout.addWidget(self.splitter)
+        main_layout.addWidget(self.log_edit)
 
         self.setLayout(main_layout)
 
@@ -1020,6 +1044,9 @@ class VariantViewWidget(plugin.PluginWidget):
         self.groupby_left_pane.view.selectionModel().currentRowChanged.connect(
             lambda x, _: self.on_variant_clicked(x)
         )
+        # Connect errors from async runnables
+        self.main_right_pane.runnable_exception.connect(self.set_message)
+        self.groupby_left_pane.runnable_exception.connect(self.set_message)
 
         # Default group
         self.last_group = ["chr"]
@@ -1150,6 +1177,9 @@ class VariantViewWidget(plugin.PluginWidget):
         self.groupby_action.blockSignals(True)
         self.groupby_action.setChecked(is_grouped)
         self.groupby_action.blockSignals(False)
+
+        # Hide potential errors
+        self.log_edit.hide()
 
         if is_grouped:
             # Ungrouped => grouped or already grouped
@@ -1333,6 +1363,24 @@ class VariantViewWidget(plugin.PluginWidget):
         See Also: VariantView.select_all
         """
         self.main_right_pane.select_all()
+
+    def set_message(self, message: str):
+        """Show message error at the bottom of the view
+
+        Args:
+            message (str): Error message
+        """
+        if self.log_edit.isHidden():
+            self.log_edit.show()
+
+        icon_64 = FIcon(0xF0027, style.WARNING_TEXT_COLOR).to_base64(18, 18)
+
+        self.log_edit.setText(
+            """<div height=100%>
+            <img src="data:image/png;base64,{}" align="left"/>
+             <span> {} </span>
+            </div>""".format(icon_64, message)
+        )
 
 
 if __name__ == "__main__":
