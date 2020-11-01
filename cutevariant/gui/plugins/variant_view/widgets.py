@@ -1229,15 +1229,22 @@ class VariantViewWidget(plugin.PluginWidget):
                 ]
 
                 if self.save_filters:
-                    # Keep and update previous filter
+                    # Build a new filter dict/tree based on the current one
                     filters = copy.deepcopy(self.save_filters)
 
                     if "AND" in self.save_filters:
+                        # {'AND': [...]}
+                        # => Just add our additional constraints joined by AND
                         filters["AND"] += and_list
-                    else:
-                        filters["AND"] = and_list
+                    elif "OR" in self.save_filters:
+                        # {'OR': [...]}
+                        # => Insert the previous filter as a child of a AND constraint
+                        # Ours are mandatory
+                        # {'AND': [{'OR': [...]}, ...]}
+                        and_list.append(filters)
+                        filters = {"AND": and_list}
                 else:
-                    # New filter
+                    # New filter => {'AND': [...]}
                     filters = {"AND": and_list}
 
                 print(filters)
