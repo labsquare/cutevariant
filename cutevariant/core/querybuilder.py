@@ -46,6 +46,7 @@ In the most of the case, you only need to use :
 # Standard imports
 import sqlite3
 import re
+from functools import lru_cache
 from ast import literal_eval
 
 # Custom imports
@@ -575,10 +576,9 @@ def build_full_sql_query(
         offset (int): record count per page
         group_by (list/None): list of field you want to group
     """
-    # Get {'favorite': 'variants', 'comment': 'variants', impact': 'annotations', ...}
-    default_tables = {i["name"]: i["category"] for i in sql.get_fields(conn)}
-    # Get {'NORMAL': 1, 'TUMOR': 2}
-    samples_ids = {i["name"]: i["id"] for i in sql.get_samples(conn)}
+    # Used cached data
+    default_tables, sample_ids = get_default_tables_and_sample_ids(conn)
+    print("Cache status", get_default_tables_and_sample_ids.cache_info())
 
     query = build_sql_query(
         fields=fields,
@@ -591,6 +591,24 @@ def build_full_sql_query(
         group_by=group_by,
         having=having,
         default_tables=default_tables,
-        samples_ids=samples_ids,
+        samples_ids=sample_ids,
     )
     return query
+
+
+@lru_cache()
+def get_default_tables_and_sample_ids(conn):
+    """Handy function to cache default_tables and sample_ids from database
+
+    This function is used for every queries built in :meth:`build_full_sql_query`
+
+    Warnings:
+        Do not forget to clear this cache when samples are added in DB via
+        a PED file for example.
+    """
+    # Get {'favorite': 'variants', 'comment': 'variants', impact': 'annotations', ...}
+    default_tables = {i["name"]: i["category"] for i in sql.get_fields(conn)}
+    # Get {'NORMAL': 1, 'TUMOR': 2}
+    sample_ids = {i["name"]: i["id"] for i in sql.get_samples(conn)}
+
+    return default_tables, sample_ids
