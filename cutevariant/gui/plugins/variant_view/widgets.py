@@ -115,7 +115,7 @@ class VariantModel(QAbstractTableModel):
             SqlRunnable.sql_connections_pool = dict()
             # Reset pool of results
             self.pool_results.clear()
-
+            # Init Runnables (1 for each query type)
             self.variant_runnable = SqlRunnable(self.conn)
             self.count_runnable = SqlRunnable(self.conn)
             self.variant_runnable.finished.connect(self.loaded)
@@ -589,7 +589,6 @@ class VariantView(QWidget):
 
         main_layout = QVBoxLayout()
         main_layout.setContentsMargins(0, 0, 0, 0)
-
         main_layout.addWidget(self.view)
         main_layout.addWidget(self.bottom_bar)
         self.setLayout(main_layout)
@@ -1164,7 +1163,7 @@ class VariantViewWidget(plugin.PluginWidget):
         return self.groupby_left_pane.group_by != []
 
     def load(self):
-        """Load all view
+        """Load all views
 
         Called by on_refresh, on_group_changed, and _show_group_dialog
         Display/hide groupby_left_pane on user demand.

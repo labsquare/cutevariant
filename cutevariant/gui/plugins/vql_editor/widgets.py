@@ -57,9 +57,9 @@ class VqlEditorWidget(plugin.PluginWidget):
 
         # Syntax highlighter and autocompletion
         self.text_edit = VqlEditor()
-        self.log_edit = QLabel()
         self.highlighter = VqlSyntaxHighlighter(self.text_edit.document())
-
+        # Error handling
+        self.log_edit = QLabel()
         self.log_edit.setMinimumHeight(40)
         self.log_edit.setStyleSheet(
             "QWidget{{background-color:'{}'; color:'{}'}}".format(
@@ -67,8 +67,8 @@ class VqlEditorWidget(plugin.PluginWidget):
             )
         )
         self.log_edit.hide()
-
         self.log_edit.setFrameStyle(QFrame.StyledPanel | QFrame.Raised)
+
         main_layout = QVBoxLayout()
         main_layout.addWidget(self.top_bar)
         main_layout.addWidget(self.text_edit)
@@ -222,7 +222,7 @@ class VqlEditorWidget(plugin.PluginWidget):
         """Show message error at the bottom of the view
 
         Args:
-            message (str): Description
+            message (str): Error message
         """
         if self.log_edit.isHidden():
             self.log_edit.show()
@@ -230,13 +230,10 @@ class VqlEditorWidget(plugin.PluginWidget):
         icon_64 = FIcon(0xF0027, style.WARNING_TEXT_COLOR).to_base64(18, 18)
 
         self.log_edit.setText(
-            """
-            <div height=100%>
+            """<div height=100%>
             <img src="data:image/png;base64,{}" align="left"/>
-             <span>  {} </span>
-            </div>""".format(
-                icon_64, message
-            )
+             <span> {} </span>
+            </div>""".format(icon_64, message)
         )
 
 
