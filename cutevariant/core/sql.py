@@ -783,23 +783,25 @@ def get_fields(conn):
     .. seealso:: insert_many_fields
 
     :param conn: sqlite3.connect
-    :return: Generator of dictionnaries with as many keys as there are columns
+    :return: Tuple of dictionnaries with as many keys as there are columns
         in the table.
-    :rtype: <generator <dict>>
+    :rtype: <tuple <dict>>
     """
     conn.row_factory = sqlite3.Row
-    return (dict(data) for data in conn.execute("SELECT * FROM fields"))
+    return tuple(dict(data) for data in conn.execute("SELECT * FROM fields"))
 
 
 def get_field_by_category(conn, category):
     """Get fields within a category
 
     :param conn: sqlite3.connect
-    :return: Generator of dictionnaries with as many keys as there are columns
-        in the table.
-    :rtype: <generator <dict>>
+    :param category: Category of field requested.
+    :type category: <str>
+    :return: Tuple of dictionnaries with as many keys as there are columns
+        in the table. Dictionnaries are only related to the given field category.
+    :rtype: <tuple <dict>>
     """
-    return [field for field in get_fields(conn) if field["category"] == category]
+    return tuple(field for field in get_fields(conn) if field["category"] == category)
 
 
 def get_field_by_name(conn, field_name: str):
