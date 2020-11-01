@@ -1191,7 +1191,10 @@ class VariantViewWidget(plugin.PluginWidget):
             self.groupby_left_pane.filters = self.save_filters
 
             # Refresh models
-            self.main_right_pane.load()  # useless, except if we modify fields like above
+            # right pane: Useless, except if we modify fields like above
+            # But refreshing left pane triggers right pane refreshing
+            # So => do not do it here
+            # self.main_right_pane.load()
             self.groupby_left_pane.load()
         else:
             # Grouped => ungrouped
