@@ -345,7 +345,7 @@ class VariantModel(QAbstractTableModel):
             # => WAIT missing result
             return
 
-        # LOGGER.debug("count_cache", cmd.count_cmd.cache_info())
+        # LOGGER.debug(cmd.count_cmd.cache_info())
         LOGGER.debug("Received load data; query %s", query_number)
 
         self.beginResetModel()

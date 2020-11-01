@@ -578,7 +578,7 @@ def build_full_sql_query(
     """
     # Used cached data
     default_tables, sample_ids = get_default_tables_and_sample_ids(conn)
-    print("Cache status", get_default_tables_and_sample_ids.cache_info())
+    # LOGGER.debug(get_default_tables_and_sample_ids.cache_info())
 
     query = build_sql_query(
         fields=fields,
