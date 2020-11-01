@@ -161,15 +161,13 @@ class VqlEditorWidget(plugin.PluginWidget):
 
         Suported commands and the plugins that need to be refreshed in consequence:
             - select_cmd: main ui (all plugins in fact)
-            - count_cmd: ?
+            - count_cmd: *not supported*
             - drop_cmd: selections & wordsets
             - create_cmd: selections
             - set_cmd: selections
             - bed_cmd: selections
-            - show_cmd: ?
+            - show_cmd: *not supported*
             - import_cmd: wordsets
-
-        TODO: manage unsupported requests
         """
         # Check VQL syntax first
         if not self.check_vql():
@@ -180,8 +178,10 @@ class VqlEditorWidget(plugin.PluginWidget):
             LOGGER.debug("VQL command %s", cmd)
             cmd_type = cmd["cmd"]
 
-            #  If command is a select kind
+            # If command is a select kind
             if cmd_type == "select_cmd":
+                # => Command will be executed in different widgets (variant_view)
+                # /!\ VQL Editor will not check SQL validity of the command
                 # columns from variant table
                 self.mainwindow.state.fields = cmd["fields"]
                 # name of the variant selection
@@ -194,8 +194,10 @@ class VqlEditorWidget(plugin.PluginWidget):
                 continue
 
             try:
+                # Check SQL validity of selections related commands
                 command.create_command_from_obj(self.conn, cmd)()
             except (sqlite3.DatabaseError, VQLSyntaxError) as e:
+                # Display errors in VQL editor
                 self.set_message(str(e))
                 LOGGER.exception(e)
                 continue
