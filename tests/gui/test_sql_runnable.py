@@ -23,7 +23,7 @@ def test_query(qtbot, conn):
     # Fill with a function that will be executed in a separated thread
     runnable = SqlRunnable(
         conn,
-        sql.get_variants_count,
+        function=sql.get_variants_count,
     )
 
     with qtbot.waitSignal(runnable.finished, timeout=10000) as blocker:
@@ -35,7 +35,7 @@ def test_query(qtbot, conn):
     # Same Query but via VQL wrapper
     runnable = SqlRunnable(
         conn,
-        count_cmd,
+        function=count_cmd,
     )
 
     with qtbot.waitSignal(runnable.finished, timeout=10000) as blocker:
