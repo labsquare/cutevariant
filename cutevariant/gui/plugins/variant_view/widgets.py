@@ -3,6 +3,8 @@ import functools
 import math
 import csv
 import io
+import itertools as it
+from collections import defaultdict
 import copy
 import string
 from logging import DEBUG
@@ -70,9 +72,20 @@ class VariantModel(QAbstractTableModel):
 
         # Async stuff
         self.pool = QThreadPool()
+        # Keep in mind that for each thread there is an independent cache...
+        self.pool.setMaxThreadCount(3)
+        # Threads don't expire
+        # => allows to keep sql connections and their cache alive
+        self.pool.setExpiryTimeout(-1)
         self.is_loading = False
+        # Runnables (1 for each query)
         self.variant_runnable = None
         self.count_runnable = None
+        # Unique ids for runs
+        self.query_counter = it.count()
+        self.query_number = 0
+        # Pool of results; query numbers as keys, runnable objects as values
+        self.pool_results = defaultdict(set)
 
     @property
     def conn(self):
@@ -90,6 +103,16 @@ class VariantModel(QAbstractTableModel):
                 field["name"]: field["description"]
                 for field in sql.get_fields(self.conn)
             }
+            LOGGER.debug("Init async runnables")
+            # Reset pool of connections
+            SqlRunnable.sql_connections_pool = dict()
+            # Reset pool of results
+            self.pool_results.clear()
+
+            self.variant_runnable = SqlRunnable(self.conn)
+            self.count_runnable = SqlRunnable(self.conn)
+            self.variant_runnable.finished.connect(self.loaded)
+            self.count_runnable.finished.connect(self.loaded)
 
     @property
     def formatter(self):
@@ -220,11 +243,14 @@ class VariantModel(QAbstractTableModel):
         ]
 
     def load(self):
-        """Load variant data into the model from query attributes
+        """Start async queries to get variants and variant count
 
         Called by:
             - on_change_query() from the view.
             - sort() and setPage() by the model.
+
+        See Also:
+            :meth:`loaded`
         """
         if self.conn is None:
             return
@@ -238,7 +264,7 @@ class VariantModel(QAbstractTableModel):
         # self.clear()  # Assume variant = []
         self.total = 0
 
-        LOGGER.debug("page: %s", self.page)
+        # LOGGER.debug("Page queried: %s", self.page)
 
         # Store SQL query for debugging purpose
         self.debug_sql = build_full_sql_query(
@@ -277,35 +303,47 @@ class VariantModel(QAbstractTableModel):
             group_by=self.group_by,
         )
 
-        # self.sql_thread.terminate()
-        self.variant_runnable = SqlRunnable(
-            self.conn, lambda conn: list(load_func(conn))
-        )
-        self.variant_runnable.finished.connect(self.loaded)
-
-        self.count_runnable = SqlRunnable(self.conn, count_function)
-        self.count_runnable.finished.connect(self.loaded)
-
+        # Assign async functions to runnables
+        self.variant_runnable.function = lambda conn: list(load_func(conn))
+        self.count_runnable.function = count_function
+        # Assign unique ID for this run
+        self.query_number = next(self.query_counter)
+        self.variant_runnable.query_number = self.query_number
+        self.count_runnable.query_number = self.query_number
+        # Start the run
+        LOGGER.debug("Start pools; query number %s", self.query_number)
         self.pool.start(self.variant_runnable)
         self.pool.start(self.count_runnable)
 
-    def loaded(self):
+    def loaded(self, query_number):
         """Called when SQL async queries are done
 
         - We wait until the 2 requests (variant and count rennable) have finished.
         - self.variants, self.total are set
 
         Signals:
-            - self._is_loading() si called at the end and so loading(true) is emitted
+            - self._set_loading() is called at the end and so loading(true) is emitted
             - load_finished (captured by VariantView to load page_box)
         """
-        if not self.variant_runnable or not self.count_runnable:
+        # Discard deprecated query results
+        # print("expected query number:", self.query_number, "get:", query_number)
+        if query_number < self.query_number:
+            # Discard result; WAIT current query
             return
-        if not self.variant_runnable.done or not self.count_runnable.done:
+        else:
+            self.pool_results[query_number].add(self.sender())
+
+        # Wait second query result
+        if len(self.pool_results[self.query_number]) == 2:
+            # All results are here!
+            # => Reset for next run
+            self.pool_results.clear()
+        else:
             # One of the runner has not finished his job
+            # => WAIT missing result
             return
 
-        LOGGER.debug("received load data")
+        LOGGER.debug("Received load data; query %s", query_number)
 
         self.beginResetModel()
         self.variants.clear()
@@ -321,13 +359,8 @@ class VariantModel(QAbstractTableModel):
             # Set headers of the view
             self.headers = list(self.variants[0].keys())
 
-        # print(self.count_runnable.results["count"])
         self.total = self.count_runnable.results["count"]
 
-        # Reset for next run
-        self.variant_runnable = self.count_runnable = None
-
-        # print(self.fields, self.filters, self.group_by)
         self.endResetModel()
         self._set_loading(False)
         self.load_finished.emit()

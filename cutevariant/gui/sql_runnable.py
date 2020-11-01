@@ -3,7 +3,7 @@ import sqlite3
 from typing import Callable
 
 # Qt imports
-from PySide2.QtCore import QRunnable, QObject, Signal
+from PySide2.QtCore import QRunnable, QObject, Signal, QThread
 
 # Custom imports
 from cutevariant.core.sql import get_sql_connection
@@ -19,14 +19,27 @@ class SqlRunnable(QObject, QRunnable):
         - results: Contain the result of the threaded function.
             `None`, as long as the function has not finished its execution done.
 
+    Class attributes:
+        - sql_connections_pool (dict): Mapping of thread ids as keys and
+            sqlite3 Connections as values. It allows to reuse sql connections
+            accros calls of run() method and benefit from their cache methods.
+
     Signals:
         - started: Emitted when the threaded function is started.
-        - finished: Emitted when the function has finished its execution.
+        - finished(int): Emitted when the function has finished its execution.
+            The emitted argument is the unique ID of the executed query.
+
+    Notes:
+        AutoDelete flag of such objects is set to False.
+        This means that QThreadPool **will not** delete these objects after
+        calling run() method.
     """
     started = Signal()
-    finished = Signal()
+    finished = Signal(int)
 
-    def __init__(self, conn: sqlite3.Connection, function: Callable):
+    sql_connections_pool = {}
+
+    def __init__(self, conn: sqlite3.Connection, function: Callable = None):
         """Init a runnable with connection and callable
 
         Notes:
@@ -50,15 +63,18 @@ class SqlRunnable(QObject, QRunnable):
         # AttributeError: 'PySide2.QtCore.Signal' object has no attribute 'connect'
         QObject.__init__(self)
         QRunnable.__init__(self)
-        # A valid function must be set
-        assert isinstance(function, Callable)
+
+        self._function = None
+        if function:
+            self.function = function
 
         # Get the database filename to duplicate the connection to be thread safe
         self.db_file = conn.execute("PRAGMA database_list").fetchone()["file"]
         self.async_conn = None
-        self.function = function
+
         self.results = None
-        self.done = False
+        self.query_number = None
+        self.setAutoDelete(False)
 
     def run(self):
         """Execute the function in a new thread
@@ -69,20 +85,38 @@ class SqlRunnable(QObject, QRunnable):
         Signals:
             - started: When the threaded function is started
             - finished: When the function has finished its execution.
-
-        Returns:
-            When the job is finished, `done` is set to True.
         """
-        # Create a new connection to be thread safe
-        self.async_conn = get_sql_connection(self.db_file)
+        # Copy the current query number so it is attached to this run only
+        query_number = int(self.query_number)
+
+        # Use a new connection to be thread safe
+        thread_id = QThread.currentThread()
+        if thread_id not in self.sql_connections_pool:
+            # Current thread hasn't its connection => create a new one
+            # LOGGER.debug("NEW CONN for %s", thread_id)
+            self.async_conn = get_sql_connection(self.db_file)
+            self.sql_connections_pool[thread_id] = self.async_conn
+        else:
+            # Reuse sql connection
+            # LOGGER.debug("REUSE CONN for %s", thread_id)
+            self.async_conn = self.sql_connections_pool[thread_id]
+
         # Connection must be established
         assert self.async_conn
 
-        self.done = False
         self.started.emit()
         self.results = self.function(self.async_conn)
-        self.done = True
-        self.finished.emit()
+        self.finished.emit(query_number)
+
+    @property
+    def function(self):
+        return self._function
+
+    @function.setter
+    def function(self, value: Callable):
+        # A valid function must be set
+        assert isinstance(value, Callable)
+        self._function = value
 
 
 if __name__ == "__main__":
