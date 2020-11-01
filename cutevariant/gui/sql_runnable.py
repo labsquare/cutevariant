@@ -16,6 +16,8 @@ class SqlRunnable(QObject, QRunnable):
         - db_file (str): File path of the database.
         - async_conn (sqlite3.Connection): sqlite3 Connection
         - function (Callable): Function to be executed
+        - query_number (int): (default: 0) Used to identify the finished query
+            in a pool via the finished signal (see section Signals below).
         - results: Contain the result of the threaded function.
             `None`, as long as the function has not finished its execution done.
 
@@ -39,7 +41,7 @@ class SqlRunnable(QObject, QRunnable):
 
     sql_connections_pool = {}
 
-    def __init__(self, conn: sqlite3.Connection, function: Callable = None):
+    def __init__(self, conn: sqlite3.Connection, function: Callable = None, query_number: int = 0):
         """Init a runnable with connection and callable
 
         Notes:
@@ -73,7 +75,7 @@ class SqlRunnable(QObject, QRunnable):
         self.async_conn = None
 
         self.results = None
-        self.query_number = None
+        self.query_number = query_number
         self.setAutoDelete(False)
 
     def run(self):
