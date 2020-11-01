@@ -28,18 +28,20 @@ LOGGER = cm.logger()
 
 
 class VariantModel(QAbstractTableModel):
-    """
-    VariantModel is a Qt model class which contains variants datas from sql.VariantBuilder .
-    It loads paginated data from VariantBuilder and create an interface for a Qt view and controllers.
-    The model can group variants by (chr,pos,ref,alt) into a tree thanks to VariantBuilder.tree().
+    """VariantModel is a Qt model class which contains variant data from SQL DB.
+
+    It loads paginated data and create an interface for Qt views and controllers.
+    The model can group variants by (chr,pos,ref,alt).
 
     See Qt model/view programming for more information
     https://doc.qt.io/qt-5/model-view-programming.html
 
-    Variants are stored internally as a list of variants. By default, there is only one transcript per row.
-    When user expand the row, it will append duplicates variants as children.
-    For example, this is a tree with 2 variants , each of them refer to many transcripts.
-
+    Variants are stored internally as a list of variants.
+    By default, there is only one variant per row until a user selects a field
+    from annotations or from multiple samples.
+    Duplicated variants will be displayed in this case. It is advised to use the
+    button "group" in the GUI to easily split between specific fields and common
+    fields.
     """
 
     loading = Signal(bool)  # emit when data start or stop loading
