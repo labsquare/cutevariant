@@ -967,7 +967,9 @@ class VariantViewWidget(plugin.PluginWidget):
         self.groupby_action = self.top_bar.addAction(
             FIcon(0xF14E0), self.tr("Group by"), self.on_group_changed
         )
-        self.groupby_action.setToolTip(self.tr("Group variants according to columns"))
+        self.groupby_action.setToolTip(
+            self.tr("Group variants according to choosen columns")
+        )
         self.groupby_action.setCheckable(True)
         self.groupby_action.setChecked(False)
 
@@ -990,7 +992,7 @@ class VariantViewWidget(plugin.PluginWidget):
         # Refresh UI button
         self.top_bar.addSeparator()
         action = self.top_bar.addAction(
-            FIcon(0xF0450), self.tr("Refresh"), self.on_refresh
+            FIcon(0xF0450), self.tr("Refresh the list of variants"), self.on_refresh
         )
         action.setPriority(QAction.LowPriority)
 
