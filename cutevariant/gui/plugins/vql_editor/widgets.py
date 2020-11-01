@@ -112,22 +112,22 @@ class VqlEditorWidget(plugin.PluginWidget):
         self.text_edit.blockSignals(False)
 
     def _create_completer(self):
-        """Create Completer with his model"""
+        """Create Completer with his model
+
+        Fill the model with the SQL keywords and database fields
+        """
         model = QStringListModel()
         completer = QCompleter()
-        # Fill the model with the SQL keywords and database fields
-
-        # fields = [i["name"] for i in sql.get_fields(self.conn)]
 
         keywords = []
         samples = [i["name"] for i in sql.get_samples(self.conn)]
         selections = [i["name"] for i in sql.get_selections(self.conn)]
-        for i in sql.get_fields(self.conn):
-            if i["category"] == "samples":
-                for s in samples:
-                    keywords.append("sample['{}'].{}".format(s, i["name"]))
+        for field in sql.get_fields(self.conn):
+            if field["category"] == "samples":
+                for sample in samples:
+                    keywords.append("sample['{}'].{}".format(sample, field["name"]))
             else:
-                keywords.append(i["name"])
+                keywords.append(field["name"])
 
         keywords.extend(VqlSyntaxHighlighter.sql_keywords)
         keywords.extend(selections)
