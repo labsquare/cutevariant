@@ -1247,7 +1247,7 @@ class VariantViewWidget(plugin.PluginWidget):
                     # New filter => {'AND': [...]}
                     filters = {"AND": and_list}
 
-                print(filters)
+                LOGGER.debug("Filters for right pane for grouped variants %s", filters)
 
                 self.main_right_pane.filters = filters
 
