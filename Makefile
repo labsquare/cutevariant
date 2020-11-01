@@ -26,7 +26,7 @@ install_deps:
 	@# Skip quotes and other spaces with -0
 	@# Split on \n
 	@# Enclose args with quotes
-	python -c "import configparser; c = configparser.ConfigParser(); c.read('setup.cfg'); print(c['options']['install_requires'], end=''); print(c['options.extras_require']['dev'],end='')" | xargs -0 -d "\n" -I {} pip install '{}'
+	python -c "import configparser; c = configparser.ConfigParser(); c.read('setup.cfg'); print('\n'.join([i for i in (c['options']['install_requires'] + c['options.extras_require']['dev']).split('\n') if i and 'PySide2' not in i]), end='')" | xargs -0 -d "\n" -I {} pip install '{}'
 install:
 	@# Replacement for python setup.py develop which doesn't support extra_require keyword.
 	@# Install a project in editable mode.
