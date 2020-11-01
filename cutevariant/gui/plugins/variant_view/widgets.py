@@ -476,7 +476,9 @@ class LoadingTableView(QTableView):
         if self.is_loading():
             painter = QPainter(self.viewport())
 
-            painter.drawText(self.viewport().rect(), Qt.AlignCenter, "Loading ...")
+            painter.drawText(
+                self.viewport().rect(), Qt.AlignCenter, self.tr("Loading ...")
+            )
 
         else:
             super().paintEvent(event)
