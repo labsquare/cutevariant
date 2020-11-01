@@ -1215,7 +1215,7 @@ class VariantViewWidget(plugin.PluginWidget):
             # Ungroup it
             self.groupby_action.setIcon(FIcon(0xF14E0))
             self.groupby_action.setToolTip(
-                self.tr("Group variants according to columns")
+                self.tr("Group variants according to choosen columns")
             )
             # Save current group
             self.last_group = self.groupby_left_pane.group_by
