@@ -26,7 +26,6 @@ variables:
 
 # command to install dependencies
 install:
-  - pip install PySide2>=5.14
   - make install_deps
 
 # command to run tests
