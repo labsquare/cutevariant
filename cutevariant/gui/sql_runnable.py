@@ -7,6 +7,9 @@ from PySide2.QtCore import QRunnable, QObject, Signal, QThread
 
 # Custom imports
 from cutevariant.core.sql import get_sql_connection
+from cutevariant.commons import logger
+
+LOGGER = logger()
 
 
 class SqlRunnable(QObject, QRunnable):
@@ -38,6 +41,7 @@ class SqlRunnable(QObject, QRunnable):
     """
     started = Signal()
     finished = Signal(int)
+    error = Signal(str)
 
     sql_connections_pool = {}
 
@@ -107,7 +111,13 @@ class SqlRunnable(QObject, QRunnable):
         assert self.async_conn
 
         self.started.emit()
-        self.results = self.function(self.async_conn)
+        try:
+            self.results = self.function(self.async_conn)
+        except Exception as e:
+            LOGGER.exception(e)
+            self.error.emit("%s: %s" % (e.__class__.__name__, str(e)))
+            return
+
         self.finished.emit(query_number)
 
     @property
