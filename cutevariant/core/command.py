@@ -114,20 +114,22 @@ def count_cmd(
     Returns:
         dict: Count of variants wgstith "count" as a key
     """
-    # TODO : See #177: Check if fields has annotations
+    # See #177: Check if fields has annotations
     # If an annotation field is selected, the variant count stored in the selection
     # table (count without taking account of annotations) is different.
     # This leads to a fault in the pagination hiding the latest variants if
     # more than 50 must be displayed.
+    variants_fields = set(field["name"] for field in sql.get_field_by_category(conn, "variants"))
 
-    # if not filters and not group_by:
-    #     # Returned stored cache variant
-    #     LOGGER.debug("command:count_cmd:: cached from selections table")
-    #     return {
-    #         "count": conn.execute(
-    #             f"SELECT count FROM selections WHERE name = '{source}'"
-    #         ).fetchone()[0]
-    #     }
+    if set(fields).issubset(variants_fields) and not filters and not group_by:
+        # All fields are in variants table
+        # Returned stored cache variant
+        LOGGER.debug("command:count_cmd:: cached from selections table")
+        return {
+            "count": conn.execute(
+                f"SELECT count FROM selections WHERE name = '{source}'"
+            ).fetchone()[0]
+        }
 
     query = build_full_sql_query(
         conn,
