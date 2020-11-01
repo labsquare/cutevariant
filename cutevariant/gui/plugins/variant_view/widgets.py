@@ -334,6 +334,7 @@ class VariantModel(QAbstractTableModel):
             return
         else:
             self.pool_results[query_number].add(self.sender())
+        # print("pool", self.pool_results)
 
         # Wait second query result
         if len(self.pool_results[self.query_number]) == 2:
