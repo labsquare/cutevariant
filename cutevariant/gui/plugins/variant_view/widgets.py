@@ -783,9 +783,19 @@ class VariantView(QWidget):
             return
 
         current_variant = self.model.variant(current_index.row())
-        full_variant = sql.get_one_variant(self.conn, current_variant["id"])
+        full_variant = sql.get_one_variant(self.conn, current_variant["id"], with_annotations=True)
         # Update variant with currently displayed fields (not in variants table)
         full_variant.update(current_variant)
+
+        ## Crap code for multi values placeholders; see below for external links
+        # Enrich current_variant with annotation data
+        annotation_values = defaultdict(set)
+        # Group annotation values by fields
+        full_variant_backup = dict(full_variant)
+        [annotation_values[k].add(v) for annotation in
+         full_variant["annotations"] for k, v in annotation.items()]
+        full_variant.update(annotation_values)
+        ## End of crap code ####################################################
 
         # Copy action: Copy the variant reference ID in to the clipboard
         formatted_variant = "{chr}:{pos}-{ref}-{alt}".format(**full_variant)
@@ -825,7 +835,47 @@ class VariantView(QWidget):
                 name
                 for text, name, spec, conv in string.Formatter().parse(format_string)
             }
-            if field_names & full_variant.keys():
+            common_placeholders = field_names & full_variant.keys()
+            if common_placeholders:
+
+                ## Starting here, the code is crap #############################
+                # The aim is to show as many links as there are values for 1 placeholder
+                # Get placeholders with multiple values
+                multiple_placeholders = [
+                    field for field in common_placeholders if isinstance(full_variant[field], set)
+                ]
+
+                if len(multiple_placeholders) > 1:
+                    # I will not handle all (valid?) permutations between values...
+                    # This is why it is a bad idea...
+                    # => fallback to normal behavior
+                    links_menu.addAction(
+                        key,
+                        functools.partial(
+                            QDesktopServices.openUrl,
+                            QUrl(format_string.format(**full_variant_backup),
+                                 QUrl.TolerantMode),
+                        ),
+                    )
+
+                elif len(multiple_placeholders) == 1:
+                    # Only 1 multi-placeholder for the current link
+                    # => create as many links as there are values
+                    placeholder = multiple_placeholders[0]
+                    for elem in full_variant[placeholder]:
+                        tmp_variant = copy.copy(full_variant)
+                        tmp_variant[placeholder] = elem
+                        links_menu.addAction(
+                            f"{key} - {elem}",
+                            functools.partial(
+                                QDesktopServices.openUrl,
+                                QUrl(format_string.format(**tmp_variant),
+                                     QUrl.TolerantMode),
+                            ),
+                        )
+                    continue
+                ## End of crap code ############################################
+
                 # Full or partial mapping => accepted link
                 links_menu.addAction(
                     key,
