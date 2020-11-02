@@ -147,9 +147,17 @@ class VariantModel(QAbstractTableModel):
         return len(self.headers)
 
     def clear(self):
+        """Reset the current model
+
+            - clear variants list
+            - total of variants is set to 0
+            - emit load_finished signal
+        """
         self.beginResetModel()
         self.variants.clear()
+        self.total = 0
         self.endResetModel()
+        self.load_finished.emit()
 
     def data(self, index: QModelIndex(), role=Qt.DisplayRole):
         """Overrided: return index data according role.
