@@ -189,7 +189,7 @@ class AbstractReader(ABC):
             "name": "annotation_count",
             "type": "int",
             "category": "variants",
-            "description": "Transcript count per variants",
+            "description": "Count of transcripts per variant",
         }
 
         yield {
@@ -294,7 +294,8 @@ class AbstractReader(ABC):
             # Samples can't be both in cases and controls
             case_samples = kwargs["case"]
             control_samples = kwargs["control"]
-            assert not set(case_samples) & set(control_samples), "Found both in cases and controls!"
+            assert not set(case_samples) & set(control_samples), \
+                "Found sample both in cases and controls!"
             case_and_control_samples_found = True
 
         for variant in self.get_variants():
