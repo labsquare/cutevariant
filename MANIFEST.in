@@ -4,11 +4,18 @@ exclude *.py
 exclude *.sublime-*
 exclude *.txt
 exclude *.xmi
+exclude *.ico
+exclude *.properties
+exclude *.yml
+exclude *.yaml
 exclude Makefile
 exclude pytest.ini
 prune .vscode
-prune exemples
-prune pocs
+prune docs
+prune examples
+prune fbs
+prune plugin_template
+prune poc
 prune tests
 include setup.py
 recursive-exclude cutevariant *.txt
@@ -17,6 +24,7 @@ recursive-include cutevariant *.py
 recursive-include cutevariant *.tx
 recursive-include cutevariant *.ttf
 recursive-include cutevariant *.qss
-recursive-include cutevariant/gui/plugins/ *.json
+recursive-include cutevariant/gui/plugins *.json
 include cutevariant/assets/i18n/*.qm
+exclude cutevariant/assets/i18n/*.ts
 include cutevariant/assets/LICENSE
