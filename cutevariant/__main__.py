@@ -118,6 +118,7 @@ def load_translations(app):
     app_settings = QSettings()
     locale_name = app_settings.value("ui/locale", "en")
 
+    # site-packages/PySide2/Qt/translations
     lib_info = QLibraryInfo.location(QLibraryInfo.TranslationsPath)
 
     # Qt translations
