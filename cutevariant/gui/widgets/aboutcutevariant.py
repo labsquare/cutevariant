@@ -84,7 +84,7 @@ class AboutCutevariant(QDialog):
         if filename == "LICENSE":
             # Add license header
             text = self.tr(
-                "Copyright (C) 2018-2019  Labsquare.org\n\n"
+                "Copyright (C) 2018-2020  Labsquare.org\n\n"
                 "This program is distributed under the terms of the GNU "
                 "General Public License v3.\n\n"
             )
@@ -140,7 +140,7 @@ class AboutCutevariant(QDialog):
         painter.drawText(
             titleRect,
             Qt.AlignTop,
-            f"Version %s\nGPL3 Copyright (C) 2018-2019\nLabsquare.org" % __version__,
+            f"Version %s\nGPL3 Copyright (C) 2018-2020\nLabsquare.org" % __version__,
         )
 
         self.header_lbl.setPixmap(pixmap)

@@ -1,6 +1,6 @@
 # Cutevariant is a light standalone viewer of genetic variation written
 # in Python for Qt. It allows to view and filter VCF and other format files.
-# Copyright (C) 2018-2019  Labsquare.org
+# Copyright (C) 2018-2020  Labsquare.org
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
