@@ -515,9 +515,12 @@ class VariantView(QWidget):
 
     Signals:
         runnable_exception (str): Emit message when async runnables encounter errors
+        no_variant: Emitted when there is no variant to display.
+            Used by left pane to clear right pane.
     """
 
     runnable_exception = Signal(str)
+    no_variant = Signal()
 
     def __init__(self, parent=None, show_popup_menu=True):
         """
@@ -646,12 +649,18 @@ class VariantView(QWidget):
     def loaded(self):
         """Slot called when async queries from the model are finished
         (especially count of variants for page box).
+
+        Signals:
+            Emits no_variant signal.
         """
         if self.row_to_be_selected is not None:
             # Left groupby pane only:
             # Select by default the first line in order to refresh the
-            # current variant in the other panef
-            self.select_row(0)
+            # current variant in the other pane
+            if self.model.rowCount():
+                self.select_row(0)
+            else:
+                self.no_variant.emit()
 
         self.load_page_box()
         if LOGGER.getEffectiveLevel() != DEBUG:
@@ -1049,6 +1058,7 @@ class VariantViewWidget(plugin.PluginWidget):
         self.groupby_left_pane.view.selectionModel().currentRowChanged.connect(
             lambda x, _: self.on_variant_clicked(x)
         )
+        self.groupby_left_pane.no_variant.connect(self.on_no_variant)
         # Connect errors from async runnables
         self.main_right_pane.runnable_exception.connect(self.set_message)
         self.groupby_left_pane.runnable_exception.connect(self.set_message)
@@ -1160,6 +1170,13 @@ class VariantViewWidget(plugin.PluginWidget):
             )
             # Retry
             self.on_save_selection()
+
+    def on_no_variant(self):
+        """Slot called when left pane hasn't any variant to display
+
+        Clear right pane (nothing to select in it)
+        """
+        self.main_right_pane.model.clear()
 
     def _is_grouped(self) -> bool:
         """Return grouped mode status of the view"""
