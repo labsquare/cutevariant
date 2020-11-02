@@ -9,12 +9,12 @@
     </message>
     <message>
         <location filename="cutevariant/gui/widgets/aboutcutevariant.py" line="87"/>
-        <source>Copyright (C) 2018-2019  Labsquare.org
+        <source>Copyright (C) 2018-2020  Labsquare.org
 
 This program is distributed under the terms of the GNU General Public License v3.
 
 </source>
-        <translation>Copyright (C) 2018-2019  Labsquare.org
+        <translation>Copyright (C) 2018-2020  Labsquare.org
 
 Ce programme est distribué selon les termes de la Licence Publique Générale GNU v3.
 
@@ -772,37 +772,37 @@ Doublez-cliquez pour les éditer.</translation>
 <context>
     <name>VariantView</name>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="807"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="799"/>
         <source>&amp;Unmark favorite</source>
         <translation>&amp;Ne plus afficher en favori</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="807"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="799"/>
         <source>&amp;Mark as favorite</source>
         <translation>&amp;Marquer en tant que favori</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="875"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="841"/>
         <source>&amp;Edit comment ...</source>
         <translation>&amp;Éditer le commentaire</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="879"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="845"/>
         <source>&amp;Copy</source>
         <translation>&amp;Copier</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="882"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="848"/>
         <source>&amp;Select all</source>
         <translation>&amp;Sélectionner tout</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="817"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="809"/>
         <source>Classification</source>
         <translation>Classification</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="826"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="818"/>
         <source>External links</source>
         <translation>Liens externes</translation>
     </message>
@@ -825,52 +825,52 @@ Doublez-cliquez pour les éditer.</translation>
 <context>
     <name>VariantViewWidget</name>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="1028"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="994"/>
         <source>Group by</source>
         <translation>Grouper</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="1061"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="1027"/>
         <source>Save selection</source>
         <translation>Sauvegarder la sélection</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="1177"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="1143"/>
         <source>Create a new selection</source>
         <translation>Créer une nouvelle sélection</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="1177"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="1143"/>
         <source>Name of the new selection:</source>
         <translation>Nom de la nouvelle sélection:</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="1064"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="1030"/>
         <source>Save the current variants into a new selection</source>
         <translation>Sauvegarder les variants affichés dans une nouvelle sélection</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="1277"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="1243"/>
         <source>Ungroup variants</source>
         <translation>Dégrouper les variants</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="1200"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="1166"/>
         <source>Error while creating selection</source>
         <translation>Erreur durant la création de la sélection</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="1200"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="1166"/>
         <source>Error while creating selection &apos;%s&apos;; Name is already used</source>
         <translation>Erreur durant la création de la sélection &apos;%s&apos;; Le nom est déjà utilisé</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="1283"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="1249"/>
         <source>Group variants according to choosen columns</source>
         <translation>Grouper les variants d&apos;après les colonnes choisies</translation>
     </message>
     <message>
-        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="1055"/>
+        <location filename="cutevariant/gui/plugins/variant_view/widgets.py" line="1021"/>
         <source>Refresh the list of variants</source>
         <translation>Rafraîchir la liste des variants</translation>
     </message>
@@ -1160,12 +1160,12 @@ puis de sélectionner &quot;Ajouter une condition&quot;.&lt;/li&gt;
 <context>
     <name>main</name>
     <message>
-        <location filename="cutevariant/__main__.py" line="159"/>
+        <location filename="cutevariant/__main__.py" line="160"/>
         <source>Display the version of Cutevariant and exit.</source>
         <translation>Affiche la version de Cutevariant et quitte.</translation>
     </message>
     <message>
-        <location filename="cutevariant/__main__.py" line="167"/>
+        <location filename="cutevariant/__main__.py" line="168"/>
         <source>Modify verbosity.</source>
         <translation>Modifie le niveau de verbosité.</translation>
     </message>
