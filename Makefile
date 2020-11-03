@@ -14,7 +14,10 @@ fix_notepad:
 black:
 	black cutevariant
 
-doc-deploy:
+doc:
+	$(MAKE) -C ./docs html
+
+doc-deploy: doc
 	git add docs/build/html/
 	git subtree push --prefix docs/build/html origin gh-pages  
 
