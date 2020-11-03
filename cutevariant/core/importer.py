@@ -157,10 +157,6 @@ def import_pedfile(conn, filename):
 
     See Also:
         :meth:`cutevariant.core.reader.pedreader.PedReader`
-
-    Arguments:
-        conn {[type]} -- [description]
-        data {list} -- [description]
     """
     [
         update_sample(conn, sample)

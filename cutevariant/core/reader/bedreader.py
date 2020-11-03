@@ -13,7 +13,7 @@ LOGGER = cm.logger()
 
 
 class BedReader:
-    """BED file parser
+    r"""BED file parser
 
     It is a substitution to pybedtools that is a (too) big black box to make lots
     of things, while we only need the file parser.
@@ -31,7 +31,8 @@ class BedReader:
 
     .. seealso:: BED specs: https://www.ensembl.org/info/website/upload/bed.html
 
-    How to use:
+    How to use::
+
         intervals = BedReader("myfile.bed.gz)
         generator = iter(intervals)
         first_interval = next(generator)
@@ -107,7 +108,8 @@ class BedReader:
 
     def get_intervals(self, stream):
         """Yield Interval objects in the given stream
-        .. seelalso: `__iter__`
+
+        .. seelalso:: :meth:`__iter__`
         """
         # Throws line with headers
         skipped_header_line = 0  # Will be used to rewind the stream

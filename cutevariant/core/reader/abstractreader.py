@@ -46,7 +46,8 @@ class AbstractReader(ABC):
 
         Variant dictionnary has 4 mandatory fields `chr`, `pos`, `ref`, `alt`.
         Other fields are optionnal
-        For instance:
+        For instance::
+
             [
                 {"chr": "chr3","pos": 3244,"ref": "A","alt":"C", "qual": 30},
                 {"chr": "chr4","pos": 3244,"ref": "A","alt":"C","qual": 20},
@@ -58,6 +59,8 @@ class AbstractReader(ABC):
         In the most of the case, those are relative to transcripts.
         Samples describes information relative to a variant with a sample,
         like genotype (gt). This is a mandatory field.
+
+        .. code-block:: python
 
             [{
                 "chr": "chr3",

@@ -1,4 +1,4 @@
-"""Expose of high-level reader classes"""
+"""Expose of high-level writer classes"""
 
 from .csvwriter import CsvWriter
 from .pedwriter import PedWriter

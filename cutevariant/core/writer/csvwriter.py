@@ -11,10 +11,9 @@ class CsvWriter(AbstractWriter):
         device: a file object typically returned by open("w")
 
     Example:
-
-        with open(filename,"rw") as file:
-            writer = MyWriter(file)
-            writer.save(conn)
+        >>> with open(filename,"rw") as file:
+        ...    writer = MyWriter(file)
+        ...    writer.save(conn)
     """
 
     def __init__(self, device):
@@ -25,7 +24,7 @@ class CsvWriter(AbstractWriter):
 
         .. TODO:: move SQL query into a dedicated place
 
-        Examples:
+        Examples::
 
             chr pos     ref alt
             11  10000   G   T

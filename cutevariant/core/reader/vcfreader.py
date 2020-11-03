@@ -67,17 +67,16 @@ class VcfReader(AbstractReader):
 
         This function is called a first time before variants insertion.
 
-        .. note:: Annotations fields are added here if they exist in the file.
+        Annotations fields are added here if they exist in the file.
 
-        .. seealso:: parse_fields()
+        .. seealso:: :meth:`parse_fields` for basic default fields.
 
         :return: Tuple of fields.
             Each field is a dict with the following keys:
-                name, category, description, type
+            `name, category, description, type`.
             Some fields have an additional constraint key when they are destined
             to be a primary key in the database.
             Annotations fields are added here if they exist in the file.
-            .. seealso parse_fields() for basic default fields.
         :rtype: <tuple <dict>>
         """
         if self.fields is None:
@@ -219,7 +218,7 @@ class VcfReader(AbstractReader):
 
         :return: Generator of fields.
             Each field is a dict with the following keys:
-                name, category, description, type
+            `name, category, description, type`.
             Some fields have an additional constraint key when they are destined
             to be a primary key in the database.
         :rtype: <generator <dict>>

@@ -12,10 +12,9 @@ class PedWriter(AbstractWriter):
         device: a file object typically returned by open("w")
 
     Example:
-
-        with open(filename,"rw") as file:
-            writer = MyWriter(file)
-            writer.save(conn)
+        >>> with open(filename,"rw") as file:
+        ...    writer = MyWriter(file)
+        ...    writer.save(conn)
     """
 
     def __init__(self, device):
@@ -27,7 +26,7 @@ class PedWriter(AbstractWriter):
         Notes:
             File is written without header.
 
-        Example of line:
+        Example of line::
 
             `family_id\tindividual_id\tfather_id\tmother_id\tsex\tphenotype`
 

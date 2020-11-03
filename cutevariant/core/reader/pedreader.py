@@ -7,7 +7,7 @@ LOGGER = cm.logger()
 
 
 class PedReader:
-    """PED *.tfam file (PLINK sample information file) parser
+    r"""PED \*.tfam file (PLINK sample information file) parser
 
     Data has the same structure of a tfam file object
     https://www.cog-genomics.org/plink/1.9/formats#fam
@@ -89,20 +89,22 @@ class PedReader:
 
         Notes:
             The following problems with samples are detected:
-            - Not digit sex/phenotype: Exception raised
-            - Sex/phenotype not expected (0,1,2): Individual skipped
-            - Unknown individual_id: Individual skipped
-            - If samples are given, not found family_id, individual_id couple:
-                Individual skipped.
-                i.e.: And individual not already in DB is skipped.
-            - If samples are given, not found family_id, father_id/mother_id:
-                Added as unknown.
+                - Not digit sex/phenotype: Exception raised
+                - Sex/phenotype not expected (0,1,2): Individual skipped
+                - Unknown individual_id: Individual skipped
+                - If samples are given, not found family_id, individual_id couple:
+                  Individual skipped.
+                  i.e.: And individual not already in DB is skipped.
+                - If samples are given, not found family_id, father_id/mother_id:
+                  Added as unknown.
 
         Returns:
             (generator[dict/list]): Generator of samples.
                 - If raw_samples are activated (default), samples are lists of fields.
                 - If raw_samples are not activated, samples are dict of fields
-                ready to be inserted in the database according to the given samples.
+                  ready to be inserted in the database according to the given samples.
+
+            Example::
 
                 `[family_id, individual_id, father_id, mother_id, sex, phenotype]`
                 Or

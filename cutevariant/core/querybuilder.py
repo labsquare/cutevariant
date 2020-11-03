@@ -144,13 +144,17 @@ def wordset_data_to_sql(wordset_expr: tuple):
     Wordset function is used in VQL to filter fields within a set of words.
 
     Example:
-        `SELECT ... WHERE gene IN WORDSET('boby')`,
-        will be replaced by:
-        `SELECT ... WHERE gene IN (SELECT value FROM sets WHERE name = 'boby')`
 
-        We return only the sub SELECT statement here:
-        >>> wordset_data_to_sql(("WORDSET", "boby"))
-        "SELECT value FROM sets WHERE name = 'boby'"
+        .. code-block:: sql
+
+            SELECT ... WHERE gene IN WORDSET('boby')
+            -- will be replaced by:
+            SELECT ... WHERE gene IN (SELECT value FROM sets WHERE name = 'boby')
+
+        We return only the sub SELECT statement here::
+
+            >>> wordset_data_to_sql(("WORDSET", "boby"))
+            "SELECT value FROM sets WHERE name = 'boby'"
 
     Args:
         wordset_expr (tuple): Tuple of 2 items: First one is "WORDSET",
