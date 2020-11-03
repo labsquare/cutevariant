@@ -10,9 +10,11 @@ Welcome to cutevariant's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   overview
    installation
    core_api
+
+.. overview => to be redacted
+
 
 Indices and tables
 ==================
