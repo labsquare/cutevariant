@@ -11,6 +11,7 @@ Welcome to cutevariant's documentation!
    :caption: Contents:
 
    installation
+   command_line_usage
    core_api
 
 .. overview => to be redacted
