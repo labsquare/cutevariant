@@ -2,27 +2,30 @@
 
 In the most of cases, you will only use build_sql_query function.
 
-Examples:
+Examples::
 
     conn = sqlite3.Connection("::memory::")
     query = build_sql_query(["chr","pos"])
     conn.execute(query)
 
 
-A variant query can be understood from 3 points of view :
+A variant query can be understood from the following 3 points of view.
 
-## The SQL statements:
-This is the raw sqlite query.
+The SQL statements:
+~~~~~~~~~~~~~~~~~~~
+This is the raw sqlite query::
 
     "SELECT `variants`.`chr`, `variants`.`pos` FROM `variants` WHERE `variants`.`ref` == 'A' "
 
-## The VQL statements:
-This is a domain specific language . Check the vql module for more information
+The VQL statements:
+~~~~~~~~~~~~~~~~~~~
+This is a domain specific language. Check the vql module for more information::
 
-    SELECT chr, pos FROM variants WHERE ref == 'A'
+    "SELECT chr, pos FROM variants WHERE ref == 'A'"
 
-## The Python statements:
-The representation of the query as a dictionnary.
+The Python statements:
+~~~~~~~~~~~~~~~~~~~~~~
+The representation of the query as a dictionnary::
 
     query = {
         "fields": ["chr","pos"],
@@ -72,10 +75,10 @@ def filters_to_flat(filters: dict):
     Returns:
         (list): all fields are now inside a a list
 
-    Todo:
-        Move to vql ?
+    .. todo:: Move to vql ?
 
-    Examples:
+    Examples::
+
         filters = {
             'AND': [
                 {'field': 'ref', 'operator': '=', 'value': "A"},

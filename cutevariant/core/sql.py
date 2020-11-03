@@ -589,7 +589,7 @@ def sanitize_words(words):
 
 
 def import_wordset_from_file(conn: sqlite3.Connection, wordset_name, filename):
-    """Create Word set from the given file
+    r"""Create Word set from the given file
 
     Args:
         wordset_name: Name of the Word set
@@ -602,13 +602,13 @@ def import_wordset_from_file(conn: sqlite3.Connection, wordset_name, filename):
     Current data filtering (same as in the word_set plugin):
         - Strip trailing spaces and EOL characters
         - Skip empty lines
-        - Skip lines with whitespaces characters (`[ \t\n\r\f\v]`)
+        - Skip lines with whitespaces characters (``[ \t\n\r\f\v]``)
 
     Examples:
         - The following line will be skipped:
-        `"abc  def\tghi\t  \r\n"`
+          ``"abc  def\tghi\t  \r\n"``
         - The following line will be cleaned:
-        `"abc\r\n"`
+          ``"abc\r\n"``
     """
     # Search whitespaces
     with open(filename, "r") as f_h:
@@ -887,8 +887,10 @@ def get_field_unique_values(conn, field_name: str, sample_name=None):
 def create_table_annotations(conn, fields):
     """Create "annotations" table which contains dynamics fields
 
-    :param fields: Generator of SQL fields.
-        :Example of fields:
+    :param fields: Generator of SQL fields. Example of fields:
+
+        .. code-block:: python
+
             ('allele str NULL', 'consequence str NULL', ...)
     :type fields: <generator>
     """
@@ -917,6 +919,9 @@ def create_annotations_indexes(conn):
     .. warning: This function must be called after batch insertions.
 
     :Example:
+
+    .. code-block:: sql
+
         SELECT *, group_concat(annotations.rowid) FROM variants
         LEFT JOIN annotations ON variants.rowid = annotations.variant_id
         WHERE pos = 0
@@ -991,9 +996,12 @@ def create_table_variants(conn, fields):
 def create_variants_indexes(conn):
     """Create indexes on the "variants" table
 
-    .. warning: This function must be called after batch insertions.
+    .. warning:: This function must be called after batch insertions.
 
     :Example:
+
+    .. code-block:: sql
+
         SELECT *, group_concat(annotations.rowid) FROM variants
         LEFT JOIN annotations ON variants.rowid = annotations.variant_id
         WHERE pos = 0
@@ -1015,7 +1023,7 @@ def get_one_variant(
     with_annotations=False,
     with_samples=False,
 ):
-    """Get the variant with the given id
+    r"""Get the variant with the given id
 
     TODO: with_annotations, with_samples are quite useless and not used for now
 
@@ -1027,10 +1035,13 @@ def get_one_variant(
 
     Returns:
         dict: A variant item with all fields in "variants" table;
-            + all fields of annotations table if with_annotations is True
-            + all fields of sample_has_variant associated to all samples if
-            with_samples is True.
+            \+ all fields of annotations table if `with_annotations` is True;
+            \+ all fields of sample_has_variant associated to all samples if
+            `with_samples` is True.
             Example:
+
+            .. code-block:: python
+
                 {
                     variant fields as keys...,
                     "annotations": dict of annotations fields as keys...,
@@ -1126,14 +1137,13 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
     .. todo:: handle insertion errors...
     .. seealso:: abstractreader
 
-    .. warning:: About using INSERT OR IGNORE:
-        INSERT OR IGNORE avoids errors:
+    .. warning:: About using INSERT OR IGNORE: They avoid the following errors:
 
-            - Upon insertion of a duplicate key where the column must contain
-            a PRIMARY KEY or UNIQUE constraint
-            - Upon insertion of NULL value where the column has
-            a NOT NULL constraint.
-        => This is not recommended
+        - Upon insertion of a duplicate key where the column must contain
+          a PRIMARY KEY or UNIQUE constraint
+        - Upon insertion of NULL value where the column has
+          a NOT NULL constraint.
+          => This is not recommended
     """
 
     def build_columns_and_placeholders(table_name):
@@ -1410,15 +1420,17 @@ def get_sample_annotations(conn, variant_id: int, sample_id: int):
 def update_sample(conn, sample: dict):
     """Update sample record
 
-    sample = {
-        id : 3 #sample id
-        name : "Boby",  #Name of sample
-        family_id : "fam", # familly identifier
-        father_id : 0, #father id, 0 if not
-        mother_id : 0, #mother id, 0 if not
-        sex : 0 #sex code ( 1 = male, 2 = female, 0 = unknown)
-        phenotype: 0 #( 1 = control , 2 = case, 0 = unknown)
-    }
+    .. code-block:: python
+
+        sample = {
+            id : 3 #sample id
+            name : "Boby",  #Name of sample
+            family_id : "fam", # familly identifier
+            father_id : 0, #father id, 0 if not
+            mother_id : 0, #mother id, 0 if not
+            sex : 0 #sex code ( 1 = male, 2 = female, 0 = unknown)
+            phenotype: 0 #( 1 = control , 2 = case, 0 = unknown)
+        }
 
     Args:
         conn (sqlite.connection): sqlite connection

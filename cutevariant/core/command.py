@@ -155,12 +155,16 @@ def count_cmd(
 def drop_cmd(conn: sqlite3.Connection, feature: str, name: str, **kwargs):
     """Drop selection or set from database
 
-    This following VQL commands:
-        `DROP selections boby`
-        `DROP wordsets mygene`
-    will execute :
-        `drop_cmd(conn, "selections", "boby")`
-        `drop_cmd(conn, "wordsets", "boby")`
+    This following VQL commands::
+
+        DROP selections boby
+        DROP wordsets mygene
+
+    will execute::
+
+        drop_cmd(conn, "selections", "boby")
+        drop_cmd(conn, "wordsets", "boby")
+
     Args:
         conn (sqlite3.Connection): sqlite connection
         feature (str): selections or wordsets (Names of the SQL tables).
@@ -388,10 +392,12 @@ def create_command_from_obj(conn, vql_obj: dict):
         - import_cmd
 
     Warning:
-        Use command.execute instead, that is a wrapper to this function.
+        Use :meth:`execute` instead, that is a wrapper to this function.
 
     Examples:
         If you want to create a select_cmd function, pass a vql_obj like this one:
+
+        .. code-block:: python
 
             {
                 "cmd": "select_cmd",
