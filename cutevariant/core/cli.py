@@ -146,6 +146,11 @@ the arguments.""",
     # Set parser ###############################################################
     # set_parser = sub_parser.add_parser("set", help="Set variable", parents=[parent_parser])
 
+    # Workaround for sphinx-argparse module that require the object parser
+    # before the call of parse_args()
+    if "html" in sys.argv:
+        return parser
+
     args = parser.parse_args()
 
     if len(sys.argv) == 1:
