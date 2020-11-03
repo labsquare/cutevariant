@@ -61,8 +61,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'cutevariant'
-copyright = u'2019, sacha schutz'
-author = u'sacha schutz'
+copyright = u'2018-2020, labsquare.org'
+author = u'Sacha Schutz, Pierre Vignet, Aluriak'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
