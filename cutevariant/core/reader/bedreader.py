@@ -116,7 +116,7 @@ class BedReader:
         for line in stream:
             if (
                 line.startswith(("@", "#", "track", "browser"))
-                or len(line.strip()) == 0
+                or not line.strip()
             ):
                 # Header detected
                 LOGGER.debug("comment: %s", line)
