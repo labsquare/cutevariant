@@ -56,7 +56,7 @@ class PedReader:
             raw_samples (boolean):
                 - If raw_samples are activated (default), samples are lists of fields.
                 - If raw_samples are not activated, samples are dict of fields
-                ready to be inserted in the database according to the given samples.
+                  ready to be inserted in the database according to the given samples.
 
         """
         assert os.path.isfile(filepath)

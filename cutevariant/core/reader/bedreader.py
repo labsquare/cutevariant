@@ -109,7 +109,7 @@ class BedReader:
     def get_intervals(self, stream):
         """Yield Interval objects in the given stream
 
-        .. seelalso:: :meth:`__iter__`
+        .. seealso:: :meth:`__iter__`
         """
         # Throws line with headers
         skipped_header_line = 0  # Will be used to rewind the stream

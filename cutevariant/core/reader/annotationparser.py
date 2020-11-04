@@ -230,22 +230,24 @@ class BaseParser:
         :Example:
             If 'protein_position' field is encountered in a VEP file,
             'self.annotation_field_name' attribute will contain:
-            ['protein_position',] and the followwing dictionnary will be yielded:
-            {
-                "name": "aa_pos",
-                "category": "annotations",
-                "description": "amino acid pos",
-                "type": "str",
-            }
+            ['protein_position',] and the followwing dictionnary will be yielded::
+
+                {
+                    "name": "aa_pos",
+                    "category": "annotations",
+                    "description": "amino acid pos",
+                    "type": "str",
+                }
 
             If a field is not provided, a default dictionary with less
-            information is returned:
-            {
-                "name": <field_name>,
-                "description": "",
-                "type":"str",
-                "category":"annotations"
-            }
+            information is returned::
+
+                {
+                    "name": <field_name>,
+                    "description": "",
+                    "type":"str",
+                    "category":"annotations"
+                }
 
         :param raw_fields: List of fields names.
         :type raw_fields: <list>
@@ -292,14 +294,17 @@ class BaseParser:
         the list of annotations into the variant dict.
 
         .. note:: The given variant is modified in place.
-        .. note:: Structure of "annotations" value:
+
+        Structure of "annotations" value::
+
             [{
                 'annotation_field_name1': 'data1',
                 'annotation_field_name2': 'data2',
                 ...
             },]
-            "annotations" is a list since there may be multiple annotations for
-            a variant.
+
+        "annotations" is a list since there may be multiple annotations for
+        a variant.
         """
         raw = variant.pop(annotation_key_name)
 
@@ -351,7 +356,7 @@ class VepParser(BaseParser):
         This function parses special annotation field "csq"/"CSQ",
         other fields are yielded without being affected.
 
-        .. seealso:: handle_descriptions()
+        .. seealso:: :meth:`handle_descriptions`
 
         :param fields: Tuple of fields.
         :type fields: <tuple <dict>>
@@ -387,7 +392,7 @@ class VepParser(BaseParser):
         This function removes the key "csq" from the variants,
         and add "annotations" key with the list of annotations.
 
-        .. seelalso:: handle_annotations()
+        .. seealso:: :meth:`handle_annotations`
 
         :param variants: Generator of variants.
         :type variants: <generator <dict>>
@@ -407,7 +412,10 @@ class SnpEffParser(BaseParser):
     """Parser for SnpEFF annotations
 
     .. note:: We assume that the description field looks like this:
-        INFO=<ID=ANN,Number=.,Type=String,Description="Functional annotations: 'Allele | Annotation | Annotation_Impact | Gene_Name | Gene_ID | Feature_Type | Feature_ID | Transcript_BioType | Rank | HGVS.c | HGVS.p | cDNA.pos / cDNA.length |CDS.pos / CDS.length | AA.pos / AA.length | Distance | ERRORS / WARNINGS / INFO' ">
+
+        .. code-block:: text
+
+            INFO=<ID=ANN,Number=.,Type=String,Description="Functional annotations: 'Allele | Annotation | Annotation_Impact | Gene_Name | Gene_ID | Feature_Type | Feature_ID | Transcript_BioType | Rank | HGVS.c | HGVS.p | cDNA.pos / cDNA.length |CDS.pos / CDS.length | AA.pos / AA.length | Distance | ERRORS / WARNINGS / INFO' ">
     """
 
     def __init__(self):
@@ -425,9 +433,10 @@ class SnpEffParser(BaseParser):
         This function parses special annotation field "ann"/"ANN",
         other fields are yielded without being affected.
 
-        .. seealso:: handle_descriptions()
+        .. seealso:: :meth:`handle_descriptions`
 
-        :Input example:
+        Input example::
+
             ({
             'name': 'generic_field1',
             'description': ...
@@ -440,7 +449,8 @@ class SnpEffParser(BaseParser):
             ...
             })
 
-        :Output example:
+        Output example::
+
             ({
             'name': 'generic_field1',
             'description': ...
@@ -495,7 +505,7 @@ class SnpEffParser(BaseParser):
         This function removes the key "ann" from the variants,
         and add "annotations" key with the list of annotations.
 
-        .. seelalso:: handle_annotations()
+        .. seealso:: :meth:`handle_annotations`
 
         :param variants: Generator of variants.
         :type variants: <generator <dict>>

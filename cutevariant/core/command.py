@@ -409,8 +409,9 @@ def create_command_from_obj(conn, vql_obj: dict):
     Args:
         conn (sqlite3.Connection): sqlite3.connection
         vql_obj (dict): A VQL object with requested commands at "cmd" key:
-        select_cmd, create_cmd, set_cmd, bed_cmd, show_cmd, import_cmd,
-        drop_cmd, count_cmd. A VQL object is dictionary returned by vql.parse.
+            `select_cmd, create_cmd, set_cmd, bed_cmd, show_cmd, import_cmd,
+            drop_cmd, count_cmd`.
+            A VQL object is dictionary returned by vql.parse.
 
     Returns:
         (function): Function object wrapping the given vql_object.

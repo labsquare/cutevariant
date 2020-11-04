@@ -25,9 +25,9 @@ class AbstractReader(ABC):
         samples: List of samples in the file (default: empty)
 
     Example:
-        with open(filename,"r") as file:
-            reader = Reader(file)
-            reader.get_variants()
+        >>> with open(filename,"r") as file:
+        ...    reader = Reader(file)
+        ...    reader.get_variants()
     """
 
     def __init__(self, device):
@@ -93,17 +93,17 @@ class AbstractReader(ABC):
     def get_fields(cls):
         """Abstract method hat must return fields description
 
-        Full output:
-        ============
-        [
-        {"name": "chr", "type": "text", "category": "variant", "description": "description"},
-        {"name": "pos", "type": "text", "category": "variant", "description": "description"},
-        {"name": "ref", "type": "text", "category": "variant", "description": "description"},
-        {"name": "alt", "type": "text", "category": "variant", "description": "description"},
-        {"name": "field_n", "type": "text", "category": "variant", "description": "description"},
-        {"name": "name", "type": "text", "category": "annotations", "samples": "description"},
-        {"name": "genotype", "type": "text", "category": "annotations", "samples": "description"}
-        ]
+        Full output::
+
+            [
+            {"name": "chr", "type": "text", "category": "variant", "description": "..."},
+            {"name": "pos", "type": "text", "category": "variant", "description": "..."},
+            {"name": "ref", "type": "text", "category": "variant", "description": "..."},
+            {"name": "alt", "type": "text", "category": "variant", "description": "..."},
+            {"name": "field_n", "type": "text", "category": "variant", "description": "..."},
+            {"name": "name", "type": "text", "category": "annotations", "samples": "..."},
+            {"name": "genotype", "type": "text", "category": "annotations", "samples": "..."}
+            ]
 
         Yields:
             dict: field dictionnary
@@ -266,7 +266,7 @@ class AbstractReader(ABC):
         In this case, it is necessary to give sample names in "case" and
         "control" keys in kwargs .
 
-        Example of supported kwargs:
+        Example of supported kwargs::
 
             {
                 "case": ["boby", "raymond"],

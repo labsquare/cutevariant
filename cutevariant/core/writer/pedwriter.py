@@ -33,7 +33,7 @@ class PedWriter(AbstractWriter):
         Args:
             conn (sqlite.connection): sqlite connection
             delimiter (str, optional): Delimiter char used in exported file;
-                (default: "\t").
+                (default: ``\t``).
             **kwargs (dict, optional): Arguments can be given to override
                 individual formatting parameters in the current dialect.
         """
@@ -57,13 +57,13 @@ class PedWriter(AbstractWriter):
         writer.writerows(g)
 
     def save_from_list(self, samples, delimiter="\t", **kwargs):
-        """Dump samples into a tabular file
+        r"""Dump samples into a tabular file
 
         Args:
             samples(list): Iterable of samples; each sample is a list itself.
                 => It's up to the user to give field in the correct order.
             delimiter (str, optional): Delimiter char used in exported file;
-                (default: "\t").
+                (default: ``\t``).
             **kwargs (dict, optional): Arguments can be given to override
                 individual formatting parameters in the current dialect.
 

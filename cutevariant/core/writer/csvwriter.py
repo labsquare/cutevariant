@@ -33,7 +33,7 @@ class CsvWriter(AbstractWriter):
         Args:
 
             delimiter (str, optional): Delimiter char used in exported file;
-                (default: "\t").
+                (default: ``\t``).
             **kwargs (dict, optional): Arguments can be given to override
                 individual formatting parameters in the current dialect.
         """
