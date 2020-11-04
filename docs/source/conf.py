@@ -65,7 +65,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'cutevariant'
+project = u'Cutevariant'
 copyright = u'2018-2020, labsquare.org'
 author = u'Sacha Schutz, Pierre Vignet, Aluriak'
 
