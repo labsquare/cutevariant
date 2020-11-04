@@ -18,8 +18,10 @@ doc:
 	$(MAKE) -C ./docs html
 
 doc-deploy: doc
-	git add docs/build/html/
-	git subtree push --prefix docs/build/html origin gh-pages  
+	git add -f docs/build/html/
+	@# git commit -m "[doc] Update gh-pages"
+	git subtree push --prefix docs/build/html origin gh-pages
+	@# git reset --hard HEAD^1
 
 
 # development & release cycle
