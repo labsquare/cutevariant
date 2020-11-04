@@ -12,7 +12,7 @@ Welcome to cutevariant's documentation!
 
    installation
    command_line_usage
-   core_api
+   dev_documentation
 
 .. overview => to be redacted
 
