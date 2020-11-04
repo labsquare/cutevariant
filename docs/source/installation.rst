@@ -41,7 +41,7 @@ To get tests running
     cd cutevariant
     virtualenv -p /usr/bin/python3 venv
     source ven/bin/activate
-    make install_deps # install
+    make install # install
     make run     # start application
     make test    # start tests
 
@@ -53,6 +53,7 @@ Use zest.releaser to handle the version and distribution through pypi.
 
 .. code-block:: bash
 
+    # Assume installaton of zest.releaser (installed with [dev] optional dependencies)
     pip install zest.releaser[recommended]
 
 To yield a new release, use:
@@ -89,3 +90,13 @@ To yield a new release, use:
     make build_windows_blob
 
     Your blob is in ./build/ directory.
+
+Generate the doc
+================
+
+.. code-block:: bash
+
+    pip install -e .[doc]
+    make doc
+
+HTML pages are in `docs/build/html`.
