@@ -224,8 +224,12 @@ class VariantInfoWidget(PluginWidget):
             return
 
         for key, value in data.items():
-            if key in ("variant_id", "sample_id") and LOGGER.getEffectiveLevel() != DEBUG:
+            if (
+                    key in ("variant_id", "sample_id", "annotations", "samples")
+                    and LOGGER.getEffectiveLevel() != DEBUG
+            ):
                 # "variant_id", "sample_id": For Samples tab
+                # "annotations", "samples": For useless keys returned by get_one_variant
                 # "id": For Variant tab
                 continue
 
