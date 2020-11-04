@@ -50,13 +50,13 @@ Creating Pull Requests
     git checkout devel && git pull upstream
 
 
-    When creating patches, please read:
+When creating patches, please read:
 
-    - [Our Development Standards](https://github.com/labsquare/cutevariant/wiki/Development-standards).
+- [Our Development Standards](https://github.com/labsquare/cutevariant/wiki/Development-standards).
 
 
-    We suggest that you create one branch for each fix:
-    This will allow you to create more fixes without having to wait for your pull request to be merged.
+We suggest that you create one branch for each fix:
+This will allow you to create more fixes without having to wait for your pull request to be merged.
 
 
 Wiki
