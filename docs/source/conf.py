@@ -47,7 +47,10 @@ extensions = ['sphinx.ext.autodoc',
     'sphinx.ext.githubpages',
     'sphinx_rtd_theme','recommonmark','sphinx.ext.napoleon']
 
-extensions += ['sphinxarg.ext',]
+extensions += ['sphinxarg.ext', 'sphinx.ext.autosummary']
+
+autosummary_generate = True
+autosummary_imported_members = False
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
