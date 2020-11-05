@@ -449,17 +449,11 @@ def create_selection_from_bed(
         end INTEGER,
         name INTEGER)"""
     )
-    for interval in bed_intervals:
-        cur.execute(
-            "INSERT INTO bed_table (bin, chr, start, end, name) VALUES (?,?,?,?,?)",
-            (
-                0,
-                interval["chrom"],
-                interval["start"],
-                interval["end"],
-                interval["name"],
-            ),
-        )
+
+    cur.executemany(
+        "INSERT INTO bed_table (chr, start, end, name) VALUES (:chrom,:start,:end,:name)",
+        bed_intervals
+    )
 
     if source == "variants":
         source_query = "SELECT variants.id AS variant_id FROM variants"
