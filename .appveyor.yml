@@ -1,36 +1,39 @@
-
+image: Visual Studio 2019
+platform:
+  -x64
 environment:
   matrix:
-    - PYTHON_VERSION: 3.6
-      MINICONDA: C:\Miniconda3
-    - VS_VERSION: Visual Studio 14
+    - PYTHON_VERSION: 3.7
+
 
 init:
-  - "ECHO %PYTHON_VERSION% %MINICONDA%"
+  - "ECHO %PYTHON_VERSION%"
+  - cmd: SET PATH=c:\python37-x64;c:\python37-x64\Scripts;%PATH%
 
 install:
-  - "set PATH=%MINICONDA%;%MINICONDA%\\Scripts;%PATH%"
-  - conda config --set always_yes yes --set changeps1 no
-  - conda update -q conda
-  - conda info -a
-  - "conda create -q -n test-environment python=%PYTHON_VERSION%"
-  - activate test-environment
   - pip install -e .
-  - pip install cx_Freeze
+  - pip install PyInstaller==4.0
   - pip install pytest
   - pip install schema
+  - pip install pywin32
+  - pip install requests
   - ps: Start-FileDownload 'https://www.sqlite.org/2019/sqlite-dll-win32-x86-3280000.zip'
   - unzip sqlite-dll-win32-x86-3280000.zip
-  - copy sqlite3.dll C:\Miniconda3\envs\test-environment\DLLs\
-  - python make_a_blob.py build_exe
+  - pyinstaller -i icon.ico --name="cutevariant" --add-data cutevariant;cutevariant cutevariant\__main__.py
+  #- copy sqlite3.dll C:\Miniconda3\envs\test-environment\DLLs\
+  #- python make_a_blob.py build_exe
+  #- copy sqlite3.dll C:\Miniconda3\envs\test-environment\DLLs\
 
+  #- python make_a_blob.py build_exe
+
+  - cd .. 
 artifacts:
-  - path: build
+  - path: dist
     name: cutevariant
 
   
 build: off
 
-test_script:
-  - python -m pytest -vs tests
+# test_script:
+#   - python -m pytest -vs tests
 

@@ -1,0 +1,2 @@
+{"High impact variants": "SELECT favorite,chr,pos,ref,alt,impact FROM variants WHERE impact = 'HIGH'",
+"Favorite or commented variants": "SELECT favorite,comment,chr,pos,ref,alt FROM variants WHERE favorite = 1 OR comment != ''"}

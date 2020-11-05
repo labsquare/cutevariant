@@ -21,6 +21,14 @@ GENE_COLOR = "#F5A26F"
 WARNING_BACKGROUND_COLOR = "#FFCCBA"
 WARNING_TEXT_COLOR = "#D73705"
 
+DARK_COLOR = {
+    "darkpurple": "#40375C",
+    "purple": "#5A4F7C",
+    "red": "#F14235",
+    "yellow": "#F5A623",
+    "green": "#7BBB44",
+}
+
 
 # Sequence ontology colors
 SO_COLOR = {

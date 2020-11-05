@@ -1,14 +1,19 @@
 # Standard imports
 import os
+import copy
+
+# Qt imports
 from PySide2.QtWidgets import *
-from PySide2.QtCore import QThread, Signal, QDir, QSettings, QFile
+from PySide2.QtCore import QThread, Signal, QDir, QSettings, QFile, Slot
 from PySide2.QtGui import QIcon
 
 # Custom imports
 from cutevariant.core.importer import async_import_file
-from cutevariant.core import get_sql_connexion
+from cutevariant.core import get_sql_connection
 import cutevariant.commons as cm
-from cutevariant.core.readerfactory import detect_vcf_annotation
+from cutevariant.core.readerfactory import detect_vcf_annotation, create_reader
+from cutevariant.core.reader import PedReader
+from cutevariant.gui.model_view import PedView
 
 LOGGER = cm.logger()
 
@@ -26,11 +31,18 @@ class ProjectPage(QWizardPage):
             self.tr("This wizard will guide you to create a cutevariant project.")
         )
 
+        # Reload last directory used
+        app_settings = QSettings()
+        self.last_directory = app_settings.value("last_directory", QDir.homePath())
+
         self.project_name_edit = QLineEdit()
         self.project_path_edit = QLineEdit()
-        self.project_path_edit.setText(os.getcwd())
-        self.browse_button = QPushButton("Browse")
+        self.project_path_edit.setText(self.last_directory)
+        self.browse_button = QPushButton(self.tr("Browse"))
         self.reference = QComboBox()
+
+        # Unused for now
+        self.reference.hide()
 
         self.reference.addItem("hg19")
         self.registerField("project_name", self.project_name_edit, "text")
@@ -54,25 +66,27 @@ class ProjectPage(QWizardPage):
         self.project_path_edit.textChanged.connect(self.completeChanged)
         self.project_name_edit.textChanged.connect(self.completeChanged)
 
+    @Slot()
     def _browse(self):
         """Open a dialog box to set the directory where the project will be saved"""
         path = QFileDialog.getExistingDirectory(
-            self, self.tr("Select a path for the project")
+            self, self.tr("Select a path for the project"), self.last_directory
         )
         if path:
             self.project_path_edit.setText(path)
 
+    def initializePage(self):
+        """Overridden: Prepare the page just before it is shown"""
+        # Adjust the focus of project name field
+        self.project_name_edit.setFocus()
+
     def isComplete(self):
         """Conditions to unlock next button"""
-        return (
-            True
-            if (
-                QDir(self.project_path_edit.text()).exists()
-                and self.project_path_edit.text()
-                and self.project_name_edit.text()
-            )
-            else False
-        )
+        return True if (
+            QDir(self.project_path_edit.text()).exists()
+            and self.project_path_edit.text()
+            and self.project_name_edit.text()
+        ) else False
 
 
 class FilePage(QWizardPage):
@@ -87,6 +101,7 @@ class FilePage(QWizardPage):
         self.setSubTitle(self.tr("Supported file are vcf, vcf.gz, vep.txt."))
 
         self.file_path_edit = QLineEdit()
+
         self.anotation_detect_label = QLabel()
         self.button = QPushButton(self.tr("Browse"))
         h_layout = QHBoxLayout()
@@ -103,9 +118,10 @@ class FilePage(QWizardPage):
         self.file_path_edit.textChanged.connect(self.completeChanged)
 
         self.registerField("filename", self.file_path_edit, "text")
-        #  annotation ? should be an option or not ?
+        # annotation ? should be an option or not ?
         self.registerField("annotation", self.anotation_detect_label, "text")
 
+    @Slot()
     def _browse(self):
         """Open a dialog box to set the data file
 
@@ -149,6 +165,113 @@ class FilePage(QWizardPage):
         )
 
 
+class SamplePage(QWizardPage):
+    """Gather additional information on sequenced individuals and their families
+
+    PED file is facultative, a user can manually fill the data in the dynamic view.
+
+    See Also:
+        :meth:`gui.model_view.pedigree.PedView`
+    """
+    def __init__(self):
+        super().__init__()
+
+        self.setTitle(self.tr("Samples"))
+        self.setSubTitle(self.tr("Add sample descriptions or skip this step."))
+        self.help_text = QLabel(self.tr(
+            "You can edit the relationships between genomes found in the VCF\n"
+            "manually or via a PED/PLINK file (sample pedigree information and "
+            "genotype calls).\nBy default the fields are those found in the VCF; "
+            "the unknown fields are empty.\nDouble click to edit them."
+        ))
+        self.view = PedView()
+        self.import_button = QPushButton(self.tr("Import PED file (facultative)"))
+        self.ped_message = QLabel()
+        v_layout = QVBoxLayout()
+        v_layout.addWidget(self.help_text)
+        v_layout.addWidget(self.view)
+        v_layout.addWidget(self.import_button)
+        v_layout.addWidget(self.ped_message)
+        self.setLayout(v_layout)
+
+        self.vcf_samples = list()  # Raw individual_ids from VCF
+        # PED data built from VCF ids (other fields than individual_id are default)
+        # used as a reference to detect user changes
+        self.vcf_default_ped_samples = list()
+
+        self.import_button.clicked.connect(self.on_import_clicked)
+        self.view.message.connect(self.on_display_message)
+
+        # Share PedView.pedfile accross Wizard pages
+        self.registerField("pedfile", self.view, "pedfile")
+
+    def initializePage(self):
+        """Overridden: Prepare the page just before it is shown
+
+        We open variant file (vcf, etc.) to get the current samples that will
+        be eventually associated to a PED file later.
+        """
+        self.view.clear()
+        # Open variant file of the project and read its headers
+        filename = self.field("filename")
+        with create_reader(filename) as reader:
+            # Get samples of the vcf project
+            self.vcf_samples = reader.get_samples()
+
+            self.vcf_default_ped_samples = [
+                # family_id, individual_id, father_id, mother_id, sex, genotype
+                ["fam", name, "0", "0", "0", "0", "0"]
+                for name in self.vcf_samples
+            ]
+            # Deepcopy to avoid further modifications of this list of reference
+            self.view.samples = copy.deepcopy(self.vcf_default_ped_samples)
+
+    def validatePage(self):
+        """Overrided: Called when a user clicks on next button"""
+        # Check if PedView contains the same default data
+        # print("default", self.vcf_default_ped_samples)
+        # print("vs", self.view.samples)
+        if set(map(tuple, self.vcf_default_ped_samples)) == set(map(tuple, self.view.samples)):
+            # Reset samples => will set pedfile field to None
+            self.view.samples = list()
+
+        return True
+
+    @Slot()
+    def on_import_clicked(self):
+        """Slot called when import PED file is clicked
+
+        We open PED file (ped, tfam) to get the their samples that will
+        be associated to the current samples of the project.
+        """
+        # Reload last directory used
+        app_settings = QSettings()
+        last_directory = app_settings.value("last_directory", QDir.homePath())
+
+        filepath, filetype = QFileDialog.getOpenFileName(
+            self,
+            self.tr("Open PED file"),
+            last_directory,
+            self.tr("PED files (*.ped *.tfam)"),
+        )
+
+        if not filepath:
+            return
+
+        LOGGER.info("vcf samples: %s", self.vcf_samples)
+
+        # Get samples of individual_ids that are already on the VCF file
+        self.view.samples = [
+            # samples argument is empty dict since its not
+            sample for sample in PedReader(filepath, dict())
+            if sample[1] in self.vcf_samples
+        ]
+
+    def on_display_message(self, message):
+        """Display messages about data validation from the delegate"""
+        self.ped_message.setText(message)
+
+
 class ImportThread(QThread):
     """Thread used to create a new project by importing a variant file
 
@@ -167,16 +290,22 @@ class ImportThread(QThread):
         self.filename = ""
         # Project's filepath
         self.db_filename = ""
+        # Facultative PED file
+        self.pedfile = None
         self.project_settings = dict()
 
-    def set_importer_settings(self, filename, db_filename, project_settings={}):
+    def set_importer_settings(
+        self, filename, db_filename, pedfile=None, project_settings={}
+    ):
         """Init settings of the importer
 
         :param filename: File to be opened.
         :param db_filename: Filepath of the new project.
+        :key pedfile: PED file to be opened.
         :key project_settings: The reference genome and the name of the project.
             Keys have to be at least "reference" and "project_name".
         :type filename: <str>
+        :type pedfile: <str>
         :type db_filename: <str>
         :type project_settings: <dict>
         """
@@ -186,6 +315,8 @@ class ImportThread(QThread):
         self.db_filename = db_filename
         # Project settings
         self.project_settings = project_settings
+        # Ped file
+        self.pedfile = pedfile
 
     def run(self):
         """Overrided QThread method
@@ -198,32 +329,40 @@ class ImportThread(QThread):
 
         if os.path.exists(self.db_filename):
             os.remove(self.db_filename)
-        self.conn = get_sql_connexion(self.db_filename)
+        self.conn = get_sql_connection(self.db_filename)
 
         try:
             # Import the file
             for value, message in async_import_file(
-                self.conn, self.filename, self.project_settings
+                self.conn,
+                self.filename,
+                pedfile=self.pedfile,
+                project=self.project_settings
             ):
-                if self._stop == True:
+                if self._stop:
                     self.conn.close()
                     break
                 # Send progression
                 self.progress_changed.emit(value, message)
+
         except BaseException as e:
             self.progress_changed.emit(0, str(e))
             self._stop = True
+            LOGGER.exception(e)
             raise e
         finally:
             # Send status (Send True when there is no error)
             self.finished_status.emit(not self._stop)
 
     def stop(self):
+        """Stop the import process"""
         self._stop = True
 
 
 class ImportPage(QWizardPage):
     """Page: Creation of the database"""
+
+    completeChanged = Signal()
 
     def __init__(self):
         super().__init__()
@@ -234,7 +373,8 @@ class ImportPage(QWizardPage):
         )
         self.text_buttons = [self.tr("Import"), self.tr("Stop")]
 
-        self.thread_finished = False
+        # Async stuff
+        self.thread_finished = False  # True if import process is correctly finished
         self.thread = ImportThread()
         self.progress = QProgressBar()
         self.import_button = QPushButton(self.text_buttons[0])
@@ -255,15 +395,45 @@ class ImportPage(QWizardPage):
 
         # File to open
         self.log_edit.appendPlainText(self.field("filename"))
+        # Database filename; see initializePage()
+        self.db_filename = None
 
         self.thread.started.connect(
             lambda: self.log_edit.appendPlainText(self.tr("Started"))
         )
+
+        # Note: self.run is automatically launched when ImportPage is displayed
+        # See initializePage()
         self.import_button.clicked.connect(self.run)
         self.thread.progress_changed.connect(self.progress_changed)
         self.thread.finished.connect(self.import_thread_finished)
         self.thread.finished_status.connect(self.import_thread_finished_status)
 
+    def initializePage(self):
+        """Overridden: Prepare the page just before it is shown
+
+        Launch import process if currentPage is ImportPage
+        """
+        # print("Current PED file", self.field("pedfile"))
+        self.db_filename = (
+            self.field("project_path")
+            + QDir.separator()
+            + self.field("project_name")
+            + ".db"
+        )
+        self.run()
+        self.import_button.setDisabled(False)
+
+    def cleanupPage(self):
+        """Called when back button is clicked: stop the import thread"""
+        self.thread_stop()
+
+        if self.thread_finished:
+            # The import process is not finished corretly
+            # Delete file
+            os.remove(self.db_filename)
+
+    @Slot()
     def progress_changed(self, value, message):
         """Update the progress bar
         Slot called when progress_changed is emitted by the thread
@@ -272,10 +442,17 @@ class ImportPage(QWizardPage):
         if message:
             self.log_edit.appendPlainText(message)
 
+    @Slot()
     def import_thread_finished(self):
         """Force the activation of the finish button after a successful import"""
-        self.completeChanged.emit()
+        try:
+            self.completeChanged.emit()
+        except RuntimeError:
+            # When closing the wizard, the thread is stopped via cleanupPage()
+            # and finished signal is emitted after the deletion of the wizard.
+            pass
 
+    @Slot()
     def import_thread_finished_status(self, status):
         """Set the finished status of import thread
 
@@ -291,31 +468,23 @@ class ImportPage(QWizardPage):
             self.import_button.setText(self.text_buttons[0])
             self.log_edit.appendPlainText(self.tr("Stopped!"))
 
+    @Slot()
     def run(self):
         """Called when import button is clicked
         Launch the import in a separate thread
         """
         if self.thread.isRunning():
-            LOGGER.debug("ImportPage:run: stop thread")
-            self.import_button.setDisabled(True)
-            self.thread.stop()
-            self.progress.setValue(0)
-            self.import_button.setDisabled(False)
-            self.import_button.setText(self.text_buttons[0])
-
+            self.thread_stop()
         else:
             self.thread.set_importer_settings(
                 # File to open
-                self.field("filename"),
+                filename=self.field("filename"),
                 # Project's filepath
-                (
-                    self.field("project_path")
-                    + QDir.separator()
-                    + self.field("project_name")
-                    + ".db"
-                ),
+                db_filename=self.db_filename,
+                # PED file to use with samples
+                pedfile=self.field("pedfile"),
                 # Project's settings
-                {
+                project_settings={
                     # Reference genome
                     "reference": self.field("reference"),
                     # Project's name
@@ -327,6 +496,15 @@ class ImportPage(QWizardPage):
             # display stop on the button
             self.import_button.setText(self.text_buttons[1])
             self.thread.start()
+
+    def thread_stop(self):
+        """Stop the thread and refresh the UI"""
+        LOGGER.debug("ImportPage:run: stop thread")
+        self.import_button.setDisabled(True)
+        self.thread.stop()
+        self.progress.setValue(0)
+        self.import_button.setDisabled(False)
+        self.import_button.setText(self.text_buttons[0])
 
     def isComplete(self):
         """Conditions to unlock finish button"""
@@ -349,4 +527,16 @@ class ProjectWizard(QWizard):
         self.setWizardStyle(QWizard.ClassicStyle)
         self.addPage(ProjectPage())
         self.addPage(FilePage())
+        self.addPage(SamplePage())
         self.addPage(ImportPage())
+
+
+if __name__ == "__main__":
+    import sys
+
+    app = QApplication(sys.argv)
+
+    w = ProjectWizard()
+    w.show()
+
+    app.exec_()

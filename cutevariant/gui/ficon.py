@@ -1,5 +1,5 @@
 # Qt imports
-from PySide2.QtCore import qApp, Qt, QRect, QPoint, QBuffer, QByteArray
+from PySide2.QtCore import Qt, QRect, QPoint, QBuffer, QByteArray
 from PySide2.QtGui import (
     QIconEngine,
     QColor,
@@ -11,6 +11,7 @@ from PySide2.QtGui import (
     QPixmap,
     QPen,
 )
+from PySide2.QtWidgets import QApplication
 
 # Custom imports
 from cutevariant.commons import logger
@@ -26,7 +27,13 @@ class FIconEngine(QIconEngine):
 
     def __init__(self):
         super().__init__()
-        self.setColor(qApp.palette().color(QPalette.Normal, QPalette.Text))
+
+        if QApplication.instance():
+            self.palette = QApplication.instance().palette()
+        else:
+            self.palette = QPalette()
+
+        self.color = None
 
     def setCharacter(self, hex_character: int):
         self.hex_character = hex_character
@@ -40,25 +47,28 @@ class FIconEngine(QIconEngine):
         """override"""
         font = FIconEngine.font if hasattr(FIconEngine, "font") else painter.font()
 
-        # The following test is to avoid crash when running python widget outside the __main__.my
+        # The following test is to avoid crash when running python widget outside the __main__.my
         if not font:
             font = painter.font()
             return
-             
 
         painter.save()
 
-        if mode == QIcon.Disabled:
-            painter.setPen(QPen(qApp.palette().color(QPalette.Disabled, QPalette.Text)))
-
-        else:
+        if self.color:
             painter.setPen(QPen(self.color))
 
+        else:
+            if mode == QIcon.Disabled:
+                painter.setPen(
+                    QPen(self.palette.color(QPalette.Disabled, QPalette.ButtonText))
+                )
+            else:
+                painter.setPen(QPen(self.palette.color(QPalette.Active, QPalette.Text)))
 
         font.setPixelSize(rect.size().width())
 
         painter.setFont(font)
-        #painter.setRenderHint(QPainter.HighQualityAntialiasing, True)
+        # painter.setRenderHint(QPainter.HighQualityAntialiasing, True)
         painter.drawText(
             rect, Qt.AlignCenter | Qt.AlignVCenter, str(chr(self.hex_character))
         )
@@ -90,18 +100,25 @@ class FIconEngine(QIconEngine):
 class FIcon(QIcon):
     """Handy public class to load and use custom font in QIcons"""
 
-    def __init__(self, hex_character: int, color=None):
-        """Build an icon with the given character and color from the current font"""
+    def __init__(self, hex_character: int, color: QPalette = None):
+        """Build an icon with the given character and color from the current font
+
+        Args:
+            hex_character (int): Hexadecimal value of the wanted icon in the
+                font loaded in internal FIconEngine.
+                Please consult the web pages https://materialdesignicons.com/
+                and https://cdn.materialdesignicons.com/5.4.55/ for the mapping
+                between hex values and icons.
+            color (QPalette/str): Color palette to be used by the icon.
+        """
         self.engine = FIconEngine()
 
-        if self.engine.font is None: # Return empty QIcon
+        if self.engine.font is None:  # Return empty QIcon
             super().__init__()
-        else:    
+        else:
             self.engine.setCharacter(hex_character)
-            if color:
-                self.engine.setColor(color)
-            else:
-                self.engine.setColor(qApp.palette().text().color())
+            self.engine.setColor(color)
+
             super().__init__(self.engine)
 
     def to_base64(self, w=32, h=32):

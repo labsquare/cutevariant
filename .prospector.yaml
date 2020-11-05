@@ -1,6 +1,6 @@
 doc-warnings: true
 
-pep257: 
+pep257:
   disable:
     - D213 # Multi-line docstring summary should start at the second line
     - D203 # 1 blank line required before class docstring (found 0)
@@ -9,6 +9,6 @@ pep257:
     - D300
     - D101
     - D201
-pyflakes: 
+pyflakes:
   disable:
     - F999

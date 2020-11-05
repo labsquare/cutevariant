@@ -2,7 +2,7 @@
 import re
 
 # Custom imports
-from .abstractreader import AbstractReader
+from .abstractreader import sanitize_field_name
 from cutevariant.commons import logger
 
 LOGGER = logger()
@@ -14,76 +14,88 @@ LOGGER = logger()
 # PS: Consequences/annotation_impac/impacts are standardized here:
 # https://www.ensembl.org/info/genome/variation/prediction/predicted_data.html#consequences
 SNPEFF_ANNOTATION_DEFAULT_FIELDS = {
+    "allele": {
+        "name": "allele",
+        "category": "annotations",
+        "description": "Variant allele used to calculate the consequence",
+        "type": "str",
+    },
+    "feature_type": {
+        "name": "feature_type",
+        "category": "annotations",
+        "description": "Type of feature. Currently one of Transcript, RegulatoryFeature, MotifFeature.",
+        "type": "str",
+    },
     "annotation": {
         "name": "consequence",
         "category": "annotations",
-        "description": "consequence type",
+        "description": "Consequence type",
         "type": "str",
     },
     "annotation_impact": {
         "name": "impact",
         "category": "annotations",
-        "description": "impact rating of variant",
+        "description": "Impact rating of variant",
         "type": "str",
     },
     "gene_name": {
         "name": "gene",
         "category": "annotations",
-        "description": "gene name",
+        "description": "Gene name",
         "type": "str",
     },
     "gene_id": {
         "name": "gene_id",
         "category": "annotations",
-        "description": "Ensembl stable ID of affected gene",
+        "description": "Ensemble stable ID of affected gene",
         "type": "str",
     },
     "feature_id": {
         "name": "transcript",
         "category": "annotations",
-        "description": "transcript name",
+        "description": "Transcript name",
         "type": "str",
     },
     "transcript_biotype": {
         "name": "biotype",
         "category": "annotations",
-        "description": " biotype",
+        "description": "Biotype",
         "type": "str",
     },
     "hgvs.p": {
         "name": "hgvs_p",
         "category": "annotations",
-        "description": "protein hgvs",
+        "description": "Protein hgvs",
         "type": "str",
     },
     "hgvs.c": {
         "name": "hgvs_c",
         "category": "annotations",
-        "description": "coding hgvs",
+        "description": "Coding hgvs",
         "type": "str",
     },
     "cdna.pos / cdna.length": {
         "name": "cdna_pos",
         "category": "annotations",
-        "description": "relative position of base pair in cDNA sequence",
+        "description": "Relative position of base pair in cDNA sequence",
         "type": "str",
     },
     "cds.pos / cds.length": {
         "name": "cds_pos",
         "category": "annotations",
-        "description": "relative position of base pair in coding sequence",
+        "description": "Relative position of base pair in coding sequence",
         "type": "str",
     },
     "aa.pos / aa.length": {
         "name": "aa_pos",
         "category": "annotations",
-        "description": "amino acid pos",
+        "description": "Amino acid position",
         "type": "str",
     },
     "errors / warnings / info": {
         "name": "log",
         "category": "annotations",
-        "description": "amino acid pos",
+        "description": "Logging info",
         "type": "str",
     },
 }
@@ -93,79 +105,79 @@ VEP_ANNOTATION_DEFAULT_FIELDS = {
     "allele": {
         "name": "allele",
         "category": "annotations",
-        "description": "the variant allele used to calculate the consequence",
+        "description": "Variant allele used to calculate the consequence",
         "type": "str",
     },
     "consequence": {
         "name": "consequence",
         "category": "annotations",
-        "description": "consequence type",
+        "description": "Consequence type",
         "type": "str",
     },
     "impact": {
         "name": "impact",
         "category": "annotations",
-        "description": "impact rating of the variant",
+        "description": "Impact rating of the variant",
         "type": "str",
     },
     "symbol": {
         "name": "gene",
         "category": "annotations",
-        "description": "gene name",
+        "description": "Gene name",
         "type": "str",
     },
     "gene": {
         "name": "gene_id",
         "category": "annotations",
-        "description": "Ensembl stable ID of affected gene",
+        "description": "Ensemble stable ID of affected gene",
         "type": "str",
     },
     "feature": {
         "name": "transcript",
         "category": "annotations",
-        "description": "Ensembl stable ID of feature",
+        "description": "Ensemble stable ID of feature",
         "type": "str",
     },
     "feature_type": {
         "name": "feature_type",
         "category": "annotations",
-        "description": "type of feature. Currently one of Transcript, RegulatoryFeature, MotifFeature.",
+        "description": "Type of feature. Currently one of Transcript, RegulatoryFeature, MotifFeature.",
         "type": "str",
     },
     "biotype": {
         "name": "biotype",
         "category": "annotations",
-        "description": " biotype",
+        "description": "Biotype",
         "type": "str",
     },
     "hgvsp": {
         "name": "hgvs_p",
         "category": "annotations",
-        "description": "protein hgvs",
+        "description": "Protein hgvs",
         "type": "str",
     },
     "hgvsc": {
         "name": "hgvs_c",
         "category": "annotations",
-        "description": "coding hgvs",
+        "description": "Coding hgvs",
         "type": "str",
     },
     "cdna_position": {
         "name": "cdna_pos",
         "category": "annotations",
-        "description": "relative position of base pair in cDNA sequence",
+        "description": "Relative position of base pair in cDNA sequence",
         "type": "str",
     },
     "cds_position": {
         "name": "cds_pos",
         "category": "annotations",
-        "description": "relative position of base pair in coding sequence",
+        "description": "Relative position of base pair in coding sequence",
         "type": "str",
     },
     "protein_position": {
         "name": "aa_pos",
         "category": "annotations",
-        "description": "relative position of amino acid in protein",
+        "description": "Relative position of amino acid in protein",
         "type": "str",
     },
     "amino_acids": {
@@ -190,8 +202,7 @@ VEP_ANNOTATION_DEFAULT_FIELDS = {
 
 
 class BaseParser:
-    """Base class that brings together common functions of VepParser and SnpEffParser
-    """
+    """Base class that brings together common functions of VepParser and SnpEffParser"""
 
     def __init__(self):
 
@@ -206,6 +217,12 @@ class BaseParser:
         # used by the program.
         self.variant_field_names = set()
 
+        # About self.annotation_field_name
+        # The value of this attribute is deliberately None from the base
+        # class because it is created when fields are parsed and it is an
+        # insurance that the fields have been processed before variants.
+        self.annotation_field_name = None
+
     def handle_descriptions(self, raw_fields: list):
         """Construct annotation_field_name with the fields of the file, and
         yield fields (dictionnaries) with the full description of fields of the file.
@@ -213,22 +230,24 @@ class BaseParser:
         :Example:
             If 'protein_position' field is encountered in a VEP file,
             'self.annotation_field_name' attribute will contain:
-            ['protein_position',] and the followwing dictionnary will be yielded:
-            {
-                "name": "aa_pos",
-                "category": "annotations",
-                "description": "amino acid pos",
-                "type": "str",
-            }
+            ['protein_position',] and the followwing dictionnary will be yielded::
+
+                {
+                    "name": "aa_pos",
+                    "category": "annotations",
+                    "description": "amino acid pos",
+                    "type": "str",
+                }
 
             If a field is not provided, a default dictionary with less
-            information is returned:
-            {
-                "name": <field_name>,
-                "description": "None",
-                "type":"str",
-                "category":"annotations"
-            }
+            information is returned::
+
+                {
+                    "name": <field_name>,
+                    "description": "",
+                    "type":"str",
+                    "category":"annotations"
+                }
 
         :param raw_fields: List of fields names.
         :type raw_fields: <list>
@@ -244,10 +263,10 @@ class BaseParser:
                 # Sanitize fields names here
                 # PS: If name is in annotation_default_fields it will be modified
                 # by the previous condition.
-                raw_field_name = AbstractReader.sanitize_field_name(raw_field_name)
+                raw_field_name = sanitize_field_name(raw_field_name)
                 _f = {
                     "name": raw_field_name,
-                    "description": "None",
+                    "description": "",
                     "type": "str",
                     "category": "annotations",
                 }
@@ -275,14 +294,17 @@ class BaseParser:
         the list of annotations into the variant dict.
 
         .. note:: The given variant is modified in place.
-        .. note:: Structure of "annotations" value:
+
+        Structure of "annotations" value::
+
             [{
                 'annotation_field_name1': 'data1',
                 'annotation_field_name2': 'data2',
                 ...
             },]
-            "annotations" is a list since there may be multiple annotations for
-            a variant.
+
+        "annotations" is a list since there may be multiple annotations for
+        a variant.
         """
         raw = variant.pop(annotation_key_name)
 
@@ -334,7 +356,7 @@ class VepParser(BaseParser):
         This function parses special annotation field "csq"/"CSQ",
         other fields are yielded without being affected.
 
-        .. seealso:: handle_descriptions()
+        .. seealso:: :meth:`handle_descriptions`
 
         :param fields: Tuple of fields.
         :type fields: <tuple <dict>>
@@ -370,14 +392,14 @@ class VepParser(BaseParser):
         This function removes the key "csq" from the variants,
         and add "annotations" key with the list of annotations.
 
-        .. seelalso:: handle_annotations()
+        .. seealso:: :meth:`handle_annotations`
 
         :param variants: Generator of variants.
         :type variants: <generator <dict>>
         :return: Generator of full variants with "annotations" key.
         :rtype: <generator <dict>>
         """
-        if not hasattr(self, "annotation_field_name"):
+        if self.annotation_field_name is None:
             raise Exception("Cannot parse variant without parsing first fields")
 
         for variant in variants:
@@ -390,7 +412,10 @@ class SnpEffParser(BaseParser):
     """Parser for SnpEFF annotations
 
     .. note:: We assume that the description field looks like this:
-        INFO=<ID=ANN,Number=.,Type=String,Description="Functional annotations: 'Allele | Annotation | Annotation_Impact | Gene_Name | Gene_ID | Feature_Type | Feature_ID | Transcript_BioType | Rank | HGVS.c | HGVS.p | cDNA.pos / cDNA.length |CDS.pos / CDS.length | AA.pos / AA.length | Distance | ERRORS / WARNINGS / INFO' ">
+
+        .. code-block:: text
+
+            INFO=<ID=ANN,Number=.,Type=String,Description="Functional annotations: 'Allele | Annotation | Annotation_Impact | Gene_Name | Gene_ID | Feature_Type | Feature_ID | Transcript_BioType | Rank | HGVS.c | HGVS.p | cDNA.pos / cDNA.length |CDS.pos / CDS.length | AA.pos / AA.length | Distance | ERRORS / WARNINGS / INFO' ">
     """
 
     def __init__(self):
@@ -408,9 +433,10 @@ class SnpEffParser(BaseParser):
         This function parses special annotation field "ann"/"ANN",
         other fields are yielded without being affected.
 
-        .. seealso:: handle_descriptions()
+        .. seealso:: :meth:`handle_descriptions`
 
-        :Input example:
+        Input example::
+
             ({
             'name': 'generic_field1',
             'description': ...
@@ -423,7 +449,8 @@ class SnpEffParser(BaseParser):
             ...
             })
 
-        :Output example:
+        Output example::
+
             ({
             'name': 'generic_field1',
             'description': ...
@@ -478,14 +505,14 @@ class SnpEffParser(BaseParser):
         This function removes the key "ann" from the variants,
         and add "annotations" key with the list of annotations.
 
-        .. seelalso:: handle_annotations()
+        .. seealso:: :meth:`handle_annotations`
 
         :param variants: Generator of variants.
         :type variants: <generator <dict>>
         :return: Generator of full variants with "annotations" key.
         :rtype: <generator <dict>>
         """
-        if not hasattr(self, "annotation_field_name"):
+        if self.annotation_field_name is None:
             raise Exception("Cannot parse variant without parsing first fields")
 
         for variant in variants:

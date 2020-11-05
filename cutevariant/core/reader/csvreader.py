@@ -14,29 +14,32 @@ class CsvReader(AbstractReader):
 
     .. seealso:: AbstractReader class for more information.
 
-    .. note:: About VEP file format:
+    About VEP file format:
 
     http://www.ensembl.org/info/docs/tools/vep/script/vep_other.html#pick
 
-    if a variant overlaps a gene with multiple alternate splicing variants
+    If a variant overlaps a gene with multiple alternate splicing variants
     (transcripts), then a block of annotation for each of these transcripts
     is reported in the output. In the default VEP output format each of these
     blocks is written on a single line of output; in VCF output format the
     blocks are separated by commas in the INFO field.
 
-    #Uploaded_variation   Location   Allele   Consequence   IMPACT
-    SYMBOL   Gene   Feature_type   Feature   BIOTYPE   EXON   INTRON   HGVSc
-    HGVSp   cDNA_position   CDS_position   Protein_position
-    Amino_acids   Codons   Existing_variation   DISTANCE
-    STRAND   FLAGS   SYMBOL_SOURCE   HGNC_ID   TSL   APPRIS
-    REFSEQ_MATCHGIVEN_REF   USED_REF   BAM_EDIT
-    SIFT   PolyPhen   AF   CLIN_SIG   SOMATIC   PHENO
-    PUBMED   MOTIF_NAME   MOTIF_POS   HIGH_INF_POS   MOTIF_SCORE_CHANGE
-    LRT_pred   LRT_score   MutationTaster_model   MutationTaster_pred
-    SIFT_pred   SIFT_score   clinvar_clnsig   clinvar_rs   clinvar_trait
+    Example of annotation block (1 line)::
+
+        #Uploaded_variation   Location   Allele   Consequence   IMPACT
+        SYMBOL   Gene   Feature_type   Feature   BIOTYPE   EXON   INTRON   HGVSc
+        HGVSp   cDNA_position   CDS_position   Protein_position
+        Amino_acids   Codons   Existing_variation   DISTANCE
+        STRAND   FLAGS   SYMBOL_SOURCE   HGNC_ID   TSL   APPRIS
+        REFSEQ_MATCHGIVEN_REF   USED_REF   BAM_EDIT
+        SIFT   PolyPhen   AF   CLIN_SIG   SOMATIC   PHENO
+        PUBMED   MOTIF_NAME   MOTIF_POS   HIGH_INF_POS   MOTIF_SCORE_CHANGE
+        LRT_pred   LRT_score   MutationTaster_model   MutationTaster_pred
+        SIFT_pred   SIFT_score   clinvar_clnsig   clinvar_rs   clinvar_trait
     """
 
     def __init__(self, device):
+        # Note: number of lines is computed in parent class
         super().__init__(device)
 
         # Quick tests on the input file...
@@ -70,6 +73,9 @@ class CsvReader(AbstractReader):
             "used_ref",
         )
 
+        # Fields descriptions
+        self.fields = None
+
         LOGGER.debug(
             "CsvReader::init: CSV fields found: %s", self.csv_reader.fieldnames
         )
@@ -82,15 +88,14 @@ class CsvReader(AbstractReader):
 
         .. note:: Annotations fields are added here if they exist in the file.
 
-        .. seealso:: parse_fields()
+        .. seealso:: :meth:`parse_fields` for basic default fields.
 
         :return: Tuple of fields.
             Each field is a dict with the following keys:
-                name, category, description, type
+            `name, category, description, type`.
             Some fields have an additional constraint key when they are destined
             to be a primary key in the database.
             Annotations fields are added here if they exist in the file.
-            .. seealso parse_fields() for basic default fields.
         :rtype: <tuple <dict>>
         """
         LOGGER.debug("CsvReader::get_fields: called")
@@ -113,35 +118,36 @@ class CsvReader(AbstractReader):
         yield from self.parse_variants()
 
     def get_samples(self):
-        """???????"""
+        """Return samples (individual/family data) of the file (empty list for this reader)"""
         return []
 
     def parse_fields(self):
+        """See :meth:`get_fields`"""
         yield {
             "name": "chr",
             "category": "variants",
-            "description": "chromosom",
+            "description": "Chromosome",
             "type": "str",
             "constraint": "NOT NULL",
         }
         yield {
             "name": "pos",
             "category": "variants",
-            "description": "position",
+            "description": "Reference position, with the 1st base having position 1",
             "type": "int",
             "constraint": "NOT NULL",
         }
         yield {
             "name": "ref",
             "category": "variants",
-            "description": "reference base",
+            "description": "Reference base",
             "type": "str",
             "constraint": "NOT NULL",
         }
         yield {
             "name": "alt",
             "category": "variants",
-            "description": "alternative base",
+            "description": "Alternative base",
             "type": "str",
             "constraint": "NOT NULL",
         }
@@ -159,9 +165,6 @@ class CsvReader(AbstractReader):
 
     def parse_variants(self):
         """Read file and parse variants
-
-        .. todo:: An estimation of the progression is made here by updating
-            self.read_bytes attribute.
 
         .. todo: Handle samples
 
@@ -184,14 +187,15 @@ class CsvReader(AbstractReader):
                 # Set
                 variant["annotations"] = [annotation]
 
-        if not hasattr(self.annotation_parser, "annotation_field_name"):
-            raise Exception("Cannot parse variant without parsing first fields")
+        if self.annotation_parser.annotation_field_name is None:
+            raise Exception("Cannot parse variant without parsing fields first")
 
         variants = dict()
-        for i, row in enumerate(self.csv_reader, 1):
+        transcript_idx = 0
+        for transcript_idx, row in enumerate(self.csv_reader, 1):
 
             # Build primary key by mapping existing fields in the original file
-            chr, pos = self.location_to_chr_pos(row["Location"])
+            chrom, pos = self.location_to_chr_pos(row["Location"])
             ref = row["GIVEN_REF"]
             alt = row["Allele"]
 
@@ -199,7 +203,7 @@ class CsvReader(AbstractReader):
                 # Check consistency
                 assert row["GIVEN_REF"] == row["USED_REF"], "GIVEN_REF != USED_REF"
 
-            primary_key = (chr, pos, ref, alt)
+            primary_key = (chrom, pos, ref, alt)
             # Get previous variant with same primary key (previous transcript)
             variant = variants.get(primary_key, dict())
 
@@ -247,7 +251,8 @@ class CsvReader(AbstractReader):
             variants[primary_key] = variant
 
         LOGGER.info(
-            "CsvReader::parse_variants: transcripts %s, variants %s", i, len(variants)
+            "CsvReader::parse_variants: transcripts %s, variants %s",
+            transcript_idx, len(variants)
         )
 
         for variant in variants.values():
@@ -269,9 +274,9 @@ class CsvReader(AbstractReader):
         :return: Tuple of chr and pos data.
         :rtype: <tuple <str>, <str>>
         """
-        chr, positions = location.split(":")
+        chrom, positions = location.split(":")
         pos = positions.split("-")[0]
-        return chr, pos
+        return chrom, pos
 
     def __repr__(self):
         return f"VEP Reader using {type(self.annotation_parser).__name__}"

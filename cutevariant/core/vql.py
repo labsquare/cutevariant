@@ -1,5 +1,11 @@
 """Proof of concept for the VQL DSL.
 
+From this module, you only need to use parse_vql or parse_one_vql.
+For instance::
+
+    cmd = parse_one_vql("SELECT chr, pos FROM variants")
+    print(cmd)
+
 See test_vql.py for usage and features.
 
 """
@@ -31,6 +37,14 @@ class VQLSyntaxError(ValueError):
         super().__init__(message, col, *args, **kwargs)
         self.message = message
         self.col = col
+
+    def __repr__(self):
+        if self.col:
+            return "VQLSyntaxError: '%s' at position %s" % (self.message, self.col)
+        return "VQLSyntaxError: '%s'" % self.message
+
+    def __str__(self):
+        return self.__repr__()
 
 
 # ============ Error handle ==================================
@@ -80,7 +94,7 @@ class FilterExpression(metaclass=model_class):
     @property
     def value(self):
         out = []
-        key = "AND"  #  By default
+        key = "AND"  # By default
         for i in self.op:
             if isinstance(i, str):
                 if i in ("AND", "OR"):
@@ -92,20 +106,12 @@ class FilterExpression(metaclass=model_class):
         return {key: out}
 
 
-# class FilterExpression(metaclass=model_class):
-#     @property
-#     def value(self):
-#         out = []
-#         key = "AND"  #  By default
-#         for i in self.op:
-#             if isinstance(i, str):
-#                 if i in ("AND", "OR"):
-#                     key = i
-#                 else:
-#                     out.append(i)
-#             else:
-#                 out.append(i.value)
-#         return {key: out}
+class SetExpression(metaclass=model_class):
+    @property
+    def value(self):
+        return "test"
+
+
 class FilterOperand(metaclass=model_class):
     @property
     def value(self):
@@ -126,19 +132,40 @@ class Tuple(metaclass=model_class):
         return tuple(self.items)
 
 
+class WordSetIdentifier(metaclass=model_class):
+    @property
+    def value(self):
+        return ("WORDSET", self.arg)
+
+
 class SelectCmd(metaclass=model_class):
     @property
     def value(self):
         output = {
             "cmd": "select_cmd",
-            "columns": [
-                col.value if hasattr(col, "value") else col for col in self.columns
+            "fields": [
+                col.value if hasattr(col, "value") else col for col in self.fields
             ],
             "source": self.source,
         }
 
         if self.filter:
-            output["filter"] = self.filter.value
+            output["filters"] = self.filter.value
+        else:
+            output["filters"] = {}
+
+        if self.group_by:
+            output["group_by"] = [
+                i.value if isinstance(i, Function) else i for i in self.group_by
+            ]
+
+        else:
+            output["group_by"] = []
+
+        if self.having_op and self.having_val:
+            output["having"] = {"op": self.having_op, "value": self.having_val}
+        else:
+            output["having"] = {}
 
         return output
 
@@ -149,8 +176,8 @@ class CreateCmd(metaclass=model_class):
         return {
             "cmd": "create_cmd",
             "source": self.source,
-            "filter": self.filter.value if self.filter else None,
-            "target": self.target
+            "filters": self.filter.value if self.filter else {},
+            "target": self.target,
         }
 
 
@@ -158,9 +185,68 @@ class SetCmd(metaclass=model_class):
     @property
     def value(self):
         return {
-        "cmd": "set_cmd",
-        "target": self.target,
-        "expression": "todo" #self.expression
+            "cmd": "set_cmd",
+            "target": self.target,
+            "first": self.first,
+            "operator": self.op,
+            "second": self.second,
+        }
+
+
+class BedCmd(metaclass=model_class):
+    @property
+    def value(self):
+        return {
+            "cmd": "bed_cmd",
+            "target": self.target,
+            "source": self.source,
+            "path": self.path,
+        }
+
+
+class CopyCmd(metaclass=model_class):
+    @property
+    def value(self):
+        return {
+            "cmd": "create_cmd",
+            "source": self.source,
+            "filters": {},
+            "target": self.target,
+        }
+
+
+class CountCmd(metaclass=model_class):
+    @property
+    def value(self):
+        obj = {
+            "cmd": "count_cmd",
+            "source": self.source,
+            "filters": self.filters.value if self.filters else {},
+        }
+
+        return obj
+
+
+class DropCmd(metaclass=model_class):
+    @property
+    def value(self):
+        return {"cmd": "drop_cmd", "feature": self.feature, "name": self.name}
+
+
+class ShowCmd(metaclass=model_class):
+    @property
+    def value(self):
+        return {"cmd": "show_cmd", "feature": self.feature}
+
+
+class ImportCmd(metaclass=model_class):
+    @property
+    def value(self):
+        return {
+            "cmd": "import_cmd",
+            "feature": self.feature,
+            "path": self.path,
+            "name": self.name,
         }
 
 
@@ -172,11 +258,20 @@ METAMODEL = textx.metamodel_from_str(
 )
 
 
-def execute_vql(raw_vql: str) -> list:
+def parse_vql(raw_vql: str) -> list:
     """Execute multiline VQL statement separated by ";"
 
-    :return: yield 1 dictionnary per command
-        .. example :: {'cmd': 'select_cmd', 'columns': ['chr','pos'], 'source':'variants', 'filter': 'None'}
+    Returns:
+         (generator[dict]): yield 1 VQL object (a dictionnary) per command
+
+    Example of VQL object::
+
+        {
+            'cmd': 'select_cmd',
+            'columns': ['chr','pos'],
+            'source':'variants',
+            'filter': 'None'
+        }
     """
     try:
         raw_model = METAMODEL.model_from_str(raw_vql)
@@ -186,6 +281,19 @@ def execute_vql(raw_vql: str) -> list:
     yield from (command.value for command in raw_model.commands)
 
 
-def model_from_string(raw_vql: str) -> dict:
-    """Obsolete : retro compatibility"""
-    return next(execute_vql(raw_vql))
+def parse_one_vql(raw_vql: str) -> dict:
+    """Execute 1 VQL statement
+
+    Returns:
+        (dict): 1 VQL object
+
+    Examples of VQL object::
+
+        {
+            'cmd': 'select_cmd',
+            'columns': ['chr','pos'],
+            'source':'variants',
+            'filter': 'None'
+        }
+    """
+    return next(parse_vql(raw_vql))

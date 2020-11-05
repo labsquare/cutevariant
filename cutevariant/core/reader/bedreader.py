@@ -7,14 +7,13 @@ import io
 import re
 
 # Custom imports
-from cutevariant.core.readerfactory import is_gz_file
-from cutevariant.commons import logger
+import cutevariant.commons as cm
 
-LOGGER = logger()
+LOGGER = cm.logger()
 
 
-class BedTool:
-    """BED file parser
+class BedReader:
+    r"""BED file parser
 
     It is a substitution to pybedtools that is a (too) big black box to make lots
     of things, while we only need the file parser.
@@ -32,19 +31,20 @@ class BedTool:
 
     .. seealso:: BED specs: https://www.ensembl.org/info/website/upload/bed.html
 
-    How to use:
-        intervals = BedTool("myfile.bed.gz)
+    How to use::
+
+        intervals = BedReader("myfile.bed.gz)
         generator = iter(intervals)
         first_interval = next(generator)
 
-        intervals = BedTool("myfile.bed)
+        intervals = BedReader("myfile.bed)
 
         large_string = \"""
             chr1 1    10   feature1  0 +
             chr1 50   60   feature2  0 -
             chr1 51 59 another_feature 0 +
         \"""
-        intervals = BedTool(large_string)
+        intervals = BedReader(large_string)
 
         for interval in intervals:
             print(interval)
@@ -61,7 +61,7 @@ class BedTool:
             self.is_gz_file = False
         else:
             self.is_from_string = False
-            self.is_gz_file = is_gz_file(filepath)
+            self.is_gz_file = cm.is_gz_file(filepath)
 
     def __iter__(self):
         """Yield Interval objects in the given BED file
@@ -79,6 +79,9 @@ class BedTool:
             - blockCount
             - blockSizes
             - blockStarts
+
+        Excedent data is put in and additional column 'misc'.
+        Empty columns contain None values.
 
         :return: Generator of Intervals
         :rtype: <generator <OrderectDict>>
@@ -105,21 +108,21 @@ class BedTool:
 
     def get_intervals(self, stream):
         """Yield Interval objects in the given stream
-        .. seelalso: `__iter__`
+
+        .. seealso:: :meth:`__iter__`
         """
         # Throws line with headers
         skipped_header_line = 0  # Will be used to rewind the stream
         for line in stream:
             if (
                 line.startswith(("@", "#", "track", "browser"))
-                or len(line.strip()) == 0
+                or not line.strip()
             ):
                 # Header detected
-                print("comment", line)
+                LOGGER.debug("comment: %s", line)
                 skipped_header_line += 1
                 continue
-            else:
-                break
+            break
 
         # Quick tests on the first line of data...
         # Delimiters can only be '\t' or ' ' since
@@ -127,7 +130,7 @@ class BedTool:
 
         # Rewind the stream
         stream.seek(0)
-        [next(stream) for line in range(skipped_header_line)]
+        [next(stream) for _ in range(skipped_header_line)]
         try:
             # If there is no data at all or after the header
             data_line = next(stream)
@@ -139,7 +142,7 @@ class BedTool:
 
         # Rewind the stream
         stream.seek(0)
-        [next(stream) for line in range(skipped_header_line)]
+        [next(stream) for _ in range(skipped_header_line)]
         # Build a csv reader
         bed_fieldnames = (
             "chrom",
@@ -159,8 +162,9 @@ class BedTool:
             stream, fieldnames=bed_fieldnames, restkey="misc", dialect=csv_dialect
         )
 
+        line_number = 0
         for line_number, interval in enumerate(csv_reader, 1):
-            print(interval)
+            # print(interval)
             yield interval
 
         self.count = line_number
@@ -184,7 +188,7 @@ def parse_bed_file(filepath):
 
     .. seealso:: https://www.ensembl.org/info/website/upload/bed.html
     """
-    bedtool = BedTool(filepath)
+    bedtool = BedReader(filepath)
 
     for interval in bedtool:
         # Remove 'chr' prefix from the chromosome name

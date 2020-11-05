@@ -1,5 +1,4 @@
 from .abstractreader import AbstractReader
-import vcf
 
 
 class FakeReader(AbstractReader):
@@ -13,8 +12,8 @@ class FakeReader(AbstractReader):
             "ref": "T",
             "alt": "A",
             "annotations": [
-                {"transcript": "NM_234234", "gene": "CFTR"},
-                {"transcript": "NM_234235", "gene": "CFTR"},
+                {"transcript": "NM_234234", "gene": "CFTR", "ref": "NN"},
+                {"transcript": "NM_234235", "gene": "CFTR", "ref": "NN"},
             ],
             "samples": [{"name": "sacha", "gt": 1, "dp": 30}],
         }
@@ -25,8 +24,8 @@ class FakeReader(AbstractReader):
             "ref": "T",
             "alt": "A",
             "annotations": [
-                {"transcript": "NM_234234", "gene": "CFTR"},
-                {"transcript": "NM_234235", "gene": "CFTR"},
+                {"transcript": "NM_234234", "gene": "CFTR", "ref": "YY"},
+                {"transcript": "NM_234235", "gene": "CFTR", "ref": "YY"},
             ],
             "samples": [{"name": "sacha", "gt": 1, "dp": 50}],
         }
@@ -112,6 +111,13 @@ class FakeReader(AbstractReader):
             "name": "transcript",
             "category": "annotations",
             "description": "gene transcripts",
+            "type": "str",
+        }
+
+        yield {
+            "name": "ref",
+            "category": "annotations",
+            "description": "duplicate test",
             "type": "str",
         }
 
