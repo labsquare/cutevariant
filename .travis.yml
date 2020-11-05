@@ -18,7 +18,7 @@ addons:
 services: xvfb
 
 python:
-  - "3.7"
+  - "3.8"
 variables:
   QT_QPA_PLATFORM: "offscreen"
 
