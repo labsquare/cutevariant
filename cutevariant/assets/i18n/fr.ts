@@ -1340,9 +1340,9 @@ in the same fashion as a SQL query.&lt;/p&gt;
 &lt;p&gt;The VQL language can be run from the user interface via this plugin or directly
 via the command line of Cutevariant.&lt;/p&gt;
 
-&lt;p&gt;Although the plugin offers auto-completion and syntax highlighting, if you want
-to have more details on how to write your own VQL queries, as well as the keywords 
-of the language, please see the project wiki page:&lt;/p&gt;
+&lt;p&gt;Although the plugin offers auto-completion (do not forget the joker character &apos;!&apos;)
+and syntax highlighting, if you want to have more details on how to write your own VQL queries,
+as well as the keywords of the language, please see the project wiki page:&lt;/p&gt;
 
 &lt;a href=&quot;https://github.com/labsquare/cutevariant/wiki/VQL-language&quot;&gt;
 https://github.com/labsquare/cutevariant/wiki/VQL-language&lt;/a&gt;
@@ -1350,13 +1350,14 @@ https://github.com/labsquare/cutevariant/wiki/VQL-language&lt;/a&gt;
         <translation>&lt;p&gt;Ce plugin permet de diriger la plupart des travaux pouvant être réalisés dans un projet Cutevariant
 en rédigeant et en exécutant des requêtes VQL.&lt;/p&gt;
 
-&lt;p&gt;VQL est un &lt;i&gt;langage dédié&lt;/i&gt;, son but est de permettre de filtrer les 
+&lt;p&gt;VQL est un &lt;i&gt;langage dédié&lt;/i&gt;, son but est de permettre de filtrer les
 variants à l&apos;aide d&apos;une commande semblable à une requête SQL.&lt;/p&gt;
-&lt;p&gt;Le langage VQL peut être exécuté depuis l&apos;interface via ce plugin ou directement 
+&lt;p&gt;Le langage VQL peut être exécuté depuis l&apos;interface via ce plugin ou directement
 via la ligne de commande de Cutevariant.&lt;/p&gt;
 
-&lt;p&gt;Bien que le plugin propose une autocomplétion et une coloration syntaxique, si vous désirez avoir
-plus de détails sur la manière de rédiger vos requêtes VQL, ainsi que sur les mots-clés du langage,
+&lt;p&gt;Bien que le plugin propose une autocomplétion (n&apos;oubliez pas le caractère joker &apos;!&apos;)
+et une coloration syntaxique, si vous désirez avoir plus de détails sur la manière de rédiger
+vos requêtes VQL, ainsi que sur les mots-clés du langage,
 veuillez consulter la page du wiki du projet:&lt;/p&gt;
 
 &lt;a href=&quot;https://github.com/labsquare/cutevariant/wiki/VQL-language&quot;&gt;
