@@ -792,7 +792,7 @@ class VariantView(QWidget):
         menu.addAction(
             FIcon(0xF014C),
             formatted_variant,
-            functools.partial(qApp.clipboard().setText, formatted_variant),
+            functools.partial(QApplication.instance().clipboard().setText, formatted_variant),
         )
 
         # Create favorite action
@@ -942,7 +942,7 @@ class VariantView(QWidget):
                 del variant["id"]
             writer.writerow(variant)
 
-        qApp.clipboard().setText(output.getvalue())
+        QApplication.instance().clipboard().setText(output.getvalue())
         output.close()
 
 

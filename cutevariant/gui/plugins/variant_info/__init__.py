@@ -1,7 +1,7 @@
-from PySide2.QtCore import qApp
+from PySide2.QtWidgets import QApplication
 __title__ = "InfoVariant"
 __description__ = "A plugin to display variant info"
-__long_description__ = qApp.translate("variant_info", """
+__long_description__ = QApplication.instance().translate("variant_info", """
 <p>This plugin allows you to view all the data attached to the currently selected
 variant in the main Variant view window.
 </p>

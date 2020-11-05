@@ -127,7 +127,7 @@ class AboutCutevariant(QDialog):
         font.setBold(True)
         font.setPixelSize(16)
         painter.setFont(font)
-        painter.setPen(QPen(qApp.palette().text().color()))
+        painter.setPen(QPen(QApplication.instance().palette().text().color()))
         painter.drawText(titleRect, Qt.AlignTop, "Cutevariant")
 
         font_metrics = QFontMetrics(font)

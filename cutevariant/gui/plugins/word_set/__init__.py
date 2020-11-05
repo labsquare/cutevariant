@@ -1,7 +1,7 @@
-from PySide2.QtCore import qApp
+from PySide2.QtWidgets import QApplication
 __title__ = "WordSets"
 __description__ = "A plugin to manage word sets"
-__long_description__ = qApp.translate("word_sets", """
+__long_description__ = QApplication.instance().translate("word_sets", """
 <p>This plugin allows to create sets of words that can be matched with the
 attributes of the project's variants.</p>
 <p>

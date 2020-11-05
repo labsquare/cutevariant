@@ -1,7 +1,7 @@
-from PySide2.QtCore import qApp
+from PySide2.QtWidgets import QApplication
 __title__ = "VQL Editor"
 __description__ = "A VQL editor"
-__long_description__ = qApp.translate("vql_editor", """
+__long_description__ = QApplication.instance().translate("vql_editor", """
 <p>This plugin allows you to manage most of the work that can be done in a 
 Cutevariant project by writing and executing VQL queries.</p>
 
