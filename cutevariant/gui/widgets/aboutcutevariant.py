@@ -9,6 +9,7 @@ from PySide2.QtWidgets import (
     QVBoxLayout,
     QPlainTextEdit,
     QFrame,
+    QApplication,
 )
 from PySide2.QtGui import (
     QIcon,
