@@ -32,3 +32,5 @@ install:
 # command to run tests
 script:
   - python -m pytest tests/core/ -vv
+  - make coverage 
+  - bash <(curl -s https://codecov.io/bash)
