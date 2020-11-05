@@ -12,10 +12,17 @@ Presently, SnpEff and VEP annotations are supported.
 Once your project is created, you can query variant using different gui controller or directly using the VQL language. This Domain Specific Language is specially designed for cutevariant and try to keep the same syntax than SQL for an easy use.
 
 # Installation
-
+## PyPi
 Cutevariant is avaible from Pypi : 
 
     pip install cutevariant # install
     cutevariant             # run
 
+## From source 
+- Python 3.7 or newer is required  
 
+```
+git clone https://github.com/labsquare/cutevariant.git
+make install_deps 
+make run 
+```
