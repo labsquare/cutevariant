@@ -1,22 +1,21 @@
 # Cutevariant
 
-cutevariant is a light standalone viewer of genetic variation written in Python for Qt. It allows you to view and filter VCF and other format files.
+**A standalone and free application to explore genetics variations from VCF file**
+
+[![AppVeyor](https://ci.appveyor.com/api/projects/status/r526oy2rb04663dp?svg=true)](https://ci.appveyor.com/project/dridk/cutevariant-1ex8i)
 
 ![Cutevariant example](https://raw.githubusercontent.com/labsquare/CuteVariant-cpp/master/screencast.gif)
 
+Cutevariant is a cross-plateform application dedicated to maniupulate and filter variation from annotated VCF file. 
+When you create a project, data are imported into an sqlite database that cutevariant queries according your needs. 
+Presently, SnpEff and VEP annotations are supported. 
+Once your project is created, you can query variant using different gui controller or directly using the VQL language. This Domain Specific Language is specially designed for cutevariant and try to keep the same syntax than SQL for an easy use.
+
 # Installation
+
+Cutevariant is avaible from Pypi : 
 
     pip install cutevariant # install
     cutevariant             # run
-.
 
-# To get tests running
 
-    git clone git@github.com:labsquare/cutevariant.git
-    cd cutevariant
-    virtualenv -p /usr/bin/python3 venv
-    source venv/bin/activate
-    make install_deps # install
-    make install # pip install -e . 
-    make run     # start application
-    make test    # start tests
