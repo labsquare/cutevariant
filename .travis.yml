@@ -18,7 +18,7 @@ addons:
 services: xvfb
 
 python:
-  - "3.7"
+  - "3.8"
 variables:
   QT_QPA_PLATFORM: "offscreen"
 
@@ -26,8 +26,11 @@ variables:
 
 # command to install dependencies
 install:
+  - pip install PySide2 
   - make install_deps
 
 # command to run tests
 script:
   - python -m pytest tests/core/ -vv
+  - make coverage 
+  - bash <(curl -s https://codecov.io/bash)
