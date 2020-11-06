@@ -26,7 +26,7 @@ variables:
 
 # command to install dependencies
 install:
-  - pip install PySide2 
+  - pip install PySide2 coverage
   - make install_deps
 
 # command to run tests
