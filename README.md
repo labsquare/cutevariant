@@ -4,6 +4,9 @@
 
 [![AppVeyor](https://ci.appveyor.com/api/projects/status/r526oy2rb04663dp?svg=true)](https://ci.appveyor.com/project/dridk/cutevariant-1ex8i)
 
+
+![](https://raw.githubusercontent.com/labsquare/cutevariant/devel/screencast.gif)
+
 Cutevariant is a cross-plateform application dedicated to maniupulate and filter variation from annotated VCF file. 
 When you create a project, data are imported into an sqlite database that cutevariant queries according your needs. 
 Presently, SnpEff and VEP annotations are supported. 
