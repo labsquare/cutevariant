@@ -438,6 +438,7 @@ def build_sql_query(
     having={},  # {"op":">", "value": 3  }
     default_tables={},
     samples_ids={},
+    **kwargs,
 ):
     """Build SQL SELECT query
 
@@ -599,6 +600,7 @@ def build_full_sql_query(
         having=having,
         default_tables=default_tables,
         samples_ids=sample_ids,
+        **kwargs,
     )
     return query
 
