@@ -71,7 +71,7 @@ class VariantModel(QAbstractTableModel):
         self.group_by = []
         self.having = {}
         self.order_by = None
-        self.order_desc = True
+        self.order_desc = False
         self.formatter = None
         self.debug_sql = None
         # Keep after all initialization
