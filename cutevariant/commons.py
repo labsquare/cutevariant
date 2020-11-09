@@ -10,7 +10,7 @@ MAX_RECENT_PROJECTS = 5
 MIN_COMPLETION_LETTERS = 1
 DEFAULT_SELECTION_NAME = "variants"
 # version from which database files are supported (included)
-MIN_AUTHORIZED_DB_VERSION = "1.0.0.beta0"
+MIN_AUTHORIZED_DB_VERSION = "0.2.0"
 
 
 # ACMG Classification
@@ -33,12 +33,7 @@ CLASSIFICATION_ICONS = {
 }
 
 # Genotypes
-GENOTYPE_ICONS = {
-    -1: 0xF10D3,
-    0: 0xF0766,
-    1: 0xF0AA1,
-    2: 0xF0AA5,
-}
+GENOTYPE_ICONS = {-1: 0xF10D3, 0: 0xF0766, 1: 0xF0AA1, 2: 0xF0AA5}
 
 GENOTYPE_DESC = {
     -1: "Unknown genotype",
@@ -150,4 +145,4 @@ def get_uncompressed_size(filepath):
     """
     with open(filepath, "rb") as file_obj:
         file_obj.seek(-4, 2)
-        return int.from_bytes(file_obj.read(4), byteorder='little')
+        return int.from_bytes(file_obj.read(4), byteorder="little")

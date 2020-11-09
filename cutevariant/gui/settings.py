@@ -26,7 +26,7 @@ from logging import DEBUG
 
 # Qt imports
 from PySide2.QtWidgets import *
-from PySide2.QtCore import *  # qApp
+from PySide2.QtCore import *  # QApplication.instance()
 from PySide2.QtGui import *  # QIcon, QPalette
 
 # Custom imports
@@ -90,7 +90,7 @@ class TranslationSettingsWidget(BaseWidget):
         # self.locales_combobox.currentTextChanged.connect(self.switchTranslator)
 
     def save(self):
-        """Switch qApp translator with the selected one and save it into config
+        """Switch QApplication.instance() translator with the selected one and save it into config
 
         .. note:: settings are stored in "ui" group
         .. todo:: Handle the propagation the LanguageChange event
@@ -99,16 +99,16 @@ class TranslationSettingsWidget(BaseWidget):
         """
 
         # Remove the old translator
-        # qApp.removeTranslator(translator)
+        # QApplication.instance().removeTranslator(translator)
 
         # Load the new translator
 
         # Save locale setting
         locale_name = self.locales_combobox.currentText()
         self.settings.setValue("ui/locale", locale_name)
-        app_translator = QTranslator(qApp)
+        app_translator = QTranslator(QApplication.instance())
         if app_translator.load(locale_name, cm.DIR_TRANSLATIONS):
-            qApp.installTranslator(app_translator)
+            QApplication.instance().installTranslator(app_translator)
 
     def load(self):
         """Setup widgets in TranslationSettingsWidget"""
@@ -240,13 +240,13 @@ class StyleSettingsWidget(BaseWidget):
 
         if style_name == cm.BASIC_STYLE:
             # Bright version: Reset style
-            qApp.setStyleSheet("")
-            qApp.setPalette(QApplication.style().standardPalette())
+            QApplication.instance().setStyleSheet("")
+            QApplication.instance().setPalette(QApplication.style().standardPalette())
         else:
-            # qApp.setStyle("fusion")
+            # QApplication.instance().setStyle("fusion")
             # Apply selected style by calling on the method in style module based on its
             # name; equivalent of style.dark(app)
-            getattr(style, style_name.lower())(qApp)
+            getattr(style, style_name.lower())(QApplication.instance())
 
         # Clear pixmap cache
         QPixmapCache.clear()

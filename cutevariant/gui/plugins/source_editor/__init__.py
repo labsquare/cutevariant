@@ -1,7 +1,7 @@
-from PySide2.QtCore import qApp
+from PySide2.QtWidgets import QApplication
 __title__ = "Selections"
 __description__ = "A plugin to display selections"
-__long_description__ = qApp.translate("source_editor", """
+__long_description__ = QApplication.instance().translate("source_editor", """
 <p>It is a plugin allowing to work on a subset of variants.<br>
 A subset of variants is called selection or source.
 </p>

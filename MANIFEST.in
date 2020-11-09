@@ -28,3 +28,4 @@ recursive-include cutevariant/gui/plugins *.json
 include cutevariant/assets/i18n/*.qm
 exclude cutevariant/assets/i18n/*.ts
 include cutevariant/assets/LICENSE
+

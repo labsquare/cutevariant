@@ -81,7 +81,7 @@ class MainWindow(QMainWindow):
 
         # Window geometry
         self.resize(600, 400)
-        self.setGeometry(qApp.desktop().rect().adjusted(100, 100, -100, -100))
+        self.setGeometry(QApplication.instance().desktop().rect().adjusted(100, 100, -100, -100))
 
         self.setTabPosition(Qt.AllDockWidgetAreas, QTabWidget.North)
 
@@ -301,7 +301,7 @@ class MainWindow(QMainWindow):
 
         ## Help
         self.help_menu = self.menuBar().addMenu(self.tr("Help"))
-        self.help_menu.addAction(self.tr("About Qt"), qApp.aboutQt)
+        self.help_menu.addAction(self.tr("About Qt"), QApplication.instance().aboutQt)
         self.help_menu.addAction(
             QIcon(DIR_ICONS + "app.png"),
             self.tr("About Cutevariant"),

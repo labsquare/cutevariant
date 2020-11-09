@@ -1,7 +1,7 @@
-from PySide2.QtCore import qApp
+from PySide2.QtWidgets import QApplication
 __title__ = "Filters"
 __description__ = "A plugin to display filters"
-__long_description__ = qApp.translate("filters_editor", """
+__long_description__ = QApplication.instance().translate("filters_editor", """
 <p>This plugin is used to filter (show/hide) the variants displayed in the main window.</p>
 
 <p>Start by clicking on the <em>"+"</em> button (Add Condition), an example is displayed.</p>

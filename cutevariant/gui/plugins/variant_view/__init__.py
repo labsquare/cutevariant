@@ -1,7 +1,7 @@
-from PySide2.QtCore import qApp
+from PySide2.QtWidgets import QApplication
 __title__ = "Variants"
 __description__ = "The default view for variants DB"
-__long_description__ = qApp.translate("variant_view", """
+__long_description__ = QApplication.instance().translate("variant_view", """
 <p>This window is the main window of Cutevariant. Here you will find the variants
 and their related data presented in the various columns selected from the
 <em>Columns selector</em> plugin.</p>

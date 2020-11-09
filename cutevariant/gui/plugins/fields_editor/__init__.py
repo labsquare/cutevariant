@@ -1,7 +1,7 @@
-from PySide2.QtCore import qApp
+from PySide2.QtWidgets import QApplication
 __title__ = "Columns selector"
 __description__ = "A plugin to display fields "
-__long_description__ = qApp.translate("fields_editor", """
+__long_description__ = QApplication.instance().translate("fields_editor", """
 <p>This plugin is used to manage the fields visible from the main "variant view"
 window.</p>
 
