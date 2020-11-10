@@ -19,7 +19,7 @@ install:
   - pip install requests
   - ps: Start-FileDownload 'https://www.sqlite.org/2019/sqlite-dll-win32-x86-3280000.zip'
   - unzip sqlite-dll-win32-x86-3280000.zip
-  - pyinstaller -i icon.ico --name="cutevariant" --add-data cutevariant;cutevariant cutevariant\__main__.py
+  - pyinstaller -i icon.ico --name="cutevariant" --hidden-import json --add-data cutevariant;cutevariant cutevariant\__main__.py
   #- copy sqlite3.dll C:\Miniconda3\envs\test-environment\DLLs\
   #- python make_a_blob.py build_exe
   #- copy sqlite3.dll C:\Miniconda3\envs\test-environment\DLLs\
