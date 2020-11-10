@@ -1,0 +1,15 @@
+name: CI 
+
+# when it active ? 
+on: 
+  push:
+    branches:
+      - github-ci 
+
+
+jobs:
+  say_hello:
+    runs-on: ubuntu-latest
+    steps:
+    - run: |
+        echo "salut "
