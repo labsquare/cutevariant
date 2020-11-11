@@ -13,16 +13,7 @@ on:
       - devel
       - master 
 
-  workflow_dispatch:
-    branches:
-      - devel
-      - master
-      - github-ci 
-    inputs:
-      deploy:
-        description: "Create binary"
-        required: True
-        default: True
+
 
 
 
@@ -42,52 +33,52 @@ jobs:
       - name: install PySide2    # Parce que @ysard veut absolument les version deprecated
         run : pip install PySide2
 
-  # # WINDOWS JOB 
+  # WINDOWS JOB 
 
-  # windows:
-  #   runs-on: windows-latest
-  #   if: "contains(github.event.head_commit.message, '[deploy]')"
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #     - uses: actions/setup-python@v2
-  #       with:
-  #         python-version: '3.8'
-  #     - name: install_deps
-  #       run: "make install_deps"
-  #     - name: install PySide2    # Parce que @ysard veut absolument les version deprecated
-  #       run : pip install PySide2
-  #     - name: install windows deps 
-  #       run: |
-  #           pip install pywin32
-  #           pip install PyInstaller==4.0
-  #     - name: create binary 
-  #       if: "${{ github.event.inputs.deploy }}"
-  #     # TODO : use a spec file ! 
-  #       run: pyinstaller -i icon.ico --name="cutevariant" --hidden-import json --add-data "cutevariant;cutevariant" cutevariant\__main__.py
+  windows:
+    runs-on: windows-latest
+    if: "contains(github.event.head_commit.message, '[deploy]')"
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+      - name: install_deps
+        run: "make install_deps"
+      - name: install PySide2    # Parce que @ysard veut absolument les version deprecated
+        run : pip install PySide2
+      - name: install windows deps 
+        run: |
+            pip install pywin32
+            pip install PyInstaller==4.0
+      - name: create binary 
+        if: "${{ github.event.inputs.deploy }}"
+      # TODO : use a spec file ! 
+        run: pyinstaller -i icon.ico --name="cutevariant" --hidden-import json --add-data "cutevariant;cutevariant" cutevariant\__main__.py
 
-  #     - name: Upload artifact
-  #       if: "contains(github.event.head_commit.message, '[deploy]')"
-  #       uses: actions/upload-artifact@v2
-  #       with:
-  #         name: cutevariant-standalone
-  #         path: dist
+      - name: Upload artifact
+        if: "contains(github.event.head_commit.message, '[deploy]')"
+        uses: actions/upload-artifact@v2
+        with:
+          name: cutevariant-standalone
+          path: dist
 
-  # # MAC OS JOB 
+  # MAC OS JOB 
 
-  # Macos:
-  #   runs-on: macOS-latest
-  #   if: "${{ github.event.inputs.deploy }}"
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #     - uses: actions/setup-python@v2
-  #       with:
-  #         python-version: '3.8'
-  #     - name: install_deps
-  #       run: "make install"
-  #     - name: install PySide2    # Parce que @ysard veut absolument les version deprecated
-  #       run : pip install PySide2
-  #     - name: install mac deps 
-  #       run: |
-  #           pip install PyInstaller==4.0
-  #     - name: create binary 
-  #       run: pyinstaller -i icon.ico --name="cutevariant" --add-data cutevariant:cutevariant cutevariant/__main__.py;ls
+  Macos:
+    runs-on: macOS-latest
+    if: "${{ github.event.inputs.deploy }}"
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+      - name: install_deps
+        run: "make install"
+      - name: install PySide2    # Parce que @ysard veut absolument les version deprecated
+        run : pip install PySide2
+      - name: install mac deps 
+        run: |
+            pip install PyInstaller==4.0
+      - name: create binary 
+        run: pyinstaller -i icon.ico --name="cutevariant" --add-data cutevariant:cutevariant cutevariant/__main__.py;ls
