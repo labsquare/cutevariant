@@ -1,0 +1,85 @@
+name: CI 
+
+# when it active ? 
+on: 
+  push:
+    branches:
+      - devel
+      - master 
+      - github-ci
+ 
+  pull_request:
+    branches:
+      - devel
+      - master 
+
+
+
+
+
+jobs:
+  
+  # LINUX JOB 
+
+  linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python_version: ['3.7', '3.8']
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{matrix.python_version}}
+      - name: install_deps
+        run: "make install_deps"
+      - name: install PySide2    # Parce que @ysard veut absolument les version deprecated
+        run : pip install PySide2
+
+  # WINDOWS JOB 
+
+  windows:
+    runs-on: windows-latest
+    if: "contains(github.event.head_commit.message, '[deploy]')"
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+      - name: install_deps
+        run: "make install_deps"
+      - name: install PySide2    # Parce que @ysard veut absolument les version deprecated
+        run : pip install PySide2
+      - name: install windows deps 
+        run: |
+            pip install pywin32
+            pip install PyInstaller==4.0
+      - name: create binary 
+      # TODO : use a spec file ! 
+        run: pyinstaller -i icon.ico --name="cutevariant" --hidden-import json --add-data "cutevariant;cutevariant" cutevariant\__main__.py
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: cutevariant-standalone
+          path: dist
+
+  # MAC OS JOB 
+
+  Macos:
+    runs-on: macOS-latest
+    if: "contains(github.event.head_commit.message, '[deploy]')"
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+      - name: install_deps
+        run: "make install"
+      - name: install PySide2    # Parce que @ysard veut absolument les version deprecated
+        run : pip install PySide2
+      - name: install mac deps 
+        run: |
+            pip install PyInstaller==4.0
+      - name: create binary 
+        run: pyinstaller -i icon.ico --name="cutevariant" --add-data cutevariant:cutevariant cutevariant/__main__.py;ls

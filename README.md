@@ -2,8 +2,7 @@
 
 **A standalone and free application to explore genetics variations from VCF file**
 
-[![AppVeyor](https://ci.appveyor.com/api/projects/status/r526oy2rb04663dp?svg=true)](https://ci.appveyor.com/project/dridk/cutevariant-1ex8i)
-
+![CI](https://github.com/labsquare/cutevariant/workflows/CI/badge.svg)
 
 ![](https://raw.githubusercontent.com/labsquare/cutevariant/devel/screencast.gif)
 
