@@ -60,8 +60,11 @@ class PedReader:
 
         """
         assert os.path.isfile(filepath)
-        assert (samples and not raw_samples) or raw_samples, \
+        assert (
+            samples and not raw_samples
+        ) or raw_samples, (
             "If raw_samples are deactivated, database samples must be given"
+        )
 
         self.filepath = filepath
         self.samples = samples
@@ -78,8 +81,8 @@ class PedReader:
             stream.seek(0)
 
             reader = csv.reader(
-                (row for row in stream if not row.startswith('#')),  # Remove comments
-                dialect
+                (row for row in stream if not row.startswith("#")),  # Remove comments
+                dialect,
             )
 
             yield from self.get_samples(reader)
@@ -110,9 +113,7 @@ class PedReader:
                 Or
                 `["id": _, "family_id": _, "father_id": _, "mother_id": _, "sex": _, "phenotype": ]`
         """
-        samples_mapping = {
-            (sample["family_id"], sample["name"]): sample["id"] for sample in self.samples
-        }
+        samples_mapping = {sample["name"]: sample["id"] for sample in self.samples}
 
         for index, line in enumerate(reader, 1):
             if len(line) < 6:
@@ -154,26 +155,16 @@ class PedReader:
                 continue
 
             # Test presence of sample in DB
-            individual_key = (family_id, individual_id)
-            if samples_mapping and individual_key not in samples_mapping.keys():
-                LOGGER.error(
-                    "PED file conformity line <%s>; sample (family_id, individual_id):"
-                    "<%s, %s> not found in database",
-                    index, family_id, individual_id,
-                )
-                continue
+            # individual_key = (family_id, individual_id)
+            # if samples_mapping and individual_key not in samples_mapping.keys():
+            #     LOGGER.error(
+            #         "PED file conformity line <%s>; sample (family_id, individual_id):"
+            #         "<%s, %s> not found in database",
+            #         index, family_id, individual_id,
+            #     )
+            #     continue
 
             # Test presence of parents in DB
-            father_key = (family_id, father_id)
-            mother_key = (family_id, mother_id)
-            if samples_mapping and {father_key, mother_key} - samples_mapping.keys():
-                # If set not empty: 1 tuple is not found in DB
-                # => will be replaced by 0 (unknown)
-                LOGGER.warning(
-                    "PED file conformity line <%s>; parent sample (family_id, parent_id),"
-                    "father: <%s> or mother: <%s> not found in database",
-                    index, father_key, mother_key,
-                )
 
             if self.raw_samples:
                 new_sample = [
@@ -188,10 +179,10 @@ class PedReader:
             else:
 
                 new_sample = {
-                    "id": samples_mapping[individual_key],  # Get DB sample id
+                    "id": samples_mapping[individual_id],  # Get DB sample id
                     "family_id": family_id,
-                    "father_id": samples_mapping.get(father_key, 0),
-                    "mother_id": samples_mapping.get(mother_key, 0),
+                    "father_id": samples_mapping.get(father_id, 0),
+                    "mother_id": samples_mapping.get(mother_id, 0),
                     "sex": sex,
                     "phenotype": phenotype,
                 }
