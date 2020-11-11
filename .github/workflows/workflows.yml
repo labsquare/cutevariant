@@ -24,8 +24,8 @@ jobs:
   linux:
     runs-on: ubuntu-latest
     strategy:
-    matrix:
-      python_version: ['3.7', '3.8']
+      matrix:
+        python_version: ['3.7', '3.8']
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
