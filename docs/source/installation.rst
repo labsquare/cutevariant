@@ -42,8 +42,39 @@ To get tests running
     virtualenv -p /usr/bin/python3 venv
     source ven/bin/activate
     make install # install
-    make run     # start application
     make test    # start tests
+
+
+Translations
+============
+
+This will activate the translation procedure with the help of `pylupdate4`.
+
+    make translations
+
+
+Linters & code formatters
+=========================
+
+Main linters:
+
+.. code-block:: bash
+
+    prospector cutevariant/targeted_file.py
+
+    pylint cutevariant/targeted_file.py
+
+Code formatter:
+
+.. code-block:: bash
+
+    black cutevariant/targeted_file.py
+
+Search missing docstrings:
+
+.. code-block:: bash
+
+    make missing_doc
 
 
 Development & release cycle
@@ -63,33 +94,20 @@ To yield a new release, use:
     fullrelease
 
 
-.. Development on Windows (good luck)
+Development on Windows (good luck)
+----------------------------------
 
-        Install Python3.6+
+    - Install Python3.6+
+    - Install git
+    - Install make (optional)
+    - pip install wheel
+    - pip install --user -e .[dev]
 
-        Install git
 
-        Install make (optional)
+Executable files are located here:
 
-        pip install wheel git clone https://github.com/ysard/cutevariant.git git fetch git checkout dev # or devel make install # or pip install --user -e .[dev]
+    Executable path: C:\Users<username>\AppData\Roaming\Python\Python37\Scripts\cutevariant.exe
 
-    Executable files are located here:
-
-        Executable path: C:\Users<username>\AppData\Roaming\Python\Python37\Scripts\cutevariant.exe
-
-    Build standalone program/archive/blob[add synonyms here] on Windows using cx_freeze
-
-    Strongly discouraged: You will generate an archive of 350Mo just for a program of less than 900Ko (including 550Ko of fonts and icons).
-
-    Install cx_freeze:
-
-    pip install cx_freeze
-
-    Build a blob:
-
-    make build_windows_blob
-
-    Your blob is in ./build/ directory.
 
 Generate the doc
 ================
