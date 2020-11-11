@@ -36,6 +36,10 @@ class PedModel(QAbstractTableModel):
 
     """
 
+    SEX_MAP = {"1": "Male", "2": "Female", "0": ""}
+    PHENOTYPE_MAP = {"1": "Unaffected", "2": "Affected", "0": ""}
+    UNKNOWN_VALUES = ["", "NA", "0"]
+
     def __init__(self):
         super().__init__()
 
@@ -48,10 +52,6 @@ class PedModel(QAbstractTableModel):
             "Sex",
             "Phenotype",
         )
-
-        self.sex_map = {"1": "Male", "2": "Female", "0": ""}
-
-        self.phenotype_map = {"1": "Unaffected", "2": "Affected", "0": ""}
 
     def rowCount(self, index=QModelIndex()):
         """ override """
@@ -105,6 +105,7 @@ class PedModel(QAbstractTableModel):
         Example:
             samples = [family_id, individual_id, father_id, mother_id, sex, genotype]
         """
+
         self.beginResetModel()
         self.samples_data.clear()
         self.samples_data = list(samples)
@@ -123,13 +124,13 @@ class PedModel(QAbstractTableModel):
             value = self.samples_data[index.row()][index.column()]
 
             if index.column() == 2 or index.column() == 3:  # father_id, mother_id
-                return value if value != "0" else ""
+                return value if value not in self.UNKNOWN_VALUES else ""
 
             if index.column() == 4:  # Sex
-                return self.sex_map.get(value, "")
+                return self.SEX_MAP.get(str(value), "")
 
             if index.column() == 5:  # Phenotype
-                return self.phenotype_map.get(value, "")
+                return self.PHENOTYPE_MAP.get(str(value), "")
 
             return value
 
@@ -249,8 +250,7 @@ class PedDelegate(QItemDelegate):
 
             for row in self.erroneous_samples:
                 self.parthenogenesis_detected.emit(
-                    self.tr(
-                        "<b>Same father and mother for sample '{}'</b>").format(
+                    self.tr("<b>Same father and mother for sample '{}'</b>").format(
                         model.samples_data[row][1]
                     )
                 )
@@ -281,7 +281,9 @@ class PedView(QTableView):
         self.setAlternatingRowColors(True)
         self.verticalHeader().hide()
         self.setItemDelegate(self.delegate)
-        self.setEditTriggers(QAbstractItemView.CurrentChanged | QAbstractItemView.DoubleClicked)
+        self.setEditTriggers(
+            QAbstractItemView.CurrentChanged | QAbstractItemView.DoubleClicked
+        )
         self.delegate.parthenogenesis_detected.connect(self.message)
         # PED file for the model
         self.outfile = None
