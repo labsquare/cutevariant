@@ -13,6 +13,7 @@ Welcome to cutevariant's documentation!
    installation
    command_line_usage
    dev_documentation
+   programming_chart
 
 .. overview => to be redacted
 
