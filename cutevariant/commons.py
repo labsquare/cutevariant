@@ -62,6 +62,7 @@ WEBSITES_URLS = {
 }
 
 REPORT_BUG_URL = "https://github.com/labsquare/cutevariant/issues/new"
+WIKI_URL = "https://github.com/labsquare/cutevariant/wiki"
 
 # Logging
 LOGGER_NAME = "cutevariant"

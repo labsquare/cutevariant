@@ -55,7 +55,7 @@ class VariantModel(QAbstractTableModel):
     def __init__(self, conn=None, parent=None):
         super().__init__()
         self.limit = 50
-        self.page = 0
+        self.page = 1  #
         self.total = 0
         self.variants = []
         self.headers = []
@@ -71,7 +71,7 @@ class VariantModel(QAbstractTableModel):
         self.group_by = []
         self.having = {}
         self.order_by = None
-        self.order_desc = True
+        self.order_desc = False
         self.formatter = None
         self.debug_sql = None
         # Keep after all initialization
@@ -275,7 +275,7 @@ class VariantModel(QAbstractTableModel):
         self._set_loading(True)
         LOGGER.debug("Start loading")
 
-        offset = self.page * self.limit
+        offset = (self.page - 1) * self.limit
 
         # Add fields from group by
         # self.clear()  # Assume variant = []
@@ -386,7 +386,7 @@ class VariantModel(QAbstractTableModel):
 
     def hasPage(self, page: int) -> bool:
         """ Return True if <page> exists otherwise return False """
-        return page >= 0 and page * self.limit < self.total
+        return (page - 1) >= 0 and (page - 1) * self.limit < self.total
 
     def setPage(self, page: int):
         """ set the page of the model """
@@ -406,12 +406,12 @@ class VariantModel(QAbstractTableModel):
 
     def firstPage(self):
         """ Set model to the first page """
-        self.setPage(0)
+        self.setPage(1)
 
     def lastPage(self):
         """ Set model to the last page """
 
-        self.setPage(self.pageCount() - 1)
+        self.setPage(self.pageCount())
 
     def pageCount(self):
         """ Return total page count """
@@ -643,7 +643,7 @@ class VariantView(QWidget):
         self.view.setModel(model)
 
     def load(self):
-        self.model.page = 0
+        self.model.page = 1
         self.model.load()
 
     def loaded(self):
@@ -753,7 +753,7 @@ class VariantView(QWidget):
             self.set_pagging_enabled(False)
         else:
             # self.page_box.addItems([str(i) for i in range(self.model.pageCount())])
-            self.page_box.validator().setRange(0, self.model.pageCount() - 1)
+            self.page_box.validator().setRange(1, self.model.pageCount())
             self.page_box.setText(str(self.model.page))
             self.set_pagging_enabled(True)
 
@@ -792,7 +792,9 @@ class VariantView(QWidget):
         menu.addAction(
             FIcon(0xF014C),
             formatted_variant,
-            functools.partial(QApplication.instance().clipboard().setText, formatted_variant),
+            functools.partial(
+                QApplication.instance().clipboard().setText, formatted_variant
+            ),
         )
 
         # Create favorite action
@@ -1405,7 +1407,9 @@ class VariantViewWidget(plugin.PluginWidget):
             """<div height=100%>
             <img src="data:image/png;base64,{}" align="left"/>
              <span> {} </span>
-            </div>""".format(icon_64, message)
+            </div>""".format(
+                icon_64, message
+            )
         )
 
 

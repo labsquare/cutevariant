@@ -438,6 +438,7 @@ def build_sql_query(
     having={},  # {"op":">", "value": 3  }
     default_tables={},
     samples_ids={},
+    **kwargs,
 ):
     """Build SQL SELECT query
 
@@ -541,7 +542,6 @@ def build_sql_query(
     if order_by:
         # TODO : sqlite escape field with quote
         orientation = "DESC" if order_desc else "ASC"
-        print("DEBUGH", order_by)
         order_by = fields_to_sql(order_by, default_tables)
         sql_query += f" ORDER BY {order_by} {orientation}"
 
@@ -599,6 +599,7 @@ def build_full_sql_query(
         having=having,
         default_tables=default_tables,
         samples_ids=sample_ids,
+        **kwargs,
     )
     return query
 

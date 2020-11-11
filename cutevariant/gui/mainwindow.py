@@ -308,6 +308,12 @@ class MainWindow(QMainWindow):
             self.about_cutevariant,
         )
         self.help_menu.addAction(
+            FIcon(0xF00BE), self.tr("Wiki"),
+            partial(
+                QDesktopServices.openUrl, QUrl(cm.WIKI_URL, QUrl.TolerantMode),
+            )
+        )
+        self.help_menu.addAction(
             FIcon(0xF02D6), self.tr("What's this"), QWhatsThis.enterWhatsThisMode
         )
         self.help_menu.addAction(

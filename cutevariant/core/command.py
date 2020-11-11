@@ -78,6 +78,7 @@ def select_cmd(
         offset=offset,
         group_by=group_by,
         having=having,
+        **kwargs,
     )
     LOGGER.debug("command:select_cmd:: %s", query)
     for i in conn.execute(query):
@@ -141,6 +142,7 @@ def count_cmd(
         order_by=None,
         group_by=group_by,
         having=having,
+        **kwargs,
     )
 
     # THIS IS INSANE... SQLITE DOESNT RETURN ALIAS NAME WITH SQUARE BRACKET....
@@ -224,6 +226,7 @@ def create_cmd(
         source=source,
         filters=filters,
         limit=None,
+        **kwargs,
     )
 
     LOGGER.debug("command:create_cmd:: %s", sql_query)
