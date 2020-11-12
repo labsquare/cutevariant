@@ -33,7 +33,7 @@ Cutevariant is avaible from [Pypi](https://pypi.org/project/cutevariant/) :
     cutevariant             # run
 
 ## From source 
-- Python 3.7 or newer is required  
+- Python 3.6 or newer is required  
 
 ```
 git clone https://github.com/labsquare/cutevariant.git
