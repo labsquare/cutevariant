@@ -5,7 +5,7 @@
 
 ![CI](https://github.com/labsquare/cutevariant/workflows/CI/badge.svg)
 
-![](https://raw.githubusercontent.com/labsquare/cutevariant/devel/screencast.gif)
+
 
 Cutevariant is a cross-plateform application dedicated to maniupulate and filter variation from annotated VCF file. 
 When you create a project, data are imported into an sqlite database that cutevariant queries according your needs. 
