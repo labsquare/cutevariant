@@ -40,3 +40,10 @@ git clone https://github.com/labsquare/cutevariant.git
 make install_deps 
 make run 
 ```
+
+## Contributions / Bugs
+cutevariant is a new project and all contributors are welcome.
+If you found a bug or have a feature request, you can report it from the Github isse trackers.
+You can join us [on discord](https://discord.gg/7sSH4VSPKK). We are speaking french right now, but we can switch to english. 
+
+
