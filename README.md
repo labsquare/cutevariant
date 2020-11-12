@@ -43,7 +43,13 @@ make run
 
 ## Contributions / Bugs
 cutevariant is a new project and all contributors are welcome.
+### Issues
 If you found a bug or have a feature request, you can report it from the Github isse trackers.
+
+### Create a plugin
+Documentation to create a plugin is [available here](https://github.com/labsquare/cutevariant/wiki/Plugins)
+
+### Chat 
 You can join us [on discord](https://discord.gg/7sSH4VSPKK). We are speaking french right now, but we can switch to english. 
 
 
