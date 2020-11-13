@@ -59,7 +59,7 @@ jobs:
             pip install PyInstaller==4.0
       - name: create binary 
       # TODO : use a spec file ! 
-        run: pyinstaller -i icon.ico --name="cutevariant_{matrix.architecture}" --hidden-import json --add-data "cutevariant;cutevariant" cutevariant\__main__.py
+        run: pyinstaller -i icon.ico --name="cutevariant_${{matrix.architecture}}" --hidden-import json --add-data "cutevariant;cutevariant" cutevariant\__main__.py
 
       - name: Upload artifact
         uses: actions/upload-artifact@v2
