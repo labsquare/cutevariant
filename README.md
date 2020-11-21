@@ -24,6 +24,7 @@ Once your project is created, you can query variant using different gui controll
 # Installation
 
 ## Windows 
+Standalone binary are available for windows:  
 - [Download cutevariant 32 bit](https://github.com/labsquare/cutevariant/releases/download/latest/cutevariant-latest-x86.zip)
 - [Download cutevariant 64 bit](https://github.com/labsquare/cutevariant/releases/download/latest/cutevariant-latest-x64.zip)
 
