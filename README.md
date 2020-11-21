@@ -41,8 +41,15 @@ make install_deps
 make run 
 ```
 
+## Usages 
+You can follow this tutorial to familiarize yourself with cutevarant.       
+https://github.com/labsquare/cutevariant/wiki/Usage-examples
+
+The VQL langage specification is available here :      
+https://github.com/labsquare/cutevariant/wiki/VQL-language
+
 ## Contributions / Bugs
-Cutevariant is a new project and all contributors are welcome.
+Cutevariant is a new project and all contributors are welcome
 ### Issues
 If you found a bug or have a feature request, you can report it from the [Github isse trackers](https://github.com/labsquare/cutevariant/issues).
 
