@@ -132,6 +132,7 @@ class MetricsDialog(PluginDialog):
         Notes:
             When closing the dialog window, the thread is not stopped.
         """
+
         def compute_metrics(conn):
             """Async function"""
             return {
@@ -160,7 +161,7 @@ class MetricsDialog(PluginDialog):
         self.model.add_metrics("Transition count", results["transitions"])
         self.model.add_metrics("Transversion count", results["transversions"])
         self.model.add_metrics("Tr/tv ratio", ratio)
-        self.model.add_metrics("Sample count", results["variants"])
+        self.model.add_metrics("Sample count", results["samples"])
 
         self.view.horizontalHeader().setSectionResizeMode(
             0, QHeaderView.ResizeToContents
