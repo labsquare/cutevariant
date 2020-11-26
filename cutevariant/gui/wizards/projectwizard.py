@@ -1,6 +1,7 @@
 # Standard imports
 import os
 import copy
+import time
 
 # Qt imports
 from PySide2.QtWidgets import *
@@ -82,11 +83,15 @@ class ProjectPage(QWizardPage):
 
     def isComplete(self):
         """Conditions to unlock next button"""
-        return True if (
-            QDir(self.project_path_edit.text()).exists()
-            and self.project_path_edit.text()
-            and self.project_name_edit.text()
-        ) else False
+        return (
+            True
+            if (
+                QDir(self.project_path_edit.text()).exists()
+                and self.project_path_edit.text()
+                and self.project_name_edit.text()
+            )
+            else False
+        )
 
 
 class FilePage(QWizardPage):
@@ -173,17 +178,20 @@ class SamplePage(QWizardPage):
     See Also:
         :meth:`gui.model_view.pedigree.PedView`
     """
+
     def __init__(self):
         super().__init__()
 
         self.setTitle(self.tr("Samples"))
         self.setSubTitle(self.tr("Add sample descriptions or skip this step."))
-        self.help_text = QLabel(self.tr(
-            "You can edit the relationships between genomes found in the VCF\n"
-            "manually or via a PED/PLINK file (sample pedigree information and "
-            "genotype calls).\nBy default the fields are those found in the VCF; "
-            "the unknown fields are empty.\nDouble click to edit them."
-        ))
+        self.help_text = QLabel(
+            self.tr(
+                "You can edit the relationships between genomes found in the VCF\n"
+                "manually or via a PED/PLINK file (sample pedigree information and "
+                "genotype calls).\nBy default the fields are those found in the VCF; "
+                "the unknown fields are empty.\nDouble click to edit them."
+            )
+        )
         self.view = PedView()
         self.import_button = QPushButton(self.tr("Import PED file (facultative)"))
         self.ped_message = QLabel()
@@ -231,7 +239,9 @@ class SamplePage(QWizardPage):
         # Check if PedView contains the same default data
         # print("default", self.vcf_default_ped_samples)
         # print("vs", self.view.samples)
-        if set(map(tuple, self.vcf_default_ped_samples)) == set(map(tuple, self.view.samples)):
+        if set(map(tuple, self.vcf_default_ped_samples)) == set(
+            map(tuple, self.view.samples)
+        ):
             # Reset samples => will set pedfile field to None
             self.view.samples = list()
 
@@ -263,7 +273,8 @@ class SamplePage(QWizardPage):
         # Get samples of individual_ids that are already on the VCF file
         self.view.samples = [
             # samples argument is empty dict since its not
-            sample for sample in PedReader(filepath, dict())
+            sample
+            for sample in PedReader(filepath, dict())
             if sample[1] in self.vcf_samples
         ]
 
@@ -327,6 +338,9 @@ class ImportThread(QThread):
         """
         self._stop = False
 
+        #  start timer
+        start = time.clock()
+
         if os.path.exists(self.db_filename):
             os.remove(self.db_filename)
         self.conn = get_sql_connection(self.db_filename)
@@ -337,7 +351,7 @@ class ImportThread(QThread):
                 self.conn,
                 self.filename,
                 pedfile=self.pedfile,
-                project=self.project_settings
+                project=self.project_settings,
             ):
                 if self._stop:
                     self.conn.close()
@@ -352,6 +366,10 @@ class ImportThread(QThread):
             raise e
         finally:
             # Send status (Send True when there is no error)
+            # end timer
+            end = time.clock()
+            elapsed_time = end - start
+            self.progress_changed.emit(100, str("Elapsed time: %.2gs" % (end - start)))
             self.finished_status.emit(not self._stop)
 
     def stop(self):
