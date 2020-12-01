@@ -55,6 +55,10 @@ def main():
     # Load app styles
     load_styles(app)
 
+    # # Uncomment those line to clear settings
+    # settings = QSettings()
+    # settings.clear()
+
     # Set icons set
     setFontPath(cm.FONT_FILE)
 
@@ -188,5 +192,3 @@ def process_arguments(app):
 
 if __name__ == "__main__":
     main()
-
-

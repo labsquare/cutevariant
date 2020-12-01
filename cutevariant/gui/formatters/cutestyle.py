@@ -14,7 +14,7 @@ import cutevariant.commons as cm
 
 class CutestyleFormatter(Formatter):
 
-    DISPLAY_NAME = "CuteStyle"
+    DISPLAY_NAME = "Cute style"
 
     BASE_COLOR = {"A": "green", "C": "red", "T": "red"}
 

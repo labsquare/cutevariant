@@ -1080,7 +1080,7 @@ class VariantViewWidget(plugin.PluginWidget):
         Default formatter is "SeqoneFormatter".
         """
         # Get previously selected formatter
-        formatter_name = self.settings.value("ui/formatter", "SeqoneFormatter")
+        formatter_name = self.settings.value("ui/formatter", "CutestyleFormatter")
 
         # Add formatters to combobox, a click on it will instantiate the class
         selected_formatter_index = 0
@@ -1130,9 +1130,11 @@ class VariantViewWidget(plugin.PluginWidget):
         self._set_groups(self.mainwindow.state.group_by)
 
         # Set formatter
-        formatter_class = next(formatter.find_formatters())
-        self.main_right_pane.model.formatter = formatter_class()
-        self.groupby_left_pane.model.formatter = formatter_class()
+        formatter_class = self.formatter_combo.currentData()
+
+        #        formatter_class = next(formatter.find_formatters())
+        self.main_right_pane.set_formatter(formatter_class())
+        self.groupby_left_pane.set_formatter(formatter_class())
         # Load ui
         self.load()
 
