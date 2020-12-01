@@ -1006,6 +1006,23 @@ class VariantViewWidget(plugin.PluginWidget):
         self.groupbylist_action.setVisible(False)
         self.groupbylist_action.triggered.connect(self._show_group_dialog)
 
+        self.top_bar.addSeparator()
+        # Save selection
+        self.save_action = self.top_bar.addAction(
+            FIcon(0xF0F87), self.tr("Save selection"), self.on_save_selection
+        )
+        self.save_action.setToolTip(
+            self.tr("Save the current variants into a new selection")
+        )
+        # self.save_action.setPriority(QAction.LowPriority)
+
+        # Refresh UI button
+        action = self.top_bar.addAction(
+            FIcon(0xF0450), self.tr("Refresh"), self.on_refresh
+        )
+        action.setToolTip(self.tr("Refresh the current list of variants"))
+        # action.setPriority(QAction.LowPriority)
+
         # Formatter tools
         self.top_bar.addSeparator()
         spacer = QWidget()
@@ -1016,22 +1033,6 @@ class VariantViewWidget(plugin.PluginWidget):
         self.formatter_combo = QComboBox()
         self.settings = QSettings()
         self.add_available_formatters()
-
-        # Refresh UI button
-        self.top_bar.addSeparator()
-        action = self.top_bar.addAction(
-            FIcon(0xF0450), self.tr("Refresh the list of variants"), self.on_refresh
-        )
-        action.setPriority(QAction.LowPriority)
-
-        # Save selection
-        self.save_action = self.top_bar.addAction(
-            FIcon(0xF0193), self.tr("Save selection"), self.on_save_selection
-        )
-        self.save_action.setToolTip(
-            self.tr("Save the current variants into a new selection")
-        )
-        self.save_action.setPriority(QAction.LowPriority)
 
         # Error handling
         self.log_edit = QLabel()
@@ -1084,12 +1085,13 @@ class VariantViewWidget(plugin.PluginWidget):
         # Add formatters to combobox, a click on it will instantiate the class
         selected_formatter_index = 0
         for index, obj in enumerate(formatter.find_formatters()):
-            self.formatter_combo.addItem(obj.DISPLAY_NAME, obj)
+            self.formatter_combo.addItem(FIcon(0xF03D8), obj.DISPLAY_NAME, obj)
             if obj.__name__ == formatter_name:
                 selected_formatter_index = index
 
         self.top_bar.addWidget(self.formatter_combo)
         self.formatter_combo.currentTextChanged.connect(self.on_formatter_changed)
+        self.formatter_combo.setToolTip(self.tr("Change current style"))
 
         # Set the previously used/default formatter
         self.formatter_combo.setCurrentIndex(selected_formatter_index)
