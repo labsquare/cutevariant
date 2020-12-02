@@ -66,8 +66,15 @@ class WordListDialog(QDialog):
         self.view.setModel(self.model)
         self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
 
+        vlayout = QVBoxLayout()
+        #  Create title label
+        self.title_label = QLabel()
+        self.title_label.setText(self.tr("<b> Create a set by adding words </b>"))
+        vlayout.addWidget(self.title_label)
+        vlayout.addWidget(self.view)
+
         hlayout = QHBoxLayout()
-        hlayout.addWidget(self.view)
+        hlayout.addLayout(vlayout)
         hlayout.addLayout(box)
 
         self.setLayout(hlayout)
