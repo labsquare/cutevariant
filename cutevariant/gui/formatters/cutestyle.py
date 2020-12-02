@@ -65,6 +65,8 @@ class CutestyleFormatter(Formatter):
         else:
             text_color = option.palette.color(QPalette.Normal, QPalette.Text)
 
+        is_selected = option.state & QStyle.State_Selected
+
         # Default theme color
         pen.setColor(text_color)
 
@@ -72,16 +74,18 @@ class CutestyleFormatter(Formatter):
         value = self.value(index)
 
         # Colour bases (default color is the one of the current theme)
-        if field_name == "ref" or field_name == "alt" and value in ("A", "C", "G", "T"):
+        if (field_name == "ref" or field_name == "alt") and (
+            value in ("A", "C", "G", "T") and not is_selected
+        ):
             pen.setColor(
                 self.BASE_COLOR.get(value, option.palette.color(QPalette.WindowText))
             )
 
-        if field_name == "impact":
+        if field_name == "impact" and not is_selected:
             font.setBold(True)
             pen.setColor(self.IMPACT_COLOR.get(value, self.IMPACT_COLOR["MODIFIER"]))
 
-        if field_name == "gene":
+        if field_name == "gene" and not is_selected:
             pen.setColor("#6a9fca")
 
         if field_name == "classification":
