@@ -761,7 +761,7 @@ class VariantView(QWidget):
             # Yes it's hacky... but left pane doesn't show variants
             text = self.tr("{} group(s) {} page(s)")
         else:
-            text = self.tr("{} variant(s) {} page(s)")
+            text = self.tr("{} line(s) {} page(s)")
 
         self.info_label.setText(text.format(self.model.total, self.model.pageCount()))
 
