@@ -106,6 +106,7 @@ class PluginWidget(QWidget):
             Can be: DOCK_LOCATION, CENTRAL_LOCATION, FOOTER_LOCATION
         - ENABLE: If False, the plugin is disabled and will not be loaded;
             (used for development purpose).
+        - REFRESH_ONLY_VISIBLE: If this is True, the plugin will refresh only if plugin is visible
 
     Attributes:
         - mainwindow: Parent widget
@@ -117,6 +118,7 @@ class PluginWidget(QWidget):
 
     LOCATION = DOCK_LOCATION
     ENABLE = False
+    REFRESH_ONLY_VISIBLE = True
 
     def __init__(self, parent=None):
         """Set parent window (mainwindow) to QWidget and to mainwindow attribute
@@ -238,6 +240,7 @@ class PluginSettingsWidget(settings.GroupWidget):
 
 ################################################################################
 
+
 def snake_to_camel(name: str) -> str:
     """Convert snake_case name to CamelCase name
 
@@ -344,7 +347,9 @@ def find_plugins(path=None):
             if class_name not in dir(sub_module):
                 LOGGER.error(
                     "Plugin <%s.%s>, class <%s> not found!",
-                    module.__name__, sub_module_type, class_name
+                    module.__name__,
+                    sub_module_type,
+                    class_name,
                 )
                 continue
 
@@ -365,7 +370,7 @@ def find_plugins(path=None):
                     "Plugin <%s.%s>, parent class <%s> not found!",
                     module.__name__,
                     sub_module_type,
-                    authorized_base_clases[sub_module_type].__name__
+                    authorized_base_clases[sub_module_type].__name__,
                 )
                 continue
 
@@ -374,8 +379,8 @@ def find_plugins(path=None):
 
             # Fix plugin status by user decision via app settings
             if not class_item.ENABLE:
-                class_item.ENABLE = QSettings().value(
-                    f"plugins/{plugin_item['name']}/status"
-                ) == "true"
+                class_item.ENABLE = (
+                    QSettings().value(f"plugins/{plugin_item['name']}/status") == "true"
+                )
 
         yield plugin_item

@@ -81,7 +81,9 @@ class MainWindow(QMainWindow):
 
         # Window geometry
         self.resize(600, 400)
-        self.setGeometry(QApplication.instance().desktop().rect().adjusted(100, 100, -100, -100))
+        self.setGeometry(
+            QApplication.instance().desktop().rect().adjusted(100, 100, -100, -100)
+        )
 
         self.setTabPosition(Qt.AllDockWidgetAreas, QTabWidget.North)
 
@@ -212,7 +214,9 @@ class MainWindow(QMainWindow):
             sender (PluginWidget): from a plugin, you can pass "self" as argument
         """
         for plugin_obj in self.plugins.values():
-            if plugin_obj is not sender and plugin_obj.isVisible():
+            if plugin_obj is not sender and (
+                plugin_obj.isVisible() or plugin_obj.REFRESH_ONLY_VISIBLE is False
+            ):
                 try:
                     plugin_obj.on_refresh()
                 except Exception as e:
@@ -308,19 +312,19 @@ class MainWindow(QMainWindow):
             self.about_cutevariant,
         )
         self.help_menu.addAction(
-            FIcon(0xF00BE), self.tr("Wiki"),
-            partial(
-                QDesktopServices.openUrl, QUrl(cm.WIKI_URL, QUrl.TolerantMode),
-            )
+            FIcon(0xF00BE),
+            self.tr("Wiki"),
+            partial(QDesktopServices.openUrl, QUrl(cm.WIKI_URL, QUrl.TolerantMode)),
         )
         self.help_menu.addAction(
             FIcon(0xF02D6), self.tr("What's this"), QWhatsThis.enterWhatsThisMode
         )
         self.help_menu.addAction(
-            FIcon(0xF0A30), self.tr("Report a bug"),
+            FIcon(0xF0A30),
+            self.tr("Report a bug"),
             partial(
-                QDesktopServices.openUrl, QUrl(cm.REPORT_BUG_URL, QUrl.TolerantMode),
-            )
+                QDesktopServices.openUrl, QUrl(cm.REPORT_BUG_URL, QUrl.TolerantMode)
+            ),
         )
 
     def setup_toolbar(self):
