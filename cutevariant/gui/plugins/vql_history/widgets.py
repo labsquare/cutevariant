@@ -110,6 +110,7 @@ class VqlHistoryWidget(plugin.PluginWidget):
 
         # Create layout
         main_layout = QVBoxLayout()
+        main_layout.setSpacing(0)
         main_layout.addWidget(self.toolbar)
         main_layout.addWidget(self.view)
         main_layout.setContentsMargins(0, 0, 0, 0)
