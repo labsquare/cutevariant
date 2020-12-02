@@ -69,7 +69,7 @@ class WordListDialog(QDialog):
         vlayout = QVBoxLayout()
         #  Create title label
         self.title_label = QLabel()
-        self.title_label.setText(self.tr("<b> Create a set by adding words </b>"))
+        self.title_label.setText(self.tr("Create a set by adding words"))
         vlayout.addWidget(self.title_label)
         vlayout.addWidget(self.view)
 
