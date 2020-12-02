@@ -33,7 +33,7 @@ class HistoryModel(QAbstractTableModel):
 
         if role == Qt.DisplayRole:
             if index.column() == 0:
-                return self.records[index.row()][0].toString()
+                return self.records[index.row()][0].toString("hh:mm:ss")
             if index.column() == 1:
                 return str(self.records[index.row()][1])
             if index.column() == 2:
@@ -59,7 +59,7 @@ class HistoryModel(QAbstractTableModel):
         now = QDateTime().currentDateTime()
 
         self.beginInsertRows(QModelIndex(), 0, 0)
-        self.records.append((now, count, query))
+        self.records.insert(0, (now, count, query))
         self.endInsertRows()
 
     def clear_records(self):
@@ -68,6 +68,10 @@ class HistoryModel(QAbstractTableModel):
         self.beginResetModel()
         self.records.clear()
         self.endResetModel()
+
+    def get_record(self, index: QModelIndex):
+        """ Return record corresponding to the model index """
+        return self.records[index.row()]
 
 
 class VqlHistoryWidget(plugin.PluginWidget):
@@ -91,8 +95,18 @@ class VqlHistoryWidget(plugin.PluginWidget):
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setSelectionMode(QAbstractItemView.SingleSelection)
 
+        #  Getting the variant count is not easy in this way...
+        # Because the variant count is computed asynchronously from the variant_view
+        #  TODO : need to find a way ! I hide the column for now
+        self.view.hideColumn(1)
+
+        self.view.doubleClicked.connect(self.on_double_clicked)
         #  Create toolbar
         self.toolbar = QToolBar()
+        self.toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        self.toolbar.addAction(
+            FIcon(0xF0413), self.tr("Clear"), self.model.clear_records
+        )
 
         # Create layout
         main_layout = QVBoxLayout()
@@ -103,15 +117,19 @@ class VqlHistoryWidget(plugin.PluginWidget):
         self.setLayout(main_layout)
 
     def on_register(self, mainwindow):
+        """ override """
         pass
 
     def on_open_project(self, conn):
+        """ override """
         pass
 
     def on_close(self):
+        """ override """
         pass
 
     def on_refresh(self):
+        """ override """
 
         vql_query = build_vql_query(
             self.mainwindow.state.fields,
@@ -121,7 +139,29 @@ class VqlHistoryWidget(plugin.PluginWidget):
             self.mainwindow.state.having,
         )
 
+        # TODO : Get the variant count
+        # Get the total count from variant_view is not easy because it is asynchrone...
+        #  So it is hidden for now ...
+
         self.model.add_record(vql_query, 0)
+
+    def on_double_clicked(self, index: QModelIndex):
+        """triggered when history record is clicked 
+        
+        Args:
+            index (QModelIndex): index 
+        """
+        _, _, query = self.model.get_record(index)
+        parsed_query = next(vql.parse_vql(query))
+        print(parsed_query)
+
+        self.mainwindow.state.fields = parsed_query["fields"]
+        self.mainwindow.state.source = parsed_query["source"]
+        self.mainwindow.state.filters = parsed_query["filters"]
+        self.mainwindow.state.group_by = parsed_query["group_by"]
+        self.mainwindow.state.having = parsed_query["having"]
+
+        self.mainwindow.refresh_plugins(sender=self)
 
 
 if __name__ == "__main__":
