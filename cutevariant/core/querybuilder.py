@@ -293,6 +293,9 @@ def filters_to_sql(filters, default_tables={}):
                 except ValueError:
                     pass
 
+            elif operator == "IS" and value == "NULL":
+                value = f"NULL"
+
             elif isinstance(value, str):
                 # enclose string with quotes
                 value = f"'{value}'"
@@ -364,6 +367,9 @@ def filters_to_vql(filters):
                     value = temp_val
                 except ValueError:
                     pass
+
+            elif operator == "IS" and value == "NULL":
+                value = f"NULL"
 
             elif isinstance(value, str):
                 value = f"'{value}'"

@@ -27,6 +27,15 @@ VQL_TO_TREE_CASES = {
             ]
         },
     },
+    # Test 2 bis avec IS NULL
+    "SELECT chr,pos,ref FROM variants WHERE a IS NULL": {
+        "cmd": "select_cmd",
+        "fields": ["chr", "pos", "ref"],
+        "source": "variants",
+        "group_by": [],
+        "having": {},
+        "filters": {"AND": [{"field": "a", "operator": "IS", "value": "NULL"}]},
+    },
     # Test 3
     "SELECT chr,pos,ref FROM variants WHERE a=3 AND (b=5 OR c=3)": {
         "cmd": "select_cmd",

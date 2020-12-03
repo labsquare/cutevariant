@@ -82,17 +82,9 @@ def test_fields_to_sql():
 # Structure: (filter dict, expected SQL, expected VQL)
 FILTERS_VS_SQL_VQL = [
     # Empty filter
-    (
-        {},
-        "",
-        ""
-    ),
+    ({}, "", ""),
     # Empty filter
-    (
-        {"AND": []},
-        "",
-        ""
-    ),
+    ({"AND": []}, "", ""),
     # Standard not nested filter
     (
         {
@@ -104,12 +96,17 @@ FILTERS_VS_SQL_VQL = [
         "(`variants`.`ref` = 'A' AND `variants`.`alt` = 'C')",
         "ref = 'A' AND alt = 'C'",
     ),
+    #  TEST IS NULL
+    (
+        {"AND": [{"field": "ref", "operator": "IS", "value": "NULL"}]},
+        "`variants`.`ref` IS NULL",
+        "ref IS NULL",
+    ),
     # Test composite field
     (
         {
             "AND": [
-                {"field": ("sample", "sacha", "gt"), "operator": "=",
-                 "value": 4},
+                {"field": ("sample", "sacha", "gt"), "operator": "=", "value": 4},
                 {"field": "alt", "operator": "=", "value": "C"},
             ]
         },
@@ -134,59 +131,59 @@ FILTERS_VS_SQL_VQL = [
     ),
     # Test IN with numeric tuple
     (
-        {'field': 'chr', 'operator': 'in', 'value': (11.0,)},
+        {"field": "chr", "operator": "in", "value": (11.0,)},
         "`variants`.`chr` IN (11.0)",
         "chr IN (11.0)",
     ),
     # Test IN with string tuple
     (
-        {'field': 'chr', 'operator': 'in', 'value': ("XXX",)},
+        {"field": "chr", "operator": "in", "value": ("XXX",)},
         "`variants`.`chr` IN ('XXX')",
         "chr IN ('XXX')",
     ),
     # Test IN: conservation of not mixed types in the tuple
     (
-        {'field': 'chr', 'operator': 'in', 'value': (10.0, 11.0)},
-        '`variants`.`chr` IN (10.0, 11.0)',
-        'chr IN (10.0, 11.0)',
+        {"field": "chr", "operator": "in", "value": (10.0, 11.0)},
+        "`variants`.`chr` IN (10.0, 11.0)",
+        "chr IN (10.0, 11.0)",
     ),
     # Test IN: conservation of not mixed types in a tuple with str type
     # => Cast via literal_eval
     (
-        {'field': 'chr', 'operator': 'in', 'value': '(10.0, 11.0)'},
-        '`variants`.`chr` IN (10.0, 11.0)',
-        'chr IN (10.0, 11.0)',
+        {"field": "chr", "operator": "in", "value": "(10.0, 11.0)"},
+        "`variants`.`chr` IN (10.0, 11.0)",
+        "chr IN (10.0, 11.0)",
     ),
     # Test IN: conservation of mixed types in the tuple
     (
-        {'field': 'gene', 'operator': 'in', 'value': ('CICP23', 2.0)},
+        {"field": "gene", "operator": "in", "value": ("CICP23", 2.0)},
         "`annotations`.`gene` IN ('CICP23', 2.0)",
         "gene IN ('CICP23', 2.0)",
     ),
     # Test IN: conservation of mixed types in a tuple with str type
     # => Cast via literal_eval
     (
-        {'field': 'gene', 'operator': 'in', 'value': "('CICP23', 2.0)"},
+        {"field": "gene", "operator": "in", "value": "('CICP23', 2.0)"},
         "`annotations`.`gene` IN ('CICP23', 2.0)",
         "gene IN ('CICP23', 2.0)",
     ),
     # Test IN: Just elements separated by comas
     (
-        {'field': 'chr', 'operator': 'in', 'value': '100, 11'},
-        '`variants`.`chr` IN (100, 11)',
+        {"field": "chr", "operator": "in", "value": "100, 11"},
+        "`variants`.`chr` IN (100, 11)",
         "chr IN (100, 11)",
     ),
     # Test normal operator (not IN) with tuple
     (
-        {'field': 'chr', 'operator': '<', 'value': '(10.0, 11.0)'},
+        {"field": "chr", "operator": "<", "value": "(10.0, 11.0)"},
         "`variants`.`chr` < '(10.0, 11.0)'",
         "chr < '(10.0, 11.0)'",
     ),
     # Test WORDSET function
     (
-        {'field': 'gene', 'operator': 'in', 'value': ('WORDSET', 'coucou')},
+        {"field": "gene", "operator": "in", "value": ("WORDSET", "coucou")},
         "`annotations`.`gene` IN (SELECT value FROM wordsets WHERE name = 'coucou')",
-        "gene IN WORDSET['coucou']"
+        "gene IN WORDSET['coucou']",
     ),
 ]
 
@@ -258,11 +255,7 @@ QUERY_TESTS = [
         {
             "fields": ["chr", "pos"],
             "source": "variants",
-            "filters": {
-                "AND": [
-                    {"field": "alt", "operator": "~", "value": "C"},
-                ]
-            },
+            "filters": {"AND": [{"field": "alt", "operator": "~", "value": "C"}]},
         },
         "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants WHERE `variants`.`alt` REGEXP 'C' LIMIT 50 OFFSET 0",
         "SELECT chr,pos FROM variants WHERE alt ~ 'C'",
