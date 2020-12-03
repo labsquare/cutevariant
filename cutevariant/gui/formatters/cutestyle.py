@@ -3,7 +3,7 @@ import re
 
 # Qt imports
 from PySide2.QtGui import QColor, QFont, QBrush, QPainter, QPen, QFontMetrics, QPalette
-from PySide2.QtCore import Qt, QModelIndex, QRect
+from PySide2.QtCore import Qt, QModelIndex, QRect, QUrl
 from PySide2.QtWidgets import QStyleOptionViewItem, QStyle
 
 # Custom imports
@@ -136,6 +136,12 @@ class CutestyleFormatter(Formatter):
                 x += width + 20
                 painter.setClipping(False)
 
+            return
+
+        if field_name == "rsid":
+            self.draw_url(
+                painter, option.rect, value, QUrl("http://www.google.fr"), index
+            )
             return
 
         painter.setBrush(brush)

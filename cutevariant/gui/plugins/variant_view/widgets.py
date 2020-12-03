@@ -59,7 +59,6 @@ class VariantModel(QAbstractTableModel):
         self.total = 0
         self.variants = []
         self.headers = []
-        self.formatter = None
 
         # Cache all database fields and their descriptions for tooltips
         # Field names as keys, descriptions as values
@@ -122,16 +121,6 @@ class VariantModel(QAbstractTableModel):
             self.count_runnable.finished.connect(self.loaded)
             self.variant_runnable.error.connect(self.runnable_exception)
             self.count_runnable.error.connect(self.runnable_exception)
-
-    @property
-    def formatter(self):
-        return self._formatter
-
-    @formatter.setter
-    def formatter(self, formatter):
-        self.beginResetModel()
-        self._formatter = formatter
-        self.endResetModel()
 
     def rowCount(self, parent=QModelIndex()):
         """Overrided : Return children count of index"""

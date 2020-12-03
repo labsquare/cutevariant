@@ -5,9 +5,9 @@ import os
 import inspect
 
 # Qt imports
-from PySide2.QtCore import Qt, QModelIndex, QRect
+from PySide2.QtCore import Qt, QModelIndex, QRect, QUrl
 from PySide2.QtWidgets import QStyleOptionViewItem
-from PySide2.QtGui import QIcon, QPainter
+from PySide2.QtGui import QIcon, QPainter, QFont, QPen, QColor
 
 
 class Formatter(object):
@@ -17,6 +17,7 @@ class Formatter(object):
     Class attributes:
         - DISPLAY_NAME: Name of the formatter displayed on the GUI.
     """
+
     DISPLAY_NAME = ""
 
     def __init__(self):
@@ -37,6 +38,13 @@ class Formatter(object):
         r = QRect(0, 0, 20, 20)
         r.moveCenter(rect.center())
         painter.drawPixmap(r, icon.pixmap(20, 20))
+
+    def draw_url(self, painter: QPainter, rect: QRect, value: str):
+        font = QFont()
+        font.setUnderline(True)
+        painter.setFont(font)
+        painter.setPen(QPen(QColor("blue")))
+        painter.drawText(rect, Qt.AlignCenter, value)
 
 
 ################################################################################
