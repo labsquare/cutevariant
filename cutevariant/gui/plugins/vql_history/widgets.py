@@ -38,6 +38,9 @@ class HistoryModel(QAbstractTableModel):
                 return str(self.records[index.row()][1])
             if index.column() == 2:
                 return self.records[index.row()][2]
+        if role == Qt.ToolTipRole:
+            return self.records[index.row()][2]
+
         return None
 
     def headerData(self, section: int, orientation: Qt.Orientation, role):
