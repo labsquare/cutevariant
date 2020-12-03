@@ -8,11 +8,15 @@ from PySide2.QtWidgets import (
     QTableView,
     QComboBox,
     QGroupBox,
+    QLabel,
+    QSizePolicy,
+    QSpacerItem,
     QDialogButtonBox,
 )
 from PySide2.QtCore import Qt, QAbstractTableModel, QModelIndex, QThreadPool
 
 # Custom imports
+from cutevariant.gui.ficon import FIcon
 from cutevariant.gui.plugin import PluginDialog
 from cutevariant.gui.sql_runnable import SqlRunnable
 from cutevariant.core import sql
@@ -53,11 +57,14 @@ class TrioAnalysisDialog(PluginDialog):
 
         flayout = QFormLayout()
         flayout.addRow(self.tr("Type"), self.type_combo)
+
+        # add spacer
+
+        # flayout.addItem(QSpacerItem(0, 10))
         flayout.addRow(self.tr("Father"), self.father_combo)
         flayout.addRow(self.tr("Mother"), self.mother_combo)
         flayout.addRow(self.tr("Child"), self.child_combo)
 
-        self.form_box.setTitle("Create a Trio filter ")
         self.form_box.setLayout(flayout)
 
         self.button_box = QDialogButtonBox(
@@ -67,13 +74,22 @@ class TrioAnalysisDialog(PluginDialog):
         self.button_box.button(QDialogButtonBox.Apply).clicked.connect(
             self.create_filter
         )
+        self.button_box.rejected.connect(self.reject)
 
         vlayout = QVBoxLayout()
 
+        self.title = QLabel()
+        self.title.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.title.setText(
+            """<b>Create Trio analysis filters</b> <br/>
+            Set samples to the corresponding parents
+            """
+        )
+        vlayout.addWidget(self.title)
         vlayout.addWidget(self.form_box)
         vlayout.addWidget(self.button_box)
         self.setLayout(vlayout)
-
+        self.resize(600, 300)
         self.populate()
 
     def populate(self):
@@ -85,9 +101,11 @@ class TrioAnalysisDialog(PluginDialog):
         self.child_combo.clear()
 
         samples = [i["name"] for i in sql.get_samples(self.conn)]
-        self.mother_combo.addItems(samples)
-        self.father_combo.addItems(samples)
-        self.child_combo.addItems(samples)
+
+        for sample in samples:
+            self.mother_combo.addItem(FIcon(0xF1077), sample)
+            self.father_combo.addItem(FIcon(0xF0643), sample)
+            self.child_combo.addItem(FIcon(0xF0E7D), sample)
 
     def check_form(self):
         """ Check if formular is okay and enable apply button
