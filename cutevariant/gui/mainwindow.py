@@ -549,6 +549,7 @@ class MainWindow(QMainWindow):
             dialog_class = self.dialog_plugins[action]
             # Send SQL connection
             dialog = dialog_class(conn=self.conn)
+            dialog.mainwindow = self
             dialog.exec_()
 
     def about_cutevariant(self):
