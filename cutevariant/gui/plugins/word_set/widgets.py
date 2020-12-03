@@ -15,6 +15,7 @@ from PySide2.QtWidgets import (
     QMessageBox,
     QDialog,
     QPushButton,
+    QLabel,
     QInputDialog,
 )
 from PySide2.QtCore import QStringListModel, QSize, QDir, QSettings
