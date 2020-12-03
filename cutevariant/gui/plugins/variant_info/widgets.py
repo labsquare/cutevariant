@@ -121,13 +121,21 @@ class VariantInfoWidget(PluginWidget):
             key: FIcon(val) for key, val in cm.GENOTYPE_ICONS.items()
         }
 
+    def clear(self):
+        """ Clear all view """
+        self.variant_view.clear()
+        self.transcript_view.clear()
+        self.sample_view.clear()
+        self.genotype_view.clear()
+        self.comment_input.clear()
+
     def on_open_project(self, conn):
         self.conn = conn
+        self.clear()
         self.on_refresh()
         # Cache DB fields descriptions
         self.fields_descriptions = {
-            field["name"]: field["description"]
-            for field in sql.get_fields(self.conn)
+            field["name"]: field["description"] for field in sql.get_fields(self.conn)
         }
 
     def on_refresh(self):
@@ -147,8 +155,7 @@ class VariantInfoWidget(PluginWidget):
 
         # Populate variant
         self.populate_tree_widget(
-            self.variant_view,
-            sql.get_one_variant(self.conn, variant_id)
+            self.variant_view, sql.get_one_variant(self.conn, variant_id)
         )
 
         # Populate annotations
@@ -225,8 +232,8 @@ class VariantInfoWidget(PluginWidget):
 
         for key, value in data.items():
             if (
-                    key in ("variant_id", "sample_id", "annotations", "samples")
-                    and LOGGER.getEffectiveLevel() != DEBUG
+                key in ("variant_id", "sample_id", "annotations", "samples")
+                and LOGGER.getEffectiveLevel() != DEBUG
             ):
                 # "variant_id", "sample_id": For Samples tab
                 # "annotations", "samples": For useless keys returned by get_one_variant
