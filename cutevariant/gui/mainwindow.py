@@ -201,7 +201,7 @@ class MainWindow(QMainWindow):
             plugin_dialog_class = extension["dialog"]
 
             # Add plugin to Tools menu
-            dialog_action = self.tool_menu.addAction(displayed_title)
+            dialog_action = self.tool_menu.addAction(displayed_title + "...")
             self.dialog_plugins[dialog_action] = plugin_dialog_class
             dialog_action.triggered.connect(self.show_dialog)
 
@@ -246,7 +246,7 @@ class MainWindow(QMainWindow):
         )
         self.open_project_action = self.file_menu.addAction(
             FIcon(0xF095D),
-            self.tr("&Open project ..."),
+            self.tr("&Open project..."),
             self.open_project,
             QKeySequence.Open,
         )
@@ -266,7 +266,7 @@ class MainWindow(QMainWindow):
         self.file_menu.addSeparator()
         ### Misc
         self.file_menu.addAction(
-            FIcon(0xF0493), self.tr("Settings ..."), self.show_settings
+            FIcon(0xF0493), self.tr("Settings..."), self.show_settings
         )
         self.file_menu.addSeparator()
         self.file_menu.addAction(self.tr("&Quit"), self.close, QKeySequence.Quit)
@@ -305,26 +305,34 @@ class MainWindow(QMainWindow):
 
         ## Help
         self.help_menu = self.menuBar().addMenu(self.tr("Help"))
-        self.help_menu.addAction(self.tr("About Qt"), QApplication.instance().aboutQt)
+
         self.help_menu.addAction(
-            QIcon(DIR_ICONS + "app.png"),
-            self.tr("About Cutevariant"),
-            self.about_cutevariant,
+            FIcon(0xF02D6),
+            self.tr("What's this"),
+            QWhatsThis.enterWhatsThisMode,
+            QKeySequence.WhatsThis,
         )
         self.help_menu.addAction(
-            FIcon(0xF00BE),
-            self.tr("Wiki"),
+            FIcon(0xF059F),
+            self.tr("Documentation..."),
             partial(QDesktopServices.openUrl, QUrl(cm.WIKI_URL, QUrl.TolerantMode)),
         )
         self.help_menu.addAction(
-            FIcon(0xF02D6), self.tr("What's this"), QWhatsThis.enterWhatsThisMode
-        )
-        self.help_menu.addAction(
             FIcon(0xF0A30),
-            self.tr("Report a bug"),
+            self.tr("Report a bug..."),
             partial(
                 QDesktopServices.openUrl, QUrl(cm.REPORT_BUG_URL, QUrl.TolerantMode)
             ),
+        )
+
+        self.help_menu.addSeparator()
+        self.help_menu.addAction(
+            self.tr("About Qt..."), QApplication.instance().aboutQt
+        )
+        self.help_menu.addAction(
+            QIcon(DIR_ICONS + "app.png"),
+            self.tr("About Cutevariant..."),
+            self.about_cutevariant,
         )
 
     def setup_toolbar(self):
