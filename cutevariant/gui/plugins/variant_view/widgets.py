@@ -14,6 +14,8 @@ from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 from PySide2.QtGui import *
 
+from xpyhle import xopen
+
 # Custom imports
 from cutevariant.core.querybuilder import build_full_sql_query, fields_to_vql
 

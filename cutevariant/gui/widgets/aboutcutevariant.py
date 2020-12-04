@@ -22,6 +22,8 @@ from PySide2.QtGui import (
     QDesktopServices,
 )
 
+from xpyhle import xopen
+
 # Custom imports
 from cutevariant.gui.ficon import FIcon
 from cutevariant import commons as cm
@@ -90,7 +92,7 @@ class AboutCutevariant(QDialog):
                 "General Public License v3.\n\n"
             )
 
-        with open(cm.DIR_ASSETS + filename, "r") as f_d:
+        with xopen(cm.DIR_ASSETS + filename, "r") as f_d:
             text_edit.setPlainText(text + f_d.read())
             self.tab_widget.addTab(text_edit, filename)
 

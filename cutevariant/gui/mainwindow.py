@@ -27,6 +27,8 @@ from cutevariant.commons import (
     MIN_AUTHORIZED_DB_VERSION,
 )
 
+from xpyhle import xopen
+
 # Import plugins
 from cutevariant.gui import plugin
 
@@ -514,7 +516,7 @@ class MainWindow(QMainWindow):
         )
 
         if filepath:
-            with open(filepath, "w") as file:
+            with xopen(filepath, "w") as file:
                 writer = CsvWriter(file)
                 writer.save(self.conn)
 
@@ -531,7 +533,7 @@ class MainWindow(QMainWindow):
         if filepath:
             filepath = filepath if filepath.endswith(".tfam") else filepath + ".tfam"
 
-            with open(filepath, "w") as file:
+            with xopen(filepath, "w") as file:
                 writer = PedWriter(file)
                 writer.save(self.conn)
 

@@ -2,6 +2,8 @@
 from cutevariant.commons import DIR_STYLES
 from PySide2.QtGui import QPalette, QColor
 
+from xpyhle import xopen
+
 TYPE_COLORS = {
     "str": "#27A4DD",  # blue
     "bool": "#F1646C",  # red
@@ -102,5 +104,5 @@ def apply_frameless_style(widget):
 
     TODO: What this style is supposed to do ?
     """
-    with open(DIR_STYLES + "frameless.qss", "r") as file:
+    with xopen(DIR_STYLES + "frameless.qss", "r") as file:
         widget.setStyleSheet(file.read())

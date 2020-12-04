@@ -20,6 +20,8 @@ from PySide2.QtWidgets import (
     QAbstractItemView,
 )
 
+from xphyle import xopen
+
 # Custom imports
 from cutevariant.core.reader import PedReader
 from cutevariant.core.writer import PedWriter
@@ -95,7 +97,7 @@ class PedModel(QAbstractTableModel):
         Notes:
             Replace None or empty strings to 0 (unknown PED ID)
         """
-        with open(filename, "w") as file:
+        with xopen(filename, "w") as file:
             writer = PedWriter(file)
             writer.save_from_list(self.samples_data)
 

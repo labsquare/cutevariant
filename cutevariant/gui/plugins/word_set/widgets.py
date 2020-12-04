@@ -21,6 +21,8 @@ from PySide2.QtWidgets import (
 from PySide2.QtCore import QStringListModel, QSize, QDir, QSettings
 from PySide2.QtGui import QIcon
 
+from xpyhle import xopen
+
 # Custom imports
 from cutevariant.gui.plugin import PluginWidget
 from cutevariant.core.sql import (
@@ -161,7 +163,7 @@ class WordListDialog(QDialog):
             return
 
         # Sanitize words
-        with open(filename, "r") as f_h:
+        with xopen(filename, "r") as f_h:
             data = sanitize_words(f_h)
 
         data.update(self.model.stringList())
@@ -239,7 +241,7 @@ class WordSetWidget(PluginWidget):
         """
         # Dump the list in a temporary file
         _, filename = tempfile.mkstemp()
-        with open(filename, "w") as file:
+        with xopen(filename, "w") as file:
             [file.write(word + "\n") for word in words]
 
         # Import the content of the temp file in DB

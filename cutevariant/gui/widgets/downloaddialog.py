@@ -13,7 +13,6 @@ from PySide2.QtGui import QFont
 from PySide2.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
 import sys
 
-
 class DownloadDialog(QDialog):
 
     """Summary
