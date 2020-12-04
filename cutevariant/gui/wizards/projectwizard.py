@@ -339,7 +339,7 @@ class ImportThread(QThread):
         self._stop = False
 
         #  start timer
-        start = time.clock()
+        start = time.perf_counter()
 
         if os.path.exists(self.db_filename):
             os.remove(self.db_filename)
@@ -367,7 +367,7 @@ class ImportThread(QThread):
         finally:
             # Send status (Send True when there is no error)
             # end timer
-            end = time.clock()
+            end = time.perf_counter()
             elapsed_time = end - start
             self.progress_changed.emit(100, str("Elapsed time: %.2gs" % (end - start)))
             self.finished_status.emit(not self._stop)
