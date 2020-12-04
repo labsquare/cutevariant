@@ -1,6 +1,8 @@
 import os
 import csv
 
+from xphyle import xopen
+
 import cutevariant.commons as cm
 
 LOGGER = cm.logger()
@@ -75,7 +77,7 @@ class PedReader:
 
         PED file is opened as a tabulated or white space separated file.
         """
-        with open(self.filepath, "r") as stream:
+        with xopen(self.filepath, "r") as stream:
             # Sniff dialect of CSV file
             dialect = csv.Sniffer().sniff(stream.read(10000), delimiters="\t ")
             stream.seek(0)

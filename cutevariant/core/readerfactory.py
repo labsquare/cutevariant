@@ -3,6 +3,8 @@ from contextlib import contextmanager
 import pathlib
 import vcf
 
+from xphyle import xopen
+
 # Custom imports
 from cutevariant.core.reader import VcfReader, CsvReader
 import cutevariant.commons as cm
@@ -19,11 +21,7 @@ def detect_vcf_annotation(filepath):
 
     :return: "vep", "snpeff", None
     """
-    if cm.is_gz_file(filepath):
-        # Open .gz files in binary mode (See #84)
-        device = open(filepath, "rb")
-    else:
-        device = open(filepath, "r")
+    device = xopen(filepath, "r")
 
     std_reader = vcf.VCFReader(device)
     # print(std_reader.metadata)
@@ -60,24 +58,16 @@ def create_reader(filepath):
         cm.is_gz_file(filepath),
     )
 
-    if ".vcf" in path.suffixes and ".gz" in path.suffixes:
-        annotation_detected = detect_vcf_annotation(filepath)
-        device = open(filepath, "rb")
-        reader = VcfReader(device, annotation_parser=annotation_detected)
-        yield reader
-        device.close()
-        return
-
     if ".vcf" in path.suffixes:
         annotation_detected = detect_vcf_annotation(filepath)
-        device = open(filepath, "r")
+        device = xopen(filepath, "r")
         reader = VcfReader(device, annotation_parser=annotation_detected)
         yield reader
         device.close()
         return
 
     if {".tsv", ".csv", ".txt"} & set(path.suffixes):
-        device = open(filepath, "r")
+        device = xopen(filepath, "r")
         reader = CsvReader(device)
         yield reader
         device.close()

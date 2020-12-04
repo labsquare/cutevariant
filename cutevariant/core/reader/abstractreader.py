@@ -1,6 +1,4 @@
 from abc import ABC, abstractmethod
-import io
-import gzip
 from collections import Counter
 import cutevariant.commons as cm
 
@@ -435,16 +433,7 @@ class AbstractReader(ABC):
         if not self.device:
             return 0
 
-        # Detect type of file handler
-        if isinstance(self.device, (io.RawIOBase, io.BufferedIOBase)):
-            # Binary opened file => assert that it is a vcf.gz file
-            with gzip.open(self.device.name, "rb") as file_obj:
-                find_lines_in_text_file(file_obj)
-        elif isinstance(self.device, io.TextIOBase):
-            find_lines_in_text_file(self.device)
-        else:
-            LOGGER.error("Unknown file handler type: %s", type(self.device))
-            raise TypeError("Unknown file handler type: %s" % type(self.device))
+        find_lines_in_text_file(self.device)
 
         # Rewind the file
         self.device.seek(0)

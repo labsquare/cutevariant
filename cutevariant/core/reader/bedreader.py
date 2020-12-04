@@ -1,10 +1,11 @@
 """Module to handle BED files"""
 # Standard imports
-import gzip
 import csv
 import os
 import io
 import re
+
+from xphyle import xopen
 
 # Custom imports
 import cutevariant.commons as cm
@@ -97,14 +98,8 @@ class BedReader:
             # Load in memory file
             yield from self.get_intervals(io.StringIO(self.filepath))
         else:
-            if self.is_gz_file:
-                # Handle gzip file
-                with gzip.open(self.filepath, "rt") as stream:
-                    yield from self.get_intervals(stream)
-            else:
-                # Handle text file
-                with open(self.filepath, "r") as stream:
-                    yield from self.get_intervals(stream)
+            with xopen(self.filepath, "rt") as stream:
+                yield from self.get_intervals(stream)
 
     def get_intervals(self, stream):
         """Yield Interval objects in the given stream

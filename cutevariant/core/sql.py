@@ -33,6 +33,7 @@ from pkg_resources import parse_version
 from functools import partial, lru_cache
 import itertools as it
 
+from xphyle import xopen
 
 # Custom imports
 import cutevariant.commons as cm
@@ -605,7 +606,7 @@ def import_wordset_from_file(conn: sqlite3.Connection, wordset_name, filename):
           ``"abc\r\n"``
     """
     # Search whitespaces
-    with open(filename, "r") as f_h:
+    with xopen(filename, "r") as f_h:
         data = sanitize_words(f_h)
 
     if not data:
