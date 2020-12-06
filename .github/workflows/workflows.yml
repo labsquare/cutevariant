@@ -36,7 +36,7 @@ jobs:
       - name: install PySide2    # Parce que @ysard veut absolument les version deprecated
         run : pip install PySide2
       - name: test 
-        run: python -m pytest tests
+        run: python -m pytest tests/core
 
   # WINDOWS JOB 
 
