@@ -35,6 +35,8 @@ jobs:
         run: "make install_deps"
       - name: install PySide2    # Parce que @ysard veut absolument les version deprecated
         run : pip install PySide2
+      - name: test 
+        run: make test 
 
   # WINDOWS JOB 
 
@@ -53,6 +55,8 @@ jobs:
         run: |
             pip install pywin32
             pip install PyInstaller==4.0
+      - name: test 
+        run: make test 
       - name: create binary 
         if: "contains(github.event.head_commit.message, '[deploy]')"
       # TODO : use a spec file ! 
