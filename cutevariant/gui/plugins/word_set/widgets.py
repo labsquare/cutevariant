@@ -238,7 +238,7 @@ class WordSetWidget(PluginWidget):
             (boolean): Status of the wordset creation
         """
         # Dump the list in a temporary file
-        _, filename = tempfile.mkstemp()
+        fd, filename = tempfile.mkstemp()
         with open(filename, "w") as file:
             [file.write(word + "\n") for word in words]
 
@@ -253,6 +253,7 @@ class WordSetWidget(PluginWidget):
                 self.tr("Error while importing set '%s'") % wordset_name,
             )
 
+        os.close(fd)
         os.remove(filename)
         return result["success"]
 
