@@ -3,7 +3,7 @@ from contextlib import contextmanager
 import pathlib
 import vcf
 
-from xphyle import xopen
+from xopen import xopen
 
 # Custom imports
 from cutevariant.core.reader import VcfReader, CsvReader

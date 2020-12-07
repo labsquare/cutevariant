@@ -22,7 +22,7 @@ from PySide2.QtGui import (
     QDesktopServices,
 )
 
-from xpyhle import xopen
+from xopen import xopen
 
 # Custom imports
 from cutevariant.gui.ficon import FIcon

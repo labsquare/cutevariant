@@ -21,7 +21,7 @@ from PySide2.QtWidgets import (
 from PySide2.QtCore import QStringListModel, QSize, QDir, QSettings
 from PySide2.QtGui import QIcon
 
-from xpyhle import xopen
+from xopen import xopen
 
 # Custom imports
 from cutevariant.gui.plugin import PluginWidget

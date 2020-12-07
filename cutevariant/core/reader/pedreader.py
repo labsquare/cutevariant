@@ -1,7 +1,7 @@
 import os
 import csv
 
-from xphyle import xopen
+from xopen import xopen
 
 import cutevariant.commons as cm
 

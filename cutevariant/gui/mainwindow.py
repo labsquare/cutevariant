@@ -27,7 +27,7 @@ from cutevariant.commons import (
     MIN_AUTHORIZED_DB_VERSION,
 )
 
-from xpyhle import xopen
+from xopen import xopen
 
 # Import plugins
 from cutevariant.gui import plugin

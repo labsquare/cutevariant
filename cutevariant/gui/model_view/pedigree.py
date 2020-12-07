@@ -20,7 +20,7 @@ from PySide2.QtWidgets import (
     QAbstractItemView,
 )
 
-from xphyle import xopen
+from xopen import xopen
 
 # Custom imports
 from cutevariant.core.reader import PedReader

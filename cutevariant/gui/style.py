@@ -2,7 +2,7 @@
 from cutevariant.commons import DIR_STYLES
 from PySide2.QtGui import QPalette, QColor
 
-from xpyhle import xopen
+from xopen import xopen
 
 TYPE_COLORS = {
     "str": "#27A4DD",  # blue

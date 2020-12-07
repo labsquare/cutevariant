@@ -5,7 +5,7 @@ import os
 import io
 import re
 
-from xphyle import xopen
+from xopen import xopen
 
 # Custom imports
 import cutevariant.commons as cm
@@ -124,7 +124,13 @@ class BedReader:
         # 'itemRgb' column is comma separated.
 
         # Rewind the stream
-        stream.seek(0)
+        if isinstance(stream, io.StringIO):
+            stream.seek(0)
+        else:
+            stream.close()
+            stream = xopen(self.filepath, "rt")
+
+
         [next(stream) for _ in range(skipped_header_line)]
         try:
             # If there is no data at all or after the header
@@ -136,7 +142,12 @@ class BedReader:
         csv_dialect = csv.Sniffer().sniff(data_line, delimiters="\t ")
 
         # Rewind the stream
-        stream.seek(0)
+        if isinstance(stream, io.StringIO):
+            stream.seek(0)
+        else:
+            stream.close()
+            stream = xopen(self.filepath, "rt")
+        
         [next(stream) for _ in range(skipped_header_line)]
         # Build a csv reader
         bed_fieldnames = (

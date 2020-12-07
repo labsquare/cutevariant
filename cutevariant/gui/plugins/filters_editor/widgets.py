@@ -13,7 +13,7 @@ from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 from PySide2.QtGui import *
 
-from xphyle import xopen()
+from xopen import xopen
 
 # Custom imports
 from cutevariant.gui import style, plugin
@@ -1756,7 +1756,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
         filters = dict()
         # Open from embedded JSON and load software filters
         if os.path.isfile(json_file_path):
-            with xopen(json_file_path, encoding="utf8") as f_d:
+            with xopen(json_file_path) as f_d:
                 try:
                     filters = json.loads(f_d.read())
                 except json.decoder.JSONDecodeError as e:

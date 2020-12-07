@@ -33,7 +33,7 @@ from pkg_resources import parse_version
 from functools import partial, lru_cache
 import itertools as it
 
-from xphyle import xopen
+from xopen import xopen
 
 # Custom imports
 import cutevariant.commons as cm
