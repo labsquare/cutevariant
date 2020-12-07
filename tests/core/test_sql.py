@@ -161,13 +161,14 @@ def kindly_wordset_fixture():
 
 def kindly_wordset():
     """Return filepath + expected data of a word set that contains 4 genes"""
-    _, filepath = tempfile.mkstemp()
+    fd, filepath = tempfile.mkstemp()
     data = ["gene1", "gene2", "KRAS", "BRCA1"]
 
     # Simulate a file with a list of genes (1 per line)
     with open(filepath, "w") as f_h:
         f_h.write("\n".join(data))
 
+    os.close(fd)
     return filepath, data
 
 
@@ -178,13 +179,13 @@ def hasardous_wordset():
     Notes:
         Empty lines, whitespaces in line
     """
-    _, filepath = tempfile.mkstemp()
+    fd, filepath = tempfile.mkstemp()
     data = ["gene2", "E.Micron", "xyz\r\n", "abc  def\tghi\t  \r\n"]
 
     # Simulate a file with a list of genes (1 per line)
     with open(filepath, "w") as f_h:
         f_h.write("\n".join(data))
-
+    os.close(fd)
     return filepath, data[:2] + ["xyz"]
 
 
@@ -319,7 +320,7 @@ def test_insert_set_from_file(conn, wordset):
         assert record["name"] == "test_wordset"
         assert record["value"] in expected_data
 
-    os.remove(wordset_file)
+    #os.remove(wordset_file)
 
 
 def test_get_sets(conn, kindly_wordset_fixture):
@@ -356,7 +357,7 @@ def test_get_words_in_set(conn, wordset):
 
     assert set(expected_data) == found
 
-    os.remove(wordset_file)
+    #os.remove(wordset_file)
 
 
 def test_selections(conn):
