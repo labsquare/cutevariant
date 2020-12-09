@@ -24,7 +24,9 @@ Once your project is created, you can query variant using different gui controll
 # Installation
 
 ## Windows 
-[Windows standalone binary](https://github.com/labsquare/cutevariant/releases/download/0.2.1/cutevariant-win32-latest.zip)
+Standalone binary are available for windows:  
+- [Download cutevariant 32 bit](https://github.com/labsquare/cutevariant/releases/download/latest/cutevariant-latest-x86.zip)
+- [Download cutevariant 64 bit](https://github.com/labsquare/cutevariant/releases/download/latest/cutevariant-latest-x64.zip)
 
 ## PyPi
 Cutevariant is avaible from [Pypi](https://pypi.org/project/cutevariant/) : 
@@ -41,8 +43,15 @@ make install_deps
 make run 
 ```
 
+## Usages 
+You can follow this tutorial to familiarize yourself with cutevarant.       
+https://github.com/labsquare/cutevariant/wiki/Usage-examples
+
+The VQL langage specification is available here :      
+https://github.com/labsquare/cutevariant/wiki/VQL-language
+
 ## Contributions / Bugs
-Cutevariant is a new project and all contributors are welcome.
+Cutevariant is a new project and all contributors are welcome
 ### Issues
 If you found a bug or have a feature request, you can report it from the [Github isse trackers](https://github.com/labsquare/cutevariant/issues).
 
