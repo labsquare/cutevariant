@@ -184,6 +184,7 @@ class StrField(BaseField):
         # TODO: ugly cast to return tuple corresponding to (WORDSET, name)
         # Please just leave pass in this section if WORDSET is converted to normal operator
         import re
+
         match = re.search(r"WORDSET\[['\"](.*)['\"]\]", value)
         if match:
             return "WORDSET", match[1]
@@ -1667,17 +1668,12 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.view.setDragDropMode(QAbstractItemView.InternalMove)
         self.view.setAlternatingRowColors(True)
         self.view.setIndentation(0)
-
         self.view.header().setSectionResizeMode(0, QHeaderView.ResizeToContents)
         self.view.header().setSectionResizeMode(1, QHeaderView.Stretch)
         self.view.header().setSectionResizeMode(2, QHeaderView.ResizeToContents)
         self.view.header().setSectionResizeMode(3, QHeaderView.Stretch)
         self.view.header().setSectionResizeMode(4, QHeaderView.ResizeToContents)
-        self.view.setEditTriggers(
-            QAbstractItemView.CurrentChanged  # whenever current item changes.
-            | QAbstractItemView.SelectedClicked  # when clicking on an already selected item (slow)
-            | QAbstractItemView.DoubleClicked  # item is double clicked.
-        )
+        self.view.setEditTriggers(QAbstractItemView.DoubleClicked)
         # Item selected in view
         self.view.selectionModel().selectionChanged.connect(self.on_selection_changed)
         self.view.header().hide()
@@ -1701,7 +1697,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
         # self.save_button.setMinimumHeight(30)
         # self.del_button.setMinimumHeight(30)
 
-        self.apply_button = QPushButton(FIcon(0xF0233),self.tr("Apply filter"))
+        self.apply_button = QPushButton(FIcon(0xF0233), self.tr("Apply filter"))
         self.apply_button.clicked.connect(self.on_filters_changed)
         hlayout = QHBoxLayout()
         hlayout.addWidget(self.combo)
@@ -1729,8 +1725,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
         layout.setSpacing(1)
         self.setLayout(layout)
 
-     
-        #self.model.filtersChanged.connect(self.on_filters_changed)
+        # self.model.filtersChanged.connect(self.on_filters_changed)
 
     @property
     def filters(self):
