@@ -193,9 +193,10 @@ class VcfReader(AbstractReader):
                         # Load sample fields
                         # 1 genotype field per format
                         # In theory: All same fields for each sample
+                        #print("FORMAT FIELD",format_fields, sample["GQ"])
                         for gt_field in format_fields:
                             try:
-                                value = sample[gt_field]
+                                value = sample[gt_field.upper()]
                                 if isinstance(value, list):
                                     value = ",".join(str(i) for i in value)
                                 sample_data[gt_field] = value

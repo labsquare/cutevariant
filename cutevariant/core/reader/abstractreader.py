@@ -237,14 +237,15 @@ class AbstractReader(ABC):
             "description": "Number of homozygous genotypes (0/0) in control",
         }
 
-        # avoid duplicates fields ...
+        # avoid duplicates fields by categories ...
         duplicates = set()
         for field in self.get_fields():
-
-            if field["name"] not in duplicates:
+            # Create unique identifiant by categories
+            unique_key = field["category"]+"."+field["name"]
+            if unique_key not in duplicates:
                 yield field
 
-            duplicates.add(field["name"])
+            duplicates.add(unique_key)
 
     def get_extra_variants(self, **kwargs):
         """Yield variants with extra information computed.

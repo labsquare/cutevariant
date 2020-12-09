@@ -1284,6 +1284,8 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
             q = f"INSERT INTO sample_has_variant VALUES ({placeholders})"
             cursor.executemany(q, samples)
 
+
+
         # Yield progression
         if variant_count % yield_every == 0:
             if total_variant_count:

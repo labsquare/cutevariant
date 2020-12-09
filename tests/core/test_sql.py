@@ -24,6 +24,12 @@ FIELDS = [
         "description": "alternative",
     },
     {
+        "name": "dp",
+        "category": "variants",
+        "type": "int",
+        "description": "depth ",
+    },
+    {
         "name": "extra1",
         "category": "variants",
         "type": "float",
@@ -64,6 +70,7 @@ VARIANTS = [
         "pos": 10,
         "ref": "G",
         "alt": "A",
+        "dp": 100,
         "extra1": 10,
         "extra2": 100,
         "annotations": [
@@ -80,6 +87,7 @@ VARIANTS = [
         "pos": 50,
         "ref": "C",
         "alt": "C",
+        "dp": 100,
         "extra1": 20,
         "extra2": 100,
         "annotations": [{"gene": "gene1", "transcript": "transcript1"}],
@@ -89,6 +97,7 @@ VARIANTS = [
         "pos": 45,
         "ref": "G",
         "alt": "A",
+        "dp": 100,
         "extra1": 20,
         "extra2": 100,
         "annotations": [{"gene": "gene2", "transcript": "transcript2"}],
@@ -195,6 +204,30 @@ def hasardous_wordset():
 def test_create_connexion(conn):
     assert conn is not None
 
+
+def test_columns(conn):
+      # Test if variant fields is in databases
+    q = conn.execute("PRAGMA table_info(variants)")
+    variant_fields = [record[1] for record in q]
+
+    q = conn.execute("PRAGMA table_info(annotations)")
+    annotation_fields = [record[1] for record in q]
+
+    q = conn.execute("PRAGMA table_info(sample_has_variant)")
+    sample_fields = [record[1] for record in q]
+
+
+    for field in FIELDS:
+
+        if field["category"] == "variants":
+            assert field["name"] in variant_fields
+
+        if field["category"] == "annotations":
+            assert field["name"] in annotation_fields
+
+        if field["category"] == "samples":
+            assert field["name"] in sample_fields
+    
 
 def test_get_columns(conn):
     """Test getting columns of variants and annotations"""
