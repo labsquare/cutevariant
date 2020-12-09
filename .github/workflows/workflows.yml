@@ -72,20 +72,20 @@ jobs:
 
   # MAC OS JOB 
 
-  Macos:
-    runs-on: macOS-latest
-    if: "contains(github.event.head_commit.message, '[deploy]')"
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
-        with:
-          python-version: '3.8'
-      - name: install_deps
-        run: "make install"
-      - name: install PySide2    # Parce que @ysard veut absolument les version deprecated
-        run : pip install PySide2
-      - name: install mac deps 
-        run: |
-            pip install PyInstaller==4.0
-      - name: create binary 
-        run: pyinstaller -i icon.ico --name="cutevariant" --add-data cutevariant:cutevariant cutevariant/__main__.py;ls
+  # Macos:
+  #   runs-on: macOS-latest
+  #   if: "contains(github.event.head_commit.message, '[deploy]')"
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - uses: actions/setup-python@v2
+  #       with:
+  #         python-version: '3.8'
+  #     - name: install_deps
+  #       run: "make install"
+  #     - name: install PySide2    # Parce que @ysard veut absolument les version deprecated
+  #       run : pip install PySide2
+  #     - name: install mac deps 
+  #       run: |
+  #           pip install PyInstaller==4.0
+  #     - name: create binary 
+  #       run: pyinstaller -i icon.ico --name="cutevariant" --add-data cutevariant:cutevariant cutevariant/__main__.py;ls

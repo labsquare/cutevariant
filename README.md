@@ -5,7 +5,7 @@
 
 ![CI](https://github.com/labsquare/cutevariant/workflows/CI/badge.svg)
 
-![](https://raw.githubusercontent.com/labsquare/cutevariant/devel/screencast.gif)
+
 
 Cutevariant is a cross-plateform application dedicated to maniupulate and filter variation from annotated VCF file. 
 When you create a project, data are imported into an sqlite database that cutevariant queries according your needs. 
@@ -33,10 +33,28 @@ Cutevariant is avaible from [Pypi](https://pypi.org/project/cutevariant/) :
     cutevariant             # run
 
 ## From source 
-- Python 3.7 or newer is required  
+- Python 3.6 or newer is required  
 
 ```
 git clone https://github.com/labsquare/cutevariant.git
 make install_deps 
 make run 
 ```
+
+## Contributions / Bugs
+Cutevariant is a new project and all contributors are welcome.
+### Issues
+If you found a bug or have a feature request, you can report it from the [Github isse trackers](https://github.com/labsquare/cutevariant/issues).
+
+### Create a plugin
+Documentation to create a plugin is [available here](https://github.com/labsquare/cutevariant/wiki/Plugins)
+
+### Chat 
+You can join us [on discord](https://discord.gg/7sSH4VSPKK). We are speaking french right now, but we can switch to english. 
+
+## Licenses
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with this program. If not, see https://www.gnu.org/licenses/gpl-3.0.txt.
