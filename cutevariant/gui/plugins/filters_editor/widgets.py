@@ -1701,6 +1701,8 @@ class FiltersEditorWidget(plugin.PluginWidget):
         # self.save_button.setMinimumHeight(30)
         # self.del_button.setMinimumHeight(30)
 
+        self.apply_button = QPushButton(FIcon(0xF0233),self.tr("Apply filter"))
+        self.apply_button.clicked.connect(self.on_filters_changed)
         hlayout = QHBoxLayout()
         hlayout.addWidget(self.combo)
         hlayout.addWidget(self.save_button)
@@ -1709,6 +1711,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
         layout = QVBoxLayout()
         layout.addLayout(hlayout)
         layout.addWidget(self.view)
+        layout.addWidget(self.apply_button)
         layout.addWidget(self.toolbar)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(1)
@@ -1721,7 +1724,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
-        self.model.filtersChanged.connect(self.on_filters_changed)
+        #self.model.filtersChanged.connect(self.on_filters_changed)
 
     @property
     def filters(self):
