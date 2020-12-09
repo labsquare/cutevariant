@@ -35,6 +35,12 @@ def test_fields(reader):
     for field in fields:
         check_field_schema(field)
 
+    # test field genotypes 
+    sample_fields = [field["name"] for field in fields if field["category"] == "samples"]
+    assert "gt" in sample_fields
+    assert "dp" in sample_fields
+
+
     #Test if fields are unique per categories
     field_with_categories = [f["name"]+f["category"] for f in fields]
     assert len(field_with_categories) == len(set(field_with_categories))
