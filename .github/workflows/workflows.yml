@@ -67,16 +67,11 @@ jobs:
         if: github.ref == 'refs/heads/master' || contains(github.event.head_commit.message, '[deploy]')  
         uses: actions/upload-artifact@v2
         with:
-          name: cutevariant-standalone
+          name: cutevariant-standalone-${{matrix.architecture}}
           path: dist
-      - name: Create release
-        if: github.ref == 'refs/heads/master' || contains(github.event.head_commit.message, '[deploy]')  
-        uses: Roang-zero1/github-create-release-action@master
-        with:
-          args:
-          - dist
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
+
 
   # MAC OS JOB 
 
