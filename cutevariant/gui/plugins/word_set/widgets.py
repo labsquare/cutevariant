@@ -206,8 +206,8 @@ class WordSetWidget(PluginWidget):
         v_layout.setContentsMargins(0, 0, 0, 0)
         v_layout.setSpacing(0)
 
-        v_layout.addWidget(self.view)
         v_layout.addWidget(self.toolbar)
+        v_layout.addWidget(self.view)
 
         self.setLayout(v_layout)
 

@@ -146,9 +146,9 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self.view.header().setVisible(False)
         layout = QVBoxLayout()
 
-        layout.addWidget(self.search_edit)
-        layout.addWidget(self.view)
         layout.addWidget(self.toolbar)
+        layout.addWidget(self.view)
+        layout.addWidget(self.search_edit)
 
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)

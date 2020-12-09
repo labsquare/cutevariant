@@ -179,8 +179,8 @@ class SourceEditorWidget(plugin.PluginWidget):
         self.view.setAlternatingRowColors(True)
 
         layout = QVBoxLayout()
-        layout.addWidget(self.view)
         layout.addWidget(self.toolbar)
+        layout.addWidget(self.view)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 

@@ -1708,22 +1708,28 @@ class FiltersEditorWidget(plugin.PluginWidget):
         hlayout.addWidget(self.save_button)
         hlayout.addWidget(self.del_button)
 
+        # setup Menu
+        self.add_button = self.toolbar.addAction(
+            FIcon(0xF0EF0), self.tr("Add Condition"), self.on_add_condition
+        )
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.toolbar.addWidget(spacer)
+
+        self.toolbar.addWidget(self.combo)
+        self.toolbar.addWidget(self.save_button)
+        self.toolbar.addWidget(self.del_button)
+
         layout = QVBoxLayout()
-        layout.addLayout(hlayout)
+
+        layout.addWidget(self.toolbar)
         layout.addWidget(self.view)
         layout.addWidget(self.apply_button)
-        layout.addWidget(self.toolbar)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(1)
         self.setLayout(layout)
 
-        # setup Menu
-        self.add_button = self.toolbar.addAction(
-            FIcon(0xF0415), self.tr("Add Condition"), self.on_add_condition
-        )
-        spacer = QWidget()
-        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-
+     
         #self.model.filtersChanged.connect(self.on_filters_changed)
 
     @property
