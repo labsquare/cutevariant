@@ -25,8 +25,8 @@ Once your project is created, you can query variant using different gui controll
 
 ## Windows 
 Standalone binary are available for windows:  
-- [Download cutevariant 32 bit](https://github.com/labsquare/cutevariant/releases/download/latest/cutevariant-latest-x86.zip)
-- [Download cutevariant 64 bit](https://github.com/labsquare/cutevariant/releases/download/latest/cutevariant-latest-x64.zip)
+- [Download cutevariant 32 bit](https://github.com/labsquare/cutevariant/releases/download/0.2.5/cutevariant-latest-x86.zip)
+- [Download cutevariant 64 bit](https://github.com/labsquare/cutevariant/releases/download/0.2.5/cutevariant-latest-x64.zip)
 
 ## PyPi
 Cutevariant is avaible from [Pypi](https://pypi.org/project/cutevariant/) : 
