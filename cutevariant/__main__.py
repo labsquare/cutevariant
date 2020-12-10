@@ -20,6 +20,8 @@
 
 # Standard imports
 import sys
+from pkg_resources import parse_version
+
 from PySide2.QtCore import (
     QCoreApplication,
     QSettings,
@@ -76,6 +78,15 @@ def main():
     splash.showMessage(f"Version {__version__}")
     splash.show()
     app.processEvents()
+
+    #  Drop settings if old version
+    settings = QSettings()
+    settings_version = settings.value("version", None)
+    if settings_version is None or parse_version(settings_version) < parse_version(
+        __version__
+    ):
+        settings.clear()
+        settings.setValue("version", __version__)
 
     # Display
     w = MainWindow()

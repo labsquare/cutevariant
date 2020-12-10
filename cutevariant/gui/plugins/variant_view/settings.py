@@ -20,14 +20,15 @@ class LinkSettings(BaseWidget):
             self.tr(
                 "Allow to set predefined masks for urls pointing to various databases of variants.\n"
                 "Shortcuts will be visible from contextual menu over current variant.\n"
-                "Set a link as default makes possible to open it directly by double clicking on the view."
+                "Set a link as default makes possible to open alink by double clicking on the view."
             )
         )
 
         self.view = QListWidget()
         self.add_button = QPushButton(self.tr("Add"))
         self.edit_button = QPushButton(self.tr("Edit"))
-        self.set_default_button = QPushButton(self.tr("Set default"))
+        self.set_default_button = QPushButton(self.tr("Set as default"))
+        self.set_default_button.setToolTip(self.tr("Double click will open this link"))
         self.remove_button = QPushButton(self.tr("Remove"))
 
         v_layout = QVBoxLayout()

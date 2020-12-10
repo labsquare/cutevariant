@@ -604,6 +604,8 @@ class VariantView(QWidget):
         self.model.load_finished.connect(self.loaded)
         # Connect errors from async runnables
         self.model.runnable_exception.connect(self.runnable_exception)
+        #  connect double clicke
+        self.view.doubleClicked.connect(self.on_double_clicked)
 
     def _set_loading(self, active=True):
         """Slot to obtain the status of async load: started/finished
@@ -812,27 +814,20 @@ class VariantView(QWidget):
         for index in range(size):
             self.settings.setArrayIndex(index)
             key = self.settings.value("name")
-            is_default = bool(self.settings.value("is_default"))
+            is_default = bool(int(self.settings.value("is_default", 0)))
             format_string = self.settings.value("url")
-            # Get placeholders
-            field_names = {
-                name
-                for text, name, spec, conv in string.Formatter().parse(format_string)
-            }
-            if field_names & full_variant.keys():
-                # Full or partial mapping => accepted link
+
+            url = self._create_url(format_string, full_variant)
+
+            if url:
                 action = links_menu.addAction(
-                    f"{key}",
-                    functools.partial(
-                        QDesktopServices.openUrl,
-                        QUrl(format_string.format(**full_variant), QUrl.TolerantMode),
-                    ),
+                    f"{key}", functools.partial(QDesktopServices.openUrl, url)
                 )
 
                 #  set bold if default
-                font = QFont()
-                font.setBold(is_default)
-                action.setFont(font)
+                # font = QFont()
+                # font.setBold(is_default)
+                # action.setFont(font)
 
         self.settings.endArray()
 
@@ -854,6 +849,28 @@ class VariantView(QWidget):
 
         # Display
         menu.exec_(event.globalPos())
+
+    def _create_url(self, format_string: str, variant: dict) -> QUrl:
+        """Create a link from a format string and a variant data 
+        
+        Args:
+            format_string (str): a string with format group like : http://www.google.fr?q={chr}
+            variant (dict): a variant dict returned by sql.get_one_variant.
+        
+        Returns:
+            QUrl: return url or return None
+        
+        """
+        field_names = {
+            name
+            for _, name, _, _ in string.Formatter().parse(format_string)
+            if name is not None
+        }
+        if field_names & variant.keys():
+            # Full or partial mapping => accepted link
+            return QUrl(format_string.format(**variant), QUrl.TolerantMode)
+        else:
+            return None
 
     def update_favorites(self, checked: bool):
         """Update favorite status of multiple selected variants
@@ -944,6 +961,36 @@ class VariantView(QWidget):
 
         QApplication.instance().clipboard().setText(output.getvalue())
         output.close()
+
+    def on_double_clicked(self, index: QModelIndex):
+        """ 
+        React on double clicked
+        TODO : duplicate code with ContextMenu Event ! Need to refactor a bit 
+        """
+        current_variant = self.model.variant(index.row())
+        full_variant = sql.get_one_variant(self.conn, current_variant["id"])
+        # Update variant with currently displayed fields (not in variants table)
+        full_variant.update(current_variant)
+
+        # Look from settings the default open link
+        format_string = None
+        size = self.settings.beginReadArray("plugins/variant_view/links")
+        for index in range(size):
+            self.settings.setArrayIndex(index)
+            print(self.settings.value("name"), self.settings.value("is_default"))
+            is_default = bool(int(self.settings.value("is_default")))
+            if is_default:
+                format_string = self.settings.value("url")
+                break
+        self.settings.endArray()
+
+        print(format_string)
+        #  Create and open link
+        if format_string:
+            # Get placeholders
+            url = self._create_url(format_string, full_variant)
+            if url:
+                QDesktopServices.openUrl(url)
 
 
 class VariantViewWidget(plugin.PluginWidget):
