@@ -984,7 +984,6 @@ class VariantView(QWidget):
                 break
         self.settings.endArray()
 
-        print(format_string)
         #  Create and open link
         if format_string:
             # Get placeholders
