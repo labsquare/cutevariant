@@ -65,9 +65,6 @@ def main():
     # Translations
     load_translations(app)
 
-    # Load default external links
-    load_default_external_links()
-
     # debug settings
     # from cutevariant.gui.settings import *
     # w = SettingsWidget()
@@ -141,18 +138,6 @@ def load_translations(app):
     else:
         # Init setting
         app_settings.setValue("ui/locale", "en")
-
-
-def load_default_external_links():
-    """Load default external DB links if the list is empty"""
-    app_settings = QSettings()
-    app_settings.beginGroup("plugins/variant_view/links")
-
-    # If no value: add default values
-    if not app_settings.childKeys():
-        for db_name, db_url in cm.WEBSITES_URLS.items():
-            app_settings.setValue(db_name, db_url)
-    app_settings.endGroup()
 
 
 def process_arguments(app):

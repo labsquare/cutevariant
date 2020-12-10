@@ -807,10 +807,13 @@ class VariantView(QWidget):
 
         # Create external links
         links_menu = menu.addMenu(self.tr("External links"))
-        self.settings.beginGroup("plugins/variant_view/links")
+        size = self.settings.beginReadArray("plugins/variant_view/links")
         # Display only external links with placeholders that can be mapped
-        for key in self.settings.childKeys():
-            format_string = self.settings.value(key)
+        for index in range(size):
+            self.settings.setArrayIndex(index)
+            key = self.settings.value("name")
+            is_default = bool(self.settings.value("is_default"))
+            format_string = self.settings.value("url")
             # Get placeholders
             field_names = {
                 name
@@ -818,14 +821,20 @@ class VariantView(QWidget):
             }
             if field_names & full_variant.keys():
                 # Full or partial mapping => accepted link
-                links_menu.addAction(
-                    key,
+                action = links_menu.addAction(
+                    f"{key}",
                     functools.partial(
                         QDesktopServices.openUrl,
                         QUrl(format_string.format(**full_variant), QUrl.TolerantMode),
                     ),
                 )
-        self.settings.endGroup()
+
+                #  set bold if default
+                font = QFont()
+                font.setBold(is_default)
+                action.setFont(font)
+
+        self.settings.endArray()
 
         # Comment action
         on_edit = functools.partial(self.edit_comment, current_index)

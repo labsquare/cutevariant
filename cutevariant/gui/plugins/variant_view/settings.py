@@ -16,10 +16,13 @@ class LinkSettings(BaseWidget):
         self.setWindowTitle(self.tr("Cross databases links"))
         self.setWindowIcon(FIcon(0xF070F))
 
-        help_label = QLabel(self.tr(
-            "Allow to set predefined masks for urls pointing to various databases of variants.\n"
-            "Shortcuts will be visible from contextual menu over current variant."
-        ))
+        help_label = QLabel(
+            self.tr(
+                "Allow to set predefined masks for urls pointing to various databases of variants.\n"
+                "Shortcuts will be visible from contextual menu over current variant.\n"
+                "Set a link as default makes possible to open it directly by double clicking on the view."
+            )
+        )
 
         self.view = QListWidget()
         self.add_button = QPushButton(self.tr("Add"))
@@ -47,39 +50,59 @@ class LinkSettings(BaseWidget):
         self.add_button.clicked.connect(self.add_url)
         self.edit_button.clicked.connect(self.edit_item)
         self.view.itemDoubleClicked.connect(self.add_url)
-        self.set_default_button.clicked.connect(self.load_default_external_links)
+        self.set_default_button.clicked.connect(self.set_default_link)
         self.remove_button.clicked.connect(self.remove_item)
 
     def save(self):
         """Override from BaseWidget"""
         settings = QSettings()
-
+        # Bug from Pyside2.QSettings which don't return boolean
         settings.remove("plugins/variant_view/links")
-        settings.beginGroup("plugins/variant_view/links")
+        settings.beginWriteArray("plugins/variant_view/links")
         for i in range(self.view.count()):
+            settings.setArrayIndex(i)
             item = self.view.item(i)
             name = item.text()
             url = item.data(Qt.UserRole)
-            settings.setValue(name, url)
-        settings.endGroup()
+            is_default = int(item.data(Qt.UserRole + 1))
+            settings.setValue("name", name)
+            settings.setValue("url", url)
+            settings.setValue("is_default", is_default)
+        settings.endArray()
 
     def load(self):
         """Override from BaseWidget"""
         settings = QSettings()
-        settings.beginGroup("plugins/variant_view/links")
+        size = settings.beginReadArray("plugins/variant_view/links")
         self.view.clear()
-        for key in settings.childKeys():
-            self.add_list_widget_item(key, settings.value(key))
 
-        settings.endGroup()
+        #  If no links available, load default one
+        # if size == 0:
+        #     self.load_default_external_links()
 
-    def add_list_widget_item(self, db_name: str, url: str):
+        for i in range(size):
+            settings.setArrayIndex(i)
+            name = settings.value("name")
+            url = settings.value("url")
+
+            # Bug from Pyside2.QSettings which don't return boolean
+            is_default = bool(int(settings.value("is_default")))
+            self.add_list_widget_item(name, url, is_default)
+        settings.endArray()
+
+    def add_list_widget_item(self, db_name: str, url: str, is_default=False):
         """Add an item to the QListWidget of the current view"""
         # Key is the name of the database, value is its url
         item = QListWidgetItem(db_name)
         item.setIcon(FIcon(0xF0866))
-        item.setData(Qt.UserRole, str(url))
+        item.setData(Qt.UserRole, str(url))  #  UserRole = Link
+        item.setData(Qt.UserRole + 1, bool(is_default))  # UserRole+1 = is default link
         item.setToolTip(str(url))
+
+        font = item.font()
+        font.setBold(is_default)
+        item.setFont(font)
+
         self.view.addItem(item)
 
     def edit_list_widget_item(self, item: QListWidgetItem, db_name: str, url: str):
@@ -148,12 +171,27 @@ class LinkSettings(BaseWidget):
     def load_default_external_links(self):
         """Load default external DB links"""
         settings = QSettings()
-        settings.beginGroup("plugins/variant_view/links")
+        settings.beginWriteArray("plugins/variant_view/links")
 
-        for db_name, db_url in cm.WEBSITES_URLS.items():
-            self.add_list_widget_item(db_name, db_url)
+        for index, item in enumerate(cm.WEBSITES_URLS.items()):
+            settings.settings.setArrayIndex(index)
+            db_name, db_url = item
+            is_default = False if index else True
+            self.add_list_widget_item(db_name, db_url, is_default)
 
-        settings.endGroup()
+        settings.endArray()
+
+    def set_default_link(self):
+        """ set current item as default link """
+        current_item = self.view.currentItem()
+
+        for row in range(self.view.count()):
+            item = self.view.item(row)
+            font = item.font()
+            is_default = True if item == current_item else False
+            item.setData(Qt.UserRole + 1, is_default)
+            font.setBold(is_default)
+            item.setFont(font)
 
 
 class VariantViewSettingsWidget(PluginSettingsWidget):
