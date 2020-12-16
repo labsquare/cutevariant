@@ -24,6 +24,9 @@ class AbstractReader(ABC):
             It's a fallback if number_lines can't be computed.
         samples: List of samples in the file (default: empty)
 
+        ignore_fields: Skip fields in importations. 
+            A list of fields to skip [{field_name:"AF", "category":"variant"}]
+
     Example:
         >>> with open(filename,"r") as file:
         ...    reader = Reader(file)
@@ -38,6 +41,8 @@ class AbstractReader(ABC):
 
         self.file_size = self.get_total_file_size()
         self.compute_number_lines()
+
+        self.ignore_fields = set()
 
     @classmethod
     @abstractmethod
@@ -242,10 +247,28 @@ class AbstractReader(ABC):
         for field in self.get_fields():
             # Create unique identifiant by categories
             unique_key = field["category"]+"."+field["name"]
-            if unique_key not in duplicates:
+            is_unique  = unique_key not in duplicates 
+            is_ignored = (field["name"], field["category"]) in self.ignore_fields
+            if is_unique and not is_ignored:
                 yield field
 
             duplicates.add(unique_key)
+
+
+
+
+    def add_ignore_fields(self, field_name: str, field_category:str):
+        """Add new field to the ignore_fields list. 
+        ignored fields will not returned by get_extra_fields and then are not imporpted 
+        into the database 
+        
+        Args:
+            field_name (str): a field name 
+            field_category (str): the category field name (variant,annotation,sample)
+        """
+
+        self.ignore_fields.add((field_name, field_category))
+
 
     def get_extra_variants(self, **kwargs):
         """Yield variants with extra information computed.
@@ -350,6 +373,23 @@ class AbstractReader(ABC):
                 variant["control_count_hom"] = control_counter[2]
                 variant["control_count_het"] = control_counter[1]
                 variant["control_count_ref"] = control_counter[0]
+
+            # Remove ignore variants 
+            for name, category in self.ignore_fields:
+                if category == "variants":
+                    if name in variant:
+                        del variant[name]
+                # remove from category 
+                if category == "annotations":
+                    for ann in variant["annotations"]:
+                        if name in ann:
+                            del ann[name]
+                
+                if category == "samples":
+                    for sample in variant["samples"]:
+                        if name in sample:
+                            del sample[name]
+
 
             yield variant
 

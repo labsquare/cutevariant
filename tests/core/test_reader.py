@@ -49,6 +49,37 @@ def test_fields(reader):
 @pytest.mark.parametrize(
     "reader", READERS, ids=[str(i.__class__.__name__) for i in READERS]
 )
+def test_extra_fields(reader):
+    fields = tuple(reader.get_extra_fields())
+    field_names = [f["name"] for f in fields]
+
+    assert "favorite" in field_names
+    assert "comment" in field_names
+    assert "classification" in field_names
+    assert "count_hom" in field_names
+    assert "count_ref" in field_names
+    assert "count_het" in field_names
+    assert "count_var" in field_names
+    assert "is_indel" in field_names
+    assert "is_snp" in field_names
+
+    ## test to remove the  fields 
+    if "qual" in field_names and "dp" in field_names:
+
+        reader.add_ignore_fields("qual", "variants")
+        reader.add_ignore_fields("dp", "variants")
+
+        fields = tuple(reader.get_extra_fields())
+        field_names = [f["name"] for f in fields if f["category"] == 'variants']
+
+        "qual" not in field_names
+        "dp" not in field_names
+
+
+
+@pytest.mark.parametrize(
+    "reader", READERS, ids=[str(i.__class__.__name__) for i in READERS]
+)
 def test_variants(reader):
 
     # test if variant field name match name from get_fields
@@ -74,6 +105,41 @@ def test_variants(reader):
         # check variant schema
         check_variant_schema(variant)
 
+@pytest.mark.parametrize(
+    "reader", READERS, ids=[str(i.__class__.__name__) for i in READERS]
+)
+def test_extra_variants(reader):
+
+    for variant in reader.get_extra_variants():
+        assert "comment" in variant
+        assert "favorite" in variant
+        assert "classification" in variant 
+        assert variant["favorite"] == False
+        assert variant["classification"] == 3
+
+    # test remove fields 
+    last_variant = variant
+    ## remove qual 
+    reader.add_ignore_fields("qual", "variants")
+    for variant in reader.get_extra_variants():
+        assert "qual" not in variant
+
+    ## remove annotation
+    if "annotations" in last_variant:
+        if "impact" in last_variant["annotations"][0]:
+            reader.add_ignore_fields("impact", "annotations")
+            for variant in reader.get_extra_variants():
+                for ann in variant["annotations"]:
+                    assert "impact" not in ann
+
+    ## remove sample annotations foxog
+    if "samples" in last_variant:
+        if "foxog" in last_variant["samples"][0]:
+            reader.add_ignore_fields("foxog", "samples")
+            for variant in reader.get_extra_variants():
+                for sample in variant["samples"]:
+                    assert "foxog" not in sample
+        
 
 @pytest.mark.parametrize(
     "reader", READERS, ids=[str(i.__class__.__name__) for i in READERS]
