@@ -24,7 +24,7 @@ class AbstractReader(ABC):
             It's a fallback if number_lines can't be computed.
         samples: List of samples in the file (default: empty)
 
-        ignore_fields: Skip fields in importations. 
+        ignored_fields: Skip fields in importations. 
             A list of fields to skip [{field_name:"AF", "category":"variant"}]
 
     Example:
@@ -42,7 +42,7 @@ class AbstractReader(ABC):
         self.file_size = self.get_total_file_size()
         self.compute_number_lines()
 
-        self.ignore_fields = set()
+        self.ignored_fields = set()
 
     @classmethod
     @abstractmethod
@@ -248,7 +248,7 @@ class AbstractReader(ABC):
             # Create unique identifiant by categories
             unique_key = field["category"]+"."+field["name"]
             is_unique  = unique_key not in duplicates 
-            is_ignored = (field["name"], field["category"]) in self.ignore_fields
+            is_ignored = (field["name"], field["category"]) in self.ignored_fields
             if is_unique and not is_ignored:
                 yield field
 
@@ -257,8 +257,8 @@ class AbstractReader(ABC):
 
 
 
-    def add_ignore_fields(self, field_name: str, field_category:str):
-        """Add new field to the ignore_fields list. 
+    def add_ignored_field(self, field_name: str, field_category:str):
+        """Add new field to the ignored_fields list. 
         ignored fields will not returned by get_extra_fields and then are not imporpted 
         into the database 
         
@@ -267,7 +267,7 @@ class AbstractReader(ABC):
             field_category (str): the category field name (variant,annotation,sample)
         """
 
-        self.ignore_fields.add((field_name, field_category))
+        self.ignored_fields.add((field_name, field_category))
 
 
     def get_extra_variants(self, **kwargs):
@@ -375,7 +375,7 @@ class AbstractReader(ABC):
                 variant["control_count_ref"] = control_counter[0]
 
             # Remove ignore variants 
-            for name, category in self.ignore_fields:
+            for name, category in self.ignored_fields:
                 if category == "variants":
                     if name in variant:
                         del variant[name]

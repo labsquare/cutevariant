@@ -26,7 +26,7 @@ from cutevariant.commons import logger
 LOGGER = logger()
 
 
-def async_import_reader(conn, reader: AbstractReader, pedfile=None, project={}):
+def async_import_reader(conn, reader: AbstractReader, pedfile=None, ignored_fields = set(), project={}):
     """Import data via the given reader into a SQLite database via the given connection
 
     :param conn: sqlite connection
@@ -54,6 +54,11 @@ def async_import_reader(conn, reader: AbstractReader, pedfile=None, project={}):
     insert_many_metadatas(conn, metadatas)
 
     yield 0, "Creating table shema..."
+
+    # Setup ignored fields 
+    reader.ignored_fields = ignored_fields
+
+
     # Create table fields
     create_table_fields(conn)
 
@@ -116,7 +121,7 @@ def async_import_reader(conn, reader: AbstractReader, pedfile=None, project={}):
     # session.add(Selection(name="favoris", description="favoris", count = 0))
 
 
-def async_import_file(conn, filename, pedfile=None, project={}):
+def async_import_file(conn, filename, pedfile=None, ignored_fields = set(), project={}):
     """Import filename into SQLite database
 
     :param conn: sqlite connection
@@ -129,25 +134,25 @@ def async_import_file(conn, filename, pedfile=None, project={}):
     """
     # Context manager that wraps the given file and creates an apropriate reader
     with create_reader(filename) as reader:
-        yield from async_import_reader(conn, reader, pedfile, project)
+        yield from async_import_reader(conn, reader, pedfile,ignored_fields, project)
 
 
-def import_file(conn, filename, pedfile=None, project={}):
+def import_file(conn, filename, pedfile=None, ignored_fields = set(), project={}):
     """Wrapper for debugging purpose
 
     TODO: to be deleted
     """
-    for progress, message in async_import_file(conn, filename, pedfile, project):
+    for progress, message in async_import_file(conn, filename, pedfile,ignored_fields, project):
         # don't show message
         pass
 
 
-def import_reader(conn, reader, pedfile=None, project={}):
+def import_reader(conn, reader, pedfile=None, ignored_fields = set(), project={}):
     """Wrapper for debugging purpose
 
     TODO: to be deleted
     """
-    for progress, message in async_import_reader(conn, reader, pedfile, project):
+    for progress, message in async_import_reader(conn, reader, pedfile,ignored_fields, project):
         # don't show message
         pass
 

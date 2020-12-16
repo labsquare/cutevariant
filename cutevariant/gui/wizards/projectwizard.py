@@ -5,8 +5,8 @@ import time
 
 # Qt imports
 from PySide2.QtWidgets import *
-from PySide2.QtCore import QThread, Signal, QDir, QSettings, QFile, Slot
-from PySide2.QtGui import QIcon
+from PySide2.QtCore import QThread, Signal, QDir, QSettings, QFile, Slot, Qt
+from PySide2.QtGui import QIcon, QStandardItem, QStandardItemModel
 
 # Custom imports
 from cutevariant.core.importer import async_import_file
@@ -283,6 +283,94 @@ class SamplePage(QWizardPage):
         self.ped_message.setText(message)
 
 
+
+class FieldsPage(QWizardPage):
+    """Allow user to skip too import some fields 
+
+    """
+    MANDATORY_FIELDS = ["chr","pos","ref","alt","gt"]
+
+    def __init__(self):
+        super().__init__()
+
+        self.setTitle(self.tr("Fields"))
+        self.setSubTitle(self.tr("Select fields you want to import"))
+        self.help_text = QLabel(
+            self.tr(
+                "Check fields you want to import "
+            )
+        )
+        self.select_button = QPushButton(self.tr("(Un)Select all"))
+        self.view = QTableView()
+        self.model = QStandardItemModel()
+        self.view.setModel(self.model)
+        self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.view.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.view.setAlternatingRowColors(True)
+
+
+        # main layout 
+        main_layout =QHBoxLayout()
+        main_layout.addWidget(self.view)
+
+        self.setLayout(main_layout)
+
+
+        
+
+    def initializePage(self):
+        """ overload """ 
+
+        # Load fields 
+        self.model.clear()
+        self.model.setColumnCount(4)
+        self.model.setHorizontalHeaderLabels(["name", "category", "description", "type"])
+
+        # Open variant file of the project and read its headers
+        filename = self.field("filename")
+
+        with create_reader(filename) as reader:
+
+            for field in reader.get_fields():
+
+                name_item = QStandardItem(field["name"])
+                cat_item = QStandardItem(field["category"])
+                desc_item = QStandardItem(field["description"])
+                type_item = QStandardItem(field["type"])
+
+                name_item.setCheckable(True)
+                name_item.setCheckState(Qt.Checked)
+                name_item.setData(field)
+
+                line = [name_item, cat_item, desc_item, type_item]
+
+
+                for item in line:
+                    item.setEditable(False)
+                    item.setEnabled(not field["name"] in self.MANDATORY_FIELDS)
+            
+
+                self.model.appendRow(line)
+
+        self.view.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
+
+    def validatePage(self):
+        """ override """ 
+
+        # Loop over fields a create a ignored fields set e.g (("qual","variants"))
+        ignored_fields = set()
+        for row in range(self.model.rowCount()):
+            item = self.model.item(row, 0)
+            if item.checkState() == Qt.Unchecked:
+                field = item.data()
+                ignored_fields.add((field["name"], field["category"]))
+
+
+        self.wizard().config["ignored_fields"]  = ignored_fields
+
+        return True
+
+
 class ImportThread(QThread):
     """Thread used to create a new project by importing a variant file
 
@@ -303,10 +391,13 @@ class ImportThread(QThread):
         self.db_filename = ""
         # Facultative PED file
         self.pedfile = None
+        # Ignored fields 
+        self.ignored_fields = set()
+
         self.project_settings = dict()
 
     def set_importer_settings(
-        self, filename, db_filename, pedfile=None, project_settings={}
+        self, filename, db_filename, pedfile=None, ignored_fields = set(), project_settings={}
     ):
         """Init settings of the importer
 
@@ -328,6 +419,8 @@ class ImportThread(QThread):
         self.project_settings = project_settings
         # Ped file
         self.pedfile = pedfile
+        # Ignored fields 
+        self.ignored_fields = ignored_fields
 
     def run(self):
         """Overrided QThread method
@@ -351,6 +444,7 @@ class ImportThread(QThread):
                 self.conn,
                 self.filename,
                 pedfile=self.pedfile,
+                ignored_fields = self.ignored_fields,
                 project=self.project_settings,
             ):
                 if self._stop:
@@ -415,7 +509,10 @@ class ImportPage(QWizardPage):
         self.log_edit.appendPlainText(self.field("filename"))
         # Database filename; see initializePage()
         self.db_filename = None
-
+        
+        # Ignored field from previous page; see initializePage()
+        self.ignored_fields = set()
+        
         self.thread.started.connect(
             lambda: self.log_edit.appendPlainText(self.tr("Started"))
         )
@@ -439,6 +536,9 @@ class ImportPage(QWizardPage):
             + self.field("project_name")
             + ".db"
         )
+
+        self.ignored_fields = self.wizard().config["ignored_fields"]
+
         self.run()
         self.import_button.setDisabled(False)
 
@@ -501,6 +601,8 @@ class ImportPage(QWizardPage):
                 db_filename=self.db_filename,
                 # PED file to use with samples
                 pedfile=self.field("pedfile"),
+                # Ignored fields 
+                ignored_fields = self.ignored_fields,
                 # Project's settings
                 project_settings={
                     # Reference genome
@@ -511,6 +613,9 @@ class ImportPage(QWizardPage):
             )
 
             self.log_edit.appendPlainText(self.tr("Import ") + self.thread.filename)
+            
+            show_ignored_fields = ",".join([i[0] for i in self.ignored_fields])
+            self.log_edit.appendPlainText("Ignored fields: " + show_ignored_fields)
             # display stop on the button
             self.import_button.setText(self.text_buttons[1])
             self.thread.start()
@@ -546,7 +651,13 @@ class ProjectWizard(QWizard):
         self.addPage(ProjectPage())
         self.addPage(FilePage())
         self.addPage(SamplePage())
+        self.addPage(FieldsPage())
         self.addPage(ImportPage())
+
+        # Stored all data filled by the wizard
+        # Better than using cumberstome setField...
+        self.config = {}
+
 
 
 if __name__ == "__main__":
