@@ -1246,7 +1246,7 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
 
             values = []
             for ann in variant["annotations"]:
-                default_values = defaultdict(str, ann)
+                default_values = defaultdict(lambda : None, ann)
                 value = [default_values[col] for col in ann_columns[1:]]
                 value.insert(0, variant_id)
                 values.append(value)
@@ -1275,7 +1275,7 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
             samples = []
             for sample in variant["samples"]:
                 sample_id = samples_id_mapping[sample["name"]]
-                default_values = defaultdict(str, sample)
+                default_values = defaultdict(lambda : None, sample)
                 sample_value = [sample_id, variant_id]
                 sample_value += [default_values[i] for i in sample_columns[2:]]
                 samples.append(sample_value)
