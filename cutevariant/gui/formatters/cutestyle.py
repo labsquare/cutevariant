@@ -138,11 +138,11 @@ class CutestyleFormatter(Formatter):
 
             return
 
-        if field_name == "rsid":
-            self.draw_url(
-                painter, option.rect, value, QUrl("http://www.google.fr"), index
-            )
-            return
+        # if field_name == "rsid":
+        #     self.draw_url(
+        #         painter, option.rect, value, QUrl("http://www.google.fr"), index
+        #     )
+        #     return
 
         painter.setBrush(brush)
         painter.setPen(pen)
