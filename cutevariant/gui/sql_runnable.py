@@ -42,13 +42,16 @@ class SqlRunnable(QObject, QRunnable):
         This means that QThreadPool **will not** delete these objects after
         calling run() method.
     """
+
     started = Signal()
     finished = Signal(int)
     error = Signal(str)
 
     sql_connections_pool = {}
 
-    def __init__(self, conn: sqlite3.Connection, function: Callable = None, query_number: int = 0):
+    def __init__(
+        self, conn: sqlite3.Connection, function: Callable = None, query_number: int = 0
+    ):
         """Init a runnable with connection and callable
 
         Notes:

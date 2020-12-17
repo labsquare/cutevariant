@@ -247,18 +247,15 @@ class AbstractReader(ABC):
         duplicates = set()
         for field in self.get_fields():
             # Create unique identifiant by categories
-            unique_key = field["category"]+"."+field["name"]
-            is_unique  = unique_key not in duplicates 
+            unique_key = field["category"] + "." + field["name"]
+            is_unique = unique_key not in duplicates
             is_ignored = (field["name"], field["category"]) in self.ignored_fields
             if is_unique and not is_ignored:
                 yield field
 
             duplicates.add(unique_key)
 
-
-
-
-    def add_ignored_field(self, field_name: str, field_category:str):
+    def add_ignored_field(self, field_name: str, field_category: str):
         """Add new field to the ignored_fields list. 
         ignored fields will not returned by get_extra_fields and then are not imporpted 
         into the database 
@@ -269,7 +266,6 @@ class AbstractReader(ABC):
         """
 
         self.ignored_fields.add((field_name, field_category))
-
 
     def get_extra_variants(self, **kwargs):
         """Yield variants with extra information computed.
@@ -322,8 +318,9 @@ class AbstractReader(ABC):
             # Samples can't be both in cases and controls
             case_samples = kwargs["case"]
             control_samples = kwargs["control"]
-            assert not set(case_samples) & set(control_samples), \
-                "Found sample both in cases and controls!"
+            assert not set(case_samples) & set(
+                control_samples
+            ), "Found sample both in cases and controls!"
             case_and_control_samples_found = True
 
         for variant in self.get_variants():
@@ -375,22 +372,21 @@ class AbstractReader(ABC):
                 variant["control_count_het"] = control_counter[1]
                 variant["control_count_ref"] = control_counter[0]
 
-            # Remove ignore variants 
+            # Remove ignore variants
             for name, category in self.ignored_fields:
                 if category == "variants":
                     if name in variant:
                         del variant[name]
-                # remove from category 
+                # remove from category
                 if category == "annotations":
                     for ann in variant["annotations"]:
                         if name in ann:
                             del ann[name]
-                
+
                 if category == "samples":
                     for sample in variant["samples"]:
                         if name in sample:
                             del sample[name]
-
 
             yield nullify(variant)
 
@@ -568,6 +564,7 @@ def sanitize_field_name(field: str):
     LOGGER.warning("NOT implemented function!!")
     return field
 
+
 def nullify(variant: dict) -> dict:
     """ Convert empty fields value  to NONE 
     This is used have NULL value inside the SQLITE inside an empty string
@@ -587,17 +584,17 @@ def nullify(variant: dict) -> dict:
 
         return value
 
-    for key in variant.keys(): 
+    for key in variant.keys():
         variant[key] = convert_to_none(variant[key])
 
         if key == "annotations":
             for ann in variant["annotations"]:
                 for ann_key in ann.keys():
-                        ann[ann_key] = convert_to_none(ann[ann_key])
+                    ann[ann_key] = convert_to_none(ann[ann_key])
 
         if key == "samples":
             for sample in variant["samples"]:
                 for sample_key in sample.keys():
-                        sample[sample_key] = convert_to_none(sample[sample_key])
+                    sample[sample_key] = convert_to_none(sample[sample_key])
 
     return variant

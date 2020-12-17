@@ -166,7 +166,9 @@ class SourceEditorWidget(plugin.PluginWidget):
         self.view.setSelectionMode(QAbstractItemView.SingleSelection)
         self.view.horizontalHeader().show()
         self.view.horizontalHeader().setStretchLastSection(False)
-        self.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        self.view.horizontalHeader().setSectionResizeMode(
+            0, QHeaderView.ResizeToContents
+        )
         self.view.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
         self.view.horizontalHeader().hide()
 
@@ -438,7 +440,10 @@ class SourceEditorWidget(plugin.PluginWidget):
         last_directory = app_settings.value("last_directory", QDir.homePath())
 
         filepath, _ = QFileDialog.getOpenFileName(
-            self, self.tr("Open BED file"), last_directory, self.tr("BED - Browser Extensible Data (*.bed)")
+            self,
+            self.tr("Open BED file"),
+            last_directory,
+            self.tr("BED - Browser Extensible Data (*.bed)"),
         )
         if not filepath:
             return

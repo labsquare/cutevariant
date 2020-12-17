@@ -8,7 +8,7 @@ from PySide2.QtWidgets import (
     QDialogButtonBox,
     QAbstractItemView,
     QHeaderView,
-    QTabWidget
+    QTabWidget,
 )
 from PySide2.QtCore import Qt, QAbstractTableModel, QModelIndex, QThreadPool
 
@@ -94,8 +94,9 @@ class KeyValueModel(QAbstractTableModel):
         self.items.append((name, value))
         self.endInsertRows()
 
+
 class KeyValueWidget(QTableView):
-    def __init__(self, parent = None):
+    def __init__(self, parent=None):
         super().__init__(parent)
         self.model = KeyValueModel()
         self.setModel(self.model)
@@ -104,18 +105,15 @@ class KeyValueWidget(QTableView):
         self.verticalHeader().hide()
         self.setSelectionMode(QAbstractItemView.SingleSelection)
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
-  
-    def set_data(self, data:dict):
+
+    def set_data(self, data: dict):
         self.model.clear()
 
         for key in data.keys():
             self.model.add_metrics(key, str(data[key]))
 
-        self.horizontalHeader().setSectionResizeMode(
-            0, QHeaderView.ResizeToContents
-        )
+        self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
         self.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
-
 
 
 class MetricsDialog(PluginDialog):
@@ -127,13 +125,14 @@ class MetricsDialog(PluginDialog):
         self.conn = conn
 
         self.tab_widget = QTabWidget()
-       
+
         self.meta_view = KeyValueWidget()
         self.stat_view = KeyValueWidget()
 
-        self.tab_widget.addTab(self.meta_view,"Metadata",)
-        self.tab_widget.addTab(self.stat_view,"Statistic")
-
+        self.tab_widget.addTab(
+            self.meta_view, "Metadata",
+        )
+        self.tab_widget.addTab(self.stat_view, "Statistic")
 
         self.buttons = QDialogButtonBox(QDialogButtonBox.Ok)
 
@@ -162,7 +161,6 @@ class MetricsDialog(PluginDialog):
 
             meta_data = sql.get_metadatas(conn)
 
-
             stats_data = {
                 "Variant count": get_variant_count(conn),
                 "Snp count": get_snp_count(conn),
@@ -171,8 +169,9 @@ class MetricsDialog(PluginDialog):
                 "Sample count": get_sample_count(conn),
             }
 
-            stats_data["Tr/tv ratio"] = stats_data["Transition count"] / stats_data["Transversion count"]
-
+            stats_data["Tr/tv ratio"] = (
+                stats_data["Transition count"] / stats_data["Transversion count"]
+            )
 
             return meta_data, stats_data
 
@@ -186,12 +185,9 @@ class MetricsDialog(PluginDialog):
         """Called at the end of the thread and populate data"""
         meta_data, stats_data = self.metrics_runnable.results
 
-
         self.stat_view.set_data(stats_data)
         self.meta_view.set_data(meta_data)
 
-
-  
 
 if __name__ == "__main__":
     from PySide2.QtWidgets import QApplication

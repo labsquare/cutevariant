@@ -303,7 +303,9 @@ class PluginsSettingsWidget(BaseWidget):
         Notes:
             Called only if the user clicks on "save all" button.
         """
-        for iterator in QTreeWidgetItemIterator(self.view, QTreeWidgetItemIterator.Enabled):
+        for iterator in QTreeWidgetItemIterator(
+            self.view, QTreeWidgetItemIterator.Enabled
+        ):
             item = iterator.value()
             # Get extension and check state
             extension = item.data(0, Qt.UserRole)
@@ -312,7 +314,11 @@ class PluginsSettingsWidget(BaseWidget):
             self.settings.setValue(f"plugins/{extension['name']}/status", check_state)
 
             # Set the enable status of the extension
-            for sub_extension_type in {"widget", "dialog", "setting"} & extension.keys():
+            for sub_extension_type in {
+                "widget",
+                "dialog",
+                "setting",
+            } & extension.keys():
                 extension[sub_extension_type].ENABLE = check_state
 
             if check_state:
@@ -330,7 +336,11 @@ class PluginsSettingsWidget(BaseWidget):
         settings_keys = set(self.settings.allKeys())
 
         for extension in plugin.find_plugins():
-            displayed_title = extension["name"] if LOGGER.getEffectiveLevel() == DEBUG else extension["title"]
+            displayed_title = (
+                extension["name"]
+                if LOGGER.getEffectiveLevel() == DEBUG
+                else extension["title"]
+            )
             item = QTreeWidgetItem()
             item.setText(0, displayed_title)
             item.setText(1, extension["description"])
@@ -342,9 +352,15 @@ class PluginsSettingsWidget(BaseWidget):
             # Get activation status
             # Only disabled extensions can be in settings
             key = f"plugins/{extension['name']}/status"
-            activated_by_user = self.settings.value(key) == "true" if key in settings_keys else None
+            activated_by_user = (
+                self.settings.value(key) == "true" if key in settings_keys else None
+            )
 
-            for sub_extension_type in {"widget", "dialog", "setting"} & extension.keys():
+            for sub_extension_type in {
+                "widget",
+                "dialog",
+                "setting",
+            } & extension.keys():
                 if activated_by_user is None and extension[sub_extension_type].ENABLE:
                     is_enabled = True
                     # Only disabled plugins can be reactivated by the user
@@ -371,6 +387,7 @@ class SettingsWidget(QDialog):
         uiSettingsChanged(Signal): Emitted when some settings of the GUI are
             modified and need a reload of all widgets to take effect.
     """
+
     uiSettingsChanged = Signal()
 
     def __init__(self, parent):

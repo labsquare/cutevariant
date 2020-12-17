@@ -452,7 +452,7 @@ def create_selection_from_bed(
 
     cur.executemany(
         "INSERT INTO bed_table (chr, start, end, name) VALUES (:chrom,:start,:end,:name)",
-        bed_intervals
+        bed_intervals,
     )
 
     if source == "variants":
@@ -1054,7 +1054,8 @@ def get_one_variant(
     variant["annotations"] = []
     if with_annotations:
         variant["annotations"] = [
-            dict(annotation) for annotation in conn.execute(
+            dict(annotation)
+            for annotation in conn.execute(
                 f"SELECT * FROM annotations WHERE variant_id = {variant_id}"
             )
         ]
@@ -1062,7 +1063,8 @@ def get_one_variant(
     variant["samples"] = []
     if with_samples:
         variant["samples"] = [
-            dict(sample) for sample in conn.execute(
+            dict(sample)
+            for sample in conn.execute(
                 f"""SELECT samples.name, sample_has_variant.* FROM sample_has_variant
                 LEFT JOIN samples on samples.id = sample_has_variant.sample_id
                 WHERE variant_id = {variant_id}"""
@@ -1204,8 +1206,8 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
 
         # Create list of value to insert
         # ["chr",234234,"A","G"]
-        # if field key is missing, set a default value to None ! 
-        default_values = defaultdict(lambda : None, variant)
+        # if field key is missing, set a default value to None !
+        default_values = defaultdict(lambda: None, variant)
         values = [default_values[col] for col in var_columns]
 
         cursor.execute(variant_insert_query, values)
@@ -1246,7 +1248,7 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
 
             values = []
             for ann in variant["annotations"]:
-                default_values = defaultdict(lambda : None, ann)
+                default_values = defaultdict(lambda: None, ann)
                 value = [default_values[col] for col in ann_columns[1:]]
                 value.insert(0, variant_id)
                 values.append(value)
@@ -1275,7 +1277,7 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
             samples = []
             for sample in variant["samples"]:
                 sample_id = samples_id_mapping[sample["name"]]
-                default_values = defaultdict(lambda : None, sample)
+                default_values = defaultdict(lambda: None, sample)
                 sample_value = [sample_id, variant_id]
                 sample_value += [default_values[i] for i in sample_columns[2:]]
                 samples.append(sample_value)
@@ -1284,8 +1286,6 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
 
             q = f"INSERT INTO sample_has_variant VALUES ({placeholders})"
             cursor.executemany(q, samples)
-
-
 
         # Yield progression
         if variant_count % yield_every == 0:

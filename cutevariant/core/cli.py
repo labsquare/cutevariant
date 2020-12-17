@@ -15,14 +15,7 @@ from cutevariant.commons import log_level
 
 def display_sql_results(data, headers, *args, **kwargs):
     """Display SQL results in the console in tabulated format"""
-    print(
-        columnar(
-            data,
-            headers=headers,
-            no_borders=True,
-            **kwargs,
-        )
-    )
+    print(columnar(data, headers=headers, no_borders=True, **kwargs,))
 
 
 def display_query_status(query_result):
@@ -37,8 +30,7 @@ def display_query_status(query_result):
     if query_result.get("success") or ("id" in query_result):
         print("Done")
     else:
-        print(
-            "An error occured, there is no result, or there is nothing to do.")
+        print("An error occured, there is no result, or there is nothing to do.")
     exit(1)
 
 
@@ -82,7 +74,7 @@ the arguments.""",
         epilog="""Examples:
 
         $ cutevariant-cli createdb -i "examples/test.snpeff.vcf"
-        """
+        """,
     )
     createdb_parser.add_argument("-i", "--input", help="VCF file path", required=True)
 
@@ -198,25 +190,23 @@ the arguments.""",
         if args.table == "fields":
             display_sql_results(
                 (i.values() for i in sql.get_fields(conn)),
-                ["id", "name", "table", "type", "description"]
+                ["id", "name", "table", "type", "description"],
             )
 
         if args.table == "samples":
             display_sql_results(
-                (i.values() for i in sql.get_samples(conn)),
-                ["id", "name"]
+                (i.values() for i in sql.get_samples(conn)), ["id", "name"]
             )
 
         if args.table == "selections":
             display_sql_results(
                 (i.values() for i in sql.get_selections(conn)),
-                ["id", "name", "variant_count"]
+                ["id", "name", "variant_count"],
             )
 
         if args.table == "wordsets":
             display_sql_results(
-                (i.values() for i in sql.get_wordsets(conn)),
-                ["id", "word_count"]
+                (i.values() for i in sql.get_wordsets(conn)), ["id", "word_count"]
             )
 
     # Remove parser ############################################################
@@ -271,7 +261,10 @@ the arguments.""",
             display_sql_results((i.values() for i in ret), ["id"] + cmd["fields"])
             exit(1)
 
-        if cmd["cmd"] in ("drop_cmd", "import_cmd", "create_cmd", "set_cmd", "bed_cmd") or args.to_selection:
+        if (
+            cmd["cmd"] in ("drop_cmd", "import_cmd", "create_cmd", "set_cmd", "bed_cmd")
+            or args.to_selection
+        ):
             # PS: to_selection is used to detect select_cmd with selection creation
             display_query_status(ret)
 

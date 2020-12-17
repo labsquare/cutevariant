@@ -1,4 +1,3 @@
-
 class AbstractWriter:
     """Base class for all Writer required to export variants into a file or a database.
 

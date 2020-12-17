@@ -146,7 +146,9 @@ class VcfReader(AbstractReader):
         """
         # loop over record
         self.device.seek(0)
-        vcf_reader = vcf.VCFReader(self.device, strict_whitespace=True) # TODO use class attr
+        vcf_reader = vcf.VCFReader(
+            self.device, strict_whitespace=True
+        )  # TODO use class attr
 
         # Genotype format fields
         format_fields = set(map(str.lower, vcf_reader.formats))
@@ -187,13 +189,13 @@ class VcfReader(AbstractReader):
                         # New sample data
                         sample_data = {
                             "name": sample.sample,
-                            "gt": -1 if sample.gt_type is None else sample.gt_type
+                            "gt": -1 if sample.gt_type is None else sample.gt_type,
                         }
 
                         # Load sample fields
                         # 1 genotype field per format
                         # In theory: All same fields for each sample
-                        #print("FORMAT FIELD",format_fields, sample["GQ"])
+                        # print("FORMAT FIELD",format_fields, sample["GQ"])
                         for gt_field in format_fields:
                             try:
                                 value = sample[gt_field.upper()]
@@ -262,7 +264,7 @@ class VcfReader(AbstractReader):
             "name": "qual",
             "category": "variants",
             "description": "Phred-scaled quality score for the assertion made in ALT:"
-                           "−10log10 prob(call in ALT is wrong).",
+            "−10log10 prob(call in ALT is wrong).",
             "type": "int",
         }
         yield {
@@ -296,7 +298,9 @@ class VcfReader(AbstractReader):
 
             if field_name == "GT":
                 # Edit description of Genotype field
-                description += " (0: homozygous_ref, 1: heterozygous, 2: homozygous_alt)"
+                description += (
+                    " (0: homozygous_ref, 1: heterozygous, 2: homozygous_alt)"
+                )
 
             yield {
                 "name": field_name.lower(),

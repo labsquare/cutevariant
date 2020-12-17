@@ -233,7 +233,9 @@ class VqlEditorWidget(plugin.PluginWidget):
             """<div height=100%>
             <img src="data:image/png;base64,{}" align="left"/>
              <span> {} </span>
-            </div>""".format(icon_64, message)
+            </div>""".format(
+                icon_64, message
+            )
         )
 
 

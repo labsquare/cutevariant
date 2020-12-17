@@ -114,10 +114,7 @@ class BedReader:
         # Throws line with headers
         skipped_header_line = 0  # Will be used to rewind the stream
         for line in stream:
-            if (
-                line.startswith(("@", "#", "track", "browser"))
-                or not line.strip()
-            ):
+            if line.startswith(("@", "#", "track", "browser")) or not line.strip():
                 # Header detected
                 LOGGER.debug("comment: %s", line)
                 skipped_header_line += 1

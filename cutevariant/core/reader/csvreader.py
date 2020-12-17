@@ -252,7 +252,8 @@ class CsvReader(AbstractReader):
 
         LOGGER.info(
             "CsvReader::parse_variants: transcripts %s, variants %s",
-            transcript_idx, len(variants)
+            transcript_idx,
+            len(variants),
         )
 
         for variant in variants.values():

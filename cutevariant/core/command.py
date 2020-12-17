@@ -120,7 +120,9 @@ def count_cmd(
     # table (count without taking account of annotations) is different.
     # This leads to a fault in the pagination hiding the latest variants if
     # more than 50 must be displayed.
-    variants_fields = set(field["name"] for field in sql.get_field_by_category(conn, "variants"))
+    variants_fields = set(
+        field["name"] for field in sql.get_field_by_category(conn, "variants")
+    )
 
     if set(fields).issubset(variants_fields) and not filters and not group_by:
         # All fields are in variants table
@@ -221,12 +223,7 @@ def create_cmd(
         return {}
 
     sql_query = build_full_sql_query(
-        conn,
-        fields=["id"],
-        source=source,
-        filters=filters,
-        limit=None,
-        **kwargs,
+        conn, fields=["id"], source=source, filters=filters, limit=None, **kwargs,
     )
 
     LOGGER.debug("command:create_cmd:: %s", sql_query)

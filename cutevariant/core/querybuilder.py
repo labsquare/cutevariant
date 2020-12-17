@@ -372,7 +372,7 @@ def filters_to_vql(filters):
                 except ValueError:
                     pass
 
-            elif (operator == "IS" or operator =="IS NOT") and value == "NULL":
+            elif (operator == "IS" or operator == "IS NOT") and value == "NULL":
                 value = f"NULL"
 
             elif isinstance(value, str):
