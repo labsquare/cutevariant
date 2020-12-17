@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 import io
 import gzip
+import math
 from collections import Counter
 import cutevariant.commons as cm
 
@@ -391,7 +392,7 @@ class AbstractReader(ABC):
                             del sample[name]
 
 
-            yield variant
+            yield nullify(variant)
 
     def get_extra_fields_by_category(self, category: str):
         """Syntaxic suggar to get fields according their category
@@ -566,3 +567,37 @@ def sanitize_field_name(field: str):
     # TODO
     LOGGER.warning("NOT implemented function!!")
     return field
+
+def nullify(variant: dict) -> dict:
+    """ Convert empty fields value  to NONE 
+    This is used have NULL value inside the SQLITE inside an empty string
+
+    """
+
+    def convert_to_none(value):
+        """ convert value to None according type """
+        EMPTY_STRING = ["", "."]
+        if isinstance(value, str):
+            if value in EMPTY_STRING:
+                return None
+
+        if isinstance(value, float) or isinstance(value, int):
+            if math.isnan(value):
+                return None
+
+        return value
+
+    for key in variant.keys(): 
+        variant[key] = convert_to_none(variant[key])
+
+        if key == "annotations":
+            for ann in variant["annotations"]:
+                for ann_key in ann.keys():
+                        ann[ann_key] = convert_to_none(ann[ann_key])
+
+        if key == "samples":
+            for sample in variant["samples"]:
+                for sample_key in sample.keys():
+                        sample[sample_key] = convert_to_none(sample[sample_key])
+
+    return variant

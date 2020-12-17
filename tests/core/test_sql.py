@@ -70,7 +70,7 @@ VARIANTS = [
         "pos": 10,
         "ref": "G",
         "alt": "A",
-        "dp": 100,
+        "dp": None,
         "extra1": 10,
         "extra2": 100,
         "annotations": [

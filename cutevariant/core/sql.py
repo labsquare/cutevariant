@@ -1204,7 +1204,8 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
 
         # Create list of value to insert
         # ["chr",234234,"A","G"]
-        default_values = defaultdict(str, variant)
+        # if field key is missing, set a default value to None ! 
+        default_values = defaultdict(lambda : None, variant)
         values = [default_values[col] for col in var_columns]
 
         cursor.execute(variant_insert_query, values)
