@@ -8,6 +8,7 @@ from PySide2.QtWidgets import (
     QDialogButtonBox,
     QAbstractItemView,
     QHeaderView,
+    QTabWidget
 )
 from PySide2.QtCore import Qt, QAbstractTableModel, QModelIndex, QThreadPool
 
@@ -63,7 +64,7 @@ def get_snp_count(conn: sqlite3.Connection):
     ).fetchone()["count"]
 
 
-class MetricModel(QAbstractTableModel):
+class KeyValueModel(QAbstractTableModel):
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -93,6 +94,29 @@ class MetricModel(QAbstractTableModel):
         self.items.append((name, value))
         self.endInsertRows()
 
+class KeyValueWidget(QTableView):
+    def __init__(self, parent = None):
+        super().__init__(parent)
+        self.model = KeyValueModel()
+        self.setModel(self.model)
+        self.setAlternatingRowColors(True)
+        self.horizontalHeader().hide()
+        self.verticalHeader().hide()
+        self.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.setSelectionBehavior(QAbstractItemView.SelectRows)
+  
+    def set_data(self, data:dict):
+        self.model.clear()
+
+        for key in data.keys():
+            self.model.add_metrics(key, str(data[key]))
+
+        self.horizontalHeader().setSectionResizeMode(
+            0, QHeaderView.ResizeToContents
+        )
+        self.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+
+
 
 class MetricsDialog(PluginDialog):
 
@@ -102,23 +126,23 @@ class MetricsDialog(PluginDialog):
         super().__init__(parent)
         self.conn = conn
 
-        self.view = QTableView()
-        self.model = MetricModel()
-        self.buttons = QDialogButtonBox(QDialogButtonBox.Ok)
+        self.tab_widget = QTabWidget()
+       
+        self.meta_view = KeyValueWidget()
+        self.stat_view = KeyValueWidget()
 
-        self.view.setModel(self.model)
-        self.view.setAlternatingRowColors(True)
-        self.view.horizontalHeader().hide()
-        self.view.verticalHeader().hide()
-        self.view.setSelectionMode(QAbstractItemView.SingleSelection)
-        self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.tab_widget.addTab(self.meta_view,"Metadata",)
+        self.tab_widget.addTab(self.stat_view,"Statistic")
+
+
+        self.buttons = QDialogButtonBox(QDialogButtonBox.Ok)
 
         self.buttons.accepted.connect(self.accept)
 
         self.setWindowTitle(self.tr("Project metrics"))
 
         v_layout = QVBoxLayout()
-        v_layout.addWidget(self.view)
+        v_layout.addWidget(self.tab_widget)
         v_layout.addWidget(self.buttons)
         self.setLayout(v_layout)
 
@@ -135,15 +159,24 @@ class MetricsDialog(PluginDialog):
 
         def compute_metrics(conn):
             """Async function"""
-            return {
-                "variants": get_variant_count(conn),
-                "snps": get_snp_count(conn),
-                "transitions": get_variant_transition(conn),
-                "transversions": get_variant_transversion(conn),
-                "samples": get_sample_count(conn),
+
+            meta_data = sql.get_metadatas(conn)
+
+
+            stats_data = {
+                "Variant count": get_variant_count(conn),
+                "Snp count": get_snp_count(conn),
+                "Transition count": get_variant_transition(conn),
+                "Transversion count": get_variant_transversion(conn),
+                "Sample count": get_sample_count(conn),
             }
 
-        self.model.add_metrics(self.tr("Loading..."), self.tr("data..."))
+            stats_data["Tr/tv ratio"] = stats_data["Transition count"] / stats_data["Transversion count"]
+
+
+            return meta_data, stats_data
+
+        self.stat_view.model.add_metrics(self.tr("Loading..."), self.tr("data..."))
 
         self.metrics_runnable = SqlRunnable(self.conn, compute_metrics)
         self.metrics_runnable.finished.connect(self.loaded)
@@ -151,23 +184,14 @@ class MetricsDialog(PluginDialog):
 
     def loaded(self):
         """Called at the end of the thread and populate data"""
-        results = self.metrics_runnable.results
+        meta_data, stats_data = self.metrics_runnable.results
 
-        self.model.clear()
-        ratio = results["transitions"] / results["transversions"]
 
-        self.model.add_metrics("Variant count", results["variants"])
-        self.model.add_metrics("Snp count", results["snps"])
-        self.model.add_metrics("Transition count", results["transitions"])
-        self.model.add_metrics("Transversion count", results["transversions"])
-        self.model.add_metrics("Tr/tv ratio", ratio)
-        self.model.add_metrics("Sample count", results["samples"])
+        self.stat_view.set_data(stats_data)
+        self.meta_view.set_data(meta_data)
 
-        self.view.horizontalHeader().setSectionResizeMode(
-            0, QHeaderView.ResizeToContents
-        )
-        self.view.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
 
+  
 
 if __name__ == "__main__":
     from PySide2.QtWidgets import QApplication

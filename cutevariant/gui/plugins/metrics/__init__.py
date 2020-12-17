@@ -1,4 +1,4 @@
-__title__ = "Metrics plugin"
+__title__ = "Information plugin"
 __description__ = "A dialog to compute different metrics on the database of variants"
 __long_description__ = ""
 __author__ = "Sacha schutz"
