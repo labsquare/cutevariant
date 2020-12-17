@@ -73,7 +73,8 @@ class CutestyleFormatter(Formatter):
         field_name = self.field_name(index).lower()
         value = self.value(index)
 
-        if value == "None":
+        if value == "NULL":
+            font.setItalic(True)
             pen.setColor("lightgray")
 
         # Colour bases (default color is the one of the current theme)
