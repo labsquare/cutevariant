@@ -3,6 +3,7 @@ import functools
 import math
 import csv
 import io
+import time
 import itertools as it
 from collections import defaultdict
 import copy
@@ -322,6 +323,8 @@ class VariantModel(QAbstractTableModel):
         self.count_runnable.query_number = self.query_number
         # Start the run
         LOGGER.debug("Start pools; query number %s", self.query_number)
+        self._start_timer = time.perf_counter()
+
         self.pool.start(self.variant_runnable)
         self.pool.start(self.count_runnable)
 
@@ -356,6 +359,8 @@ class VariantModel(QAbstractTableModel):
 
         # LOGGER.debug(cmd.count_cmd.cache_info())
         LOGGER.debug("Received load data; query %s", query_number)
+        self._end_timer = time.perf_counter()
+        self.elapsed_time = self._end_timer - self._start_timer
 
         self.beginResetModel()
         self.variants.clear()
@@ -571,8 +576,13 @@ class VariantView(QWidget):
             )
         # Display nb of variants/groups and pages
         self.info_label = QLabel()
-        self.bottom_bar.addWidget(self.info_label)
+        self.time_label = QLabel()
+
+        self.bottom_bar.addAction(FIcon(0xF0A30), "sql", self.on_show_sql)
+        self.bottom_bar.addWidget(self.time_label)
+        self.bottom_bar.addSeparator()
         self.bottom_bar.addWidget(spacer)
+        self.bottom_bar.addWidget(self.info_label)
         self.bottom_bar.setIconSize(QSize(16, 16))
         self.bottom_bar.setMaximumHeight(30)
         self.bottom_bar.setContentsMargins(0, 0, 0, 0)
@@ -738,12 +748,20 @@ class VariantView(QWidget):
     def on_show_sql(self):
         """Display debug sql query"""
         msg_box = QMessageBox()
+        msg_box.setWindowTitle("SQL debug")
         msg_box.setText(self.model.debug_sql)
+        explain_query = []
+        for rec in self.conn.execute("EXPLAIN QUERY PLAN " + self.model.debug_sql):
+            explain_query.append(str(dict(rec)))
+
+        msg_box.setDetailedText("\n".join(explain_query))
+
         msg_box.exec_()
 
     def load_page_box(self):
         """Load Bottom toolbar with pagination"""
         self.page_box.clear()
+        self.time_label.setText(str(" Executed in %.2gs " % (self.model.elapsed_time)))
         if self.model.pageCount() - 1 == 0:
             self.set_pagging_enabled(False)
         else:
