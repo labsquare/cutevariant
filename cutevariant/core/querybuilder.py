@@ -242,6 +242,10 @@ def fields_to_sql(field, default_tables={}, use_as=False) -> str:
         if field in default_tables.keys():
             # Set the table
             table = default_tables[field]
+            # Samples fields are managed differently from JOIN... Skip it
+            if table == "samples":
+                return f"`{field}`"
+
         else:
             # Unknown table, just return the field
             return f"`{field}`"
