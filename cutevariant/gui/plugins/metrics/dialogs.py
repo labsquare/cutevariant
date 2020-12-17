@@ -63,6 +63,32 @@ def get_snp_count(conn: sqlite3.Connection):
         "SELECT COUNT(*) AS `count` FROM variants WHERE is_snp = 1"
     ).fetchone()["count"]
 
+def get_indel_count(conn: sqlite3.Connection):
+    """Get the number of variants that are SNP
+
+    Notes:
+        This query is currently not covered by an index.
+    """
+    return conn.execute(
+        "SELECT COUNT(*) AS `count` FROM variants WHERE is_indel = 1"
+    ).fetchone()["count"]
+
+
+
+
+def get_gene_counts(conn: sqlite3.Connection):
+    """ Get the number of variant per genes """ 
+    results = {}
+    for record in conn.execute(
+        "SELECT gene, COUNT(*) as 'count' FROM annotations GROUP BY gene ORDER by count DESC LIMIT 1,100"
+    ):
+        results[record["gene"]] = record["count"]
+
+    return results
+
+
+
+
 
 class KeyValueModel(QAbstractTableModel):
     def __init__(self, parent=None):
@@ -115,6 +141,9 @@ class KeyValueWidget(QTableView):
         self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
         self.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
 
+    def show_loading(self):
+        self.model.clear()
+        self.model.add_metrics("Loading ...", "Data ...")
 
 class MetricsDialog(PluginDialog):
 
@@ -128,11 +157,13 @@ class MetricsDialog(PluginDialog):
 
         self.meta_view = KeyValueWidget()
         self.stat_view = KeyValueWidget()
+        self.ann_view = KeyValueWidget()
 
         self.tab_widget.addTab(
             self.meta_view, "Metadata",
         )
-        self.tab_widget.addTab(self.stat_view, "Statistic")
+        self.tab_widget.addTab(self.stat_view, "Variants")
+        self.tab_widget.addTab(self.ann_view, "Annotations")
 
         self.buttons = QDialogButtonBox(QDialogButtonBox.Ok)
 
@@ -149,6 +180,8 @@ class MetricsDialog(PluginDialog):
         self.metrics_runnable = None
         self.populate()
 
+
+
     def populate(self):
         """Async implementation to populate the view
 
@@ -164,18 +197,25 @@ class MetricsDialog(PluginDialog):
             stats_data = {
                 "Variant count": get_variant_count(conn),
                 "Snp count": get_snp_count(conn),
+                "Indel count": get_indel_count(conn),
                 "Transition count": get_variant_transition(conn),
                 "Transversion count": get_variant_transversion(conn),
                 "Sample count": get_sample_count(conn),
             }
 
             stats_data["Tr/tv ratio"] = (
-                stats_data["Transition count"] / stats_data["Transversion count"]
+                round(stats_data["Transition count"] / stats_data["Transversion count"],2)
             )
 
-            return meta_data, stats_data
+            if sql.table_exists(conn, "annotations"):
+                genes_data = get_gene_counts(conn)
+            else:
+                gene_data = {}
 
-        self.stat_view.model.add_metrics(self.tr("Loading..."), self.tr("data..."))
+            return meta_data, stats_data, genes_data
+
+        self.stat_view.show_loading()
+        self.meta_view.show_loading()
 
         self.metrics_runnable = SqlRunnable(self.conn, compute_metrics)
         self.metrics_runnable.finished.connect(self.loaded)
@@ -183,10 +223,11 @@ class MetricsDialog(PluginDialog):
 
     def loaded(self):
         """Called at the end of the thread and populate data"""
-        meta_data, stats_data = self.metrics_runnable.results
+        meta_data, stats_data, genes_data = self.metrics_runnable.results
 
         self.stat_view.set_data(stats_data)
         self.meta_view.set_data(meta_data)
+        self.ann_view.set_data(genes_data)
 
 
 if __name__ == "__main__":

@@ -75,6 +75,20 @@ def get_sql_connection(filepath):
 
     return connection
 
+def table_exists(conn: sqlite3.Connection, name:str) -> bool:
+    """Return True if table exists
+    
+    Args:
+        conn (sqlite3.Connection): Sqlite3 connection
+        name (str): Table name
+    
+    Returns:
+        bool: True if table exists 
+    """
+    c = conn.cursor()
+    c.execute(f"SELECT name FROM sqlite_master WHERE name = '{name}'")
+    return c.fetchone() != None
+
 
 def drop_table(conn, table_name):
     """Drop the given table
