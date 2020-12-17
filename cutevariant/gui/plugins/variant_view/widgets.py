@@ -649,6 +649,7 @@ class VariantView(QWidget):
 
     def load(self):
         self.model.page = 1
+        self.model.order_by = None
         self.model.load()
 
     def loaded(self):
