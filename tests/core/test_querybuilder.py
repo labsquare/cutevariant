@@ -102,6 +102,12 @@ FILTERS_VS_SQL_VQL = [
         "`variants`.`ref` IS NULL",
         "ref IS NULL",
     ),
+        #  TEST IS NOT NULL
+    (
+        {"AND": [{"field": "ref", "operator": "IS NOT", "value": "NULL"}]},
+        "`variants`.`ref` IS NOT NULL",
+        "ref IS NOT NULL",
+    ),
     # Test composite field
     (
         {

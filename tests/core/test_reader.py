@@ -4,6 +4,9 @@ import sqlite3
 from collections import OrderedDict
 
 # Custom imports
+
+from cutevariant.core.reader.abstractreader import nullify
+
 from cutevariant.core.reader import VcfReader, FakeReader
 from cutevariant.core.reader import BedReader
 from cutevariant.core.reader import check_variant_schema, check_field_schema
@@ -35,14 +38,15 @@ def test_fields(reader):
     for field in fields:
         check_field_schema(field)
 
-    # test field genotypes 
-    sample_fields = [field["name"] for field in fields if field["category"] == "samples"]
+    # test field genotypes
+    sample_fields = [
+        field["name"] for field in fields if field["category"] == "samples"
+    ]
     assert "gt" in sample_fields
     assert "dp" in sample_fields
 
-
-    #Test if fields are unique per categories
-    field_with_categories = [f["name"]+f["category"] for f in fields]
+    # Test if fields are unique per categories
+    field_with_categories = [f["name"] + f["category"] for f in fields]
     assert len(field_with_categories) == len(set(field_with_categories))
 
 
@@ -63,18 +67,17 @@ def test_extra_fields(reader):
     assert "is_indel" in field_names
     assert "is_snp" in field_names
 
-    ## test to remove the  fields 
+    ## test to remove the  fields
     if "qual" in field_names and "dp" in field_names:
 
         reader.add_ignored_field("qual", "variants")
         reader.add_ignored_field("dp", "variants")
 
         fields = tuple(reader.get_extra_fields())
-        field_names = [f["name"] for f in fields if f["category"] == 'variants']
+        field_names = [f["name"] for f in fields if f["category"] == "variants"]
 
         "qual" not in field_names
         "dp" not in field_names
-
 
 
 @pytest.mark.parametrize(
@@ -105,6 +108,7 @@ def test_variants(reader):
         # check variant schema
         check_variant_schema(variant)
 
+
 @pytest.mark.parametrize(
     "reader", READERS, ids=[str(i.__class__.__name__) for i in READERS]
 )
@@ -113,13 +117,13 @@ def test_extra_variants(reader):
     for variant in reader.get_extra_variants():
         assert "comment" in variant
         assert "favorite" in variant
-        assert "classification" in variant 
+        assert "classification" in variant
         assert variant["favorite"] == False
         assert variant["classification"] == 3
 
-    # test remove fields 
+    # test remove fields
     last_variant = variant
-    ## remove qual 
+    ## remove qual
     reader.add_ignored_field("qual", "variants")
     for variant in reader.get_extra_variants():
         assert "qual" not in variant
@@ -139,7 +143,7 @@ def test_extra_variants(reader):
             for variant in reader.get_extra_variants():
                 for sample in variant["samples"]:
                     assert "foxog" not in sample
-        
+
 
 @pytest.mark.parametrize(
     "reader", READERS, ids=[str(i.__class__.__name__) for i in READERS]
@@ -332,6 +336,32 @@ def test_bedreader_from_file():
 
     assert intervals == expected
     assert bedtool.count == 4
+
+
+def test_nullify():
+    variant = {
+        "chr": "chr3",
+        "filters": "",
+        "annotations": [
+            {
+            "gene":"CFTR",
+            "test":""
+            }
+        ],
+        "samples": [
+            {
+            "name":"boby",
+            "dp":""
+            }
+        ]
+    
+    }
+
+    variant = nullify(variant)
+
+    assert variant["filters"] is None
+    assert variant["annotations"][0]["test"] is None
+    assert variant["samples"][0]["dp"] is None
 
 
 # def test_vcf():

@@ -171,7 +171,11 @@ class VariantModel(QAbstractTableModel):
 
             # ---- Display Role ----
             if role == Qt.DisplayRole:
-                return str(self.variant(index.row())[column_name])
+                value = self.variant(index.row())[column_name]
+                if value is None:
+                    return "NULL"
+                else:
+                    return str(self.variant(index.row())[column_name])
 
     def headerData(self, section, orientation=Qt.Horizontal, role=Qt.DisplayRole):
         """Overrided: Return column name and display tooltips on headers

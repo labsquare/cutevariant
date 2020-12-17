@@ -73,6 +73,10 @@ class CutestyleFormatter(Formatter):
         field_name = self.field_name(index).lower()
         value = self.value(index)
 
+        if value == "NULL":
+            font.setItalic(True)
+            pen.setColor("lightgray")
+
         # Colour bases (default color is the one of the current theme)
         if (field_name == "ref" or field_name == "alt") and (
             value in ("A", "C", "G", "T") and not is_selected
