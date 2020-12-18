@@ -66,9 +66,13 @@ class LinkSettings(BaseWidget):
             name = item.text()
             url = item.data(Qt.UserRole)
             is_default = int(item.data(Qt.UserRole + 1))
+            is_browser = int(item.data(Qt.UserRole + 2))
             settings.setValue("name", name)
             settings.setValue("url", url)
             settings.setValue("is_default", is_default)
+            settings.setValue("is_browser", is_browser)
+
+
         settings.endArray()
 
     def load(self):
@@ -88,16 +92,20 @@ class LinkSettings(BaseWidget):
 
             # Bug from Pyside2.QSettings which don't return boolean
             is_default = bool(int(settings.value("is_default")))
-            self.add_list_widget_item(name, url, is_default)
+            is_browser = bool(int(settings.value("is_browser")))
+
+            self.add_list_widget_item(name, url, is_default, is_browser)
+
         settings.endArray()
 
-    def add_list_widget_item(self, db_name: str, url: str, is_default=False):
+    def add_list_widget_item(self, db_name: str, url: str, is_default=False, is_browser=False):
         """Add an item to the QListWidget of the current view"""
         # Key is the name of the database, value is its url
         item = QListWidgetItem(db_name)
         item.setIcon(FIcon(0xF0866))
         item.setData(Qt.UserRole, str(url))  #  UserRole = Link
         item.setData(Qt.UserRole + 1, bool(is_default))  # UserRole+1 = is default link
+        item.setData(Qt.UserRole + 2, bool(is_browser))  # UserRole+1 = is default link
         item.setToolTip(str(url))
 
         font = item.font()
@@ -106,44 +114,58 @@ class LinkSettings(BaseWidget):
 
         self.view.addItem(item)
 
-    def edit_list_widget_item(self, item: QListWidgetItem, db_name: str, url: str):
+    def edit_list_widget_item(self, item: QListWidgetItem, db_name: str, url: str, is_default = False, is_browser = False):
         """Modify the given item"""
         item.setText(db_name)
         item.setData(Qt.UserRole, url)
+        item.setData(Qt.UserRole+1, int(is_default))
+        item.setData(Qt.UserRole+2, int(is_browser))
 
     def add_url(self, item=None):
         """Allow the user to insert and save custom database URL"""
         # Display dialog box to let the user enter it's own url
         dialog = QDialog()
-        title = QLabel(self.tr("Example: http://url_with_columns{chr}{pos}{ref}{alt}"))
+        title = QLabel(self.tr("""Create a link using variant field as place holder.
+For instance, to open UCSC genom browser use :\n
+https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg19&position={chr}:{pos}
+            """))
         name = QLineEdit()
         url = QLineEdit()
+        browser = QCheckBox(self.tr("Keep this box unchecked if you only want a http request "))
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         buttons.accepted.connect(dialog.accept)
         buttons.rejected.connect(dialog.reject)
+        
+
         layout = QFormLayout()
-        layout.addWidget(title)
         layout.addRow(self.tr("Name"), name)
         layout.addRow(self.tr("Url mask"), url)
+        layout.addRow(self.tr("Open in browser"), browser)
         layout.addWidget(buttons)
 
-        dialog.setLayout(layout)
+        main_layout = QVBoxLayout()
+        main_layout.addWidget(title)
+        main_layout.addLayout(layout)
+
+        dialog.setLayout(main_layout)
 
         if item:
             # Called by itemDoubleClicked or edit_item
             # Fill forms with item data
             name.setText(item.text())
             url.setText(item.data(Qt.UserRole))
+            is_browser = Qt.Checked if item.data(Qt.UserRole + 2) == 1 else Qt.Unchecked
+            browser.setChecked(is_browser)
 
         # Also do a minimal check on the data inserted
         if dialog.exec_() == QDialog.Accepted and name.text() and url.text():
 
             if item:
                 # Edit the current item in the list
-                self.edit_list_widget_item(item, name.text(), url.text())
+                self.edit_list_widget_item(item, name.text(), url.text(), False, bool(browser.checkState()))
             else:
                 # Add the item to the list
-                self.add_list_widget_item(name.text(), url.text())
+                self.add_list_widget_item(name.text(), url.text(), False, bool(browser.checkState()))
 
             # Save the item in settings
             # (Here to limit the friction with Save all button)
