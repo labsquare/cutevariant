@@ -66,7 +66,7 @@ WIKI_URL = "https://github.com/labsquare/cutevariant/wiki"
 
 # Logging
 LOGGER_NAME = "cutevariant"
-LOG_LEVEL = "INFO"
+LOG_LEVEL = "DEBUG"
 LOG_LEVELS = {
     "debug": logging.DEBUG,
     "info": logging.INFO,

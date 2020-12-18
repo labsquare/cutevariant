@@ -8,6 +8,7 @@ import itertools as it
 from collections import defaultdict
 import copy
 import string
+import urllib.request   # STRANGE: CANNOT IMPORT URLLIB ALONE
 from logging import DEBUG
 
 # Qt imports
@@ -264,6 +265,10 @@ class VariantModel(QAbstractTableModel):
             :meth:`loaded`
         """
         if self.conn is None:
+            return
+
+        # If Previous load not finished 
+        if self.pool.activeThreadCount() > 0:
             return
 
         self._set_loading(True)
@@ -838,13 +843,16 @@ class VariantView(QWidget):
             self.settings.setArrayIndex(index)
             key = self.settings.value("name")
             is_default = bool(int(self.settings.value("is_default", 0)))
+            is_browser = bool(int(self.settings.value("is_browser", 0)))
             format_string = self.settings.value("url")
 
             url = self._create_url(format_string, full_variant)
 
+            print("URL ", url)
+
             if url:
                 action = links_menu.addAction(
-                    f"{key}", functools.partial(QDesktopServices.openUrl, url)
+                    f"{key}", functools.partial(self._open_url, url, is_browser)
                 )
 
                 #  set bold if default
@@ -872,6 +880,16 @@ class VariantView(QWidget):
 
         # Display
         menu.exec_(event.globalPos())
+
+    def _open_url(self, url: QUrl, in_browser = False):
+
+        if in_browser:
+            QDesktopServices.openUrl(url)
+
+        else:
+            urllib.request.urlopen(url.toString(),timeout=10)
+
+
 
     def _create_url(self, format_string: str, variant: dict) -> QUrl:
         """Create a link from a format string and a variant data 
