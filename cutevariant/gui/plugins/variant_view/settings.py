@@ -91,8 +91,8 @@ class LinkSettings(BaseWidget):
             url = settings.value("url")
 
             # Bug from Pyside2.QSettings which don't return boolean
-            is_default = bool(int(settings.value("is_default")))
-            is_browser = bool(int(settings.value("is_browser")))
+            is_default = bool(int(settings.value("is_default",0)))
+            is_browser = bool(int(settings.value("is_browser",0)))
 
             self.add_list_widget_item(name, url, is_default, is_browser)
 
