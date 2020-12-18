@@ -189,7 +189,7 @@ class LinkSettings(BaseWidget):
         for row in range(self.view.count()):
             item = self.view.item(row)
             font = item.font()
-            is_default = True if item == current_item else False
+            is_default = True if item is current_item else False
             item.setData(Qt.UserRole + 1, is_default)
             font.setBold(is_default)
             item.setFont(font)
