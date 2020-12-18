@@ -573,12 +573,7 @@ class VariantView(QWidget):
         self.page_box.setValidator(QIntValidator())
         self.page_box.setFixedWidth(50)
         self.page_box.setValidator(QIntValidator())
-
-        if LOGGER.getEffectiveLevel() == DEBUG:
-            # Display SQL query on debug mode only
-            self.bottom_bar.addAction(
-                FIcon(0xF0866), self.tr("Show SQL query"), self.on_show_sql
-            )
+    
         # Display nb of variants/groups and pages
         self.info_label = QLabel()
         self.time_label = QLabel()
