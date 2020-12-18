@@ -1018,8 +1018,9 @@ class VariantView(QWidget):
         size = self.settings.beginReadArray("plugins/variant_view/links")
         for index in range(size):
             self.settings.setArrayIndex(index)
-            print(self.settings.value("name"), self.settings.value("is_default"))
             is_default = bool(int(self.settings.value("is_default")))
+            is_browser = bool(int(self.settings.value("is_browser", 0)))
+
             if is_default:
                 format_string = self.settings.value("url")
                 break
@@ -1030,7 +1031,7 @@ class VariantView(QWidget):
             # Get placeholders
             url = self._create_url(format_string, full_variant)
             if url:
-                QDesktopServices.openUrl(url)
+                self._open_url(url, is_browser)
 
 
 class VariantViewWidget(plugin.PluginWidget):
