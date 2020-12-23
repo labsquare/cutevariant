@@ -3,7 +3,7 @@ import sqlite3
 from typing import Callable
 
 # Qt imports
-from PySide2.QtCore import QRunnable, QObject, Signal, QThread
+from PySide2.QtCore import QThread, QObject, Signal
 
 # Custom imports
 from cutevariant.core.sql import get_sql_connection
@@ -12,7 +12,7 @@ from cutevariant.commons import logger
 LOGGER = logger()
 
 
-class SqlRunnable(QObject, QRunnable):
+class SqlThread(QThread):
     """Used to execute SQL/VQL queries in a separated thread
 
     Attributes:
@@ -43,16 +43,8 @@ class SqlRunnable(QObject, QRunnable):
         calling run() method.
     """
 
-    started = Signal()
-    finished = Signal(int)
-    error = Signal(str)
-
-    sql_connections_pool = {}
-
-    def __init__(
-        self, conn: sqlite3.Connection, function: Callable = None, query_number: int = 0
-    ):
-        """Init a runnable with connection and callable
+    def __init__(self, conn: sqlite3.Connection, function: Callable = None):
+        """Init a Thread with sqlite connection and callable
 
         Notes:
             Since sqlite3 Connection objects are not thread safe, we create a new
@@ -60,33 +52,46 @@ class SqlRunnable(QObject, QRunnable):
 
         Examples:
 
-            >>> runnable = SqlRunnable(conn, lambda conn : conn.execute("query"))
-            >>> def my_func(conn):
-            ...     return conn.execute("query")
-            >>> runnable = SqlRunnable(conn, my_func)
+            >>> thread = SqlThread(conn)
+            >>> thread.exec_function(lambda conn: conn.execute("query"))
 
         Args:
             conn (sqlite3.Connection): sqlite3 Connexion
-            function (Callable): Function that can takes conn in its first argument.
-                This function will be executed in a separated thread.
+
         """
-        # Must instantiate the 2 constructors, especially QObject for Signals
-        # Workaround for:
-        # AttributeError: 'PySide2.QtCore.Signal' object has no attribute 'connect'
-        QObject.__init__(self)
-        QRunnable.__init__(self)
 
-        self._function = None
-        if function:
-            self.function = function
+        super().__init__()
 
-        # Get the database filename to duplicate the connection to be thread safe
-        self.db_file = conn.execute("PRAGMA database_list").fetchone()["file"]
-        self.async_conn = None
-
+        self.conn = conn
+        self._async_conn = None
         self.results = None
-        self.query_number = query_number
-        self.setAutoDelete(False)
+        self.function = function
+        self.last_error = None
+
+    @property
+    def conn(self) -> sqlite3.Connection:
+        """Return the Application thread connection
+        
+        Returns:
+            sqlite3.Connection
+        """
+        return self._conn
+
+    @property
+    def async_conn(self) -> sqlite3.Connection:
+        """Return the thread connection 
+        It is a clone of application connection for thread safe
+        
+        Returns:
+            TYPE: Description
+        """
+        return self._async_conn
+
+    @conn.setter
+    def conn(self, conn):
+        self._conn = conn
+        self._async_conn = None
+        self.db_file = conn.execute("PRAGMA database_list").fetchone()["file"]
 
     def run(self):
         """Execute the function in a new thread
@@ -94,50 +99,55 @@ class SqlRunnable(QObject, QRunnable):
         Note:
             All the context of this function is executed into a separated thread.
 
-        Signals:
-            - started: When the threaded function is started
-            - finished: When the function has finished its execution.
         """
-        # Copy the current query number so it is attached to this run only
-        query_number = int(self.query_number)
+        self.last_error = None
 
-        # Use a new connection to be thread safe
-        thread_id = QThread.currentThread()
-        if thread_id not in self.sql_connections_pool:
-            # Current thread hasn't its connection => create a new one
-            # LOGGER.debug("NEW CONN for %s", thread_id)
-            self.async_conn = get_sql_connection(self.db_file)
-            self.sql_connections_pool[thread_id] = self.async_conn
-        else:
-            # Reuse sql connection
-            # LOGGER.debug("REUSE CONN for %s", thread_id)
-            self.async_conn = self.sql_connections_pool[thread_id]
-
-        # Connection must be established
-        assert self.async_conn
-
-        self.started.emit()
-        try:
-            self.results = self.function(self.async_conn)
-        except Exception as e:
-            LOGGER.exception(e)
-            self.error.emit("%s: %s" % (e.__class__.__name__, str(e)))
+        if self.function is None:
+            LOGGER.exception("no function defined")
             return
 
-        self.finished.emit(query_number)
+        LOGGER.debug("thread with " + self.db_file)
+        self._async_conn = get_sql_connection(self.db_file)
+        assert self.async_conn
+
+        try:
+            LOGGER.debug("thread start ")
+            self.results = self.function(self.async_conn)
+            LOGGER.debug("Thread finished")
+        except Exception as e:
+            LOGGER.exception(e)
+            self.last_error = "%s: %s" % (e.__class__.__name__, str(e))
+            return
+
+    def exec_function(self, function: Callable):
+        """Execute a function in the thread
+        
+        Args:
+            function (Callable): Function must take con as arguments 
+
+        Examples:
+            >>> thread.exec_function(lambda conn: conn.execute("SELECT ..."))
+
+        """
+        assert isinstance(function, Callable)
+        self.function = function
+
+        self.exec_()
+
+    def interupt(self):
+        """Interrupt the thread connection
+
+        Use this method instead of terminate.
+        """
+        self.async_conn.interrupt()
 
     @property
     def function(self):
         return self._function
 
-    def interrupt(self):
-        if self.async_conn:
-            self.async_conn.interrupt()
-
     @function.setter
     def function(self, value: Callable):
         # A valid function must be set
-        assert isinstance(value, Callable)
         self._function = value
 
 

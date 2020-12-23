@@ -271,6 +271,9 @@ class VariantModel(QAbstractTableModel):
 
         offset = (self.page - 1) * self.limit
 
+        self.count_runnable.interrupt()
+        self.variant_runnable.interrupt()
+
         # Add fields from group by
         # self.clear()  # Assume variant = []
         self.total = 0
