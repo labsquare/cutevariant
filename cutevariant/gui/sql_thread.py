@@ -30,9 +30,6 @@ class SqlThread(QThread):
             accros calls of run() method and benefit from their cache methods.
 
     Signals:
-        - started: Emitted when the threaded function is started.
-        - finished(int): Emitted when the function has finished its execution.
-            The emitted argument is the unique ID of the executed query.
         - error(str): Emitted when the function has encountered an error during
             its execution. The message is formatted with the type and the
             message of the exception.
@@ -43,6 +40,8 @@ class SqlThread(QThread):
         calling run() method.
     """
 
+    error = Signal(str)
+
     def __init__(self, conn: sqlite3.Connection, function: Callable = None):
         """Init a Thread with sqlite connection and callable
 
@@ -52,8 +51,8 @@ class SqlThread(QThread):
 
         Examples:
 
-            >>> thread = SqlThread(conn)
-            >>> thread.exec_function(lambda conn: conn.execute("query"))
+            >>> thread = SqlThread(conn,lambda conn: conn.execute("query"))
+            >>> thread.start()
 
         Args:
             conn (sqlite3.Connection): sqlite3 Connexion
@@ -62,6 +61,7 @@ class SqlThread(QThread):
 
         super().__init__()
 
+        print("salut")
         self.conn = conn
         self._async_conn = None
         self.results = None
@@ -106,7 +106,7 @@ class SqlThread(QThread):
             LOGGER.exception("no function defined")
             return
 
-        LOGGER.debug("thread with " + self.db_file)
+
         self._async_conn = get_sql_connection(self.db_file)
         assert self.async_conn
 
@@ -117,9 +117,10 @@ class SqlThread(QThread):
         except Exception as e:
             LOGGER.exception(e)
             self.last_error = "%s: %s" % (e.__class__.__name__, str(e))
+            self.error.emit(self.last_error)
             return
 
-    def exec_function(self, function: Callable):
+    def start_function(self, function: Callable):
         """Execute a function in the thread
         
         Args:
@@ -132,9 +133,9 @@ class SqlThread(QThread):
         assert isinstance(function, Callable)
         self.function = function
 
-        self.exec_()
+        self.start()
 
-    def interupt(self):
+    def interrupt(self):
         """Interrupt the thread connection
 
         Use this method instead of terminate.
