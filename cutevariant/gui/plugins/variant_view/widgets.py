@@ -61,7 +61,7 @@ class VariantModel(QAbstractTableModel):
 
     error_raised = Signal(str)
 
-    DEFAUT_CACHE_SIZE = 1_048_576 * 32   # Default cache size of 32 Mo 
+    DEFAUT_CACHE_SIZE = 1_048_576 * 32  # Default cache size of 32 Mo
 
     def __init__(self, conn=None, parent=None):
         super().__init__()
@@ -95,7 +95,9 @@ class VariantModel(QAbstractTableModel):
         # Create results cache because Thread doesn't use the memoization cache from command.py.
         # This is because Thread create a new connection and change the function signature used by the cache.
 
-        self._load_variant_cache = cachetools.LFUCache(maxsize= self.DEFAUT_CACHE_SIZE, getsizeof = sys.getsizeof)
+        self._load_variant_cache = cachetools.LFUCache(
+            maxsize=self.DEFAUT_CACHE_SIZE, getsizeof=sys.getsizeof
+        )
         self._load_count_cache = cachetools.LFUCache(maxsize=1000)
 
     @property
@@ -151,12 +153,11 @@ class VariantModel(QAbstractTableModel):
         self._load_count_cache.clear()
 
     def cache_size(self):
-        """ Return total cache size """ 
+        """ Return total cache size """
         return self._load_variant_cache.currsize
 
     def max_cache_size(self):
         return self._load_variant_cache.maxsize
-
 
     def clear(self):
         """Reset the current model
@@ -277,8 +278,6 @@ class VariantModel(QAbstractTableModel):
                 self._load_variant_thread.interrupt()
                 self._load_variant_thread.quit()
 
-
-
     def load(self):
         """Start async queries to get variants and variant count
 
@@ -339,14 +338,15 @@ class VariantModel(QAbstractTableModel):
             group_by=self.group_by,
         )
 
-  
         # Start the run
         self._start_timer = time.perf_counter()
 
         self.load_started.emit()
 
-        # Create function HASH for CACHE 
-        self._count_hash = hash(count_function.func.__name__ + str(count_function.keywords))
+        # Create function HASH for CACHE
+        self._count_hash = hash(
+            count_function.func.__name__ + str(count_function.keywords)
+        )
         self._variant_hash = hash(load_func.func.__name__ + str(load_func.keywords))
 
         # Launch the first thread "count" or by pass it using the cache
@@ -358,9 +358,10 @@ class VariantModel(QAbstractTableModel):
 
         # Launch the second thread "count" or by pass it using the cache
         if self._variant_hash in self._load_variant_cache:
-            self._load_variant_thread.results = self._load_variant_cache[self._variant_hash]
+            self._load_variant_thread.results = self._load_variant_cache[
+                self._variant_hash
+            ]
             self._on_variant_loaded()
-
 
         else:
             self._load_variant_thread.start_function(lambda conn: list(load_func(conn)))
@@ -375,8 +376,6 @@ class VariantModel(QAbstractTableModel):
         self._end_timer = time.perf_counter()
         self.elapsed_time = self._end_timer - self._start_timer
 
-
-
         self.beginResetModel()
         self.variants.clear()
 
@@ -385,9 +384,11 @@ class VariantModel(QAbstractTableModel):
             if g not in self.fields:
                 self.fields.append(g)
 
-        # Save cache 
-        self._load_variant_cache[self._variant_hash] = self._load_variant_thread.results.copy()
-        
+        # Save cache
+        self._load_variant_cache[
+            self._variant_hash
+        ] = self._load_variant_thread.results.copy()
+
         # Load variants
         self.variants = self._load_variant_thread.results
         if self.variants:
@@ -410,8 +411,9 @@ class VariantModel(QAbstractTableModel):
         """
 
         # Save cache
-        self._load_count_cache[self._count_hash] = self._load_count_thread.results.copy()
-        
+        self._load_count_cache[
+            self._count_hash
+        ] = self._load_count_thread.results.copy()
 
         self.total = self._load_count_thread.results["count"]
         self.count_loaded.emit()
@@ -718,7 +720,7 @@ class VariantView(QWidget):
         #         self.no_variant.emit()
 
         self.time_label.setText(str(" Executed in %.2gs " % (self.model.elapsed_time)))
-        cache  =cm.bytes_to_readable(self.model.cache_size())
+        cache = cm.bytes_to_readable(self.model.cache_size())
         max_cache = cm.bytes_to_readable(self.model.max_cache_size())
         self.cache_label.setText(str(" Cache {} of {}".format(cache, max_cache)))
         if LOGGER.getEffectiveLevel() != DEBUG:
@@ -730,7 +732,6 @@ class VariantView(QWidget):
     def _on_count_loaded(self):
 
         self.page_box.clear()
-
 
         if self.model.pageCount() - 1 == 0:
             self.set_pagging_enabled(False)
@@ -1149,9 +1150,7 @@ class VariantViewWidget(plugin.PluginWidget):
         # self.save_action.setPriority(QAction.LowPriority)
 
         # Refresh UI button
-        action = self.top_bar.addAction(
-            FIcon(0xF0450), self.tr("Refresh"), self.load
-        )
+        action = self.top_bar.addAction(FIcon(0xF0450), self.tr("Refresh"), self.load)
         action.setToolTip(self.tr("Refresh the current list of variants"))
         # action.setPriority(QAction.LowPriority)
 
@@ -1333,7 +1332,7 @@ class VariantViewWidget(plugin.PluginWidget):
         # print("right", self.main_right_pane.model.group_by)
         return self.groupby_left_pane.group_by != []
 
-    def load(self, reset_page = False):
+    def load(self, reset_page=False):
         """Load all views
 
         Called by on_refresh, on_group_changed, and _show_group_dialog

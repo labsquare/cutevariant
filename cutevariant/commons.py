@@ -158,8 +158,8 @@ def bytes_to_readable(size) -> str:
         str: readable size
     """
     out = ""
-    for count in ['Bytes','KB','MB','GB']:
+    for count in ["Bytes", "KB", "MB", "GB"]:
         if size > -1024.0 and size < 1024.0:
             return "%3.1f%s" % (size, count)
         size /= 1024.0
-    return "%3.1f%s" % (size, 'TB')
+    return "%3.1f%s" % (size, "TB")

@@ -73,7 +73,6 @@ class SqlThread(QThread):
         self.results = None
         self.function = function
         self.last_error = None
-        
 
     @property
     def conn(self) -> sqlite3.Connection:
@@ -99,7 +98,6 @@ class SqlThread(QThread):
         self._conn = conn
         self._async_conn = None
         self.db_file = conn.execute("PRAGMA database_list").fetchone()["file"]
-
 
     def run(self):
         """Execute the function in a new thread
@@ -130,7 +128,7 @@ class SqlThread(QThread):
 
         return
 
-    def start_function(self, function: Callable, caching_hash = None):
+    def start_function(self, function: Callable, caching_hash=None):
         """Execute a function in the thread
         
         Args:
@@ -160,7 +158,6 @@ class SqlThread(QThread):
     def function(self, value: Callable):
         # A valid function must be set
         self._function = value
-
 
 
 if __name__ == "__main__":

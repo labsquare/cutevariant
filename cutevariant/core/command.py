@@ -118,7 +118,6 @@ def count_cmd(
     # This leads to a fault in the pagination hiding the latest variants if
     # more than 50 must be displayed.
 
-
     variants_fields = set(
         field["name"] for field in sql.get_field_by_category(conn, "variants")
     )
@@ -461,9 +460,6 @@ def execute_all(conn: sqlite3.Connection, vql_source: str):
     for vql_obj in vql.parse_vql(vql_source):
         cmd = create_command_from_obj(conn, vql_obj)
         yield cmd()
-
-
-
 
 
 # class CommandGraph(object):

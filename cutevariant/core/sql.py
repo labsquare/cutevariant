@@ -75,7 +75,8 @@ def get_sql_connection(filepath):
 
     return connection
 
-def table_exists(conn: sqlite3.Connection, name:str) -> bool:
+
+def table_exists(conn: sqlite3.Connection, name: str) -> bool:
     """Return True if table exists
     
     Args:

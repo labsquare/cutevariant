@@ -206,15 +206,13 @@ class MemorySettings(BaseWidget):
         self.spinbox.setRange(0, 100000)
         layout.addRow(self.tr("Cache size"), self.spinbox)
 
-
     def save(self):
-        ''' overload '''
+        """ overload """
         pass
 
     def load(self):
-        ''' load ''' 
+        """ load """
         pass
-
 
 
 class VariantViewSettingsWidget(PluginSettingsWidget):
@@ -230,6 +228,5 @@ class VariantViewSettingsWidget(PluginSettingsWidget):
         super().__init__(parent)
         self.setWindowIcon(FIcon(0xF035C))
         self.setWindowTitle("Variant view")
-        #self.add_settings_widget(MemorySettings())
+        # self.add_settings_widget(MemorySettings())
         self.add_settings_widget(LinkSettings())
-
