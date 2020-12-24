@@ -120,16 +120,20 @@ class VariantModel(QAbstractTableModel):
             LOGGER.debug("Init async thread")
 
             # Clear cache with new connection
-            self.clear_cache()
+            self.clear_all_cache()
 
             # Init Runnables (1 for each query type)
             self._load_variant_thread = SqlThread(self.conn)
             self._load_variant_thread.result_ready.connect(self._on_variant_loaded)
-            self._load_variant_thread.error.connect(self.error_raised)
+
+            # I hide the error connection for now because I call interrupt from load 
+            # which raise an exception .. 
+            # TODO : raise error except for interrupt ! 
+            #self._load_variant_thread.error.connect(self.error_raised)
 
             self._load_count_thread = SqlThread(self.conn)
             self._load_count_thread.result_ready.connect(self._on_count_loaded)
-            self._load_count_thread.error.connect(self.error_raised)
+            #self._load_count_thread.error.connect(self.error_raised)
 
     def rowCount(self, parent=QModelIndex()):
         """Overrided : Return children count of index"""
@@ -148,9 +152,15 @@ class VariantModel(QAbstractTableModel):
             return len(self.headers)
         return 0
 
-    def clear_cache(self):
+    def clear_all_cache(self):
         """ clear cache """
+        self.clear_count_cache()
+        self.clear_variant_cache()
+
+    def clear_variant_cache(self):
         self._load_variant_cache.clear()
+
+    def clear_count_cache(self):
         self._load_count_cache.clear()
 
     def cache_size(self):
@@ -159,6 +169,12 @@ class VariantModel(QAbstractTableModel):
 
     def max_cache_size(self):
         return self._load_variant_cache.maxsize
+
+    def is_variant_loading(self):
+        return self._load_variant_cache.isRunning()
+
+    def is_count_loading(self):
+        return self._load_count_thread.isRunning()
 
     def clear(self):
         """Reset the current model
@@ -291,6 +307,14 @@ class VariantModel(QAbstractTableModel):
         """
         if self.conn is None:
             return
+
+        if self._load_variant_thread.isRunning():
+            self._load_variant_thread.interrupt()
+            self._load_variant_thread.wait()
+
+        if self._load_count_thread.isRunning():
+            self._load_count_thread.interrupt()
+            self._load_count_thread.wait()
 
 
         LOGGER.debug("Start loading")
@@ -621,13 +645,19 @@ class VariantView(QWidget):
         self.info_label = QLabel()
         self.time_label = QLabel()
         self.cache_label = QLabel()
+        self.loading_label = QLabel()
+        self.loading_label.setMovie(QMovie(cm.DIR_ICONS + "loading.gif"))
 
         self.bottom_bar.addAction(FIcon(0xF0A30), "sql", self.on_show_sql)
         self.bottom_bar.addWidget(self.time_label)
         self.bottom_bar.addWidget(self.cache_label)
         self.bottom_bar.addSeparator()
         self.bottom_bar.addWidget(spacer)
+        
+        #Add loading action and store action
         self.bottom_bar.addWidget(self.info_label)
+        self.loading_action = self.bottom_bar.addWidget(self.loading_label)
+        
         self.bottom_bar.setIconSize(QSize(16, 16))
         self.bottom_bar.setMaximumHeight(30)
         self.bottom_bar.setContentsMargins(0, 0, 0, 0)
@@ -700,9 +730,8 @@ class VariantView(QWidget):
             self.model.page = 1
 
         self.model.order_by = None
-        self.set_tool_enabled(False)
-        self.set_view_enabled(False)
-
+        self.set_view_loading(True)
+        self.set_tool_loading(True)
         self.model.load()
 
     def _on_variant_loaded(self):
@@ -728,7 +757,7 @@ class VariantView(QWidget):
         if LOGGER.getEffectiveLevel() != DEBUG:
             self.view.setColumnHidden(0, True)
 
-        self.set_view_enabled(True)
+        self.set_view_loading(False)
         self.view.scrollToTop()
 
     def _on_count_loaded(self):
@@ -750,11 +779,11 @@ class VariantView(QWidget):
             text = self.tr("{} line(s) {} page(s)")
 
         self.info_label.setText(text.format(self.model.total, self.model.pageCount()))
-        self.set_tool_enabled(True)
+        self.set_tool_loading(False)
 
     def _on_error(self, message):
-        self.set_view_enabled(True)
-        self.set_tool_enabled(True)
+        self.set_view_loading(False)
+        self.set_tool_loading(False)
 
     def set_formatter(self, formatter):
         self.delegate.formatter = formatter
@@ -847,11 +876,31 @@ class VariantView(QWidget):
         for action in self.pagging_actions:
             action.setEnabled(active)
 
-    def set_view_enabled(self, active=True):
-        self.view.setEnabled(active)
 
-    def set_tool_enabled(self, active=True):
-        self.bottom_bar.setEnabled(active)
+    def set_view_loading(self, active=True):
+
+        def show_loading_if_loading():
+            if self.model.is_variant_loading():
+                self.view.start_loading()
+
+        if active:
+            QTimer.singleShot(2000, show_loading_if_loading)
+        else:
+            self.view.stop_loading()
+        self.view.setDisabled(active)
+
+    def set_tool_loading(self, active=True):
+        if active:
+            self.info_label.setText(self.tr("Counting all variants. This can take a while ... "))
+            self.loading_action.setVisible(True)
+            self.loading_label.movie().start()
+        else:
+            print("hide")
+            self.loading_label.movie().stop()
+            self.loading_action.setVisible(False)
+        
+
+        self.bottom_bar.setDisabled(active)
 
     def contextMenuEvent(self, event: QContextMenuEvent):
         """Override: Show contextual menu over the current variant"""
@@ -1290,9 +1339,11 @@ class VariantViewWidget(plugin.PluginWidget):
         self.main_right_pane.set_formatter(formatter_class())
         self.groupby_left_pane.set_formatter(formatter_class())
         
-        # Clear cache 
-        self.main_right_pane.model.clear_cache()
-        self.groupby_left_pane.model.clear_cache()
+        # Clear only the variant cache ! Because user can edit data 
+        self.main_right_pane.model.clear_variant_cache()
+        self.groupby_left_pane.model.clear_variant_cache()
+
+  
 
         # Load ui
         self.load(reset_page=True)
