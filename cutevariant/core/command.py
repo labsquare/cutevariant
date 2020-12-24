@@ -90,7 +90,7 @@ def select_cmd(
         yield {k.replace("(", "[").replace(")", "]"): v for k, v in dict(i).items()}
 
 
-@cached(max_size=128)
+@cached()
 def count_cmd(
     conn: sqlite3.Connection,
     fields=["chr", "pos", "ref", "alt"],
@@ -120,6 +120,9 @@ def count_cmd(
     # table (count without taking account of annotations) is different.
     # This leads to a fault in the pagination hiding the latest variants if
     # more than 50 must be displayed.
+
+    print("Y A PAS DE CACHE ??")
+
     variants_fields = set(
         field["name"] for field in sql.get_field_by_category(conn, "variants")
     )

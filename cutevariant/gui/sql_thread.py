@@ -67,6 +67,8 @@ class SqlThread(QThread):
         self.results = None
         self.function = function
         self.last_error = None
+        self.hash = None
+        self.cache = {}
 
     @property
     def conn(self) -> sqlite3.Connection:
@@ -92,6 +94,8 @@ class SqlThread(QThread):
         self._conn = conn
         self._async_conn = None
         self.db_file = conn.execute("PRAGMA database_list").fetchone()["file"]
+        self.cache = {}
+
 
     def run(self):
         """Execute the function in a new thread
@@ -111,7 +115,15 @@ class SqlThread(QThread):
 
         try:
             LOGGER.debug("thread start ")
-            self.results = self.function(self.async_conn)
+            print("function",self.function)
+
+            if self.hash in self.cache and self.hash is not None:
+                self.results = self.cache[self.hash]
+            else:
+                self.results = self.function(self.async_conn)
+                self.cache[self.hash] = self.results
+                print("cache", self.cache)
+
             LOGGER.debug("Thread finished")
         except Exception as e:
             # LOGGER.exception(e)

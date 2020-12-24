@@ -315,6 +315,9 @@ class VariantModel(QAbstractTableModel):
         self._load_variant_thread.function = lambda conn: list(load_func(conn))
         self._load_count_thread.function = count_function
 
+        count_hash = hash(count_function.func.__name__ + str(count_function.keywords))
+        self._load_count_thread.hash = count_hash
+
         # Start the run
         self._start_timer = time.perf_counter()
 
