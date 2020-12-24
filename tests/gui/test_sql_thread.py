@@ -71,6 +71,5 @@ def test_interupt(qtbot, conn):
         thread.start()
         time.sleep(1)
         thread.interrupt()
-        thread.wait()
 
     assert "interrupted" in thread.last_error
