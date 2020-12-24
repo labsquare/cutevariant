@@ -87,6 +87,11 @@ class VariantModel(QAbstractTableModel):
         self._load_count_thread = None
         self._finished_thread_count = 0
 
+        # Create results cache because Thread doesn't use the memoization cache from command.py.
+        # This is because Thread create a new connection and change the function signature used by the cache.
+        self._load_variant_cache = {}
+        self._load_count_cache = {}
+
     @property
     def conn(self):
         """ Return sqlite connection """
@@ -104,6 +109,9 @@ class VariantModel(QAbstractTableModel):
                 for field in sql.get_fields(self.conn)
             }
             LOGGER.debug("Init async thread")
+
+            # Clear cache with new connection
+            self.clear_cache()
 
             # Init Runnables (1 for each query type)
             self._load_variant_thread = SqlThread(self.conn)
@@ -130,6 +138,11 @@ class VariantModel(QAbstractTableModel):
         if parent == QModelIndex():
             return len(self.headers)
         return 0
+
+    def clear_cache(self):
+        """ clear cache """
+        self._load_variant_cache.clear()
+        self._load_count_cache.clear()
 
     def clear(self):
         """Reset the current model
@@ -310,24 +323,33 @@ class VariantModel(QAbstractTableModel):
             group_by=self.group_by,
         )
 
-        # Assign async functions to thread
-        #  Note : cannot return a generator from a thread
-        self._load_variant_thread.function = lambda conn: list(load_func(conn))
-        self._load_count_thread.function = count_function
-
-        count_hash = hash(count_function.func.__name__ + str(count_function.keywords))
-        self._load_count_thread.hash = count_hash
-
+  
         # Start the run
         self._start_timer = time.perf_counter()
 
         self.load_started.emit()
 
-        # print("interrupt")
-        # self.interrupt()
+        # Create function HASH for CACHE 
+        self._count_hash = hash(count_function.func.__name__ + str(count_function.keywords))
+        self._variant_hash = hash(load_func.func.__name__ + str(load_func.keywords))
 
-        self._load_variant_thread.start()
-        self._load_count_thread.start()
+        # Launch the first thread "count" or by pass it using the cache
+        if self._count_hash in self._load_count_cache:
+            self._load_count_thread.results = self._load_count_cache[self._count_hash]
+            self._on_count_loaded()
+            print("use cache count")
+        else:
+            self._load_count_thread.start_function(count_function)
+
+        # Launch the second thread "count" or by pass it using the cache
+        if self._variant_hash in self._load_variant_cache:
+            self._load_variant_thread.results = self._load_variant_cache[self._variant_hash]
+            self._on_variant_loaded()
+            print("use cache variant")
+
+
+        else:
+            self._load_variant_thread.start_function(lambda conn: list(load_func(conn)))
 
     def _on_variant_loaded(self):
         """
@@ -339,6 +361,8 @@ class VariantModel(QAbstractTableModel):
         self._end_timer = time.perf_counter()
         self.elapsed_time = self._end_timer - self._start_timer
 
+
+
         self.beginResetModel()
         self.variants.clear()
 
@@ -347,6 +371,9 @@ class VariantModel(QAbstractTableModel):
             if g not in self.fields:
                 self.fields.append(g)
 
+        # Save cache 
+        self._load_variant_cache[self._variant_hash] = self._load_variant_thread.results.copy()
+        
         # Load variants
         self.variants = self._load_variant_thread.results
         if self.variants:
@@ -367,6 +394,10 @@ class VariantModel(QAbstractTableModel):
         """
         Triggered when count_threaed is finished 
         """
+
+        # Save cache
+        self._load_count_cache[self._count_hash] = self._load_count_thread.results.copy()
+        
 
         self.total = self._load_count_thread.results["count"]
         self.count_loaded.emit()

@@ -19,20 +19,21 @@ class SqlThread(QThread):
         - db_file (str): File path of the database.
         - async_conn (sqlite3.Connection): sqlite3 Connection
         - function (Callable): Function to be executed
-        - query_number (int): (default: 0) Used to identify the finished query
-            in a pool via the finished signal (see section Signals below).
+        - caching_hash: A user defined hash of the request
         - results: Contain the result of the threaded function.
             `None`, as long as the function has not finished its execution done.
 
-    Class attributes:
-        - sql_connections_pool (dict): Mapping of thread ids as keys and
-            sqlite3 Connections as values. It allows to reuse sql connections
-            accros calls of run() method and benefit from their cache methods.
+
 
     Signals:
+        - result_ready(): Emitted when results is available. If no results or error ,
+            This signal is not emitted
         - error(str): Emitted when the function has encountered an error during
             its execution. The message is formatted with the type and the
             message of the exception.
+        - finished() : inherits from QThread
+        - starte() : inherits from QThread
+
 
     Notes:
         AutoDelete flag of such objects is set to False.
@@ -48,12 +49,17 @@ class SqlThread(QThread):
 
         Notes:
             Since sqlite3 Connection objects are not thread safe, we create a new
-            connection based on it.
+            connection based on it. 
+
+
 
         Examples:
 
-            >>> thread = SqlThread(conn,lambda conn: conn.execute("query"))
-            >>> thread.start()
+            >>> thread = SqlThread(conn)
+            >>> thread.start_function(lambda conn: conn.execute("SELECT COUNT(*) FROM variants"))
+            >>> thread.result_ready.connect(self.on_received)
+
+
 
         Args:
             conn (sqlite3.Connection): sqlite3 Connexion
@@ -67,8 +73,7 @@ class SqlThread(QThread):
         self.results = None
         self.function = function
         self.last_error = None
-        self.hash = None
-        self.cache = {}
+        
 
     @property
     def conn(self) -> sqlite3.Connection:
@@ -94,7 +99,6 @@ class SqlThread(QThread):
         self._conn = conn
         self._async_conn = None
         self.db_file = conn.execute("PRAGMA database_list").fetchone()["file"]
-        self.cache = {}
 
 
     def run(self):
@@ -115,13 +119,7 @@ class SqlThread(QThread):
 
         try:
             LOGGER.debug("thread start ")
-
-            if self.hash in self.cache and self.hash is not None:
-                self.results = self.cache[self.hash]
-            else:
-                self.results = self.function(self.async_conn)
-                self.cache[self.hash] = self.results
-
+            self.results = self.function(self.async_conn)
             LOGGER.debug("Thread finished")
         except Exception as e:
             # LOGGER.exception(e)
@@ -132,7 +130,7 @@ class SqlThread(QThread):
 
         return
 
-    def start_function(self, function: Callable):
+    def start_function(self, function: Callable, caching_hash = None):
         """Execute a function in the thread
         
         Args:
@@ -144,7 +142,6 @@ class SqlThread(QThread):
         """
         assert isinstance(function, Callable)
         self.function = function
-
         self.start()
 
     def interrupt(self):
@@ -163,6 +160,7 @@ class SqlThread(QThread):
     def function(self, value: Callable):
         # A valid function must be set
         self._function = value
+
 
 
 if __name__ == "__main__":

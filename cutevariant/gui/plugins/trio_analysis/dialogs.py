@@ -18,7 +18,7 @@ from PySide2.QtCore import Qt, QAbstractTableModel, QModelIndex, QThreadPool
 # Custom imports
 from cutevariant.gui.ficon import FIcon
 from cutevariant.gui.plugin import PluginDialog
-from cutevariant.gui.sql_runnable import SqlRunnable
+from cutevariant.gui.sql_thread import SqlThread
 from cutevariant.core import sql
 
 
