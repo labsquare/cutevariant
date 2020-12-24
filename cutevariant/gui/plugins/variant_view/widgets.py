@@ -1167,7 +1167,7 @@ class VariantViewWidget(plugin.PluginWidget):
         # self.save_action.setPriority(QAction.LowPriority)
 
         # Refresh UI button
-        action = self.top_bar.addAction(FIcon(0xF0450), self.tr("Refresh"), self.load)
+        action = self.top_bar.addAction(FIcon(0xF0450), self.tr("Refresh"), self.on_refresh)
         action.setToolTip(self.tr("Refresh the current list of variants"))
         # action.setPriority(QAction.LowPriority)
 
@@ -1289,6 +1289,11 @@ class VariantViewWidget(plugin.PluginWidget):
         #        formatter_class = next(formatter.find_formatters())
         self.main_right_pane.set_formatter(formatter_class())
         self.groupby_left_pane.set_formatter(formatter_class())
+        
+        # Clear cache 
+        self.main_right_pane.model.clear_cache()
+        self.groupby_left_pane.model.clear_cache()
+
         # Load ui
         self.load(reset_page=True)
 
