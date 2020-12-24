@@ -6,20 +6,29 @@ from .abstractreader import AbstractReader, sanitize_field_name
 from .annotationparser import VepParser, SnpEffParser
 from cutevariant.commons import logger
 
+LOGGER = logger()
 
 # Fixing PyVCF bug
 # https://github.com/jamescasbon/PyVCF/pull/320
-def _map(self, func, iterable, bad=[".", "", "NA"]):
+def _map(self, func, iterable, bad=[".", "", "NA", "-"]):
     """``map``, but make bad values None."""
-    return [func(x) if x not in bad else None for x in iterable]
+
+    def _convert(x):
+        if x in bad:
+            return None
+        try:
+            return func(x)
+        except Exception as e:
+            LOGGER.exception(e)
+            return None
+
+    return [_convert(x) for x in iterable]
 
 
 vcf.Reader._map = _map
 
 # End fixing
 
-
-LOGGER = logger()
 
 VCF_TYPE_MAPPING = {
     "Float": "float",
