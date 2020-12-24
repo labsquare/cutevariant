@@ -9,7 +9,7 @@ from collections import defaultdict
 import copy
 import sys
 import string
-import urllib.request   # STRANGE: CANNOT IMPORT URLLIB ALONE
+import urllib.request  # STRANGE: CANNOT IMPORT URLLIB ALONE
 from logging import DEBUG
 
 # dependency
@@ -127,9 +127,9 @@ class VariantModel(QAbstractTableModel):
             self._load_variant_thread = SqlThread(self.conn)
             self._load_variant_thread.result_ready.connect(self._on_variant_loaded)
 
-            # I hide the error connection for now because I call interrupt from load 
-            # which raise an exception .. 
-            # TODO : raise error except for interrupt ! 
+            # I hide the error connection for now because I call interrupt from load
+            # which raise an exception ..
+            # TODO : raise error except for interrupt !
             self._load_variant_thread.error.connect(self.error_raised)
 
             self._load_count_thread = SqlThread(self.conn)
@@ -291,7 +291,6 @@ class VariantModel(QAbstractTableModel):
                 self._load_count_thread.interrupt()
                 self._load_count_thread.wait()
 
-
         if self._load_variant_thread:
             if self._load_variant_thread.isRunning():
                 self._load_variant_thread.interrupt()
@@ -312,7 +311,6 @@ class VariantModel(QAbstractTableModel):
 
         self.interrupt()
 
-
         LOGGER.debug("Start loading")
 
         offset = (self.page - 1) * self.limit
@@ -323,7 +321,7 @@ class VariantModel(QAbstractTableModel):
         self._finished_thread_count = 0
         # LOGGER.debug("Page queried: %s", self.page)
 
-        print("ORDER" , self.order_by, self.order_desc)
+        print("ORDER", self.order_by, self.order_desc)
 
         # Store SQL query for debugging purpose
         self.debug_sql = build_full_sql_query(
@@ -379,7 +377,6 @@ class VariantModel(QAbstractTableModel):
             self._on_count_loaded()
         else:
             self._load_count_thread.start_function(count_function)
-
 
         # Launch the second thread "count" or by pass it using the cache
         if self._variant_hash in self._load_variant_cache:
@@ -498,10 +495,16 @@ class VariantModel(QAbstractTableModel):
         return self.variants[row]
 
     def is_variant_loading(self):
-        return self._load_variant_thread.isRunning()
+        if self._load_variant_thread:
+            return self._load_variant_thread.isRunning()
+        else:
+            return False
 
     def is_count_loading(self):
-        return self._load_count_thread.isRunning()
+        if self._load_count_thread:
+            return self._load_count_thread.isRunning()
+        else:
+            return False
 
 
 class VariantDelegate(QStyledItemDelegate):
@@ -652,11 +655,11 @@ class VariantView(QWidget):
         self.bottom_bar.addWidget(self.cache_label)
         self.bottom_bar.addSeparator()
         self.bottom_bar.addWidget(spacer)
-        
-        #Add loading action and store action
+
+        # Add loading action and store action
         self.bottom_bar.addWidget(self.info_label)
         self.loading_action = self.bottom_bar.addWidget(self.loading_label)
-        
+
         self.bottom_bar.setIconSize(QSize(16, 16))
         self.bottom_bar.setMaximumHeight(30)
         self.bottom_bar.setContentsMargins(0, 0, 0, 0)
@@ -691,7 +694,7 @@ class VariantView(QWidget):
         # Queries are finished (yes its redundant with loading signal...)
         self.model.variant_loaded.connect(self._on_variant_loaded)
         self.model.count_loaded.connect(self._on_count_loaded)
-        self.model.load_started.connect(lambda : self.set_loading(True))
+        self.model.load_started.connect(lambda: self.set_loading(True))
         # Connect errors from async runnables
         self.model.error_raised.connect(self.error_raised)
         self.model.error_raised.connect(self._on_error)
@@ -875,7 +878,6 @@ class VariantView(QWidget):
         for action in self.pagging_actions:
             action.setEnabled(active)
 
-
     def set_view_loading(self, active=True):
         self.view.setDisabled(active)
 
@@ -889,19 +891,20 @@ class VariantView(QWidget):
             self.view.stop_loading()
 
     def set_tool_loading(self, active=True):
-    
 
         if active:
-            self.info_label.setText(self.tr("Counting all variants. This can take a while ... "))
+            self.info_label.setText(
+                self.tr("Counting all variants. This can take a while ... ")
+            )
             self.loading_action.setVisible(True)
             self.loading_label.movie().start()
         else:
             self.loading_label.movie().stop()
             self.loading_action.setVisible(False)
-    
+
         self.bottom_bar.setDisabled(active)
 
-    def set_loading(self, active = True):
+    def set_loading(self, active=True):
 
         self.set_view_loading(active)
         self.set_tool_loading(active)
@@ -998,15 +1001,13 @@ class VariantView(QWidget):
         # Display
         menu.exec_(event.globalPos())
 
-    def _open_url(self, url: QUrl, in_browser = False):
+    def _open_url(self, url: QUrl, in_browser=False):
 
         if in_browser:
             QDesktopServices.openUrl(url)
 
         else:
-            urllib.request.urlopen(url.toString(),timeout=10)
-
-
+            urllib.request.urlopen(url.toString(), timeout=10)
 
     def _create_url(self, format_string: str, variant: dict) -> QUrl:
         """Create a link from a format string and a variant data 
@@ -1220,7 +1221,9 @@ class VariantViewWidget(plugin.PluginWidget):
         # self.save_action.setPriority(QAction.LowPriority)
 
         # Refresh UI button
-        action = self.top_bar.addAction(FIcon(0xF0450), self.tr("Refresh"), self.on_refresh)
+        action = self.top_bar.addAction(
+            FIcon(0xF0450), self.tr("Refresh"), self.on_refresh
+        )
         action.setToolTip(self.tr("Refresh the current list of variants"))
         # action.setPriority(QAction.LowPriority)
 
@@ -1342,12 +1345,10 @@ class VariantViewWidget(plugin.PluginWidget):
         #        formatter_class = next(formatter.find_formatters())
         self.main_right_pane.set_formatter(formatter_class())
         self.groupby_left_pane.set_formatter(formatter_class())
-        
-        # Clear only the variant cache ! Because user can edit data 
+
+        # Clear only the variant cache ! Because user can edit data
         self.main_right_pane.model.clear_variant_cache()
         self.groupby_left_pane.model.clear_variant_cache()
-
-  
 
         # Load ui
         self.load(reset_page=True)
