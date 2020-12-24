@@ -27,16 +27,21 @@ def test_query(qtbot, conn):
     """Test asynchrone count query
     """
     # Fill with a function that will be executed in a separated thread
-    
+
     thread = SqlThread(conn, sql.get_variants_count)
     with qtbot.waitSignal(thread.finished, timeout=1000) as blocker:
         thread.start()
 
     assert thread.results == 11
 
-
     thread = SqlThread(conn)
     with qtbot.waitSignal(thread.finished, timeout=1000) as blocker:
+        thread.start_function(sql.get_variants_count)
+
+    assert thread.results == 11
+
+    thread = SqlThread(conn)
+    with qtbot.waitSignal(thread.result_ready, timeout=1000) as blocker:
         thread.start_function(sql.get_variants_count)
 
     assert thread.results == 11
@@ -45,10 +50,12 @@ def test_query(qtbot, conn):
 def test_interupt(qtbot, conn):
     """ Test sqlite interruption on a long query 
     """
+
     def slow_query(conn):
         """A Sqlite long query that take a long time to execute 
         """
-        conn.execute("""
+        conn.execute(
+            """
             WITH RECURSIVE r(i) AS (
             VALUES(0)
             UNION ALL
@@ -56,7 +63,8 @@ def test_interupt(qtbot, conn):
             LIMIT 50000000
         )
         SELECT i FROM r WHERE i = 1;
-        """ )
+        """
+        )
 
     thread = SqlThread(conn, slow_query)
     with qtbot.waitSignal(thread.error, timeout=2000):

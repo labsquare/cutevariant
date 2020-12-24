@@ -41,6 +41,7 @@ class SqlThread(QThread):
     """
 
     error = Signal(str)
+    result_ready = Signal()
 
     def __init__(self, conn: sqlite3.Connection, function: Callable = None):
         """Init a Thread with sqlite connection and callable
@@ -61,7 +62,6 @@ class SqlThread(QThread):
 
         super().__init__()
 
-        print("salut")
         self.conn = conn
         self._async_conn = None
         self.results = None
@@ -106,7 +106,6 @@ class SqlThread(QThread):
             LOGGER.exception("no function defined")
             return
 
-
         self._async_conn = get_sql_connection(self.db_file)
         assert self.async_conn
 
@@ -115,10 +114,13 @@ class SqlThread(QThread):
             self.results = self.function(self.async_conn)
             LOGGER.debug("Thread finished")
         except Exception as e:
-            LOGGER.exception(e)
+            # LOGGER.exception(e)
             self.last_error = "%s: %s" % (e.__class__.__name__, str(e))
             self.error.emit(self.last_error)
-            return
+        else:
+            self.result_ready.emit()
+
+        return
 
     def start_function(self, function: Callable):
         """Execute a function in the thread
@@ -140,7 +142,8 @@ class SqlThread(QThread):
 
         Use this method instead of terminate.
         """
-        self.async_conn.interrupt()
+        if self.async_conn:
+            self.async_conn.interrupt()
 
     @property
     def function(self):
