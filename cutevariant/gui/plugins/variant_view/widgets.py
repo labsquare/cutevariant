@@ -327,6 +327,8 @@ class VariantModel(QAbstractTableModel):
         self._finished_thread_count = 0
         # LOGGER.debug("Page queried: %s", self.page)
 
+        print("ORDER" , self.order_by, self.order_desc)
+
         # Store SQL query for debugging purpose
         self.debug_sql = build_full_sql_query(
             self.conn,
@@ -730,8 +732,8 @@ class VariantView(QWidget):
 
         if reset_page:
             self.model.page = 1
+            self.model.order_by = None
 
-        self.model.order_by = None
         self.set_view_loading(True)
         self.set_tool_loading(True)
         self.model.load()
