@@ -11,6 +11,9 @@ import string
 import urllib.request   # STRANGE: CANNOT IMPORT URLLIB ALONE
 from logging import DEBUG
 
+# dependency
+import cachetools
+
 # Qt imports
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
@@ -18,10 +21,11 @@ from PySide2.QtGui import *
 
 # Custom imports
 from cutevariant.core.querybuilder import build_full_sql_query, fields_to_vql
+from cutevariant.core import sql
 
 from cutevariant.core import command as cmd
 from cutevariant.gui import plugin, FIcon, formatter, style
-from cutevariant.gui.sql_runnable import SqlRunnable
+from cutevariant.gui.sql_thread import SqlThread
 from cutevariant.gui.widgets import MarkdownEditor
 import cutevariant.commons as cm
 
@@ -45,14 +49,20 @@ class VariantModel(QAbstractTableModel):
     fields.
 
     Signals:
-        loading (bool): Emit when data start or stop loading
-        load_finished: Emit when data is loaded and ready to be used
-        runnable_exception (str): Emit message when async runnables encounter errors
+        variant_loaded(bool): Emit when variant are loaded 
+        count_loaded(bool): Emit when total count are loaded 
+        error_raised(str): Emit message when threads or something else encounter errors
     """
 
-    loading = Signal(bool)
+    variant_loaded = Signal()
+    count_loaded = Signal()
+
+    load_started = Signal()
     load_finished = Signal()
-    runnable_exception = Signal(str)
+
+    error_raised = Signal(str)
+
+    DEFAUT_CACHE_SIZE = 1_048_576 * 32  # Default cache size of 32 Mo
 
     def __init__(self, conn=None, parent=None):
         super().__init__()
@@ -78,22 +88,18 @@ class VariantModel(QAbstractTableModel):
         # Keep after all initialization
         self.conn = conn
 
-        # Async stuff
-        self.pool = QThreadPool()
-        # Keep in mind that for each thread there is an independent cache...
-        self.pool.setMaxThreadCount(3)
-        # Threads don't expire
-        # => allows to keep sql connections and their cache alive
-        self.pool.setExpiryTimeout(-1)
-        self.is_loading = False
-        # Runnables (1 for each query)
-        self.variant_runnable = None
-        self.count_runnable = None
-        # Unique ids for runs
-        self.query_counter = it.count()
-        self.query_number = 0
-        # Pool of results; query numbers as keys, runnable objects as values
-        self.pool_results = defaultdict(set)
+        # Thread (1 for getting variant, 1 for getting count variant )
+        self._load_variant_thread = None
+        self._load_count_thread = None
+        self._finished_thread_count = 0
+
+        # Create results cache because Thread doesn't use the memoization cache from command.py.
+        # This is because Thread create a new connection and change the function signature used by the cache.
+
+        self._load_variant_cache = cachetools.LFUCache(
+            maxsize=self.DEFAUT_CACHE_SIZE, getsizeof=sys.getsizeof
+        )
+        self._load_count_cache = cachetools.LFUCache(maxsize=1000)
 
     @property
     def conn(self):
@@ -111,18 +117,19 @@ class VariantModel(QAbstractTableModel):
                 field["name"]: field["description"]
                 for field in sql.get_fields(self.conn)
             }
-            LOGGER.debug("Init async runnables")
-            # Reset pool of connections
-            SqlRunnable.sql_connections_pool = dict()
-            # Reset pool of results
-            self.pool_results.clear()
+            LOGGER.debug("Init async thread")
+
+            # Clear cache with new connection
+            self.clear_cache()
+
             # Init Runnables (1 for each query type)
-            self.variant_runnable = SqlRunnable(self.conn)
-            self.count_runnable = SqlRunnable(self.conn)
-            self.variant_runnable.finished.connect(self.loaded)
-            self.count_runnable.finished.connect(self.loaded)
-            self.variant_runnable.error.connect(self.runnable_exception)
-            self.count_runnable.error.connect(self.runnable_exception)
+            self._load_variant_thread = SqlThread(self.conn)
+            self._load_variant_thread.result_ready.connect(self._on_variant_loaded)
+            self._load_variant_thread.error.connect(self.error_raised)
+
+            self._load_count_thread = SqlThread(self.conn)
+            self._load_count_thread.result_ready.connect(self._on_count_loaded)
+            self._load_count_thread.error.connect(self.error_raised)
 
     def rowCount(self, parent=QModelIndex()):
         """Overrided : Return children count of index"""
@@ -133,22 +140,38 @@ class VariantModel(QAbstractTableModel):
     def columnCount(self, parent=QModelIndex()):
         """Overrided: Return column count of parent .
 
-        Parent is not used here.
+        Parent is not used here 
         """
-        return len(self.headers)
+
+        #  Check integrity for unit test
+        if parent == QModelIndex():
+            return len(self.headers)
+        return 0
+
+    def clear_cache(self):
+        """ clear cache """
+        self._load_variant_cache.clear()
+        self._load_count_cache.clear()
+
+    def cache_size(self):
+        """ Return total cache size """
+        return self._load_variant_cache.currsize
+
+    def max_cache_size(self):
+        return self._load_variant_cache.maxsize
 
     def clear(self):
         """Reset the current model
 
             - clear variants list
             - total of variants is set to 0
-            - emit load_finished signal
+            - emit variant_loaded signal
         """
         self.beginResetModel()
         self.variants.clear()
         self.total = 0
         self.endResetModel()
-        self.load_finished.emit()
+        self.variant_loaded.emit()
 
     def data(self, index: QModelIndex(), role=Qt.DisplayRole):
         """Overrided: return index data according role.
@@ -229,17 +252,6 @@ class VariantModel(QAbstractTableModel):
             self.variants[row].update(variant)
             self.dataChanged.emit(left, right)
 
-    def _set_loading(self, active=True):
-        """Emit the loading status of async queries
-
-        Called before async queries and after their end.
-
-        Signal emitted: loading(bool), captured by VariantView to start/stop
-        movie animation.
-        """
-        self.is_loading = active
-        self.loading.emit(active)
-
     def find_row_id_from_variant_id(self, variant_id: int) -> list:
         """Find the ids of all rows with the same given variant_id
 
@@ -254,6 +266,19 @@ class VariantModel(QAbstractTableModel):
             if variant["id"] == variant_id
         ]
 
+    def interrupt(self):
+        """Interrupt current query if active
+        """
+        if self._load_count_thread:
+            if self._load_count_thread.isRunning():
+                self._load_count_thread.interrupt()
+                self._load_count_thread.quit()
+
+        if self._load_variant_thread:
+            if self._load_variant_thread.isRunning():
+                self._load_variant_thread.interrupt()
+                self._load_variant_thread.quit()
+
     def load(self):
         """Start async queries to get variants and variant count
 
@@ -267,11 +292,7 @@ class VariantModel(QAbstractTableModel):
         if self.conn is None:
             return
 
-        # If Previous load not finished 
-        if self.pool.activeThreadCount() > 0:
-            return
 
-        self._set_loading(True)
         LOGGER.debug("Start loading")
 
         offset = (self.page - 1) * self.limit
@@ -279,7 +300,7 @@ class VariantModel(QAbstractTableModel):
         # Add fields from group by
         # self.clear()  # Assume variant = []
         self.total = 0
-
+        self._finished_thread_count = 0
         # LOGGER.debug("Page queried: %s", self.page)
 
         # Store SQL query for debugging purpose
@@ -319,51 +340,41 @@ class VariantModel(QAbstractTableModel):
             group_by=self.group_by,
         )
 
-        # Assign async functions to runnables
-        self.variant_runnable.function = lambda conn: list(load_func(conn))
-        self.count_runnable.function = count_function
-        # Assign unique ID for this run
-        self.query_number = next(self.query_counter)
-        self.variant_runnable.query_number = self.query_number
-        self.count_runnable.query_number = self.query_number
         # Start the run
-        LOGGER.debug("Start pools; query number %s", self.query_number)
         self._start_timer = time.perf_counter()
 
-        self.pool.start(self.variant_runnable)
-        self.pool.start(self.count_runnable)
+        self.load_started.emit()
 
-    def loaded(self, query_number):
-        """Called when SQL async queries are done
+        # Create function HASH for CACHE
+        self._count_hash = hash(
+            count_function.func.__name__ + str(count_function.keywords)
+        )
+        self._variant_hash = hash(load_func.func.__name__ + str(load_func.keywords))
 
-        - We wait until the 2 requests (variant and count rennable) have finished.
-        - self.variants, self.total are set
+        # Launch the first thread "count" or by pass it using the cache
+        if self._count_hash in self._load_count_cache:
+            self._load_count_thread.results = self._load_count_cache[self._count_hash]
+            self._on_count_loaded()
+        else:
+            self._load_count_thread.start_function(count_function)
 
-        Signals:
-            - self._set_loading() is called at the end and so loading(true) is emitted
-            - load_finished (captured by VariantView to load page_box)
+        # Launch the second thread "count" or by pass it using the cache
+        if self._variant_hash in self._load_variant_cache:
+            self._load_variant_thread.results = self._load_variant_cache[
+                self._variant_hash
+            ]
+            self._on_variant_loaded()
+
+        else:
+            self._load_variant_thread.start_function(lambda conn: list(load_func(conn)))
+
+    def _on_variant_loaded(self):
         """
-        # Discard deprecated query results
-        # print("expected query number:", self.query_number, "get:", query_number)
-        if query_number < self.query_number:
-            # Discard result; WAIT current query
-            return
-        else:
-            self.pool_results[query_number].add(self.sender())
-        # print("pool", self.pool_results)
+        Triggered when variant_thread is finished 
 
-        # Wait second query result
-        if len(self.pool_results[self.query_number]) == 2:
-            # All results are here!
-            # => Reset for next run
-            self.pool_results.clear()
-        else:
-            # One of the runner has not finished his job
-            # => WAIT missing result
-            return
+        """
 
-        # LOGGER.debug(cmd.count_cmd.cache_info())
-        LOGGER.debug("Received load data; query %s", query_number)
+        #  Compute time elapsed since loading
         self._end_timer = time.perf_counter()
         self.elapsed_time = self._end_timer - self._start_timer
 
@@ -375,17 +386,44 @@ class VariantModel(QAbstractTableModel):
             if g not in self.fields:
                 self.fields.append(g)
 
+        # Save cache
+        self._load_variant_cache[
+            self._variant_hash
+        ] = self._load_variant_thread.results.copy()
+
         # Load variants
-        self.variants = self.variant_runnable.results
+        self.variants = self._load_variant_thread.results
         if self.variants:
             # Set headers of the view
             self.headers = list(self.variants[0].keys())
 
-        self.total = self.count_runnable.results["count"]
+        # self.total = self._load_count_thread.results["count"]
 
         self.endResetModel()
-        self._set_loading(False)
-        self.load_finished.emit()
+        self.variant_loaded.emit()
+
+        #  Test if both thread are finished
+        self._finished_thread_count += 1
+        if self._finished_thread_count == 2:
+            self.load_finished.emit()
+
+    def _on_count_loaded(self):
+        """
+        Triggered when count_threaed is finished 
+        """
+
+        # Save cache
+        self._load_count_cache[
+            self._count_hash
+        ] = self._load_count_thread.results.copy()
+
+        self.total = self._load_count_thread.results["count"]
+        self.count_loaded.emit()
+
+        #  Test if both thread are finished
+        self._finished_thread_count += 1
+        if self._finished_thread_count == 2:
+            self.load_finished.emit()
 
     def hasPage(self, page: int) -> bool:
         """ Return True if <page> exists otherwise return False """
@@ -395,7 +433,6 @@ class VariantModel(QAbstractTableModel):
         """ set the page of the model """
         if self.hasPage(page):
             self.page = page
-            self.load()
 
     def nextPage(self):
         """ Set model to the next page """
@@ -436,6 +473,12 @@ class VariantModel(QAbstractTableModel):
     def variant(self, row: int) -> dict:
         """Return variant data according index"""
         return self.variants[row]
+
+    def is_variant_loading(self):
+        return self._load_variant_thread.isRunning()
+
+    def is_count_loading(self):
+        return self._load_count_thread.isRunning()
 
 
 class VariantDelegate(QStyledItemDelegate):
@@ -517,12 +560,12 @@ class VariantView(QWidget):
             TL,DR: Select the first row if in grouped mode => refresh the right pane.
 
     Signals:
-        runnable_exception (str): Emit message when async runnables encounter errors
+        error_raised (str): Emit message when async runnables encounter errors
         no_variant: Emitted when there is no variant to display.
             Used by left pane to clear right pane.
     """
 
-    runnable_exception = Signal(str)
+    error_raised = Signal(str)
     no_variant = Signal()
 
     def __init__(self, parent=None, show_popup_menu=True):
@@ -573,13 +616,15 @@ class VariantView(QWidget):
         self.page_box.setValidator(QIntValidator())
         self.page_box.setFixedWidth(50)
         self.page_box.setValidator(QIntValidator())
-    
+
         # Display nb of variants/groups and pages
         self.info_label = QLabel()
         self.time_label = QLabel()
+        self.cache_label = QLabel()
 
         self.bottom_bar.addAction(FIcon(0xF0A30), "sql", self.on_show_sql)
         self.bottom_bar.addWidget(self.time_label)
+        self.bottom_bar.addWidget(self.cache_label)
         self.bottom_bar.addSeparator()
         self.bottom_bar.addWidget(spacer)
         self.bottom_bar.addWidget(self.info_label)
@@ -613,64 +658,103 @@ class VariantView(QWidget):
         # broadcast focus signal
         self.row_to_be_selected = None
         # Get the status of async load: started/finished
-        self.model.loading.connect(self._set_loading)
+        # self.model.loading.connect(self._set_loading)
         # Queries are finished (yes its redundant with loading signal...)
-        self.model.load_finished.connect(self.loaded)
+        self.model.variant_loaded.connect(self._on_variant_loaded)
+        self.model.count_loaded.connect(self._on_count_loaded)
         # Connect errors from async runnables
-        self.model.runnable_exception.connect(self.runnable_exception)
+        self.model.error_raised.connect(self.error_raised)
+        self.model.error_raised.connect(self._on_error)
         #  connect double clicke
         self.view.doubleClicked.connect(self.on_double_clicked)
 
-    def _set_loading(self, active=True):
-        """Slot to obtain the status of async load: started/finished
+    # def _set_loading(self, active=True):
+    #     """Slot to obtain the status of async load: started/finished
 
-        Start/Stop the movie animation on the view.
+    #     Start/Stop the movie animation on the view.
 
-        Keyword Args:
-            active (bool): True if loaded, False if finished
-        """
-        self.setDisabled(active)
-        if active:
-            QTimer.singleShot(1000, self.start_loading_after_delay)
-        else:
-            self.view.stop_loading()
+    #     Keyword Args:
+    #         active (bool): True if loaded, False if finished
+    #     """
+    #     self.setDisabled(active)
+    #     if active:
+    #         QTimer.singleShot(1000, self.start_loading_after_delay)
+    #     else:
+    #         self.view.stop_loading()
 
-    def start_loading_after_delay(self):
-        self.setDisabled(self.model.is_loading)
+    # def start_loading_after_delay(self):
+    #     self.setDisabled(self.model.is_loading)
 
-        if self.model.is_loading:
-            self.view.start_loading()
-        else:
-            self.view.stop_loading()
+    #     if self.model.is_loading:
+    #         self.view.start_loading()
+    #     else:
+    #         self.view.stop_loading()
 
     def setModel(self, model: VariantModel):
         self.model = model
         self.view.setModel(model)
 
-    def load(self):
-        self.model.page = 1
+    def load(self, reset_page=False):
+
+        if reset_page:
+            self.model.page = 1
+
         self.model.order_by = None
+        self.set_tool_enabled(False)
+        self.set_view_enabled(False)
+
         self.model.load()
 
-    def loaded(self):
+    def _on_variant_loaded(self):
         """Slot called when async queries from the model are finished
         (especially count of variants for page box).
 
         Signals:
             Emits no_variant signal.
         """
-        if self.row_to_be_selected is not None:
-            # Left groupby pane only:
-            # Select by default the first line in order to refresh the
-            # current variant in the other pane
-            if self.model.rowCount():
-                self.select_row(0)
-            else:
-                self.no_variant.emit()
+        # if self.row_to_be_selected is not None:
+        #     # Left groupby pane only:
+        #     # Select by default the first line in order to refresh the
+        #     # current variant in the other pane
+        #     if self.model.rowCount():
+        #         self.select_row(0)
+        #     else:
+        #         self.no_variant.emit()
 
-        self.load_page_box()
+        self.time_label.setText(str(" Executed in %.2gs " % (self.model.elapsed_time)))
+        cache = cm.bytes_to_readable(self.model.cache_size())
+        max_cache = cm.bytes_to_readable(self.model.max_cache_size())
+        self.cache_label.setText(str(" Cache {} of {}".format(cache, max_cache)))
         if LOGGER.getEffectiveLevel() != DEBUG:
             self.view.setColumnHidden(0, True)
+
+        self.set_view_enabled(True)
+        self.view.scrollToTop()
+
+    def _on_count_loaded(self):
+
+        self.page_box.clear()
+
+        if self.model.pageCount() - 1 == 0:
+            self.set_pagging_enabled(False)
+        else:
+            # self.page_box.addItems([str(i) for i in range(self.model.pageCount())])
+            self.page_box.validator().setRange(1, self.model.pageCount())
+            self.page_box.setText(str(self.model.page))
+            self.set_pagging_enabled(True)
+
+        if not self.show_popup_menu:
+            # Yes it's hacky... but left pane doesn't show variants
+            text = self.tr("{} group(s) {} page(s)")
+        else:
+            text = self.tr("{} line(s) {} page(s)")
+
+        self.info_label.setText(text.format(self.model.total, self.model.pageCount()))
+        self.set_tool_enabled(True)
+
+    def _on_error(self, message):
+        self.set_view_enabled(True)
+        self.set_tool_enabled(True)
 
     def set_formatter(self, formatter):
         self.delegate.formatter = formatter
@@ -733,9 +817,7 @@ class VariantView(QWidget):
             fct = self.model.nextPage
 
         fct()
-        self.view.scrollToTop()
-
-        self.page_box.setText(str(self.model.page))
+        self.load()
 
     def on_page_changed(self):
         """Slot called when page_box is modified and the user has pressed return key
@@ -745,6 +827,7 @@ class VariantView(QWidget):
         if self.page_box.text():
             page = int(self.page_box.text())
             self.model.setPage(page)
+            self.load()
 
     def on_show_sql(self):
         """Display debug sql query"""
@@ -759,30 +842,16 @@ class VariantView(QWidget):
 
         msg_box.exec_()
 
-    def load_page_box(self):
-        """Load Bottom toolbar with pagination"""
-        self.page_box.clear()
-        self.time_label.setText(str(" Executed in %.2gs " % (self.model.elapsed_time)))
-        if self.model.pageCount() - 1 == 0:
-            self.set_pagging_enabled(False)
-        else:
-            # self.page_box.addItems([str(i) for i in range(self.model.pageCount())])
-            self.page_box.validator().setRange(1, self.model.pageCount())
-            self.page_box.setText(str(self.model.page))
-            self.set_pagging_enabled(True)
-
-        if not self.show_popup_menu:
-            # Yes it's hacky... but left pane doesn't show variants
-            text = self.tr("{} group(s) {} page(s)")
-        else:
-            text = self.tr("{} line(s) {} page(s)")
-
-        self.info_label.setText(text.format(self.model.total, self.model.pageCount()))
-
     def set_pagging_enabled(self, active=True):
         self.page_box.setEnabled(active)
         for action in self.pagging_actions:
             action.setEnabled(active)
+
+    def set_view_enabled(self, active=True):
+        self.view.setEnabled(active)
+
+    def set_tool_enabled(self, active=True):
+        self.bottom_bar.setEnabled(active)
 
     def contextMenuEvent(self, event: QContextMenuEvent):
         """Override: Show contextual menu over the current variant"""
@@ -1098,11 +1167,15 @@ class VariantViewWidget(plugin.PluginWidget):
         # self.save_action.setPriority(QAction.LowPriority)
 
         # Refresh UI button
-        action = self.top_bar.addAction(
-            FIcon(0xF0450), self.tr("Refresh"), self.on_refresh
-        )
+        action = self.top_bar.addAction(FIcon(0xF0450), self.tr("Refresh"), self.load)
         action.setToolTip(self.tr("Refresh the current list of variants"))
         # action.setPriority(QAction.LowPriority)
+
+        # Interrupt current query
+        action = self.top_bar.addAction(
+            FIcon(0xF04DB), self.tr("Stop"), self.on_interrupt
+        )
+        action.setToolTip(self.tr("Stop current query"))
 
         # Formatter tools
         self.top_bar.addSeparator()
@@ -1144,8 +1217,8 @@ class VariantViewWidget(plugin.PluginWidget):
         )
         self.groupby_left_pane.no_variant.connect(self.on_no_variant)
         # Connect errors from async runnables
-        self.main_right_pane.runnable_exception.connect(self.set_message)
-        self.groupby_left_pane.runnable_exception.connect(self.set_message)
+        self.main_right_pane.error_raised.connect(self.set_message)
+        self.groupby_left_pane.error_raised.connect(self.set_message)
 
         # Default group
         self.last_group = ["chr"]
@@ -1217,7 +1290,11 @@ class VariantViewWidget(plugin.PluginWidget):
         self.main_right_pane.set_formatter(formatter_class())
         self.groupby_left_pane.set_formatter(formatter_class())
         # Load ui
-        self.load()
+        self.load(reset_page=True)
+
+    def on_interrupt(self):
+        self.main_right_pane.model.interrupt()
+        self.groupby_left_pane.model.interrupt()
 
     def on_save_selection(self):
         """Triggered on 'save_selection' button
@@ -1272,7 +1349,7 @@ class VariantViewWidget(plugin.PluginWidget):
         # print("right", self.main_right_pane.model.group_by)
         return self.groupby_left_pane.group_by != []
 
-    def load(self):
+    def load(self, reset_page=False):
         """Load all views
 
         Called by on_refresh, on_group_changed, and _show_group_dialog
@@ -1308,7 +1385,7 @@ class VariantViewWidget(plugin.PluginWidget):
             # But refreshing left pane triggers right pane refreshing
             # So => do not do it here
             # self.main_right_pane.load()
-            self.groupby_left_pane.load()
+            self.groupby_left_pane.load(reset_page)
         else:
             # Grouped => ungrouped
             # Restore fields
@@ -1316,7 +1393,7 @@ class VariantViewWidget(plugin.PluginWidget):
             # Restore filters
             self.main_right_pane.filters = self.save_filters
             # Refresh model
-            self.main_right_pane.load()
+            self.main_right_pane.load(reset_page)
             # print("saved right:", self.save_fields)
 
     def on_group_changed(self):

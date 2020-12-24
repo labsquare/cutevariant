@@ -146,3 +146,20 @@ def get_uncompressed_size(filepath):
     with open(filepath, "rb") as file_obj:
         file_obj.seek(-4, 2)
         return int.from_bytes(file_obj.read(4), byteorder="little")
+
+
+def bytes_to_readable(size) -> str:
+    """return human readable size from bytes
+    
+    Args:
+        size (int): size in bytes
+    
+    Returns:
+        str: readable size
+    """
+    out = ""
+    for count in ["Bytes", "KB", "MB", "GB"]:
+        if size > -1024.0 and size < 1024.0:
+            return "%3.1f%s" % (size, count)
+        size /= 1024.0
+    return "%3.1f%s" % (size, "TB")

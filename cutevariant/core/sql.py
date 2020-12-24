@@ -75,7 +75,8 @@ def get_sql_connection(filepath):
 
     return connection
 
-def table_exists(conn: sqlite3.Connection, name:str) -> bool:
+
+def table_exists(conn: sqlite3.Connection, name: str) -> bool:
     """Return True if table exists
     
     Args:
@@ -156,10 +157,6 @@ def create_indexes(conn: sqlite3.Connection):
 
 def count_query(conn, query):
     """Count elements from the given query or table
-
-    Notes about memoization here:
-        Not implemented here, we should be able to clear cache when
-        the current project is changed.
     """
     return conn.execute(f"SELECT COUNT(*) as count FROM ({query})").fetchone()[0]
 

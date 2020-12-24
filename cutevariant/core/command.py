@@ -22,8 +22,6 @@ import sqlite3
 import os
 import functools
 
-# Pip install ( because functools doesnt work with unhachable)
-from memoization import cached
 
 # Custom imports
 from cutevariant.core.querybuilder import build_sql_query, build_full_sql_query
@@ -90,7 +88,6 @@ def select_cmd(
         yield {k.replace("(", "[").replace(")", "]"): v for k, v in dict(i).items()}
 
 
-@cached(max_size=128)
 def count_cmd(
     conn: sqlite3.Connection,
     fields=["chr", "pos", "ref", "alt"],
@@ -120,6 +117,7 @@ def count_cmd(
     # table (count without taking account of annotations) is different.
     # This leads to a fault in the pagination hiding the latest variants if
     # more than 50 must be displayed.
+
     variants_fields = set(
         field["name"] for field in sql.get_field_by_category(conn, "variants")
     )
@@ -462,14 +460,6 @@ def execute_all(conn: sqlite3.Connection, vql_source: str):
     for vql_obj in vql.parse_vql(vql_source):
         cmd = create_command_from_obj(conn, vql_obj)
         yield cmd()
-
-
-def clear_cache_cmd():
-    """Clear function cache by memoization module.
-
-    This method must be called when new project is open
-    """
-    count_cmd.cache_clear()
 
 
 # class CommandGraph(object):

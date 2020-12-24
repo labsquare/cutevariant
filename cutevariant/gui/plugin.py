@@ -196,6 +196,7 @@ class PluginWidget(QWidget):
             event(PySide2.QtGui.QShowEvent):
         """
         LOGGER.debug("Show event %s", self)
+
         if self.conn:
             self.on_refresh()
 

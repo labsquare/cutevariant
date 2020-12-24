@@ -3,9 +3,6 @@ import pytest
 
 # Qt imports
 from PySide2 import QtCore, QtWidgets
-# Mandatory step to init qApp global variable...
-# Needed in cutevariant.gui.plugins.word_set.__init__.py
-QtWidgets.QApplication()
 
 # Custom imports
 from tests import utils

@@ -14,7 +14,7 @@ from PySide2.QtCore import Qt, QAbstractTableModel, QModelIndex, QThreadPool
 
 # Custom imports
 from cutevariant.gui.plugin import PluginDialog
-from cutevariant.gui.sql_runnable import SqlRunnable
+from cutevariant.gui.sql_thread import SqlThread
 from cutevariant.core import sql
 
 
@@ -63,6 +63,7 @@ def get_snp_count(conn: sqlite3.Connection):
         "SELECT COUNT(*) AS `count` FROM variants WHERE is_snp = 1"
     ).fetchone()["count"]
 
+
 def get_indel_count(conn: sqlite3.Connection):
     """Get the number of variants that are SNP
 
@@ -74,10 +75,8 @@ def get_indel_count(conn: sqlite3.Connection):
     ).fetchone()["count"]
 
 
-
-
 def get_gene_counts(conn: sqlite3.Connection):
-    """ Get the number of variant per genes """ 
+    """ Get the number of variant per genes """
     results = {}
     for record in conn.execute(
         "SELECT gene, COUNT(*) as 'count' FROM annotations GROUP BY gene ORDER by count DESC LIMIT 1,100"
@@ -85,9 +84,6 @@ def get_gene_counts(conn: sqlite3.Connection):
         results[record["gene"]] = record["count"]
 
     return results
-
-
-
 
 
 class KeyValueModel(QAbstractTableModel):
@@ -145,6 +141,7 @@ class KeyValueWidget(QTableView):
         self.model.clear()
         self.model.add_metrics("Loading ...", "Data ...")
 
+
 class MetricsDialog(PluginDialog):
 
     ENABLE = True
@@ -177,10 +174,8 @@ class MetricsDialog(PluginDialog):
         self.setLayout(v_layout)
 
         # Async stuff
-        self.metrics_runnable = None
+        self.metric_thread = None
         self.populate()
-
-
 
     def populate(self):
         """Async implementation to populate the view
@@ -203,8 +198,8 @@ class MetricsDialog(PluginDialog):
                 "Sample count": get_sample_count(conn),
             }
 
-            stats_data["Tr/tv ratio"] = (
-                round(stats_data["Transition count"] / stats_data["Transversion count"],2)
+            stats_data["Tr/tv ratio"] = round(
+                stats_data["Transition count"] / stats_data["Transversion count"], 2
             )
 
             if sql.table_exists(conn, "annotations"):
@@ -217,13 +212,13 @@ class MetricsDialog(PluginDialog):
         self.stat_view.show_loading()
         self.meta_view.show_loading()
 
-        self.metrics_runnable = SqlRunnable(self.conn, compute_metrics)
-        self.metrics_runnable.finished.connect(self.loaded)
-        QThreadPool.globalInstance().start(self.metrics_runnable)
+        self.metric_thread = SqlThread(self.conn, compute_metrics)
+        self.metric_thread.result_ready.connect(self.loaded)
+        self.metric_thread.start()
 
     def loaded(self):
         """Called at the end of the thread and populate data"""
-        meta_data, stats_data, genes_data = self.metrics_runnable.results
+        meta_data, stats_data, genes_data = self.metric_thread.results
 
         self.stat_view.set_data(stats_data)
         self.meta_view.set_data(meta_data)
