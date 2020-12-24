@@ -353,7 +353,6 @@ class VariantModel(QAbstractTableModel):
         if self._count_hash in self._load_count_cache:
             self._load_count_thread.results = self._load_count_cache[self._count_hash]
             self._on_count_loaded()
-            print("use cache count")
         else:
             self._load_count_thread.start_function(count_function)
 
@@ -361,7 +360,6 @@ class VariantModel(QAbstractTableModel):
         if self._variant_hash in self._load_variant_cache:
             self._load_variant_thread.results = self._load_variant_cache[self._variant_hash]
             self._on_variant_loaded()
-            print("use cache variant")
 
 
         else:
