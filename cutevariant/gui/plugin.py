@@ -197,9 +197,8 @@ class PluginWidget(QWidget):
         """
         LOGGER.debug("Show event %s", self)
 
-        # This call load 2 time at the startup !
-        # if self.conn:
-        #     self.on_refresh()
+        if self.conn:
+            self.on_refresh()
 
 
 class PluginDialog(QDialog):

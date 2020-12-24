@@ -285,16 +285,22 @@ class VariantModel(QAbstractTableModel):
 
     def interrupt(self):
         """Interrupt current query if active
+
+        call interrupt and wait the thread finished...
+        If nothing happen after 1000 ms, by pass and continue
+        If I don't use the dead time, it is waiting for an infinite time
+        at startup ... Because at startup, loading is called 2 times.
+        One time by the register_plugin and a second time by the plugin.show_event
         """
         if self._load_count_thread:
             if self._load_count_thread.isRunning():
                 self._load_count_thread.interrupt()
-                self._load_count_thread.wait()
+                self._load_count_thread.wait(1000)
 
         if self._load_variant_thread:
             if self._load_variant_thread.isRunning():
                 self._load_variant_thread.interrupt()
-                self._load_variant_thread.wait()
+                self._load_variant_thread.wait(1000)
 
     def load(self):
         """Start async queries to get variants and variant count
