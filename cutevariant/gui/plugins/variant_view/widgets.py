@@ -1106,7 +1106,7 @@ class VariantViewWidget(plugin.PluginWidget):
 
         # Refresh UI button
         action = self.top_bar.addAction(
-            FIcon(0xF0450), self.tr("Refresh"), self.on_refresh
+            FIcon(0xF0450), self.tr("Refresh"), self.load
         )
         action.setToolTip(self.tr("Refresh the current list of variants"))
         # action.setPriority(QAction.LowPriority)
@@ -1230,7 +1230,7 @@ class VariantViewWidget(plugin.PluginWidget):
         self.main_right_pane.set_formatter(formatter_class())
         self.groupby_left_pane.set_formatter(formatter_class())
         # Load ui
-        self.load()
+        self.load(reset_page=True)
 
     def on_interrupt(self):
         print("interrupt")
@@ -1290,7 +1290,7 @@ class VariantViewWidget(plugin.PluginWidget):
         # print("right", self.main_right_pane.model.group_by)
         return self.groupby_left_pane.group_by != []
 
-    def load(self):
+    def load(self, reset_page = False):
         """Load all views
 
         Called by on_refresh, on_group_changed, and _show_group_dialog
@@ -1326,7 +1326,7 @@ class VariantViewWidget(plugin.PluginWidget):
             # But refreshing left pane triggers right pane refreshing
             # So => do not do it here
             # self.main_right_pane.load()
-            self.groupby_left_pane.load(reset_page=True)
+            self.groupby_left_pane.load(reset_page)
         else:
             # Grouped => ungrouped
             # Restore fields
@@ -1334,7 +1334,7 @@ class VariantViewWidget(plugin.PluginWidget):
             # Restore filters
             self.main_right_pane.filters = self.save_filters
             # Refresh model
-            self.main_right_pane.load(reset_page=True)
+            self.main_right_pane.load(reset_page)
             # print("saved right:", self.save_fields)
 
     def on_group_changed(self):
