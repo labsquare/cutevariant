@@ -411,7 +411,6 @@ class MainWindow(QMainWindow):
         self.conn = conn
 
         # Clear memoization cache for count_cmd
-        command.clear_cache_cmd()
         # Clear State variable of application
         # store fields, source, filters, group_by, having data
         self.state = State()

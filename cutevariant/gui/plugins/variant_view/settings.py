@@ -195,6 +195,28 @@ class LinkSettings(BaseWidget):
             item.setFont(font)
 
 
+class MemorySettings(BaseWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle(self.tr("Memory"))
+        self.setWindowIcon(FIcon(0xF070F))
+
+        layout = QFormLayout()
+        self.spinbox = QSpinBox()
+        self.spinbox.setRange(0, 100000)
+        layout.addRow(self.tr("Cache size"), self.spinbox)
+
+
+    def save(self):
+        ''' overload '''
+        pass
+
+    def load(self):
+        ''' load ''' 
+        pass
+
+
+
 class VariantViewSettingsWidget(PluginSettingsWidget):
     """Instantiated plugin in the settings panel of Cutevariant
 
@@ -208,4 +230,6 @@ class VariantViewSettingsWidget(PluginSettingsWidget):
         super().__init__(parent)
         self.setWindowIcon(FIcon(0xF035C))
         self.setWindowTitle("Variant view")
+        #self.add_settings_widget(MemorySettings())
         self.add_settings_widget(LinkSettings())
+

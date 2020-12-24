@@ -10,6 +10,9 @@ import copy
 import string
 from logging import DEBUG
 
+# dependency
+import cachetools
+
 # Qt imports
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
@@ -58,6 +61,8 @@ class VariantModel(QAbstractTableModel):
 
     error_raised = Signal(str)
 
+    DEFAUT_CACHE_SIZE = 1_048_576 * 32   # Default cache size of 32 Mo 
+
     def __init__(self, conn=None, parent=None):
         super().__init__()
         self.limit = 50
@@ -89,8 +94,9 @@ class VariantModel(QAbstractTableModel):
 
         # Create results cache because Thread doesn't use the memoization cache from command.py.
         # This is because Thread create a new connection and change the function signature used by the cache.
-        self._load_variant_cache = {}
-        self._load_count_cache = {}
+
+        self._load_variant_cache = cachetools.LFUCache(maxsize= self.DEFAUT_CACHE_SIZE, getsizeof = sys.getsizeof)
+        self._load_count_cache = cachetools.LFUCache(maxsize=1000)
 
     @property
     def conn(self):
@@ -143,6 +149,14 @@ class VariantModel(QAbstractTableModel):
         """ clear cache """
         self._load_variant_cache.clear()
         self._load_count_cache.clear()
+
+    def cache_size(self):
+        """ Return total cache size """ 
+        return self._load_variant_cache.currsize
+
+    def max_cache_size(self):
+        return self._load_variant_cache.maxsize
+
 
     def clear(self):
         """Reset the current model
@@ -262,6 +276,8 @@ class VariantModel(QAbstractTableModel):
             if self._load_variant_thread.isRunning():
                 self._load_variant_thread.interrupt()
                 self._load_variant_thread.quit()
+
+
 
     def load(self):
         """Start async queries to get variants and variant count
@@ -602,9 +618,11 @@ class VariantView(QWidget):
         # Display nb of variants/groups and pages
         self.info_label = QLabel()
         self.time_label = QLabel()
+        self.cache_label = QLabel()
 
         self.bottom_bar.addAction(FIcon(0xF0A30), "sql", self.on_show_sql)
         self.bottom_bar.addWidget(self.time_label)
+        self.bottom_bar.addWidget(self.cache_label)
         self.bottom_bar.addSeparator()
         self.bottom_bar.addWidget(spacer)
         self.bottom_bar.addWidget(self.info_label)
@@ -702,7 +720,9 @@ class VariantView(QWidget):
         #         self.no_variant.emit()
 
         self.time_label.setText(str(" Executed in %.2gs " % (self.model.elapsed_time)))
-
+        cache  =cm.bytes_to_readable(self.model.cache_size())
+        max_cache = cm.bytes_to_readable(self.model.max_cache_size())
+        self.cache_label.setText(str(" Cache {} of {}".format(cache, max_cache)))
         if LOGGER.getEffectiveLevel() != DEBUG:
             self.view.setColumnHidden(0, True)
 

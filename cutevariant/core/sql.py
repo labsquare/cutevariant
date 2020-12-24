@@ -156,10 +156,6 @@ def create_indexes(conn: sqlite3.Connection):
 
 def count_query(conn, query):
     """Count elements from the given query or table
-
-    Notes about memoization here:
-        Not implemented here, we should be able to clear cache when
-        the current project is changed.
     """
     return conn.execute(f"SELECT COUNT(*) as count FROM ({query})").fetchone()[0]
 

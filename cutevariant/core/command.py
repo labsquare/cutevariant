@@ -22,8 +22,6 @@ import sqlite3
 import os
 import functools
 
-# Pip install ( because functools doesnt work with unhachable)
-from memoization import cached
 
 # Custom imports
 from cutevariant.core.querybuilder import build_sql_query, build_full_sql_query
@@ -90,7 +88,6 @@ def select_cmd(
         yield {k.replace("(", "[").replace(")", "]"): v for k, v in dict(i).items()}
 
 
-@cached()
 def count_cmd(
     conn: sqlite3.Connection,
     fields=["chr", "pos", "ref", "alt"],
@@ -466,12 +463,7 @@ def execute_all(conn: sqlite3.Connection, vql_source: str):
         yield cmd()
 
 
-def clear_cache_cmd():
-    """Clear function cache by memoization module.
 
-    This method must be called when new project is open
-    """
-    count_cmd.cache_clear()
 
 
 # class CommandGraph(object):
