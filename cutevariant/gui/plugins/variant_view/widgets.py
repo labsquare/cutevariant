@@ -326,7 +326,6 @@ class VariantModel(QAbstractTableModel):
         # print("interrupt")
         # self.interrupt()
 
-        print("start")
         self._load_variant_thread.start()
         self._load_count_thread.start()
 
@@ -342,7 +341,6 @@ class VariantModel(QAbstractTableModel):
 
         self.beginResetModel()
         self.variants.clear()
-        print("loaded")
 
         # Add fields from group by
         for g in self.group_by:
@@ -684,7 +682,6 @@ class VariantView(QWidget):
 
         self.page_box.clear()
 
-        print("received", self.model.page)
 
         if self.model.pageCount() - 1 == 0:
             self.set_pagging_enabled(False)
@@ -768,7 +765,6 @@ class VariantView(QWidget):
             fct = self.model.nextPage
 
         fct()
-        print("click", str(self.model.page))
         self.load()
 
     def on_page_changed(self):
@@ -1021,7 +1017,6 @@ class VariantView(QWidget):
         size = self.settings.beginReadArray("plugins/variant_view/links")
         for index in range(size):
             self.settings.setArrayIndex(index)
-            print(self.settings.value("name"), self.settings.value("is_default"))
             is_default = bool(int(self.settings.value("is_default")))
             if is_default:
                 format_string = self.settings.value("url")
@@ -1233,7 +1228,6 @@ class VariantViewWidget(plugin.PluginWidget):
         self.load(reset_page=True)
 
     def on_interrupt(self):
-        print("interrupt")
         self.main_right_pane.model.interrupt()
         self.groupby_left_pane.model.interrupt()
 

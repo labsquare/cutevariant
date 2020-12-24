@@ -115,14 +115,12 @@ class SqlThread(QThread):
 
         try:
             LOGGER.debug("thread start ")
-            print("function",self.function)
 
             if self.hash in self.cache and self.hash is not None:
                 self.results = self.cache[self.hash]
             else:
                 self.results = self.function(self.async_conn)
                 self.cache[self.hash] = self.results
-                print("cache", self.cache)
 
             LOGGER.debug("Thread finished")
         except Exception as e:

@@ -121,7 +121,6 @@ def count_cmd(
     # This leads to a fault in the pagination hiding the latest variants if
     # more than 50 must be displayed.
 
-    print("Y A PAS DE CACHE ??")
 
     variants_fields = set(
         field["name"] for field in sql.get_field_by_category(conn, "variants")

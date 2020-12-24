@@ -14,7 +14,7 @@ from PySide2.QtCore import Qt, QAbstractTableModel, QModelIndex, QThreadPool
 
 # Custom imports
 from cutevariant.gui.plugin import PluginDialog
-from cutevariant.gui.sql_runnable import SqlRunnable
+from cutevariant.gui.sql_thread import SqlThread
 from cutevariant.core import sql
 
 
@@ -177,7 +177,7 @@ class MetricsDialog(PluginDialog):
         self.setLayout(v_layout)
 
         # Async stuff
-        self.metrics_runnable = None
+        self.metric_thread = None
         self.populate()
 
 
@@ -217,13 +217,13 @@ class MetricsDialog(PluginDialog):
         self.stat_view.show_loading()
         self.meta_view.show_loading()
 
-        self.metrics_runnable = SqlRunnable(self.conn, compute_metrics)
-        self.metrics_runnable.finished.connect(self.loaded)
-        QThreadPool.globalInstance().start(self.metrics_runnable)
-
+        self.metric_thread = SqlThread(self.conn, compute_metrics)
+        self.metric_thread.result_ready.connect(self.loaded)
+        self.metric_thread.start()
+        
     def loaded(self):
         """Called at the end of the thread and populate data"""
-        meta_data, stats_data, genes_data = self.metrics_runnable.results
+        meta_data, stats_data, genes_data = self.metric_thread.results
 
         self.stat_view.set_data(stats_data)
         self.meta_view.set_data(meta_data)
