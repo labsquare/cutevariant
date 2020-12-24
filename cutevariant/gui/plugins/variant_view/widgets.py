@@ -367,13 +367,13 @@ class VariantModel(QAbstractTableModel):
         # Start the run
         self._start_timer = time.perf_counter()
 
-        self.load_started.emit()
-
         # Create function HASH for CACHE
         self._count_hash = hash(
             count_function.func.__name__ + str(count_function.keywords)
         )
         self._variant_hash = hash(load_func.func.__name__ + str(load_func.keywords))
+
+        self.load_started.emit()
 
         # Launch the first thread "count" or by pass it using the cache
         if self._count_hash in self._load_count_cache:
@@ -381,6 +381,7 @@ class VariantModel(QAbstractTableModel):
             self._on_count_loaded()
         else:
             self._load_count_thread.start_function(count_function)
+
 
         # Launch the second thread "count" or by pass it using the cache
         if self._variant_hash in self._load_variant_cache:
@@ -692,6 +693,7 @@ class VariantView(QWidget):
         # Queries are finished (yes its redundant with loading signal...)
         self.model.variant_loaded.connect(self._on_variant_loaded)
         self.model.count_loaded.connect(self._on_count_loaded)
+        self.model.load_started.connect(lambda : self.set_loading(True))
         # Connect errors from async runnables
         self.model.error_raised.connect(self.error_raised)
         self.model.error_raised.connect(self._on_error)
@@ -756,7 +758,6 @@ class VariantView(QWidget):
         self.cache_label.setText(str(" Cache {} of {}".format(cache, max_cache)))
         if LOGGER.getEffectiveLevel() != DEBUG:
             self.view.setColumnHidden(0, True)
-
         self.set_view_loading(False)
         self.view.scrollToTop()
 
@@ -878,6 +879,7 @@ class VariantView(QWidget):
 
 
     def set_view_loading(self, active=True):
+        self.view.setDisabled(active)
 
         def show_loading_if_loading():
             if self.model.is_variant_loading():
@@ -887,20 +889,24 @@ class VariantView(QWidget):
             QTimer.singleShot(2000, show_loading_if_loading)
         else:
             self.view.stop_loading()
-        self.view.setDisabled(active)
 
     def set_tool_loading(self, active=True):
+    
+
         if active:
             self.info_label.setText(self.tr("Counting all variants. This can take a while ... "))
             self.loading_action.setVisible(True)
             self.loading_label.movie().start()
         else:
-            print("hide")
             self.loading_label.movie().stop()
             self.loading_action.setVisible(False)
-        
-
+    
         self.bottom_bar.setDisabled(active)
+
+    def set_loading(self, active = True):
+
+        self.set_view_loading(active)
+        self.set_tool_loading(active)
 
     def contextMenuEvent(self, event: QContextMenuEvent):
         """Override: Show contextual menu over the current variant"""
