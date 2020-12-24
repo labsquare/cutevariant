@@ -129,11 +129,11 @@ class VariantModel(QAbstractTableModel):
             # I hide the error connection for now because I call interrupt from load 
             # which raise an exception .. 
             # TODO : raise error except for interrupt ! 
-            #self._load_variant_thread.error.connect(self.error_raised)
+            self._load_variant_thread.error.connect(self.error_raised)
 
             self._load_count_thread = SqlThread(self.conn)
             self._load_count_thread.result_ready.connect(self._on_count_loaded)
-            #self._load_count_thread.error.connect(self.error_raised)
+            self._load_count_thread.error.connect(self.error_raised)
 
     def rowCount(self, parent=QModelIndex()):
         """Overrided : Return children count of index"""
@@ -288,12 +288,13 @@ class VariantModel(QAbstractTableModel):
         if self._load_count_thread:
             if self._load_count_thread.isRunning():
                 self._load_count_thread.interrupt()
-                self._load_count_thread.quit()
+                self._load_count_thread.wait()
+
 
         if self._load_variant_thread:
             if self._load_variant_thread.isRunning():
                 self._load_variant_thread.interrupt()
-                self._load_variant_thread.quit()
+                self._load_variant_thread.wait()
 
     def load(self):
         """Start async queries to get variants and variant count
@@ -308,13 +309,7 @@ class VariantModel(QAbstractTableModel):
         if self.conn is None:
             return
 
-        if self._load_variant_thread.isRunning():
-            self._load_variant_thread.interrupt()
-            self._load_variant_thread.wait()
-
-        if self._load_count_thread.isRunning():
-            self._load_count_thread.interrupt()
-            self._load_count_thread.wait()
+        self.interrupt()
 
 
         LOGGER.debug("Start loading")
