@@ -1627,6 +1627,11 @@ class VariantViewWidget(plugin.PluginWidget):
         Args:
             message (str): Error message
         """
+
+        # skip message with interrupt
+        if "interrupt" in message:
+            return
+
         if self.log_edit.isHidden():
             self.log_edit.show()
 
