@@ -120,6 +120,10 @@ class PluginWidget(QWidget):
     ENABLE = False
     REFRESH_ONLY_VISIBLE = True
 
+    # This variable is set to False by the showEvent
+    #  It is a hack to avoid calling load() 2 time by the showEvent in startup
+    _STARTUP = True
+
     def __init__(self, parent=None):
         """Set parent window (mainwindow) to QWidget and to mainwindow attribute
 
@@ -197,8 +201,10 @@ class PluginWidget(QWidget):
         """
         LOGGER.debug("Show event %s", self)
 
-        if self.conn:
+        if self.conn and not self._STARTUP:
             self.on_refresh()
+        else:
+            self._STARTUP = False
 
 
 class PluginDialog(QDialog):
