@@ -1037,14 +1037,15 @@ class VariantView(QWidget):
         else:
             return None
 
-    def update_favorites(self, checked: bool):
+    def update_favorites(self, checked: bool = None):
         """Update favorite status of multiple selected variants
+
+        if checked is None, toggle favorite
 
         Warnings:
             BE CAREFUL with this code, we try to limit useless SQL queries as
             much as possible.
         """
-        update_data = {"favorite": int(checked)}
 
         # Do not update the same variant multiple times
         unique_ids = set()
@@ -1062,6 +1063,12 @@ class VariantView(QWidget):
             unique_ids.add(variant_id)
 
             # Update GUI + DB
+            if checked is None:
+                #  Toggle checked box
+                update_data = {"favorite": int(not bool(variant["favorite"]))}
+            else:
+                update_data = {"favorite": int(checked)}
+
             self.model.update_variant(index.row(), update_data)
 
             # JUST update the GUI
@@ -1238,6 +1245,17 @@ class VariantViewWidget(plugin.PluginWidget):
             FIcon(0xF04DB), self.tr("Stop"), self.on_interrupt
         )
         action.setToolTip(self.tr("Stop current query"))
+
+        self.top_bar.addSeparator()
+        #  edit action
+        self.fav_action = self.top_bar.addAction(
+            FIcon(0xF00C3), self.tr("Toogle favorite")
+        )
+        self.fav_action.setToolTip(self.tr("Toogle as favorite"))
+        self.fav_action.triggered.connect(
+            lambda: self.main_right_pane.update_favorites()
+        )
+        self.fav_action.setShortcut(QKeySequence(Qt.Key_Space))
 
         # Formatter tools
         self.top_bar.addSeparator()
