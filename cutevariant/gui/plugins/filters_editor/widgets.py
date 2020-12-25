@@ -331,6 +331,8 @@ class OperatorField(BaseField):
         "~": "regex",
         "IN": "in",
         "NOT IN": "not in",
+        "IS": "is",
+        "IS NOT": "is not",
     }
 
     def __init__(self, parent=None):
@@ -1665,6 +1667,8 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.view.setDragEnabled(True)
         self.view.header().setStretchLastSection(False)
         self.view.setAcceptDrops(True)
+        self.view.setExpandsOnDoubleClick(False)
+
         self.view.setDragDropMode(QAbstractItemView.InternalMove)
         self.view.setAlternatingRowColors(True)
         self.view.setIndentation(0)
@@ -2014,12 +2018,6 @@ if __name__ == "__main__":
     from cutevariant.core.reader import FakeReader
     import cutevariant.commons as cm
     from cutevariant.gui.ficon import FIcon, setFontPath
-
-    conn = get_sql_connection("test.db")
-
-    d = FieldDialog(conn)
-    d.show()
-    # ---
 
     setFontPath(cm.FONT_FILE)
 

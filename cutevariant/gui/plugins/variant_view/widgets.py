@@ -1539,7 +1539,7 @@ class VariantViewWidget(plugin.PluginWidget):
                 self.main_right_pane.filters = filters
 
                 # Update right pane only
-                self.main_right_pane.load()
+                self.main_right_pane.load(reset_page=True)
 
         if index.model() == self.main_right_pane.view.model():
             # Variant clicked on right pane
