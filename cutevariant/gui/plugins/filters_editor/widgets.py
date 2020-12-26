@@ -1237,16 +1237,17 @@ class FilterDelegate(QStyledItemDelegate):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.add_icon = FIcon(0xF0419)
-        self.rem_icon = FIcon(0xF0156)
+        self.add_icon = FIcon(0xF0704)
+        self.group_icon = FIcon(0xF0704)
+        self.rem_icon = FIcon(0xF0156, "red")
 
         self.eye_on = FIcon(0xF06D0)
         self.eye_off = FIcon(0xF06D1)
 
-        self.icon_size = QSize(16, 16)
+        self.icon_size = QSize(20, 20)
 
-        self.indentation = 15
-        self.branch_width = 9
+        self.indentation = 12
+        self.branch_width = 8
 
     def createEditor(self, parent, option, index: QModelIndex) -> QWidget:
         """Overrided from Qt. Create an editor for the selected column.
@@ -1450,16 +1451,15 @@ class FilterDelegate(QStyledItemDelegate):
         parent = index.model().item(index.parent())
         level = self._compute_level(index)
         color = option.palette.color(QPalette.WindowText)
-        margin = self.indentation
 
         pen = QPen(color, 1, Qt.DotLine)
         painter.setPen(pen)
-        xstart = option.rect.x() + margin * (level - 1)
+        xstart = option.rect.x() + self.indentation * (level - 1)
         xend = xstart + self.branch_width
 
         #  draw horizontal
         painter.drawLine(
-            xstart, option.rect.center().y(), xend, option.rect.center().y()
+            xstart + 2, option.rect.center().y(), xend, option.rect.center().y()
         )
 
         #  Draw Vertical
@@ -1480,7 +1480,7 @@ class FilterDelegate(QStyledItemDelegate):
                 if not index.model().is_last(current):
                     painter.drawLine(x, option.rect.top(), x, option.rect.bottom())
                 current = current.parent()
-                x -= margin
+                x -= self.indentation
 
     def paint(self, painter, option, index):
 
@@ -1500,6 +1500,8 @@ class FilterDelegate(QStyledItemDelegate):
         if option.state & QStyle.State_Selected:
             is_selected = True
             painter.fillRect(option.rect, option.palette.color(bg, QPalette.Highlight))
+
+        margin = self.indentation * (self._compute_level(index))
 
         #  ========= Draw Checkbox
         if index.column() == self.COLUMN_CHECKBOX:
@@ -1538,9 +1540,27 @@ class FilterDelegate(QStyledItemDelegate):
                 QPalette.HighlightedText if is_selected else QPalette.WindowText,
             )
 
-            if item.type == FilterItem.LOGIC_TYPE:
+            if (
+                item.type == FilterItem.LOGIC_TYPE
+                and index.column() == self.COLUMN_FIELD
+            ):
                 font.setBold(True)
-
+                # metric = QFontMetrics(font)
+                # print(self._compute_level(index))
+                # text_width = metric.boundingRect(index.data()).width()
+                # #  Draw Add buttion
+                # rect = QRect(0, 0, self.icon_size.width(), self.icon_size.height())
+                # rect.moveCenter(
+                #     QPoint(
+                #         option.rect.x() + margin + text_width + 20,
+                #         option.rect.center().y(),
+                #     )
+                # )
+                # painter.drawPixmap(
+                #     rect.right() - self.icon_size.width(),
+                #     rect.y(),
+                #     self.add_icon.pixmap(self.icon_size),
+                # )
             if index.column() == self.COLUMN_FIELD:
                 align |= Qt.AlignLeft
 
@@ -1556,10 +1576,8 @@ class FilterDelegate(QStyledItemDelegate):
 
             text_rect = option.rect
             if index.column() == 1:
-                xstart = option.rect.x() + self.indentation * (
-                    self._compute_level(index) - 1
-                )
-                text_rect.setX(xstart + 2 + self.branch_width)
+                xstart = option.rect.x() + margin
+                text_rect.setX(xstart)
 
             painter.drawText(text_rect, align, index.data(Qt.DisplayRole))
 
