@@ -53,7 +53,9 @@ class VqlEditorWidget(plugin.PluginWidget):
             FIcon(0xF040A), self.tr("Run"), self.run_vql
         )
         self.run_action.setShortcuts([Qt.CTRL + Qt.Key_R, QKeySequence.Refresh])
-        self.run_action.setToolTip(self.tr("Run VQL query (F5)"))
+        self.run_action.setToolTip(
+            self.tr("Run VQL query (%s)" % self.run_action.shortcut().toString())
+        )
 
         # Syntax highlighter and autocompletion
         self.text_edit = VqlEditor()
