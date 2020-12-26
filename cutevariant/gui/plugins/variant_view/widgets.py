@@ -671,20 +671,34 @@ class VariantView(QWidget):
         self.bottom_bar.setContentsMargins(0, 0, 0, 0)
 
         self.pagging_actions = []
-        self.pagging_actions.append(
-            self.bottom_bar.addAction(FIcon(0xF0600), "<<", self.on_page_clicked)
-        )
-        self.pagging_actions.append(
-            self.bottom_bar.addAction(FIcon(0xF0141), "<", self.on_page_clicked)
-        )
+
+        action = self.bottom_bar.addAction(FIcon(0xF0600), "<<", self.on_page_clicked)
+        action.setShortcut(Qt.CTRL + Qt.Key_Left)
+        action.setAutoRepeat(False)
+        action.setToolTip(self.tr("First page (%s)" % action.shortcut().toString()))
+
+        self.pagging_actions.append(action)
+
+        action = self.bottom_bar.addAction(FIcon(0xF0141), "<", self.on_page_clicked)
+        action.setShortcut(QKeySequence(Qt.Key_Left))
+        action.setAutoRepeat(False)
+        action.setToolTip(self.tr("Previous page (%s)" % action.shortcut().toString()))
+        self.pagging_actions.append(action)
+
         self.bottom_bar.addWidget(self.page_box)
-        self.pagging_actions.append(
-            self.bottom_bar.addAction(FIcon(0xF0142), ">", self.on_page_clicked)
-        )
-        self.pagging_actions.append(
-            self.bottom_bar.addAction(FIcon(0xF0601), ">>", self.on_page_clicked)
-        )
         self.page_box.returnPressed.connect(self.on_page_changed)
+
+        action = self.bottom_bar.addAction(FIcon(0xF0142), ">", self.on_page_clicked)
+        action.setShortcut(QKeySequence(Qt.Key_Right))
+        action.setAutoRepeat(False)
+        action.setToolTip(self.tr("Next page (%s)" % action.shortcut().toString()))
+        self.pagging_actions.append(action)
+
+        action = self.bottom_bar.addAction(FIcon(0xF0601), ">>", self.on_page_clicked)
+        action.setShortcut(Qt.CTRL + Qt.Key_Right)
+        action.setAutoRepeat(False)
+        action.setToolTip(self.tr("Last page (%s)" % action.shortcut().toString()))
+        self.pagging_actions.append(action)
 
         main_layout = QVBoxLayout()
         main_layout.setContentsMargins(0, 0, 0, 0)
@@ -767,6 +781,11 @@ class VariantView(QWidget):
             self.view.setColumnHidden(0, True)
         self.set_view_loading(False)
         self.view.scrollToTop()
+
+        #  Select first row
+        if self.model.rowCount():
+            self.select_row(0)
+            self.view.setFocus(Qt.ActiveWindowFocusReason)
 
     def _on_count_loaded(self):
 
@@ -1248,14 +1267,16 @@ class VariantViewWidget(plugin.PluginWidget):
 
         self.top_bar.addSeparator()
         #  edit action
-        self.fav_action = self.top_bar.addAction(
-            FIcon(0xF00C3), self.tr("Toogle favorite")
-        )
-        self.fav_action.setToolTip(self.tr("Toogle as favorite"))
+        self.fav_action = QAction(FIcon(0xF00C0), self.tr("Toggle favorite "))
         self.fav_action.triggered.connect(
             lambda: self.main_right_pane.update_favorites()
         )
         self.fav_action.setShortcut(QKeySequence(Qt.Key_Space))
+        self.fav_action.setAutoRepeat(False)
+        self.fav_action.setToolTip(
+            self.tr("Toggle favorite (%s)" % self.fav_action.shortcut().toString())
+        )
+        self.top_bar.addAction(self.fav_action)
 
         # Formatter tools
         self.top_bar.addSeparator()
