@@ -112,3 +112,20 @@ venv.bak/
 
 *.db
 *.db-journal
+
+
+# cutevariant 
+/examples
+*.vcf
+*.vcf.gz
+*.fasta
+*.fastq
+*.tfam
+*.ped
+test.py
+.tags
+.vscode/
+build/
+cov_html/
+poc/
+

@@ -9,12 +9,14 @@ from PySide2.QtWidgets import (
     QAbstractItemView,
     QHeaderView,
     QTabWidget,
+    QStatusBar,
 )
 from PySide2.QtCore import Qt, QAbstractTableModel, QModelIndex, QThreadPool
 
 # Custom imports
 from cutevariant.gui.plugin import PluginDialog
 from cutevariant.gui.sql_thread import SqlThread
+from cutevariant.gui.widgets import DictWidget
 from cutevariant.core import sql
 
 
@@ -86,62 +88,6 @@ def get_gene_counts(conn: sqlite3.Connection):
     return results
 
 
-class KeyValueModel(QAbstractTableModel):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-        self.items = []
-
-    def columnCount(self, parent=QModelIndex()) -> int:
-        """ override """
-        if parent == QModelIndex():
-            return 2
-
-    def rowCount(self, parent=QModelIndex()) -> int:
-        return len(self.items)
-
-    def data(self, index, role):
-
-        if role == Qt.DisplayRole:
-            return self.items[index.row()][index.column()]
-
-    def clear(self):
-        self.beginResetModel()
-        self.items.clear()
-        self.endResetModel()
-
-    def add_metrics(self, name, value):
-
-        self.beginInsertRows(QModelIndex(), len(self.items), len(self.items))
-        self.items.append((name, value))
-        self.endInsertRows()
-
-
-class KeyValueWidget(QTableView):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.model = KeyValueModel()
-        self.setModel(self.model)
-        self.setAlternatingRowColors(True)
-        self.horizontalHeader().hide()
-        self.verticalHeader().hide()
-        self.setSelectionMode(QAbstractItemView.SingleSelection)
-        self.setSelectionBehavior(QAbstractItemView.SelectRows)
-
-    def set_data(self, data: dict):
-        self.model.clear()
-
-        for key in data.keys():
-            self.model.add_metrics(key, str(data[key]))
-
-        self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
-        self.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
-
-    def show_loading(self):
-        self.model.clear()
-        self.model.add_metrics("Loading ...", "Data ...")
-
-
 class MetricsDialog(PluginDialog):
 
     ENABLE = True
@@ -151,14 +97,13 @@ class MetricsDialog(PluginDialog):
         self.conn = conn
 
         self.tab_widget = QTabWidget()
+        self.status_bar = QStatusBar()
 
-        self.meta_view = KeyValueWidget()
-        self.stat_view = KeyValueWidget()
-        self.ann_view = KeyValueWidget()
+        self.meta_view = DictWidget()
+        self.stat_view = DictWidget()
+        self.ann_view = DictWidget()
 
-        self.tab_widget.addTab(
-            self.meta_view, "Metadata",
-        )
+        self.tab_widget.addTab(self.meta_view, "Metadata")
         self.tab_widget.addTab(self.stat_view, "Variants")
         self.tab_widget.addTab(self.ann_view, "Annotations")
 
@@ -170,9 +115,12 @@ class MetricsDialog(PluginDialog):
 
         v_layout = QVBoxLayout()
         v_layout.addWidget(self.tab_widget)
+        v_layout.addWidget(self.status_bar)
         v_layout.addWidget(self.buttons)
+        v_layout.setSpacing(0)
         self.setLayout(v_layout)
 
+        self.resize(640, 480)
         # Async stuff
         self.metric_thread = None
         self.populate()
@@ -209,9 +157,7 @@ class MetricsDialog(PluginDialog):
 
             return meta_data, stats_data, genes_data
 
-        self.stat_view.show_loading()
-        self.meta_view.show_loading()
-
+        self.status_bar.showMessage("Loading ...")
         self.metric_thread = SqlThread(self.conn, compute_metrics)
         self.metric_thread.result_ready.connect(self.loaded)
         self.metric_thread.start()
@@ -220,9 +166,10 @@ class MetricsDialog(PluginDialog):
         """Called at the end of the thread and populate data"""
         meta_data, stats_data, genes_data = self.metric_thread.results
 
-        self.stat_view.set_data(stats_data)
-        self.meta_view.set_data(meta_data)
-        self.ann_view.set_data(genes_data)
+        self.stat_view.set_dict(stats_data)
+        self.meta_view.set_dict(meta_data)
+        self.ann_view.set_dict(genes_data)
+        self.status_bar.showMessage("")
 
 
 if __name__ == "__main__":

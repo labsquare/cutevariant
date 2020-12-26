@@ -29,19 +29,19 @@ def test_query(qtbot, conn):
     # Fill with a function that will be executed in a separated thread
 
     thread = SqlThread(conn, sql.get_variants_count)
-    with qtbot.waitSignal(thread.finished, timeout=5000) as blocker:
+    with qtbot.waitSignal(thread.result_ready, timeout=1000) as blocker:
         thread.start()
 
     assert thread.results == 11
 
     thread = SqlThread(conn)
-    with qtbot.waitSignal(thread.finished, timeout=5000) as blocker:
+    with qtbot.waitSignal(thread.finished, timeout=1000) as blocker:
         thread.start_function(sql.get_variants_count)
 
     assert thread.results == 11
 
     thread = SqlThread(conn)
-    with qtbot.waitSignal(thread.result_ready, timeout=5000) as blocker:
+    with qtbot.waitSignal(thread.result_ready, timeout=1000) as blocker:
         thread.start_function(sql.get_variants_count)
 
     assert thread.results == 11
@@ -67,7 +67,7 @@ def test_interupt(qtbot, conn):
         )
 
     thread = SqlThread(conn, slow_query)
-    with qtbot.waitSignal(thread.error, timeout=5000):
+    with qtbot.waitSignal(thread.error, timeout=2000):
         thread.start()
         time.sleep(1)
         thread.interrupt()

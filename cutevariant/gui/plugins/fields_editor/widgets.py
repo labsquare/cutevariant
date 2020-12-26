@@ -122,8 +122,8 @@ class FieldsEditorWidget(plugin.PluginWidget):
         super().__init__(parent)
 
         self.setWindowTitle(self.tr("Columns"))
-        self.view = QTreeView()
-        self.toolbar = QToolBar()
+        self.view = QTreeView(self)
+        self.toolbar = QToolBar(self)
         # conn is always None here but initialized in on_open_project()
         self.model = FieldsModel(conn)
 
@@ -162,12 +162,16 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self.toolbar.addAction(FIcon(0xF0616), self.tr("Expand"), self.view.expandAll)
 
         # setup search edit
-        search_act = self.toolbar.addAction(
-            FIcon(0xF0969), self.tr("Search fields by keywords...")
-        )
-        search_act.setCheckable(True)
-        search_act.toggled.connect(self.on_search_pressed)
-        search_act.setShortcut(QKeySequence.Find)
+        self.setFocusPolicy(Qt.ClickFocus)
+        self.search_act = QAction(FIcon(0xF0969), self.tr("Search by keywords..."))
+        self.search_act.setCheckable(True)
+        self.search_act.toggled.connect(self.on_search_pressed)
+        self.search_act.setShortcutContext(Qt.WidgetShortcut)
+        self.search_act.setShortcut(QKeySequence.Find)
+        self.toolbar.addAction(self.search_act)
+
+        self.view.addAction(self.search_act)
+
         self.search_edit.setVisible(False)
         self.search_edit.setPlaceholderText(self.tr("Search by keywords... "))
 

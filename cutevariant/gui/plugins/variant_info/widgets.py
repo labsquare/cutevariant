@@ -17,6 +17,8 @@ from cutevariant.core import sql, get_sql_connection
 from cutevariant.gui.plugin import PluginWidget
 from cutevariant import commons as cm
 
+from cutevariant.gui.widgets import DictWidget
+
 LOGGER = cm.logger()
 
 
@@ -38,20 +40,15 @@ class VariantInfoWidget(PluginWidget):
         self.toolbar.setIconSize(QSize(16, 16))
 
         # Build variant tab
-        self.variant_view = QTreeWidget()
-        self.variant_view.setColumnCount(2)
-        self.variant_view.setAlternatingRowColors(True)
-        # self.variant_view.setHeaderLabels(["Field", "Value"])
-        self.variant_view.header().setVisible(False)
+        self.variant_view = DictWidget()
+        self.variant_view.set_header_visible(False)
+
         self.view.addTab(self.variant_view, self.tr("Variant"))
 
         # Build transcript tab
         self.transcript_combo = QComboBox()
-        self.transcript_view = QTreeWidget()
-        self.transcript_view.setColumnCount(2)
-        self.transcript_view.setAlternatingRowColors(True)
-        # self.transcript_view.setHeaderLabels(["Field", "Value"])
-        self.transcript_view.header().setVisible(False)
+        self.transcript_view = DictWidget()
+        self.transcript_view.set_header_visible(False)
         tx_layout = QVBoxLayout()
         tx_layout.addWidget(self.transcript_combo)
         tx_layout.addWidget(self.transcript_view)
@@ -62,11 +59,9 @@ class VariantInfoWidget(PluginWidget):
 
         # Build Samples tab
         self.sample_combo = QComboBox()
-        self.sample_view = QTreeWidget()
-        self.sample_view.setAlternatingRowColors(True)
-        self.sample_view.setColumnCount(2)
-        # self.sample_view.setHeaderLabels(["Field", "Value"])
-        self.sample_view.header().setVisible(False)
+        self.sample_view = DictWidget()
+        self.sample_view.set_header_visible(False)
+
         tx_layout = QVBoxLayout()
         tx_layout.addWidget(self.sample_combo)
         tx_layout.addWidget(self.sample_view)
@@ -154,13 +149,17 @@ class VariantInfoWidget(PluginWidget):
         variant_id = self.current_variant["id"]
 
         # Populate variant
-        self.populate_tree_widget(
-            self.variant_view, sql.get_one_variant(self.conn, variant_id)
-        )
+        data = [
+            (k, v)
+            for k, v in sql.get_one_variant(self.conn, variant_id).items()
+            if k not in ("variant_id", "sample_id", "annotations", "samples")
+        ]
+        self.variant_view.set_dict(dict(data))
 
         # Populate annotations
         self.transcript_combo.blockSignals(True)
         self.transcript_combo.clear()
+
         for annotation in sql.get_annotations(self.conn, variant_id):
             if "transcript" in annotation:
                 self.transcript_combo.addItem(annotation["transcript"], annotation)
@@ -198,7 +197,7 @@ class VariantInfoWidget(PluginWidget):
         Fill fields & values for selected transcript.
         """
         annotations = self.transcript_combo.currentData()
-        self.populate_tree_widget(self.transcript_view, annotations)
+        self.transcript_view.set_dict(annotations)
 
     @Slot()
     def on_sample_changed(self):
@@ -209,9 +208,8 @@ class VariantInfoWidget(PluginWidget):
         sample_id = self.sample_combo.currentData()
         variant_id = self.current_variant["id"]
 
-        self.populate_tree_widget(
-            self.sample_view,
-            sql.get_sample_annotations(self.conn, variant_id, sample_id),
+        self.sample_view.set_dict(
+            sql.get_sample_annotations(self.conn, variant_id, sample_id)
         )
 
     def populate_tree_widget(self, treewidget, data):
