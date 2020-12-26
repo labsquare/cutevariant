@@ -1276,7 +1276,7 @@ class VariantViewWidget(plugin.PluginWidget):
         self.fav_action.setToolTip(
             self.tr("Toggle favorite (%s)" % self.fav_action.shortcut().toString())
         )
-        self.top_bar.addAction(self.fav_action)
+        self.main_right_pane.addAction(self.fav_action)
 
         # Formatter tools
         self.top_bar.addSeparator()
