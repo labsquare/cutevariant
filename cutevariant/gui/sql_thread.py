@@ -122,8 +122,10 @@ class SqlThread(QThread):
         except Exception as e:
             # LOGGER.exception(e)
             self.last_error = "%s: %s" % (e.__class__.__name__, str(e))
+            self.async_conn.close()
             self.error.emit(self.last_error)
         else:
+            self.async_conn.close()
             self.result_ready.emit()
 
         return
