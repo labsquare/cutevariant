@@ -286,21 +286,38 @@ class VariantModel(QAbstractTableModel):
     def interrupt(self):
         """Interrupt current query if active
 
+        This is a blocking function... 
+
         call interrupt and wait the thread finished...
         If nothing happen after 1000 ms, by pass and continue
         If I don't use the dead time, it is waiting for an infinite time
         at startup ... Because at startup, loading is called 2 times.
         One time by the register_plugin and a second time by the plugin.show_event
         """
+
+        loop = None
         if self._load_count_thread:
             if self._load_count_thread.isRunning():
                 self._load_count_thread.interrupt()
                 self._load_count_thread.wait(1000)
+                loop = QEventLoop()
 
         if self._load_variant_thread:
             if self._load_variant_thread.isRunning():
                 self._load_variant_thread.interrupt()
                 self._load_variant_thread.wait(1000)
+                loop = QEventLoop()
+
+        # Wait for exception ... 
+        if loop:
+            self.error_raised.connect(loop.quit)
+            loop.exec_()
+
+
+
+    def is_running(self):
+        return self._load_variant_thread.isRunning() or self._load_count_thread.isRunning()
+
 
     def load(self):
         """Start async queries to get variants and variant count
@@ -315,7 +332,10 @@ class VariantModel(QAbstractTableModel):
         if self.conn is None:
             return
 
-        self.interrupt()
+
+        if self.is_running():
+            LOGGER.debug("Cannot load data. Thread is not finished. You can call interrupt() ")
+
 
         LOGGER.debug("Start loading")
 
@@ -762,6 +782,9 @@ class VariantView(QWidget):
         if reset_page:
             self.model.page = 1
             self.model.order_by = None
+
+        if self.model.is_running():
+            self.model.interrupt()
 
         self.set_view_loading(True)
         self.set_tool_loading(True)
