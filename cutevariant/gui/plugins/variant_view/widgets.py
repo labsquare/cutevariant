@@ -700,6 +700,16 @@ class VariantView(QWidget):
         action.setToolTip(self.tr("Last page (%s)" % action.shortcut().toString()))
         self.pagging_actions.append(action)
 
+        self.fav_action = QAction(FIcon(0xF00C0), self.tr("Toggle favorite "))
+        self.fav_action.triggered.connect(lambda: self.update_favorites())
+        self.fav_action.setShortcut(QKeySequence(Qt.Key_Space))
+        self.fav_action.setShortcutContext(Qt.WidgetShortcut)
+        self.fav_action.setAutoRepeat(False)
+        self.fav_action.setToolTip(
+            self.tr("Toggle favorite (%s)" % self.fav_action.shortcut().toString())
+        )
+        self.view.addAction(self.fav_action)
+
         main_layout = QVBoxLayout()
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.addWidget(self.view)
@@ -1265,18 +1275,8 @@ class VariantViewWidget(plugin.PluginWidget):
         )
         action.setToolTip(self.tr("Stop current query"))
 
-        self.top_bar.addSeparator()
         #  edit action
-        self.fav_action = QAction(FIcon(0xF00C0), self.tr("Toggle favorite "))
-        self.fav_action.triggered.connect(
-            lambda: self.main_right_pane.update_favorites()
-        )
-        self.fav_action.setShortcut(QKeySequence(Qt.Key_Space))
-        self.fav_action.setAutoRepeat(False)
-        self.fav_action.setToolTip(
-            self.tr("Toggle favorite (%s)" % self.fav_action.shortcut().toString())
-        )
-        self.top_bar.addAction(self.fav_action)
+        # TODO : move into view
 
         # Formatter tools
         self.top_bar.addSeparator()

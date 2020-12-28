@@ -856,6 +856,15 @@ class FilterModel(QAbstractItemModel):
             if orientation == Qt.Horizontal:
                 return self._HEADERS[section]
 
+    def is_last(self, index: QModelIndex()) -> bool:
+        """Return True if index is the last in the row
+        This is used by draw_branch
+        """
+        if index == QModelIndex():
+            return False
+
+        return index.row() == index.model().rowCount(index.parent()) - 1
+
     def index(self, row, column, parent=QModelIndex()) -> QModelIndex:
         """Overrided Qt methods: create index according row, column and parent
 
@@ -1228,13 +1237,17 @@ class FilterDelegate(QStyledItemDelegate):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.add_icon = FIcon(0xF0419)
-        self.rem_icon = FIcon(0xF0156)
+        self.add_icon = FIcon(0xF0704)
+        self.group_icon = FIcon(0xF0704)
+        self.rem_icon = FIcon(0xF0156, "red")
 
         self.eye_on = FIcon(0xF06D0)
         self.eye_off = FIcon(0xF06D1)
 
-        self.icon_size = QSize(16, 16)
+        self.icon_size = QSize(20, 20)
+
+        self.indentation = 12
+        self.branch_width = 8
 
     def createEditor(self, parent, option, index: QModelIndex) -> QWidget:
         """Overrided from Qt. Create an editor for the selected column.
@@ -1415,7 +1428,7 @@ class FilterDelegate(QStyledItemDelegate):
             return QSize(20, 30)
 
         if index.column() == self.COLUMN_FIELD:
-            margin = self._compute_margin(index)
+            margin = self.indentation * self._compute_level(index) + self.indentation
             size.setWidth(size.width() + margin + 10)
 
         return size
@@ -1429,13 +1442,49 @@ class FilterDelegate(QStyledItemDelegate):
 
         return level
 
-    def _compute_margin(self, index: QModelIndex):
-        return self._compute_level(index) * 10 + 5
+    def _draw_branch(self, painter, option, index):
 
-    def paint(
-        self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex
-    ):
+        if index.parent() == QModelIndex():
+            return
 
+        item = index.model().item(index)
+        parent = index.model().item(index.parent())
+        level = self._compute_level(index)
+        color = option.palette.color(QPalette.WindowText)
+
+        pen = QPen(color, 1, Qt.DotLine)
+        painter.setPen(pen)
+        xstart = option.rect.x() + self.indentation * (level - 1)
+        xend = xstart + self.branch_width
+
+        #  draw horizontal
+        painter.drawLine(
+            xstart + 2, option.rect.center().y(), xend, option.rect.center().y()
+        )
+
+        #  Draw Vertical
+        ## If last
+        if index.model().is_last(index):
+            yend = option.rect.center().y()
+            painter.drawLine(xstart, option.rect.top(), xstart, yend)
+
+        # If middle
+        else:
+            yend = option.rect.bottom()
+            painter.drawLine(xstart, option.rect.top(), xstart, yend)
+
+        if level > 1:
+            x = xstart
+            current = index
+            while current != QModelIndex():
+                if not index.model().is_last(current):
+                    painter.drawLine(x, option.rect.top(), x, option.rect.bottom())
+                current = current.parent()
+                x -= self.indentation
+
+    def paint(self, painter, option, index):
+
+        # ======== Draw background
         item = index.model().item(index)
         is_selected = False
 
@@ -1452,21 +1501,10 @@ class FilterDelegate(QStyledItemDelegate):
             is_selected = True
             painter.fillRect(option.rect, option.palette.color(bg, QPalette.Highlight))
 
-        # Indentation level
-        margin = self._compute_margin(index)
+        margin = self.indentation * (self._compute_level(index))
 
-        rect = option.rect
-        # Add margin for column 1 and 0
-        if index.column() <= 1:
-            rect.setLeft(rect.x() + margin)
-
-        # ========== Check box ====================
+        #  ========= Draw Checkbox
         if index.column() == self.COLUMN_CHECKBOX:
-            # cbOpt = QStyleOptionButton()
-            # cbOpt.rect = self._check_rect(rect)
-            # cbOpt.setLeft(cbOpt.rect.x() + margin)
-            # cbOpt.state |= QStyle.State_On if item.checked else QStyle.State_Off
-            # QApplication.instance().style().drawControl(QStyle.CE_CheckBox, cbOpt, painter)
 
             check_icon = self.eye_on if item.checked else self.eye_off
             rect = QRect(0, 0, self.icon_size.width(), self.icon_size.height())
@@ -1476,6 +1514,25 @@ class FilterDelegate(QStyledItemDelegate):
 
         if index.column() > self.COLUMN_CHECKBOX:
 
+            if index.column() == 1:
+                self._draw_branch(painter, option, index)
+            # pen = QPen(QColor("white"), 1, Qt.DotLine)
+            # painter.setPen(pen)
+            # # painter.drawRect(option.rect)
+            # painter.drawLine(
+            #     option.rect.left(),
+            #     option.rect.center().y(),
+            #     margin - 2,
+            #     option.rect.center().y(),
+            # )
+
+            # painter.drawLine(
+            #     option.rect.left(),
+            #     option.rect.top(),
+            #     option.rect.left(),
+            #     option.rect.bottom(),
+            # )
+
             font = QFont()
             align = Qt.AlignVCenter
             color = option.palette.color(
@@ -1483,9 +1540,27 @@ class FilterDelegate(QStyledItemDelegate):
                 QPalette.HighlightedText if is_selected else QPalette.WindowText,
             )
 
-            if item.type == FilterItem.LOGIC_TYPE:
+            if (
+                item.type == FilterItem.LOGIC_TYPE
+                and index.column() == self.COLUMN_FIELD
+            ):
                 font.setBold(True)
-
+                # metric = QFontMetrics(font)
+                # print(self._compute_level(index))
+                # text_width = metric.boundingRect(index.data()).width()
+                # #  Draw Add buttion
+                # rect = QRect(0, 0, self.icon_size.width(), self.icon_size.height())
+                # rect.moveCenter(
+                #     QPoint(
+                #         option.rect.x() + margin + text_width + 20,
+                #         option.rect.center().y(),
+                #     )
+                # )
+                # painter.drawPixmap(
+                #     rect.right() - self.icon_size.width(),
+                #     rect.y(),
+                #     self.add_icon.pixmap(self.icon_size),
+                # )
             if index.column() == self.COLUMN_FIELD:
                 align |= Qt.AlignLeft
 
@@ -1497,7 +1572,14 @@ class FilterDelegate(QStyledItemDelegate):
 
             painter.setFont(font)
             painter.setPen(color)
-            painter.drawText(rect, align, index.data(Qt.DisplayRole))
+            # Indentation level
+
+            text_rect = option.rect
+            if index.column() == 1:
+                xstart = option.rect.x() + margin
+                text_rect.setX(xstart)
+
+            painter.drawText(text_rect, align, index.data(Qt.DisplayRole))
 
             if index.column() == self.COLUMN_REMOVE:
                 rect = QRect(0, 0, self.icon_size.width(), self.icon_size.height())
@@ -1537,8 +1619,9 @@ class FilterDelegate(QStyledItemDelegate):
         """
 
         if index.column() == 1:
-            margin = self._compute_margin(index)
-            option.rect.setLeft(option.rect.x() + margin)
+            option.rect.setLeft(
+                option.rect.x() + self.indentation * (self._compute_level(index) - 1)
+            )
             editor.setGeometry(option.rect)
             return
 
@@ -1656,6 +1739,26 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.settings = QSettings()
         self.view = QTreeView()
         # conn is always None here but initialized in on_open_project()
+
+        self.view.setStyleSheet(
+            """
+QTreeView::branch:has-siblings:!adjoins-item {
+    border-image: url(/home/sacha/vline.png) 0;
+}
+
+QTreeView::branch:has-siblings:adjoins-item {
+    border-image: url(/home/sacha/branch-more.png) 0;
+}
+
+QTreeView::branch:!has-children:!has-siblings:adjoins-item {
+    border-image: url(/home/sacha/branch-end.png) 0;
+}
+
+
+
+            """
+        )
+
         self.model = FilterModel(conn)
         self.delegate = FilterDelegate()
         self.toolbar = QToolBar()
@@ -2030,6 +2133,34 @@ if __name__ == "__main__":
             {"field": "gene", "operator": "=", "value": "chr12"},
             {"field": "gene", "operator": "=", "value": "chr12"},
             {"field": "gene", "operator": "=", "value": "chr12"},
+            {"field": "gene", "operator": "=", "value": "chr12"},
+            {"field": "gene", "operator": "=", "value": "chr12"},
+            {
+                "AND": [
+                    {"field": "gene", "operator": "=", "value": "chr12"},
+                    {"field": "gene", "operator": "=", "value": "chr12"},
+                    {
+                        "AND": [
+                            {"field": "gene", "operator": "=", "value": "chr12"},
+                            {"field": "gene", "operator": "=", "value": "chr12"},
+                            {
+                                "AND": [
+                                    {
+                                        "field": "gene",
+                                        "operator": "=",
+                                        "value": "chr12",
+                                    },
+                                    {
+                                        "field": "gene",
+                                        "operator": "=",
+                                        "value": "chr12",
+                                    },
+                                ]
+                            },
+                        ]
+                    },
+                ]
+            },
             {"field": "gene", "operator": "=", "value": "chr12"},
             {"field": "gene", "operator": "=", "value": "chr12"},
         ]

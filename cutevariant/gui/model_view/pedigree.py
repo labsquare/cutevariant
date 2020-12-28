@@ -53,11 +53,11 @@ class PedModel(QAbstractTableModel):
             "Phenotype",
         )
 
-    def rowCount(self, index=QModelIndex()):
+    def rowCount(self, index=QModelIndex()) -> int:
         """ override """
         return len(self.samples_data)
 
-    def columnCount(self, index=QModelIndex()):
+    def columnCount(self, index=QModelIndex()) -> int:
         """ override """
         if index == QModelIndex():
             return len(self.headers)
