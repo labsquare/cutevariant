@@ -6,10 +6,23 @@ from PySide2.QtWidgets import (
     QAbstractItemView,
     QLabel,
     QHBoxLayout,
+    QStyledItemDelegate,
+    QFrame,
+    QStyle,
 )
-from PySide2.QtGui import QPainter, QTextCursor, QIcon
+from PySide2.QtGui import (
+    QPainter,
+    QTextCursor,
+    QIcon,
+    QPalette,
+    QPen,
+    QColor,
+    QFont,
+    QFontMetrics,
+)
 from PySide2.QtCore import (
     Qt,
+    QSize,
     QStringListModel,
     QSortFilterProxyModel,
     QItemSelectionModel,
@@ -29,16 +42,219 @@ class CompleterModel(QAbstractListModel):
     def __init__(self, parent=None):
         super().__init__(parent)
 
+        type_icons = {"int": 0xF03A0, "str": 0xF100D, "float": 0xF03A0, "bool": 0xF023B}
+
         self.items = [
             {
                 "name": "SELECT",
-                "description": "POUR FAIRE UNE SELECTION",
+                "description": "ICI CEST ",
                 "icon": 0xF03AD,
+                "color": "#01BBCA",
             },
-            {"name": "chr", "description": "chromosome", "icon": 0xF03AD},
-            {"name": "chrisalide", "description": "chrisalide", "icon": 0xF03AD},
-            {"name": "chrosss", "description": "chrosss", "icon": 0xF03AD},
-            {"name": "pos", "description": "position", "icon": 0xF03AD},
+            {
+                "name": "chr",
+                "description": "chromosome (str) \n\n This is the name of the chromosomes \n\n Examples: `chr3` ",
+                "icon": 0xF03A0,
+                "color": "#01BBCA",
+            },
+            {
+                "name": "chrisalide",
+                "description": "chrisalide",
+                "icon": 0xF100D,
+                "color": "#01BBCA",
+            },
+            {
+                "name": "chrosss",
+                "description": "chrosss",
+                "icon": 0xF03A0,
+                "color": "#175AA0",
+            },
+            {
+                "name": "chrosss",
+                "description": "chrosss",
+                "icon": 0xF03A0,
+                "color": "#01BBCA",
+            },
+            {
+                "name": "chrosss",
+                "description": "chrosss",
+                "icon": 0xF03A0,
+                "color": "#01BBCA",
+            },
+            {
+                "name": "chrosss",
+                "description": "chrosss",
+                "icon": 0xF03A0,
+                "color": "#E46C6D",
+            },
+            {
+                "name": "chrosss",
+                "description": "chrosss",
+                "icon": 0xF03A0,
+                "color": "#01BBCA",
+            },
+            {
+                "name": "chrosss",
+                "description": "chrosss",
+                "icon": 0xF03A0,
+                "color": "#175AA0",
+            },
+            {
+                "name": "chrosss",
+                "description": "chrosss",
+                "icon": 0xF03A0,
+                "color": "#01BBCA",
+            },
+            {
+                "name": "chrosss",
+                "description": "chrosss",
+                "icon": 0xF03A0,
+                "color": "#E46C6D",
+            },
+            {
+                "name": "pos",
+                "description": "position",
+                "icon": 0xF023B,
+                "color": "#01BBCA",
+            },
+            {
+                "name": "pos",
+                "description": "position",
+                "icon": 0xF023B,
+                "color": "#01BBCA",
+            },
+            {
+                "name": "pos",
+                "description": "position",
+                "icon": 0xF023B,
+                "color": "#01BBCA",
+            },
+            {
+                "name": "pos",
+                "description": "position",
+                "icon": 0xF023B,
+                "color": "#01BBCA",
+            },
+            {
+                "name": "pos",
+                "description": "position",
+                "icon": 0xF023B,
+                "color": "#01BBCA",
+            },
+            {
+                "name": "pos",
+                "description": "position",
+                "icon": 0xF023B,
+                "color": "#01BBCA",
+            },
+            {
+                "name": "pos",
+                "description": "position",
+                "icon": 0xF023B,
+                "color": "#01BBCA",
+            },
+            {
+                "name": "pos",
+                "description": "position",
+                "icon": 0xF023B,
+                "color": "#01BBCA",
+            },
+            {
+                "name": "pos",
+                "description": "position",
+                "icon": 0xF023B,
+                "color": "#01BBCA",
+            },
+            {
+                "name": "pos",
+                "description": "position",
+                "icon": 0xF023B,
+                "color": "#01BBCA",
+            },
+            {
+                "name": "pos",
+                "description": "position",
+                "icon": 0xF023B,
+                "color": "#01BBCA",
+            },
+            {
+                "name": "pos",
+                "description": "position",
+                "icon": 0xF023B,
+                "color": "#01BBCA",
+            },
+            {
+                "name": "pos",
+                "description": "position",
+                "icon": 0xF023B,
+                "color": "#01BBCA",
+            },
+            {
+                "name": "pos",
+                "description": "position",
+                "icon": 0xF023B,
+                "color": "#01BBCA",
+            },
+            {
+                "name": "pos",
+                "description": "position",
+                "icon": 0xF023B,
+                "color": "#01BBCA",
+            },
+            {
+                "name": "pos",
+                "description": "position",
+                "icon": 0xF023B,
+                "color": "#01BBCA",
+            },
+            {
+                "name": "pos",
+                "description": "position",
+                "icon": 0xF023B,
+                "color": "#01BBCA",
+            },
+            {
+                "name": "pos",
+                "description": "position",
+                "icon": 0xF023B,
+                "color": "#01BBCA",
+            },
+            {
+                "name": "pos",
+                "description": "position",
+                "icon": 0xF023B,
+                "color": "#01BBCA",
+            },
+            {
+                "name": "pos",
+                "description": "position",
+                "icon": 0xF023B,
+                "color": "#01BBCA",
+            },
+            {
+                "name": "pos",
+                "description": "position",
+                "icon": 0xF023B,
+                "color": "#01BBCA",
+            },
+            {
+                "name": "pos",
+                "description": "position",
+                "icon": 0xF023B,
+                "color": "#01BBCA",
+            },
+            {
+                "name": "pos",
+                "description": "position",
+                "icon": 0xF023B,
+                "color": "#01BBCA",
+            },
+            {
+                "name": "pos",
+                "description": "position",
+                "icon": 0xF023B,
+                "color": "#01BBCA",
+            },
         ]
 
     def rowCount(self, parent=None):
@@ -58,9 +274,57 @@ class CompleterModel(QAbstractListModel):
             return self.items[index.row()]["description"]
 
         if role == Qt.DecorationRole:
-            return QIcon(FIcon(0xF14DE))
+            return QIcon(FIcon(self.items[index.row()]["icon"], "white"))
+
+        if role == Qt.BackgroundColorRole:
+            return self.items[index.row()]["color"]
 
         return None
+
+
+class CompleterDelegate(QStyledItemDelegate):
+    def paint(self, painter, option, index):
+
+        if option.state & QStyle.State_Selected:
+            select_color = option.palette.color(QPalette.Normal, QPalette.Highlight)
+            text_color = option.palette.color(QPalette.Normal, QPalette.BrightText)
+            painter.fillRect(option.rect, select_color)
+
+        else:
+            text_color = option.palette.color(QPalette.Normal, QPalette.Text)
+
+        icon = index.data(Qt.DecorationRole)
+        icon_color = index.data(Qt.BackgroundColorRole)
+
+        area = QRect(
+            option.rect.x(), option.rect.y(), option.rect.height(), option.rect.height()
+        )
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(QColor(icon_color))
+        painter.drawRect(area)
+        icon_area = area.adjusted(3, 3, -3, -3)
+        painter.drawPixmap(icon_area, icon.pixmap(icon_area.size()))
+
+        text_rect = option.rect
+        text_rect.setLeft(option.rect.height() + 3)
+
+        light_font = QFont()
+        dark_font = QFont()
+
+        word = index.data(Qt.DisplayRole)
+        font = QFont("monospace")
+        painter.setFont(font)
+        painter.setPen(QPen(text_color))
+        painter.drawText(text_rect, Qt.AlignLeft | Qt.AlignVCenter, word)
+
+        #  TODO : higlight match text
+        # text_rect.setLeft(
+        #     text_rect.left()
+        #     + QFontMetrics(light_font).size(Qt.TextSingleLine, word).width()
+        # )
+
+        # painter.setPen(QPen("gray"))
+        # painter.drawText(text_rect, Qt.AlignLeft | Qt.AlignVCenter, word)
 
 
 class Completer(QWidget):
@@ -81,21 +345,39 @@ class Completer(QWidget):
         self.model = CompleterModel()
         self.proxy_model = QSortFilterProxyModel()
         self.proxy_model.setSourceModel(self.model)
+
+        #  create delegate
+        self.delegate = CompleterDelegate()
         # create view
         self.view = QListView()
         self.view.setSelectionMode(QAbstractItemView.SingleSelection)
         self.view.setFocusPolicy(Qt.NoFocus)
         self.view.installEventFilter(self)
         self.view.setModel(self.proxy_model)
+        self.view.setItemDelegate(self.delegate)
         self.view.setMinimumWidth(200)
+        self.view.setUniformItemSizes(True)
+        # self.view.setIconSize(QSize(25, 25))
+        self.view.setSpacing(0)
+
+        self.view.setStyleSheet(
+            """
+
+            QListView::item {padding: 0px;}
+            QListView {margin: 0px; padding:0px}
+
+            """
+        )
+
         self.view.selectionModel().currentRowChanged.connect(self._on_row_changed)
         self.setFocusProxy(self.view)
 
         #  create panel info
         self.panel = QLabel()
         self.panel.setAlignment(Qt.AlignTop)
-        self.panel.setMinimumWidth(200)
-
+        self.panel.setMinimumWidth(300)
+        self.panel.setWordWrap(True)
+        self.panel.setFrameShape(QFrame.StyledPanel)
         self.panel.setText(
             """
             Impact (str)
@@ -109,6 +391,7 @@ class Completer(QWidget):
 
         vlayout = QHBoxLayout()
         vlayout.setContentsMargins(0, 0, 0, 0)
+        vlayout.setSpacing(0)
         vlayout.addWidget(self.view)
         vlayout.addWidget(self.panel)
         self.setLayout(vlayout)
@@ -171,6 +454,9 @@ class Completer(QWidget):
             if not self.isVisible():
                 width = 400
                 height = self.view.sizeHintForRow(0) * self.proxy_model.rowCount() + 3
+                #  HACK.. TODO better !
+                height = min(self._target.height() / 2, height)
+
                 self.resize(width, height)
                 self.show()
 
@@ -196,7 +482,7 @@ class Completer(QWidget):
 
     def _on_row_changed(self, current: QModelIndex, previous: QModelIndex):
 
-        description = previous.data(Qt.ToolTipRole)
+        description = current.data(Qt.ToolTipRole)
         self.panel.setText(description)
 
 

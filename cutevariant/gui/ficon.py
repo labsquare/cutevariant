@@ -34,12 +34,16 @@ class FIconEngine(QIconEngine):
             self.palette = QPalette()
 
         self.color = None
+        self.bgcolor = None
 
     def setCharacter(self, hex_character: int):
         self.hex_character = hex_character
 
     def setColor(self, color: QColor):
         self.color = color
+
+    def setBackgroundColor(self, color: QColor):
+        self.bgcolor = color
 
     def paint(
         self, painter: QPainter, rect: QRect, mode: QIcon.Mode, state: QIcon.State
@@ -53,6 +57,12 @@ class FIconEngine(QIconEngine):
             return
 
         painter.save()
+
+        #  draw background
+        if self.bgcolor:
+            painter.setBrush(QColor(self.bgcolor))
+            painter.setPen(Qt.NoPen)
+            painter.drawRect(rect)
 
         if self.color:
             painter.setPen(QPen(self.color))
@@ -69,6 +79,7 @@ class FIconEngine(QIconEngine):
 
         painter.setFont(font)
         # painter.setRenderHint(QPainter.HighQualityAntialiasing, True)
+
         painter.drawText(
             rect, Qt.AlignCenter | Qt.AlignVCenter, str(chr(self.hex_character))
         )
@@ -100,7 +111,9 @@ class FIconEngine(QIconEngine):
 class FIcon(QIcon):
     """Handy public class to load and use custom font in QIcons"""
 
-    def __init__(self, hex_character: int, color: QPalette = None):
+    def __init__(
+        self, hex_character: int, color: QColor = None, bgcolor: QColor = None
+    ):
         """Build an icon with the given character and color from the current font
 
         Args:
@@ -118,6 +131,7 @@ class FIcon(QIcon):
         else:
             self.engine.setCharacter(hex_character)
             self.engine.setColor(color)
+            self.engine.setBackgroundColor(bgcolor)
 
             super().__init__(self.engine)
 
