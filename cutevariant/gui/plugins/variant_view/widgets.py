@@ -853,8 +853,8 @@ class VariantView(QWidget):
         else:
             text = self.tr("{} line(s) {} page(s)")
 
-        self.info_label.setText(text.format(self.model.total, self.model.pageCount()))
         self.set_tool_loading(False)
+        self.info_label.setText(text.format(self.model.total, self.model.pageCount()))
 
     def _on_error(self, message):
         self.set_view_loading(False)
@@ -974,6 +974,7 @@ class VariantView(QWidget):
         else:
             self.loading_label.movie().stop()
             self.loading_action.setVisible(False)
+            self.info_label.setText("")
 
         self.bottom_bar.setDisabled(active)
 
