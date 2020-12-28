@@ -21,7 +21,9 @@ class Completer(QWidget):
         vlayout = QHBoxLayout()
         vlayout.setContentsMargins(0, 0, 0, 0)
         vlayout.addWidget(self.view)
-        vlayout.addWidget(QLabel("salut"))
+        self.info = QLabel("salut")
+        self.info.setMinimumWidth(300)
+        vlayout.addWidget(self.info)
         self.setLayout(vlayout)
 
         self.resize(100, 200)
@@ -55,8 +57,12 @@ class TextEdit(QTextEdit):
     def keyPressEvent(self, event):
 
         self.mycompleter.move(self.mapToGlobal(self.cursorRect().center()))
+        tc = self.textCursor()
+        tc.select(QTextCursor.WordUnderCursor)
+        print(tc.selectedText())
 
         if not self.mycompleter.isVisible():
+
             self.mycompleter.show()
             self.mycompleter.setFocus()
 
