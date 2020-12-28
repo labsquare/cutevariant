@@ -28,7 +28,7 @@ class VqlSyntaxHighlighter(QSyntaxHighlighter):
         "AS",
         "AND",
         "OR",
-        "NOT",
+        "NOT",F
         "CREATE",
         "DROP",
         "IN",
