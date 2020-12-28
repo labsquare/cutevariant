@@ -1491,7 +1491,7 @@ class FilterDelegate(QStyledItemDelegate):
         if option.state & QStyle.State_Enabled:
             bg = (
                 QPalette.Normal
-                if option.state & QStyle.State_Active
+                if option.state & QStyle.State_Active or option.state & QStyle.State_Selected
                 else QPalette.Inactive
             )
         else:

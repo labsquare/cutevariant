@@ -93,6 +93,7 @@ class VariantModel(QAbstractTableModel):
         self._load_variant_thread = None
         self._load_count_thread = None
         self._finished_thread_count = 0
+        self._user_has_interrupt = False
 
         # Create results cache because Thread doesn't use the memoization cache from command.py.
         # This is because Thread create a new connection and change the function signature used by the cache.
@@ -130,11 +131,11 @@ class VariantModel(QAbstractTableModel):
             # I hide the error connection for now because I call interrupt from load
             # which raise an exception ..
             # TODO : raise error except for interrupt !
-            self._load_variant_thread.error.connect(self.error_raised)
+            self._load_variant_thread.error.connect(self._on_error)
 
             self._load_count_thread = SqlThread(self.conn)
             self._load_count_thread.result_ready.connect(self._on_count_loaded)
-            self._load_count_thread.error.connect(self.error_raised)
+            self._load_count_thread.error.connect(self._on_error)
 
     def rowCount(self, parent=QModelIndex()):
         """Overrided : Return children count of index"""
@@ -286,21 +287,40 @@ class VariantModel(QAbstractTableModel):
     def interrupt(self):
         """Interrupt current query if active
 
-        call interrupt and wait the thread finished...
+        This is a blocking function... 
+
+        call interrupt and wait for the error_raised signals ...
         If nothing happen after 1000 ms, by pass and continue
         If I don't use the dead time, it is waiting for an infinite time
         at startup ... Because at startup, loading is called 2 times.
         One time by the register_plugin and a second time by the plugin.show_event
         """
+
         if self._load_count_thread:
             if self._load_count_thread.isRunning():
+                self._user_has_interrupt = True
                 self._load_count_thread.interrupt()
                 self._load_count_thread.wait(1000)
 
         if self._load_variant_thread:
             if self._load_variant_thread.isRunning():
+                self._user_has_interrupt = True
                 self._load_variant_thread.interrupt()
                 self._load_variant_thread.wait(1000)
+
+        # # Wait for exception ...
+        # if loop:
+        #     self.error_raised.connect(loop.quit)
+        #     loop.exec_()
+
+    def is_running(self):
+        if self._load_variant_thread and self._load_count_thread:
+            return (
+                self._load_variant_thread.isRunning()
+                or self._load_count_thread.isRunning()
+            )
+
+        return False
 
     def load(self):
         """Start async queries to get variants and variant count
@@ -315,7 +335,10 @@ class VariantModel(QAbstractTableModel):
         if self.conn is None:
             return
 
-        self.interrupt()
+        if self.is_running():
+            LOGGER.debug(
+                "Cannot load data. Thread is not finished. You can call interrupt() "
+            )
 
         LOGGER.debug("Start loading")
 
@@ -451,6 +474,14 @@ class VariantModel(QAbstractTableModel):
         if self._finished_thread_count == 2:
             self.load_finished.emit()
 
+    def _on_error(self):
+
+        # emit a signal only if doesn't come from interrupt function
+        if not self._user_has_interrupt:
+            self.error_raised.emit()
+        else:
+            self._user_has_interrupt = False
+
     def hasPage(self, page: int) -> bool:
         """ Return True if <page> exists otherwise return False """
         return (page - 1) >= 0 and (page - 1) * self.limit < self.total
@@ -532,6 +563,7 @@ class VariantDelegate(QStyledItemDelegate):
             bg = (
                 QPalette.Normal
                 if option.state & QStyle.State_Active
+                or option.state & QStyle.State_Selected
                 else QPalette.Inactive
             )
         else:
@@ -763,6 +795,8 @@ class VariantView(QWidget):
             self.model.page = 1
             self.model.order_by = None
 
+        self.model.interrupt()
+
         self.set_view_loading(True)
         self.set_tool_loading(True)
         self.model.load()
@@ -795,7 +829,6 @@ class VariantView(QWidget):
         #  Select first row
         if self.model.rowCount():
             self.select_row(0)
-            # self.view.setFocus(Qt.ActiveWindowFocusReason)
 
     def _on_count_loaded(self):
 
@@ -815,8 +848,8 @@ class VariantView(QWidget):
         else:
             text = self.tr("{} line(s) {} page(s)")
 
-        self.info_label.setText(text.format(self.model.total, self.model.pageCount()))
         self.set_tool_loading(False)
+        self.info_label.setText(text.format(self.model.total, self.model.pageCount()))
 
     def _on_error(self, message):
         self.set_view_loading(False)
@@ -936,6 +969,7 @@ class VariantView(QWidget):
         else:
             self.loading_label.movie().stop()
             self.loading_action.setVisible(False)
+            self.info_label.setText("")
 
         self.bottom_bar.setDisabled(active)
 

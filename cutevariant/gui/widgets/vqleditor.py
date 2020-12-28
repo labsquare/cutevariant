@@ -1,10 +1,6 @@
 from PySide2.QtCore import Qt, QRegularExpression
 
-from PySide2.QtWidgets import (
-    QTextEdit,
-    QCompleter,
-    QApplication,
-)
+from PySide2.QtWidgets import QTextEdit, QCompleter, QApplication
 from PySide2.QtGui import (
     QSyntaxHighlighter,
     QFont,
