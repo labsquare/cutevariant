@@ -528,10 +528,10 @@ class VariantDelegate(QStyledItemDelegate):
             return super().paint(painter, option, index)
 
         # Draw selections
-        if option.state & QStyle.State_Enabled:
+        if option.state & QStyle.State_Enabled :
             bg = (
                 QPalette.Normal
-                if option.state & QStyle.State_Active
+                if option.state & QStyle.State_Active or option.state & QStyle.State_Selected
                 else QPalette.Inactive
             )
         else:
