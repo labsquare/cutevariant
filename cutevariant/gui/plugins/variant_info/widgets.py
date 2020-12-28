@@ -344,7 +344,7 @@ class VariantInfoWidget(PluginWidget):
         self.edit_panel.set_data(data)
 
         title = "{chr}:{pos} {ref}>{alt}".format(**data)
-        self.parent().setWindowTitle(title)
+        # self.parent().setWindowTitle(title)
 
 
         # Populate annotations
