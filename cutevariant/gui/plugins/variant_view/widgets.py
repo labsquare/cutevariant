@@ -795,7 +795,7 @@ class VariantView(QWidget):
         #  Select first row
         if self.model.rowCount():
             self.select_row(0)
-            self.view.setFocus(Qt.ActiveWindowFocusReason)
+            #self.view.setFocus(Qt.ActiveWindowFocusReason)
 
     def _on_count_loaded(self):
 
