@@ -55,13 +55,22 @@ class VariantModel(QAbstractTableModel):
         error_raised(str): Emit message when threads or something else encounter errors
     """
 
+    # emit when variant results is loaded 
     variant_loaded = Signal()
-    count_loaded = Signal()
+    variant_is_loading = Signal(bool)
 
+    # emit when toutal count is loaded 
+    count_loaded = Signal()
+    count_is_loading = Signal(bool)
+
+    # Emit when all load has started 
     load_started = Signal()
+
+    # Emit when all data ( count + variant) has finished 
     load_finished = Signal()
 
     error_raised = Signal(str)
+    interrupted = Signal()
 
     DEFAUT_CACHE_SIZE = 1_048_576 * 32  # Default cache size of 32 Mo
 
@@ -126,16 +135,17 @@ class VariantModel(QAbstractTableModel):
 
             # Init Runnables (1 for each query type)
             self._load_variant_thread = SqlThread(self.conn)
-            self._load_variant_thread.result_ready.connect(self._on_variant_loaded)
 
-            # I hide the error connection for now because I call interrupt from load
-            # which raise an exception ..
-            # TODO : raise error except for interrupt !
-            self._load_variant_thread.error.connect(self._on_error)
+            self._load_variant_thread.started.connect(lambda : self.variant_is_loading.emit(True))
+            self._load_variant_thread.finished.connect(lambda : self.variant_is_loading.emit(False))
+            self._load_variant_thread.result_ready.connect(self._on_variant_loaded)
+            self._load_variant_thread.error.connect(self.error_raised)
 
             self._load_count_thread = SqlThread(self.conn)
+            self._load_count_thread.started.connect(lambda : self.count_is_loading.emit(True))
+            self._load_count_thread.finished.connect(lambda : self.count_is_loading.emit(False))
             self._load_count_thread.result_ready.connect(self._on_count_loaded)
-            self._load_count_thread.error.connect(self._on_error)
+            #self._load_count_thread.error.connect(self._on_error)
 
     def rowCount(self, parent=QModelIndex()):
         """Overrided : Return children count of index"""
@@ -304,17 +314,24 @@ class VariantModel(QAbstractTableModel):
         One time by the register_plugin and a second time by the plugin.show_event
         """
 
+        interrupted = False
+
         if self._load_count_thread:
             if self._load_count_thread.isRunning():
                 self._user_has_interrupt = True
                 self._load_count_thread.interrupt()
                 self._load_count_thread.wait(1000)
+                interrupted = True
 
         if self._load_variant_thread:
             if self._load_variant_thread.isRunning():
                 self._user_has_interrupt = True
                 self._load_variant_thread.interrupt()
                 self._load_variant_thread.wait(1000)
+                interrupted = True
+
+        if interrupted:
+            self.interrupted.emit()
 
         # # Wait for exception ...
         # if loop:
@@ -482,13 +499,6 @@ class VariantModel(QAbstractTableModel):
         if self._finished_thread_count == 2:
             self.load_finished.emit()
 
-    def _on_error(self):
-
-        # emit a signal only if doesn't come from interrupt function
-        if not self._user_has_interrupt:
-            self.error_raised.emit()
-        else:
-            self._user_has_interrupt = False
 
     def hasPage(self, page: int) -> bool:
         """ Return True if <page> exists otherwise return False """
@@ -764,10 +774,13 @@ class VariantView(QWidget):
         # Queries are finished (yes its redundant with loading signal...)
         self.model.variant_loaded.connect(self._on_variant_loaded)
         self.model.count_loaded.connect(self._on_count_loaded)
-        self.model.load_started.connect(lambda: self.set_loading(True))
+
+        self.model.count_is_loading.connect(self.set_tool_loading)
+        self.model.variant_is_loading.connect(self.set_view_loading)
+
+
         # Connect errors from async runnables
         self.model.error_raised.connect(self.error_raised)
-        self.model.error_raised.connect(self._on_error)
         #  connect double clicke
         self.view.doubleClicked.connect(self.on_double_clicked)
 
@@ -805,8 +818,6 @@ class VariantView(QWidget):
 
         self.model.interrupt()
 
-        self.set_view_loading(True)
-        self.set_tool_loading(True)
         self.model.load()
 
     def _on_variant_loaded(self):
@@ -831,7 +842,6 @@ class VariantView(QWidget):
         self.cache_label.setText(str(" Cache {} of {}".format(cache, max_cache)))
         if LOGGER.getEffectiveLevel() != DEBUG:
             self.view.setColumnHidden(0, True)
-        self.set_view_loading(False)
         self.view.scrollToTop()
 
         #  Select first row
@@ -856,12 +866,9 @@ class VariantView(QWidget):
         else:
             text = self.tr("{} line(s) {} page(s)")
 
-        self.set_tool_loading(False)
         self.info_label.setText(text.format(self.model.total, self.model.pageCount()))
 
-    def _on_error(self, message):
-        self.set_view_loading(False)
-        self.set_tool_loading(False)
+
 
     def set_formatter(self, formatter):
         self.delegate.formatter = formatter
@@ -874,7 +881,6 @@ class VariantView(QWidget):
     @conn.setter
     def conn(self, _conn):
         self.model.conn = _conn
-
     @property
     def fields(self):
         return self.model.fields
@@ -1706,9 +1712,6 @@ class VariantViewWidget(plugin.PluginWidget):
             message (str): Error message
         """
 
-        # skip message with interrupt
-        if "interrupt" in message:
-            return
 
         if self.log_edit.isHidden():
             self.log_edit.show()
