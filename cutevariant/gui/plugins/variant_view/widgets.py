@@ -125,13 +125,7 @@ class VariantModel(QAbstractTableModel):
         self._load_count_cache = cachetools.LFUCache(maxsize=1000)
 
 
-    def __del__(self):
-        """ destructor """ 
-        
-        self.interrupt()
-        self._load_variant_thread.terminate()
-        self._load_count_thread.terminate()
-        super().__del__()
+
 
     @property
     def conn(self):
