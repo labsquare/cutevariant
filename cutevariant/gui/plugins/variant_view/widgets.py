@@ -851,7 +851,6 @@ class VariantView(QWidget):
     def _on_count_loaded(self):
 
         self.page_box.clear()
-
         if self.model.pageCount() - 1 == 0:
             self.set_pagging_enabled(False)
         else:
@@ -866,6 +865,7 @@ class VariantView(QWidget):
         else:
             text = self.tr("{} line(s) {} page(s)")
 
+        print("loaded")
         self.info_label.setText(text.format(self.model.total, self.model.pageCount()))
 
 
@@ -983,7 +983,7 @@ class VariantView(QWidget):
         else:
             self.loading_label.movie().stop()
             self.loading_action.setVisible(False)
-            self.info_label.setText("")
+            #self.info_label.setText("")
 
         self.bottom_bar.setDisabled(active)
 
