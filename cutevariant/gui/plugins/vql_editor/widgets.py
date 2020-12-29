@@ -30,8 +30,9 @@ from cutevariant.gui import style, plugin, FIcon
 from cutevariant.core.vql import VQLSyntaxError
 from cutevariant.core import command
 from cutevariant.core.querybuilder import build_vql_query
-from cutevariant.gui.widgets import VqlEditor, VqlSyntaxHighlighter
+from cutevariant.gui.widgets import CodeEdit
 from cutevariant.commons import logger
+from cutevariant import appstyle
 
 LOGGER = logger()
 
@@ -58,8 +59,7 @@ class VqlEditorWidget(plugin.PluginWidget):
         )
 
         # Syntax highlighter and autocompletion
-        self.text_edit = VqlEditor()
-        self.highlighter = VqlSyntaxHighlighter(self.text_edit.document())
+        self.text_edit = CodeEdit()
         # Error handling
         self.log_edit = QLabel()
         self.log_edit.setMinimumHeight(40)
@@ -86,7 +86,7 @@ class VqlEditorWidget(plugin.PluginWidget):
             conn (sqlite3.Connection): sqlite3 connection
         """
         self.conn = conn
-        self.text_edit.setCompleter(self._create_completer())
+        self._fill_completer()
 
         self.on_refresh()
 
@@ -113,29 +113,63 @@ class VqlEditorWidget(plugin.PluginWidget):
         self.text_edit.setPlainText(text)
         self.text_edit.blockSignals(False)
 
-    def _create_completer(self):
+    def _fill_completer(self):
         """Create Completer with his model
 
         Fill the model with the SQL keywords and database fields
         """
-        model = QStringListModel()
-        completer = QCompleter()
-
-        keywords = []
+        # preload samples , selection and wordset
         samples = [i["name"] for i in sql.get_samples(self.conn)]
         selections = [i["name"] for i in sql.get_selections(self.conn)]
-        for field in sql.get_fields(self.conn):
-            if field["category"] == "samples":
-                for sample in samples:
-                    keywords.append("sample['{}'].{}".format(sample, field["name"]))
-            else:
-                keywords.append(field["name"])
+        wordsets = [i["name"] for i in sql.get_wordsets(self.conn)]
 
-        keywords.extend(VqlSyntaxHighlighter.sql_keywords)
-        keywords.extend(selections)
-        model.setStringList(keywords)
-        completer.setModel(model)
-        return completer
+        # keywords = []
+        self.text_edit.completer.model.clear()
+        self.text_edit.completer.model.beginResetModel()
+
+        # register keywords 
+        for keyword in self.text_edit.syntax.sql_keywords:
+            print(keyword)
+            self.text_edit.completer.model.add_item(keyword, "VQL keywords", FIcon(0xF0169), "#f6ecf0")   
+
+
+        for selection in selections:
+            self.text_edit.completer.model.add_item(selection, "Source table", FIcon(0xF04EB), "#f6ecf0")   
+
+        for wordset in wordsets:
+            self.text_edit.completer.model.add_item(f"WORDSET['{wordset}']", "WORDSET", FIcon(0xF04EB), "#f6ecf0")   
+    
+
+        for field in sql.get_fields(self.conn):
+            name = field["name"]
+            description = "<b>{}</b> ({}) from {} <br/><br/> {}" .format(field["name"], field["type"], field["category"], field["description"])
+            color = appstyle.FIELD_TYPE.get(field["type"], "str")["color"]
+            icon = FIcon(appstyle.FIELD_TYPE.get(field["type"], "str")["icon"], "white")
+
+            if field["category"] == "variants" or field["category"] == "annotations":
+                self.text_edit.completer.model.add_item(name, description, icon, color)   
+
+            if field["category"] == "samples":
+                # Overwrite name 
+                for sample in samples:
+                    name = "sample['{}'].{}".format(sample, field["name"])
+                    description = "<b>{}</b> ({}) from {} {} <br/><br/> {}" .format(field["name"], field["type"], field["category"], sample, field["description"])
+                    self.text_edit.completer.model.add_item(name, description, icon, color)   
+
+
+
+
+        self.text_edit.completer.model.endResetModel()      
+
+            # if field["category"] == "samples":
+            #     for sample in samples:
+            #         keywords.append("sample['{}'].{}".format(sample, field["name"]))
+            # else:
+            #     keywords.append(field["name"])
+
+
+
+      
 
     def check_vql(self) -> bool:
         """Check VQL statement; return True if OK, False when an error occurs
