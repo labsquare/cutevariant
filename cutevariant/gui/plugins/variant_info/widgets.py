@@ -16,6 +16,7 @@ from cutevariant.gui.ficon import FIcon
 from cutevariant.core import sql, get_sql_connection
 from cutevariant.gui.plugin import PluginWidget
 from cutevariant import commons as cm
+from cutevariant import appstyle
 
 from cutevariant.gui.widgets import DictWidget
 
@@ -58,8 +59,10 @@ class EditPanel(QFrame):
         self.class_edit.setFrame(False)
         self.class_edit.currentIndexChanged.connect(self._form_changed)
 
-        for index, name in cm.CLASSIFICATION.items():
-            self.class_edit.addItem(FIcon(cm.CLASSIFICATION_ICONS[index]), name)
+        for key in appstyle.CLASSIFICATION:
+            self.class_edit.addItem(
+                FIcon(appstyle.CLASSIFICATION[key]["icon"], appstyle.CLASSIFICATION[key]["color"]),
+                appstyle.CLASSIFICATION[key]["name"])
         
 
         # Create comment form . This is a stack widget with a PlainText editor 
@@ -298,8 +301,13 @@ class VariantInfoWidget(PluginWidget):
             
             update_data = self.edit_panel.get_data()
 
+
             index = variant_view.main_right_pane.view.currentIndex()
             variant_view.main_right_pane.model.update_variant(index.row(), update_data)
+            
+            #variant_view.main_right_pane.model.update_variant(index.row(), update_data)
+
+
 
         else:
             # TODO BUT UNNECESSARY because we always have a variant_viex ...  

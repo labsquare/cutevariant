@@ -260,15 +260,23 @@ class VariantModel(QAbstractTableModel):
             variant (dict): Dict of fields to be updated
         """
         # Update in database
-        left = self.index(row, 0)
-        right = self.index(row, self.columnCount() - 1)
+        variant_id = self.variants[row]["id"]
 
-        if left.isValid() and right.isValid():
-            # Get database id of the variant to allow its update operation
-            variant["id"] = self.variants[row]["id"]
-            sql.update_variant(self.conn, variant)
-            self.variants[row].update(variant)
-            self.dataChanged.emit(left, right)
+        print("variant", variant)
+
+        # Update all variant with same variant_id
+        # Use case : When several transcript are displayed
+        for row in self.find_row_id_from_variant_id(variant_id):
+            print(row)
+            left = self.index(row, 0)
+            right = self.index(row, self.columnCount() - 1)
+
+            if left.isValid() and right.isValid():
+                # Get database id of the variant to allow its update operation
+                variant["id"] = self.variants[row]["id"]
+                sql.update_variant(self.conn, variant)
+                self.variants[row].update(variant)
+                self.dataChanged.emit(left, right)
 
     def find_row_id_from_variant_id(self, variant_id: int) -> list:
         """Find the ids of all rows with the same given variant_id
@@ -1134,9 +1142,6 @@ class VariantView(QWidget):
 
             self.model.update_variant(index.row(), update_data)
 
-            # JUST update the GUI
-            for row_id in self.model.find_row_id_from_variant_id(variant_id):
-                self.model.variants[row_id].update(update_data)
 
     def update_classification(self, index: QModelIndex, value=3):
         """Update classification level of the variant at the given index"""
