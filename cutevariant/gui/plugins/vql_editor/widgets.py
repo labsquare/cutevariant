@@ -129,7 +129,6 @@ class VqlEditorWidget(plugin.PluginWidget):
 
         # register keywords 
         for keyword in self.text_edit.syntax.sql_keywords:
-            print(keyword)
             self.text_edit.completer.model.add_item(keyword, "VQL keywords", FIcon(0xF0169), "#f6ecf0")   
 
 

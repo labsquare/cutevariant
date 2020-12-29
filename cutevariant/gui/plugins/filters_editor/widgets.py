@@ -674,6 +674,7 @@ class FilterModel(QAbstractItemModel):
         super().__init__(parent)
         self.root_item = FilterItem("AND")
         self.conn = conn
+        self.clear()
 
     @property
     def filters(self):
@@ -894,6 +895,7 @@ class FilterModel(QAbstractItemModel):
             return QModelIndex()
 
         child_item = index.internalPointer()
+
         parent_item = child_item.parent
 
         if parent_item == self.root_item:
@@ -904,6 +906,10 @@ class FilterModel(QAbstractItemModel):
     def clear(self):
         """Clear Model"""
         self.root_item.children.clear()
+        # Load first default item 
+        self.root_item.append(FilterItem("AND"))
+
+
 
     def load(self, data: dict):
         """load model from dict
@@ -921,8 +927,8 @@ class FilterModel(QAbstractItemModel):
             data (TYPE): Description
         """
         self.beginResetModel()
-        self.clear()
         if data:
+            self.root_item.children.clear()
             self.root_item.append(self.to_item(data))
         self.endResetModel()
 
@@ -1355,8 +1361,12 @@ class FilterDelegate(QStyledItemDelegate):
         if not index.isValid():
             return False
 
+        # Skip action with First LogicItem root item 
+  
+
         if event.type() == QEvent.MouseButtonPress:
-            # print("mouse pressed on", index.column(), event.button())
+
+
             item = model.item(index)
 
             if index.column() == self.COLUMN_CHECKBOX and self._check_rect(
@@ -1370,7 +1380,10 @@ class FilterDelegate(QStyledItemDelegate):
                 option.rect
             ).contains(event.pos()):
                 # Remove item
-                model.remove_item(index)
+
+                #Do not remove first elements 
+                if index.parent() != QModelIndex():
+                    model.remove_item(index)
                 return True
 
         # Default implementation of base method
@@ -1581,7 +1594,7 @@ class FilterDelegate(QStyledItemDelegate):
 
             painter.drawText(text_rect, align, index.data(Qt.DisplayRole))
 
-            if index.column() == self.COLUMN_REMOVE:
+            if index.column() == self.COLUMN_REMOVE and index.parent() != QModelIndex():
                 rect = QRect(0, 0, self.icon_size.width(), self.icon_size.height())
                 rect.moveCenter(option.rect.center())
                 painter.drawPixmap(
@@ -1740,25 +1753,6 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.view = QTreeView()
         # conn is always None here but initialized in on_open_project()
 
-        self.view.setStyleSheet(
-            """
-QTreeView::branch:has-siblings:!adjoins-item {
-    border-image: url(/home/sacha/vline.png) 0;
-}
-
-QTreeView::branch:has-siblings:adjoins-item {
-    border-image: url(/home/sacha/branch-more.png) 0;
-}
-
-QTreeView::branch:!has-children:!has-siblings:adjoins-item {
-    border-image: url(/home/sacha/branch-end.png) 0;
-}
-
-
-
-            """
-        )
-
         self.model = FilterModel(conn)
         self.delegate = FilterDelegate()
         self.toolbar = QToolBar()
@@ -1804,6 +1798,18 @@ QTreeView::branch:!has-children:!has-siblings:adjoins-item {
         # self.save_button.setMinimumHeight(30)
         # self.del_button.setMinimumHeight(30)
 
+        self.add_filter_button = QPushButton("Add Filter")
+        self.add_filter_button.setFlat(True)
+        self.add_group_button = QPushButton("Add Group")
+        self.add_group_button .setFlat(True)
+        self.add_filter_button.clicked.connect(self.on_add_condition)
+        self.add_group_button.clicked.connect(self.on_add_logic)
+
+        blayout = QHBoxLayout()
+        blayout.addWidget(self.add_filter_button)
+        blayout.addWidget(self.add_group_button)
+
+
         self.apply_button = QPushButton(FIcon(0xF0233), self.tr("Apply filter"))
         self.apply_button.clicked.connect(self.on_filters_changed)
         hlayout = QHBoxLayout()
@@ -1811,14 +1817,10 @@ QTreeView::branch:!has-children:!has-siblings:adjoins-item {
         hlayout.addWidget(self.save_button)
         hlayout.addWidget(self.del_button)
 
-        # setup Menu
-        self.add_button = self.toolbar.addAction(
-            FIcon(0xF0EF0), self.tr("Add Condition"), self.on_add_condition
-        )
-        spacer = QWidget()
-        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.toolbar.addWidget(spacer)
 
+
+
+        # setup Menu
         self.toolbar.addWidget(self.combo)
         self.toolbar.addWidget(self.save_button)
         self.toolbar.addWidget(self.del_button)
@@ -1827,6 +1829,7 @@ QTreeView::branch:!has-children:!has-siblings:adjoins-item {
 
         layout.addWidget(self.toolbar)
         layout.addWidget(self.view)
+        layout.addLayout(blayout)
         layout.addWidget(self.apply_button)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(1)
@@ -1902,29 +1905,20 @@ QTreeView::branch:!has-children:!has-siblings:adjoins-item {
 
     def refresh_buttons(self):
         """Actualize the enable states of Add/Del buttons"""
+
         if self.filters:
             # Data
-            # Deletion/clear is always possible
-            self.del_button.setEnabled(True)
 
             # Add button: Is an item selected ?
             index = self.view.currentIndex()
             if index.isValid() and self.model.item(index).type == FilterItem.LOGIC_TYPE:
-                self.add_button.setEnabled(True)
+                self.add_filter_button.setEnabled(True)
+                self.add_group_button.setEnabled(True)
             else:
                 # item is CONDITION_TYPE or there is no item selected (because of deletion)
-                self.add_button.setEnabled(False)
-        else:
-            # Empty
-            self.add_button.setEnabled(True)
-
-            current_index = self.combo.currentIndex()
-            if current_index == 0:
-                # Not saved filter => useless to delete it
-                self.del_button.setEnabled(False)
-            else:
-                # Saved filter => allow its deletion
-                self.del_button.setEnabled(True)
+                self.add_filter_button.setEnabled(False)
+                self.add_group_button.setEnabled(False)
+      
 
     def on_filters_changed(self):
         """Triggered when filters changed FROM THIS plugin
