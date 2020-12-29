@@ -99,8 +99,20 @@ class VariantModel(QAbstractTableModel):
         self.conn = conn
 
         # Thread (1 for getting variant, 1 for getting count variant )
-        self._load_variant_thread = None
-        self._load_count_thread = None
+        self._load_variant_thread = SqlThread(self.conn)
+        self._load_count_thread = SqlThread(self.conn)
+
+        self._load_variant_thread.started.connect(lambda : self.variant_is_loading.emit(True))
+        self._load_variant_thread.finished.connect(lambda : self.variant_is_loading.emit(False))
+        self._load_variant_thread.result_ready.connect(self._on_variant_loaded)
+        self._load_variant_thread.error.connect(self.error_raised)
+
+        self._load_count_thread.started.connect(lambda : self.count_is_loading.emit(True))
+        self._load_count_thread.finished.connect(lambda : self.count_is_loading.emit(False))
+        self._load_count_thread.result_ready.connect(self._on_count_loaded)
+
+
+
         self._finished_thread_count = 0
         self._user_has_interrupt = False
 
@@ -111,6 +123,15 @@ class VariantModel(QAbstractTableModel):
             maxsize=self.DEFAUT_CACHE_SIZE, getsizeof=sys.getsizeof
         )
         self._load_count_cache = cachetools.LFUCache(maxsize=1000)
+
+
+    def __del__(self):
+        """ destructor """ 
+        
+        self.interrupt()
+        self._load_variant_thread.terminate()
+        self._load_count_thread.terminate()
+        super().__del__()
 
     @property
     def conn(self):
@@ -134,17 +155,10 @@ class VariantModel(QAbstractTableModel):
             self.clear_all_cache()
 
             # Init Runnables (1 for each query type)
-            self._load_variant_thread = SqlThread(self.conn)
+            self._load_variant_thread.conn = conn
+            self._load_count_thread.conn = conn
 
-            self._load_variant_thread.started.connect(lambda : self.variant_is_loading.emit(True))
-            self._load_variant_thread.finished.connect(lambda : self.variant_is_loading.emit(False))
-            self._load_variant_thread.result_ready.connect(self._on_variant_loaded)
-            self._load_variant_thread.error.connect(self.error_raised)
 
-            self._load_count_thread = SqlThread(self.conn)
-            self._load_count_thread.started.connect(lambda : self.count_is_loading.emit(True))
-            self._load_count_thread.finished.connect(lambda : self.count_is_loading.emit(False))
-            self._load_count_thread.result_ready.connect(self._on_count_loaded)
             #self._load_count_thread.error.connect(self._on_error)
 
     def rowCount(self, parent=QModelIndex()):

@@ -44,7 +44,7 @@ class SqlThread(QThread):
     error = Signal(str)
     result_ready = Signal()
 
-    def __init__(self, conn: sqlite3.Connection, function: Callable = None):
+    def __init__(self, conn: sqlite3.Connection = None, function: Callable = None):
         """Init a Thread with sqlite connection and callable
 
         Notes:
@@ -95,9 +95,10 @@ class SqlThread(QThread):
 
     @conn.setter
     def conn(self, conn):
-        self._conn = conn
-        self._async_conn = None
-        self.db_file = conn.execute("PRAGMA database_list").fetchone()["file"]
+        if conn:
+            self._conn = conn
+            self._async_conn = None
+            self.db_file = conn.execute("PRAGMA database_list").fetchone()["file"]
 
     def run(self):
         """Execute the function in a new thread
