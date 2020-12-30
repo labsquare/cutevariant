@@ -127,5 +127,4 @@ test.py
 .vscode/
 build/
 cov_html/
-poc/
 
