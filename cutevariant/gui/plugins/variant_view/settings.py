@@ -269,4 +269,4 @@ class VariantViewSettingsWidget(PluginSettingsWidget):
         self.setWindowIcon(FIcon(0xF035C))
         self.setWindowTitle("Variant view")
         # self.add_settings_widget(MemorySettings())
-        self.add_settings_widget(LinkSettings())
+        self.add_page(LinkSettings())

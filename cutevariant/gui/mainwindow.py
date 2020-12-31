@@ -18,7 +18,7 @@ from cutevariant.core.writer import CsvWriter, PedWriter
 from cutevariant.gui.ficon import FIcon
 from cutevariant.gui.state import State
 from cutevariant.gui.wizards import ProjectWizard
-from cutevariant.gui.settings import SettingsWidget
+from cutevariant.gui.settings import SettingsDialog
 from cutevariant.gui.widgets.aboutcutevariant import AboutCutevariant
 from cutevariant import commons as cm
 from cutevariant.commons import (
@@ -536,7 +536,7 @@ class MainWindow(QMainWindow):
 
     def show_settings(self):
         """Slot to show settings window"""
-        widget = SettingsWidget(self)
+        widget = SettingsDialog(self)
         widget.uiSettingsChanged.connect(self.reload_ui)
         widget.exec_()
 

@@ -1,13 +1,13 @@
 """List of classes used for settings window
 
-A SettingsWidget is a collection of section ( SectionWidget ) 
+A SettingsDialog is a collection of section ( SectionWidget ) 
 which contains multiple page ( PageWidget ) to save and load settings thanks to QSettings.
 
-* SettingsWidget: 
+* SettingsDialog: 
 Main widget for settings window that instantiate all subsection widget
 
 * SectionWidget: 
-Handy class to group similar settings widgets in tabs (used by SettingsWidget).
+Handy class to group similar settings widgets in tabs (used by SettingsDialog).
 
 * PageWidget:
 Abstract class for build a page settings
@@ -119,7 +119,7 @@ class SectionWidget(QTabWidget):
         super().__init__(parent)
         self.prefix_settings = prefix_settings
 
-    def add_settings_widget(self, widget: PageWidget):
+    def add_page(self, widget: PageWidget):
         widget.section_widget = self
         self.addTab(widget, widget.windowIcon(), widget.windowTitle())
 
@@ -450,7 +450,7 @@ class PluginsSettingsWidget(PageWidget):
             self.view.addTopLevelItem(item)
 
 
-class SettingsWidget(QDialog):
+class SettingsDialog(QDialog):
     """Main widget for settings window
 
     Subwidgets are intantiated on panels; a SectionWidget groups similar widgets
@@ -463,7 +463,7 @@ class SettingsWidget(QDialog):
 
     uiSettingsChanged = Signal()
 
-    def __init__(self, parent):
+    def __init__(self, parent = None):
         super().__init__(parent)
         self.setWindowTitle(self.tr("Cutevariant - Settings"))
         self.setWindowIcon(QIcon(cm.DIR_ICONS + "app.png"))
@@ -494,14 +494,20 @@ class SettingsWidget(QDialog):
         general_settings.setWindowTitle(self.tr("General"))
         general_settings.setWindowIcon(FIcon(0xF0614))
 
-        general_settings.add_settings_widget(TranslationSettingsWidget())
-        general_settings.add_settings_widget(ProxySettingsWidget())
-        general_settings.add_settings_widget(StyleSettingsWidget())
+        general_settings.add_page(TranslationSettingsWidget())
+        general_settings.add_page(ProxySettingsWidget())
+        general_settings.add_page(StyleSettingsWidget())
 
         # Activation status of plugins
         plugin_settings = PluginsSettingsWidget()
-        plugin_settings.registerPlugin.connect(parent.register_plugin)
-        plugin_settings.deregisterPlugin.connect(parent.deregister_plugin)
+
+
+        # BOF... 
+        if parent:
+            plugin_settings.registerPlugin.connect(parent.register_plugin)
+            plugin_settings.deregisterPlugin.connect(parent.deregister_plugin)
+
+            
 
         # Specialized widgets on panels
         self.add_section(general_settings)
