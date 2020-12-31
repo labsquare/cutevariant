@@ -69,27 +69,27 @@ class BaseWidget(QWidget):
         self.section_widget = widget
 
     @property
-    def section_name(self) -> str:
+    def prefix_settings(self) -> str:
         """ Return the parent section name 
         Returns:
             str
         """
         if self.section_widget:
-            return self.section_widget.section_name
+            return self.section_widget.prefix_settings
         return None
 
     def create_settings(self):
         settings = QSettings()
-        settings.beginGroup(self.section_name)
+        settings.beginGroup(self.prefix_settings)
         return settings
 
 
 class SectionWidget(QTabWidget):
     """Handy class to group similar settings widgets in tabs"""
 
-    def __init__(self, section_name, parent=None):
+    def __init__(self, prefix_settings, parent=None):
         super().__init__(parent)
-        self.section_name = section_name
+        self.prefix_settings = prefix_settings
 
     def add_settings_widget(self, widget: BaseWidget):
         widget.set_section_widget(self)
@@ -527,7 +527,7 @@ class SettingsWidget(QDialog):
                     continue
 
                 widget = settings_widget_class()
-                widget.section_name = extension["name"]
+                widget.prefix_settings = extension["name"] + "_plugin"
 
                 if not widget.windowTitle():
                     widget.setWindowTitle(extension["name"])

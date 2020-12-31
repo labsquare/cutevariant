@@ -75,16 +75,10 @@ class LinkSettings(BaseWidget):
 
         settings.endArray()
 
-    def creates(self):
-        settings = QSettings()
-        settings.beginGroup(self.section_name)
-        return settings
-
     def load(self):
         """Override from BaseWidget"""
         settings = self.create_settings()
-        settings.beginGroup(self.section_name)
-        size = settings.beginReadArray("plugins/variant_view/links")
+        size = settings.beginReadArray("links")
         self.view.clear()
 
         #  If no links available, load default one
