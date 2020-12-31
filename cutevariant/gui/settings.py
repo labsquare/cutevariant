@@ -12,11 +12,18 @@ BaseWidget: Abstract class for settings widgets.
         - VariantSettingsWidget: Allow to add personal templates to search a
         variant in a third-party database
 
-GroupWidget: Handy class to group similar settings widgets in tabs (used by SettingsWidget).
+SectionWidget: Handy class to group similar settings widgets in tabs (used by SettingsWidget).
+
+    Note:
+        A SectionWidget refer to a section in an ini file.   
+
     Used for:
         - TranslationSettingsWidget
         - ProxySettingsWidget
         - StyleSettingsWidget
+
+
+
 """
 # Standard imports
 import os
@@ -38,14 +45,15 @@ LOGGER = cm.logger()
 
 
 class BaseWidget(QWidget):
-    """Abstract class for settings widgets"""
+    """Abstract class for settings widgets
+    
+    """
 
     def __init__(self):
         super().__init__()
-        self.group_parent = None
-        self.settings = QSettings()
         self.setWindowTitle("base")
         self.setWindowIcon(FIcon(0xF5CA))
+        self.section_widget = None
 
     @abstractmethod
     def save(self):
@@ -57,20 +65,42 @@ class BaseWidget(QWidget):
         """Load settings from QSettings"""
         raise NotImplementedError(self.__class__.__name__)
 
+    def set_section_widget(self, widget):
+        self.section_widget = widget
 
-class GroupWidget(QTabWidget):
+    @property
+    def section_name(self) -> str:
+        """ Return the parent section name 
+        Returns:
+            str
+        """
+        if self.section_widget:
+            return self.section_widget.section_name
+        return None
+
+    def create_settings(self):
+        settings = QSettings()
+        settings.beginGroup(self.section_name)
+        return settings
+
+
+class SectionWidget(QTabWidget):
     """Handy class to group similar settings widgets in tabs"""
 
+    def __init__(self, section_name, parent=None):
+        super().__init__(parent)
+        self.section_name = section_name
+
     def add_settings_widget(self, widget: BaseWidget):
-        widget.group_parent = self
+        widget.set_section_widget(self)
         self.addTab(widget, widget.windowIcon(), widget.windowTitle())
 
     def save(self):
-        """Call save() method of all widgets in the GroupWidget"""
+        """Call save() method of all widgets in the SectionWidget"""
         [self.widget(index).save() for index in range(self.count())]
 
     def load(self):
-        """Call load() method of all widgets in the GroupWidget"""
+        """Call load() method of all widgets in the SectionWidget"""
         [self.widget(index).load() for index in range(self.count())]
 
 
@@ -105,7 +135,8 @@ class TranslationSettingsWidget(BaseWidget):
 
         # Save locale setting
         locale_name = self.locales_combobox.currentText()
-        self.settings.setValue("ui/locale", locale_name)
+        settings = self.create_settings()
+        settings.setValue("ui/locale", locale_name)
         app_translator = QTranslator(QApplication.instance())
         if app_translator.load(locale_name, cm.DIR_TRANSLATIONS):
             QApplication.instance().installTranslator(app_translator)
@@ -123,7 +154,9 @@ class TranslationSettingsWidget(BaseWidget):
         self.locales_combobox.addItems(available_locales)
 
         # Display current locale
-        locale_name = self.settings.value("ui/locale", "en")
+        settings = self.create_settings()
+        locale_name = settings.value("ui/locale", "en")
+
         self.locales_combobox.setCurrentIndex(available_locales.index(locale_name))
 
 
@@ -161,31 +194,35 @@ class ProxySettingsWidget(BaseWidget):
 
     def save(self):
         """Save settings under "proxy" group"""
-        self.settings.beginGroup("proxy")
-        self.settings.setValue("type", self.combo_box.currentIndex())
-        self.settings.setValue("host", self.host_edit.text())
-        self.settings.setValue("port", self.port_edit.value())
-        self.settings.setValue("username", self.user_edit.text())
-        self.settings.setValue("password", self.user_edit.text())
-        self.settings.endGroup()
+        settings = self.create_settings()
+        settings.beginGroup("proxy")
+        settings.setValue("type", self.combo_box.currentIndex())
+        settings.setValue("host", self.host_edit.text())
+        settings.setValue("port", self.port_edit.value())
+        settings.setValue("username", self.user_edit.text())
+        settings.setValue("password", self.user_edit.text())
+        settings.endGroup()
 
     def load(self):
         """Load "proxy" group settings"""
-        self.settings.beginGroup("proxy")
 
-        s_type = self.settings.value("type", 0)
+        settings = self.create_settings()
+
+        settings.beginGroup("proxy")
+
+        s_type = settings.value("type", 0)
         if s_type:
             self.combo_box.setCurrentIndex(int(s_type))
 
-        self.host_edit.setText(self.settings.value("host"))
+        self.host_edit.setText(settings.value("host"))
 
-        s_port = self.settings.value("port", 0)
+        s_port = settings.value("port", 0)
         if s_port:
             self.port_edit.setValue(int(s_port))
 
-        self.user_edit.setText(self.settings.value("username"))
-        self.pass_edit.setText(self.settings.value("password"))
-        self.settings.endGroup()
+        self.user_edit.setText(settings.value("username"))
+        self.pass_edit.setText(settings.value("password"))
+        settings.endGroup()
 
     def on_combo_changed(self, index):
         """ disable formular when No proxy """
@@ -226,13 +263,16 @@ class StyleSettingsWidget(BaseWidget):
         """Save the selected style in config
         """
         # Get previous style
-        old_style_name = self.settings.value("ui/style", cm.BASIC_STYLE)
+
+        settings = self.create_settings()
+
+        old_style_name = settings.value("ui/style", cm.BASIC_STYLE)
 
         # Save style setting
         style_name = self.styles_combobox.currentText()
         if old_style_name == style_name:
             return
-        self.settings.setValue("ui/style", style_name)
+        settings.setValue("ui/style", style_name)
 
         # Change the style on the fly
         # TODO: Find a way to revert properly dark() palette and fill
@@ -272,7 +312,8 @@ class StyleSettingsWidget(BaseWidget):
 
         # Display current style
         # Dark is the default style
-        style_name = self.settings.value("ui/style", cm.BASIC_STYLE)
+        settings = self.create_settings()
+        style_name = settings.value("ui/style", cm.BASIC_STYLE)
         self.styles_combobox.setCurrentIndex(available_styles.index(style_name))
 
 
@@ -311,7 +352,9 @@ class PluginsSettingsWidget(BaseWidget):
             extension = item.data(0, Qt.UserRole)
             check_state = item.checkState(0) == Qt.Checked
             # Save status
-            self.settings.setValue(f"plugins/{extension['name']}/status", check_state)
+
+            settings = self.create_settings()
+            settings.setValue(f"plugins/{extension['name']}/status", check_state)
 
             # Set the enable status of the extension
             for sub_extension_type in {
@@ -333,7 +376,9 @@ class PluginsSettingsWidget(BaseWidget):
         self.view.clear()
         from cutevariant.gui import plugin
 
-        settings_keys = set(self.settings.allKeys())
+        settings = self.create_settings()
+
+        settings_keys = set(settings.allKeys())
 
         for extension in plugin.find_plugins():
             displayed_title = (
@@ -353,7 +398,7 @@ class PluginsSettingsWidget(BaseWidget):
             # Only disabled extensions can be in settings
             key = f"plugins/{extension['name']}/status"
             activated_by_user = (
-                self.settings.value(key) == "true" if key in settings_keys else None
+                settings.value(key) == "true" if key in settings_keys else None
             )
 
             for sub_extension_type in {
@@ -380,7 +425,7 @@ class PluginsSettingsWidget(BaseWidget):
 class SettingsWidget(QDialog):
     """Main widget for settings window
 
-    Subwidgets are intantiated on panels; a GroupWidget groups similar widgets
+    Subwidgets are intantiated on panels; a SectionWidget groups similar widgets
     in tabs.
 
     Signals:
@@ -417,7 +462,7 @@ class SettingsWidget(QDialog):
 
         # Instantiate subwidgets on panels
         # Similar widgets for general configuration
-        general_settings = GroupWidget()
+        general_settings = SectionWidget("General")  #  Not a title !
         general_settings.setWindowTitle(self.tr("General"))
         general_settings.setWindowIcon(FIcon(0xF0614))
 
@@ -431,8 +476,8 @@ class SettingsWidget(QDialog):
         plugin_settings.deregisterPlugin.connect(parent.deregister_plugin)
 
         # Specialized widgets on panels
-        self.addPanel(general_settings)
-        self.addPanel(plugin_settings)
+        self.addSection(general_settings)
+        # self.addSection(plugin_settings)
         self.load_plugins()
 
         self.resize(800, 400)
@@ -449,7 +494,7 @@ class SettingsWidget(QDialog):
 
         self.accepted.connect(self.close)
 
-    def addPanel(self, widget: BaseWidget):
+    def addSection(self, widget: SectionWidget):
         """Add a widget on the widow via a QStackedWidget; keep a reference on it
         for later connection/activation"""
         # Used to load/save all widgets on demand
@@ -482,6 +527,7 @@ class SettingsWidget(QDialog):
                     continue
 
                 widget = settings_widget_class()
+                widget.section_name = extension["name"]
 
                 if not widget.windowTitle():
                     widget.setWindowTitle(extension["name"])
@@ -489,7 +535,7 @@ class SettingsWidget(QDialog):
                 if not widget.windowIcon():
                     widget.setWindowIcon(FIcon(0xF0431))
 
-                self.addPanel(widget)
+                self.addSection(widget)
 
 
 if __name__ == "__main__":

@@ -225,7 +225,7 @@ class PluginDialog(QDialog):
         self.conn = None
 
 
-class PluginSettingsWidget(settings.GroupWidget):
+class PluginSettingsWidget(settings.SectionWidget):
     """Model class for settings plugins"""
 
     ENABLE = False

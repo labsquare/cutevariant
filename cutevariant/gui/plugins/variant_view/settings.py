@@ -56,10 +56,11 @@ class LinkSettings(BaseWidget):
 
     def save(self):
         """Override from BaseWidget"""
-        settings = QSettings()
+        settings = self.create_settings()
+
         # Bug from Pyside2.QSettings which don't return boolean
-        settings.remove("plugins/variant_view/links")
-        settings.beginWriteArray("plugins/variant_view/links")
+        settings.remove("links")
+        settings.beginWriteArray("links")
         for i in range(self.view.count()):
             settings.setArrayIndex(i)
             item = self.view.item(i)
@@ -74,9 +75,15 @@ class LinkSettings(BaseWidget):
 
         settings.endArray()
 
+    def creates(self):
+        settings = QSettings()
+        settings.beginGroup(self.section_name)
+        return settings
+
     def load(self):
         """Override from BaseWidget"""
-        settings = QSettings()
+        settings = self.create_settings()
+        settings.beginGroup(self.section_name)
         size = settings.beginReadArray("plugins/variant_view/links")
         self.view.clear()
 
