@@ -127,17 +127,16 @@ class GeneWidget(QAbstractScrollArea):
         self.translation = 0
 
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
         self.horizontalScrollBar().setRange(0, 0)
-        self.verticalScrollBar().setRange(1, 100)
-        self.verticalScrollBar().setValue(1)
 
         # QScroller.grabGesture(self, QScroller.LeftMouseButtonGesture);
 
         self.horizontalScrollBar().valueChanged.connect(self.set_translation)
-        self.verticalScrollBar().valueChanged.connect(self.set_scale)
 
         self.resize(640, 200)
+        QScroller.grabGesture(self.viewport(), QScroller.LeftMouseButtonGesture)
 
     def paintEvent(self, event: QPaintEvent):
 
@@ -255,9 +254,17 @@ class GeneWidget(QAbstractScrollArea):
     def draw_area(self):
         return self.viewport().rect().adjusted(10, 10, -10, -10)
 
+    def wheelEvent(self, event):
+
+        if event.delta() > 0:
+            self.set_scale(self.scale_factor + 0.5)
+        else:
+            if self.scale_factor > 1:
+                self.set_scale(self.scale_factor - 0.5)
+
     def mousePressEvent(self, event):
 
-        pass
+        super().mousePressEvent(event)
         # print("mark")
         # self.marks.append(self.horizontalScrollBar().value())
         # self.viewport().update()

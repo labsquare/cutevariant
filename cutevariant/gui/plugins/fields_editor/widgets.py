@@ -1,88 +1,125 @@
 from cutevariant.gui import plugin, FIcon
 from cutevariant.core import sql
+from cutevariant import appstyle
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 from PySide2.QtGui import *
 
+from typing import List
+import sqlite3
+import json
+
 
 class FieldsModel(QStandardItemModel):
-    """Model to store all fields available for variants, annotations and samples"""
+    """Model to display all fields from databases into 3 groups (variants, annotation, samples)
+    Fields are checkable and can be set using setter/getter checked_fields .
 
-    def __init__(self, conn=None):
+    Examples: 
+        
+        from cutevariant.core import sql 
+        conn = sql.get_connectionn("project.db")
+
+        model = FieldsModel(conn)
+        view = QTreeView()
+        view.setModel(model)
+        
+        model.checked_fields = ["chr","pos","ref"]
+        model.load() 
+
+
+    Attributes:
+        conn (sqlite3.Connection)
+
+    Todo : 
+        Possible bug with duplicate name in different categories.
+        e.g: variants.gene and annotations.gene    
+    
+    """
+
+    def __init__(self, conn: sqlite3.Connection = None):
+        """Create the model with a connection.
+            
+            conn can be None and set later 
+        
+        Args:
+            conn (sqlite3.Connection, optional)
+        """
         super().__init__()
-        self.checkable_items = []
+
+        # store QStandardItem which can be checked
+        self._checkable_items = []
         self.conn = conn
 
-    def columnCount(self, index=QModelIndex()):
-        return 2
-
-    def headerData(self, section, orientation, role):
-
-        if role != Qt.DisplayRole:
-            return None
-
-        if orientation == Qt.Horizontal:
-            if section == 0:
-                return "Name"
-
-        return None
-
     @property
-    def fields(self):
-        """Return checked columns
-
+    def checked_fields(self) -> List[str]:
+        """Return checked fields
+        
         Returns:
-            list -- list of columns
+            List[str] : list of checked fields
         """
         selected_fields = []
-        for item in self.checkable_items:
+        for item in self._checkable_items:
             if item.checkState() == Qt.Checked:
                 selected_fields.append(item.data()["name"])
         return selected_fields
 
-    @fields.setter
-    def fields(self, columns):
-        """Check items which name is in columns
-
+    @checked_fields.setter
+    def checked_fields(self, fields: List[str]):
+        """Check fields according name 
+        
         Arguments:
-            columns {list} -- list of columns
+            columns (List[str]): 
+
+        Todo: 
+            Bug : What if 2 name are in different categories 
         """
 
-        for item in self.checkable_items:
+        for item in self._checkable_items:
             item.setCheckState(Qt.Unchecked)
-            if item.data()["name"] in columns:
+            if item.data()["name"] in fields:
                 item.setCheckState(Qt.Checked)
 
     def load(self):
-        """Load all columns avaible into the model"""
+        """Load all fields from the model
+        """
         self.clear()
-        self.checkable_items.clear()
+        self._checkable_items.clear()
+        self.setColumnCount(2)
+        self.setHorizontalHeaderLabels(["name", "description"])
 
-        self.appendRow(self.load_fields("variants"))
-        self.appendRow(self.load_fields("annotations"))
-
+        #  Load fields from variant categories
+        self.appendRow(self._load_fields("variants"))
+        #  Load fields from annotations categories
+        self.appendRow(self._load_fields("annotations"))
+        # Create and load fields from samples categories
         samples_items = QStandardItem("samples")
         samples_items.setIcon(FIcon(0xF0B9C))
         font = QFont()
 
         samples_items.setFont(font)
-
         for sample in sql.get_samples(self.conn):
-            sample_item = self.load_fields("samples", parent_name=sample["name"])
+            sample_item = self._load_fields("samples", parent_name=sample["name"])
             sample_item.setText(sample["name"])
             sample_item.setIcon(FIcon(0xF0B9C))
             samples_items.appendRow(sample_item)
 
         self.appendRow(samples_items)
 
-    def load_fields(self, category, parent_name=None):
+    def _load_fields(self, category: str, parent_name: str = None) -> QStandardItem:
+        """Load fields from database and create a QStandardItem
+        
+        Args:
+            category (str): category name : eg. variants / annotations / samples
+            parent_name (str, optional): name of the parent item 
+        
+        Returns:
+            QStandardItem
+        """
         root_item = QStandardItem(category)
         root_item.setColumnCount(2)
         root_item.setIcon(FIcon(0xF0256))
         font = QFont()
         root_item.setFont(font)
-
-        type_icons = {"int": 0xF03A0, "str": 0xF100D, "float": 0xF03A0, "bool": 0xF023B}
 
         for field in sql.get_field_by_category(self.conn, category):
             field_name = QStandardItem(field["name"])
@@ -91,11 +128,11 @@ class FieldsModel(QStandardItemModel):
 
             field_name.setCheckable(True)
 
-            if field["type"] in type_icons.keys():
-                field_name.setIcon(FIcon(type_icons[field["type"]]))
+            field_type = appstyle.FIELD_TYPE.get(field["type"])
+            field_name.setIcon(FIcon(field_type["icon"], "white", field_type["color"]))
 
             root_item.appendRow([field_name, descr])
-            self.checkable_items.append(field_name)
+            self._checkable_items.append(field_name)
 
             if category == "samples":
                 field_name.setData({"name": ("sample", parent_name, field["name"])})
@@ -103,6 +140,26 @@ class FieldsModel(QStandardItemModel):
                 field_name.setData(field)
 
         return root_item
+
+    def to_file(self, filename: str):
+        """Serialize checked fields to a json file
+        
+        Args:
+            filename (str): a json filename
+        """
+        with open(filename, "w") as outfile:
+            obj = {"checked_fields": self.checked_fields}
+            json.dump(obj, outfile)
+
+    def from_file(self, filename: str):
+        """Unserialize checked fields from a json file
+        
+        Args:
+            filename (str): a json filename
+        """
+        with open(filename, "r") as infile:
+            obj = json.load(infile)
+            self.checked_fields = obj.get("checked_fields", [])
 
 
 class FieldsEditorWidget(plugin.PluginWidget):
@@ -194,7 +251,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
     def on_refresh(self):
         """ overrided from PluginWidget """
         self._is_refreshing = True
-        self.model.fields = self.mainwindow.state.fields
+        self.model.checked_fields = self.mainwindow.state.fields
         self._is_refreshing = False
 
     def on_fields_changed(self):
@@ -202,7 +259,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
         if self.mainwindow is None or self._is_refreshing:
             return
 
-        self.mainwindow.state.fields = self.model.fields
+        self.mainwindow.state.fields = self.model.checked_fields
         self.mainwindow.refresh_plugins(sender=self)
 
 
