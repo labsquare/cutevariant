@@ -5,12 +5,12 @@ from PySide2.QtWidgets import *
 
 # Custom imports
 from cutevariant.gui.plugin import PluginSettingsWidget
-from cutevariant.gui.settings import BaseWidget
+from cutevariant.gui.settings import PageWidget
 from cutevariant.gui import FIcon
 import cutevariant.commons as cm
 
 
-class LinkSettings(BaseWidget):
+class LinkSettings(PageWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Cross databases links"))
@@ -55,7 +55,7 @@ class LinkSettings(BaseWidget):
         self.remove_button.clicked.connect(self.remove_item)
 
     def save(self):
-        """Override from BaseWidget"""
+        """Override from PageWidget"""
         settings = self.create_settings()
 
         # Bug from Pyside2.QSettings which don't return boolean
@@ -76,7 +76,7 @@ class LinkSettings(BaseWidget):
         settings.endArray()
 
     def load(self):
-        """Override from BaseWidget"""
+        """Override from PageWidget"""
         settings = self.create_settings()
         size = settings.beginReadArray("links")
         self.view.clear()
@@ -235,7 +235,7 @@ https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg19&position={chr}:{pos}
             item.setFont(font)
 
 
-class MemorySettings(BaseWidget):
+class MemorySettings(PageWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Memory"))

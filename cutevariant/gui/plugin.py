@@ -206,6 +206,20 @@ class PluginWidget(QWidget):
         else:
             self._STARTUP = False
 
+        # def create_settings(self):
+        #     settings = QSettings()
+        #     settings.beginGroup(self._prefix_settings)
+        #     return settings
+
+    @property
+    def plugin_name(self):
+        return self.__class__.__name__.replace("Widget", "")
+
+    def create_settings(self):
+        settings = QSettings()
+        settings.beginGroup(self.plugin_name)
+        return settings
+
 
 class PluginDialog(QDialog):
     """Model class for all tool menu plugins
@@ -223,6 +237,15 @@ class PluginDialog(QDialog):
         """
         super().__init__(parent)
         self.conn = None
+
+    @property
+    def plugin_name(self):
+        return self.__class__.__name__.replace("Dialog", "")
+
+    def create_settings(self):
+        settings = QSettings()
+        settings.beginGroup(self.plugin_name)
+        return settings
 
 
 class PluginSettingsWidget(settings.SectionWidget):
@@ -267,7 +290,6 @@ def find_plugins(path=None):
 
     Example of yielded dict:
 
-        .. code-block:: javascript
 
             {
                 'name': 'word_set',
@@ -391,3 +413,12 @@ def find_plugins(path=None):
                 )
 
         yield plugin_item
+
+    @property
+    def plugin_name(self):
+        return self.__class__.__name__.replace("SettingsWidget", "")
+
+
+if __name__ == "__main__":
+
+    print(snake_to_camel("query_view"))

@@ -1,28 +1,57 @@
 """List of classes used for settings window
 
-SettingsWidget: Main widget for settings window that instantiate all subwidgets
+A SettingsWidget is a collection of section ( SectionWidget ) 
+which contains multiple page ( PageWidget ) to save and load settings thanks to QSettings.
 
-BaseWidget: Abstract class for settings widgets.
+* SettingsWidget: 
+Main widget for settings window that instantiate all subsection widget
+
+* SectionWidget: 
+Handy class to group similar settings widgets in tabs (used by SettingsWidget).
+
+* PageWidget:
+Abstract class for build a page settings
+    
     Subclasses:
         - TranslationSettingsWidget: Allow to choose a language for the interface
-        - ProxySettingsWidget: Allow to configure proxy settings for widgets that
-        require internet connection
+        - ProxySettingsWidget: Allow to configure proxy settings for widgets that require internet connection
         - StyleSettingsWidget
         - PluginsSettingsWidget
-        - VariantSettingsWidget: Allow to add personal templates to search a
-        variant in a third-party database
+        - VariantSettingsWidget: Allow to add personal templates to search a variant in a third-party database
 
-SectionWidget: Handy class to group similar settings widgets in tabs (used by SettingsWidget).
+Exemples: 
 
-    Note:
-        A SectionWidget refer to a section in an ini file.   
+    # Create sub-section  
 
-    Used for:
-        - TranslationSettingsWidget
-        - ProxySettingsWidget
-        - StyleSettingsWidget
+    class MemorySettings(BaseSettings):
+        def save():
+            settings = self.create_settings()
+            settings.setValue("value", 10)    
 
+        def load():
+            settings = self.create_settings()
+            value = settings.value("value")
+               
 
+    class DiskSettings(BaseSettings):
+        def save():
+            settings = self.create_settings()
+            settings.setValue("value", 10)    
+
+        def load():
+            settings = self.create_settings()
+            value = settings.value("value")
+
+    # create one section 
+    performance_section = SectionWidget()
+    performance_section.add_setting_widget(MemorySettings)
+    performance_section.add_setting_widget(DiskSettings)
+
+    # add section to the main settings widge 
+    widget = SettingsWidget()
+    widget.add_section(widget)
+
+    widget.save_all()
 
 """
 # Standard imports
@@ -44,9 +73,11 @@ from cutevariant.gui import network, style
 LOGGER = cm.logger()
 
 
-class BaseWidget(QWidget):
+class PageWidget(QWidget):
     """Abstract class for settings widgets
-    
+
+    User must reimplement load() and save() 
+     
     """
 
     def __init__(self):
@@ -65,9 +96,6 @@ class BaseWidget(QWidget):
         """Load settings from QSettings"""
         raise NotImplementedError(self.__class__.__name__)
 
-    def set_section_widget(self, widget):
-        self.section_widget = widget
-
     @property
     def prefix_settings(self) -> str:
         """ Return the parent section name 
@@ -85,14 +113,14 @@ class BaseWidget(QWidget):
 
 
 class SectionWidget(QTabWidget):
-    """Handy class to group similar settings widgets in tabs"""
+    """Handy class to group similar settings page in tabs"""
 
-    def __init__(self, prefix_settings, parent=None):
+    def __init__(self, prefix_settings="", parent=None):
         super().__init__(parent)
         self.prefix_settings = prefix_settings
 
-    def add_settings_widget(self, widget: BaseWidget):
-        widget.set_section_widget(self)
+    def add_settings_widget(self, widget: PageWidget):
+        widget.section_widget = self
         self.addTab(widget, widget.windowIcon(), widget.windowTitle())
 
     def save(self):
@@ -105,7 +133,7 @@ class SectionWidget(QTabWidget):
 
 
 ################################################################################
-class TranslationSettingsWidget(BaseWidget):
+class TranslationSettingsWidget(PageWidget):
     """Allow to choose a language for the interface"""
 
     def __init__(self):
@@ -160,7 +188,7 @@ class TranslationSettingsWidget(BaseWidget):
         self.locales_combobox.setCurrentIndex(available_locales.index(locale_name))
 
 
-class ProxySettingsWidget(BaseWidget):
+class ProxySettingsWidget(PageWidget):
     """Allow to configure proxy settings for widgets that require internet connection"""
 
     def __init__(self):
@@ -239,7 +267,7 @@ class ProxySettingsWidget(BaseWidget):
         self.pass_edit.setDisabled(disabled)
 
 
-class StyleSettingsWidget(BaseWidget):
+class StyleSettingsWidget(PageWidget):
     """Allow to choose a style for the interface"""
 
     def __init__(self):
@@ -317,7 +345,7 @@ class StyleSettingsWidget(BaseWidget):
         self.styles_combobox.setCurrentIndex(available_styles.index(style_name))
 
 
-class PluginsSettingsWidget(BaseWidget):
+class PluginsSettingsWidget(PageWidget):
     """Display a list of found plugin and their status (enabled/disabled)"""
 
     registerPlugin = Signal(dict)
@@ -462,7 +490,7 @@ class SettingsWidget(QDialog):
 
         # Instantiate subwidgets on panels
         # Similar widgets for general configuration
-        general_settings = SectionWidget("General")  #  Not a title !
+        general_settings = SectionWidget()  #  Not a title !
         general_settings.setWindowTitle(self.tr("General"))
         general_settings.setWindowIcon(FIcon(0xF0614))
 
@@ -476,8 +504,8 @@ class SettingsWidget(QDialog):
         plugin_settings.deregisterPlugin.connect(parent.deregister_plugin)
 
         # Specialized widgets on panels
-        self.addSection(general_settings)
-        # self.addSection(plugin_settings)
+        self.add_section(general_settings)
+        # self.add_section(plugin_settings)
         self.load_plugins()
 
         self.resize(800, 400)
@@ -494,7 +522,7 @@ class SettingsWidget(QDialog):
 
         self.accepted.connect(self.close)
 
-    def addSection(self, widget: SectionWidget):
+    def add_section(self, widget: SectionWidget):
         """Add a widget on the widow via a QStackedWidget; keep a reference on it
         for later connection/activation"""
         # Used to load/save all widgets on demand
@@ -527,7 +555,10 @@ class SettingsWidget(QDialog):
                     continue
 
                 widget = settings_widget_class()
-                widget.prefix_settings = extension["name"] + "_plugin"
+                # Create rprefix settings ! For instance [VariantView]
+                widget.prefix_settings = widget.__class__.__name__.replace(
+                    "SettingsWidget", ""
+                )
 
                 if not widget.windowTitle():
                     widget.setWindowTitle(extension["name"])
@@ -535,7 +566,7 @@ class SettingsWidget(QDialog):
                 if not widget.windowIcon():
                     widget.setWindowIcon(FIcon(0xF0431))
 
-                self.addSection(widget)
+                self.add_section(widget)
 
 
 if __name__ == "__main__":
