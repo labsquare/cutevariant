@@ -32,7 +32,6 @@ from cutevariant.core import command
 from cutevariant.core.querybuilder import build_vql_query
 from cutevariant.gui.widgets import CodeEdit
 from cutevariant.commons import logger
-from cutevariant import appstyle
 
 LOGGER = logger()
 
@@ -127,48 +126,55 @@ class VqlEditorWidget(plugin.PluginWidget):
         self.text_edit.completer.model.clear()
         self.text_edit.completer.model.beginResetModel()
 
-        # register keywords 
+        # register keywords
         for keyword in self.text_edit.syntax.sql_keywords:
-            self.text_edit.completer.model.add_item(keyword, "VQL keywords", FIcon(0xF0169), "#f6ecf0")   
-
+            self.text_edit.completer.model.add_item(
+                keyword, "VQL keywords", FIcon(0xF0169), "#f6ecf0"
+            )
 
         for selection in selections:
-            self.text_edit.completer.model.add_item(selection, "Source table", FIcon(0xF04EB), "#f6ecf0")   
+            self.text_edit.completer.model.add_item(
+                selection, "Source table", FIcon(0xF04EB), "#f6ecf0"
+            )
 
         for wordset in wordsets:
-            self.text_edit.completer.model.add_item(f"WORDSET['{wordset}']", "WORDSET", FIcon(0xF04EB), "#f6ecf0")   
-    
+            self.text_edit.completer.model.add_item(
+                f"WORDSET['{wordset}']", "WORDSET", FIcon(0xF04EB), "#f6ecf0"
+            )
 
         for field in sql.get_fields(self.conn):
             name = field["name"]
-            description = "<b>{}</b> ({}) from {} <br/><br/> {}" .format(field["name"], field["type"], field["category"], field["description"])
-            color = appstyle.FIELD_TYPE.get(field["type"], "str")["color"]
-            icon = FIcon(appstyle.FIELD_TYPE.get(field["type"], "str")["icon"], "white")
+            description = "<b>{}</b> ({}) from {} <br/><br/> {}".format(
+                field["name"], field["type"], field["category"], field["description"]
+            )
+            color = style.FIELD_TYPE.get(field["type"], "str")["color"]
+            icon = FIcon(style.FIELD_TYPE.get(field["type"], "str")["icon"], "white")
 
             if field["category"] == "variants" or field["category"] == "annotations":
-                self.text_edit.completer.model.add_item(name, description, icon, color)   
+                self.text_edit.completer.model.add_item(name, description, icon, color)
 
             if field["category"] == "samples":
-                # Overwrite name 
+                # Overwrite name
                 for sample in samples:
                     name = "sample['{}'].{}".format(sample, field["name"])
-                    description = "<b>{}</b> ({}) from {} {} <br/><br/> {}" .format(field["name"], field["type"], field["category"], sample, field["description"])
-                    self.text_edit.completer.model.add_item(name, description, icon, color)   
+                    description = "<b>{}</b> ({}) from {} {} <br/><br/> {}".format(
+                        field["name"],
+                        field["type"],
+                        field["category"],
+                        sample,
+                        field["description"],
+                    )
+                    self.text_edit.completer.model.add_item(
+                        name, description, icon, color
+                    )
 
+        self.text_edit.completer.model.endResetModel()
 
-
-
-        self.text_edit.completer.model.endResetModel()      
-
-            # if field["category"] == "samples":
-            #     for sample in samples:
-            #         keywords.append("sample['{}'].{}".format(sample, field["name"]))
-            # else:
-            #     keywords.append(field["name"])
-
-
-
-      
+        # if field["category"] == "samples":
+        #     for sample in samples:
+        #         keywords.append("sample['{}'].{}".format(sample, field["name"]))
+        # else:
+        #     keywords.append(field["name"])
 
     def check_vql(self) -> bool:
         """Check VQL statement; return True if OK, False when an error occurs

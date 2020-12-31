@@ -32,7 +32,7 @@ from PySide2.QtGui import *  # QIcon, QPalette
 # Custom imports
 import cutevariant.commons as cm
 from cutevariant.gui.ficon import FIcon
-from cutevariant.gui import network, style
+from cutevariant.gui import network, style, widgets
 
 LOGGER = cm.logger()
 
@@ -377,6 +377,25 @@ class PluginsSettingsWidget(BaseWidget):
             self.view.addTopLevelItem(item)
 
 
+class PathSettingsWidget(BaseWidget):
+    """ Path settings where to store shared data """
+
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle(self.tr("Path"))
+        self.setWindowIcon(FIcon(0xF1080))
+
+        main_layout = QFormLayout()
+
+        self.setLayout(main_layout)
+
+    def save(self):
+        pass
+
+    def load(self):
+        pass
+
+
 class SettingsWidget(QDialog):
     """Main widget for settings window
 
@@ -421,6 +440,7 @@ class SettingsWidget(QDialog):
         general_settings.setWindowTitle(self.tr("General"))
         general_settings.setWindowIcon(FIcon(0xF0614))
 
+        general_settings.add_settings_widget(PathSettingsWidget())
         general_settings.add_settings_widget(TranslationSettingsWidget())
         general_settings.add_settings_widget(ProxySettingsWidget())
         general_settings.add_settings_widget(StyleSettingsWidget())

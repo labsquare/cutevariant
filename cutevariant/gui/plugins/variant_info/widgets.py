@@ -12,17 +12,14 @@ from PySide2.QtWidgets import *
 from PySide2.QtGui import QFont
 
 # Custom imports
-from cutevariant.gui.ficon import FIcon
+from cutevariant.gui import FIcon, style
 from cutevariant.core import sql, get_sql_connection
 from cutevariant.gui.plugin import PluginWidget
 from cutevariant import commons as cm
-from cutevariant import appstyle
 
 from cutevariant.gui.widgets import DictWidget
 
 LOGGER = cm.logger()
-
-
 
 
 class EditPanel(QFrame):
@@ -35,39 +32,40 @@ class EditPanel(QFrame):
 
     """
 
-    # A signal emit when save button is pressed 
+    # A signal emit when save button is pressed
     saved = Signal()
-    
+
     _form_changed = Signal()
 
-    def __init__(self, parent = None):
+    def __init__(self, parent=None):
         super().__init__(parent)
 
-
-        # Create fav button 
+        # Create fav button
         self.fav_button = QToolButton()
         self.fav_button.setCheckable(True)
         self.fav_button.setAutoRaise(True)
         self.fav_button.clicked.connect(self._form_changed)
         icon = QIcon()
-        icon.addPixmap(FIcon(0xF00C3).pixmap(32,32), QIcon.Normal, QIcon.Off)
-        icon.addPixmap(FIcon(0xF00C0).pixmap(32,32), QIcon.Normal, QIcon.On)
+        icon.addPixmap(FIcon(0xF00C3).pixmap(32, 32), QIcon.Normal, QIcon.Off)
+        icon.addPixmap(FIcon(0xF00C0).pixmap(32, 32), QIcon.Normal, QIcon.On)
         self.fav_button.setIcon(icon)
 
-        # Create classification combobox 
+        # Create classification combobox
         self.class_edit = QComboBox()
         self.class_edit.setFrame(False)
         self.class_edit.currentIndexChanged.connect(self._form_changed)
 
-        for key in appstyle.CLASSIFICATION:
+        for key in style.CLASSIFICATION:
             self.class_edit.addItem(
-                FIcon(appstyle.CLASSIFICATION[key]["icon"], appstyle.CLASSIFICATION[key]["color"]),
-                appstyle.CLASSIFICATION[key]["name"])
-        
+                FIcon(
+                    style.CLASSIFICATION[key]["icon"],
+                    style.CLASSIFICATION[key]["color"],
+                ),
+                style.CLASSIFICATION[key]["name"],
+            )
 
-        # Create comment form . This is a stack widget with a PlainText editor 
+        # Create comment form . This is a stack widget with a PlainText editor
         # and a Markdown preview as QTextBrowser
-
 
         self.comment_edit = QPlainTextEdit()
         self.comment_edit.setPlaceholderText("Write a comment in markdown ...")
@@ -79,22 +77,21 @@ class EditPanel(QFrame):
         self.comment_preview.setOpenExternalLinks(True)
         self.comment_preview.setFrameStyle(QFrame.NoFrame)
 
-        # Create stacked 
+        # Create stacked
         self.stack = QStackedWidget()
         self.stack.addWidget(self.comment_edit)
         self.stack.addWidget(self.comment_preview)
         self.stack.setCurrentIndex(1)
 
-        # Build layout 
+        # Build layout
         self.setFrameShape(QFrame.StyledPanel)
 
-        # header  layout 
+        # header  layout
         title_layout = QHBoxLayout()
         title_layout.addWidget(self.class_edit)
         title_layout.addWidget(self.fav_button)
 
-
-        # Button layout 
+        # Button layout
         self.switch_button = QPushButton(self.tr("Edit comment..."))
         self.switch_button.setFlat(True)
         self.save_button = QPushButton(self.tr("Save"))
@@ -104,20 +101,17 @@ class EditPanel(QFrame):
         bar_layout.addStretch()
         bar_layout.addWidget(self.save_button)
 
-
-        # Main layout 
+        # Main layout
         v_layout = QVBoxLayout()
         v_layout.addLayout(title_layout)
         v_layout.addWidget(self.stack)
         v_layout.addLayout(bar_layout)
         self.setLayout(v_layout)
 
-
-        # Create connection 
+        # Create connection
         self.switch_button.clicked.connect(self.switch_mode)
         self.save_button.clicked.connect(self._on_save)
-        self._form_changed.connect(lambda : self.save_button.setEnabled(True))
-
+        self._form_changed.connect(lambda: self.save_button.setEnabled(True))
 
     def switch_mode(self):
         """Switch comment mode between editable and previewer 
@@ -138,7 +132,7 @@ class EditPanel(QFrame):
         self.saved.emit()
         self.save_button.setEnabled(False)
 
-    def set_text(self, text:str):
+    def set_text(self, text: str):
         """Set comment 
         
         Args:
@@ -147,7 +141,7 @@ class EditPanel(QFrame):
         """
         if text is None:
             self.clear()
-            return 
+            return
 
         self.comment_edit.setPlainText(str(text))
         try:
@@ -161,7 +155,6 @@ class EditPanel(QFrame):
         """
         self.comment_edit.clear()
         self.comment_preview.clear()
-
 
     def set_data(self, variant: dict):
         """Set Form with variant data
@@ -181,10 +174,11 @@ class EditPanel(QFrame):
             self.set_text(variant["comment"])
 
         if "favorite" in variant:
-            self.fav_button.setChecked(Qt.Checked if variant["favorite"] else Qt.Unchecked)
+            self.fav_button.setChecked(
+                Qt.Checked if variant["favorite"] else Qt.Unchecked
+            )
 
         self.save_button.setEnabled(False)
-
 
     def get_data(self) -> dict:
         """Get variant data from Form input 
@@ -194,10 +188,9 @@ class EditPanel(QFrame):
         """
         return {
             "classification": self.class_edit.currentIndex(),
-            "comment" : self.comment_edit.toPlainText(),
-            "favorite": int(self.fav_button.isChecked())
+            "comment": self.comment_edit.toPlainText(),
+            "favorite": int(self.fav_button.isChecked()),
         }
-
 
 
 class VariantInfoWidget(PluginWidget):
@@ -217,8 +210,7 @@ class VariantInfoWidget(PluginWidget):
         self.toolbar = QToolBar()
         self.toolbar.setIconSize(QSize(16, 16))
 
-
-       # Build comments tab
+        # Build comments tab
         self.edit_panel = EditPanel()
         self.edit_panel.saved.connect(self.on_save_variant)
         self.view.addTab(self.edit_panel, self.tr("User"))
@@ -259,8 +251,6 @@ class VariantInfoWidget(PluginWidget):
         self.genotype_view.setIconSize(QSize(20, 20))
         self.view.addTab(self.genotype_view, self.tr("Genotypes"))
 
- 
-
         v_layout = QVBoxLayout()
         v_layout.setContentsMargins(0, 0, 0, 0)
         v_layout.addWidget(self.view)
@@ -293,28 +283,22 @@ class VariantInfoWidget(PluginWidget):
         self.edit_panel.clear()
 
     def on_save_variant(self):
-        
 
-        # if view is visible 
+        # if view is visible
         if "variant_view" in self.mainwindow.plugins:
             variant_view = self.mainwindow.plugins["variant_view"]
-            
-            update_data = self.edit_panel.get_data()
 
+            update_data = self.edit_panel.get_data()
 
             index = variant_view.main_right_pane.view.currentIndex()
             variant_view.main_right_pane.model.update_variant(index.row(), update_data)
-            
-            #variant_view.main_right_pane.model.update_variant(index.row(), update_data)
 
-
+            # variant_view.main_right_pane.model.update_variant(index.row(), update_data)
 
         else:
-            # TODO BUT UNNECESSARY because we always have a variant_viex ...  
-            # Save directly in database ? 
+            # TODO BUT UNNECESSARY because we always have a variant_viex ...
+            # Save directly in database ?
             pass
-
-
 
     def on_open_project(self, conn):
         self.conn = conn
@@ -330,7 +314,6 @@ class VariantInfoWidget(PluginWidget):
         self.current_variant = self.mainwindow.state.current_variant
         self.populate()
 
-
     def populate(self):
         """Show the current variant attributes on the TreeWidget
 
@@ -342,18 +325,19 @@ class VariantInfoWidget(PluginWidget):
         variant_id = self.current_variant["id"]
 
         # Populate variant
-        data = dict([
-            (k, v)
-            for k, v in sql.get_one_variant(self.conn, variant_id).items()
-            if k not in ("variant_id", "sample_id", "annotations", "samples")
-        ])
+        data = dict(
+            [
+                (k, v)
+                for k, v in sql.get_one_variant(self.conn, variant_id).items()
+                if k not in ("variant_id", "sample_id", "annotations", "samples")
+            ]
+        )
         self.variant_view.set_dict(data)
 
         self.edit_panel.set_data(data)
 
         title = "{chr}:{pos} {ref}>{alt}".format(**data)
         # self.parent().setWindowTitle(title)
-
 
         # Populate annotations
         self.transcript_combo.blockSignals(True)
@@ -410,8 +394,6 @@ class VariantInfoWidget(PluginWidget):
         self.sample_view.set_dict(
             sql.get_sample_annotations(self.conn, variant_id, sample_id)
         )
-
-    
 
     # @Slot()
     # def on_save_clicked(self):

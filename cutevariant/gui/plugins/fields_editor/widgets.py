@@ -1,6 +1,5 @@
-from cutevariant.gui import plugin, FIcon
+from cutevariant.gui import plugin, FIcon, style
 from cutevariant.core import sql
-from cutevariant import appstyle
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 from PySide2.QtGui import *
@@ -128,7 +127,7 @@ class FieldsModel(QStandardItemModel):
 
             field_name.setCheckable(True)
 
-            field_type = appstyle.FIELD_TYPE.get(field["type"])
+            field_type = style.FIELD_TYPE.get(field["type"])
             field_name.setIcon(FIcon(field_type["icon"], "white", field_type["color"]))
 
             root_item.appendRow([field_name, descr])
