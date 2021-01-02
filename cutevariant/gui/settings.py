@@ -98,7 +98,7 @@ class PageWidget(QWidget):
 
     @property
     def prefix_settings(self) -> str:
-        """ Return the parent section name 
+        """ Return prefix settings from section parent  
         Returns:
             str
         """
@@ -463,7 +463,7 @@ class SettingsDialog(QDialog):
 
     uiSettingsChanged = Signal()
 
-    def __init__(self, parent = None):
+    def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle(self.tr("Cutevariant - Settings"))
         self.setWindowIcon(QIcon(cm.DIR_ICONS + "app.png"))
@@ -501,13 +501,10 @@ class SettingsDialog(QDialog):
         # Activation status of plugins
         plugin_settings = PluginsSettingsWidget()
 
-
-        # BOF... 
+        #  BOF...
         if parent:
             plugin_settings.registerPlugin.connect(parent.register_plugin)
             plugin_settings.deregisterPlugin.connect(parent.deregister_plugin)
-
-            
 
         # Specialized widgets on panels
         self.add_section(general_settings)
@@ -562,9 +559,9 @@ class SettingsDialog(QDialog):
 
                 widget = settings_widget_class()
                 # Create rprefix settings ! For instance [VariantView]
-                widget.prefix_settings = widget.__class__.__name__.replace(
-                    "SettingsWidget", ""
-                )
+                # widget.prefix_settings = widget.__class__.__name__.replace(
+                #     "SettingsWidget", ""
+                # )
 
                 if not widget.windowTitle():
                     widget.setWindowTitle(extension["name"])

@@ -213,7 +213,7 @@ class PluginWidget(QWidget):
 
     @property
     def plugin_name(self):
-        return self.__class__.__name__.replace("Widget", "")
+        return cm.camel_to_snake(self.__class__.__name__.replace("Widget", ""))
 
     def create_settings(self):
         settings = QSettings()
@@ -240,7 +240,7 @@ class PluginDialog(QDialog):
 
     @property
     def plugin_name(self):
-        return self.__class__.__name__.replace("Dialog", "")
+        return cm.camel_to_snake(self.__class__.__name__.replace("Dialog", ""))
 
     def create_settings(self):
         settings = QSettings()
@@ -259,6 +259,7 @@ class PluginSettingsWidget(settings.SectionWidget):
             parent (QMainWindow): cutevariant window (mainly SettingsWidget)
         """
         super().__init__(parent)
+        self.prefix_settings = self.plugin_name
 
     def on_refresh(self):
         """Called to refresh the GUI of the current plugin
@@ -267,20 +268,12 @@ class PluginSettingsWidget(settings.SectionWidget):
         """
         pass
 
+    @property
+    def plugin_name(self):
+        return cm.camel_to_snake(self.__class__.__name__.replace("SettingsWidget", ""))
+
 
 ################################################################################
-
-
-def snake_to_camel(name: str) -> str:
-    """Convert snake_case name to CamelCase name
-
-    Args:
-        name (str): a snake string like : query_view
-
-    Returns:
-        str: a camel string like: QueryView
-    """
-    return "".join([i.capitalize() for i in name.split("_")])
 
 
 def find_plugins(path=None):
@@ -323,9 +316,9 @@ def find_plugins(path=None):
         )
 
         # TODO: maybe could use __title__ to build class names...
-        widget_class_name = snake_to_camel(package.name) + "Widget"
-        settings_class_name = snake_to_camel(package.name) + "SettingsWidget"
-        dialog_class_name = snake_to_camel(package.name) + "Dialog"
+        widget_class_name = cm.snake_to_camel(package.name) + "Widget"
+        settings_class_name = cm.snake_to_camel(package.name) + "SettingsWidget"
+        dialog_class_name = cm.snake_to_camel(package.name) + "Dialog"
 
         # Load __init__ file data of the module
         # We expect to load a plugin per module found in a plugin directory
@@ -421,4 +414,4 @@ def find_plugins(path=None):
 
 if __name__ == "__main__":
 
-    print(snake_to_camel("query_view"))
+    print(cm.snake_to_camel("query_view"))
