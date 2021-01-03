@@ -1,22 +1,58 @@
 """List of classes used for settings window
 
-SettingsWidget: Main widget for settings window that instantiate all subwidgets
+A SettingsDialog is a collection of section ( SectionWidget ) 
+which contains multiple page ( AbstractSettingsWidget ) to save and load settings thanks to QSettings.
 
-BaseWidget: Abstract class for settings widgets.
+* SettingsDialog: 
+Main widget for settings window that instantiate all subsection widget
+
+* SectionWidget: 
+Handy class to group similar settings widgets in tabs (used by SettingsDialog).
+
+* AbstractSettingsWidget:
+Abstract class for build a page settings
+    
     Subclasses:
         - TranslationSettingsWidget: Allow to choose a language for the interface
-        - ProxySettingsWidget: Allow to configure proxy settings for widgets that
-        require internet connection
+        - ProxySettingsWidget: Allow to configure proxy settings for widgets that require internet connection
         - StyleSettingsWidget
         - PluginsSettingsWidget
-        - VariantSettingsWidget: Allow to add personal templates to search a
-        variant in a third-party database
+        - VariantSettingsWidget: Allow to add personal templates to search a variant in a third-party database
 
-GroupWidget: Handy class to group similar settings widgets in tabs (used by SettingsWidget).
-    Used for:
-        - TranslationSettingsWidget
-        - ProxySettingsWidget
-        - StyleSettingsWidget
+Exemples: 
+
+    # Create sub-section  
+
+    class MemorySettings(BaseSettings):
+        def save():
+            settings = self.create_settings()
+            settings.setValue("value", 10)    
+
+        def load():
+            settings = self.create_settings()
+            value = settings.value("value")
+               
+
+    class DiskSettings(BaseSettings):
+        def save():
+            settings = self.create_settings()
+            settings.setValue("value", 10)    
+
+        def load():
+            settings = self.create_settings()
+            value = settings.value("value")
+
+    # create one section 
+    performance_section = SectionWidget()
+    performance_section.add_setting_widget(MemorySettings)
+    performance_section.add_setting_widget(DiskSettings)
+
+    # add section to the main settings widge 
+    widget = SettingsWidget()
+    widget.add_section(widget)
+
+    widget.save_all()
+
 """
 # Standard imports
 import os
@@ -37,15 +73,18 @@ from cutevariant.gui import network, style, widgets
 LOGGER = cm.logger()
 
 
-class BaseWidget(QWidget):
-    """Abstract class for settings widgets"""
+class AbstractSettingsWidget(QWidget):
+    """Abstract class for settings widgets
+
+    User must reimplement load() and save() 
+     
+    """
 
     def __init__(self):
         super().__init__()
-        self.group_parent = None
-        self.settings = QSettings()
         self.setWindowTitle("base")
         self.setWindowIcon(FIcon(0xF5CA))
+        self.section_widget = None
 
     @abstractmethod
     def save(self):
@@ -57,25 +96,44 @@ class BaseWidget(QWidget):
         """Load settings from QSettings"""
         raise NotImplementedError(self.__class__.__name__)
 
+    @property
+    def prefix_settings(self) -> str:
+        """ Return prefix settings from section parent  
+        Returns:
+            str
+        """
+        if self.section_widget:
+            return self.section_widget.prefix_settings
+        return None
 
-class GroupWidget(QTabWidget):
-    """Handy class to group similar settings widgets in tabs"""
+    def create_settings(self):
+        settings = QSettings()
+        settings.beginGroup(self.prefix_settings)
+        return settings
 
-    def add_settings_widget(self, widget: BaseWidget):
-        widget.group_parent = self
+
+class SectionWidget(QTabWidget):
+    """Handy class to group similar settings page in tabs"""
+
+    def __init__(self, prefix_settings="", parent=None):
+        super().__init__(parent)
+        self.prefix_settings = prefix_settings
+
+    def add_page(self, widget: AbstractSettingsWidget):
+        widget.section_widget = self
         self.addTab(widget, widget.windowIcon(), widget.windowTitle())
 
     def save(self):
-        """Call save() method of all widgets in the GroupWidget"""
+        """Call save() method of all widgets in the SectionWidget"""
         [self.widget(index).save() for index in range(self.count())]
 
     def load(self):
-        """Call load() method of all widgets in the GroupWidget"""
+        """Call load() method of all widgets in the SectionWidget"""
         [self.widget(index).load() for index in range(self.count())]
 
 
 ################################################################################
-class TranslationSettingsWidget(BaseWidget):
+class TranslationSettingsWidget(AbstractSettingsWidget):
     """Allow to choose a language for the interface"""
 
     def __init__(self):
@@ -105,7 +163,8 @@ class TranslationSettingsWidget(BaseWidget):
 
         # Save locale setting
         locale_name = self.locales_combobox.currentText()
-        self.settings.setValue("ui/locale", locale_name)
+        settings = self.create_settings()
+        settings.setValue("ui/locale", locale_name)
         app_translator = QTranslator(QApplication.instance())
         if app_translator.load(locale_name, cm.DIR_TRANSLATIONS):
             QApplication.instance().installTranslator(app_translator)
@@ -123,11 +182,13 @@ class TranslationSettingsWidget(BaseWidget):
         self.locales_combobox.addItems(available_locales)
 
         # Display current locale
-        locale_name = self.settings.value("ui/locale", "en")
+        settings = self.create_settings()
+        locale_name = settings.value("ui/locale", "en")
+
         self.locales_combobox.setCurrentIndex(available_locales.index(locale_name))
 
 
-class ProxySettingsWidget(BaseWidget):
+class ProxySettingsWidget(AbstractSettingsWidget):
     """Allow to configure proxy settings for widgets that require internet connection"""
 
     def __init__(self):
@@ -161,31 +222,35 @@ class ProxySettingsWidget(BaseWidget):
 
     def save(self):
         """Save settings under "proxy" group"""
-        self.settings.beginGroup("proxy")
-        self.settings.setValue("type", self.combo_box.currentIndex())
-        self.settings.setValue("host", self.host_edit.text())
-        self.settings.setValue("port", self.port_edit.value())
-        self.settings.setValue("username", self.user_edit.text())
-        self.settings.setValue("password", self.user_edit.text())
-        self.settings.endGroup()
+        settings = self.create_settings()
+        settings.beginGroup("proxy")
+        settings.setValue("type", self.combo_box.currentIndex())
+        settings.setValue("host", self.host_edit.text())
+        settings.setValue("port", self.port_edit.value())
+        settings.setValue("username", self.user_edit.text())
+        settings.setValue("password", self.user_edit.text())
+        settings.endGroup()
 
     def load(self):
         """Load "proxy" group settings"""
-        self.settings.beginGroup("proxy")
 
-        s_type = self.settings.value("type", 0)
+        settings = self.create_settings()
+
+        settings.beginGroup("proxy")
+
+        s_type = settings.value("type", 0)
         if s_type:
             self.combo_box.setCurrentIndex(int(s_type))
 
-        self.host_edit.setText(self.settings.value("host"))
+        self.host_edit.setText(settings.value("host"))
 
-        s_port = self.settings.value("port", 0)
+        s_port = settings.value("port", 0)
         if s_port:
             self.port_edit.setValue(int(s_port))
 
-        self.user_edit.setText(self.settings.value("username"))
-        self.pass_edit.setText(self.settings.value("password"))
-        self.settings.endGroup()
+        self.user_edit.setText(settings.value("username"))
+        self.pass_edit.setText(settings.value("password"))
+        settings.endGroup()
 
     def on_combo_changed(self, index):
         """ disable formular when No proxy """
@@ -202,7 +267,7 @@ class ProxySettingsWidget(BaseWidget):
         self.pass_edit.setDisabled(disabled)
 
 
-class StyleSettingsWidget(BaseWidget):
+class StyleSettingsWidget(AbstractSettingsWidget):
     """Allow to choose a style for the interface"""
 
     def __init__(self):
@@ -226,13 +291,16 @@ class StyleSettingsWidget(BaseWidget):
         """Save the selected style in config
         """
         # Get previous style
-        old_style_name = self.settings.value("ui/style", cm.BASIC_STYLE)
+
+        settings = self.create_settings()
+
+        old_style_name = settings.value("ui/style", cm.BASIC_STYLE)
 
         # Save style setting
         style_name = self.styles_combobox.currentText()
         if old_style_name == style_name:
             return
-        self.settings.setValue("ui/style", style_name)
+        settings.setValue("ui/style", style_name)
 
         # Change the style on the fly
         # TODO: Find a way to revert properly dark() palette and fill
@@ -272,11 +340,12 @@ class StyleSettingsWidget(BaseWidget):
 
         # Display current style
         # Dark is the default style
-        style_name = self.settings.value("ui/style", cm.BASIC_STYLE)
+        settings = self.create_settings()
+        style_name = settings.value("ui/style", cm.BASIC_STYLE)
         self.styles_combobox.setCurrentIndex(available_styles.index(style_name))
 
 
-class PluginsSettingsWidget(BaseWidget):
+class PluginsSettingsWidget(AbstractSettingsWidget):
     """Display a list of found plugin and their status (enabled/disabled)"""
 
     registerPlugin = Signal(dict)
@@ -311,7 +380,9 @@ class PluginsSettingsWidget(BaseWidget):
             extension = item.data(0, Qt.UserRole)
             check_state = item.checkState(0) == Qt.Checked
             # Save status
-            self.settings.setValue(f"plugins/{extension['name']}/status", check_state)
+
+            settings = self.create_settings()
+            settings.setValue(f"plugins/{extension['name']}/status", check_state)
 
             # Set the enable status of the extension
             for sub_extension_type in {
@@ -333,7 +404,9 @@ class PluginsSettingsWidget(BaseWidget):
         self.view.clear()
         from cutevariant.gui import plugin
 
-        settings_keys = set(self.settings.allKeys())
+        settings = self.create_settings()
+
+        settings_keys = set(settings.allKeys())
 
         for extension in plugin.find_plugins():
             displayed_title = (
@@ -353,7 +426,7 @@ class PluginsSettingsWidget(BaseWidget):
             # Only disabled extensions can be in settings
             key = f"plugins/{extension['name']}/status"
             activated_by_user = (
-                self.settings.value(key) == "true" if key in settings_keys else None
+                settings.value(key) == "true" if key in settings_keys else None
             )
 
             for sub_extension_type in {
@@ -377,7 +450,7 @@ class PluginsSettingsWidget(BaseWidget):
             self.view.addTopLevelItem(item)
 
 
-class PathSettingsWidget(BaseWidget):
+class PathSettingsWidget(AbstractSettingsWidget):
     """ Path settings where to store shared data """
 
     def __init__(self):
@@ -385,21 +458,33 @@ class PathSettingsWidget(BaseWidget):
         self.setWindowTitle(self.tr("Path"))
         self.setWindowIcon(FIcon(0xF1080))
 
+        self.edit = widgets.FileEdit()
+        self.edit.set_path_type("dir")
         main_layout = QFormLayout()
+        main_layout.addRow("path", self.edit)
 
         self.setLayout(main_layout)
 
     def save(self):
-        pass
+        settings = QSettings()
+        if self.edit.exists():
+            settings.setValue("data_path", self.edit.text())
 
     def load(self):
-        pass
+
+        settings = QSettings()
+        path = settings.value(
+            "data_path",
+            QStandardPaths.writableLocation(QStandardPaths.GenericDataLocation),
+        )
+
+        self.edit.setText(path)
 
 
-class SettingsWidget(QDialog):
+class SettingsDialog(QDialog):
     """Main widget for settings window
 
-    Subwidgets are intantiated on panels; a GroupWidget groups similar widgets
+    Subwidgets are intantiated on panels; a SectionWidget groups similar widgets
     in tabs.
 
     Signals:
@@ -409,7 +494,7 @@ class SettingsWidget(QDialog):
 
     uiSettingsChanged = Signal()
 
-    def __init__(self, parent):
+    def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle(self.tr("Cutevariant - Settings"))
         self.setWindowIcon(QIcon(cm.DIR_ICONS + "app.png"))
@@ -436,23 +521,29 @@ class SettingsWidget(QDialog):
 
         # Instantiate subwidgets on panels
         # Similar widgets for general configuration
-        general_settings = GroupWidget()
+        general_settings = SectionWidget()  #  Not a title !
         general_settings.setWindowTitle(self.tr("General"))
         general_settings.setWindowIcon(FIcon(0xF0614))
 
-        general_settings.add_settings_widget(PathSettingsWidget())
-        general_settings.add_settings_widget(TranslationSettingsWidget())
-        general_settings.add_settings_widget(ProxySettingsWidget())
-        general_settings.add_settings_widget(StyleSettingsWidget())
+        general_settings.add_page(PathSettingsWidget())
+
+        # Cutevariant is  not yet translated ..
+        # general_settings.add_page(TranslationSettingsWidget())
+
+        general_settings.add_page(ProxySettingsWidget())
+        general_settings.add_page(StyleSettingsWidget())
 
         # Activation status of plugins
         plugin_settings = PluginsSettingsWidget()
-        plugin_settings.registerPlugin.connect(parent.register_plugin)
-        plugin_settings.deregisterPlugin.connect(parent.deregister_plugin)
+
+        #  BOF...
+        if parent:
+            plugin_settings.registerPlugin.connect(parent.register_plugin)
+            plugin_settings.deregisterPlugin.connect(parent.deregister_plugin)
 
         # Specialized widgets on panels
-        self.addPanel(general_settings)
-        self.addPanel(plugin_settings)
+        self.add_section(general_settings)
+        # self.add_section(plugin_settings)
         self.load_plugins()
 
         self.resize(800, 400)
@@ -469,7 +560,7 @@ class SettingsWidget(QDialog):
 
         self.accepted.connect(self.close)
 
-    def addPanel(self, widget: BaseWidget):
+    def add_section(self, widget: SectionWidget):
         """Add a widget on the widow via a QStackedWidget; keep a reference on it
         for later connection/activation"""
         # Used to load/save all widgets on demand
@@ -502,6 +593,10 @@ class SettingsWidget(QDialog):
                     continue
 
                 widget = settings_widget_class()
+                # Create rprefix settings ! For instance [VariantView]
+                # widget.prefix_settings = widget.__class__.__name__.replace(
+                #     "SettingsWidget", ""
+                # )
 
                 if not widget.windowTitle():
                     widget.setWindowTitle(extension["name"])
@@ -509,7 +604,7 @@ class SettingsWidget(QDialog):
                 if not widget.windowIcon():
                     widget.setWindowIcon(FIcon(0xF0431))
 
-                self.addPanel(widget)
+                self.add_section(widget)
 
 
 if __name__ == "__main__":
@@ -517,7 +612,7 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
-    d = SettingsWidget()
+    d = SettingsDialog()
     d.show()
 
     app.exec_()

@@ -2,7 +2,10 @@
 from logging.handlers import RotatingFileHandler
 import logging
 import datetime as dt
+import re
+import json
 import tempfile
+import os
 from pkg_resources import resource_filename
 
 # Misc
@@ -163,3 +166,42 @@ def bytes_to_readable(size) -> str:
             return "%3.1f%s" % (size, count)
         size /= 1024.0
     return "%3.1f%s" % (size, "TB")
+
+
+def snake_to_camel(name: str) -> str:
+    """Convert snake_case name to CamelCase name
+
+    Args:
+        name (str): a snake string like : query_view
+
+    Returns:
+        str: a camel string like: QueryView
+    """
+    return "".join([i.capitalize() for i in name.split("_")])
+
+
+def camel_to_snake(name: str) -> str:
+    """Convert CamelCase to snake_case name
+
+    Args:
+        name (str): a snake string like : QueryView
+
+    Returns:
+        str: a camel string like: query_view
+    """
+    name = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", name)
+    return re.sub("([a-z0-9])([A-Z])", r"\1_\2", name).lower()
+
+
+def is_json_file(filename):
+
+    if not os.path.exists(filename):
+        return False
+
+    with open(filename) as file:
+        try:
+            json.load(file)
+        except Exception as e:
+            return False
+        finally:
+            return True

@@ -83,9 +83,10 @@ class DictModel(QAbstractTableModel):
 
     def set_dict(self, data: dict):
 
-        self.beginResetModel()
-        self._raw_data = [(k, v) for k, v in data.items()]
-        self.endResetModel()
+        if data:
+            self.beginResetModel()
+            self._raw_data = [(k, v) for k, v in data.items()]
+            self.endResetModel()
 
     def clear(self):
         self.set_dict({})

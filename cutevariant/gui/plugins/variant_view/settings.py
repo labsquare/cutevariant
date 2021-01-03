@@ -5,12 +5,12 @@ from PySide2.QtWidgets import *
 
 # Custom imports
 from cutevariant.gui.plugin import PluginSettingsWidget
-from cutevariant.gui.settings import BaseWidget
+from cutevariant.gui.settings import AbstractSettingsWidget
 from cutevariant.gui import FIcon
 import cutevariant.commons as cm
 
 
-class LinkSettings(BaseWidget):
+class LinkSettings(AbstractSettingsWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Cross databases links"))
@@ -55,30 +55,30 @@ class LinkSettings(BaseWidget):
         self.remove_button.clicked.connect(self.remove_item)
 
     def save(self):
-        """Override from BaseWidget"""
-        settings = QSettings()
+        """Override from PageWidget"""
+        settings = self.create_settings()
+
         # Bug from Pyside2.QSettings which don't return boolean
-        settings.remove("plugins/variant_view/links")
-        settings.beginWriteArray("plugins/variant_view/links")
+        settings.remove("links")
+        settings.beginWriteArray("links")
         for i in range(self.view.count()):
             settings.setArrayIndex(i)
             item = self.view.item(i)
             name = item.text()
             url = item.data(Qt.UserRole)
-            is_default = int(item.data(Qt.UserRole + 1))
-            is_browser = int(item.data(Qt.UserRole + 2))
+            is_default = bool(item.data(Qt.UserRole + 1))
+            is_browser = bool(item.data(Qt.UserRole + 2))
             settings.setValue("name", name)
             settings.setValue("url", url)
             settings.setValue("is_default", is_default)
             settings.setValue("is_browser", is_browser)
 
-
         settings.endArray()
 
     def load(self):
-        """Override from BaseWidget"""
-        settings = QSettings()
-        size = settings.beginReadArray("plugins/variant_view/links")
+        """Override from PageWidget"""
+        settings = self.create_settings()
+        size = settings.beginReadArray("links")
         self.view.clear()
 
         #  If no links available, load default one
@@ -91,14 +91,16 @@ class LinkSettings(BaseWidget):
             url = settings.value("url")
 
             # Bug from Pyside2.QSettings which don't return boolean
-            is_default = bool(int(settings.value("is_default",0)))
-            is_browser = bool(int(settings.value("is_browser",0)))
+            is_default = settings.value("is_default", False, type=bool)
+            is_browser = settings.value("is_browser", False, type=bool)
 
             self.add_list_widget_item(name, url, is_default, is_browser)
 
         settings.endArray()
 
-    def add_list_widget_item(self, db_name: str, url: str, is_default=False, is_browser=False):
+    def add_list_widget_item(
+        self, db_name: str, url: str, is_default=False, is_browser=False
+    ):
         """Add an item to the QListWidget of the current view"""
         # Key is the name of the database, value is its url
         item = QListWidgetItem(db_name)
@@ -114,28 +116,40 @@ class LinkSettings(BaseWidget):
 
         self.view.addItem(item)
 
-    def edit_list_widget_item(self, item: QListWidgetItem, db_name: str, url: str, is_default = False, is_browser = False):
+    def edit_list_widget_item(
+        self,
+        item: QListWidgetItem,
+        db_name: str,
+        url: str,
+        is_default=False,
+        is_browser=False,
+    ):
         """Modify the given item"""
         item.setText(db_name)
         item.setData(Qt.UserRole, url)
-        item.setData(Qt.UserRole+1, int(is_default))
-        item.setData(Qt.UserRole+2, int(is_browser))
+        item.setData(Qt.UserRole + 1, is_default)
+        item.setData(Qt.UserRole + 2, is_browser)
 
     def add_url(self, item=None):
         """Allow the user to insert and save custom database URL"""
         # Display dialog box to let the user enter it's own url
         dialog = QDialog()
-        title = QLabel(self.tr("""Create a link using variant field as place holder.
+        title = QLabel(
+            self.tr(
+                """Create a link using variant field as place holder.
 For instance, to open UCSC genom browser use :\n
 https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg19&position={chr}:{pos}
-            """))
+            """
+            )
+        )
         name = QLineEdit()
         url = QLineEdit()
-        browser = QCheckBox(self.tr("Keep this box unchecked if you only want a http request "))
+        browser = QCheckBox(
+            self.tr("Keep this box unchecked if you only want a http request ")
+        )
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         buttons.accepted.connect(dialog.accept)
         buttons.rejected.connect(dialog.reject)
-        
 
         layout = QFormLayout()
         layout.addRow(self.tr("Name"), name)
@@ -162,10 +176,14 @@ https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg19&position={chr}:{pos}
 
             if item:
                 # Edit the current item in the list
-                self.edit_list_widget_item(item, name.text(), url.text(), False, bool(browser.checkState()))
+                self.edit_list_widget_item(
+                    item, name.text(), url.text(), False, bool(browser.checkState())
+                )
             else:
                 # Add the item to the list
-                self.add_list_widget_item(name.text(), url.text(), False, bool(browser.checkState()))
+                self.add_list_widget_item(
+                    name.text(), url.text(), False, bool(browser.checkState())
+                )
 
             # Save the item in settings
             # (Here to limit the friction with Save all button)
@@ -217,7 +235,7 @@ https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg19&position={chr}:{pos}
             item.setFont(font)
 
 
-class MemorySettings(BaseWidget):
+class MemorySettings(AbstractSettingsWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Memory"))
@@ -251,4 +269,4 @@ class VariantViewSettingsWidget(PluginSettingsWidget):
         self.setWindowIcon(FIcon(0xF035C))
         self.setWindowTitle("Variant view")
         # self.add_settings_widget(MemorySettings())
-        self.add_settings_widget(LinkSettings())
+        self.add_page(LinkSettings())

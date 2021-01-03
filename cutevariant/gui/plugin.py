@@ -206,6 +206,20 @@ class PluginWidget(QWidget):
         else:
             self._STARTUP = False
 
+        # def create_settings(self):
+        #     settings = QSettings()
+        #     settings.beginGroup(self._prefix_settings)
+        #     return settings
+
+    @property
+    def plugin_name(self):
+        return cm.camel_to_snake(self.__class__.__name__.replace("Widget", ""))
+
+    def create_settings(self):
+        settings = QSettings()
+        settings.beginGroup(self.plugin_name)
+        return settings
+
 
 class PluginDialog(QDialog):
     """Model class for all tool menu plugins
@@ -224,8 +238,17 @@ class PluginDialog(QDialog):
         super().__init__(parent)
         self.conn = None
 
+    @property
+    def plugin_name(self):
+        return cm.camel_to_snake(self.__class__.__name__.replace("Dialog", ""))
 
-class PluginSettingsWidget(settings.GroupWidget):
+    def create_settings(self):
+        settings = QSettings()
+        settings.beginGroup(self.plugin_name)
+        return settings
+
+
+class PluginSettingsWidget(settings.SectionWidget):
     """Model class for settings plugins"""
 
     ENABLE = False
@@ -236,6 +259,7 @@ class PluginSettingsWidget(settings.GroupWidget):
             parent (QMainWindow): cutevariant window (mainly SettingsWidget)
         """
         super().__init__(parent)
+        self.prefix_settings = self.plugin_name
 
     def on_refresh(self):
         """Called to refresh the GUI of the current plugin
@@ -244,20 +268,12 @@ class PluginSettingsWidget(settings.GroupWidget):
         """
         pass
 
+    @property
+    def plugin_name(self):
+        return cm.camel_to_snake(self.__class__.__name__.replace("SettingsWidget", ""))
+
 
 ################################################################################
-
-
-def snake_to_camel(name: str) -> str:
-    """Convert snake_case name to CamelCase name
-
-    Args:
-        name (str): a snake string like : query_view
-
-    Returns:
-        str: a camel string like: QueryView
-    """
-    return "".join([i.capitalize() for i in name.split("_")])
 
 
 def find_plugins(path=None):
@@ -267,7 +283,6 @@ def find_plugins(path=None):
 
     Example of yielded dict:
 
-        .. code-block:: javascript
 
             {
                 'name': 'word_set',
@@ -301,9 +316,9 @@ def find_plugins(path=None):
         )
 
         # TODO: maybe could use __title__ to build class names...
-        widget_class_name = snake_to_camel(package.name) + "Widget"
-        settings_class_name = snake_to_camel(package.name) + "SettingsWidget"
-        dialog_class_name = snake_to_camel(package.name) + "Dialog"
+        widget_class_name = cm.snake_to_camel(package.name) + "Widget"
+        settings_class_name = cm.snake_to_camel(package.name) + "SettingsWidget"
+        dialog_class_name = cm.snake_to_camel(package.name) + "Dialog"
 
         # Load __init__ file data of the module
         # We expect to load a plugin per module found in a plugin directory
@@ -391,3 +406,12 @@ def find_plugins(path=None):
                 )
 
         yield plugin_item
+
+    @property
+    def plugin_name(self):
+        return self.__class__.__name__.replace("SettingsWidget", "")
+
+
+if __name__ == "__main__":
+
+    print(cm.snake_to_camel("query_view"))

@@ -55,18 +55,18 @@ class VariantModel(QAbstractTableModel):
         error_raised(str): Emit message when threads or something else encounter errors
     """
 
-    # emit when variant results is loaded 
+    # emit when variant results is loaded
     variant_loaded = Signal()
     variant_is_loading = Signal(bool)
 
-    # emit when toutal count is loaded 
+    # emit when toutal count is loaded
     count_loaded = Signal()
     count_is_loading = Signal(bool)
 
-    # Emit when all load has started 
+    # Emit when all load has started
     load_started = Signal()
 
-    # Emit when all data ( count + variant) has finished 
+    # Emit when all data ( count + variant) has finished
     load_finished = Signal()
 
     error_raised = Signal(str)
@@ -102,16 +102,22 @@ class VariantModel(QAbstractTableModel):
         self._load_variant_thread = SqlThread(self.conn)
         self._load_count_thread = SqlThread(self.conn)
 
-        self._load_variant_thread.started.connect(lambda : self.variant_is_loading.emit(True))
-        self._load_variant_thread.finished.connect(lambda : self.variant_is_loading.emit(False))
+        self._load_variant_thread.started.connect(
+            lambda: self.variant_is_loading.emit(True)
+        )
+        self._load_variant_thread.finished.connect(
+            lambda: self.variant_is_loading.emit(False)
+        )
         self._load_variant_thread.result_ready.connect(self._on_variant_loaded)
         self._load_variant_thread.error.connect(self.error_raised)
 
-        self._load_count_thread.started.connect(lambda : self.count_is_loading.emit(True))
-        self._load_count_thread.finished.connect(lambda : self.count_is_loading.emit(False))
+        self._load_count_thread.started.connect(
+            lambda: self.count_is_loading.emit(True)
+        )
+        self._load_count_thread.finished.connect(
+            lambda: self.count_is_loading.emit(False)
+        )
         self._load_count_thread.result_ready.connect(self._on_count_loaded)
-
-
 
         self._finished_thread_count = 0
         self._user_has_interrupt = False
@@ -123,9 +129,6 @@ class VariantModel(QAbstractTableModel):
             maxsize=self.DEFAUT_CACHE_SIZE, getsizeof=sys.getsizeof
         )
         self._load_count_cache = cachetools.LFUCache(maxsize=1000)
-
-
-
 
     @property
     def conn(self):
@@ -152,8 +155,7 @@ class VariantModel(QAbstractTableModel):
             self._load_variant_thread.conn = conn
             self._load_count_thread.conn = conn
 
-
-            #self._load_count_thread.error.connect(self._on_error)
+            # self._load_count_thread.error.connect(self._on_error)
 
     def rowCount(self, parent=QModelIndex()):
         """Overrided : Return children count of index"""
@@ -507,7 +509,6 @@ class VariantModel(QAbstractTableModel):
         if self._finished_thread_count == 2:
             self.load_finished.emit()
 
-
     def hasPage(self, page: int) -> bool:
         """ Return True if <page> exists otherwise return False """
         return (page - 1) >= 0 and (page - 1) * self.limit < self.total
@@ -675,8 +676,6 @@ class VariantView(QWidget):
         self.view = LoadingTableView()
         self.bottom_bar = QToolBar()
 
-        self.settings = QSettings()
-
         # self.view.setFrameStyle(QFrame.NoFrame)
         self.view.setAlternatingRowColors(True)
         self.view.horizontalHeader().setStretchLastSection(True)
@@ -786,7 +785,6 @@ class VariantView(QWidget):
         self.model.count_is_loading.connect(self.set_tool_loading)
         self.model.variant_is_loading.connect(self.set_view_loading)
 
-
         # Connect errors from async runnables
         self.model.error_raised.connect(self.error_raised)
         #  connect double clicke
@@ -876,8 +874,6 @@ class VariantView(QWidget):
         print("loaded")
         self.info_label.setText(text.format(self.model.total, self.model.pageCount()))
 
-
-
     def set_formatter(self, formatter):
         self.delegate.formatter = formatter
         self.view.reset()
@@ -889,6 +885,7 @@ class VariantView(QWidget):
     @conn.setter
     def conn(self, _conn):
         self.model.conn = _conn
+
     @property
     def fields(self):
         return self.model.fields
@@ -991,7 +988,7 @@ class VariantView(QWidget):
         else:
             self.loading_label.movie().stop()
             self.loading_action.setVisible(False)
-            #self.info_label.setText("")
+            # self.info_label.setText("")
 
         self.bottom_bar.setDisabled(active)
 
@@ -999,6 +996,41 @@ class VariantView(QWidget):
 
         self.set_view_loading(active)
         self.set_tool_loading(active)
+
+    def _get_links(self) -> list:
+        """Get links from settings
+
+        Return list of links from QSettings 
+
+        Exemples:
+            {
+            "name":"google",
+            "url": "http://www.google.fr/q={}",
+            "is_browser": True   # Open with browser  
+            "is_default": True   # is a default action 
+            }
+
+        """
+        links = []
+        settings = QSettings()
+        settings.beginGroup("variant_view")
+        size = settings.beginReadArray("links")
+        for index in range(size):
+            settings.setArrayIndex(index)
+
+            links.append(
+                {
+                    "name": settings.value("name"),
+                    "url": settings.value("url"),
+                    "is_default": settings.value("is_default", 0, type=bool),
+                    "is_browser": settings.value("is_browser", 0, type=bool),
+                }
+            )
+
+        settings.endArray()
+        settings.endGroup()
+
+        return links
 
     def contextMenuEvent(self, event: QContextMenuEvent):
         """Override: Show contextual menu over the current variant"""
@@ -1048,30 +1080,13 @@ class VariantView(QWidget):
 
         # Create external links
         links_menu = menu.addMenu(self.tr("External links"))
-        size = self.settings.beginReadArray("plugins/variant_view/links")
-        # Display only external links with placeholders that can be mapped
-        for index in range(size):
-            self.settings.setArrayIndex(index)
-            key = self.settings.value("name")
-            is_default = bool(int(self.settings.value("is_default", 0)))
-            is_browser = bool(int(self.settings.value("is_browser", 0)))
-            format_string = self.settings.value("url")
 
-            url = self._create_url(format_string, full_variant)
-
-            print("URL ", url)
-
+        # Display only exec_ternal links with placeholders that can be mapped
+        for link in self._get_links():
+            url = self._create_url(link["url"], full_variant)
             if url:
-                action = links_menu.addAction(
-                    f"{key}", functools.partial(self._open_url, url, is_browser)
-                )
-
-                #  set bold if default
-                # font = QFont()
-                # font.setBold(is_default)
-                # action.setFont(font)
-
-        self.settings.endArray()
+                func_slot = functools.partial(self._open_url, url, link["is_browser"])
+                action = links_menu.addAction(link["url"], func_slot)
 
         # Comment action
         on_edit = functools.partial(self.edit_comment, current_index)
@@ -1120,7 +1135,7 @@ class VariantView(QWidget):
             # Full or partial mapping => accepted link
             return QUrl(format_string.format(**variant), QUrl.TolerantMode)
         else:
-            return None
+            return format_string
 
     def update_favorites(self, checked: bool = None):
         """Update favorite status of multiple selected variants
@@ -1155,7 +1170,6 @@ class VariantView(QWidget):
                 update_data = {"favorite": int(checked)}
 
             self.model.update_variant(index.row(), update_data)
-
 
     def update_classification(self, index: QModelIndex, value=3):
         """Update classification level of the variant at the given index"""
@@ -1216,35 +1230,30 @@ class VariantView(QWidget):
         QApplication.instance().clipboard().setText(output.getvalue())
         output.close()
 
+    def _open_default_link(self, index: QModelIndex):
+
+        current_variant = self.model.variant(index.row())
+        full_variant = sql.get_one_variant(self.conn, current_variant["id"])
+        # Update variant with annotation data visible in the view ...
+        full_variant.update(current_variant)
+        #  get default link
+        link = [i for i in self._get_links() if i["is_default"] is True]
+        if not link:
+            return
+
+        link = link[0]
+
+        url = self._create_url(link["url"], full_variant)
+        if url:
+            self._open_url(url, link["is_browser"])
+
     def on_double_clicked(self, index: QModelIndex):
         """ 
         React on double clicked
         TODO : duplicate code with ContextMenu Event ! Need to refactor a bit 
         """
-        current_variant = self.model.variant(index.row())
-        full_variant = sql.get_one_variant(self.conn, current_variant["id"])
-        # Update variant with currently displayed fields (not in variants table)
-        full_variant.update(current_variant)
 
-        # Look from settings the default open link
-        format_string = None
-        size = self.settings.beginReadArray("plugins/variant_view/links")
-        for index in range(size):
-            self.settings.setArrayIndex(index)
-            is_default = bool(int(self.settings.value("is_default")))
-            is_browser = bool(int(self.settings.value("is_browser", 0)))
-
-            if is_default:
-                format_string = self.settings.value("url")
-                break
-        self.settings.endArray()
-
-        #  Create and open link
-        if format_string:
-            # Get placeholders
-            url = self._create_url(format_string, full_variant)
-            if url:
-                self._open_url(url, is_browser)
+        self._open_default_link(index)
 
 
 class VariantViewWidget(plugin.PluginWidget):
@@ -1339,7 +1348,6 @@ class VariantViewWidget(plugin.PluginWidget):
 
         # Add formatters to combobox
         self.formatter_combo = QComboBox()
-        self.settings = QSettings()
         self.add_available_formatters()
 
         # Error handling
@@ -1388,7 +1396,10 @@ class VariantViewWidget(plugin.PluginWidget):
         Default formatter is "SeqoneFormatter".
         """
         # Get previously selected formatter
-        formatter_name = self.settings.value("ui/formatter", "CutestyleFormatter")
+
+        settings = QSettings()
+        settings.beginGroup("variant_view")
+        formatter_name = settings.value("formatter", "CutestyleFormatter")
 
         # Add formatters to combobox, a click on it will instantiate the class
         selected_formatter_index = 0
@@ -1405,15 +1416,19 @@ class VariantViewWidget(plugin.PluginWidget):
         self.formatter_combo.setCurrentIndex(selected_formatter_index)
 
     def on_formatter_changed(self):
-        """Activate the selected formatter
+        """Activate the selected formatter and save it in settings
 
         Called when the current formatter is modified
         """
+
+        settings = QSettings()
+        settings.beginGroup("variant_view")
+
         formatter_class = self.formatter_combo.currentData()
         self.main_right_pane.set_formatter(formatter_class())
         self.groupby_left_pane.set_formatter(formatter_class())
         # Save formatter setting
-        self.settings.setValue("ui/formatter", formatter_class.__name__)
+        settings.setValue("formatter", formatter_class.__name__)
 
     def on_open_project(self, conn):
         """Overrided from PluginWidget"""
@@ -1719,7 +1734,6 @@ class VariantViewWidget(plugin.PluginWidget):
         Args:
             message (str): Error message
         """
-
 
         if self.log_edit.isHidden():
             self.log_edit.show()
