@@ -103,7 +103,7 @@ def test_save_view(qtbot, monkeypatch, conn):
     assert view.filter_path == temp_dir
 
     # ON SAVE_AS file_path_1
-    monkeypatch.setattr(QFileDialog, "exec_", lambda x: True)
+    monkeypatch.setattr(QFileDialog, "exec_", lambda x: QMessageBox.Save)
     monkeypatch.setattr(QFileDialog, "selectedFiles", lambda x: [file_path_1])
     view.on_save_as()
     assert os.path.exists(file_path_1)
@@ -113,7 +113,7 @@ def test_save_view(qtbot, monkeypatch, conn):
 
     # ON SAVE_AS file_path_2 ( is an empty file )
     view.model.clear()
-    monkeypatch.setattr(QFileDialog, "exec_", lambda x: True)
+    monkeypatch.setattr(QFileDialog, "exec_", lambda x: QMessageBox.Save)
     monkeypatch.setattr(QFileDialog, "selectedFiles", lambda x: [file_path_2])
     view.on_save_as()
     assert os.path.exists(file_path_2)
@@ -126,6 +126,9 @@ def test_save_view(qtbot, monkeypatch, conn):
     assert view.model.filters == FILTERS
 
     # ON DELETE
-    monkeypatch.setattr(QMessageBox, "exec_", lambda x: True)
+    monkeypatch.setattr(QMessageBox, "exec_", lambda x: QMessageBox.No)
+    view.on_delete()
+    assert os.path.exists(file_path_1)
+    monkeypatch.setattr(QMessageBox, "exec_", lambda x: QMessageBox.Yes)
     view.on_delete()
     assert not os.path.exists(file_path_1)

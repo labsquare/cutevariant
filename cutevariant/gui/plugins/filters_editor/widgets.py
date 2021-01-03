@@ -2056,7 +2056,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
         msgBox.setStandardButtons(QMessageBox.Save | QMessageBox.Discard)
         msgBox.setDefaultButton(QMessageBox.Save)
 
-        if msgBox.exec_():
+        if msgBox.exec_() == QMessageBox.Save:
             filename = self.combo.currentData()
             if os.path.exists(filename):
                 self.model.to_json(filename)
@@ -2084,10 +2084,10 @@ class FiltersEditorWidget(plugin.PluginWidget):
         msgBox = QMessageBox()
         msgBox.setText(f"Remove {filename}")
         msgBox.setInformativeText("Do you want to remove this file ?")
-        msgBox.setStandardButtons(QMessageBox.Save | QMessageBox.Discard)
-        msgBox.setDefaultButton(QMessageBox.Save)
+        msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        msgBox.setDefaultButton(QMessageBox.No)
 
-        if msgBox.exec():
+        if msgBox.exec() == QMessageBox.Yes:
             if os.path.exists(filename):
                 os.remove(filename)
                 self.model.clear()
