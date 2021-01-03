@@ -2015,18 +2015,6 @@ class FiltersEditorWidget(plugin.PluginWidget):
             self.mainwindow.state.filters = self.filters
             self.mainwindow.refresh_plugins(sender=self)
 
-        # Filters changed:
-        # - item in combobox has been changed
-        # - filters in current filter has been changed
-        # Filters are read only, so we must go to the unsaved one.
-        current_index = self.combo.currentIndex()
-        if current_index != 0 and self.combo.currentData() != self.filters:
-            # Update UserRole of default no saved filter and select it
-            self.combo.blockSignals(True)
-            self.combo.setItemData(0, self.filters)
-            self.combo.setCurrentIndex(0)
-            self.combo.blockSignals(False)
-
         self.refresh_buttons()
 
     def on_add_logic(self):
@@ -2108,10 +2096,12 @@ class FiltersEditorWidget(plugin.PluginWidget):
     def on_combo_changed(self, index):
         """Called when a new item is selected in the ComboBox (programatically or not)"""
         filename = self.combo.itemData(index)
+        print(filename)
 
         if filename:
             self.combo.setToolTip(filename)
             self.model.from_json(filename)
+            self.on_filters_changed()
             self._update_view_geometry()
         # self.on_filters_changed()
 
