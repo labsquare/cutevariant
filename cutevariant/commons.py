@@ -203,5 +203,5 @@ def is_json_file(filename):
             json.load(file)
         except Exception as e:
             return False
-        finally:
-            return True
+
+    return True

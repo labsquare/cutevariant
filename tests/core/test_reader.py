@@ -76,8 +76,8 @@ def test_extra_fields(reader):
         fields = tuple(reader.get_extra_fields())
         field_names = [f["name"] for f in fields if f["category"] == "variants"]
 
-        "qual" not in field_names
-        "dp" not in field_names
+        assert "qual" not in field_names
+        assert "dp" not in field_names
 
 
 @pytest.mark.parametrize(
@@ -342,19 +342,8 @@ def test_nullify():
     variant = {
         "chr": "chr3",
         "filters": "",
-        "annotations": [
-            {
-            "gene":"CFTR",
-            "test":""
-            }
-        ],
-        "samples": [
-            {
-            "name":"boby",
-            "dp":""
-            }
-        ]
-    
+        "annotations": [{"gene": "CFTR", "test": ""}],
+        "samples": [{"name": "boby", "dp": ""}],
     }
 
     variant = nullify(variant)
