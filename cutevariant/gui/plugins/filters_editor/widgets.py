@@ -1945,12 +1945,13 @@ class FiltersEditorWidget(plugin.PluginWidget):
     #         self.combo.addItem(filter_name, vql_obj["filters"])
 
     def on_refresh(self):
-        """Overrided"""
+
         if self.filters == self.mainwindow.state.filters:
             # No change in filters = no refresh
             return
 
-        # Filters changed: Update UserRole of default filter and select it
+        self.model.clear()
+        self.model.filters = self.mainwindow.state.filters
 
         self.refresh_buttons()
         self._update_view_geometry()
@@ -1989,6 +1990,8 @@ class FiltersEditorWidget(plugin.PluginWidget):
     def load_combo(self):
 
         self.combo.clear()
+
+        print("===LOAD Combo")
 
         folder = QDir(self.filter_path)
         for index, file_info in enumerate(
