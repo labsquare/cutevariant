@@ -22,6 +22,8 @@
 import sys
 from pkg_resources import parse_version
 
+import cachetools  # Force pyinstaller to import cache tools
+
 from PySide2.QtCore import (
     QCoreApplication,
     QSettings,
