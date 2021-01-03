@@ -43,13 +43,14 @@ from PySide2.QtCore import (
     QEvent,
     QStandardPaths,
     QSize,
+    QFileInfo,
     QSettings,
     QRect,
 )
 from PySide2.QtGui import QPainter, QPalette, QFont, QPen, QBrush
 
 # Custom imports
-from cutevariant.gui import style, plugin
+from cutevariant.gui import style, plugin, FIcon
 from cutevariant.core import sql, get_sql_connection
 from cutevariant.core.vql import parse_one_vql
 from cutevariant.core.querybuilder import (
@@ -1954,6 +1955,21 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.refresh_buttons()
         self._update_view_geometry()
 
+    @property
+    def filter_path(self):
+        """ Return filter path from settings """
+        settings = QSettings()
+        settings.beginGroup(self.plugin_name)
+        return settings.value(
+            "filter_path", QStandardPaths.writableLocation(QStandardPaths.DataLocation)
+        )
+
+    @filter_path.setter
+    def filter_path(self, value: str):
+        settings = QSettings()
+        settings.beginGroup(self.plugin_name)
+        return settings.setValue("filter_path", value)
+
     def refresh_buttons(self):
         """Actualize the enable states of Add/Del buttons"""
 
@@ -1972,15 +1988,9 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
     def load_combo(self):
 
-        settings = QSettings()
-        settings.beginGroup(self.plugin_name)
-
         self.combo.clear()
-        path = settings.value(
-            "filter_path", QStandardPaths.writableLocation(QStandardPaths.DataLocation)
-        )
 
-        folder = QDir(path)
+        folder = QDir(self.filter_path)
         for index, file_info in enumerate(
             folder.entryInfoList(["*.filter.json"], QDir.Files)
         ):
@@ -1989,18 +1999,11 @@ class FiltersEditorWidget(plugin.PluginWidget):
                 str(file_info.baseName()),
                 str(file_info.absoluteFilePath()),
             )
-            print(
-                "add item", str(file_info.baseName()), str(file_info.absoluteFilePath())
-            )
+
             #  Security
             if index > 1000:
                 LOGGER.warning("Too many file filters. Some filters are not imported")
                 break
-
-        print(self.combo.itemText(0), self.combo.itemData(0))
-        print(self.combo.itemText(1), self.combo.itemData(1))
-
-        settings.endGroup()
 
     def on_filters_changed(self):
         """Triggered when filters changed FROM THIS plugin
@@ -2051,7 +2054,6 @@ class FiltersEditorWidget(plugin.PluginWidget):
                 self.model.to_json(filename)
                 self.load_combo()
                 file_info = QFileInfo(filename)
-                print("save as", file_info.baseName())
                 self.combo.setCurrentText(file_info.baseName())
 
     def on_save(self):
@@ -2066,32 +2068,24 @@ class FiltersEditorWidget(plugin.PluginWidget):
         msgBox.setStandardButtons(QMessageBox.Save | QMessageBox.Discard)
         msgBox.setDefaultButton(QMessageBox.Save)
 
-        if msgBox.exec():
+        if msgBox.exec_():
             filename = self.combo.currentData()
             if os.path.exists(filename):
                 self.model.to_json(filename)
 
     def on_set_directory(self):
 
-        settings = QSettings()
-        settings.beginGroup(self.plugin_name)
-
-        path = settings.value(
-            "filter_path", QStandardPaths.writableLocation(QStandardPaths.DataLocation)
-        )
-
         dialog = QFileDialog()
-        dialog.setDirectory(path)
+        dialog.setDirectory(self.filter_path)
         dialog.setAcceptMode(QFileDialog.AcceptOpen)
         dialog.setFileMode(QFileDialog.DirectoryOnly)
         if dialog.exec_():
             if dialog.selectedFiles():
                 filename = dialog.selectedFiles()[0]
                 if filename:
-                    settings.setValue("filter_path", filename)
+                    self.filter_path = filename
 
         self.load_combo()
-        settings.endGroup()
 
     def on_delete(self):
         filename = self.combo.currentData()
