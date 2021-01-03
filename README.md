@@ -32,7 +32,7 @@ Standalone binary are available for windows:
 Cutevariant is avaible from [Pypi](https://pypi.org/project/cutevariant/) : 
 
     pip install cutevariant # install
-    cutevariant             # run
+    python -m cutevariant   # run
 
 ## From source 
 - Python 3.6 or newer is required  
