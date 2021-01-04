@@ -45,10 +45,10 @@ make run
 
 ## Usages 
 You can follow this tutorial to familiarize yourself with cutevarant.       
-https://github.com/labsquare/cutevariant/wiki/Usage-examples
+[Usage examples](https://github.com/labsquare/cutevariant/wiki/Usage-examples)
 
 The VQL langage specification is available here :      
-https://github.com/labsquare/cutevariant/wiki/VQL-language
+[VQL specification](https://github.com/labsquare/cutevariant/wiki/VQL-language)
 
 ## Contributions / Bugs
 Cutevariant is a new project and all contributors are welcome
