@@ -100,8 +100,11 @@ def test_variants(reader):
         if "annotations" in variant:
             assert isinstance(variant["annotations"], list)
 
+ 
+
         if "samples" in variant:
             assert isinstance(variant["samples"], list)
+
             samples_names = [s["name"] for s in variant["samples"]]
             assert sorted(reader.get_samples()) == sorted(samples_names)
 
@@ -113,6 +116,19 @@ def test_variants(reader):
     "reader", READERS, ids=[str(i.__class__.__name__) for i in READERS]
 )
 def test_extra_variants(reader):
+
+    def check_value(value:str):
+        # check if value is okay ! 
+        if isinstance(value,str):
+            assert "%3A" not in value
+            assert "%3B" not in value
+            assert "%3D" not in value
+            assert "%25" not in value
+            assert "%2C" not in value
+            assert "%0D" not in value
+            assert "%0A" not in value
+            assert "%09" not in value
+
 
     for variant in reader.get_extra_variants():
         assert "comment" in variant
@@ -127,6 +143,8 @@ def test_extra_variants(reader):
     reader.add_ignored_field("qual", "variants")
     for variant in reader.get_extra_variants():
         assert "qual" not in variant
+        for key, value in variant.items():
+            check_value(value)
 
     ## remove annotation
     if "annotations" in last_variant:
@@ -135,6 +153,8 @@ def test_extra_variants(reader):
             for variant in reader.get_extra_variants():
                 for ann in variant["annotations"]:
                     assert "impact" not in ann
+                    for key, value in ann.items():
+                        check_value(value)
 
     ## remove sample annotations foxog
     if "samples" in last_variant:
@@ -143,6 +163,8 @@ def test_extra_variants(reader):
             for variant in reader.get_extra_variants():
                 for sample in variant["samples"]:
                     assert "foxog" not in sample
+                    for key, value in sample.items():
+                        check_value(value)
 
 
 @pytest.mark.parametrize(

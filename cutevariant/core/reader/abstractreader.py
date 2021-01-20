@@ -3,6 +3,10 @@ import io
 import gzip
 import math
 from collections import Counter
+
+# use to format value with URL caracter : #See Issue
+from urllib.parse import unquote
+
 import cutevariant.commons as cm
 
 LOGGER = cm.logger()
@@ -268,7 +272,7 @@ class AbstractReader(ABC):
         self.ignored_fields.add((field_name, field_category))
 
     def get_extra_variants(self, **kwargs):
-        """Yield variants with extra information computed.
+        """Yield variants with extra information computed and format if necessary
 
         The following information are added. See get_extra_fields
 
@@ -387,6 +391,28 @@ class AbstractReader(ABC):
                     for sample in variant["samples"]:
                         if name in sample:
                             del sample[name]
+
+            # Format variant value ! For instance replace %3D by "="  using unquote
+            # See issue https://github.com/labsquare/cutevariant/issues/220
+
+            for key, value in variant.items():
+                if isinstance(value,str):
+                    variant[key] = unquote(value)
+
+            if "annotations" in variant:
+                for i, ann in enumerate(variant["annotations"]):
+                    for key, value in ann.items():
+                        if isinstance(value,str):
+                            variant["annotations"][i][key] = unquote(variant["annotations"][i][key])
+
+            if "samples" in variant:
+                for i, sample in enumerate(variant["samples"]):
+                    for key, value in sample.items():
+                        if isinstance(value,str):
+                            variant["samples"][i][key] = unquote(variant["samples"][i][key])
+
+
+
 
             yield nullify(variant)
 
