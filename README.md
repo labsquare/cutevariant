@@ -2,6 +2,7 @@
 
 **A standalone and free application to explore genetics variations from VCF file**
 
+A preprint is [available in bioRxiv](https://www.biorxiv.org/content/10.1101/2021.02.10.430619v1)
 
 ![CI](https://github.com/labsquare/cutevariant/workflows/CI/badge.svg)
 
