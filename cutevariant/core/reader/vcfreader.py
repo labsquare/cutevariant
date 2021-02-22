@@ -4,7 +4,7 @@ import vcf
 # Custom imports
 from .abstractreader import AbstractReader, sanitize_field_name
 from .annotationparser import VepParser, SnpEffParser
-from cutevariant.commons import logger
+from cutevariant.commons import logger, get_uncompressed_size
 
 LOGGER = logger()
 
@@ -70,6 +70,9 @@ class VcfReader(AbstractReader):
         self._set_annotation_parser(annotation_parser)
         # Fields descriptions
         self.fields = None
+
+        self.file_size = get_uncompressed_size(self.device.name)
+        self.compute_number_lines()
 
     def get_fields(self):
         """Get full fields descriptions
