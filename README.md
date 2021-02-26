@@ -9,6 +9,18 @@ cutevariant is a light standalone viewer of genetic variation written in Python 
     pip install cutevariant # install
     cutevariant             # run
 
+If you run into this error:
+
+```
+qt.qpa.plugin: Could not load the Qt platform plugin "xcb" in "" even though it was found.
+This application failed to start because no Qt platform plugin could be initialized. Reinstalling the application may fix this problem.
+Available platform plugins are: eglfs, linuxfb, minimal, minimalegl, offscreen, vnc, wayland-egl, wayland, wayland-xcomposite-egl, wayland-xcomposite-glx, webgl, xcb.
+```
+
+There is an easy fix (tested on Linux Mint 18):
+
+`sudo apt-get install libxcb-xinerama0`
+
 # Installation on Windows
 
 Pyside2 is not currently (2019 May) functional on Cygwin, so Cutevariant will not work on Cygwin.
