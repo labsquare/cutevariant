@@ -50,8 +50,8 @@ class VariantModel(QAbstractTableModel):
     fields.
 
     Signals:
-        variant_loaded(bool): Emit when variant are loaded 
-        count_loaded(bool): Emit when total count are loaded 
+        variant_loaded(bool): Emit when variant are loaded
+        count_loaded(bool): Emit when total count are loaded
         error_raised(str): Emit message when threads or something else encounter errors
     """
 
@@ -166,7 +166,7 @@ class VariantModel(QAbstractTableModel):
     def columnCount(self, parent=QModelIndex()):
         """Overrided: Return column count of parent .
 
-        Parent is not used here 
+        Parent is not used here
         """
 
         #  Check integrity for unit test
@@ -201,9 +201,9 @@ class VariantModel(QAbstractTableModel):
     def clear(self):
         """Reset the current model
 
-            - clear variants list
-            - total of variants is set to 0
-            - emit variant_loaded signal
+        - clear variants list
+        - total of variants is set to 0
+        - emit variant_loaded signal
         """
         self.beginResetModel()
         self.variants.clear()
@@ -315,7 +315,7 @@ class VariantModel(QAbstractTableModel):
     def interrupt(self):
         """Interrupt current query if active
 
-        This is a blocking function... 
+        This is a blocking function...
 
         call interrupt and wait for the error_raised signals ...
         If nothing happen after 1000 ms, by pass and continue
@@ -454,7 +454,7 @@ class VariantModel(QAbstractTableModel):
 
     def _on_variant_loaded(self):
         """
-        Triggered when variant_thread is finished 
+        Triggered when variant_thread is finished
 
         """
 
@@ -493,7 +493,7 @@ class VariantModel(QAbstractTableModel):
 
     def _on_count_loaded(self):
         """
-        Triggered when count_threaed is finished 
+        Triggered when count_threaed is finished
         """
 
         # Save cache
@@ -1000,14 +1000,14 @@ class VariantView(QWidget):
     def _get_links(self) -> list:
         """Get links from settings
 
-        Return list of links from QSettings 
+        Return list of links from QSettings
 
         Exemples:
             {
             "name":"google",
             "url": "http://www.google.fr/q={}",
-            "is_browser": True   # Open with browser  
-            "is_default": True   # is a default action 
+            "is_browser": True   # Open with browser
+            "is_default": True   # is a default action
             }
 
         """
@@ -1116,15 +1116,15 @@ class VariantView(QWidget):
             urllib.request.urlopen(url.toString(), timeout=10)
 
     def _create_url(self, format_string: str, variant: dict) -> QUrl:
-        """Create a link from a format string and a variant data 
-        
+        """Create a link from a format string and a variant data
+
         Args:
             format_string (str): a string with format group like : http://www.google.fr?q={chr}
             variant (dict): a variant dict returned by sql.get_one_variant.
-        
+
         Returns:
             QUrl: return url or return None
-        
+
         """
         field_names = {
             name
@@ -1210,6 +1210,17 @@ class VariantView(QWidget):
             index, QItemSelectionModel.SelectCurrent | QItemSelectionModel.Rows
         )
 
+    def keyPressEvent(self, event: QKeyEvent):
+        """
+        Handles key press events on the VariantView
+        Can be used to filter out unexpected behavior with KeySequence conflicts
+        """
+        if event.matches(
+            QKeySequence.Copy
+        ):  # Default behavior from QTableView only copies the index that the mouse hovers
+            self.copy_to_clipboard()  # So copy to clipboard to get the expected behavior in contextMenuEvent
+            event.accept()  # Accept the event before the QTableView handles it in a terrible way
+
     def copy_to_clipboard(self):
         """Copy the selected variant(s) into the clipboard
 
@@ -1248,9 +1259,9 @@ class VariantView(QWidget):
             self._open_url(url, link["is_browser"])
 
     def on_double_clicked(self, index: QModelIndex):
-        """ 
+        """
         React on double clicked
-        TODO : duplicate code with ContextMenu Event ! Need to refactor a bit 
+        TODO : duplicate code with ContextMenu Event ! Need to refactor a bit
         """
 
         self._open_default_link(index)
