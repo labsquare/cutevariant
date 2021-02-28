@@ -231,17 +231,6 @@ class SourceEditorWidget(plugin.PluginWidget):
         self.mainwindow.state.source = source
         self.mainwindow.refresh_plugins(sender=self)
 
-    def show_original_query_popup(self):
-        current_index = self.view.selectionModel().currentIndex()
-        selection_query = self.model.record(current_index)["query"]
-        if current_index and selection_query:
-            popup = QMessageBox(QMessageBox.NoIcon,self.tr("Original query for this record"),selection_query,parent=self)
-            popup.setModal(False)
-            popup.setAttribute(Qt.WA_DeleteOnClose)
-            popup.show()
-            popup.destroyed.connect(lambda:LOGGER.debug("Popup is being deleted correctly"))
-            LOGGER.debug(selection_query)
-
     def menu_setup(self, locked_selection=False):
         """Setup popup menu
         :key locked_selection: Allow to mask edit/remove actions (default False)
@@ -252,7 +241,6 @@ class SourceEditorWidget(plugin.PluginWidget):
 
         if not locked_selection:
             menu.addAction(FIcon(0xF0900), self.tr("Edit"), self.edit_selection)
-            menu.addAction(self.tr("Show original query"),self.show_original_query_popup)
 
         #  Create action for bed
         menu.addAction(
