@@ -37,6 +37,9 @@ def detect_vcf_annotation(filepath):
         if "ANN" in std_reader.infos:
             device.close()
             return "snpeff"
+        if "EFF" in std_reader.infos:
+            device.close()
+            return "snpeff3"
 
 
 @contextmanager
