@@ -1624,15 +1624,17 @@ class VariantViewWidget(plugin.PluginWidget):
                 self.groupby_left_pane.source = self.main_right_pane.source
 
                 # Forge a special filter to display the current variant
-                value = variant[fields_to_vql(field)]
-                and_list = [
-                    {
-                        "field": field,
-                        "operator": "=",
-                        "value": value if value is not None else "NULL",
-                    }
-                    for field in self.groupby_left_pane.group_by
-                ]
+
+                and_list = []
+                for field in self.groupby_left_pane.group_by:
+                    value = variant[fields_to_vql(field)]
+                    and_list.append(
+                        {
+                            "field": field,
+                            "operator": "=",
+                            "value": value if value is not None else "NULL",
+                        }
+                    )
 
                 if self.save_filters:
                     # Build a new filter dict/tree based on the current one
