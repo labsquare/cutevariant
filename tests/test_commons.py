@@ -33,3 +33,10 @@ def test_is_json_file():
 
     assert cm.is_json_file(filename) == True
     assert cm.is_json_file("nofile.png") == False
+
+
+def test_uncompress_size():
+
+    assert cm.get_uncompressed_size("examples/test.snpeff.vcf") == 23718
+    assert cm.get_uncompressed_size("examples/test.snpeff.vcf.gzip.gz") == 23718
+    assert cm.get_uncompressed_size("examples/test.snpeff.vcf.bgzip.gz") == 23718

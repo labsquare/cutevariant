@@ -21,8 +21,7 @@ from PySide2.QtGui import (
     QFont,
     QFontMetrics,
     QSyntaxHighlighter,
-    QTextCharFormat
-
+    QTextCharFormat,
 )
 from PySide2.QtCore import (
     Qt,
@@ -36,11 +35,9 @@ from PySide2.QtCore import (
     QAbstractListModel,
     QRect,
     Signal,
-    QRegularExpression
-
+    QRegularExpression,
 )
 import sys
-
 
 
 class VqlSyntaxHighlighter(QSyntaxHighlighter):
@@ -154,8 +151,6 @@ class VqlSyntaxHighlighter(QSyntaxHighlighter):
                 self.setFormat(match.capturedStart(), match.capturedLength(), t_format)
 
 
-
-
 class CompleterModel(QAbstractListModel):
 
     """Model used by Completer which contains keyword name, description, icon and color 
@@ -175,7 +170,6 @@ class CompleterModel(QAbstractListModel):
 
         self._items = []
 
-
     def clear(self):
         """Clear model
         """
@@ -183,8 +177,7 @@ class CompleterModel(QAbstractListModel):
         self._items.clear()
         self.endResetModel()
 
-
-    def add_item(self, name:str, description:str, icon = QIcon(), color = None):
+    def add_item(self, name: str, description: str, icon=QIcon(), color=None):
         """Add items 
 
         Todo:
@@ -196,12 +189,9 @@ class CompleterModel(QAbstractListModel):
             icon (TYPE, optional): the icon 
             color (None, optional): the background color icon
         """
-        self._items.append({
-            "name": name,
-            "description": description, 
-            "icon": icon,
-            "color": color
-            })
+        self._items.append(
+            {"name": name, "description": description, "icon": icon, "color": color}
+        )
 
     def rowCount(self, parent=QModelIndex()) -> int:
         """Override from QAbstractListModel
@@ -249,7 +239,9 @@ class CompleterDelegate(QStyledItemDelegate):
     """CompleterDelegate is use by the completer to draw nicely icon and elements of the completer
     """
 
-    def paint(self, painter:QPainter, option: QStyleOptionViewItem , index: QModelIndex):
+    def paint(
+        self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex
+    ):
         """Paint a cell according index and option
         
         Args:
@@ -271,7 +263,7 @@ class CompleterDelegate(QStyledItemDelegate):
         icon = index.data(Qt.DecorationRole)
         icon_color = index.data(Qt.BackgroundColorRole)
 
-        # draw icon background 
+        # draw icon background
         area = QRect(
             option.rect.x(), option.rect.y(), option.rect.height(), option.rect.height()
         )
@@ -279,12 +271,12 @@ class CompleterDelegate(QStyledItemDelegate):
         painter.setBrush(QColor(icon_color))
         painter.drawRect(area)
 
-        # Draw icon 
+        # Draw icon
         if icon:
             icon_area = area.adjusted(3, 3, -3, -3)
             painter.drawPixmap(icon_area, icon.pixmap(icon_area.size()))
 
-        # Draw text 
+        # Draw text
         text_rect = option.rect
         text_rect.setLeft(option.rect.height() + 3)
 
@@ -361,7 +353,7 @@ class Completer(QWidget):
         self.panel.setWordWrap(True)
         self.panel.setFrameShape(QFrame.StyledPanel)
 
-        # Create layout 
+        # Create layout
         vlayout = QHBoxLayout()
         vlayout.setContentsMargins(0, 0, 0, 0)
         vlayout.setSpacing(0)
@@ -414,7 +406,7 @@ class Completer(QWidget):
                     event.ignore()
                     return True
 
-                # use tab to move down/up in the list 
+                # use tab to move down/up in the list
                 if event.key() == Qt.Key_Tab:
                     if current.row() < self.proxy_model.rowCount() - 1:
                         self.view.setCurrentIndex(
@@ -426,7 +418,7 @@ class Completer(QWidget):
                             self.proxy_model.index(current.row() - 1, 0)
                         )
 
-                # Route other key event to the target ! This make possible to write text when completer is visible 
+                # Route other key event to the target ! This make possible to write text when completer is visible
                 self._target.event(event)
 
         return super().eventFilter(obj, event)
@@ -448,11 +440,11 @@ class Completer(QWidget):
             self.setFocus()
             if not self.isVisible():
                 width = 400
-                #height = self.view.sizeHintForRow(0) * self.proxy_model.rowCount() + 3
+                # height = self.view.sizeHintForRow(0) * self.proxy_model.rowCount() + 3
                 #  HACK.. TODO better !
-                #height = min(self._target.height() / 2, height)
+                # height = min(self._target.height() / 2, height)
 
-                #self.resize(width, height)
+                # self.resize(width, height)
                 self.adjustSize()
                 self.show()
 
@@ -463,8 +455,14 @@ class Completer(QWidget):
             prefix (str): A prefix keyword used to filter model
         """
         self.view.clearSelection()
-        self._completion_prefix = prefix
-        self.proxy_model.setFilterRegularExpression(QRegularExpression(f"^{prefix}.*", QRegularExpression.CaseInsensitiveOption))
+        self._completion_prefix = QRegularExpression.escape(prefix)
+
+        self.proxy_model.setFilterRegularExpression(
+            QRegularExpression(
+                f"^{ self._completion_prefix}.*",
+                QRegularExpression.CaseInsensitiveOption,
+            )
+        )
         if self.proxy_model.rowCount() > 0:
             self.select_row(0)
 
@@ -477,7 +475,7 @@ class Completer(QWidget):
         index = self.proxy_model.index(row, 0)
         self.view.selectionModel().setCurrentIndex(index, QItemSelectionModel.Select)
 
-    def completion_prefix(self)->str:
+    def completion_prefix(self) -> str:
         """getter of completion_prefix
         
         TODO: use getter / setter 
@@ -531,8 +529,7 @@ class CodeEdit(QTextEdit):
         self.completer = Completer()
         self.completer.set_target(self)
 
-        self.syntax =VqlSyntaxHighlighter(self.document())
-
+        self.syntax = VqlSyntaxHighlighter(self.document())
 
         font = QFont("monospace")
         self.setFont(font)
@@ -565,7 +562,7 @@ class CodeEdit(QTextEdit):
 
         super().keyPressEvent(event)
 
-        #Skip modifier event 
+        # Skip modifier event
         has_modifier = event.modifiers() == Qt.ControlModifier
         if has_modifier:
             return
@@ -580,7 +577,7 @@ class CodeEdit(QTextEdit):
             self.completer.set_completion_prefix(word)
             self.completer.complete(rect)
 
-    def text_under_cursor(self)->str:
+    def text_under_cursor(self) -> str:
         """return text under cursor
         
         Returns:
@@ -590,7 +587,7 @@ class CodeEdit(QTextEdit):
         tc.select(QTextCursor.WordUnderCursor)
         return tc.selectedText()
 
-    def insert_completion(self, completion:str):
+    def insert_completion(self, completion: str):
         """Replace current word by completion
         
         Args:
@@ -601,18 +598,21 @@ class CodeEdit(QTextEdit):
 
         tc.select(QTextCursor.WordUnderCursor)
         tc.removeSelectedText()
-        #tc.movePosition(QTextCursor.Left)
-        #tc.movePosition(QTextCursor.StartOfWord)
+        # tc.movePosition(QTextCursor.Left)
+        # tc.movePosition(QTextCursor.StartOfWord)
         tc.insertText(completion + " ")
-
-
 
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
-
     w = CodeEdit()
+    w.completer.model.beginResetModel()
+    w.completer.model.add_item("keyword", "description", QIcon(), "white")
+    w.completer.model.add_item("keyword", "description", QIcon(), "white")
+    w.completer.model.add_item("keyword", "description", QIcon(), "white")
+    w.completer.model.endResetModel()
+
     w.show()
 
     app.exec_()

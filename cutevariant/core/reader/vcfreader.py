@@ -4,7 +4,7 @@ import vcf
 # Custom imports
 from .abstractreader import AbstractReader, sanitize_field_name
 from .annotationparser import VepParser, SnpEffParser
-from cutevariant.commons import logger
+from cutevariant.commons import logger, get_uncompressed_size
 
 LOGGER = logger()
 
@@ -48,6 +48,12 @@ class VcfReader(AbstractReader):
         annotation_parser (object): Support "VepParser()" and "SnpeffParser()"
     """
 
+    ANNOTATION_PARSERS={
+        "vep" : VepParser,
+        "snpeff" : SnpEffParser,
+        "snpeff3" : SnpEffParser
+    }
+
     def __init__(self, device, annotation_parser: str = None):
         """Construct a VCF Reader
 
@@ -70,6 +76,9 @@ class VcfReader(AbstractReader):
         self._set_annotation_parser(annotation_parser)
         # Fields descriptions
         self.fields = None
+
+        self.file_size = get_uncompressed_size(self.device.name)
+        self.compute_number_lines()
 
     def get_fields(self):
         """Get full fields descriptions
@@ -323,12 +332,13 @@ class VcfReader(AbstractReader):
         return self.samples
 
     def _set_annotation_parser(self, parser: str):
-        """Set the given annotation parser"""
-        if parser == "vep":
-            self.annotation_parser = VepParser()
+        if parser in VcfReader.ANNOTATION_PARSERS:
+            self.annotation_parser = VcfReader.ANNOTATION_PARSERS[parser]()
+        else:
+            self.annotation_parser = None
 
-        if parser == "snpeff":
-            self.annotation_parser = SnpEffParser()
+        if self.annotation_parser is None:
+            LOGGER.info("Will not parse annotations")
 
     def __repr__(self):
         return f"VCF Reader using {type(self.annotation_parser).__name__}"

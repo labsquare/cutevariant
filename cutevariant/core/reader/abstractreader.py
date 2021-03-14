@@ -3,6 +3,10 @@ import io
 import gzip
 import math
 from collections import Counter
+
+# use to format value with URL caracter : #See Issue
+from urllib.parse import unquote
+
 import cutevariant.commons as cm
 
 LOGGER = cm.logger()
@@ -18,7 +22,6 @@ class AbstractReader(ABC):
         device: A file object typically returned by open(); Can be None if
             FakeReader type is instanciated.
         file_size: File size in bytes
-            See Also: :meth:`self.get_total_file_size`
         number_lines: Number of lines in the file (compressed or not).
             See Also: :meth:`self.compute_number_lines`
         read_bytes: Current bytes readed (progression = read_bytes / file_size)
@@ -40,8 +43,7 @@ class AbstractReader(ABC):
         self.read_bytes = 0
         self.samples = list()
 
-        self.file_size = self.get_total_file_size()
-        self.compute_number_lines()
+        self.file_size = 0
 
         self.ignored_fields = set()
 
@@ -268,7 +270,7 @@ class AbstractReader(ABC):
         self.ignored_fields.add((field_name, field_category))
 
     def get_extra_variants(self, **kwargs):
-        """Yield variants with extra information computed.
+        """Yield variants with extra information computed and format if necessary
 
         The following information are added. See get_extra_fields
 
@@ -388,6 +390,29 @@ class AbstractReader(ABC):
                         if name in sample:
                             del sample[name]
 
+            # Format variant value ! For instance replace %3D by "="  using unquote
+            # See issue https://github.com/labsquare/cutevariant/issues/220
+
+            for key, value in variant.items():
+                if isinstance(value, str):
+                    variant[key] = unquote(value)
+
+            if "annotations" in variant:
+                for i, ann in enumerate(variant["annotations"]):
+                    for key, value in ann.items():
+                        if isinstance(value, str):
+                            variant["annotations"][i][key] = unquote(
+                                variant["annotations"][i][key]
+                            )
+
+            if "samples" in variant:
+                for i, sample in enumerate(variant["samples"]):
+                    for key, value in sample.items():
+                        if isinstance(value, str):
+                            variant["samples"][i][key] = unquote(
+                                variant["samples"][i][key]
+                            )
+
             yield nullify(variant)
 
     def get_extra_fields_by_category(self, category: str):
@@ -416,22 +441,6 @@ class AbstractReader(ABC):
         Override this method to make it faster
         """
         return len(tuple(self.get_variants()))
-
-    def get_total_file_size(self) -> int:
-        """Compute file size int bytes"""
-        # FakeReader is used ?
-        if not self.device:
-            return 0
-
-        filename = self.device.name
-
-        if cm.is_gz_file(filename):
-            return cm.get_uncompressed_size(filename)
-        # Go to EOF and get position in bytes
-        size = self.device.seek(0, 2)
-        # Rewind the file
-        self.device.seek(0)
-        return size
 
     def compute_number_lines(self):
         """Get a sample of lines in file if possible and if the end of file is
@@ -515,14 +524,14 @@ def check_variant_schema(variant: dict):
                 {
                     "gene": str,
                     "transcript": str,
-                    Optional(str): Or(int, str, bool, float),
+                    Optional(str): Or(int, str, bool, float, None),
                 }
             ],
             Optional("samples"): [
                 {
                     "name": str,
                     "gt": And(int, lambda x: x in [-1, 0, 1, 2]),
-                    Optional(str): Or(int, str, bool, float),
+                    Optional(str): Or(int, str, bool, float, None),
                 }
             ],
         }
@@ -561,7 +570,7 @@ def check_field_schema(field: dict):
 
 def sanitize_field_name(field: str):
     # TODO
-    LOGGER.warning("NOT implemented function!!")
+    #LOGGER.warning("NOT implemented function!!")
     return field
 
 

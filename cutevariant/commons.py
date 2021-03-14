@@ -8,6 +8,8 @@ import tempfile
 import os
 from pkg_resources import resource_filename
 
+from .bgzf import BgzfBlocks
+
 # Misc
 MAX_RECENT_PROJECTS = 5
 MIN_COMPLETION_LETTERS = 1
@@ -143,12 +145,22 @@ def is_gz_file(filepath):
 
 
 def get_uncompressed_size(filepath):
-    """Get the size of the given compressed file
-    This size is stored in the last 4 bytes of the file.
-    """
-    with open(filepath, "rb") as file_obj:
-        file_obj.seek(-4, 2)
-        return int.from_bytes(file_obj.read(4), byteorder="little")
+    device = open(filepath, "rb")
+    magic_4bytes = device.read()[:4]
+    #  IT IS A GZIP FILE
+    if magic_4bytes == b"\x1f\x8b\x08\x08":
+        device.seek(-4, 2)
+        return int.from_bytes(device.read(4), byteorder="little")
+
+    #  IT IS A BGZIP FILE
+    elif magic_4bytes == b"\x1f\x8b\x08\x04":
+        device.seek(0)
+        return sum([i[3] for i in BgzfBlocks(device)])
+
+    else:
+        device = open(filepath, "rb")
+        device.seek(0, os.SEEK_END)
+        return device.tell()
 
 
 def bytes_to_readable(size) -> str:
@@ -203,5 +215,5 @@ def is_json_file(filename):
             json.load(file)
         except Exception as e:
             return False
-        finally:
-            return True
+
+    return True

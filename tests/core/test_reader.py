@@ -18,7 +18,13 @@ READERS = [
     VcfReader(open("examples/test.vcf")),
     VcfReader(open("examples/test.vep.vcf"), "vep"),
     VcfReader(open("examples/test.snpeff.vcf"), "snpeff"),
+    VcfReader(open("examples/snpeff3.vcf"), "snpeff3")
 ]
+
+def test_snpeff3():
+    reader = VcfReader(open("examples/snpeff3.vcf"))
+    names = [field["name"] for field in reader.get_fields()]
+    assert "eff" in names
 
 
 @pytest.mark.parametrize(
@@ -76,8 +82,8 @@ def test_extra_fields(reader):
         fields = tuple(reader.get_extra_fields())
         field_names = [f["name"] for f in fields if f["category"] == "variants"]
 
-        "qual" not in field_names
-        "dp" not in field_names
+        assert "qual" not in field_names
+        assert "dp" not in field_names
 
 
 @pytest.mark.parametrize(
@@ -100,8 +106,11 @@ def test_variants(reader):
         if "annotations" in variant:
             assert isinstance(variant["annotations"], list)
 
+ 
+
         if "samples" in variant:
             assert isinstance(variant["samples"], list)
+
             samples_names = [s["name"] for s in variant["samples"]]
             assert sorted(reader.get_samples()) == sorted(samples_names)
 
@@ -113,6 +122,19 @@ def test_variants(reader):
     "reader", READERS, ids=[str(i.__class__.__name__) for i in READERS]
 )
 def test_extra_variants(reader):
+
+    def check_value(value:str):
+        # check if value is okay ! 
+        if isinstance(value,str):
+            assert "%3A" not in value
+            assert "%3B" not in value
+            assert "%3D" not in value
+            assert "%25" not in value
+            assert "%2C" not in value
+            assert "%0D" not in value
+            assert "%0A" not in value
+            assert "%09" not in value
+
 
     for variant in reader.get_extra_variants():
         assert "comment" in variant
@@ -127,6 +149,8 @@ def test_extra_variants(reader):
     reader.add_ignored_field("qual", "variants")
     for variant in reader.get_extra_variants():
         assert "qual" not in variant
+        for key, value in variant.items():
+            check_value(value)
 
     ## remove annotation
     if "annotations" in last_variant:
@@ -135,6 +159,8 @@ def test_extra_variants(reader):
             for variant in reader.get_extra_variants():
                 for ann in variant["annotations"]:
                     assert "impact" not in ann
+                    for key, value in ann.items():
+                        check_value(value)
 
     ## remove sample annotations foxog
     if "samples" in last_variant:
@@ -143,6 +169,8 @@ def test_extra_variants(reader):
             for variant in reader.get_extra_variants():
                 for sample in variant["samples"]:
                     assert "foxog" not in sample
+                    for key, value in sample.items():
+                        check_value(value)
 
 
 @pytest.mark.parametrize(
@@ -342,19 +370,8 @@ def test_nullify():
     variant = {
         "chr": "chr3",
         "filters": "",
-        "annotations": [
-            {
-            "gene":"CFTR",
-            "test":""
-            }
-        ],
-        "samples": [
-            {
-            "name":"boby",
-            "dp":""
-            }
-        ]
-    
+        "annotations": [{"gene": "CFTR", "test": ""}],
+        "samples": [{"name": "boby", "dp": ""}],
     }
 
     variant = nullify(variant)

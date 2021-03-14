@@ -78,13 +78,13 @@ def get_sql_connection(filepath):
 
 def table_exists(conn: sqlite3.Connection, name: str) -> bool:
     """Return True if table exists
-    
+
     Args:
         conn (sqlite3.Connection): Sqlite3 connection
         name (str): Table name
-    
+
     Returns:
-        bool: True if table exists 
+        bool: True if table exists
     """
     c = conn.cursor()
     c.execute(f"SELECT name FROM sqlite_master WHERE name = '{name}'")
@@ -156,8 +156,7 @@ def create_indexes(conn: sqlite3.Connection):
 
 
 def count_query(conn, query):
-    """Count elements from the given query or table
-    """
+    """Count elements from the given query or table"""
     return conn.execute(f"SELECT COUNT(*) as count FROM ({query})").fetchone()[0]
 
 
@@ -472,7 +471,7 @@ def create_selection_from_bed(
         source_query = f"""
         SELECT variants.id AS variant_id FROM variants
         INNER JOIN selections ON selections.name = '{source}'
-        INNER JOIN selection_has_variant AS sv ON sv.selection_id = selections.id AND sv.variant_id = variants.id 
+        INNER JOIN selection_has_variant AS sv ON sv.selection_id = selections.id AND sv.variant_id = variants.id
         """
 
     query = (
@@ -1205,6 +1204,7 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
     # Loop over variants
     errors = 0
     progress = 0
+    variant_count = 0
     for variant_count, variant in enumerate(data, 1):
 
         # Insert current variant
