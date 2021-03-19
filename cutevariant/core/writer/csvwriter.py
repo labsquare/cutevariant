@@ -1,6 +1,12 @@
+# Standard imports
 import csv
 
-from .abstractwriter import AbstractWriter
+# Custom imports
+from cutevariant.core.writer.abstractwriter import AbstractWriter
+from cutevariant.core import command as cmd
+import cutevariant.commons as cm
+
+LOGGER = cm.logger()
 
 
 class CsvWriter(AbstractWriter):
@@ -17,7 +23,7 @@ class CsvWriter(AbstractWriter):
     """
 
     def __init__(self, device, fields_to_export=None):
-        super().__init__(device,fields_to_export)
+        super().__init__(device, fields_to_export)
 
     def async_save(self, conn, *args, **kwargs):
         r"""Iteratively dumps variants into CSV file
@@ -36,34 +42,45 @@ class CsvWriter(AbstractWriter):
                 delimiter : How the fields are separated in the CSV file
                 lineterminator : How the lines end in the CSV file
         """
-        
-        offset = 0
-        limit = 50
+
+        variant_request_args = {
+            "fields": self.fields,
+            "source": self.source,
+            "filters": self.filters,
+            "order_desc": self.order_desc,
+            "order_by": self.order_by,
+            "group_by": self.group_by,
+            "having": self.having,
+        }
 
         # If we know the variant count in advance, let's use it to report relative progress
         if "variant_count" in kwargs:
             variant_count = kwargs["variant_count"]
+        else:
+            # TODO: Move this request so that upon saving, counting and retrieving variants are done as separated steps
+            variant_count = cmd.count_cmd(
+                conn, fields=self.fields, filters=self.filters
+            )["count"]
 
-        dict_writer_args = {"f" : self.device,
-                            "delimiter" : "\t",
-                            "lineterminator" : "\n",
-                            }
-
+        # Use dictionnary to define proper arguments for the writer, beforehand, in one variable
+        dict_writer_args = {
+            "f": self.device,
+            "delimiter": "\t",
+            "lineterminator": "\n",
+        }
         dict_writer_args.update(kwargs)
-        
-        #Set fieldnames after updating with kwargs to make sure they are not provided by this method's call
+
+        # Set fieldnames **after** updating with kwargs to make sure they are not provided by the method's call kwargs
         dict_writer_args["fieldnames"] = list(self.fields)
 
         writer = csv.DictWriter(**dict_writer_args)
         writer.writeheader()
 
-        query_chunk = self.load_variants(conn,0,50) # Get the first records before starting the loop
-        while len(query_chunk)>0:
-            lines = [{k:v for k,v in variant.items() if k in self.fields} for variant in query_chunk]
-            
-            writer.writerows(lines)
-            # Yield the page number corresponding to the chunk written (one-based index...)
-            yield (offset/limit)+1
-            offset += limit
-            query_chunk = self.load_variants(conn,offset,limit)
-        
+        for progress, variant in enumerate(
+            cmd.select_cmd(conn, **variant_request_args)
+        ):
+            written_var = {
+                k: v for k, v in dict(variant).items() if k in writer.fieldnames
+            }
+            writer.writerow(written_var)
+            yield progress, variant_count
