@@ -22,10 +22,10 @@ class CsvWriter(AbstractWriter):
         ...    writer.save(conn)
     """
 
-    def __init__(self, device, fields_to_export=None):
-        super().__init__(device, fields_to_export)
+    def __init__(self, conn, device):
+        super().__init__(conn, device)
 
-    def async_save(self, conn, *args, **kwargs):
+    def async_save(self, *args, **kwargs):
         r"""Iteratively dumps variants into CSV file
         This function creates a generator that yields progress
 
@@ -59,7 +59,7 @@ class CsvWriter(AbstractWriter):
         else:
             # TODO: Move this request so that upon saving, counting and retrieving variants are done as separated steps
             variant_count = cmd.count_cmd(
-                conn, fields=self.fields, filters=self.filters
+                self.conn, fields=self.fields, filters=self.filters
             )["count"]
 
         # Use dictionnary to define proper arguments for the writer, beforehand, in one variable
@@ -77,10 +77,11 @@ class CsvWriter(AbstractWriter):
         writer.writeheader()
 
         for progress, variant in enumerate(
-            cmd.select_cmd(conn, **variant_request_args)
+            cmd.select_cmd(self.conn, **variant_request_args)
         ):
             written_var = {
                 k: v for k, v in dict(variant).items() if k in writer.fieldnames
             }
             writer.writerow(written_var)
+            print("BOB", self.device.name)
             yield progress, variant_count

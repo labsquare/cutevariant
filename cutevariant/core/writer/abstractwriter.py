@@ -22,14 +22,12 @@ class AbstractWriter:
         ...    writer.save(conn)
     """
 
-    def __init__(self, device, fields_to_export=None):
-        self.device = device
-
-        if fields_to_export is None:
-            fields_to_export = ["chr", "pos", "ref", "alt"]
+    def __init__(self, conn, device):
 
         # assert {"chr","pos","ref","alt"}.issubset(fields_to_export), "Fields to export should have at least CHR, POS, REF and ALT"
-        self.fields = fields_to_export
+        self.device = device
+        self.conn = conn
+        self.fields = ["chr", "pos", "ref", "alt"]
         self.filters = dict()
         self.source = "variants"
         self.group_by = []
@@ -39,16 +37,16 @@ class AbstractWriter:
         self.formatter = None
         self.debug_sql = None
 
-    def async_save(self, conn, *args, **kwargs):
+    def async_save(self, *args, **kwargs):
         """
         Yields percentage of progress upon saving fields into device (See :meth: save)
         """
         raise NotImplementedError()
 
-    def save(self, conn, *args, **kwargs) -> bool:
+    def save(self, *args, **kwargs) -> bool:
         """
         Write the selected fields for this writer inside device (See :meth: __init__).
         Returns True on success, False otherwise.
         """
-        for progress, variant_count in self.async_save(conn, *args, **kwargs):
-            LOGGER.debug("Saving %i out of %i", progress + 1, variant_count)
+        for progress, variant_count in self.async_save(*args, **kwargs):
+            LOGGER.info("Saving %i out of %i", progress + 1, variant_count)

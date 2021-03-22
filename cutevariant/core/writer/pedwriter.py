@@ -17,10 +17,10 @@ class PedWriter(AbstractWriter):
         ...    writer.save(conn)
     """
 
-    def __init__(self, device):
-        super().__init__(device)
+    def __init__(self, conn, device):
+        super().__init__(conn, device)
 
-    def save(self, conn, delimiter="\t", **kwargs):
+    def save(self, delimiter="\t", **kwargs):
         r"""Dump samples into a tabular file
 
         Notes:
@@ -52,7 +52,7 @@ class PedWriter(AbstractWriter):
             extrasaction="ignore",
             **kwargs
         )
-        g = list(get_samples(conn))
+        g = list(get_samples(self.conn))
         # Map DB ids with individual_ids
         individual_ids_mapping = {sample["id"]: sample["name"] for sample in g}
         # Add default value
