@@ -6,7 +6,7 @@ import sqlite3
 # Custom imports
 from cutevariant.core.importer import import_reader, import_pedfile
 from cutevariant.core.reader import FakeReader, VcfReader
-from cutevariant.core.writer import CsvWriter, PedWriter
+from cutevariant.core.writer import CsvWriter, PedWriter, VcfWriter
 
 
 @pytest.fixture
@@ -80,3 +80,15 @@ def test_ped_writer(conn):
     print("Found:\n'", content, "'")
 
     assert expected == content
+
+
+def test_vcf_writer(conn):
+
+    filename = tempfile.mkstemp(suffix=".vcf")[1]
+    print(filename)
+    import_reader(conn, VcfReader(open("examples/test.snpeff.vcf")))
+
+    with open(filename, "w") as device:
+        writer = VcfWriter(conn, device)
+
+        writer.save()
