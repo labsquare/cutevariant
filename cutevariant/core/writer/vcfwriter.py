@@ -60,7 +60,10 @@ class VcfWriter(AbstractWriter):
         )
 
         for index, variant in enumerate(
-            cmd.execute(self.conn, "SELECT chr, pos, rsid, ref,alt, qual FROM variants")
+            cmd.execute(
+                self.conn,
+                "SELECT chr, pos, rsid, ref,alt, qual, sample['TUMOR'].gt,sample['NORMAL'].gt FROM variants",
+            )
         ):
 
             chrom = variant["chr"]
@@ -71,7 +74,7 @@ class VcfWriter(AbstractWriter):
             qual = variant["qual"]
             ffilter = "PASS"
             info = "TRUC=3;BLA=24"
-            fformat = "GT:AS"
+            fformat = "GT"
             samples = "1/1"
 
             self.device.write(
