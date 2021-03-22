@@ -76,14 +76,18 @@ class SunburstWidget(QWidget):
             0,
         ]  # A list of angular position (radius,angle) of the mouse in the diagram coordinates
         self.setMouseTracking(True)
+        self.painter_paths = []
+
+        self.build_chart()
 
     def set_data(self, data: dict):
         self._data = data
         self.update()
+        self.arc_paths = []
 
-    def paintEvent(self, event: QPaintEvent):
+    def build_chart(self):
 
-        side = min(event.rect().width(), event.rect().height())
+        side = min(self.rect().width(), self.rect().height())
 
         area = QRect(0, 0, side, side)
         area.moveCenter(self.rect().center())
@@ -94,38 +98,50 @@ class SunburstWidget(QWidget):
         start_angle = 0
         for angle in [0.5, 0.4, 0.1]:
 
-            painter_path = SunburstWidget.draw_doughnut_part(
+            painter_path = SunburstWidget.create_arc_path(
                 area, r1, r2, start_angle, angle * 360
             )
 
-            painter = QPainter()
-            painter.begin(self)
-
-            painter.setRenderHint(QPainter.Antialiasing)
-            brush = QBrush()
-
-            sat = 100
-
-            if self.mouse_pos:
-                if painter_path.contains(self.mouse_pos):
-                    sat = 255
-                    # self.current_path.changed(path)
-
-            color = QColor.fromHsv((start_angle * 4) % 100, sat, 255)
-
-            # sat = 100
-            # if in_interval(self._mouse_zone[1], start_angle, start_angle + 360 * angle):
-            #     sat = 255
-            # color = QColor.fromHsv((start_angle * 4) % 100, sat, 255)
+            self.painter_paths.append(painter_path)
 
             start_angle += angle * 360
 
-            painter.fillPath(painter_path, color)
-            painter.end()
+    def paintEvent(self, event: QPaintEvent):
+
+        painter = QPainter()
+        painter.begin(self)
+
+        painter.setRenderHint(QPainter.Antialiasing)
+        brush = QBrush()
+
+        for i, path in enumerate(self.painter_paths):
+            painter.drawPath(path)
+            painter.fillPath(path, QColor(i * 100, 255, 255))
+
+        # sat = 100
+
+        # color = QColor.fromHsv((start_angle * 4) % 100, sat, 255)
+
+        # # sat = 100
+        # # if in_interval(self._mouse_zone[1], start_angle, start_angle + 360 * angle):
+        # #     sat = 255
+        # # color = QColor.fromHsv((start_angle * 4) % 100, sat, 255)
+
+        # start_angle += angle * 360
+
+        # painter.fillPath(painter_path, color)
+        # painter.end()
 
     def mouseMoveEvent(self, event: QMouseEvent):
 
         self.mouse_pos = event.pos()
+
+        for path in self.painter_paths:
+
+            if path.contains(self.mouse_pos):
+
+                # Changer la couleur dans les datas
+                self.update()
 
         # x, y = event.localPos().x(), event.localPos().y()
         # xc = self.geometry().width() / 2
@@ -134,13 +150,13 @@ class SunburstWidget(QWidget):
         # self._mouse_zone[1] = degrees(atan2(y - yc, xc - x)) + 180
         self.update()
 
-    def draw_doughnut_part(
+    def create_arc_path(
         rect: QRect,
         inner_radius: int,
         outer_radius: int,
         start_angle: float,
         span_angle: float,
-    ):
+    ) -> QPainterPath:
         center = rect.center()
 
         inner_rect = QRect(0, 0, inner_radius, inner_radius)
