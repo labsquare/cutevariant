@@ -5,30 +5,16 @@ from PySide2.QtWidgets import *
 
 import sys
 
-from math import sin,cos,radians,atan2,sqrt,degrees
-
-def lerp(p1:QPoint,p2:QPoint,alpha:float):
-    return p1*alpha + p2*(1-alpha)
-
-def in_interval(x,a,b):
-    return x>=a and x<b
+from math import sin, cos, radians, atan2, sqrt, degrees
 
 
-def draw_doughnut_part(rect:QRect,r1:int,r2:int,start_angle:float,span_angle:float):
-    c=rect.center()
-    inner_rect = QRect(c-QPoint(r1/2,r1/2),QSize(r1,r1))
-    outer_rect = QRect(c-QPoint(r2/2,r2/2),QSize(r2,r2))
+def lerp(p1: QPoint, p2: QPoint, alpha: float):
+    return p1 * alpha + p2 * (1 - alpha)
 
-    painter_path=QPainterPath(rect.center())
 
-    painter_path.arcMoveTo(inner_rect,start_angle)
-    start_point = painter_path.currentPosition()
-    
-    painter_path.arcTo(outer_rect,start_angle,span_angle)
-    painter_path.lineTo(lerp(painter_path.currentPosition(),c,r1/r2))
-    painter_path.arcTo(inner_rect,start_angle+span_angle,-span_angle)
+def in_interval(x, a, b):
+    return x >= a and x < b
 
-    return painter_path
 
 class SunburstWidget(QWidget):
     """
@@ -80,59 +66,109 @@ class SunburstWidget(QWidget):
     }
     Out of this kind of json input, it shows each layer of the graph in a different color
     """
-    def __init__(self,parent=None):
+
+    def __init__(self, parent=None):
         super().__init__(parent)
         self._data = None
-        self._mouse_zone = [0,0] # A list of angular position (radius,angle) of the mouse in the diagram coordinates
+        self.mouse_pos = None
+        self._mouse_zone = [
+            0,
+            0,
+        ]  # A list of angular position (radius,angle) of the mouse in the diagram coordinates
         self.setMouseTracking(True)
 
-    def set_data(self,data: dict):
+    def set_data(self, data: dict):
         self._data = data
         self.update()
 
-    def paintEvent(self,event: QPaintEvent):
-        side = min(event.rect().width(),event.rect().height())
-        topleft = QPoint((event.rect().width()-side)/2,(event.rect().height()-side)/2)
-        area = QRect(topleft,QSize(side,side))
+    def paintEvent(self, event: QPaintEvent):
 
-        r1 = side/2
-        r2 = r1 + side/4
+        side = min(event.rect().width(), event.rect().height())
+
+        area = QRect(0, 0, side, side)
+        area.moveCenter(self.rect().center())
+
+        r1 = side / 2
+        r2 = r1 + side / 4
 
         start_angle = 0
-        for angle in [0.5,0.4,0.1]:
+        for angle in [0.5, 0.4, 0.1]:
 
-            painter_path = draw_doughnut_part(area,r1,r2,start_angle,angle*360)
+            painter_path = SunburstWidget.draw_doughnut_part(
+                area, r1, r2, start_angle, angle * 360
+            )
 
-            painter = QPainter(self)
+            painter = QPainter()
+            painter.begin(self)
+
             painter.setRenderHint(QPainter.Antialiasing)
             brush = QBrush()
 
             sat = 100
-            if in_interval(self._mouse_zone[1],start_angle,start_angle+360*angle):
-                sat = 255
-            color = QColor.fromHsv((start_angle*4)%100,sat,255)
+
+            if self.mouse_pos:
+                if painter_path.contains(self.mouse_pos):
+                    sat = 255
+                    # self.current_path.changed(path)
+
+            color = QColor.fromHsv((start_angle * 4) % 100, sat, 255)
+
+            # sat = 100
+            # if in_interval(self._mouse_zone[1], start_angle, start_angle + 360 * angle):
+            #     sat = 255
+            # color = QColor.fromHsv((start_angle * 4) % 100, sat, 255)
 
             start_angle += angle * 360
 
-            painter.fillPath(painter_path,color)
+            painter.fillPath(painter_path, color)
             painter.end()
 
-            
+    def mouseMoveEvent(self, event: QMouseEvent):
 
-    def mouseMoveEvent(self,event:QMouseEvent):
-        x,y = event.localPos().x(),event.localPos().y()
-        xc = self.geometry().width()/2
-        yc = self.geometry().height()/2
-        self._mouse_zone[0] = sqrt((x-xc)**2+(y-yc)**2)
-        self._mouse_zone[1] = degrees(atan2(y-yc,xc-x))+180
+        self.mouse_pos = event.pos()
+
+        # x, y = event.localPos().x(), event.localPos().y()
+        # xc = self.geometry().width() / 2
+        # yc = self.geometry().height() / 2
+        # self._mouse_zone[0] = sqrt((x - xc) ** 2 + (y - yc) ** 2)
+        # self._mouse_zone[1] = degrees(atan2(y - yc, xc - x)) + 180
         self.update()
-        
+
+    def draw_doughnut_part(
+        rect: QRect,
+        inner_radius: int,
+        outer_radius: int,
+        start_angle: float,
+        span_angle: float,
+    ):
+        center = rect.center()
+
+        inner_rect = QRect(0, 0, inner_radius, inner_radius)
+        inner_rect.moveCenter(center)
+
+        outer_rect = QRect(0, 0, outer_radius, outer_radius)
+        outer_rect.moveCenter(center)
+
+        painter_path = QPainterPath(rect.center())
+
+        painter_path.arcMoveTo(inner_rect, start_angle)
+        start_point = painter_path.currentPosition()
+
+        painter_path.arcTo(outer_rect, start_angle, span_angle)
+        painter_path.lineTo(
+            lerp(painter_path.currentPosition(), center, inner_radius / outer_radius)
+        )
+        painter_path.arcTo(inner_rect, start_angle + span_angle, -span_angle)
+
+        return painter_path
+
 
 def main(argv):
     app = QApplication(argv)
     window = SunburstWidget()
     window.show()
     return app.exec_()
+
 
 if __name__ == "__main__":
     exit(main(sys.argv))
