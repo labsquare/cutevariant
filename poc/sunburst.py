@@ -190,20 +190,21 @@ class SunburstWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._data = {}
-        self._visible_tree = {} # Holds the sub-tree we want to show to the user
         self.mouse_pos = None
-        self._selected_path = None
 
+        self._selected_path = None
+        self._selected_layer = 0
         self._selected_label = ""
+
         self._area = QRect(0,0,0,0)
 
         self.setMouseTracking(True)
         self._painter_paths = {}
+        
         self._max_depth = 10 # Above 10 rings, the data is not readable...
 
     def set_data(self, data: dict):
         self._data = data
-        self._visible_tree = data
         self.build_chart()
         self.update()
 
@@ -216,6 +217,9 @@ class SunburstWidget(QWidget):
         """
         if depth > self._max_depth: # No need to go further down in the recursion, max_depth has been reached !
             return
+        
+        if parent_name is None:
+            assert depth==0, "Cannot"
         
         rect = self._area
         inner_radius = inner_most_radius + depth * width
@@ -261,7 +265,6 @@ class SunburstWidget(QWidget):
 
             if "subparts" in cell:
                 self.create_layer(cell["subparts"],depth+1,inner_most_radius,width,label)
-                #cell["subparts"]["parent"]=cell["label"]
                 
             
             start_angle += span_angle
@@ -313,6 +316,7 @@ class SunburstWidget(QWidget):
                 if self._painter_paths[depth][label]["path"].contains(event.pos()): # The mouse is hovering this path...
                     self._selected_label = label # There we have it. The selected label !
                     self._painter_paths[depth][label]["color"]["s"]=255 # Set the saturation of the label to max to highlight it
+                    self._selected_layer = depth
                 else:
                     self._painter_paths[depth][label]["color"]["s"]=100 # This label is not selected, set its saturation to 100
         
