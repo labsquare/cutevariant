@@ -118,20 +118,17 @@ class SunburstWidget(QWidget):
             "subparts":
             [
                 {
-                    "parent" : "HIGH",
                     "label" : "not so HIGH",
                     "part" : 0.4,
                     "color" : 0,
                     "subparts":
                     [
                         {
-                            "parent" : "not so HIGH",
                             "label" : "whatever",
                             "part" : 0.5,
                             "color" : 0
                         },
                         {
-                            "parent" : "not so HIGH",
                             "label" : "other",
                             "part" : 0.5,
                             "color" : 0
@@ -139,19 +136,16 @@ class SunburstWidget(QWidget):
                     ]
                 },
                 {
-                    "parent" : "HIGH",
                     "label" : "mildly HIGH",
                     "part" : 0.2,
                     "color" : 0
                 },
                 {
-                    "parent" : "HIGH",
                     "label" : "somehow HIGH",
                     "part" : 0.1,
                     "color" : 0
                 },
                 {
-                    "parent" : "HIGH",
                     "label" : "pretty HIGH",
                     "part" : 0.3,
                     "color" : 0
@@ -165,31 +159,26 @@ class SunburstWidget(QWidget):
             "subparts":
             [
                 {
-                    "parent" : "LOW",
                     "label" : "kinda LOW",
                     "part" : 0.4,
                     "color" : 180,
                     "subparts" :
                     [
                         {
-                            "parent" : "kinda LOW",
                             "label" : "just a test",
                             "part" : 0.2
                         },
                         {
-                            "parent" : "kinda LOW",
                             "label" : "another test",
                             "part" : 0.5,
                         },
                         {
-                            "parent" : "kinda LOW",
                             "label" : "Now that's debugging \m/",
                             "part" : 0.1
                         }
                     ]
                 },
                 {
-                    "parent" : "LOW",
                     "label" : "really LOW",
                     "part" : 0.6,
                     "color" : 180
@@ -218,7 +207,7 @@ class SunburstWidget(QWidget):
         self.build_chart()
         self.update()
 
-    def create_layer(self,layer:list,depth:int,inner_most_radius:int,width:int):
+    def create_layer(self,layer:list,depth:int,inner_most_radius:int,width:int, parent_name: str=None):
         """
         Adds a ring of width :width: after skipping depth rings from inner_most_radius
         :depth: ring index of this layer. 0 means it is the inner_most ring, displaying the data from the very first element of tree
@@ -232,14 +221,15 @@ class SunburstWidget(QWidget):
         inner_radius = inner_most_radius + depth * width
         outer_radius = inner_radius + width
         start_angle = 0
-        parent_name = None
         parent_part = 1.0 # Remember, each part is relative to the previous depth's part (absolute if depth is 0)
         
         if depth not in self._painter_paths: # Somehow hacky. Just to make sure there is a key for depth, for the rest of the function to fill
             self._painter_paths[depth] = {}
 
+        if parent_name is None:
+            assert depth==0, "Cannot create layer at depth %i without parent node" % depth
+
         if depth > 0:
-            parent_name = layer[0]["parent"]
             parent_part = self._painter_paths[depth-1][parent_name]["relative_part"] # The angle of the ring is proportionnal to the one of its parent, and so on !
             start_angle = self._painter_paths[depth-1][parent_name]["start_angle"] # We want the child ring to start at the same angle as its parent
 
@@ -263,14 +253,14 @@ class SunburstWidget(QWidget):
                                             "part" : part,
                                             "relative_part" : relative_part,
                                             "start_angle" : start_angle,
-                                            "color" : {"h":hue,"s":100,"v":int(255/(depth+1))},
+                                            "color" : {"h":hue,"s":100,"v":int(255-24*(depth))},
                                             "span_angle" : span_angle,
                                             "path" : SunburstWidget.create_arc_path(rect,inner_radius,outer_radius,start_angle,span_angle)
                                         }
 
 
             if "subparts" in cell:
-                self.create_layer(cell["subparts"],depth+1,inner_most_radius,width)
+                self.create_layer(cell["subparts"],depth+1,inner_most_radius,width,label)
                 #cell["subparts"]["parent"]=cell["label"]
                 
             
@@ -288,7 +278,7 @@ class SunburstWidget(QWidget):
 
     def build_chart(self):
         """
-        Should be called everytime 
+        Should be called with geometry update, as well as data setting
         """
         side = min(self.rect().size().toTuple())
 
