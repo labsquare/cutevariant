@@ -13,33 +13,33 @@ class FieldsModel(QStandardItemModel):
     """Model to display all fields from databases into 3 groups (variants, annotation, samples)
     Fields are checkable and can be set using setter/getter checked_fields .
 
-    Examples: 
-        
-        from cutevariant.core import sql 
+    Examples:
+
+        from cutevariant.core import sql
         conn = sql.get_connectionn("project.db")
 
         model = FieldsModel(conn)
         view = QTreeView()
         view.setModel(model)
-        
+
         model.checked_fields = ["chr","pos","ref"]
-        model.load() 
+        model.load()
 
 
     Attributes:
         conn (sqlite3.Connection)
 
-    Todo : 
+    Todo :
         Possible bug with duplicate name in different categories.
-        e.g: variants.gene and annotations.gene    
-    
+        e.g: variants.gene and annotations.gene
+
     """
 
-    def __init__(self,category = None conn: sqlite3.Connection = None):
+    def __init__(self, category: str = None, conn: sqlite3.Connection = None):
         """Create the model with a connection.
-            
-            conn can be None and set later 
-        
+
+            conn can be None and set later
+
         Args:
             conn (sqlite3.Connection, optional)
         """
@@ -50,10 +50,13 @@ class FieldsModel(QStandardItemModel):
         self.conn = conn
         self.category = category
 
+        if conn:
+            self.load()
+
     @property
     def checked_fields(self) -> List[str]:
         """Return checked fields
-        
+
         Returns:
             List[str] : list of checked fields
         """
@@ -65,12 +68,12 @@ class FieldsModel(QStandardItemModel):
 
     @checked_fields.setter
     def checked_fields(self, fields: List[str]):
-        """Check fields according name 
-        
-        Arguments:
-            columns (List[str]): 
+        """Check fields according name
 
-        Todo: 
+        Arguments:
+            columns (List[str]):
+
+        Todo:
             Bug : What if 2 name are in different categories - Answer: no problem, this model handles the three categories individually :)
         """
 
@@ -80,19 +83,18 @@ class FieldsModel(QStandardItemModel):
                 item.setCheckState(Qt.Checked)
 
     def load(self):
-        """Load all fields from the model
-        """
+        """Load all fields from the model"""
         self.clear()
         self._checkable_items.clear()
         self.setColumnCount(2)
         self.setHorizontalHeaderLabels(["name", "description"])
 
         # For variants and annotations, it is easy: one row per item
-        if self.category in ("variants","annotations"):
+        if self.category in ("variants", "annotations"):
             self.appendRow(self._load_fields(self.category))
 
         if self.category == "samples":
-            
+
             samples_items = QStandardItem("samples")
             samples_items.setIcon(FIcon(0xF0B9C))
             font = QFont()
@@ -108,11 +110,11 @@ class FieldsModel(QStandardItemModel):
 
     def _load_fields(self, category: str, parent_name: str = None) -> QStandardItem:
         """Load fields from database and create a QStandardItem
-        
+
         Args:
             category (str): category name : eg. variants / annotations / samples
-            parent_name (str, optional): name of the parent item 
-        
+            parent_name (str, optional): name of the parent item
+
         Returns:
             QStandardItem
         """
@@ -144,7 +146,7 @@ class FieldsModel(QStandardItemModel):
 
     def to_file(self, filename: str):
         """Serialize checked fields to a json file
-        
+
         Args:
             filename (str): a json filename
         """
@@ -154,7 +156,7 @@ class FieldsModel(QStandardItemModel):
 
     def from_file(self, filename: str):
         """Unserialize checked fields from a json file
-        
+
         Args:
             filename (str): a json filename
         """
@@ -176,14 +178,15 @@ class FieldsEditorWidget(plugin.PluginWidget):
 
     ENABLE = True
 
-    def __init__(self, conn=None, parent=None):
+    def __init__(self, category: str, conn=None, parent=None):
         super().__init__(parent)
 
         self.setWindowTitle(self.tr("Columns"))
-        self.view = QTreeView(self)
+        self.view = QTableView(self)
+
         self.toolbar = QToolBar(self)
         # conn is always None here but initialized in on_open_project()
-        self.model = FieldsModel(conn)
+        self.model = FieldsModel(category, conn)
 
         # setup proxy ( for search option )
         self.proxy_model = QSortFilterProxyModel()
@@ -196,12 +199,12 @@ class FieldsEditorWidget(plugin.PluginWidget):
 
         self.view.setModel(self.proxy_model)
         self.view.setIconSize(QSize(16, 16))
-        self.view.header().setSectionResizeMode(QHeaderView.ResizeToContents)
+        # self.view.header().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.view.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.search_edit = QLineEdit()
         # self.view.setIndentation(0)
-        self.view.header().setVisible(False)
+        # self.view.header().setVisible(False)
         layout = QVBoxLayout()
 
         layout.addWidget(self.toolbar)
@@ -214,10 +217,10 @@ class FieldsEditorWidget(plugin.PluginWidget):
 
         # Setup toolbar
         self.toolbar.setIconSize(QSize(16, 16))
-        self.toolbar.addAction(
-            FIcon(0xF0615), self.tr("Collapse"), self.view.collapseAll
-        )
-        self.toolbar.addAction(FIcon(0xF0616), self.tr("Expand"), self.view.expandAll)
+        # self.toolbar.addAction(
+        #     FIcon(0xF0615), self.tr("Collapse"), self.view.collapseAll
+        # )
+        # self.toolbar.addAction(FIcon(0xF0616), self.tr("Expand"), self.view.expandAll)
 
         # setup search edit
         self.setFocusPolicy(Qt.ClickFocus)
@@ -247,10 +250,13 @@ class FieldsEditorWidget(plugin.PluginWidget):
         """ Overrided from PluginWidget """
         self.model.conn = conn
         self.model.load()
+        self.view.setRootIndex(self.proxy_model.index(0, 0))
         self.on_refresh()
 
     def on_refresh(self):
         """ overrided from PluginWidget """
+        if self.mainwindow is None:  # Debugging
+            return
         self._is_refreshing = True
         self.model.checked_fields = self.mainwindow.state.fields
         self._is_refreshing = False
@@ -262,3 +268,51 @@ class FieldsEditorWidget(plugin.PluginWidget):
 
         self.mainwindow.state.fields = self.model.checked_fields
         self.mainwindow.refresh_plugins(sender=self)
+
+
+class TestWindow(QMainWindow):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        file_menu = self.menuBar().addMenu(self.tr("File"))
+        open_action = file_menu.addAction(self.tr("Open"))
+        open_action.triggered.connect(self.open_db)
+
+        self.views_all = {
+            "annotations": FieldsEditorWidget("annotations"),
+            "variants": FieldsEditorWidget("variants"),
+            "samples": FieldsEditorWidget("samples"),
+        }
+
+        self.tab_widget = QTabWidget(self)
+        for view_name, view in self.views_all.items():
+            self.tab_widget.addTab(view, QIcon(), view_name)
+
+        self.setCentralWidget(self.tab_widget)
+        self.conn = None
+
+    def open_db(self):
+        db_name = QFileDialog.getOpenFileName(
+            self,
+            self.tr("Chose database to see its fields"),
+            QDir.homePath(),
+            self.tr("SQL database files (*.db)"),
+        )[0]
+        if db_name:
+            self.conn = sql.get_sql_connection(db_name)
+
+            for view_name, view in self.views_all.items():
+                view.on_open_project(self.conn)
+
+
+def main():
+    import sys
+
+    app = QApplication(sys.argv)
+    # conn = sql.get_sql_connection("./examples/snpeff3_test.db")
+    window = TestWindow()
+    window.show()
+    return app.exec_()
+
+
+if __name__ == "__main__":
+    exit(main())
