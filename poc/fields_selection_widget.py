@@ -228,9 +228,11 @@ class FieldsEditorWidget(plugin.PluginWidget):
                 view.header().setSectionResizeMode(QHeaderView.ResizeToContents)
                 view.header().setStretchLastSection(True)
             elif isinstance(view, QTableView):
-                view.setVerticalHeader(QHeaderView(Qt.Vertical, self))
-                view.verticalHeader().setStretchLastSection(True)
-                view.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+                view.setHorizontalHeader(QHeaderView(Qt.Horizontal, self))
+                view.horizontalHeader().setStretchLastSection(True)
+                view.horizontalHeader().setSectionResizeMode(
+                    QHeaderView.ResizeToContents
+                )
 
         self.toolbar = QToolBar(self)
 
