@@ -220,9 +220,17 @@ class FieldsEditorWidget(plugin.PluginWidget):
             self.tab_widget.addTab(view, QIcon(), view_name)
             view.setModel(self.proxy_models_all[view_name])
             view.setIconSize(QSize(16, 16))
-            # view.header().setSectionResizeMode(QHeaderView.ResizeToContents)
             view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
             view.setEditTriggers(QAbstractItemView.NoEditTriggers)
+            view.setAlternatingRowColors(True)
+            view.setSelectionBehavior(QAbstractItemView.SelectRows)
+            if isinstance(view, QTreeView):
+                view.header().setSectionResizeMode(QHeaderView.ResizeToContents)
+                view.header().setStretchLastSection(True)
+            elif isinstance(view, QTableView):
+                view.setVerticalHeader(QHeaderView(Qt.Vertical, self))
+                view.verticalHeader().setStretchLastSection(True)
+                view.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
 
         self.toolbar = QToolBar(self)
 
