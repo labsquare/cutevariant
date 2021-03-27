@@ -56,7 +56,8 @@ def test_settings_dialog(qtbot):
     assert not dialog.isVisible()
 
     ## is saved ?
-    s = QSettings(path, QSettings.NativeFormat)
+    print(path)
+    s = QSettings()
     assert s.value("value") == 32
 
     # Test Loading

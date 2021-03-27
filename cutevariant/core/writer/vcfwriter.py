@@ -25,11 +25,12 @@ class VcfWriter(AbstractWriter):
     def __init__(self, device, fields_to_export):
         super().__init__(device, fields_to_export)
 
+
     def async_save(self):
 
         # export header
         for key, value in sql.get_metadatas(self.conn).items():
-            self.device.write(f"##{key}={value}\n")
+            self.device.write(f"##{key}={value}")
 
         # save infos
         for field in sql.get_field_by_category(self.conn, "variants"):
@@ -38,7 +39,7 @@ class VcfWriter(AbstractWriter):
             vcf_type = VcfWriter.VCF_TYPE.get(field["type"], "String")
 
             self.device.write(
-                f'##INFO=<ID={name}, Number=1, Type={vcf_type}, Description="{descr}"\n'
+                f'##INFO=<ID={name}, Number=1, Type={vcf_type}, Description="{descr}"',
             )
 
         # save format
