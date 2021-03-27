@@ -1,6 +1,7 @@
 from cutevariant import commons as cm
 import tempfile
 import json
+import os
 
 
 def test_bytes_to_readable():
@@ -37,6 +38,7 @@ def test_is_json_file():
 
 def test_uncompress_size():
 
-    assert cm.get_uncompressed_size("examples/test.snpeff.vcf") == 23718
+    file_size = os.path.getsize("examples/test.snpeff.vcf")
+    assert cm.get_uncompressed_size("examples/test.snpeff.vcf") == file_size
     assert cm.get_uncompressed_size("examples/test.snpeff.vcf.gzip.gz") == 23718
     assert cm.get_uncompressed_size("examples/test.snpeff.vcf.bgzip.gz") == 23718
