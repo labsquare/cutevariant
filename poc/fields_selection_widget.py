@@ -166,54 +166,83 @@ class FieldsModel(QStandardItemModel):
 
 
 class FieldsEditorWidget(plugin.PluginWidget):
-    """Display all fields according categorie
+    """Displays all the fields by category
+    Each category has its own tab widget, with a tableview of selectable items
+    For the samples category, there TODO is a combobox that lets the user choose the appropriate sample
 
     Usage:
 
-     view = FieldsWidget
-     (conn)
-     view.columns = ["chr","pos"]
+     conn = ...
+     view = FieldsEditorWidget()
+     view.on_open_project(conn)
 
     """
 
     ENABLE = True
 
-    def __init__(self, category: str, conn=None, parent=None):
+    def __init__(self, conn=None, parent=None):
+        """"""
         super().__init__(parent)
 
+        # Define the supported categories out of the table names of cutevariant. Modifying this list will automatically update each and every ineternal model
+        categories = ["variants", "annotations", "samples"]
+
         self.setWindowTitle(self.tr("Columns"))
-        self.view = QTableView(self)
+
+        self.views_all = {
+            category: QTableView()
+            if category
+            in (
+                "variants",
+                "annotations",
+            )  # Table views for variants and annotations, for samples it will be Tree view
+            else QTreeView()
+            for category in categories
+        }  # This conditional list comprehension would need a dict to associate a category with a view...
+
+        self.models_all = {category: FieldsModel(category) for category in categories}
+
+        self.proxy_models_all = {}
+        for category, model in self.models_all.items():
+            self.proxy_models_all[category] = QSortFilterProxyModel()
+            # setup proxy ( for search option )
+            self.proxy_models_all[category] = QSortFilterProxyModel()
+            self.proxy_models_all[category].setSourceModel(model)
+            self.proxy_models_all[category].setRecursiveFilteringEnabled(True)
+            # Search is case insensitive
+            self.proxy_models_all[category].setFilterCaseSensitivity(Qt.CaseInsensitive)
+            # Search in all columns
+            self.proxy_models_all[category].setFilterKeyColumn(-1)
+
+        self.tab_widget = QTabWidget(self)
+
+        for view_name, view in self.views_all.items():
+            self.tab_widget.addTab(view, QIcon(), view_name)
+            view.setModel(self.proxy_models_all[view_name])
+            view.setIconSize(QSize(16, 16))
+            # view.header().setSectionResizeMode(QHeaderView.ResizeToContents)
+            view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+            view.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
         self.toolbar = QToolBar(self)
-        # conn is always None here but initialized in on_open_project()
-        self.model = FieldsModel(category, conn)
 
-        # setup proxy ( for search option )
-        self.proxy_model = QSortFilterProxyModel()
-        self.proxy_model.setSourceModel(self.model)
-        self.proxy_model.setRecursiveFilteringEnabled(True)
-        # Search is case insensitive
-        self.proxy_model.setFilterCaseSensitivity(Qt.CaseInsensitive)
-        # Search in all columns
-        self.proxy_model.setFilterKeyColumn(-1)
-
-        self.view.setModel(self.proxy_model)
-        self.view.setIconSize(QSize(16, 16))
-        # self.view.header().setSectionResizeMode(QHeaderView.ResizeToContents)
-        self.view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.view.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.search_edit = QLineEdit()
         # self.view.setIndentation(0)
         # self.view.header().setVisible(False)
         layout = QVBoxLayout()
 
         layout.addWidget(self.toolbar)
-        layout.addWidget(self.view)
+        layout.addWidget(self.tab_widget)
         layout.addWidget(self.search_edit)
 
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
-        self.model.itemChanged.connect(self.on_fields_changed)
+        for category in categories:
+            self.models_all[category].itemChanged.connect(
+                lambda: self.on_fields_changed(category)
+            )
+            # When an item is changed, this widget is responsible for telling the window.
+            # There are three categories for now (variants, annotations, samples) so the notification is connected to the respective category
 
         # Setup toolbar
         self.toolbar.setIconSize(QSize(16, 16))
@@ -231,12 +260,14 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self.search_act.setShortcut(QKeySequence.Find)
         self.toolbar.addAction(self.search_act)
 
-        self.view.addAction(self.search_act)
-
         self.search_edit.setVisible(False)
         self.search_edit.setPlaceholderText(self.tr("Search by keywords... "))
 
-        self.search_edit.textChanged.connect(self.proxy_model.setFilterRegExp)
+        # Connect the search bar to each category there is, to filter their respective models
+        for category in categories:
+            self.search_edit.textChanged.connect(
+                self.proxy_models_all[category].setFilterRegExp
+            )
 
         self._is_refreshing = (
             False  # Help to avoid loop between on_refresh and on_fields_changed
@@ -248,9 +279,21 @@ class FieldsEditorWidget(plugin.PluginWidget):
 
     def on_open_project(self, conn):
         """ Overrided from PluginWidget """
-        self.model.conn = conn
-        self.model.load()
-        self.view.setRootIndex(self.proxy_model.index(0, 0))
+
+        # Update every model, one per category
+        for category, model in self.models_all.items():
+            model.conn = conn
+            model.load()
+            if category in ("variants", "annotations"):
+                self.views_all[category].setRootIndex(
+                    self.proxy_models_all[category].index(0, 0)
+                )
+            if category == "samples":
+                # TODO Retrieve the selected index off of a combobox, and show in a tableview the infos about the selected sample
+                # selected_sample_index = self.proxy_models_all[category].
+                self.views_all[category].setRootIndex(
+                    self.proxy_models_all[category].index(0, 0)
+                )
         self.on_refresh()
 
     def on_refresh(self):
@@ -258,15 +301,23 @@ class FieldsEditorWidget(plugin.PluginWidget):
         if self.mainwindow is None:  # Debugging
             return
         self._is_refreshing = True
-        self.model.checked_fields = self.mainwindow.state.fields
+
+        # Refreshing means we need to make sure that the model's fields are the same as the ones from the mainwindow
+        for category, model in self.models_all.items():
+            model.checked_fields = self.mainwindow.state.specialized_fields[category]
+
         self._is_refreshing = False
 
-    def on_fields_changed(self):
+    def on_fields_changed(self, category):
 
         if self.mainwindow is None or self._is_refreshing:
             return
 
-        self.mainwindow.state.fields = self.model.checked_fields
+        self.mainwindow.state.specialized_fields[category] = self.models_all[
+            category
+        ].checked_fields
+
+        # Same as on_refresh
         self.mainwindow.refresh_plugins(sender=self)
 
 
@@ -276,19 +327,8 @@ class TestWindow(QMainWindow):
         file_menu = self.menuBar().addMenu(self.tr("File"))
         open_action = file_menu.addAction(self.tr("Open"))
         open_action.triggered.connect(self.open_db)
-
-        self.views_all = {
-            "annotations": FieldsEditorWidget("annotations"),
-            "variants": FieldsEditorWidget("variants"),
-            "samples": FieldsEditorWidget("samples"),
-        }
-
-        self.tab_widget = QTabWidget(self)
-        for view_name, view in self.views_all.items():
-            self.tab_widget.addTab(view, QIcon(), view_name)
-
-        self.setCentralWidget(self.tab_widget)
-        self.conn = None
+        self.view = FieldsEditorWidget()
+        self.setCentralWidget(self.view)
 
     def open_db(self):
         db_name = QFileDialog.getOpenFileName(
@@ -299,9 +339,7 @@ class TestWindow(QMainWindow):
         )[0]
         if db_name:
             self.conn = sql.get_sql_connection(db_name)
-
-            for view_name, view in self.views_all.items():
-                view.on_open_project(self.conn)
+            self.view.on_open_project(self.conn)
 
 
 def main():

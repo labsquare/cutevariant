@@ -23,6 +23,8 @@ class ExportDialog(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
+        self.conn = None
+
         self.setWindowTitle(self.tr("Export database"))
 
         self.description_label = QLabel(
@@ -38,6 +40,7 @@ class ExportDialog(QWidget):
         self.save_file_name = ""
         self.button_export.pressed.connect(self.get_save_file_name)
 
+        # Position the widgets on the grid, manually, not using Qt designer
         self.grid_layout = QGridLayout(self)
         self.grid_layout.addWidget(self.description_label, 0, 0, 1, 2)
         self.grid_layout.addItem(self.spacer, 1, 0, 1, 2)
@@ -48,6 +51,7 @@ class ExportDialog(QWidget):
         settings = QSettings()
         export_path = QDir.homePath()
 
+        # Not working, I didn't understand how to use QSettings (but this is not crucial for now)
         if settings.contains("save_paths/export_path"):
             export_path = settings.value("save_paths/export_path", export_path)
 
@@ -57,9 +61,12 @@ class ExportDialog(QWidget):
             self.tr("Please select a file name you would like to export to"),
             export_path,
             self.tr(f"{extension_name.upper()} file (*.{extension_name})"),
-        )
+        )[0]
+        # PySide differs from C++ Qt in that it returns a tuple that starts with the path instead of just the path...
+
         if f_name:
             self.save_file_name = f_name[0]
+            self.combo_format.hide()  # We don't need it anymore
 
             # Make sure the extension of the save file name matches the extension_name (even though you can write csv data to a file called export.vcf)
             if not self.save_file_name.endswith(f".{extension_name}"):
