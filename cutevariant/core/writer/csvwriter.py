@@ -2,9 +2,11 @@
 import csv
 
 # Custom imports
-from cutevariant.core.writer.abstractwriter import AbstractWriter
+from .abstractwriter import AbstractWriter
 from cutevariant.core import command as cmd
 import cutevariant.commons as cm
+
+import time
 
 LOGGER = cm.logger()
 
@@ -24,6 +26,16 @@ class CsvWriter(AbstractWriter):
 
     def __init__(self, conn, device):
         super().__init__(conn, device)
+
+    def total_count(self):
+        """
+        Returns the total count of elements we will have to write.
+        Should be called everytime the fields get updated
+        """
+        self.variant_count = cmd.count_cmd(
+            self.conn, fields=self.fields, filters=self.filters
+        )["count"]
+        return self.variant_count
 
     def async_save(self, *args, **kwargs):
         r"""Iteratively dumps variants into CSV file
@@ -51,16 +63,8 @@ class CsvWriter(AbstractWriter):
             "order_by": self.order_by,
             "group_by": self.group_by,
             "having": self.having,
+            "limit": None,
         }
-
-        # If we know the variant count in advance, let's use it to report relative progress
-        if "variant_count" in kwargs:
-            variant_count = kwargs["variant_count"]
-        else:
-            # TODO: Move this request so that upon saving, counting and retrieving variants are done as separated steps
-            variant_count = cmd.count_cmd(
-                self.conn, fields=self.fields, filters=self.filters
-            )["count"]
 
         # Use dictionnary to define proper arguments for the writer, beforehand, in one variable
         dict_writer_args = {
@@ -77,11 +81,17 @@ class CsvWriter(AbstractWriter):
         writer.writeheader()
 
         for progress, variant in enumerate(
-            cmd.select_cmd(self.conn, **variant_request_args)
+            cmd.select_cmd(self.conn, **variant_request_args), start=1
         ):
-            written_var = {
-                k: v for k, v in dict(variant).items() if k in writer.fieldnames
-            }
+            # written_var = {
+            #     k: v
+            #     for k, v in dict(variant).items()
+            #     if any(
+            #         k in fieldname for fieldname in writer.fieldnames
+            #     )  # Weird workaround to include fields even with their table prefix
+            #     for k in writer.fieldnames
+            # }
+            written_var = {k: v for k, v in dict(variant).items() if k in self.fields}
             writer.writerow(written_var)
-            print("BOB", self.device.name)
-            yield progress, variant_count
+            # time.sleep(0.1) For demo purposes only. If the database is small, the progress bar won't show up !
+            yield progress, self.variant_count

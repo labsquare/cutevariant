@@ -39,7 +39,14 @@ class AbstractWriter:
 
     def async_save(self, *args, **kwargs):
         """
-        Yields percentage of progress upon saving fields into device (See :meth: save)
+        Yields a tuple (number_of_variants_saved, total_variants_count) upon saving fields into device (See :meth: save)
+        """
+        raise NotImplementedError()
+
+    def total_count(self) -> int:
+        """
+        Returns the total number of fields that will get written.
+        You may call anything a field, just make sure that in async_save you're yielding total_count() times at the StopIteration
         """
         raise NotImplementedError()
 

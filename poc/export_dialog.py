@@ -1,13 +1,20 @@
+import sys
+
+import time
+
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 from PySide2.QtGui import *
 
 from csv_dialog import CSVDialog
 from vcf_dialog import VCFDialog
+from cutevariant.core.writer.abstractwriter import AbstractWriter
 
-import sys
+import sqlite3
+from cutevariant.core import sql
+import cutevariant.commons as cm
 
-import time
+LOGGER = cm.logger()
 
 
 class ExportDialog(QWidget):
@@ -47,7 +54,14 @@ class ExportDialog(QWidget):
         self.grid_layout.addWidget(self.combo_format, 2, 0, 1, 1)
         self.grid_layout.addWidget(self.button_export, 2, 1, 1, 1)
 
+        # For future reference, store the appropriate export dialog as a member of this widget
+        self.specialized_export_dialog: AbstractWriterDialog = None
+
     def get_save_file_name(self) -> None:
+        if self.conn is None:
+            LOGGER.warning("No database connected, aborting")
+            return
+
         settings = QSettings()
         export_path = QDir.homePath()
 
@@ -65,7 +79,7 @@ class ExportDialog(QWidget):
         # PySide differs from C++ Qt in that it returns a tuple that starts with the path instead of just the path...
 
         if f_name:
-            self.save_file_name = f_name[0]
+            self.save_file_name = f_name
             self.combo_format.hide()  # We don't need it anymore
 
             # Make sure the extension of the save file name matches the extension_name (even though you can write csv data to a file called export.vcf)
@@ -74,25 +88,113 @@ class ExportDialog(QWidget):
                     f".{extension_name}"  # At 11PM, cannot do better...
                 )
 
+            # Open the export dialog according to the chosen extension.
+            # The specialized dialog needs sql connection, a file name to save the exported file to, and self (parent widget)
+            self.specialized_export_dialog = ExportDialog.EXPORT_FORMATS[
+                extension_name
+            ](self.conn, self.save_file_name, self)
+            LOGGER.debug(
+                "Instantiated CSV dialog with filename %s", self.save_file_name
+            )
+
+            self.specialized_export_dialog.accepted.connect(self.save)
+            self.specialized_export_dialog.rejected.connect(self.cancel_export)
+
+            self.specialized_export_dialog.show()  # Don't forget to show it ;)
+
+    def cancel_export(self):
+        """
+        Makes sure that at any point, if the user wants to abort any step, this widget gets reset
+        """
+        LOGGER.debug("Resetting export dialog")
+        self.combo_format.show()
+        self.save_file_name = ""
+
     def save(self):
-        progress = QProgressDialog("Copying files...", "Abort Copy", 0, 1000, self)
+        """
+        At this point, the user has selected the file type, name, and fields to export
+        So using the specialized dialog, we save the file using the appropriate writer
+        """
+        if self.conn is None:
+            LOGGER.debug("No database to save from, aborting")
+            return
+
+        if self.specialized_export_dialog is None:
+            LOGGER.debug(
+                "No export dialog was created, please report a bug (this is serious)"
+            )
+
+        writer: AbstractWriter = self.specialized_export_dialog.writer()
+
+        progress = QProgressDialog(
+            self.tr("Saving database to VCF file, please wait..."),
+            self.tr("Abort"),
+            0,
+            writer.total_count(),
+            self,
+        )
         progress.setWindowModality(Qt.WindowModal)
         progress.show()
 
-        for i in range(1000):
+        for i, total in writer.async_save():
             progress.setValue(i)
 
             if progress.wasCanceled():
                 break
 
-            [i / i for i in range(1, 1000000)]
+        self.close()
+
+
+class TestWindow(QMainWindow):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        file_menu = self.menuBar().addMenu(self.tr("File"))
+        open_action = file_menu.addAction(self.tr("Open"))
+        open_action.triggered.connect(self.open_db)
+
+        self.button_export = QPushButton(self.tr("Export"))
+        self.button_export.pressed.connect(self.show_export_dialog)
+
+        self.label_state = QLabel(
+            self.tr(
+                "No database loaded yet (File -> Open to load variant sql database)"
+            )
+        )
+        layout = QVBoxLayout()
+        layout.addWidget(self.label_state)
+        layout.addWidget(self.button_export)
+
+        self.setCentralWidget(QWidget())
+        self.centralWidget().setLayout(layout)
+
+        self.export_dialog = None
+        self.conn = None
+
+    def open_db(self):
+        db_name = QFileDialog.getOpenFileName(
+            self,
+            self.tr("Chose database to see its fields"),
+            QDir.homePath(),
+            self.tr("SQL database files (*.db)"),
+        )[0]
+        if db_name:
+            self.conn = sql.get_sql_connection(db_name)
+            self.label_state.setText(self.tr("SQL database loaded"))
+
+    def show_export_dialog(self):
+        if self.conn:
+            self.export_dialog = ExportDialog()
+            self.export_dialog.conn = self.conn
+            self.export_dialog.show()
+        else:
+            LOGGER.debug("No database to export CSV from, aborting")
 
 
 if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
-    w = ExportDialog()
+    w = TestWindow()
     w.show()
 
     app.exec_()
