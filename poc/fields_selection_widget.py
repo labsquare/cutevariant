@@ -1,12 +1,12 @@
+from typing import List
+import sqlite3
+import json
+
 from cutevariant.gui import plugin, FIcon, style
 from cutevariant.core import sql
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 from PySide2.QtGui import *
-
-from typing import List
-import sqlite3
-import json
 
 
 class FieldsModel(QStandardItemModel):
@@ -165,7 +165,7 @@ class FieldsModel(QStandardItemModel):
             self.checked_fields = obj.get("checked_fields", [])
 
 
-class FieldsEditorWidget(plugin.PluginWidget):
+class FieldsEditorWidget(QWidget):
     """Displays all the fields by category
     Each category has its own tab widget, with a tableview of selectable items
     For the samples category, there TODO is a combobox that lets the user choose the appropriate sample
@@ -180,7 +180,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
 
     ENABLE = True
 
-    def __init__(self, conn=None, parent=None):
+    def __init__(self, parent=None):
         """"""
         super().__init__(parent)
 
@@ -247,12 +247,6 @@ class FieldsEditorWidget(plugin.PluginWidget):
 
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
-        for category in categories:
-            self.models_all[category].itemChanged.connect(
-                lambda: self.on_fields_changed(category)
-            )
-            # When an item is changed, this widget is responsible for telling the window.
-            # There are three categories for now (variants, annotations, samples) so the notification is connected to the respective category
 
         # Setup toolbar
         self.toolbar.setIconSize(QSize(16, 16))
@@ -287,7 +281,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self.search_edit.setVisible(checked)
         self.search_edit.setFocus(Qt.MenuBarFocusReason)
 
-    def on_open_project(self, conn):
+    def set_connection(self, conn):
         """ Overrided from PluginWidget """
 
         # Update every model, one per category
@@ -304,31 +298,12 @@ class FieldsEditorWidget(plugin.PluginWidget):
                 self.views_all[category].setRootIndex(
                     self.proxy_models_all[category].index(0, 0)
                 )
-        self.on_refresh()
 
-    def on_refresh(self):
-        """ overrided from PluginWidget """
-        if self.mainwindow is None:  # Debugging
-            return
-        self._is_refreshing = True
-
-        # Refreshing means we need to make sure that the model's fields are the same as the ones from the mainwindow
-        for category, model in self.models_all.items():
-            model.checked_fields = self.mainwindow.state.specialized_fields[category]
-
-        self._is_refreshing = False
-
-    def on_fields_changed(self, category):
-
-        if self.mainwindow is None or self._is_refreshing:
-            return
-
-        self.mainwindow.state.specialized_fields[category] = self.models_all[
-            category
-        ].checked_fields
-
-        # Same as on_refresh
-        self.mainwindow.refresh_plugins(sender=self)
+    def get_selected_fields(self):
+        return {
+            category: model.checked_fields
+            for category, model in self.models_all.items()
+        }
 
 
 class TestWindow(QMainWindow):
@@ -349,7 +324,7 @@ class TestWindow(QMainWindow):
         )[0]
         if db_name:
             self.conn = sql.get_sql_connection(db_name)
-            self.view.on_open_project(self.conn)
+            self.view.set_connection(self.conn)
 
 
 def main():
