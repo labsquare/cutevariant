@@ -261,12 +261,6 @@ class MainWindow(QMainWindow):
 
         self.export_menu = self.file_menu.addMenu(self.tr("Export as"))
 
-        ExportDialogFactory.STATE = {
-            "fields": self.state.fields,
-            "source": self.state.source,
-            "filters": self.state.filters,
-        }
-
         for export_format_name in ExportDialogFactory.get_supported_formats():
 
             action = self.export_menu.addAction(
@@ -726,7 +720,11 @@ class MainWindow(QMainWindow):
         default_save_dir = settings.value("last_save_file_dir", QDir.homePath())
 
         # Supported export extensions to filter names in the save file dialog (all of them by default)
-        exts = ExportDialogFactory.get_supported_formats()
+
+        factory = ExportDialogFactory()
+        # factory.state = self.state
+
+        exts = factory.get_supported_formats()
 
         format_name = self.sender().data()
 
@@ -767,6 +765,14 @@ class MainWindow(QMainWindow):
         export_dialog: ExportDialog = ExportDialogFactory.create_dialog(
             self.conn, chosen_ext
         )
+
+        # # TODO : refactor self.state
+        # export_dialog.state = {
+        # "fields" : self.state.fields,
+        # "source": self.state.source,
+        # "filters": self.state.filters,
+        # }
+
         export_dialog.filename = file_name
         export_dialog.exec_()
 
