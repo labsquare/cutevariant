@@ -28,6 +28,7 @@ def test_export_csv(qtbot, conn):
     os.remove(filename)
 
     dialog = exp.ExportDialogFactory.create_dialog(conn, "CSV")
+    dialog.filename = filename
     assert isinstance(dialog, exp.CsvExportDialog)
     qtbot.addWidget(dialog)
     dialog.show()
