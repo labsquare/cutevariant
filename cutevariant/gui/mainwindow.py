@@ -16,7 +16,7 @@ from PySide2.QtGui import QIcon, QKeySequence, QDesktopServices
 # Custom imports
 from cutevariant.core import get_sql_connection, get_metadatas, command
 from cutevariant.core.writer import CsvWriter, PedWriter
-from cutevariant.gui.ficon import FIcon
+from cutevariant.gui import FIcon
 from cutevariant.gui.state import State
 from cutevariant.gui.wizards import ProjectWizard
 from cutevariant.gui.settings import SettingsDialog
@@ -259,20 +259,16 @@ class MainWindow(QMainWindow):
 
         self.file_menu.addAction(QIcon(), self.tr("Export..."), self.on_export_pressed)
 
-        self.export_actions = {}  # Say it with dictionnaries
+        self.export_menu = self.file_menu.addMenu(self.tr("Export as"))
+
         for export_format_name in ExportDialogFactory.get_supported_formats():
 
-            action = self.file_menu.addAction(
-                self.tr(f"Export as {export_format_name}"), self.on_export_pressed
+            action = self.export_menu.addAction(
+                self.tr(f"Export as {export_format_name}..."), self.on_export_pressed
             )
 
-            action.setData(
-                export_format_name
-            )  # Since there are several actions connected to the same slot, we need to pass the format to the receiver
-
-            self.export_actions[
-                export_format_name
-            ] = action  # Store it in a dictionnary
+            # Since there are several actions connected to the same slot, we need to pass the format to the receiver
+            action.setData(export_format_name)
 
         # self.export_ped_action = self.file_menu.addAction(
         #     self.tr("Export pedigree PED/PLINK"), self.export_ped
@@ -743,33 +739,30 @@ class MainWindow(QMainWindow):
             ";;".join(filters_and_exts.keys()),
         )
 
-        if file_name:
-
-            settings.setValue("last_save_file_dir", os.path.dirname(file_name))
-
-            chosen_ext = filters_and_exts[
-                chosen_ext
-            ]  # Hacky, extracts extension from second element from getSaveFileName result
-
-            # Automatic extension of file_name
-            file_name = (
-                file_name
-                if file_name.endswith(chosen_ext)
-                else f"{file_name}.{chosen_ext}"
-            )
-
-            export_dialog: ExportDialog = ExportDialogFactory.create_dialog(
-                self.conn, chosen_ext
-            )
-            export_dialog.filename = file_name
-            export_dialog.exec_()
-
-        else:
+        if not file_name:
             QMessageBox.information(
                 self,
                 self.tr("Info"),
                 self.tr("No file name specified, nothing will be written"),
             )
+            return
+
+        settings.setValue("last_save_file_dir", os.path.dirname(file_name))
+
+        chosen_ext = filters_and_exts[
+            chosen_ext
+        ]  # Hacky, extracts extension from second element from getSaveFileName result
+
+        # Automatic extension of file_name
+        file_name = (
+            file_name if file_name.endswith(chosen_ext) else f"{file_name}.{chosen_ext}"
+        )
+
+        export_dialog: ExportDialog = ExportDialogFactory.create_dialog(
+            self.conn, chosen_ext
+        )
+        export_dialog.filename = file_name
+        export_dialog.exec_()
 
     # @Slot()
     # def on_query_model_changed(self):
