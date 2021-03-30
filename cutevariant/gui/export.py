@@ -31,7 +31,7 @@ class ExportDialog(QDialog):
             QDialogButtonBox.Cancel | QDialogButtonBox.Save
         )
         self.vlayout = QVBoxLayout(self)
-        self.vlayout.addStretch()
+
         self.vlayout.addWidget(self.button_box)
 
         self.button_box.accepted.connect(self.save)
@@ -49,11 +49,12 @@ class ExportDialog(QDialog):
         """
         raise NotImplementedError()
 
-    def generic_save(self, writer: AbstractWriter, message: str = None) -> bool:
+    def save_from_writer(self, writer: AbstractWriter, message: str = None) -> bool:
         """
         Should be called only by subclasses to lauch the progress dialog with the specialized writer they just built.
         Returns True on success, False otherwise
         """
+
         if writer:
             if not message:
                 message = "Saving database to file, please wait..."
@@ -111,10 +112,9 @@ class VcfExportDialog(ExportDialog):
             QMessageBox.critical(
                 self, self.tr("Error"), self.tr("No file name set. Nothing to save")
             )
-
         with open(self.filename, "w+") as device:
             writer = VcfWriter(device, self.fields_to_export)
-            success = self.generic_save(writer)
+            success = self.save_from_writer(writer)
             if success:
                 QMessageBox.information(
                     self,
@@ -162,7 +162,7 @@ class CsvExportDialog(ExportDialog):
 
         with open(self.filename, "w+") as device:
             writer = CsvWriter(self.conn, device)
-            selected_fields = self.widget_fields_editor.get_selected_fields()
+            selected_fields = self.fields_selector.get_selected_fields()
             selected_fields_as_list = []
             for category, fields in selected_fields.items():
                 # TODO Would be great, sadly with that we end up with suffixes in the header that are not in the fields
@@ -172,7 +172,7 @@ class CsvExportDialog(ExportDialog):
 
             writer.fields = selected_fields_as_list
 
-            success = self.generic_save(writer)
+            success = self.save_from_writer(writer)
             if success:
                 QMessageBox.information(
                     self,
