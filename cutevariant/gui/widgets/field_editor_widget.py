@@ -92,7 +92,6 @@ class FieldsModel(QStandardItemModel):
 
         for field in sql.get_field_by_category(self.conn, self.category):
 
-            print("salut", field)
             field_name = QStandardItem(field["name"])
             descr = QStandardItem(field["description"])
             descr.setToolTip(field["description"])

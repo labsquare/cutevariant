@@ -12,6 +12,7 @@ from PySide2.QtCore import Qt, QSettings, QByteArray, QDir, QUrl
 from PySide2.QtWidgets import *
 from PySide2.QtGui import QIcon, QKeySequence, QDesktopServices
 
+
 # Custom imports
 from cutevariant.core import get_sql_connection, get_metadatas, command
 from cutevariant.core.writer import CsvWriter, PedWriter
@@ -26,6 +27,8 @@ from cutevariant.commons import (
     DIR_ICONS,
     MIN_AUTHORIZED_DB_VERSION,
 )
+
+from cutevariant.gui.export import ExportDialogFactory, ExportDialog
 
 # Import plugins
 from cutevariant.gui import plugin
@@ -254,14 +257,26 @@ class MainWindow(QMainWindow):
         self.recent_files_menu = self.file_menu.addMenu(self.tr("Open recent"))
         self.setup_recent_menu()
 
-        ### Export projects as
-        self.export_csv_action = self.file_menu.addAction(
-            self.tr("Export as csv"), self.export_as_csv
-        )
+        self.file_menu.addAction(QIcon(), self.tr("Export..."), self.on_export_pressed)
 
-        self.export_ped_action = self.file_menu.addAction(
-            self.tr("Export pedigree PED/PLINK"), self.export_ped
-        )
+        self.export_actions = {}  # Say it with dictionnaries
+        for export_format_name in ExportDialogFactory.get_supported_formats():
+
+            action = self.file_menu.addAction(
+                self.tr(f"Export as {export_format_name}"), self.on_export_pressed
+            )
+
+            action.setData(
+                export_format_name
+            )  # Since there are several actions connected to the same slot, we need to pass the format to the receiver
+
+            self.export_actions[
+                export_format_name
+            ] = action  # Store it in a dictionnary
+
+        # self.export_ped_action = self.file_menu.addAction(
+        #     self.tr("Export pedigree PED/PLINK"), self.export_ped
+        # )
 
         self.file_menu.addSeparator()
         ### Misc
@@ -689,6 +704,72 @@ class MainWindow(QMainWindow):
     def toggle_footer_visibility(self, visibility):
         """Toggle visibility of the bottom toolbar and all its plugins"""
         self.footer_tab.setVisible(visibility)
+
+    def on_export_pressed(self):
+        """
+        Slot called by any export action.
+        Use QAction.setData() on the sender to set format name.
+        Otherwise, this slot will guess the format based on the save file dialog
+        """
+
+        if not self.conn:
+            QMessageBox.information(
+                self,
+                self.tr("Info"),
+                self.tr("No project opened, nothing to export.\nAborting."),
+            )
+            return
+
+        settings = QSettings()
+        default_save_dir = settings.value("last_save_file_dir", QDir.homePath())
+
+        # Supported export extensions to filter names in the save file dialog (all of them by default)
+        exts = ExportDialogFactory.get_supported_formats()
+
+        format_name = self.sender().data()
+
+        # Narrow down available extensions based on the action that was triggered
+        if format_name:
+            exts = [format_name]
+
+        filters_and_exts = {
+            f"{ext.upper()} file (*.{ext})": ext for ext in exts
+        }  # Hack to get only ext out of savefiledialog result's second element (associates the filter's message with the extension name)
+
+        file_name, chosen_ext = QFileDialog.getSaveFileName(
+            self,
+            self.tr("Please chose a filename you'd like to save the database to"),
+            default_save_dir,
+            ";;".join(filters_and_exts.keys()),
+        )
+
+        if file_name:
+
+            settings.setValue("last_save_file_dir", os.path.dirname(file_name))
+
+            chosen_ext = filters_and_exts[
+                chosen_ext
+            ]  # Hacky, extracts extension from second element from getSaveFileName result
+
+            # Automatic extension of file_name
+            file_name = (
+                file_name
+                if file_name.endswith(chosen_ext)
+                else f"{file_name}.{chosen_ext}"
+            )
+
+            export_dialog: ExportDialog = ExportDialogFactory.create_dialog(
+                self.conn, chosen_ext
+            )
+            export_dialog.filename = file_name
+            export_dialog.exec_()
+
+        else:
+            QMessageBox.information(
+                self,
+                self.tr("Info"),
+                self.tr("No file name specified, nothing will be written"),
+            )
 
     # @Slot()
     # def on_query_model_changed(self):

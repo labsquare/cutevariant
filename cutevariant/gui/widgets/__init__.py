@@ -7,3 +7,5 @@ from .dict_widget import DictModel, DictWidget
 from .codeedit import CodeEdit
 
 from .file_edit import FileEdit
+
+from .field_editor_widget import FieldsEditorWidget
