@@ -24,18 +24,10 @@ class CsvWriter(AbstractWriter):
         ...    writer.save(conn)
     """
 
-    def __init__(self, conn, device):
-        super().__init__(conn, device)
+    def __init__(self, conn, device, state):
+        super().__init__(conn, device, state)
 
-    def total_count(self):
-        """
-        Returns the total count of elements we will have to write.
-        Should be called everytime the fields get updated
-        """
-        self.variant_count = cmd.count_cmd(
-            self.conn, fields=self.fields, filters=self.filters
-        )["count"]
-        return self.variant_count
+        self.separator = "\t"
 
     def async_save(self, *args, **kwargs):
         r"""Iteratively dumps variants into CSV file
@@ -55,43 +47,25 @@ class CsvWriter(AbstractWriter):
                 lineterminator : How the lines end in the CSV file
         """
 
-        variant_request_args = {
-            "fields": self.fields,
-            "source": self.source,
-            "filters": self.filters,
-            "order_desc": self.order_desc,
-            "order_by": self.order_by,
-            "group_by": self.group_by,
-            "having": self.having,
-            "limit": None,
-        }
-
         # Use dictionnary to define proper arguments for the writer, beforehand, in one variable
-        dict_writer_args = {
+        dict_writer_options = {
             "f": self.device,
-            "delimiter": "\t",
+            "delimiter": self.separator,
             "lineterminator": "\n",
         }
-        dict_writer_args.update(kwargs)
+        dict_writer_options.update(kwargs)
 
         # Set fieldnames **after** updating with kwargs to make sure they are not provided by the method's call kwargs
-        dict_writer_args["fieldnames"] = list(self.fields)
+        dict_writer_options["fieldnames"] = list(self.state["fields"])
 
-        writer = csv.DictWriter(**dict_writer_args)
+        writer = csv.DictWriter(**dict_writer_options)
         writer.writeheader()
 
-        for progress, variant in enumerate(
-            cmd.select_cmd(self.conn, **variant_request_args), start=1
-        ):
-            # written_var = {
-            #     k: v
-            #     for k, v in dict(variant).items()
-            #     if any(
-            #         k in fieldname for fieldname in writer.fieldnames
-            #     )  # Weird workaround to include fields even with their table prefix
-            #     for k in writer.fieldnames
-            # }
-            written_var = {k: v for k, v in dict(variant).items() if k in self.fields}
+        for count, variant in enumerate(self.get_variants()):
+
+            written_var = {
+                k: v for k, v in dict(variant).items() if k in self.state["fields"]
+            }
             writer.writerow(written_var)
             # time.sleep(0.1) For demo purposes only. If the database is small, the progress bar won't show up !
-            yield progress, self.variant_count
+            yield count

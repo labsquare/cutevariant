@@ -7,7 +7,7 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 
 from cutevariant.gui.widgets import FieldsEditorWidget
-from cutevariant.core.writer import VcfWriter, CsvWriter, AbstractWriter
+from cutevariant.core.writer import VcfWriter, CsvWriter, BedWriter, AbstractWriter
 
 import cutevariant.commons as cm
 
@@ -23,10 +23,11 @@ class ExportDialog(QDialog):
     Base class for every export dialog
     """
 
-    def __init__(self, conn: sqlite3.Connection, parent=None):
+    def __init__(self, conn: sqlite3.Connection, filename, state={}, parent=None):
         super().__init__(parent)
 
         self.conn = conn
+        self.state = state
         self.button_box = QDialogButtonBox(
             QDialogButtonBox.Cancel | QDialogButtonBox.Save
         )
@@ -37,7 +38,7 @@ class ExportDialog(QDialog):
         self.button_box.accepted.connect(self.save)
         self.button_box.rejected.connect(self.reject)
 
-        self.filename = ""
+        self.filename = filename
 
     def set_central_widget(self, widget: QWidget):
 
@@ -82,119 +83,126 @@ class ExportDialog(QDialog):
             return False
 
 
-class VcfExportDialog(ExportDialog):
-    """
-    Dialog to retrieve user choices when exporting to VCF
-    """
-
-    def __init__(self, conn: sqlite3.Connection, parent=None):
-        super().__init__(conn, parent)
-
-        self.fields_selector = FieldsEditorWidget(self)
-        self.fields_selector.set_connection(conn)
-
-        self.tab_widget = QTabWidget(self)
-
-        self.tab_widget.addTab(
-            self.fields_selector,
-            self.fields_selector.windowIcon(),
-            self.fields_selector.windowTitle(),
-        )
-
-        # self.tab_widget.addTab(widget, icon, label)
-
-        self.set_central_widget(self.tab_widget)
-        self.fields_to_export = ["chr", "pos", "ref", "alt"]
-
-    def save(self):
-        if not self.filename:
-            LOGGER.debug("No file name set. Aborting")
-            QMessageBox.critical(
-                self, self.tr("Error"), self.tr("No file name set. Nothing to save")
-            )
-        with open(self.filename, "w+") as device:
-            writer = VcfWriter(device, self.fields_to_export)
-            success = self.save_from_writer(writer)
-            if success:
-                QMessageBox.information(
-                    self,
-                    self.tr("Success !"),
-                    self.tr(f"Successfully saved VCF file at {self.filename}"),
-                )
-            else:
-                QMessageBox.warning(
-                    self,
-                    self.tr("Failure"),
-                    self.tr("Could not save file !"),
-                )
-
-        self.close()  # Whatever happens, this dialog is now useless
-
-
-class CsvExportDialog(ExportDialog):
+class BedExportDialog(ExportDialog):
     """docstring for ClassName"""
 
-    def __init__(self, conn: sqlite3.Connection, parent=None):
-        super().__init__(conn, parent)
-
-        self.fields_selector = FieldsEditorWidget(self)
-        self.fields_selector.set_connection(conn)
-
-        self.csv_options_widget = QWidget(self)
-        self.csv_options_widget.setWindowTitle(self.tr("CSV options"))
-
-        self.tab_widget = QTabWidget(self)
-
-        self.tab_widget.addTab(
-            self.fields_selector,
-            self.fields_selector.windowIcon(),
-            self.fields_selector.windowTitle(),
-        )
-
-        self.set_central_widget(self.tab_widget)
+    def __init__(self, conn, filename, parent=None):
+        super().__init__(conn, filename, state, parent)
 
     def save(self):
-        if not self.filename:
-            LOGGER.debug("No file name set. Aborting")
-            QMessageBox.critical(
-                self, self.tr("Error"), self.tr("No file name set. Nothing to save")
-            )
+        with open(self.filename) as device:
+            writer = BedWriter(self.conn, device, self.state)
+            self.save_from_writer(writer, "Saving BED file")
 
-        with open(self.filename, "w+") as device:
-            writer = CsvWriter(self.conn, device)
-            selected_fields = self.fields_selector.get_selected_fields()
-            selected_fields_as_list = []
-            for category, fields in selected_fields.items():
-                # TODO Would be great, sadly with that we end up with suffixes in the header that are not in the fields
-                # selected_fields_as_list += [f"{category}.{field}" for field in fields]
+            # class CsvExportDialog(ExportDialog):
+            #     """docstring for ClassName"""
 
-                selected_fields_as_list += [field for field in fields]
+            #     def __init__(self, conn: sqlite3.Connection, parent=None):
+            #         super().__init__(conn, parent)
 
-            writer.fields = selected_fields_as_list
+            #         self.fields_selector = FieldsEditorWidget(self)
+            #         self.fields_selector.set_connection(conn)
 
-            success = self.save_from_writer(writer)
-            if success:
-                QMessageBox.information(
-                    self,
-                    self.tr("Success !"),
-                    self.tr(f"Successfully saved CSV file at {self.filename}"),
-                )
-            else:
-                QMessageBox.warning(
-                    self,
-                    self.tr("Failure"),
-                    self.tr("Could not save file !"),
-                )
+            #         self.csv_options_widget = QWidget(self)
+            #         self.csv_options_widget.setWindowTitle(self.tr("CSV options"))
 
-        self.close()  # Whatever happens, this dialog is now useless
+            #         self.tab_widget = QTabWidget(self)
+
+            #         self.tab_widget.addTab(
+            #             self.fields_selector,
+            #             self.fields_selector.windowIcon(),
+            #             self.fields_selector.windowTitle(),
+            #         )
+
+            #         self.set_central_widget(self.tab_widget)
+
+            #     def save(self):
+            #         if not self.filename:
+            #             LOGGER.debug("No file name set. Aborting")
+            #             QMessageBox.critical(
+            #                 self, self.tr("Error"), self.tr("No file name set. Nothing to save")
+            #             )
+
+            #         with open(self.filename, "w+") as device:
+            #             writer = CsvWriter(self.conn, device)
+            #             selected_fields = self.fields_selector.get_selected_fields()
+            #             selected_fields_as_list = []
+            #             for category, fields in selected_fields.items():
+            #                 # TODO Would be great, sadly with that we end up with suffixes in the header that are not in the fields
+            #                 # selected_fields_as_list += [f"{category}.{field}" for field in fields]
+
+            #                 selected_fields_as_list += [field for field in fields]
+
+            #             writer.fields = selected_fields_as_list
+
+            #             success = self.save_from_writer(writer)
+            #             if success:
+            #                 QMessageBox.information(
+            #                     self,
+            #                     self.tr("Success !"),
+            #                     self.tr(f"Successfully saved CSV file at {self.filename}"),
+            #                 )
+            #             else:
+            #                 QMessageBox.warning(
+            #                     self,
+            #                     self.tr("Failure"),
+            #                     self.tr("Could not save file !"),
+            #                 )
+
+            #         self.close()  # Whatever happens, this dialog is now useless
+
+
+# class VcfExportDialog(ExportDialog):
+#     """
+#     Dialog to retrieve user choices when exporting to VCF
+#     """
+
+#     def __init__(self, conn: sqlite3.Connection, parent=None):
+#         super().__init__(conn, parent)
+
+#         self.fields_selector = FieldsEditorWidget(self)
+#         self.fields_selector.set_connection(conn)
+
+#         self.tab_widget = QTabWidget(self)
+
+#         self.tab_widget.addTab(
+#             self.fields_selector,
+#             self.fields_selector.windowIcon(),
+#             self.fields_selector.windowTitle(),
+#         )
+
+#         # self.tab_widget.addTab(widget, icon, label)
+
+#         self.set_central_widget(self.tab_widget)
+#         self.fields_to_export = ["chr", "pos", "ref", "alt"]
+
+#     def save(self):
+#         with open(self.filename, "w+") as device:
+#             writer = VcfWriter(device, self.fields_to_export)
+#             success = self.save_from_writer(writer)
+#             if success:
+#                 QMessageBox.information(
+#                     self,
+#                     self.tr("Success !"),
+#                     self.tr(f"Successfully saved VCF file at {self.filename}"),
+#                 )
+#             else:
+#                 QMessageBox.warning(
+#                     self,
+#                     self.tr("Failure"),
+#                     self.tr("Could not save file !"),
+#                 )
+
+#         self.close()  # Whatever happens, this dialog is now useless
 
 
 class ExportDialogFactory:
 
-    FORMATS = {"vcf": VcfExportDialog, "csv": CsvExportDialog}
+    # FORMATS = {"vcf": VcfExportDialog, "csv": CsvExportDialog}
+    FORMATS = {"bed": BedExportDialog}
 
     @classmethod
-    def create_dialog(cls, conn: sqlite3.Connection, format_name: str):
+    def create_dialog(cls, conn: sqlite3.Connection, format_name: str, filename: str):
         return cls.FORMATS.get(format_name, VcfExportDialog)(conn)
 
     def get_supported_formats():

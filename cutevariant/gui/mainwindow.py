@@ -261,6 +261,12 @@ class MainWindow(QMainWindow):
 
         self.export_menu = self.file_menu.addMenu(self.tr("Export as"))
 
+        ExportDialogFactory.STATE = {
+            "fields": self.state.fields,
+            "source": self.state.source,
+            "filters": self.state.filters,
+        }
+
         for export_format_name in ExportDialogFactory.get_supported_formats():
 
             action = self.export_menu.addAction(

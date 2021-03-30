@@ -18,9 +18,16 @@ def conn():
 def test_bed_writer(conn):
 
     # Write bed file
+
+    state = {
+        "fields": ["chr", "pos", "ref", "alt"],
+        "source": "variants",
+        "filters": {},
+    }
+
     filename = tempfile.mkstemp()[1]
     with open(filename, "w") as file:
-        bedwriter = BedWriter(conn, file)
+        bedwriter = BedWriter(conn, file, state)
         bedwriter.save()
 
     # Read bed file
@@ -28,7 +35,7 @@ def test_bed_writer(conn):
     with open(filename) as file:
         for line in file:
             line = line.strip()
-            chrom, start, end, _ = tuple(line.split("\t"))
+            chrom, start, end = tuple(line.split("\t"))
             observed.append((chrom, start, end))
 
     # Read databases
@@ -44,7 +51,8 @@ def test_bed_writer(conn):
     assert observed == expected
 
 
-def test_csv_writer(conn):
+@pytest.mark.parametrize("separator", ["\t", ";"])
+def test_csv_writer(conn, separator):
     """Test CSV writer
 
     - Tabulated file
@@ -53,27 +61,37 @@ def test_csv_writer(conn):
 
     filename = tempfile.mkstemp()[1]
 
+    state = {
+        "fields": ["chr", "pos", "alt"],
+        "source": "variants",
+        "filters": {"AND": [{"field": "alt", "operator": "=", "value": "A"}]},
+    }
+
     # Save file
     with open(filename, "w") as file:
-        import_reader(conn, FakeReader())
-        csvwriter = CsvWriter(conn, file)
-        csvwriter.fields = ["chr", "pos", "alt"]
+        csvwriter = CsvWriter(conn, file, state)
+        csvwriter.separator = separator
         csvwriter.save()
 
     # Read file
+    observed = []
     with open(filename, "r") as file:
-        content = file.read()
+        for line in file:
+            line = tuple(line.strip().split(separator))
+            observed.append(line)
 
-    expected = """chr\tpos\talt
-11\t125010\tA
-12\t125010\tA
-13\t125010\tA
-"""
+    # Read databases
+    expected = [("chr", "pos", "alt")]
+    for record in conn.execute("SELECT chr, pos, alt FROM variants WHERE alt = 'A'"):
+        chrom = str(record["chr"])
+        pos = str(record["pos"])
+        alt = str(record["alt"])
+        expected.append((chrom, pos, alt))
 
-    print("Expected:\n'", expected, "'")
-    print("Found:\n'", content, "'")
+    print(observed)
+    print(expected)
 
-    assert expected == content
+    assert observed == expected
 
 
 def test_ped_writer(conn):
@@ -88,14 +106,13 @@ def test_ped_writer(conn):
         pedwriter(PedWriter): Instance of writer pointing to a temp file.
     """
     reader = VcfReader(open("examples/test.snpeff.vcf"), "snpeff")
-    import_reader(conn, reader)
     import_pedfile(conn, "examples/test.snpeff.pedigree.tfam")
 
     filename = tempfile.mkstemp()[1]
 
     # save database
     with open(filename, "w") as file:
-        pedwriter = PedWriter(conn, file)
+        pedwriter = PedWriter(conn, file, {})
         # Test save from DB
         pedwriter.save()
 
