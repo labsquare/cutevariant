@@ -6,14 +6,42 @@ import sqlite3
 # Custom imports
 from cutevariant.core.importer import import_reader, import_pedfile
 from cutevariant.core.reader import FakeReader, VcfReader
-from cutevariant.core.writer import CsvWriter, PedWriter, VcfWriter
+from cutevariant.core.writer import CsvWriter, PedWriter, VcfWriter, BedWriter
+from tests import utils
 
 
 @pytest.fixture
 def conn():
-    conn = sqlite3.connect(":memory:")
-    conn.row_factory = sqlite3.Row
-    return conn
+    return utils.create_conn()
+
+
+def test_bed_writer(conn):
+
+    # Write bed file
+    filename = tempfile.mkstemp()[1]
+    with open(filename, "w") as file:
+        bedwriter = BedWriter(conn, file)
+        bedwriter.save()
+
+    # Read bed file
+    observed = []
+    with open(filename) as file:
+        for line in file:
+            line = line.strip()
+            chrom, start, end, _ = tuple(line.split("\t"))
+            observed.append((chrom, start, end))
+
+    # Read databases
+    expected = []
+    for record in conn.execute(
+        "SELECT chr, pos as 'start', pos+1 as 'end' FROM variants"
+    ):
+        chrom = str(record["chr"])
+        start = str(record["start"])
+        end = str(record["end"])
+        expected.append((chrom, start, end))
+
+    assert observed == expected
 
 
 def test_csv_writer(conn):
@@ -95,4 +123,3 @@ def test_vcf_writer(conn):
 
         for line in file:
             print(line.strip())
-
