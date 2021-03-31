@@ -31,6 +31,7 @@ class BedWriter(AbstractWriter):
     def async_save(self, *args, **kwargs):
         r""""""
 
+        self.fields = ["chr", "pos"]
         for count, variant in enumerate(self.get_variants()):
 
             chrom = str(variant["chr"])

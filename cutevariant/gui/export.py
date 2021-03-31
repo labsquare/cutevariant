@@ -23,11 +23,14 @@ class ExportDialog(QDialog):
     Base class for every export dialog
     """
 
-    def __init__(self, conn: sqlite3.Connection, filename, state={}, parent=None):
+    def __init__(self, conn: sqlite3.Connection, filename, parent=None):
         super().__init__(parent)
 
+        self.fields = ["chr", "pos", "ref", "alt"]
+        self.source = "variants"
+        self.filters = {}
         self.conn = conn
-        self.state = state
+
         self.button_box = QDialogButtonBox(
             QDialogButtonBox.Cancel | QDialogButtonBox.Save
         )
@@ -68,15 +71,16 @@ class ExportDialog(QDialog):
                 self,
             )
 
-            progress.setWindowModality(Qt.WindowModal)
-            progress.show()
+            progress_dialog.setWindowModality(Qt.WindowModal)
+            progress_dialog.show()
 
-            for i, total in writer.async_save():
-                progress.setValue(i)
+            for i in writer.async_save():
+                progress_dialog.setValue(i)
 
-                if progress.wasCanceled():
+                if progress_dialog.wasCanceled():
                     return False
 
+            progress_dialog.close()
             return True
 
         else:
@@ -87,69 +91,48 @@ class BedExportDialog(ExportDialog):
     """docstring for ClassName"""
 
     def __init__(self, conn, filename, parent=None):
-        super().__init__(conn, filename, state, parent)
+        super().__init__(conn, filename, parent)
+
+        self.setWindowTitle(f"Export to {self.filename}")
 
     def save(self):
-        with open(self.filename) as device:
-            writer = BedWriter(self.conn, device, self.state)
-            # self.save_from_writer(writer, "Saving BED file")
+        with open(self.filename, "w+") as device:
+            writer = BedWriter(
+                self.conn, device, self.fields, self.source, self.filters
+            )
 
-            # class CsvExportDialog(ExportDialog):
-            #     """docstring for ClassName"""
+            success = self.save_from_writer(writer, "Saving BED file")
+            if success:
+                self.accept()
+            else:
+                self.reject()
 
-            #     def __init__(self, conn: sqlite3.Connection, parent=None):
-            #         super().__init__(conn, parent)
 
-            #         self.fields_selector = FieldsEditorWidget(self)
-            #         self.fields_selector.set_connection(conn)
+class CsvExportDialog(ExportDialog):
+    """docstring for ClassName"""
 
-            #         self.csv_options_widget = QWidget(self)
-            #         self.csv_options_widget.setWindowTitle(self.tr("CSV options"))
+    def __init__(self, conn: sqlite3.Connection, parent=None):
+        super().__init__(conn, parent)
 
-            #         self.tab_widget = QTabWidget(self)
+        self.combo = QComboBox()
+        self.combo.addItem(";", ";")
+        self.combo.addItem("TAB", "\t")
+        self.set_central_widget(self.combo)
 
-            #         self.tab_widget.addTab(
-            #             self.fields_selector,
-            #             self.fields_selector.windowIcon(),
-            #             self.fields_selector.windowTitle(),
-            #         )
+    def save(self):
+        if not self.filename:
+            LOGGER.debug("No file name set. Aborting")
+            QMessageBox.critical(
+                self, self.tr("Error"), self.tr("No file name set. Nothing to save")
+            )
 
-            #         self.set_central_widget(self.tab_widget)
+        with open(self.filename, "w+") as device:
 
-            #     def save(self):
-            #         if not self.filename:
-            #             LOGGER.debug("No file name set. Aborting")
-            #             QMessageBox.critical(
-            #                 self, self.tr("Error"), self.tr("No file name set. Nothing to save")
-            #             )
-
-            #         with open(self.filename, "w+") as device:
-            #             writer = CsvWriter(self.conn, device)
-            #             selected_fields = self.fields_selector.get_selected_fields()
-            #             selected_fields_as_list = []
-            #             for category, fields in selected_fields.items():
-            #                 # TODO Would be great, sadly with that we end up with suffixes in the header that are not in the fields
-            #                 # selected_fields_as_list += [f"{category}.{field}" for field in fields]
-
-            #                 selected_fields_as_list += [field for field in fields]
-
-            #             writer.fields = selected_fields_as_list
-
-            #             success = self.save_from_writer(writer)
-            #             if success:
-            #                 QMessageBox.information(
-            #                     self,
-            #                     self.tr("Success !"),
-            #                     self.tr(f"Successfully saved CSV file at {self.filename}"),
-            #                 )
-            #             else:
-            #                 QMessageBox.warning(
-            #                     self,
-            #                     self.tr("Failure"),
-            #                     self.tr("Could not save file !"),
-            #                 )
-
-            #         self.close()  # Whatever happens, this dialog is now useless
+            writer = CsvWriter(
+                self.conn, device, self.fields, self.source, self.filters
+            )
+            writer.separator = self.combo.currentData()
+            success = self.save_from_writer(writer)
 
 
 # class VcfExportDialog(ExportDialog):
@@ -199,17 +182,32 @@ class BedExportDialog(ExportDialog):
 class ExportDialogFactory:
 
     # FORMATS = {"vcf": VcfExportDialog, "csv": CsvExportDialog}
-    FORMATS = {"bed": BedExportDialog}
+    FORMATS = {"bed": BedExportDialog, "csv": CsvExportDialog}
 
     @classmethod
-    def create_dialog(cls, conn: sqlite3.Connection, format_name: str, filename: str):
-        return cls.FORMATS.get(format_name, VcfExportDialog)(conn)
+    def create_dialog(
+        cls,
+        conn: sqlite3.Connection,
+        format_name: str,
+        filename: str,
+        fields=["chr", "pos", "ref", "alt"],
+        source="variants",
+        filters={},
+    ):
+        DialogClass = cls.FORMATS.get(format_name)
+        dialog = DialogClass(conn, filename)
+        dialog.fields = fields
+        dialog.source = source
+        dialog.filters = filters
 
-    def get_supported_formats():
+        return dialog
+
+    @classmethod
+    def get_supported_formats(cls):
         """
         Returns a list of supported export formats
         """
-        return ExportDialogFactory.FORMATS.keys()
+        return cls.FORMATS.keys()
 
 
 if __name__ == "__main__":

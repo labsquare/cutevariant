@@ -763,7 +763,12 @@ class MainWindow(QMainWindow):
         )
 
         export_dialog: ExportDialog = ExportDialogFactory.create_dialog(
-            self.conn, chosen_ext
+            self.conn,
+            chosen_ext,
+            file_name,
+            fields=self.state.fields,
+            source=self.state.source,
+            filters=self.state.filters,
         )
 
         # # TODO : refactor self.state
@@ -774,7 +779,9 @@ class MainWindow(QMainWindow):
         # }
 
         export_dialog.filename = file_name
-        export_dialog.exec_()
+
+        success = export_dialog.exec_()
+        # IF ... show message "exported ok   ou exported failed "
 
     # @Slot()
     # def on_query_model_changed(self):

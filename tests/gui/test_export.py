@@ -22,25 +22,16 @@ def conn():
     return conn
 
 
-def test_export_csv(qtbot, conn):
+@pytest.mark.parametrize("extension", ["csv", "bed", "ped", "vcf"])
+def test_export_dialog(qtbot, conn, extension):
 
-    filename = tempfile.mkstemp(suffix=".csv")[1]
+    filename = tempfile.mkstemp(suffix=extension)[1]
     os.remove(filename)
 
-    dialog = exp.ExportDialogFactory.create_dialog(conn, "CSV")
-    dialog.filename = filename
-    assert isinstance(dialog, exp.CsvExportDialog)
+    dialog = exp.ExportDialogFactory.create_dialog(conn, extension, filename)
+
     qtbot.addWidget(dialog)
     dialog.show()
     assert dialog.isVisible()
-
     qtbot.mouseClick(dialog.button_box.button(QDialogButtonBox.Save), Qt.LeftButton)
-
     assert os.path.exists(filename), "the file has not been created"
-
-    qtbot.mouseClick(dialog.button_box.button(QDialogButtonBox.Cancel), Qt.LeftButton)
-    assert not dialog.isVisible()
-
-
-def test_export_vcf(qtbot, conn):
-    pass
