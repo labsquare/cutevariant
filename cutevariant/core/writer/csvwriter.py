@@ -24,8 +24,15 @@ class CsvWriter(AbstractWriter):
         ...    writer.save(conn)
     """
 
-    def __init__(self, conn, device, state):
-        super().__init__(conn, device, state)
+    def __init__(
+        self,
+        conn,
+        device,
+        fields=["chr", "pos", "ref", "alt"],
+        source="variants",
+        filters={},
+    ):
+        super().__init__(conn, device, fields, source, filters)
 
         self.separator = "\t"
 
@@ -56,16 +63,14 @@ class CsvWriter(AbstractWriter):
         dict_writer_options.update(kwargs)
 
         # Set fieldnames **after** updating with kwargs to make sure they are not provided by the method's call kwargs
-        dict_writer_options["fieldnames"] = list(self.state["fields"])
+        dict_writer_options["fieldnames"] = list(self.fields)
 
         writer = csv.DictWriter(**dict_writer_options)
         writer.writeheader()
 
         for count, variant in enumerate(self.get_variants()):
 
-            written_var = {
-                k: v for k, v in dict(variant).items() if k in self.state["fields"]
-            }
+            written_var = {k: v for k, v in dict(variant).items() if k in self.fields}
             writer.writerow(written_var)
             # time.sleep(0.1) For demo purposes only. If the database is small, the progress bar won't show up !
             yield count

@@ -22,9 +22,18 @@ class AbstractWriter:
         ...    writer.save(conn)
     """
 
-    def __init__(self, conn, device, state):
+    def __init__(
+        self,
+        conn,
+        device,
+        fields=["chr", "pos", "ref", "alt"],
+        source="variants",
+        filters={},
+    ):
 
-        self.state = state
+        self.fields = fields
+        self.source = source
+        self.filters = filters
         self.conn = conn
         self.device = device
 
@@ -48,9 +57,9 @@ class AbstractWriter:
 
         return cmd.count_cmd(
             self.conn,
-            fields=self.state["fields"],
-            source=self.state["source"],
-            filters=self.state["filters"],
+            fields=self.fields,
+            source=self.source,
+            filters=self.filters,
             limit=None,
         )["count"]
 
@@ -58,8 +67,8 @@ class AbstractWriter:
 
         yield from cmd.select_cmd(
             self.conn,
-            fields=self.state["fields"],
-            source=self.state["source"],
-            filters=self.state["filters"],
+            fields=self.fields,
+            source=self.source,
+            filters=self.filters,
             limit=None,
         )

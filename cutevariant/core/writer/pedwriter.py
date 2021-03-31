@@ -24,8 +24,8 @@ class PedWriter(AbstractWriter):
         ...    writer.save(conn)
     """
 
-    def __init__(self, conn, device, state):
-        super().__init__(conn, device, state)
+    def __init__(self, conn, device):
+        super().__init__(conn, device)
 
     def async_save(self, *args, **kwargs):
 

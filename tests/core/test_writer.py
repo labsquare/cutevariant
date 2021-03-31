@@ -19,15 +19,9 @@ def test_bed_writer(conn):
 
     # Write bed file
 
-    state = {
-        "fields": ["chr", "pos", "ref", "alt"],
-        "source": "variants",
-        "filters": {},
-    }
-
     filename = tempfile.mkstemp()[1]
     with open(filename, "w") as file:
-        bedwriter = BedWriter(conn, file, state)
+        bedwriter = BedWriter(conn, file)
         bedwriter.save()
 
     # Read bed file
@@ -61,15 +55,12 @@ def test_csv_writer(conn, separator):
 
     filename = tempfile.mkstemp()[1]
 
-    state = {
-        "fields": ["chr", "pos", "alt"],
-        "source": "variants",
-        "filters": {"AND": [{"field": "alt", "operator": "=", "value": "A"}]},
-    }
+    fields = ["chr", "pos", "alt"]
+    filters = {"AND": [{"field": "alt", "operator": "=", "value": "A"}]}
 
     # Save file
     with open(filename, "w") as file:
-        csvwriter = CsvWriter(conn, file, state)
+        csvwriter = CsvWriter(conn, file, fields=fields, filters=filters)
         csvwriter.separator = separator
         csvwriter.save()
 
@@ -112,7 +103,7 @@ def test_ped_writer(conn):
 
     # save database
     with open(filename, "w") as file:
-        pedwriter = PedWriter(conn, file, {})
+        pedwriter = PedWriter(conn, file)
         # Test save from DB
         pedwriter.save()
 

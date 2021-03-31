@@ -23,13 +23,13 @@ class BedWriter(AbstractWriter):
         ...    writer.save(conn)
     """
 
-    def __init__(self, conn, device, state):
-        super().__init__(conn, device, state)
+    def __init__(
+        self, conn, device, fields=["chr", "pos"], source="variants", filters={}
+    ):
+        super().__init__(conn, device, fields, source, filters)
 
     def async_save(self, *args, **kwargs):
         r""""""
-
-        self.state["fields"] = ["chr", "pos"]
 
         for count, variant in enumerate(self.get_variants()):
 

@@ -92,7 +92,7 @@ class BedExportDialog(ExportDialog):
     def save(self):
         with open(self.filename) as device:
             writer = BedWriter(self.conn, device, self.state)
-            self.save_from_writer(writer, "Saving BED file")
+            # self.save_from_writer(writer, "Saving BED file")
 
             # class CsvExportDialog(ExportDialog):
             #     """docstring for ClassName"""
