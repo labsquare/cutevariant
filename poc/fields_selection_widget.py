@@ -2,7 +2,8 @@ from typing import List
 import sqlite3
 import json
 
-from cutevariant.gui import plugin, FIcon, style
+from cutevariant.gui import plugin, FIcon
+from cutevariant.gui import style
 from cutevariant.core import sql
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
@@ -177,8 +178,6 @@ class FieldsEditorWidget(QWidget):
      view.on_open_project(conn)
 
     """
-
-    ENABLE = True
 
     def __init__(self, parent=None):
         """"""
