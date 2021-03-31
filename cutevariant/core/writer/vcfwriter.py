@@ -22,6 +22,9 @@ class VcfWriter(AbstractWriter):
 
     VCF_TYPE = {"int": "Integer", "float": "Float", "str": "String"}
 
+    # TEMPORARY BECAUSE CUTEVARIANT MUST STORE PHASE GENOTYPE
+    GENOTYPE_MAP = {0: "0/0", 1: "0/1", 2: "1/1"}
+
     def __init__(
         self,
         conn,
@@ -32,7 +35,7 @@ class VcfWriter(AbstractWriter):
     ):
         super().__init__(conn, device, fields, source, filters)
 
-    def async_save(self):
+    def async_save(self, *args, **kwargs):
 
         # export header
         for key, value in sql.get_metadatas(self.conn).items():
@@ -60,10 +63,13 @@ class VcfWriter(AbstractWriter):
 
         # save header variants
 
-        samples = "\t".join([item["name"] for item in sql.get_samples(self.conn)])
+        # sample["id"], sample["sampl"] for sample sql.get_samples(self.conn)
+
+        samples = sql.get_samples(self.conn)
+        samples_name = "\t".join([item["name"] for item in samples])
 
         self.device.write(
-            f"#CHROM  POS     ID      REF     ALT     QUAL    FILTER  INFO    FORMAT  {samples}\n"
+            f"#CHROM  POS     ID      REF     ALT     QUAL    FILTER  INFO    FORMAT  {samples_name}\n"
         )
 
         for index, variant in enumerate(
@@ -81,8 +87,18 @@ class VcfWriter(AbstractWriter):
             qual = variant["qual"]
             ffilter = "PASS"
             info = "TRUC=3;BLA=24"
+
             fformat = "GT"
-            samples = "1/1"
+            ssample = []
+            sample_annotations = sql.get_sample_annotations_by_variant(
+                self.conn, variant["id"]
+            )
+
+            for ann in sample_annotations:
+
+                ssample.append(self.GENOTYPE_MAP[ann["gt"]])
+
+            ssample = "\t".join(ssample)
 
             self.device.write(
                 "\t".join(
@@ -96,7 +112,7 @@ class VcfWriter(AbstractWriter):
                         ffilter,
                         info,
                         fformat,
-                        samples,
+                        ssample,
                     )
                 )
                 + "\n"

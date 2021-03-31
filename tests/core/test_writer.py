@@ -121,7 +121,6 @@ def test_ped_writer(conn):
 def test_vcf_writer(conn):
 
     filename = tempfile.mkstemp(suffix=".vcf")[1]
-    import_reader(conn, VcfReader(open("examples/test.snpeff.vcf")))
 
     with open(filename, "w", encoding="utf8") as device:
         writer = VcfWriter(conn, device)
@@ -130,4 +129,5 @@ def test_vcf_writer(conn):
     with open(filename) as file:
 
         for line in file:
-            print(line.strip())
+            # pass
+            assert "charles " == "a faire "
