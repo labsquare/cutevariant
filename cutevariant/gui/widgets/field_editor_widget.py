@@ -1,11 +1,13 @@
 from typing import List
 import sqlite3
-
-from cutevariant.gui import FIcon, style
-from cutevariant.core import sql
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 from PySide2.QtGui import *
+
+
+from cutevariant.gui import style
+from cutevariant.gui import FIcon
+from cutevariant.core import sql
 
 
 class FieldsModel(QStandardItemModel):
@@ -89,37 +91,91 @@ class FieldsModel(QStandardItemModel):
         self.setHorizontalHeaderLabels(["name", "description"])
 
         # For variants and annotations, it is easy: one row per item
+        if self.category in ("variants", "annotations"):
 
-        for field in sql.get_field_by_category(self.conn, self.category):
+            self.appendRow(self._load_fields(self.category))
 
+        # For samples table, it is a bit more complex
+        elif self.category == "samples":
+
+            samples_items = QStandardItem("samples")
+            samples_items.setIcon(FIcon(0xF0B9C))
+            font = QFont()
+
+            samples_items.setFont(font)
+            for sample in sql.get_samples(self.conn):
+                sample_item = self._load_fields("samples", parent_name=sample["name"])
+                sample_item.setText(sample["name"])
+                sample_item.setIcon(FIcon(0xF0B9C))
+                samples_items.appendRow(sample_item)
+
+            self.appendRow(samples_items)
+
+    def _load_fields(self, category: str, parent_name: str = None) -> QStandardItem:
+        """Load fields from database and create a QStandardItem
+
+        Args:
+            category (str): category name : eg. variants / annotations / samples
+            parent_name (str, optional): name of the parent item
+
+        Returns:
+            QStandardItem
+        """
+        root_item = QStandardItem(category)
+        root_item.setColumnCount(2)
+        root_item.setIcon(FIcon(0xF0256))
+        font = QFont()
+        root_item.setFont(font)
+
+        for field in sql.get_field_by_category(self.conn, category):
             field_name = QStandardItem(field["name"])
             descr = QStandardItem(field["description"])
             descr.setToolTip(field["description"])
+
             field_name.setCheckable(True)
-            self.appendRow([field_name, descr])
+
+            field_type = style.FIELD_TYPE.get(field["type"])
+            field_name.setIcon(FIcon(field_type["icon"], "white", field_type["color"]))
+
+            root_item.appendRow([field_name, descr])
+            self._checkable_items.append(field_name)
+
+            if category == "samples":
+                field_name.setData({"name": ("sample", parent_name, field["name"])})
+            else:
+                field_name.setData(field)
+
+        return root_item
 
 
 class FieldsWidget(QWidget):
-    """docstring for ClassName"""
+    """
+    This widget shows all the field names of a given category (either variants, annotation, or samples)
+    """
 
     def __init__(self, category, parent=None):
         super().__init__(parent)
+        self.category = category
 
-        self.view = QTableView()
+        self.table_view = QTableView()
         self.model = FieldsModel(category)
         self.proxy_model = QSortFilterProxyModel()
         self.proxy_model.setSourceModel(self.model)
-        self.view.setModel(self.proxy_model)
+        self.table_view.setModel(self.proxy_model)
 
-        self.view.setHorizontalHeader(QHeaderView(Qt.Horizontal, self))
-        self.view.horizontalHeader().setStretchLastSection(True)
-        self.view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        self.table_view.setHorizontalHeader(QHeaderView(Qt.Horizontal, self))
+        self.table_view.horizontalHeader().setStretchLastSection(True)
+        self.table_view.horizontalHeader().setSectionResizeMode(
+            QHeaderView.ResizeToContents
+        )
 
-        self.view.setIconSize(QSize(16, 16))
-        self.view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.view.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        self.view.setAlternatingRowColors(True)
-        self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.table_view.setIconSize(QSize(16, 16))
+        self.table_view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.table_view.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.table_view.setAlternatingRowColors(True)
+        self.table_view.setSelectionBehavior(QAbstractItemView.SelectRows)
+
+        self.table_view.setRootIndex(self.proxy_model.index(0, 0, QModelIndex()))
 
         self.proxy_model.setRecursiveFilteringEnabled(True)
         # Search is case insensitive
@@ -127,25 +183,54 @@ class FieldsWidget(QWidget):
         # Search in all columns
         self.proxy_model.setFilterKeyColumn(-1)
 
+        self.hlayout = QHBoxLayout(self)
+        self.hlayout.addWidget(self.table_view)
+
+        # ----------------------------------------
+        # # For the samples category, split up the widget in two
+        # if self.category == "samples":
+        #     self.sample_selection_view = QListView(self)
+        #     self.hlayout.insertWidget(0, self.sample_selection_view)
+
+    def set_connection(self, conn):
+
+        self.model.conn = conn
+        self.model.load()
+
+        # ----------------New idea to display the samples as two separate views.
+        # ----------------For now, doesn't work
+        # ----------------because of a weird error : Invalid index when trying to setup a selction model...
+        # if self.category == "samples":
+        #     self.sample_selection_view.setModel(self.proxy_model)
+        #     self.sample_selection_view.setRootIndex(
+        #         self.proxy_model.index(0, 0, QModelIndex())
+        #     )
+        #     self.sample_selection_view.selectionModel().setModel(self.proxy_model)
+        #     self.sample_selection_view.selectionModel().currentChanged.connect(
+        #         lambda cur, prev: self.table_view.setRootIndex(
+        #             self.proxy_model.index(0, 0, cur)
+        #         )
+        #     )
+        #     return
+
+        self.table_view.setRootIndex(self.proxy_model.index(0, 0))
+
+
+class SamplesWidget(QWidget):
+    """docstring for ClassName"""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.view = QTreeView()
+        self.model = FieldsModel("samples")
+        self.proxy_model = QSortFilterProxyModel()
+        self.proxy_model.setSourceModel(self.model)
+        self.view.setModel(self.proxy_model)
         self.vlayout = QVBoxLayout(self)
         self.vlayout.addWidget(self.view)
-
-
-# class SamplesWidget(QWidget):
-#     """docstring for ClassName"""
-
-#     def __init__(self, parent=None):
-#         super().__init__(parent)
-
-#         self.view = QTreeView()
-#         self.model = FieldsModel("samples")
-#         self.proxy_model = QSortFilterProxyModel()
-#         self.proxy_model.setSourceModel(self.model)
-#         self.view.setModel(self.proxy_model)
-#         self.vlayout = QVBoxLayout(self)
-#         self.vlayout.addWidget(self.view)
-#         self.view.header().setSectionResizeMode(QHeaderView.ResizeToContents)
-#         self.view.header().setStretchLastSection(True)
+        self.view.header().setSectionResizeMode(QHeaderView.ResizeToContents)
+        self.view.header().setStretchLastSection(True)
 
 
 class FieldsEditorWidget(QWidget):
@@ -170,6 +255,7 @@ class FieldsEditorWidget(QWidget):
         self.widgets = {
             "variants": FieldsWidget("variants"),
             "annotations": FieldsWidget("annotations"),
+            "samples": FieldsWidget("samples"),
         }
 
         self.tab_widget = QTabWidget(self)
@@ -215,23 +301,9 @@ class FieldsEditorWidget(QWidget):
         self.search_edit.setFocus(Qt.MenuBarFocusReason)
 
     def set_connection(self, conn):
-        """ Overrided from PluginWidget """
-
         # Update every model, one per category
         for name, widget in self.widgets.items():
-            widget.model.conn = conn
-            widget.model.load()
-
-            # if category in ("variants", "annotations"):
-            #     self.views_all[category].setRootIndex(
-            #         self.proxy_models_all[category].index(0, 0)
-            #     )
-            # if category == "samples":
-            #     # TODO Retrieve the selected index off of a combobox, and show in a tableview the infos about the selected sample
-            #     # selected_sample_index = self.proxy_models_all[category].
-            #     self.views_all[category].setRootIndex(
-            #         self.proxy_models_all[category].index(0, 0)
-            #     )
+            widget.set_connection(conn)
 
     def get_selected_fields(self):
         return {
