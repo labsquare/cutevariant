@@ -8,7 +8,13 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 
 from cutevariant.gui.widgets import FieldsEditorWidget
-from cutevariant.core.writer import VcfWriter, CsvWriter, BedWriter, AbstractWriter
+from cutevariant.core.writer import (
+    AbstractWriter,
+    VcfWriter,
+    CsvWriter,
+    BedWriter,
+    PedWriter,
+)
 
 import cutevariant.commons as cm
 
@@ -141,6 +147,23 @@ class CsvExportDialog(ExportDialog):
                 self.reject()
 
 
+class PedExportDialog(ExportDialog):
+    """Dialog to export database to a bed file"""
+
+    def __init__(self, conn, filename, parent=None):
+        super().__init__(conn, filename, parent)
+
+    def save(self):
+        with open(self.filename, "w+") as device:
+            writer = PedWriter(self.conn, device)
+
+            success = self.save_from_writer(writer, "Saving PED file")
+            if success:
+                self.accept()
+            else:
+                self.reject()
+
+
 class VcfExportDialog(ExportDialog):
     """
     Dialog to retrieve user choices when exporting to VCF
@@ -157,18 +180,11 @@ class VcfExportDialog(ExportDialog):
                 self.conn, device, self.fields, self.source, self.filters
             )
             success = self.save_from_writer(writer, "Exporting to VCF")
+
             if success:
-                QMessageBox.information(
-                    self,
-                    self.tr("Success !"),
-                    self.tr(f"Successfully saved VCF file at {self.filename}"),
-                )
+                self.accept()
             else:
-                QMessageBox.warning(
-                    self,
-                    self.tr("Failure"),
-                    self.tr("Could not save file !"),
-                )
+                self.reject()
 
         self.close()  # Whatever happens, this dialog is now useless
 
@@ -176,7 +192,12 @@ class VcfExportDialog(ExportDialog):
 class ExportDialogFactory:
 
     # FORMATS = {"vcf": VcfExportDialog, "csv": CsvExportDialog}
-    FORMATS = {"bed": BedExportDialog, "csv": CsvExportDialog, "vcf": VcfExportDialog}
+    FORMATS = {
+        "bed": BedExportDialog,
+        "csv": CsvExportDialog,
+        "vcf": VcfExportDialog,
+        "ped": PedExportDialog,
+    }
 
     @classmethod
     def create_dialog(

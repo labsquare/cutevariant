@@ -25,7 +25,7 @@ def conn():
 @pytest.mark.parametrize("extension", ["csv", "bed", "ped", "vcf"])
 def test_export_dialog(qtbot, conn, extension):
 
-    filename = tempfile.mkstemp(suffix=extension)[1]
+    filename = tempfile.mkstemp(suffix="." + extension)[1]
     os.remove(filename)
 
     dialog = exp.ExportDialogFactory.create_dialog(conn, extension, filename)
@@ -35,3 +35,5 @@ def test_export_dialog(qtbot, conn, extension):
     assert dialog.isVisible()
     qtbot.mouseClick(dialog.button_box.button(QDialogButtonBox.Save), Qt.LeftButton)
     assert os.path.exists(filename), "the file has not been created"
+
+    # print(QCoreApplication.instance().activePopupWidget())
