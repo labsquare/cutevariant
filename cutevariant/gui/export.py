@@ -1,6 +1,7 @@
 import sys
 import sqlite3
 import time
+import os
 
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
@@ -20,10 +21,11 @@ LOGGER = cm.logger()
 
 class ExportDialog(QDialog):
     """
-    Base class for every export dialog
+    Base class for every export dialog.
+    Derived classes must implement save (will get called when user presses save)
     """
 
-    def __init__(self, conn: sqlite3.Connection, filename, parent=None):
+    def __init__(self, conn: sqlite3.Connection, filename: str, parent=None):
         super().__init__(parent)
 
         self.fields = ["chr", "pos", "ref", "alt"]
@@ -42,6 +44,8 @@ class ExportDialog(QDialog):
         self.button_box.rejected.connect(self.reject)
 
         self.filename = filename
+
+        self.setWindowTitle(f"Export to {os.path.basename(self.filename)}")
 
     def set_central_widget(self, widget: QWidget):
 
@@ -88,12 +92,10 @@ class ExportDialog(QDialog):
 
 
 class BedExportDialog(ExportDialog):
-    """docstring for ClassName"""
+    """Dialog to export database to a bed file"""
 
     def __init__(self, conn, filename, parent=None):
         super().__init__(conn, filename, parent)
-
-        self.setWindowTitle(f"Export to {self.filename}")
 
     def save(self):
         with open(self.filename, "w+") as device:
@@ -109,10 +111,10 @@ class BedExportDialog(ExportDialog):
 
 
 class CsvExportDialog(ExportDialog):
-    """docstring for ClassName"""
+    """Dialog to export project to CSV."""
 
-    def __init__(self, conn: sqlite3.Connection, parent=None):
-        super().__init__(conn, parent)
+    def __init__(self, conn: sqlite3.Connection, filename: str, parent=None):
+        super().__init__(conn, filename, parent)
 
         self.combo = QComboBox()
         self.combo.addItem(";", ";")
@@ -132,57 +134,49 @@ class CsvExportDialog(ExportDialog):
                 self.conn, device, self.fields, self.source, self.filters
             )
             writer.separator = self.combo.currentData()
-            success = self.save_from_writer(writer)
+            success = self.save_from_writer(writer, "Saving CSV file")
+            if success:
+                self.accept()
+            else:
+                self.reject()
 
 
-# class VcfExportDialog(ExportDialog):
-#     """
-#     Dialog to retrieve user choices when exporting to VCF
-#     """
+class VcfExportDialog(ExportDialog):
+    """
+    Dialog to retrieve user choices when exporting to VCF
+    """
 
-#     def __init__(self, conn: sqlite3.Connection, parent=None):
-#         super().__init__(conn, parent)
+    def __init__(self, conn: sqlite3.Connection, filename: str, parent=None):
+        super().__init__(conn, filename, parent)
 
-#         self.fields_selector = FieldsEditorWidget(self)
-#         self.fields_selector.set_connection(conn)
+        self.set_central_widget(QLabel("Exporting to VCF"))
 
-#         self.tab_widget = QTabWidget(self)
+    def save(self):
+        with open(self.filename, "w+") as device:
+            writer = VcfWriter(
+                self.conn, device, self.fields, self.source, self.filters
+            )
+            success = self.save_from_writer(writer, "Exporting to VCF")
+            if success:
+                QMessageBox.information(
+                    self,
+                    self.tr("Success !"),
+                    self.tr(f"Successfully saved VCF file at {self.filename}"),
+                )
+            else:
+                QMessageBox.warning(
+                    self,
+                    self.tr("Failure"),
+                    self.tr("Could not save file !"),
+                )
 
-#         self.tab_widget.addTab(
-#             self.fields_selector,
-#             self.fields_selector.windowIcon(),
-#             self.fields_selector.windowTitle(),
-#         )
-
-#         # self.tab_widget.addTab(widget, icon, label)
-
-#         self.set_central_widget(self.tab_widget)
-#         self.fields_to_export = ["chr", "pos", "ref", "alt"]
-
-#     def save(self):
-#         with open(self.filename, "w+") as device:
-#             writer = VcfWriter(device, self.fields_to_export)
-#             success = self.save_from_writer(writer)
-#             if success:
-#                 QMessageBox.information(
-#                     self,
-#                     self.tr("Success !"),
-#                     self.tr(f"Successfully saved VCF file at {self.filename}"),
-#                 )
-#             else:
-#                 QMessageBox.warning(
-#                     self,
-#                     self.tr("Failure"),
-#                     self.tr("Could not save file !"),
-#                 )
-
-#         self.close()  # Whatever happens, this dialog is now useless
+        self.close()  # Whatever happens, this dialog is now useless
 
 
 class ExportDialogFactory:
 
     # FORMATS = {"vcf": VcfExportDialog, "csv": CsvExportDialog}
-    FORMATS = {"bed": BedExportDialog, "csv": CsvExportDialog}
+    FORMATS = {"bed": BedExportDialog, "csv": CsvExportDialog, "vcf": VcfExportDialog}
 
     @classmethod
     def create_dialog(

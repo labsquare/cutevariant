@@ -22,9 +22,15 @@ class VcfWriter(AbstractWriter):
 
     VCF_TYPE = {"int": "Integer", "float": "Float", "str": "String"}
 
-    def __init__(self, device, fields_to_export):
-        super().__init__(device, fields_to_export)
-
+    def __init__(
+        self,
+        conn,
+        device,
+        fields=["chr", "pos", "ref", "alt"],
+        source="variants",
+        filters={},
+    ):
+        super().__init__(conn, device, fields, source, filters)
 
     def async_save(self):
 
@@ -63,7 +69,7 @@ class VcfWriter(AbstractWriter):
         for index, variant in enumerate(
             cmd.execute(
                 self.conn,
-                "SELECT chr, pos, rsid, ref,alt, qual, sample['TUMOR'].gt,sample['NORMAL'].gt FROM variants",
+                "SELECT chr, pos, rsid, ref,alt, qual FROM variants",
             )
         ):
 
@@ -96,4 +102,4 @@ class VcfWriter(AbstractWriter):
                 + "\n"
             )
 
-        yield 1, 1
+            yield index
