@@ -56,11 +56,7 @@ class AbstractWriter:
         """
 
         return cmd.count_cmd(
-            self.conn,
-            fields=self.fields,
-            source=self.source,
-            filters=self.filters,
-            limit=None,
+            self.conn, fields=self.fields, source=self.source, filters=self.filters
         )["count"]
 
     def get_variants(self):
