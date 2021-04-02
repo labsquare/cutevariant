@@ -778,10 +778,19 @@ class MainWindow(QMainWindow):
         # "filters": self.state.filters,
         # }
 
-        export_dialog.filename = file_name
-
         success = export_dialog.exec_()
-        # IF ... show message "exported ok   ou exported failed "
+        if success == QDialog.Accepted:
+            QMessageBox.information(
+                self,
+                self.tr("Success!"),
+                self.tr(f"Successfully saved {os.path.basename(file_name)}"),
+            )
+        else:
+            QMessageBox.critical(
+                self,
+                self.tr("Error!"),
+                self.tr(f"Cannot save file to {os.path.basename(file_name)}"),
+            )
 
     # @Slot()
     # def on_query_model_changed(self):
