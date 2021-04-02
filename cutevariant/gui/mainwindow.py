@@ -397,6 +397,7 @@ class MainWindow(QMainWindow):
 
             self.open_database(self.conn)
             self.save_recent_project(filepath)
+            self.state.project_file_name = filepath
 
         except sqlite3.OperationalError as e:
             LOGGER.exception(e)

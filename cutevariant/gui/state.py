@@ -9,6 +9,7 @@ class State:
         - filters (dict): Pre-defined filters
         - group_by (list[str]): Pre-defined fields used to group variants
         - having (dict): TODO
+        - project_file_name (str): The absolute path to the project's file (can be used as a key to store project-specific user data)
     """
 
     def __init__(self):
@@ -32,6 +33,7 @@ class State:
         self.filters = {}
         self.group_by = []
         self.having = {}
+        self.project_file_name = None
 
         # selected variants
         self.current_variant = None
