@@ -133,4 +133,5 @@ def test_vcf_writer(conn):
         # TODO: associate the test example file name with the fields it has. This way, testing is fair
         writer.save()
 
-    # conn = utils.create_conn(filename)
+    # If this succeeds, it means that the file was successfully opened. So we generated a valid VCF file
+    conn = utils.create_conn(filename)
