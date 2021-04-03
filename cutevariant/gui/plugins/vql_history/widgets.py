@@ -6,7 +6,13 @@ import os
 
 # Qt imports
 from PySide2.QtCore import Qt, QAbstractTableModel, QDateTime, QSettings, QDir
-from PySide2.QtWidgets import QToolBar, QVBoxLayout, QApplication, QFileDialog
+from PySide2.QtWidgets import (
+    QToolBar,
+    QVBoxLayout,
+    QApplication,
+    QFileDialog,
+    QMessageBox,
+)
 
 # Custom imports
 from cutevariant.gui import style, plugin, FIcon
@@ -133,6 +139,11 @@ class HistoryModel(QAbstractTableModel):
             self.endInsertRows()
 
     def load_from_json(self, file_name):
+        QMessageBox.information(
+            self,
+            self.tr("Easter egg..."),
+            self.tr("A JSON file ? Fine, as you wish... You're the user after all..."),
+        )
         with open(file_name) as device:
             records = json.load(device)
 
