@@ -147,22 +147,29 @@ class CsvExportDialog(ExportDialog):
     ):
         super().__init__(conn, filename, fields, source, filters, parent)
 
+        form_layout = QFormLayout()
         self.combo = QComboBox()
         self.combo.addItem(";", ";")
         self.combo.addItem("TAB", "\t")
         newline = "\n"
 
-        self.info_widget = QLabel(
-            self.tr(
-                f"""The following fields will be exported :
-{newline.join([f'- {field}' for field in self.fields])}\nfrom table {self.source}"""
-            )
-        )
+        form_layout.addRow(self.tr("Separator"), self.combo)
+
+        self.group_box = QGroupBox()
+        self.group_box.setTitle(self.tr("The following fields will be exported"))
+        self.group_box.setLayout(QVBoxLayout())
+
+        self.info_view = QListView()
+        self.info_view.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.info_model = QStringListModel(self.fields)
+        self.info_view.setModel(self.info_model)
+
+        self.group_box.layout().addWidget(self.info_view)
 
         widget = QWidget(self)
         layout = QVBoxLayout(widget)
-        layout.addWidget(self.combo)
-        layout.addWidget(self.info_widget)
+        layout.addLayout(form_layout)
+        layout.addWidget(self.group_box)
 
         self.set_central_widget(widget)
 
@@ -219,15 +226,22 @@ class VcfExportDialog(ExportDialog):
     ):
         super().__init__(conn, filename, fields, source, filters, parent)
 
-        newline = "\n"
-        self.info_widget = QLabel(
-            self.tr(
-                f"""The following fields will be exported :
-{newline.join([f'- {field}' for field in self.fields])}\nfrom table {self.source}"""
-            )
-        )
+        self.group_box = QGroupBox()
+        self.group_box.setTitle(self.tr("The following fields will be exported"))
+        self.group_box.setLayout(QVBoxLayout())
 
-        self.set_central_widget(self.info_widget)
+        self.info_view = QListView()
+        self.info_view.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.info_model = QStringListModel(self.fields)
+        self.info_view.setModel(self.info_model)
+
+        self.group_box.layout().addWidget(self.info_view)
+
+        widget = QWidget(self)
+        layout = QVBoxLayout(widget)
+        layout.addWidget(self.group_box)
+
+        self.set_central_widget(self.group_box)
 
     def save(self):
         with open(self.filename, "w+") as device:
