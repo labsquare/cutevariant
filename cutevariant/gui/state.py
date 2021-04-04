@@ -33,7 +33,6 @@ class State:
         self.filters = {}
         self.group_by = []
         self.having = {}
-        self.project_file_name = None
 
         # selected variants
         self.current_variant = None

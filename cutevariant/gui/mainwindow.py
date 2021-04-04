@@ -395,7 +395,7 @@ class MainWindow(QMainWindow):
                 )
                 return
 
-            self.open_database(self.conn, filepath)
+            self.open_database(self.conn)
             self.save_recent_project(filepath)
 
         except sqlite3.OperationalError as e:
@@ -413,7 +413,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Cutevariant - %s" % os.path.basename(filepath))
         self.status_bar.showMessage(self.tr("{} opened").format(filepath))
 
-    def open_database(self, conn, filepath=None):
+    def open_database(self, conn):
         """Open the project file and populate widgets
 
         Args:
@@ -425,9 +425,6 @@ class MainWindow(QMainWindow):
         # Clear State variable of application
         # store fields, source, filters, group_by, having data
         self.state = State()
-
-        # When we open a database, the plugins are notified, so be sure to give it the filepath
-        self.state.project_file_name = filepath
 
         for plugin_obj in self.plugins.values():
             plugin_obj.on_open_project(self.conn)
@@ -616,7 +613,7 @@ class MainWindow(QMainWindow):
         self.register_plugins()
 
         # We reload everything, but do not forget the project's file name !
-        self.open_database(self.conn, self.state.project_file_name)
+        self.open_database(self.conn)
         # Allow a user to save further modifications
         self.requested_reset_ui = False
 
