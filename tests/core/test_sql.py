@@ -205,8 +205,15 @@ def test_create_connexion(conn):
     assert conn is not None
 
 
+def test_get_database_file_name():
+    dbfile_name = tempfile.mkstemp()[1]
+    conn = sql.get_sql_connection(dbfile_name)
+    returned_file_name = sql.get_database_file_name(conn)
+    assert dbfile_name == returned_file_name
+
+
 def test_columns(conn):
-      # Test if variant fields is in databases
+    # Test if variant fields is in databases
     q = conn.execute("PRAGMA table_info(variants)")
     variant_fields = [record[1] for record in q]
 
@@ -215,7 +222,6 @@ def test_columns(conn):
 
     q = conn.execute("PRAGMA table_info(sample_has_variant)")
     sample_fields = [record[1] for record in q]
-
 
     for field in FIELDS:
 
@@ -227,7 +233,7 @@ def test_columns(conn):
 
         if field["category"] == "samples":
             assert field["name"] in sample_fields
-    
+
 
 def test_get_columns(conn):
     """Test getting columns of variants and annotations"""
@@ -353,7 +359,7 @@ def test_insert_set_from_file(conn, wordset):
         assert record["name"] == "test_wordset"
         assert record["value"] in expected_data
 
-    #os.remove(wordset_file)
+    # os.remove(wordset_file)
 
 
 def test_get_sets(conn, kindly_wordset_fixture):
@@ -390,7 +396,7 @@ def test_get_words_in_set(conn, wordset):
 
     assert set(expected_data) == found
 
-    #os.remove(wordset_file)
+    # os.remove(wordset_file)
 
 
 def test_selections(conn):

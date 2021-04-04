@@ -43,6 +43,10 @@ LOGGER = cm.logger()
 ## Misc functions ==============================================================
 
 
+def get_database_file_name(conn):
+    return conn.execute("PRAGMA database_list").fetchone()["file"]
+
+
 def get_sql_connection(filepath):
     """Open a SQLite database and return the connection object
 
