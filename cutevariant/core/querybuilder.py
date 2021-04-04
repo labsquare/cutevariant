@@ -2,49 +2,23 @@
 
 In the most of cases, you will only use build_sql_query function.
 
-Examples::
+Examples
 
     conn = sqlite3.Connection("::memory::")
-    query = build_sql_query(["chr","pos"])
+    query = build_sql_query(fields, source, filters)
     conn.execute(query)
 
+Fields contains columns to select according sql table that they belong to.
 
-A variant query can be understood from the following 3 points of view.
-
-The SQL statements:
-~~~~~~~~~~~~~~~~~~~
-This is the raw sqlite query::
-
-    "SELECT `variants`.`chr`, `variants`.`pos` FROM `variants` WHERE `variants`.`ref` == 'A' "
-
-The VQL statements:
-~~~~~~~~~~~~~~~~~~~
-This is a domain specific language. Check the vql module for more information::
-
-    "SELECT chr, pos FROM variants WHERE ref == 'A'"
-
-The Python statements:
-~~~~~~~~~~~~~~~~~~~~~~
-The representation of the query as a dictionnary::
-
-    query = {
-        "fields": ["chr","pos"],
-        "source": "variants",
-        "filters": {
-        "AND":
-            [
-                {"name":"ref", "operator":"==","value":"A"}
-            ]
-        }
+    {
+    "variants": ["chr","pos","ref"]
+    "annotations": ["gene","impact"],
+    "samples": [
+        {"name":"boby", "fields":["gt","dp"]},
+        {"name":"boby", "fields":["gt","dp"]}
+    ]
     }
 
-The following module contains several functions to make easy conversion from
-Python statements to VQL or SQL statements .
-
-In the most of the case, you only need to use :
-
-- :meth:`build_vql_query`: to create a VQL query from python statements
-- :meth:`build_sql_query`: to create a SQL query from python statements
 """
 # Standard imports
 import sqlite3
@@ -64,6 +38,20 @@ LOGGER = logger()
 GENOTYPE_FUNC_NAME = "sample"
 # WORDSET["truc"]
 WORDSET_FUNC_NAME = "WORDSET"
+
+OPERATORS = {
+    "$eq": "=",
+    "$gt": ">",
+    "$gte": ">=",
+    "$lt": "<",
+    "$lte": "<=",
+    "$in": "IN",
+    "$ne": "!=",
+    "$nin": "NOT IN",
+    "$regex": "REXP",
+    "$and": "AND",
+    "$or": "OR",
+}
 
 
 def filters_to_flat(filters: dict):
@@ -207,207 +195,157 @@ def fields_to_vql(field) -> str:
     return field
 
 
-def fields_to_sql(field, default_tables={}, use_as=False) -> str:
+# refactor
+def fields_to_sql(fields, use_as=False) -> str:
     """Return field as SQL syntax
 
     Args:
-        field (str or tuple): Column name from a table
-        default_tables (dict, optional): association between field name and table origin
+        field (dict): Column name from a table
 
     Returns:
         str: Sql field
 
     Examples:
 
-        >>> default_tables = {"variants.chr": "variants", "alt": "variants"}
-        >>> fields_to_sql("chr", default_tables=default_tables)
-        "`variants`.`chr`"
-        >>> fields_to_sql("gene", default_tables=default_tables)
-        "`annotations`.`gene`"
-        >>> fields_to_sql("coucou", default_tables=default_tables)
-        "`coucou`"
+        fields = {   {
+            "variants": ["chr","pos","ref"]
+            "annotations": ["gene","impact"],
+            "samples": [
+                {"name":"boby", "fields":["gt","dp"]},
+                {"name":"charles", "fields":["gt"]}
+                    ]
+                }
+
+    This will converted to :
+
+    ["
+    `variants`.`chr`,
+    `variants`.`pos`,
+    `variants`.`ref`,
+    `ann`.`gene`,
+    `ann`.`impact`,
+    `sample_boby`.`gt`,
+    `sample_boby`.`dp`,
+    `sample_charles`.`gt`,
+    "]
+
+
     """
-    if isinstance(field, tuple):
-        # If it is "genotype.name.truc then it is field function"
-        # ("genotype", "boby", "gt") => `genotype_boby`.GT
-        return field_function_to_sql(field, use_as)
 
-    # extract variants.chr => (variants, chr) => `variants`.`chr`
-    match = re.match(r"^(\w+)\.(\w+)", field)
+    sql_fields = []
 
-    if match:
-        table = match[1]
-        field = match[2]
+    # extract variants
+    if "variants" in fields:
+        for field in fields["variants"]:
+            sql_fields.append(f"`variants`.`{field}`")
+
+    # extract annotations
+    if "annotations" in fields:
+        for field in fields["annotations"]:
+            sql_fields.append(f"`annotations`.`{field}`")
+
+    if "samples" in fields:
+        for name, values in fields["samples"].items():
+            for value in values:
+                key = f"`sample_{name}`.`{value}`"
+                sql_fields.append(key)
+
+    return sql_fields
+
+
+# refactor
+def condition_to_sql(item):
+    """
+    Convert a key, value items from fiters into SQL query
+
+    Exemples:
+
+        condition_to_sql({"chr":3}) ==> variants.chr = 3
+        condition_to_sql({"chr":{"$gte": 30}}) ==> variants.chr >= 3
+
+    """
+    table = item.get("$table", "variants")
+
+    k, v = [(i, item[i]) for i in item.keys() if i not in ("$table", "$sample")][0]
+
+    if isinstance(v, dict):
+        vk, vv = list(v.items())[0]
+        operator = vk
+        value = vv
     else:
-        if field in default_tables.keys():
-            # Set the table
-            table = default_tables[field]
-            # Samples fields are managed differently from JOIN... Skip it
-            if table == "samples":
-                return f"`{field}`"
+        operator = "$eq"
+        value = v
 
-        else:
-            # Unknown table, just return the field
-            return f"`{field}`"
+    # MAP operator
+    sql_operator = OPERATORS[operator]
 
-    return f"`{table}`.`{field}`"
+    # Cast value
+    if isinstance(value, str):
+        value = f"'{value}'"
 
+    # Cast IS NULL
+    if value is None:
+        if operator == "$eq":
+            sql_operator = "IS"
 
-def filters_to_sql(filters, default_tables={}):
-    """Return filters as SQL syntax
+        if operator == "$ne":
+            sql_operator = "IS NOT"
 
-    Args:
-        filters (dict): Nested tree of conditions
-        default_tables (dict, optional): Association between field names and tables
+        value = "NULL"
 
-    Returns:
-        str: SQL WHERE expression
+    # Cast wordset
+    if isinstance(value, dict):
+        if "$wordset" in value:
+            wordset_name = value["$wordset"]
+            value = f"(SELECT value FROM wordsets WHERE name = '{wordset_name}')"
 
-    Examples:
-        >>> filters_to_sql({"AND": [("pos", ">", 34), ("af", "=", 10)})
-        "`variants`.`pos` > 34 AND `variants`.`af` = 10"
+    # Convert [1,2,3] =>  "(1,2,3)"
+    if isinstance(value, list) or isinstance(value, tuple):
+        value = (
+            "("
+            + ",".join([f"'{i}'" if isinstance(i, str) else f"{i}" for i in value])
+            + ")"
+        )
 
-    Note:
-        There is a recursive function inside to parse the nested tree of conditions
-    """
+    if table == "samples":
+        name = item.get("$name")
+        condition = f"`{table}_{name}`.`{k}` {sql_operator} {value}"
 
-    def is_field(node):
-        return len(node) == 3
+    else:
+        condition = f"`{table}`.`{k}` {sql_operator} {value}"
 
-    def recursive(node):
-        if not node:
-            return ""
-
-        if is_field(node):
-            # print("Node to SQL", node)
-            field = fields_to_sql(node["field"], default_tables)
-            value = node["value"]
-            operator = node["operator"].upper()
-
-            if operator == "~":
-                operator = "REGEXP"
-
-            if operator in ("IN", "NOT IN") and isinstance(value, str):
-                # node: {'field': 'ref', 'operator': 'IN', 'value': "('A', 'T', 'G', 'C')"}
-                # wanted: "ref IN ('A', 'T', 'G', 'C')"
-                # Try to cast string to tuple
-                try:
-                    temp_val = literal_eval(value)
-                    value = temp_val
-                except ValueError:
-                    pass
-
-            elif (operator == "IS" or operator == "IS NOT") and value == "NULL":
-                value = f"NULL"
-
-            elif isinstance(value, str):
-                # enclose string with quotes
-                value = f"'{value}'"
-
-            if isinstance(value, tuple):
-                # If value is a WORDSET["salut"] aka ('WORDSET', 'salut')
-                # => Get SQL statement
-                if value[0] == WORDSET_FUNC_NAME:
-                    value = wordset_data_to_sql(value)
-                elif len(value) == 1:
-                    # Remove trailing comma in tuple with 1 element ("xxx",)
-                    value = str(value).replace(",", "")
-
-            # Strings must be space separated because of operators (IN, etc.)
-            return "%s %s %s" % (field, operator, value)
-
-        # If node is not a field: 1 key only: the logical operator
-        logic_op = list(node.keys())[0]
-        g = (recursive(child) for child in node[logic_op])
-        out = [sql_filter for sql_filter in g if sql_filter]
-        # print("to SQL", out, "LOGIC", logic_op)
-        # Recursive call for each field in the list associated to the
-        # logical operator.
-        # node:
-        # {'AND': [
-        #   {'field': 'ref', 'operator': 'IN', 'value': "('A', 'T', 'G', 'C')"},
-        #   {'field': 'alt', 'operator': 'IN', 'value': "('A', 'T', 'G', 'C')"}
-        # ]}
-        # Wanted: "ref IN ('A', 'T', 'G', 'C') AND alt IN ('A', 'T', 'G', 'C')"
-        # to SQL ["ref IN ('A', 'T', 'G', 'C')", "alt IN ('A', 'T', 'G', 'C')"]
-        if not out:
-            return ""
-        if len(out) == 1:
-            return out[0]
-        return "(" + f" {logic_op} ".join(out) + ")"
-
-    return recursive(filters)
+    return condition
 
 
-def filters_to_vql(filters):
-    """Return filters as VQL syntax
+def filters_to_sql(filters):
 
-    Args:
-        filters (dict): Nested tree of conditions
+    # ---------------------------------
+    def recursive(obj):
 
-    Returns:
-        str: VQL WHERE expression
-    """
+        conditions = ""
+        for k, v in obj.items():
+            if k in ["$and", "$or"]:
+                conditions += (
+                    "("
+                    + f" {OPERATORS[k]} ".join([recursive(item) for item in v])
+                    + ")"
+                )
 
-    def is_field(node):
-        return len(node) == 3
+            elif k not in ("$table", "$name"):
+                if k in ("annotations", "samples"):
+                    for ann in v:
+                        conditions += condition_to_sql(obj)
+                    continue
 
-    def recursive(node):
-        if not node:
-            return ""
+                conditions += condition_to_sql(obj)
+        return conditions
 
-        if is_field(node):
-            # print("Node to VQL", node)
-            field = fields_to_vql(node["field"])
-            value = node["value"]
-            operator = node["operator"].upper()
+    # ---------------------------------
+    query = recursive(filters)
 
-            if operator in ("IN", "NOT IN") and isinstance(value, str):
-                # node: {'field': 'ref', 'operator': 'IN', 'value': "('A', 'T', 'G', 'C')"}
-                # wanted: "ref IN ('A', 'T', 'G', 'C')"
-                # Try to cast string to tuple
-                try:
-                    temp_val = literal_eval(value)
-                    value = temp_val
-                except ValueError:
-                    pass
+    # hacky code to remove first level parenthesis
 
-            elif (operator == "IS" or operator == "IS NOT") and value == "NULL":
-                value = f"NULL"
-
-            elif isinstance(value, str):
-                value = f"'{value}'"
-
-            if isinstance(value, tuple):
-                # If value is ('WORDSET', 'salut') aka WORDSET["salut"]
-                # => Get VQL statement
-                if len(value) == 2 and value[0] == WORDSET_FUNC_NAME:
-                    value = wordset_data_to_vql(value)
-                elif len(value) == 1:
-                    # Remove trailing comma in tuple with 1 element ("xxx",)
-                    value = str(value).replace(",", "")
-
-            # Strings must be space separated because of operators (IN, etc.)
-            return "%s %s %s" % (field, operator, value)
-
-        # If node is not a field: 1 key only: the logical operator
-        logic_op = list(node.keys())[0]
-        g = (recursive(child) for child in node[logic_op])
-        out = [sql_filter for sql_filter in g if sql_filter]
-        # print("to VQL", out, "LOGIC", logic_op)
-        # {'field': 'chr', 'operator': 'IN', 'value': (10.0, 11.0)}
-        # to VQL ['chr IN (10.0, 11.0)'] LOGIC AND
-        if not out:
-            return ""
-        if len(out) == 1:
-            return out[0]
-        return "(" + f" {logic_op} ".join(out) + ")"
-
-    # Do not return first level of enclosing parenthesis
-    vql_filters = recursive(filters)
-    if vql_filters.startswith("("):
-        return vql_filters[1:-1]
-    return vql_filters
+    return query
 
 
 def build_vql_query(fields, source="variants", filters={}, group_by=[], having={}):
