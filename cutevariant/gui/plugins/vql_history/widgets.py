@@ -19,6 +19,8 @@ from cutevariant.gui import style, plugin, FIcon
 from cutevariant.core.querybuilder import build_vql_query
 from cutevariant.commons import logger
 
+from cutevariant.core import sql
+
 
 LOGGER = logger()
 
@@ -128,12 +130,16 @@ class HistoryModel(QAbstractTableModel):
                 # So we don't get empty lines in our CSV !
                 line = line.strip()
                 # \t is the perfect separator: one cannot accidentally create a tag with a tabulation in it (at least not from a tableview)
-                time, count, query, tags = line.split("\t")
+                time, count, query, *_ = line.split("\t")
+
+                # Just a hack to allow tag (last column) to be optional. Store it in the _ python garbage-like variable
+                tag = _[0] if _ else ""
+
                 if time.isnumeric():
                     time = QDateTime.fromSecsSinceEpoch(int(time))
                 else:
                     time = QDateTime.currentDateTime()
-                self.records.append([time, count, query, tags])
+                self.records.append([time, count, query, tag])
 
             # TODO Call sort on the model after insertion (to sort by date)
             self.endInsertRows()
@@ -160,12 +166,13 @@ class HistoryModel(QAbstractTableModel):
                         time = QDateTime.fromSecsSinceEpoch(int(time))
                 count = record.get("count", 0)
                 query = records.get("query", "")
-                tags = records.get("tags", "")
-                self.records.append([time, count, query, tags])
+                tag = records.get("tags", "")
+                self.records.append([time, count, query, tag])
 
             self.endInsertRows()
 
     def save_to_csv(self, file_name):
+        print("Saving CSV to ", file_name)
         with open(file_name, "w+") as device:
             for record in self.records:
                 time, count, query, tags = record
@@ -253,9 +260,8 @@ class VqlHistoryWidget(plugin.PluginWidget):
 
     def on_open_project(self, conn):
         """ override """
-        full_path = self.mainwindow.state.project_file_name
-        if not full_path:
-            return
+        self.conn = conn
+        full_path = sql.get_database_file_name(conn)
 
         # Get the project absolute directory
         project_dir = os.path.dirname(full_path)
@@ -266,18 +272,24 @@ class VqlHistoryWidget(plugin.PluginWidget):
         # Look for logs in the project directory, with name starting with log and containing the project name
         history_logs = glob.glob(f"{project_dir}/log*{project_name}*.*")
         for log in history_logs:
+            print(log)
             try:
                 if log.endswith("csv"):
                     self.model.load_from_csv(log)
                 if log.endswith("json"):
                     self.model.load_from_json(log)
-            except:
+            except Exception as e:
+                QMessageBox.warning(
+                    self,
+                    self.tr("Warning"),
+                    self.tr(f"Could not open VQL history ! Full exception below\n{e}"),
+                )
                 continue
 
     def on_close(self):
         """ override """
 
-        full_path = self.mainwindow.state.project_file_name
+        full_path = sql.get_database_file_name(self.conn)
 
         # Get the project absolute directory
         project_dir = os.path.dirname(full_path)
