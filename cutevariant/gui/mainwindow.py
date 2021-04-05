@@ -8,7 +8,7 @@ from functools import partial
 from logging import DEBUG
 
 # Qt imports
-from PySide2.QtCore import Qt, QSettings, QByteArray, QDir, QUrl
+from PySide2.QtCore import Qt, QSettings, QByteArray, QDir, QUrl, Signal
 from PySide2.QtWidgets import *
 from PySide2.QtGui import QIcon, QKeySequence, QDesktopServices
 
@@ -38,6 +38,9 @@ LOGGER = cm.logger()
 
 class MainWindow(QMainWindow):
     """Main window of Cutevariant"""
+
+    variants_loaded = Signal()
+    variants_count_loaded = Signal(int)
 
     def __init__(self, parent=None):
 
@@ -156,6 +159,18 @@ class MainWindow(QMainWindow):
 
             # Setup new widget
             widget = plugin_widget_class(parent=self)
+
+            """Variant view is a special widget that loads variants and counts them.
+            Every plugin should be warned whenever the variants get loaded, so we need to connect variant view's signals to mainwindow's signals"""
+            if name == "variant_view":
+
+                LOGGER.debug("Loading variant view")
+                widget.variants_loaded.connect(lambda: self.variants_loaded.emit())
+                widget.variants_count_loaded.connect(
+                    lambda count: self.variants_count_loaded.emit(count)
+                )
+                LOGGER.debug("Connected variant view signals to mainwindow")
+
             if not widget.objectName():
                 LOGGER.debug(
                     "widget '%s' has no objectName attribute; "
