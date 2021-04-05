@@ -244,6 +244,16 @@ class VqlHistoryWidget(plugin.PluginWidget):
             self.on_load_logs_pressed,
         )
 
+        self.toolbar.addAction(
+            FIcon(0xF0256),
+            self.tr("Open project directory"),
+            lambda: QDesktopServices.openUrl(QUrl.fromLocalFile(self.project_dir))
+            if self.project_dir
+            else QMessageBox.information(
+                self, self.tr("Info"), self.tr("No project opened")
+            ),
+        )
+
         # Create layout
         main_layout = QVBoxLayout()
         main_layout.setSpacing(0)
