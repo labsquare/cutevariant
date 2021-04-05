@@ -659,6 +659,9 @@ class VariantView(QWidget):
     error_raised = Signal(str)
     no_variant = Signal()
 
+    variant_loaded = Signal()
+    variant_count_loaded = Signal(int)
+
     def __init__(self, parent=None, show_popup_menu=True):
         """
         Args:
@@ -850,6 +853,10 @@ class VariantView(QWidget):
             self.view.setColumnHidden(0, True)
         self.view.scrollToTop()
 
+        if not self.show_popup_menu:
+            # Emit this signal only for the variant table view, not the groupby view
+            self.variant_loaded.emit()
+
         #  Select first row
         if self.model.rowCount():
             self.select_row(0)
@@ -870,6 +877,7 @@ class VariantView(QWidget):
             text = self.tr("{} group(s) {} page(s)")
         else:
             text = self.tr("{} line(s) {} page(s)")
+            self.variant_count_loaded.emit(self.model.total)
 
         print("loaded")
         self.info_label.setText(text.format(self.model.total, self.model.pageCount()))
@@ -1273,6 +1281,9 @@ class VariantViewWidget(plugin.PluginWidget):
     variant_clicked = Signal(dict)
     LOCATION = plugin.CENTRAL_LOCATION
 
+    variants_loaded = Signal()
+    variants_count_loaded = Signal(int)
+
     ENABLE = True
 
     def __init__(self, parent=None):
@@ -1392,6 +1403,14 @@ class VariantViewWidget(plugin.PluginWidget):
         # Connect errors from async runnables
         self.main_right_pane.error_raised.connect(self.set_message)
         self.groupby_left_pane.error_raised.connect(self.set_message)
+
+        # When the right pane emits variant count loaded, we emit it as well
+        self.main_right_pane.variant_count_loaded.connect(
+            lambda count: self.variants_count_loaded.emit(count)
+        )
+
+        # When the right pane emits variants loaded, we emit it as well
+        self.main_right_pane.variant_loaded.connect(lambda: self.variants_loaded.emit())
 
         # Default group
         self.last_group = ["chr"]
