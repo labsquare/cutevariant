@@ -5,7 +5,7 @@ import json
 import os
 
 # Qt imports
-from PySide2.QtCore import Qt, QAbstractTableModel, QDateTime, QSettings, QDir
+from PySide2.QtCore import Qt, QAbstractTableModel, QDateTime, QSettings, QDir, QUrl
 from PySide2.QtWidgets import (
     QToolBar,
     QVBoxLayout,
@@ -14,8 +14,10 @@ from PySide2.QtWidgets import (
     QMessageBox,
 )
 
+from PySide2.QtGui import QDesktopServices
+
 # Custom imports
-from cutevariant.gui import style, plugin, FIcon
+from cutevariant.gui import style, plugin, FIcon, MainWindow
 from cutevariant.core.querybuilder import build_vql_query
 from cutevariant.commons import logger
 
@@ -225,10 +227,7 @@ class VqlHistoryWidget(plugin.PluginWidget):
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setSelectionMode(QAbstractItemView.SingleSelection)
 
-        #  Getting the variant count is not easy in this way...
-        # Because the variant count is computed asynchronously from the variant_view
-        #  TODO : need to find a way ! I hide the column for now
-        self.view.hideColumn(1)
+        self.project_dir = ""
 
         self.view.doubleClicked.connect(self.on_double_clicked)
         #  Create toolbar
@@ -254,9 +253,19 @@ class VqlHistoryWidget(plugin.PluginWidget):
 
         self.setLayout(main_layout)
 
-    def on_register(self, mainwindow):
-        """ override """
-        pass
+    def on_register(self, mainwindow: MainWindow):
+        mainwindow.variants_count_loaded.connect(self.on_variant_count)
+
+    def on_variant_count(self, count: int):
+        vql_query = build_vql_query(
+            self.mainwindow.state.fields,
+            self.mainwindow.state.source,
+            self.mainwindow.state.filters,
+            self.mainwindow.state.group_by,
+            self.mainwindow.state.having,
+        )
+
+        self.model.add_record(vql_query, count)
 
     def on_open_project(self, conn):
         """ override """
@@ -264,13 +273,13 @@ class VqlHistoryWidget(plugin.PluginWidget):
         full_path = sql.get_database_file_name(conn)
 
         # Get the project absolute directory
-        project_dir = os.path.dirname(full_path)
+        self.project_dir = os.path.dirname(full_path)
 
         # Get the project name without the extension
         project_name = os.path.basename(full_path).split(".")[0]
 
         # Look for logs in the project directory, with name starting with log and containing the project name
-        history_logs = glob.glob(f"{project_dir}/log*{project_name}*.*")
+        history_logs = glob.glob(f"{self.project_dir}/log*{project_name}*.*")
         for log in history_logs:
             print(log)
             try:
@@ -303,21 +312,8 @@ class VqlHistoryWidget(plugin.PluginWidget):
         super().on_close()
 
     def on_refresh(self):
-        """ override """
-
-        vql_query = build_vql_query(
-            self.mainwindow.state.fields,
-            self.mainwindow.state.source,
-            self.mainwindow.state.filters,
-            self.mainwindow.state.group_by,
-            self.mainwindow.state.having,
-        )
-
-        # TODO : Get the variant count
-        # Get the total count from variant_view is not easy because it is asynchrone...
-        #  So it is hidden for now ...
-
-        self.model.add_record(vql_query, 0)
+        """"""
+        pass
 
     def on_double_clicked(self, index: QModelIndex):
         """triggered when history record is clicked
