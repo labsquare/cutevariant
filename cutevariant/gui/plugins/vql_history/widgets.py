@@ -12,6 +12,7 @@ from PySide2.QtWidgets import (
     QApplication,
     QFileDialog,
     QMessageBox,
+    QTableView,
 )
 
 from PySide2.QtGui import QDesktopServices
@@ -134,6 +135,9 @@ class HistoryModel(QAbstractTableModel):
                 # \t is the perfect separator: one cannot accidentally create a tag with a tabulation in it (at least not from a tableview)
                 time, count, query, *_ = line.split("\t")
 
+                # Avoid type error when trying to sort counts between loaded counts and actual counts...
+                count = int(count)
+
                 # Just a hack to allow tag (last column) to be optional. Store it in the _ python garbage-like variable
                 tag = _[0] if _ else ""
 
@@ -205,6 +209,20 @@ class HistoryModel(QAbstractTableModel):
         """ Return record corresponding to the model index """
         return self.records[index.row()]
 
+    def sort(self, column, order=Qt.AscendingOrder):
+        """
+        Only sort on columns 0 (request time) and 1 (variants count returned by the request)
+        """
+
+        if column <= 1:
+            self.beginResetModel()
+            self.records.sort(
+                key=lambda record: record[column], reverse=(order == Qt.AscendingOrder)
+            )
+            self.endResetModel()
+        else:
+            return
+
 
 class VqlHistoryWidget(plugin.PluginWidget):
     """Exposed class to manage VQL/SQL queries from the mainwindow"""
@@ -226,6 +244,7 @@ class VqlHistoryWidget(plugin.PluginWidget):
         self.view.verticalHeader().hide()
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.view.setSortingEnabled(True)
 
         self.project_dir = ""
 
