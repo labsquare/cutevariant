@@ -5,7 +5,16 @@ import json
 import os
 
 # Qt imports
-from PySide2.QtCore import Qt, QAbstractTableModel, QDateTime, QSettings, QDir, QUrl
+from PySide2.QtCore import (
+    Qt,
+    QAbstractTableModel,
+    QDateTime,
+    QSettings,
+    QDir,
+    QUrl,
+    QModelIndex,
+    QSortFilterProxyModel,
+)
 from PySide2.QtWidgets import (
     QToolBar,
     QVBoxLayout,
@@ -52,8 +61,8 @@ class HistoryModel(QAbstractTableModel):
 
         if role == Qt.DisplayRole:
             if index.column() == 0:
-                # The time for the query
-                return self.records[index.row()][0].toString("hh:mm:ss")
+                # The date and time for the query
+                return self.records[index.row()][0].toString("dd/MM/yyyy - hh:mm:ss")
             if index.column() == 1:
                 # The number of variants for this query
                 return str(self.records[index.row()][1])
@@ -231,6 +240,14 @@ class HistoryModel(QAbstractTableModel):
         else:
             return
 
+    def get_query(self, index: QModelIndex):
+        return self.records[index.row()][2]
+
+
+class DateSortProxyModel(QSortFilterProxyModel):
+    def sort(self, column, order=Qt.AscendingOrder):
+        return self.sourceModel().sort(column, order)
+
 
 class VqlHistoryWidget(plugin.PluginWidget):
     """Exposed class to manage VQL/SQL queries from the mainwindow"""
@@ -248,7 +265,7 @@ class VqlHistoryWidget(plugin.PluginWidget):
         self.model = HistoryModel()
 
         # Setup search feature on a proxy model
-        self.proxy_model = QSortFilterProxyModel()
+        self.proxy_model = DateSortProxyModel()
         self.proxy_model.setSourceModel(self.model)
 
         # Search is case insensitive
@@ -377,7 +394,7 @@ class VqlHistoryWidget(plugin.PluginWidget):
         Args:
             index (QModelIndex): index
         """
-        _, _, query, _ = self.model.get_record(index)
+        query = self.model.get_query(index)
         parsed_query = next(vql.parse_vql(query))
         print(parsed_query)
 
