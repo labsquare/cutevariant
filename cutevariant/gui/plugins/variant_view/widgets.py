@@ -1282,7 +1282,9 @@ class VariantViewWidget(plugin.PluginWidget):
     LOCATION = plugin.CENTRAL_LOCATION
 
     variants_loaded = Signal()
-    variants_count_loaded = Signal(int)
+
+    # Emitted when the variants have been counted. Provides the variants count and the elapsed time (in seconds) to execute the query
+    variants_count_loaded = Signal(int, float)
 
     ENABLE = True
 
@@ -1406,7 +1408,9 @@ class VariantViewWidget(plugin.PluginWidget):
 
         # When the right pane emits variant count loaded, we emit it as well
         self.main_right_pane.variant_count_loaded.connect(
-            lambda count: self.variants_count_loaded.emit(count)
+            lambda count: self.variants_count_loaded.emit(
+                count, self.main_right_pane.model.elapsed_time
+            )
         )
 
         # When the right pane emits variants loaded, we emit it as well

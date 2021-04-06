@@ -40,7 +40,7 @@ LOGGER = logger()
 
 class HistoryModel(QAbstractTableModel):
 
-    HEADERS = ["time", "count", "query", "tags"]
+    HEADERS = ["Name", "Date", "Elapsed Time", "Query", "Count"]
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -52,7 +52,7 @@ class HistoryModel(QAbstractTableModel):
 
     def columnCount(self, parent: QModelIndex) -> int:
         """ override """
-        return 4
+        return 5
 
     def data(self, index: QModelIndex, role):
         """ override """
@@ -62,37 +62,40 @@ class HistoryModel(QAbstractTableModel):
 
         if role == Qt.DisplayRole:
             if index.column() == 0:
-                # The date and time for the query
-                return self.records[index.row()][0].toString("dd/MM/yyyy - hh:mm:ss")
-            if index.column() == 1:
-                # The number of variants for this query
-                return str(self.records[index.row()][1])
-            if index.column() == 2:
-                # The query itself
-                return self.records[index.row()][2]
-            if index.column() == 3:
                 # The tags for this query
+                return self.records[index.row()][0]
+            if index.column() == 1:
+                # The date and time the query finished
+                return self.records[index.row()][1].toString("dd/MM/yyyy - hh:mm:ss")
+            if index.column() == 2:
+                # The time it took for the query
+                return f"{self.records[index.row()][2]:.3f} s"
+            if index.column() == 3:
+                # The query itself
                 return self.records[index.row()][3]
+            if index.column() == 4:
+                # The number of variants for this query
+                return str(self.records[index.row()][4])
 
         if role == Qt.EditRole:
-            if index.column() == 3:
-                return self.records[index.row()][3]
+            if index.column() == 0:
+                return self.records[index.row()][0]
 
         if role == Qt.ToolTipRole:
-            return self.records[index.row()][3]
+            return self.records[index.row()][0]
 
         return None
 
     def setData(self, index, value, role=Qt.EditRole):
-        if index.column() == 3:
-            self.records[index.row()][3] = value
+        if index.column() == 0:
+            self.records[index.row()][0] = value
             return True
         else:
             return False
 
     def flags(self, index):
         base_flags = super().flags(index)
-        if index.column() == 3:
+        if index.column() == 0:
             return base_flags | Qt.ItemIsEditable
         else:
             return base_flags
@@ -106,7 +109,12 @@ class HistoryModel(QAbstractTableModel):
         return None
 
     def add_record(
-        self, query: str, count: int, time: QDateTime = None, tags: str = None
+        self,
+        query: str,
+        count: int,
+        perf_time: float,
+        time: QDateTime = None,
+        tags: str = None,
     ):
         """Add a record into the model
 
@@ -124,7 +132,7 @@ class HistoryModel(QAbstractTableModel):
             tags = ""
 
         self.beginInsertRows(QModelIndex(), 0, 0)
-        self.records.insert(0, [time, count, query, tags])
+        self.records.insert(0, [tags, time, perf_time, query, count])
         self.endInsertRows()
 
     def load_from_json(self, file_name):
@@ -144,18 +152,27 @@ class HistoryModel(QAbstractTableModel):
                 count = record.get("count", 0)
                 query = record.get("query", "")
                 tag = record.get("tags", "")
-                self.records.append([time, count, query, tag])
+                perf_time = record.get("perf_time", 0)
+                self.records.append([tag, time, perf_time, query, count])
 
             self.endResetModel()
 
     def save_to_json(self, file_name):
         root = []
         for record in self.records:
-            time, count, query, tags = record
+            tags, time, perf_time, query, count = record
 
             # In self.records, time (first column) is a QDateTime. So we need to convert it to a string to store it
             time = str(time.toSecsSinceEpoch())
-            root.append({"time": time, "count": count, "query": query, "tags": tags})
+            root.append(
+                {
+                    "tags": tags,
+                    "time": time,
+                    "perf_time": perf_time,
+                    "query": query,
+                    "count": count,
+                }
+            )
 
         with open(file_name, "w+") as device:
             json.dump(root, device)
@@ -175,7 +192,7 @@ class HistoryModel(QAbstractTableModel):
         Only sort on columns 0 (request time) and 1 (variants count returned by the request)
         """
 
-        if column <= 1:
+        if column in (1, 2, 4):
             self.beginResetModel()
             self.records.sort(
                 key=lambda record: record[column], reverse=(order == Qt.AscendingOrder)
@@ -185,7 +202,7 @@ class HistoryModel(QAbstractTableModel):
             return
 
     def get_query(self, index: QModelIndex):
-        return self.records[index.row()][2]
+        return self.records[index.row()][3]
 
 
 class DateSortProxyModel(QSortFilterProxyModel):
@@ -224,10 +241,17 @@ class VqlHistoryWidget(plugin.PluginWidget):
         self.view.setSelectionMode(QAbstractItemView.SingleSelection)
         self.view.setSortingEnabled(True)
 
-        self.view.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
         self.view.horizontalHeader().setSectionResizeMode(
             0, QHeaderView.ResizeToContents
         )
+        self.view.horizontalHeader().setSectionResizeMode(
+            1, QHeaderView.ResizeToContents
+        )
+        self.view.horizontalHeader().setSectionResizeMode(
+            2, QHeaderView.ResizeToContents
+        )
+
+        self.view.horizontalHeader().setSectionResizeMode(3, QHeaderView.Stretch)
 
         self.project_dir = ""
 
@@ -280,7 +304,7 @@ class VqlHistoryWidget(plugin.PluginWidget):
     def on_register(self, mainwindow: MainWindow):
         mainwindow.variants_count_loaded.connect(self.on_variants_count_loaded)
 
-    def on_variants_count_loaded(self, count: int):
+    def on_variants_count_loaded(self, count: int, elapsed_time: float):
         vql_query = build_vql_query(
             self.mainwindow.state.fields,
             self.mainwindow.state.source,
@@ -289,7 +313,7 @@ class VqlHistoryWidget(plugin.PluginWidget):
             self.mainwindow.state.having,
         )
 
-        self.model.add_record(vql_query, count)
+        self.model.add_record(vql_query, count, elapsed_time)
 
     def on_open_project(self, conn):
         """ override """
