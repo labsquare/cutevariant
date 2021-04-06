@@ -335,16 +335,16 @@ class VqlHistoryWidget(plugin.PluginWidget):
     def on_open_project(self, conn):
         """ override """
         self.conn = conn
-        full_path = sql.get_database_file_name(conn)
+        self.project_full_path = sql.get_database_file_name(conn)
 
         # Get the project absolute directory
-        self.project_dir = os.path.dirname(full_path)
+        self.project_dir = os.path.dirname(self.project_full_path)
 
         # Get the project name without the extension
-        project_name = os.path.basename(full_path).split(".")[0]
+        self.project_name = os.path.basename(self.project_full_path).split(".")[0]
 
         # Look for logs in the project directory, with name starting with log and containing the project name
-        history_logs = glob.glob(f"{self.project_dir}/log*{project_name}*.*")
+        history_logs = glob.glob(f"{self.project_dir}/log*{self.project_name}*.*")
         for log in history_logs:
             print(log)
             try:
@@ -362,16 +362,7 @@ class VqlHistoryWidget(plugin.PluginWidget):
 
     def on_close(self):
         """ override """
-
-        full_path = sql.get_database_file_name(self.conn)
-
-        # Get the project absolute directory
-        project_dir = os.path.dirname(full_path)
-
-        # Get the project name without the extension
-        project_name = os.path.basename(full_path).split(".")[0]
-
-        log_file_name = f"{project_dir}/log_{project_name}.csv"
+        log_file_name = f"{self.project_dir}/log_{self.project_name}.csv"
         self.model.save_to_csv(log_file_name)
 
         super().on_close()
@@ -407,7 +398,7 @@ class VqlHistoryWidget(plugin.PluginWidget):
 
         # When asking for a log file to load, try to remember where it was last time
         log_dir = settings.value(
-            f"{self.mainwindow.state.project_file_name}/latest_log_dir", QDir.homePath()
+            f"{self.project_full_path}/latest_log_dir", QDir.homePath()
         )
 
         # Ask for a file name to load the log from
@@ -426,7 +417,7 @@ class VqlHistoryWidget(plugin.PluginWidget):
 
         # Remember where we just loaded from last time
         settings.setValue(
-            f"{self.mainwindow.state.project_file_name}/latest_log_dir",
+            f"{self.project_full_path}/latest_log_dir",
             os.path.dirname(file_name),
         )
 
