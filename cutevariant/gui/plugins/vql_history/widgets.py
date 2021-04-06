@@ -22,6 +22,7 @@ from PySide2.QtWidgets import (
     QFileDialog,
     QMessageBox,
     QTableView,
+    QHeaderView,
 )
 
 from PySide2.QtGui import QDesktopServices
@@ -126,51 +127,12 @@ class HistoryModel(QAbstractTableModel):
         self.records.insert(0, [time, count, query, tags])
         self.endInsertRows()
 
-    def load_from_csv(self, file_name):
-
-        with open(file_name) as device:
-            lines = device.readlines()
-
-            # Will append the lines from the file to the existing ones
-            prev_row_count = self.rowCount(QModelIndex())
-
-            self.beginInsertRows(
-                QModelIndex(), prev_row_count, prev_row_count + len(lines) - 1
-            )
-
-            for line in lines:
-                # So we don't get empty lines in our CSV !
-                line = line.strip()
-                # \t is the perfect separator: one cannot accidentally create a tag with a tabulation in it (at least not from a tableview)
-                time, count, query, *_ = line.split("\t")
-
-                # Avoid type error when trying to sort counts between loaded counts and actual counts...
-                count = int(count)
-
-                # Just a hack to allow tag (last column) to be optional. Store it in the _ python garbage-like variable
-                tag = _[0] if _ else ""
-
-                if time.isnumeric():
-                    time = QDateTime.fromSecsSinceEpoch(int(time))
-                else:
-                    time = QDateTime.currentDateTime()
-                self.records.append([time, count, query, tag])
-
-            # TODO Call sort on the model after insertion (to sort by date)
-            self.endInsertRows()
-
     def load_from_json(self, file_name):
-        QMessageBox.information(
-            self,
-            self.tr("Easter egg..."),
-            self.tr("A JSON file ? Fine, as you wish... You're the user after all..."),
-        )
         with open(file_name) as device:
             records = json.load(device)
 
-            self.beginInsertRows(
-                QModelIndex(), prev_row_count, prev_row_count + len(lines)
-            )
+            self.beginResetModel()
+            self.records.clear()
 
             # records is a python array from a JSON one. Each record in it has the four keys of the four columns of our model
             for record in records:
@@ -180,21 +142,11 @@ class HistoryModel(QAbstractTableModel):
                     if time.isnumeric():
                         time = QDateTime.fromSecsSinceEpoch(int(time))
                 count = record.get("count", 0)
-                query = records.get("query", "")
-                tag = records.get("tags", "")
+                query = record.get("query", "")
+                tag = record.get("tags", "")
                 self.records.append([time, count, query, tag])
 
-            self.endInsertRows()
-
-    def save_to_csv(self, file_name):
-        print("Saving CSV to ", file_name)
-        with open(file_name, "w+") as device:
-            for record in self.records:
-                time, count, query, tags = record
-
-                # In self.records, time (first column) is a QDateTime. So we need to convert it to a string to store it
-                time = str(time.toSecsSinceEpoch())
-                device.write("\t".join([time, str(count), query, tags]) + "\n")
+            self.endResetModel()
 
     def save_to_json(self, file_name):
         root = []
@@ -209,18 +161,10 @@ class HistoryModel(QAbstractTableModel):
             json.dump(root, device)
 
     def clear_records(self):
-        """Clear records from models after asking for confirmation"""
-        confirmation = QMessageBox.question(
-            None,
-            self.tr("Please confirm"),
-            self.tr(
-                f"Do you really want to clear whole history ?\n {len(self.records)} records would be definitely lost !"
-            ),
-        )
-        if confirmation == QMessageBox.Yes:
-            self.beginResetModel()
-            self.records.clear()
-            self.endResetModel()
+        """Clear records from models"""
+        self.beginResetModel()
+        self.records.clear()
+        self.endResetModel()
 
     def get_record(self, index: QModelIndex):
         """ Return record corresponding to the model index """
@@ -275,11 +219,15 @@ class VqlHistoryWidget(plugin.PluginWidget):
 
         self.view.setModel(self.proxy_model)
         self.view.setAlternatingRowColors(True)
-        self.view.horizontalHeader().setStretchLastSection(True)
         self.view.verticalHeader().hide()
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setSelectionMode(QAbstractItemView.SingleSelection)
         self.view.setSortingEnabled(True)
+
+        self.view.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
+        self.view.horizontalHeader().setSectionResizeMode(
+            0, QHeaderView.ResizeToContents
+        )
 
         self.project_dir = ""
 
@@ -292,20 +240,14 @@ class VqlHistoryWidget(plugin.PluginWidget):
             FIcon(0xF0413), self.tr("Clear"), self.model.clear_records
         )
 
-        self.toolbar.addAction(
-            FIcon(0xF02FA),
-            self.tr("Load history from file (will append)"),
-            self.on_load_logs_pressed,
+        load_history_from_file = self.toolbar.addAction(
+            FIcon(0xF0DAE),
+            self.tr("Import log"),
+            self.on_import_history_pressed,
         )
 
         self.toolbar.addAction(
-            FIcon(0xF0256),
-            self.tr("Open project directory"),
-            lambda: QDesktopServices.openUrl(QUrl.fromLocalFile(self.project_dir))
-            if self.project_dir
-            else QMessageBox.information(
-                self, self.tr("Info"), self.tr("No project opened")
-            ),
+            FIcon(0xF0DAD), self.tr("Export log"), self.on_export_history_pressed
         )
 
         # Add search feature widget
@@ -336,9 +278,9 @@ class VqlHistoryWidget(plugin.PluginWidget):
         self.setLayout(main_layout)
 
     def on_register(self, mainwindow: MainWindow):
-        mainwindow.variants_count_loaded.connect(self.on_variant_count)
+        mainwindow.variants_count_loaded.connect(self.on_variants_count_loaded)
 
-    def on_variant_count(self, count: int):
+    def on_variants_count_loaded(self, count: int):
         vql_query = build_vql_query(
             self.mainwindow.state.fields,
             self.mainwindow.state.source,
@@ -361,26 +303,19 @@ class VqlHistoryWidget(plugin.PluginWidget):
         self.project_name = os.path.basename(self.project_full_path).split(".")[0]
 
         # Look for logs in the project directory, with name starting with log and containing the project name
-        history_logs = glob.glob(f"{self.project_dir}/log*{self.project_name}*.*")
+        history_logs = glob.glob(f"{self.project_dir}/log*{self.project_name}*.json")
         for log in history_logs:
-            print(log)
             try:
-                if log.endswith("csv"):
-                    self.model.load_from_csv(log)
-                if log.endswith("json"):
-                    self.model.load_from_json(log)
+                self.model.load_from_json(log)
             except Exception as e:
-                QMessageBox.warning(
-                    self,
-                    self.tr("Warning"),
-                    self.tr(f"Could not open VQL history ! Full exception below\n{e}"),
+                LOGGER.debug(
+                    "An error occured while loading VQL queries history \n%s", e
                 )
-                continue
 
     def on_close(self):
         """ override """
-        log_file_name = f"{self.project_dir}/log_{self.project_name}.csv"
-        self.model.save_to_csv(log_file_name)
+        log_file_name = os.path.join(self.project_dir, f"log_{self.project_name}.json")
+        self.model.save_to_json(log_file_name)
 
         super().on_close()
 
@@ -406,41 +341,83 @@ class VqlHistoryWidget(plugin.PluginWidget):
 
         self.mainwindow.refresh_plugins(sender=self)
 
-    def on_load_logs_pressed(self):
+    def on_import_history_pressed(self):
         """
         Called whenever you'd like the user to load a log file into the query history.
         This feature can be useful if you'd like to share your queries with other users
         """
-        settings = QSettings()
-
-        # When asking for a log file to load, try to remember where it was last time
-        log_dir = settings.value(
-            f"{self.project_full_path}/latest_log_dir", QDir.homePath()
-        )
-
-        # Ask for a file name to load the log from
-        file_name = QFileDialog.getOpenFileName(
+        confirmation = QMessageBox.question(
             self,
-            self.tr("Please select the file you want to load the log from"),
-            log_dir,
-            self.tr("Log file (*.csv *.json)"),
-        )[0]
-
-        # Load the file into the model, according to the extension
-        if file_name.endswith("csv"):
-            self.model.load_from_csv(file_name)
-        if file_name.endswith("json"):
-            self.model.load_from_json(file_name)
-
-        # Remember where we just loaded from last time
-        settings.setValue(
-            f"{self.project_full_path}/latest_log_dir",
-            os.path.dirname(file_name),
+            self.tr("Please confirm"),
+            self.tr(
+                f"Do you really want to replace whole history with a new log file ?\n {len(self.model.records)} records would be definitely lost !"
+            ),
         )
+        if confirmation == QMessageBox.Yes:
+            settings = QSettings()
+
+            # When asking for a log file to load, try to remember where it was last time
+            log_dir = settings.value(
+                f"{self.project_full_path}/latest_log_dir", QDir.homePath()
+            )
+
+            # Ask for a file name to load the log from
+            file_name = QFileDialog.getOpenFileName(
+                self,
+                self.tr("Please select the file you want to load the log from"),
+                log_dir,
+                self.tr("Log file (*.csv *.json)"),
+            )[0]
+
+            # Load the file into the model, according to the extension
+            if file_name.endswith("csv"):
+                self.model.load_from_csv(file_name)
+            if file_name.endswith("json"):
+                self.model.load_from_json(file_name)
+
+            # Remember where we just loaded from last time
+            settings.setValue(
+                f"{self.project_full_path}/latest_log_dir",
+                os.path.dirname(file_name),
+            )
 
     def on_search_pressed(self, checked: bool):
         self.search_edit.setVisible(checked)
         self.search_edit.setFocus(Qt.MenuBarFocusReason)
+
+    def on_clear_logs_pressed(self):
+        confirmation = QMessageBox.question(
+            self,
+            self.tr("Please confirm"),
+            self.tr(
+                f"Do you really want to clear whole history ?\n {len(self.model.records)} records would be definitely lost !"
+            ),
+        )
+        if confirmation == QMessageBox.Yes:
+            self.model.clear_records()
+
+    def on_export_history_pressed(self):
+        """
+        Exports the whole history of requests for this project in a JSON file
+        """
+        confirmation = QMessageBox.question(self, self.tr("Please conf"), text)
+        settings = QSettings()
+        export_log_dir = settings.value(
+            f"{self.project_full_path}/export_log_dir", QDir.homePath()
+        )
+
+        filename = QFileDialog.getSaveFileName(
+            self,
+            self.tr("Please choose a file name to export your log"),
+            export_log_dir,
+            self.tr("Log file (*.json)"),
+        )[0]
+
+        settings.setValue(
+            f"{self.project_full_path}/export_log_dir", os.path.dirname(filename)
+        )
+
+        self.model.save_to_json(filename)
 
 
 if __name__ == "__main__":
@@ -450,7 +427,7 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
-    conn = sqlite3.connect("/home/sacha/Dev/cutevariant/examples/test.db")
+    conn = sqlite3.connect("examples/snpeff3_test.db")
 
     view = VqlHistoryWidget()
     view.show()
