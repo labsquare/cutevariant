@@ -200,10 +200,18 @@ class HistoryModel(QAbstractTableModel):
             json.dump(root, device)
 
     def clear_records(self):
-        """Clear records from models"""
-        self.beginResetModel()
-        self.records.clear()
-        self.endResetModel()
+        """Clear records from models after asking for confirmation"""
+        confirmation = QMessageBox.question(
+            None,
+            self.tr("Please confirm"),
+            self.tr(
+                f"Do you really want to clear whole history ?\n {len(self.records)} records would be definitely lost !"
+            ),
+        )
+        if confirmation == QMessageBox.Yes:
+            self.beginResetModel()
+            self.records.clear()
+            self.endResetModel()
 
     def get_record(self, index: QModelIndex):
         """ Return record corresponding to the model index """
@@ -238,7 +246,17 @@ class VqlHistoryWidget(plugin.PluginWidget):
         # Create model / view
         self.view = QTableView()
         self.model = HistoryModel()
-        self.view.setModel(self.model)
+
+        # Setup search feature on a proxy model
+        self.proxy_model = QSortFilterProxyModel()
+        self.proxy_model.setSourceModel(self.model)
+
+        # Search is case insensitive
+        self.proxy_model.setFilterCaseSensitivity(Qt.CaseInsensitive)
+
+        self.proxy_model.setFilterKeyColumn(-1)
+
+        self.view.setModel(self.proxy_model)
         self.view.setAlternatingRowColors(True)
         self.view.horizontalHeader().setStretchLastSection(True)
         self.view.verticalHeader().hide()
@@ -273,11 +291,29 @@ class VqlHistoryWidget(plugin.PluginWidget):
             ),
         )
 
+        # Add search feature widget
+        self.search_edit = QLineEdit()
+        self.setFocusPolicy(Qt.ClickFocus)
+        self.search_act = QAction(FIcon(0xF0969), self.tr("Search query..."))
+        self.search_act.setCheckable(True)
+        self.search_act.toggled.connect(self.on_search_pressed)
+        self.search_act.setShortcutContext(Qt.WidgetShortcut)
+        self.search_act.setShortcut(QKeySequence.Find)
+        self.toolbar.addAction(self.search_act)
+        self.view.addAction(self.search_act)
+
+        self.search_edit.setVisible(False)
+        self.search_edit.setPlaceholderText(self.tr("Search query... "))
+
+        self.search_edit.textChanged.connect(self.proxy_model.setFilterRegExp)
+
         # Create layout
         main_layout = QVBoxLayout()
         main_layout.setSpacing(0)
         main_layout.addWidget(self.toolbar)
+        main_layout.addWidget(self.search_edit)
         main_layout.addWidget(self.view)
+
         main_layout.setContentsMargins(0, 0, 0, 0)
 
         self.setLayout(main_layout)
@@ -393,6 +429,10 @@ class VqlHistoryWidget(plugin.PluginWidget):
             f"{self.mainwindow.state.project_file_name}/latest_log_dir",
             os.path.dirname(file_name),
         )
+
+    def on_search_pressed(self, checked: bool):
+        self.search_edit.setVisible(checked)
+        self.search_edit.setFocus(Qt.MenuBarFocusReason)
 
 
 if __name__ == "__main__":
