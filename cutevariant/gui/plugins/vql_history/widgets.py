@@ -25,7 +25,7 @@ from PySide2.QtWidgets import (
     QHeaderView,
 )
 
-from PySide2.QtGui import QDesktopServices
+from PySide2.QtGui import QDesktopServices, QKeySequence
 
 # Custom imports
 from cutevariant.gui import style, plugin, FIcon, MainWindow
@@ -69,7 +69,7 @@ class HistoryModel(QAbstractTableModel):
                 return self.records[index.row()][1].toString("dd/MM/yyyy - hh:mm:ss")
             if index.column() == 2:
                 # The time it took for the query
-                return f"{self.records[index.row()][2]:.3f} s"
+                return f"{self.records[index.row()][2]} s"
             if index.column() == 3:
                 # The query itself
                 return self.records[index.row()][3]
@@ -201,6 +201,11 @@ class HistoryModel(QAbstractTableModel):
         else:
             return
 
+    def removeRow(self, row):
+        self.beginRemoveRows(QModelIndex(), row, row)
+        del self.records[row]
+        self.endRemoveRows()
+
     def get_query(self, index: QModelIndex):
         return self.records[index.row()][3]
 
@@ -261,18 +266,25 @@ class VqlHistoryWidget(plugin.PluginWidget):
         self.toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
 
         self.toolbar.addAction(
-            FIcon(0xF0413), self.tr("Clear"), self.model.clear_records
+            FIcon(0xF0413), self.tr("Clear"), self.on_clear_logs_pressed
         )
 
-        load_history_from_file = self.toolbar.addAction(
+        self.toolbar.addAction(
             FIcon(0xF0DAE),
-            self.tr("Import log"),
+            self.tr("Import..."),
             self.on_import_history_pressed,
         )
 
         self.toolbar.addAction(
-            FIcon(0xF0DAD), self.tr("Export log"), self.on_export_history_pressed
+            FIcon(0xF0DAD), self.tr("Export..."), self.on_export_history_pressed
         )
+
+        delete_row = self.toolbar.addAction(
+            FIcon(0xF04F5),
+            self.tr("Remove row"),
+            self.on_remove_row_pressed,
+        )
+        delete_row.setShortcut(QKeySequence.Delete)
 
         # Add search feature widget
         self.search_edit = QLineEdit()
@@ -424,7 +436,7 @@ class VqlHistoryWidget(plugin.PluginWidget):
         """
         Exports the whole history of requests for this project in a JSON file
         """
-        confirmation = QMessageBox.question(self, self.tr("Please conf"), text)
+
         settings = QSettings()
         export_log_dir = settings.value(
             f"{self.project_full_path}/export_log_dir", QDir.homePath()
@@ -442,6 +454,24 @@ class VqlHistoryWidget(plugin.PluginWidget):
         )
 
         self.model.save_to_json(filename)
+
+    def on_remove_row_pressed(self):
+        settings = QSettings()
+        selected_index = self.view.selectionModel().currentIndex()
+        if not selected_index:
+            return
+
+        if settings.value(f"{__name__}/confirm_remove_row", False):
+            confirmation = QMessageBox.question(
+                self,
+                self.tr("Please confirm"),
+                self.tr(
+                    f"Do you really want to remove this row ?\nYou cannot undo this !"
+                ),
+            )
+            if confirmation == QMessageBox.No:
+                return
+        self.model.removeRow(selected_index.row())
 
 
 if __name__ == "__main__":
