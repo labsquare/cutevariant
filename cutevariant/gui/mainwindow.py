@@ -115,7 +115,12 @@ class MainWindow(QMainWindow):
         dock.setObjectName(str(widget.__class__))
 
         self.addDockWidget(area, dock)
-        self.view_menu.addAction(dock.toggleViewAction())
+        action = dock.toggleViewAction()
+        action.setIcon(widget.windowIcon())
+        action.setText(widget.windowTitle())
+        self.view_menu.addAction(action)
+
+        self.toolbar.addAction(action)
 
     def register_plugins(self):
         """Dynamically load plugins to the window
@@ -151,7 +156,7 @@ class MainWindow(QMainWindow):
 
         name = extension["name"]
         title = extension["title"]
-        displayed_title = name if LOGGER.getEffectiveLevel() == DEBUG else title
+        displayed_title = title
 
         if "widget" in extension and extension["widget"].ENABLE:
             # New GUI widget

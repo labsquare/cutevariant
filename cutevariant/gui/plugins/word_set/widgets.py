@@ -181,7 +181,7 @@ class WordSetWidget(PluginWidget):
         super().__init__(parent)
         self.conn = None
         self.set_names = list()
-        self.setWindowTitle(self.tr("Word Sets"))
+        self.setWindowIcon(FIcon(0xF10E3))
         self.toolbar = QToolBar()
         self.view = QListWidget()
         self.view.setIconSize(QSize(20, 20))

@@ -133,17 +133,6 @@ def conn():
     project_data = sql.get_project(conn)
     assert project_data["name"] == "test"
     assert project_data["reference"] == "hg19"
-    sql.update_project(
-        conn,
-        {
-            "latest_vql_query": 'SELECT chr,pos,ref,alt,gene FROM variants WHERE gene != "CFTR"',
-        },
-    )
-    project_data = sql.get_project(conn)
-    assert (
-        project_data["latest_vql_query"]
-        == 'SELECT chr,pos,ref,alt,gene FROM variants WHERE gene != "CFTR"'
-    )
 
     sql.create_table_fields(conn)
     assert table_exists(conn, "fields"), "cannot create table fields"
@@ -218,6 +207,22 @@ def hasardous_wordset():
 
 def test_create_connexion(conn):
     assert conn is not None
+
+
+def test_update_project(conn):
+    
+    sql.update_project(
+        conn,
+        {
+            "latest_vql_query": 'SELECT chr,pos,ref,alt,gene FROM variants WHERE gene != "CFTR"',
+        },
+    )
+    project_data = sql.get_project(conn)
+    assert (
+        project_data["latest_vql_query"]
+        == 'SELECT chr,pos,ref,alt,gene FROM variants WHERE gene != "CFTR"'
+    )
+
 
 
 def test_get_database_file_name():

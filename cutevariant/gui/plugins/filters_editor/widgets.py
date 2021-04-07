@@ -1793,7 +1793,8 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
     def __init__(self, conn=None, parent=None):
         super().__init__(parent)
-        self.setWindowTitle(self.tr("Filters"))
+        self.setWindowTitle("Filters")
+        self.setWindowIcon(FIcon(0xF0232))
 
         self.settings = QSettings()
         self.view = QTreeView()

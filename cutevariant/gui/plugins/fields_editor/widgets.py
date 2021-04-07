@@ -177,7 +177,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
     def __init__(self, conn=None, parent=None):
         super().__init__(parent)
 
-        self.setWindowTitle(self.tr("Columns"))
+        self.setWindowIcon(FIcon(0xF098F))
         self.view = QTreeView(self)
         self.toolbar = QToolBar(self)
         # conn is always None here but initialized in on_open_project()

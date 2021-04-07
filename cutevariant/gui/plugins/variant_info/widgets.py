@@ -201,8 +201,7 @@ class VariantInfoWidget(PluginWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.setWindowTitle(self.tr("Info variants"))
-
+        self.setWindowIcon(FIcon(0xF0B73))
         # Current variant => set by on_refresh and on_open_project
         self.current_variant = None
 
