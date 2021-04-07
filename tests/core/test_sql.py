@@ -127,8 +127,23 @@ def conn():
     """Initialize a memory DB with test data and return a connexion on this DB"""
     conn = sql.get_sql_connection(":memory:")
 
-    sql.create_project(conn, "test", "hg19")
+    sql.create_table_project(conn, "test", "hg19")
     assert table_exists(conn, "projects"), "cannot create table projects"
+
+    project_data = sql.get_project(conn)
+    assert project_data["name"] == "test"
+    assert project_data["reference"] == "hg19"
+    sql.update_project(
+        conn,
+        {
+            "latest_vql_query": 'SELECT chr,pos,ref,alt,gene FROM variants WHERE gene != "CFTR"',
+        },
+    )
+    project_data = sql.get_project(conn)
+    assert (
+        project_data["latest_vql_query"]
+        == 'SELECT chr,pos,ref,alt,gene FROM variants WHERE gene != "CFTR"'
+    )
 
     sql.create_table_fields(conn)
     assert table_exists(conn, "fields"), "cannot create table fields"

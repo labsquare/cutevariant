@@ -167,7 +167,7 @@ def count_query(conn, query):
 ## project table ===============================================================
 
 
-def create_project(conn: sqlite3.Connection, name: str, reference: str):
+def create_table_project(conn: sqlite3.Connection, name: str, reference: str):
     """Create the table "projects" and insert project name and reference genome
 
     Args:
@@ -175,18 +175,25 @@ def create_project(conn: sqlite3.Connection, name: str, reference: str):
         name (str): Project name
         reference (str): Genom project
 
-    Todo:
-        * Rename to create_table_project
-
     """
-    cursor = conn.cursor()
-    cursor.execute(
-        "CREATE TABLE projects (id INTEGER PRIMARY KEY, name TEXT, reference TEXT)"
-    )
-    cursor.execute(
-        "INSERT INTO projects (name, reference) VALUES (?, ?)", (name, reference)
+    project_data = {"name": name, "reference": reference}
+
+    conn.execute("CREATE TABLE projects (id INTEGER PRIMARY KEY, key TEXT, value TEXT)")
+    conn.commit()
+
+    update_project(conn, project_data)
+
+
+def update_project(conn: sqlite3.Connection, project: dict):
+    conn.executemany(
+        "INSERT INTO projects (key, value) VALUES (?, ?)", list(project.items())
     )
     conn.commit()
+
+
+def get_project(conn: sqlite3.Connection):
+    g = (dict(data) for data in conn.execute("SELECT key, value FROM projects"))
+    return {data["key"]: data["value"] for data in g}
 
 
 ## metadatas table =============================================================
