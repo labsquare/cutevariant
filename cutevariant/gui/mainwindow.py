@@ -15,6 +15,7 @@ from PySide2.QtGui import QIcon, QKeySequence, QDesktopServices
 
 # Custom imports
 from cutevariant.core import get_sql_connection, get_metadatas, command
+from cutevariant.core.sql import get_database_file_name
 from cutevariant.core.writer import CsvWriter, PedWriter
 from cutevariant.gui import FIcon
 from cutevariant.gui.state import State
@@ -438,6 +439,10 @@ class MainWindow(QMainWindow):
         # Clear State variable of application
         # store fields, source, filters, group_by, having data
         self.state = State()
+
+        # Load previous window state for this project (file_path being the key for the settings)
+        file_path = get_database_file_name(conn)
+        self.state = self.app_settings.value(f"{file_path}/last_state", State())
 
         for plugin_obj in self.plugins.values():
             plugin_obj.on_open_project(self.conn)
