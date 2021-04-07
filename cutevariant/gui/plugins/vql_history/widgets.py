@@ -14,6 +14,7 @@ from PySide2.QtCore import (
     QUrl,
     QModelIndex,
     QSortFilterProxyModel,
+
 )
 from PySide2.QtWidgets import (
     QToolBar,
@@ -24,7 +25,8 @@ from PySide2.QtWidgets import (
     QTableView,
     QHeaderView,
     QSpacerItem,
-    QLineEdit,
+    QStyledItemDelegate,
+    QLineEdit
 )
 
 from PySide2.QtGui import QDesktopServices, QKeySequence
@@ -36,13 +38,15 @@ from cutevariant.commons import logger
 
 from cutevariant.core import sql
 
+from cutevariant.gui.widgets import VqlSyntaxHighlighter
+
 
 LOGGER = logger()
 
 
 class HistoryModel(QAbstractTableModel):
 
-    HEADERS = ["Name", "Date", "Elapsed Time", "Query", "Count"]
+    HEADERS = ["Name", "Date", "time", "Query", "Count"]
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -68,10 +72,10 @@ class HistoryModel(QAbstractTableModel):
                 return self.records[index.row()][0]
             if index.column() == 1:
                 # The date and time the query finished
-                return self.records[index.row()][1].toString("dd/MM/yyyy - hh:mm:ss")
+                return self.records[index.row()][1].toString("hh:mm:ss")
             if index.column() == 2:
                 # The time it took for the query
-                return f"{self.records[index.row()][2]} s"
+                return f"{self.records[index.row()][2]:.2f} s"
             if index.column() == 3:
                 # The query itself
                 return self.records[index.row()][3]
@@ -84,7 +88,7 @@ class HistoryModel(QAbstractTableModel):
                 return self.records[index.row()][0]
 
         if role == Qt.ToolTipRole:
-            return self.records[index.row()][0]
+            return self.records[index.row()][3]
 
         return None
 
@@ -208,6 +212,22 @@ class HistoryModel(QAbstractTableModel):
         del self.records[row]
         self.endRemoveRows()
 
+    def removeRows(self, indexes):
+
+        rows = sorted([index.row() for index in indexes], reverse=True)
+
+        self.beginResetModel()
+
+        for row in rows:
+            print(row)
+
+            del self.records[row]
+
+        self.endResetModel()
+
+
+
+
     def get_query(self, index: QModelIndex):
         return self.records[index.row()][3]
 
@@ -215,6 +235,53 @@ class HistoryModel(QAbstractTableModel):
 class DateSortProxyModel(QSortFilterProxyModel):
     def sort(self, column, order=Qt.AscendingOrder):
         return self.sourceModel().sort(column, order)
+
+
+class HistoryDelegate(QStyledItemDelegate):
+
+    def __init__(self, parent = None):
+        super().__init__( parent)
+
+
+
+    def paint(self, painter, option, index):
+
+        if index.column() == 0:
+
+            if not index.data():
+                font = QFont()
+                font.setItalic(True)
+                painter.setFont(font)
+                painter.setPen(QPen(Qt.darkGray))
+                painter.drawText(option.rect,Qt.AlignCenter, "edit ...")
+
+
+
+        if index.column() == 3 and not option.state &  QStyle.State_Selected:
+
+            painter.save()
+            painter.setClipRegion(option.rect)
+            painter.setPen(QColor("red"))
+            doc = QTextDocument()
+            doc.setDocumentMargin(0)
+            metrics = QFontMetrics(painter.font())
+            area = option.rect.adjusted(5,5,-5,-5)
+
+            syntax = VqlSyntaxHighlighter(doc)
+            vql = index.data()
+
+            elided_vql = painter.fontMetrics().elidedText(vql,Qt.ElideRight, area.width())
+            doc.setPlainText(elided_vql)
+            #highlighter_->setDocument(&doc);
+            #context.palette.setColor(QPalette.Text, painter.pen().color())
+            painter.translate(area.topLeft())
+            doc.drawContents(painter)
+            painter.restore()
+
+        else:
+            super().paint(painter, option, index)
+
+
 
 
 class VqlHistoryWidget(plugin.PluginWidget):
@@ -231,6 +298,7 @@ class VqlHistoryWidget(plugin.PluginWidget):
         # Create model / view
         self.view = QTableView()
         self.model = HistoryModel()
+        self.delegate = HistoryDelegate()
 
         # Setup search feature on a proxy model
         self.proxy_model = DateSortProxyModel()
@@ -245,8 +313,9 @@ class VqlHistoryWidget(plugin.PluginWidget):
         self.view.setAlternatingRowColors(True)
         self.view.verticalHeader().hide()
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.view.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.view.setSortingEnabled(True)
+        self.view.setItemDelegate(self.delegate)
 
         self.view.horizontalHeader().setSectionResizeMode(
             0, QHeaderView.ResizeToContents
@@ -309,9 +378,8 @@ class VqlHistoryWidget(plugin.PluginWidget):
         main_layout.setSpacing(0)
         main_layout.addWidget(self.toolbar)
         main_layout.addWidget(self.view)
-        self.search_edit.setContentsMargins(10, 10, 0, 0)
+        self.search_edit.setContentsMargins(10, 10, 10, 10)
         main_layout.addWidget(self.search_edit)
-        main_layout.addSpacerItem(QSpacerItem(0, 20))
 
         main_layout.setContentsMargins(0, 0, 0, 0)
 
@@ -465,8 +533,8 @@ class VqlHistoryWidget(plugin.PluginWidget):
 
     def on_remove_row_pressed(self):
         settings = QSettings()
-        selected_index = self.view.selectionModel().currentIndex()
-        if not selected_index:
+        selected_indexes = self.view.selectionModel().selectedRows()
+        if not selected_indexes:
             return
 
         if settings.value(f"{__name__}/confirm_remove_row", False):
@@ -479,7 +547,8 @@ class VqlHistoryWidget(plugin.PluginWidget):
             )
             if confirmation == QMessageBox.No:
                 return
-        self.model.removeRow(selected_index.row())
+
+        self.model.removeRows(selected_indexes)
 
 
 if __name__ == "__main__":
