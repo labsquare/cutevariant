@@ -39,8 +39,7 @@ LOGGER = cm.logger()
 class MainWindow(QMainWindow):
     """Main window of Cutevariant"""
 
-    variants_loaded = Signal()
-    variants_count_loaded = Signal(int, float)
+    variants_load_finished = Signal(int, float)
 
     def __init__(self, parent=None):
 
@@ -165,9 +164,8 @@ class MainWindow(QMainWindow):
             if name == "variant_view":
 
                 LOGGER.debug("Loading variant view")
-                widget.variants_loaded.connect(lambda: self.variants_loaded.emit())
-                widget.variants_count_loaded.connect(
-                    lambda count,time: self.variants_count_loaded.emit(count,time)
+                widget.variants_load_finished.connect(
+                    lambda count, time: self.variants_load_finished.emit(count, time)
                 )
                 LOGGER.debug("Connected variant view signals to mainwindow")
 

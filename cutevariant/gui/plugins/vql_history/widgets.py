@@ -302,9 +302,9 @@ class VqlHistoryWidget(plugin.PluginWidget):
         self.setLayout(main_layout)
 
     def on_register(self, mainwindow: MainWindow):
-        mainwindow.variants_count_loaded.connect(self.on_variants_count_loaded)
+        mainwindow.variants_load_finished.connect(self.on_variants_load_finished)
 
-    def on_variants_count_loaded(self, count: int, elapsed_time: float):
+    def on_variants_load_finished(self, count: int, elapsed_time: float):
         vql_query = build_vql_query(
             self.mainwindow.state.fields,
             self.mainwindow.state.source,
