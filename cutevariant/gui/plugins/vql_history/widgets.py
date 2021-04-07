@@ -23,6 +23,8 @@ from PySide2.QtWidgets import (
     QMessageBox,
     QTableView,
     QHeaderView,
+    QSpacerItem,
+    QLineEdit,
 )
 
 from PySide2.QtGui import QDesktopServices, QKeySequence
@@ -306,8 +308,10 @@ class VqlHistoryWidget(plugin.PluginWidget):
         main_layout = QVBoxLayout()
         main_layout.setSpacing(0)
         main_layout.addWidget(self.toolbar)
-        main_layout.addWidget(self.search_edit)
         main_layout.addWidget(self.view)
+        self.search_edit.setContentsMargins(10, 10, 0, 0)
+        main_layout.addWidget(self.search_edit)
+        main_layout.addSpacerItem(QSpacerItem(0, 20))
 
         main_layout.setContentsMargins(0, 0, 0, 0)
 
