@@ -151,6 +151,7 @@ class CsvExportDialog(ExportDialog):
         self.combo = QComboBox()
         self.combo.addItem(";", ";")
         self.combo.addItem("TAB", "\t")
+        self.combo.addItem(",", ",")
         newline = "\n"
 
         form_layout.addRow(self.tr("Separator"), self.combo)
