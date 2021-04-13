@@ -42,6 +42,12 @@ FIELDS = [
         "description": "annotation 2",
     },
     {
+        "name": "qual",
+        "category": "variants",
+        "type": "float",
+        "description": "Quality of the variant",
+    },
+    {
         "name": "gene",
         "category": "annotations",
         "type": "str",
@@ -73,6 +79,7 @@ VARIANTS = [
         "dp": None,
         "extra1": 10,
         "extra2": 100,
+        "qual": 15,
         "annotations": [
             {"gene": "gene1", "transcript": "transcript1"},
             {"gene": "gene1", "transcript": "transcript2"},
@@ -90,6 +97,7 @@ VARIANTS = [
         "dp": 100,
         "extra1": 20,
         "extra2": 100,
+        "qual": 20,
         "annotations": [{"gene": "gene1", "transcript": "transcript1"}],
     },
     {
@@ -100,6 +108,7 @@ VARIANTS = [
         "dp": 100,
         "extra1": 20,
         "extra2": 100,
+        "qual": 7,
         "annotations": [{"gene": "gene2", "transcript": "transcript2"}],
         "samples": [
             {"name": "sacha", "gt": 0, "dp": 30},
