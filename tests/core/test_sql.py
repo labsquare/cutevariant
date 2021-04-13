@@ -214,12 +214,19 @@ def hasardous_wordset():
 ################################################################################
 
 
+@pytest.mark.parametrize("field", ["pos", "qual"])
+def test_get_quantitative_stats(conn, field):
+    stats = sql.get_quantitative_stats(conn, field, ["min", "max", "median", "mean"])
+    print(stats)
+    # This test still needs improvement but at least kinda works...
+
+
 def test_create_connexion(conn):
     assert conn is not None
 
 
 def test_update_project(conn):
-    
+
     sql.update_project(
         conn,
         {
@@ -231,7 +238,6 @@ def test_update_project(conn):
         project_data["latest_vql_query"]
         == 'SELECT chr,pos,ref,alt,gene FROM variants WHERE gene != "CFTR"'
     )
-
 
 
 def test_get_database_file_name():

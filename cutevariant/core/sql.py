@@ -32,6 +32,7 @@ import logging
 from pkg_resources import parse_version
 from functools import partial, lru_cache
 import itertools as it
+import numpy as np
 
 
 # Custom imports
@@ -40,11 +41,72 @@ import cutevariant.commons as cm
 LOGGER = cm.logger()
 
 
+## Custom statistics aggregate classes
+
+
+class AggregateQuantitative:
+    """
+    Class that defines an aggregate function in sqlite3
+    Usage (in SQL):
+        SELECT DESCRIBE_QUANT(field_name,count,mean,std) FROM variants
+        # This will return 'count=2000,mean=3.5,std=0.3'
+    """
+
+    descriptor_functions = {
+        "count": lambda ar: len(ar),
+        "mean": lambda ar: ar.mean(),
+        "std": lambda ar: ar.std(),
+        "q0": lambda ar: np.quantile(ar, 0.0),
+        "q1": lambda ar: np.quantile(ar, 0.25),
+        "q2": lambda ar: np.quantile(ar, 0.5),
+        "q3": lambda ar: np.quantile(ar, 0.75),
+        "q4": lambda ar: np.quantile(ar, 1.0),
+    }
+
+    descriptor_alternative_names = {"min": "q0", "median": "q2", "max": "q4"}
+
+    def __init__(self):
+        self.descriptor_names = ["count", "mean", "std", "q0", "q1", "q2", "q3", "q4"]
+        self.array = []
+        self.count = 0
+
+    def step(self, value, *descriptors):
+        """
+        This is a python callback from SQL engine. Value must be the name of the field, and every following argument
+        should be the name of a supported quantitative descriptor (any key of descriptor_functions or its alternative name)
+        i.e.:
+        SELECT DESCRIBE_QUANT(field_name,count,mean,std,min,max) FROM variants
+        """
+        self.array.append(float(value))
+        # Kinda hacky, but this way we only set the descriptors once
+        if self.count == 0:
+            self.descriptor_names = [
+                d
+                if d in AggregateQuantitative.descriptor_functions.keys()
+                else AggregateQuantitative.descriptor_alternative_names.get(d)
+                for d in descriptors
+            ]
+        self.count += 1
+
+    def finalize(self):
+        """
+        Returns a comma-separated string containing the requested descriptors for the requested field.
+        From the following query:
+            SELECT DESCRIBE_QUANT(field_name,'count','mean','std','min','max') FROM variants
+        results:
+            count=1000,mean=3.5,std=0.3,min=0,max=15
+        """
+        self.array = np.array(self.array)
+        result = ",".join(
+            [
+                f"{desc}={AggregateQuantitative.descriptor_functions[desc](self.array)}"
+                for desc in self.descriptor_names
+            ]
+        )
+        return result
+
+
 ## Misc functions ==============================================================
-
-
-def get_database_file_name(conn):
-    return conn.execute("PRAGMA database_list").fetchone()["file"]
 
 
 def get_sql_connection(filepath):
@@ -57,6 +119,9 @@ def get_sql_connection(filepath):
         sqlite3.Connection: Sqlite3 Connection
             The connection is initialized with `row_factory = Row`.
             So all results are accessible via indexes or keys.
+            The connection also supports
+            - REGEXP function
+            - DESCRIBE_QUANT aggregate
     """
     connection = sqlite3.connect(filepath)
     # Activate Foreign keys
@@ -73,11 +138,17 @@ def get_sql_connection(filepath):
 
     connection.create_function("REGEXP", 2, regexp)
 
+    connection.create_aggregate("DESCRIBE_QUANT", -1, AggregateQuantitative)
+
     if LOGGER.getEffectiveLevel() == logging.DEBUG:
         # Enable tracebacks from custom functions in DEBUG mode only
         sqlite3.enable_callback_tracebacks(True)
 
     return connection
+
+
+def get_database_file_name(conn):
+    return conn.execute("PRAGMA database_list").fetchone()["file"]
 
 
 def table_exists(conn: sqlite3.Connection, name: str) -> bool:
@@ -162,6 +233,33 @@ def create_indexes(conn: sqlite3.Connection):
 def count_query(conn, query):
     """Count elements from the given query or table"""
     return conn.execute(f"SELECT COUNT(*) as count FROM ({query})").fetchone()[0]
+
+
+# Statistical data
+
+
+def get_quantitative_stats(conn, field, descriptors):
+    """
+    Returns statistical metrics for field in conn
+    Descriptors is the list of statistical descriptors you'd like to retrieve, among:
+    count,mean,std,q0,q1,q2,q3,q4
+
+    The returned string is in the form:
+        descriptor1=value1,descriptor2=value2,descriptor3=value3
+    It WILL and SHOULD change in the future
+    """
+
+    # Descriptors are literals, not column names, so add some single quotes to tell SQL
+    descriptors = ",".join([f"'{desc}'" for desc in descriptors])
+
+    # This is TERRIBLE, but for now it does the job
+    return list(
+        dict(
+            conn.execute(
+                f"SELECT DESCRIBE_QUANT({field},{descriptors}) FROM variants"
+            ).fetchone()
+        ).values()
+    )[0]
 
 
 ## project table ===============================================================
