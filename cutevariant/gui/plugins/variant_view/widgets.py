@@ -723,8 +723,8 @@ class VariantView(QWidget):
         self.bottom_bar.addWidget(self.info_label)
         self.loading_action = self.bottom_bar.addWidget(self.loading_label)
 
-        self.bottom_bar.setIconSize(QSize(16, 16))
-        self.bottom_bar.setMaximumHeight(30)
+        #self.bottom_bar.setIconSize(QSize(16, 16))
+        #self.bottom_bar.setMaximumHeight(30)
         self.bottom_bar.setContentsMargins(0, 0, 0, 0)
 
         self.pagging_actions = []
