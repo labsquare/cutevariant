@@ -207,7 +207,7 @@ class VariantInfoWidget(PluginWidget):
 
         self.view = QTabWidget()
         self.toolbar = QToolBar()
-        self.toolbar.setIconSize(QSize(16, 16))
+        #self.toolbar.setIconSize(QSize(16, 16))
 
         # Build comments tab
         self.edit_panel = EditPanel()
@@ -247,7 +247,7 @@ class VariantInfoWidget(PluginWidget):
 
         # Build genotype tab
         self.genotype_view = QListWidget()
-        self.genotype_view.setIconSize(QSize(20, 20))
+        #self.genotype_view.setIconSize(QSize(20, 20))
         self.view.addTab(self.genotype_view, self.tr("Genotypes"))
 
         v_layout = QVBoxLayout()

@@ -56,7 +56,7 @@ def main():
     # Process command line arguments
     app = QApplication(sys.argv)
     app.setAttribute(Qt.AA_EnableHighDpiScaling, True) 
-    #app.setAttribute(Qt.AA_UseHighDpiPixmaps, True) #u
+    app.setAttribute(Qt.AA_UseHighDpiPixmaps, True) #u
     process_arguments(app)
 
     # Load app styles

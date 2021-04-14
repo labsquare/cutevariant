@@ -173,7 +173,7 @@ class SourceEditorWidget(plugin.PluginWidget):
         self.view.horizontalHeader().hide()
 
         self.toolbar = QToolBar()
-        self.toolbar.setIconSize(QSize(16, 16))
+        #self.toolbar.setIconSize(QSize(16, 16))
 
         self.view.verticalHeader().hide()
         self.view.verticalHeader().setDefaultSectionSize(26)

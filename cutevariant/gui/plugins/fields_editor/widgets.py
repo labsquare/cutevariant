@@ -193,7 +193,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self.proxy_model.setFilterKeyColumn(-1)
 
         self.view.setModel(self.proxy_model)
-        self.view.setIconSize(QSize(16, 16))
+        #self.view.setIconSize(QSize(16, 16))
         self.view.header().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.view.setEditTriggers(QAbstractItemView.NoEditTriggers)
@@ -211,7 +211,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self.model.itemChanged.connect(self.on_fields_changed)
 
         # Setup toolbar
-        self.toolbar.setIconSize(QSize(16, 16))
+        #self.toolbar.setIconSize(QSize(16, 16))
         self.toolbar.addAction(
             FIcon(0xF0615), self.tr("Collapse"), self.view.collapseAll
         )

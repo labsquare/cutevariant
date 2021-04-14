@@ -35,9 +35,11 @@ class Formatter(object):
         return index.data(Qt.DisplayRole)
 
     def draw_icon(self, painter: QPainter, rect: QRect, icon: QIcon):
-        r = QRect(0, 0, 20, 20)
+        
+
+        r = QRect(0, 0, rect.height(), rect.height())
         r.moveCenter(rect.center())
-        painter.drawPixmap(r, icon.pixmap(20, 20))
+        painter.drawPixmap(r, icon.pixmap(r.width(), r.height()))
 
     def draw_url(self, painter: QPainter, rect: QRect, value: str):
         font = QFont()
