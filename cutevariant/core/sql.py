@@ -41,71 +41,6 @@ import cutevariant.commons as cm
 LOGGER = cm.logger()
 
 
-## Custom statistics aggregate classes
-
-
-class AggregateQuantitative:
-    """
-    Class that defines an aggregate function in sqlite3
-    Usage (in SQL):
-        SELECT DESCRIBE_QUANT(field_name,count,mean,std) FROM variants
-        # This will return 'count=2000,mean=3.5,std=0.3'
-    """
-
-    descriptor_functions = {
-        "count": lambda ar: len(ar),
-        "mean": lambda ar: ar.mean(),
-        "std": lambda ar: ar.std(),
-        "q0": lambda ar: np.quantile(ar, 0.0),
-        "q1": lambda ar: np.quantile(ar, 0.25),
-        "q2": lambda ar: np.quantile(ar, 0.5),
-        "q3": lambda ar: np.quantile(ar, 0.75),
-        "q4": lambda ar: np.quantile(ar, 1.0),
-    }
-
-    descriptor_alternative_names = {"min": "q0", "median": "q2", "max": "q4"}
-
-    def __init__(self):
-        self.descriptor_names = ["count", "mean", "std", "q0", "q1", "q2", "q3", "q4"]
-        self.array = []
-        self.count = 0
-
-    def step(self, value, *descriptors):
-        """
-        This is a python callback from SQL engine. Value must be the name of the field, and every following argument
-        should be the name of a supported quantitative descriptor (any key of descriptor_functions or its alternative name)
-        i.e.:
-        SELECT DESCRIBE_QUANT(field_name,count,mean,std,min,max) FROM variants
-        """
-        self.array.append(float(value))
-        # Kinda hacky, but this way we only set the descriptors once
-        if self.count == 0:
-            self.descriptor_names = [
-                d
-                if d in AggregateQuantitative.descriptor_functions.keys()
-                else AggregateQuantitative.descriptor_alternative_names.get(d)
-                for d in descriptors
-            ]
-        self.count += 1
-
-    def finalize(self):
-        """
-        Returns a comma-separated string containing the requested descriptors for the requested field.
-        From the following query:
-            SELECT DESCRIBE_QUANT(field_name,'count','mean','std','min','max') FROM variants
-        results:
-            count=1000,mean=3.5,std=0.3,min=0,max=15
-        """
-        self.array = np.array(self.array)
-        result = ",".join(
-            [
-                f"{desc}={AggregateQuantitative.descriptor_functions[desc](self.array)}"
-                for desc in self.descriptor_names
-            ]
-        )
-        return result
-
-
 ## Misc functions ==============================================================
 
 
@@ -137,8 +72,6 @@ def get_sql_connection(filepath):
         return re.search(expr, str(item)) is not None
 
     connection.create_function("REGEXP", 2, regexp)
-
-    connection.create_aggregate("DESCRIBE_QUANT", -1, AggregateQuantitative)
 
     if LOGGER.getEffectiveLevel() == logging.DEBUG:
         # Enable tracebacks from custom functions in DEBUG mode only
@@ -238,7 +171,7 @@ def count_query(conn, query):
 # Statistical data
 
 
-def get_quantitative_stats(conn, field, descriptors):
+def get_field_info(conn, field, metrics=["mean", "std"]):
     """
     Returns statistical metrics for field in conn
     Descriptors is the list of statistical descriptors you'd like to retrieve, among:
@@ -250,16 +183,32 @@ def get_quantitative_stats(conn, field, descriptors):
     """
 
     # Descriptors are literals, not column names, so add some single quotes to tell SQL
-    descriptors = ",".join([f"'{desc}'" for desc in descriptors])
 
-    # This is TERRIBLE, but for now it does the job
-    return list(
-        dict(
-            conn.execute(
-                f"SELECT DESCRIBE_QUANT({field},{descriptors}) FROM variants"
-            ).fetchone()
-        ).values()
-    )[0]
+    # TODO :
+
+    metric_functions = {
+        "count": len,
+        "mean": np.mean,
+        "std": np.std,
+        "min": lambda ar: np.quantile(ar, 0.0),
+        "q1": lambda ar: np.quantile(ar, 0.25),
+        "median": lambda ar: np.quantile(ar, 0.5),
+        "q3": lambda ar: np.quantile(ar, 0.75),
+        "max": lambda ar: np.quantile(ar, 1.0),
+    }
+
+    conn.row_factory = None
+    data = [i[0] for i in conn.execute(f"SELECT {field} FROM variants")]
+
+    results = {}
+    for metric in metrics:
+        if metric in metric_functions:
+            value = metric_functions[metric](data)
+            results[metric] = value
+
+    conn.row_factory = sqlite3.Row
+
+    return results
 
 
 ## project table ===============================================================
