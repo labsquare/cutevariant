@@ -8,10 +8,20 @@ from cutevariant.core.sql import get_sql_connection, get_field_info, get_fields
 
 from cutevariant.commons import logger
 
+from cutevariant.gui.sql_thread import SqlThread
+
 LOGGER = logger()
 
 
 class StatsModel(QAbstractTableModel):
+
+    stats_loaded = Signal()
+    stats_is_loading = Signal(bool)
+
+    error_raised = Signal(str)
+    interrupted = Signal()
+    no_stats = Signal()
+
     metrics = {
         "mean": "The mean value of this field",
         "std": "Standard deviation",
@@ -28,8 +38,49 @@ class StatsModel(QAbstractTableModel):
 
         self.cache = {}
         self.conn = None
-        self.field = ""
         self.current_table = []
+
+        self._load_stats_thread = SqlThread(self.conn)
+        self._load_stats_thread.started.connect(
+            lambda: self.stats_is_loading.emit(True)
+        )
+        self._load_stats_thread.finished.connect(
+            lambda: self.stats_is_loading.emit(False)
+        )
+        self._load_stats_thread.result_ready.connect(self.on_stats_loaded)
+        self._load_stats_thread.error.connect(self.error_raised)
+
+        self._user_has_interrupt = False
+
+        self.field_name = ""
+
+    def is_stats_loading(self):
+        return self._load_stats_thread.isRunning()
+
+    def clear(self):
+        """Reset the current model
+
+        - clear variants list
+        - total of variants is set to 0
+        - emit variant_loaded signal
+        """
+        self.beginResetModel()
+        self.current_table.clear()
+        self.endResetModel()
+        self.stats_loaded.emit()
+
+    @property
+    def conn(self):
+        """
+        Returns sqlite connection
+        """
+        return self._conn
+
+    @conn.setter
+    def conn(self, conn):
+        self._conn = conn
+        if conn:
+            self._load_stats_thread.conn = conn
 
     def columnCount(self, index):
         return 2
@@ -37,36 +88,53 @@ class StatsModel(QAbstractTableModel):
     def rowCount(self, index):
         return len(self.current_table)
 
-    def load(self, conn: sqlite3.Connection, field_name):
+    def on_stats_loaded(self):
+        self.beginResetModel()
 
-        if conn:
-            self.conn = conn
+        self.current_table.clear()
 
-            try:
-                if field_name not in self.cache:
-                    self.cache[field_name] = get_field_info(
-                        self.conn, field_name, StatsModel.metrics.keys()
-                    )
-            except sqlite3.Error as e:
-                LOGGER.error(e)
-                return False
-            except ArithmeticError as e:
-                LOGGER.error(e)
-                return False
-            except Exception as e:
-                LOGGER.error(e)
-                return False
+        if self.field_name not in self.cache:
+            self.cache[self.field_name] = self._load_stats_thread.results
 
-            self.beginResetModel()
+        self.current_table = list(self._load_stats_thread.results.items())
 
-            # If not cached, compute it
+        if self.current_table:
+            self.stats_loaded.emit()
+        else:
+            self.no_stats.emit()
 
-            # Current table is a list of tuples, based on key-value pairs stored in cache as a dictionnary
-            self.current_table = list(self.cache[field_name].items())
+        self.endResetModel()
 
-            self.endResetModel()
+    # def load(self, conn: sqlite3.Connection, field_name):
 
-            return True
+    #     if conn:
+    #         self.conn = conn
+
+    #         try:
+    #             if field_name not in self.cache:
+    #                 self.cache[field_name] = get_field_info(
+    #                     self.conn, field_name, StatsModel.metrics.keys()
+    #                 )
+    #         except sqlite3.Error as e:
+    #             LOGGER.error(e)
+    #             return False
+    #         except ArithmeticError as e:
+    #             LOGGER.error(e)
+    #             return False
+    #         except Exception as e:
+    #             LOGGER.error(e)
+    #             return False
+
+    #         self.beginResetModel()
+
+    #         # If not cached, compute it
+
+    #         # Current table is a list of tuples, based on key-value pairs stored in cache as a dictionnary
+    #         self.current_table = list(self.cache[field_name].items())
+
+    #         self.endResetModel()
+
+    #         return True
 
     def data(self, index: QModelIndex, role):
 
@@ -90,19 +158,97 @@ class StatsModel(QAbstractTableModel):
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
             return ["Field name", "Field value"][section]
 
+    def interrupt(self):
+        """Interrupt current query if active
+
+        This is a blocking function...
+
+        call interrupt and wait for the error_raised signals ...
+        If nothing happen after 1000 ms, by pass and continue
+        If I don't use the dead time, it is waiting for an infinite time
+        at startup ... Because at startup, loading is called 2 times.
+        One time by the register_plugin and a second time by the plugin.show_event
+
+        Shamelessly copy-pasted from VariantView ;)
+        """
+
+        interrupted = False
+
+        if self._load_stats_thread:
+            if self._load_stats_thread.isRunning():
+                self._user_has_interrupt = True
+                self._load_stats_thread.wait(1000)
+                interrupted = True
+
+        if interrupted:
+            self.interrupted.emit()
+
+    def load(self, field_name):
+        """
+        Asynchronously loads statistical data about field_name column
+        """
+        if not self.conn:
+            return
+
+        if self.is_stats_loading():
+            LOGGER.debug(
+                "Cannot load data. Thread is not finished. You can call interrupt() "
+            )
+            return
+
+        self.field_name = field_name
+
+        if field_name in self.cache:
+            self._load_stats_thread.results = self.cache[field_name]
+            self.on_stats_loaded()
+        else:
+            self._load_stats_thread.start_function(
+                lambda conn: get_field_info(conn, field_name, StatsModel.metrics.keys())
+            )
+
+
+class LoadingTableView(QTableView):
+    """Movie animation displayed on VariantView for long SQL queries executed
+    in background.
+    """
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self._is_loading = False
+
+    def paintEvent(self, event: QPainter):
+
+        if self.is_loading():
+            painter = QPainter(self.viewport())
+
+            painter.drawText(
+                self.viewport().rect(), Qt.AlignCenter, self.tr("Loading ...")
+            )
+
+        else:
+            super().paintEvent(event)
+
+    def set_loading(self, loading=False):
+        self._is_loading = loading
+        self.viewport().update()
+
+    def is_loading(self):
+        return self._is_loading
+
 
 class StatsWidget(QWidget):
     """
     Widget to show basic stats about a column in the cutevariant database
     """
 
-    ENABLE = True
+    error_raised = Signal(str)
 
     def __init__(self, conn=None):
         super().__init__()
         self.conn = conn
         self.combobox_field = QComboBox(self)
-        self.tableview_stats = QTableView(self)
+        self.tableview_stats = LoadingTableView(self)
 
         layout = QVBoxLayout(self)
         layout.addWidget(self.combobox_field)
@@ -116,15 +262,23 @@ class StatsWidget(QWidget):
         )
         self.last_field_selected = ""
 
+        self.stats_model.stats_is_loading.connect(self.tableview_stats.set_loading)
+        self.stats_model.error_raised.connect(self.on_error)
+
     def on_current_field_selected_changed(self, new_text):
         if self.conn:
-            if self.stats_model.load(self.conn, new_text):
-                self.last_field_selected = new_text
-            else:
-                if self.last_field_selected:
-                    self.combobox_field.blockSignals(True)
-                    self.combobox_field.setCurrentText(self.last_field_selected)
-                    self.combobox_field.blockSignals(False)
+            self.stats_model.load(new_text)
+
+    def on_stats_loaded(self):
+        self.last_field_selected = self.stats_model.field_name
+
+    def on_no_stats(self):
+        if self.last_field_selected:
+            self.combobox_field.setCurrentText(self.last_field_selected)
+
+    def on_error(self, error_msg):
+        LOGGER.error(error_msg)
+        self.on_no_stats()
 
     def set_connection(self, conn: sqlite3.Connection):
         self.conn = conn
@@ -136,6 +290,7 @@ class StatsWidget(QWidget):
                 if field["type"] in ("float", "int")
             ]
         )
+        self.stats_model.conn = conn
 
 
 class TestWidget(QMainWindow):
