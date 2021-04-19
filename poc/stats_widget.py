@@ -293,6 +293,8 @@ class StatsWidget(QWidget):
         )
         self.stats_model.conn = conn
 
+        self.stats_model.load(self.combobox_field.currentText())
+
 
 class TestWidget(QMainWindow):
     def __init__(self, parent=None):
