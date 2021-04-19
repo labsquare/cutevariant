@@ -111,7 +111,7 @@ class StatsWidget(QWidget):
         self.stats_model = StatsModel()
         self.tableview_stats.setModel(self.stats_model)
 
-        self.combobox_field.currentIndexChanged.connect(
+        self.combobox_field.currentTextChanged.connect(
             self.on_current_field_selected_changed
         )
         self.last_field_selected = ""
