@@ -130,9 +130,10 @@ def samples_join_required(fields, filters) -> list:
 
     for condition in filters_to_flat(filters):
         key = list(condition.keys())[0]
-        _, *sample, _ = key.split(".")
-        sample = ".".join(sample)
-        samples.add(sample)
+        if key.startswith("samples"):
+            _, *sample, _ = key.split(".")
+            sample = ".".join(sample)
+            samples.add(sample)
 
     return list(samples)
 

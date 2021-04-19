@@ -178,7 +178,7 @@ FILTERS_VS_SQL_VQL = [
     ),
     # Test composite field
     (
-        {"$and": [{"alt": "C"}, {"gt": 4, "$table": "samples", "$name": "sacha"}]},
+        {"$and": [{"alt": "C"}, {"samples.sacha.gt": 4}]},
         "(`variants`.`alt` = 'C' AND `sample_sacha`.`gt` = 4)",
         "samples['sacha'].gt = 4 AND alt = 'C'",
     ),
@@ -208,20 +208,20 @@ FILTERS_VS_SQL_VQL = [
     ),
     # Test IN: conservation of mixed types in the tuple
     (
-        {"gene": {"$in": ("CICP23", 2.0)}, "$table": "annotations"},
+        {"ann.gene": {"$in": ("CICP23", 2.0)}},
         "`annotations`.`gene` IN ('CICP23',2.0)",
         "gene IN ('CICP23', 2.0)",
     ),
     # Test IN: conservation of mixed types in a tuple with str type
     # => Cast via literal_eval
     (
-        {"gene": {"$in": ("CICP23", 2.0)}, "$table": "annotations"},
+        {"ann.gene": {"$in": ("CICP23", 2.0)}},
         "`annotations`.`gene` IN ('CICP23',2.0)",
         "gene IN ('CICP23', 2.0)",
     ),
     # Test WORDSET function
     (
-        {"gene": {"$in": {"$wordset": "coucou"}}, "$table": "annotations"},
+        {"ann.gene": {"$in": {"$wordset": "coucou"}}},
         "`annotations`.`gene` IN (SELECT value FROM wordsets WHERE name = 'coucou')",
         "gene IN WORDSET['coucou']",
     ),
@@ -249,16 +249,16 @@ def test_many_filters_to_sql(filter_in, expected_sql, expected_vql):
 QUERY_TESTS = [
     (
         # Test simple
-        {"fields": {"variants": ["chr", "pos"]}, "source": "variants"},
+        {"fields": ["chr", "pos"], "source": "variants"},
         "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants LIMIT 50 OFFSET 0",
         "SELECT chr,pos FROM variants",
     ),
     (
         # Test GROUPBY
         {
-            "fields": {"variants": ["chr", "pos"]},
+            "fields": ["chr", "pos"],
             "source": "variants",
-            "group_by": {"variants": ["chr"]},
+            "group_by": ["chr"],
         },
         "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants GROUP BY `variants`.`chr` LIMIT 50 OFFSET 0",
         "SELECT chr,pos FROM variants GROUP BY chr",
@@ -266,7 +266,7 @@ QUERY_TESTS = [
     # Test limit offset
     (
         {
-            "fields": {"variants": ["chr", "pos"]},
+            "fields": ["chr", "pos"],
             "source": "variants",
             "limit": 10,
             "offset": 4,
@@ -277,9 +277,9 @@ QUERY_TESTS = [
     # Test order by
     (
         {
-            "fields": {"variants": ["chr", "pos"]},
+            "fields": ["chr", "pos"],
             "source": "variants",
-            "order_by": {"variants": ["chr"]},
+            "order_by": ["chr"],
             "order_desc": True,
         },
         "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants ORDER BY `variants`.`chr` DESC LIMIT 50 OFFSET 0",
@@ -288,7 +288,7 @@ QUERY_TESTS = [
     # Test filters
     (
         {
-            "fields": {"variants": ["chr", "pos"]},
+            "fields": ["chr", "pos"],
             "source": "variants",
             "filters": {
                 "$and": [
@@ -302,7 +302,7 @@ QUERY_TESTS = [
     ),
     (
         {
-            "fields": {"variants": ["chr", "pos"]},
+            "fields": ["chr", "pos"],
             "source": "variants",
             "filters": {"$and": [{"alt": {"$regex": "C"}}]},
         },
@@ -311,7 +311,7 @@ QUERY_TESTS = [
     ),
     # Test different source
     (
-        {"fields": {"variants": ["chr", "pos"]}, "source": "other"},
+        {"fields": ["chr", "pos"], "source": "other"},
         (
             "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants "
             "INNER JOIN selection_has_variant sv ON sv.variant_id = variants.id "
@@ -322,7 +322,7 @@ QUERY_TESTS = [
     # Test genotype fields 8
     (
         {
-            "fields": {"variants": ["chr", "pos"], "samples": {"TUMOR": ["gt"]}},
+            "fields": ["chr", "pos", "samples.TUMOR.gt"],
             "source": "variants",
         },
         (
@@ -335,9 +335,9 @@ QUERY_TESTS = [
     # Test genotype in filters
     (
         {
-            "fields": {"variants": ["chr", "pos"]},
+            "fields": ["chr", "pos"],
             "source": "variants",
-            "filters": {"$and": [{"gt": 1, "$table": "samples", "$name": "TUMOR"}]},
+            "filters": {"$and": [{"samples.TUMOR.gt": 1}]},
         },
         (
             "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants"
@@ -349,12 +349,12 @@ QUERY_TESTS = [
     # Test genotype with 2 filters
     (
         {
-            "fields": {"variants": ["chr", "pos"]},
+            "fields": ["chr", "pos"],
             "source": "variants",
             "filters": {
                 "$and": [
-                    {"gt": 1, "$table": "samples", "$name": "TUMOR"},
-                    {"dp": {"$gt": 10}, "$table": "samples", "$name": "TUMOR"},
+                    {"samples.TUMOR.gt": 1},
+                    {"samples.TUMOR.dp": {"$gt": 10}},
                 ]
             },
         },
@@ -369,11 +369,11 @@ QUERY_TESTS = [
     # Test genotype in both filters and fields
     (
         {
-            "fields": {"variants": ["chr", "pos"], "samples": {"TUMOR": {"gt"}}},
+            "fields": ["chr", "pos", "samples.TUMOR.gt"],
             "source": "variants",
             "filters": {
                 "$and": [
-                    {"gt": 1, "$table": "samples", "$name": "TUMOR"},
+                    {"samples.TUMOR.gt": 1},
                 ]
             },
         },
@@ -388,7 +388,7 @@ QUERY_TESTS = [
     # Test IN SET
     (
         {
-            "fields": {"variants": ["chr"]},
+            "fields": ["chr"],
             "source": "variants",
             "filters": {"$and": [{"chr": {"$in": {"$wordset": "name"}}}]},
         },
