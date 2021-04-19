@@ -173,16 +173,28 @@ def count_query(conn, query):
 
 def get_field_info(conn, field, metrics=["mean", "std"]):
     """
-    Returns statistical metrics for field in conn
-    Descriptors is the list of statistical descriptors you'd like to retrieve, among:
-    count,mean,std,q0,q1,q2,q3,q4
+    Returns statistical metrics for column field in conn
+    metrics is the list of statistical metrics you'd like to retrieve, among:
+    count,mean,std,min,q1,median,q3,max
 
-    The returned string is in the form:
-        descriptor1=value1,descriptor2=value2,descriptor3=value3
+    For the metrics, you can also specify your own as a tuple by following the following format:
+
+    (metric_name,callable) where callable takes a numpy array and metric_name will be the key in the result
+    dictionnary. Example:
+
+    ("standard error",lambda array:np.std(array)/np.sqrt(len(array)))
+
+    The returned dict is in the form:
+    {
+        "mean" : 42,
+        "min" : 5,
+        "max" : 1000
+        "arbitrary_metric":15
+    }
     It WILL and SHOULD change in the future
     """
 
-    # Descriptors are literals, not column names, so add some single quotes to tell SQL
+    # metrics are literals, not column names, so add some single quotes to tell SQL
 
     # TODO :
 
@@ -205,6 +217,12 @@ def get_field_info(conn, field, metrics=["mean", "std"]):
         if metric in metric_functions:
             value = metric_functions[metric](data)
             results[metric] = value
+
+        if isinstance(metric, tuple) and len(metric) == 2:
+            metric_name, metric_func = metric
+            if callable(metric_func):
+                value = metric_func(data)
+                results[metric_name] = value
 
     conn.row_factory = sqlite3.Row
 
