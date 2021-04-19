@@ -49,7 +49,7 @@ class SqlThread(QThread):
 
         Notes:
             Since sqlite3 Connection objects are not thread safe, we create a new
-            connection based on it. 
+            connection based on it.
 
 
 
@@ -77,7 +77,7 @@ class SqlThread(QThread):
     @property
     def conn(self) -> sqlite3.Connection:
         """Return the Application thread connection
-        
+
         Returns:
             sqlite3.Connection
         """
@@ -85,9 +85,9 @@ class SqlThread(QThread):
 
     @property
     def async_conn(self) -> sqlite3.Connection:
-        """Return the thread connection 
+        """Return the thread connection
         It is a clone of application connection for thread safe
-        
+
         Returns:
             TYPE: Description
         """
@@ -99,6 +99,9 @@ class SqlThread(QThread):
             self._conn = conn
             self._async_conn = None
             self.db_file = conn.execute("PRAGMA database_list").fetchone()["file"]
+
+            if not self.db_file:
+                raise Exception("Cannot use SQL_Thread without a file database")
 
     def run(self):
         """Execute the function in a new thread
@@ -133,9 +136,9 @@ class SqlThread(QThread):
 
     def start_function(self, function: Callable, caching_hash=None):
         """Execute a function in the thread
-        
+
         Args:
-            function (Callable): Function must take con as arguments 
+            function (Callable): Function must take con as arguments
 
         Examples:
             >>> thread.exec_function(lambda conn: conn.execute("SELECT ..."))

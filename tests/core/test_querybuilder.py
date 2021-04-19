@@ -1,8 +1,6 @@
 import pytest
-from cutevariant.core import querybuilder
-
-
-SAMPLES_ID = {"TUMOR": 1, "NORMAL": 2}
+from cutevariant.core import querybuilder, sql
+from tests.utils import create_conn
 
 
 def test_filter_to_flat():
@@ -10,43 +8,43 @@ def test_filter_to_flat():
         "$and": [
             {"ref": "A"},
             {"alt": "C"},
-            {"$or": [{"gene": "CFTR", "$table": "annotations"}]},
+            {"$or": [{"ann.gene": "CFTR"}]},
         ]
     }
 
     assert querybuilder.filters_to_flat(filters) == [
         {"ref": "A"},
         {"alt": "C"},
-        {"gene": "CFTR", "$table": "annotations"},
+        {"ann.gene": "CFTR"},
     ]
 
 
 def test_is_annotation_join_required():
 
-    fields = {"variants": ["chr"]}
-    filters = {"$and": [{"ref": "A", "$table": "annotations"}]}
+    fields = ["chr"]
+    filters = {"$and": [{"ann.ref": "A"}]}
     assert querybuilder.is_annotation_join_required(fields, filters)
 
-    fields = {"variants": ["chr"]}
+    fields = ["chr"]
     filters = {"$and": [{"ref": "A"}]}
     assert not querybuilder.is_annotation_join_required(fields, filters)
 
-    fields = {"variants": ["chr"], "annotations": ["gene"]}
+    fields = ["chr", "ann.gene"]
     filters = {"$and": [{"ref": "A"}]}
     assert querybuilder.is_annotation_join_required(fields, filters)
 
 
 def test_samples_join_required():
 
-    fields = {"variants": ["chr"], "samples": {"boby": ["gt"]}}
+    fields = ["chr", "samples.boby.gt"]
     filters = {}
     assert querybuilder.samples_join_required(fields, filters) == ["boby"]
 
-    fields = {"variants": ["chr"]}
-    filters = {"gt": 1, "$table": "samples", "$name": "boby"}
+    fields = ["chr"]
+    filters = {"samples.boby.gt": 1}
     assert querybuilder.samples_join_required(fields, filters) == ["boby"]
 
-    fields = {"variants": ["chr"]}
+    fields = ["chr"]
     filters = {}
     assert querybuilder.samples_join_required(fields, filters) == []
 
@@ -68,23 +66,33 @@ def test_condition_to_sql():
     )
 
     assert (
-        querybuilder.condition_to_sql({"gene": "CFTR", "$table": "annotations"})
+        querybuilder.condition_to_sql({"ann.gene": {"$nin": ["CFTR", "GJB2"]}})
+        == "`annotations`.`gene` NOT IN ('CFTR','GJB2')"
+    )
+
+    assert (
+        querybuilder.condition_to_sql({"ann.gene": "CFTR"})
         == "`annotations`.`gene` = 'CFTR'"
     )
 
     assert (
-        querybuilder.condition_to_sql({"dp": 42, "$table": "samples", "$name": "boby"})
+        querybuilder.condition_to_sql({"samples.boby.dp": 42})
         == "`sample_boby`.`dp` = 42"
     )
 
 
 # refactor
 def test_fields_to_sql():
-    fields = {
-        "variants": ["chr", "pos", "ref"],
-        "annotations": ["gene", "impact"],
-        "samples": {"boby": ["gt", "dp"], "charles": ["gt"]},
-    }
+    fields = [
+        "chr",
+        "pos",
+        "ref",
+        "ann.gene",
+        "ann.impact",
+        "samples.boby.gt",
+        "samples.boby.dp",
+        "samples.charles.gt",
+    ]
 
     expected_fields = [
         "`variants`.`chr`",
@@ -99,6 +107,14 @@ def test_fields_to_sql():
 
     assert querybuilder.fields_to_sql(fields) == expected_fields
 
+    expected_fields[3] = "`annotations`.`gene` AS `ann.gene`"
+    expected_fields[4] = "`annotations`.`impact` AS `ann.impact`"
+    expected_fields[5] = "`sample_boby`.`gt` AS `sample.boby.gt`"
+    expected_fields[6] = "`sample_boby`.`dp` AS `sample.boby.dp`"
+    expected_fields[7] = "`sample_charles`.`gt` AS `sample.charles.gt`"
+
+    assert querybuilder.fields_to_sql(fields, use_as=True) == expected_fields
+
 
 # refactor
 def test_filters_to_sql():
@@ -106,9 +122,11 @@ def test_filters_to_sql():
         "$and": [
             {"chr": "chr1"},
             {"pos": {"$gt": 111}},
-            {"gene": "CFTR", "$table": "annotations"},
-            {"gene": {"$gt": "LOW"}, "$table": "annotations"},
-            {"gt": 1, "$table": "samples", "$name": "boby"},
+            {
+                "ann.gene": "CFTR",
+            },
+            {"ann.gene": {"$gt": "LOW"}},
+            {"samples.boby.gt": 1},
             {"$or": [{"pos": {"$gte": 10}}, {"pos": {"$lte": 100}}]},
         ]
     }
@@ -308,7 +326,7 @@ QUERY_TESTS = [
             "source": "variants",
         },
         (
-            "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`sample_TUMOR`.`gt` FROM variants"
+            "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`sample_TUMOR`.`gt` AS `sample.TUMOR.gt` FROM variants"
             " INNER JOIN sample_has_variant `sample_TUMOR` ON `sample_TUMOR`.variant_id = variants.id AND `sample_TUMOR`.sample_id = 1"
             " LIMIT 50 OFFSET 0"
         ),
@@ -360,7 +378,7 @@ QUERY_TESTS = [
             },
         },
         (
-            "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`sample_TUMOR`.`gt` FROM variants"
+            "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`sample_TUMOR`.`gt` AS `sample.TUMOR.gt` FROM variants"
             " INNER JOIN sample_has_variant `sample_TUMOR` ON `sample_TUMOR`.variant_id = variants.id AND `sample_TUMOR`.sample_id = 1"
             " WHERE (`sample_TUMOR`.`gt` = 1)"
             " LIMIT 50 OFFSET 0"
@@ -389,11 +407,18 @@ QUERY_TESTS = [
 )
 def test_build_query(test_input, test_output, vql):
 
-    # Test SQL query builder
-    query = querybuilder.build_sql_query(**test_input, samples_ids=SAMPLES_ID)
+    # Create fake database with samples
+    # This is necessary because querybuilder need to extract samples id
+    conn = sql.get_sql_connection(":memory:")
+    sql.create_table_samples(conn)
+    sql.insert_sample(conn, "TUMOR")
+    sql.insert_sample(conn, "NORMAL")
 
-    print(query)
-    print(test_output)
+    # Test SQL query builder
+    query = querybuilder.build_sql_query(conn, **test_input)
+
+    # print(query)
+    # print(test_output)
     assert query == test_output
 
     # Test VQL query builder

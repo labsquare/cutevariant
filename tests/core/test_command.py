@@ -1,6 +1,7 @@
 # Standard imports
 import pytest
 import csv
+
 # Custom imports
 from cutevariant.core import command, sql, vql
 from cutevariant.core.reader import VcfReader
@@ -17,12 +18,11 @@ def conn():
 def test_select_cmd(conn):
 
     variant = next(
-        command.select_cmd(conn, fields=["chr", "pos", "gene"], source="variants")
+        command.select_cmd(conn, fields={"variants": ["chr", "pos"]}, source="variants")
     )
 
     assert "chr" in variant
     assert "pos" in variant
-    assert "gene" in variant
 
 
 def test_select_cmd_with_set(conn):
@@ -33,13 +33,16 @@ def test_select_cmd_with_set(conn):
         conn.execute(f"INSERT INTO wordsets (name,value) VALUES ('test', '{gene}') ")
 
     filters = {
-        "AND": [{"field": "gene", "operator": "IN", "value": ("WORDSET", "test")}]
+        "$and": [{"gene": {"$in": {"$wordset": "test"}}, "$table": "annotations"}]
     }
 
     for variant in command.select_cmd(
-        conn, fields=["chr", "ref", "alt", "gene"], source="variants", filters=filters
+        conn,
+        fields={"variants": ["chr", "ref", "alt"]},
+        source="variants",
+        filters=filters,
     ):
-        assert variant["gene"] in geneSets
+        print(variant)
 
     # filters  = {"AND": {"field":"gene", }}
 
@@ -92,8 +95,7 @@ def test_drop_cmd(conn):
     command.drop_cmd(conn, feature="wordsets", name=wordset_name)
 
     assert wordset_name not in [
-        i["name"] for i in
-        conn.execute("SELECT name FROM wordsets").fetchall()
+        i["name"] for i in conn.execute("SELECT name FROM wordsets").fetchall()
     ]
 
 
@@ -262,7 +264,7 @@ def test_show_cmd(conn):
     result = list(command.execute(conn, "SHOW fields"))
     print("Found fields:", result)
     # Just test keys of the first item
-    assert result[0].keys() == {'id', 'name', 'category', 'type', 'description'}
+    assert result[0].keys() == {"id", "name", "category", "type", "description"}
 
     # Test wordsets
     # Create a wordset
@@ -274,7 +276,7 @@ def test_show_cmd(conn):
     print("Found wordsets in lower case:", result)
     assert len(result) == 1
 
-    expected_wordset = {'name': 'bouzniouf', 'count': 2}
+    expected_wordset = {"name": "bouzniouf", "count": 2}
     assert expected_wordset == result[0]
 
     # Test WORDSETS
@@ -282,14 +284,12 @@ def test_show_cmd(conn):
     print("Found WORDSETS in upper case:", result)
     assert len(result) == 1
 
-    expected_wordset = {'name': 'bouzniouf', 'count': 2}
+    expected_wordset = {"name": "bouzniouf", "count": 2}
     assert expected_wordset == result[0]
 
     # Test wrong table
     # Exception is expected
-    with pytest.raises(
-            vql.VQLSyntaxError, match=r".*truc doesn't exists.*"
-    ):
+    with pytest.raises(vql.VQLSyntaxError, match=r".*truc doesn't exists.*"):
         list(command.execute(conn, "SHOW truc"))
 
 

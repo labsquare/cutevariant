@@ -28,7 +28,7 @@ class AbstractReader(ABC):
             It's a fallback if number_lines can't be computed.
         samples: List of samples in the file (default: empty)
 
-        ignored_fields: Skip fields in importations. 
+        ignored_fields: Skip fields in importations.
             A list of fields to skip [{field_name:"AF", "category":"variant"}]
 
     Example:
@@ -258,12 +258,12 @@ class AbstractReader(ABC):
             duplicates.add(unique_key)
 
     def add_ignored_field(self, field_name: str, field_category: str):
-        """Add new field to the ignored_fields list. 
-        ignored fields will not returned by get_extra_fields and then are not imporpted 
-        into the database 
-        
+        """Add new field to the ignored_fields list.
+        ignored fields will not returned by get_extra_fields and then are not imporpted
+        into the database
+
         Args:
-            field_name (str): a field name 
+            field_name (str): a field name
             field_category (str): the category field name (variant,annotation,sample)
         """
 
@@ -570,12 +570,12 @@ def check_field_schema(field: dict):
 
 def sanitize_field_name(field: str):
     # TODO
-    LOGGER.warning("NOT implemented function!!")
+    # LOGGER.warning("NOT implemented function!!")
     return field
 
 
 def nullify(variant: dict) -> dict:
-    """ Convert empty fields value  to NONE 
+    """Convert empty fields value  to NONE
     This is used have NULL value inside the SQLITE inside an empty string
 
     """

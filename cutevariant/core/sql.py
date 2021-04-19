@@ -36,6 +36,7 @@ import itertools as it
 
 # Custom imports
 import cutevariant.commons as cm
+from cutevariant.core.querybuilder import build_sql_query
 
 LOGGER = cm.logger()
 
@@ -1122,6 +1123,81 @@ def get_variants_count(conn):
     return count_query(conn, "variants")
 
 
+def get_variants(
+    conn: sqlite3.Connection,
+    fields,
+    source="variants",
+    filters={},
+    order_by=None,
+    order_desc=True,
+    limit=50,
+    offset=0,
+    group_by={},
+    having={},  # {"op":">", "value": 3  }
+    **kwargs,
+):
+
+    # TODO : rename as get_variant_as_tables ?
+
+    query = build_sql_query(
+        conn,
+        fields=fields,
+        source=source,
+        filters=filters,
+        order_by=order_by,
+        order_desc=order_desc,
+        limit=limit,
+        offset=offset,
+        group_by=group_by,
+        having=having,
+        **kwargs,
+    )
+
+    for i in conn.execute(query):
+        # THIS IS INSANE... SQLITE DOESNT RETURN ALIAS NAME WITH SQUARE BRACKET....
+        # I HAVE TO replace [] by () and go back after...
+        # TODO : Change VQL Syntax from [] to () would be a good alternative
+        # @See QUERYBUILDER
+        # See : https://stackoverflow.com/questions/41538952/issue-cursor-description-never-returns-square-bracket-in-column-name-python-2-7-sqlite3-alias
+        yield {k.replace("(", "[").replace(")", "]"): v for k, v in dict(i).items()}
+
+
+def get_variants_tree(
+    conn: sqlite3.Connection,
+    **kwargs,
+):
+    pass
+    # for variant in get_variants(conn, **kwargs):
+
+    #     item = {}
+    #     annotations = []
+    #     samples = {}
+
+    #     for key, value in variant.items():
+    #         if key.startswith("ann."):
+    #             value = str(value)
+    #             annotations.append(value[4:])
+
+    #         elif key.startswith("sample."):
+    #             _, *sample, field = key.split(".")
+    #             sample = ".".join(sample)
+
+    #             if "sample" not in samples:
+    #                 samples[sample] = list()
+    #             samples[sample].append()
+
+    #         else:
+    #             item[key] = value
+
+    #     if annotations:
+    #         item["annotations"] = annotations
+
+    #     if samples:
+    #         item["samples"] = samples
+
+    #     yield item
+
+
 def async_insert_many_variants(conn, data, total_variant_count=None, yield_every=3000):
     """Insert many variants from data into variants table
 
@@ -1325,7 +1401,7 @@ def insert_many_variants(conn, data, **kwargs):
 ## samples table ===============================================================
 
 
-def create_table_samples(conn, fields=None):
+def create_table_samples(conn, fields=[]):
     """Create samples table
 
     :param conn: sqlite3.connect
@@ -1454,7 +1530,7 @@ def update_sample(conn, sample: dict):
     for key, value in sample.items():
         if key != "id":
             sql_set.append(f"`{key}` = ? ")
-            sql_val.append(value)
+            sql_val.append(fvalue)
 
     query = (
         "UPDATE samples SET " + ",".join(sql_set) + " WHERE id = " + str(sample["id"])

@@ -21,7 +21,7 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 
 # Custom imports
-from cutevariant.core.querybuilder import build_full_sql_query, fields_to_vql
+from cutevariant.core.querybuilder import build_sql_query
 from cutevariant.core import sql
 
 from cutevariant.core import command as cmd
@@ -86,7 +86,8 @@ class VariantModel(QAbstractTableModel):
         # Field names as keys, descriptions as values
         self.fields_descriptions = None
 
-        self.fields = ["chr", "pos", "ref", "alt"]
+        self.fields = ["chr", "pos", "ref", "alt", "ann.gene"]
+
         self.filters = dict()
         self.source = "variants"
         self.group_by = []
@@ -385,10 +386,8 @@ class VariantModel(QAbstractTableModel):
         self._finished_thread_count = 0
         # LOGGER.debug("Page queried: %s", self.page)
 
-        print("ORDER", self.order_by, self.order_desc)
-
         # Store SQL query for debugging purpose
-        self.debug_sql = build_full_sql_query(
+        self.debug_sql = build_sql_query(
             self.conn,
             fields=self.fields,
             source=self.source,
@@ -401,6 +400,7 @@ class VariantModel(QAbstractTableModel):
             having=self.having,
         )
 
+        print(self.debug_sql)
         # Create load_func to run asynchronously: load variants
         load_func = functools.partial(
             cmd.select_cmd,
@@ -459,6 +459,8 @@ class VariantModel(QAbstractTableModel):
         """
 
         #  Compute time elapsed since loading
+
+        print("LOADED !!!!!!!!")
         self._end_timer = time.perf_counter()
         self.elapsed_time = self._end_timer - self._start_timer
 
@@ -550,7 +552,8 @@ class VariantModel(QAbstractTableModel):
         """
         if column < self.columnCount():
             field = self.fields[column - 1]
-            self.order_by = field
+
+            self.order_by = [field]
             self.order_desc = order == Qt.DescendingOrder
             self.load()
 
@@ -1310,22 +1313,6 @@ class VariantViewWidget(plugin.PluginWidget):
         # PS: Actions with QAction::LowPriority will not show the text labels
         self.top_bar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
 
-        # checkable group action
-        self.groupby_action = self.top_bar.addAction(
-            FIcon(0xF14E0), self.tr("Group by"), self.on_group_changed
-        )
-        self.groupby_action.setToolTip(
-            self.tr("Group variants according to choosen columns")
-        )
-        self.groupby_action.setCheckable(True)
-        self.groupby_action.setChecked(False)
-
-        # groupbylist
-        self.groupbylist_action = self.top_bar.addAction("chr,pos,ref")
-        self.groupbylist_action.setVisible(False)
-        self.groupbylist_action.triggered.connect(self._show_group_dialog)
-
-        self.top_bar.addSeparator()
         # Save selection
         self.save_action = self.top_bar.addAction(
             FIcon(0xF0F87), self.tr("Save selection"), self.on_save_selection
@@ -1385,20 +1372,10 @@ class VariantViewWidget(plugin.PluginWidget):
             lambda x, _: self.on_variant_clicked(x)
         )
 
-        self.groupby_left_pane.view.selectionModel().currentRowChanged.connect(
-            lambda x, _: self.on_variant_clicked(x)
-        )
-        self.groupby_left_pane.no_variant.connect(self.on_no_variant)
-        # Connect errors from async runnables
         self.main_right_pane.error_raised.connect(self.set_message)
-        self.groupby_left_pane.error_raised.connect(self.set_message)
-
-        # Default group
-        self.last_group = ["chr"]
-
         # Save fields between group/ungroup
-        self.save_fields = list()
-        self.save_filters = list()
+        self.save_fields = dict()
+        self.save_filters = dict()
 
     def add_available_formatters(self):
         """Populate the formatters
@@ -1437,7 +1414,6 @@ class VariantViewWidget(plugin.PluginWidget):
 
         formatter_class = self.formatter_combo.currentData()
         self.main_right_pane.set_formatter(formatter_class())
-        self.groupby_left_pane.set_formatter(formatter_class())
         # Save formatter setting
         settings.setValue("formatter", formatter_class.__name__)
 
@@ -1446,7 +1422,6 @@ class VariantViewWidget(plugin.PluginWidget):
         self.conn = conn
         # Set connections of models
         self.main_right_pane.conn = self.conn
-        self.groupby_left_pane.conn = self.conn
 
         self.on_refresh()
 
@@ -1454,32 +1429,29 @@ class VariantViewWidget(plugin.PluginWidget):
         """Overrided from PluginWidget"""
         # Save default data with current query attributes
         # See load(), we use this attr to restore fields after grouping
-        self.save_fields = self.mainwindow.state.fields
-        self.save_filters = self.mainwindow.state.filters
 
-        self.main_right_pane.fields = self.mainwindow.state.fields
-        self.main_right_pane.source = self.mainwindow.state.source
-        self.main_right_pane.filters = self.mainwindow.state.filters
-        # Set current group_by to left pane
-        self._set_groups(self.mainwindow.state.group_by)
+        if self.mainwindow:
+            self.save_fields = self.mainwindow.state.fields
+            self.save_filters = self.mainwindow.state.filters
+
+            self.main_right_pane.fields = self.mainwindow.state.fields
+            self.main_right_pane.source = self.mainwindow.state.source
+            self.main_right_pane.filters = self.mainwindow.state.filters
 
         # Set formatter
         formatter_class = self.formatter_combo.currentData()
 
         #        formatter_class = next(formatter.find_formatters())
         self.main_right_pane.set_formatter(formatter_class())
-        self.groupby_left_pane.set_formatter(formatter_class())
 
         # Clear only the variant cache ! Because user can edit data
         self.main_right_pane.model.clear_variant_cache()
-        self.groupby_left_pane.model.clear_variant_cache()
 
         # Load ui
         self.load(reset_page=True)
 
     def on_interrupt(self):
         self.main_right_pane.model.interrupt()
-        self.groupby_left_pane.model.interrupt()
 
     def on_save_selection(self):
         """Triggered on 'save_selection' button
@@ -1527,84 +1499,24 @@ class VariantViewWidget(plugin.PluginWidget):
         """
         self.main_right_pane.model.clear()
 
-    def _is_grouped(self) -> bool:
-        """Return grouped mode status of the view"""
-        # print("is grouped ?")
-        # print("left", self.groupby_left_pane.model.group_by)
-        # print("right", self.main_right_pane.model.group_by)
-        return self.groupby_left_pane.group_by != []
-
     def load(self, reset_page=False):
         """Load all views
 
         Called by on_refresh, on_group_changed, and _show_group_dialog
         Display/hide groupby_left_pane on user demand.
         """
-        is_grouped = self._is_grouped()
-        # Left pane and groupbylist are visible in group mode
-        self.groupby_left_pane.setVisible(is_grouped)
-        self.groupbylist_action.setVisible(is_grouped)
-
-        self.groupby_action.blockSignals(True)
-        self.groupby_action.setChecked(is_grouped)
-        self.groupby_action.blockSignals(False)
 
         # Hide potential errors
         self.log_edit.hide()
 
-        if is_grouped:
-            # Ungrouped => grouped or already grouped
-            # Groupby fields become left pane fields
-            self.groupby_left_pane.fields = self.groupby_left_pane.group_by
-            # Prune right fields with left fields => avoid redundancy of information
-            self.main_right_pane.fields = [
-                field
-                for field in self.save_fields
-                if field not in self.groupby_left_pane.group_by
-            ]
-            self.groupby_left_pane.filters = self.save_filters
-            self.groupby_left_pane.source = self.main_right_pane.source
-
-            # Refresh models
-            # right pane: Useless, except if we modify fields like above
-            # But refreshing left pane triggers right pane refreshing
-            # So => do not do it here
-            # self.main_right_pane.load()
-            self.groupby_left_pane.load(reset_page)
-        else:
-            # Grouped => ungrouped
-            # Restore fields
-            self.main_right_pane.fields = self.save_fields
-            # Restore filters
-            self.main_right_pane.filters = self.save_filters
-            # Refresh model
-            self.main_right_pane.load(reset_page)
-            # print("saved right:", self.save_fields)
-
-    def on_group_changed(self):
-        """Set group by fields when group by button is clicked"""
-        is_checked = self.groupby_action.isChecked()
-        is_grouped = self._is_grouped()
-        if is_checked and not is_grouped:
-            # Group it
-            self.groupby_action.setIcon(FIcon(0xF14E1))
-            self.groupby_action.setToolTip(self.tr("Ungroup variants"))
-            # Recall previous/default group
-            self._set_groups(self.last_group)
-        else:
-            # Ungroup it
-            self.groupby_action.setIcon(FIcon(0xF14E0))
-            self.groupby_action.setToolTip(
-                self.tr("Group variants according to choosen columns")
-            )
-            # Save current group
-            self.last_group = self.groupby_left_pane.group_by
-        if not is_checked:
-            # Reset to default group (chr set in _show_group_dialog)
-            self._set_groups([])
-
-        self.load()
-        self._refresh_vql_editor()
+        # Grouped => ungrouped
+        # Restore fields
+        self.main_right_pane.fields = self.save_fields
+        # Restore filters
+        self.main_right_pane.filters = self.save_filters
+        # Refresh model
+        self.main_right_pane.load(reset_page)
+        # print("saved right:", self.save_fields)
 
     def on_variant_clicked(self, index: QModelIndex):
         """React on variant clicked
@@ -1615,114 +1527,18 @@ class VariantViewWidget(plugin.PluginWidget):
                 selection models to locate an item in the model.
         """
 
-        if index.model() == self.groupby_left_pane.view.model():
-            # Variant clicked on left pane => refresh the right pane
-            variant = self.groupby_left_pane.model.variant(index.row())
-
-            if self._is_grouped():
-                # Restore fields
-                self.groupby_left_pane.source = self.main_right_pane.source
-
-                # Forge a special filter to display the current variant
-                value = variant[fields_to_vql(field)]
-                and_list = [
-                    {
-                        "field": field,
-                        "operator": "=",
-                        "value": value if value is not None else "NULL",
-                    }
-                    for field in self.groupby_left_pane.group_by
-                ]
-
-                if self.save_filters:
-                    # Build a new filter dict/tree based on the current one
-                    filters = copy.deepcopy(self.save_filters)
-
-                    if "AND" in self.save_filters:
-                        # {'AND': [...]}
-                        # => Just add our additional constraints joined by AND
-                        filters["AND"] += and_list
-                    elif "OR" in self.save_filters:
-                        # {'OR': [...]}
-                        # => Insert the previous filter as a child of a AND constraint
-                        # Ours are mandatory
-                        # {'AND': [{'OR': [...]}, ...]}
-                        and_list.append(filters)
-                        filters = {"AND": and_list}
-                else:
-                    # New filter => {'AND': [...]}
-                    filters = {"AND": and_list}
-
-                LOGGER.debug("Filters for right pane for grouped variants %s", filters)
-
-                self.main_right_pane.filters = filters
-
-                # Update right pane only
-                self.main_right_pane.load(reset_page=True)
-
         if index.model() == self.main_right_pane.view.model():
             # Variant clicked on right pane
             variant = self.main_right_pane.model.variant(index.row())
 
-        # Refresh the current variant of mainwindow and plugins
-        self.mainwindow.state.current_variant = variant
-        # Request a refresh of the variant_info plugin
-        self.mainwindow.refresh_plugin("variant_info")
-
-    def _show_group_dialog(self):
-        """Show a dialog window to select group fields"""
-        dialog = QDialog(self)
-
-        view = QListWidget()
-        box = QVBoxLayout()
-        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        box.addWidget(view)
-        box.addWidget(buttons)
-        buttons.accepted.connect(dialog.accept)
-        buttons.rejected.connect(dialog.reject)
-
-        # Populate the list of fields with their check status
-        for field in self.save_fields:
-            item = QListWidgetItem()
-            item.setText(fields_to_vql(field))
-            item.setData(Qt.UserRole, field)
-            if field in self.groupby_left_pane.group_by:
-                item.setCheckState(Qt.Checked)
-            else:
-                item.setCheckState(Qt.Unchecked)
-
-            view.addItem(item)
-        dialog.setLayout(box)
-
-        if dialog.exec_() == QDialog.Accepted:
-
-            selected_fields = []
-            for i in range(view.count()):
-                item = view.item(i)
-                if item.checkState() == Qt.Checked:
-                    selected_fields.append(item.data(Qt.UserRole))
-
-            # if no group force chr
-            if not selected_fields:
-                selected_fields = ["chr"]
-
-            # Set current group_by to left pane
-            self._set_groups(selected_fields)
-            # Reload ui
-            self.load()
-            self._refresh_vql_editor()
-
-    def _set_groups(self, grouped_fields):
-        """Set fields on groupby_left_pane and refresh text on groupby action"""
-        self.groupby_left_pane.group_by = grouped_fields
-        self.groupbylist_action.setText(
-            ",".join([fields_to_vql(field) for field in grouped_fields])
-        )
+        if self.mainwindow:
+            self.mainwindow.state.current_variant = variant
+            # Request a refresh of the variant_info plugin
+            self.mainwindow.refresh_plugin("variant_info")
 
     def _refresh_vql_editor(self):
         """Force refresh of vql_editor if loaded"""
         if "vql_editor" in self.mainwindow.plugins:
-            self.mainwindow.state.group_by = self.groupby_left_pane.group_by
             # Request a refresh of the vql_editor plugin
             self.mainwindow.refresh_plugin("vql_editor")
 
@@ -1771,25 +1587,15 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
-    m = QStringListModel()
-    m.setStringList(["salut", "sach"])
-    w = LoadingTableView()
-    w.setModel(m)
+    conn = sql.get_sql_connection("/home/sacha/Dev/cutevariant/corpos3.db")
+
+    w = VariantViewWidget()
+    w.conn = conn
+    w.main_right_pane.model.conn = conn
+    w.main_right_pane.load()
+    # w.main_view.model.group_by = ["chr","pos","ref","alt"]
+    # w.on_refresh()
+
     w.show()
-
-    # conn = sql.get_sql_connection(":memory:")
-    # reader = VcfReader(
-    #     open("/home/sacha/Dev/cutevariant/examples/test.snpeff.vcf"), "snpeff"
-    # )
-    # import_reader(conn, reader)
-
-    # w = VariantViewWidget()
-    # w.conn = conn
-    # w.main_right_pane.model.conn = conn
-    # w.main_right_pane.load()
-    # # w.main_view.model.group_by = ["chr","pos","ref","alt"]
-    # # w.on_refresh()
-
-    # w.show()
 
     app.exec_()

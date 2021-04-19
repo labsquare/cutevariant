@@ -26,6 +26,8 @@ def test_model_load(qtmodeltester, qtbot, conn):
     model = widgets.VariantModel()
     model.conn = conn
 
+    model.fields = {"variants": ["chr", "pos", "ref", "alt"]}
+
     # Load asynchronously
     with qtbot.waitSignals(
         [model.variant_loaded, model.count_loaded], timeout=5000
@@ -35,7 +37,7 @@ def test_model_load(qtmodeltester, qtbot, conn):
     # Test default variants !
     assert model.total == 11
     assert model.rowCount() == model.total
-    assert model.columnCount() == len(model.fields) + 1
+    assert model.columnCount() == len(model.fields["variants"]) + 1
     qtmodeltester.check(model)
 
 
@@ -93,6 +95,8 @@ def test_model_data(qtbot, conn):
 
     model = widgets.VariantModel()
     model.conn = conn
+    model.fields = {"variants": ["chr", "pos", "ref", "alt"]}
+
     # Load asynchronously
     with qtbot.waitSignal(model.load_finished, timeout=5000) as blocker:
         model.load()
@@ -102,11 +106,11 @@ def test_model_data(qtbot, conn):
     assert isinstance(variant, dict)
 
     # Check if fields present in variant
-    for field in model.fields:
+    for field in model.fields["variants"]:
         assert field in variant
 
     # Test header data
-    assert model.fields[0] == "chr"
+    assert model.fields["variants"][0] == "chr"
     assert model.headerData(1) == "chr"
 
     #  Test data first cells ( chromosome 5 )
@@ -117,6 +121,7 @@ def test_model_data(qtbot, conn):
 def test_model_sort(qtbot, conn):
     model = widgets.VariantModel()
     model.conn = conn
+    model.fields = {"variants": ["chr", "pos", "ref", "alt"]}
 
     # First load data
     with qtbot.waitSignal(model.load_finished, timeout=5000):

@@ -206,7 +206,7 @@ def test_create_connexion(conn):
 
 
 def test_columns(conn):
-      # Test if variant fields is in databases
+    # Test if variant fields is in databases
     q = conn.execute("PRAGMA table_info(variants)")
     variant_fields = [record[1] for record in q]
 
@@ -215,7 +215,6 @@ def test_columns(conn):
 
     q = conn.execute("PRAGMA table_info(sample_has_variant)")
     sample_fields = [record[1] for record in q]
-
 
     for field in FIELDS:
 
@@ -227,7 +226,7 @@ def test_columns(conn):
 
         if field["category"] == "samples":
             assert field["name"] in sample_fields
-    
+
 
 def test_get_columns(conn):
     """Test getting columns of variants and annotations"""
@@ -275,6 +274,17 @@ def test_get_fields(conn):
         rowid = f.pop("id")
         assert f == FIELDS[index]
         assert index + 1 == rowid
+
+
+def test_get_variants(conn):
+    """ More complexe query are actually tested from query builder """
+
+    fields = {"variants": ["chr", "pos", "ref", "alt"], "annotations": ["gene"]}
+
+    for variant in sql.get_variants(conn, fields):
+        print(variant)
+        for field in fields["variants"]:
+            assert field in variant
 
 
 def test_get_samples(conn):
@@ -353,7 +363,7 @@ def test_insert_set_from_file(conn, wordset):
         assert record["name"] == "test_wordset"
         assert record["value"] in expected_data
 
-    #os.remove(wordset_file)
+    # os.remove(wordset_file)
 
 
 def test_get_sets(conn, kindly_wordset_fixture):
@@ -390,7 +400,7 @@ def test_get_words_in_set(conn, wordset):
 
     assert set(expected_data) == found
 
-    #os.remove(wordset_file)
+    # os.remove(wordset_file)
 
 
 def test_selections(conn):

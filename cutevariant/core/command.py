@@ -24,7 +24,7 @@ import functools
 
 
 # Custom imports
-from cutevariant.core.querybuilder import build_sql_query, build_full_sql_query
+from cutevariant.core.querybuilder import build_sql_query
 from cutevariant.core import sql, vql
 from cutevariant.commons import logger
 from cutevariant.core.reader import BedReader
@@ -34,7 +34,7 @@ LOGGER = logger()
 
 def select_cmd(
     conn: sqlite3.Connection,
-    fields=("chr", "pos", "ref", "alt"),
+    fields={"variants": ["chr", "pos", "ref", "alt"]},
     source="variants",
     filters={},
     order_by=None,
@@ -65,7 +65,7 @@ def select_cmd(
     Yields:
         variants (dict)
     """
-    query = build_full_sql_query(
+    query = build_sql_query(
         conn,
         fields=fields,
         source=source,
@@ -79,6 +79,7 @@ def select_cmd(
         **kwargs,
     )
     LOGGER.debug("command:select_cmd:: %s", query)
+    print(query)
     for i in conn.execute(query):
         # THIS IS INSANE... SQLITE DOESNT RETURN ALIAS NAME WITH SQUARE BRACKET....
         # I HAVE TO replace [] by () and go back after...
@@ -132,7 +133,7 @@ def count_cmd(
             ).fetchone()[0]
         }
 
-    query = build_full_sql_query(
+    query = build_sql_query(
         conn,
         fields=fields,
         source=source,
@@ -220,8 +221,13 @@ def create_cmd(
     if target is None:
         return {}
 
-    sql_query = build_full_sql_query(
-        conn, fields=["id"], source=source, filters=filters, limit=None, **kwargs,
+    sql_query = build_sql_query(
+        conn,
+        fields=["id"],
+        source=source,
+        filters=filters,
+        limit=None,
+        **kwargs,
     )
 
     LOGGER.debug("command:create_cmd:: %s", sql_query)
@@ -258,8 +264,8 @@ def set_cmd(
     if target is None or first is None or second is None or operator is None:
         return {}
 
-    query_first = build_sql_query(["id"], first, limit=None)
-    query_second = build_sql_query(["id"], second, limit=None)
+    query_first = build_sql_query(conn, {"variants": ["id"]}, first, limit=None)
+    query_second = build_sql_query(conn, {"variants": ["id"]}, second, limit=None)
 
     func_query = {
         "|": sql.union_variants,

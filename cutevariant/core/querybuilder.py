@@ -96,13 +96,16 @@ def is_annotation_join_required(fields, filters) -> bool:
     Returns:
         bool: Description
     """
-    if "annotations" in fields:
-        return True
+
+    for field in fields:
+        if field.startswith("ann."):
+            return True
 
     for condition in filters_to_flat(filters):
-        if "$table" in condition:
-            if condition["$table"] == "annotations":
-                return True
+
+        condition = list(condition.keys())[0]
+        if condition.startswith("ann."):
+            return True
 
     return False
 
@@ -119,13 +122,18 @@ def samples_join_required(fields, filters) -> list:
     """
     samples = set()
 
-    if "samples" in fields:
-        for sample in fields["samples"].keys():
+    for field in fields:
+        if field.startswith("samples"):
+            _, *sample, _ = field.split(".")
+            sample = ".".join(sample)
             samples.add(sample)
 
     for condition in filters_to_flat(filters):
-        if "$table" in condition and "$name" in condition:
-            samples.add(condition["$name"])
+        key = list(condition.keys())[0]
+        _, *sample, _ = key.split(".")
+        sample = ".".join(sample)
+        samples.add(sample)
+
     return list(samples)
 
 
@@ -179,6 +187,9 @@ def fields_to_sql(fields, use_as=False) -> str:
     Returns:
         str: Sql field
 
+    TODO:
+        REMOVE USE_AS ?
+
     Examples:
 
         fields = {   {
@@ -196,11 +207,11 @@ def fields_to_sql(fields, use_as=False) -> str:
     `variants`.`chr`,
     `variants`.`pos`,
     `variants`.`ref`,
-    `ann`.`gene`,
-    `ann`.`impact`,
-    `sample_boby`.`gt`,
-    `sample_boby`.`dp`,
-    `sample_charles`.`gt`,
+    `ann`.`gene` AS ann.gene,
+    `ann`.`impact` AS ann.impact,
+    `sample_boby`.`gt` AS sample.boby.gt,
+    `sample_boby`.`dp` AS sample.boby.dp,
+    `sample_charles`.`gt` AS sample.charles.gt,
     "]
 
 
@@ -208,21 +219,28 @@ def fields_to_sql(fields, use_as=False) -> str:
 
     sql_fields = []
 
-    # extract variants
-    if "variants" in fields:
-        for field in fields["variants"]:
+    for field in fields:
+
+        if field.startswith("ann."):
+            sql_field = f"`annotations`.`{field[4:]}`"
+            if use_as:
+                sql_field = f"{sql_field} AS `ann.{field[4:]}`"
+            sql_fields.append(sql_field)
+
+        elif field.startswith("samples."):
+            # "sample.boby.gt"
+
+            _, *name, value = field.split(".")
+
+            name = ".".join(name)
+
+            sql_field = f"`sample_{name}`.`{value}`"
+            if use_as:
+                sql_field = f"{sql_field} AS `sample.{name}.{value}`"
+            sql_fields.append(sql_field)
+
+        else:
             sql_fields.append(f"`variants`.`{field}`")
-
-    # extract annotations
-    if "annotations" in fields:
-        for field in fields["annotations"]:
-            sql_fields.append(f"`annotations`.`{field}`")
-
-    if "samples" in fields:
-        for name, values in fields["samples"].items():
-            for value in values:
-                key = f"`sample_{name}`.`{value}`"
-                sql_fields.append(key)
 
     return sql_fields
 
@@ -231,16 +249,30 @@ def fields_to_sql(fields, use_as=False) -> str:
 def condition_to_sql(item: dict) -> str:
     """
     Convert a key, value items from fiters into SQL query
-
+    {"ann.gene": "CFTR"}
     Exemples:
 
         condition_to_sql({"chr":3}) ==> variants.chr = 3
         condition_to_sql({"chr":{"$gte": 30}}) ==> variants.chr >= 3
+        condition_to_sql({"ann.gene":{"$gte": 30}}) ==> annotation.gene >= 30
 
     """
-    table = item.get("$table", "variants")
 
-    k, v = [(i, item[i]) for i in item.keys() if i not in ("$table", "$sample")][0]
+    # TODO : optimiser
+    k = list(item.keys())[0]
+    v = item[k]
+
+    if k.startswith("ann."):
+        table = "annotations"
+        k = k[4:]
+
+    elif k.startswith("samples."):
+        table = "samples"
+        _, *name, k = k.split(".")
+        name = ".".join(name)
+
+    else:
+        table = "variants"
 
     if isinstance(v, dict):
         vk, vv = list(v.items())[0]
@@ -282,7 +314,6 @@ def condition_to_sql(item: dict) -> str:
         )
 
     if table == "samples":
-        name = item.get("$name")
         condition = f"`sample_{name}`.`{k}` {sql_operator} {value}"
 
     else:
@@ -301,8 +332,8 @@ def filters_to_sql(filters: dict) -> str:
                 {"chr": "chr1"},
                 {"pos": {"$gt": 111}},
                 {"$or":[
-                    {"gene": "CFTR", "$table": "annotations"},
-                    {"gene": "GJB2", "$table": "annotations"}
+                    {"ann.gene": "CFTR"},
+                    {"ann.gene": "GJB2"}
                     ]
                  }
             ]}
@@ -373,6 +404,7 @@ def filters_to_sql(filters: dict) -> str:
 
 
 def build_sql_query(
+    conn: sqlite3.Connection,
     fields,
     source="variants",
     filters={},
@@ -382,7 +414,6 @@ def build_sql_query(
     offset=0,
     group_by={},
     having={},  # {"op":">", "value": 3  }
-    samples_ids={},
     **kwargs,
 ):
     """Build SQL SELECT query
@@ -398,9 +429,12 @@ def build_sql_query(
             If None, offset is not required.
         offset (int): record count per page
         group_by (list/None): list of field you want to group
-        default_tables (dict): association map between fields and sql table origin
-        samples_ids (dict): association map between samples name and id
     """
+
+    # get samples ids
+
+    samples_ids = {i["name"]: i["id"] for i in sql.get_samples(conn)}
+
     # Create fields
     sql_fields = ["`variants`.`id`"] + fields_to_sql(fields, use_as=True)
 
@@ -460,74 +494,3 @@ def build_sql_query(
         sql_query += f" LIMIT {limit} OFFSET {offset}"
 
     return sql_query
-
-
-def build_full_sql_query(
-    conn: sqlite3.Connection,
-    fields=["chr", "pos", "ref", "alt"],
-    source="variants",
-    filters=dict(),
-    order_by=None,
-    order_desc=True,
-    group_by=[],
-    having={},  # {"op":">", "value": 3  }
-    limit=50,
-    offset=0,
-    **kwargs,
-):
-    """Build a complete SQL SELECT statement according to the data loaded from DB
-
-    You don't have to give the association map between fields and sql table origin
-    nor the association map between samples name and id.
-    In exchange SQL connection is mandatory.
-
-    Args:
-        conn (sqlite3.Connection): SQL connection
-        fields (list): List of fields
-        source (str): source of the virtual table ( see: selection )
-        filters (dict): nested condition tree
-        order_by (str/None): Order by field;
-            If None, order_desc is not required.
-        order_desc (bool): Descending or Ascending order
-        limit (int/None): limit record count;
-            If None, offset is not required.
-        offset (int): record count per page
-        group_by (list/None): list of field you want to group
-    """
-    # Used cached data
-    default_tables, sample_ids = get_default_tables_and_sample_ids(conn)
-    # LOGGER.debug(get_default_tables_and_sample_ids.cache_info())
-
-    query = build_sql_query(
-        fields=fields,
-        source=source,
-        filters=filters,
-        order_by=order_by,
-        order_desc=order_desc,
-        limit=limit,
-        offset=offset,
-        group_by=group_by,
-        having=having,
-        default_tables=default_tables,
-        samples_ids=sample_ids,
-        **kwargs,
-    )
-    return query
-
-
-@lru_cache()
-def get_default_tables_and_sample_ids(conn):
-    """Handy function to cache default_tables and sample_ids from database
-
-    This function is used for every queries built in :meth:`build_full_sql_query`
-
-    Warnings:
-        Do not forget to clear this cache when samples are added in DB via
-        a PED file for example.
-    """
-    # Get {'favorite': 'variants', 'comment': 'variants', impact': 'annotations', ...}
-    default_tables = {i["name"]: i["category"] for i in sql.get_fields(conn)}
-    # Get {'NORMAL': 1, 'TUMOR': 2}
-    sample_ids = {i["name"]: i["id"] for i in sql.get_samples(conn)}
-
-    return default_tables, sample_ids
