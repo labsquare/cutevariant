@@ -264,6 +264,7 @@ class StatsWidget(QWidget):
 
         self.stats_model.stats_is_loading.connect(self.tableview_stats.set_loading)
         self.stats_model.error_raised.connect(self.on_error)
+        self.stats_model.stats_loaded.connect(self.on_stats_loaded)
 
     def on_current_field_selected_changed(self, new_text):
         if self.conn:
