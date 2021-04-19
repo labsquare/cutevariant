@@ -26,7 +26,7 @@ def test_model_load(qtmodeltester, qtbot, conn):
     model = widgets.VariantModel()
     model.conn = conn
 
-    model.fields = {"variants": ["chr", "pos", "ref", "alt"]}
+    model.fields = ["chr", "pos", "ref", "alt"]
 
     # Load asynchronously
     with qtbot.waitSignals(
@@ -37,7 +37,7 @@ def test_model_load(qtmodeltester, qtbot, conn):
     # Test default variants !
     assert model.total == 11
     assert model.rowCount() == model.total
-    assert model.columnCount() == len(model.fields["variants"]) + 1
+    assert model.columnCount() == len(model.fields) + 1
     qtmodeltester.check(model)
 
 
@@ -95,7 +95,7 @@ def test_model_data(qtbot, conn):
 
     model = widgets.VariantModel()
     model.conn = conn
-    model.fields = {"variants": ["chr", "pos", "ref", "alt"]}
+    model.fields = ["chr", "pos", "ref", "alt"]
 
     # Load asynchronously
     with qtbot.waitSignal(model.load_finished, timeout=5000) as blocker:
@@ -121,7 +121,7 @@ def test_model_data(qtbot, conn):
 def test_model_sort(qtbot, conn):
     model = widgets.VariantModel()
     model.conn = conn
-    model.fields = {"variants": ["chr", "pos", "ref", "alt"]}
+    model.fields = ["chr", "pos", "ref", "alt"]
 
     # First load data
     with qtbot.waitSignal(model.load_finished, timeout=5000):
