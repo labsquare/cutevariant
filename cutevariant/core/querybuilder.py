@@ -378,6 +378,61 @@ def filters_to_sql(filters: dict) -> str:
     return query
 
 
+# def filters_to_vql(filters: dict) -> str:
+#     """Build a VQL where clause from the nested set defined in filters
+
+#     Examples:
+
+#         filters = {
+#             "$and": [
+#                 {"chr": "chr1"},
+#                 {"pos": {"$gt": 111}},
+#                 {"$or":[
+#                     {"ann.gene": "CFTR"},
+#                     {"ann.gene": "GJB2"}
+#                     ]
+#                  }
+#             ]}
+
+#         where_clause = filter_to_sql(filters)
+#         # will output
+#         # chr = 'chr1' AND pos > 11 AND ( ann.gene = CFTR OR ann.gene="GJB2")
+
+#     Args:
+#         filters (dict): A nested set of conditions
+
+#     Returns:
+#         str: A vql where expression
+#     """
+#     # ---------------------------------
+#     def recursive(obj):
+
+#         conditions = ""
+#         for k, v in obj.items():
+#             if k in ["$and", "$or"]:
+#                 conditions += (
+#                     "("
+#                     + f" {OPERATORS[k]} ".join([recursive(item) for item in v])
+#                     + ")"
+#                 )
+
+#             elif k not in ("$table", "$name"):
+#                 if k in ("annotations", "samples"):
+#                     for ann in v:
+#                         conditions += condition_to_sql(obj)
+#                     continue
+
+#                 conditions += condition_to_sql(obj)
+#         return conditions
+
+#     # ---------------------------------
+#     query = recursive(filters)
+
+#     # hacky code to remove first level parenthesis
+
+#     return query
+
+
 # def build_vql_query(fields, source="variants", filters={}, group_by=[], having={}):
 #     """Build VQL SELECT query
 

@@ -233,7 +233,7 @@ FILTERS_VS_SQL_VQL = [
     FILTERS_VS_SQL_VQL,
     ids=[str(i) for i in range(len(FILTERS_VS_SQL_VQL))],
 )
-def test_many_filters_to_sql(filter_in, expected_sql, expected_vql):
+def test_filters(filter_in, expected_sql, expected_vql):
     assert querybuilder.filters_to_sql(filter_in) == expected_sql
 
 
