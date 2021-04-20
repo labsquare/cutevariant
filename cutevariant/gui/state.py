@@ -17,8 +17,6 @@ class State:
         self.fields = ["favorite", "classification", "chr", "pos", "ref", "alt", "qual"]
         self.source = "variants"
         self.filters = {}
-        self.group_by = []
-        self.having = {}
 
         # selected variants
         self.current_variant = None

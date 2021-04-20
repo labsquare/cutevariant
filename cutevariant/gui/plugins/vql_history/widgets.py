@@ -53,7 +53,7 @@ class HistoryModel(QAbstractTableModel):
 
     def add_record(self, query: str, count: int):
         """Add a record into the model
-        
+
         Args:
             query (str): A VQL query
             count (int): the total count of variant returns by the VQL query
@@ -66,8 +66,7 @@ class HistoryModel(QAbstractTableModel):
         self.endInsertRows()
 
     def clear_records(self):
-        """Clear records from models
-        """
+        """Clear records from models"""
         self.beginResetModel()
         self.records.clear()
         self.endResetModel()
@@ -139,8 +138,6 @@ class VqlHistoryWidget(plugin.PluginWidget):
             self.mainwindow.state.fields,
             self.mainwindow.state.source,
             self.mainwindow.state.filters,
-            self.mainwindow.state.group_by,
-            self.mainwindow.state.having,
         )
 
         # TODO : Get the variant count
@@ -150,10 +147,10 @@ class VqlHistoryWidget(plugin.PluginWidget):
         self.model.add_record(vql_query, 0)
 
     def on_double_clicked(self, index: QModelIndex):
-        """triggered when history record is clicked 
-        
+        """triggered when history record is clicked
+
         Args:
-            index (QModelIndex): index 
+            index (QModelIndex): index
         """
         _, _, query = self.model.get_record(index)
         parsed_query = next(vql.parse_vql(query))

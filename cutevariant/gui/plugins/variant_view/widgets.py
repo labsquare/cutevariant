@@ -1285,13 +1285,6 @@ class VariantViewWidget(plugin.PluginWidget):
         self.splitter = QSplitter(Qt.Horizontal)
         self.main_right_pane = VariantView(parent=self)
 
-        # No popup menu on this one
-        self.groupby_left_pane = VariantView(parent=self, show_popup_menu=False)
-        self.groupby_left_pane.hide()
-        # Force selection of first item after refresh
-        self.groupby_left_pane.row_to_be_selected = 0
-
-        self.splitter.addWidget(self.groupby_left_pane)
         self.splitter.addWidget(self.main_right_pane)
 
         # Make resizable TODO : ugly ... Make it nicer

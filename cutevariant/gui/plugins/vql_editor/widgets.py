@@ -96,8 +96,6 @@ class VqlEditorWidget(plugin.PluginWidget):
             self.mainwindow.state.fields,
             self.mainwindow.state.source,
             self.mainwindow.state.filters,
-            self.mainwindow.state.group_by,
-            self.mainwindow.state.having,
         )
 
         self.set_vql(vql_query)
@@ -228,8 +226,6 @@ class VqlEditorWidget(plugin.PluginWidget):
                 # name of the variant selection
                 self.mainwindow.state.source = cmd["source"]
                 self.mainwindow.state.filters = cmd["filters"]
-                self.mainwindow.state.group_by = cmd["group_by"]
-                self.mainwindow.state.having = cmd["having"]
                 # Refresh all plugins
                 self.mainwindow.refresh_plugins(sender=self)
                 continue
