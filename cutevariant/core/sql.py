@@ -1530,7 +1530,7 @@ def update_sample(conn, sample: dict):
     for key, value in sample.items():
         if key != "id":
             sql_set.append(f"`{key}` = ? ")
-            sql_val.append(fvalue)
+            sql_val.append(value)
 
     query = (
         "UPDATE samples SET " + ",".join(sql_set) + " WHERE id = " + str(sample["id"])

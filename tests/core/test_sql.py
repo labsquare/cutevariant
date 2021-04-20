@@ -279,11 +279,11 @@ def test_get_fields(conn):
 def test_get_variants(conn):
     """ More complexe query are actually tested from query builder """
 
-    fields = {"variants": ["chr", "pos", "ref", "alt"], "annotations": ["gene"]}
+    fields = ["chr", "pos", "ref", "alt", "ann.gene"]
 
     for variant in sql.get_variants(conn, fields):
         print(variant)
-        for field in fields["variants"]:
+        for field in fields:
             assert field in variant
 
 
