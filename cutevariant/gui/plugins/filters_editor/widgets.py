@@ -56,7 +56,6 @@ from cutevariant.core.vql import parse_one_vql
 from cutevariant.core.querybuilder import (
     build_vql_query,
     fields_to_vql,
-
 )
 import cutevariant.commons as cm
 
@@ -707,7 +706,7 @@ class FilterModel(QAbstractItemModel):
 
     def __init__(self, conn=None, parent=None):
         super().__init__(parent)
-        self.root_item = FilterItem("AND")
+        self.root_item = FilterItem("$and")
         self.conn = conn
         self.clear()
 
@@ -973,7 +972,6 @@ class FilterModel(QAbstractItemModel):
         keys = list(item.keys())
         return keys[0] in ("$and", "$or")
 
-
     def to_item(self, data: dict) -> FilterItem:
         """Recursive function to build a nested FilterItem structure from dict data"""
         if FilterModel.is_logic(data):
@@ -984,9 +982,26 @@ class FilterModel(QAbstractItemModel):
 
             field = list(data.keys())[0]
             value = data[field]
-            item = FilterItem((field, "=", value))
+            operator = "="
+            OPERATORS = {
+                "$eq": "=",
+                "$gt": ">",
+                "$gte": ">=",
+                "$lt": "<",
+                "$lte": "<=",
+                "$in": "IN",
+                "$ne": "!=",
+                "$nin": "NOT IN",
+                "$regex": "REGEXP",
+                "$and": "AND",
+                "$or": "OR",
+            }
+            if isinstance(value, dict):
+                k, v = list(value.items())[0]
+                operator = OPERATORS[k]
+                value = v
+            item = FilterItem((field, operator , value))
 
-    
         return item
 
     def to_dict(self, item=None) -> dict:
@@ -1016,7 +1031,7 @@ class FilterModel(QAbstractItemModel):
                 "value": item.get_value(),
             }
 
-    def add_logic_item(self, value="AND", parent=QModelIndex()):
+    def add_logic_item(self, value="$and", parent=QModelIndex()):
         """Add logic item
 
         Args:
@@ -2243,30 +2258,28 @@ if __name__ == "__main__":
 
     data = {
         "$and": [
-            {"ann.gene":"chr12"},
-            {"ann.gene":"chr12"},
-            {"ann.gene":"chr12"},
-            {"ann.gene":"chr12"},
-            {"ann.gene":"chr12"},
-            {"qual":{"$gte":40}},
+            {"ann.gene": "chr12"},
+            {"ann.gene": "chr12"},
+            {"ann.gene": "chr12"},
+            {"ann.gene": "chr12"},
+            {"ann.gene": "chr12"},
+            {"qual": {"$gte": 40}},
             {
                 "$and": [
-                    {"ann.gene":"chr12"},
-                    {"ann.gene":"chr12"},   
+                    {"ann.gene": "chr12"},
+                    {"ann.gene": "chr12"},
                 ]
             },
-        
         ]
     }
 
-    #print(FilterModel.is_logic(data["$and"][6]))
+    # print(FilterModel.is_logic(data["$and"][6]))
 
     view = QTreeView()
     model = FilterModel()
     view.setModel(model)
     model.conn = conn
     model.load(data)
-
 
     view.show()
 
