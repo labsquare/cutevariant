@@ -165,10 +165,10 @@ def get_uncompressed_size(filepath):
 
 def bytes_to_readable(size) -> str:
     """return human readable size from bytes
-    
+
     Args:
         size (int): size in bytes
-    
+
     Returns:
         str: readable size
     """

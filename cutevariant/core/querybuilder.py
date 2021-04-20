@@ -179,7 +179,23 @@ def samples_join_required(fields, filters) -> list:
 
 
 # refactor
-def fields_to_sql(fields, use_as=False) -> str:
+
+
+def fields_to_vql(fields) -> list:
+
+    vql_fields = []
+    for field in fields:
+        if field.startswith("samples."):
+            _, *name, param = field.split(".")
+            name = ".".join(name)
+            vql_fields.append(f"sample['{name}'].{param}")
+        else:
+            vql_fields.append(field)
+
+    return vql_fields
+
+
+def fields_to_sql(fields, use_as=False) -> list:
     """Return field as SQL syntax
 
     Args:
@@ -323,6 +339,78 @@ def condition_to_sql(item: dict) -> str:
     return condition
 
 
+def condition_to_vql(item: dict) -> str:
+    """
+    Convert a key, value items from fiters into SQL query
+    {"ann.gene": "CFTR"}
+    Exemples:
+
+        condition_to_sql({"chr":3}) ==> chr = 3
+        condition_to_sql({"chr":{"$gte": 30}}) ==> chr >= 3
+        condition_to_sql({"ann.gene":{"$gte": 30}}) ==> ann.gene >= 30
+
+    """
+
+    # TODO : optimiser
+    k = list(item.keys())[0]
+    v = item[k]
+
+    field = k
+
+    if isinstance(v, dict):
+        vk, vv = list(v.items())[0]
+        operator = vk
+        value = vv
+    else:
+        operator = "$eq"
+        value = v
+
+    # MAP operator
+    sql_operator = OPERATORS[operator]
+    # hack .. we want ~ instead of REGEXP
+    if sql_operator == "REGEXP":
+        sql_operator = "~"
+
+    # Cast value
+    if isinstance(value, str):
+        value = f"'{value}'"
+
+    # Cast IS NULL
+    if value is None:
+        if operator == "$eq":
+            sql_operator = "IS"
+
+        if operator == "$ne":
+            sql_operator = "IS NOT"
+
+        value = "NULL"
+
+    # Cast wordset
+    if isinstance(value, dict):
+        if "$wordset" in value:
+            wordset_name = value["$wordset"]
+            value = f"WORDSET['{wordset_name}']"
+
+    # Convert [1,2,3] =>  "(1,2,3)"
+    if isinstance(value, list) or isinstance(value, tuple):
+        value = (
+            "("
+            + ",".join([f"'{i}'" if isinstance(i, str) else f"{i}" for i in value])
+            + ")"
+        )
+
+    if k.startswith("samples."):
+        _, *name, k = k.split(".")
+        name = ".".join(name)
+        k = f"sample['{name}'].{k}"
+
+        # k = f"sample{name}`.`{k}` {sql_operator} {value}"
+
+    condition = f"{k} {sql_operator} {value}"
+
+    return condition
+
+
 def filters_to_sql(filters: dict) -> str:
     """Build a the SQL where clause from the nested set defined in filters
 
@@ -361,13 +449,9 @@ def filters_to_sql(filters: dict) -> str:
                     + ")"
                 )
 
-            elif k not in ("$table", "$name"):
-                if k in ("annotations", "samples"):
-                    for ann in v:
-                        conditions += condition_to_sql(obj)
-                    continue
-
+            else:
                 conditions += condition_to_sql(obj)
+
         return conditions
 
     # ---------------------------------
@@ -378,59 +462,56 @@ def filters_to_sql(filters: dict) -> str:
     return query
 
 
-# def filters_to_vql(filters: dict) -> str:
-#     """Build a VQL where clause from the nested set defined in filters
+def filters_to_vql(filters: dict) -> str:
+    """Build a the VQL where clause from the nested set defined in filters
 
-#     Examples:
+    Examples:
 
-#         filters = {
-#             "$and": [
-#                 {"chr": "chr1"},
-#                 {"pos": {"$gt": 111}},
-#                 {"$or":[
-#                     {"ann.gene": "CFTR"},
-#                     {"ann.gene": "GJB2"}
-#                     ]
-#                  }
-#             ]}
+        filters = {
+            "$and": [
+                {"chr": "chr1"},
+                {"pos": {"$gt": 111}},
+                {"$or":[
+                    {"ann.gene": "CFTR"},
+                    {"ann.gene": "GJB2"}
+                    ]
+                 }
+            ]}
 
-#         where_clause = filter_to_sql(filters)
-#         # will output
-#         # chr = 'chr1' AND pos > 11 AND ( ann.gene = CFTR OR ann.gene="GJB2")
+        where_clause = filter_to_sql(filters)
+        # will output
+        # chr = 'chr1' AND pos > 11 AND ( ann.gene = CFTR OR ann.gene="GJB2")
 
-#     Args:
-#         filters (dict): A nested set of conditions
+    Args:
+        filters (dict): A nested set of conditions
 
-#     Returns:
-#         str: A vql where expression
-#     """
-#     # ---------------------------------
-#     def recursive(obj):
+    Returns:
+        str: A sql where expression
+    """
+    # ---------------------------------
+    def recursive(obj):
 
-#         conditions = ""
-#         for k, v in obj.items():
-#             if k in ["$and", "$or"]:
-#                 conditions += (
-#                     "("
-#                     + f" {OPERATORS[k]} ".join([recursive(item) for item in v])
-#                     + ")"
-#                 )
+        conditions = ""
+        for k, v in obj.items():
+            if k in ["$and", "$or"]:
+                conditions += (
+                    "("
+                    + f" {OPERATORS[k]} ".join([recursive(item) for item in v])
+                    + ")"
+                )
 
-#             elif k not in ("$table", "$name"):
-#                 if k in ("annotations", "samples"):
-#                     for ann in v:
-#                         conditions += condition_to_sql(obj)
-#                     continue
+            else:
+                conditions += condition_to_vql(obj)
 
-#                 conditions += condition_to_sql(obj)
-#         return conditions
+        return conditions
 
-#     # ---------------------------------
-#     query = recursive(filters)
+    # ---------------------------------
+    query = recursive(filters)
 
-#     # hacky code to remove first level parenthesis
+    # hacky code to remove first level parenthesis
+    query = query[1:-1]
 
-#     return query
+    return query
 
 
 # def build_vql_query(fields, source="variants", filters={}, group_by=[], having={}):
@@ -550,3 +631,22 @@ def build_sql_query(
         sql_query += f" LIMIT {limit} OFFSET {offset}"
 
     return sql_query
+
+
+def build_vql_query(
+    fields,
+    source="variants",
+    filters={},
+    **kwargs,
+):
+
+    select_clause = ",".join(fields_to_vql(fields))
+
+    where_clause = filters_to_vql(filters)
+
+    if where_clause:
+        where_clause = f" WHERE {where_clause}"
+    else:
+        where_clause = ""
+
+    return f"SELECT {select_clause} FROM {source}{where_clause}"

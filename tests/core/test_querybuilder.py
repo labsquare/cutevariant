@@ -81,7 +81,32 @@ def test_condition_to_sql():
     )
 
 
-# refactor
+def test_fields_to_vql():
+    fields = [
+        "chr",
+        "pos",
+        "ref",
+        "ann.gene",
+        "ann.impact",
+        "samples.boby.gt",
+        "samples.boby.dp",
+        "samples.charles.gt",
+    ]
+
+    expected_fields = [
+        "chr",
+        "pos",
+        "ref",
+        "ann.gene",
+        "ann.impact",
+        "sample['boby'].gt",
+        "sample['boby'].dp",
+        "sample['charles'].gt",
+    ]
+
+    assert querybuilder.fields_to_vql(fields) == expected_fields
+
+
 def test_fields_to_sql():
     fields = [
         "chr",
@@ -138,6 +163,27 @@ def test_filters_to_sql():
     assert observed == expected
 
 
+def test_filters_to_vql():
+    filters = {
+        "$and": [
+            {"chr": "chr1"},
+            {"pos": {"$gt": 111}},
+            {
+                "ann.gene": "CFTR",
+            },
+            {"ann.gene": {"$gt": "LOW"}},
+            {"samples.boby.gt": 1},
+            {"$or": [{"pos": {"$gte": 10}}, {"pos": {"$lte": 100}}]},
+        ]
+    }
+
+    observed = querybuilder.filters_to_vql(filters)
+
+    print(observed)
+    expected = "chr = 'chr1' AND pos > 111 AND ann.gene = 'CFTR' AND ann.gene > 'LOW' AND sample['boby'].gt = 1 AND (pos >= 10 OR pos <= 100)"
+    assert observed == expected
+
+
 # def test_build_sql_query():
 
 #     fields = {"variants": ["chr", "pos"], "annotations": ["gene"]}
@@ -162,7 +208,7 @@ FILTERS_VS_SQL_VQL = [
     (
         {"$and": [{"qual": {"$gte": 30}}]},
         "(`variants`.`qual` >= 30)",
-        "ref = 'A' AND alt = 'C'",
+        "qual >= 30",
     ),
     #  TEST IS NULL
     (
@@ -180,7 +226,7 @@ FILTERS_VS_SQL_VQL = [
     (
         {"$and": [{"alt": "C"}, {"samples.sacha.gt": 4}]},
         "(`variants`.`alt` = 'C' AND `sample_sacha`.`gt` = 4)",
-        "samples['sacha'].gt = 4 AND alt = 'C'",
+        "alt = 'C' AND sample['sacha'].gt = 4",
     ),
     # Test nested filters
     (
@@ -190,40 +236,40 @@ FILTERS_VS_SQL_VQL = [
     ),
     # Test IN with numeric tuple
     (
-        {"chr": {"$in": (11.0, 12.0)}},
-        "`variants`.`chr` IN (11.0,12.0)",
-        "chr IN (11.0, 12.0)",
+        {"$and": [{"chr": {"$in": (11.0, 12.0)}}]},
+        "(`variants`.`chr` IN (11.0,12.0))",
+        "chr IN (11.0,12.0)",
     ),
     # Test IN with string tuple
     (
-        {"chr": {"$in": ("XXX",)}},
-        "`variants`.`chr` IN ('XXX')",
+        {"$and": [{"chr": {"$in": ("XXX",)}}]},
+        "(`variants`.`chr` IN ('XXX'))",
         "chr IN ('XXX')",
     ),
     # Test IN: conservation of not mixed types in the tuple
     (
-        {"chr": {"$in": (10.0, 11.0)}},
-        "`variants`.`chr` IN (10.0,11.0)",
-        "chr IN (10.0, 11.0)",
+        {"$and": [{"chr": {"$in": (10.0, 11.0)}}]},
+        "(`variants`.`chr` IN (10.0,11.0))",
+        "chr IN (10.0,11.0)",
     ),
     # Test IN: conservation of mixed types in the tuple
     (
-        {"ann.gene": {"$in": ("CICP23", 2.0)}},
-        "`annotations`.`gene` IN ('CICP23',2.0)",
-        "gene IN ('CICP23', 2.0)",
+        {"$and": [{"ann.gene": {"$in": ("CICP23", 2.0)}}]},
+        "(`annotations`.`gene` IN ('CICP23',2.0))",
+        "ann.gene IN ('CICP23',2.0)",
     ),
     # Test IN: conservation of mixed types in a tuple with str type
     # => Cast via literal_eval
     (
-        {"ann.gene": {"$in": ("CICP23", 2.0)}},
-        "`annotations`.`gene` IN ('CICP23',2.0)",
-        "gene IN ('CICP23', 2.0)",
+        {"$and": [{"ann.gene": {"$in": ("CICP23", 2.0)}}]},
+        "(`annotations`.`gene` IN ('CICP23',2.0))",
+        "ann.gene IN ('CICP23',2.0)",
     ),
     # Test WORDSET function
     (
-        {"ann.gene": {"$in": {"$wordset": "coucou"}}},
-        "`annotations`.`gene` IN (SELECT value FROM wordsets WHERE name = 'coucou')",
-        "gene IN WORDSET['coucou']",
+        {"$and": [{"ann.gene": {"$in": {"$wordset": "coucou"}}}]},
+        "(`annotations`.`gene` IN (SELECT value FROM wordsets WHERE name = 'coucou'))",
+        "ann.gene IN WORDSET['coucou']",
     ),
 ]
 
@@ -234,7 +280,9 @@ FILTERS_VS_SQL_VQL = [
     ids=[str(i) for i in range(len(FILTERS_VS_SQL_VQL))],
 )
 def test_filters(filter_in, expected_sql, expected_vql):
+
     assert querybuilder.filters_to_sql(filter_in) == expected_sql
+    assert querybuilder.filters_to_vql(filter_in) == expected_vql
 
 
 # @pytest.mark.parametrize(
@@ -252,16 +300,6 @@ QUERY_TESTS = [
         {"fields": ["chr", "pos"], "source": "variants"},
         "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants LIMIT 50 OFFSET 0",
         "SELECT chr,pos FROM variants",
-    ),
-    (
-        # Test GROUPBY
-        {
-            "fields": ["chr", "pos"],
-            "source": "variants",
-            "group_by": ["chr"],
-        },
-        "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants GROUP BY `variants`.`chr` LIMIT 50 OFFSET 0",
-        "SELECT chr,pos FROM variants GROUP BY chr",
     ),
     # Test limit offset
     (
@@ -364,7 +402,7 @@ QUERY_TESTS = [
             " WHERE (`sample_TUMOR`.`gt` = 1 AND `sample_TUMOR`.`dp` > 10)"
             " LIMIT 50 OFFSET 0"
         ),
-        "SELECT chr,pos FROM variants WHERE (sample['TUMOR'].gt = 1 AND sample['TUMOR'].dp > 10)",
+        "SELECT chr,pos FROM variants WHERE sample['TUMOR'].gt = 1 AND sample['TUMOR'].dp > 10",
     ),
     # Test genotype in both filters and fields
     (
@@ -401,11 +439,11 @@ QUERY_TESTS = [
 
 
 @pytest.mark.parametrize(
-    "test_input, test_output, vql",
+    "args, expected_sql, expected_vql",
     QUERY_TESTS,
     ids=[str(i) for i in range(len(QUERY_TESTS))],
 )
-def test_build_query(test_input, test_output, vql):
+def test_build_query(args, expected_sql, expected_vql):
 
     # Create fake database with samples
     # This is necessary because querybuilder need to extract samples id
@@ -415,11 +453,12 @@ def test_build_query(test_input, test_output, vql):
     sql.insert_sample(conn, "NORMAL")
 
     # Test SQL query builder
-    query = querybuilder.build_sql_query(conn, **test_input)
+    observed_sql = querybuilder.build_sql_query(conn, **args)
+    assert observed_sql == expected_sql
 
-    # print(query)
-    # print(test_output)
-    assert query == test_output
+    # Test VQL query builder
+    observed_vql = querybuilder.build_vql_query(**args)
+    assert observed_vql == expected_vql
 
     # Test VQL query builder
 

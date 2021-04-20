@@ -56,8 +56,7 @@ from cutevariant.core.vql import parse_one_vql
 from cutevariant.core.querybuilder import (
     build_vql_query,
     fields_to_vql,
-    wordset_data_to_vql,
-    WORDSET_FUNC_NAME,
+
 )
 import cutevariant.commons as cm
 
@@ -675,12 +674,12 @@ class FilterModel(QAbstractItemModel):
         filtersChanged: Emitted when model data (filters) is changed.
 
     Examples:
-        data = {"AND": [
-        {"field": "ref", "operator": "=", "value": "A"},
+        data = {"$and": [
+        {"ref": "A"},
         {
-            "OR": [
-                {"field": "chr", "operator": "=", "value": "chr5"},
-                {"field": "chr", "operator": "=", "value": "chr3"},
+            "$or": [
+                {"chr":"chr5"},
+                {"chr":"chr3"},
             ]
         },}}
         model = FilterModel(conn)
@@ -751,7 +750,7 @@ class FilterModel(QAbstractItemModel):
 
             if index.column() == 1:
                 if item.type == FilterItem.CONDITION_TYPE:
-                    return fields_to_vql(item.get_field())
+                    return item.get_field()
 
                 if item.type == FilterItem.LOGIC_TYPE:
                     val = item.get_value()
@@ -944,7 +943,7 @@ class FilterModel(QAbstractItemModel):
         self.beginResetModel()
         self.root_item.children.clear()
         # Load first default item
-        self.root_item.append(FilterItem("AND"))
+        self.root_item.append(FilterItem("$and"))
 
         self.endResetModel()
 
@@ -952,12 +951,12 @@ class FilterModel(QAbstractItemModel):
         """load model from dict
 
         dict should be a nested dictionnary of condition. For example:
-        data = {"AND": [
-        {"field": "ref", "operator": "=", "value": "A"},
+        data = {"$and": [
+        {"ref":"A"},
         {
-            "OR": [
-                {"field": "chr", "operator": "=", "value": "chr5"},
-                {"field": "chr", "operator": "=", "value": "chr3"},
+            "$or": [
+                {"chr":"chr5"},
+                {"chr":"chr3"},
             ]
         },}}
         Args:
@@ -969,14 +968,25 @@ class FilterModel(QAbstractItemModel):
             self.root_item.append(self.to_item(data))
         self.endResetModel()
 
+    @classmethod
+    def is_logic(cls, item):
+        keys = list(item.keys())
+        return keys[0] in ("$and", "$or")
+
+
     def to_item(self, data: dict) -> FilterItem:
         """Recursive function to build a nested FilterItem structure from dict data"""
-        if len(data) == 1:  # logic item
+        if FilterModel.is_logic(data):
             operator = list(data.keys())[0]
             item = FilterItem(operator)
             [item.append(self.to_item(k)) for k in data[operator]]
         else:  # condition item
-            item = FilterItem((data["field"], data["operator"], data["value"]))
+
+            field = list(data.keys())[0]
+            value = data[field]
+            item = FilterItem((field, "=", value))
+
+    
         return item
 
     def to_dict(self, item=None) -> dict:
@@ -2232,49 +2242,32 @@ if __name__ == "__main__":
     import_reader(conn, FakeReader())
 
     data = {
-        "AND": [
-            {"field": "gene", "operator": "=", "value": "chr12"},
-            {"field": "gene", "operator": "=", "value": "chr12"},
-            {"field": "gene", "operator": "=", "value": "chr12"},
-            {"field": "gene", "operator": "=", "value": "chr12"},
-            {"field": "gene", "operator": "=", "value": "chr12"},
-            {"field": "gene", "operator": "=", "value": "chr12"},
+        "$and": [
+            {"ann.gene":"chr12"},
+            {"ann.gene":"chr12"},
+            {"ann.gene":"chr12"},
+            {"ann.gene":"chr12"},
+            {"ann.gene":"chr12"},
+            {"qual":{"$gte":40}},
             {
-                "AND": [
-                    {"field": "gene", "operator": "=", "value": "chr12"},
-                    {"field": "gene", "operator": "=", "value": "chr12"},
-                    {
-                        "AND": [
-                            {"field": "gene", "operator": "=", "value": "chr12"},
-                            {"field": "gene", "operator": "=", "value": "chr12"},
-                            {
-                                "AND": [
-                                    {
-                                        "field": "gene",
-                                        "operator": "=",
-                                        "value": "chr12",
-                                    },
-                                    {
-                                        "field": "gene",
-                                        "operator": "=",
-                                        "value": "chr12",
-                                    },
-                                ]
-                            },
-                        ]
-                    },
+                "$and": [
+                    {"ann.gene":"chr12"},
+                    {"ann.gene":"chr12"},   
                 ]
             },
-            {"field": "gene", "operator": "=", "value": "chr12"},
-            {"field": "gene", "operator": "=", "value": "chr12"},
+        
         ]
     }
 
-    view = FiltersEditorWidget()
-    view.model.conn = conn
-    view.model.load(data)
+    #print(FilterModel.is_logic(data["$and"][6]))
 
-    view._update_view_geometry()
+    view = QTreeView()
+    model = FilterModel()
+    view.setModel(model)
+    model.conn = conn
+    model.load(data)
+
+
     view.show()
 
     # view = QTreeView()

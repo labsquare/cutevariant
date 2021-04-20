@@ -13,33 +13,33 @@ class FieldsModel(QStandardItemModel):
     """Model to display all fields from databases into 3 groups (variants, annotation, samples)
     Fields are checkable and can be set using setter/getter checked_fields .
 
-    Examples: 
-        
-        from cutevariant.core import sql 
+    Examples:
+
+        from cutevariant.core import sql
         conn = sql.get_connectionn("project.db")
 
         model = FieldsModel(conn)
         view = QTreeView()
         view.setModel(model)
-        
+
         model.checked_fields = ["chr","pos","ref"]
-        model.load() 
+        model.load()
 
 
     Attributes:
         conn (sqlite3.Connection)
 
-    Todo : 
+    Todo :
         Possible bug with duplicate name in different categories.
-        e.g: variants.gene and annotations.gene    
-    
+        e.g: variants.gene and annotations.gene
+
     """
 
     def __init__(self, conn: sqlite3.Connection = None):
         """Create the model with a connection.
-            
-            conn can be None and set later 
-        
+
+            conn can be None and set later
+
         Args:
             conn (sqlite3.Connection, optional)
         """
@@ -52,7 +52,7 @@ class FieldsModel(QStandardItemModel):
     @property
     def checked_fields(self) -> List[str]:
         """Return checked fields
-        
+
         Returns:
             List[str] : list of checked fields
         """
@@ -64,13 +64,13 @@ class FieldsModel(QStandardItemModel):
 
     @checked_fields.setter
     def checked_fields(self, fields: List[str]):
-        """Check fields according name 
-        
-        Arguments:
-            columns (List[str]): 
+        """Check fields according name
 
-        Todo: 
-            Bug : What if 2 name are in different categories 
+        Arguments:
+            columns (List[str]):
+
+        Todo:
+            Bug : What if 2 name are in different categories
         """
 
         for item in self._checkable_items:
@@ -79,8 +79,7 @@ class FieldsModel(QStandardItemModel):
                 item.setCheckState(Qt.Checked)
 
     def load(self):
-        """Load all fields from the model
-        """
+        """Load all fields from the model"""
         self.clear()
         self._checkable_items.clear()
         self.setColumnCount(2)
@@ -106,11 +105,11 @@ class FieldsModel(QStandardItemModel):
 
     def _load_fields(self, category: str, parent_name: str = None) -> QStandardItem:
         """Load fields from database and create a QStandardItem
-        
+
         Args:
             category (str): category name : eg. variants / annotations / samples
-            parent_name (str, optional): name of the parent item 
-        
+            parent_name (str, optional): name of the parent item
+
         Returns:
             QStandardItem
         """
@@ -142,7 +141,7 @@ class FieldsModel(QStandardItemModel):
 
     def to_file(self, filename: str):
         """Serialize checked fields to a json file
-        
+
         Args:
             filename (str): a json filename
         """
@@ -152,7 +151,7 @@ class FieldsModel(QStandardItemModel):
 
     def from_file(self, filename: str):
         """Unserialize checked fields from a json file
-        
+
         Args:
             filename (str): a json filename
         """
@@ -273,10 +272,15 @@ if __name__ == "__main__":
     import_reader(conn, FakeReader())
     # import_file(conn, "examples/test.snpeff.vcf")
 
-    view = FieldsEditorWidget()
+    model = FieldsModel()
+    view = QTreeView()
 
-    view.conn = conn
-    view.fields = ["chr", "pos"]
+    view.setModel(model)
+
+    model.conn = conn
+    model.fields = ["chr", "pos"]
+
+    model.load()
 
     # view.changed.connect(lambda : print(view.columns))
 
