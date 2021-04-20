@@ -13,6 +13,21 @@ import textx
 from pkg_resources import resource_string
 
 
+OPERATORS = {
+    "=": "$eq",
+    ">": "$gt",
+    ">=": "$gte",
+    "<": "$lt",
+    "<=": "$lte",
+    "IN": "$in",
+    "!=": "$ne",
+    "NOT IN": "$nin",
+    "~": "$regexp",
+    "AND": "$and",
+    "OR": "$or",
+}
+
+
 def model_class(name: str, bases: tuple, attrs: dict) -> type:
     """Metaclass to automatically build the __init__ to get the properties,
     and register the class for metamodel
@@ -87,18 +102,21 @@ class FilterTerm(metaclass=model_class):
     def value(self):
         field = self.field.value if hasattr(self.field, "value") else self.field
         val = self.val.value if hasattr(self.val, "value") else self.val
-        return {"field": field, "operator": self.op, "value": val}
+        if val == "NULL":
+            val = None
+        op = OPERATORS.get(self.op, "$eq")
+        return {field: {op: val}}
 
 
 class FilterExpression(metaclass=model_class):
     @property
     def value(self):
         out = []
-        key = "AND"  # By default
+        key = "$and"  # By default
         for i in self.op:
             if isinstance(i, str):
                 if i in ("AND", "OR"):
-                    key = i
+                    key = OPERATORS.get(i, "$and")
                 else:
                     out.append(i)
             else:
@@ -135,38 +153,38 @@ class Tuple(metaclass=model_class):
 class WordSetIdentifier(metaclass=model_class):
     @property
     def value(self):
-        return ("WORDSET", self.arg)
+        return {"$wordset": self.arg}
 
 
 class SelectCmd(metaclass=model_class):
     @property
     def value(self):
-        output = {
-            "cmd": "select_cmd",
-            "fields": [
-                col.value if hasattr(col, "value") else col for col in self.fields
-            ],
-            "source": self.source,
-        }
+
+        filters = {}
+        fields = []
+
+        for col in self.fields:
+            # Manage function like sample("boby").gt
+            if isinstance(col, Function):
+                fct_name, fct_param, fct_field = col.value
+                if fct_name == "sample":
+                    fields.append(f"sample.{fct_param}.{fct_field}")
+            else:
+                fields.append(col)
+
+        # "fields": [
+        #      col.value if hasattr(col, "value") else col for col in self.fields
+        #  ],
 
         if self.filter:
-            output["filters"] = self.filter.value
-        else:
-            output["filters"] = {}
+            filters = self.filter.value
 
-        if self.group_by:
-            output["group_by"] = [
-                i.value if isinstance(i, Function) else i for i in self.group_by
-            ]
-
-        else:
-            output["group_by"] = []
-
-        if self.having_op and self.having_val:
-            output["having"] = {"op": self.having_op, "value": self.having_val}
-        else:
-            output["having"] = {}
-
+        output = {
+            "cmd": "select_cmd",
+            "fields": fields,
+            "source": self.source,
+            "filters": filters,
+        }
         return output
 
 

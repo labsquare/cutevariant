@@ -264,8 +264,8 @@ def set_cmd(
     if target is None or first is None or second is None or operator is None:
         return {}
 
-    query_first = build_sql_query(conn, {"variants": ["id"]}, first, limit=None)
-    query_second = build_sql_query(conn, {"variants": ["id"]}, second, limit=None)
+    query_first = build_sql_query(conn, ["id"], first, limit=None)
+    query_second = build_sql_query(conn, ["id"], second, limit=None)
 
     func_query = {
         "|": sql.union_variants,

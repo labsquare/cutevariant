@@ -6,10 +6,8 @@ VQL_TO_TREE_CASES = {
     # Test 1
     'SELECT chr,pos,sample["sacha"] FROM variants': {
         "cmd": "select_cmd",
-        "fields": ["chr", "pos", ("sample", "sacha", "gt")],
+        "fields": ["chr", "pos", "sample.sacha.gt"],
         "filters": {},
-        "group_by": [],
-        "having": {},
         "source": "variants",
     },
     # Test 2
@@ -17,13 +15,11 @@ VQL_TO_TREE_CASES = {
         "cmd": "select_cmd",
         "fields": ["chr", "pos", "ref"],
         "source": "variants",
-        "group_by": [],
-        "having": {},
         "filters": {
-            "AND": [
-                {"field": "a", "operator": "=", "value": 3},
-                {"field": "b", "operator": "!=", "value": 5},
-                {"field": "c", "operator": "<", "value": 3},
+            "$and": [
+                {"a": {"$eq": 3}},
+                {"b": {"$ne": 5}},
+                {"c": {"$lt": 3}},
             ]
         },
     },
@@ -32,24 +28,20 @@ VQL_TO_TREE_CASES = {
         "cmd": "select_cmd",
         "fields": ["chr", "pos", "ref"],
         "source": "variants",
-        "group_by": [],
-        "having": {},
-        "filters": {"AND": [{"field": "a", "operator": "IS", "value": "NULL"}]},
+        "filters": {"$and": [{"a": {"$eq": None}}]},
     },
     # Test 3
     "SELECT chr,pos,ref FROM variants WHERE a=3 AND (b=5 OR c=3)": {
         "cmd": "select_cmd",
         "fields": ["chr", "pos", "ref"],
         "source": "variants",
-        "group_by": [],
-        "having": {},
         "filters": {
-            "AND": [
-                {"field": "a", "operator": "=", "value": 3},
+            "$and": [
+                {"a": {"$eq": 3}},
                 {
-                    "OR": [
-                        {"field": "b", "operator": "=", "value": 5},
-                        {"field": "c", "operator": "=", "value": 3},
+                    "$or": [
+                        {"b": {"$eq": 5}},
+                        {"c": {"$eq": 3}},
                     ]
                 },
             ]
@@ -58,60 +50,30 @@ VQL_TO_TREE_CASES = {
     # Test 4
     'SELECT chr,pos, sample["sacha"] FROM variants # comments are handled': {
         "cmd": "select_cmd",
-        "fields": ["chr", "pos", ("sample", "sacha", "gt")],
-        "filters": {},
-        "group_by": [],
-        "having": {},
-        "source": "variants",
-    },
-    # Test 5 - 4bis GROUP BY
-    "SELECT chr, pos, ref, alt FROM variants GROUP BY chr,pos": {
-        "cmd": "select_cmd",
-        "fields": ["chr", "pos", "ref", "alt"],
+        "fields": ["chr", "pos", "sample.sacha.gt"],
         "filters": {},
         "source": "variants",
-        "group_by": ["chr", "pos"],
-        "having": {},
-    },
-    # Test 6 - 4ter GROUP BY HAVING
-    "SELECT chr, pos, ref, alt FROM variants GROUP BY chr HAVING count > 3": {
-        "cmd": "select_cmd",
-        "fields": ["chr", "pos", "ref", "alt"],
-        "filters": {},
-        "source": "variants",
-        "group_by": ["chr"],
-        "having": {"op": ">", "value": 3},
     },
     # Test 7 - 4quater GROUP BY on genotypes
     "SELECT chr, pos, sample['sacha'].gt FROM variants GROUP BY sample['sacha'].gt": {
         "cmd": "select_cmd",
-        "fields": ["chr", "pos", ("sample", "sacha", "gt")],
+        "fields": ["chr", "pos", "sample.sacha.gt"],
         "filters": {},
         "source": "variants",
-        "group_by": [("sample", "sacha", "gt")],
-        "having": {},
     },
     # Test 8
     "SELECT chr FROM variants WHERE some_field IN ('one', 'two')": {
         "cmd": "select_cmd",
         "fields": ["chr"],
         "source": "variants",
-        "group_by": [],
-        "having": {},
-        "filters": {
-            "AND": [{"field": "some_field", "operator": "IN", "value": ("one", "two")}]
-        },
+        "filters": {"$and": [{"some_field": {"$in": ("one", "two")}}]},
     },
     # Test 9
     "SELECT chr FROM variants WHERE gene IN WORDSET['test']": {
         "cmd": "select_cmd",
         "fields": ["chr"],
         "source": "variants",
-        "group_by": [],
-        "having": {},
-        "filters": {
-            "AND": [{"field": "gene", "operator": "IN", "value": ("WORDSET", "test")}]
-        },
+        "filters": {"$and": [{"gene": {"$in": {"$wordset": "test"}}}]},
     },
     # Test 10
     "CREATE denovo FROM variants": {
@@ -125,9 +87,7 @@ VQL_TO_TREE_CASES = {
         "cmd": "create_cmd",
         "source": "variants",
         "target": "denovo",
-        "filters": {
-            "AND": [{"field": "some_field", "operator": "IN", "value": ("one", "two")}]
-        },
+        "filters": {"$and": [{"some_field": {"$in": ("one", "two")}}]},
     },
     # Test 12
     "CREATE denovo = A | B ": {
@@ -150,7 +110,7 @@ VQL_TO_TREE_CASES = {
     "COUNT FROM variants WHERE a = 3": {
         "cmd": "count_cmd",
         "source": "variants",
-        "filters": {"AND": [{"field": "a", "operator": "=", "value": 3}]},
+        "filters": {"$and": [{"a": {"$eq": 3}}]},
     },
     # Test 16
     "DROP selections subset": {

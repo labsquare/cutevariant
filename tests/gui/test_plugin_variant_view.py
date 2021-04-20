@@ -132,7 +132,7 @@ def test_model_sort(qtbot, conn):
         model.sort(2, QtCore.Qt.DescendingOrder)
 
 
-def test_view(qtbot, conn):
+def te  st_view(qtbot, conn):
 
     view = widgets.VariantView()
     view.conn = conn
