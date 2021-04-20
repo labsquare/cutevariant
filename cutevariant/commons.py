@@ -37,6 +37,34 @@ CLASSIFICATION_ICONS = {
     5: 0xF03B1,
 }
 
+OPERATORS_PY_2_SQL = {
+    "$eq": "=",
+    "$gt": ">",
+    "$gte": ">=",
+    "$lt": "<",
+    "$lte": "<=",
+    "$in": "IN",
+    "$ne": "!=",
+    "$nin": "NOT IN",
+    "$regex": "REGEXP",
+    "$and": "AND",
+    "$or": "OR",
+}
+
+OPERATORS_SQL_2_PY = {
+    "=": "$eq",
+    ">": "$gt",
+    ">=": "$gte",
+    "<": "$lt",
+    "<=": "$lte",
+    "IN": "$in",
+    "!=": "$ne",
+    "NOT IN": "$nin",
+    "~": "$regexp",
+    "AND": "$and",
+    "OR": "$or",
+}
+
 # Genotypes
 GENOTYPE_ICONS = {-1: 0xF10D3, 0: 0xF0766, 1: 0xF0AA1, 2: 0xF0AA5}
 

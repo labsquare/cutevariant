@@ -586,7 +586,7 @@ class FilterItem:
 
     def get_operator(self):
         if self.type == self.CONDITION_TYPE:
-            return self.data[1].upper()
+            return self.data[1]
 
     def get_value(self):
         """Get value of condition or operator value
@@ -709,6 +709,7 @@ class FilterModel(QAbstractItemModel):
         self.root_item = FilterItem("$and")
         self.conn = conn
         self.clear()
+        self.filtersChanged.connect(lambda: print(self.to_dict()))
 
     @property
     def filters(self):
@@ -745,7 +746,7 @@ class FilterModel(QAbstractItemModel):
 
         if role in (Qt.DisplayRole, Qt.EditRole, Qt.UserRole):
             if index.column() == 0:
-                return item.checked if role == Qt.UserRole else str(item.checked)
+                return item.checked
 
             if index.column() == 1:
                 if item.type == FilterItem.CONDITION_TYPE:
@@ -753,27 +754,25 @@ class FilterModel(QAbstractItemModel):
 
                 if item.type == FilterItem.LOGIC_TYPE:
                     val = item.get_value()
-                    return val if role == Qt.UserRole else str(val)
+                    return val
 
             if item.type != FilterItem.CONDITION_TYPE:
                 return
 
             if index.column() == 2:
-                operator = item.get_operator()
-                return operator if role == Qt.UserRole else str(operator)
+                operator = cm.OPERATORS_PY_2_SQL.get(item.get_operator(), "=")
+                return operator
 
             if index.column() == 3:
                 val = item.get_value()
-                # TODO: WORDSET handling here. To be modified if WORDSET is a real operator
-                # Same way that for fields formatting in VQL form for column 1
-                if (
-                    role in (Qt.EditRole, Qt.DisplayRole)
-                    and isinstance(val, tuple)
-                    and val[0] == WORDSET_FUNC_NAME
-                ):
-                    return wordset_data_to_vql(val)
+                if isinstance(val, list):
+                    return ",".join(val)
 
-                return val if role == Qt.UserRole else str(val)
+                if isinstance(val, dict):
+                    if "$wordset" in val:
+                        return val["$wordset"]
+
+                return val
 
         if role == FilterModel.TypeRole:
             # Return item type
@@ -857,10 +856,17 @@ class FilterModel(QAbstractItemModel):
             if item.type == FilterItem.CONDITION_TYPE:
 
                 if index.column() == 2:
-                    item.set_operator(value)
+                    item.set_operator(cm.OPERATORS_SQL_2_PY.get(value, "$eq"))
 
                 if index.column() == 3:
-                    item.set_value(value)
+                    print(item.get_operator())
+                    if item.get_operator() in ("$in", "$nin"):
+                        if "," in value:
+                            item.set_value(value.split(","))
+                        else:
+                            item.set_value({"$wordset": value})
+                    else:
+                        item.set_value(value)
 
             self.filtersChanged.emit()
             # just one item is changed
@@ -968,7 +974,13 @@ class FilterModel(QAbstractItemModel):
         self.endResetModel()
 
     @classmethod
-    def is_logic(cls, item):
+    def is_logic(cls, item: dict) -> bool:
+        """
+        Returns whether item holds a logic operator
+        Example:
+            > is_logic({"$and":[...]})
+            > True
+        """
         keys = list(item.keys())
         return keys[0] in ("$and", "$or")
 
@@ -982,25 +994,14 @@ class FilterModel(QAbstractItemModel):
 
             field = list(data.keys())[0]
             value = data[field]
-            operator = "="
-            OPERATORS = {
-                "$eq": "=",
-                "$gt": ">",
-                "$gte": ">=",
-                "$lt": "<",
-                "$lte": "<=",
-                "$in": "IN",
-                "$ne": "!=",
-                "$nin": "NOT IN",
-                "$regex": "REGEXP",
-                "$and": "AND",
-                "$or": "OR",
-            }
+            operator = "$eq"
+
             if isinstance(value, dict):
                 k, v = list(value.items())[0]
-                operator = OPERATORS[k]
+                operator = k
                 value = v
-            item = FilterItem((field, operator , value))
+
+            item = FilterItem((field, operator, value))
 
         return item
 
@@ -1025,11 +1026,13 @@ class FilterModel(QAbstractItemModel):
             return {item.get_value(): operator_data}
 
         if item.type == FilterItem.CONDITION_TYPE:
-            return {
-                "field": item.get_field(),
-                "operator": item.get_operator(),
-                "value": item.get_value(),
-            }
+            result = {}
+            operator = cm.OPERATORS_SQL_2_PY.get(item.get_operator(), "$eq")
+            if operator == "$eq":
+                result = {item.get_field(): item.get_value()}
+            else:
+                result = {item.get_field(): {operator: item.get_value()}}
+            return result
 
     def add_logic_item(self, value="$and", parent=QModelIndex()):
         """Add logic item
@@ -2264,6 +2267,10 @@ if __name__ == "__main__":
             {"ann.gene": "chr12"},
             {"ann.gene": "chr12"},
             {"qual": {"$gte": 40}},
+            {"ann.gene": {"$in": ["CFTR", "GJB2"]}},
+            {"qual": {"$in": {"$wordset": "boby"}}},
+            {"qual": {"$nin": {"$wordset": "boby"}}},
+            {"samples.boby.gt": 1},
             {
                 "$and": [
                     {"ann.gene": "chr12"},
@@ -2280,6 +2287,8 @@ if __name__ == "__main__":
     view.setModel(model)
     model.conn = conn
     model.load(data)
+
+    print(model.to_dict())
 
     view.show()
 
