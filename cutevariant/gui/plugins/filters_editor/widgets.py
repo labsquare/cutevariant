@@ -17,6 +17,7 @@ from PySide2.QtWidgets import (
     QPushButton,
     QCompleter,
     QDialog,
+    QLineEdit,
     QFileDialog,
     QApplication,
     QStyledItemDelegate,
@@ -42,12 +43,13 @@ from PySide2.QtCore import (
     QMimeData,
     QEvent,
     QStandardPaths,
+    QStringListModel,
     QSize,
     QFileInfo,
     QSettings,
     QRect,
 )
-from PySide2.QtGui import QPainter, QPalette, QFont, QPen, QBrush
+from PySide2.QtGui import QPainter, QPalette, QFont, QPen, QBrush, QIntValidator,QDoubleValidator
 
 # Custom imports
 from cutevariant.gui import style, plugin, FIcon
@@ -65,26 +67,29 @@ LOGGER = cm.logger()
 @lru_cache()
 def prepare_fields(conn):
     """Prepares a list of columns on which filters can be applied"""
-    columns = []
+    results = {}
     samples = [sample["name"] for sample in sql.get_samples(conn)]
 
     for field in sql.get_fields(conn):
+
+        if field["category"] == "variants":
+            name = field["name"]
+            results[name] = field["type"]
+
+        if field["category"] == "annotations":
+            name = field["name"]
+            results[f"ann.{name}"]= field["type"]
+
         if field["category"] == "samples":
-            # Replace the name for samples with:
-            # ("sample", <individual_id>, <field_name>)
-            # Ex: with a "name" equal to "ps":
-            # {'id': 48, 'name': ('sample', 'HG001', 'ps'), 'category': 'samples',
-            # 'type': 'str', 'description': ''}
+            name = field["name"]
             for sample in samples:
-                temp_field = field.copy()
-                temp_field["name"] = ("sample", sample, field["name"])
-                columns.append(temp_field)
-        else:
-            columns.append(field)
-    return columns
+                sample_field = f"samples.{sample}.{name}"
+                results[sample_field] = field["type"]
+
+    return results
 
 
-class BaseField(QFrame):
+class BaseFieldEditor(QFrame):
     """Base class for all editor widgets.
 
     Editor widgets are used in FilterDelegate to display different kind of
@@ -126,7 +131,7 @@ class BaseField(QFrame):
         self.setLayout(h_layout)
 
 
-class IntegerField(BaseField):
+class IntFieldEditor(BaseFieldEditor):
     """Editor for integer value
 
     Attributes:
@@ -135,22 +140,24 @@ class IntegerField(BaseField):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.spin_box = QSpinBox()
-        self.set_widget(self.spin_box)
-        self.spin_box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.line_edit = QLineEdit()
+        self.validator = QIntValidator()
+        self.line_edit.setValidator(self.validator)
+        self.set_widget(self.line_edit)
+        self.line_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
     def set_value(self, value: int):
-        self.spin_box.setValue(value)
+        self.line_edit.setText(str(value))
 
     def get_value(self) -> int:
-        return self.spin_box.value()
+        return int(self.line_edit.text())
 
     def set_range(self, min_, max_):
         """ Limit editor with a range of value """
-        self.spin_box.setRange(min_, max_)
+        self.validator.setRange(min_, max_)
 
 
-class FloatField(BaseField):
+class DoubleFieldEditor(BaseFieldEditor):
     """Editor for floating point value
 
     Attributes:
@@ -159,21 +166,22 @@ class FloatField(BaseField):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.spin_box = QDoubleSpinBox()
-        self.set_widget(self.spin_box)
-        self.spin_box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.line_edit = QLineEdit()
+        self.validator = QIntValidator()
+        self.line_edit.setValidator(self.validator)
+        self.line_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
-    def set_value(self, value: int):
-        self.spin_box.setValue(value)
+    def set_value(self, value: float):
+        self.line_edit.setValue(str(value))
 
     def get_value(self) -> float:
-        return self.spin_box.value()
+        return float(self.line_edit.value())
 
     def set_range(self, min_, max_):
-        self.spin_box.setRange(min_, max_)
+        self.validator.setRange(min_, max_)
 
 
-class StrField(BaseField):
+class StrFieldEditor(BaseFieldEditor):
     """Editor for string value
 
     Attributes:
@@ -185,143 +193,51 @@ class StrField(BaseField):
         self.edit = QLineEdit()
         self.edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.set_widget(self.edit)
+ 
 
-    def set_value(self, value: Any):
+
+    def set_value(self, value: str):
         """Set displayed value in the lineEdit of the editor
-
-        Notes: TODO: TO be updated/removed if WORDSET is a real operator
-            For the following query:
-            SELECT favorite,chr,pos,ref,alt FROM variants where gene IN WORDSET['aa']
-
-            We need to show to the user only "WORDSET['aa']"; not the internal
-            representation: ("WORDSET", "aa"). This must be done in
-            the model that return one representation or the other according to
-            DisplayRole or UserRole.
-
-            Here we get the internal representation (tuple) from the UserRole
-            of the model.
-            So we need to cast it via wordset_data_to_vql().
-
-            The opposite is made in get_value() that MUST return internal
-            representation.
         """
-        # TODO: ugly cast to handle tuple corresponding to (WORDSET, name)
-        if isinstance(value, tuple) and value[0] == WORDSET_FUNC_NAME:
-            value = wordset_data_to_vql(value)
-
         self.edit.setText(str(value))
 
-    def get_value(self) -> Any:
+    def get_value(self) -> str:
         """Return string or float/int for numeric values"""
         value = self.edit.text()
-
-        # TODO: ugly cast to return tuple corresponding to (WORDSET, name)
-        # Please just leave pass in this section if WORDSET is converted to normal operator
-        import re
-
-        match = re.search(r"WORDSET\[['\"](.*)['\"]\]", value)
-        if match:
-            return "WORDSET", match[1]
-
-        if value.isdigit():
-            return int(value)
-
-        if value.isdecimal():
-            return float(value)
         return value
 
-    def set_completer(self, completer: QCompleter):
+    def set_completion(self, items: list):
         """Set a completer to autocomplete value"""
-        self.edit.setCompleter(completer)
+        #self.edit.setCompleter(completer)
+        print("SET COMPLETION ", items)
+        self.completer = QCompleter()
+        self.model = QStringListModel(items)
+        self.completer.setModel(self.model)
+        self.edit.setCompleter(self.completer)
 
-
-class IterableField(StrField):
-    """Editor for iterables in string form.
-
-    Attributes:
-        edit (QLineEdit)
-    """
-
-    def set_value(self, value: Iterable):
-        """Set displayed value in the lineEdit of the editor"""
-        print("Iterable field set value ?", value, type(value))
-        super().set_value(value)
-
-    def get_value(self) -> tuple:
-        """Return the value of the field in tuple type
-
-        Notes:
-            Try to cast the follwing terms into tuples:
-            - 'a, b' => ('a', 'b')
-            - 'a,b' => ...
-            - '(a, b' => ...
-            - 'a,b)" => ...
-            - ('a', 'b') => ...
-            - (1, 2) => (1, 2)
-
-        Returns:
-            (tuple): Casted from string
-        """
-        value = self.edit.text()
-
-        try:
-            if "," in value and ("(" not in value or ")" not in value):
-                value = value.replace("(", "").replace(")", "").replace(", ", ",")
-                value = tuple(value.split(","))
-                # print("splitted value", value)
-                return value
-
-            # Cast proper tuple
-            return literal_eval(value)
-        except ValueError:
-            pass
-        # Cast to str
-        return super().get_value()
-
-
-class ComboField(BaseField):
-    """Editor for string value
-
-    Notes:
-        Items are added in FilterDelegate.createEditor()
+  
+class ListFieldEditor(BaseFieldEditor):
+    """Editor for Boolean value
 
     Attributes:
-        edit (QLineEdit)
+        box (QCheckBox)
     """
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.edit = QComboBox()
-        self.edit.setEditable(True)
-        self.edit.setSizeAdjustPolicy(QComboBox.AdjustToContents)
+        self.edit = QLineEdit()
+        # DisplayRole, UserRole
         self.set_widget(self.edit)
+        self.edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
-    def set_value(self, value: str):
-        """Set text of lineEdit in ComboBox"""
-        # items = [self.edit.itemText(i) for i in range(self.edit.count())]
-        # Set text of lineEdit via the index of the required text
-        # Here we use an editable combobox with a lineEdit.
-        # => Use setCurrentIndex instead of setCurrentText.
-        # The last one doesn't refresh the index and thus the currentData.
-        # In this case, get_value will return the currentData of the first item
-        # in ComboBox regardless the item in the lineEdit.
-        index = self.edit.findText(value)
-        if index != -1:
-            self.edit.setCurrentIndex(index)
-            # /!\ Don't do this only: self.edit.setCurrentText(value) (see above)
-
-    def get_value(self):
-        """Return UserRole string"""
-        # Return UserRole
-        return self.edit.currentData()
-
-    def addItems(self, words: list):
-        """Set a completer to autocomplete value"""
-        self.edit.clear()
-        self.edit.addItems(words)
+    def set_value(self, value: list):
+        self.edit.setText(",".join(value))
+        
+    def get_value(self) -> list:
+        return self.edit.text().split(",")
 
 
-class BoolField(BaseField):
+class BoolFieldEditor(BaseFieldEditor):
     """Editor for Boolean value
 
     Attributes:
@@ -345,29 +261,36 @@ class BoolField(BaseField):
         return self.box.currentData()
 
 
-class OperatorField(BaseField):
+class ComboFieldEditor(BaseFieldEditor):
     """Editor for Logic Value (less, greater, more than etc ...)
 
     Attributes:
         combo_box (QComboBox): Combobox to allow a suer to select operators.
     """
 
-    # Symbols used in VQL vs text descriptions
-    SYMBOLS = {
-        "<": "less",
-        "<=": "less or equal",
-        ">": "greater",
-        ">=": "greater or equal",
-        "=": "equal",
-        "!=": "not equal",
-        "LIKE": "like",
-        "NOT LIKE": "not like",
-        "~": "regex",
-        "IN": "in",
-        "NOT IN": "not in",
-        "IS": "is",
-        "IS NOT": "is not",
-    }
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.combo_box = QComboBox()
+        self.set_widget(self.combo_box)
+        self.combo_box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+    def set_value(self, value: str):
+        self.combo_box.setCurrentText(value)
+
+    def get_value(self) -> str:
+        # Return UserRole
+        return self.combo_box.currentText()
+
+    def fill(self, items):
+        self.combo_box.clear()
+        self.combo_box.addItems(items)
+
+class OperatorFieldEditor(BaseFieldEditor):
+    """Editor for Logic Value (less, greater, more than etc ...)
+
+    Attributes:
+        combo_box (QComboBox): Combobox to allow a suer to select operators.
+    """
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -378,8 +301,7 @@ class OperatorField(BaseField):
         self._fill()
 
     def set_value(self, value: str):
-        assert value.upper() in self.SYMBOLS
-        self.combo_box.setCurrentText(self.SYMBOLS[value.upper()])
+        self.combo_box.setCurrentText(value)
 
     def get_value(self) -> str:
         # Return UserRole
@@ -388,12 +310,11 @@ class OperatorField(BaseField):
     def _fill(self):
         """Init QComboBox with all supported operators"""
         self.combo_box.clear()
-        for symbol, text in self.SYMBOLS.items():
-            # DisplayRole, UserRole
-            self.combo_box.addItem(text, symbol)
+        for symbol in cm.OPERATORS_PY_2_SQL.keys():
+            self.combo_box.addItem(symbol, symbol)
 
 
-class LogicField(BaseField):
+class LogicFieldEditor(BaseFieldEditor):
     """Editor for logic field (And/Or)"""
 
     def __init__(self, parent=None):
@@ -401,15 +322,15 @@ class LogicField(BaseField):
         self.box = QComboBox()
 
         # DisplayRole, UserRole
-        self.box.addItem("AND", "AND")
-        self.box.addItem("OR", "OR")
+        self.box.addItem("$and", "$and")
+        self.box.addItem("$or", "$or")
 
         self.box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.set_widget(self.box)
 
     def set_value(self, value: str):
 
-        if value.upper() == "OR":
+        if value == "$or":
             self.box.setCurrentIndex(1)
 
         else:  # AND
@@ -432,47 +353,37 @@ class FieldFactory(QObject):
     def __init__(self, conn):
         super().__init__()
         self.conn = conn
+        self.field_types_mapping = prepare_fields(self.conn)
 
-        self.field_types_mapping = {
-            field["name"]: field["type"] for field in prepare_fields(conn)
-        }
-
-    def create(self, sql_field, parent=None):
+    def create(self, field:str, operator = None,  parent = None):
         """Get FieldWidget according to type key of the given sql_field"""
-        # sample fields are stored as tuples
-        # if type(sql_field) is tuple:
-        # sample = sql_field[1]
-        # sql_field = sql_field[2]
-        # else:
-        # # Passing sample has no effect for non-sample fields
-        # sample = None
 
-        # Get field data by its name in DB
-        # Don't work anymore because some fields (samples related)
-        # have a tuple structure.
-        # See prepare_fields()
-        # field_type = sql.get_field_by_name(self.conn, sql_field)
+        field_type = self.field_types_mapping.get(field)
 
-        field_type = self.field_types_mapping.get(sql_field)
-        assert field_type
+        if operator in ("$in", "$nin"):
+            return ListFieldEditor(parent)
 
         if field_type == "int":
-            w = IntegerField(parent)
+            w = IntFieldEditor(parent)
             # w.set_range(*sql.get_field_range(self.conn, sql_field, sample))
             return w
 
         if field_type == "float":
-            w = FloatField(parent)
+            w = DoubleFieldEditor(parent)
             # w.set_range(*sql.get_field_range(self.conn, sql_field, sample))
             return w
 
         if field_type == "str":
-            return StrField(parent)
+            w = StrFieldEditor(parent)
+            liste = sql.get_field_unique_values(self.conn, field )
+            w.set_completion(liste)
+            return w 
 
         if field_type == "bool":
-            return BoolField(parent)
+            return BoolFieldEditor(parent)
 
-        return StrField(parent)
+        LOGGER.warning("field is unknown")
+        return StrFieldEditor(parent)
 
 
 class FilterItem:
@@ -639,7 +550,7 @@ class FilterItem:
     def set_operator(self, value):
         """Set operator part of CONDITION_TYPE item"""
         if self.type == self.CONDITION_TYPE:
-            self.data[1] = value.upper()
+            self.data[1] = value
 
     def set_value(self, value):
         """Set value part of CONDITION_TYPE item or value of LOGIC_TYPE item
@@ -760,7 +671,7 @@ class FilterModel(QAbstractItemModel):
                 return
 
             if index.column() == 2:
-                operator = cm.OPERATORS_PY_2_SQL.get(item.get_operator(), "=")
+                operator = item.get_operator()
                 return operator
 
             if index.column() == 3:
@@ -856,15 +767,15 @@ class FilterModel(QAbstractItemModel):
             if item.type == FilterItem.CONDITION_TYPE:
 
                 if index.column() == 2:
-                    item.set_operator(cm.OPERATORS_SQL_2_PY.get(value, "$eq"))
+                    item.set_operator(value)
 
                 if index.column() == 3:
-                    print(item.get_operator())
-                    if item.get_operator() in ("$in", "$nin"):
-                        if "," in value:
-                            item.set_value(value.split(","))
+                    if isinstance(value,list):
+                        if len(value) == 1 : 
+                            item.set_value({"$wordset": value[0]})
                         else:
-                            item.set_value({"$wordset": value})
+                            item.set_value(value)
+                            
                     else:
                         item.set_value(value)
 
@@ -1027,7 +938,7 @@ class FilterModel(QAbstractItemModel):
 
         if item.type == FilterItem.CONDITION_TYPE:
             result = {}
-            operator = cm.OPERATORS_SQL_2_PY.get(item.get_operator(), "$eq")
+            operator = item.get_operator()
             if operator == "$eq":
                 result = {item.get_field(): item.get_value()}
             else:
@@ -1347,40 +1258,64 @@ class FilterDelegate(QStyledItemDelegate):
         """
         model = index.model()
         item = model.item(index)
+        field = item.get_field()
+        operator = item.get_operator()
         # Get current sql connection
-        conn = model.conn
+        # conn = model.conn
 
-        if index.column() == 1:
+        if index.column() == self.COLUMN_FIELD:
             if item.type == FilterItem.LOGIC_TYPE:
-                # AND/OR logic operators
-                return LogicField(parent)
-
+                return LogicFieldEditor(parent)
             if item.type == FilterItem.CONDITION_TYPE:
-                # Display all fields of the database
-                widget = ComboField(parent)
-                # LOGGER.debug(prepare_fields.cache_info())
-                # Add items
-                for field in prepare_fields(conn):
-                    # Cast ('sample', 'HG001', 'gt') to sample['HG001'].gt
-                    # Leave "chr" to "chr"
-                    text = fields_to_vql(field["name"])
-                    widget.edit.addItem(text, field["name"])
+                combo = ComboFieldEditor(parent)
+                combo.fill(prepare_fields(model.conn))
+                return combo
 
-                return widget
+        if index.column() == self.COLUMN_VALUE:
+            # TODO: create instance only one time 
+            factory = FieldFactory(model.conn)
+            print(operator)
+            w =  factory.create(field, operator, parent)
+            print(w)
+            return w
 
-        if index.column() == 2:
-            return OperatorField(parent)
+        if index.column() == self.COLUMN_OPERATOR:
+            return OperatorFieldEditor(parent)
+            
 
-        if index.column() == 3:
-            if model.item(index).get_operator() in ("IN", "NOT IN"):
-                # Tuple value is expecitem required
-                return IterableField(parent)
-            # Basic string or int or float
-            return StrField(parent)
-            # Dynamic field according to database type
-            # return FieldFactory(conn).create(model.item(index).get_field(), parent=parent)
 
-        return super().createEditor(parent, option, index)
+
+        # if index.column() == 1:
+        #     if item.type == FilterItem.LOGIC_TYPE:
+        #         # AND/OR logic operators
+        #         return LogicField(parent)
+
+        #     if item.type == FilterItem.CONDITION_TYPE:
+        #         # Display all fields of the database
+        #         widget = ComboField(parent)
+        #         # LOGGER.debug(prepare_fields.cache_info())
+        #         # Add items
+        #         for field in prepare_fields(conn):
+        #             # Cast ('sample', 'HG001', 'gt') to sample['HG001'].gt
+        #             # Leave "chr" to "chr"
+        #             text = fields_to_vql(field["name"])
+        #             widget.edit.addItem(text, field["name"])
+
+        #         return widget
+
+        # if index.column() == 2:
+        #     return OperatorField(parent)
+
+        # if index.column() == 3:
+        #     if model.item(index).get_operator() in ("IN", "NOT IN"):
+        #         # Tuple value is expecitem required
+        #         return IterableField(parent)
+        #     # Basic string or int or float
+        #     return StrField(parent)
+        #     # Dynamic field according to database type
+        #     # return FieldFactory(conn).create(model.item(index).get_field(), parent=parent)
+
+        # return super().createEditor(parent, option, index)
 
     def setEditorData(self, editor: QWidget, index: QModelIndex):
         """Overrided from Qt: Read data from model (FilterItem) and set editor data
@@ -1409,7 +1344,25 @@ class FilterDelegate(QStyledItemDelegate):
 
         # Set editor data from the model (from the selected FilterItem)
         # Editors expect typed values, so don't forget to use UserRole, not EditRole
-        editor.set_value(index.data(role=Qt.UserRole))
+        
+        #
+        model = index.model()
+        item = model.item(index)
+        field = item.get_field()
+        operator = item.get_operator()
+        value = item.get_value()
+
+        if index.column() == self.COLUMN_VALUE:
+            editor.set_value(value)
+
+        if index.column() == self.COLUMN_OPERATOR:
+            editor.set_value(operator)
+
+        if index.column() == self.COLUMN_FIELD:
+            editor.set_value(field)
+
+
+        
 
     def editorEvent(self, event: QEvent, model, option, index: QModelIndex):
         """
@@ -1481,6 +1434,8 @@ class FilterDelegate(QStyledItemDelegate):
         # Then set this data to the FilterItem (in the corresponding attribute)
         # via its set_value() function.
         # Default: UserRole
+
+
         model.setData(index, editor.get_value())
 
         # super().setModelData(editor, model, index)
@@ -1568,124 +1523,124 @@ class FilterDelegate(QStyledItemDelegate):
                 current = current.parent()
                 x -= self.indentation
 
-    def paint(self, painter, option, index):
+    # def paint(self, painter, option, index):
 
-        # ======== Draw background
-        item = index.model().item(index)
-        is_selected = False
+    #     # ======== Draw background
+    #     item = index.model().item(index)
+    #     is_selected = False
 
-        if option.state & QStyle.State_Enabled:
-            bg = (
-                QPalette.Normal
-                if option.state & QStyle.State_Active
-                or option.state & QStyle.State_Selected
-                else QPalette.Inactive
-            )
-        else:
-            bg = QPalette.Disabled
+    #     if option.state & QStyle.State_Enabled:
+    #         bg = (
+    #             QPalette.Normal
+    #             if option.state & QStyle.State_Active
+    #             or option.state & QStyle.State_Selected
+    #             else QPalette.Inactive
+    #         )
+    #     else:
+    #         bg = QPalette.Disabled
 
-        if option.state & QStyle.State_Selected:
-            is_selected = True
-            painter.fillRect(option.rect, option.palette.color(bg, QPalette.Highlight))
+    #     if option.state & QStyle.State_Selected:
+    #         is_selected = True
+    #         painter.fillRect(option.rect, option.palette.color(bg, QPalette.Highlight))
 
-        margin = self.indentation * (self._compute_level(index))
+    #     margin = self.indentation * (self._compute_level(index))
 
-        #  ========= Draw Checkbox
-        if index.column() == self.COLUMN_CHECKBOX:
+    #     #  ========= Draw Checkbox
+    #     if index.column() == self.COLUMN_CHECKBOX:
 
-            check_icon = self.eye_on if item.checked else self.eye_off
-            rect = QRect(0, 0, self.icon_size.width(), self.icon_size.height())
-            rect.moveCenter(option.rect.center())
-            rect.setX(4)
-            painter.drawPixmap(rect.x(), rect.y(), check_icon.pixmap(self.icon_size))
+    #         check_icon = self.eye_on if item.checked else self.eye_off
+    #         rect = QRect(0, 0, self.icon_size.width(), self.icon_size.height())
+    #         rect.moveCenter(option.rect.center())
+    #         rect.setX(4)
+    #         painter.drawPixmap(rect.x(), rect.y(), check_icon.pixmap(self.icon_size))
 
-        if index.column() > self.COLUMN_CHECKBOX:
+    #     if index.column() > self.COLUMN_CHECKBOX:
 
-            if index.column() == 1:
-                self._draw_branch(painter, option, index)
-            # pen = QPen(QColor("white"), 1, Qt.DotLine)
-            # painter.setPen(pen)
-            # # painter.drawRect(option.rect)
-            # painter.drawLine(
-            #     option.rect.left(),
-            #     option.rect.center().y(),
-            #     margin - 2,
-            #     option.rect.center().y(),
-            # )
+    #         if index.column() == 1:
+    #             self._draw_branch(painter, option, index)
+    #         # pen = QPen(QColor("white"), 1, Qt.DotLine)
+    #         # painter.setPen(pen)
+    #         # # painter.drawRect(option.rect)
+    #         # painter.drawLine(
+    #         #     option.rect.left(),
+    #         #     option.rect.center().y(),
+    #         #     margin - 2,
+    #         #     option.rect.center().y(),
+    #         # )
 
-            # painter.drawLine(
-            #     option.rect.left(),
-            #     option.rect.top(),
-            #     option.rect.left(),
-            #     option.rect.bottom(),
-            # )
+    #         # painter.drawLine(
+    #         #     option.rect.left(),
+    #         #     option.rect.top(),
+    #         #     option.rect.left(),
+    #         #     option.rect.bottom(),
+    #         # )
 
-            font = QFont()
-            align = Qt.AlignVCenter
-            color = option.palette.color(
-                QPalette.Normal if item.checked else QPalette.Disabled,
-                QPalette.HighlightedText if is_selected else QPalette.WindowText,
-            )
+    #         font = QFont()
+    #         align = Qt.AlignVCenter
+    #         color = option.palette.color(
+    #             QPalette.Normal if item.checked else QPalette.Disabled,
+    #             QPalette.HighlightedText if is_selected else QPalette.WindowText,
+    #         )
 
-            if (
-                item.type == FilterItem.LOGIC_TYPE
-                and index.column() == self.COLUMN_FIELD
-            ):
-                font.setBold(True)
-                # metric = QFontMetrics(font)
-                # print(self._compute_level(index))
-                # text_width = metric.boundingRect(index.data()).width()
-                # #  Draw Add buttion
-                # rect = QRect(0, 0, self.icon_size.width(), self.icon_size.height())
-                # rect.moveCenter(
-                #     QPoint(
-                #         option.rect.x() + margin + text_width + 20,
-                #         option.rect.center().y(),
-                #     )
-                # )
-                # painter.drawPixmap(
-                #     rect.right() - self.icon_size.width(),
-                #     rect.y(),
-                #     self.add_icon.pixmap(self.icon_size),
-                # )
-            if index.column() == self.COLUMN_FIELD:
-                align |= Qt.AlignLeft
+    #         if (
+    #             item.type == FilterItem.LOGIC_TYPE
+    #             and index.column() == self.COLUMN_FIELD
+    #         ):
+    #             font.setBold(True)
+    #             # metric = QFontMetrics(font)
+    #             # print(self._compute_level(index))
+    #             # text_width = metric.boundingRect(index.data()).width()
+    #             # #  Draw Add buttion
+    #             # rect = QRect(0, 0, self.icon_size.width(), self.icon_size.height())
+    #             # rect.moveCenter(
+    #             #     QPoint(
+    #             #         option.rect.x() + margin + text_width + 20,
+    #             #         option.rect.center().y(),
+    #             #     )
+    #             # )
+    #             # painter.drawPixmap(
+    #             #     rect.right() - self.icon_size.width(),
+    #             #     rect.y(),
+    #             #     self.add_icon.pixmap(self.icon_size),
+    #             # )
+    #         if index.column() == self.COLUMN_FIELD:
+    #             align |= Qt.AlignLeft
 
-            if index.column() == self.COLUMN_OPERATOR:
-                align |= Qt.AlignCenter
+    #         if index.column() == self.COLUMN_OPERATOR:
+    #             align |= Qt.AlignCenter
 
-            if index.column() == self.COLUMN_VALUE:
-                align |= Qt.AlignLeft
+    #         if index.column() == self.COLUMN_VALUE:
+    #             align |= Qt.AlignLeft
 
-            painter.setFont(font)
-            painter.setPen(color)
-            # Indentation level
+    #         painter.setFont(font)
+    #         painter.setPen(color)
+    #         # Indentation level
 
-            text_rect = option.rect
-            if index.column() == 1:
-                xstart = option.rect.x() + margin
-                text_rect.setX(xstart)
+    #         text_rect = option.rect
+    #         if index.column() == 1:
+    #             xstart = option.rect.x() + margin
+    #             text_rect.setX(xstart)
 
-            painter.drawText(text_rect, align, index.data(Qt.DisplayRole))
+    #         painter.drawText(text_rect, align, index.data(Qt.DisplayRole))
 
-            if index.column() == self.COLUMN_REMOVE and index.parent() != QModelIndex():
-                rect = QRect(0, 0, self.icon_size.width(), self.icon_size.height())
-                rect.moveCenter(option.rect.center())
-                painter.drawPixmap(
-                    rect.right() - self.icon_size.width(),
-                    rect.y(),
-                    self.rem_icon.pixmap(self.icon_size),
-                )
+    #         if index.column() == self.COLUMN_REMOVE and index.parent() != QModelIndex():
+    #             rect = QRect(0, 0, self.icon_size.width(), self.icon_size.height())
+    #             rect.moveCenter(option.rect.center())
+    #             painter.drawPixmap(
+    #                 rect.right() - self.icon_size.width(),
+    #                 rect.y(),
+    #                 self.rem_icon.pixmap(self.icon_size),
+    #             )
 
-        # if index.column() == 3:
-        #     painter.drawPixmap(self._icon_rect(option), self.rem_icon.pixmap(self.icon_size))
+    #     # if index.column() == 3:
+    #     #     painter.drawPixmap(self._icon_rect(option), self.rem_icon.pixmap(self.icon_size))
 
-        # if index.column() == 3 and item.type == FilterItem.LOGIC_TYPE:
-        #     x = option.rect.right() - 20
-        #     y = option.rect.center().y() - self.icon_size.height() / 2
-        #     painter.drawPixmap(QRect(x,y,self.icon_size.width(), self.icon_size.height()), self.add_icon.pixmap(self.icon_size))
+    #     # if index.column() == 3 and item.type == FilterItem.LOGIC_TYPE:
+    #     #     x = option.rect.right() - 20
+    #     #     y = option.rect.center().y() - self.icon_size.height() / 2
+    #     #     painter.drawPixmap(QRect(x,y,self.icon_size.width(), self.icon_size.height()), self.add_icon.pixmap(self.icon_size))
 
-        # super().paint(painter, option,index)
+    #     # super().paint(painter, option,index)
 
     def _icon_rect(self, rect):
         x = rect.x()
@@ -2261,11 +2216,12 @@ if __name__ == "__main__":
 
     data = {
         "$and": [
+            {"chr": "chr12"},
+            {"ref": "chr12"},
             {"ann.gene": "chr12"},
             {"ann.gene": "chr12"},
-            {"ann.gene": "chr12"},
-            {"ann.gene": "chr12"},
-            {"ann.gene": "chr12"},
+            {"pos": 21234},
+            {"favorite": True},
             {"qual": {"$gte": 40}},
             {"ann.gene": {"$in": ["CFTR", "GJB2"]}},
             {"qual": {"$in": {"$wordset": "boby"}}},
@@ -2284,12 +2240,17 @@ if __name__ == "__main__":
 
     view = QTreeView()
     model = FilterModel()
+
+    delegate = FilterDelegate()
+
     view.setModel(model)
+    view.setItemDelegate(delegate)
     model.conn = conn
     model.load(data)
 
-    print(model.to_dict())
+    print(prepare_fields(conn))
 
+    view.resize(800,800)
     view.show()
 
     # view = QTreeView()
@@ -2307,5 +2268,6 @@ if __name__ == "__main__":
     # view.resize(500, 500)
     # view.show()
     # view.expandAll()
+
 
     app.exec_()
