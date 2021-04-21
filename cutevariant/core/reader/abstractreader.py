@@ -524,14 +524,14 @@ def check_variant_schema(variant: dict):
                 {
                     "gene": str,
                     "transcript": str,
-                    Optional(str): Or(int, str, bool, float),
+                    Optional(str): Or(int, str, bool, float, None),
                 }
             ],
             Optional("samples"): [
                 {
                     "name": str,
                     "gt": And(int, lambda x: x in [-1, 0, 1, 2]),
-                    Optional(str): Or(int, str, bool, float),
+                    Optional(str): Or(int, str, bool, float, None),
                 }
             ],
         }
@@ -571,6 +571,7 @@ def check_field_schema(field: dict):
 def sanitize_field_name(field: str):
     # TODO
     # LOGGER.warning("NOT implemented function!!")
+
     return field
 
 

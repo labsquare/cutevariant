@@ -2,6 +2,7 @@
 
 **A standalone and free application to explore genetics variations from VCF file**
 
+A preprint is [available in bioRxiv](https://www.biorxiv.org/content/10.1101/2021.02.10.430619v1)
 
 ![CI](https://github.com/labsquare/cutevariant/workflows/CI/badge.svg)
 
@@ -12,13 +13,13 @@ When you create a project, data are imported into an sqlite database that cuteva
 Presently, SnpEff and VEP annotations are supported. 
 Once your project is created, you can query variant using different gui controller or directly using the VQL language. This Domain Specific Language is specially designed for cutevariant and try to keep the same syntax than SQL for an easy use.
 
-![](https://raw.githubusercontent.com/labsquare/cutevariant/devel/screencast.gif)
+![](https://raw.githubusercontent.com/labsquare/cutevariant/master/screencast.gif)
 
 
 
 | | | |
 |:-------------------------:|:-------------------------:|:-------------------------:|
-|<img width="1604" alt="screen shot 2017-08-07 at 12 18 15 pm" src="https://raw.githubusercontent.com/labsquare/cutevariant/devel/screenshot1.png"> |<img width="1604" alt="screen shot 2017-08-07 at 12 18 15 pm" src="https://raw.githubusercontent.com/labsquare/cutevariant/devel/screenshot2.png">|<img width="1604" alt="screen shot 2017-08-07 at 12 18 15 pm" src="https://raw.githubusercontent.com/labsquare/cutevariant/devel/screenshot4.png">|
+|<img width="1604" alt="screen shot 2017-08-07 at 12 18 15 pm" src="https://raw.githubusercontent.com/labsquare/cutevariant/master/screenshot1.png"> |<img width="1604" alt="screen shot 2017-08-07 at 12 18 15 pm" src="https://raw.githubusercontent.com/labsquare/cutevariant/master/screenshot2.png">|<img width="1604" alt="screen shot 2017-08-07 at 12 18 15 pm" src="https://raw.githubusercontent.com/labsquare/cutevariant/master/screenshot4.png">|
 
 
 # Installation
@@ -32,7 +33,7 @@ Standalone binary are available for windows:
 Cutevariant is avaible from [Pypi](https://pypi.org/project/cutevariant/) : 
 
     pip install cutevariant # install
-    cutevariant             # run
+    python -m cutevariant   # run
 
 ## From source 
 - Python 3.6 or newer is required  

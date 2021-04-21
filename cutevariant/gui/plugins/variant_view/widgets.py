@@ -726,8 +726,8 @@ class VariantView(QWidget):
         self.bottom_bar.addWidget(self.info_label)
         self.loading_action = self.bottom_bar.addWidget(self.loading_label)
 
-        self.bottom_bar.setIconSize(QSize(16, 16))
-        self.bottom_bar.setMaximumHeight(30)
+        # self.bottom_bar.setIconSize(QSize(16, 16))
+        # self.bottom_bar.setMaximumHeight(30)
         self.bottom_bar.setContentsMargins(0, 0, 0, 0)
 
         self.pagging_actions = []
@@ -1276,6 +1276,9 @@ class VariantViewWidget(plugin.PluginWidget):
     variant_clicked = Signal(dict)
     LOCATION = plugin.CENTRAL_LOCATION
 
+    # Emitted when the variants are both counted and loaded in the view. Provides the variants count and the elapsed time (in seconds) to execute the query
+    variants_load_finished = Signal(int, float)
+
     ENABLE = True
 
     def __init__(self, parent=None):
@@ -1366,9 +1369,17 @@ class VariantViewWidget(plugin.PluginWidget):
         )
 
         self.main_right_pane.error_raised.connect(self.set_message)
-        # Save fields between group/ungroup
-        self.save_fields = dict()
-        self.save_filters = dict()
+
+        # Connect model's signal load_finished to this signal's load_finished
+        self.main_right_pane.model.load_finished.connect(
+            lambda: self.variants_load_finished.emit(
+                self.main_right_pane.model.total,
+                self.main_right_pane.model.elapsed_time,
+            )
+        )
+
+        # Default group
+        self.last_group = ["chr"]
 
     def add_available_formatters(self):
         """Populate the formatters

@@ -9,12 +9,26 @@ class State:
         - filters (dict): Pre-defined filters
         - group_by (list[str]): Pre-defined fields used to group variants
         - having (dict): TODO
+        - project_file_name (str): The absolute path to the project's file (can be used as a key to store project-specific user data)
     """
 
     def __init__(self):
 
         # query
         self.fields = ["favorite", "classification", "chr", "pos", "ref", "alt", "qual"]
+        self.specialized_fields = {
+            "variants": [
+                "favorite",
+                "classification",
+                "chr",
+                "pos",
+                "ref",
+                "alt",
+                "qual",
+            ],
+            "annotations": ["gene_id"],
+            "samples": [],
+        }
         self.source = "variants"
         self.filters = {}
 

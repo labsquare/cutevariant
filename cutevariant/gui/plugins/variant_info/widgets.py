@@ -201,14 +201,13 @@ class VariantInfoWidget(PluginWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.setWindowTitle(self.tr("Info variants"))
-
+        self.setWindowIcon(FIcon(0xF0B73))
         # Current variant => set by on_refresh and on_open_project
         self.current_variant = None
 
         self.view = QTabWidget()
         self.toolbar = QToolBar()
-        self.toolbar.setIconSize(QSize(16, 16))
+        #self.toolbar.setIconSize(QSize(16, 16))
 
         # Build comments tab
         self.edit_panel = EditPanel()
@@ -248,7 +247,7 @@ class VariantInfoWidget(PluginWidget):
 
         # Build genotype tab
         self.genotype_view = QListWidget()
-        self.genotype_view.setIconSize(QSize(20, 20))
+        #self.genotype_view.setIconSize(QSize(20, 20))
         self.view.addTab(self.genotype_view, self.tr("Genotypes"))
 
         v_layout = QVBoxLayout()

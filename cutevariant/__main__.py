@@ -31,6 +31,7 @@ from PySide2.QtCore import (
     QCommandLineParser,
     QCommandLineOption,
     QLibraryInfo,
+    Qt
 )
 from PySide2.QtWidgets import QApplication, QSplashScreen
 from PySide2.QtGui import QPixmap
@@ -54,6 +55,8 @@ def main():
 
     # Process command line arguments
     app = QApplication(sys.argv)
+    app.setAttribute(Qt.AA_EnableHighDpiScaling, True) 
+    app.setAttribute(Qt.AA_UseHighDpiPixmaps, True) #u
     process_arguments(app)
 
     # Load app styles

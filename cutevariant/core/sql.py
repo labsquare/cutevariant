@@ -32,6 +32,7 @@ import logging
 from pkg_resources import parse_version
 from functools import partial, lru_cache
 import itertools as it
+import numpy as np
 
 
 # Custom imports
@@ -54,6 +55,9 @@ def get_sql_connection(filepath):
         sqlite3.Connection: Sqlite3 Connection
             The connection is initialized with `row_factory = Row`.
             So all results are accessible via indexes or keys.
+            The connection also supports
+            - REGEXP function
+            - DESCRIBE_QUANT aggregate
     """
     connection = sqlite3.connect(filepath)
     # Activate Foreign keys
@@ -75,6 +79,10 @@ def get_sql_connection(filepath):
         sqlite3.enable_callback_tracebacks(True)
 
     return connection
+
+
+def get_database_file_name(conn):
+    return conn.execute("PRAGMA database_list").fetchone()["file"]
 
 
 def table_exists(conn: sqlite3.Connection, name: str) -> bool:
@@ -161,10 +169,71 @@ def count_query(conn, query):
     return conn.execute(f"SELECT COUNT(*) as count FROM ({query})").fetchone()[0]
 
 
+# Statistical data
+
+
+def get_field_info(conn, field, metrics=["mean", "std"]):
+    """
+    Returns statistical metrics for column field in conn
+    metrics is the list of statistical metrics you'd like to retrieve, among:
+    count,mean,std,min,q1,median,q3,max
+
+    For the metrics, you can also specify your own as a tuple by following the following format:
+
+    (metric_name,callable) where callable takes a numpy array and metric_name will be the key in the result
+    dictionnary. Example:
+
+    ("standard error",lambda array:np.std(array)/np.sqrt(len(array)))
+
+    The returned dict is in the form:
+    {
+        "mean" : 42,
+        "min" : 5,
+        "max" : 1000
+        "arbitrary_metric":15
+    }
+    It WILL and SHOULD change in the future
+    """
+
+    # metrics are literals, not column names, so add some single quotes to tell SQL
+
+    # TODO :
+
+    metric_functions = {
+        "count": len,
+        "mean": np.mean,
+        "std": np.std,
+        "min": lambda ar: np.quantile(ar, 0.0),
+        "q1": lambda ar: np.quantile(ar, 0.25),
+        "median": lambda ar: np.quantile(ar, 0.5),
+        "q3": lambda ar: np.quantile(ar, 0.75),
+        "max": lambda ar: np.quantile(ar, 1.0),
+    }
+
+    conn.row_factory = None
+    data = [i[0] for i in conn.execute(f"SELECT {field} FROM variants")]
+
+    results = {}
+    for metric in metrics:
+        if metric in metric_functions:
+            value = metric_functions[metric](data)
+            results[metric] = value
+
+        if isinstance(metric, tuple) and len(metric) == 2:
+            metric_name, metric_func = metric
+            if callable(metric_func):
+                value = metric_func(data)
+                results[metric_name] = value
+
+    conn.row_factory = sqlite3.Row
+
+    return results
+
+
 ## project table ===============================================================
 
 
-def create_project(conn: sqlite3.Connection, name: str, reference: str):
+def create_table_project(conn: sqlite3.Connection, name: str, reference: str):
     """Create the table "projects" and insert project name and reference genome
 
     Args:
@@ -172,18 +241,25 @@ def create_project(conn: sqlite3.Connection, name: str, reference: str):
         name (str): Project name
         reference (str): Genom project
 
-    Todo:
-        * Rename to create_table_project
-
     """
-    cursor = conn.cursor()
-    cursor.execute(
-        "CREATE TABLE projects (id INTEGER PRIMARY KEY, name TEXT, reference TEXT)"
-    )
-    cursor.execute(
-        "INSERT INTO projects (name, reference) VALUES (?, ?)", (name, reference)
+    project_data = {"name": name, "reference": reference}
+
+    conn.execute("CREATE TABLE projects (id INTEGER PRIMARY KEY, key TEXT, value TEXT)")
+    conn.commit()
+
+    update_project(conn, project_data)
+
+
+def update_project(conn: sqlite3.Connection, project: dict):
+    conn.executemany(
+        "INSERT INTO projects (key, value) VALUES (?, ?)", list(project.items())
     )
     conn.commit()
+
+
+def get_project(conn: sqlite3.Connection):
+    g = (dict(data) for data in conn.execute("SELECT key, value FROM projects"))
+    return {data["key"]: data["value"] for data in g}
 
 
 ## metadatas table =============================================================
@@ -1499,6 +1575,17 @@ def get_sample_annotations(conn, variant_id: int, sample_id: int):
             f"SELECT * FROM sample_has_variant WHERE variant_id = {variant_id} and sample_id = {sample_id}"
         ).fetchone()
     )
+
+
+def get_sample_annotations_by_variant(conn, variant_id: int):
+
+    conn.row_factory = sqlite3.Row
+    return [
+        dict(data)
+        for data in conn.execute(
+            f"SELECT * FROM sample_has_variant WHERE variant_id = {variant_id}"
+        )
+    ]
 
 
 def update_sample(conn, sample: dict):

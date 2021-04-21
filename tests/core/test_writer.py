@@ -6,54 +6,88 @@ import sqlite3
 # Custom imports
 from cutevariant.core.importer import import_reader, import_pedfile
 from cutevariant.core.reader import FakeReader, VcfReader
-from cutevariant.core.writer import CsvWriter, PedWriter
+from cutevariant.core.writer import CsvWriter, PedWriter, VcfWriter, BedWriter
+from tests import utils
 
-
-@pytest.fixture
-def csvwriter():
-    return CsvWriter(tempfile.NamedTemporaryFile("w+"))
-
-
-@pytest.fixture
-def pedwriter():
-    return PedWriter(tempfile.NamedTemporaryFile("w+"))
+test_filters = [{"field": "pos", "operator": "<", "value": 100000}]
 
 
 @pytest.fixture
 def conn():
-    conn = sqlite3.connect(":memory:")
-    conn.row_factory = sqlite3.Row
-    return conn
+    return utils.create_conn()
 
 
-def test_csv_writer(conn, csvwriter):
+def test_bed_writer(conn):
+
+    # Write bed file
+
+    filename = tempfile.mkstemp()[1]
+    with open(filename, "w") as file:
+        bedwriter = BedWriter(conn, file)
+        bedwriter.save()
+
+    # Read bed file
+    observed = []
+    with open(filename) as file:
+        for line in file:
+            line = line.strip()
+            chrom, start, end = tuple(line.split("\t"))
+            observed.append((chrom, start, end))
+
+    # Read databases
+    expected = []
+    for record in conn.execute(
+        "SELECT chr, pos as 'start', pos+1 as 'end' FROM variants"
+    ):
+        chrom = str(record["chr"])
+        start = str(record["start"])
+        end = str(record["end"])
+        expected.append((chrom, start, end))
+
+    assert observed == expected
+
+
+@pytest.mark.parametrize("separator", ["\t", ";"])
+def test_csv_writer(conn, separator):
     """Test CSV writer
 
     - Tabulated file
     - Headers: chr, pos, ref, alt (no id column)
     """
 
-    import_reader(conn, FakeReader())
-    csvwriter.save(conn)
-    # Test file content
-    csvwriter.device.seek(0)
-    content = csvwriter.device.read()
+    filename = tempfile.mkstemp()[1]
 
-    expected = """chr\tpos\tref\talt
-11\t125010\tT\tA
-12\t125010\tT\tA
-13\t125010\tT\tA
-"""
-    print("Expected:\n'", expected, "'")
-    print("Found:\n'", content, "'")
+    fields = ["chr", "pos", "alt"]
+    filters = {"AND": [{"field": "alt", "operator": "=", "value": "A"}]}
 
-    assert expected == content
+    # Save file
+    with open(filename, "w") as file:
+        csvwriter = CsvWriter(conn, file, fields=fields, filters=filters)
+        csvwriter.separator = separator
+        csvwriter.save()
 
-    # Delete file
-    csvwriter.device.close()
+    # Read file
+    observed = []
+    with open(filename, "r") as file:
+        for line in file:
+            line = tuple(line.strip().split(separator))
+            observed.append(line)
+
+    # Read databases
+    expected = [("chr", "pos", "alt")]
+    for record in conn.execute("SELECT chr, pos, alt FROM variants WHERE alt = 'A'"):
+        chrom = str(record["chr"])
+        pos = str(record["pos"])
+        alt = str(record["alt"])
+        expected.append((chrom, pos, alt))
+
+    print(observed)
+    print(expected)
+
+    assert observed == expected
 
 
-def test_ped_writer(conn, pedwriter):
+def test_ped_writer(conn):
     """Test export of PED file
 
     2 methods are tested here:
@@ -65,44 +99,39 @@ def test_ped_writer(conn, pedwriter):
         pedwriter(PedWriter): Instance of writer pointing to a temp file.
     """
     reader = VcfReader(open("examples/test.snpeff.vcf"), "snpeff")
-    import_reader(conn, reader)
     import_pedfile(conn, "examples/test.snpeff.pedigree.tfam")
 
-    # Test save from DB
-    pedwriter.save(conn)
+    filename = tempfile.mkstemp()[1]
 
-    # Test file content
-    pedwriter.device.seek(0)
-    content = pedwriter.device.read()
+    # save database
+    with open(filename, "w") as file:
+        pedwriter = PedWriter(conn, file)
+        # Test save from DB
+        pedwriter.save()
 
-    expected = """fam\tNORMAL\tTUMOR\tNORMAL\t2\t1
-fam\tTUMOR\t0\t0\t1\t2
-"""
+    with open(filename, "r") as file:
+        # Test save from DB
+        content = file.read()
+
+    expected = """fam\tNORMAL\tTUMOR\tNORMAL\t2\t1\nfam\tTUMOR\t0\t0\t1\t2\n"""
     print("Expected:\n'", expected, "'")
     print("Found:\n'", content, "'")
 
     assert expected == content
 
 
-    # Test save from list
-    pedwriter.device.seek(0)
+def test_vcf_writer(conn):
 
-    samples = [
-        ["fam", "NORMAL", "TUMOR", "NORMAL", "2", "1"],
-        # Empty string should be casted into 0 into exported file
-        ["fam", "TUMOR", "", "0", "1", "2"],
-    ]
+    filename = tempfile.mkstemp(suffix=".vcf")[1]
 
-    pedwriter.save_from_list(samples)
+    conn = utils.create_conn("examples/test.vcf", "snpeff")
+    with open(filename, "w", encoding="utf8") as device:
+        writer = VcfWriter(conn, device)
+        writer.filters = {
+            "AND": [{"field": "annotation_count", "operator": "=", "value": 1}]
+        }  # This filter helps passing the test. In fact, when we load again the result, the reader complains about having duplicate variants
+        # TODO: associate the test example file name with the fields it has. This way, testing is fair
+        writer.save()
 
-    # Test file content
-    pedwriter.device.seek(0)
-    content = pedwriter.device.read()
-
-    print("Expected:\n'", expected, "'")
-    print("Found:\n'", content, "'")
-
-    assert expected == content
-
-    # Delete file
-    pedwriter.device.close()
+    # If this succeeds, it means that the file was successfully opened. So we generated a valid VCF file
+    conn = utils.create_conn(filename)

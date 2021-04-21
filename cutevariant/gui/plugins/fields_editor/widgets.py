@@ -320,6 +320,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
 
         self.toolbar = QToolBar(self)
         self.widget_fields = FieldsWidget(conn, parent)
+
         self.search_edit = QLineEdit()
 
         layout = QVBoxLayout(self)

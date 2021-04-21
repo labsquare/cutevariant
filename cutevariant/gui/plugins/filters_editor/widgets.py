@@ -1265,7 +1265,9 @@ class FilterDelegate(QStyledItemDelegate):
         self.eye_on = FIcon(0xF0208)
         self.eye_off = FIcon(0xF0209)
 
-        self.icon_size = QSize(20, 20)
+        s = qApp.style().pixelMetric(QStyle.PM_ListViewIconSize) 
+        self.icon_size = QSize(s, s)
+        self.row_height = qApp.style().pixelMetric(QStyle.PM_ListViewIconSize) 
 
         self.indentation = 12
         self.branch_width = 8
@@ -1498,7 +1500,7 @@ class FilterDelegate(QStyledItemDelegate):
             TYPE: Description
         """
 
-        size = QSize(option.rect.width(), 30)
+        size = QSize(option.rect.width(), self.row_height)
 
         if index.column() == self.COLUMN_CHECKBOX:
             return QSize(20, 30)
@@ -1817,7 +1819,8 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
     def __init__(self, conn=None, parent=None):
         super().__init__(parent)
-        self.setWindowTitle(self.tr("Filters"))
+        self.setWindowTitle("Filters")
+        self.setWindowIcon(FIcon(0xF0232))
 
         self.settings = QSettings()
         self.view = QTreeView()
@@ -1826,7 +1829,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.model = FilterModel(conn)
         self.delegate = FilterDelegate()
         self.toolbar = QToolBar()
-        self.toolbar.setIconSize(QSize(16, 16))
+        #self.toolbar.setIconSize(QSize(16, 16))
 
         # Drag & drop
         self.view.setModel(self.model)

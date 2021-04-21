@@ -42,6 +42,12 @@ FIELDS = [
         "description": "annotation 2",
     },
     {
+        "name": "qual",
+        "category": "variants",
+        "type": "float",
+        "description": "Quality of the variant",
+    },
+    {
         "name": "gene",
         "category": "annotations",
         "type": "str",
@@ -73,6 +79,7 @@ VARIANTS = [
         "dp": None,
         "extra1": 10,
         "extra2": 100,
+        "qual": 15,
         "annotations": [
             {"gene": "gene1", "transcript": "transcript1"},
             {"gene": "gene1", "transcript": "transcript2"},
@@ -90,6 +97,7 @@ VARIANTS = [
         "dp": 100,
         "extra1": 20,
         "extra2": 100,
+        "qual": 20,
         "annotations": [{"gene": "gene1", "transcript": "transcript1"}],
     },
     {
@@ -100,6 +108,7 @@ VARIANTS = [
         "dp": 100,
         "extra1": 20,
         "extra2": 100,
+        "qual": 7,
         "annotations": [{"gene": "gene2", "transcript": "transcript2"}],
         "samples": [
             {"name": "sacha", "gt": 0, "dp": 30},
@@ -127,8 +136,12 @@ def conn():
     """Initialize a memory DB with test data and return a connexion on this DB"""
     conn = sql.get_sql_connection(":memory:")
 
-    sql.create_project(conn, "test", "hg19")
+    sql.create_table_project(conn, "test", "hg19")
     assert table_exists(conn, "projects"), "cannot create table projects"
+
+    project_data = sql.get_project(conn)
+    assert project_data["name"] == "test"
+    assert project_data["reference"] == "hg19"
 
     sql.create_table_fields(conn)
     assert table_exists(conn, "fields"), "cannot create table fields"
@@ -201,8 +214,41 @@ def hasardous_wordset():
 ################################################################################
 
 
+@pytest.mark.parametrize("field", ["pos", "qual"])
+def test_get_field_info(conn, field):
+
+    metrics = ["min", "max", "median", "mean", "q1", "q3"]
+    stats = sql.get_field_info(conn, field, metrics)
+
+    assert sorted(list(stats.keys())) == sorted(metrics)
+
+    # This test still needs improvement but at least kinda works...
+
+
 def test_create_connexion(conn):
     assert conn is not None
+
+
+def test_update_project(conn):
+
+    sql.update_project(
+        conn,
+        {
+            "latest_vql_query": 'SELECT chr,pos,ref,alt,gene FROM variants WHERE gene != "CFTR"',
+        },
+    )
+    project_data = sql.get_project(conn)
+    assert (
+        project_data["latest_vql_query"]
+        == 'SELECT chr,pos,ref,alt,gene FROM variants WHERE gene != "CFTR"'
+    )
+
+
+def test_get_database_file_name():
+    dbfile_name = tempfile.mkstemp()[1]
+    conn = sql.get_sql_connection(dbfile_name)
+    returned_file_name = sql.get_database_file_name(conn)
+    assert dbfile_name == returned_file_name
 
 
 def test_columns(conn):

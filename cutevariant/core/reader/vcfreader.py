@@ -48,6 +48,12 @@ class VcfReader(AbstractReader):
         annotation_parser (object): Support "VepParser()" and "SnpeffParser()"
     """
 
+    ANNOTATION_PARSERS={
+        "vep" : VepParser,
+        "snpeff" : SnpEffParser,
+        "snpeff3" : SnpEffParser
+    }
+
     def __init__(self, device, annotation_parser: str = None):
         """Construct a VCF Reader
 
@@ -326,12 +332,13 @@ class VcfReader(AbstractReader):
         return self.samples
 
     def _set_annotation_parser(self, parser: str):
-        """Set the given annotation parser"""
-        if parser == "vep":
-            self.annotation_parser = VepParser()
+        if parser in VcfReader.ANNOTATION_PARSERS:
+            self.annotation_parser = VcfReader.ANNOTATION_PARSERS[parser]()
+        else:
+            self.annotation_parser = None
 
-        if parser == "snpeff":
-            self.annotation_parser = SnpEffParser()
+        if self.annotation_parser is None:
+            LOGGER.info("Will not parse annotations")
 
     def __repr__(self):
         return f"VCF Reader using {type(self.annotation_parser).__name__}"

@@ -530,7 +530,7 @@ class CodeEdit(QTextEdit):
         self.completer.set_target(self)
 
         self.syntax = VqlSyntaxHighlighter(self.document())
-
+        self.setAcceptRichText(False)
         font = QFont("monospace")
         self.setFont(font)
 

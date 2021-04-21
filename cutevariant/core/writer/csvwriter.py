@@ -1,6 +1,14 @@
+# Standard imports
 import csv
 
+# Custom imports
 from .abstractwriter import AbstractWriter
+from cutevariant.core import command as cmd
+import cutevariant.commons as cm
+
+import time
+
+LOGGER = cm.logger()
 
 
 class CsvWriter(AbstractWriter):
@@ -16,13 +24,21 @@ class CsvWriter(AbstractWriter):
         ...    writer.save(conn)
     """
 
-    def __init__(self, device):
-        super().__init__(device)
+    def __init__(
+        self,
+        conn,
+        device,
+        fields=["chr", "pos", "ref", "alt"],
+        source="variants",
+        filters={},
+    ):
+        super().__init__(conn, device, fields, source, filters)
 
-    def save(self, conn, delimiter="\t", **kwargs) -> bool:
-        r"""Dump variants into CSV file
+        self.separator = "\t"
 
-        .. TODO:: move SQL query into a dedicated place
+    def async_save(self, *args, **kwargs):
+        r"""Iteratively dumps variants into CSV file
+        This function creates a generator that yields progress
 
         Examples::
 
@@ -31,21 +47,30 @@ class CsvWriter(AbstractWriter):
             11  120000  G   T
 
         Args:
-
-            delimiter (str, optional): Delimiter char used in exported file;
-                (default: ``\t``).
             **kwargs (dict, optional): Arguments can be given to override
                 individual formatting parameters in the current dialect.
+            Examples of useful kwargs:
+                delimiter : How the fields are separated in the CSV file
+                lineterminator : How the lines end in the CSV file
         """
-        writer = csv.DictWriter(
-            self.device,
-            delimiter=delimiter,
-            lineterminator="\n",
-            fieldnames=["chr", "pos", "ref", "alt"],
-            **kwargs
-        )
+
+        # Use dictionnary to define proper arguments for the writer, beforehand, in one variable
+        dict_writer_options = {
+            "f": self.device,
+            "delimiter": self.separator,
+            "lineterminator": "\n",
+        }
+        dict_writer_options.update(kwargs)
+
+        # Set fieldnames **after** updating with kwargs to make sure they are not provided by the method's call kwargs
+        dict_writer_options["fieldnames"] = list(self.fields)
+
+        writer = csv.DictWriter(**dict_writer_options)
         writer.writeheader()
-        g = (
-            dict(row) for row in conn.execute("SELECT chr, pos, ref, alt FROM variants")
-        )
-        writer.writerows(g)
+
+        for count, variant in enumerate(self.get_variants()):
+
+            written_var = {k: v for k, v in dict(variant).items() if k in self.fields}
+            writer.writerow(written_var)
+            # time.sleep(0.1) For demo purposes only. If the database is small, the progress bar won't show up !
+            yield count

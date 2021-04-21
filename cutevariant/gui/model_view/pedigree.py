@@ -1,5 +1,6 @@
 # Standard imports
 import tempfile
+import csv
 
 # Qt imports
 from PySide2.QtCore import (
@@ -22,7 +23,6 @@ from PySide2.QtWidgets import (
 
 # Custom imports
 from cutevariant.core.reader import PedReader
-from cutevariant.core.writer import PedWriter
 
 
 class PedModel(QAbstractTableModel):
@@ -96,8 +96,13 @@ class PedModel(QAbstractTableModel):
             Replace None or empty strings to 0 (unknown PED ID)
         """
         with open(filename, "w") as file:
-            writer = PedWriter(file)
-            writer.save_from_list(self.samples_data)
+
+            writer = csv.writer(file, delimiter="\t", lineterminator="\n")
+            # Replace None or empty strings to 0 (unknown PED ID)
+            clean_samples = (
+                [item if item else 0 for item in sample] for sample in self.samples_data
+            )
+            writer.writerows(clean_samples)
 
     def set_samples(self, samples: list):
         """Fill model with NEW samples

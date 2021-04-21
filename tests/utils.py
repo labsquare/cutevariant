@@ -23,9 +23,12 @@ from cutevariant.core.reader import VcfReader
 from cutevariant.core.importer import import_reader
 
 
-def create_conn():
+def create_conn(file_name=None, annotation_parser=None):
+    if not file_name:
+        file_name = "examples/test.snpeff.vcf"
+        annotation_parser = "snpeff"
     conn = sql.get_sql_connection(":memory:")
-    import_reader(conn, VcfReader(open("examples/test.snpeff.vcf"), "snpeff"))
+    import_reader(conn, VcfReader(open(file_name), annotation_parser))
     return conn
 
 

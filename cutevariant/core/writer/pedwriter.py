@@ -1,11 +1,18 @@
+# Standard imports
 import csv
 
+# Custom imports
 from .abstractwriter import AbstractWriter
-from cutevariant.core.sql import get_samples
+from cutevariant.core import command as cmd
+from cutevariant.core import sql
+import cutevariant.commons as cm
+
+
+LOGGER = cm.logger()
 
 
 class PedWriter(AbstractWriter):
-    """Writer allowing to export samples of a project into a PED/PLINK file.
+    """Writer allowing to export variants of a project into a CSV file.
 
     Attributes:
 
@@ -17,69 +24,36 @@ class PedWriter(AbstractWriter):
         ...    writer.save(conn)
     """
 
-    def __init__(self, device):
-        super().__init__(device)
+    def __init__(self, conn, device):
+        super().__init__(conn, device)
 
-    def save(self, conn, delimiter="\t", **kwargs):
-        r"""Dump samples into a tabular file
+    def async_save(self, *args, **kwargs):
 
-        Notes:
-            File is written without header.
+        samples = list(sql.get_samples(self.conn))
+        sample_map = dict((sample["id"], sample["name"]) for sample in samples)
 
-        Example of line::
+        for count, sample in enumerate(samples):
 
-            `family_id\tindividual_id\tfather_id\tmother_id\tsex\tphenotype`
+            fam = str(sample["family_id"])
+            name = str(sample["name"])
+            father = sample["father_id"]
+            mother = sample["mother_id"]
+            sex = str(sample["sex"])
+            phenotype = str(sample["phenotype"])
 
-        Args:
-            conn (sqlite.connection): sqlite connection
-            delimiter (str, optional): Delimiter char used in exported file;
-                (default: ``\t``).
-            **kwargs (dict, optional): Arguments can be given to override
-                individual formatting parameters in the current dialect.
-        """
-        writer = csv.DictWriter(
-            self.device,
-            delimiter=delimiter,
-            lineterminator="\n",
-            fieldnames=[
-                "family_id",
-                "name",
-                "father_id",
-                "mother_id",
-                "sex",
-                "phenotype",
-            ],
-            extrasaction="ignore",
-            **kwargs
-        )
-        g = list(get_samples(conn))
-        # Map DB ids with individual_ids
-        individual_ids_mapping = {sample["id"]: sample["name"] for sample in g}
-        # Add default value
-        individual_ids_mapping[0] = 0
-        # Replace DB ids
-        for sample in g:
-            sample["father_id"] = individual_ids_mapping[sample["father_id"]]
-            sample["mother_id"] = individual_ids_mapping[sample["mother_id"]]
-        writer.writerows(g)
+            line = (
+                "\t".join(
+                    [
+                        fam,
+                        name,
+                        sample_map.get(father, "0"),
+                        sample_map.get(mother, "0"),
+                        sex,
+                        phenotype,
+                    ]
+                )
+                + "\n"
+            )
+            self.device.write(line)
 
-    def save_from_list(self, samples, delimiter="\t", **kwargs):
-        r"""Dump samples into a tabular file
-
-        Args:
-            samples(list): Iterable of samples; each sample is a list itself.
-                => It's up to the user to give field in the correct order.
-            delimiter (str, optional): Delimiter char used in exported file;
-                (default: ``\t``).
-            **kwargs (dict, optional): Arguments can be given to override
-                individual formatting parameters in the current dialect.
-
-        Notes:
-            Replace None or empty strings to 0 (unknown PED ID)
-        """
-        writer = csv.writer(
-            self.device, delimiter=delimiter, lineterminator="\n", **kwargs
-        )
-        # Replace None or empty strings to 0 (unknown PED ID)
-        clean_samples = ([item if item else 0 for item in sample] for sample in samples)
-        writer.writerows(clean_samples)
+            yield count

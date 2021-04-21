@@ -157,7 +157,7 @@ class SourceEditorWidget(plugin.PluginWidget):
         """
         super().__init__(parent)
 
-        self.setWindowTitle(self.tr("Source editor"))
+        self.setWindowIcon(FIcon(0xF10E4))
         # conn is always None here but initialized in on_open_project()
         self.model = SourceModel(conn)
         self.view = QTableView()
@@ -173,7 +173,7 @@ class SourceEditorWidget(plugin.PluginWidget):
         self.view.horizontalHeader().hide()
 
         self.toolbar = QToolBar()
-        self.toolbar.setIconSize(QSize(16, 16))
+        #self.toolbar.setIconSize(QSize(16, 16))
 
         self.view.verticalHeader().hide()
         self.view.verticalHeader().setDefaultSectionSize(26)

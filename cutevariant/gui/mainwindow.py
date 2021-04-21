@@ -8,14 +8,16 @@ from functools import partial
 from logging import DEBUG
 
 # Qt imports
-from PySide2.QtCore import Qt, QSettings, QByteArray, QDir, QUrl
+from PySide2.QtCore import Qt, QSettings, QByteArray, QDir, QUrl, Signal
 from PySide2.QtWidgets import *
 from PySide2.QtGui import QIcon, QKeySequence, QDesktopServices
 
+
 # Custom imports
 from cutevariant.core import get_sql_connection, get_metadatas, command
+from cutevariant.core.sql import get_database_file_name
 from cutevariant.core.writer import CsvWriter, PedWriter
-from cutevariant.gui.ficon import FIcon
+from cutevariant.gui import FIcon
 from cutevariant.gui.state import State
 from cutevariant.gui.wizards import ProjectWizard
 from cutevariant.gui.settings import SettingsDialog
@@ -27,6 +29,8 @@ from cutevariant.commons import (
     MIN_AUTHORIZED_DB_VERSION,
 )
 
+from cutevariant.gui.export import ExportDialogFactory, ExportDialog
+
 # Import plugins
 from cutevariant.gui import plugin
 
@@ -35,6 +39,8 @@ LOGGER = cm.logger()
 
 class MainWindow(QMainWindow):
     """Main window of Cutevariant"""
+
+    variants_load_finished = Signal(int, float)
 
     def __init__(self, parent=None):
 
@@ -109,7 +115,12 @@ class MainWindow(QMainWindow):
         dock.setObjectName(str(widget.__class__))
 
         self.addDockWidget(area, dock)
-        self.view_menu.addAction(dock.toggleViewAction())
+        action = dock.toggleViewAction()
+        action.setIcon(widget.windowIcon())
+        action.setText(widget.windowTitle())
+        self.view_menu.addAction(action)
+
+        self.toolbar.addAction(action)
 
     def register_plugins(self):
         """Dynamically load plugins to the window
@@ -145,7 +156,7 @@ class MainWindow(QMainWindow):
 
         name = extension["name"]
         title = extension["title"]
-        displayed_title = name if LOGGER.getEffectiveLevel() == DEBUG else title
+        displayed_title = title
 
         if "widget" in extension and extension["widget"].ENABLE:
             # New GUI widget
@@ -153,6 +164,17 @@ class MainWindow(QMainWindow):
 
             # Setup new widget
             widget = plugin_widget_class(parent=self)
+
+            """Variant view is a special widget that loads variants and counts them.
+            Every plugin should be warned whenever the variants get loaded, so we need to connect variant view's signals to mainwindow's signals"""
+            if name == "variant_view":
+
+                LOGGER.debug("Loading variant view")
+                widget.variants_load_finished.connect(
+                    lambda count, time: self.variants_load_finished.emit(count, time)
+                )
+                LOGGER.debug("Connected variant view signals to mainwindow")
+
             if not widget.objectName():
                 LOGGER.debug(
                     "widget '%s' has no objectName attribute; "
@@ -254,14 +276,22 @@ class MainWindow(QMainWindow):
         self.recent_files_menu = self.file_menu.addMenu(self.tr("Open recent"))
         self.setup_recent_menu()
 
-        ### Export projects as
-        self.export_csv_action = self.file_menu.addAction(
-            self.tr("Export as csv"), self.export_as_csv
-        )
+        self.file_menu.addAction(QIcon(), self.tr("Export..."), self.on_export_pressed)
 
-        self.export_ped_action = self.file_menu.addAction(
-            self.tr("Export pedigree PED/PLINK"), self.export_ped
-        )
+        self.export_menu = self.file_menu.addMenu(self.tr("Export as"))
+
+        for export_format_name in ExportDialogFactory.get_supported_formats():
+
+            action = self.export_menu.addAction(
+                self.tr(f"Export as {export_format_name}..."), self.on_export_pressed
+            )
+
+            # Since there are several actions connected to the same slot, we need to pass the format to the receiver
+            action.setData(export_format_name)
+
+        # self.export_ped_action = self.file_menu.addAction(
+        #     self.tr("Export pedigree PED/PLINK"), self.export_ped
+        # )
 
         self.file_menu.addSeparator()
         ### Misc
@@ -414,6 +444,10 @@ class MainWindow(QMainWindow):
         # Clear State variable of application
         # store fields, source, filters, group_by, having data
         self.state = State()
+
+        # Load previous window state for this project (file_path being the key for the settings)
+        file_path = get_database_file_name(conn)
+        self.state = self.app_settings.value(f"{file_path}/last_state", State())
 
         for plugin_obj in self.plugins.values():
             plugin_obj.on_open_project(self.conn)
@@ -600,6 +634,8 @@ class MainWindow(QMainWindow):
         self.dialog_plugins = {}
         # Register new plugins
         self.register_plugins()
+
+        # We reload everything, but do not forget the project's file name !
         self.open_database(self.conn)
         # Allow a user to save further modifications
         self.requested_reset_ui = False
@@ -653,6 +689,10 @@ class MainWindow(QMainWindow):
         .. note:: Reset windowState if asked.
         """
         self.write_settings()
+
+        # Don't forget to tell all the plugins that the window is being closed
+        for plugin_obj in self.plugins.values():
+            plugin_obj.on_close()
         super().closeEvent(event)
 
     def write_settings(self):
@@ -689,6 +729,97 @@ class MainWindow(QMainWindow):
     def toggle_footer_visibility(self, visibility):
         """Toggle visibility of the bottom toolbar and all its plugins"""
         self.footer_tab.setVisible(visibility)
+
+    def on_export_pressed(self):
+        """
+        Slot called by any export action.
+        Use QAction.setData() on the sender to set format name.
+        Otherwise, this slot will guess the format based on the save file dialog
+        """
+
+        if not self.conn:
+            QMessageBox.information(
+                self,
+                self.tr("Info"),
+                self.tr("No project opened, nothing to export.\nAborting."),
+            )
+            return
+
+        settings = QSettings()
+        default_save_dir = settings.value("last_save_file_dir", QDir.homePath())
+
+        # Supported export extensions to filter names in the save file dialog (all of them by default)
+
+        factory = ExportDialogFactory()
+        # factory.state = self.state
+
+        exts = factory.get_supported_formats()
+
+        format_name = self.sender().data()
+
+        # Narrow down available extensions based on the action that was triggered
+        if format_name:
+            exts = [format_name]
+
+        filters_and_exts = {
+            f"{ext.upper()} file (*.{ext})": ext for ext in exts
+        }  # Hack to get only ext out of savefiledialog result's second element (associates the filter's message with the extension name)
+
+        file_name, chosen_ext = QFileDialog.getSaveFileName(
+            self,
+            self.tr("Please chose a filename you'd like to save the database to"),
+            default_save_dir,
+            ";;".join(filters_and_exts.keys()),
+        )
+
+        if not file_name:
+            QMessageBox.information(
+                self,
+                self.tr("Info"),
+                self.tr("No file name specified, nothing will be written"),
+            )
+            return
+
+        settings.setValue("last_save_file_dir", os.path.dirname(file_name))
+
+        chosen_ext = filters_and_exts[
+            chosen_ext
+        ]  # Hacky, extracts extension from second element from getSaveFileName result
+
+        # Automatic extension of file_name
+        file_name = (
+            file_name if file_name.endswith(chosen_ext) else f"{file_name}.{chosen_ext}"
+        )
+
+        export_dialog: ExportDialog = ExportDialogFactory.create_dialog(
+            self.conn,
+            chosen_ext,
+            file_name,
+            fields=self.state.fields,
+            source=self.state.source,
+            filters=self.state.filters,
+        )
+
+        # # TODO : refactor self.state
+        # export_dialog.state = {
+        # "fields" : self.state.fields,
+        # "source": self.state.source,
+        # "filters": self.state.filters,
+        # }
+
+        success = export_dialog.exec_()
+        if success == QDialog.Accepted:
+            QMessageBox.information(
+                self,
+                self.tr("Success!"),
+                self.tr(f"Successfully saved {os.path.basename(file_name)}"),
+            )
+        else:
+            QMessageBox.critical(
+                self,
+                self.tr("Error!"),
+                self.tr(f"Cannot save file to {os.path.basename(file_name)}"),
+            )
 
     # @Slot()
     # def on_query_model_changed(self):

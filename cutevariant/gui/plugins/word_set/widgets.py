@@ -181,15 +181,15 @@ class WordSetWidget(PluginWidget):
         super().__init__(parent)
         self.conn = None
         self.set_names = list()
-        self.setWindowTitle(self.tr("Word Sets"))
+        self.setWindowIcon(FIcon(0xF10E3))
         self.toolbar = QToolBar()
         self.view = QListWidget()
-        self.view.setIconSize(QSize(20, 20))
+        #self.view.setIconSize(QSize(20, 20))
         self.view.itemDoubleClicked.connect(self.open_wordset)
         self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
 
         # setup tool bar
-        self.toolbar.setIconSize(QSize(16, 16))
+        #self.toolbar.setIconSize(QSize(16, 16))
         self.toolbar.addAction(
             FIcon(0xF0415), self.tr("Add Word set"), self.add_wordset
         )
