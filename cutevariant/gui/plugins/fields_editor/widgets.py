@@ -16,7 +16,6 @@ import cutevariant.commons as cm
 LOGGER = cm.logger()
 
 
-@lru_cache()
 def prepare_fields_for_editor(conn):
     """
     Returns a dict with field info for each category.
@@ -72,8 +71,14 @@ def prepare_fields_for_editor(conn):
 
 
 class FieldsModel(QStandardItemModel):
+    """
+    Standard key,value model (2 columns) with field name and its respective description
+    """
+
+    fields_loaded = Signal()
+
     def __init__(
-        self, category="variants", conn: sqlite3.Connection = None, parent=None
+        self, conn: sqlite3.Connection = None, category="variants", parent=None
     ):
         super().__init__(0, 2, parent)
         self._checkable_items = []
@@ -161,12 +166,15 @@ class FieldsModel(QStandardItemModel):
 
                     descr_item = QStandardItem(field_desc)
                     self.appendRow([field_name_item, descr_item])
+                    self.fields_loaded.emit()
 
     def to_file(self, filename: str):
         """Serialize checked fields to a json file
 
         Args:
             filename (str): a json filename
+
+        TODO: Rename to 'to_json'
         """
         with open(filename, "w") as outfile:
             obj = {"checked_fields": self.checked_fields}
@@ -191,67 +199,61 @@ class FieldsWidget(QWidget):
         super().__init__(parent)
         self.tab_widget = QTabWidget(self)
 
+        self.views = []
+
         # Create the variants widget (the view and its associated filter model)
-        self.variants_fields_view = QTableView()
-        self.variants_fields_model = FieldsModel("variants", conn)
-        self.variants_fields_filter = QSortFilterProxyModel(self)
-        self.init_all(
-            self.variants_fields_model,
-            self.variants_fields_filter,
-            self.variants_fields_view,
-        )
+        self.add_view(conn, "variants")
 
         # Create the annotations widget (the view and its associated filter model)
-        self.annotations_fields_view = QTableView()
-        self.annotations_fields_model = FieldsModel("annotations", conn)
-        self.annotations_fields_filter = QSortFilterProxyModel(self)
-        self.init_all(
-            self.annotations_fields_model,
-            self.annotations_fields_filter,
-            self.annotations_fields_view,
-        )
+        self.add_view(conn, "annotations")
 
         # Create the samples widget (the view and its associated filter model)
-        self.samples_fields_view = QTableView()
-        self.samples_fields_model = FieldsModel("samples", conn)
-        self.samples_fields_filter = QSortFilterProxyModel(self)
-        self.init_all(
-            self.samples_fields_model,
-            self.samples_fields_filter,
-            self.samples_fields_view,
-        )
-
-        self.tab_widget.addTab(self.variants_fields_view, self.tr("variants"))
-        self.tab_widget.addTab(self.annotations_fields_view, self.tr("annotations"))
-        self.tab_widget.addTab(self.samples_fields_view, self.tr("samples"))
+        self.add_view(conn, "samples")
 
         layout = QVBoxLayout(self)
         layout.addWidget(self.tab_widget)
+        layout.setContentsMargins(0, 0, 0, 0)
 
         self.conn = conn
 
-    def init_all(
-        self, model: FieldsModel, proxy: QSortFilterProxyModel, view: QTableView
-    ):
+    def add_view(self, conn, category):
+        model = FieldsModel(conn, category)
+        view = QTableView()
+        proxy = QSortFilterProxyModel()
         proxy.setSourceModel(model)
+
         view.setModel(proxy)
-        view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        view.horizontalHeader().setStretchLastSection(True)
         view.setIconSize(QSize(16, 16))
         view.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        proxy.setRecursiveFilteringEnabled(True)
+        view.setSelectionMode(QAbstractItemView.SingleSelection)
+        view.setSelectionBehavior(QAbstractItemView.SelectRows)
+        view.setAlternatingRowColors(True)
+        view.setWordWrap(True)
+        view.verticalHeader().hide()
 
+        proxy.setRecursiveFilteringEnabled(True)
         proxy.setFilterCaseSensitivity(Qt.CaseInsensitive)
         proxy.setFilterKeyColumn(-1)
 
         model.itemChanged.connect(lambda: self.fields_changed.emit())
 
+        self.views.append(
+            {"view": view, "proxy": proxy, "model": model, "name": category}
+        )
+        self.tab_widget.addTab(
+            view, FIcon(style.FIELD_CATEGORY.get(category, None)["icon"]), category
+        )
+
     def update_filter(self, text: str):
         """
         Callback for when the search bar is updated (filter the three models)
         """
-        self.variants_fields_filter.setFilterRegExp(text)
-        self.annotations_fields_filter.setFilterRegExp(text)
-        self.samples_fields_filter.setFilterRegExp(text)
+        for index, view in enumerate(self.views):
+            view["proxy"].setFilterRegExp(text)
+            count = view["proxy"].rowCount()
+            name = view["name"]
+            self.tab_widget.setTabText(index, f"{name} ({count})")
 
     @property
     def checked_fields(self) -> List[str]:
@@ -260,11 +262,10 @@ class FieldsWidget(QWidget):
         Returns:
             List[str] : list of checked fields
         """
-        return (
-            self.variants_fields_model.checked_fields
-            + self.annotations_fields_model.checked_fields
-            + self.samples_fields_model.checked_fields
-        )
+        result = []
+        for view in self.views:
+            result += view["model"].checked_fields
+        return result
 
     @checked_fields.setter
     def checked_fields(self, fields: List[str]):
@@ -273,9 +274,8 @@ class FieldsWidget(QWidget):
         Arguments:
             columns (List[str]):
         """
-        self.variants_fields_model.checked_fields = fields
-        self.annotations_fields_model.checked_fields = fields
-        self.samples_fields_model.checked_fields = fields
+        for view in self.views:
+            view["model"].checked_fields = fields
 
     @property
     def conn(self):
@@ -283,11 +283,16 @@ class FieldsWidget(QWidget):
 
     @conn.setter
     def conn(self, conn):
-        prepare_fields_for_editor.cache_clear()
         self._conn = conn
-        self.variants_fields_model.conn = conn
-        self.annotations_fields_model.conn = conn
-        self.samples_fields_model.conn = conn
+        for index, view in enumerate(self.views):
+            model = view["model"]
+            name = view["name"]
+            model.conn = conn
+            self.tab_widget.setTabText(index, f"{name} ({model.rowCount()})")
+            if conn:
+                view["view"].horizontalHeader().setSectionResizeMode(
+                    0, QHeaderView.ResizeToContents
+                )
 
 
 class FieldsEditorWidget(plugin.PluginWidget):
@@ -303,15 +308,6 @@ class FieldsEditorWidget(plugin.PluginWidget):
 
     ENABLE = True
 
-    # @property
-    # def conn(self):
-    #     return self._conn
-
-    # @conn.setter
-    # def conn(self, conn):
-    #     self._conn = conn
-    #     self.widget_fields.conn = conn
-
     def __init__(self, conn=None, parent=None):
         super().__init__(parent)
 
@@ -326,6 +322,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
         layout.addWidget(self.toolbar)
         layout.addWidget(self.widget_fields)
         layout.addWidget(self.search_edit)
+        layout.setSpacing(0)
 
         layout.setContentsMargins(0, 0, 0, 0)
 
@@ -333,6 +330,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
 
         # Setup toolbar
         self.toolbar.setIconSize(QSize(16, 16))
+        self.toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
 
         # setup search edit
         self.setFocusPolicy(Qt.ClickFocus)
@@ -355,8 +353,6 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self._is_refreshing = (
             False  # Help to avoid loop between on_refresh and on_fields_changed
         )
-
-        self.conn = conn
 
     def on_search_pressed(self, checked: bool):
         self.search_edit.setVisible(checked)

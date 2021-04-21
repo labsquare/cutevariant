@@ -32,6 +32,12 @@ FIELD_TYPE = {
     "bool": {"name": "boolean", "icon": 0xF023B, "color": "#949cdf"},
 }
 
+FIELD_CATEGORY = {
+    "variants": {"icon": 0xF0B1D},
+    "annotations": {"icon": 0xF0B08},
+    "samples": {"icon": 0xF0B1A},
+}
+
 
 GENE_COLOR = "#F5A26F"
 WARNING_BACKGROUND_COLOR = "#FFCCBA"
@@ -72,8 +78,8 @@ def bright(app):
 
 def dark(app):
     """Apply Dark Theme to the Qt application instance.
-        Args:
-            app (QApplication): QApplication instance.
+    Args:
+        app (QApplication): QApplication instance.
     """
 
     darkPalette = QPalette()
