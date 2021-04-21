@@ -1,53 +1,96 @@
+from typing import List
+import sqlite3
+import json
+from functools import lru_cache
+
+
 from cutevariant.gui import plugin, FIcon, style
 from cutevariant.core import sql
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 from PySide2.QtGui import *
 
-from typing import List
-import sqlite3
-import json
+
+import cutevariant.commons as cm
+
+LOGGER = cm.logger()
+
+
+@lru_cache()
+def prepare_fields_for_editor(conn):
+    """
+    Returns a dict with field info for each category.
+    Example result:
+    {
+        "variants":
+        {
+            "chr":{"type":"str","description":{"The chromosome the variant was found on"}},
+            "pos":{...}
+        },
+        "annotations":
+        {
+            "ann.gene":{"type":"str","description":"Name of the gene where the variant is"}},
+            "ann.impact":{...}
+        },
+        "samples":
+        {
+            "samples.boby.gt":{"type":"int","description":{"Genotype for this sample (0:hom. for ref, 1: het for alt, 2:hom for alt)}}
+            "samples.boby.dp":{...}
+        }
+    }
+    """
+
+    results = {"variants": {}, "annotations": {}, "samples": {}}
+
+    samples = [sample["name"] for sample in sql.get_samples(conn)]
+
+    for field in sql.get_fields(conn):
+
+        if field["category"] == "variants":
+            name = field["name"]
+            results["variants"][name] = {
+                "type": field["type"],
+                "description": field["description"],
+            }
+
+        if field["category"] == "annotations":
+            name = field["name"]
+            results["annotations"][f"ann.{name}"] = {
+                "type": field["type"],
+                "description": field["description"],
+            }
+
+        if field["category"] == "samples":
+            name = field["name"]
+            for sample in samples:
+                results["samples"][f"samples.{sample}.{name}"] = {
+                    "type": field["type"],
+                    "description": field["description"],
+                }
+
+    return results
 
 
 class FieldsModel(QStandardItemModel):
-    """Model to display all fields from databases into 3 groups (variants, annotation, samples)
-    Fields are checkable and can be set using setter/getter checked_fields .
-
-    Examples:
-
-        from cutevariant.core import sql
-        conn = sql.get_connectionn("project.db")
-
-        model = FieldsModel(conn)
-        view = QTreeView()
-        view.setModel(model)
-
-        model.checked_fields = ["chr","pos","ref"]
-        model.load()
-
-
-    Attributes:
-        conn (sqlite3.Connection)
-
-    Todo :
-        Possible bug with duplicate name in different categories.
-        e.g: variants.gene and annotations.gene
-
-    """
-
-    def __init__(self, conn: sqlite3.Connection = None):
-        """Create the model with a connection.
-
-            conn can be None and set later
-
-        Args:
-            conn (sqlite3.Connection, optional)
-        """
-        super().__init__()
-
-        # store QStandardItem which can be checked
+    def __init__(
+        self, category="variants", conn: sqlite3.Connection = None, parent=None
+    ):
+        super().__init__(0, 2, parent)
         self._checkable_items = []
         self.conn = conn
+        self._category = category
+
+    @property
+    def conn(self):
+        return self._conn
+
+    @conn.setter
+    def conn(self, conn):
+        self._conn = conn
+        if self._conn:
+            self.load()
+        else:
+            self.clear()
 
     @property
     def checked_fields(self) -> List[str]:
@@ -80,64 +123,44 @@ class FieldsModel(QStandardItemModel):
 
     def load(self):
         """Load all fields from the model"""
-        self.clear()
-        self._checkable_items.clear()
+
         self.setColumnCount(2)
         self.setHorizontalHeaderLabels(["name", "description"])
 
-        #  Load fields from variant categories
-        self.appendRow(self._load_fields("variants"))
-        #  Load fields from annotations categories
-        self.appendRow(self._load_fields("annotations"))
-        # Create and load fields from samples categories
-        samples_items = QStandardItem("samples")
-        samples_items.setIcon(FIcon(0xF0B9C))
-        font = QFont()
-
-        samples_items.setFont(font)
-        for sample in sql.get_samples(self.conn):
-            sample_item = self._load_fields("samples", parent_name=sample["name"])
-            sample_item.setText(sample["name"])
-            sample_item.setIcon(FIcon(0xF0B9C))
-            samples_items.appendRow(sample_item)
-
-        self.appendRow(samples_items)
-
-    def _load_fields(self, category: str, parent_name: str = None) -> QStandardItem:
-        """Load fields from database and create a QStandardItem
-
-        Args:
-            category (str): category name : eg. variants / annotations / samples
-            parent_name (str, optional): name of the parent item
-
-        Returns:
-            QStandardItem
-        """
-        root_item = QStandardItem(category)
-        root_item.setColumnCount(2)
-        root_item.setIcon(FIcon(0xF0256))
-        font = QFont()
-        root_item.setFont(font)
-
-        for field in sql.get_field_by_category(self.conn, category):
-            field_name = QStandardItem(field["name"])
-            descr = QStandardItem(field["description"])
-            descr.setToolTip(field["description"])
-
-            field_name.setCheckable(True)
-
-            field_type = style.FIELD_TYPE.get(field["type"])
-            field_name.setIcon(FIcon(field_type["icon"], "white", field_type["color"]))
-
-            root_item.appendRow([field_name, descr])
-            self._checkable_items.append(field_name)
-
-            if category == "samples":
-                field_name.setData({"name": ("sample", parent_name, field["name"])})
+        if self.conn:
+            fields = prepare_fields_for_editor(self.conn).get(self._category, None)
+            if not fields:
+                LOGGER.warning("Cannot load field category %s", self._category)
             else:
-                field_name.setData(field)
+                for field in fields:
+                    field_name = field
+                    if self._category == "annotations":
+                        # Remove the ann. prefix (4 characters)
+                        field_name = field_name[4:]
+                    if self._category == "samples":
+                        # Remove the samples. prefix (8 characters)
+                        field_name = field_name[8:]
 
-        return root_item
+                    field_desc = fields[field]["description"]
+
+                    field_name_item = QStandardItem(field_name)
+                    field_name_item.setCheckable(True)
+                    field_type = style.FIELD_TYPE.get(fields[field]["type"])
+                    field_name_item.setIcon(
+                        FIcon(field_type["icon"], "white", field_type["color"])
+                    )
+
+                    self._checkable_items.append(field_name_item)
+                    field_name_item.setData(
+                        {
+                            "name": field,
+                            "type": fields[field]["type"],
+                            "description": fields[field]["description"],
+                        }
+                    )
+
+                    descr_item = QStandardItem(field_desc)
+                    self.appendRow([field_name_item, descr_item])
 
     def to_file(self, filename: str):
         """Serialize checked fields to a json file
@@ -160,6 +183,113 @@ class FieldsModel(QStandardItemModel):
             self.checked_fields = obj.get("checked_fields", [])
 
 
+class FieldsWidget(QWidget):
+
+    fields_changed = Signal()
+
+    def __init__(self, conn: sqlite3.Connection = None, parent=None):
+        super().__init__(parent)
+        self.tab_widget = QTabWidget(self)
+
+        # Create the variants widget (the view and its associated filter model)
+        self.variants_fields_view = QTableView()
+        self.variants_fields_model = FieldsModel("variants", conn)
+        self.variants_fields_filter = QSortFilterProxyModel(self)
+        self.init_all(
+            self.variants_fields_model,
+            self.variants_fields_filter,
+            self.variants_fields_view,
+        )
+
+        # Create the annotations widget (the view and its associated filter model)
+        self.annotations_fields_view = QTableView()
+        self.annotations_fields_model = FieldsModel("annotations", conn)
+        self.annotations_fields_filter = QSortFilterProxyModel(self)
+        self.init_all(
+            self.annotations_fields_model,
+            self.annotations_fields_filter,
+            self.annotations_fields_view,
+        )
+
+        # Create the samples widget (the view and its associated filter model)
+        self.samples_fields_view = QTableView()
+        self.samples_fields_model = FieldsModel("samples", conn)
+        self.samples_fields_filter = QSortFilterProxyModel(self)
+        self.init_all(
+            self.samples_fields_model,
+            self.samples_fields_filter,
+            self.samples_fields_view,
+        )
+
+        self.tab_widget.addTab(self.variants_fields_view, self.tr("variants"))
+        self.tab_widget.addTab(self.annotations_fields_view, self.tr("annotations"))
+        self.tab_widget.addTab(self.samples_fields_view, self.tr("samples"))
+
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.tab_widget)
+
+        self.conn = conn
+
+    def init_all(
+        self, model: FieldsModel, proxy: QSortFilterProxyModel, view: QTableView
+    ):
+        proxy.setSourceModel(model)
+        view.setModel(proxy)
+        view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        view.setIconSize(QSize(16, 16))
+        view.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        proxy.setRecursiveFilteringEnabled(True)
+
+        proxy.setFilterCaseSensitivity(Qt.CaseInsensitive)
+        proxy.setFilterKeyColumn(-1)
+
+        model.itemChanged.connect(lambda: self.fields_changed.emit())
+
+    def update_filter(self, text: str):
+        """
+        Callback for when the search bar is updated (filter the three models)
+        """
+        self.variants_fields_filter.setFilterRegExp(text)
+        self.annotations_fields_filter.setFilterRegExp(text)
+        self.samples_fields_filter.setFilterRegExp(text)
+
+    @property
+    def checked_fields(self) -> List[str]:
+        """Return checked fields
+
+        Returns:
+            List[str] : list of checked fields
+        """
+        return (
+            self.variants_fields_model.checked_fields
+            + self.annotations_fields_model.checked_fields
+            + self.samples_fields_model.checked_fields
+        )
+
+    @checked_fields.setter
+    def checked_fields(self, fields: List[str]):
+        """Check fields according name
+
+        Arguments:
+            columns (List[str]):
+        """
+        self.variants_fields_model.checked_fields = fields
+        self.annotations_fields_model.checked_fields = fields
+        self.samples_fields_model.checked_fields = fields
+
+    @property
+    def conn(self):
+        return self._conn
+
+    @conn.setter
+    def conn(self, conn):
+        prepare_fields_for_editor.cache_clear()
+        self._conn = conn
+        self.variants_fields_model.conn = conn
+        self.annotations_fields_model.conn = conn
+        self.samples_fields_model.conn = conn
+
+
 class FieldsEditorWidget(plugin.PluginWidget):
     """Display all fields according categorie
 
@@ -173,68 +303,60 @@ class FieldsEditorWidget(plugin.PluginWidget):
 
     ENABLE = True
 
+    # @property
+    # def conn(self):
+    #     return self._conn
+
+    # @conn.setter
+    # def conn(self, conn):
+    #     self._conn = conn
+    #     self.widget_fields.conn = conn
+
     def __init__(self, conn=None, parent=None):
         super().__init__(parent)
 
         self.setWindowTitle(self.tr("Columns"))
-        self.view = QTreeView(self)
+
         self.toolbar = QToolBar(self)
-        # conn is always None here but initialized in on_open_project()
-        self.model = FieldsModel(conn)
-
-        # setup proxy ( for search option )
-        self.proxy_model = QSortFilterProxyModel()
-        self.proxy_model.setSourceModel(self.model)
-        self.proxy_model.setRecursiveFilteringEnabled(True)
-        # Search is case insensitive
-        self.proxy_model.setFilterCaseSensitivity(Qt.CaseInsensitive)
-        # Search in all columns
-        self.proxy_model.setFilterKeyColumn(-1)
-
-        self.view.setModel(self.proxy_model)
-        self.view.setIconSize(QSize(16, 16))
-        self.view.header().setSectionResizeMode(QHeaderView.ResizeToContents)
-        self.view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.view.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.widget_fields = FieldsWidget(conn, parent)
         self.search_edit = QLineEdit()
-        # self.view.setIndentation(0)
-        self.view.header().setVisible(False)
-        layout = QVBoxLayout()
+
+        layout = QVBoxLayout(self)
 
         layout.addWidget(self.toolbar)
-        layout.addWidget(self.view)
+        layout.addWidget(self.widget_fields)
         layout.addWidget(self.search_edit)
 
         layout.setContentsMargins(0, 0, 0, 0)
-        self.setLayout(layout)
-        self.model.itemChanged.connect(self.on_fields_changed)
+
+        self.widget_fields.fields_changed.connect(self.on_fields_changed)
 
         # Setup toolbar
         self.toolbar.setIconSize(QSize(16, 16))
-        self.toolbar.addAction(
-            FIcon(0xF0615), self.tr("Collapse"), self.view.collapseAll
-        )
-        self.toolbar.addAction(FIcon(0xF0616), self.tr("Expand"), self.view.expandAll)
 
         # setup search edit
         self.setFocusPolicy(Qt.ClickFocus)
+
         self.search_act = QAction(FIcon(0xF0969), self.tr("Search by keywords..."))
         self.search_act.setCheckable(True)
         self.search_act.toggled.connect(self.on_search_pressed)
         self.search_act.setShortcutContext(Qt.WidgetShortcut)
         self.search_act.setShortcut(QKeySequence.Find)
-        self.toolbar.addAction(self.search_act)
 
-        self.view.addAction(self.search_act)
+        self.toolbar.addAction(self.search_act)
 
         self.search_edit.setVisible(False)
         self.search_edit.setPlaceholderText(self.tr("Search by keywords... "))
 
-        self.search_edit.textChanged.connect(self.proxy_model.setFilterRegExp)
+        self.search_edit.textChanged.connect(self.widget_fields.update_filter)
+
+        self.auto_refresh = True
 
         self._is_refreshing = (
             False  # Help to avoid loop between on_refresh and on_fields_changed
         )
+
+        self.conn = conn
 
     def on_search_pressed(self, checked: bool):
         self.search_edit.setVisible(checked)
@@ -242,23 +364,27 @@ class FieldsEditorWidget(plugin.PluginWidget):
 
     def on_open_project(self, conn):
         """ Overrided from PluginWidget """
-        self.model.conn = conn
-        self.model.load()
+        self.widget_fields.conn = conn
         self.on_refresh()
 
     def on_refresh(self):
         """ overrided from PluginWidget """
-        self._is_refreshing = True
-        self.model.checked_fields = self.mainwindow.state.fields
-        self._is_refreshing = False
+        if self.mainwindow:
+            self._is_refreshing = True
+            self.widget_fields.checked_fields = self.mainwindow.state.fields
+            self._is_refreshing = False
 
     def on_fields_changed(self):
-
         if self.mainwindow is None or self._is_refreshing:
+            """
+            Debugging (no window)
+            """
+            print(self.widget_fields.checked_fields)
             return
 
-        self.mainwindow.state.fields = self.model.checked_fields
-        self.mainwindow.refresh_plugins(sender=self)
+        self.mainwindow.state.fields = self.widget_fields.checked_fields
+        if self.auto_refresh:
+            self.mainwindow.refresh_plugins(sender=self)
 
 
 if __name__ == "__main__":
@@ -272,18 +398,11 @@ if __name__ == "__main__":
     import_reader(conn, FakeReader())
     # import_file(conn, "examples/test.snpeff.vcf")
 
-    model = FieldsModel()
-    view = QTreeView()
-
-    view.setModel(model)
-
-    model.conn = conn
-    model.fields = ["chr", "pos"]
-
-    model.load()
+    widget = FieldsEditorWidget()
+    widget.on_open_project(conn)
 
     # view.changed.connect(lambda : print(view.columns))
 
-    view.show()
+    widget.show()
 
     app.exec_()
