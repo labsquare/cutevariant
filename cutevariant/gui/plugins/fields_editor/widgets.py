@@ -150,6 +150,9 @@ class FieldsModel(QStandardItemModel):
 
                     field_name_item = QStandardItem(field_name)
                     field_name_item.setCheckable(True)
+                    font = QFont()
+                    font.setBold(True)
+                    field_name_item.setFont(font)
                     field_type = style.FIELD_TYPE.get(fields[field]["type"])
                     field_name_item.setIcon(
                         FIcon(field_type["icon"], "white", field_type["color"])
@@ -165,6 +168,8 @@ class FieldsModel(QStandardItemModel):
                     )
 
                     descr_item = QStandardItem(field_desc)
+                    descr_item.setToolTip(fields[field]["description"])
+
                     self.appendRow([field_name_item, descr_item])
                     self.fields_loaded.emit()
 
