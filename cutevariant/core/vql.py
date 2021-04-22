@@ -147,7 +147,7 @@ class Function(metaclass=model_class):
 class Tuple(metaclass=model_class):
     @property
     def value(self):
-        return tuple(self.items)
+        return list(self.items)
 
 
 class WordSetIdentifier(metaclass=model_class):
