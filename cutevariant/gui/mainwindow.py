@@ -751,7 +751,6 @@ class MainWindow(QMainWindow):
         # Supported export extensions to filter names in the save file dialog (all of them by default)
 
         factory = ExportDialogFactory()
-        # factory.state = self.state
 
         exts = factory.get_supported_formats()
 

@@ -148,8 +148,13 @@ class VqlEditorWidget(plugin.PluginWidget):
             color = style.FIELD_TYPE.get(field["type"], "str")["color"]
             icon = FIcon(style.FIELD_TYPE.get(field["type"], "str")["icon"], "white")
 
-            if field["category"] == "variants" or field["category"] == "annotations":
+            if field["category"] == "variants":
                 self.text_edit.completer.model.add_item(name, description, icon, color)
+
+            if field["category"] == "annotations":
+                self.text_edit.completer.model.add_item(
+                    f"ann.{name}", description, icon, color
+                )
 
             if field["category"] == "samples":
                 # Overwrite name

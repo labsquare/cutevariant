@@ -39,6 +39,8 @@ from PySide2.QtCore import (
 )
 import sys
 
+import re
+
 
 class VqlSyntaxHighlighter(QSyntaxHighlighter):
     """SQL Syntax highlighter for VqlEditor"""
@@ -153,10 +155,10 @@ class VqlSyntaxHighlighter(QSyntaxHighlighter):
 
 class CompleterModel(QAbstractListModel):
 
-    """Model used by Completer which contains keyword name, description, icon and color 
-    Use add_item to add new items . 
+    """Model used by Completer which contains keyword name, description, icon and color
+    Use add_item to add new items .
     Exemples:
-    
+
         model.beginResetModel()
         model.add_item("keyword", "description", QIcon(), "white")
         model.add_item("keyword", "description", QIcon(), "white")
@@ -171,22 +173,21 @@ class CompleterModel(QAbstractListModel):
         self._items = []
 
     def clear(self):
-        """Clear model
-        """
+        """Clear model"""
         self.beginResetModel()
         self._items.clear()
         self.endResetModel()
 
     def add_item(self, name: str, description: str, icon=QIcon(), color=None):
-        """Add items 
+        """Add items
 
         Todo:
             Create a signal with beginInsert
-        
+
         Args:
             name (str): keyword name to be inserted
             description (str): a description of the keyword
-            icon (TYPE, optional): the icon 
+            icon (TYPE, optional): the icon
             color (None, optional): the background color icon
         """
         self._items.append(
@@ -195,12 +196,12 @@ class CompleterModel(QAbstractListModel):
 
     def rowCount(self, parent=QModelIndex()) -> int:
         """Override from QAbstractListModel
-        
+
         Args:
             parent (QModelIndex, optional)
-        
+
         Returns:
-            int: row count 
+            int: row count
         """
         if parent == QModelIndex():
             return len(self._items)
@@ -208,13 +209,13 @@ class CompleterModel(QAbstractListModel):
 
     def data(self, index: QModelIndex, role: Qt.ItemDataRole):
         """Override from QAbstractListModel
-        
+
         Args:
             index (QModelIndex): index
-            role (Qt.ItemDataRole): role 
-        
+            role (Qt.ItemDataRole): role
+
         Returns:
-            Any: value 
+            Any: value
         """
         if not index.isValid():
             return None
@@ -236,14 +237,13 @@ class CompleterModel(QAbstractListModel):
 
 class CompleterDelegate(QStyledItemDelegate):
 
-    """CompleterDelegate is use by the completer to draw nicely icon and elements of the completer
-    """
+    """CompleterDelegate is use by the completer to draw nicely icon and elements of the completer"""
 
     def paint(
         self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex
     ):
         """Paint a cell according index and option
-        
+
         Args:
             painter (QPainter)
             option (QStyleOptionViewItem)
@@ -307,10 +307,10 @@ class Completer(QWidget):
         model (CompleterModel): the model
         proxy_model (QSortFilterProxyModel ): the proxy model used to filter model
         panel (QLabel): The description widget
-        view (QListView): the view 
-    
+        view (QListView): the view
+
     Signals:
-        activated (str): return the keyword selected 
+        activated (str): return the keyword selected
     """
 
     activated = Signal(str)
@@ -362,21 +362,21 @@ class Completer(QWidget):
         self.setLayout(vlayout)
 
     def set_target(self, target):
-        """Set CodeEdit  
-        
+        """Set CodeEdit
+
         Args:
-            target (CodeEdit): The CodeEdit 
+            target (CodeEdit): The CodeEdit
         """
         self._target = target
         self.installEventFilter(self._target)
 
     def eventFilter(self, obj: QObject, event: QEvent) -> bool:
         """Filter event from CodeEdit and QListView
-        
+
         Args:
             obj (QObject): Description
             event (QEvent): Description
-        
+
         Returns:
             bool
         """
@@ -425,10 +425,10 @@ class Completer(QWidget):
 
     def complete(self, rect: QRect):
         """Show completer as popup
-        
+
         Args:
             rect (QRect): the area where to display the completer
-        
+
         """
         if self.proxy_model.rowCount() == 0:
             self.hide()
@@ -449,8 +449,8 @@ class Completer(QWidget):
                 self.show()
 
     def set_completion_prefix(self, prefix: str):
-        """Set prefix and filter model 
-        
+        """Set prefix and filter model
+
         Args:
             prefix (str): A prefix keyword used to filter model
         """
@@ -468,7 +468,7 @@ class Completer(QWidget):
 
     def select_row(self, row: int):
         """Select a row in the model
-        
+
         Args:
             row (int): a row number
         """
@@ -477,9 +477,9 @@ class Completer(QWidget):
 
     def completion_prefix(self) -> str:
         """getter of completion_prefix
-        
-        TODO: use getter / setter 
-        
+
+        TODO: use getter / setter
+
         Returns:
             str: Return the completion_prefix
         """
@@ -488,7 +488,7 @@ class Completer(QWidget):
     def hide(self):
         """Override from QWidget
 
-        Hide the completer 
+        Hide the completer
         """
         self.set_completion_prefix("")
         super().hide()
@@ -496,7 +496,7 @@ class Completer(QWidget):
     def _on_row_changed(self, current: QModelIndex, previous: QModelIndex):
         """Slot received when user select a new item in the list.
         This is used to update the panel
-        
+
         Args:
             current (QModelIndex): the selection index
             previous (QModelIndex): UNUSED
@@ -508,7 +508,7 @@ class Completer(QWidget):
 class CodeEdit(QTextEdit):
     """
     A QTextEdit code editor with a custom completer ( not QCompleter) and a VQL syntax Highlighter.
-    To make completer available, you should fill it . 
+    To make completer available, you should fill it .
 
     Examples:
 
@@ -579,24 +579,28 @@ class CodeEdit(QTextEdit):
 
     def text_under_cursor(self) -> str:
         """return text under cursor
-        
+
         Returns:
             str
         """
         tc = self.textCursor()
-        tc.select(QTextCursor.WordUnderCursor)
-        return tc.selectedText()
+        tc.setPosition(0, QTextCursor.KeepAnchor)
+        match = re.findall(r"([\w\.]+)$", tc.selectedText())
+        return match[0] if match else ""
 
     def insert_completion(self, completion: str):
         """Replace current word by completion
-        
+
         Args:
             completion (str)
         """
         tc = self.textCursor()
         extra = len(self.completer.completion_prefix())
+        text_under_cursor = self.text_under_cursor()
+        tc.movePosition(
+            QTextCursor.Left, QTextCursor.KeepAnchor, len(text_under_cursor)
+        )
 
-        tc.select(QTextCursor.WordUnderCursor)
         tc.removeSelectedText()
         # tc.movePosition(QTextCursor.Left)
         # tc.movePosition(QTextCursor.StartOfWord)
