@@ -14,7 +14,6 @@ from PySide2.QtCore import (
     QUrl,
     QModelIndex,
     QSortFilterProxyModel,
-
 )
 from PySide2.QtWidgets import (
     QToolBar,
@@ -26,7 +25,7 @@ from PySide2.QtWidgets import (
     QHeaderView,
     QSpacerItem,
     QStyledItemDelegate,
-    QLineEdit
+    QLineEdit,
 )
 
 from PySide2.QtGui import QDesktopServices, QKeySequence
@@ -225,9 +224,6 @@ class HistoryModel(QAbstractTableModel):
 
         self.endResetModel()
 
-
-
-
     def get_query(self, index: QModelIndex):
         return self.records[index.row()][3]
 
@@ -238,11 +234,8 @@ class DateSortProxyModel(QSortFilterProxyModel):
 
 
 class HistoryDelegate(QStyledItemDelegate):
-
-    def __init__(self, parent = None):
-        super().__init__( parent)
-
-
+    def __init__(self, parent=None):
+        super().__init__(parent)
 
     def paint(self, painter, option, index):
 
@@ -253,11 +246,9 @@ class HistoryDelegate(QStyledItemDelegate):
                 font.setItalic(True)
                 painter.setFont(font)
                 painter.setPen(QPen(Qt.darkGray))
-                painter.drawText(option.rect,Qt.AlignCenter, "edit ...")
+                painter.drawText(option.rect, Qt.AlignCenter, "edit ...")
 
-
-
-        if index.column() == 3 and not option.state &  QStyle.State_Selected:
+        if index.column() == 3 and not option.state & QStyle.State_Selected:
 
             painter.save()
             painter.setClipRegion(option.rect)
@@ -265,23 +256,23 @@ class HistoryDelegate(QStyledItemDelegate):
             doc = QTextDocument()
             doc.setDocumentMargin(0)
             metrics = QFontMetrics(painter.font())
-            area = option.rect.adjusted(5,5,-5,-5)
+            area = option.rect.adjusted(5, 5, -5, -5)
 
             syntax = VqlSyntaxHighlighter(doc)
             vql = index.data()
 
-            elided_vql = painter.fontMetrics().elidedText(vql,Qt.ElideRight, area.width())
+            elided_vql = painter.fontMetrics().elidedText(
+                vql, Qt.ElideRight, area.width()
+            )
             doc.setPlainText(elided_vql)
-            #highlighter_->setDocument(&doc);
-            #context.palette.setColor(QPalette.Text, painter.pen().color())
+            # highlighter_->setDocument(&doc);
+            # context.palette.setColor(QPalette.Text, painter.pen().color())
             painter.translate(area.topLeft())
             doc.drawContents(painter)
             painter.restore()
 
         else:
             super().paint(painter, option, index)
-
-
 
 
 class VqlHistoryWidget(plugin.PluginWidget):
@@ -316,6 +307,9 @@ class VqlHistoryWidget(plugin.PluginWidget):
         self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.view.setSortingEnabled(True)
         self.view.setItemDelegate(self.delegate)
+
+        # Hide name column (too ugly for now)
+        self.view.hideColumn(0)
 
         self.view.horizontalHeader().setSectionResizeMode(
             0, QHeaderView.ResizeToContents
