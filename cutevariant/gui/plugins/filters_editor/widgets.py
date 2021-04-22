@@ -16,6 +16,7 @@ from PySide2.QtWidgets import (
     QToolButton,
     QPushButton,
     QCompleter,
+    QStackedWidget,
     QDialog,
     QLineEdit,
     QFileDialog,
@@ -239,33 +240,74 @@ class WordSetEditor(BaseFieldEditor):
     Attributes:
         box (QCheckBox)
     """
-
     def __init__(self, parent=None):
         super().__init__(parent)
+
+        self.w = QWidget()
         self.edit = QLineEdit()
+        self.combo = QComboBox()
+        self.stack = QStackedWidget()
+        self.btn = QPushButton()
+        self.btn.setFlat(True)
+        self.btn.setToolTip(self.tr("Use wordset"))
+
+        hlayout = QHBoxLayout()
+        self.stack.addWidget(self.edit)
+        self.stack.addWidget(self.combo)
+
+        hlayout.addWidget(self.stack)
+        hlayout.addWidget(self.btn)
+
+        hlayout.setContentsMargins(0,0,0,0)
+        hlayout.setSpacing(0)
+        self.setLayout(hlayout)
+
         # DisplayRole, UserRole
-        self.set_widget(self.edit)
+
         self.edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.btn.clicked.connect(self.switch_mode)
+
+    def switch_mode(self):
+        next_mode = "list" if self.get_mode() == "wordset" else "wordset"
+        self.set_mode(next_mode)
+
+    def fill_wordsets(self, wordsets:list):
+        self.combo.clear()
+        self.combo.addItems(wordsets)
+
+    def set_mode(self, mode = "list"):
+        """ set mode with either 'list' or 'wordset' """
+
+        if mode == "list":
+            self.stack.setCurrentIndex(0)
+            self.btn.setIcon(FIcon(0xF0B13))
+        if mode == "wordset":
+            self.stack.setCurrentIndex(1)
+            self.btn.setIcon(FIcon(0xF0C2E))
+
+    def get_mode(self):
+        return "list" if self.stack.currentIndex() == 0 else "wordset"
 
     def set_value(self, value: Any):
 
         # If value is a simple list of elements ...
         if isinstance(value, list):
             self.edit.setText(",".join(value))
+            self.set_mode("list")
 
         # If it is a real wordset object
         if isinstance(value, dict):
             if "$wordset" in value:
-                print("t", value)
-                self.edit.setText(value["$wordset"])
+                self.combo.setCurrentText(value["$wordset"])
+                self.set_mode("wordset")
 
     def get_value(self) -> Any:
 
         # If has ",", it is a simple list list.
-        if "," in self.edit.text():
+        if self.get_mode() == "list":  # ListMode
             return self.edit.text().split(",")
-        # Other wise return a wordset object
-        return {"$wordset": self.edit.text()}
+        else:
+            return {"$wordset": self.combo.currentText()}
 
 
 class BoolFieldEditor(BaseFieldEditor):
@@ -391,7 +433,9 @@ class FieldFactory(QObject):
         field_type = self.field_types_mapping.get(field)
 
         if operator in ("$in", "$nin"):
-            return WordSetEditor(parent)
+            w =  WordSetEditor(parent)
+            w.fill_wordsets([w["name"] for w in sql.get_wordsets(self.conn)])
+            return w 
 
         if field_type == "int":
             w = IntFieldEditor(parent)
@@ -804,14 +848,7 @@ class FilterModel(QAbstractItemModel):
                     item.set_operator(value)
 
                 if index.column() == 3:
-                    if isinstance(value, list):
-                        if len(value) == 1:
-                            item.set_value({"$wordset": value[0]})
-                        else:
-                            item.set_value(value)
-
-                    else:
-                        item.set_value(value)
+                    item.set_value(value)
 
             self.filtersChanged.emit()
             # just one item is changed
@@ -2300,6 +2337,8 @@ if __name__ == "__main__":
 
     model.conn = conn
     model.load(data)
+
+    view.expandAll()
 
     print(prepare_fields(conn))
 
