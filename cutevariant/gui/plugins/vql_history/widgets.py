@@ -440,8 +440,6 @@ class VqlHistoryWidget(plugin.PluginWidget):
         self.mainwindow.state.fields = parsed_query["fields"]
         self.mainwindow.state.source = parsed_query["source"]
         self.mainwindow.state.filters = parsed_query["filters"]
-        self.mainwindow.state.group_by = parsed_query["group_by"]
-        self.mainwindow.state.having = parsed_query["having"]
 
         self.mainwindow.refresh_plugins(sender=self)
 

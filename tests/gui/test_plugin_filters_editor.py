@@ -21,32 +21,7 @@ def conn():
     return utils.create_conn()
 
 
-FILTERS = {
-    "AND": [
-        {"field": "gene", "operator": "=", "value": "chr12"},
-        {"field": "gene", "operator": "=", "value": "chr12"},
-        {
-            "AND": [
-                {"field": "gene", "operator": "=", "value": "chr12"},
-                {"field": "gene", "operator": "=", "value": "chr12"},
-                {
-                    "AND": [
-                        {"field": "gene", "operator": "=", "value": "chr12"},
-                        {"field": "gene", "operator": "=", "value": "chr12"},
-                        {
-                            "AND": [
-                                {"field": "gene", "operator": "=", "value": "chr12"},
-                                {"field": "gene", "operator": "=", "value": "chr12"},
-                            ]
-                        },
-                    ]
-                },
-            ]
-        },
-        {"field": "gene", "operator": "=", "value": "chr12"},
-        {"field": "gene", "operator": "=", "value": "chr12"},
-    ]
-}
+FILTERS = {"$and": [{"gene": "chr12"}]}
 
 
 def test_model_load(qtmodeltester, conn):
@@ -63,14 +38,14 @@ def test_model_load(qtmodeltester, conn):
     item = model.item(first_child)
 
     assert item.type == widgets.FilterItem.CONDITION_TYPE
-    assert item.data == ["gene", "=", "chr12"]
+    assert item.data == ["gene", "$eq", "chr12"]
 
     #  test save model
     _, filename = tempfile.mkstemp()
     model.to_json(filename)
 
     #  load model
-    assert model.rowCount(model.index(0, 0)) == len(FILTERS["AND"])
+    assert model.rowCount(model.index(0, 0)) == len(FILTERS["$and"])
 
     #  Clear data
     model.clear()
@@ -78,7 +53,7 @@ def test_model_load(qtmodeltester, conn):
 
     #  Get back data from file
     model.from_json(filename)
-    assert model.rowCount(model.index(0, 0)) == len(FILTERS["AND"])
+    assert model.rowCount(model.index(0, 0)) == len(FILTERS["$and"])
 
 
 def test_save_view(qtbot, monkeypatch, conn):
@@ -119,7 +94,7 @@ def test_save_view(qtbot, monkeypatch, conn):
     assert os.path.exists(file_path_2)
     assert view.combo.count() == 2  #  There is 2 file in the combo
     assert view.combo.currentText() == "test2"
-    assert view.model.filters == {"AND": []}
+    assert view.model.filters == {"$and": []}
 
     #  test change file from combo
     view.combo.setCurrentText("test1")

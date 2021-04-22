@@ -66,7 +66,7 @@ VQL_TO_TREE_CASES = {
         "cmd": "select_cmd",
         "fields": ["chr"],
         "source": "variants",
-        "filters": {"$and": [{"some_field": {"$in": ("one", "two")}}]},
+        "filters": {"$and": [{"some_field": {"$in": ["one", "two"]}}]},
     },
     # Test 9
     "SELECT chr FROM variants WHERE gene IN WORDSET['test']": {
@@ -87,7 +87,7 @@ VQL_TO_TREE_CASES = {
         "cmd": "create_cmd",
         "source": "variants",
         "target": "denovo",
-        "filters": {"$and": [{"some_field": {"$in": ("one", "two")}}]},
+        "filters": {"$and": [{"some_field": {"$in": ["one", "two"]}}]},
     },
     # Test 12
     "CREATE denovo = A | B ": {

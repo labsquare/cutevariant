@@ -31,6 +31,7 @@ from PySide2.QtWidgets import (
     QVBoxLayout,
     QMenu,
     QStyle,
+    QAbstractItemDelegate,
 )
 from PySide2.QtCore import (
     Qt,
@@ -680,6 +681,8 @@ class FilterModel(QAbstractItemModel):
             Any type: Return value
         """
         if not index.isValid():
+            return
+        if index == QModelIndex():
             return
 
         item = self.item(index)
@@ -2033,6 +2036,11 @@ class FiltersEditorWidget(plugin.PluginWidget):
         Set the filters of the mainwindow and trigger a refresh of all plugins.
         """
         if self.mainwindow and self.filters != self.mainwindow.state.filters:
+            # Close editor on validate, to avoid unset data
+            self.view.closeEditor(
+                self.view.indexWidget(self.view.currentIndex()),
+                QAbstractItemDelegate.NoHint,
+            )
             # Refresh other plugins only if the filters are modified
             self.mainwindow.state.filters = self.filters
             self.mainwindow.refresh_plugins(sender=self)

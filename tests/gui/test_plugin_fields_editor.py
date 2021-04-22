@@ -17,32 +17,32 @@ def conn():
     return utils.create_conn()
 
 
-TEST_FIELDS = [
-    (
-        # Test check annotation fields
-        ["chr", "pos", "ref", "alt"],
-        ["ann.gene", "ann.impact"],
-        ["chr", "pos", "ref", "alt", "ann.gene", "ann.impact"],
-    ),
-    (
-        # Test check when plugin is initialized with no fields
-        [],
-        ["ann.gene", "ann.impact"],
-        ["ann.gene", "ann.impact"],
-    ),
-    (
-        # Test check sample fields
-        ["chr", "pos", "ref", "alt"],
-        ["samples.NORMAL.gt", "samples.TUMOR.gt"],
-        ["chr", "pos", "ref", "alt", "samples.NORMAL.gt", "samples.TUMOR.gt"],
-    ),
-]
-
-
 def test_plugin(conn, qtbot):
     plugin = widgets.FieldsEditorWidget()
-    plugin.conn = conn
-    plugin.show()
+    plugin.on_open_project(conn)
+
+    assert plugin.widget_fields.views[0]["model"].rowCount() == len(
+        sql.get_field_by_category(conn, "variants")
+    )
+    assert plugin.widget_fields.views[1]["model"].rowCount() == len(
+        sql.get_field_by_category(conn, "annotations")
+    )
+    assert plugin.widget_fields.views[2]["model"].rowCount() == len(
+        sql.get_field_by_category(conn, "samples")
+    ) * len(list(sql.get_samples(conn)))
+
+    checked_fields = [
+        "chr",
+        "pos",
+        "ann.gene",
+        "ann.impact",
+        "samples.TUMOR.gt",
+        "samples.NORMAL.gt",
+    ]
+    plugin.widget_fields.checked_fields = checked_fields
+    assert len(plugin.widget_fields.views[0]["model"].checked_fields) == 2
+    assert len(plugin.widget_fields.views[1]["model"].checked_fields) == 2
+    assert len(plugin.widget_fields.views[2]["model"].checked_fields) == 2
 
 
 # def test_model_load(qtmodeltester, conn):

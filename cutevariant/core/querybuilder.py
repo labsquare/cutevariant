@@ -306,6 +306,9 @@ def condition_to_sql(item: dict) -> str:
     if isinstance(value, str):
         value = f"'{value}'"
 
+    if isinstance(value, bool):
+        value = int(value)
+
     # Cast IS NULL
     if value is None:
         if operator == "$eq":
@@ -374,6 +377,9 @@ def condition_to_vql(item: dict) -> str:
     # Cast value
     if isinstance(value, str):
         value = f"'{value}'"
+
+    if isinstance(value, bool):
+        value = int(value)
 
     # Cast IS NULL
     if value is None:
