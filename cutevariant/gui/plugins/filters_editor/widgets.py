@@ -50,7 +50,15 @@ from PySide2.QtCore import (
     QSettings,
     QRect,
 )
-from PySide2.QtGui import QPainter, QPalette, QFont, QPen, QBrush, QIntValidator,QDoubleValidator
+from PySide2.QtGui import (
+    QPainter,
+    QPalette,
+    QFont,
+    QPen,
+    QBrush,
+    QIntValidator,
+    QDoubleValidator,
+)
 
 # Custom imports
 from cutevariant.gui import style, plugin, FIcon
@@ -65,9 +73,9 @@ import cutevariant.commons as cm
 LOGGER = cm.logger()
 
 TYPE_OPERATORS = {
-    "str": ["$eq", "$neq","$in","$ne","$in","$nin"],
-    "float": ["$eq", "$neq","$gte","$gt","$lt","$lte"],
-    "int": ["$eq", "$neq","$gte","$gt","$lt","$lte"],
+    "str": ["$eq", "$neq", "$in", "$ne", "$in", "$nin"],
+    "float": ["$eq", "$neq", "$gte", "$gt", "$lt", "$lte"],
+    "int": ["$eq", "$neq", "$gte", "$gt", "$lt", "$lte"],
     "bool": ["$eq"],
 }
 
@@ -86,7 +94,7 @@ def prepare_fields(conn):
 
         if field["category"] == "annotations":
             name = field["name"]
-            results[f"ann.{name}"]= field["type"]
+            results[f"ann.{name}"] = field["type"]
 
         if field["category"] == "samples":
             name = field["name"]
@@ -95,7 +103,6 @@ def prepare_fields(conn):
                 results[sample_field] = field["type"]
 
     return results
-
 
 
 class BaseFieldEditor(QFrame):
@@ -205,12 +212,9 @@ class StrFieldEditor(BaseFieldEditor):
         self.edit = QLineEdit()
         self.edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.set_widget(self.edit)
- 
-
 
     def set_value(self, value: str):
-        """Set displayed value in the lineEdit of the editor
-        """
+        """Set displayed value in the lineEdit of the editor"""
         self.edit.setText(str(value))
 
     def get_value(self) -> str:
@@ -220,14 +224,14 @@ class StrFieldEditor(BaseFieldEditor):
 
     def set_completion(self, items: list):
         """Set a completer to autocomplete value"""
-        #self.edit.setCompleter(completer)
+        # self.edit.setCompleter(completer)
         print("SET COMPLETION ", items)
         self.completer = QCompleter()
         self.model = QStringListModel(items)
         self.completer.setModel(self.model)
         self.edit.setCompleter(self.completer)
 
-  
+
 class WordSetEditor(BaseFieldEditor):
     """Editor for Boolean value
 
@@ -243,25 +247,24 @@ class WordSetEditor(BaseFieldEditor):
         self.edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
     def set_value(self, value: Any):
-        
-        # If value is a simple list of elements ... 
+
+        # If value is a simple list of elements ...
         if isinstance(value, list):
             self.edit.setText(",".join(value))
 
-        # If it is a real wordset object 
+        # If it is a real wordset object
         if isinstance(value, dict):
             if "$wordset" in value:
-                print("t",value)
+                print("t", value)
                 self.edit.setText(value["$wordset"])
 
-        
     def get_value(self) -> Any:
 
-        # If has ",", it is a simple list list. 
+        # If has ",", it is a simple list list.
         if "," in self.edit.text():
             return self.edit.text().split(",")
         # Other wise return a wordset object
-        return {"$wordset":self.edit.text()}
+        return {"$wordset": self.edit.text()}
 
 
 class BoolFieldEditor(BaseFieldEditor):
@@ -312,6 +315,7 @@ class ComboFieldEditor(BaseFieldEditor):
         self.combo_box.clear()
         self.combo_box.addItems(items)
 
+
 class OperatorFieldEditor(BaseFieldEditor):
     """Editor for Logic Value (less, greater, more than etc ...)
 
@@ -325,8 +329,6 @@ class OperatorFieldEditor(BaseFieldEditor):
         self.set_widget(self.combo_box)
         self.combo_box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
-        
-
     def set_value(self, value: str):
         self.combo_box.setCurrentText(value)
 
@@ -334,7 +336,7 @@ class OperatorFieldEditor(BaseFieldEditor):
         # Return UserRole
         return self.combo_box.currentData()
 
-    def fill(self, operators = TYPE_OPERATORS["str"]):
+    def fill(self, operators=TYPE_OPERATORS["str"]):
         """Init QComboBox with all supported operators"""
         self.combo_box.clear()
         for op in operators:
@@ -382,7 +384,7 @@ class FieldFactory(QObject):
         self.conn = conn
         self.field_types_mapping = prepare_fields(self.conn)
 
-    def create(self, field:str, operator = None,  parent = None):
+    def create(self, field: str, operator=None, parent=None):
         """Get FieldWidget according to type key of the given sql_field"""
 
         field_type = self.field_types_mapping.get(field)
@@ -402,9 +404,9 @@ class FieldFactory(QObject):
 
         if field_type == "str":
             w = StrFieldEditor(parent)
-            liste = sql.get_field_unique_values(self.conn, field )
+            liste = sql.get_field_unique_values(self.conn, field)
             w.set_completion(liste)
-            return w 
+            return w
 
         if field_type == "bool":
             return BoolFieldEditor(parent)
@@ -799,12 +801,12 @@ class FilterModel(QAbstractItemModel):
                     item.set_operator(value)
 
                 if index.column() == 3:
-                    if isinstance(value,list):
-                        if len(value) == 1 : 
+                    if isinstance(value, list):
+                        if len(value) == 1:
                             item.set_value({"$wordset": value[0]})
                         else:
                             item.set_value(value)
-                            
+
                     else:
                         item.set_value(value)
 
@@ -1265,9 +1267,9 @@ class FilterDelegate(QStyledItemDelegate):
         self.eye_on = FIcon(0xF0208)
         self.eye_off = FIcon(0xF0209)
 
-        s = qApp.style().pixelMetric(QStyle.PM_ListViewIconSize) 
+        s = qApp.style().pixelMetric(QStyle.PM_ListViewIconSize)
         self.icon_size = QSize(s, s)
-        self.row_height = qApp.style().pixelMetric(QStyle.PM_ListViewIconSize) 
+        self.row_height = qApp.style().pixelMetric(QStyle.PM_ListViewIconSize)
 
         self.indentation = 12
         self.branch_width = 8
@@ -1306,20 +1308,16 @@ class FilterDelegate(QStyledItemDelegate):
                 return combo
 
         if index.column() == self.COLUMN_OPERATOR:
-            w =  OperatorFieldEditor(parent)
-            # Fill operator according fields 
+            w = OperatorFieldEditor(parent)
+            # Fill operator according fields
             field_type = factory.field_types_mapping[field]
             w.fill(TYPE_OPERATORS[field_type])
-            return w 
-
-        if index.column() == self.COLUMN_VALUE:
-            # TODO: create instance only one time 
-            w =  factory.create(field, operator, parent)
             return w
 
-            
-
-
+        if index.column() == self.COLUMN_VALUE:
+            # TODO: create instance only one time
+            w = factory.create(field, operator, parent)
+            return w
 
         # if index.column() == 1:
         #     if item.type == FilterItem.LOGIC_TYPE:
@@ -1380,7 +1378,7 @@ class FilterDelegate(QStyledItemDelegate):
 
         # Set editor data from the model (from the selected FilterItem)
         # Editors expect typed values, so don't forget to use UserRole, not EditRole
-        
+
         #
         model = index.model()
         item = model.item(index)
@@ -1391,18 +1389,13 @@ class FilterDelegate(QStyledItemDelegate):
         if index.column() == self.COLUMN_VALUE:
             editor.set_value(value)
 
-            # Reset operators and values widgets 
-
-
+            # Reset operators and values widgets
 
         if index.column() == self.COLUMN_OPERATOR:
             editor.set_value(operator)
 
         if index.column() == self.COLUMN_FIELD:
             editor.set_value(field)
-
-
-        
 
     def editorEvent(self, event: QEvent, model, option, index: QModelIndex):
         """
@@ -1474,7 +1467,6 @@ class FilterDelegate(QStyledItemDelegate):
         # Then set this data to the FilterItem (in the corresponding attribute)
         # via its set_value() function.
         # Default: UserRole
-
 
         model.setData(index, editor.get_value())
 
@@ -1583,7 +1575,7 @@ class FilterDelegate(QStyledItemDelegate):
             is_selected = True
             painter.fillRect(option.rect, option.palette.color(bg, QPalette.Highlight))
 
-        #margin = self.indentation * (self._compute_level(index))
+        # margin = self.indentation * (self._compute_level(index))
 
         #  ========= Draw Checkbox
         if index.column() == self.COLUMN_CHECKBOX:
@@ -1591,7 +1583,7 @@ class FilterDelegate(QStyledItemDelegate):
             check_icon = self.eye_on if item.checked else self.eye_off
             rect = QRect(0, 0, self.icon_size.width(), self.icon_size.height())
             rect.moveCenter(option.rect.center())
-            #rect.setX(4)
+            # rect.setX(4)
             painter.drawPixmap(rect.x(), rect.y(), check_icon.pixmap(self.icon_size))
 
         else:
@@ -1829,7 +1821,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.model = FilterModel(conn)
         self.delegate = FilterDelegate()
         self.toolbar = QToolBar()
-        #self.toolbar.setIconSize(QSize(16, 16))
+        # self.toolbar.setIconSize(QSize(16, 16))
 
         # Drag & drop
         self.view.setModel(self.model)
@@ -2275,7 +2267,7 @@ if __name__ == "__main__":
                 "$and": [
                     {"ann.gene": "chr12"},
                     {"ann.gene": "chr12"},
-                    {"$or": [ {"ann.gene": "chr12"}, {"ann.gene": "chr12"}]}
+                    {"$or": [{"ann.gene": "chr12"}, {"ann.gene": "chr12"}]},
                 ]
             },
         ]
@@ -2298,13 +2290,12 @@ if __name__ == "__main__":
     view.setSelectionBehavior(QAbstractItemView.SelectRows)
     view.setDragDropMode(QAbstractItemView.InternalMove)
 
-
     model.conn = conn
     model.load(data)
 
     print(prepare_fields(conn))
 
-    view.resize(800,800)
+    view.resize(800, 800)
     view.show()
 
     # view = QTreeView()
@@ -2316,6 +2307,5 @@ if __name__ == "__main__":
     # view.resize(500, 500)
     # view.show()
     # view.expandAll()
-
 
     app.exec_()
