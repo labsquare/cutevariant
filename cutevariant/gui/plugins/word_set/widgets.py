@@ -46,9 +46,10 @@ class WordListDialog(QDialog):
         self.setWindowIcon(QIcon(cm.DIR_ICONS + "app.png"))
 
         box = QVBoxLayout()
-        self.add_button = QPushButton(self.tr("Add"))
-        self.add_file_button = QPushButton(self.tr("Add from file..."))
-        self.del_button = QPushButton(self.tr("Remove"))
+        self.add_button = QPushButton(FIcon(0xF0415),self.tr("Add"))
+        self.paste_file_button = QPushButton(FIcon(0xF0192),self.tr("Paste"))
+        self.add_file_button = QPushButton(FIcon(0xF0EED),self.tr("Add from file..."))
+        self.del_button = QPushButton(FIcon(0xF0A7A),self.tr("Remove"))
         self.del_button.setDisabled(True)
 
         self.save_button = QPushButton(self.tr("Save"))
@@ -56,8 +57,9 @@ class WordListDialog(QDialog):
         self.cancel_button = QPushButton(self.tr("Cancel"))
 
         box.addWidget(self.add_button)
-        box.addWidget(self.del_button)
+        box.addWidget(self.paste_file_button)
         box.addWidget(self.add_file_button)
+        box.addWidget(self.del_button)
         box.addStretch()
         box.addWidget(self.save_button)
         box.addWidget(self.cancel_button)
@@ -83,7 +85,7 @@ class WordListDialog(QDialog):
         self.add_button.pressed.connect(self.on_add)
         self.del_button.pressed.connect(self.on_remove)
         self.add_file_button.pressed.connect(self.on_load_file)
-
+        self.paste_file_button.pressed.connect(self.on_paste)
         self.cancel_button.pressed.connect(self.reject)
         self.save_button.pressed.connect(self.accept)
         # Item selected in view
@@ -101,6 +103,18 @@ class WordListDialog(QDialog):
         """Enable the save button when data in model is changed"""
         self.save_button.setEnabled(True)
 
+    def on_paste(self):
+        text = qApp.clipboard().text()
+
+        words = self.model.stringList()
+        for word in text.splitlines():
+            words.append(word)
+
+        self.model.setStringList(words)
+
+
+
+
     def on_add(self):
         """Allow to manually add a word to the list
 
@@ -110,6 +124,9 @@ class WordListDialog(QDialog):
         data = self.model.stringList()
         data.append(self.tr("<double click to edit>"))
         self.model.setStringList(data)
+        last_index = self.model.index(len(data)-1)
+        self.view.setCurrentIndex(last_index)
+        self.view.edit(last_index)
 
     def on_remove(self):
         """Remove the selected rows of the list
