@@ -76,8 +76,8 @@ LOGGER = cm.logger()
 class AbstractSettingsWidget(QWidget):
     """Abstract class for settings widgets
 
-    User must reimplement load() and save() 
-     
+    User must reimplement load() and save()
+
     """
 
     def __init__(self):
@@ -98,7 +98,7 @@ class AbstractSettingsWidget(QWidget):
 
     @property
     def prefix_settings(self) -> str:
-        """ Return prefix settings from section parent  
+        """Return prefix settings from section parent
         Returns:
             str
         """
@@ -288,8 +288,7 @@ class StyleSettingsWidget(AbstractSettingsWidget):
         self.setLayout(mainLayout)
 
     def save(self):
-        """Save the selected style in config
-        """
+        """Save the selected style in config"""
         # Get previous style
 
         settings = self.create_settings()

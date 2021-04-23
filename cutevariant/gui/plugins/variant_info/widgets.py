@@ -23,12 +23,12 @@ LOGGER = cm.logger()
 
 
 class EditPanel(QFrame):
-    """Edit Panel 
-    
-    A panel box to edit a variant 
+    """Edit Panel
 
-    get_data: returned updated variant with favorite, comment and classification 
-    set_data: Fill the formular a variant  
+    A panel box to edit a variant
+
+    get_data: returned updated variant with favorite, comment and classification
+    set_data: Fill the formular a variant
 
     """
 
@@ -114,8 +114,7 @@ class EditPanel(QFrame):
         self._form_changed.connect(lambda: self.save_button.setEnabled(True))
 
     def switch_mode(self):
-        """Switch comment mode between editable and previewer 
-        """
+        """Switch comment mode between editable and previewer"""
         if self.stack.currentWidget() == self.comment_edit:
             self.stack.setCurrentIndex(1)
             self.comment_preview.setMarkdown(str(self.comment_edit.toPlainText()))
@@ -133,11 +132,11 @@ class EditPanel(QFrame):
         self.save_button.setEnabled(False)
 
     def set_text(self, text: str):
-        """Set comment 
-        
+        """Set comment
+
         Args:
             text (str): Description
-        
+
         """
         if text is None:
             self.clear()
@@ -151,8 +150,7 @@ class EditPanel(QFrame):
             self.comment_preview.setPlainText(str(text))
 
     def clear(self):
-        """Clear comment 
-        """
+        """Clear comment"""
         self.comment_edit.clear()
         self.comment_preview.clear()
 
@@ -160,9 +158,9 @@ class EditPanel(QFrame):
         """Set Form with variant data
 
         Args:
-            variant (dict): 
-            
-        Exemples:            
+            variant (dict):
+
+        Exemples:
             w.set_data({"favorite": 1, "comment":'salut', "classification":4})
         """
 
@@ -181,8 +179,8 @@ class EditPanel(QFrame):
         self.save_button.setEnabled(False)
 
     def get_data(self) -> dict:
-        """Get variant data from Form input 
-        
+        """Get variant data from Form input
+
         Returns:
             dict: variant updated data
         """
@@ -207,7 +205,7 @@ class VariantInfoWidget(PluginWidget):
 
         self.view = QTabWidget()
         self.toolbar = QToolBar()
-        #self.toolbar.setIconSize(QSize(16, 16))
+        # self.toolbar.setIconSize(QSize(16, 16))
 
         # Build comments tab
         self.edit_panel = EditPanel()
@@ -247,7 +245,7 @@ class VariantInfoWidget(PluginWidget):
 
         # Build genotype tab
         self.genotype_view = QListWidget()
-        #self.genotype_view.setIconSize(QSize(20, 20))
+        # self.genotype_view.setIconSize(QSize(20, 20))
         self.view.addTab(self.genotype_view, self.tr("Genotypes"))
 
         v_layout = QVBoxLayout()

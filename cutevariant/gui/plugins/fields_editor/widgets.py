@@ -388,6 +388,17 @@ class FieldsEditorWidget(plugin.PluginWidget):
         if self.auto_refresh:
             self.mainwindow.refresh_plugins(sender=self)
 
+    def to_json(self):
+        """ override from plugins: Serialize plugin state """
+
+        return {"checked_fields": self.widget_fields.checked_fields}
+
+    def from_json(self, data):
+        """ override from plugins: Unzerialize plugin state """
+
+        if "checked_fields" in data:
+            self.widget_fields.checked_fields = data["checked_fields"]
+
 
 if __name__ == "__main__":
     import sys

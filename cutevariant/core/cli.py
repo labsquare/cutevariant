@@ -15,7 +15,14 @@ from cutevariant.commons import log_level
 
 def display_sql_results(data, headers, *args, **kwargs):
     """Display SQL results in the console in tabulated format"""
-    print(columnar(data, headers=headers, no_borders=True, **kwargs,))
+    print(
+        columnar(
+            data,
+            headers=headers,
+            no_borders=True,
+            **kwargs,
+        )
+    )
 
 
 def display_query_status(query_result):

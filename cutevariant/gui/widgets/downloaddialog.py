@@ -17,11 +17,11 @@ import sys
 class DownloadDialog(QDialog):
 
     """Summary
-        A dialog to download file and display progression 
+        A dialog to download file and display progression
 
     Attributes:
         source (QUrl): url of file to download
-        destination (QDir): destination folder of downloaded file 
+        destination (QDir): destination folder of downloaded file
     """
 
     def __init__(self, parent=None):
@@ -54,8 +54,8 @@ class DownloadDialog(QDialog):
         self.setWindowTitle(self.tr("Download file"))
 
     def set_source(self, url: QUrl):
-        """Set file url to download 
-        
+        """Set file url to download
+
         Args:
             url (QUrl)
         """
@@ -63,16 +63,15 @@ class DownloadDialog(QDialog):
         self.file_label.setText(self.source.fileName())
 
     def set_destination(self, directory: QDir):
-        """Set folder path where download the file 
-        
+        """Set folder path where download the file
+
         Args:
             directory (QDir)
         """
         self.destination = directory
 
     def start(self):
-        """ Start downloading the file specify by set_source 
-        """
+        """Start downloading the file specify by set_source"""
         filepath = self.destination.absoluteFilePath(self.source.fileName())
 
         if QFile(filepath).exists():
@@ -95,8 +94,7 @@ class DownloadDialog(QDialog):
             self.reply.error.connect(self.on_error)
 
     def cancel(self):
-        """Cancel download
-        """
+        """Cancel download"""
         if hasattr(self, "reply"):
             self.reply.abort()
             self._file.remove()
@@ -104,8 +102,8 @@ class DownloadDialog(QDialog):
 
     @Slot(int, int)
     def on_update_progress(self, read, total):
-        """This methods is called by self.reply.downloadProgress signal 
-        
+        """This methods is called by self.reply.downloadProgress signal
+
         Args:
             read (int): Number of bytes readed
             total (int): Total bytes to download
@@ -138,8 +136,7 @@ class DownloadDialog(QDialog):
 
     @Slot()
     def on_finished(self):
-        """This methods is called by self.reply.finished signal
-        """
+        """This methods is called by self.reply.finished signal"""
         if self.reply.error() == QNetworkReply.NoError:
             self._file.close()
             self.reply.deleteLater()
@@ -148,7 +145,7 @@ class DownloadDialog(QDialog):
     @Slot(QNetworkReply.NetworkError)
     def on_error(self, err: QNetworkReply.NetworkError):
         """This method is called by self.reply.error signal
-        
+
         Args:
             err (QNetworkReply.NetworkError)
         """

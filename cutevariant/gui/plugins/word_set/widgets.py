@@ -46,10 +46,10 @@ class WordListDialog(QDialog):
         self.setWindowIcon(QIcon(cm.DIR_ICONS + "app.png"))
 
         box = QVBoxLayout()
-        self.add_button = QPushButton(FIcon(0xF0415),self.tr("Add"))
-        self.paste_file_button = QPushButton(FIcon(0xF0192),self.tr("Paste"))
-        self.add_file_button = QPushButton(FIcon(0xF0EED),self.tr("Add from file..."))
-        self.del_button = QPushButton(FIcon(0xF0A7A),self.tr("Remove"))
+        self.add_button = QPushButton(FIcon(0xF0415), self.tr("Add"))
+        self.paste_file_button = QPushButton(FIcon(0xF0192), self.tr("Paste"))
+        self.add_file_button = QPushButton(FIcon(0xF0EED), self.tr("Add from file..."))
+        self.del_button = QPushButton(FIcon(0xF0A7A), self.tr("Remove"))
         self.del_button.setDisabled(True)
 
         self.save_button = QPushButton(self.tr("Save"))
@@ -112,9 +112,6 @@ class WordListDialog(QDialog):
 
         self.model.setStringList(words)
 
-
-
-
     def on_add(self):
         """Allow to manually add a word to the list
 
@@ -124,7 +121,7 @@ class WordListDialog(QDialog):
         data = self.model.stringList()
         data.append(self.tr("<double click to edit>"))
         self.model.setStringList(data)
-        last_index = self.model.index(len(data)-1)
+        last_index = self.model.index(len(data) - 1)
         self.view.setCurrentIndex(last_index)
         self.view.edit(last_index)
 
@@ -201,12 +198,12 @@ class WordSetWidget(PluginWidget):
         self.setWindowIcon(FIcon(0xF10E3))
         self.toolbar = QToolBar()
         self.view = QListWidget()
-        #self.view.setIconSize(QSize(20, 20))
+        # self.view.setIconSize(QSize(20, 20))
         self.view.itemDoubleClicked.connect(self.open_wordset)
         self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
 
         # setup tool bar
-        #self.toolbar.setIconSize(QSize(16, 16))
+        # self.toolbar.setIconSize(QSize(16, 16))
         self.toolbar.addAction(
             FIcon(0xF0415), self.tr("Add Word set"), self.add_wordset
         )

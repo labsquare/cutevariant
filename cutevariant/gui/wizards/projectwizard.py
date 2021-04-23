@@ -75,7 +75,7 @@ class ProjectPage(QWizardPage):
         )
         if path:
             self.project_path_edit.setText(path)
-            self.last_directory = path # If you change your mind after this point, it's good to have the last directory you selected
+            self.last_directory = path  # If you change your mind after this point, it's good to have the last directory you selected
 
     def initializePage(self):
         """Overridden: Prepare the page just before it is shown"""
@@ -285,9 +285,7 @@ class SamplePage(QWizardPage):
 
 
 class FieldsPage(QWizardPage):
-    """Allow user to skip too import some fields 
-
-    """
+    """Allow user to skip too import some fields"""
 
     MANDATORY_FIELDS = ["chr", "pos", "ref", "alt", "gt"]
 

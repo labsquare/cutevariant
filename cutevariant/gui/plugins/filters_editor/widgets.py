@@ -240,6 +240,7 @@ class WordSetEditor(BaseFieldEditor):
     Attributes:
         box (QCheckBox)
     """
+
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -258,7 +259,7 @@ class WordSetEditor(BaseFieldEditor):
         hlayout.addWidget(self.stack)
         hlayout.addWidget(self.btn)
 
-        hlayout.setContentsMargins(0,0,0,0)
+        hlayout.setContentsMargins(0, 0, 0, 0)
         hlayout.setSpacing(0)
         self.setLayout(hlayout)
 
@@ -271,11 +272,11 @@ class WordSetEditor(BaseFieldEditor):
         next_mode = "list" if self.get_mode() == "wordset" else "wordset"
         self.set_mode(next_mode)
 
-    def fill_wordsets(self, wordsets:list):
+    def fill_wordsets(self, wordsets: list):
         self.combo.clear()
         self.combo.addItems(wordsets)
 
-    def set_mode(self, mode = "list"):
+    def set_mode(self, mode="list"):
         """ set mode with either 'list' or 'wordset' """
 
         if mode == "list":
@@ -433,9 +434,9 @@ class FieldFactory(QObject):
         field_type = self.field_types_mapping.get(field)
 
         if operator in ("$in", "$nin"):
-            w =  WordSetEditor(parent)
+            w = WordSetEditor(parent)
             w.fill_wordsets([w["name"] for w in sql.get_wordsets(self.conn)])
-            return w 
+            return w
 
         if field_type == "int":
             w = IntFieldEditor(parent)
@@ -1956,6 +1957,8 @@ class FiltersEditorWidget(plugin.PluginWidget):
     @filters.setter
     def filters(self, filters):
         self.model.filters = filters
+        self.view.expandAll()
+
 
     def on_open_project(self, conn):
         """Overrided from PluginWidget"""
@@ -2092,6 +2095,16 @@ class FiltersEditorWidget(plugin.PluginWidget):
             # self.view.setFirstColumnSpanned(0, index.parent(), True)
 
             self._update_view_geometry()
+
+    def to_json(self):
+        """override """
+
+        return {"filters": self.filters}
+
+    def from_json(self, data):
+        """ override """
+        if "filters" in data:
+            self.filters = data["filters"]
 
     def on_save_as(self):
 

@@ -48,10 +48,10 @@ class VcfReader(AbstractReader):
         annotation_parser (object): Support "VepParser()" and "SnpeffParser()"
     """
 
-    ANNOTATION_PARSERS={
-        "vep" : VepParser,
-        "snpeff" : SnpEffParser,
-        "snpeff3" : SnpEffParser
+    ANNOTATION_PARSERS = {
+        "vep": VepParser,
+        "snpeff": SnpEffParser,
+        "snpeff3": SnpEffParser,
     }
 
     def __init__(self, device, annotation_parser: str = None):

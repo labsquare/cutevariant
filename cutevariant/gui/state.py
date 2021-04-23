@@ -16,7 +16,7 @@ class State:
 
         # query
         self.fields = ["favorite", "classification", "chr", "pos", "ref", "alt", "qual"]
-      
+
         self.source = "variants"
         self.filters = {}
 

@@ -394,30 +394,6 @@ class VqlHistoryWidget(plugin.PluginWidget):
     def on_open_project(self, conn):
         """ override """
         self.conn = conn
-        self.project_full_path = sql.get_database_file_name(conn)
-
-        # Get the project absolute directory
-        self.project_dir = os.path.dirname(self.project_full_path)
-
-        # Get the project name without the extension
-        self.project_name = os.path.basename(self.project_full_path).split(".")[0]
-
-        # Look for logs in the project directory, with name starting with log and containing the project name
-        history_logs = glob.glob(f"{self.project_dir}/log*{self.project_name}*.json")
-        for log in history_logs:
-            try:
-                self.model.load_from_json(log)
-            except Exception as e:
-                LOGGER.debug(
-                    "An error occured while loading VQL queries history \n%s", e
-                )
-
-    def on_close(self):
-        """ override """
-        log_file_name = os.path.join(self.project_dir, f"log_{self.project_name}.json")
-        self.model.save_to_json(log_file_name)
-   
-        super().on_close()
 
     def on_refresh(self):
         """"""

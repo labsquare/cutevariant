@@ -93,8 +93,7 @@ class TrioAnalysisDialog(PluginDialog):
         self.populate()
 
     def populate(self):
-        """Fill combobox with samples from databases 
-        """
+        """Fill combobox with samples from databases"""
 
         self.mother_combo.clear()
         self.father_combo.clear()
@@ -108,8 +107,8 @@ class TrioAnalysisDialog(PluginDialog):
             self.child_combo.addItem(FIcon(0xF0E7D), sample)
 
     def check_form(self):
-        """ Check if formular is okay and enable apply button
-        This methods is triggered by all formular input 
+        """Check if formular is okay and enable apply button
+        This methods is triggered by all formular input
         """
 
         #  Check if all samples are unique

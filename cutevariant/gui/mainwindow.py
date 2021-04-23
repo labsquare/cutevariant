@@ -3,6 +3,7 @@
 import os
 import sys
 import sqlite3
+import json
 from pkg_resources import parse_version
 from functools import partial
 from logging import DEBUG
@@ -294,6 +295,15 @@ class MainWindow(QMainWindow):
         # )
 
         self.file_menu.addSeparator()
+
+        self.file_menu.addAction(
+            FIcon(0xF0193), self.tr("Save session ..."), self.save_session
+        )
+        self.file_menu.addAction(
+            FIcon(0xF0770), self.tr("Restore session ..."), self.load_session
+        )
+
+        self.file_menu.addSeparator()
         ### Misc
         self.file_menu.addAction(
             FIcon(0xF0493), self.tr("Settings..."), self.show_settings
@@ -447,8 +457,8 @@ class MainWindow(QMainWindow):
 
         # Load previous window state for this project (file_path being the key for the settings)
         file_path = get_database_file_name(conn)
-        
-        #self.state = self.app_settings.value(f"{file_path}/last_state", State())
+
+        # self.state = self.app_settings.value(f"{file_path}/last_state", State())
 
         for plugin_obj in self.plugins.values():
             plugin_obj.on_open_project(self.conn)
@@ -695,6 +705,59 @@ class MainWindow(QMainWindow):
         for plugin_obj in self.plugins.values():
             plugin_obj.on_close()
         super().closeEvent(event)
+
+    def save_session(self):
+        """ save plugin state into a json file """
+
+        filename, _ = QFileDialog.getSaveFileName(
+            self,
+            self.tr("Save the session"),
+            QDir.home().path(),
+            "Session file (*.session.json)",
+        )
+
+        if os.path.exists(filename):
+            ret = QMessageBox.warning(
+                self,
+                "file already exists",
+                "Overwrite?",
+                QMessageBox.Yes | QMessageBox.No,
+            )
+
+            if ret == QMessageBox.No:
+                return
+
+        if not filename.endswith(".session.json"):
+            filename = filename + ".session.json"
+
+        #  write sessions
+        session = {}
+        for name, plugin in self.plugins.items():
+            session[name] = plugin.to_json()
+
+        #  write file
+        with open(filename, "w") as file:
+            json.dump(session, file)
+
+    def load_session(self):
+        filename, _ = QFileDialog.getOpenFileName(
+            self,
+            self.tr("Save the session"),
+            QDir.home().path(),
+            "Session file (*.session.json)",
+        )
+
+        if not os.path.exists(filename):
+            return
+
+        # read sessions
+        with open(filename) as file:
+            state = json.load(file)
+
+        #  set plugins
+        for name, plugin in self.plugins.items():
+            if name in state:
+                plugin.from_json(state[name])
 
     def write_settings(self):
         """Store the state of this mainwindow.

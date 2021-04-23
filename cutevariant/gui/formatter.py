@@ -35,7 +35,6 @@ class Formatter(object):
         return index.data(Qt.DisplayRole)
 
     def draw_icon(self, painter: QPainter, rect: QRect, icon: QIcon):
-        
 
         r = QRect(0, 0, rect.height(), rect.height())
         r.moveCenter(rect.center())
