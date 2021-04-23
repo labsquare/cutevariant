@@ -85,11 +85,11 @@ class CutestyleFormatter(Formatter):
                 self.BASE_COLOR.get(value, option.palette.color(QPalette.WindowText))
             )
 
-        if field_name == "impact" and not is_selected:
+        if field_name == "ann.impact" and not is_selected:
             font.setBold(True)
             pen.setColor(self.IMPACT_COLOR.get(value, self.IMPACT_COLOR["MODIFIER"]))
 
-        if field_name == "gene" and not is_selected:
+        if field_name == "ann.gene" and not is_selected:
             pen.setColor("#6a9fca")
 
         if field_name == "classification":
@@ -102,13 +102,13 @@ class CutestyleFormatter(Formatter):
             self.draw_icon(painter, option.rect, icon)
             return
 
-        if field_name == "hgvs_c":
+        if field_name == "ann.hgvs_c":
             font.setBold(True)
             m = re.search(r"([cnm]\..+)", str(value))
             if m:
                 value = m.group(1)
 
-        if field_name == "hgvs_p":
+        if field_name == "ann.hgvs_p":
             font.setBold(True)
             m = re.search(r"(p\..+)", str(value))
             if m:
@@ -119,7 +119,7 @@ class CutestyleFormatter(Formatter):
             self.draw_icon(painter, option.rect, icon)
             return
 
-        if field_name == "consequence":
+        if field_name == "ann.consequence":
             values = str(self.value(index)).split("&")
             metrics = QFontMetrics(font)
             x = option.rect.x() + 5
