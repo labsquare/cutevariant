@@ -615,7 +615,7 @@ def build_sql_query(
     # Add Where Clause
     if filters:
         where_clause = filters_to_sql(filters)
-        if where_clause:
+        if where_clause and where_clause!="()":
             sql_query += " WHERE " + where_clause
 
     # Add Group By
@@ -650,7 +650,7 @@ def build_vql_query(
 
     where_clause = filters_to_vql(filters)
 
-    if where_clause:
+    if where_clause and where_clause!="()":
         where_clause = f" WHERE {where_clause}"
     else:
         where_clause = ""

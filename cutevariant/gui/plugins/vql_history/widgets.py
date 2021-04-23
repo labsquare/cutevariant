@@ -416,11 +416,7 @@ class VqlHistoryWidget(plugin.PluginWidget):
         """ override """
         log_file_name = os.path.join(self.project_dir, f"log_{self.project_name}.json")
         self.model.save_to_json(log_file_name)
-
-        # Save the latest query (window.state) to the settings for this project
-        settings = QSettings()
-        settings.setValue(f"{self.project_full_path}/last_state", self.mainwindow.state)
-
+   
         super().on_close()
 
     def on_refresh(self):

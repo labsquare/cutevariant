@@ -447,7 +447,8 @@ class MainWindow(QMainWindow):
 
         # Load previous window state for this project (file_path being the key for the settings)
         file_path = get_database_file_name(conn)
-        self.state = self.app_settings.value(f"{file_path}/last_state", State())
+        
+        #self.state = self.app_settings.value(f"{file_path}/last_state", State())
 
         for plugin_obj in self.plugins.values():
             plugin_obj.on_open_project(self.conn)

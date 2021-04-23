@@ -16,19 +16,7 @@ class State:
 
         # query
         self.fields = ["favorite", "classification", "chr", "pos", "ref", "alt", "qual"]
-        self.specialized_fields = {
-            "variants": [
-                "favorite",
-                "classification",
-                "chr",
-                "pos",
-                "ref",
-                "alt",
-                "qual",
-            ],
-            "annotations": ["gene_id"],
-            "samples": [],
-        }
+      
         self.source = "variants"
         self.filters = {}
 
