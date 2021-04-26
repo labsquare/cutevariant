@@ -188,15 +188,29 @@ class DoubleFieldEditor(BaseFieldEditor):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.line_edit = QLineEdit()
-        self.validator = QIntValidator()
+        self.validator = QDoubleValidator()
         self.line_edit.setValidator(self.validator)
         self.line_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.set_widget(self.line_edit)
 
     def set_value(self, value: float):
-        self.line_edit.setValue(str(value))
+        try:
+            txt = QLocale().toString(value)
+        except:
+            txt = QLocale().toString(0.0)
+        self.line_edit.setText(txt)
 
     def get_value(self) -> float:
-        return float(self.line_edit.value())
+
+        text = self.line_edit.text()
+        value = 0.0
+        print("TT", text)
+        value, success = QLocale().toDouble(text)
+
+        if not success:
+            value = 0.0
+
+        return value
 
     def set_range(self, min_, max_):
         self.validator.setRange(min_, max_)
