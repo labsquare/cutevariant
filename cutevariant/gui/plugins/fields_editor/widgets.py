@@ -129,6 +129,9 @@ class FieldsModel(QStandardItemModel):
     def load(self):
         """Load all fields from the model"""
 
+        # Don't forget to reset the model
+        self.clear()
+
         self.setColumnCount(2)
         self.setHorizontalHeaderLabels(["name", "description"])
 
