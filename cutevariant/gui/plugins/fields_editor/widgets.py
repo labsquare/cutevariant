@@ -242,6 +242,7 @@ class FieldsWidget(QWidget):
         view.setAlternatingRowColors(True)
         view.setWordWrap(True)
         view.verticalHeader().hide()
+        view.setSortingEnabled(True)
 
         proxy.setRecursiveFilteringEnabled(True)
         proxy.setFilterCaseSensitivity(Qt.CaseInsensitive)
