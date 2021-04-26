@@ -132,6 +132,9 @@ class FieldsModel(QStandardItemModel):
         # Don't forget to reset the model
         self.clear()
 
+        # Clear checkable items as well, the list may contain selected items from another project...
+        self._checkable_items.clear()
+
         self.setColumnCount(2)
         self.setHorizontalHeaderLabels(["name", "description"])
 
@@ -390,6 +393,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self.mainwindow.state.fields = self.widget_fields.checked_fields
         if self.auto_refresh:
             self.mainwindow.refresh_plugins(sender=self)
+            print("ALADDIN", self.widget_fields.checked_fields)
 
     def to_json(self):
         """ override from plugins: Serialize plugin state """
