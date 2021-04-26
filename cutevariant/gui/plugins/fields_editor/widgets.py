@@ -1,8 +1,9 @@
 from typing import List
 import sqlite3
 import json
+import os
+import glob
 from functools import lru_cache
-from glob import glob
 
 from cutevariant.gui import plugin, FIcon, style
 from cutevariant.core import sql
@@ -350,11 +351,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
         action = self.toolbar.addWidget(button)
         self.menu = QMenu(self)
 
-        self.load_preset()
-
-        self.menu.addSeparator()
-        self.menu.addAction("Save ...", self.on_save_preset)
-        self.menu.addAction("Edit ...")
+        self.load_preset_menu()
 
         button.setMenu(self.menu)
         self.setFocusPolicy(Qt.ClickFocus)
@@ -374,7 +371,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
             False  # Help to avoid loop between on_refresh and on_fields_changed
         )
 
-    def load_preset(self):
+    def load_preset_menu(self):
         settings = QSettings()
         preset_path = settings.value(
             "preset_path",
@@ -382,13 +379,21 @@ class FieldsEditorWidget(plugin.PluginWidget):
         )
 
         self.menu.clear()
-        for filename in glob(f"{preset_path}/*.fields.json"):
+
+        filenames = glob.glob(f"{preset_path}/*.fields.json")
+        #  Sort file by date
+        filenames.sort(key=os.path.getmtime)
+
+        for filename in filenames:
             with open(filename) as file:
                 obj = json.load(file)
                 action = self.menu.addAction(obj.get("name", ""))
                 action.setData(obj)
-                action.setIcon(FIcon(0xF0A03))
                 action.triggered.connect(self.on_preset_clicked)
+
+        self.menu.addSeparator()
+        self.menu.addAction("Save ...", self.on_save_preset)
+        self.menu.addAction("Edit ...")
 
     def on_preset_clicked(self):
 
@@ -418,7 +423,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
                 obj["name"] = name
                 json.dump(obj, file)
 
-            self.load_preset()
+            self.load_preset_menu()
 
     def on_search_pressed(self, checked: bool):
         self.search_edit.setVisible(checked)

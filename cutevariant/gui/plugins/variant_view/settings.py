@@ -144,9 +144,7 @@ https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg19&position={chr}:{pos}
         )
         name = QLineEdit()
         url = QLineEdit()
-        browser = QCheckBox(
-            self.tr("Keep this box unchecked if you only want a http request ")
-        )
+        browser = QCheckBox(self.tr("Uncheck the box for http request only"))
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         buttons.accepted.connect(dialog.accept)
         buttons.rejected.connect(dialog.reject)
@@ -203,11 +201,12 @@ https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg19&position={chr}:{pos}
         .. todo:: removeItemWidget() is not functional?
         """
         # Get selected item
-        item = self.view.selectedItems()[0]
+        if self.view.selectedItems():
+            item = self.view.selectedItems()[0]
 
-        # Delete the item
-        self.view.takeItem(self.view.row(item))
-        del item  # Is it mandatory in Python ?
+            # Delete the item
+            self.view.takeItem(self.view.row(item))
+            del item  # Is it mandatory in Python ?
 
     def load_default_external_links(self):
         """Load default external DB links"""

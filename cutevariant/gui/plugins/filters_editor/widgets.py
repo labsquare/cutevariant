@@ -411,7 +411,7 @@ class LogicFieldEditor(BaseFieldEditor):
 
     def get_value(self) -> str:
         # Return UserRole
-        return self.box.currentData()
+        return int(self.box.currentData())
 
 
 class FieldFactory(QObject):
@@ -1959,7 +1959,6 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.model.filters = filters
         self.view.expandAll()
 
-
     def on_open_project(self, conn):
         """Overrided from PluginWidget"""
         self.model.conn = conn
@@ -2075,17 +2074,28 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
         Set the filters of the mainwindow and trigger a refresh of all plugins.
         """
-        if self.mainwindow and self.filters != self.mainwindow.state.filters:
+        if self.mainwindow:
+
             # Close editor on validate, to avoid unset data
-            self.view.closeEditor(
-                self.view.indexWidget(self.view.currentIndex()),
-                QAbstractItemDelegate.NoHint,
-            )
+            self.close_current_editor()
             # Refresh other plugins only if the filters are modified
             self.mainwindow.state.filters = self.filters
             self.mainwindow.refresh_plugins(sender=self)
 
         self.refresh_buttons()
+
+    def close_current_editor(self):
+        row = self.view.currentIndex().row()
+        column = 3
+        parent = self.view.currentIndex().parent()
+        index = self.model.index(row, column, parent)
+
+        widget = self.view.indexWidget(index)
+        self.view.commitData(widget)
+        self.view.closeEditor(
+            widget,
+            QAbstractItemDelegate.NoHint,
+        )
 
     def on_add_logic(self):
         """Add logic item to the current selected index"""
