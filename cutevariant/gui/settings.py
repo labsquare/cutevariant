@@ -454,26 +454,26 @@ class PathSettingsWidget(AbstractSettingsWidget):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle(self.tr("Path"))
+        self.setWindowTitle(self.tr("Global settings"))
         self.setWindowIcon(FIcon(0xF1080))
 
         self.edit = widgets.FileEdit()
         self.edit.set_path_type("dir")
         main_layout = QFormLayout()
-        main_layout.addRow("path", self.edit)
+        main_layout.addRow("Preset path", self.edit)
 
         self.setLayout(main_layout)
 
     def save(self):
         settings = QSettings()
         if self.edit.exists():
-            settings.setValue("data_path", self.edit.text())
+            settings.setValue("preset_path", self.edit.text())
 
     def load(self):
 
         settings = QSettings()
         path = settings.value(
-            "data_path",
+            "preset_path",
             QStandardPaths.writableLocation(QStandardPaths.GenericDataLocation),
         )
 

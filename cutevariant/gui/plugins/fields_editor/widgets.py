@@ -2,7 +2,7 @@ from typing import List
 import sqlite3
 import json
 from functools import lru_cache
-
+from glob import glob
 
 from cutevariant.gui import plugin, FIcon, style
 from cutevariant.core import sql
@@ -334,7 +334,6 @@ class FieldsEditorWidget(plugin.PluginWidget):
 
         layout.addWidget(self.toolbar)
         layout.addWidget(self.widget_fields)
-        layout.addWidget(self.search_edit)
         layout.setSpacing(0)
 
         layout.setContentsMargins(0, 0, 0, 0)
@@ -344,8 +343,20 @@ class FieldsEditorWidget(plugin.PluginWidget):
         # Setup toolbar
         self.toolbar.setIconSize(QSize(16, 16))
         self.toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        self.toolbar.addWidget(self.search_edit)
 
-        # setup search edit
+        button = QPushButton("Preset 1")
+        button.setFlat(True)
+        action = self.toolbar.addWidget(button)
+        self.menu = QMenu(self)
+
+        self.load_preset()
+
+        self.menu.addSeparator()
+        self.menu.addAction("Save ...", self.on_save_preset)
+        self.menu.addAction("Edit ...")
+
+        button.setMenu(self.menu)
         self.setFocusPolicy(Qt.ClickFocus)
 
         self.search_act = QAction(FIcon(0xF0969), self.tr("Search by keywords..."))
@@ -354,11 +365,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self.search_act.setShortcutContext(Qt.WidgetShortcut)
         self.search_act.setShortcut(QKeySequence.Find)
 
-        self.toolbar.addAction(self.search_act)
-
-        self.search_edit.setVisible(False)
         self.search_edit.setPlaceholderText(self.tr("Search by keywords... "))
-
         self.search_edit.textChanged.connect(self.widget_fields.update_filter)
 
         self.auto_refresh = True
@@ -366,6 +373,52 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self._is_refreshing = (
             False  # Help to avoid loop between on_refresh and on_fields_changed
         )
+
+    def load_preset(self):
+        settings = QSettings()
+        preset_path = settings.value(
+            "preset_path",
+            QStandardPaths.writableLocation(QStandardPaths.GenericDataLocation),
+        )
+
+        self.menu.clear()
+        for filename in glob(f"{preset_path}/*.fields.json"):
+            with open(filename) as file:
+                obj = json.load(file)
+                action = self.menu.addAction(obj.get("name", ""))
+                action.setData(obj)
+                action.setIcon(FIcon(0xF0A03))
+                action.triggered.connect(self.on_preset_clicked)
+
+    def on_preset_clicked(self):
+
+        action = self.sender()
+        self.from_json(action.data())
+
+    def on_save_preset(self):
+
+        # TODO : save preset
+        settings = QSettings()
+        preset_path = settings.value(
+            "preset_path",
+            QStandardPaths.writableLocation(QStandardPaths.GenericDataLocation),
+        )
+
+        name, ok = QInputDialog.getText(
+            self,
+            self.tr("Input dialog"),
+            self.tr("User name:"),
+            QLineEdit.Normal,
+            QDir.home().dirName(),
+        )
+
+        if ok:
+            with open(f"{preset_path}/{name}.fields.json", "w") as file:
+                obj = self.to_json()
+                obj["name"] = name
+                json.dump(obj, file)
+
+            self.load_preset()
 
     def on_search_pressed(self, checked: bool):
         self.search_edit.setVisible(checked)
