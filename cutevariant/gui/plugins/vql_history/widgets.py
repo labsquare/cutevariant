@@ -22,7 +22,9 @@ from PySide2.QtWidgets import (
     QFileDialog,
     QMessageBox,
     QTableView,
+    QAction,
     QHeaderView,
+    QAbstractItemView,
     QSpacerItem,
     QStyledItemDelegate,
     QLineEdit,
@@ -196,7 +198,7 @@ class HistoryModel(QAbstractTableModel):
 
         return root
 
-    def clear_records(self):
+    def clear(self):
         """Clear records from models"""
         self.beginResetModel()
         self.records.clear()
@@ -522,7 +524,7 @@ class VqlHistoryWidget(plugin.PluginWidget):
             ),
         )
         if confirmation == QMessageBox.Yes:
-            self.model.clear_records()
+            self.model.clear()
 
     def on_export_history_pressed(self):
         """
