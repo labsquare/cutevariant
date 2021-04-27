@@ -477,6 +477,8 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self.search_edit.setVisible(show)
         if not show:
             self.search_edit.clear()
+        else:
+            self.search_edit.setFocus(Qt.PopupFocusReason)
 
     def toggle_checked(self, show=True):
         # TODO : this is not working .. Charles
