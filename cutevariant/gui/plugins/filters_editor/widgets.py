@@ -424,6 +424,9 @@ class ComboFieldEditor(BaseFieldEditor):
         self.combo_box.clear()
         self.combo_box.addItems(items)
 
+    def set_editable(self, active):
+        self.combo_box.setEditable(True)
+
 
 class OperatorFieldEditor(BaseFieldEditor):
     """Editor for Logic Value (less, greater, more than etc ...)
@@ -1530,6 +1533,7 @@ class FilterDelegate(QStyledItemDelegate):
                 return LogicFieldEditor(parent)
             if item.type == FilterItem.CONDITION_TYPE:
                 combo = ComboFieldEditor(parent)
+                combo.set_editable(True)
                 combo.fill(prepare_fields(model.conn))
                 return combo
 
