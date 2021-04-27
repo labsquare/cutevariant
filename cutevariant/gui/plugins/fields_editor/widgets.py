@@ -312,13 +312,15 @@ class PresetsEditorDialog(QDialog):
         self.caption_label = QLabel(self.tr("Edit fields presets"))
         self.presets_model = QStandardItemModel(0, 0)
         self.presets_view = QListView(self)
-        self.presets_view.setSelectionMode(QAbstractItemView.MultiSelection)
+        self.presets_view.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.presets_view.setModel(self.presets_model)
 
         self.toolbar = QToolBar(self)
         self.delete_action = self.toolbar.addAction(
             FIcon(0xF01B4), self.tr("Delete selected presets"), self.on_remove_presets
         )
+        self.delete_action.setShortcut(QKeySequence.Delete)
+        self.toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
 
         self.ok_button = QDialogButtonBox(QDialogButtonBox.Ok, self)
         self.ok_button.clicked.connect(self.accept)
@@ -521,6 +523,9 @@ class FieldsEditorWidget(plugin.PluginWidget):
                 json.dump(obj, file)
 
             self.load_preset_menu()
+
+            # Fakes the selection of that preset that just got created...
+            self.presets_button.setText(name)
 
     def on_edit_preset_pressed(self):
         edit_dialog = PresetsEditorDialog(self)
