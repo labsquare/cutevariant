@@ -1595,8 +1595,6 @@ class FilterDelegate(QStyledItemDelegate):
 
         return level
 
-        # super().paint(painter, option, index)
-
         # painter.setPen(option.palette.color(QPalette.Dark))
 
         # painter.setPen(QPen(QColor("lightgray")))
