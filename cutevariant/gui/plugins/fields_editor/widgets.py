@@ -117,9 +117,6 @@ class FieldsModel(QStandardItemModel):
 
         Arguments:
             columns (List[str]):
-
-        Todo:
-            Bug : What if 2 name are in different categories
         """
 
         for item in self._checkable_items:
@@ -330,30 +327,32 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self.widget_fields = FieldsWidget(conn, parent)
 
         self.search_edit = QLineEdit()
+        self.apply_fields = QPushButton(self.tr("Apply fields"))
+        self.apply_fields.pressed.connect(self.on_apply_fields_pressed)
 
         layout = QVBoxLayout(self)
 
         layout.addWidget(self.toolbar)
         layout.addWidget(self.widget_fields)
+        layout.addWidget(self.apply_fields)
+
         layout.setSpacing(0)
 
         layout.setContentsMargins(0, 0, 0, 0)
-
-        self.widget_fields.fields_changed.connect(self.on_fields_changed)
 
         # Setup toolbar
         self.toolbar.setIconSize(QSize(16, 16))
         self.toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         self.toolbar.addWidget(self.search_edit)
 
-        button = QPushButton("Preset 1")
-        button.setFlat(True)
-        action = self.toolbar.addWidget(button)
+        self.presets_button = QPushButton(self.tr("Default preset"))
+        self.presets_button.setFlat(True)
+        action = self.toolbar.addWidget(self.presets_button)
         self.menu = QMenu(self)
 
         self.load_preset_menu()
 
-        button.setMenu(self.menu)
+        self.presets_button.setMenu(self.menu)
         self.setFocusPolicy(Qt.ClickFocus)
 
         self.search_act = QAction(FIcon(0xF0969), self.tr("Search by keywords..."))
@@ -392,17 +391,39 @@ class FieldsEditorWidget(plugin.PluginWidget):
                 action.triggered.connect(self.on_preset_clicked)
 
         self.menu.addSeparator()
-        self.menu.addAction("Save ...", self.on_save_preset)
-        self.menu.addAction("Edit ...")
+        default_preset = self.menu.addAction(self.presets_button.text())
+
+        # Hard-coded default preset
+        default_preset.setData(
+            {
+                "name": self.presets_button.text(),
+                "checked_fields": [
+                    "favorite",
+                    "classification",
+                    "chr",
+                    "pos",
+                    "ref",
+                    "alt",
+                    "qual",
+                ],
+            }
+        )
+        default_preset.triggered.connect(self.on_preset_clicked)
+        self.menu.addAction(FIcon(0xF0193), "Save ...", self.on_save_preset)
+        self.menu.addAction(FIcon(0xF14E5), "Edit ...",self.)
 
     def on_preset_clicked(self):
 
         action = self.sender()
-        self.from_json(action.data())
+        data = action.data()
+        if "name" in data:
+            self.presets_button.setText(data["name"])
+        else:
+            self.presets_button.setText("")
+        self.from_json(data)
 
     def on_save_preset(self):
 
-        # TODO : save preset
         settings = QSettings()
         preset_path = settings.value(
             "preset_path",
@@ -425,6 +446,9 @@ class FieldsEditorWidget(plugin.PluginWidget):
 
             self.load_preset_menu()
 
+    def on_edit_preset_pressed(self):
+        print("Not implemented yet, but you can find the presets folder and edit them as you like :)")
+
     def on_search_pressed(self, checked: bool):
         self.search_edit.setVisible(checked)
         self.search_edit.setFocus(Qt.MenuBarFocusReason)
@@ -441,7 +465,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
             self.widget_fields.checked_fields = self.mainwindow.state.fields
             self._is_refreshing = False
 
-    def on_fields_changed(self):
+    def on_apply_fields_pressed(self):
         if self.mainwindow is None or self._is_refreshing:
             """
             Debugging (no window)
@@ -450,9 +474,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
             return
 
         self.mainwindow.state.fields = self.widget_fields.checked_fields
-        if self.auto_refresh:
-            self.mainwindow.refresh_plugins(sender=self)
-            print("ALADDIN", self.widget_fields.checked_fields)
+        self.mainwindow.refresh_plugins(sender=self)
 
     def to_json(self):
         """ override from plugins: Serialize plugin state """
