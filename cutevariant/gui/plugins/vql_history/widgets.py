@@ -356,7 +356,7 @@ class VqlHistoryWidget(plugin.PluginWidget):
         self.view.setItemDelegate(self.delegate)
 
         # Hide name column (too ugly for now)
-        # self.view.hideColumn(0)
+        self.view.hideColumn(0)
 
         self.view.horizontalHeader().setSectionResizeMode(
             0, QHeaderView.ResizeToContents
