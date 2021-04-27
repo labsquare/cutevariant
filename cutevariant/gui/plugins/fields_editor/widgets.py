@@ -410,7 +410,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
         )
         default_preset.triggered.connect(self.on_preset_clicked)
         self.menu.addAction(FIcon(0xF0193), "Save ...", self.on_save_preset)
-        self.menu.addAction(FIcon(0xF14E5), "Edit ...",self.)
+        self.menu.addAction(FIcon(0xF14E5), "Edit ...", self.on_edit_preset_pressed)
 
     def on_preset_clicked(self):
 
