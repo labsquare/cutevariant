@@ -945,20 +945,30 @@ def get_field_unique_values(conn, field_name: str, sample_name=None):
     :return: list of unique values (can be empty if the field is not found)
     :rtype: list
     """
+
+    if field_name.startswith("ann."):
+        field_name = field_name.replace("ann.", "")
+
+    if field_name.startswith("samples."):
+        #  TODO replace samples ...
+        _, *_, field = field_name.split(".")
+        field_name = field
+
     field = get_field_by_name(conn, field_name)
     if not field:
         return []
     table = field["category"]  # variants, or annotations or samples
+
     if table == "samples":
-        if not sample_name:
-            raise ValueError("Pass sample parameter for sample fields")
-        query = f"""SELECT DISTINCT {field_name}
-        FROM sample_has_variant
-        JOIN samples ON sample_has_variant.sample_id = samples.id
-        WHERE samples.name='{sample_name}'
-        """
+        query = f""" SELECT DISTINCT `{field_name}` FROM sample_has_variant """
+
+    elif table == "annotations":
+        query = f""" SELECT DISTINCT `{field_name}` FROM annotations """
+
     else:
         query = f"SELECT DISTINCT `{field_name}` FROM {table}"
+
+    print(query)
     return [i[field_name] for i in conn.execute(query)]
 
 
