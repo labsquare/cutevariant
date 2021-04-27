@@ -292,36 +292,21 @@ class StyleSettingsWidget(AbstractSettingsWidget):
         # Get previous style
 
         settings = self.create_settings()
-
         old_style_name = settings.value("ui/style", cm.BASIC_STYLE)
 
         # Save style setting
         style_name = self.styles_combobox.currentText()
         if old_style_name == style_name:
             return
+
         settings.setValue("ui/style", style_name)
 
-        # Change the style on the fly
-        # TODO: Find a way to revert properly dark() palette and fill
-        # style.bright() function.
-
-        if style_name == cm.BASIC_STYLE:
-            # Bright version: Reset style
-            QApplication.instance().setStyleSheet("")
-            QApplication.instance().setPalette(QApplication.style().standardPalette())
-        else:
-            # QApplication.instance().setStyle("fusion")
-            # Apply selected style by calling on the method in style module based on its
-            # name; equivalent of style.dark(app)
-            getattr(style, style_name.lower())(QApplication.instance())
+        QMessageBox.information(
+            self, "restart", self.tr("Please restart application to apply theme")
+        )
 
         # Clear pixmap cache
         QPixmapCache.clear()
-
-        # Get the window for this widget,
-        # i.e. the next ancestor widget that has a window-system frame.
-        # And call refresh signal => reload the widgets
-        self.window().uiSettingsChanged.emit()
 
     def load(self):
         """Setup widgets in StyleSettingsWidget"""
