@@ -81,6 +81,20 @@ TYPE_OPERATORS = {
     "bool": ["$eq"],
 }
 
+OPERATORS_PY_SQL = {
+    "$eq": "=",
+    "$gt": ">",
+    "$gte": ">=",
+    "$lt": "<",
+    "$lte": "<=",
+    "$in": "IN",
+    "$ne": "!=",
+    "$nin": "NOT IN",
+    "$regex": "REGEXP",
+    "$and": "AND",
+    "$or": "OR",
+}
+
 
 @lru_cache()
 def prepare_fields(conn):
@@ -409,8 +423,8 @@ class LogicFieldEditor(BaseFieldEditor):
         self.box = QComboBox()
 
         # DisplayRole, UserRole
-        self.box.addItem("$and", "$and")
-        self.box.addItem("$or", "$or")
+        self.box.addItem(OPERATORS_PY_SQL.get("$and"), "$and")
+        self.box.addItem(OPERATORS_PY_SQL.get("$or"), "$or")
 
         self.box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.set_widget(self.box)
@@ -425,7 +439,7 @@ class LogicFieldEditor(BaseFieldEditor):
 
     def get_value(self) -> str:
         # Return UserRole
-        return int(self.box.currentData())
+        return self.box.currentData()
 
 
 class FieldFactory(QObject):
@@ -704,12 +718,22 @@ class FilterModel(QAbstractItemModel):
 
     filtersChanged = Signal()
 
+    COLUMN_CHECKBOX = 4
+    COLUMN_FIELD = 0
+    COLUMN_LOGIC = 0
+    COLUMN_OPERATOR = 1
+    COLUMN_VALUE = 2
+    COLUMN_REMOVE = 3
+
     def __init__(self, conn=None, parent=None):
         super().__init__(parent)
         self.root_item = FilterItem("$and")
         self.conn = conn
         self.clear()
         self.filtersChanged.connect(lambda: print(self.to_dict()))
+
+        self.disable_font = QFont()
+        self.disable_font.setStrikeOut(True)
 
     @property
     def filters(self):
@@ -746,26 +770,54 @@ class FilterModel(QAbstractItemModel):
 
         item = self.item(index)
 
-        if role in (Qt.DisplayRole, Qt.EditRole):
-            if index.column() == 0:
-                return item.checked
+        # icon checkbox
+        if role == Qt.DecorationRole:
+            if index.column() == self.COLUMN_CHECKBOX:
+                return QIcon(FIcon(0xF0208)) if item.checked else QIcon(FIcon(0xF0209))
 
-            if index.column() == 1:
+            if (
+                index.column() == self.COLUMN_FIELD
+                and item.type == FilterItem.LOGIC_TYPE
+            ):
+                return QIcon(FIcon(0xF0169))
+
+        # columns title
+        if role == Qt.FontRole and index.column() == 1:
+            font = QFont()
+            font.setBold(True)
+            return font
+
+        if role == Qt.ForegroundRole:
+            if not item.checked:
+                return QColor("lightgray")
+
+        # align operator
+        if role == Qt.TextAlignmentRole and index.column() == self.COLUMN_OPERATOR:
+            return Qt.AlignCenter
+
+        # Delete icon
+        if role == Qt.DecorationRole and index.column() == self.COLUMN_REMOVE:
+            if index.parent() != QModelIndex():
+                return QIcon(FIcon(0xF0156, "red"))
+
+        if role in (Qt.DisplayRole, Qt.EditRole):
+
+            if index.column() == self.COLUMN_FIELD:
                 if item.type == FilterItem.CONDITION_TYPE:
                     return item.get_field()
 
                 if item.type == FilterItem.LOGIC_TYPE:
                     val = item.get_value()
-                    return val
+                    return OPERATORS_PY_SQL.get(val, "$and")
 
             if item.type != FilterItem.CONDITION_TYPE:
                 return
 
-            if index.column() == 2:
+            if index.column() == self.COLUMN_OPERATOR:
                 operator = item.get_operator()
-                return operator
+                return OPERATORS_PY_SQL.get(operator, "=")
 
-            if index.column() == 3:
+            if index.column() == self.COLUMN_VALUE:
                 val = item.get_value()
                 if isinstance(val, list):
                     return ",".join(val)
@@ -845,10 +897,10 @@ class FilterModel(QAbstractItemModel):
         if role in (Qt.DisplayRole, Qt.EditRole, Qt.UserRole):
             item = self.item(index)
 
-            if index.column() == 0:
+            if index.column() == self.COLUMN_CHECKBOX:
                 item.checked = bool(value)
 
-            if index.column() == 1:
+            if index.column() == self.COLUMN_FIELD:
                 if item.type == FilterItem.LOGIC_TYPE:
                     item.set_value(value)
 
@@ -859,10 +911,10 @@ class FilterModel(QAbstractItemModel):
 
             if item.type == FilterItem.CONDITION_TYPE:
 
-                if index.column() == 2:
+                if index.column() == self.COLUMN_OPERATOR:
                     item.set_operator(value)
 
-                if index.column() == 3:
+                if index.column() == self.COLUMN_VALUE:
                     item.set_value(value)
 
             self.filtersChanged.emit()
@@ -1103,13 +1155,16 @@ class FilterModel(QAbstractItemModel):
 
         item = index.internalPointer()
 
-        if index.column() == 0 or index.column() == 4:
+        if (
+            index.column() == self.COLUMN_CHECKBOX
+            or index.column() == self.COLUMN_REMOVE
+        ):
             return Qt.ItemIsSelectable | Qt.ItemIsEnabled
 
-        if item.type == FilterItem.LOGIC_TYPE and index.column() != 1:
+        if item.type == FilterItem.LOGIC_TYPE and index.column() != self.COLUMN_FIELD:
             return Qt.ItemIsSelectable | Qt.ItemIsEnabled
 
-        if item.type == FilterItem.LOGIC_TYPE and index.column() == 1:
+        if item.type == FilterItem.LOGIC_TYPE and index.column() == self.COLUMN_FIELD:
             return (
                 Qt.ItemIsSelectable
                 | Qt.ItemIsEditable
@@ -1305,12 +1360,12 @@ class FilterDelegate(QStyledItemDelegate):
         view.setItemDelegate(delegate)
     """
 
-    COLUMN_CHECKBOX = 0
-    COLUMN_FIELD = 1
-    COLUMN_LOGIC = 1
-    COLUMN_OPERATOR = 2
-    COLUMN_VALUE = 3
-    COLUMN_REMOVE = 4
+    COLUMN_CHECKBOX = 4
+    COLUMN_FIELD = 0
+    COLUMN_LOGIC = 0
+    COLUMN_OPERATOR = 1
+    COLUMN_VALUE = 2
+    COLUMN_REMOVE = 3
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -1325,9 +1380,6 @@ class FilterDelegate(QStyledItemDelegate):
         s = qApp.style().pixelMetric(QStyle.PM_ListViewIconSize)
         self.icon_size = QSize(s, s)
         self.row_height = qApp.style().pixelMetric(QStyle.PM_ListViewIconSize)
-
-        self.indentation = 12
-        self.branch_width = 8
 
     def createEditor(self, parent, option, index: QModelIndex) -> QWidget:
         """Overrided from Qt. Create an editor for the selected column.
@@ -1374,67 +1426,8 @@ class FilterDelegate(QStyledItemDelegate):
             w = factory.create(field, operator, parent)
             return w
 
-        # if index.column() == 1:
-        #     if item.type == FilterItem.LOGIC_TYPE:
-        #         # AND/OR logic operators
-        #         return LogicField(parent)
-
-        #     if item.type == FilterItem.CONDITION_TYPE:
-        #         # Display all fields of the database
-        #         widget = ComboField(parent)
-        #         # LOGGER.debug(prepare_fields.cache_info())
-        #         # Add items
-        #         for field in prepare_fields(conn):
-        #             # Cast ('sample', 'HG001', 'gt') to sample['HG001'].gt
-        #             # Leave "chr" to "chr"
-        #             text = fields_to_vql(field["name"])
-        #             widget.edit.addItem(text, field["name"])
-
-        #         return widget
-
-        # if index.column() == 2:
-        #     return OperatorField(parent)
-
-        # if index.column() == 3:
-        #     if model.item(index).get_operator() in ("IN", "NOT IN"):
-        #         # Tuple value is expecitem required
-        #         return IterableField(parent)
-        #     # Basic string or int or float
-        #     return StrField(parent)
-        #     # Dynamic field according to database type
-        #     # return FieldFactory(conn).create(model.item(index).get_field(), parent=parent)
-
-        # return super().createEditor(parent, option, index)
-
     def setEditorData(self, editor: QWidget, index: QModelIndex):
-        """Overrided from Qt: Read data from model (FilterItem) and set editor data
 
-        TL;DR: populate the editor with the data from the model.
-
-        Sets the contents of the given editor, with the data of the item at the
-        given index.
-
-        Currently, it calls BaseEditor.set_value() methods
-
-        See Also:
-            :meth:`setModelData` for the opposite function (set model data)
-
-        Args:
-            editor (QWidget)
-            index (QModelindex)
-        """
-        # print("SET editor val from model:")
-        # roles = (Qt.UserRole, Qt.EditRole, Qt.DisplayRole)
-        # print("user, edit, display")
-        # print(";".join(str(index.data(role)) for role in roles))
-        # print(";".join(str(type(index.data(role))) for role in roles))
-        # print("VAL:", index.data(role=Qt.UserRole))
-        # print("editor type", type(editor))
-
-        # Set editor data from the model (from the selected FilterItem)
-        # Editors expect typed values, so don't forget to use UserRole, not EditRole
-
-        #
         model = index.model()
         item = model.item(index)
         field = item.get_field()
@@ -1549,15 +1542,15 @@ class FilterDelegate(QStyledItemDelegate):
 
         size = QSize(option.rect.width(), self.row_height)
 
-        if index.column() == self.COLUMN_CHECKBOX:
-            return QSize(20, 30)
+        # if index.column() == self.COLUMN_CHECKBOX:
+        #     return QSize(20, 30)
 
-        if index.column() == self.COLUMN_OPERATOR:
-            return QSize(20, 30)
+        # if index.column() == self.COLUMN_OPERATOR:
+        #     return QSize(20, 30)
 
-        if index.column() == self.COLUMN_FIELD:
-            margin = self.indentation * self._compute_level(index) + self.indentation
-            size.setWidth(size.width() + margin + 10)
+        # if index.column() == self.COLUMN_FIELD:
+        #     margin = self.indentation * self._compute_level(index) + self.indentation
+        #     size.setWidth(size.width() + margin + 10)
 
         return size
 
@@ -1570,167 +1563,167 @@ class FilterDelegate(QStyledItemDelegate):
 
         return level
 
-    def _draw_branch(self, painter, option, index):
+    # def _draw_branch(self, painter, option, index):
 
-        if index.parent() == QModelIndex():
-            return
+    #     if index.parent() == QModelIndex():
+    #         return
 
-        item = index.model().item(index)
-        parent = index.model().item(index.parent())
-        level = self._compute_level(index)
-        color = option.palette.color(QPalette.WindowText)
+    #     item = index.model().item(index)
+    #     parent = index.model().item(index.parent())
+    #     level = self._compute_level(index)
+    #     color = option.palette.color(QPalette.WindowText)
 
-        pen = QPen(color, 1, Qt.DotLine)
-        painter.setPen(pen)
-        xstart = option.rect.x() + self.indentation * (level - 1)
-        xend = xstart + self.branch_width
+    #     pen = QPen(color, 1, Qt.DotLine)
+    #     painter.setPen(pen)
+    #     xstart = option.rect.x() + self.indentation * (level - 1)
+    #     xend = xstart + self.branch_width
 
-        #  draw horizontal
-        painter.drawLine(
-            xstart + 2, option.rect.center().y(), xend, option.rect.center().y()
-        )
+    #     #  draw horizontal
+    #     painter.drawLine(
+    #         xstart + 2, option.rect.center().y(), xend, option.rect.center().y()
+    #     )
 
-        #  Draw Vertical
-        ## If last
-        if index.model().is_last(index):
-            yend = option.rect.center().y()
-            painter.drawLine(xstart, option.rect.top(), xstart, yend)
+    #     #  Draw Vertical
+    #     ## If last
+    #     if index.model().is_last(index):
+    #         yend = option.rect.center().y()
+    #         painter.drawLine(xstart, option.rect.top(), xstart, yend)
 
-        # If middle
-        else:
-            yend = option.rect.bottom()
-            painter.drawLine(xstart, option.rect.top(), xstart, yend)
+    #     # If middle
+    #     else:
+    #         yend = option.rect.bottom()
+    #         painter.drawLine(xstart, option.rect.top(), xstart, yend)
 
-        if level > 1:
-            x = xstart
-            current = index
-            while current != QModelIndex():
-                if not index.model().is_last(current):
-                    painter.drawLine(x, option.rect.top(), x, option.rect.bottom())
-                current = current.parent()
-                x -= self.indentation
+    #     if level > 1:
+    #         x = xstart
+    #         current = index
+    #         while current != QModelIndex():
+    #             if not index.model().is_last(current):
+    #                 painter.drawLine(x, option.rect.top(), x, option.rect.bottom())
+    #             current = current.parent()
+    #             x -= self.indentation
 
-    def paint(self, painter, option, index):
+    # def paint(self, painter, option, index):
 
-        # ======== Draw background
-        item = index.model().item(index)
-        is_selected = False
+    #     # ======== Draw background
+    #     item = index.model().item(index)
+    #     is_selected = False
 
-        if option.state & QStyle.State_Enabled:
-            bg = (
-                QPalette.Normal
-                if option.state & QStyle.State_Active
-                or option.state & QStyle.State_Selected
-                else QPalette.Inactive
-            )
-        else:
-            bg = QPalette.Disabled
+    #     if option.state & QStyle.State_Enabled:
+    #         bg = (
+    #             QPalette.Normal
+    #             if option.state & QStyle.State_Active
+    #             or option.state & QStyle.State_Selected
+    #             else QPalette.Inactive
+    #         )
+    #     else:
+    #         bg = QPalette.Disabled
 
-        if option.state & QStyle.State_Selected:
-            is_selected = True
-            painter.fillRect(option.rect, option.palette.color(bg, QPalette.Highlight))
+    #     if option.state & QStyle.State_Selected:
+    #         is_selected = True
+    #         painter.fillRect(option.rect, option.palette.color(bg, QPalette.Highlight))
 
-        # margin = self.indentation * (self._compute_level(index))
+    #     # margin = self.indentation * (self._compute_level(index))
 
-        #  ========= Draw Checkbox
-        if index.column() == self.COLUMN_CHECKBOX:
+    #     #  ========= Draw Checkbox
+    #     if index.column() == self.COLUMN_CHECKBOX:
 
-            check_icon = self.eye_on if item.checked else self.eye_off
-            rect = QRect(0, 0, self.icon_size.width(), self.icon_size.height())
-            rect.moveCenter(option.rect.center())
-            # rect.setX(4)
-            painter.drawPixmap(rect.x(), rect.y(), check_icon.pixmap(self.icon_size))
+    #         check_icon = self.eye_on if item.checked else self.eye_off
+    #         rect = QRect(0, 0, self.icon_size.width(), self.icon_size.height())
+    #         rect.moveCenter(option.rect.center())
+    #         # rect.setX(4)
+    #         painter.drawPixmap(rect.x(), rect.y(), check_icon.pixmap(self.icon_size))
 
-        else:
-            return super().paint(painter, option, index)
+    #     else:
+    #         return super().paint(painter, option, index)
 
-        # if index.column() > self.COLUMN_CHECKBOX:
+    # if index.column() > self.COLUMN_CHECKBOX:
 
-        #     if index.column() == 1:
-        #         self._draw_branch(painter, option, index)
-        #     # pen = QPen(QColor("white"), 1, Qt.DotLine)
-        #     # painter.setPen(pen)
-        #     # # painter.drawRect(option.rect)
-        #     # painter.drawLine(
-        #     #     option.rect.left(),
-        #     #     option.rect.center().y(),
-        #     #     margin - 2,
-        #     #     option.rect.center().y(),
-        #     # )
+    #     if index.column() == 1:
+    #         self._draw_branch(painter, option, index)
+    #     # pen = QPen(QColor("white"), 1, Qt.DotLine)
+    #     # painter.setPen(pen)
+    #     # # painter.drawRect(option.rect)
+    #     # painter.drawLine(
+    #     #     option.rect.left(),
+    #     #     option.rect.center().y(),
+    #     #     margin - 2,
+    #     #     option.rect.center().y(),
+    #     # )
 
-        #     # painter.drawLine(
-        #     #     option.rect.left(),
-        #     #     option.rect.top(),
-        #     #     option.rect.left(),
-        #     #     option.rect.bottom(),
-        #     # )
+    #     # painter.drawLine(
+    #     #     option.rect.left(),
+    #     #     option.rect.top(),
+    #     #     option.rect.left(),
+    #     #     option.rect.bottom(),
+    #     # )
 
-        #     font = QFont()
-        #     align = Qt.AlignVCenter
-        #     color = option.palette.color(
-        #         QPalette.Normal if item.checked else QPalette.Disabled,
-        #         QPalette.HighlightedText if is_selected else QPalette.WindowText,
-        #     )
+    #     font = QFont()
+    #     align = Qt.AlignVCenter
+    #     color = option.palette.color(
+    #         QPalette.Normal if item.checked else QPalette.Disabled,
+    #         QPalette.HighlightedText if is_selected else QPalette.WindowText,
+    #     )
 
-        #     if (
-        #         item.type == FilterItem.LOGIC_TYPE
-        #         and index.column() == self.COLUMN_FIELD
-        #     ):
-        #         font.setBold(True)
-        #         # metric = QFontMetrics(font)
-        #         # print(self._compute_level(index))
-        #         # text_width = metric.boundingRect(index.data()).width()
-        #         # #  Draw Add buttion
-        #         # rect = QRect(0, 0, self.icon_size.width(), self.icon_size.height())
-        #         # rect.moveCenter(
-        #         #     QPoint(
-        #         #         option.rect.x() + margin + text_width + 20,
-        #         #         option.rect.center().y(),
-        #         #     )
-        #         # )
-        #         # painter.drawPixmap(
-        #         #     rect.right() - self.icon_size.width(),
-        #         #     rect.y(),
-        #         #     self.add_icon.pixmap(self.icon_size),
-        #         # )
-        #     if index.column() == self.COLUMN_FIELD:
-        #         align |= Qt.AlignLeft
+    #     if (
+    #         item.type == FilterItem.LOGIC_TYPE
+    #         and index.column() == self.COLUMN_FIELD
+    #     ):
+    #         font.setBold(True)
+    #         # metric = QFontMetrics(font)
+    #         # print(self._compute_level(index))
+    #         # text_width = metric.boundingRect(index.data()).width()
+    #         # #  Draw Add buttion
+    #         # rect = QRect(0, 0, self.icon_size.width(), self.icon_size.height())
+    #         # rect.moveCenter(
+    #         #     QPoint(
+    #         #         option.rect.x() + margin + text_width + 20,
+    #         #         option.rect.center().y(),
+    #         #     )
+    #         # )
+    #         # painter.drawPixmap(
+    #         #     rect.right() - self.icon_size.width(),
+    #         #     rect.y(),
+    #         #     self.add_icon.pixmap(self.icon_size),
+    #         # )
+    #     if index.column() == self.COLUMN_FIELD:
+    #         align |= Qt.AlignLeft
 
-        #     if index.column() == self.COLUMN_OPERATOR:
-        #         align |= Qt.AlignCenter
+    #     if index.column() == self.COLUMN_OPERATOR:
+    #         align |= Qt.AlignCenter
 
-        #     if index.column() == self.COLUMN_VALUE:
-        #         align |= Qt.AlignLeft
+    #     if index.column() == self.COLUMN_VALUE:
+    #         align |= Qt.AlignLeft
 
-        #     painter.setFont(font)
-        #     painter.setPen(color)
-        #     # Indentation level
+    #     painter.setFont(font)
+    #     painter.setPen(color)
+    #     # Indentation level
 
-        #     text_rect = option.rect
-        #     if index.column() == 1:
-        #         xstart = option.rect.x() + margin
-        #         text_rect.setX(xstart)
+    #     text_rect = option.rect
+    #     if index.column() == 1:
+    #         xstart = option.rect.x() + margin
+    #         text_rect.setX(xstart)
 
-        #     painter.drawText(text_rect, align, index.data(Qt.DisplayRole))
+    #     painter.drawText(text_rect, align, index.data(Qt.DisplayRole))
 
-        #     if index.column() == self.COLUMN_REMOVE and index.parent() != QModelIndex():
-        #         rect = QRect(0, 0, self.icon_size.width(), self.icon_size.height())
-        #         rect.moveCenter(option.rect.center())
-        #         painter.drawPixmap(
-        #             rect.right() - self.icon_size.width(),
-        #             rect.y(),
-        #             self.rem_icon.pixmap(self.icon_size),
-        #         )
+    #     if index.column() == self.COLUMN_REMOVE and index.parent() != QModelIndex():
+    #         rect = QRect(0, 0, self.icon_size.width(), self.icon_size.height())
+    #         rect.moveCenter(option.rect.center())
+    #         painter.drawPixmap(
+    #             rect.right() - self.icon_size.width(),
+    #             rect.y(),
+    #             self.rem_icon.pixmap(self.icon_size),
+    #         )
 
-        # if index.column() == 3:
-        #     painter.drawPixmap(self._icon_rect(option), self.rem_icon.pixmap(self.icon_size))
+    # if index.column() == 3:
+    #     painter.drawPixmap(self._icon_rect(option), self.rem_icon.pixmap(self.icon_size))
 
-        # if index.column() == 3 and item.type == FilterItem.LOGIC_TYPE:
-        #     x = option.rect.right() - 20
-        #     y = option.rect.center().y() - self.icon_size.height() / 2
-        #     painter.drawPixmap(QRect(x,y,self.icon_size.width(), self.icon_size.height()), self.add_icon.pixmap(self.icon_size))
+    # if index.column() == 3 and item.type == FilterItem.LOGIC_TYPE:
+    #     x = option.rect.right() - 20
+    #     y = option.rect.center().y() - self.icon_size.height() / 2
+    #     painter.drawPixmap(QRect(x,y,self.icon_size.width(), self.icon_size.height()), self.add_icon.pixmap(self.icon_size))
 
-        # super().paint(painter, option,index)
+    # super().paint(painter, option,index)
 
     def _icon_rect(self, rect):
         x = rect.x()
@@ -1741,23 +1734,23 @@ class FilterDelegate(QStyledItemDelegate):
     def _check_rect(self, rect):
         return QRect(rect.x(), rect.y(), rect.height(), rect.height())
 
-    def updateEditorGeometry(self, editor, option, index):
-        """Overrided from Qt. Set editor geometry
+    # def updateEditorGeometry(self, editor, option, index):
+    #     """Overrided from Qt. Set editor geometry
 
-        Args:
-            editor (QWidget)
-            option (QStyleOptionViewItem)
-            index (QModelIndex)
-        """
+    #     Args:
+    #         editor (QWidget)
+    #         option (QStyleOptionViewItem)
+    #         index (QModelIndex)
+    #     """
 
-        if index.column() == 1:
-            option.rect.setLeft(
-                option.rect.x() + self.indentation * (self._compute_level(index) - 1)
-            )
-            editor.setGeometry(option.rect)
-            return
+    #     if index.column() == 1:
+    #         option.rect.setLeft(
+    #             option.rect.x() + self.indentation * (self._compute_level(index) - 1)
+    #         )
+    #         editor.setGeometry(option.rect)
+    #         return
 
-        super().updateEditorGeometry(editor, option, index)
+    #     super().updateEditorGeometry(editor, option, index)
 
 
 class FieldDialog(QDialog):
@@ -1881,6 +1874,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
         # Drag & drop
         self.view.setModel(self.model)
         self.view.setItemDelegate(self.delegate)
+        self.view.setIndentation(10)
         self.view.setDragEnabled(True)
         self.view.header().setStretchLastSection(False)
         self.view.setAcceptDrops(True)
@@ -1888,16 +1882,15 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
         self.view.setDragDropMode(QAbstractItemView.InternalMove)
         self.view.setAlternatingRowColors(True)
-        self.view.setIndentation(0)
-        self.view.header().setSectionResizeMode(0, QHeaderView.ResizeToContents)
-        self.view.header().setSectionResizeMode(1, QHeaderView.Stretch)
-        self.view.header().setSectionResizeMode(2, QHeaderView.ResizeToContents)
-        self.view.header().setSectionResizeMode(3, QHeaderView.Stretch)
-        self.view.header().setSectionResizeMode(4, QHeaderView.ResizeToContents)
+        # self.view.header().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        # self.view.header().setSectionResizeMode(1, QHeaderView.Stretch)
+        # self.view.header().setSectionResizeMode(2, QHeaderView.ResizeToContents)
+        # self.view.header().setSectionResizeMode(3, QHeaderView.Stretch)
+        # self.view.header().setSectionResizeMode(4, QHeaderView.ResizeToContents)
         self.view.setEditTriggers(QAbstractItemView.DoubleClicked)
         # Item selected in view
         self.view.selectionModel().selectionChanged.connect(self.on_selection_changed)
-        self.view.header().hide()
+        # self.view.header().hide()
 
         self.combo = QComboBox()
         self.combo.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
