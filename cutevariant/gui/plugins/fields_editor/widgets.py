@@ -305,8 +305,84 @@ class FieldsWidget(QWidget):
                 )
 
 
+class PresetsEditorDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(self.tr("Presets Editor"))
+        self.caption_label = QLabel(self.tr("Edit fields presets"))
+        self.presets_model = QStandardItemModel(0, 0)
+        self.presets_view = QListView(self)
+        self.presets_view.setSelectionMode(QAbstractItemView.MultiSelection)
+        self.presets_view.setModel(self.presets_model)
+
+        self.toolbar = QToolBar(self)
+        self.delete_action = self.toolbar.addAction(
+            FIcon(0xF01B4), self.tr("Delete selected presets"), self.on_remove_presets
+        )
+
+        self.ok_button = QDialogButtonBox(QDialogButtonBox.Ok, self)
+        self.ok_button.clicked.connect(self.accept)
+
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.toolbar)
+        layout.addWidget(self.presets_view)
+        layout.addWidget(self.ok_button)
+
+        self.load_presets()
+
+    def on_remove_presets(self):
+        # Retrieve selected presets (scheduled for deletion)
+        selected_preset_indexes = self.presets_view.selectionModel().selectedIndexes()
+        if not selected_preset_indexes:
+            # Don't even ask, nothing will be deleted !
+            return
+
+        confirmation = QMessageBox.question(
+            self,
+            self.tr("Please confirm"),
+            self.tr(
+                f"Do you really want to remove selected presets ?\n {len(selected_preset_indexes)} presets would be definitely lost !"
+            ),
+        )
+        if confirmation == QMessageBox.Yes:
+            selected_items = [
+                self.presets_model.item(selected.row())
+                for selected in selected_preset_indexes
+            ]
+            for selected_item in selected_items:
+                preset_file_name = selected_item.data()
+                os.remove(preset_file_name)
+            # After we removed all selected presets from the disk, let's reload the model
+            self.load_presets()
+
+    def load_presets(self):
+
+        self.presets_model.clear()
+        settings = QSettings()
+        preset_path = settings.value(
+            "preset_path",
+            QStandardPaths.writableLocation(QStandardPaths.GenericDataLocation),
+        )
+
+        filenames = glob.glob(f"{preset_path}/*.fields.json")
+        #  Sort file by date
+        filenames.sort(key=os.path.getmtime)
+
+        for filename in filenames:
+            with open(filename) as file:
+                obj = json.load(file)
+                preset_item = QStandardItem(obj.get("name", ""))
+
+                # All we need from the preset is its name (the item title) and the path to the file where it is stored
+                preset_item.setData(filename)
+                self.presets_model.appendRow([preset_item])
+
+    def __del__(self):
+        print(f"{self.__class__.__name__} got deleted")
+
+
 class FieldsEditorWidget(plugin.PluginWidget):
-    """Display all fields according categorie
+    """Display all fields according categories
 
     Usage:
 
@@ -409,8 +485,8 @@ class FieldsEditorWidget(plugin.PluginWidget):
             }
         )
         default_preset.triggered.connect(self.on_preset_clicked)
-        self.menu.addAction(FIcon(0xF0193), "Save ...", self.on_save_preset)
-        self.menu.addAction(FIcon(0xF14E5), "Edit ...", self.on_edit_preset_pressed)
+        self.menu.addAction(FIcon(0xF0193), "Save...", self.on_save_preset)
+        self.menu.addAction(FIcon(0xF11E7), "Edit...", self.on_edit_preset_pressed)
 
     def on_preset_clicked(self):
 
@@ -433,7 +509,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
         name, ok = QInputDialog.getText(
             self,
             self.tr("Input dialog"),
-            self.tr("User name:"),
+            self.tr("Preset name:"),
             QLineEdit.Normal,
             QDir.home().dirName(),
         )
@@ -447,7 +523,9 @@ class FieldsEditorWidget(plugin.PluginWidget):
             self.load_preset_menu()
 
     def on_edit_preset_pressed(self):
-        print("Not implemented yet, but you can find the presets folder and edit them as you like :)")
+        edit_dialog = PresetsEditorDialog(self)
+        edit_dialog.show()
+        # Dialog should be out of scope, but doesn't get deleted !
 
     def on_search_pressed(self, checked: bool):
         self.search_edit.setVisible(checked)
