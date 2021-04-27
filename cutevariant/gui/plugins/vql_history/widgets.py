@@ -42,8 +42,25 @@ from cutevariant.gui.widgets import VqlSyntaxHighlighter
 
 LOGGER = logger()
 
+""" 
+This plugin is intended to store VQL history and several information 
+
+"""
+
 
 class HistoryModel(QAbstractTableModel):
+
+    """A model to store history.
+
+    Each History record are composed of 5 values
+
+    - A tag name
+    - a Date
+    - Time execution of VQL
+    - VQL query
+    - Variant count
+
+    """
 
     HEADERS = ["Name", "Date", "time", "Query", "Count"]
 
@@ -52,15 +69,17 @@ class HistoryModel(QAbstractTableModel):
         self.records = []
 
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
-        """ override """
+        """ override :  Return Row Count"""
         return len(self.records)
 
     def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
-        """ override """
-        return 5
+        """ override : Return Column Count """
+        if parent == QModelIndex():
+            return 5
+        return 0
 
-    def data(self, index: QModelIndex, role):
-        """ override """
+    def data(self, index: QModelIndex, role: Qt.DisplayRole):
+        """ override: Return data according index and role """
 
         if not index.isValid():
             return None
@@ -92,18 +111,12 @@ class HistoryModel(QAbstractTableModel):
         return None
 
     def setData(self, index, value, role=Qt.EditRole):
+        """ override : Set model data according index and role """
         if index.column() == 0:
             self.records[index.row()][0] = value
             return True
         else:
             return False
-
-    def flags(self, index):
-        base_flags = super().flags(index)
-        if index.column() == 0:
-            return base_flags | Qt.ItemIsEditable
-        else:
-            return base_flags
 
     def headerData(self, section: int, orientation: Qt.Orientation, role):
         """ override """
@@ -140,29 +153,31 @@ class HistoryModel(QAbstractTableModel):
         self.records.insert(0, [tags, time, perf_time, query, count])
         self.endInsertRows()
 
-    def load_from_json(self, file_name):
-        with open(file_name) as device:
-            records = json.load(device)
+    def from_json(self, records: dict):
+        """ Load from a json serialisable object"""
 
-            self.beginResetModel()
-            self.records.clear()
+        self.beginResetModel()
+        self.records.clear()
 
-            # records is a python array from a JSON one. Each record in it has the four keys of the four columns of our model
-            for record in records:
-                # Get the time of query from this record (defaults to current time)
-                time = record.get("time", QDateTime().currentDateTime())
-                if isinstance(time, str):
-                    if time.isnumeric():
-                        time = QDateTime.fromSecsSinceEpoch(int(time))
-                count = record.get("count", 0)
-                query = record.get("query", "")
-                tag = record.get("tags", "")
-                perf_time = record.get("perf_time", 0)
-                self.records.append([tag, time, perf_time, query, count])
+        # records is a python array from a JSON one. Each record in it has the four keys of the four columns of our model
+        for record in records:
+            # Get the time of query from this record (defaults to current time)
+            time = record.get("time", QDateTime().currentDateTime())
+            if isinstance(time, str):
+                if time.isnumeric():
+                    time = QDateTime.fromSecsSinceEpoch(int(time))
+            count = record.get("count", 0)
+            query = record.get("query", "")
+            tag = record.get("tags", "")
+            perf_time = record.get("perf_time", 0)
+            self.records.append([tag, time, perf_time, query, count])
 
-            self.endResetModel()
+        self.endResetModel()
 
-    def save_to_json(self, file_name):
+    def to_json(self) -> dict:
+        """
+        Return Json serialisable object
+        """
         root = []
         for record in self.records:
             tags, time, perf_time, query, count = record
@@ -179,8 +194,7 @@ class HistoryModel(QAbstractTableModel):
                 }
             )
 
-        with open(file_name, "w+") as device:
-            json.dump(root, device)
+        return root
 
     def clear_records(self):
         """Clear records from models"""
@@ -188,8 +202,15 @@ class HistoryModel(QAbstractTableModel):
         self.records.clear()
         self.endResetModel()
 
-    def get_record(self, index: QModelIndex):
-        """ Return record corresponding to the model index """
+    def get_record(self, index: QModelIndex) -> list:
+        """Return record corresponding to the model index
+
+        Args:
+            index (QModelIndex)
+
+        Returns:
+            list: Return record as a list of values
+        """
         return self.records[index.row()]
 
     def sort(self, column, order=Qt.AscendingOrder):
@@ -206,13 +227,22 @@ class HistoryModel(QAbstractTableModel):
         else:
             return
 
-    def removeRow(self, row):
+    def removeRow(self, row: int):
+        """Remove one row from corresponding row
+
+        Args:
+            row (int)
+        """
         self.beginRemoveRows(QModelIndex(), row, row)
         del self.records[row]
         self.endRemoveRows()
 
-    def removeRows(self, indexes):
+    def removeRows(self, indexes: list):
+        """Remove multiples records from indexes
 
+        Args:
+            indexes (list): list of QModelIndex
+        """
         rows = sorted([index.row() for index in indexes], reverse=True)
 
         self.beginResetModel()
@@ -224,8 +254,24 @@ class HistoryModel(QAbstractTableModel):
 
         self.endResetModel()
 
-    def get_query(self, index: QModelIndex):
+    def get_query(self, index: QModelIndex) -> str:
+        """Return VQL query from index
+
+        Args:
+            index (QModelIndex)
+
+        Returns:
+            str: corresponding vql query
+        """
         return self.records[index.row()][3]
+
+    def get_last_query(self) -> str:
+
+        if self.rowCount():
+            last_index = self.index(0, 0)
+            return self.get_query(last_index)
+
+        return None
 
 
 class DateSortProxyModel(QSortFilterProxyModel):
@@ -297,7 +343,6 @@ class VqlHistoryWidget(plugin.PluginWidget):
 
         # Search is case insensitive
         self.proxy_model.setFilterCaseSensitivity(Qt.CaseInsensitive)
-
         self.proxy_model.setFilterKeyColumn(-1)
 
         self.view.setModel(self.proxy_model)
@@ -309,7 +354,7 @@ class VqlHistoryWidget(plugin.PluginWidget):
         self.view.setItemDelegate(self.delegate)
 
         # Hide name column (too ugly for now)
-        self.view.hideColumn(0)
+        # self.view.hideColumn(0)
 
         self.view.horizontalHeader().setSectionResizeMode(
             0, QHeaderView.ResizeToContents
@@ -322,8 +367,6 @@ class VqlHistoryWidget(plugin.PluginWidget):
         )
 
         self.view.horizontalHeader().setSectionResizeMode(3, QHeaderView.Stretch)
-
-        self.project_dir = ""
 
         self.view.doubleClicked.connect(self.on_double_clicked)
         #  Create toolbar
@@ -364,15 +407,14 @@ class VqlHistoryWidget(plugin.PluginWidget):
 
         self.search_edit.setVisible(False)
         self.search_edit.setPlaceholderText(self.tr("Search query... "))
-
         self.search_edit.textChanged.connect(self.proxy_model.setFilterRegExp)
+        self.search_edit.setContentsMargins(10, 10, 10, 10)
 
         # Create layout
         main_layout = QVBoxLayout()
         main_layout.setSpacing(0)
         main_layout.addWidget(self.toolbar)
         main_layout.addWidget(self.view)
-        self.search_edit.setContentsMargins(10, 10, 10, 10)
         main_layout.addWidget(self.search_edit)
 
         main_layout.setContentsMargins(0, 0, 0, 0)
@@ -380,9 +422,17 @@ class VqlHistoryWidget(plugin.PluginWidget):
         self.setLayout(main_layout)
 
     def on_register(self, mainwindow: MainWindow):
+        """ override  """
         mainwindow.variants_load_finished.connect(self.on_variants_load_finished)
 
     def on_variants_load_finished(self, count: int, elapsed_time: float):
+        """Triggered when variant has been loaded from variant_view plugin and store a records if required
+
+        Args:
+            count (int)
+            elapsed_time (float)
+        """
+
         vql_query = build_vql_query(
             self.mainwindow.state.fields,
             self.mainwindow.state.source,
@@ -390,14 +440,8 @@ class VqlHistoryWidget(plugin.PluginWidget):
         )
 
         #  Do not store same query consecutively
-        if self.model.rowCount() > 0:
-            previous_index = self.model.index(0, 0)
-            previous_query = self.model.get_record(previous_index)[3]
-
-            if vql_query != previous_query:
-                self.model.add_record(vql_query, count, elapsed_time)
-
-        else:
+        last_query = self.model.get_last_query()
+        if vql_query != self.model.get_last_query() or last_query is None:
             self.model.add_record(vql_query, count, elapsed_time)
 
     def on_open_project(self, conn):
@@ -405,8 +449,16 @@ class VqlHistoryWidget(plugin.PluginWidget):
         self.conn = conn
 
     def on_refresh(self):
-        """"""
+        """override"""
         pass
+
+    def to_json(self):
+        """ override """
+        return self.model.to_json()
+
+    def from_json(self, data):
+        """ override """
+        self.model.from_json(data)
 
     def on_double_clicked(self, index: QModelIndex):
         """triggered when history record is clicked
@@ -437,38 +489,31 @@ class VqlHistoryWidget(plugin.PluginWidget):
             ),
         )
         if confirmation == QMessageBox.Yes:
-            settings = QSettings()
-
-            # When asking for a log file to load, try to remember where it was last time
-            log_dir = settings.value(
-                f"{self.project_full_path}/latest_log_dir", QDir.homePath()
-            )
 
             # Ask for a file name to load the log from
             file_name = QFileDialog.getOpenFileName(
                 self,
                 self.tr("Please select the file you want to load the log from"),
-                log_dir,
+                QDir.home().path(),
                 self.tr("Log file (*.csv *.json)"),
             )[0]
 
-            # Load the file into the model, according to the extension
-            if file_name.endswith("csv"):
-                self.model.load_from_csv(file_name)
             if file_name.endswith("json"):
-                self.model.load_from_json(file_name)
-
-            # Remember where we just loaded from last time
-            settings.setValue(
-                f"{self.project_full_path}/latest_log_dir",
-                os.path.dirname(file_name),
-            )
+                with open(file_name) as file:
+                    data = json.load(file)
+                    self.model.from_json(data)
 
     def on_search_pressed(self, checked: bool):
+        """Triggered when user press search button
+
+        Args:
+            checked (bool)
+        """
         self.search_edit.setVisible(checked)
         self.search_edit.setFocus(Qt.MenuBarFocusReason)
 
     def on_clear_logs_pressed(self):
+        """Clear all records with a confirm message """
         confirmation = QMessageBox.question(
             self,
             self.tr("Please confirm"),
@@ -484,31 +529,28 @@ class VqlHistoryWidget(plugin.PluginWidget):
         Exports the whole history of requests for this project in a JSON file
         """
 
-        settings = QSettings()
-        export_log_dir = settings.value(
-            f"{self.project_full_path}/export_log_dir", QDir.homePath()
-        )
-
         filename = QFileDialog.getSaveFileName(
             self,
             self.tr("Please choose a file name to export your log"),
-            export_log_dir,
+            QDir.home().path(),
             self.tr("Log file (*.json)"),
         )[0]
 
-        settings.setValue(
-            f"{self.project_full_path}/export_log_dir", os.path.dirname(filename)
-        )
+        if filename:
 
-        self.model.save_to_json(filename)
+            if not filename.endswith("history.json"):
+                filename += ".history.json"
+            with open(filename, "w") as file:
+                data = self.model.to_json()
+                json.dump(data, file)
 
     def on_remove_row_pressed(self):
-        settings = QSettings()
+        """Remove selected records"""
+
         selected_indexes = self.view.selectionModel().selectedRows()
         if not selected_indexes:
             return
 
-        if settings.value(f"{__name__}/confirm_remove_row", False):
             confirmation = QMessageBox.question(
                 self,
                 self.tr("Please confirm"),
