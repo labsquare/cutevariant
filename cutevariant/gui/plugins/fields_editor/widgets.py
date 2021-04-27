@@ -260,7 +260,19 @@ class FieldsWidget(QWidget):
         Callback for when the search bar is updated (filter the three models)
         """
         for index, view in enumerate(self.views):
+            view["proxy"].setFilterRole(Qt.DisplayRole)
             view["proxy"].setFilterRegExp(text)
+            count = view["proxy"].rowCount()
+            name = view["name"]
+            self.tab_widget.setTabText(index, f"{name} ({count})")
+
+    def show_checked_only(self, active=False):
+        # TODO : this is not working .. Charles
+        for index, view in enumerate(self.views):
+            view["proxy"].setFilterRole(Qt.CheckStateRole)
+            view["proxy"].setFilterKeyColumn(0)
+
+            # view["proxy"].setFilterFixedString("1")
             count = view["proxy"].rowCount()
             name = view["name"]
             self.tab_widget.setTabText(index, f"{name} ({count})")
@@ -315,20 +327,26 @@ class PresetsEditorDialog(QDialog):
         self.presets_view.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.presets_view.setModel(self.presets_model)
 
-        self.toolbar = QToolBar(self)
-        self.delete_action = self.toolbar.addAction(
-            FIcon(0xF01B4), self.tr("Delete selected presets"), self.on_remove_presets
-        )
-        self.delete_action.setShortcut(QKeySequence.Delete)
-        self.toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        # self.toolbar = QToolBar(self)
+        # self.delete_action = self.toolbar.addAction(
+        #     FIcon(0xF01B4), self.tr("Delete selected presets"), self.on_remove_presets
+        # )
 
-        self.ok_button = QDialogButtonBox(QDialogButtonBox.Ok, self)
-        self.ok_button.clicked.connect(self.accept)
+        #        self.delete_action.setShortcut(QKeySequence.Delete)
+
+        del_button = QPushButton(self.tr("Delete"))
+        ok_button = QPushButton(self.tr("Ok"))
+
+        ok_button.clicked.connect(self.close)
+        del_button.clicked.connect(self.on_remove_presets)
+
+        button_layout = QHBoxLayout()
+        button_layout.addWidget(del_button)
+        button_layout.addWidget(ok_button)
 
         layout = QVBoxLayout(self)
-        layout.addWidget(self.toolbar)
         layout.addWidget(self.presets_view)
-        layout.addWidget(self.ok_button)
+        layout.addLayout(button_layout)
 
         self.load_presets()
 
@@ -379,9 +397,6 @@ class PresetsEditorDialog(QDialog):
                 preset_item.setData(filename)
                 self.presets_model.appendRow([preset_item])
 
-    def __del__(self):
-        print(f"{self.__class__.__name__} got deleted")
-
 
 class FieldsEditorWidget(plugin.PluginWidget):
     """Display all fields according categories
@@ -404,28 +419,47 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self.toolbar = QToolBar(self)
         self.widget_fields = FieldsWidget(conn, parent)
 
+        # Create search bar
         self.search_edit = QLineEdit()
-        self.apply_fields = QPushButton(self.tr("Apply fields"))
-        self.apply_fields.pressed.connect(self.on_apply_fields_pressed)
-
+        self.search_edit.setPlaceholderText(self.tr("Search by keywords... "))
+        self.search_edit.textChanged.connect(self.widget_fields.update_filter)
+        self.search_edit.setVisible(False)
+        # setup button_layout
         layout = QVBoxLayout(self)
-
-        layout.addWidget(self.toolbar)
-        layout.addWidget(self.widget_fields)
-        layout.addWidget(self.apply_fields)
-
-        layout.setSpacing(0)
-
         layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(self.toolbar)
+        layout.addWidget(self.search_edit)
+
+        layout.addWidget(self.widget_fields)
+
+        # Create search action
+        self.search_action = self.toolbar.addAction(FIcon(0xF0349), "Search ...")
+        self.search_action.setCheckable(True)
+        self.search_action.triggered.connect(lambda x: self.toggle_search_bar(x))
+
+        # self.show_check_action = self.toolbar.addAction(FIcon(0xF0C51), "show checked")
+        # self.show_check_action.setCheckable(True)
+        # self.show_check_action.triggered.connect(lambda x: self.toggle_checked(x))
+
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.toolbar.addWidget(spacer)
+        # Create apply button
+        self.apply_fields = QPushButton(FIcon(0xF0E1E), self.tr("Apply"))
+        self.apply_fields.pressed.connect(self.on_apply_fields_pressed)
 
         # Setup toolbar
         self.toolbar.setIconSize(QSize(16, 16))
         self.toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-        self.toolbar.addWidget(self.search_edit)
 
+        # Create preset button
         self.presets_button = QPushButton(self.tr("Default preset"))
         self.presets_button.setFlat(True)
-        action = self.toolbar.addWidget(self.presets_button)
+        self.presets_button.setIcon(FIcon(0xF035C))
+
+        self.toolbar.addWidget(self.presets_button)
+        self.toolbar.addAction(FIcon(0xF0E1E), "Apply", self.on_apply_fields_pressed)
+
         self.menu = QMenu(self)
 
         self.load_preset_menu()
@@ -433,20 +467,20 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self.presets_button.setMenu(self.menu)
         self.setFocusPolicy(Qt.ClickFocus)
 
-        self.search_act = QAction(FIcon(0xF0969), self.tr("Search by keywords..."))
-        self.search_act.setCheckable(True)
-        self.search_act.toggled.connect(self.on_search_pressed)
-        self.search_act.setShortcutContext(Qt.WidgetShortcut)
-        self.search_act.setShortcut(QKeySequence.Find)
-
-        self.search_edit.setPlaceholderText(self.tr("Search by keywords... "))
-        self.search_edit.textChanged.connect(self.widget_fields.update_filter)
-
         self.auto_refresh = True
 
         self._is_refreshing = (
             False  # Help to avoid loop between on_refresh and on_fields_changed
         )
+
+    def toggle_search_bar(self, show=True):
+        self.search_edit.setVisible(show)
+        if not show:
+            self.search_edit.clear()
+
+    def toggle_checked(self, show=True):
+        # TODO : this is not working .. Charles
+        self.widget_fields.show_checked_only(True)
 
     def load_preset_menu(self):
         settings = QSettings()
@@ -466,6 +500,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
                 obj = json.load(file)
                 action = self.menu.addAction(obj.get("name", ""))
                 action.setData(obj)
+                action.setIcon(FIcon(0xF103B))
                 action.triggered.connect(self.on_preset_clicked)
 
         self.menu.addSeparator()
@@ -500,6 +535,8 @@ class FieldsEditorWidget(plugin.PluginWidget):
             self.presets_button.setText("")
         self.from_json(data)
 
+        self.on_apply_fields_pressed()
+
     def on_save_preset(self):
 
         settings = QSettings()
@@ -531,10 +568,6 @@ class FieldsEditorWidget(plugin.PluginWidget):
         edit_dialog = PresetsEditorDialog(self)
         edit_dialog.show()
         # Dialog should be out of scope, but doesn't get deleted !
-
-    def on_search_pressed(self, checked: bool):
-        self.search_edit.setVisible(checked)
-        self.search_edit.setFocus(Qt.MenuBarFocusReason)
 
     def on_open_project(self, conn):
         """ Overrided from PluginWidget """
