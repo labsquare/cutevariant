@@ -748,7 +748,7 @@ class FilterModel(QAbstractItemModel):
     """
 
     # See self.headerData()
-    _HEADERS = ["field", "operator", "value", "c", "remove"]
+    _HEADERS = ["field", "operator", "value", "visible", "remove"]
     _MIMEDATA = "application/x-qabstractitemmodeldatalist"
 
     # Custom type to get FilterItem.type. See self.data()
@@ -805,10 +805,13 @@ class FilterModel(QAbstractItemModel):
         # icon checkbox
         if role == Qt.DecorationRole:
             if index.column() == COLUMN_CHECKBOX:
-                return QIcon(FIcon(0xF0208)) if item.checked else QIcon(FIcon(0xF0209))
+                return QIcon(FIcon(0xF06D0)) if item.checked else QIcon(FIcon(0xF06D1))
 
             if index.column() == COLUMN_FIELD and item.type == FilterItem.LOGIC_TYPE:
-                return QIcon(FIcon(0xF0169))
+                if item.get_value() == "$and":
+                    return QIcon(FIcon(0xF08E1))
+                if item.get_value() == "$or":
+                    return QIcon(FIcon(0xF08E5))
 
             if (
                 index.column() == COLUMN_FIELD
@@ -818,7 +821,7 @@ class FilterModel(QAbstractItemModel):
                 val = item.get_value()
 
         # columns title
-        if role == Qt.FontRole and index.column() == 1:
+        if role == Qt.FontRole and index.column() == COLUMN_FIELD:
             font = QFont()
             font.setBold(True)
             return font
@@ -826,6 +829,9 @@ class FilterModel(QAbstractItemModel):
         if role == Qt.ForegroundRole:
             if not item.checked:
                 return QColor("lightgray")
+
+            # if index.column() == COLUMN_VALUE:
+            #     return QColor("blue")
 
         # align operator
         if role == Qt.TextAlignmentRole and index.column() == COLUMN_OPERATOR:
@@ -844,7 +850,9 @@ class FilterModel(QAbstractItemModel):
 
                 if item.type == FilterItem.LOGIC_TYPE:
                     val = item.get_value()
-                    return OPERATORS_PY_SQL.get(val, "$and")
+                    return (
+                        OPERATORS_PY_SQL.get(val, "$and") + f"  ({len(item.children)})"
+                    )
 
             if item.type != FilterItem.CONDITION_TYPE:
                 return
@@ -1407,7 +1415,7 @@ class FilterDelegate(QStyledItemDelegate):
 
         s = qApp.style().pixelMetric(QStyle.PM_ListViewIconSize)
         self.icon_size = QSize(s, s)
-        self.row_height = qApp.style().pixelMetric(QStyle.PM_ListViewIconSize) * 1.5
+        self.row_height = qApp.style().pixelMetric(QStyle.PM_ListViewIconSize) * 1.2
 
     def createEditor(self, parent, option, index: QModelIndex) -> QWidget:
         """Overrided from Qt. Create an editor for the selected column.
@@ -1504,16 +1512,12 @@ class FilterDelegate(QStyledItemDelegate):
 
             item = model.item(index)
 
-            if index.column() == COLUMN_CHECKBOX and self._check_rect(
-                option.rect
-            ).contains(event.pos()):
+            if index.column() == COLUMN_CHECKBOX and option.rect.contains(event.pos()):
                 # Invert check state
                 model.setData(index, not item.checked, role=Qt.CheckStateRole)
                 return True
 
-            if index.column() == COLUMN_REMOVE and self._check_rect(
-                option.rect
-            ).contains(event.pos()):
+            if index.column() == COLUMN_REMOVE and option.rect.contains(event.pos()):
                 # Remove item
 
                 # Do not remove first elements
@@ -1591,88 +1595,76 @@ class FilterDelegate(QStyledItemDelegate):
 
         return level
 
-    def paint(self, painter: QPainter, option, index: QModelIndex):
-        super().paint(painter, option, index)
-        painter.setPen(option.palette.color(QPalette.Midlight))
-        painter.drawLine(option.rect.topRight(), option.rect.bottomRight())
+        # super().paint(painter, option, index)
+
+        # painter.setPen(option.palette.color(QPalette.Dark))
+
+        # painter.setPen(QPen(QColor("lightgray")))
+
+        # item = index.model().item(index)
+
+        # if item.type == FilterItem.CONDITION_TYPE or index.column() == COLUMN_VALUE:
+        #     painter.drawLine(option.rect.topRight(), option.rect.bottomRight())
+
+        # if index.column() == 0:
+        #     painter.drawLine(QPoint(0, option.rect.bottom()), option.rect.bottomRight())
+        # else:
+        #     painter.drawLine(option.rect.bottomLeft(), option.rect.bottomRight())
+
+    def paint(self, painter, option, index):
+
+        # ======== Draw background
+        item = index.model().item(index)
+        is_selected = False
+
+        if option.state & QStyle.State_Enabled:
+            bg = (
+                QPalette.Normal
+                if option.state & QStyle.State_Active
+                or option.state & QStyle.State_Selected
+                else QPalette.Inactive
+            )
+        else:
+            bg = QPalette.Disabled
+
+        if option.state & QStyle.State_Selected:
+            is_selected = True
+            painter.fillRect(option.rect, option.palette.color(bg, QPalette.Highlight))
+
+        #     # margin = self.indentation * (self._compute_level(index))
+
+        #  ========= Draw icon centered
+        if index.column() == COLUMN_CHECKBOX or index.column() == COLUMN_REMOVE:
+
+            decoration_icon = index.data(Qt.DecorationRole)
+
+            if decoration_icon:
+                rect = QRect(
+                    0, 0, option.decorationSize.width(), option.decorationSize.height()
+                )
+                rect.moveCenter(option.rect.center())
+                # rect.setX(4)
+                painter.drawPixmap(
+                    rect.x(), rect.y(), decoration_icon.pixmap(option.decorationSize)
+                )
+
+        else:
+            super().paint(painter, option, index)
+
+        # Draw lines
+
+        painter.setPen(QPen(QColor("lightgray")))
+        if (
+            item.type == FilterItem.CONDITION_TYPE
+            or index.column() == COLUMN_VALUE
+            or index.column() == COLUMN_CHECKBOX
+        ):
+            painter.drawLine(option.rect.topRight(), option.rect.bottomRight())
+
         if index.column() == 0:
             painter.drawLine(QPoint(0, option.rect.bottom()), option.rect.bottomRight())
         else:
             painter.drawLine(option.rect.bottomLeft(), option.rect.bottomRight())
-
-    # def _draw_branch(self, painter, option, index):
-
-    #     if index.parent() == QModelIndex():
-    #         return
-
-    #     item = index.model().item(index)
-    #     parent = index.model().item(index.parent())
-    #     level = self._compute_level(index)
-    #     color = option.palette.color(QPalette.WindowText)
-
-    #     pen = QPen(color, 1, Qt.DotLine)
-    #     painter.setPen(pen)
-    #     xstart = option.rect.x() + self.indentation * (level - 1)
-    #     xend = xstart + self.branch_width
-
-    #     #  draw horizontal
-    #     painter.drawLine(
-    #         xstart + 2, option.rect.center().y(), xend, option.rect.center().y()
-    #     )
-
-    #     #  Draw Vertical
-    #     ## If last
-    #     if index.model().is_last(index):
-    #         yend = option.rect.center().y()
-    #         painter.drawLine(xstart, option.rect.top(), xstart, yend)
-
-    #     # If middle
-    #     else:
-    #         yend = option.rect.bottom()
-    #         painter.drawLine(xstart, option.rect.top(), xstart, yend)
-
-    #     if level > 1:
-    #         x = xstart
-    #         current = index
-    #         while current != QModelIndex():
-    #             if not index.model().is_last(current):
-    #                 painter.drawLine(x, option.rect.top(), x, option.rect.bottom())
-    #             current = current.parent()
-    #             x -= self.indentation
-
-    # def paint(self, painter, option, index):
-
-    #     # ======== Draw background
-    #     item = index.model().item(index)
-    #     is_selected = False
-
-    #     if option.state & QStyle.State_Enabled:
-    #         bg = (
-    #             QPalette.Normal
-    #             if option.state & QStyle.State_Active
-    #             or option.state & QStyle.State_Selected
-    #             else QPalette.Inactive
-    #         )
-    #     else:
-    #         bg = QPalette.Disabled
-
-    #     if option.state & QStyle.State_Selected:
-    #         is_selected = True
-    #         painter.fillRect(option.rect, option.palette.color(bg, QPalette.Highlight))
-
-    #     # margin = self.indentation * (self._compute_level(index))
-
-    #     #  ========= Draw Checkbox
-    #     if index.column() == COLUMN_CHECKBOX:
-
-    #         check_icon = self.eye_on if item.checked else self.eye_off
-    #         rect = QRect(0, 0, self.icon_size.width(), self.icon_size.height())
-    #         rect.moveCenter(option.rect.center())
-    #         # rect.setX(4)
-    #         painter.drawPixmap(rect.x(), rect.y(), check_icon.pixmap(self.icon_size))
-
-    #     else:
-    #         return super().paint(painter, option, index)
 
     # if index.column() > COLUMN_CHECKBOX:
 
@@ -1925,21 +1917,19 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.view.header().setSectionResizeMode(
             COLUMN_OPERATOR, QHeaderView.ResizeToContents
         )
-        self.view.header().setSectionResizeMode(
-            COLUMN_REMOVE, QHeaderView.ResizeToContents
-        )
+        self.view.header().setSectionResizeMode(COLUMN_VALUE, QHeaderView.Stretch)
         self.view.header().setSectionResizeMode(
             COLUMN_CHECKBOX, QHeaderView.ResizeToContents
         )
-        # self.view.header().setSectionResizeMode(
-        #     COLUMN_REMOVE, QHeaderView.ResizeToContents
-        # )
+        self.view.header().setSectionResizeMode(
+            COLUMN_REMOVE, QHeaderView.ResizeToContents
+        )
 
         self.view.setEditTriggers(QAbstractItemView.DoubleClicked)
         # Item selected in view
         self.view.selectionModel().selectionChanged.connect(self.on_selection_changed)
-        # self.view.header().hide()
-        self.view.hideColumn(4)
+        self.view.header().hide()
+        # self.view.hideColumn(4)
 
         self.combo = QComboBox()
         self.combo.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
