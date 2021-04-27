@@ -748,7 +748,7 @@ class FilterModel(QAbstractItemModel):
     """
 
     # See self.headerData()
-    _HEADERS = ["c", "field", "operator", "value", "op"]
+    _HEADERS = ["field", "operator", "value", "c", "remove"]
     _MIMEDATA = "application/x-qabstractitemmodeldatalist"
 
     # Custom type to get FilterItem.type. See self.data()
@@ -1407,7 +1407,7 @@ class FilterDelegate(QStyledItemDelegate):
 
         s = qApp.style().pixelMetric(QStyle.PM_ListViewIconSize)
         self.icon_size = QSize(s, s)
-        self.row_height = qApp.style().pixelMetric(QStyle.PM_ListViewIconSize)
+        self.row_height = qApp.style().pixelMetric(QStyle.PM_ListViewIconSize) * 1.5
 
     def createEditor(self, parent, option, index: QModelIndex) -> QWidget:
         """Overrided from Qt. Create an editor for the selected column.
@@ -1590,6 +1590,15 @@ class FilterDelegate(QStyledItemDelegate):
             level += 1
 
         return level
+
+    def paint(self, painter: QPainter, option, index: QModelIndex):
+        super().paint(painter, option, index)
+        painter.setPen(option.palette.color(QPalette.Midlight))
+        painter.drawLine(option.rect.topRight(), option.rect.bottomRight())
+        if index.column() == 0:
+            painter.drawLine(QPoint(0, option.rect.bottom()), option.rect.bottomRight())
+        else:
+            painter.drawLine(option.rect.bottomLeft(), option.rect.bottomRight())
 
     # def _draw_branch(self, painter, option, index):
 
@@ -1911,22 +1920,26 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.view.setDragDropMode(QAbstractItemView.InternalMove)
         self.view.setAlternatingRowColors(True)
 
-        self.view.header().setSectionResizeMode(COLUMN_FIELD, QHeaderView.Interactive)
+        # Setup header
+        self.view.header().setSectionResizeMode(COLUMN_FIELD, QHeaderView.Stretch)
         self.view.header().setSectionResizeMode(
             COLUMN_OPERATOR, QHeaderView.ResizeToContents
-        )
-        self.view.header().setSectionResizeMode(COLUMN_REMOVE, QHeaderView.Interactive)
-        self.view.header().setSectionResizeMode(
-            COLUMN_CHECKBOX, QHeaderView.ResizeToContents
         )
         self.view.header().setSectionResizeMode(
             COLUMN_REMOVE, QHeaderView.ResizeToContents
         )
+        self.view.header().setSectionResizeMode(
+            COLUMN_CHECKBOX, QHeaderView.ResizeToContents
+        )
+        # self.view.header().setSectionResizeMode(
+        #     COLUMN_REMOVE, QHeaderView.ResizeToContents
+        # )
 
         self.view.setEditTriggers(QAbstractItemView.DoubleClicked)
         # Item selected in view
         self.view.selectionModel().selectionChanged.connect(self.on_selection_changed)
         # self.view.header().hide()
+        self.view.hideColumn(4)
 
         self.combo = QComboBox()
         self.combo.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
