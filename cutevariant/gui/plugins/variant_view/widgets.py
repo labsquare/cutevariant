@@ -874,8 +874,10 @@ class VariantView(QWidget):
         else:
             text = self.tr("{} line(s) {} page(s)")
 
-        print("loaded")
         self.info_label.setText(text.format(self.model.total, self.model.pageCount()))
+
+        #  Set focus to view ! Otherwise it stay on page_box
+        self.setFocus(Qt.ActiveWindowFocusReason)
 
     def set_formatter(self, formatter):
         self.delegate.formatter = formatter
