@@ -33,6 +33,7 @@ from PySide2.QtWidgets import (
     QMenu,
     QStyle,
     QAbstractItemDelegate,
+    QAction,
 )
 from PySide2.QtCore import (
     Qt,
@@ -60,6 +61,7 @@ from PySide2.QtGui import (
     QBrush,
     QIntValidator,
     QDoubleValidator,
+    QKeySequence,
 )
 
 # Custom imports
@@ -475,6 +477,87 @@ class LogicFieldEditor(BaseFieldEditor):
     def get_value(self) -> str:
         # Return UserRole
         return self.box.currentData()
+
+
+class PresetsEditorDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(self.tr("Presets Editor"))
+        self.caption_label = QLabel(self.tr("Edit filters presets"))
+        self.presets_model = QStandardItemModel(0, 0)
+        self.presets_view = QListView(self)
+        self.presets_view.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.presets_view.setModel(self.presets_model)
+
+        # self.toolbar = QToolBar(self)
+        # self.delete_action = self.toolbar.addAction(
+        #     FIcon(0xF01B4), self.tr("Delete selected presets"), self.on_remove_presets
+        # )
+
+        #        self.delete_action.setShortcut(QKeySequence.Delete)
+
+        del_button = QPushButton(self.tr("Delete"))
+        ok_button = QPushButton(self.tr("Ok"))
+
+        ok_button.clicked.connect(self.close)
+        del_button.clicked.connect(self.on_remove_presets)
+
+        button_layout = QHBoxLayout()
+        button_layout.addWidget(del_button)
+        button_layout.addWidget(ok_button)
+
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.presets_view)
+        layout.addLayout(button_layout)
+
+        self.load_presets()
+
+    def on_remove_presets(self):
+        # Retrieve selected presets (scheduled for deletion)
+        selected_preset_indexes = self.presets_view.selectionModel().selectedIndexes()
+        if not selected_preset_indexes:
+            # Don't even ask, nothing will be deleted !
+            return
+
+        confirmation = QMessageBox.question(
+            self,
+            self.tr("Please confirm"),
+            self.tr(
+                f"Do you really want to remove selected presets ?\n {len(selected_preset_indexes)} presets would be definitely lost !"
+            ),
+        )
+        if confirmation == QMessageBox.Yes:
+            selected_items = [
+                self.presets_model.item(selected.row())
+                for selected in selected_preset_indexes
+            ]
+            for selected_item in selected_items:
+                preset_file_name = selected_item.data()
+                os.remove(preset_file_name)
+            # After we removed all selected presets from the disk, let's reload the model
+            self.load_presets()
+
+    def load_presets(self):
+
+        self.presets_model.clear()
+        settings = QSettings()
+        preset_path = settings.value(
+            "preset_path",
+            QStandardPaths.writableLocation(QStandardPaths.GenericDataLocation),
+        )
+
+        filenames = glob.glob(f"{preset_path}/*.filters.json")
+        #  Sort file by date
+        filenames.sort(key=os.path.getmtime)
+
+        for filename in filenames:
+            with open(filename) as file:
+                obj = json.load(file)
+                preset_item = QStandardItem(obj.get("name", ""))
+
+                # All we need from the preset is its name (the item title) and the path to the file where it is stored
+                preset_item.setData(filename)
+                self.presets_model.appendRow([preset_item])
 
 
 class FieldFactory(QObject):
@@ -1896,7 +1979,9 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.model = FilterModel(conn)
         self.delegate = FilterDelegate()
         self.toolbar = QToolBar()
-        # self.toolbar.setIconSize(QSize(16, 16))
+
+        self.toolbar.setIconSize(QSize(16, 16))
+        self.toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
 
         # Drag & drop
         self.view.setModel(self.model)
@@ -1923,15 +2008,23 @@ class FiltersEditorWidget(plugin.PluginWidget):
             COLUMN_REMOVE, QHeaderView.ResizeToContents
         )
 
+        # Setup remove filter action
+        remove_filter_act = QAction(QIcon(FIcon(0xF0234)), "Remove filter")
+        remove_filter_act.triggered.connect(self.on_remove_filter)
+
+        remove_filter_act.setShortcut(QKeySequence.Delete)
+        self.view.addAction(remove_filter_act)
+        self.toolbar.addAction(remove_filter_act)
+
         self.view.setEditTriggers(QAbstractItemView.DoubleClicked)
         # Item selected in view
         self.view.selectionModel().selectionChanged.connect(self.on_selection_changed)
         self.view.header().hide()
         # self.view.hideColumn(4)
 
-        self.combo = QComboBox()
-        self.combo.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        self.combo.addItem(self.tr("Current not saved filter..."))
+        # self.combo = QComboBox()
+        # self.combo.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        # self.combo.addItem(self.tr("Current not saved filter..."))
 
         # self.save_button = QToolButton()
         # self.save_button.setIcon(FIcon(0xF0193))
@@ -1948,9 +2041,9 @@ class FiltersEditorWidget(plugin.PluginWidget):
         # self.del_button.setMinimumHeight(30)
 
         self.add_filter_button = QPushButton("Add Filter")
-        self.add_filter_button.setFlat(True)
+        # self.add_filter_button.setFlat(True)
         self.add_group_button = QPushButton("Add Group")
-        self.add_group_button.setFlat(True)
+        # self.add_group_button.setFlat(True)
         self.add_filter_button.clicked.connect(self.on_add_condition)
         self.add_group_button.clicked.connect(self.on_add_logic)
 
@@ -1958,39 +2051,30 @@ class FiltersEditorWidget(plugin.PluginWidget):
         blayout.addWidget(self.add_filter_button)
         blayout.addWidget(self.add_group_button)
 
-        self.apply_button = QPushButton(FIcon(0xF0233), self.tr("Apply filter"))
-        self.apply_button.clicked.connect(self.on_filters_changed)
+        # # setup Menu
+        # self.toolbar.addWidget(self.combo)
 
-        # setup Menu
-        self.toolbar.addWidget(self.combo)
+        self.presets_menu = QMenu()
+        self.load_preset_menu()
 
-        self.file_menu = QMenu()
-        self.file_menu.addAction(FIcon(0xF0818), "Save ", self.on_save)
-        self.file_menu.addAction(FIcon(0xF0CFC), "Save as ...", self.on_save_as)
-        self.file_menu.addAction(FIcon(0xF0156), "Clear", self.model.clear)
-        self.file_menu.addAction(FIcon(0xF0A7A, "red"), "Delete ...", self.on_delete)
-        self.file_menu.addSeparator()
-        self.file_menu.addAction(
-            FIcon(0xF0DCE), "set default directory ...", self.on_set_directory
-        )
+        self.presets_button = QPushButton()
+        self.presets_button.setIcon(FIcon(0xF035C))
+        self.presets_button.setText(self.tr("Select preset"))
+        self.presets_button.setMenu(self.presets_menu)
 
-        self.menu_button = QToolButton()
-        self.menu_button.setIcon(FIcon(0xF035C))
-        self.menu_button.setMenu(self.file_menu)
-        self.menu_button.setPopupMode(QToolButton.InstantPopup)
-        self.toolbar.addWidget(self.menu_button)
+        self.toolbar.addWidget(self.presets_button)
+        self.toolbar.addAction(FIcon(0xF0E1E), "Apply", self.on_filters_changed)
 
         layout = QVBoxLayout()
 
         layout.addWidget(self.toolbar)
         layout.addWidget(self.view)
         layout.addLayout(blayout)
-        layout.addWidget(self.apply_button)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(1)
         self.setLayout(layout)
 
-        self.combo.currentIndexChanged.connect(self.on_combo_changed)
+        # self.combo.currentIndexChanged.connect(self.on_combo_changed)
 
         # self.model.filtersChanged.connect(self.on_filters_changed)
 
@@ -2010,9 +2094,55 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
         # Clear lru_cache
         prepare_fields.cache_clear()
-        self.load_combo()
-        self.on_combo_changed(0)
         self.on_refresh()
+
+    def on_edit_preset_pressed(self):
+        dialog = PresetsEditorDialog(self)
+        dialog.exec_()
+        self.load_preset_menu()
+
+    def on_remove_filter(self):
+        selected_index = self.view.selectionModel().currentIndex()
+        if not selected_index:
+            return
+
+        confirmation = QMessageBox.question(
+            self,
+            self.tr("Please confirm"),
+            self.tr(
+                f"Do you really want to remove selected filter ? \nYou cannot undo this operation"
+            ),
+        )
+        if confirmation == QMessageBox.Yes:
+            self.model.remove_item(selected_index)
+
+    def load_preset_menu(self):
+        settings = QSettings()
+        preset_path = settings.value(
+            "preset_path",
+            QStandardPaths.writableLocation(QStandardPaths.GenericDataLocation),
+        )
+
+        self.presets_menu.clear()
+
+        filenames = glob.glob(f"{preset_path}/*.filters.json")
+        #  Sort file by date
+        filenames.sort(key=os.path.getmtime)
+
+        for filename in filenames:
+            with open(filename) as file:
+                obj = json.load(file)
+                action = self.presets_menu.addAction(obj.get("name", ""))
+                action.setData(obj)
+                action.setIcon(FIcon(0xF103B))
+                action.triggered.connect(self.on_preset_clicked)
+
+        self.presets_menu.addSeparator()
+
+        self.presets_menu.addAction(FIcon(0xF0193), "Save...", self.on_save_preset)
+        self.presets_menu.addAction(
+            FIcon(0xF11E7), "Edit...", self.on_edit_preset_pressed
+        )
 
     # def load_predefined_filters(self):
     #     """Load user and software defined filters)
@@ -2092,26 +2222,26 @@ class FiltersEditorWidget(plugin.PluginWidget):
                 self.add_filter_button.setEnabled(False)
                 self.add_group_button.setEnabled(False)
 
-    def load_combo(self):
+    # def load_combo(self):
 
-        self.combo.clear()
+    #     self.combo.clear()
 
-        print("===LOAD Combo")
+    #     print("===LOAD Combo")
 
-        folder = QDir(self.filter_path)
-        for index, file_info in enumerate(
-            folder.entryInfoList(["*.filter.json"], QDir.Files)
-        ):
-            self.combo.addItem(
-                FIcon(0xF0E29),
-                str(file_info.baseName()),
-                str(file_info.absoluteFilePath()),
-            )
+    #     folder = QDir(self.filter_path)
+    #     for index, file_info in enumerate(
+    #         folder.entryInfoList(["*.filter.json"], QDir.Files)
+    #     ):
+    #         self.combo.addItem(
+    #             FIcon(0xF0E29),
+    #             str(file_info.baseName()),
+    #             str(file_info.absoluteFilePath()),
+    #         )
 
-            #  Security
-            if index > 1000:
-                LOGGER.warning("Too many file filters. Some filters are not imported")
-                break
+    #         #  Security
+    #         if index > 1000:
+    #             LOGGER.warning("Too many file filters. Some filters are not imported")
+    #             break
 
     def on_filters_changed(self):
         """Triggered when filters changed FROM THIS plugin
@@ -2160,84 +2290,86 @@ class FiltersEditorWidget(plugin.PluginWidget):
         if "filters" in data:
             self.filters = data["filters"]
 
-    def on_save_as(self):
-
-        dialog = QFileDialog()
-        dialog.setDirectory(
-            QStandardPaths.writableLocation(QStandardPaths.DataLocation)
+    def on_save_preset(self):
+        settings = QSettings()
+        preset_path = settings.value(
+            "preset_path",
+            QStandardPaths.writableLocation(QStandardPaths.GenericDataLocation),
         )
-        dialog.setDefaultSuffix("filter.json")
-        dialog.setNameFilter("*.filter.json")
-        dialog.setAcceptMode(QFileDialog.AcceptSave)
 
-        if dialog.exec_():
-            if dialog.selectedFiles():
-                filename = dialog.selectedFiles()[0]
-                self.model.to_json(filename)
-                self.load_combo()
-                file_info = QFileInfo(filename)
-                self.combo.setCurrentText(file_info.baseName())
+        name, ok = QInputDialog.getText(
+            self,
+            self.tr("Input dialog"),
+            self.tr("Preset name:"),
+            QLineEdit.Normal,
+            QDir.home().dirName(),
+        )
 
-    def on_save(self):
+        if ok:
+            with open(f"{preset_path}/{name}.filters.json", "w") as file:
+                obj = self.to_json()
+                obj["name"] = name
+                json.dump(obj, file)
 
-        if self.combo.currentData() is None:
-            self.on_save_as()
-            return
+            self.load_preset_menu()
 
-        msgBox = QMessageBox()
-        msgBox.setText("The filter has been modified.")
-        msgBox.setInformativeText("Do you want to override the file ?")
-        msgBox.setStandardButtons(QMessageBox.Save | QMessageBox.Discard)
-        msgBox.setDefaultButton(QMessageBox.Save)
+            # Fakes the selection of that preset that just got created...
+            self.presets_button.setText(name)
 
-        if msgBox.exec_() == QMessageBox.Save:
-            filename = self.combo.currentData()
-            if os.path.exists(filename):
-                self.model.to_json(filename)
+    def on_preset_clicked(self):
+        action = self.sender()
+        data = action.data()
+        if "name" in data:
+            self.presets_button.setText(data["name"])
+        else:
+            self.presets_button.setText("")
+        self.from_json(data)
 
-    def on_set_directory(self):
+        self.on_filters_changed()
 
-        dialog = QFileDialog()
-        dialog.setDirectory(self.filter_path)
-        dialog.setAcceptMode(QFileDialog.AcceptOpen)
-        dialog.setFileMode(QFileDialog.DirectoryOnly)
-        if dialog.exec_():
-            if dialog.selectedFiles():
-                filename = dialog.selectedFiles()[0]
-                if filename:
-                    self.filter_path = filename
+    # def on_set_directory(self):
 
-        self.load_combo()
+    #     dialog = QFileDialog()
+    #     dialog.setDirectory(self.filter_path)
+    #     dialog.setAcceptMode(QFileDialog.AcceptOpen)
+    #     dialog.setFileMode(QFileDialog.DirectoryOnly)
+    #     if dialog.exec_():
+    #         if dialog.selectedFiles():
+    #             filename = dialog.selectedFiles()[0]
+    #             if filename:
+    #                 self.filter_path = filename
 
-    def on_delete(self):
-        filename = self.combo.currentData()
-        if filename == None:
-            self.model.clear()
-            return
+    #     self.load_combo()
 
-        msgBox = QMessageBox()
-        msgBox.setText(f"Remove {filename}")
-        msgBox.setInformativeText("Do you want to remove this file ?")
-        msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-        msgBox.setDefaultButton(QMessageBox.No)
+    # def on_delete(self):
+    #     filename = self.combo.currentData()
+    #     if filename == None:
+    #         self.model.clear()
+    #         return
 
-        if msgBox.exec() == QMessageBox.Yes:
-            if os.path.exists(filename):
-                os.remove(filename)
-                self.model.clear()
-                self.load_combo()
+    #     msgBox = QMessageBox()
+    #     msgBox.setText(f"Remove {filename}")
+    #     msgBox.setInformativeText("Do you want to remove this file ?")
+    #     msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+    #     msgBox.setDefaultButton(QMessageBox.No)
 
-    def on_combo_changed(self, index):
-        """Called when a new item is selected in the ComboBox (programatically or not)"""
-        filename = self.combo.itemData(index)
-        print(filename)
+    #     if msgBox.exec() == QMessageBox.Yes:
+    #         if os.path.exists(filename):
+    #             os.remove(filename)
+    #             self.model.clear()
+    #             self.load_combo()
 
-        if filename:
-            self.combo.setToolTip(filename)
-            self.model.from_json(filename)
-            self.on_filters_changed()
-            self._update_view_geometry()
-        # self.on_filters_changed()
+    # def on_combo_changed(self, index):
+    #     """Called when a new item is selected in the ComboBox (programatically or not)"""
+    #     filename = self.combo.itemData(index)
+    #     print(filename)
+
+    #     if filename:
+    #         self.combo.setToolTip(filename)
+    #         self.model.from_json(filename)
+    #         self.on_filters_changed()
+    #         self._update_view_geometry()
+    #     # self.on_filters_changed()
 
     def _update_view_geometry(self):
         """Set column Spanned to True for all Logic Item
