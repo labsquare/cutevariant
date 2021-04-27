@@ -75,9 +75,9 @@ import cutevariant.commons as cm
 LOGGER = cm.logger()
 
 TYPE_OPERATORS = {
-    "str": ["$eq", "$neq", "$in", "$ne", "$in", "$nin"],
-    "float": ["$eq", "$neq", "$gte", "$gt", "$lt", "$lte"],
-    "int": ["$eq", "$neq", "$gte", "$gt", "$lt", "$lte"],
+    "str": ["$eq", "$ne", "$in", "$nin"],
+    "float": ["$eq", "$ne", "$gte", "$gt", "$lt", "$lte"],
+    "int": ["$eq", "$ne", "$gte", "$gt", "$lt", "$lte"],
     "bool": ["$eq"],
 }
 
@@ -94,6 +94,14 @@ OPERATORS_PY_SQL = {
     "$and": "AND",
     "$or": "OR",
 }
+
+
+COLUMN_FIELD = 0
+COLUMN_LOGIC = 0
+COLUMN_OPERATOR = 1
+COLUMN_VALUE = 2
+COLUMN_CHECKBOX = 3
+COLUMN_REMOVE = 4
 
 
 @lru_cache()
@@ -412,7 +420,7 @@ class OperatorFieldEditor(BaseFieldEditor):
         """Init QComboBox with all supported operators"""
         self.combo_box.clear()
         for op in operators:
-            self.combo_box.addItem(op, op)
+            self.combo_box.addItem(OPERATORS_PY_SQL.get(op), op)
 
 
 class LogicFieldEditor(BaseFieldEditor):
@@ -718,13 +726,6 @@ class FilterModel(QAbstractItemModel):
 
     filtersChanged = Signal()
 
-    COLUMN_CHECKBOX = 4
-    COLUMN_FIELD = 0
-    COLUMN_LOGIC = 0
-    COLUMN_OPERATOR = 1
-    COLUMN_VALUE = 2
-    COLUMN_REMOVE = 3
-
     def __init__(self, conn=None, parent=None):
         super().__init__(parent)
         self.root_item = FilterItem("$and")
@@ -772,13 +773,10 @@ class FilterModel(QAbstractItemModel):
 
         # icon checkbox
         if role == Qt.DecorationRole:
-            if index.column() == self.COLUMN_CHECKBOX:
+            if index.column() == COLUMN_CHECKBOX:
                 return QIcon(FIcon(0xF0208)) if item.checked else QIcon(FIcon(0xF0209))
 
-            if (
-                index.column() == self.COLUMN_FIELD
-                and item.type == FilterItem.LOGIC_TYPE
-            ):
+            if index.column() == COLUMN_FIELD and item.type == FilterItem.LOGIC_TYPE:
                 return QIcon(FIcon(0xF0169))
 
         # columns title
@@ -792,17 +790,17 @@ class FilterModel(QAbstractItemModel):
                 return QColor("lightgray")
 
         # align operator
-        if role == Qt.TextAlignmentRole and index.column() == self.COLUMN_OPERATOR:
+        if role == Qt.TextAlignmentRole and index.column() == COLUMN_OPERATOR:
             return Qt.AlignCenter
 
         # Delete icon
-        if role == Qt.DecorationRole and index.column() == self.COLUMN_REMOVE:
+        if role == Qt.DecorationRole and index.column() == COLUMN_REMOVE:
             if index.parent() != QModelIndex():
                 return QIcon(FIcon(0xF0156, "red"))
 
         if role in (Qt.DisplayRole, Qt.EditRole):
 
-            if index.column() == self.COLUMN_FIELD:
+            if index.column() == COLUMN_FIELD:
                 if item.type == FilterItem.CONDITION_TYPE:
                     return item.get_field()
 
@@ -813,11 +811,11 @@ class FilterModel(QAbstractItemModel):
             if item.type != FilterItem.CONDITION_TYPE:
                 return
 
-            if index.column() == self.COLUMN_OPERATOR:
+            if index.column() == COLUMN_OPERATOR:
                 operator = item.get_operator()
                 return OPERATORS_PY_SQL.get(operator, "=")
 
-            if index.column() == self.COLUMN_VALUE:
+            if index.column() == COLUMN_VALUE:
                 val = item.get_value()
                 if isinstance(val, list):
                     return ",".join(val)
@@ -897,10 +895,10 @@ class FilterModel(QAbstractItemModel):
         if role in (Qt.DisplayRole, Qt.EditRole, Qt.UserRole):
             item = self.item(index)
 
-            if index.column() == self.COLUMN_CHECKBOX:
+            if index.column() == COLUMN_CHECKBOX:
                 item.checked = bool(value)
 
-            if index.column() == self.COLUMN_FIELD:
+            if index.column() == COLUMN_FIELD:
                 if item.type == FilterItem.LOGIC_TYPE:
                     item.set_value(value)
 
@@ -911,10 +909,10 @@ class FilterModel(QAbstractItemModel):
 
             if item.type == FilterItem.CONDITION_TYPE:
 
-                if index.column() == self.COLUMN_OPERATOR:
+                if index.column() == COLUMN_OPERATOR:
                     item.set_operator(value)
 
-                if index.column() == self.COLUMN_VALUE:
+                if index.column() == COLUMN_VALUE:
                     item.set_value(value)
 
             self.filtersChanged.emit()
@@ -922,7 +920,7 @@ class FilterModel(QAbstractItemModel):
             self.dataChanged.emit(index, index, role)
             return True
 
-        if role == Qt.CheckStateRole:
+        if role == Qt.CheckStateRole and index.column() == COLUMN_CHECKBOX:
             self.set_recursive_check_state(index, bool(value))
             self.filtersChanged.emit()
             # just one item is changed
@@ -1132,8 +1130,8 @@ class FilterModel(QAbstractItemModel):
 
     def rowCount(self, parent=QModelIndex()) -> int:
         """Overrided Qt methods: return row count according parent """
-        if parent.column() > 0:
-            return 0
+        # if parent.column() > 0:
+        #     return 0
 
         if not parent.isValid():
             parent_item = self.root_item
@@ -1155,16 +1153,13 @@ class FilterModel(QAbstractItemModel):
 
         item = index.internalPointer()
 
-        if (
-            index.column() == self.COLUMN_CHECKBOX
-            or index.column() == self.COLUMN_REMOVE
-        ):
+        if index.column() == COLUMN_CHECKBOX or index.column() == COLUMN_REMOVE:
             return Qt.ItemIsSelectable | Qt.ItemIsEnabled
 
-        if item.type == FilterItem.LOGIC_TYPE and index.column() != self.COLUMN_FIELD:
+        if item.type == FilterItem.LOGIC_TYPE and index.column() != COLUMN_FIELD:
             return Qt.ItemIsSelectable | Qt.ItemIsEnabled
 
-        if item.type == FilterItem.LOGIC_TYPE and index.column() == self.COLUMN_FIELD:
+        if item.type == FilterItem.LOGIC_TYPE and index.column() == COLUMN_FIELD:
             return (
                 Qt.ItemIsSelectable
                 | Qt.ItemIsEditable
@@ -1305,12 +1300,14 @@ class FilterModel(QAbstractItemModel):
 
     def set_recursive_check_state(self, index, checked=True):
         """Recursive check of all subfilters"""
+
         if not index.isValid():
             return
 
         item = self.item(index)
 
         item.checked = checked
+
         start = self.index(index.row(), 0, index.parent())
         end = self.index(index.row(), self.columnCount() - 1, index.parent())
 
@@ -1360,13 +1357,6 @@ class FilterDelegate(QStyledItemDelegate):
         view.setItemDelegate(delegate)
     """
 
-    COLUMN_CHECKBOX = 4
-    COLUMN_FIELD = 0
-    COLUMN_LOGIC = 0
-    COLUMN_OPERATOR = 1
-    COLUMN_VALUE = 2
-    COLUMN_REMOVE = 3
-
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -1406,7 +1396,7 @@ class FilterDelegate(QStyledItemDelegate):
         # Get current sql connection
         # conn = model.conn
 
-        if index.column() == self.COLUMN_FIELD:
+        if index.column() == COLUMN_FIELD:
             if item.type == FilterItem.LOGIC_TYPE:
                 return LogicFieldEditor(parent)
             if item.type == FilterItem.CONDITION_TYPE:
@@ -1414,14 +1404,14 @@ class FilterDelegate(QStyledItemDelegate):
                 combo.fill(prepare_fields(model.conn))
                 return combo
 
-        if index.column() == self.COLUMN_OPERATOR:
+        if index.column() == COLUMN_OPERATOR:
             w = OperatorFieldEditor(parent)
             # Fill operator according fields
             field_type = factory.field_types_mapping[field]
             w.fill(TYPE_OPERATORS[field_type])
             return w
 
-        if index.column() == self.COLUMN_VALUE:
+        if index.column() == COLUMN_VALUE:
             # TODO: create instance only one time
             w = factory.create(field, operator, parent)
             return w
@@ -1434,15 +1424,15 @@ class FilterDelegate(QStyledItemDelegate):
         operator = item.get_operator()
         value = item.get_value()
 
-        if index.column() == self.COLUMN_VALUE:
+        if index.column() == COLUMN_VALUE:
             editor.set_value(value)
 
             # Reset operators and values widgets
 
-        if index.column() == self.COLUMN_OPERATOR:
+        if index.column() == COLUMN_OPERATOR:
             editor.set_value(operator)
 
-        if index.column() == self.COLUMN_FIELD:
+        if index.column() == COLUMN_FIELD:
             editor.set_value(field)
 
     def editorEvent(self, event: QEvent, model, option, index: QModelIndex):
@@ -1476,14 +1466,14 @@ class FilterDelegate(QStyledItemDelegate):
 
             item = model.item(index)
 
-            if index.column() == self.COLUMN_CHECKBOX and self._check_rect(
+            if index.column() == COLUMN_CHECKBOX and self._check_rect(
                 option.rect
             ).contains(event.pos()):
                 # Invert check state
                 model.setData(index, not item.checked, role=Qt.CheckStateRole)
                 return True
 
-            if index.column() == self.COLUMN_REMOVE and self._check_rect(
+            if index.column() == COLUMN_REMOVE and self._check_rect(
                 option.rect
             ).contains(event.pos()):
                 # Remove item
@@ -1542,13 +1532,13 @@ class FilterDelegate(QStyledItemDelegate):
 
         size = QSize(option.rect.width(), self.row_height)
 
-        # if index.column() == self.COLUMN_CHECKBOX:
+        # if index.column() == COLUMN_CHECKBOX:
         #     return QSize(20, 30)
 
-        # if index.column() == self.COLUMN_OPERATOR:
+        # if index.column() == COLUMN_OPERATOR:
         #     return QSize(20, 30)
 
-        # if index.column() == self.COLUMN_FIELD:
+        # if index.column() == COLUMN_FIELD:
         #     margin = self.indentation * self._compute_level(index) + self.indentation
         #     size.setWidth(size.width() + margin + 10)
 
@@ -1626,7 +1616,7 @@ class FilterDelegate(QStyledItemDelegate):
     #     # margin = self.indentation * (self._compute_level(index))
 
     #     #  ========= Draw Checkbox
-    #     if index.column() == self.COLUMN_CHECKBOX:
+    #     if index.column() == COLUMN_CHECKBOX:
 
     #         check_icon = self.eye_on if item.checked else self.eye_off
     #         rect = QRect(0, 0, self.icon_size.width(), self.icon_size.height())
@@ -1637,7 +1627,7 @@ class FilterDelegate(QStyledItemDelegate):
     #     else:
     #         return super().paint(painter, option, index)
 
-    # if index.column() > self.COLUMN_CHECKBOX:
+    # if index.column() > COLUMN_CHECKBOX:
 
     #     if index.column() == 1:
     #         self._draw_branch(painter, option, index)
@@ -1667,7 +1657,7 @@ class FilterDelegate(QStyledItemDelegate):
 
     #     if (
     #         item.type == FilterItem.LOGIC_TYPE
-    #         and index.column() == self.COLUMN_FIELD
+    #         and index.column() == COLUMN_FIELD
     #     ):
     #         font.setBold(True)
     #         # metric = QFontMetrics(font)
@@ -1686,13 +1676,13 @@ class FilterDelegate(QStyledItemDelegate):
     #         #     rect.y(),
     #         #     self.add_icon.pixmap(self.icon_size),
     #         # )
-    #     if index.column() == self.COLUMN_FIELD:
+    #     if index.column() == COLUMN_FIELD:
     #         align |= Qt.AlignLeft
 
-    #     if index.column() == self.COLUMN_OPERATOR:
+    #     if index.column() == COLUMN_OPERATOR:
     #         align |= Qt.AlignCenter
 
-    #     if index.column() == self.COLUMN_VALUE:
+    #     if index.column() == COLUMN_VALUE:
     #         align |= Qt.AlignLeft
 
     #     painter.setFont(font)
@@ -1706,7 +1696,7 @@ class FilterDelegate(QStyledItemDelegate):
 
     #     painter.drawText(text_rect, align, index.data(Qt.DisplayRole))
 
-    #     if index.column() == self.COLUMN_REMOVE and index.parent() != QModelIndex():
+    #     if index.column() == COLUMN_REMOVE and index.parent() != QModelIndex():
     #         rect = QRect(0, 0, self.icon_size.width(), self.icon_size.height())
     #         rect.moveCenter(option.rect.center())
     #         painter.drawPixmap(
