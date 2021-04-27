@@ -708,6 +708,7 @@ class VariantView(QWidget):
         self.page_box.setValidator(QIntValidator())
         self.page_box.setFixedWidth(50)
         self.page_box.setValidator(QIntValidator())
+        self.page_box.setFocusPolicy(Qt.NoFocus)
 
         # Display nb of variants/groups and pages
         self.info_label = QLabel()
@@ -877,7 +878,7 @@ class VariantView(QWidget):
         self.info_label.setText(text.format(self.model.total, self.model.pageCount()))
 
         #  Set focus to view ! Otherwise it stay on page_box
-        self.setFocus(Qt.ActiveWindowFocusReason)
+        self.view.setFocus(Qt.ActiveWindowFocusReason)
 
     def set_formatter(self, formatter):
         self.delegate.formatter = formatter
