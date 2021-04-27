@@ -75,7 +75,7 @@ import cutevariant.commons as cm
 LOGGER = cm.logger()
 
 TYPE_OPERATORS = {
-    "str": ["$eq", "$ne", "$in", "$nin"],
+    "str": ["$eq", "$ne", "$in", "$nin", "$regex"],
     "float": ["$eq", "$ne", "$gte", "$gt", "$lt", "$lte"],
     "int": ["$eq", "$ne", "$gte", "$gt", "$lt", "$lte"],
     "bool": ["$eq"],
@@ -371,6 +371,33 @@ class BoolFieldEditor(BaseFieldEditor):
         return self.box.currentData()
 
 
+class GenotypeFieldEditor(BaseFieldEditor):
+    """Editor for Boolean value
+
+    Attributes:
+        box (QCheckBox)
+    """
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.box = QComboBox()
+        # DisplayRole, UserRole
+        self.box.addItem("0/1", 1)
+        self.box.addItem("1/1", 2)
+        self.box.addItem("0/0", 0)
+        self.box.addItem("?/?", -1)
+
+        self.set_widget(self.box)
+        self.box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+    def set_value(self, value: int):
+        self.box.setCurrentIndex(self.box.findData(value))
+
+    def get_value(self) -> int:
+        # Return UserRole
+        return self.box.currentData()
+
+
 class ComboFieldEditor(BaseFieldEditor):
     """Editor for Logic Value (less, greater, more than etc ...)
 
@@ -468,6 +495,10 @@ class FieldFactory(QObject):
         """Get FieldWidget according to type key of the given sql_field"""
 
         field_type = self.field_types_mapping.get(field)
+
+        if field.endswith(".gt"):
+            w = GenotypeFieldEditor(parent)
+            return w
 
         if operator in ("$in", "$nin"):
             w = WordSetEditor(parent)
@@ -778,6 +809,13 @@ class FilterModel(QAbstractItemModel):
 
             if index.column() == COLUMN_FIELD and item.type == FilterItem.LOGIC_TYPE:
                 return QIcon(FIcon(0xF0169))
+
+            if (
+                index.column() == COLUMN_FIELD
+                and item.type == FilterItem.CONDITION_TYPE
+            ):
+
+                val = item.get_value()
 
         # columns title
         if role == Qt.FontRole and index.column() == 1:
@@ -1098,7 +1136,7 @@ class FilterModel(QAbstractItemModel):
         self.endInsertRows()
         self.filtersChanged.emit()
 
-    def add_condition_item(self, value=("chr", ">", "100"), parent=QModelIndex()):
+    def add_condition_item(self, value=("ref", "$eq", "A"), parent=QModelIndex()):
         """Add condition item
 
         Args:
@@ -1872,11 +1910,19 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
         self.view.setDragDropMode(QAbstractItemView.InternalMove)
         self.view.setAlternatingRowColors(True)
-        # self.view.header().setSectionResizeMode(0, QHeaderView.ResizeToContents)
-        # self.view.header().setSectionResizeMode(1, QHeaderView.Stretch)
-        # self.view.header().setSectionResizeMode(2, QHeaderView.ResizeToContents)
-        # self.view.header().setSectionResizeMode(3, QHeaderView.Stretch)
-        # self.view.header().setSectionResizeMode(4, QHeaderView.ResizeToContents)
+
+        self.view.header().setSectionResizeMode(COLUMN_FIELD, QHeaderView.Interactive)
+        self.view.header().setSectionResizeMode(
+            COLUMN_OPERATOR, QHeaderView.ResizeToContents
+        )
+        self.view.header().setSectionResizeMode(COLUMN_REMOVE, QHeaderView.Interactive)
+        self.view.header().setSectionResizeMode(
+            COLUMN_CHECKBOX, QHeaderView.ResizeToContents
+        )
+        self.view.header().setSectionResizeMode(
+            COLUMN_REMOVE, QHeaderView.ResizeToContents
+        )
+
         self.view.setEditTriggers(QAbstractItemView.DoubleClicked)
         # Item selected in view
         self.view.selectionModel().selectionChanged.connect(self.on_selection_changed)
@@ -2083,7 +2129,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
     def close_current_editor(self):
         row = self.view.currentIndex().row()
-        column = 3
+        column = COLUMN_VALUE
         parent = self.view.currentIndex().parent()
         index = self.model.index(row, column, parent)
 
