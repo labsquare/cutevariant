@@ -51,11 +51,11 @@ class HistoryModel(QAbstractTableModel):
         super().__init__(parent)
         self.records = []
 
-    def rowCount(self, parent: QModelIndex) -> int:
+    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
         """ override """
         return len(self.records)
 
-    def columnCount(self, parent: QModelIndex) -> int:
+    def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
         """ override """
         return 5
 
@@ -389,7 +389,16 @@ class VqlHistoryWidget(plugin.PluginWidget):
             self.mainwindow.state.filters,
         )
 
-        self.model.add_record(vql_query, count, elapsed_time)
+        #  Do not store same query consecutively
+        if self.model.rowCount() > 0:
+            previous_index = self.model.index(0, 0)
+            previous_query = self.model.get_record(previous_index)[3]
+
+            if vql_query != previous_query:
+                self.model.add_record(vql_query, count, elapsed_time)
+
+        else:
+            self.model.add_record(vql_query, count, elapsed_time)
 
     def on_open_project(self, conn):
         """ override """
