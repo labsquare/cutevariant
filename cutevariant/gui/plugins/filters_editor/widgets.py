@@ -1594,7 +1594,10 @@ class FilterDelegate(QStyledItemDelegate):
     def paint(self, painter: QPainter, option, index: QModelIndex):
         super().paint(painter, option, index)
         painter.setPen(option.palette.color(QPalette.Midlight))
-        painter.drawLine(option.rect.topRight(), option.rect.bottomRight())
+        if hasattr(index.model(), "item"):
+            if index.model().item(index).type != FilterItem.LOGIC_TYPE:
+                painter.drawLine(option.rect.topRight(), option.rect.bottomRight())
+
         if index.column() == 0:
             painter.drawLine(QPoint(0, option.rect.bottom()), option.rect.bottomRight())
         else:
