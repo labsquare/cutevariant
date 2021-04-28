@@ -156,11 +156,6 @@ class AbstractAsyncSQLCompleterModel(QStringListModel):
                 self._load_thread.wait(1000)
 
 
-class FieldAsyncSQLCompleterModel(AbstractAsyncSQLCompleterModel):
-    def __init__(self):
-        self._request = sql.get_field_unique_values
-
-
 #####------------------------------------END WIP----------------------------------------
 
 
@@ -2051,6 +2046,11 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
         remove_filter_act.setShortcut(QKeySequence.Delete)
         self.view.addAction(remove_filter_act)
+
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.toolbar.addWidget(spacer)
+
         self.toolbar.addAction(remove_filter_act)
 
         self.view.setEditTriggers(QAbstractItemView.DoubleClicked)
@@ -2090,6 +2090,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.presets_menu = QMenu()
 
         self.presets_button = QPushButton()
+        self.presets_button.setFlat(True)
         self.presets_button.setIcon(FIcon(0xF035C))
         self.presets_button.setText(self.tr("Select preset"))
         self.presets_button.setMenu(self.presets_menu)
