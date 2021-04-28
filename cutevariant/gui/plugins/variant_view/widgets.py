@@ -193,12 +193,6 @@ class VariantModel(QAbstractTableModel):
     def max_cache_size(self):
         return self._load_variant_cache.maxsize
 
-    def is_variant_loading(self):
-        return self._load_variant_cache.isRunning()
-
-    def is_count_loading(self):
-        return self._load_count_thread.isRunning()
-
     def clear(self):
         """Reset the current model
 
@@ -460,7 +454,6 @@ class VariantModel(QAbstractTableModel):
 
         #  Compute time elapsed since loading
 
-        print("LOADED !!!!!!!!")
         self._end_timer = time.perf_counter()
         self.elapsed_time = self._end_timer - self._start_timer
 
