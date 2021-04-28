@@ -317,7 +317,7 @@ class FieldsWidget(QWidget):
                 )
 
 
-class PresetsEditorDialog(QDialog):
+class FieldsPresetsEditorDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle(self.tr("Presets Editor"))
@@ -485,6 +485,10 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self.widget_fields.show_checked_only(True)
 
     def load_preset_menu(self):
+        """
+        Loads/updates all saved presets
+        When called, the default preset will be selected and applied, to avoid any confusion
+        """
         settings = QSettings()
         preset_path = settings.value(
             "preset_path",
@@ -506,12 +510,12 @@ class FieldsEditorWidget(plugin.PluginWidget):
                 action.triggered.connect(self.on_preset_clicked)
 
         self.menu.addSeparator()
-        default_preset = self.menu.addAction(self.presets_button.text())
+        default_preset = self.menu.addAction(self.tr("Default preset"))
 
         # Hard-coded default preset
         default_preset.setData(
             {
-                "name": self.presets_button.text(),
+                "name": self.tr("Default preset"),
                 "checked_fields": [
                     "favorite",
                     "classification",
@@ -524,8 +528,11 @@ class FieldsEditorWidget(plugin.PluginWidget):
             }
         )
         default_preset.triggered.connect(self.on_preset_clicked)
+
         self.menu.addAction(FIcon(0xF0193), "Save...", self.on_save_preset)
         self.menu.addAction(FIcon(0xF11E7), "Edit...", self.on_edit_preset_pressed)
+
+        default_preset.trigger()
 
     def on_preset_clicked(self):
 
@@ -567,8 +574,11 @@ class FieldsEditorWidget(plugin.PluginWidget):
             self.presets_button.setText(name)
 
     def on_edit_preset_pressed(self):
-        edit_dialog = PresetsEditorDialog(self)
-        edit_dialog.show()
+        edit_dialog = FieldsPresetsEditorDialog(self)
+        edit_dialog.exec_()
+
+        # Reload the preset menu again, in case the user deleted some
+        self.load_preset_menu()
         # Dialog should be out of scope, but doesn't get deleted !
 
     def on_open_project(self, conn):
