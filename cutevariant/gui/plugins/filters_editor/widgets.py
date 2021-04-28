@@ -2170,17 +2170,25 @@ class FiltersEditorWidget(plugin.PluginWidget):
         #  Sort file by date
         filenames.sort(key=os.path.getmtime)
 
+        action_names = []
         for filename in filenames:
             with open(filename) as file:
                 obj = json.load(file)
-                action = self.presets_menu.addAction(obj.get("name", ""))
+                name = obj.get("name", "")
+                action_names.append(name)
+                action = self.presets_menu.addAction(name)
                 action.setData(obj)
                 action.setIcon(FIcon(0xF103B))
                 action.triggered.connect(self.on_preset_clicked)
 
+        # The user deleted the preset that was selected last. So make it clear to the user that the preset doesn't exist anymore
+        if self.presets_button.text() not in action_names:
+            self.presets_button.setText(self.tr("Select preset"))
+
         self.presets_menu.addSeparator()
 
-        reset_act = QAction(self.tr("Reset Filters"))
+        reset_act = QAction(self.tr("Reset Filters"), self)
+        reset_act.triggered.connect(self.on_preset_clicked)
 
         # When triggered, we will check for data and if None, we reset
         reset_act.setData(None)
@@ -2368,16 +2376,21 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
         # Data is None or empty, we reset the filters
         if not data:
-            self.presets_button.setText(self.tr("Reset Filters"))
-            data = {"$and": []}
+            data = {"filters": {"$and": []}}
+            # We created an empty thus valid filter, apply it
+            self.from_json(data)
+            self.on_filters_changed()
+            self.presets_button.setText(self.tr("Select preset"))
+
+            # So we don't need an else (the reset case has been correctly handled)
+            return
 
         # Data is not empty, it's a preset with (hopefully) a name
+        if "name" in data:
+            self.presets_button.setText(data["name"])
         else:
-            if "name" in data:
-                self.presets_button.setText(data["name"])
-            else:
-                self.presets_button.setText("")
-        
+            self.presets_button.setText("")
+
         # If data was None, it has been filled with an empty but valid filter
         self.from_json(data)
 
