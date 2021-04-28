@@ -2354,20 +2354,20 @@ class FiltersEditorWidget(plugin.PluginWidget):
         """
         self.refresh_buttons()
 
-    # def contextMenuEvent(self, event: QContextMenuEvent):
+    def contextMenuEvent(self, event: QContextMenuEvent):
 
-    #     pos = self.view.viewport().mapFromGlobal(event.globalPos())
-    #     index = self.view.indexAt(pos)
+        pos = self.view.viewport().mapFromGlobal(event.globalPos())
+        index = self.view.indexAt(pos)
 
-    #     if index.isValid():
-    #         menu = QMenu(self)
+        if index.isValid():
+            menu = QMenu(self)
 
-    #         item = self.model.item(index)
-    #         if item.type == FilterItem.LOGIC_TYPE:
-    #             menu.addAction(self.tr("Add condition"), self.on_add_condition)
-    #             menu.addAction(self.tr("Add subfilter"), self.on_add_logic)
+            item = self.model.item(index)
+            if item.type == FilterItem.LOGIC_TYPE:
+                menu.addAction(self.tr("Add condition"), self.on_add_condition)
+                menu.addAction(self.tr("Add logical operator"), self.on_add_logic)
 
-    #         menu.exec_(event.globalPos())
+            menu.exec_(event.globalPos())
 
 
 if __name__ == "__main__":
