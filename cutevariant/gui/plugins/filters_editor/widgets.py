@@ -7,6 +7,7 @@ import uuid
 from ast import literal_eval
 from functools import lru_cache
 from typing import Any, Iterable
+import sqlite3
 
 # Qt imports
 from PySide2.QtWidgets import (
@@ -73,6 +74,7 @@ from cutevariant.core.querybuilder import (
     fields_to_vql,
 )
 import cutevariant.commons as cm
+from cutevariant.gui.sql_thread import SqlThread
 
 LOGGER = cm.logger()
 
@@ -129,6 +131,37 @@ def prepare_fields(conn):
                 results[sample_field] = field["type"]
 
     return results
+
+
+#####-------------------------------------WIP--------------------------------------------
+
+
+class AbstractAsyncSQLCompleterModel(QStringListModel):
+    def __init__(self, limit=50, conn=None):
+        self.limit = limit
+        self.conn = conn
+        self._request = None
+        self._load_thread = SqlThread(self.conn)
+
+    @property
+    def conn(self) -> sqlite3.Connection:
+        return self._conn
+
+    @conn.setter
+    def conn(self, conn: sqlite3.Connection):
+        if self._conn:
+            # TODO interrupt current thread
+            if self._load_thread.isRunning():
+                self._load_thread.interrupt()
+                self._load_thread.wait(1000)
+
+
+class FieldAsyncSQLCompleterModel(AbstractAsyncSQLCompleterModel):
+    def __init__(self):
+        self._request = sql.get_field_unique_values
+
+
+#####------------------------------------END WIP----------------------------------------
 
 
 class BaseFieldEditor(QFrame):
@@ -482,7 +515,7 @@ class LogicFieldEditor(BaseFieldEditor):
         return self.box.currentData()
 
 
-class PresetsEditorDialog(QDialog):
+class FiltersPresetsEditorDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle(self.tr("Presets Editor"))
@@ -603,7 +636,7 @@ class FieldFactory(QObject):
 
         if field_type == "str":
             w = StrFieldEditor(parent)
-            liste = sql.get_field_unique_values(self.conn, field)
+            liste = sql.get_field_unique_values(self.conn, field, 50)
             w.set_completion(liste)
             return w
 
@@ -2101,7 +2134,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.on_refresh()
 
     def on_edit_preset_pressed(self):
-        dialog = PresetsEditorDialog(self)
+        dialog = FiltersPresetsEditorDialog(self)
         dialog.exec_()
         self.load_preset_menu()
 
@@ -2121,6 +2154,10 @@ class FiltersEditorWidget(plugin.PluginWidget):
             self.model.remove_item(selected_index)
 
     def load_preset_menu(self):
+        """
+        Loads/updates all saved presets
+        When called, the default preset will be selected and applied, to avoid any confusion
+        """
         settings = QSettings()
         preset_path = settings.value(
             "preset_path",
@@ -2143,6 +2180,11 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
         self.presets_menu.addSeparator()
 
+        reset_act = QAction(self.tr("Reset Filters"))
+
+        # When triggered, we will check for data and if None, we reset
+        reset_act.setData(None)
+        self.presets_menu.addAction(reset_act)
         self.presets_menu.addAction(FIcon(0xF0193), "Save...", self.on_save_preset)
         self.presets_menu.addAction(
             FIcon(0xF11E7), "Edit...", self.on_edit_preset_pressed
@@ -2323,10 +2365,20 @@ class FiltersEditorWidget(plugin.PluginWidget):
     def on_preset_clicked(self):
         action = self.sender()
         data = action.data()
-        if "name" in data:
-            self.presets_button.setText(data["name"])
+
+        # Data is None or empty, we reset the filters
+        if not data:
+            self.presets_button.setText(self.tr("Reset Filters"))
+            data = {"$and": []}
+
+        # Data is not empty, it's a preset with (hopefully) a name
         else:
-            self.presets_button.setText("")
+            if "name" in data:
+                self.presets_button.setText(data["name"])
+            else:
+                self.presets_button.setText("")
+        
+        # If data was None, it has been filled with an empty but valid filter
         self.from_json(data)
 
         self.on_filters_changed()
