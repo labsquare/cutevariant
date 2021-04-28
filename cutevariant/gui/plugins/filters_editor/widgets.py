@@ -133,32 +133,6 @@ def prepare_fields(conn):
     return results
 
 
-#####-------------------------------------WIP--------------------------------------------
-
-
-class AbstractAsyncSQLCompleterModel(QStringListModel):
-    def __init__(self, limit=50, conn=None):
-        self.limit = limit
-        self.conn = conn
-        self._request = None
-        self._load_thread = SqlThread(self.conn)
-
-    @property
-    def conn(self) -> sqlite3.Connection:
-        return self._conn
-
-    @conn.setter
-    def conn(self, conn: sqlite3.Connection):
-        if self._conn:
-            # TODO interrupt current thread
-            if self._load_thread.isRunning():
-                self._load_thread.interrupt()
-                self._load_thread.wait(1000)
-
-
-#####------------------------------------END WIP----------------------------------------
-
-
 class BaseFieldEditor(QFrame):
     """Base class for all editor widgets.
 
@@ -2041,17 +2015,12 @@ class FiltersEditorWidget(plugin.PluginWidget):
         )
 
         # Setup remove filter action
-        remove_filter_act = QAction(QIcon(FIcon(0xF0234)), "Remove filter")
+        remove_filter_act = QAction(QIcon(FIcon(0xF0234)), "Remove filter", self)
         remove_filter_act.triggered.connect(self.on_remove_filter)
 
         remove_filter_act.setShortcut(QKeySequence.Delete)
+        # This action has no right to be in self's toolbar, but
         self.view.addAction(remove_filter_act)
-
-        spacer = QWidget()
-        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.toolbar.addWidget(spacer)
-
-        self.toolbar.addAction(remove_filter_act)
 
         self.view.setEditTriggers(QAbstractItemView.DoubleClicked)
         # Item selected in view
@@ -2059,30 +2028,12 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.view.header().hide()
         # self.view.hideColumn(4)
 
-        # self.save_button = QToolButton()
-        # self.save_button.setIcon(FIcon(0xF0193))
-        # self.save_button.setToolTip(self.tr("Save the current filter"))
-        # self.save_button.clicked.connect(self.on_save_filters)
-        # self.del_button = QToolButton()
-        # self.del_button.setDefaultAction(
-        #     QAction(FIcon(0xF0A7A), self.tr("Delete the filter"))
-        # )
-        # self.del_button.clicked.connect(self.on_delete_item)
-        # Adjust heights
-        # self.combo.setMinimumHeight(30)
-        # self.save_button.setMinimumHeight(30)
-        # self.del_button.setMinimumHeight(30)
-
         self.add_filter_button = QPushButton("Add Filter")
-        # self.add_filter_button.setFlat(True)
         self.add_group_button = QPushButton("Add Group")
         # self.add_group_button.setFlat(True)
+        # self.add_filter_button.setFlat(True)
         self.add_filter_button.clicked.connect(self.on_add_condition)
         self.add_group_button.clicked.connect(self.on_add_logic)
-
-        blayout = QHBoxLayout()
-        blayout.addWidget(self.add_filter_button)
-        blayout.addWidget(self.add_group_button)
 
         # # setup Menu
         # self.toolbar.addWidget(self.combo)
@@ -2095,6 +2046,13 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.presets_button.setText(self.tr("Select preset"))
         self.presets_button.setMenu(self.presets_menu)
 
+        self.toolbar.addWidget(self.add_filter_button)
+        self.toolbar.addWidget(self.add_group_button)
+
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.toolbar.addWidget(spacer)
+
         self.toolbar.addWidget(self.presets_button)
         self.toolbar.addAction(FIcon(0xF0E1E), "Apply", self.on_filters_changed)
 
@@ -2102,7 +2060,6 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
         layout.addWidget(self.toolbar)
         layout.addWidget(self.view)
-        layout.addLayout(blayout)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(1)
         self.setLayout(layout)
