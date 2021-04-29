@@ -327,26 +327,33 @@ class FieldsPresetsEditorDialog(QDialog):
         self.presets_view.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.presets_view.setModel(self.presets_model)
 
-        # self.toolbar = QToolBar(self)
-        # self.delete_action = self.toolbar.addAction(
-        #     FIcon(0xF01B4), self.tr("Delete selected presets"), self.on_remove_presets
-        # )
+        self.toolbar = QToolBar(self)
+        self.toolbar.setIconSize(QSize(16, 16))
+        self.toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
 
-        #        self.delete_action.setShortcut(QKeySequence.Delete)
+        self.delete_action = self.toolbar.addAction(
+            FIcon(0xF01B4), self.tr("Delete selected presets"), self.on_remove_presets
+        )
+        self.delete_action.setShortcut(QKeySequence.Delete)
 
-        del_button = QPushButton(self.tr("Delete"))
+        self.toolbar.addAction(self.delete_action)
+
         ok_button = QPushButton(self.tr("Ok"))
+        cancel_button = QPushButton(self.tr("Cancel"))
 
-        ok_button.clicked.connect(self.close)
-        del_button.clicked.connect(self.on_remove_presets)
+        ok_button.clicked.connect(self.accept)
+        cancel_button.clicked.connect(self.reject)
 
         button_layout = QHBoxLayout()
-        button_layout.addWidget(del_button)
         button_layout.addWidget(ok_button)
+        button_layout.addWidget(cancel_button)
 
         layout = QVBoxLayout(self)
+        layout.addWidget(self.toolbar)
         layout.addWidget(self.presets_view)
         layout.addLayout(button_layout)
+
+        self.presets_model.itemChanged.connect(self.on_preset_name_changed)
 
         self.load_presets()
 
@@ -396,6 +403,30 @@ class FieldsPresetsEditorDialog(QDialog):
                 # All we need from the preset is its name (the item title) and the path to the file where it is stored
                 preset_item.setData(filename)
                 self.presets_model.appendRow([preset_item])
+
+    def on_preset_name_changed(self, item: QStandardItem):
+        file_name = item.data()
+        original_base_name = os.path.basename(file_name)
+
+        obj = {}
+
+        with open(file_name) as file:
+            obj = json.load(file)
+            obj["name"] = item.text()
+
+        if obj:
+            # Basically, renames the preset's file with the new item text
+            renamed_file_name = os.path.join(
+                os.path.dirname(file_name),
+                original_base_name.replace(
+                    original_base_name.split(".")[0], item.text()
+                ),
+            )
+            os.rename(file_name, renamed_file_name)
+            item.setData(renamed_file_name)
+            with open(renamed_file_name, "w+") as file:
+                # Overwrite the file with updated data
+                json.dump(obj, file)
 
 
 class FieldsEditorWidget(plugin.PluginWidget):
@@ -500,32 +531,42 @@ class FieldsEditorWidget(plugin.PluginWidget):
         #  Sort file by date
         filenames.sort(key=os.path.getmtime)
 
+        default_preset = None
+
+        # Load all user presets
         for filename in filenames:
             with open(filename) as file:
                 obj = json.load(file)
-                action = self.menu.addAction(obj.get("name", ""))
-                action.setData(obj)
-                action.setIcon(FIcon(0xF103B))
-                action.triggered.connect(self.on_preset_clicked)
+                # This preset has been set to default
+                if "is_default" in obj and obj["is_default"]:
+                    default_preset = QAction(self.tr("Default preset"), self)
+                    default_preset.setData(obj)
+                else:
+                    action = self.menu.addAction(obj.get("name", ""))
+                    action.setData(obj)
+                    action.setIcon(FIcon(0xF103B))
+                    action.triggered.connect(self.on_preset_clicked)
 
         self.menu.addSeparator()
-        default_preset = self.menu.addAction(self.tr("Default preset"))
 
-        # Hard-coded default preset
-        default_preset.setData(
-            {
-                "name": self.tr("Default preset"),
-                "checked_fields": [
-                    "favorite",
-                    "classification",
-                    "chr",
-                    "pos",
-                    "ref",
-                    "alt",
-                    "qual",
-                ],
-            }
-        )
+        # No default preset was found in the presets directory, let's hard-code one
+        if not default_preset:
+            default_preset = self.menu.addAction(self.tr("Default preset"))
+            # Hard-coded default preset
+            default_preset.setData(
+                {
+                    "name": self.tr("Default preset"),
+                    "checked_fields": [
+                        "favorite",
+                        "classification",
+                        "chr",
+                        "pos",
+                        "ref",
+                        "alt",
+                        "qual",
+                    ],
+                }
+            )
         default_preset.triggered.connect(self.on_preset_clicked)
 
         self.menu.addAction(FIcon(0xF0193), "Save...", self.on_save_preset)
