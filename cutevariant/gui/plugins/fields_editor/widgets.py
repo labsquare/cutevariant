@@ -336,7 +336,9 @@ class FieldsPresetsEditorDialog(QDialog):
         )
         self.delete_action.setShortcut(QKeySequence.Delete)
 
-        self.toolbar.addAction(self.delete_action)
+        self.set_as_default_action = self.toolbar.addAction(
+            FIcon(0xF0C52), self.tr("Set as default"), self.on_preset_set_as_default
+        )
 
         ok_button = QPushButton(self.tr("Ok"))
         cancel_button = QPushButton(self.tr("Cancel"))
@@ -427,6 +429,27 @@ class FieldsPresetsEditorDialog(QDialog):
             with open(renamed_file_name, "w+") as file:
                 # Overwrite the file with updated data
                 json.dump(obj, file)
+
+    def on_preset_set_as_default(self):
+        selected_index = self.presets_view.currentIndex()
+        if not selected_index:
+            return
+        selected_item = self.presets_model.itemFromIndex(selected_index)
+
+        # Look in all presets, what preset might already be set as default (to set it to false if not the one selected)
+        for row in range(self.presets_model.rowCount()):
+            item = self.presets_model.item(row)
+            preset = {}
+            with open(item.data()) as f:
+                preset = json.load(f)
+                if item != selected_item:
+                    if "is_default" in preset and preset["is_default"]:
+                        preset["is_default"] = False
+                else:
+                    preset["is_default"] = True
+            if preset:
+                with open(item.data(), "w+") as f:
+                    json.dump(preset, f)
 
 
 class FieldsEditorWidget(plugin.PluginWidget):
@@ -547,11 +570,9 @@ class FieldsEditorWidget(plugin.PluginWidget):
                     action.setIcon(FIcon(0xF103B))
                     action.triggered.connect(self.on_preset_clicked)
 
-        self.menu.addSeparator()
-
         # No default preset was found in the presets directory, let's hard-code one
         if not default_preset:
-            default_preset = self.menu.addAction(self.tr("Default preset"))
+            default_preset = QAction(self.tr("Default preset"), self)
             # Hard-coded default preset
             default_preset.setData(
                 {
@@ -567,8 +588,11 @@ class FieldsEditorWidget(plugin.PluginWidget):
                     ],
                 }
             )
+
         default_preset.triggered.connect(self.on_preset_clicked)
 
+        self.menu.addSeparator()
+        self.menu.addAction(default_preset)
         self.menu.addAction(FIcon(0xF0193), "Save...", self.on_save_preset)
         self.menu.addAction(FIcon(0xF11E7), "Edit...", self.on_edit_preset_pressed)
 
@@ -579,7 +603,12 @@ class FieldsEditorWidget(plugin.PluginWidget):
         action = self.sender()
         data = action.data()
         if "name" in data:
-            self.presets_button.setText(data["name"])
+            # Tell the user if this is currently the default preset
+            self.presets_button.setText(
+                data["name"] + " (default)"
+                if "is_default" in data and data["is_default"]
+                else data["name"]
+            )
         else:
             self.presets_button.setText("")
         self.from_json(data)
