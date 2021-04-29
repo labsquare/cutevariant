@@ -413,8 +413,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
 
     def __init__(self, conn=None, parent=None):
         super().__init__(parent)
-
-        self.setWindowTitle(self.tr("Columns"))
+        self.setWindowIcon(FIcon(0xF08DF))
 
         self.toolbar = QToolBar(self)
         self.widget_fields = FieldsWidget(conn, parent)
