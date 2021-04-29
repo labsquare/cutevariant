@@ -2042,6 +2042,9 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.add_group_button.clicked.connect(self.on_add_logic)
 
         self.presets_menu = QMenu()
+        # Doesn't seem to be working, though if I set layout direction application-wide it works.
+        # Obviously won't do that
+        self.presets_menu.setLayoutDirection(Qt.RightToLeft)
 
         self.presets_button = QPushButton()
         self.presets_button.setFlat(True)
@@ -2050,10 +2053,9 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.presets_button.setMenu(self.presets_menu)
 
         self.toolbar.addAction(remove_unchecked_act)
-
-        # spacer = QWidget()
-        # spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        # self.toolbar.addWidget(spacer)
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.toolbar.addWidget(spacer)
 
         self.toolbar.addWidget(self.presets_button)
         self.toolbar.addAction(FIcon(0xF0E1E), "Apply", self.on_filters_changed)
@@ -2152,7 +2154,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
         self.presets_menu.addSeparator()
 
-        reset_act = QAction(self.tr("Reset Filters"), self)
+        reset_act = QAction(self.tr("Clear"), self)
         reset_act.triggered.connect(self.on_preset_clicked)
 
         # When triggered, we will check for data and if None, we reset
