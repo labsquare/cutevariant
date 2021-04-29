@@ -2018,6 +2018,11 @@ class FiltersEditorWidget(plugin.PluginWidget):
         remove_filter_act = QAction(QIcon(FIcon(0xF0234)), "Remove filter", self)
         remove_filter_act.triggered.connect(self.on_remove_filter)
 
+        remove_unchecked_act = QAction(
+            QIcon(FIcon(0xF00E2)), self.tr("Remove unchecked"), self
+        )
+        remove_unchecked_act.triggered.connect(self.remove_unchecked)
+
         remove_filter_act.setShortcut(QKeySequence.Delete)
         # This action has no right to be in self's toolbar, but
         self.view.addAction(remove_filter_act)
@@ -2048,10 +2053,11 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
         self.toolbar.addWidget(self.add_filter_button)
         self.toolbar.addWidget(self.add_group_button)
+        self.toolbar.addAction(remove_unchecked_act)
 
-        spacer = QWidget()
-        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.toolbar.addWidget(spacer)
+        # spacer = QWidget()
+        # spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        # self.toolbar.addWidget(spacer)
 
         self.toolbar.addWidget(self.presets_button)
         self.toolbar.addAction(FIcon(0xF0E1E), "Apply", self.on_filters_changed)
@@ -2353,6 +2359,14 @@ class FiltersEditorWidget(plugin.PluginWidget):
             Disable Add button on CONDITION_TYPE
         """
         self.refresh_buttons()
+
+    def remove_unchecked(self):
+        """
+        Remove unchecked filters from the filters tree model
+        The trick here is that unchecked filters result in filters expression that has already
+        been computed. So there is no need to compute it again.
+        """
+        self.model.filters = self.filters
 
     def contextMenuEvent(self, event: QContextMenuEvent):
 
