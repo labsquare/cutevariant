@@ -92,7 +92,7 @@ WordSetIdentifier: 'WORDSET[' arg=ARGS ']';
 BoolOperator: "AND"|"OR";
 SetOperator: "|"|"-"|"&";
 // WARNING : ORDER IS IMPORTANT ! IS NOT BEFORE IS ..
-MathOperator: />=|<=|!=|=|>|<|!~|~|is not|is|like|not like|has|not in|in/;
+MathOperator: />=|<=|!=|=|>|<|!~|~|like|not like|has|not in|in/;
 Tuple: '(' items+=ValueIdentifier[','] ')';
 
 

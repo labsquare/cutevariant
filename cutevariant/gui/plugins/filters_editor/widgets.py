@@ -85,6 +85,8 @@ TYPE_OPERATORS = {
     "bool": ["$eq"],
 }
 
+DEFAULT_VALUES = {"str": "", "int": 0, "float": 0.0, "list": [], "bool": True}
+
 OPERATORS_PY_SQL = {
     "$eq": "=",
     "$gt": ">",
@@ -151,6 +153,19 @@ class BaseFieldEditor(QFrame):
         # style hack : Set background as same as selection in the view
         self.setAutoFillBackground(True)
         self.setBackgroundRole(QPalette.Highlight)
+        self.vlayout = QHBoxLayout(self)
+        self.vlayout.setContentsMargins(0, 0, 0, 0)
+        self.vlayout.setSpacing(0)
+        self.button = QToolButton()
+        self.button.setAutoRaise(True)
+        self.button.setIcon(FIcon(0xF07E2, "red"))
+        self.button.setCheckable(True)
+        self.button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.button.clicked.connect(self.on_press_tool_button)
+        self.vlayout.addWidget(self.button)
+
+    def set_button_icon(self, icon: QIcon):
+        self.button.setIcon(icon)
 
     def set_value(self, value):
         raise NotImplementedError
@@ -160,6 +175,10 @@ class BaseFieldEditor(QFrame):
 
     def reset(self):
         print("reset")
+
+    def on_press_tool_button(self):
+        if hasattr(self, "widget"):
+            self.widget.setDisabled(self.button.isChecked())
 
     def set_widget(self, widget):
         """Setup a layout with a widget
@@ -171,11 +190,7 @@ class BaseFieldEditor(QFrame):
             widget (QWidget)
         """
         self.widget = widget
-        h_layout = QHBoxLayout()
-        h_layout.addWidget(widget)
-        h_layout.setContentsMargins(0, 0, 0, 0)
-        h_layout.setSpacing(0)
-        self.setLayout(h_layout)
+        self.vlayout.insertWidget(0, self.widget)
 
 
 class IntFieldEditor(BaseFieldEditor):
@@ -252,6 +267,7 @@ class StrFieldEditor(BaseFieldEditor):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.edit = QLineEdit()
+        self.edit.setPlaceholderText("Enter a text ...")
         self.edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.set_widget(self.edit)
 
@@ -302,6 +318,7 @@ class WordSetEditor(BaseFieldEditor):
         hlayout.setContentsMargins(0, 0, 0, 0)
         hlayout.setSpacing(0)
         self.setLayout(hlayout)
+        self.set_mode("list")
 
         # DisplayRole, UserRole
 
@@ -1038,8 +1055,6 @@ class FilterModel(QAbstractItemModel):
 
                 if item.type == FilterItem.CONDITION_TYPE:
                     item.set_field(value)
-                    item.set_operator("$eq")
-                    item.set_value("<unset>")
 
             if item.type == FilterItem.CONDITION_TYPE:
 
@@ -1562,8 +1577,6 @@ class FilterDelegate(QStyledItemDelegate):
         if index.column() == COLUMN_VALUE:
             editor.set_value(value)
 
-            # Reset operators and values widgets
-
         if index.column() == COLUMN_OPERATOR:
             editor.set_value(operator)
 
@@ -1630,14 +1643,22 @@ class FilterDelegate(QStyledItemDelegate):
             model (FilterModel)
             index (QModelindex)
         """
-        # val = editor.get_value()
-        # print("SET data model from editor:", val, type(val))
-        # Get typed data from the editor (i.e. not a string)
-        # Then set this data to the FilterItem (in the corresponding attribute)
-        # via its set_value() function.
-        # Default: UserRole
 
-        model.setData(index, editor.get_value())
+        if index.column() == COLUMN_FIELD:
+
+            # Change operator and value
+            mapping = prepare_fields(model.conn)
+            field_name = editor.get_value()
+            field_type = mapping.get(field_name, "str")
+            operator_index = model.index(index.row(), COLUMN_OPERATOR, index.parent())
+            value_index = model.index(index.row(), COLUMN_VALUE, index.parent())
+
+            model.setData(operator_index, "$eq")
+            model.setData(index, editor.get_value())
+            model.setData(value_index, DEFAULT_VALUES.get(field_type, ""))
+
+        else:
+            model.setData(index, editor.get_value())
 
         # super().setModelData(editor, model, index)
 
@@ -1850,23 +1871,21 @@ class FilterDelegate(QStyledItemDelegate):
     def _check_rect(self, rect):
         return QRect(rect.x(), rect.y(), rect.height(), rect.height())
 
-    # def updateEditorGeometry(self, editor, option, index):
-    #     """Overrided from Qt. Set editor geometry
+    def updateEditorGeometry(self, editor, option, index):
+        """Overrided from Qt. Set editor geometry
 
-    #     Args:
-    #         editor (QWidget)
-    #         option (QStyleOptionViewItem)
-    #         index (QModelIndex)
-    #     """
+        Args:
+            editor (QWidget)
+            option (QStyleOptionViewItem)
+            index (QModelIndex)
+        """
 
-    #     if index.column() == 1:
-    #         option.rect.setLeft(
-    #             option.rect.x() + self.indentation * (self._compute_level(index) - 1)
-    #         )
-    #         editor.setGeometry(option.rect)
-    #         return
+        if index.column() == COLUMN_VALUE:
+            option.rect.setHeight(self.row_height - 1)
+            editor.setGeometry(option.rect)
+            return
 
-    #     super().updateEditorGeometry(editor, option, index)
+        super().updateEditorGeometry(editor, option, index)
 
 
 class FieldDialog(QDialog):
@@ -1985,89 +2004,58 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.model = FilterModel(conn)
         self.delegate = FilterDelegate()
 
-        # Create toolbar
-        self.toolbar = QToolBar()
-        self.toolbar.setIconSize(QSize(16, 16))
-        self.toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-
         # Setup view
         self.view.setModel(self.model)
         self.view.setItemDelegate(self.delegate)
         self.view.setIndentation(10)
         self.view.setExpandsOnDoubleClick(False)
         self.view.setAlternatingRowColors(True)
-
-        # Setup drag & drop for view
         self.view.setAcceptDrops(True)
         self.view.setDragEnabled(True)
         self.view.setDragDropMode(QAbstractItemView.InternalMove)
-
-        # Setup view header
         self.view.header().setStretchLastSection(False)
         self.view.header().setSectionResizeMode(COLUMN_FIELD, QHeaderView.Stretch)
         self.view.header().setSectionResizeMode(COLUMN_OPERATOR, QHeaderView.Stretch)
         self.view.header().setSectionResizeMode(COLUMN_VALUE, QHeaderView.Stretch)
-
-        # Checkbox and remove columns are at the end, always the same size (so resize to contents)
         self.view.header().setSectionResizeMode(
             COLUMN_CHECKBOX, QHeaderView.ResizeToContents
         )
         self.view.header().setSectionResizeMode(
             COLUMN_REMOVE, QHeaderView.ResizeToContents
         )
-
-        # Setup remove filter action (just a convenient way to remove a filter inside the view)
-        remove_filter_act = QAction(QIcon(FIcon(0xF0234)), "Remove filter", self)
-        remove_filter_act.triggered.connect(self.on_remove_filter)
-        remove_filter_act.setShortcut(QKeySequence.Delete)
-        self.view.addAction(remove_filter_act)
-
-        #
-        remove_unchecked_act = QAction(
-            QIcon(FIcon(0xF00E2)), self.tr("Remove unchecked"), self
-        )
-        remove_unchecked_act.triggered.connect(self.remove_unchecked)
-
         self.view.setEditTriggers(QAbstractItemView.DoubleClicked)
-        # Item selected in view
         self.view.selectionModel().selectionChanged.connect(self.on_selection_changed)
         self.view.header().hide()
-        # self.view.hideColumn(4)
 
-        self.add_filter_button = QPushButton("Add Filter")
-        self.add_group_button = QPushButton("Add Group")
-        self.add_group_button.setFlat(True)
-        self.add_filter_button.setFlat(True)
-        self.add_filter_button.clicked.connect(self.on_add_condition)
-        self.add_group_button.clicked.connect(self.on_add_logic)
+        # Create toolbar
+        self.toolbar = QToolBar()
+        self.toolbar.setIconSize(QSize(16, 16))
+        self.toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
 
         self.presets_menu = QMenu()
-        # Doesn't seem to be working, though if I set layout direction application-wide it works.
-        # Obviously won't do that
-        self.presets_menu.setLayoutDirection(Qt.RightToLeft)
 
-        self.presets_button = QPushButton()
-        self.presets_button.setFlat(True)
-        self.presets_button.setIcon(FIcon(0xF035C))
-        self.presets_button.setText(self.tr("Select preset"))
-        self.presets_button.setMenu(self.presets_menu)
+        self.add_condition_action = self.toolbar.addAction(
+            FIcon(0xF0704), "Add condition", self.on_add_condition
+        )
+        self.add_group_action = self.toolbar.addAction(
+            FIcon(0xF0704), "Add group", self.on_add_logic
+        )
 
-        self.toolbar.addAction(remove_unchecked_act)
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.toolbar.addWidget(spacer)
-
+        self.presets_button = QToolButton()
+        self.presets_button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        self.presets_button.setPopupMode(QToolButton.InstantPopup)
+        self.presets_button.setIcon(FIcon(0xF035C))
+        self.presets_button.setText(self.tr("Menu"))
+        self.presets_button.setMenu(self.presets_menu)
         self.toolbar.addWidget(self.presets_button)
         self.toolbar.addAction(FIcon(0xF0E1E), "Apply", self.on_filters_changed)
 
         main_layout = QVBoxLayout()
 
-        button_group_layout = QHBoxLayout()
-        button_group_layout.addWidget(self.add_filter_button)
-        button_group_layout.addWidget(self.add_group_button)
-
         main_layout.addWidget(self.toolbar)
-        main_layout.addLayout(button_group_layout)
         main_layout.addWidget(self.view)
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(1)
@@ -2211,12 +2199,12 @@ class FiltersEditorWidget(plugin.PluginWidget):
             # Add button: Is an item selected ?
             index = self.view.currentIndex()
             if index.isValid() and self.model.item(index).type == FilterItem.LOGIC_TYPE:
-                self.add_filter_button.setEnabled(True)
-                self.add_group_button.setEnabled(True)
+                self.add_condition_action.setEnabled(True)
+                self.add_group_action.setEnabled(True)
             else:
                 # item is CONDITION_TYPE or there is no item selected (because of deletion)
-                self.add_filter_button.setEnabled(False)
-                self.add_group_button.setEnabled(False)
+                self.add_condition_action.setEnabled(False)
+                self.add_group_action.setEnabled(False)
 
     def on_filters_changed(self):
         """Triggered when filters changed FROM THIS plugin

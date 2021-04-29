@@ -38,11 +38,9 @@ import numpy as np
 # Custom imports
 import cutevariant.commons as cm
 from cutevariant.core.querybuilder import build_sql_query
+from cutevariant.core.sql_aggregator import StdevFunc
 
 LOGGER = cm.logger()
-
-
-## Misc functions ==============================================================
 
 
 def get_sql_connection(filepath):
@@ -73,6 +71,7 @@ def get_sql_connection(filepath):
         return re.search(expr, str(item)) is not None
 
     connection.create_function("REGEXP", 2, regexp)
+    connection.create_aggregate("STD", 1, StdevFunc)
 
     if LOGGER.getEffectiveLevel() == logging.DEBUG:
         # Enable tracebacks from custom functions in DEBUG mode only
@@ -172,7 +171,11 @@ def count_query(conn, query):
 # Statistical data
 
 
-def get_field_info(conn, field, metrics=["mean", "std"]):
+def get_stats_info(conn, field, source="variants", filters={}):
+    pass
+
+
+def get_field_info(conn, field, source="variants", filters={}, metrics=["mean", "std"]):
     """
     Returns statistical metrics for column field in conn
     metrics is the list of statistical metrics you'd like to retrieve, among:
@@ -211,7 +214,9 @@ def get_field_info(conn, field, metrics=["mean", "std"]):
     }
 
     conn.row_factory = None
-    data = [i[0] for i in conn.execute(f"SELECT {field} FROM variants")]
+    query = build_sql_query(conn, [field], source, filters, limit=None)
+
+    data = [i[0] for i in conn.execute(query)]
 
     results = {}
     for metric in metrics:
