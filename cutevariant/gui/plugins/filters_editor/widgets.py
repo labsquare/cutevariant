@@ -1980,33 +1980,35 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
         self.settings = QSettings()
         self.view = QTreeView()
-        # conn is always None here but initialized in on_open_project()
 
+        # conn is always None here but initialized in on_open_project()
         self.model = FilterModel(conn)
         self.delegate = FilterDelegate()
-        self.toolbar = QToolBar()
 
+        # Create toolbar
+        self.toolbar = QToolBar()
         self.toolbar.setIconSize(QSize(16, 16))
         self.toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
 
-        # Drag & drop
+        # Setup view
         self.view.setModel(self.model)
         self.view.setItemDelegate(self.delegate)
         self.view.setIndentation(10)
-        self.view.setDragEnabled(True)
-        self.view.header().setStretchLastSection(False)
-        self.view.setAcceptDrops(True)
         self.view.setExpandsOnDoubleClick(False)
-
-        self.view.setDragDropMode(QAbstractItemView.InternalMove)
         self.view.setAlternatingRowColors(True)
 
-        # Setup header
+        # Setup drag & drop for view
+        self.view.setAcceptDrops(True)
+        self.view.setDragEnabled(True)
+        self.view.setDragDropMode(QAbstractItemView.InternalMove)
+
+        # Setup view header
+        self.view.header().setStretchLastSection(False)
         self.view.header().setSectionResizeMode(COLUMN_FIELD, QHeaderView.Stretch)
-        self.view.header().setSectionResizeMode(
-            COLUMN_OPERATOR, QHeaderView.ResizeToContents
-        )
+        self.view.header().setSectionResizeMode(COLUMN_OPERATOR, QHeaderView.Stretch)
         self.view.header().setSectionResizeMode(COLUMN_VALUE, QHeaderView.Stretch)
+
+        # Checkbox and remove columns are at the end, always the same size (so resize to contents)
         self.view.header().setSectionResizeMode(
             COLUMN_CHECKBOX, QHeaderView.ResizeToContents
         )
@@ -2014,18 +2016,17 @@ class FiltersEditorWidget(plugin.PluginWidget):
             COLUMN_REMOVE, QHeaderView.ResizeToContents
         )
 
-        # Setup remove filter action
+        # Setup remove filter action (just a convenient way to remove a filter inside the view)
         remove_filter_act = QAction(QIcon(FIcon(0xF0234)), "Remove filter", self)
         remove_filter_act.triggered.connect(self.on_remove_filter)
+        remove_filter_act.setShortcut(QKeySequence.Delete)
+        self.view.addAction(remove_filter_act)
 
+        #
         remove_unchecked_act = QAction(
             QIcon(FIcon(0xF00E2)), self.tr("Remove unchecked"), self
         )
         remove_unchecked_act.triggered.connect(self.remove_unchecked)
-
-        remove_filter_act.setShortcut(QKeySequence.Delete)
-        # This action has no right to be in self's toolbar, but
-        self.view.addAction(remove_filter_act)
 
         self.view.setEditTriggers(QAbstractItemView.DoubleClicked)
         # Item selected in view
@@ -2035,13 +2036,10 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
         self.add_filter_button = QPushButton("Add Filter")
         self.add_group_button = QPushButton("Add Group")
-        # self.add_group_button.setFlat(True)
-        # self.add_filter_button.setFlat(True)
+        self.add_group_button.setFlat(True)
+        self.add_filter_button.setFlat(True)
         self.add_filter_button.clicked.connect(self.on_add_condition)
         self.add_group_button.clicked.connect(self.on_add_logic)
-
-        # # setup Menu
-        # self.toolbar.addWidget(self.combo)
 
         self.presets_menu = QMenu()
 
@@ -2051,8 +2049,6 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.presets_button.setText(self.tr("Select preset"))
         self.presets_button.setMenu(self.presets_menu)
 
-        self.toolbar.addWidget(self.add_filter_button)
-        self.toolbar.addWidget(self.add_group_button)
         self.toolbar.addAction(remove_unchecked_act)
 
         # spacer = QWidget()
@@ -2062,13 +2058,18 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.toolbar.addWidget(self.presets_button)
         self.toolbar.addAction(FIcon(0xF0E1E), "Apply", self.on_filters_changed)
 
-        layout = QVBoxLayout()
+        main_layout = QVBoxLayout()
 
-        layout.addWidget(self.toolbar)
-        layout.addWidget(self.view)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(1)
-        self.setLayout(layout)
+        button_group_layout = QHBoxLayout()
+        button_group_layout.addWidget(self.add_filter_button)
+        button_group_layout.addWidget(self.add_group_button)
+
+        main_layout.addWidget(self.toolbar)
+        main_layout.addLayout(button_group_layout)
+        main_layout.addWidget(self.view)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(1)
+        self.setLayout(main_layout)
 
         self.load_preset_menu()
         # self.combo.currentIndexChanged.connect(self.on_combo_changed)
@@ -2101,6 +2102,10 @@ class FiltersEditorWidget(plugin.PluginWidget):
     def on_remove_filter(self):
         selected_index = self.view.selectionModel().currentIndex()
         if not selected_index:
+            return
+
+        # Safety, to avoid removing root item
+        if not selected_index.parent().isValid():
             return
 
         confirmation = QMessageBox.question(
@@ -2378,8 +2383,12 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
             item = self.model.item(index)
             if item.type == FilterItem.LOGIC_TYPE:
-                menu.addAction(self.tr("Add condition"), self.on_add_condition)
-                menu.addAction(self.tr("Add logical operator"), self.on_add_logic)
+                menu.addAction(self.tr("Add filter"), self.on_add_condition)
+                menu.addAction(self.tr("Add group"), self.on_add_logic)
+
+            # Check if this is not the root item
+            if index.parent().isValid():
+                menu.addAction(self.tr("Remove"), self.on_remove_filter)
 
             menu.exec_(event.globalPos())
 
