@@ -2074,9 +2074,8 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.setLayout(main_layout)
 
         self.load_preset_menu()
-        # self.combo.currentIndexChanged.connect(self.on_combo_changed)
 
-        # self.model.filtersChanged.connect(self.on_filters_changed)
+        self.current_preset_name = ""
 
     @property
     def filters(self):
@@ -2120,7 +2119,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
         if confirmation == QMessageBox.Yes:
             self.model.remove_item(selected_index)
 
-    def load_preset_menu(self):
+    def load_preset_menu(self, selected_preset_name=None):
         """
         Loads/updates all saved presets
         When called, the default preset will be selected and applied, to avoid any confusion
@@ -2138,12 +2137,18 @@ class FiltersEditorWidget(plugin.PluginWidget):
         filenames.sort(key=os.path.getmtime)
 
         action_names = []
+
+        selected_preset_action = None
+
         for filename in filenames:
             with open(filename) as file:
                 obj = json.load(file)
                 name = obj.get("name", "")
                 action_names.append(name)
                 action = self.presets_menu.addAction(name)
+                if selected_preset_name and selected_preset_name == name:
+                    # Selected preset action is selected only if the name exists, to avoid selecting an action that has been deleted
+                    selected_preset_action = action
                 action.setData(obj)
                 action.setIcon(FIcon(0xF103B))
                 action.triggered.connect(self.on_preset_clicked)
@@ -2160,10 +2165,15 @@ class FiltersEditorWidget(plugin.PluginWidget):
         # When triggered, we will check for data and if None, we reset
         reset_act.setData(None)
         self.presets_menu.addAction(reset_act)
-        self.presets_menu.addAction(FIcon(0xF0193), "Save...", self.on_save_preset)
         self.presets_menu.addAction(
-            FIcon(0xF11E7), "Edit...", self.on_edit_preset_pressed
+            FIcon(0xF11E7), "Edit preset", self.on_edit_preset_pressed
         )
+        self.presets_menu.addAction(FIcon(0xF0193), "Save", self.on_save_over_preset)
+        self.presets_menu.addAction(FIcon(0xF0415), "Save as new", self.on_save_preset)
+        self.presets_menu.addAction(FIcon(0xF054C), "Revert", self.on_revert_preset)
+
+        if selected_preset_action:
+            selected_preset_action.trigger()
 
     def on_refresh(self):
 
@@ -2299,8 +2309,10 @@ class FiltersEditorWidget(plugin.PluginWidget):
         # Data is not empty, it's a preset with (hopefully) a name
         if "name" in data:
             self.presets_button.setText(data["name"])
+            self.current_preset_name = data["name"]
         else:
             self.presets_button.setText("")
+            self.current_preset_name = ""
 
         # If data was None, it has been filled with an empty but valid filter
         self.from_json(data)
@@ -2393,6 +2405,35 @@ class FiltersEditorWidget(plugin.PluginWidget):
                 menu.addAction(self.tr("Remove"), self.on_remove_filter)
 
             menu.exec_(event.globalPos())
+
+    def on_save_over_preset(self):
+
+        settings = QSettings()
+        preset_path = settings.value(
+            "preset_path",
+            QStandardPaths.writableLocation(QStandardPaths.GenericDataLocation),
+        )
+        preset_name = self.current_preset_name
+        if os.path.isfile(f"{preset_path}/{preset_name}.filters.json"):
+            with open(f"{preset_path}/{preset_name}.filters.json", "w") as file:
+                obj = self.to_json()
+                obj["name"] = preset_name
+                json.dump(obj, file)
+
+    def on_revert_preset(self):
+        """
+        Reverts the selected preset to its last saved version
+        """
+        settings = QSettings()
+        preset_path = settings.value(
+            "preset_path",
+            QStandardPaths.writableLocation(QStandardPaths.GenericDataLocation),
+        )
+        preset_name = self.current_preset_name
+        if os.path.isfile(f"{preset_path}/{preset_name}.filters.json"):
+            with open(f"{preset_path}/{preset_name}.filters.json", "r") as file:
+                obj = json.load(file)
+                self.from_json(obj)
 
 
 if __name__ == "__main__":
