@@ -38,7 +38,8 @@ import numpy as np
 # Custom imports
 import cutevariant.commons as cm
 from cutevariant.core.querybuilder import build_sql_query
-from cutevariant.core.sql_aggregator import StdevFunc
+
+# from cutevariant.core.sql_aggregator import StdevFunc
 
 LOGGER = cm.logger()
 
@@ -71,7 +72,7 @@ def get_sql_connection(filepath):
         return re.search(expr, str(item)) is not None
 
     connection.create_function("REGEXP", 2, regexp)
-    connection.create_aggregate("STD", 1, StdevFunc)
+    # connection.create_aggregate("STD", 1, StdevFunc)
 
     if LOGGER.getEffectiveLevel() == logging.DEBUG:
         # Enable tracebacks from custom functions in DEBUG mode only
