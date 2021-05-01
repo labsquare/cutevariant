@@ -98,7 +98,7 @@ First, if you don't see the filters editor plugin, this may be because it's hidd
 
 This is what the window should look like now:
 
-![Filters plugin](images/filters.png)
+![Filters plugin](../images/filters.png)
 
 Once you have the plugin opened, you will see a tree view with only one root item. This item represents the root of the filter, which means that everything you will add as child items will be chained with `AND` statements. Among these child statements, you can in turn add `OR` or `AND` statements.
 

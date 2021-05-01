@@ -1,8 +1,50 @@
 site_name: Cutevariant Doc
+site_author: Sacha Schutz, Charles Monod-Broca
+site_description: >-
+  Find the documentation of cutevariant, with material for both developers and geneticians !
+  You will find how to use cutevariant, tips and tricks, and if you're a developer wishing to contribute,
+  here you will find a complete API reference to add features to cutevariant.
 theme:
   name: material
+  features:
+    - navigation.tabs
+    - navigation.top
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to light mode
 markdown_extensions:
 - pymdownx.emoji:
     emoji_index: !!python/name:materialx.emoji.twemoji
     emoji_generator: !!python/name:materialx.emoji.to_svg
 - attr_list
+
+# Setting up the headers
+nav:
+    - Home: 'index.md'
+    - Getting started:
+      - Installation: 'installation.md'
+      - Quick Start:
+        - Select fields: 'quick-start/fields.md'
+        - Create filters: 'quick-start/filters.md'
+        - Create wordsets: 'quick-start/wordset.md'
+        - Create selections: 'quick-start/selections.md'
+    - Development:
+      - Customization:
+        - Create a plugin: 'development/customization/create-plugin.md'
+        - Create a formatter: 'development/customization/create-formatter.md'
+        - Create a writer: 'development/customization/create-writer.md'
+        - Create a reader: 'development/customization/create-reader.md'
+      - API Documentation:
+        - Core classes: 'development/api-documentation/core-classes.md'
+        - GUI classes: 'development/api-documentation/gui-classes.md'
+    - About: 'about.md'
+
+repo_url: "https://github.com/labsquare/cutevariant"
