@@ -102,6 +102,8 @@ OPERATORS_PY_SQL = {
     "$or": "OR",
 }
 
+NULL_REPR = "@NULL"
+
 
 COLUMN_FIELD = 0
 COLUMN_LOGIC = 0
@@ -157,13 +159,6 @@ class BaseFieldEditor(QFrame):
         self.vlayout = QHBoxLayout(self)
         self.vlayout.setContentsMargins(0, 0, 0, 0)
         self.vlayout.setSpacing(0)
-        self.button = QToolButton()
-        self.button.setAutoRaise(True)
-        self.button.setIcon(FIcon(0xF07E2, "red"))
-        self.button.setCheckable(True)
-        self.button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.button.clicked.connect(self.on_press_tool_button)
-        self.vlayout.addWidget(self.button)
 
     def set_button_icon(self, icon: QIcon):
         self.button.setIcon(icon)
@@ -208,12 +203,24 @@ class IntFieldEditor(BaseFieldEditor):
         self.line_edit.setValidator(self.validator)
         self.set_widget(self.line_edit)
         self.line_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        null_action = self.line_edit.addAction(
+            FIcon(0xF07E2), QLineEdit.TrailingPosition
+        )
+        null_action.triggered.connect(lambda: self.line_edit.setText(NULL_REPR))
 
     def set_value(self, value: int):
-        self.line_edit.setText(str(value))
+        if value is None:
+            self.line_edit.setText(NULL_REPR)
+        else:
+            self.line_edit.setText(str(value))
 
     def get_value(self) -> int:
-        return int(self.line_edit.text())
+        value = self.line_edit.text()
+        if value == NULL_REPR:
+            value = None
+        else:
+            value = int(self.line_edit.text())
+        return value
 
     def set_range(self, min_, max_):
         """ Limit editor with a range of value """
@@ -233,9 +240,18 @@ class DoubleFieldEditor(BaseFieldEditor):
         self.validator = QDoubleValidator()
         self.line_edit.setValidator(self.validator)
         self.line_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        null_action = self.line_edit.addAction(
+            FIcon(0xF07E2), QLineEdit.TrailingPosition
+        )
+        null_action.triggered.connect(lambda: self.line_edit.setText(NULL_REPR))
+
         self.set_widget(self.line_edit)
 
     def set_value(self, value: float):
+
+        if value is None:
+            self.line_edit.setText(NULL_REPR)
+            return
         try:
             txt = QLocale().toString(value)
         except:
@@ -245,8 +261,10 @@ class DoubleFieldEditor(BaseFieldEditor):
     def get_value(self) -> float:
 
         text = self.line_edit.text()
+
+        if text == NULL_REPR:
+            return None
         value = 0.0
-        print("TT", text)
         value, success = QLocale().toDouble(text)
 
         if not success:
@@ -271,14 +289,20 @@ class StrFieldEditor(BaseFieldEditor):
         self.edit.setPlaceholderText("Enter a text ...")
         self.edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.set_widget(self.edit)
+        null_action = self.edit.addAction(FIcon(0xF07E2), QLineEdit.TrailingPosition)
+        null_action.triggered.connect(lambda: self.edit.setText(NULL_REPR))
 
     def set_value(self, value: str):
         """Set displayed value in the lineEdit of the editor"""
+        if value is None:
+            value = NULL_REPR
         self.edit.setText(str(value))
 
     def get_value(self) -> str:
         """Return string or float/int for numeric values"""
         value = self.edit.text()
+        if value == NULL_REPR:
+            value = None
         return value
 
     def set_completion(self, items: list):
@@ -826,8 +850,9 @@ class FilterModel(QAbstractItemModel):
             return
 
         item = self.item(index)
+        val = item.get_value()
 
-        # icon checkbox
+        # DECORATION ROLE
         if role == Qt.DecorationRole:
             if index.column() == COLUMN_CHECKBOX:
                 return QIcon(FIcon(0xF06D0)) if item.checked else QIcon(FIcon(0xF06D1))
@@ -838,37 +863,35 @@ class FilterModel(QAbstractItemModel):
                 if item.get_value() == "$or":
                     return QIcon(FIcon(0xF08E5))
 
-            if (
-                index.column() == COLUMN_FIELD
-                and item.type == FilterItem.CONDITION_TYPE
-            ):
+            if index.column() == COLUMN_REMOVE:
+                if index.parent() != QModelIndex():
+                    return QIcon(FIcon(0xF0156, "red"))
 
-                val = item.get_value()
+        # FONT ROLE
+        if role == Qt.FontRole:
+            if index.column() == COLUMN_FIELD:
+                font = QFont()
+                font.setBold(True)
+                return font
 
-        # columns title
-        if role == Qt.FontRole and index.column() == COLUMN_FIELD:
-            font = QFont()
-            font.setBold(True)
-            return font
+            if index.column() == COLUMN_VALUE and val is None:
+                font = QFont()
+                font.setItalic(True)
+                font.setBold(True)
+                return font
 
+        # FORGROUND ROLE
         if role == Qt.ForegroundRole:
             if not item.checked:
                 return QColor("lightgray")
 
-            # if index.column() == COLUMN_VALUE:
-            #     return QColor("blue")
-
         # align operator
-        if role == Qt.TextAlignmentRole and index.column() == COLUMN_OPERATOR:
-            return Qt.AlignCenter
+        if role == Qt.TextAlignmentRole:
+            if index.column() == COLUMN_OPERATOR:
+                return Qt.AlignCenter
 
-        # Delete icon
-        if role == Qt.DecorationRole and index.column() == COLUMN_REMOVE:
-            if index.parent() != QModelIndex():
-                return QIcon(FIcon(0xF0156, "red"))
-
+        # Role display or edit
         if role in (Qt.DisplayRole, Qt.EditRole):
-
             if index.column() == COLUMN_FIELD:
                 if item.type == FilterItem.CONDITION_TYPE:
                     return item.get_field()
@@ -894,6 +917,9 @@ class FilterModel(QAbstractItemModel):
                 if isinstance(val, dict):
                     if "$wordset" in val:
                         return val["$wordset"]
+
+                if val is None and role == Qt.DisplayRole:
+                    return NULL_REPR
 
                 return val
 

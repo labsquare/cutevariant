@@ -384,10 +384,10 @@ def condition_to_vql(item: dict) -> str:
     # Cast IS NULL
     if value is None:
         if operator == "$eq":
-            sql_operator = "IS"
+            sql_operator = "="
 
         if operator == "$ne":
-            sql_operator = "IS NOT"
+            sql_operator = "!="
 
         value = "NULL"
 
