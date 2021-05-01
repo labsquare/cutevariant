@@ -1979,7 +1979,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.remove_action = self.toolbar.addAction(self.tr("Remove Preset"))
         self.remove_action.setIcon(FIcon(0xF0B89))
         self.remove_action.triggered.connect(self.on_remove_preset)
-        self.remove_action.setToolTip(self.tr("Save Preset"))
+        self.remove_action.setToolTip(self.tr("Remove current preset"))
         self.remove_action.setDisabled(True)
 
         # Preset combobox
