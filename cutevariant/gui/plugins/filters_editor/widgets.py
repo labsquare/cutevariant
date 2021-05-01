@@ -20,6 +20,7 @@ from PySide2.QtWidgets import (
     QStackedWidget,
     QDialog,
     QLineEdit,
+    QActionGroup,
     QFileDialog,
     QApplication,
     QStyledItemDelegate,
@@ -499,87 +500,6 @@ class LogicFieldEditor(BaseFieldEditor):
     def get_value(self) -> str:
         # Return UserRole
         return self.box.currentData()
-
-
-class FiltersPresetsEditorDialog(QDialog):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle(self.tr("Presets Editor"))
-        self.caption_label = QLabel(self.tr("Edit filters presets"))
-        self.presets_model = QStandardItemModel(0, 0)
-        self.presets_view = QListView(self)
-        self.presets_view.setSelectionMode(QAbstractItemView.ExtendedSelection)
-        self.presets_view.setModel(self.presets_model)
-
-        # self.toolbar = QToolBar(self)
-        # self.delete_action = self.toolbar.addAction(
-        #     FIcon(0xF01B4), self.tr("Delete selected presets"), self.on_remove_presets
-        # )
-
-        #        self.delete_action.setShortcut(QKeySequence.Delete)
-
-        del_button = QPushButton(self.tr("Delete"))
-        ok_button = QPushButton(self.tr("Ok"))
-
-        ok_button.clicked.connect(self.close)
-        del_button.clicked.connect(self.on_remove_presets)
-
-        button_layout = QHBoxLayout()
-        button_layout.addWidget(del_button)
-        button_layout.addWidget(ok_button)
-
-        layout = QVBoxLayout(self)
-        layout.addWidget(self.presets_view)
-        layout.addLayout(button_layout)
-
-        self.load_presets()
-
-    def on_remove_presets(self):
-        # Retrieve selected presets (scheduled for deletion)
-        selected_preset_indexes = self.presets_view.selectionModel().selectedIndexes()
-        if not selected_preset_indexes:
-            # Don't even ask, nothing will be deleted !
-            return
-
-        confirmation = QMessageBox.question(
-            self,
-            self.tr("Please confirm"),
-            self.tr(
-                f"Do you really want to remove selected presets ?\n {len(selected_preset_indexes)} presets would be definitely lost !"
-            ),
-        )
-        if confirmation == QMessageBox.Yes:
-            selected_items = [
-                self.presets_model.item(selected.row())
-                for selected in selected_preset_indexes
-            ]
-            for selected_item in selected_items:
-                preset_file_name = selected_item.data()
-                os.remove(preset_file_name)
-            # After we removed all selected presets from the disk, let's reload the model
-            self.load_presets()
-
-    def load_presets(self):
-
-        self.presets_model.clear()
-        settings = QSettings()
-        preset_path = settings.value(
-            "preset_path",
-            QStandardPaths.writableLocation(QStandardPaths.GenericDataLocation),
-        )
-
-        filenames = glob.glob(f"{preset_path}/*.filters.json")
-        #  Sort file by date
-        filenames.sort(key=os.path.getmtime)
-
-        for filename in filenames:
-            with open(filename) as file:
-                obj = json.load(file)
-                preset_item = QStandardItem(obj.get("name", ""))
-
-                # All we need from the preset is its name (the item title) and the path to the file where it is stored
-                preset_item.setData(filename)
-                self.presets_model.appendRow([preset_item])
 
 
 class FieldFactory(QObject):
@@ -2030,29 +1950,54 @@ class FiltersEditorWidget(plugin.PluginWidget):
         # Create toolbar
         self.toolbar = QToolBar()
         self.toolbar.setIconSize(QSize(16, 16))
-        self.toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        self.toolbar.setToolButtonStyle(Qt.ToolButtonIconOnly)
 
         self.presets_menu = QMenu()
 
         self.add_condition_action = self.toolbar.addAction(
-            FIcon(0xF0704), "Add condition", self.on_add_condition
+            FIcon(0xF0415), "Add condition", self.on_add_condition
         )
+        self.add_condition_action.setToolTip("Add condition")
         self.add_group_action = self.toolbar.addAction(
-            FIcon(0xF0704), "Add group", self.on_add_logic
+            FIcon(0xF034C), "Add group", self.on_add_logic
         )
+        self.add_group_action.setToolTip("Add Group")
+
+        # Create preset combobox with actions
+        self.toolbar.addSeparator()
+
+        # Save button
+        self.save_action = self.toolbar.addAction(self.tr("Save Preset"))
+        self.save_action.setIcon(FIcon(0xF0818))
+        self.save_action.triggered.connect(self.on_save_preset)
+        self.save_action.setToolTip(self.tr("Save as a new Preset"))
+
+        # Remove button
+        self.remove_action = self.toolbar.addAction(self.tr("Remove Preset"))
+        self.remove_action.setIcon(FIcon(0xF0B89))
+        self.remove_action.triggered.connect(self.on_remove_preset)
+        self.remove_action.setToolTip(self.tr("Save Preset"))
+        self.remove_action.setDisabled(True)
+
+        # Preset combobox
+        self.preset_combo = QComboBox(self)
+        self.preset_combo.currentIndexChanged.connect(self.on_select_preset)
+        self.toolbar.addWidget(self.preset_combo)
+
+        self.toolbar.addSeparator()
 
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.toolbar.addWidget(spacer)
-        self.presets_button = QToolButton()
-        self.presets_button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-        self.presets_button.setPopupMode(QToolButton.InstantPopup)
-        self.presets_button.setIcon(FIcon(0xF035C))
-        self.presets_button.setText(self.tr("Menu"))
-        self.presets_button.setMenu(self.presets_menu)
-        self.toolbar.addWidget(self.presets_button)
-        self.toolbar.addAction(FIcon(0xF0E1E), "Apply", self.on_filters_changed)
 
+        apply_action = self.toolbar.addAction("Apply")
+        self.apply_button = self.toolbar.widgetForAction(apply_action)
+        self.apply_button.setText("Apply")
+        self.apply_button.setIcon(FIcon(0xF0E1E, "white"))
+        self.apply_button.setStyleSheet("background-color: #038F6A; color:white")
+        self.apply_button.setAutoRaise(False)
+        self.apply_button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        self.apply_button.triggered.connect(self.on_apply)
         main_layout = QVBoxLayout()
 
         main_layout.addWidget(self.toolbar)
@@ -2061,7 +2006,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
         main_layout.setSpacing(1)
         self.setLayout(main_layout)
 
-        self.load_preset_menu()
+        self.load_presets()
 
         self.current_preset_name = ""
 
@@ -2083,11 +2028,6 @@ class FiltersEditorWidget(plugin.PluginWidget):
         prepare_fields.cache_clear()
         self.on_refresh()
 
-    def on_edit_preset_pressed(self):
-        dialog = FiltersPresetsEditorDialog(self)
-        dialog.exec_()
-        self.load_preset_menu()
-
     def on_remove_filter(self):
         selected_index = self.view.selectionModel().currentIndex()
         if not selected_index:
@@ -2107,61 +2047,27 @@ class FiltersEditorWidget(plugin.PluginWidget):
         if confirmation == QMessageBox.Yes:
             self.model.remove_item(selected_index)
 
-    def load_preset_menu(self, selected_preset_name=None):
-        """
-        Loads/updates all saved presets
-        When called, the default preset will be selected and applied, to avoid any confusion
-        """
-        settings = QSettings()
-        preset_path = settings.value(
-            "preset_path",
-            QStandardPaths.writableLocation(QStandardPaths.GenericDataLocation),
-        )
+        # # The user deleted the preset that was selected last. So make it clear to the user that the preset doesn't exist anymore
+        # if self.presets_button.text() not in action_names:
+        #     self.presets_button.setText(self.tr("Select preset"))
 
-        self.presets_menu.clear()
+        # self.presets_menu.addSeparator()
 
-        filenames = glob.glob(f"{preset_path}/*.filters.json")
-        #  Sort file by date
-        filenames.sort(key=os.path.getmtime)
+        # reset_act = QAction(self.tr("Clear"), self)
+        # reset_act.triggered.connect(self.on_preset_clicked)
 
-        action_names = []
+        # # When triggered, we will check for data and if None, we reset
+        # reset_act.setData(None)
+        # self.presets_menu.addAction(reset_act)
+        # self.presets_menu.addAction(
+        #     FIcon(0xF11E7), "Edit preset", self.on_edit_preset_pressed
+        # )
+        # self.presets_menu.addAction(FIcon(0xF0193), "Save", self.on_save_over_preset)
+        # self.presets_menu.addAction(FIcon(0xF0415), "Save as new", self.on_save_preset)
+        # self.presets_menu.addAction(FIcon(0xF054C), "Revert", self.on_revert_preset)
 
-        selected_preset_action = None
-
-        for filename in filenames:
-            with open(filename) as file:
-                obj = json.load(file)
-                name = obj.get("name", "")
-                action_names.append(name)
-                action = self.presets_menu.addAction(name)
-                if selected_preset_name and selected_preset_name == name:
-                    # Selected preset action is selected only if the name exists, to avoid selecting an action that has been deleted
-                    selected_preset_action = action
-                action.setData(obj)
-                action.setIcon(FIcon(0xF103B))
-                action.triggered.connect(self.on_preset_clicked)
-
-        # The user deleted the preset that was selected last. So make it clear to the user that the preset doesn't exist anymore
-        if self.presets_button.text() not in action_names:
-            self.presets_button.setText(self.tr("Select preset"))
-
-        self.presets_menu.addSeparator()
-
-        reset_act = QAction(self.tr("Clear"), self)
-        reset_act.triggered.connect(self.on_preset_clicked)
-
-        # When triggered, we will check for data and if None, we reset
-        reset_act.setData(None)
-        self.presets_menu.addAction(reset_act)
-        self.presets_menu.addAction(
-            FIcon(0xF11E7), "Edit preset", self.on_edit_preset_pressed
-        )
-        self.presets_menu.addAction(FIcon(0xF0193), "Save", self.on_save_over_preset)
-        self.presets_menu.addAction(FIcon(0xF0415), "Save as new", self.on_save_preset)
-        self.presets_menu.addAction(FIcon(0xF054C), "Revert", self.on_revert_preset)
-
-        if selected_preset_action:
-            selected_preset_action.trigger()
+        # if selected_preset_action:
+        #     selected_preset_action.trigger()
 
     def on_refresh(self):
 
@@ -2206,7 +2112,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
                 self.add_condition_action.setEnabled(False)
                 self.add_group_action.setEnabled(False)
 
-    def on_filters_changed(self):
+    def on_apply(self):
         """Triggered when filters changed FROM THIS plugin
 
         Set the filters of the mainwindow and trigger a refresh of all plugins.
@@ -2253,6 +2159,62 @@ class FiltersEditorWidget(plugin.PluginWidget):
         if "filters" in data:
             self.filters = data["filters"]
 
+    def load_presets(self):
+        """
+        Loads/updates all saved presets
+        When called, the default preset will be selected and applied, to avoid any confusion
+        """
+        settings = QSettings()
+        preset_path = settings.value(
+            "preset_path",
+            QStandardPaths.writableLocation(QStandardPaths.GenericDataLocation),
+        )
+        self.preset_combo.blockSignals(True)
+        self.preset_combo.clear()
+        self.preset_combo.addItem(self.tr("Default"), "default")
+
+        filenames = glob.glob(f"{preset_path}/*.filters.json")
+        #  Sort file by date
+        filenames.sort(key=os.path.getmtime)
+
+        for filename in filenames:
+            with open(filename) as file:
+                obj = json.load(file)
+                name = obj.get("name", "")
+                if name:
+                    # we store the filename as data.
+                    self.preset_combo.addItem(FIcon(0xF1038), name, filename)
+        self.preset_combo.blockSignals(False)
+
+    def on_remove_preset(self):
+        filename = self.preset_combo.currentData()
+        if os.path.exists(filename):
+            reply = QMessageBox.question(
+                self,
+                self.tr("Remove preset ..."),
+                self.tr(f"Do you want to remove the preset {filename}?"),
+                QMessageBox.Yes | QMessageBox.No,
+            )
+
+            if reply == QMessageBox.Yes:
+                os.remove(filename)
+                self.load_presets()
+
+    def on_select_preset(self):
+        """Activate when preset has changed from preset_combobox"""
+        filename = self.preset_combo.currentData()
+
+        if filename == "default":
+            self.widget_fields.checked_fields = {"$and": []}
+            self.remove_action.setDisabled(True)
+
+        elif os.path.exists(filename):
+            self.remove_action.setDisabled(False)
+            with open(filename) as file:
+                self.from_json(json.load(file))
+
+        self.on_apply()
+
     def on_save_preset(self):
         settings = QSettings()
         preset_path = settings.value(
@@ -2274,38 +2236,38 @@ class FiltersEditorWidget(plugin.PluginWidget):
                 obj["name"] = name
                 json.dump(obj, file)
 
-            self.load_preset_menu()
+            self.load_presets()
+            # set last presets
+            if self.preset_combo.count() > 0:
+                self.preset_combo.setCurrentIndex(self.preset_combo.count() - 1)
 
-            # Fakes the selection of that preset that just got created...
-            self.presets_button.setText(name)
+    # def on_preset_clicked(self):
+    #     action = self.sender()
+    #     data = action.data()
 
-    def on_preset_clicked(self):
-        action = self.sender()
-        data = action.data()
+    #     # Data is None or empty, we reset the filters
+    #     if not data:
+    #         data = {"filters": {"$and": []}}
+    #         # We created an empty thus valid filter, apply it
+    #         self.from_json(data)
+    #         self.on_filters_changed()
+    #         self.presets_button.setText(self.tr("Select preset"))
 
-        # Data is None or empty, we reset the filters
-        if not data:
-            data = {"filters": {"$and": []}}
-            # We created an empty thus valid filter, apply it
-            self.from_json(data)
-            self.on_filters_changed()
-            self.presets_button.setText(self.tr("Select preset"))
+    #         # So we don't need an else (the reset case has been correctly handled)
+    #         return
 
-            # So we don't need an else (the reset case has been correctly handled)
-            return
+    #     # Data is not empty, it's a preset with (hopefully) a name
+    #     if "name" in data:
+    #         self.presets_button.setText(data["name"])
+    #         self.current_preset_name = data["name"]
+    #     else:
+    #         self.presets_button.setText("")
+    #         self.current_preset_name = ""
 
-        # Data is not empty, it's a preset with (hopefully) a name
-        if "name" in data:
-            self.presets_button.setText(data["name"])
-            self.current_preset_name = data["name"]
-        else:
-            self.presets_button.setText("")
-            self.current_preset_name = ""
+    #     # If data was None, it has been filled with an empty but valid filter
+    #     self.from_json(data)
 
-        # If data was None, it has been filled with an empty but valid filter
-        self.from_json(data)
-
-        self.on_filters_changed()
+    #     self.on_filters_changed()
 
     def _update_view_geometry(self):
         """Set column Spanned to True for all Logic Item
