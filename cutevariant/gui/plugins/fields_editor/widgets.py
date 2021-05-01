@@ -267,12 +267,14 @@ class FieldsWidget(QWidget):
             self.tab_widget.setTabText(index, f"{name} ({count})")
 
     def show_checked_only(self, active=False):
-        # TODO : this is not working .. Charles
+
         for index, view in enumerate(self.views):
             view["proxy"].setFilterRole(Qt.CheckStateRole)
             view["proxy"].setFilterKeyColumn(0)
-
-            # view["proxy"].setFilterFixedString("1")
+            # Checked = "2" / Unchecked = "0" / All : ""
+            is_checked_str = "2" if active else ""
+            print(is_checked_str)
+            view["proxy"].setFilterFixedString(is_checked_str)
             count = view["proxy"].rowCount()
             name = view["name"]
             self.tab_widget.setTabText(index, f"{name} ({count})")
@@ -357,8 +359,6 @@ class FieldsPresetsEditorDialog(QDialog):
 
         self.presets_model.itemChanged.connect(self.on_preset_name_changed)
 
-        self.load_presets()
-
     def on_remove_presets(self):
         # Retrieve selected presets (scheduled for deletion)
         selected_preset_indexes = self.presets_view.selectionModel().selectedIndexes()
@@ -386,25 +386,28 @@ class FieldsPresetsEditorDialog(QDialog):
 
     def load_presets(self):
 
-        self.presets_model.clear()
-        settings = QSettings()
-        preset_path = settings.value(
-            "preset_path",
-            QStandardPaths.writableLocation(QStandardPaths.GenericDataLocation),
-        )
+        self.preset_combo.clear()
+        self.preset_combo.addItem("salut")
 
-        filenames = glob.glob(f"{preset_path}/*.fields.json")
-        #  Sort file by date
-        filenames.sort(key=os.path.getmtime)
+        # self.presets_model.clear()
+        # settings = QSettings()
+        # preset_path = settings.value(
+        #     "preset_path",
+        #     QStandardPaths.writableLocation(QStandardPaths.GenericDataLocation),
+        # )
 
-        for filename in filenames:
-            with open(filename) as file:
-                obj = json.load(file)
-                preset_item = QStandardItem(obj.get("name", ""))
+        # filenames = glob.glob(f"{preset_path}/*.fields.json")
+        # #  Sort file by date
+        # filenames.sort(key=os.path.getmtime)
 
-                # All we need from the preset is its name (the item title) and the path to the file where it is stored
-                preset_item.setData(filename)
-                self.presets_model.appendRow([preset_item])
+        # for filename in filenames:
+        #     with open(filename) as file:
+        #         obj = json.load(file)
+        #         preset_item = QStandardItem(obj.get("name", ""))
+
+        #         # All we need from the preset is its name (the item title) and the path to the file where it is stored
+        #         preset_item.setData(filename)
+        #         self.presets_model.appendRow([preset_item])
 
     def on_preset_name_changed(self, item: QStandardItem):
         file_name = item.data()
@@ -465,6 +468,8 @@ class FieldsEditorWidget(plugin.PluginWidget):
 
     ENABLE = True
 
+    DEFAULT_FIELDS = ["chr", "pos", "ref", "alt"]
+
     def __init__(self, conn=None, parent=None):
         super().__init__(parent)
         self.setWindowIcon(FIcon(0xF08DF))
@@ -472,61 +477,89 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self.toolbar = QToolBar(self)
         self.widget_fields = FieldsWidget(conn, parent)
 
+        # Setup Toolbar
+        self.toolbar.setIconSize(QSize(16, 16))
+        self.toolbar.setToolButtonStyle(Qt.ToolButtonIconOnly)
+
         # Create search bar
         self.search_edit = QLineEdit()
         self.search_edit.setPlaceholderText(self.tr("Search by keywords... "))
         self.search_edit.textChanged.connect(self.widget_fields.update_filter)
         self.search_edit.setVisible(False)
+        clean_action = self.search_edit.addAction(
+            FIcon(0xF015A), QLineEdit.TrailingPosition
+        )
+        clean_action.triggered.connect(self.search_edit.clear)
+
         # setup button_layout
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.toolbar)
+        layout.addWidget(self.widget_fields)
         layout.addWidget(self.search_edit)
 
-        layout.addWidget(self.widget_fields)
-
-        # Create search action
-        self.search_action = self.toolbar.addAction(FIcon(0xF0349), "Search ...")
+        self.search_action = self.toolbar.addAction(FIcon(0xF0349), "Search")
         self.search_action.setCheckable(True)
-        self.search_action.triggered.connect(lambda x: self.toggle_search_bar(x))
+        self.search_action.setToolTip(self.tr("Search for a fields"))
+        self.search_action.toggled.connect(lambda x: self.toggle_search_bar(x))
+        self.show_check_action = self.toolbar.addAction(
+            FIcon(0xF0C51), "show checked only"
+        )
+        self.show_check_action.setCheckable(True)
+        self.show_check_action.setToolTip(self.tr("Show checked fields only"))
+        self.show_check_action.toggled.connect(lambda x: self.toggle_checked(x))
+        # Create exclusive actions
+        actions = QActionGroup(self)
+        actions.addAction(self.search_action)
+        actions.addAction(self.show_check_action)
+        actions.setExclusionPolicy(QActionGroup.ExclusionPolicy.ExclusiveOptional)
 
-        # self.show_check_action = self.toolbar.addAction(FIcon(0xF0C51), "show checked")
-        # self.show_check_action.setCheckable(True)
-        # self.show_check_action.triggered.connect(lambda x: self.toggle_checked(x))
+        # Create preset combobox with actions
+        self.toolbar.addSeparator()
 
+        # Save button
+        self.save_action = self.toolbar.addAction(self.tr("Save Preset"))
+        self.save_action.setIcon(FIcon(0xF0818))
+        self.save_action.triggered.connect(self.on_save_preset)
+        self.save_action.setToolTip(self.tr("Save as a new Preset"))
+
+        # Remove button
+        self.remove_action = self.toolbar.addAction(self.tr("Remove Preset"))
+        self.remove_action.setIcon(FIcon(0xF0B89))
+        self.remove_action.triggered.connect(self.on_remove_preset)
+        self.remove_action.setToolTip(self.tr("Save Preset"))
+        self.remove_action.setDisabled(True)
+
+        # Preset combobox
+        self.preset_combo = QComboBox(self)
+        self.preset_combo.currentIndexChanged.connect(self.on_select_preset)
+        self.toolbar.addWidget(self.preset_combo)
+
+        self.toolbar.addSeparator()
+
+        # Create spacer
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.toolbar.addWidget(spacer)
-        # Create apply button
-        self.apply_fields = QPushButton(FIcon(0xF0E1E), self.tr("Apply"))
-        self.apply_fields.pressed.connect(self.on_apply_fields_pressed)
 
-        # Setup toolbar
-        self.toolbar.setIconSize(QSize(16, 16))
-        self.toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        # Create apply action
+        apply_action = self.toolbar.addAction(self.tr("Apply"))
+        self.apply_button = self.toolbar.widgetForAction(apply_action)
+        self.apply_button.setIcon(FIcon(0xF0E1E, "white"))
+        self.apply_button.setStyleSheet("background-color: #038F6A; color:white")
+        self.apply_button.setAutoRaise(False)
+        self.apply_button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        self.apply_button.pressed.connect(self.on_apply)
 
-        # Create preset button
-        self.presets_button = QPushButton(self.tr("Default preset"))
-        self.presets_button.setFlat(True)
-        self.presets_button.setIcon(FIcon(0xF035C))
-
-        self.toolbar.addWidget(self.presets_button)
-        self.toolbar.addAction(FIcon(0xF0E1E), "Apply", self.on_apply_fields_pressed)
-
-        self.menu = QMenu(self)
-
-        self.load_preset_menu()
-
-        self.presets_button.setMenu(self.menu)
         self.setFocusPolicy(Qt.ClickFocus)
-
-        self.auto_refresh = True
-
-        self._is_refreshing = (
-            False  # Help to avoid loop between on_refresh and on_fields_changed
-        )
+        self.load_presets()
 
     def toggle_search_bar(self, show=True):
+        """Make search bar visible or not
+
+        Args:
+            show (bool, optional): If true, search bar is visible
+        """
         self.search_edit.setVisible(show)
         if not show:
             self.search_edit.clear()
@@ -534,89 +567,45 @@ class FieldsEditorWidget(plugin.PluginWidget):
             self.search_edit.setFocus(Qt.PopupFocusReason)
 
     def toggle_checked(self, show=True):
-        # TODO : this is not working .. Charles
-        self.widget_fields.show_checked_only(True)
+        """Make only checked fields visible or not
 
-    def load_preset_menu(self):
+        Args:
+            show (bool, optional): if true, only checked fields are visibles
+        """
+        self.widget_fields.show_checked_only(show)
+
+    def load_presets(self):
         """
         Loads/updates all saved presets
-        When called, the default preset will be selected and applied, to avoid any confusion
         """
+
+        self.preset_combo.blockSignals(True)
+        self.preset_combo.clear()
+        self.preset_combo.addItem(FIcon(0xF1038), "Default", userData="default")
+
+        # get default application directory
         settings = QSettings()
         preset_path = settings.value(
             "preset_path",
             QStandardPaths.writableLocation(QStandardPaths.GenericDataLocation),
         )
 
-        self.menu.clear()
-
         filenames = glob.glob(f"{preset_path}/*.fields.json")
         #  Sort file by date
         filenames.sort(key=os.path.getmtime)
-
-        default_preset = None
 
         # Load all user presets
         for filename in filenames:
             with open(filename) as file:
                 obj = json.load(file)
-                # This preset has been set to default
-                if "is_default" in obj and obj["is_default"]:
-                    default_preset = QAction(self.tr("Default preset"), self)
-                    default_preset.setData(obj)
-                else:
-                    action = self.menu.addAction(obj.get("name", ""))
-                    action.setData(obj)
-                    action.setIcon(FIcon(0xF103B))
-                    action.triggered.connect(self.on_preset_clicked)
-
-        # No default preset was found in the presets directory, let's hard-code one
-        if not default_preset:
-            default_preset = QAction(self.tr("Default preset"), self)
-            # Hard-coded default preset
-            default_preset.setData(
-                {
-                    "name": self.tr("Default preset"),
-                    "checked_fields": [
-                        "favorite",
-                        "classification",
-                        "chr",
-                        "pos",
-                        "ref",
-                        "alt",
-                        "qual",
-                    ],
-                }
-            )
-
-        default_preset.triggered.connect(self.on_preset_clicked)
-
-        self.menu.addSeparator()
-        self.menu.addAction(default_preset)
-        self.menu.addAction(FIcon(0xF0193), "Save...", self.on_save_preset)
-        self.menu.addAction(FIcon(0xF11E7), "Edit...", self.on_edit_preset_pressed)
-
-        default_preset.trigger()
-
-    def on_preset_clicked(self):
-
-        action = self.sender()
-        data = action.data()
-        if "name" in data:
-            # Tell the user if this is currently the default preset
-            self.presets_button.setText(
-                data["name"] + " (default)"
-                if "is_default" in data and data["is_default"]
-                else data["name"]
-            )
-        else:
-            self.presets_button.setText("")
-        self.from_json(data)
-
-        self.on_apply_fields_pressed()
+                name = obj.get("name", "")
+                if name:
+                    # we store the filename as data.
+                    self.preset_combo.addItem(FIcon(0xF1038), name, filename)
+        self.preset_combo.blockSignals(False)
 
     def on_save_preset(self):
-
+        """Save preset a file into the default directory"""
         settings = QSettings()
         preset_path = settings.value(
             "preset_path",
@@ -637,18 +626,40 @@ class FieldsEditorWidget(plugin.PluginWidget):
                 obj["name"] = name
                 json.dump(obj, file)
 
-            self.load_preset_menu()
+            self.load_presets()
+            # set last presets
+            if self.preset_combo.count() > 0:
+                self.preset_combo.setCurrentIndex(self.preset_combo.count() - 1)
 
-            # Fakes the selection of that preset that just got created...
-            self.presets_button.setText(name)
+    def on_remove_preset(self):
 
-    def on_edit_preset_pressed(self):
-        edit_dialog = FieldsPresetsEditorDialog(self)
-        edit_dialog.exec_()
+        filename = self.preset_combo.currentData()
+        if os.path.exists(filename):
+            reply = QMessageBox.question(
+                self,
+                self.tr("Remove preset ..."),
+                self.tr(f"Do you want to remove the preset {filename}?"),
+                QMessageBox.Yes | QMessageBox.No,
+            )
 
-        # Reload the preset menu again, in case the user deleted some
-        self.load_preset_menu()
-        # Dialog should be out of scope, but doesn't get deleted !
+            if reply == QMessageBox.Yes:
+                os.remove(filename)
+                self.load_presets()
+
+    def on_select_preset(self):
+        """Activate when preset has changed from preset_combobox"""
+        filename = self.preset_combo.currentData()
+
+        if filename == "default":
+            self.widget_fields.checked_fields = self.DEFAULT_FIELDS
+            self.remove_action.setDisabled(True)
+
+        elif os.path.exists(filename):
+            self.remove_action.setDisabled(False)
+            with open(filename) as file:
+                self.from_json(json.load(file))
+
+        self.on_apply()
 
     def on_open_project(self, conn):
         """ Overrided from PluginWidget """
@@ -662,7 +673,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
             self.widget_fields.checked_fields = self.mainwindow.state.fields
             self._is_refreshing = False
 
-    def on_apply_fields_pressed(self):
+    def on_apply(self):
         if self.mainwindow is None or self._is_refreshing:
             """
             Debugging (no window)
