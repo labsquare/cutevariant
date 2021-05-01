@@ -514,9 +514,13 @@ class FieldsEditorWidget(plugin.PluginWidget):
         actions.addAction(self.show_check_action)
         actions.setExclusionPolicy(QActionGroup.ExclusionPolicy.ExclusiveOptional)
 
+        # Create spacer
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.toolbar.addWidget(spacer)
+
         # Create preset combobox with actions
         self.toolbar.addSeparator()
-
         # Save button
         self.save_action = self.toolbar.addAction(self.tr("Save Preset"))
         self.save_action.setIcon(FIcon(0xF0818))
@@ -536,11 +540,6 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self.toolbar.addWidget(self.preset_combo)
 
         self.toolbar.addSeparator()
-
-        # Create spacer
-        spacer = QWidget()
-        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.toolbar.addWidget(spacer)
 
         # Create apply action
         apply_action = self.toolbar.addAction(self.tr("Apply"))

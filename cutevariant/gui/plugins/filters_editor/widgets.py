@@ -1963,6 +1963,9 @@ class FiltersEditorWidget(plugin.PluginWidget):
         )
         self.add_group_action.setToolTip("Add Group")
 
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.toolbar.addWidget(spacer)
         # Create preset combobox with actions
         self.toolbar.addSeparator()
 
@@ -1985,10 +1988,6 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.toolbar.addWidget(self.preset_combo)
 
         self.toolbar.addSeparator()
-
-        spacer = QWidget()
-        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.toolbar.addWidget(spacer)
 
         apply_action = self.toolbar.addAction("Apply")
         self.apply_button = self.toolbar.widgetForAction(apply_action)
