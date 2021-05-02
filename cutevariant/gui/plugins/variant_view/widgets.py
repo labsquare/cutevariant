@@ -868,13 +868,11 @@ class VariantView(QWidget):
             self.page_box.setText(str(self.model.page))
             self.set_pagging_enabled(True)
 
-        if not self.show_popup_menu:
-            # Yes it's hacky... but left pane doesn't show variants
-            text = self.tr("{} group(s) {} page(s)")
-        else:
-            text = self.tr("{} line(s) {} page(s)")
-
-        self.info_label.setText(text.format(self.model.total, self.model.pageCount()))
+            text = self.tr("{} line(s) Page {} on {}")
+            text = text.format(
+                self.model.total, self.model.page, self.model.pageCount()
+            )
+        self.info_label.setText(text)
 
         #  Set focus to view ! Otherwise it stay on page_box
         self.view.setFocus(Qt.ActiveWindowFocusReason)
