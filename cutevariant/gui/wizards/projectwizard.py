@@ -40,15 +40,9 @@ class ProjectPage(QWizardPage):
         self.project_path_edit = QLineEdit()
         self.project_path_edit.setText(self.last_directory)
         self.browse_button = QPushButton(self.tr("Browse"))
-        self.reference = QComboBox()
 
-        # Unused for now
-        self.reference.hide()
-
-        self.reference.addItem("hg19")
         self.registerField("project_name", self.project_name_edit, "text")
         self.registerField("project_path", self.project_path_edit, "text")
-        self.registerField("reference", self.reference, "currentText")
 
         v_layout = QFormLayout()
 
@@ -57,7 +51,6 @@ class ProjectPage(QWizardPage):
         browse_layout.addWidget(self.browse_button)
         browse_layout.setContentsMargins(0, 0, 0, 0)
 
-        v_layout.addRow(self.tr("Reference genom"), self.reference)
         v_layout.addRow(self.tr("Project Name"), self.project_name_edit)
         v_layout.addRow(self.tr("Create in"), browse_layout)
 
@@ -77,6 +70,29 @@ class ProjectPage(QWizardPage):
             self.project_path_edit.setText(path)
             self.last_directory = path  # If you change your mind after this point, it's good to have the last directory you selected
 
+    def validatePage(self):
+        name = self.project_name_edit.text()
+        filepath = QDir(self.project_path_edit.text()).filePath(name) + ".db"
+
+        if os.path.exists(filepath):
+            reply = QMessageBox.warning(
+                self,
+                self.tr("Overwrite ?"),
+                self.tr(
+                    f"a <b>{name}.db</b> project already exists in this directory. <br>"
+                    "Would you like to overwrite it ? All data will be lost."
+                ),
+                QMessageBox.Yes | QMessageBox.No,
+            )
+
+            if reply == QMessageBox.Yes:
+                os.remove(filepath)
+                return True
+            else:
+                return False
+
+        return True
+
     def initializePage(self):
         """Overridden: Prepare the page just before it is shown"""
         # Adjust the focus of project name field
@@ -84,6 +100,7 @@ class ProjectPage(QWizardPage):
 
     def isComplete(self):
         """Conditions to unlock next button"""
+
         return (
             True
             if (
@@ -600,8 +617,6 @@ class ImportPage(QWizardPage):
                 ignored_fields=self.ignored_fields,
                 # Project's settings
                 project_settings={
-                    # Reference genome
-                    "reference": self.field("reference"),
                     # Project's name
                     "project_name": self.field("project_name"),
                 },
