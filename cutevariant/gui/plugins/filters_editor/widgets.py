@@ -207,6 +207,7 @@ class IntFieldEditor(BaseFieldEditor):
             FIcon(0xF07E2), QLineEdit.TrailingPosition
         )
         null_action.triggered.connect(lambda: self.line_edit.setText(NULL_REPR))
+        null_action.setToolTip(self.tr("Set value as NULL"))
 
     def set_value(self, value: int):
         if value is None:
