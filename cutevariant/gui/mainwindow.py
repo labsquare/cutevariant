@@ -165,6 +165,7 @@ class MainWindow(QMainWindow):
 
             # Setup new widget
             widget = plugin_widget_class(parent=self)
+            widget.setDisabled(True)
 
             """Variant view is a special widget that loads variants and counts them.
             Every plugin should be warned whenever the variants get loaded, so we need to connect variant view's signals to mainwindow's signals"""
@@ -462,6 +463,7 @@ class MainWindow(QMainWindow):
 
         for plugin_obj in self.plugins.values():
             plugin_obj.on_open_project(self.conn)
+            plugin_obj.setEnabled(True)
 
     def save_recent_project(self, path):
         """Save current project into QSettings
