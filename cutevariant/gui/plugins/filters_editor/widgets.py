@@ -1457,7 +1457,7 @@ class FilterDelegate(QStyledItemDelegate):
 
         self.add_icon = FIcon(0xF0704)
         self.group_icon = FIcon(0xF0704)
-        self.rem_icon = FIcon(0xF0156, "red")
+        self.rem_icon = FIcon(0xF0235, "red")
 
         self.eye_on = FIcon(0xF0208)
         self.eye_off = FIcon(0xF0209)
@@ -1981,11 +1981,11 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.presets_menu = QMenu()
 
         self.add_condition_action = self.toolbar.addAction(
-            FIcon(0xF0415), "Add condition", self.on_add_condition
+            FIcon(0xF0EF1), "Add condition", self.on_add_condition
         )
         self.add_condition_action.setToolTip("Add condition")
         self.add_group_action = self.toolbar.addAction(
-            FIcon(0xF034C), "Add group", self.on_add_logic
+            FIcon(0xF0EF0), "Add group", self.on_add_logic
         )
         self.add_group_action.setToolTip("Add Group")
 
@@ -2196,7 +2196,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
         )
         self.preset_combo.blockSignals(True)
         self.preset_combo.clear()
-        self.preset_combo.addItem(self.tr("Default"), "default")
+        self.preset_combo.addItem(FIcon(0xF1038), self.tr("No Filters"), "default")
 
         filenames = glob.glob(f"{preset_path}/*.filters.json")
         #  Sort file by date
@@ -2230,7 +2230,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
         filename = self.preset_combo.currentData()
 
         if filename == "default":
-            self.widget_fields.checked_fields = {"$and": []}
+            self.model.filters = {"$and": []}
             self.remove_action.setDisabled(True)
 
         elif os.path.exists(filename):
@@ -2372,8 +2372,8 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
             item = self.model.item(index)
             if item.type == FilterItem.LOGIC_TYPE:
-                menu.addAction(self.tr("Add filter"), self.on_add_condition)
-                menu.addAction(self.tr("Add group"), self.on_add_logic)
+                menu.addAction(self.add_condition_action)
+                menu.addAction(self.add_group_action)
 
             # Check if this is not the root item
             if index.parent().isValid():
