@@ -868,10 +868,8 @@ class VariantView(QWidget):
             self.page_box.setText(str(self.model.page))
             self.set_pagging_enabled(True)
 
-            text = self.tr("{} line(s) Page {} on {}")
-            text = text.format(
-                self.model.total, self.model.page, self.model.pageCount()
-            )
+        text = self.tr("{} line(s) Page {} on {}")
+        text = text.format(self.model.total, self.model.page, self.model.pageCount())
         self.info_label.setText(text)
 
         #  Set focus to view ! Otherwise it stay on page_box
