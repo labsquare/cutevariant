@@ -131,3 +131,23 @@ test.py
 build/
 cov_html/
 
+
+cutevariant.vim
+
+cutevariant.code-workspace
+
+debug.py
+
+graph_gui.py
+
+grep
+
+log_corpos3.json
+
+run.py
+
+test2.py
+
+test4.py
+
+testt.py
