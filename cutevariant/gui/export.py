@@ -7,7 +7,6 @@ from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 from PySide2.QtGui import *
 
-from poc.form_widget import DictFormWidget
 
 from cutevariant.gui.widgets import FieldsEditorWidget
 from cutevariant.core.writer import (
