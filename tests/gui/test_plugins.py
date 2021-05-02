@@ -12,16 +12,15 @@ def conn():
 
 
 class MainWindow(QMainWindow):
-
     def __init__(self):
         super().__init__()
         self.state = State()
 
         self.step_counter = {}
 
-
     def on_register(self):
         pass
+
     def refresh_plugins(self, sender):
         pass
 

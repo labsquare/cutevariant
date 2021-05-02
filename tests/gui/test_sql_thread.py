@@ -12,7 +12,7 @@ from cutevariant.core.command import count_cmd
 @pytest.fixture
 def conn():
     """Summary
-    
+
     Returns:
         TYPE: Description
     """
@@ -24,8 +24,7 @@ def conn():
 
 
 def test_query(qtbot, conn):
-    """Test asynchrone count query
-    """
+    """Test asynchrone count query"""
     # Fill with a function that will be executed in a separated thread
 
     thread = SqlThread(conn, sql.get_variants_count)
@@ -48,12 +47,10 @@ def test_query(qtbot, conn):
 
 
 def test_interupt(qtbot, conn):
-    """ Test sqlite interruption on a long query 
-    """
+    """Test sqlite interruption on a long query"""
 
     def slow_query(conn):
-        """A Sqlite long query that take a long time to execute 
-        """
+        """A Sqlite long query that take a long time to execute"""
         conn.execute(
             """
             WITH RECURSIVE r(i) AS (

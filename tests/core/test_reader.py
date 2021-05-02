@@ -18,8 +18,9 @@ READERS = [
     VcfReader(open("examples/test.vcf")),
     VcfReader(open("examples/test.vep.vcf"), "vep"),
     VcfReader(open("examples/test.snpeff.vcf"), "snpeff"),
-    VcfReader(open("examples/snpeff3.vcf"), "snpeff3")
+    VcfReader(open("examples/snpeff3.vcf"), "snpeff3"),
 ]
+
 
 def test_snpeff3():
     reader = VcfReader(open("examples/snpeff3.vcf"))
@@ -106,8 +107,6 @@ def test_variants(reader):
         if "annotations" in variant:
             assert isinstance(variant["annotations"], list)
 
- 
-
         if "samples" in variant:
             assert isinstance(variant["samples"], list)
 
@@ -122,10 +121,9 @@ def test_variants(reader):
     "reader", READERS, ids=[str(i.__class__.__name__) for i in READERS]
 )
 def test_extra_variants(reader):
-
-    def check_value(value:str):
-        # check if value is okay ! 
-        if isinstance(value,str):
+    def check_value(value: str):
+        # check if value is okay !
+        if isinstance(value, str):
             assert "%3A" not in value
             assert "%3B" not in value
             assert "%3D" not in value
@@ -134,7 +132,6 @@ def test_extra_variants(reader):
             assert "%0D" not in value
             assert "%0A" not in value
             assert "%09" not in value
-
 
     for variant in reader.get_extra_variants():
         assert "comment" in variant
