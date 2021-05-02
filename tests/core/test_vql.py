@@ -24,7 +24,7 @@ VQL_TO_TREE_CASES = {
         },
     },
     # Test 2 bis avec IS NULL
-    "SELECT chr,pos,ref FROM variants WHERE a IS NULL": {
+    "SELECT chr,pos,ref FROM variants WHERE a = NULL": {
         "cmd": "select_cmd",
         "fields": ["chr", "pos", "ref"],
         "source": "variants",

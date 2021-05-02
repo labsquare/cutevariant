@@ -52,11 +52,11 @@ def main():
     QCoreApplication.setOrganizationName("labsquare")
     QCoreApplication.setApplicationName("cutevariant")
     QCoreApplication.setApplicationVersion(__version__)
+    QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
+    QCoreApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
 
     # Process command line arguments
     app = QApplication(sys.argv)
-    app.setAttribute(Qt.AA_EnableHighDpiScaling, True)
-    app.setAttribute(Qt.AA_UseHighDpiPixmaps, True)  # u
     process_arguments(app)
 
     # Load app styles

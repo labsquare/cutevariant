@@ -214,13 +214,13 @@ FILTERS_VS_SQL_VQL = [
     (
         {"$and": [{"ref": None}]},
         "(`variants`.`ref` IS NULL)",
-        "ref IS NULL",
+        "ref = NULL",
     ),
     #  TEST IS NOT NULL
     (
         {"$and": [{"ref": {"$ne": None}}]},
         "(`variants`.`ref` IS NOT NULL)",
-        "ref IS NOT NULL",
+        "ref != NULL",
     ),
     # Test composite field
     (

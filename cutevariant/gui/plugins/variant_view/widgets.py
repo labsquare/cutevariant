@@ -236,8 +236,10 @@ class VariantModel(QAbstractTableModel):
                     return str(self.variant(index.row())[column_name])
 
             if role == Qt.ToolTipRole:
-                value = self.variant(index.row())[column_name]
+                value = str(self.variant(index.row())[column_name])
                 return value
+
+        return None
 
     def headerData(self, section, orientation=Qt.Horizontal, role=Qt.DisplayRole):
         """Overrided: Return column name and display tooltips on headers

@@ -226,7 +226,7 @@ class StatsWidget(plugin.PluginWidget):
     Widget to show basic stats about a column in the cutevariant database
     """
 
-    ENABLE = True
+    ENABLE = False
 
     error_raised = Signal(str)
 

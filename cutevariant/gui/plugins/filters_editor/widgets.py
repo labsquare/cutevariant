@@ -8,6 +8,7 @@ from ast import literal_eval
 from functools import lru_cache
 from typing import Any, Iterable
 import sqlite3
+import glob
 
 # Qt imports
 from PySide2.QtWidgets import (
@@ -61,9 +62,11 @@ from PySide2.QtGui import (
     QFont,
     QPen,
     QBrush,
+    QIcon,
     QIntValidator,
     QDoubleValidator,
     QKeySequence,
+    QContextMenuEvent,
 )
 
 # Custom imports
@@ -170,7 +173,7 @@ class BaseFieldEditor(QFrame):
         raise NotImplementedError
 
     def reset(self):
-        print("reset")
+        pass
 
     def on_press_tool_button(self):
         if hasattr(self, "widget"):
@@ -309,7 +312,6 @@ class StrFieldEditor(BaseFieldEditor):
     def set_completion(self, items: list):
         """Set a completer to autocomplete value"""
         # self.edit.setCompleter(completer)
-        print("SET COMPLETION ", items)
         self.completer = QCompleter()
         self.model = QStringListModel(items)
         self.completer.setModel(self.model)
@@ -812,7 +814,6 @@ class FilterModel(QAbstractItemModel):
         self.root_item = FilterItem("$and")
         self.conn = conn
         self.clear()
-        self.filtersChanged.connect(lambda: print(self.to_dict()))
 
         self.disable_font = QFont()
         self.disable_font.setStrikeOut(True)
@@ -1226,8 +1227,8 @@ class FilterModel(QAbstractItemModel):
 
     def rowCount(self, parent=QModelIndex()) -> int:
         """Overrided Qt methods: return row count according parent """
-        # if parent.column() > 0:
-        #     return 0
+        if parent.column() > 0:
+            return 0
 
         if not parent.isValid():
             parent_item = self.root_item
@@ -1413,16 +1414,6 @@ class FilterModel(QAbstractItemModel):
         for row in range(self.rowCount(index)):
             cindex = self.index(row, 0, index)
             self.set_recursive_check_state(cindex, checked)
-
-    def to_json(self, filename: str):
-
-        with open(filename, "w") as file:
-            json.dump(self.to_dict(), file)
-
-    def from_json(self, filename: str):
-        with open(filename, "r") as file:
-            data = json.load(file)
-            self.filters = data
 
 
 class FilterDelegate(QStyledItemDelegate):
@@ -2473,8 +2464,6 @@ if __name__ == "__main__":
     model.load(data)
 
     view.expandAll()
-
-    print(prepare_fields(conn))
 
     view.resize(800, 800)
     view.show()
