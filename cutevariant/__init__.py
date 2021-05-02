@@ -1,2 +1,2 @@
 __all__ = ["core", "gui"]
-__version__ = "0.3.0"
+__version__ = "yes.dev0"
