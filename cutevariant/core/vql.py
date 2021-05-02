@@ -101,10 +101,16 @@ class FilterTerm(metaclass=model_class):
     @property
     def value(self):
         field = self.field.value if hasattr(self.field, "value") else self.field
+
         val = self.val.value if hasattr(self.val, "value") else self.val
         if val == "NULL":
             val = None
         op = OPERATORS.get(self.op, "$eq")
+
+        if isinstance(field, tuple):
+            if field[0] == "sample":
+                field = f"samples.{field[1]}.{field[2]}"
+
         return {field: {op: val}}
 
 
@@ -168,7 +174,7 @@ class SelectCmd(metaclass=model_class):
             if isinstance(col, Function):
                 fct_name, fct_param, fct_field = col.value
                 if fct_name == "sample":
-                    fields.append(f"sample.{fct_param}.{fct_field}")
+                    fields.append(f"samples.{fct_param}.{fct_field}")
             else:
                 fields.append(col)
 

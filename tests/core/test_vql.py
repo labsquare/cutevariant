@@ -4,10 +4,17 @@ from cutevariant.core.vql import parse_one_vql
 # Test valid VQL cases
 VQL_TO_TREE_CASES = {
     # Test 1
-    'SELECT chr,pos,sample["sacha"] FROM variants': {
+    'SELECT chr,pos,sample["sacha"] FROM variants ': {
         "cmd": "select_cmd",
-        "fields": ["chr", "pos", "sample.sacha.gt"],
+        "fields": ["chr", "pos", "samples.sacha.gt"],
         "filters": {},
+        "source": "variants",
+    },
+    # Test 1 bis
+    'SELECT chr,pos,sample["sacha"].gt FROM variants WHERE sample["sacha"].gt = 1': {
+        "cmd": "select_cmd",
+        "fields": ["chr", "pos", "samples.sacha.gt"],
+        "filters": {"$and": [{"samples.sacha.gt": {"$eq": 1.0}}]},
         "source": "variants",
     },
     # Test 2
@@ -50,14 +57,14 @@ VQL_TO_TREE_CASES = {
     # Test 4
     'SELECT chr,pos, sample["sacha"] FROM variants # comments are handled': {
         "cmd": "select_cmd",
-        "fields": ["chr", "pos", "sample.sacha.gt"],
+        "fields": ["chr", "pos", "samples.sacha.gt"],
         "filters": {},
         "source": "variants",
     },
     # Test 7 - 4quater GROUP BY on genotypes
     "SELECT chr, pos, sample['sacha'].gt FROM variants GROUP BY sample['sacha'].gt": {
         "cmd": "select_cmd",
-        "fields": ["chr", "pos", "sample.sacha.gt"],
+        "fields": ["chr", "pos", "samples.sacha.gt"],
         "filters": {},
         "source": "variants",
     },
