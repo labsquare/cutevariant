@@ -97,6 +97,10 @@ class CutestyleFormatter(Formatter):
             self.draw_icon(painter, option.rect, icon)
             return
 
+        if field_name == "rsid" and value.startswith("rs"):
+            # font.setUnderline(True)
+            pen.setColor("#0068F7")
+
         if field_name == "favorite":
             icon = self.FAV_ICON.get(int(value), self.FAV_ICON[0])
             self.draw_icon(painter, option.rect, icon)
