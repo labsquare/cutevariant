@@ -435,6 +435,18 @@ QUERY_TESTS = [
         ),
         "SELECT chr FROM variants WHERE chr IN WORDSET['name']",
     ),
+    # Test filters with regex !
+    (
+        {
+            "fields": ["chr", "pos", "ref", "alt"],
+            "source": "variants",
+            "filters": {
+                "$and": [{"ref": {"$regex": "^[AG]$"}}, {"alt": {"$regex": "^[CT]$"}}]
+            },
+        },
+        "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`variants`.`ref`,`variants`.`alt` FROM variants WHERE (`variants`.`ref` REGEXP '^[AG]$' AND `variants`.`alt` REGEXP '^[CT]$') LIMIT 50 OFFSET 0",
+        "SELECT chr,pos,ref,alt FROM variants WHERE ref ~ '^[AG]$' AND alt ~ '^[CT]$'",
+    ),
 ]
 
 

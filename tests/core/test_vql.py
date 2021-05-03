@@ -132,6 +132,15 @@ VQL_TO_TREE_CASES = {
         "path": "/home/truc/test.txt",
         "name": "boby",
     },
+    # Test 18 Test regex
+    "SELECT chr,pos,ref,alt FROM variants WHERE ref ~'^[AG]$' AND alt ~'^[CT]$'": {
+        "cmd": "select_cmd",
+        "fields": ["chr", "pos", "ref", "alt"],
+        "filters": {
+            "$and": [{"ref": {"$regex": "^[AG]$"}}, {"alt": {"$regex": "^[CT]$"}}]
+        },
+        "source": "variants",
+    },
 }
 
 

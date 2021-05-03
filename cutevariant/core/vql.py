@@ -22,7 +22,7 @@ OPERATORS = {
     "IN": "$in",
     "!=": "$ne",
     "NOT IN": "$nin",
-    "~": "$regexp",
+    "~": "$regex",
     "AND": "$and",
     "OR": "$or",
 }
