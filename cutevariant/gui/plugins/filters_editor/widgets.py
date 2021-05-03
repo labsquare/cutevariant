@@ -345,13 +345,15 @@ class WordSetEditor(BaseFieldEditor):
 
         hlayout.setContentsMargins(0, 0, 0, 0)
         hlayout.setSpacing(0)
-        self.setLayout(hlayout)
+        self.w.setLayout(hlayout)
         self.set_mode("list")
 
         # DisplayRole, UserRole
 
         self.edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.btn.clicked.connect(self.switch_mode)
+
+        self.set_widget(self.w)
 
     def switch_mode(self):
         next_mode = "list" if self.get_mode() == "wordset" else "wordset"
@@ -367,9 +369,11 @@ class WordSetEditor(BaseFieldEditor):
         if mode == "list":
             self.stack.setCurrentIndex(0)
             self.btn.setIcon(FIcon(0xF0B13))
+            self.btn.setToolTip(self.tr("Use wordset"))
         if mode == "wordset":
             self.stack.setCurrentIndex(1)
             self.btn.setIcon(FIcon(0xF0C2E))
+            self.btn.setToolTip(self.tr("Use list"))
 
     def get_mode(self):
         return "list" if self.stack.currentIndex() == 0 else "wordset"
