@@ -2006,7 +2006,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
         # Preset combobox
         self.preset_combo = QComboBox(self)
-        self.preset_combo.currentIndexChanged.connect(self.on_select_preset)
+        self.preset_combo.activated.connect(self.on_select_preset)
         self.toolbar.addWidget(self.preset_combo)
 
         self.toolbar.addSeparator()
