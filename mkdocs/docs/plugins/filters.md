@@ -36,6 +36,23 @@ Luckily enough, there are three ways to address these types of issues.
 
 First, you can use regular expressions. In cutevariant, we use python regular expressions engine under the hood, so [here](https://docs.python.org/3/library/re.html#regular-expression-syntax){target=_blank} is a great reference to get you started with this syntax.
 
+Below is an example of how to use regular expressions to select only [transversions](https://en.wikipedia.org/wiki/Transversion){target=_blank}.
+
+In VQL, the regular expression operator is `~`. Let's see how to use it in order to select transversion variants.
+
+```sql
+SELECT chr,pos,ref,alt FROM variants WHERE ref ~ '^[AG]$' AND alt ~ '^[CT]$'
+```
+
+You can read this statement as SELECT chr,pos,ref,alt WHERE ref matches either A or G, **and** alt matches C or T (from table variants).
+
+Note that an alternative to regular expressions, in this particular case, would be:
+
+`SELECT chr,pos,ref,alt FROM variants WHERE (ref='A' OR ref='G') AND (ref='C' OR ref='T')` which is much more verbose and harder to read than the regex way.
+
+For a more advanced exploration of regular expressions (if you're already familiar with them but need more in-depth approach), I would suggest you train on this
+really cool [website](https://regex101.com/), that helps you build and test regular expressions.
+
 #### Using wordsets
 
 You can also define wordsets. These can contain any arbitrary number of strings, and can be loaded from a file.
@@ -44,7 +61,8 @@ Usage example:
 `SELECT chr,pos,ref,alt,ann.gene FROM variants WHERE ann.gene IN WORDSET['My wordset']`
 
 This will select every variant for which the gene annotation is in the wordset `My wordset`. Note the use of the `IN` operator, that can be negated with `NOT IN`.
-To keep track of existing wordsets, create new ones, and modify them, there is a wordset plugin, which usage is described [here](wordset.md).
+
+To keep track of existing wordsets, create new ones, and modify them, there is a wordset plugin, which usage is described [here](../quick-start/wordset.md).
 
 #### Using string lists
 
@@ -59,7 +77,7 @@ You can specify as many values as you want, as long as you quote the reference s
 
 Note though, that if you have too many strings to test against one field, you may end up cluttering the VQL expression and make it hard to read.
 
-If you need to make really complex operations, you can break them down by creating new [sources](selections.md), *a.k.a.* selections.
+If you need to do really complex filtering operations, you can break them down by creating new [sources](../quick-start/selections.md)[^1], *a.k.a.* selections.
 
 ### Number operators
 
@@ -107,3 +125,5 @@ If you'd like to change any `AND` statement into an `OR`, you can do this by sim
 Once you're happy with the filter you just set, you can simply hit the <kbd>:material-check:Apply</kbd> button on the right.
 
 If you'd like to set the filter as a preset, you can do so by pressing <kbd>Save as preset</kbd> in the dropdown menu of the plugin.
+
+[^1]: This is a general remark, the whole point of cutevariant is to narrow down a selection of variants, as much as you can, and with the maximum amount of information.

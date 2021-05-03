@@ -21,21 +21,27 @@ theme:
         icon: material/toggle-switch
         name: Switch to light mode
 markdown_extensions:
+- footnotes
 - pymdownx.emoji:
     emoji_index: !!python/name:materialx.emoji.twemoji
     emoji_generator: !!python/name:materialx.emoji.to_svg
 - attr_list
+plugins:
+  - search
+  - mkdocstrings
 
 # Setting up the headers
 nav:
     - Home: 'index.md'
     - Getting started:
       - Installation: 'installation.md'
-      - Quick Start:
-        - Select fields: 'quick-start/fields.md'
-        - Create filters: 'quick-start/filters.md'
-        - Create wordsets: 'quick-start/wordset.md'
-        - Create selections: 'quick-start/selections.md'
+      - Quick start: 'quick-start.md'
+      - Plugins:
+        - Fields plugin: 'plugins/fields.md'
+        - Filters plugin: 'plugins/filters.md'
+        - Wordsets plugin: 'plugins/wordset.md'
+        - Selections plugin: 'plugins/selections.md'
+      - VQL: 'vql.md'
     - Development:
       - Customization:
         - Create a plugin: 'development/customization/create-plugin.md'
@@ -43,7 +49,23 @@ nav:
         - Create a writer: 'development/customization/create-writer.md'
         - Create a reader: 'development/customization/create-reader.md'
       - API Documentation:
-        - Core classes: 'development/api-documentation/core-classes.md'
+        - Core classes:
+          - SQL: 'development/api-documentation/sql-module-doc.md'
+          - VQL: ''
+          - Readers:
+            - Abstract Reader: ''
+            - Annotation Parser: ''
+            - Bed Reader: ''
+            - CSV Reader: ''
+            - Fake Reader: ''
+            - Ped Reader: ''
+            - VCF Reader: ''
+          - Writers:
+            - Abstract Writer: ''
+            - Bed Writer: ''
+            - CSV Writer: ''
+            - Ped Writer: ''
+            - VCF Writer: ''
         - GUI classes: 'development/api-documentation/gui-classes.md'
     - About: 'about.md'
 
