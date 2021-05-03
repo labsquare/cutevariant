@@ -91,7 +91,7 @@ TYPE_OPERATORS = {
 
 DEFAULT_VALUES = {"str": "", "int": 0, "float": 0.0, "list": [], "bool": True}
 
-OPERATORS_PY_SQL = {
+OPERATORS_PY_VQL = {
     "$eq": "=",
     "$gt": ">",
     "$gte": ">=",
@@ -100,7 +100,7 @@ OPERATORS_PY_SQL = {
     "$in": "IN",
     "$ne": "!=",
     "$nin": "NOT IN",
-    "$regex": "REGEXP",
+    "$regex": "~",
     "$and": "AND",
     "$or": "OR",
 }
@@ -503,7 +503,7 @@ class OperatorFieldEditor(BaseFieldEditor):
         """Init QComboBox with all supported operators"""
         self.combo_box.clear()
         for op in operators:
-            self.combo_box.addItem(OPERATORS_PY_SQL.get(op), op)
+            self.combo_box.addItem(OPERATORS_PY_VQL.get(op), op)
 
 
 class LogicFieldEditor(BaseFieldEditor):
@@ -514,8 +514,8 @@ class LogicFieldEditor(BaseFieldEditor):
         self.box = QComboBox()
 
         # DisplayRole, UserRole
-        self.box.addItem(OPERATORS_PY_SQL.get("$and"), "$and")
-        self.box.addItem(OPERATORS_PY_SQL.get("$or"), "$or")
+        self.box.addItem(OPERATORS_PY_VQL.get("$and"), "$and")
+        self.box.addItem(OPERATORS_PY_VQL.get("$or"), "$or")
 
         self.box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.set_widget(self.box)
@@ -905,7 +905,7 @@ class FilterModel(QAbstractItemModel):
                 if item.type == FilterItem.LOGIC_TYPE:
                     val = item.get_value()
                     return (
-                        OPERATORS_PY_SQL.get(val, "$and") + f"  ({len(item.children)})"
+                        OPERATORS_PY_VQL.get(val, "$and") + f"  ({len(item.children)})"
                     )
 
             if item.type != FilterItem.CONDITION_TYPE:
@@ -913,7 +913,7 @@ class FilterModel(QAbstractItemModel):
 
             if index.column() == COLUMN_OPERATOR:
                 operator = item.get_operator()
-                return OPERATORS_PY_SQL.get(operator, "=")
+                return OPERATORS_PY_VQL.get(operator, "=")
 
             if index.column() == COLUMN_VALUE:
                 val = item.get_value()
