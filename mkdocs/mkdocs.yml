@@ -26,6 +26,8 @@ markdown_extensions:
     emoji_index: !!python/name:materialx.emoji.twemoji
     emoji_generator: !!python/name:materialx.emoji.to_svg
 - attr_list
+- pymdownx.highlight
+- pymdownx.superfences
 plugins:
   - search
   - mkdocstrings

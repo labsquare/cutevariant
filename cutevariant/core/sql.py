@@ -33,6 +33,7 @@ from pkg_resources import parse_version
 from functools import partial, lru_cache
 import itertools as it
 import numpy as np
+from typing import Generator, Callable, Tuple
 
 
 # Custom imports
@@ -1291,34 +1292,37 @@ def get_variants_tree(
     #     yield item
 
 
-def async_insert_many_variants(conn, data, total_variant_count=None, yield_every=3000):
+def async_insert_many_variants(
+    conn: sqlite3.Connection, data: list, total_variant_count=None, yield_every=3000
+) -> Generator:
     """Insert many variants from data into variants table
 
-    :param conn: sqlite3.connect
-    :param data: list of variant dictionnary which contains same number of key than fields numbers.
-    :param total_variant_count: total variant count, to compute progression
-    :return: Yield a tuple with progression and message.
-        Progression is 0 if total_variant_count is not set.
-    :rtype: <generator <tuple <int>, <str>>
+    Args:
+        conn (sqlite3.Connection): Sqlite connection
+        data (list): list of variant dictionnary which contains same number of key than fields numbers.
+        total_variant_count (None, optional): total variant count, to compute progression
+        yield_every (int, optional): yield a progress mesasge every {yield_every} insertion
 
+    Yields:
+        (int,str): Yield a tuple with progression and message. Progression is 0 if total_variant_count is not set.
 
-    :Example:
+    Examples:
 
-        insert_many_variant(conn, [{chr:"chr1", pos:24234, alt:"A","ref":T }])
-        insert_many_variant(conn, reader.get_variants())
+        Insert many variant:
 
-    .. warning:: Using reader, this can take a while
-    .. todo:: with large dataset, need to cache import
-    .. todo:: handle insertion errors...
-    .. seealso:: abstractreader
+            $ insert_many_variant(conn, [{chr:"chr1", pos:24234, alt:"A","ref":T }])
+            $ insert_many_variant(conn, reader.get_variants())
 
-    .. warning:: About using INSERT OR IGNORE: They avoid the following errors:
+    Todo:
+        with large dataset, need to cache import
+        handle insertion errors...
 
-        - Upon insertion of a duplicate key where the column must contain
-          a PRIMARY KEY or UNIQUE constraint
-        - Upon insertion of NULL value where the column has
-          a NOT NULL constraint.
-          => This is not recommended
+    Notes:
+        About using INSERT OR IGNORE: They avoid the following errors:
+        Using reader, this can take a while
+        Upon insertion of a duplicate key where the column must contain
+        a PRIMARY KEY or UNIQUE constraint Upon insertion of NULL value where the column
+        hasa NOT NULL constraint.
     """
 
     def build_columns_and_placeholders(table_name):
