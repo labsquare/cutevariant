@@ -69,6 +69,8 @@ nav:
             - Ped Writer: ''
             - VCF Writer: ''
         - GUI classes: 'development/api-documentation/gui-classes.md'
+    - Tutorials:
+      - Adding annotation reference databases: 'tutorials/add-annotation-reference.md'
     - About: 'about.md'
 
 repo_url: "https://github.com/labsquare/cutevariant"
