@@ -25,6 +25,7 @@ Example::
 """
 
 # Standard imports
+from _typeshed import NoneType
 import sqlite3
 from collections import defaultdict
 import re
@@ -33,7 +34,7 @@ from pkg_resources import parse_version
 from functools import partial, lru_cache
 import itertools as it
 import numpy as np
-from typing import Generator, Callable, Tuple
+from typing import Generator, Callable, Tuple, List, Union, Iterable
 
 
 # Custom imports
@@ -45,19 +46,19 @@ from cutevariant.core.querybuilder import build_sql_query
 LOGGER = cm.logger()
 
 
-def get_sql_connection(filepath):
-    """Open a SQLite database and return the connection object
+def get_sql_connection(filepath: str) -> sqlite3.Connection:
+    """Opens a SQLite database and returns the connection object
 
     Args:
-        filepath (str): sqlite filepath
+        filepath (str): sqlite3 database filepath
 
     Returns:
         sqlite3.Connection: Sqlite3 Connection
             The connection is initialized with `row_factory = Row`.
             So all results are accessible via indexes or keys.
-            The connection also supports
-            - REGEXP function
-            - DESCRIBE_QUANT aggregate
+            The returned connection also adds support for custom functions:
+            - REGEXP function.
+                Usage: REGEXP(pattern,tested_string). Returns true iff tested_string matches regex pattern.
     """
     connection = sqlite3.connect(filepath)
     # Activate Foreign keys
@@ -82,16 +83,24 @@ def get_sql_connection(filepath):
     return connection
 
 
-def get_database_file_name(conn):
+def get_database_file_name(conn: sqlite3.Connection) -> str:
+    """Returns the file name that conn is connected to
+
+    Args:
+        conn (sqlite3.Connection): The Sqlite3 connection you'd like to have the file name of
+
+    Returns:
+        str: The file name conn is connected to
+    """
     return conn.execute("PRAGMA database_list").fetchone()["file"]
 
 
 def table_exists(conn: sqlite3.Connection, name: str) -> bool:
-    """Return True if table exists
+    """Returns True if table exists in the database
 
     Args:
-        conn (sqlite3.Connection): Sqlite3 connection
-        name (str): Table name
+        conn (sqlite3.Connection): Sqlite3 connection to a database
+        name (str): Table name you're looking for in the database that conn is connected to
 
     Returns:
         bool: True if table exists
@@ -101,40 +110,43 @@ def table_exists(conn: sqlite3.Connection, name: str) -> bool:
     return c.fetchone() != None
 
 
-def drop_table(conn, table_name):
+def drop_table(conn: sqlite3.Connection, table_name: str):
     """Drop the given table
 
     Args:
-        conn (sqlite3.connection): Sqlite3 connection
-        table_name (str): sqlite table name
+        conn (sqlite3.Connection): Sqlite3 connection
+        table_name (str): Name of the table to drop
     """
     cursor = conn.cursor()
     cursor.execute(f"DROP TABLE IF EXISTS {table_name}")
     conn.commit()
 
 
-def clear_table(conn: sqlite3.Connection, table_name):
+def clear_table(conn: sqlite3.Connection, table_name: str):
     """Clear content of the given table
 
     Args:
-        conn (sqlite3.Connection): Sqlite3 Connection
-        table_name (str): sqlite table name
+        conn (sqlite3.Connection): Sqlite3 connection
+        table_name (str): Name of the table to clear
     """
     cursor = conn.cursor()
     cursor.execute(f"DELETE  FROM {table_name}")
     conn.commit()
 
 
-def get_table_columns(conn: sqlite3.Connection, table_name):
-    """Return the list of columns for the given table
+def get_table_columns(conn: sqlite3.Connection, table_name: str) -> List[str]:
+    """Returns the list of columns for the given table
 
     Args:
-        conn (sqlite3.Connection): Sqlite3 Connection
-        table_name (str): sqlite table name
+        conn (sqlite3.Connection): Sqlite3 connection
+        table_name (str): The table you want the column names of
 
     Returns:
-        Columns description from table_info
-        ((0, 'chr', 'str', 0, None, 1 ... ))
+        List of column names in table table_name.
+
+    Example:
+        >>> sql.get_table_columns(conn,"fields")
+        >>> ['name', 'category', 'type', 'description']
 
     References:
         used by async_insert_many_variants() to build queries with placeholders
@@ -148,7 +160,7 @@ def create_indexes(conn: sqlite3.Connection):
     """Create extra indexes on tables
 
     Args:
-        conn (sqlite3.Connection): Sqlite3 Connection
+        conn (sqlite3.Connection): Sqlite3 connection
 
     Note:
         This function must be called after batch insertions.
@@ -165,18 +177,27 @@ def create_indexes(conn: sqlite3.Connection):
         LOGGER.debug("create_indexes:: sqlite3.%s: %s", e.__class__.__name__, str(e))
 
 
-def count_query(conn, query):
-    """Count elements from the given query or table"""
+def count_query(conn: sqlite3.Connection, query: str) -> int:
+    """Count elements from the given query or table
+
+    Args:
+        conn (sqlite3.Connection): Sqlite3 connection
+        query (str): SQL query you want to have the line count of
+
+    Returns:
+        int: Number of lines returned by the query
+    """
     return conn.execute(f"SELECT COUNT(*) as count FROM ({query})").fetchone()[0]
 
 
-# Statistical data
+# Statistical data. TODO: these functions are not usable for now. They work with the stats plugin which is still under development
 
-
+# WORK IN PROGRESS
 def get_stats_info(conn, field, source="variants", filters={}):
     pass
 
 
+# WORK IN PROGRESS
 def get_field_info(conn, field, source="variants", filters={}, metrics=["mean", "std"]):
     """
     Returns statistical metrics for column field in conn
@@ -241,12 +262,12 @@ def get_field_info(conn, field, source="variants", filters={}, metrics=["mean", 
 
 
 def create_table_project(conn: sqlite3.Connection, name: str, reference: str):
-    """Create the table "projects" and insert project name and reference genome
+    """Creates the table "projects" and inserts project name and reference genome
 
     Args:
-        conn (sqlite3.Connection): Sqlite3 Connection
+        conn (sqlite3.Connection): Sqlite3 connection
         name (str): Project name
-        reference (str): Genom project
+        reference (str): Reference genom for this project
 
     """
     project_data = {"name": name, "reference": reference}
@@ -258,13 +279,27 @@ def create_table_project(conn: sqlite3.Connection, name: str, reference: str):
 
 
 def update_project(conn: sqlite3.Connection, project: dict):
+    """Writes key,value pairs from project into the table 'projects', represented by sqlite3 connection conn
+
+    Args:
+        conn (sqlite3.Connection): Sqlite3 connection to a database with the table 'projects' you want to update
+        project (dict): Collection of key,value pairs you want to insert into the table 'projects'
+    """
     conn.executemany(
         "INSERT INTO projects (key, value) VALUES (?, ?)", list(project.items())
     )
     conn.commit()
 
 
-def get_project(conn: sqlite3.Connection):
+def get_project(conn: sqlite3.Connection) -> dict:
+    """Returns a python dict where each key, value pair is one line of the table 'projects' defined in sqlite3 connection conn.
+
+    Args:
+        conn (sqlite3.Connection): Sqlite3 connection with table 'projects'
+
+    Returns:
+        dict: A  python dict where key,value pairs are one line of the table 'projects'
+    """
     g = (dict(data) for data in conn.execute("SELECT key, value FROM projects"))
     return {data["key"]: data["value"] for data in g}
 
@@ -273,21 +308,22 @@ def get_project(conn: sqlite3.Connection):
 
 
 def create_table_metadatas(conn: sqlite3.Connection):
-    """Create table metdata
+    """Creates 'metadata' table in database that conn is connected to
 
     Args:
-        conn (sqlite3.Connection): Sqlite3 Connection
+        conn (sqlite3.Connection): Sqlite3 connection
     """
     conn.execute(
         "CREATE TABLE metadatas (id INTEGER PRIMARY KEY, key TEXT, value TEXT)"
     )
 
 
-def insert_many_metadatas(conn: sqlite3.Connection, metadatas={}):
-    """Insert metadata
+def insert_many_metadatas(conn: sqlite3.Connection, metadatas: dict = {}):
+    """Inserts key,value pairs from dict metadatas, into the table 'metadatas' of database represented by conn
 
     Args:
-        conn (sqlite3.Connection): Sqlite3 Connection
+        conn (sqlite3.Connection): Sqlite3 connection
+        metadatas (dict, optional): Collection of key,value pairs to insert into the table 'metadatas'. Defaults to {}.
     """
     if metadatas:
         cursor = conn.cursor()
@@ -298,11 +334,11 @@ def insert_many_metadatas(conn: sqlite3.Connection, metadatas={}):
         conn.commit()
 
 
-def get_metadatas(conn: sqlite3.Connection):
-    """Return a dictionary of metadatas
+def get_metadatas(conn: sqlite3.Connection) -> dict:
+    """Returns a dictionary of metadatas
 
     Returns:
-        [dict]: matadata fieldname as keys
+        dict: A python dict where each key,value pair represents metadata that was inserted in the 'metadatas' table
     """
     conn.row_factory = sqlite3.Row
     g = (dict(data) for data in conn.execute("SELECT key, value FROM metadatas"))
@@ -316,7 +352,7 @@ def delete_by_name(conn: sqlite3.Connection, name: str, table_name: str = None):
     """Delete data in "selections" or "sets" tables with the given name
 
     Args:
-        conn (sqlit3.Connection): sqlite3 connection
+        conn (sqlit3.Connection): Sqlite3 connection
         name (str): Selection/set name
         table_name (str): Name of the table concerned by the deletion
     Returns:
@@ -339,7 +375,7 @@ def delete_by_name(conn: sqlite3.Connection, name: str, table_name: str = None):
 
 
 def create_table_selections(conn: sqlite3.Connection):
-    """Create the table "selections" and association table "selection_has_variant"
+    """Creates tables "selections" and association table "selection_has_variant"
 
     This table stores variants selection saved by the user:
 
@@ -374,10 +410,10 @@ def create_table_selections(conn: sqlite3.Connection):
 
 
 def create_selections_indexes(conn: sqlite3.Connection):
-    """Create indexes on the "selections" table
+    """Creates indexes on the "selections" table
 
     Args:
-        conn (sqlite3.Connection): Sqlite3 Connection
+        conn (sqlite3.Connection): Sqlite3 connection
 
     Note:
         * This function should be called after batch insertions.
@@ -387,7 +423,7 @@ def create_selections_indexes(conn: sqlite3.Connection):
 
 
 def create_selection_has_variant_indexes(conn: sqlite3.Connection):
-    """Create indexes on "selection_has_variant" table
+    """Creates indexes on "selection_has_variant" table
 
     For joins between selections and variants tables
 
@@ -403,26 +439,19 @@ def create_selection_has_variant_indexes(conn: sqlite3.Connection):
     )
 
 
-def insert_selection(conn, query: str, name="no_name", count=0):
-    """Insert one selection record
+def insert_selection(
+    conn: Union[sqlite3.Connection, sqlite3.Cursor], query: str, name="no_name", count=0
+) -> int:
+    """Inserts selection called 'name', with records from SQL query 'query'
 
     Args:
-        conn (sqlite3.Connection/sqlite3.Cursor): Sqlite3 Connection.
-        It can be a cursor or a connection here...
-        query (str): a VQL query
-        name (str, optional): Name of selection
-        count (int, optional): Variant count of selection
+        conn (Union[sqlite3.Connection, sqlite3.Cursor]): Either a Sqlite3 connection or a cursor. Connects to the current cutevariant project's database.
+        query (str): The SQL query that populated the selection 'name'
+        name (str, optional): The name of the selection that was created from the query 'query'. Defaults to "no_name".
+        count (int, optional): Number of rows in the selection. Defaults to 0.
 
     Returns:
-        int: Return last rowid
-
-    See Also:
-        create_selection_from_sql()
-
-    Warning:
-        This function does a commit !
-
-
+        int: Total number of rows in the 'selections' table
     """
     cursor = conn.cursor() if isinstance(conn, sqlite3.Connection) else conn
 
@@ -441,21 +470,25 @@ delete_selection_by_name = partial(delete_by_name, table_name="selections")
 
 
 def create_selection_from_sql(
-    conn: sqlite3.Connection, query: str, name: str, count=None, from_selection=False
-):
-    """Create a selection record from sql variant query
+    conn: sqlite3.Connection,
+    query: str,
+    name: str,
+    count: int = None,
+    from_selection=False,
+) -> Union[int, None]:
+    """Creates a selection record from sql variant query
 
     Args:
         conn (sqlite3.connection): Sqlite3 connection
         query (str): SQL query that select all variant ids. See `from_selection`
         name (str): Name of selection
-        count (int/None, optional): Variant count
+        count (int, optional): Variant count
         from_selection (bool, optional): Use a different
             field name for variants ids; `variant_id` if `from_selection` is `True`,
             just `id` if `False`.
 
     Returns:
-        selection_id, if lines have been inserted; None otherwise (rollback).
+        Union[int,None] selection_id, if lines have been inserted; None otherwise (rollback).
     """
     cursor = conn.cursor()
 
@@ -511,9 +544,9 @@ def create_selection_from_sql(
 
 
 def create_selection_from_bed(
-    conn: sqlite3.Connection, source: str, target: str, bed_intervals
-):
-    """Create a new selection based on the given intervals taken from a BED file
+    conn: sqlite3.Connection, source: str, target: str, bed_intervals: Iterable[dict]
+) -> Union[int, None]:
+    """Creates a new selection based on the given intervals taken from a BED file
 
     Variants whose positions are contained in the intervals specified by the
     BED file will be referenced into the table selection_has_variant under
@@ -523,7 +556,7 @@ def create_selection_from_bed(
         conn (sqlite3.connection): Sqlite3 connection
         source (str): Selection name (source); Ex: "variants" (default)
         target (str): Selection name (target)
-        bed_intervals (list/generator [dict]): List of intervals
+        bed_intervals (Iterable[dict]): List of intervals
             Each interval is a dict with the expected keys: (chrom, start, end, name)
 
     Returns:
@@ -570,35 +603,36 @@ def create_selection_from_bed(
     return create_selection_from_sql(conn, query, target, from_selection=True)
 
 
-def get_selections(conn: sqlite3.Connection):
-    """Get selections in "selections" table
+def get_selections(conn: sqlite3.Connection) -> Tuple[dict]:
+    """Get selections from the "selections" table
 
     Args:
-        conn (sqlite3.connection): Sqlite3 connection
+        conn (sqlite3.Connection): Sqlite3 connection
 
-    Yield:
-        Dictionnaries with as many keys as there are columnsin the table.
+    Example:
+        >>> get_selections(conn)
+        >>> ({"id": ..., "name": ..., "count": ..., "query": ...},
+             {"id": ..., "name": ..., "count": ..., "query": ...},
+             {"id": ..., "name": ..., "count": ..., "query": ...},
+             ...
+             {"id": ..., "name": ..., "count": ..., "query": ...})
 
-    Example::
-        {"id": ..., "name": ..., "count": ..., "query": ...}
-
+    Returns:
+        Tuple[dict]: Tuple of dictionnaries describing each selection (id, name, count and query)
     """
     conn.row_factory = sqlite3.Row
     return (dict(data) for data in conn.execute("SELECT * FROM selections"))
 
 
-def delete_selection(conn: sqlite3.Connection, selection_id: int):
-    """Delete the selection with the given id in the "selections" table
-
-    :return: Number of rows deleted
-    :rtype: <int>
+def delete_selection(conn: sqlite3.Connection, selection_id: int) -> int:
+    """Deletes the selection with the given id in the "selections" table
 
     Args:
-        conn (sqlite3.Connection): Sqlite connection
-        selection_id (int): id from selection table
+        conn (sqlite3.Connection): Sqlite3 connection
+        selection_id (int): id (from the 'selections' table) of the selection to remove
 
     Returns:
-        int: Number of rows affected
+        int: Number of rows deleted
     """
     cursor = conn.cursor()
     cursor.execute("DELETE FROM selections WHERE rowid = ?", (selection_id,))
