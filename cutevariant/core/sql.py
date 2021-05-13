@@ -1,15 +1,26 @@
-"""Module to bring together all the SQL related functions
+"""
+The SQL module is part of cutevariant's bakcbone.
+A cutevariant project is basically a sqlite3 database, and this module's goal is to provide a set of useful functions to access it.
+In this module, you will find a collection of functions that execute SQL requests to easily manipulate cutevariant's database.
 
-To read and write the sqlite database with the schema described here.
-Each method refers to a CRUD operation using following prefixes:
-``get_``, ``insert_``, ``update_``, ``remove_`` and takes a sqlite connection
-as ``conn`` attribute.
+Every function in this module is responsible for **one** CRUD operation, and is always named with the following prefixes: 
 
-The module contains also QueryBuilder class to build complexe variant query based
-on filters, columns and selections.
+- `create_`
 
-Example::
+- `remove_`
 
+- `update_`,`insert_`
+
+- `get_`
+
+They all take a Sqlite3 connection as a parameter, called `conn` (except for `get_sql_connection` that actually returns one)
+
+The module also contains a QueryBuilder class to build complex variant query based on filters, columns and selections.
+
+If you don't find the request you need, please open an issue on [our github repository](https://github.com/labsquare/cutevariant/issues)
+
+Example:
+    ```python
     # Read sample table information
     from cutevariant.core import sql
     conn = sql.get_sql_connection("project.db")
@@ -21,11 +32,11 @@ Example::
     builder = QueryBuilder(conn)
     builder.columns = ["chr","pos","ref","alt"]
     print(builder.sql())
+    ```
 
 """
 
 # Standard imports
-from _typeshed import NoneType
 import sqlite3
 from collections import defaultdict
 import re
@@ -144,9 +155,12 @@ def get_table_columns(conn: sqlite3.Connection, table_name: str) -> List[str]:
     Returns:
         List of column names in table table_name.
 
-    Example:
+    !!! example
+
+        ```python
         >>> sql.get_table_columns(conn,"fields")
         >>> ['name', 'category', 'type', 'description']
+        ```
 
     References:
         used by async_insert_many_variants() to build queries with placeholders
@@ -641,14 +655,14 @@ def delete_selection(conn: sqlite3.Connection, selection_id: int) -> int:
 
 
 def edit_selection(conn: sqlite3.Connection, selection: dict):
-    """Update the name and count of a selection with the given id
+    """Updates the name and count of a selection with the given id
 
     Args:
-        conn (sqlite3.Connection): sqlite3 Connection
-        selection (dict): key/value data
+        conn (sqlite3.Connection): Sqlite3 connection
+        selection (dict): Selection dict with keys ('id','count','name')
 
     Returns:
-        int: last rowid
+        int: Number of rows in the 'selections' table
     """
     cursor = conn.cursor()
     conn.execute(
@@ -662,7 +676,7 @@ def edit_selection(conn: sqlite3.Connection, selection: dict):
 
 
 def create_table_wordsets(conn: sqlite3.Connection):
-    """Create the table "sets"
+    """Creates the table "sets"
 
     This table stores variants selection saved by the user:
         - name: name of the set of variants
@@ -674,7 +688,7 @@ def create_table_wordsets(conn: sqlite3.Connection):
     TODO: for now the one to many relation is not implemented
 
     Args:
-        conn (sqlite3.Connection): Sqlite3 Connection
+        conn (sqlite3.Connection): Sqlite3 connection
     """
     cursor = conn.cursor()
     cursor.execute(
@@ -690,11 +704,14 @@ def create_table_wordsets(conn: sqlite3.Connection):
 
 
 def sanitize_words(words):
-    """Return a set of cleaned words
+    """Returns a set of cleaned words
 
-    See Also:
-        - :meth:`import_wordset_from_file`
-        - :meth:`cutevariant.gui.plugins.word_set.widgets.WordListDialog.load_file`
+    !!! note "See also"
+
+        import_wordset_from_file
+
+        cutevariant.gui.plugins.word_set.widgets.WordListDialog.load_file
+
     """
     # Search whitespaces
     expr = re.compile("[ \t\n\r\f\v]")
@@ -726,7 +743,7 @@ def import_wordset_from_file(conn: sqlite3.Connection, wordset_name, filename):
         - Skip empty lines
         - Skip lines with whitespaces characters (``[ \t\n\r\f\v]``)
 
-    Examples:
+    !!! example
         - The following line will be skipped:
           ``"abc  def\tghi\t  \r\n"``
         - The following line will be cleaned:
@@ -881,7 +898,7 @@ def insert_many_fields(conn, data: list):
     :param conn: sqlite3.connect
     :param data: list of field dictionnary
 
-    :Examples:
+    !!! example
 
         insert_many_fields(conn, [{name:"sacha", category:"variant", count: 0, description="a description"}])
         insert_many_fields(conn, reader.get_fields())
@@ -1340,18 +1357,18 @@ def async_insert_many_variants(
     Yields:
         (int,str): Yield a tuple with progression and message. Progression is 0 if total_variant_count is not set.
 
-    Examples:
+    !!! example
 
         Insert many variant:
+            >>> conn = get_sql_connection("example.db")
+            >>> insert_many_variant(conn, [{chr:"chr1", pos:24234, alt:"A","ref":T }])
+            >>> insert_many_variant(conn, reader.get_variants())
 
-            $ insert_many_variant(conn, [{chr:"chr1", pos:24234, alt:"A","ref":T }])
-            $ insert_many_variant(conn, reader.get_variants())
-
-    Todo:
+    !!! todo "To do"
         with large dataset, need to cache import
         handle insertion errors...
 
-    Notes:
+    !!! note
         About using INSERT OR IGNORE: They avoid the following errors:
         Using reader, this can take a while
         Upon insertion of a duplicate key where the column must contain
