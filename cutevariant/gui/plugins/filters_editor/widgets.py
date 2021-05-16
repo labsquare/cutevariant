@@ -474,6 +474,8 @@ class ComboFieldEditor(BaseFieldEditor):
     def fill(self, items):
         self.combo_box.clear()
         self.combo_box.addItems(items)
+        self.combo_box.completer().setFilterMode(Qt.MatchContains)
+        self.combo_box.completer().setCompletionMode(QCompleter.PopupCompletion)
 
     def set_editable(self, active):
         self.combo_box.setEditable(True)
