@@ -93,9 +93,9 @@ class VqlEditorWidget(plugin.PluginWidget):
         """overrided from PluginWidget"""
 
         vql_query = build_vql_query(
-            self.mainwindow.state.fields,
-            self.mainwindow.state.source,
-            self.mainwindow.state.filters,
+            self.mainwindow.get_state_data("fields"),
+            self.mainwindow.get_state_data("source"),
+            self.mainwindow.get_state_data("filters"),
         )
 
         self.set_vql(vql_query)
@@ -227,10 +227,10 @@ class VqlEditorWidget(plugin.PluginWidget):
                 # => Command will be executed in different widgets (variant_view)
                 # /!\ VQL Editor will not check SQL validity of the command
                 # columns from variant table
-                self.mainwindow.state.fields = cmd["fields"]
+                self.mainwindow.set_state_data("fields", cmd["fields"])
                 # name of the variant selection
-                self.mainwindow.state.source = cmd["source"]
-                self.mainwindow.state.filters = cmd["filters"]
+                self.mainwindow.set_state_data("source", cmd["source"])
+                self.mainwindow.set_state_data("filters", cmd["filters"])
                 # Refresh all plugins
                 self.mainwindow.refresh_plugins(sender=self)
                 continue

@@ -1433,12 +1433,12 @@ class VariantViewWidget(plugin.PluginWidget):
         # See load(), we use this attr to restore fields after grouping
 
         if self.mainwindow:
-            self.save_fields = self.mainwindow.state.fields
-            self.save_filters = self.mainwindow.state.filters
+            self.save_fields = self.mainwindow.get_state_data("fields")
+            self.save_filters = self.mainwindow.get_state_data("filters")
 
-            self.main_right_pane.fields = self.mainwindow.state.fields
-            self.main_right_pane.source = self.mainwindow.state.source
-            self.main_right_pane.filters = self.mainwindow.state.filters
+            self.main_right_pane.fields = self.mainwindow.get_state_data("fields")
+            self.main_right_pane.source = self.mainwindow.get_state_data("source")
+            self.main_right_pane.filters = self.mainwindow.get_state_data("filters")
 
         # Set formatter
         formatter_class = self.formatter_combo.currentData()
@@ -1475,8 +1475,8 @@ class VariantViewWidget(plugin.PluginWidget):
             result = cmd.create_cmd(
                 self.conn,
                 selection_name,
-                source=self.mainwindow.state.source,
-                filters=self.mainwindow.state.filters,
+                source=self.mainwindow.get_state_data("source"),
+                filters=self.mainwindow.get_state_data("filters"),
                 count=self.main_right_pane.model.total,
             )
             if result:
@@ -1534,7 +1534,7 @@ class VariantViewWidget(plugin.PluginWidget):
             variant = self.main_right_pane.model.variant(index.row())
 
         if self.mainwindow:
-            self.mainwindow.state.current_variant = variant
+            self.mainwindow.set_state_data("current_variant", variant)
             # Request a refresh of the variant_info plugin
             self.mainwindow.refresh_plugin("variant_info")
 

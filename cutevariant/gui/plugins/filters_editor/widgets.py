@@ -2092,12 +2092,13 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
     def on_refresh(self):
 
-        if self.filters == self.mainwindow.state.filters:
+        current_filters = self.mainwindow.get_state_data("filters")
+        if self.filters == current_filters:
             # No change in filters = no refresh
             return
 
         self.model.clear()
-        self.model.filters = self.mainwindow.state.filters
+        self.model.filters = current_filters
 
         self.refresh_buttons()
         self._update_view_geometry()
@@ -2143,7 +2144,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
             # Close editor on validate, to avoid unset data
             self.close_current_editor()
             # Refresh other plugins only if the filters are modified
-            self.mainwindow.state.filters = self.filters
+            self.mainwindow.set_state_data("filters", self.filters)
             self.mainwindow.refresh_plugins(sender=self)
 
         self.refresh_buttons()

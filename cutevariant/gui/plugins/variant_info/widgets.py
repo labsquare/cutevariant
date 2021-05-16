@@ -308,7 +308,7 @@ class VariantInfoWidget(PluginWidget):
 
     def on_refresh(self):
         """Set the current variant by the variant displayed in the GUI"""
-        self.current_variant = self.mainwindow.state.current_variant
+        self.current_variant = self.mainwindow.get_state_data("current_variant")
         self.populate()
 
     def populate(self):

@@ -533,7 +533,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
         """ overrided from PluginWidget """
         if self.mainwindow:
             self._is_refreshing = True
-            self.widget_fields.checked_fields = self.mainwindow.state.fields
+            self.widget_fields.checked_fields = self.mainwindow.get_state_data("fields")
             self._is_refreshing = False
 
     def on_apply(self):
@@ -544,7 +544,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
             print(self.widget_fields.checked_fields)
             return
 
-        self.mainwindow.state.fields = self.widget_fields.checked_fields
+        self.mainwindow.set_state_data("fields", self.widget_fields.checked_fields)
         self.mainwindow.refresh_plugins(sender=self)
 
     def to_json(self):

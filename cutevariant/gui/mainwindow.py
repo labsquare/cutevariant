@@ -4,6 +4,7 @@ import os
 import sys
 import sqlite3
 import json
+import typing
 from pkg_resources import parse_version
 from functools import partial
 from logging import DEBUG
@@ -19,7 +20,6 @@ from cutevariant.core import get_sql_connection, get_metadatas, command
 from cutevariant.core.sql import get_database_file_name
 from cutevariant.core.writer import CsvWriter, PedWriter
 from cutevariant.gui import FIcon
-from cutevariant.gui.state import State
 from cutevariant.gui.wizards import ProjectWizard
 from cutevariant.gui.settings import SettingsDialog
 from cutevariant.gui.widgets.aboutcutevariant import AboutCutevariant
@@ -62,7 +62,13 @@ class MainWindow(QMainWindow):
         # State variable of application
         # store fields, source, filters, group_by, having data
         # Often changed by plugins
-        self.state = State()
+        self._state_data = {
+            "fields": ["chr", "pos", "ref", "alt"],
+            "source": "variants",
+            "filters": {},
+        }
+
+        self._state_data_changed = set()
 
         # Central workspace
         self.central_tab = QTabWidget()
@@ -103,6 +109,29 @@ class MainWindow(QMainWindow):
         recent = self.get_recent_projects()
         if recent and os.path.isfile(recent[0]):
             self.open(recent[0])
+
+    def set_state_data(self, key: str, value: typing.Any):
+        """set state data value from key
+
+        Args:
+            key (str): Name of the state variable
+            value (Any): a value
+        """
+
+        self._state_data[key] = value
+        self._state_data_changed.add(key)
+
+    def get_state_data(self, key: str) -> typing.Any:
+        """Get state data value from from key
+
+        Args:
+            key (str): Name of the state variable
+
+        Returns:
+            typing.Any: Return a value
+        """
+
+        return self._state_data.get(key, None)
 
     def add_panel(self, widget, area=Qt.LeftDockWidgetArea):
         """Add given widget to a new QDockWidget and to view menu in menubar"""
@@ -454,7 +483,7 @@ class MainWindow(QMainWindow):
         # Clear memoization cache for count_cmd
         # Clear State variable of application
         # store fields, source, filters, group_by, having data
-        self.state = State()
+        self.state = {"fields": ["chr"], "source": "variants", "filters": {}}
 
         # Load previous window state for this project (file_path being the key for the settings)
         file_path = get_database_file_name(conn)
