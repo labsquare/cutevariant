@@ -2050,6 +2050,22 @@ class FiltersEditorWidget(plugin.PluginWidget):
         prepare_fields.cache_clear()
         self.on_refresh()
 
+
+
+    def on_duplicate_filter(self):
+        """Duplicate filter condition from context menu 
+
+        See contextMenu()
+        """        
+        item_index = self.view.selectionModel().currentIndex()
+        parent_index = item_index.parent()
+        if not parent_index:
+            return 
+
+        data = self.model.item(item_index).data
+        self.model.add_condition_item(data, parent_index)
+
+
     def on_remove_filter(self):
         selected_index = self.view.selectionModel().currentIndex()
         if not selected_index:
@@ -2376,6 +2392,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
             # Check if this is not the root item
             if index.parent().isValid():
                 menu.addAction(self.tr("Remove"), self.on_remove_filter)
+                menu.addAction(self.tr("Duplicate"), self.on_duplicate_filter)
 
             menu.exec_(event.globalPos())
 
