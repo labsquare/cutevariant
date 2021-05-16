@@ -117,9 +117,10 @@ class MainWindow(QMainWindow):
             key (str): Name of the state variable
             value (Any): a value
         """
-
+        previous_state = dict(self._state_data)
         self._state_data[key] = value
-        self._state_data_changed.add(key)
+        if previous_state != self._state_data:
+            self._state_data_changed.add(key)
 
     def get_state_data(self, key: str) -> typing.Any:
         """Get state data value from from key
@@ -261,19 +262,33 @@ class MainWindow(QMainWindow):
     def refresh_plugins(self, sender: plugin.PluginWidget = None):
         """Refresh all widget plugins
 
-        It doesn't refresh the sender plugin, and not visible plugins.
+        It doesn't refresh a plugin if :
+
+        - the plugin is the sender
+        - the plugin is not visible
+        - the plugin specified a class variable REFRESH_STATE_DATA = ["fields"]
 
         Args:
             sender (PluginWidget): from a plugin, you can pass "self" as argument
         """
+
         for plugin_obj in self.plugins.values():
-            if plugin_obj is not sender and (
-                plugin_obj.isVisible() or plugin_obj.REFRESH_ONLY_VISIBLE is False
-            ):
+            need_refresh = (
+                plugin_obj is not sender
+                and (plugin_obj.isVisible() or not plugin_obj.REFRESH_ONLY_VISIBLE)
+                and (set(plugin_obj.REFRESH_STATE_DATA) & self._state_data_changed)
+            )
+
+            if need_refresh:
                 try:
                     plugin_obj.on_refresh()
+                    print(plugin_obj)
+
                 except Exception as e:
                     LOGGER.exception(e)
+
+        # Clear state_changed set
+        self._state_data_changed = set()
 
     def refresh_plugin(self, plugin_name: str):
         """Refresh a widget plugin identified by plugin_name

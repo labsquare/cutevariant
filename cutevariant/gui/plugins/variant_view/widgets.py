@@ -1278,6 +1278,7 @@ class VariantViewWidget(plugin.PluginWidget):
     variants_load_finished = Signal(int, float)
 
     ENABLE = True
+    REFRESH_STATE_DATA = {"fields", "filters", "source"}
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -1481,6 +1482,7 @@ class VariantViewWidget(plugin.PluginWidget):
             )
             if result:
                 self.mainwindow.refresh_plugin("source_editor")
+
         except Exception as e:
             LOGGER.exception(e)
 
@@ -1536,13 +1538,7 @@ class VariantViewWidget(plugin.PluginWidget):
         if self.mainwindow:
             self.mainwindow.set_state_data("current_variant", variant)
             # Request a refresh of the variant_info plugin
-            self.mainwindow.refresh_plugin("variant_info")
-
-    def _refresh_vql_editor(self):
-        """Force refresh of vql_editor if loaded"""
-        if "vql_editor" in self.mainwindow.plugins:
-            # Request a refresh of the vql_editor plugin
-            self.mainwindow.refresh_plugin("vql_editor")
+            self.mainwindow.refresh_plugins(self)
 
     def copy(self):
         """Copy the selected variant(s) into the clipboard

@@ -1932,6 +1932,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
     """Displayed widget plugin to allow creation/edition/deletion of filters"""
 
     ENABLE = True
+    REFRESH_STATE_DATA = {"filters"}
     changed = Signal()
 
     def __init__(self, conn=None, parent=None):

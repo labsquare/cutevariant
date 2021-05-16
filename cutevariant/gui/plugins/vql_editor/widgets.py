@@ -41,6 +41,7 @@ class VqlEditorWidget(plugin.PluginWidget):
 
     LOCATION = plugin.FOOTER_LOCATION
     ENABLE = True
+    REFRESH_STATE_DATA = {"fields", "filters", "source"}
 
     def __init__(self, parent=None):
         super().__init__(parent)

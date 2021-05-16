@@ -331,6 +331,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
     """
 
     ENABLE = True
+    REFRESH_STATE_DATA = {"fields"}
 
     DEFAULT_FIELDS = ["chr", "pos", "ref", "alt"]
 

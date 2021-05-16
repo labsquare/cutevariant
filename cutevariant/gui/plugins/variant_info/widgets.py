@@ -195,6 +195,7 @@ class VariantInfoWidget(PluginWidget):
     """Plugin to show all annotations of a selected variant"""
 
     ENABLE = True
+    REFRESH_STATE_DATA = {"current_variant"}
 
     def __init__(self, parent=None):
         super().__init__(parent)

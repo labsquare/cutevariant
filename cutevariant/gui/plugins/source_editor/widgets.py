@@ -147,6 +147,7 @@ class SourceEditorWidget(plugin.PluginWidget):
     """
 
     ENABLE = True
+    REFRESH_STATE_DATA = {"source"}
 
     def __init__(self, parent=None, conn=None):
         """
