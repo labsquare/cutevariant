@@ -41,6 +41,7 @@ import sqlite3
 from collections import defaultdict
 import re
 import logging
+from typing_extensions import TypeAlias
 from pkg_resources import parse_version
 from functools import partial, lru_cache
 import itertools as it
@@ -770,11 +771,23 @@ def import_wordset_from_file(conn: sqlite3.Connection, wordset_name, filename):
 delete_set_by_name = partial(delete_by_name, table_name="wordsets")
 
 
-def get_wordsets(conn):
-    """Return the number of words per word set stored in DB
+def get_wordsets(conn: sqlite3.Connection) -> Generator[dict]:
+    """Yields dicts of (wordset_name,word_count)
 
-    Returns:
-        generator[dict]: Yield dictionaries with `name` and `count` keys.
+    Args:
+        conn (sqlite3.Connection): Sqlite3 connection
+
+    Yields:
+        Generator[dict]: [description]
+
+    !!! example
+        >>> conn = get_sql_connection("test.db")
+        >>> get_wordsets(conn)
+        >>> {
+            "Krebs cycles genes" : 10,
+            "Genes of concern" : 20
+        }
+
     """
     for row in conn.execute(
         "SELECT name, COUNT(*) as 'count' FROM wordsets GROUP BY name"
@@ -782,11 +795,15 @@ def get_wordsets(conn):
         yield dict(row)
 
 
-def get_words_in_set(conn, wordset_name):
-    """Return generator of words in the given word set
+def get_words_in_set(conn: sqlite3.Connection, wordset_name: str) -> Generator[dict]:
+    """Yields every string in the wordset 'wordset_name'
 
-    Returns:
-        generator[str]: Yield words of the word set.
+    Args:
+        conn (sqlite3.Connection): Sqlite3 connection
+        wordset_name (str): Name of the wordset to retrieve content from
+
+    Yields:
+        Generator[dict]: One string from the wordset 'wordset_name'
     """
     for row in conn.execute(
         "SELECT DISTINCT value FROM wordsets WHERE name = ?", (wordset_name,)
@@ -797,7 +814,7 @@ def get_words_in_set(conn, wordset_name):
 ## Operations on sets of variants ==============================================
 
 
-def get_query_columns(mode="variant"):
+def get_query_columns(mode: str = "variant"):
     """(DEPRECATED FOR NOW, NOT USED)
 
     Handy func to get columns to be queried according to the group by argument
@@ -815,34 +832,77 @@ def get_query_columns(mode="variant"):
     raise NotImplementedError
 
 
-def intersect_variants(query1, query2, **kwargs):
-    """Get the variants obtained by the intersection of 2 queries
+def intersect_variants(query1: str, query2: str, **kwargs) -> str:
+    """Builds a SQL query to get variants from both query1 AND query2
 
-    Try to handle precedence of operators.
-    - The precedence of UNION and EXCEPT are similar, they are processed from
-    left to right.
-    - Both of the operations are fulfilled before INTERSECT operation,
-    i.e. they have precedence over it.
+    Args:
+        query1 (str): LHS operand of the intersection query (SQL)
+        query2 (str): RHS operand of the intersection query (SQL)
+
+    Returns:
+        str: Resulting query (SQL)
+
+    !!! info "Nota Bene"
+
+        Try to handle precedence of operators.
+        - The precedence of UNION and EXCEPT are similar, they are processed from
+        left to right.
+        - Both of the operations are fulfilled before INTERSECT operation,
+        i.e. they have precedence over it.
 
     """
     return f"""SELECT * FROM ({query1} INTERSECT {query2})"""
 
 
 def union_variants(query1, query2, **kwargs):
-    """Get the variants obtained by the union of 2 queries"""
+    """Builds a SQL query to get variants from either query1 OR query2 (or both)
+
+    Args:
+        query1 (str): LHS operand of the union query (SQL)
+        query2 (str): RHS operand of the union query (SQL)
+
+    Returns:
+        str: Resulting query (SQL)
+
+    !!! info "Nota Bene"
+
+        Try to handle precedence of operators.
+        - The precedence of UNION and EXCEPT are similar, they are processed from
+        left to right.
+        - Both of the operations are fulfilled before INTERSECT operation,
+        i.e. they have precedence over it.
+
+    """
     return f"""{query1} UNION {query2}"""
 
 
 def subtract_variants(query1, query2, **kwargs):
-    """Get the variants obtained by the difference of 2 queries"""
+    """Builds a SQL query to get variants that are in query1 BUT NOT in query2
+
+    Args:
+        query1 (str): LHS operand of the difference query (SQL)
+        query2 (str): RHS operand of the difference query (SQL)
+
+    Returns:
+        str: Resulting query (SQL)
+
+    !!! info "Nota Bene"
+
+        Try to handle precedence of operators.
+        - The precedence of UNION and EXCEPT are similar, they are processed from
+        left to right.
+        - Both of the operations are fulfilled before INTERSECT operation,
+        i.e. they have precedence over it.
+
+    """
     return f"""{query1} EXCEPT {query2}"""
 
 
 ## fields table ================================================================
 
 
-def create_table_fields(conn):
-    """Create the table "fields"
+def create_table_fields(conn: sqlite3.Connection):
+    """Creates the table "fields"
 
     This table contain fields. A field is a column with its description and type;
     it can be choose by a user to build a Query
@@ -850,15 +910,16 @@ def create_table_fields(conn):
     Fields are extracted from reader objects and are dynamically constructed.
 
     variants:
-    Chr,pos,ref,alt, filter, qual, dp, af, etc.
+    chr,pos,ref,alt,filter,qual,dp,af,etc.
 
     annotations:
-    Gene, transcrit, etc.
+    gene,transcript,etc.
 
     sample_has_variant:
-    Genotype
+    genotype
 
-    :param conn: sqlite3.connect
+    Args:
+        conn (sqlite3.Connection): Sqlite3 connection
     """
     cursor = conn.cursor()
     cursor.execute(
@@ -870,19 +931,26 @@ def create_table_fields(conn):
 
 
 def insert_field(
-    conn, name="no_name", category="variants", type="text", description=str()
-):
-    """Insert one field record (NOT USED)
+    conn: sqlite3.Connection,
+    name: str = "no_name",
+    category: str = "variants",
+    type: str = "text",
+    description: str = str(),
+) -> int:
+    """Inserts one field record (NOT USED)
 
-    :param conn: sqlite3.connect
-    :key name: field name
-    :key category: category field name.
-        .. warning:: The default is "variants". Don't use sample as category name
-    :key type: sqlite type which can be: INTEGER, REAL, TEXT
-        .. todo:: Check this argument...
-    :key description: Text that describes the field (showed to the user).
-    :return: Last row id
-    :rtype: <int>
+    Args:
+        conn (sqlite3.Connection): Sqlite3 connection
+        name (str): Name of the field to insert
+        category (str): Category field name.
+            !!! warning:
+                The default is "variants". Don't use sample as category name
+        type (str): sqlite type which can be: INTEGER, REAL, TEXT
+            !!! todo "To do":
+                Check this argument...
+        description (str): Text that describes the field (showed to the user).
+    Returns:
+        int: Last row id
     """
     cursor = conn.cursor()
     cursor.execute(
@@ -892,18 +960,22 @@ def insert_field(
     return cursor.lastrowid
 
 
-def insert_many_fields(conn, data: list):
-    """Insert multiple fields into "fields" table using one commit
-
-    :param conn: sqlite3.connect
-    :param data: list of field dictionnary
+def insert_many_fields(conn: sqlite3.Connection, data: List[dict]):
+    """Inserts multiple fields into "fields" table using one commit
 
     !!! example
+    ```python
+        >>> insert_many_fields(conn, [{"name":"sacha", "category":"variant", "type" : "TEXT", "description"="a description"}])
+        >>> insert_many_fields(conn, reader.get_fields())
+    ```
 
-        insert_many_fields(conn, [{name:"sacha", category:"variant", count: 0, description="a description"}])
-        insert_many_fields(conn, reader.get_fields())
+    !!! seealso "See also"
+        - insert_field
+        - abstractreader
 
-    .. seealso:: insert_field, abstractreader
+    Args:
+        conn (sqlite3.Connection): Sqlite3 connection
+        data (List[dict]): List of dicts describing the fields to insert (each dict should contain 'name','category', 'type' and 'description' keys)
     """
     cursor = conn.cursor()
     cursor.executemany(
@@ -917,43 +989,52 @@ def insert_many_fields(conn, data: list):
 
 
 @lru_cache()
-def get_fields(conn):
-    """Get fields as list of dictionnary
+def get_fields(conn: sqlite3.Connection) -> Tuple[dict]:
+    """Returns fields from table 'fields' as tuple of dictionnary
 
-    .. seealso:: insert_many_fields
+    !!! seealso "See also"
+        insert_many_fields
 
-    :param conn: sqlite3.connect
-    :return: Tuple of dictionnaries with as many keys as there are columns
-        in the table.
-    :rtype: <tuple <dict>>
+    conn (Sqlite3.Connection): Sqlite3 connection
+
+    Returns:
+        Tuple[dict]: Tuple of dictionnaries, each one describing one field in the table 'fields' (keys are 'name','category', 'type' and 'description')
     """
     conn.row_factory = sqlite3.Row
     return tuple(dict(data) for data in conn.execute("SELECT * FROM fields"))
 
 
 @lru_cache()
-def get_field_by_category(conn, category):
-    """Get fields within a category
+def get_field_by_category(conn: sqlite3.Connection, category: str) -> Tuple[dict]:
+    """Returns all fields from within the given category
 
-    :param conn: sqlite3.connect
-    :param category: Category of field requested.
-    :type category: <str>
-    :return: Tuple of dictionnaries with as many keys as there are columns
-        in the table. Dictionnaries are only related to the given field category.
-    :rtype: <tuple <dict>>
+    Args:
+        conn (sqlite3.Connection): Sqlite3 connection
+        category (str): Name of the category to retrieve the fields info from
+
+    Returns:
+        Tuple[dict]: Tuple of dictionnaries, each one describing one field in the table 'fields', where category == category
+
+    !!! seealso "See also"
+        get_fields
     """
     return tuple(field for field in get_fields(conn) if field["category"] == category)
 
 
-def get_field_by_name(conn, field_name: str):
-    """Return field by its name
+def get_field_by_name(conn: sqlite3.Connection, field_name: str) -> Union[dict, None]:
+    """Returns 'name','category', 'type' and 'description' about field where name == 'field_name'
 
-    .. seealso:: get_fields
+    Args:
+        conn (sqlite3.Connection): Sqlite3 connection
+        field_name (str): Name of the field to query information about
 
-    :param conn: sqlite3.connect
-    :param field_name: field name
-    :return: field record or None if not found.
-    :rtype: <dict> or None
+    Returns:
+        Union[dict,None]: dict with keys 'name','category', 'type' and 'description', or None if there is no field with name field_name in the 'field' table
+
+    !!! warning
+        If two fields from different categories have the same name, the behavior is UNDEFINED !
+        In these cases, we recommend using get_field_by_category or get_fields
+
     """
     conn.row_factory = sqlite3.Row
     field_data = conn.execute(
@@ -962,14 +1043,18 @@ def get_field_by_name(conn, field_name: str):
     return dict(field_data) if field_data else None
 
 
-def get_field_range(conn, field_name: str, sample_name=None):
-    """Return (min,max) of field_name records
+def get_field_range(
+    conn: sqlite3.Connection, field_name: str, sample_name: str = None
+) -> Union[Tuple, None]:
+    """Return (min,max) of field_name in records
 
-    :param conn: sqlite3.connect
-    :param field_name: field name
-    :param sample_name: sample name. mandatory for fields in the "samples" categories
-    :return: (min, max) or None if the field can't be processed with mix/max functions.
-    :rtype: tuple or None
+    Args:
+        conn (Sqlite3.Connection): Sqlite3 connection
+        field_name (str): field name to get the range of
+        sample_name (str): sample name. Mandatory for fields in the "samples" category
+
+    Returns:
+        Union[Tuple,None]: (min, max) of field_name or None if the field can't be processed with mix/max functions (or doesn't exist)
     """
     field = get_field_by_name(conn, field_name)
     if not field:
