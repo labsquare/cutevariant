@@ -41,12 +41,13 @@ import sqlite3
 from collections import defaultdict
 import re
 import logging
-from typing_extensions import TypeAlias
+
+# from typing_extensions import TypeAlias
 from pkg_resources import parse_version
 from functools import partial, lru_cache
 import itertools as it
 import numpy as np
-from typing import Generator, Callable, Tuple, List, Union, Iterable
+from typing import Any, Generator, Callable, Tuple, List, Union, Iterable
 
 
 # Custom imports
@@ -771,22 +772,24 @@ def import_wordset_from_file(conn: sqlite3.Connection, wordset_name, filename):
 delete_set_by_name = partial(delete_by_name, table_name="wordsets")
 
 
-def get_wordsets(conn: sqlite3.Connection) -> Generator[dict]:
+def get_wordsets(conn: sqlite3.Connection) -> Generator[dict, None, None]:
     """Yields dicts of (wordset_name,word_count)
 
     Args:
         conn (sqlite3.Connection): Sqlite3 connection
 
     Yields:
-        Generator[dict]: [description]
+        Generator[dict,None,None]: dicts containing keys wordset_name and word_count
 
     !!! example
+        ```python
         >>> conn = get_sql_connection("test.db")
         >>> get_wordsets(conn)
         >>> {
             "Krebs cycles genes" : 10,
             "Genes of concern" : 20
         }
+        ```
 
     """
     for row in conn.execute(
@@ -795,7 +798,9 @@ def get_wordsets(conn: sqlite3.Connection) -> Generator[dict]:
         yield dict(row)
 
 
-def get_words_in_set(conn: sqlite3.Connection, wordset_name: str) -> Generator[dict]:
+def get_words_in_set(
+    conn: sqlite3.Connection, wordset_name: str
+) -> Generator[str, None, None]:
     """Yields every string in the wordset 'wordset_name'
 
     Args:
@@ -803,7 +808,7 @@ def get_words_in_set(conn: sqlite3.Connection, wordset_name: str) -> Generator[d
         wordset_name (str): Name of the wordset to retrieve content from
 
     Yields:
-        Generator[dict]: One string from the wordset 'wordset_name'
+        Generator[dict,None,None]: One string from the wordset 'wordset_name'
     """
     for row in conn.execute(
         "SELECT DISTINCT value FROM wordsets WHERE name = ?", (wordset_name,)
@@ -937,16 +942,17 @@ def insert_field(
     type: str = "text",
     description: str = str(),
 ) -> int:
-    """Inserts one field record (NOT USED)
+    """
+    Inserts one field record (NOT USED)
 
     Args:
         conn (sqlite3.Connection): Sqlite3 connection
         name (str): Name of the field to insert
         category (str): Category field name.
-            !!! warning:
+            !!! warning
                 The default is "variants". Don't use sample as category name
         type (str): sqlite type which can be: INTEGER, REAL, TEXT
-            !!! todo "To do":
+            !!! todo "To do"
                 Check this argument...
         description (str): Text that describes the field (showed to the user).
     Returns:
@@ -964,14 +970,14 @@ def insert_many_fields(conn: sqlite3.Connection, data: List[dict]):
     """Inserts multiple fields into "fields" table using one commit
 
     !!! example
-    ```python
+        ```python
         >>> insert_many_fields(conn, [{"name":"sacha", "category":"variant", "type" : "TEXT", "description"="a description"}])
         >>> insert_many_fields(conn, reader.get_fields())
-    ```
+        ```
 
     !!! seealso "See also"
-        - insert_field
-        - abstractreader
+        - `insert_field`
+        - `abstractreader`
 
     Args:
         conn (sqlite3.Connection): Sqlite3 connection
@@ -1079,14 +1085,17 @@ def get_field_range(
     return result
 
 
-def get_field_unique_values(conn, field_name: str, limit=None):
-    """Return unique record values for a field name
+def get_field_unique_values(
+    conn: sqlite3.Connection, field_name: str, limit=None
+) -> List[Any]:
+    """Returns unique record values for a field name
 
-    :param conn: sqlite3.connect
-    :param field_name: Name of the field in DB.
-    :param sample_name: sample name. Mandatory for fields in the "samples" categories
-    :return: list of unique values (can be empty if the field is not found)
-    :rtype: list
+    Args:
+        conn (sqlite3.Connection): Sqlite3 connection
+        field_name (str): Name of the field in the cutevariant database.
+        sample_name: Sample name. Mandatory for fields in the "samples" categories
+    Returns
+        List[Any]: List of unique values (can be empty if the field is not found)
     """
 
     if field_name.startswith("ann."):
@@ -1119,15 +1128,18 @@ def get_field_unique_values(conn, field_name: str, limit=None):
 ## annotations table ===========================================================
 
 
-def create_table_annotations(conn, fields):
-    """Create "annotations" table which contains dynamics fields
+def create_table_annotations(conn: sqlite3.Connection, fields: Iterable[dict]):
+    """Creates "annotations" table which contains dynamics fields
 
-    :param fields: Generator of SQL fields. Example of fields:
+    Args:
+        fields (Iterable): Iterable of SQL fields. Each field is a dict with "name" and "type" keys. "type" value **must** be a valid SQL type (i.e. one of "TEXT","NUMERIC","INTEGER","REAL", or "BLOB")
 
-        .. code-block:: python
-
-            ('allele str NULL', 'consequence str NULL', ...)
-    :type fields: <generator>
+    !!! example
+        ```python
+        >>> import sql
+        >>> conn = sql.get_sql_connection("test.db")
+        >>> sql.create_table_annotations(conn,[{"name":"chr","type":"TEXT"},{"name":"pos","type":"INT"}])
+        ```
     """
     schema = ",".join([f'`{field["name"]}` {field["type"]}' for field in fields])
 
@@ -1149,26 +1161,42 @@ def create_table_annotations(conn, fields):
 
 
 def create_annotations_indexes(conn):
-    """Create indexes on the "annotations" table
+    """Creates indexes on the "annotations" table
 
-    .. warning: This function must be called after batch insertions.
+    Args:
+        conn (sqlite3.Connection) : Sqlite3 connection
 
-    :Example:
 
-    .. code-block:: sql
+    !!! warning
+        This function must be called after batch insertions.
 
+    !!! example
+
+        ```sql
         SELECT *, group_concat(annotations.rowid) FROM variants
         LEFT JOIN annotations ON variants.rowid = annotations.variant_id
         WHERE pos = 0
         GROUP BY chr,pos
         LIMIT 100
+        ```
     """
     # Allow search on variant_id
     conn.execute("CREATE INDEX idx_annotations ON annotations (variant_id)")
 
 
-def get_annotations(conn, variant_id: int):
-    """Get variant annotation for the variant with the given id"""
+def get_annotations(
+    conn: sqlite3.Connection, variant_id: int
+) -> Generator[dict, None, None]:
+    """Get variant annotations for the variant with the given id. Yields one dict of annotations for each annotation this variant has
+
+    Args:
+        conn (sqlite3.Connection): Sqlite3 connection
+        variant_id (int): ID of the variant to get annotions for
+
+    Yields:
+        dict: Annotation data for this variant
+
+    """
     conn.row_factory = sqlite3.Row
     for annotation in conn.execute(
         f"SELECT * FROM annotations WHERE variant_id = {variant_id}"
@@ -1179,26 +1207,28 @@ def get_annotations(conn, variant_id: int):
 ## variants table ==============================================================
 
 
-def create_table_variants(conn, fields):
-    """Create "variants" and "sample_has_variant" tables which contains dynamics fields
+def create_table_variants(conn: sqlite3.Connection, fields: List[dict]):
+    """Creates tables "variants" and "sample_has_variant" tables which contains dynamics fields
 
-    :Example:
+    Args:
+        conn (sqlite3.Connection): Sqlite3 connection
+        fields (List[dict]): List of 'fields' (dicts with at least name and type, optionally constraint) to put in tables variants and 'sample_has_variant'
 
-        fields = get_fields()
-        create_table_variants(conn, fields)
+    !!! example
+        ```python
+        >>> fields = get_fields()
+        >>> create_table_variants(conn, fields)
+        ```
+    !!! seealso "See also"
+        get_fields
 
-    .. seealso:: get_fields
+    !!! note
 
-    .. note:: "gt" field in "sample_has_variant" = Patient's genotype.
-        - Patient without variant: gt = 0: Wild homozygote
-        - Patient with variant in the heterozygote state: gt = -1: Heterozygote
-        - Patient with variant in the homozygote state: gt = 2: Homozygote
+        "gt" field in "sample_has_variant" = Patient's genotype.
+         - Patient without variant: gt = 0: Wild homozygote
+         - Patient with variant in the heterozygote state: gt = -1: Heterozygote
+         - Patient with variant in the homozygote state: gt = 2: Homozygote
 
-        :Example of VQL query:
-            SELECT chr, pos, genotype("pierre") FROM variants
-
-    :param conn: sqlite3.connect
-    :param fields: list of field dictionnary.
     """
     cursor = conn.cursor()
 
@@ -1229,19 +1259,21 @@ def create_table_variants(conn, fields):
 
 
 def create_variants_indexes(conn):
-    """Create indexes on the "variants" table
+    """Create indexes for the "variants" table
 
-    .. warning:: This function must be called after batch insertions.
+    !!! warning
+        This function must be called after batch insertions.
 
-    :Example:
+    !!! example
 
-    .. code-block:: sql
-
+        ```sql
         SELECT *, group_concat(annotations.rowid) FROM variants
         LEFT JOIN annotations ON variants.rowid = annotations.variant_id
         WHERE pos = 0
         GROUP BY chr,pos
         LIMIT 100
+        ```
+
     """
     # Complementary index of the primary key (sample_id, variant_id)
     conn.execute(
@@ -1257,32 +1289,48 @@ def get_one_variant(
     variant_id: int,
     with_annotations=False,
     with_samples=False,
-):
+) -> dict:
     r"""Get the variant with the given id
 
-    TODO: with_annotations, with_samples are quite useless and not used for now
+
 
     Args:
-        conn (sqlite3.Connection): sqlite3 connection
+        conn (sqlite3.Connection): Sqlite3 connection
         variant_id (int): Database id of the variant
         with_annotations (bool, optional): Add annotations items. Default is True
         with_samples (bool, optional): add samples items. Default is True
 
     Returns:
-        dict: A variant item with all fields in "variants" table;
-            \+ all fields of annotations table if `with_annotations` is True;
-            \+ all fields of sample_has_variant associated to all samples if
-            `with_samples` is True.
-            Example:
+        dict: A variant item with all fields in "variants" table. Including:
+            - all fields of annotations table if `with_annotations` is True.
+            - all fields of sample_has_variant associated to all samples if `with_samples` is True.
+            In every case, 'annotations' and 'samples' are returned as lists at their respective keys (empty lists if not requested)
 
-            .. code-block:: python
+    !!! example
+        ```python
+        >>> conn = sql.get_sql_connection("test.db")
+        >>> variant = sql.get_one_variant(conn,42,with_annotations=True)
+        {'id': 42,
+            'count_hom': 0,
+            'count_het': 1,
+            'count_ref': 0,
+            'count_var': 1,
+            'is_snp': 1,
+            'annotation_count': **1**,
+            {...}
+            'annotations': [
+            {
+                'variant_id': 42,
+                'allele': 'A',
+                'consequence': 'intergenic_region',
+                {...}
+            }],
+            'samples': []
+        }
+        ```
 
-                {
-                    variant fields as keys...,
-                    "annotations": dict of annotations fields as keys...,
-                    "samples": dict of samples fields as keys...,
-                }
-
+    !!! todo "To do"
+        with_annotations, with_samples are quite useless and not used for now
     """
     conn.row_factory = sqlite3.Row
     # Cast sqlite3.Row object to dict because later, we use items() method.
@@ -1315,14 +1363,14 @@ def get_one_variant(
     return variant
 
 
-def update_variant(conn, variant: dict):
-    """Update variant data
+def update_variant(conn: sqlite3.Connection, variant: dict):
+    """Updates variant data
 
     Used by widgets to save various modifications in a variant.
 
     Args:
-        variant (dict): Fields as keys; values as values.
-            'id' key is expected to set the variant.
+        conn (sqlite3.Connection): Sqlite3 connection
+        variant (dict): key,value pairs of fields to replace where the 'id' key indicates which variant to update
 
     Raises:
         KeyError if 'id' key is not in the given variant
@@ -1348,27 +1396,51 @@ def update_variant(conn, variant: dict):
     conn.commit()
 
 
-def get_variants_count(conn):
-    """Get the number of variants in the "variants" table"""
+def get_variants_count(conn: sqlite3.Connection):
+    """Get the number of variants in the "variants" table
+    Args:
+        conn (sqlite3.Connection): Sqlite3 connection
+    """
     return count_query(conn, "variants")
 
 
 def get_variants(
     conn: sqlite3.Connection,
-    fields,
-    source="variants",
-    filters={},
-    order_by=None,
-    order_desc=True,
-    limit=50,
-    offset=0,
+    fields: List[str],
+    source: str = "variants",
+    filters: dict = {},
+    order_by: str = None,
+    order_desc: bool = True,
+    limit: int = 50,
+    offset: int = 0,
     group_by={},
     having={},  # {"op":">", "value": 3  }
     **kwargs,
-):
+) -> Generator[dict, None, None]:
+    """Yields a dict for each variant passing filters. Each dict contains keys for every field in fields, where fields starting with 'ann.' or 'sample.'
+    are in lists under 'annotations' and 'samples' keys respectively.
 
+    Args:
+        conn (sqlite3.Connection): Sqlite3 connection
+        fields (List[str]): List of fields you want to retrieve. Fields in annotations table must be prefixed with ann, whereas fields in the sample_has_variant table should be prefixed with 'sample.{sample_name}.'
+        source (str, optional): Selection you want to retrieve the variants from. Defaults to "variants".
+        filters (dict, optional): Tree of conditions, linked by logical operators (either $and or $or). Defaults to {}.
+        order_by (str, optional): Name of the field to order the result by. Defaults to None.
+        order_desc (bool, optional): Whether to order in descendent order or not. Defaults to True.
+        limit (int, optional): Defines a limit for the request. Helps keeping memory safe. Defaults to 50.
+        offset (int, optional): Offset of the SQL request. Use it if you need the next N+p pages after having requested the first N. Defaults to 0.
+        group_by (dict, optional): Deprecated. Defaults to {}.
+        having (dict, optional): Deprecated. Defaults to {}.
+
+    Yields:
+        Generator[dict, None, None]: A dict containing all the requested fields about a variant that matches the query. Each variant unique ID will be yielded
+        only once, no matter how many annotations refer to it
+
+    !!! seealso "See also"
+        get_one_variant
+
+    """
     # TODO : rename as get_variant_as_tables ?
-
     query = build_sql_query(
         conn,
         fields=fields,
@@ -1392,45 +1464,45 @@ def get_variants(
         yield {k.replace("(", "[").replace(")", "]"): v for k, v in dict(i).items()}
 
 
-def get_variants_tree(
-    conn: sqlite3.Connection,
-    **kwargs,
-):
-    pass
-    # for variant in get_variants(conn, **kwargs):
+# def get_variants_tree(
+#     conn: sqlite3.Connection,
+#     **kwargs,
+# ):
+# pass
+# for variant in get_variants(conn, **kwargs):
 
-    #     item = {}
-    #     annotations = []
-    #     samples = {}
+#     item = {}
+#     annotations = []
+#     samples = {}
 
-    #     for key, value in variant.items():
-    #         if key.startswith("ann."):
-    #             value = str(value)
-    #             annotations.append(value[4:])
+#     for key, value in variant.items():
+#         if key.startswith("ann."):
+#             value = str(value)
+#             annotations.append(value[4:])
 
-    #         elif key.startswith("sample."):
-    #             _, *sample, field = key.split(".")
-    #             sample = ".".join(sample)
+#         elif key.startswith("sample."):
+#             _, *sample, field = key.split(".")
+#             sample = ".".join(sample)
 
-    #             if "sample" not in samples:
-    #                 samples[sample] = list()
-    #             samples[sample].append()
+#             if "sample" not in samples:
+#                 samples[sample] = list()
+#             samples[sample].append()
 
-    #         else:
-    #             item[key] = value
+#         else:
+#             item[key] = value
 
-    #     if annotations:
-    #         item["annotations"] = annotations
+#     if annotations:
+#         item["annotations"] = annotations
 
-    #     if samples:
-    #         item["samples"] = samples
+#     if samples:
+#         item["samples"] = samples
 
-    #     yield item
+#     yield item
 
 
 def async_insert_many_variants(
     conn: sqlite3.Connection, data: list, total_variant_count=None, yield_every=3000
-) -> Generator:
+) -> Generator[Tuple[int, str], None, None]:
     """Insert many variants from data into variants table
 
     Args:
@@ -1443,11 +1515,12 @@ def async_insert_many_variants(
         (int,str): Yield a tuple with progression and message. Progression is 0 if total_variant_count is not set.
 
     !!! example
-
         Insert many variant:
-            >>> conn = get_sql_connection("example.db")
-            >>> insert_many_variant(conn, [{chr:"chr1", pos:24234, alt:"A","ref":T }])
-            >>> insert_many_variant(conn, reader.get_variants())
+        ```python
+        >>> conn = get_sql_connection("example.db")
+        >>> insert_many_variant(conn, [{chr:"chr1", pos:24234, alt:"A","ref":T }])
+        >>> insert_many_variant(conn, reader.get_variants())
+        ```
 
     !!! todo "To do"
         with large dataset, need to cache import
@@ -1458,7 +1531,7 @@ def async_insert_many_variants(
         Using reader, this can take a while
         Upon insertion of a duplicate key where the column must contain
         a PRIMARY KEY or UNIQUE constraint Upon insertion of NULL value where the column
-        hasa NOT NULL constraint.
+        has a NOT NULL constraint.
     """
 
     def build_columns_and_placeholders(table_name):
@@ -1634,10 +1707,11 @@ def insert_many_variants(conn, data, **kwargs):
 ## samples table ===============================================================
 
 
-def create_table_samples(conn, fields=[]):
-    """Create samples table
-
-    :param conn: sqlite3.connect
+def create_table_samples(conn: sqlite3.Connection, fields: List[dict] = []):
+    """Create samples table with the given fields
+    Args:
+        conn (sqlite3.Connection): Sqlite3 connection
+        fields (List[dict]): List of fields in the samples table. Each field must have at least 'name' and 'type' keys, and optionally a 'constraint' field
     """
     cursor = conn.cursor()
     # sample_id is an alias on internal autoincremented 'rowid'
@@ -1683,12 +1757,14 @@ def create_table_samples(conn, fields=[]):
     conn.commit()
 
 
-def insert_sample(conn, name="no_name"):
+def insert_sample(conn: sqlite3.Connection, name: str = "no_name"):
     """Insert one sample in samples table (USED in TESTS)
 
-    :param conn: sqlite3.connect
-    :return: Last row id
-    :rtype: <int>
+    Args:
+        conn (sqlite3.Connection): Sqlite3 connection
+        name (str): Name of the sample to insert
+    Returns
+        int: Last row id
     """
     cursor = conn.cursor()
     cursor.execute("INSERT INTO samples (name) VALUES (?)", [name])
@@ -1696,12 +1772,15 @@ def insert_sample(conn, name="no_name"):
     return cursor.lastrowid
 
 
-def insert_many_samples(conn, samples: list):
-    """Insert many samples at a time in samples table
+def insert_many_samples(conn: sqlite3.Connection, samples: List[str]):
+    """Insert many samples at a time in the 'samples' table
 
-    :param samples: List of samples names
-        .. todo:: only names in this list ?
-    :type samples: <list <str>>
+    Args:
+        conn (sqlite3.Connection): Sqlite3 connection
+        samples (List[str]): List of samples names
+
+    !!! todo "To do"
+        only names in this list ?
     """
     cursor = conn.cursor()
     cursor.executemany(
@@ -1710,22 +1789,60 @@ def insert_many_samples(conn, samples: list):
     conn.commit()
 
 
-def get_samples(conn):
+def get_samples(conn: sqlite3.Connection) -> Generator[dict, None, None]:
     """Get samples from sample table
 
-    See Also: :meth:`update_sample`
 
-    :param conn: sqlite3.conn
-    :return: Generator of dictionnaries with as sample fields as values.
-        :Example: ({'id': <unique_id>, 'name': <sample_name>})
-    :rtype: <generator <dict>>
+    Args:
+        conn (sqlite3.Connection): Sqlite3 connection
+
+    Yields:
+        Each yielded dictionnary contains keys and values to identify the sample by its id, name, family_id and so on.
+
+    Returns:
+        Generator[dict,None,None]: Generator of dictionnaries
+
+    !!! example
+        ```python
+        >>> conn = sql.get_sql_connection("test.db")
+        >>> list(get_samples(conn))
+        >>> [
+                {
+                    'id': 1,
+                    'name': 'bobby',
+                    'family_id': 'fam',
+                    'father_id': 0,
+                    'mother_id': 0,
+                    'sex': 0,
+                    'phenotype': 0
+                },
+                {
+                    ...
+                },
+                ...
+        ]
+        ```
+    !!! seealso "See also"
+        update_sample
     """
     conn.row_factory = sqlite3.Row
     return (dict(data) for data in conn.execute("SELECT * FROM samples"))
 
 
-def get_sample_annotations(conn, variant_id: int, sample_id: int):
-    """Get samples for given sample id and variant id"""
+def get_sample_annotations(
+    conn: sqlite3.Connection, variant_id: int, sample_id: int
+) -> dict:
+    """Get sample annotations for given sample id and variant id
+
+    Args:
+        conn (sqlite3.Connection): Sqlite3 connection
+        variant_id (int): Variant ID you want the sample annotations from
+        sample_id (int): The sample ID you want the variant annotation for
+
+    Returns:
+        dict: A dict with keys 'sample_id', 'variant_id' (the same as the arguments) and as many key value pairs as there are annotations fields for this sample
+
+    """
     conn.row_factory = sqlite3.Row
     return dict(
         conn.execute(
@@ -1734,8 +1851,34 @@ def get_sample_annotations(conn, variant_id: int, sample_id: int):
     )
 
 
-def get_sample_annotations_by_variant(conn, variant_id: int):
+def get_sample_annotations_by_variant(
+    conn: sqlite3.Connection, variant_id: int
+) -> List[dict]:
+    """Get all samples annotations for variant with variant_id
 
+    Args:
+        conn (sqlite3.Connection): Sqlite3 connection
+        variant_id (int): The variant you want to know the sample annotations for
+
+    Returns:
+        List[dict]: List of sample annotations. Each dict has a variant_id key (the same as in the args), the sample_id you are getting the annotations for,
+        and one key,value pair for each sample annotation.
+
+    !!! example
+        ```python
+        >>> conn = sql.get_sql_connection("test.db")
+        >>> get_sample_annotations_by_variant(conn,42)
+        >>> [
+                {'sample_id': 1, 'variant_id': 42, 'gt': -1},
+                {'sample_id': 2, 'variant_id': 42, 'gt': -1},
+                {...},
+                {'sample_id': 4, 'variant_id': 42, 'gt': -1},
+                {'sample_id': 5, 'variant_id': 42, 'gt': -1},
+                {'sample_id': 6, 'variant_id': 42, 'gt': -1},
+                {'sample_id': 7, 'variant_id': 42, 'gt': -1}
+            ]
+        ```
+    """
     conn.row_factory = sqlite3.Row
     return [
         dict(data)
@@ -1745,24 +1888,30 @@ def get_sample_annotations_by_variant(conn, variant_id: int):
     ]
 
 
-def update_sample(conn, sample: dict):
-    """Update sample record
-
-    .. code-block:: python
-
-        sample = {
-            id : 3 #sample id
-            name : "Boby",  #Name of sample
-            family_id : "fam", # familly identifier
-            father_id : 0, #father id, 0 if not
-            mother_id : 0, #mother id, 0 if not
-            sex : 0 #sex code ( 1 = male, 2 = female, 0 = unknown)
-            phenotype: 0 #( 1 = control , 2 = case, 0 = unknown)
-        }
+def update_sample(conn: sqlite3.Connection, sample: dict):
+    """Updates sample record with sample as the new data
 
     Args:
-        conn (sqlite.connection): sqlite connection
-        sample (dict): data
+        conn (sqlite3.Connection): Sqlite3 connection
+        sample (dict): Sample data to update. Must have an 'id' key.
+
+    !!! example
+        ```python
+        >>> conn = sql.get_sql_connection("test.db")
+        >>> sample = {
+                id : 3 #sample id
+                name : "Boby",  #Name of sample
+                family_id : "fam", # familly identifier
+                father_id : 0, #father id, 0 if not
+                mother_id : 0, #mother id, 0 if not
+                sex : 0 #sex code ( 1 = male, 2 = female, 0 = unknown)
+                phenotype: 0 #( 1 = control , 2 = case, 0 = unknown)
+            }
+        >>> sql.update_sample(conn,sample)
+        ```
+
+    !!! todo "To do"
+        Raise exception if sample doesn't contain the 'id' key
     """
     if "id" not in sample:
         logging.debug("sample id is required")
