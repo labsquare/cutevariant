@@ -1,7 +1,5 @@
 import pytest
 from PySide2.QtWidgets import QMainWindow
-
-from cutevariant.gui.state import State
 from cutevariant.gui import plugin
 from tests import utils
 
@@ -14,7 +12,12 @@ def conn():
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.state = State()
+        self._state = {
+        "fields": ["chr","pos","ref","alt"],
+        "filters": {},
+        "source":"variants",
+        "current_variant": {}
+        }
 
         self.step_counter = {}
 
@@ -26,6 +29,12 @@ class MainWindow(QMainWindow):
 
     def on_open_project(self):
         pass
+
+    def set_state_data(self,key,value):
+    	self._state[key] = value
+
+    def get_state_data(self,key):
+    	return self._state[key]
 
 
 def test_find_plugins(qtbot, conn):
