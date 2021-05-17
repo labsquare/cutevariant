@@ -976,7 +976,7 @@ def insert_many_fields(conn: sqlite3.Connection, data: List[dict]):
         ```
 
     !!! seealso "See also"
-        - `insert_field`
+        - [`cutevariant.core.sql.insert_field`][cutevariant.core.sql.insert_field]
         - `abstractreader`
 
     Args:
