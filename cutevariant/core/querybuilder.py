@@ -269,9 +269,9 @@ def condition_to_sql(item: dict) -> str:
     {"ann.gene": "CFTR"}
     Exemples:
 
-        condition_to_sql({"chr":3}) ==> variants.chr = 3
-        condition_to_sql({"chr":{"$gte": 30}}) ==> variants.chr >= 3
-        condition_to_sql({"ann.gene":{"$gte": 30}}) ==> annotation.gene >= 30
+        condition_to_sql({"chr":3}) ==> `variants`.`chr `= 3
+        condition_to_sql({"chr":{"$gte": 30}}) ==> `variants`.`chr `>= 3
+        condition_to_sql({"ann.gene":{"$gte": 30}}) ==> `annotation`.`gene` >= 30
 
     """
 
@@ -301,6 +301,14 @@ def condition_to_sql(item: dict) -> str:
 
     # MAP operator
     sql_operator = OPERATORS[operator]
+
+    # Optimisation REGEXP
+    # use LIKE IF REGEXP HAS NO special caractere
+    if sql_operator == "REGEXP":
+        special_caracter = "[]+.?*()^$"
+        if not set(str(value)) & set(special_caracter):
+            sql_operator = "LIKE"
+            value = f"%{value}%"
 
     # Cast value
     if isinstance(value, str):

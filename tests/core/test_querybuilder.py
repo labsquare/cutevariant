@@ -80,6 +80,17 @@ def test_condition_to_sql():
         == "`sample_boby`.`dp` = 42"
     )
 
+    # Test LIKE optimisation with REGEXP
+    assert (
+        querybuilder.condition_to_sql({"gene": {"$regex": "CFTR"}})
+        == "`variants`.`gene` LIKE '%CFTR%'"
+    )
+
+    assert (
+        querybuilder.condition_to_sql({"gene": {"$regex": "CFTR.+"}})
+        == "`variants`.`gene` REGEXP 'CFTR.+'"
+    )
+
 
 def test_fields_to_vql():
     fields = [
@@ -342,10 +353,10 @@ QUERY_TESTS = [
         {
             "fields": ["chr", "pos"],
             "source": "variants",
-            "filters": {"$and": [{"alt": {"$regex": "C"}}]},
+            "filters": {"$and": [{"alt": {"$regex": "C$"}}]},
         },
-        "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants WHERE (`variants`.`alt` REGEXP 'C') LIMIT 50 OFFSET 0",
-        "SELECT chr,pos FROM variants WHERE alt ~ 'C'",
+        "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants WHERE (`variants`.`alt` REGEXP 'C$') LIMIT 50 OFFSET 0",
+        "SELECT chr,pos FROM variants WHERE alt ~ 'C$'",
     ),
     # Test different source
     (
