@@ -47,7 +47,7 @@ from pkg_resources import parse_version
 from functools import partial, lru_cache
 import itertools as it
 import numpy as np
-from typing import Any, Generator, Callable, Tuple, List, Union, Iterable
+from typing import Any, Generator, Tuple, List, Union, Iterable, Set
 
 
 # Custom imports
@@ -66,12 +66,11 @@ def get_sql_connection(filepath: str) -> sqlite3.Connection:
         filepath (str): sqlite3 database filepath
 
     Returns:
-        sqlite3.Connection: Sqlite3 Connection
-            The connection is initialized with `row_factory = Row`.
-            So all results are accessible via indexes or keys.
-            The returned connection also adds support for custom functions:
-            - REGEXP function.
-                Usage: REGEXP(pattern,tested_string). Returns true iff tested_string matches regex pattern.
+        The connection is initialized with `row_factory = Row`.
+        So all results are accessible via indexes or keys.
+        The returned connection also adds support for custom functions:
+        - REGEXP function.
+            Usage: REGEXP(pattern,tested_string). Returns true iff tested_string matches regex pattern.
     """
     connection = sqlite3.connect(filepath)
     # Activate Foreign keys
@@ -103,7 +102,7 @@ def get_database_file_name(conn: sqlite3.Connection) -> str:
         conn (sqlite3.Connection): The Sqlite3 connection you'd like to have the file name of
 
     Returns:
-        str: The file name conn is connected to
+        The file name conn is connected to
     """
     return conn.execute("PRAGMA database_list").fetchone()["file"]
 
@@ -116,7 +115,7 @@ def table_exists(conn: sqlite3.Connection, name: str) -> bool:
         name (str): Table name you're looking for in the database that conn is connected to
 
     Returns:
-        bool: True if table exists
+        True if table exists
     """
     c = conn.cursor()
     c.execute(f"SELECT name FROM sqlite_master WHERE name = '{name}'")
@@ -201,7 +200,7 @@ def count_query(conn: sqlite3.Connection, query: str) -> int:
         query (str): SQL query you want to have the line count of
 
     Returns:
-        int: Number of lines returned by the query
+        Number of lines returned by the query
     """
     return conn.execute(f"SELECT COUNT(*) as count FROM ({query})").fetchone()[0]
 
@@ -314,7 +313,7 @@ def get_project(conn: sqlite3.Connection) -> dict:
         conn (sqlite3.Connection): Sqlite3 connection with table 'projects'
 
     Returns:
-        dict: A  python dict where key,value pairs are one line of the table 'projects'
+        A  python dict where key,value pairs are one line of the table 'projects'
     """
     g = (dict(data) for data in conn.execute("SELECT key, value FROM projects"))
     return {data["key"]: data["value"] for data in g}
@@ -354,7 +353,7 @@ def get_metadatas(conn: sqlite3.Connection) -> dict:
     """Returns a dictionary of metadatas
 
     Returns:
-        dict: A python dict where each key,value pair represents metadata that was inserted in the 'metadatas' table
+        A python dict where each key,value pair represents metadata that was inserted in the 'metadatas' table
     """
     conn.row_factory = sqlite3.Row
     g = (dict(data) for data in conn.execute("SELECT key, value FROM metadatas"))
@@ -364,7 +363,7 @@ def get_metadatas(conn: sqlite3.Connection) -> dict:
 ## selections & sets tables ====================================================
 
 
-def delete_by_name(conn: sqlite3.Connection, name: str, table_name: str = None):
+def delete_by_name(conn: sqlite3.Connection, name: str, table_name: str = None) -> int:
     """Delete data in "selections" or "sets" tables with the given name
 
     Args:
@@ -372,7 +371,7 @@ def delete_by_name(conn: sqlite3.Connection, name: str, table_name: str = None):
         name (str): Selection/set name
         table_name (str): Name of the table concerned by the deletion
     Returns:
-        int: Number of rows affected
+        Number of rows affected
     """
     if table_name is None:
         raise ValueError("Please specify a table name")
@@ -467,7 +466,7 @@ def insert_selection(
         count (int, optional): Number of rows in the selection. Defaults to 0.
 
     Returns:
-        int: Total number of rows in the 'selections' table
+        Total number of rows in the 'selections' table
     """
     cursor = conn.cursor() if isinstance(conn, sqlite3.Connection) else conn
 
@@ -504,7 +503,7 @@ def create_selection_from_sql(
             just `id` if `False`.
 
     Returns:
-        Union[int,None] selection_id, if lines have been inserted; None otherwise (rollback).
+        selection_id, if lines have been inserted; None otherwise (rollback).
     """
     cursor = conn.cursor()
 
@@ -634,7 +633,7 @@ def get_selections(conn: sqlite3.Connection) -> Tuple[dict]:
              {"id": ..., "name": ..., "count": ..., "query": ...})
 
     Returns:
-        Tuple[dict]: Tuple of dictionnaries describing each selection (id, name, count and query)
+        Tuple of dictionnaries describing each selection (id, name, count and query)
     """
     conn.row_factory = sqlite3.Row
     return (dict(data) for data in conn.execute("SELECT * FROM selections"))
@@ -648,7 +647,7 @@ def delete_selection(conn: sqlite3.Connection, selection_id: int) -> int:
         selection_id (int): id (from the 'selections' table) of the selection to remove
 
     Returns:
-        int: Number of rows deleted
+        Number of rows deleted
     """
     cursor = conn.cursor()
     cursor.execute("DELETE FROM selections WHERE rowid = ?", (selection_id,))
@@ -656,7 +655,7 @@ def delete_selection(conn: sqlite3.Connection, selection_id: int) -> int:
     return cursor.rowcount
 
 
-def edit_selection(conn: sqlite3.Connection, selection: dict):
+def edit_selection(conn: sqlite3.Connection, selection: dict) -> int:
     """Updates the name and count of a selection with the given id
 
     Args:
@@ -664,7 +663,7 @@ def edit_selection(conn: sqlite3.Connection, selection: dict):
         selection (dict): Selection dict with keys ('id','count','name')
 
     Returns:
-        int: Number of rows in the 'selections' table
+        Number of rows in the 'selections' table
     """
     cursor = conn.cursor()
     conn.execute(
@@ -705,15 +704,21 @@ def create_table_wordsets(conn: sqlite3.Connection):
     conn.commit()
 
 
-def sanitize_words(words):
-    """Returns a set of cleaned words
+def sanitize_words(words: Iterable[str]) -> Set[str]:
+    """Returns a set of cleaned words from the given iterable
+
+    Args:
+        words (Iterable[str]): A collection of strings (either a file handle or generic iterable collection)
+
+    Returns:
+        A set of strings taken from the 'words' collection, having removed entries with whitespaces.
 
     !!! note "See also"
 
-        import_wordset_from_file
+        [`cutevariant.core.sql.import_wordset_from_file`][cutevariant.core.sql.import_wordset_from_file]
 
-        cutevariant.gui.plugins.word_set.widgets.WordListDialog.load_file
-
+    !!! todo "To do"
+        Generate doc for wordset_plugin to link to `cutevariant.gui.plugins.word_set.widgets.WordListDialog.load_file`
     """
     # Search whitespaces
     expr = re.compile("[ \t\n\r\f\v]")
@@ -729,12 +734,15 @@ def sanitize_words(words):
     return data
 
 
-def import_wordset_from_file(conn: sqlite3.Connection, wordset_name, filename):
+def import_wordset_from_file(
+    conn: sqlite3.Connection, wordset_name: str, filename: str
+) -> int:
     r"""Create Word set from the given file
 
     Args:
-        wordset_name: Name of the Word set
-        filename: File to be imported, we expect 1 word per line.
+        conn (sqlite3.Connection): Sqlite3 connection
+        wordset_name (str): Name of the Word set
+        filename (str): File to be imported, expects 1 word per line.
 
     Returns:
         Number of rows affected during insertion (number of words inserted).
@@ -845,7 +853,7 @@ def intersect_variants(query1: str, query2: str, **kwargs) -> str:
         query2 (str): RHS operand of the intersection query (SQL)
 
     Returns:
-        str: Resulting query (SQL)
+        Resulting query (SQL)
 
     !!! info "Nota Bene"
 
@@ -859,7 +867,7 @@ def intersect_variants(query1: str, query2: str, **kwargs) -> str:
     return f"""SELECT * FROM ({query1} INTERSECT {query2})"""
 
 
-def union_variants(query1, query2, **kwargs):
+def union_variants(query1, query2, **kwargs) -> str:
     """Builds a SQL query to get variants from either query1 OR query2 (or both)
 
     Args:
@@ -867,7 +875,7 @@ def union_variants(query1, query2, **kwargs):
         query2 (str): RHS operand of the union query (SQL)
 
     Returns:
-        str: Resulting query (SQL)
+        Resulting query (SQL)
 
     !!! info "Nota Bene"
 
@@ -881,7 +889,7 @@ def union_variants(query1, query2, **kwargs):
     return f"""{query1} UNION {query2}"""
 
 
-def subtract_variants(query1, query2, **kwargs):
+def subtract_variants(query1, query2, **kwargs) -> str:
     """Builds a SQL query to get variants that are in query1 BUT NOT in query2
 
     Args:
@@ -889,7 +897,7 @@ def subtract_variants(query1, query2, **kwargs):
         query2 (str): RHS operand of the difference query (SQL)
 
     Returns:
-        str: Resulting query (SQL)
+        Resulting query (SQL)
 
     !!! info "Nota Bene"
 
@@ -956,7 +964,7 @@ def insert_field(
                 Check this argument...
         description (str): Text that describes the field (showed to the user).
     Returns:
-        int: Last row id
+        Last row id
     """
     cursor = conn.cursor()
     cursor.execute(
@@ -1004,7 +1012,7 @@ def get_fields(conn: sqlite3.Connection) -> Tuple[dict]:
     conn (Sqlite3.Connection): Sqlite3 connection
 
     Returns:
-        Tuple[dict]: Tuple of dictionnaries, each one describing one field in the table 'fields' (keys are 'name','category', 'type' and 'description')
+        Tuple of dictionnaries, each one describing one field in the table 'fields' (keys are 'name','category', 'type' and 'description')
     """
     conn.row_factory = sqlite3.Row
     return tuple(dict(data) for data in conn.execute("SELECT * FROM fields"))
@@ -1019,7 +1027,7 @@ def get_field_by_category(conn: sqlite3.Connection, category: str) -> Tuple[dict
         category (str): Name of the category to retrieve the fields info from
 
     Returns:
-        Tuple[dict]: Tuple of dictionnaries, each one describing one field in the table 'fields', where category == category
+        Tuple of dictionnaries, each one describing one field in the table 'fields', where category == category
 
     !!! seealso "See also"
         get_fields
@@ -1035,7 +1043,8 @@ def get_field_by_name(conn: sqlite3.Connection, field_name: str) -> Union[dict, 
         field_name (str): Name of the field to query information about
 
     Returns:
-        Union[dict,None]: dict with keys 'name','category', 'type' and 'description', or None if there is no field with name field_name in the 'field' table
+        dict with keys 'name','category', 'type' and 'description'.
+        None if there is no field with name field_name in the 'field' table
 
     !!! warning
         If two fields from different categories have the same name, the behavior is UNDEFINED !
@@ -1060,7 +1069,8 @@ def get_field_range(
         sample_name (str): sample name. Mandatory for fields in the "samples" category
 
     Returns:
-        Union[Tuple,None]: (min, max) of field_name or None if the field can't be processed with mix/max functions (or doesn't exist)
+        (min, max) of field_name
+        None if the field can't be processed with mix/max functions (or doesn't exist)
     """
     field = get_field_by_name(conn, field_name)
     if not field:
@@ -1086,16 +1096,17 @@ def get_field_range(
 
 
 def get_field_unique_values(
-    conn: sqlite3.Connection, field_name: str, limit=None
+    conn: sqlite3.Connection, field_name: str, limit: int = None
 ) -> List[Any]:
-    """Returns unique record values for a field name
+    """Returns every unique value stored in the field_name column.
 
     Args:
         conn (sqlite3.Connection): Sqlite3 connection
-        field_name (str): Name of the field in the cutevariant database.
-        sample_name: Sample name. Mandatory for fields in the "samples" categories
-    Returns
-        List[Any]: List of unique values (can be empty if the field is not found)
+        field_name (str): Name of the field to get unique values of.
+        limit (int, optional): Query maximum count (keeps memory safe). Defaults to None.
+
+    Returns:
+        List of unique values stored in the column field_name in the database.
     """
 
     if field_name.startswith("ann."):
@@ -1301,10 +1312,10 @@ def get_one_variant(
         with_samples (bool, optional): add samples items. Default is True
 
     Returns:
-        dict: A variant item with all fields in "variants" table. Including:
+        A variant item with all fields in "variants" table. Including:
             - all fields of annotations table if `with_annotations` is True.
             - all fields of sample_has_variant associated to all samples if `with_samples` is True.
-            In every case, 'annotations' and 'samples' are returned as lists at their respective keys (empty lists if not requested)
+            In either case, 'annotations' and 'samples' are returned as lists at their respective keys (empty lists if not requested)
 
     !!! example
         ```python
@@ -1364,16 +1375,14 @@ def get_one_variant(
 
 
 def update_variant(conn: sqlite3.Connection, variant: dict):
-    """Updates variant data
-
-    Used by widgets to save various modifications in a variant.
+    """Used by widgets to save various modifications in a variant.
 
     Args:
         conn (sqlite3.Connection): Sqlite3 connection
         variant (dict): key,value pairs of fields to replace where the 'id' key indicates which variant to update
 
     Raises:
-        KeyError if 'id' key is not in the given variant
+        KeyError: if 'id' key is not in the given variant
     """
     if "id" not in variant:
         raise KeyError("'id' key is not in the given variant <%s>" % variant)
@@ -1800,7 +1809,7 @@ def get_samples(conn: sqlite3.Connection) -> Generator[dict, None, None]:
         Each yielded dictionnary contains keys and values to identify the sample by its id, name, family_id and so on.
 
     Returns:
-        Generator[dict,None,None]: Generator of dictionnaries
+        Generator of dictionnaries
 
     !!! example
         ```python
@@ -1840,7 +1849,7 @@ def get_sample_annotations(
         sample_id (int): The sample ID you want the variant annotation for
 
     Returns:
-        dict: A dict with keys 'sample_id', 'variant_id' (the same as the arguments) and as many key value pairs as there are annotations fields for this sample
+        A dict with keys 'sample_id', 'variant_id' (the same as the arguments) and as many key value pairs as there are annotations fields for this sample
 
     """
     conn.row_factory = sqlite3.Row
@@ -1861,7 +1870,7 @@ def get_sample_annotations_by_variant(
         variant_id (int): The variant you want to know the sample annotations for
 
     Returns:
-        List[dict]: List of sample annotations. Each dict has a variant_id key (the same as in the args), the sample_id you are getting the annotations for,
+        List of sample annotations. Each dict has a variant_id key (the same as in the args), the sample_id you are getting the annotations for,
         and one key,value pair for each sample annotation.
 
     !!! example

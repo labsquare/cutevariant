@@ -20,6 +20,8 @@ theme:
       toggle:
         icon: material/toggle-switch
         name: Switch to light mode
+  favicon: 'assets/favicon.png'
+  logo: 'assets/favicon.png'
 markdown_extensions:
 - footnotes
 - pymdownx.emoji:
@@ -40,38 +42,40 @@ nav:
       - Installation: 'installation.md'
       - Quick start: 'quick-start.md'
       - Plugins:
-        - Fields plugin: 'plugins/fields.md'
-        - Filters plugin: 'plugins/filters.md'
-        - Wordsets plugin: 'plugins/wordset.md'
-        - Selections plugin: 'plugins/selections.md'
+        - Fields : 'plugins/fields.md'
+        - Filters : 'plugins/filters.md'
+        - Wordsets : 'plugins/wordset.md'
+        - Selections : 'plugins/selections.md'
+        - Gene viewer : 'plugins/gene-viewer.md'
+        - Variant view : 'plugins/variant-view.md'
+        - VQL editor : 'plugins/vql-editor.md'
       - VQL: 'vql.md'
-    - Development:
+    - Developer:
+      - Installation: 'developer/install-for-dev.md'
       - Customization:
-        - Create a plugin: 'development/customization/create-plugin.md'
-        - Create a formatter: 'development/customization/create-formatter.md'
-        - Create a writer: 'development/customization/create-writer.md'
-        - Create a reader: 'development/customization/create-reader.md'
+        - Create a plugin: 'developer/customization/create-plugin.md'
+        - Create a formatter: 'developer/customization/create-formatter.md'
+        - Create a writer: 'developer/customization/create-writer.md'
+        - Create a reader: 'developer/customization/create-reader.md'
       - API Documentation:
         - Core classes:
-          - SQL: 'development/api-documentation/sql-module-doc.md'
-          - VQL: ''
-          - Readers:
-            - Abstract Reader: ''
-            - Annotation Parser: ''
-            - Bed Reader: ''
-            - CSV Reader: ''
-            - Fake Reader: ''
-            - Ped Reader: ''
-            - VCF Reader: ''
-          - Writers:
-            - Abstract Writer: ''
-            - Bed Writer: ''
-            - CSV Writer: ''
-            - Ped Writer: ''
-            - VCF Writer: ''
-        - GUI classes: 'development/api-documentation/gui-classes.md'
-    - Tutorials:
-      - Adding annotation reference databases: 'tutorials/add-annotation-reference.md'
+          - SQL: 'developer/api-documentation/sql-module-doc.md'
+          # - VQL: ''
+          # - Readers:
+          #   - Abstract Reader: ''
+          #   - Annotation Parser: ''
+          #   - Bed Reader: ''
+          #   - CSV Reader: ''
+          #   - Fake Reader: ''
+          #   - Ped Reader: ''
+          #   - VCF Reader: ''
+          # - Writers:
+          #   - Abstract Writer: ''
+          #   - Bed Writer: ''
+          #   - CSV Writer: ''
+          #   - Ped Writer: ''
+          #   - VCF Writer: ''
+        - GUI classes: 'developer/api-documentation/gui-classes.md'
     - About: 'about.md'
 
 repo_url: "https://github.com/labsquare/cutevariant"
