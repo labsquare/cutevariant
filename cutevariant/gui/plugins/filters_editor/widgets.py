@@ -117,38 +117,39 @@ COLUMN_CHECKBOX = 3
 COLUMN_REMOVE = 4
 
 
-class MyModel(QStringListModel):
-    def data(self, index: QModelIndex, role: int):
-
-        if role == Qt.DisplayRole:
-            print("appel model")
-        return super().data(index, role=role)
-
-
-class MyCompleter(QCompleter):
-    """docstring for ClassName"""
-
-    def __init__(self, parent=None):
+class FieldsCompleter(QCompleter):
+    def __init__(self, conn=None, parent=None):
         super().__init__(parent)
+        self.local_completion_prefix = ""
+        self.source_model = QStringListModel()
+        self.field_name = ""
+        self.limit = 50
+        self.conn = conn
+        self.setCompletionMode(QCompleter.PopupCompletion)
+        self.setModel(self.source_model)
 
-        self.m = QStringListModel(["sacha", "boby"])
-        self.setModel(self.m)
+    def setModel(self, model):
+        self.source_model = model
+        super().setModel(self.source_model)
 
-    # @Slot(str)
-    # def setCompletionPrefix(self, prefix):
+    def updateModel(self):
 
-    #     records = self.conn.execute(
-    #         f"SELECT DISTINCT gene from annotations WHERE gene LIKE '%{prefix}%' LIMIT 1"
-    #     )
+        if not self.conn or not self.field_name:
+            return
 
-    #     items = []
-    #     for r in records:
-    #         items.append(r["gene"])
+        local_completion_prefix = self.local_completion_prefix
 
-    #     print("from completion")
-    #     self.m.setStringList(items)
+        like = f"{local_completion_prefix}%"
+        values = sql.get_field_unique_values(
+            self.conn, self.field_name, like, self.limit
+        )
+        self.source_model.setStringList(values)
 
-    #     super().setCompletionPrefix(prefix)
+    def splitPath(self, path: str):
+        """override"""
+        self.local_completion_prefix = path
+        self.updateModel()
+        return ""
 
 
 @lru_cache()
@@ -343,16 +344,6 @@ class StrFieldEditor(BaseFieldEditor):
         if value == NULL_REPR:
             value = None
         return value
-
-    def set_completion(self, items: list):
-        """Set a completer to autocomplete value"""
-        # self.edit.setCompleter(completer)
-        self.completer = MyCompleter()
-        self.completer.conn = self.conn
-        # self.model = QStringListModel(items)
-        # self.completer.setModel(self.model)
-        self.edit.setCompleter(self.completer)
-        self.edit.textChanged.connect(self.completer.setCompletionPrefix)
 
 
 class WordSetEditor(BaseFieldEditor):
@@ -611,11 +602,10 @@ class FieldFactory(QObject):
             return w
 
         if field_type == "str":
-            # liste = sql.get_field_unique_values(self.conn, field, 50)
-
             w = StrFieldEditor(parent)
-            w.conn = self.conn
-            w.set_completion([])
+            w.cc = FieldsCompleter(conn=self.conn, parent=parent)
+            w.cc.field_name = field
+            w.edit.setCompleter(w.cc)
 
             return w
 

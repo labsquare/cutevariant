@@ -941,7 +941,7 @@ def get_field_range(conn, field_name: str, sample_name=None):
     return result
 
 
-def get_field_unique_values(conn, field_name: str, limit=None):
+def get_field_unique_values(conn, field_name: str, like: str = None, limit=None):
     """Return unique record values for a field name
 
     :param conn: sqlite3.connect
@@ -973,8 +973,12 @@ def get_field_unique_values(conn, field_name: str, limit=None):
     else:
         query = f"SELECT DISTINCT `{field_name}` FROM {table}"
 
+    if like:
+        query += f" WHERE `{field_name}` LIKE '{like}'"
+
     if limit:
         query += " LIMIT " + str(limit)
+
     return [i[field_name] for i in conn.execute(query)]
 
 
