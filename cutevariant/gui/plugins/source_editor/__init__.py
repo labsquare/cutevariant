@@ -1,6 +1,6 @@
 from PySide2.QtWidgets import QApplication
 
-__title__ = "Selections"
+__title__ = "Source editor"
 __description__ = "A plugin to display selections"
 __long_description__ = QApplication.instance().translate(
     "source_editor",

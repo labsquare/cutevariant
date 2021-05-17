@@ -1308,13 +1308,6 @@ class VariantViewWidget(plugin.PluginWidget):
         # PS: Actions with QAction::LowPriority will not show the text labels
         self.top_bar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
 
-        # Save selection
-        self.save_action = self.top_bar.addAction(
-            FIcon(0xF0F87), self.tr("Save selection"), self.on_save_selection
-        )
-        self.save_action.setToolTip(
-            self.tr("Save the current variants into a new selection")
-        )
         # self.save_action.setPriority(QAction.LowPriority)
 
         # Refresh UI button
@@ -1456,45 +1449,45 @@ class VariantViewWidget(plugin.PluginWidget):
     def on_interrupt(self):
         self.main_right_pane.model.interrupt()
 
-    def on_save_selection(self):
-        """Triggered on 'save_selection' button
+    # def on_save_selection(self):
+    #     """Triggered on 'save_selection' button
 
-        - This slot creates a new selection (aka source) from the current state.
-        - `source_editor` plugin will be refreshed.
-        """
+    #     - This slot creates a new selection (aka source) from the current state.
+    #     - `source_editor` plugin will be refreshed.
+    #     """
 
-        selection_name, accept = QInputDialog.getText(
-            self,
-            self.tr("Create a new selection"),
-            self.tr("Name of the new selection:"),
-        )
+    #     selection_name, accept = QInputDialog.getText(
+    #         self,
+    #         self.tr("Create a new selection"),
+    #         self.tr("Name of the new selection:"),
+    #     )
 
-        if not accept or not selection_name:
-            return
+    #     if not accept or not selection_name:
+    #         return
 
-        try:
-            result = cmd.create_cmd(
-                self.conn,
-                selection_name,
-                source=self.mainwindow.get_state_data("source"),
-                filters=self.mainwindow.get_state_data("filters"),
-                count=self.main_right_pane.model.total,
-            )
-            if result:
-                self.mainwindow.refresh_plugin("source_editor")
+    #     try:
+    #         result = cmd.create_cmd(
+    #             self.conn,
+    #             selection_name,
+    #             source=self.mainwindow.get_state_data("source"),
+    #             filters=self.mainwindow.get_state_data("filters"),
+    #             count=self.main_right_pane.model.total,
+    #         )
+    #         if result:
+    #             self.mainwindow.refresh_plugin("source_editor")
 
-        except Exception as e:
-            LOGGER.exception(e)
+    #     except Exception as e:
+    #         LOGGER.exception(e)
 
-            # Name already used
-            QMessageBox.critical(
-                self,
-                self.tr("Error while creating selection"),
-                self.tr("Error while creating selection '%s'; Name is already used")
-                % selection_name,
-            )
-            # Retry
-            self.on_save_selection()
+    #         # Name already used
+    #         QMessageBox.critical(
+    #             self,
+    #             self.tr("Error while creating selection"),
+    #             self.tr("Error while creating selection '%s'; Name is already used")
+    #             % selection_name,
+    #         )
+    #         # Retry
+    #         self.on_save_selection()
 
     def on_no_variant(self):
         """Slot called when left pane hasn't any variant to display

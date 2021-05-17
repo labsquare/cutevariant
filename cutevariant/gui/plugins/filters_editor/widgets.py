@@ -39,6 +39,7 @@ from PySide2.QtWidgets import (
     QAction,
 )
 from PySide2.QtCore import (
+    QAbstractListModel,
     Qt,
     QObject,
     Signal,
@@ -114,6 +115,40 @@ COLUMN_OPERATOR = 1
 COLUMN_VALUE = 2
 COLUMN_CHECKBOX = 3
 COLUMN_REMOVE = 4
+
+
+class MyModel(QStringListModel):
+    def data(self, index: QModelIndex, role: int):
+
+        if role == Qt.DisplayRole:
+            print("appel model")
+        return super().data(index, role=role)
+
+
+class MyCompleter(QCompleter):
+    """docstring for ClassName"""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.m = QStringListModel(["sacha", "boby"])
+        self.setModel(self.m)
+
+    # @Slot(str)
+    # def setCompletionPrefix(self, prefix):
+
+    #     records = self.conn.execute(
+    #         f"SELECT DISTINCT gene from annotations WHERE gene LIKE '%{prefix}%' LIMIT 1"
+    #     )
+
+    #     items = []
+    #     for r in records:
+    #         items.append(r["gene"])
+
+    #     print("from completion")
+    #     self.m.setStringList(items)
+
+    #     super().setCompletionPrefix(prefix)
 
 
 @lru_cache()
@@ -312,10 +347,12 @@ class StrFieldEditor(BaseFieldEditor):
     def set_completion(self, items: list):
         """Set a completer to autocomplete value"""
         # self.edit.setCompleter(completer)
-        self.completer = QCompleter()
-        self.model = QStringListModel(items)
-        self.completer.setModel(self.model)
+        self.completer = MyCompleter()
+        self.completer.conn = self.conn
+        # self.model = QStringListModel(items)
+        # self.completer.setModel(self.model)
         self.edit.setCompleter(self.completer)
+        self.edit.textChanged.connect(self.completer.setCompletionPrefix)
 
 
 class WordSetEditor(BaseFieldEditor):
@@ -574,9 +611,12 @@ class FieldFactory(QObject):
             return w
 
         if field_type == "str":
+            # liste = sql.get_field_unique_values(self.conn, field, 50)
+
             w = StrFieldEditor(parent)
-            liste = sql.get_field_unique_values(self.conn, field, 50)
-            w.set_completion(liste)
+            w.conn = self.conn
+            w.set_completion([])
+
             return w
 
         if field_type == "bool":
@@ -806,7 +846,7 @@ class FilterModel(QAbstractItemModel):
     """
 
     # See self.headerData()
-    _HEADERS = ["field", "operator", "value", "visible", "remove"]
+    _HEADERS = ["field", "operator", "value", "", ""]
     _MIMEDATA = "application/x-qabstractitemmodeldatalist"
 
     # Custom type to get FilterItem.type. See self.data()
@@ -1046,6 +1086,15 @@ class FilterModel(QAbstractItemModel):
         if role == Qt.DisplayRole:
             if orientation == Qt.Horizontal:
                 return self._HEADERS[section]
+
+        if role == Qt.TextAlignmentRole:
+            if orientation == Qt.Horizontal:
+                if section == COLUMN_FIELD:
+                    return Qt.AlignLeft
+                if section == COLUMN_OPERATOR:
+                    return Qt.AlignCenter
+                if section == COLUMN_VALUE:
+                    return Qt.AlignLeft
 
     def is_last(self, index: QModelIndex()) -> bool:
         """Return True if index is the last in the row
@@ -1959,8 +2008,8 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.view.setDragEnabled(True)
         self.view.setDragDropMode(QAbstractItemView.InternalMove)
         self.view.header().setStretchLastSection(False)
-        self.view.header().setSectionResizeMode(COLUMN_FIELD, QHeaderView.Stretch)
-        self.view.header().setSectionResizeMode(COLUMN_OPERATOR, QHeaderView.Stretch)
+        self.view.header().setSectionResizeMode(COLUMN_FIELD, QHeaderView.Interactive)
+        self.view.header().setSectionResizeMode(COLUMN_OPERATOR, QHeaderView.Fixed)
         self.view.header().setSectionResizeMode(COLUMN_VALUE, QHeaderView.Stretch)
         self.view.header().setSectionResizeMode(
             COLUMN_CHECKBOX, QHeaderView.ResizeToContents
@@ -1970,7 +2019,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
         )
         self.view.setEditTriggers(QAbstractItemView.DoubleClicked)
         self.view.selectionModel().selectionChanged.connect(self.on_selection_changed)
-        self.view.header().hide()
+        # self.view.header().hide()
 
         # Create toolbar
         self.toolbar = QToolBar()
@@ -2052,21 +2101,18 @@ class FiltersEditorWidget(plugin.PluginWidget):
         prepare_fields.cache_clear()
         self.on_refresh()
 
-
-
     def on_duplicate_filter(self):
-        """Duplicate filter condition from context menu 
+        """Duplicate filter condition from context menu
 
         See contextMenu()
-        """        
+        """
         item_index = self.view.selectionModel().currentIndex()
         parent_index = item_index.parent()
         if not parent_index:
-            return 
+            return
 
         data = self.model.item(item_index).data
         self.model.add_condition_item(data, parent_index)
-
 
     def on_remove_filter(self):
         selected_index = self.view.selectionModel().currentIndex()
