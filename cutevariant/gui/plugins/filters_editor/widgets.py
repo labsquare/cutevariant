@@ -117,6 +117,37 @@ COLUMN_CHECKBOX = 3
 COLUMN_REMOVE = 4
 
 
+@lru_cache()
+def get_field_unique_values_cached(conn, field, like, limit):
+    print("cache me ")
+    return sql.get_field_unique_values(conn, field, like, limit)
+
+
+@lru_cache()
+def prepare_fields(conn):
+    """Prepares a list of columns on which filters can be applied"""
+    results = {}
+    samples = [sample["name"] for sample in sql.get_samples(conn)]
+
+    for field in sql.get_fields(conn):
+
+        if field["category"] == "variants":
+            name = field["name"]
+            results[name] = field["type"]
+
+        if field["category"] == "annotations":
+            name = field["name"]
+            results[f"ann.{name}"] = field["type"]
+
+        if field["category"] == "samples":
+            name = field["name"]
+            for sample in samples:
+                sample_field = f"samples.{sample}.{name}"
+                results[sample_field] = field["type"]
+
+    return results
+
+
 class FieldsCompleter(QCompleter):
     """A custom completer to load fields values dynamically thanks to a SQL LIKE statement"""
 
@@ -143,7 +174,7 @@ class FieldsCompleter(QCompleter):
         local_completion_prefix = self.local_completion_prefix
 
         like = f"{local_completion_prefix}%"
-        values = sql.get_field_unique_values(
+        values = get_field_unique_values_cached(
             self.conn, self.field_name, like, self.limit
         )
         self.source_model.setStringList(values)
@@ -153,31 +184,6 @@ class FieldsCompleter(QCompleter):
         self.local_completion_prefix = path
         self.updateModel()
         return ""
-
-
-@lru_cache()
-def prepare_fields(conn):
-    """Prepares a list of columns on which filters can be applied"""
-    results = {}
-    samples = [sample["name"] for sample in sql.get_samples(conn)]
-
-    for field in sql.get_fields(conn):
-
-        if field["category"] == "variants":
-            name = field["name"]
-            results[name] = field["type"]
-
-        if field["category"] == "annotations":
-            name = field["name"]
-            results[f"ann.{name}"] = field["type"]
-
-        if field["category"] == "samples":
-            name = field["name"]
-            for sample in samples:
-                sample_field = f"samples.{sample}.{name}"
-                results[sample_field] = field["type"]
-
-    return results
 
 
 class BaseFieldEditor(QFrame):
@@ -2092,6 +2098,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
         # Clear lru_cache
         prepare_fields.cache_clear()
+        get_field_unique_values_cached.cache_clear()
         self.on_refresh()
 
     def on_duplicate_filter(self):
