@@ -118,6 +118,8 @@ COLUMN_REMOVE = 4
 
 
 class FieldsCompleter(QCompleter):
+    """A custom completer to load fields values dynamically thanks to a SQL LIKE statement"""
+
     def __init__(self, conn=None, parent=None):
         super().__init__(parent)
         self.local_completion_prefix = ""
@@ -129,11 +131,12 @@ class FieldsCompleter(QCompleter):
         self.setModel(self.source_model)
 
     def setModel(self, model):
+        """ override """
         self.source_model = model
         super().setModel(self.source_model)
 
     def updateModel(self):
-
+        """ update model from sql like """
         if not self.conn or not self.field_name:
             return
 
