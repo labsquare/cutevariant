@@ -139,7 +139,7 @@ class HarmonizomeWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.combo = QComboBox()
+        self.combo = QListView()
         self.geneset_view = QListView()
         self.gene_view = QListView()
 
@@ -156,14 +156,15 @@ class HarmonizomeWidget(QWidget):
 
         self.dataset_model.load()
 
-        vlayout = QVBoxLayout(self)
+        vlayout = QHBoxLayout(self)
         vlayout.addWidget(self.combo)
         vlayout.addWidget(self.geneset_view)
         vlayout.addWidget(self.gene_view)
 
     def on_dataset_changed(self):
 
-        href = self.combo.currentData()
+        href = self.combo.currentIndex().data(Qt.UserRole)
+        print("ICI", href)
         self.geneset_model.load(href)
 
     def on_geneset_changed(self, index):
