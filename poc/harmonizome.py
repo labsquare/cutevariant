@@ -271,13 +271,15 @@ class HarmonizomeWidget(QWidget):
         self.gene_view.setModel(self.gene_proxymodel)
 
         self.geneset_filter_le = QLineEdit(self)
-        self.geneset_filter_le.setPlaceholderText(self.tr("Search..."))
+        self.geneset_filter_le.setPlaceholderText(self.tr("Search geneset..."))
         self.gene_filter_le = QLineEdit(self)
-        self.gene_filter_le.setPlaceholderText(self.tr("Search..."))
+        self.gene_filter_le.setPlaceholderText(self.tr("Search gene..."))
 
         self.geneset_filter_le.textChanged.connect(
             self.geneset_proxymodel.setFilterRegExp
         )
+
+        self.gene_filter_le.textChanged.connect(self.gene_proxymodel.setFilterRegExp)
 
         self.geneset_progressbar = QProgressBar(self)
         self.genes_progressbar = QProgressBar(self)
