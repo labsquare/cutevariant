@@ -334,11 +334,31 @@ class HarmonizomeWidget(QWidget):
         self.genes_progressbar.setValue(cur)
 
 
+class HarmonizomeDialog(QDialog):
+    def __init__(self, parent: QWidget = None) -> None:
+        super().__init__(parent)
+        self.harmonizome_widget = HarmonizomeWidget(self)
+        self.buttons = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel, self
+        )
+        self.buttons.accepted.connect(self.accept)
+        self.buttons.rejected.connect(self.reject)
+
+        self.add_button = QPushButton(self.tr("Add selected genes"), self)
+
+        self.selected_genes_view = QListView(self)
+
+        layout = QGridLayout(self)
+        layout.addWidget(self.harmonizome_widget, 0, 0)
+        layout.addWidget(self.add_button, 0, 1)
+        layout.addWidget(self.selected_genes_view, 0, 2)
+        layout.addWidget(self.buttons, 1, 0)
+
+
 if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
-    w = HarmonizomeWidget()
-
+    w = HarmonizomeDialog()
     w.show()
     app.exec_()
