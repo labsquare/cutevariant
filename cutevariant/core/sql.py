@@ -598,7 +598,13 @@ def delete_selection(conn: sqlite3.Connection, selection_id: int):
     Returns:
         int: Number of rows affected
     """
+
+    # Ignore if it is the first selection name aka 'variants'
+    if selection_id <= 1:
+        return None
+
     cursor = conn.cursor()
+
     cursor.execute("DELETE FROM selections WHERE rowid = ?", (selection_id,))
     conn.commit()
     return cursor.rowcount

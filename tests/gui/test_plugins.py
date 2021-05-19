@@ -13,10 +13,11 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self._state = {
-        "fields": ["chr","pos","ref","alt"],
-        "filters": {},
-        "source":"variants",
-        "current_variant": {}
+            "fields": ["chr", "pos", "ref", "alt"],
+            "filters": {},
+            "source": "variants",
+            "current_variant": {},
+            "executed_query_data": {"count": 100, "elapsed_time": 3.0},
         }
 
         self.step_counter = {}
@@ -30,11 +31,11 @@ class MainWindow(QMainWindow):
     def on_open_project(self):
         pass
 
-    def set_state_data(self,key,value):
-    	self._state[key] = value
+    def set_state_data(self, key, value):
+        self._state[key] = value
 
-    def get_state_data(self,key):
-    	return self._state[key]
+    def get_state_data(self, key):
+        return self._state[key]
 
 
 def test_find_plugins(qtbot, conn):

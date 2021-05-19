@@ -3,6 +3,8 @@ from the GUI.
 SourceEditorWidget class is seen by the user and uses selectionModel class
 as a model that handles records from the database.
 """
+import typing
+
 # Qt imports
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
@@ -19,7 +21,11 @@ LOGGER = logger()
 
 # =================== SELECTION MODEL ===========================
 class SourceModel(QAbstractTableModel):
-    """Model to store all selections from SQLite `selections` table.
+    """Model to store all sources from SQLite `selections` table.
+
+    Note:
+        A source is a variant selection stored into `selection` tables.
+
     Usage:
         model = selectionModel()
         model.conn = conn
@@ -31,28 +37,29 @@ class SourceModel(QAbstractTableModel):
         self.conn = conn
         self.records = []
 
-    def rowCount(self, parent=QModelIndex()):
+    def rowCount(self, parent=QModelIndex()) -> int:
         """Overrided from QAbstractTableModel"""
         return len(self.records)
 
-    def columnCount(self, parent=QModelIndex()):
+    def columnCount(self, parent=QModelIndex()) -> int:
         """Overrided from QAbstractTableModel"""
         return 2  # value and count
 
-    def data(self, index: QModelIndex(), role=Qt.DisplayRole):
-        """Return the data stored under the given role for the item referred
-        to by the index (row, col)
-        Overrided from QAbstractTableModel
-        :param index:
-        :param role:
-        :type index:
-        :type role:
-        :return: None if no valid index
-        :rtype:
+    def data(self, index: QModelIndex(), role=Qt.DisplayRole) -> typing.Any:
+        """Override from QAbstractTableModel
+
+        Args:
+            index (QModelIndex)
+            role (Qt.ItemDataRole) Defaults to Qt.DisplayRole.
+
+        Returns:
+            Any
         """
 
         if not index.isValid():
             return None
+
+        table_name = self.records[index.row()]["name"]
 
         if role == Qt.DisplayRole:
             if index.column() == 0:
@@ -63,14 +70,32 @@ class SourceModel(QAbstractTableModel):
 
         if role == Qt.DecorationRole:
             if index.column() == 0:
-                return QIcon(FIcon(0xF04F1))
+                if table_name == "variants":
+                    return QIcon(FIcon(0xF13C6))
+                else:
+                    return QIcon(FIcon(0xF04EB))
+
+        if role == Qt.FontRole:
+            if table_name == "variants":
+                font = QFont()
+                font.setItalic(True)
+                font.setBold(True)
+                return font
 
         return None
 
-    def headerData(self, section, orientation, role=Qt.DisplayRole):
-        """Return the data for the given role and section in the header with
-        the specified orientation
-        Overrided from QAbstractTableModel
+    def headerData(
+        self, section: int, orientation: Qt.Orientation, role=Qt.DisplayRole
+    ) -> str:
+        """Override from QAbstractTableModel
+
+        Args:
+            section (int): Header index
+            orientation (Qt.Orientation): Header orientation
+            role (Qt.ItemRole, optional) Defaults to Qt.DisplayRole.
+
+        Returns:
+            str: [description]
         """
         if not self.records:
             return
@@ -86,40 +111,49 @@ class SourceModel(QAbstractTableModel):
                 "id", None
             )  # For debug purpose . displayed in vertical header
 
-    def record(self, index: QModelIndex()):
-        """Return Selection records by index"""
+    def record(self, index: QModelIndex()) -> dict:
+        """Return source item
+
+        See ```cutevariant.sql.get_selection```
+
+        Args:
+            index (QModelIndex)
+
+        Returns:
+            dict
+        """
         if not index.isValid():
             return None
         return self.records[index.row()]
 
-    def find_record(self, name: str):
+    def find_record(self, name: str) -> QModelIndex:
         """Find a record by name
-        @see: view.selectionModel()
-        :return: QModelIndex
+
+        Returns:
+            QModelIndex
         """
         for idx, record in enumerate(self.records):
             if record["name"] == name:
                 return self.index(idx, 0, QModelIndex())
         return QModelIndex()
 
-    def remove_record(self, index: QModelIndex()):
+    def remove_record(self, index: QModelIndex()) -> bool:
         """Delete the selection with the given id in the database
-        :return: True if the deletion has been made, False otherwise.
-        :rtype: <boolean>
+        Returns:
+            bool: Return True if the deletion has been made, False otherwise.
         """
         # Get selected record
         record = self.record(index)
 
-        self.beginRemoveRows(QModelIndex(), index.row(), index.row())
-
         if sql.delete_selection(self.conn, record["id"]):
+            self.beginRemoveRows(QModelIndex(), index.row(), index.row())
             # Delete in model; triggers currentRowChanged signal
             #  Magic... the record disapear ...  ??
             self.endRemoveRows()
             return True
         return False
 
-    def edit_record(self, index, record: dict):
+    def edit_record(self, index: QModelIndex, record: dict):
         """Edit the given selection in the database and emit `dataChanged` signal"""
         if sql.edit_selection(self.conn, record):
             self.dataChanged.emit(index, index)
@@ -129,7 +163,6 @@ class SourceModel(QAbstractTableModel):
 
         if self.conn is None:
             return
-
         self.beginResetModel()
         # Add all selections from the database
         # Dictionnary of all attributes of the table.
@@ -152,9 +185,8 @@ class SourceEditorWidget(plugin.PluginWidget):
     def __init__(self, parent=None, conn=None):
         """
         Args:
-            parent (QMainWindow): Mainwindow of Cutevariant, passed during
-                plugin initialization.
-            conn (sqlite3.connexion): Sqlite3 connexion
+            parent (QWidget)
+            conn (sqlite3.connexion): sqlite3 connexion
         """
         super().__init__(parent)
 
@@ -174,7 +206,7 @@ class SourceEditorWidget(plugin.PluginWidget):
         self.view.horizontalHeader().hide()
 
         self.toolbar = QToolBar()
-        # self.toolbar.setIconSize(QSize(16, 16))
+        self.toolbar.setIconSize(QSize(16, 16))
 
         self.view.verticalHeader().hide()
         self.view.verticalHeader().setDefaultSectionSize(26)
@@ -196,21 +228,111 @@ class SourceEditorWidget(plugin.PluginWidget):
         # from the user
         # This id is used by _create_set_operation_menu
         # Keys: user text; values: set operators
-        # See menu_setup()
+        # See _create_menu()
         self.set_operations_mapping = dict()
 
         # call on_current_row_changed when item selection changed
         self.view.selectionModel().currentRowChanged.connect(
             self.on_current_row_changed
         )
-        self.toolbar.addAction(FIcon(0xF0453), self.tr("Reload"), self.load)
+
+        self.add_menu = QMenu(self)
+        self.create_selection_action = self.add_menu.addAction(
+            FIcon(0xF0F87),
+            self.tr("Create source from current variants"),
+            self.create_selection,
+        )
+        self.create_from_bed_action = self.add_menu.addAction(
+            FIcon(0xF0F87),
+            self.tr("Create source from bed file ... "),
+            self.create_selection_from_bed,
+        )
+        add_action = QToolButton()
+        add_action.setIcon(FIcon(0xF0415))
+        add_action.setPopupMode(QToolButton.InstantPopup)
+        add_action.setMenu(self.add_menu)
+        self.toolbar.addWidget(add_action)
+
+        self.edit_action = self.toolbar.addAction(
+            FIcon(0xF04F0), self.tr("Edit source"), self.edit_selection
+        )
+        self.del_action = self.toolbar.addAction(
+            FIcon(0xF0A76), self.tr("Delete source"), self.remove_selection
+        )
+
+        # self.toolbar.addAction(FIcon(0xF0453), self.tr("Reload"), self.load)
+
+    @Slot()
+    def create_selection(self):
+        """Create a selection from the current data_state
+
+        Note:
+            This method is called by a toolbar QAction
+
+        """
+
+        name = self.ask_and_check_selection_name()
+
+        if name:
+
+            executed_query_data = self.mainwindow.get_state_data("executed_query_data")
+
+            result = cmd.create_cmd(
+                self.conn,
+                name,
+                source=self.mainwindow.get_state_data("source"),
+                filters=self.mainwindow.get_state_data("filters"),
+                count=executed_query_data.get("count", 0),
+            )
+
+            if result:
+                self.on_refresh()
+
+    @Slot()
+    def create_selection_from_bed(self):
+        """Create a selection from a selected bed file
+
+        Note:
+            This method is called by a toolbar QAction
+
+        """
+        # Reload last directory used
+        app_settings = QSettings()
+        last_directory = app_settings.value("last_directory", QDir.homePath())
+
+        filepath, _ = QFileDialog.getOpenFileName(
+            self,
+            self.tr("Intersect source with a bed file"),
+            last_directory,
+            self.tr("BED - Browser Extensible Data (*.bed)"),
+        )
+        if not filepath:
+            return
+
+        selection_name = self.ask_and_check_selection_name(placeholder="my_panel")
+        if not selection_name:
+            return
+
+        current_index = self.view.selectionModel().currentIndex()
+        current_selection = self.model.record(current_index)
+        source = current_selection["name"]
+
+        # Open bed intervals & create selection
+        intervals = BedReader(filepath)
+        sql.create_selection_from_bed(
+            self.model.conn, source, selection_name, intervals
+        )
+        # Refresh UI
+        self.model.load()
 
     def on_open_project(self, conn):
+        """ override from PluginWidget """
         self.model.conn = conn
         self.conn = conn
         self.on_refresh()
 
     def on_refresh(self):
+        """ override from PluginWidget """
         self.view.selectionModel().blockSignals(True)
         self.model.load()
         self.source = self.mainwindow.get_state_data("source")
@@ -232,23 +354,21 @@ class SourceEditorWidget(plugin.PluginWidget):
         self.mainwindow.set_state_data("source", source)
         self.mainwindow.refresh_plugins(sender=self)
 
-    def menu_setup(self, locked_selection=False):
-        """Setup popup menu
-        :key locked_selection: Allow to mask edit/remove actions (default False)
+    def _create_menu(self, editable: bool = False) -> QMenu:
+        """Create popup menu
+
+        Args:
+            locked_selection(bool): Allow to mask edit/remove actions (default False)
             Used on special selections like the default one (named variants).
-        :type locked_selection: <boolean>
+            locked_selection: <boolean>
         """
         menu = QMenu()
 
-        if not locked_selection:
-            menu.addAction(FIcon(0xF0900), self.tr("Edit"), self.edit_selection)
+        if not editable:
+            menu.addAction(self.edit_action)
 
         #  Create action for bed
-        menu.addAction(
-            FIcon(0xF0219),
-            self.tr("Intersect with BED file ..."),
-            self.create_selection_from_bed,
-        )
+        menu.addAction(self.create_from_bed_action)
 
         # Set operations on selections: create mapping and actions
         set_icons_ids = (0xF0779, 0xF077C, 0xF0778)
@@ -265,7 +385,7 @@ class SourceEditorWidget(plugin.PluginWidget):
             for icon_id, text in zip(set_icons_ids, set_texts)
         ]
 
-        if not locked_selection:
+        if not editable:
             menu.addSeparator()
             menu.addAction(FIcon(0xF0A7A), self.tr("Remove"), self.remove_selection)
         return menu
@@ -284,7 +404,7 @@ class SourceEditorWidget(plugin.PluginWidget):
 
         self.is_loading = False
 
-    def ask_and_check_selection_name(self):
+    def ask_and_check_selection_name(self, placeholder: str = ""):
         """Get from the user a selection name validated or None
 
         TODO : create a sql.selection_exists(name) to check if selection already exists
@@ -294,6 +414,7 @@ class SourceEditorWidget(plugin.PluginWidget):
             self.tr("Type a name for selection"),
             self.tr("Selection name:"),
             QLineEdit.Normal,
+            placeholder,
         )
         if not success:
             return
@@ -345,7 +466,7 @@ class SourceEditorWidget(plugin.PluginWidget):
         if record["name"] == DEFAULT_SELECTION_NAME:
             locked_selection = True
         # Show the menu
-        menu = self.menu_setup(locked_selection)
+        menu = self._create_menu(locked_selection)
         menu.exec_(event.globalPos())
 
     def _create_set_operation_menu(self, icon, menu_name):
@@ -411,6 +532,22 @@ class SourceEditorWidget(plugin.PluginWidget):
 
     def remove_selection(self):
         """Remove a selection from the database"""
+
+        # ignore if selection is 'variants'
+
+        if not self.view.currentIndex().isValid():
+            return
+
+        item = self.model.record(self.view.currentIndex())
+
+        if item["name"] == "variants":
+            QMessageBox.warning(
+                self,
+                self.tr("Remove source"),
+                self.tr("Removing the root table is forbidden"),
+            )
+            return
+
         msg = QMessageBox(icon=QMessageBox.Warning)
         msg.setText(self.tr("Are you sure you want to remove this selection?"))
         msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
@@ -420,50 +557,21 @@ class SourceEditorWidget(plugin.PluginWidget):
                 self.model.remove_record(index)
 
             # Reload the UI, otherwise, the old selection is still in popup menu
-            self.load()
+            # self.load()
 
     def edit_selection(self):
         """Update a selection in the database
         .. note:: We do not reload all the UI for this
         """
         current_index = self.view.selectionModel().currentIndex()
+        old_record = self.model.record(current_index)
 
-        selection_name = self.ask_and_check_selection_name()
+        selection_name = self.ask_and_check_selection_name(
+            placeholder=old_record["name"]
+        )
         if current_index and selection_name:
-            old_record = self.model.record(current_index)
             old_record["name"] = selection_name
             self.model.edit_record(current_index, old_record)
-
-    def create_selection_from_bed(self):
-        """Ask user for a bed file and create a new selection from it """
-        # Reload last directory used
-        app_settings = QSettings()
-        last_directory = app_settings.value("last_directory", QDir.homePath())
-
-        filepath, _ = QFileDialog.getOpenFileName(
-            self,
-            self.tr("Open BED file"),
-            last_directory,
-            self.tr("BED - Browser Extensible Data (*.bed)"),
-        )
-        if not filepath:
-            return
-
-        selection_name = self.ask_and_check_selection_name()
-        if not selection_name:
-            return
-
-        current_index = self.view.selectionModel().currentIndex()
-        current_selection = self.model.record(current_index)
-        source = current_selection["name"]
-
-        # Open bed intervals & create selection
-        intervals = BedReader(filepath)
-        sql.create_selection_from_bed(
-            self.model.conn, source, selection_name, intervals
-        )
-        # Refresh UI
-        self.model.load()
 
 
 if __name__ == "__main__":
