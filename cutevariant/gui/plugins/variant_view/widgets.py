@@ -271,6 +271,9 @@ class VariantModel(QAbstractTableModel):
                     field_name = self.fields[section - 1]
                     return self.fields_descriptions.get(field_name)
 
+            if role == Qt.SizeHintRole:
+                return QSize(0, 20)
+
     def update_variant(self, row: int, variant: dict):
         """Update a variant at the given row with given content
 
@@ -815,6 +818,11 @@ class VariantView(QWidget):
     #     else:
     #         self.view.stop_loading()
 
+    def set_auto_resize(self, accept=True):
+        """ change column resize mode """
+        mode = QHeaderView.ResizeToContents if accept else QHeaderView.Interactive
+        self.view.horizontalHeader().setSectionResizeMode(mode)
+
     def setModel(self, model: VariantModel):
         self.model = model
         self.view.setModel(model)
@@ -1320,8 +1328,12 @@ class VariantViewWidget(plugin.PluginWidget):
         )
         action.setToolTip(self.tr("Stop current query"))
 
-        #  edit action
-        # TODO : move into view
+        self.resize_action = self.top_bar.addAction(
+            FIcon(0xF142A), self.tr("Auto resize")
+        )
+
+        self.resize_action.setCheckable(True)
+        self.resize_action.triggered.connect(self.main_right_pane.set_auto_resize)
 
         # Formatter tools
         self.top_bar.addSeparator()
