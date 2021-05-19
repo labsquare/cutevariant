@@ -2036,6 +2036,10 @@ class FiltersEditorWidget(plugin.PluginWidget):
         )
         self.add_group_action.setToolTip("Add Group")
 
+        self.clear_all_action = self.toolbar.addAction(
+            FIcon(0xF0234), self.tr("Clear all"), self.on_clear_all
+        )
+
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.toolbar.addWidget(spacer)
@@ -2396,6 +2400,22 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
         self._update_view_geometry()
         self.refresh_buttons()
+
+    def on_clear_all(self):
+        """Clear all filters
+
+        Ask user to be sure
+
+        """
+
+        ret = QMessageBox.question(
+            self,
+            self.tr("Remove all filters"),
+            self.tr("Are you sure you want to remove all filters "),
+        )
+
+        if ret == QMessageBox.Yes:
+            self.model.clear()
 
     def on_open_condition_dialog(self):
         """Open the condition creation dialog
