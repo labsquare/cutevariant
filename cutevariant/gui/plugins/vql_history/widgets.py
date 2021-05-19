@@ -458,8 +458,7 @@ class VqlHistoryWidget(plugin.PluginWidget):
         if executed_query_data:
             count = executed_query_data.get("count", 0)
             elapsed_time = executed_query_data.get("elapsed_time", 0.0)
-
-        self.on_variants_load_finished(count, elapsed_time)
+            self.on_variants_load_finished(count, elapsed_time)
 
     def to_json(self):
         """ override """
