@@ -1,23 +1,31 @@
+from cutevariant.commons import GENOTYPE_DESC
 import sqlite3
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 from PySide2.QtGui import *
 from PySide2.QtNetwork import *
 import sys
-from urllib.request import urlopen
 import json
 import re
 import os
 import tempfile
 
+from cutevariant.gui.ficon import FIcon
 from cutevariant.core.sql import get_sql_connection, get_wordsets
 from cutevariant.core.command import import_cmd
+
+import typing
+
 
 URL_PREFIX = "https://maayanlab.cloud/Harmonizome"
 VERSION = "/api/1.0"
 
 
 class HZDataSetModel(QAbstractListModel):
+
+    progress = Signal(int, int)
+    finished = Signal()
+
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -28,6 +36,8 @@ class HZDataSetModel(QAbstractListModel):
 
         # Store entities that are still downloading
         self._part_entities = []
+
+        self.title = self.tr("Databases")
 
     def rowCount(self, parent=QModelIndex()):
         if parent == QModelIndex():
@@ -40,11 +50,24 @@ class HZDataSetModel(QAbstractListModel):
         if not index.isValid():
             return None
 
-        if role == Qt.DisplayRole:
+        if role == Qt.DisplayRole or role == Qt.ToolTipRole:
             return self.entities[index.row()]["name"]
 
         if role == Qt.UserRole:
             return self.entities[index.row()]["href"]
+
+        if role == Qt.DecorationRole:
+            return QIcon(FIcon(0xF01BC))
+
+        return None
+
+    def headerData(
+        self, section: int, orientation: Qt.Orientation, role: int
+    ) -> typing.Any:
+        if section > 0 or orientation == Qt.Vertical or role != Qt.DisplayRole:
+            return
+
+        return self.title
 
     def load(self):
         """Initiates model loading."""
@@ -76,6 +99,7 @@ class HZDataSetModel(QAbstractListModel):
     def on_download_finished(self):
         self.beginResetModel()
         self.entities = self._part_entities.copy()  # Copy to avoid surprises !
+        self.finished.emit()
         self.endResetModel()
 
 
@@ -92,6 +116,9 @@ class HZGeneSetModel(QAbstractListModel):
 
         self.genesets = []
 
+        self.database_endpoint = ""
+        self.database_name = ""
+
     def rowCount(self, parent=QModelIndex()):
         if parent == QModelIndex():
             return len(self.genesets)
@@ -103,13 +130,29 @@ class HZGeneSetModel(QAbstractListModel):
         if not index.isValid():
             return None
 
-        if role == Qt.DisplayRole:
+        if role == Qt.DisplayRole or role == Qt.ToolTipRole:
             return self.genesets[index.row()]["name"]
 
         if role == Qt.UserRole:
             return self.genesets[index.row()]["href"]
 
-    def load(self, endpoint):
+    def headerData(
+        self, section: int, orientation: Qt.Orientation, role: int
+    ) -> typing.Any:
+        if (
+            section > 0
+            or orientation == Qt.Vertical
+            or (role != Qt.DisplayRole and role != Qt.ToolTipRole)
+        ):
+            return
+
+        return (
+            self.tr(f"Geneset from {self.database_name}")
+            if self.database_name
+            else self.tr("No database selected")
+        )
+
+    def load(self, endpoint: str, database_name: str):
         """Initiates model loading."""
         self.beginResetModel()
         self.genesets.clear()
@@ -120,8 +163,11 @@ class HZGeneSetModel(QAbstractListModel):
         if self.current_download:
             self.current_download.abort()
 
+        self.database_name = database_name
+        self.database_endpoint = endpoint
+
         self.current_download = self.downloader.get(
-            QNetworkRequest(f"{URL_PREFIX}{endpoint}")
+            QNetworkRequest(f"{URL_PREFIX}{self.database_endpoint}")
         )
         # No need for batch downloads or cursors, the response is in one block !
         self.current_download.finished.connect(self.on_download_finished)
@@ -132,7 +178,14 @@ class HZGeneSetModel(QAbstractListModel):
     def on_download_finished(self):
         self.finished.emit()
         if self.current_download.isReadable():
-            data = str(self.current_download.readAll(), encoding="utf-8")
+            try:
+                data = str(self.current_download.readAll(), encoding="utf-8")
+            except:
+                try:
+                    data = str(self.current_download.readAll(), encoding="ascii")
+                except:
+                    # Give up
+                    return
             if data:
                 data = json.loads(data)
                 self.current_download.close()
@@ -157,6 +210,7 @@ class HZGeneModel(QAbstractListModel):
 
         self.genes = []
 
+        self.gene_set = ""
         self.end_point = ""
 
     def rowCount(self, parent=QModelIndex()):
@@ -173,7 +227,23 @@ class HZGeneModel(QAbstractListModel):
         if role == Qt.DisplayRole:
             return self.genes[index.row()]["gene"]["symbol"]
 
-    def load(self, endpoint):
+    def headerData(
+        self, section: int, orientation: Qt.Orientation, role: int
+    ) -> typing.Any:
+        if (
+            section > 0
+            or orientation == Qt.Vertical
+            or (role != Qt.DisplayRole and role != Qt.ToolTipRole)
+        ):
+            return
+
+        return (
+            self.tr(f"Genes in {self.gene_set}")
+            if self.gene_set
+            else self.tr("No gene set selected")
+        )
+
+    def load(self, endpoint: str, gene_set: str):
         """Initiates model loading.
         Aborts if it was downloading
         """
@@ -185,8 +255,11 @@ class HZGeneModel(QAbstractListModel):
         if self.current_download:
             self.current_download.abort()
 
+        self.end_point = endpoint
+        self.gene_set = gene_set
+
         self.current_download = self.downloader.get(
-            QNetworkRequest(f"{URL_PREFIX}{endpoint}")
+            QNetworkRequest(f"{URL_PREFIX}{self.end_point}")
         )
         # No need for batch downloads or cursors, the response is in one block !
         self.current_download.finished.connect(self.on_download_finished)
@@ -206,41 +279,152 @@ class HZGeneModel(QAbstractListModel):
                 self.genes = data["associations"]
                 self.endResetModel()
 
+    def clear(self):
+        if self.current_download:
+            # Will discard downloaded data
+            self.current_download.abort()
+        self.beginResetModel()
+        self.genes.clear()
+        self.gene_set = ""
+        self.endResetModel()
 
-# class LoadingListView(QWidget):
-#     """Display a progress bar on the list view while loading"""
 
-#     def __init__(self, parent=None):
-#         super().__init__(parent)
-#         self.progress_bar = QProgressBar(self)
-#         self.list_view = QListView(self)
+class LoadingTableView(QTableView):
+    def __init__(self, parent=None):
+        super().__init__(parent)
 
-#         hboxlayout = QHBoxLayout()
-#         self.setLayout(hboxlayout)
+        self._is_loading = False
 
-#         # Two widgets in the same layout, but you won't see them both at the same time !
-#         self.layout().addWidget(self.progress_bar)
-#         self.layout().addWidget(self.list_view)
+    def paintEvent(self, event: QPainter):
 
-#         self.progress_bar.setVisible(False)
-#         self._is_loading = False
+        if self._is_loading:
+            painter = QPainter(self.viewport())
 
-#     def start_loading(self):
-#         self._is_loading = True
-#         self.progress_bar.setVisible(True)
-#         self.list_view.setVisible(False)
-#         print("START LOADING")
+            painter.drawText(
+                self.viewport().rect(), Qt.AlignCenter, self.tr("Loading ...")
+            )
 
-#     def stop_loading(self):
-#         self._is_loading = False
-#         self.layout().removeWidget(self.progress_bar)
-#         print("STOPPED LOADING")
+        else:
+            super().paintEvent(event)
 
-#     @Slot(int, int)
-#     def set_progress(self, cur: int, tot: int):
-#         self.progress_bar.setMaximum(tot)
-#         self.progress_bar.setValue(cur)
-#         print("SET PRORGESS", cur, tot)
+    def start_loading(self):
+        self._is_loading = True
+        self.viewport().update()
+
+    def stop_loading(self):
+        self._is_loading = False
+        self.viewport().update()
+
+
+class FilteredListWidget(QWidget):
+    """Convenient widget that displays a QTableView along with a search line edit.
+    This class takes care of displaying a loading message when start_loading is called (and removes the message when stop_loading is called).
+    """
+
+    # Convenient signal to tell when current index changes. Returns index in **source** coordinates
+    current_index_changed = Signal(QModelIndex)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.tableview = LoadingTableView(self)
+        self.proxy = QSortFilterProxyModel(self)
+
+        self.tableview.setModel(self.proxy)
+        self.tableview.horizontalHeader().setStretchLastSection(True)
+        self.tableview.setAlternatingRowColors(True)
+        self.tableview.setSelectionMode(QAbstractItemView.ExtendedSelection)
+
+        self.search_edit = QLineEdit(self)
+
+        self.search_edit.textChanged.connect(self.proxy.setFilterRegExp)
+
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.tableview)
+        layout.addWidget(self.search_edit)
+
+        self.tableview.verticalHeader().hide()
+
+        self.tableview.selectionModel().currentChanged.connect(
+            self.on_current_index_changed
+        )
+
+    def set_model(self, model: QAbstractItemModel):
+        self.proxy.setSourceModel(model)
+
+    def start_loading(self):
+        self.search_edit.hide()
+        self.tableview.start_loading()
+
+    def stop_loading(self):
+        self.tableview.stop_loading()
+        self.search_edit.show()
+
+    def on_current_index_changed(self, current: QModelIndex, previous: QModelIndex):
+        # Prevents errors when filtering an empty list
+        if current.isValid():
+            self.current_index_changed.emit(self.proxy.mapToSource(current))
+
+
+class GeneSelectionDialog(QDialog):
+    def __init__(
+        self, initial_selection: typing.List[str] = None, parent: QWidget = None
+    ):
+        super().__init__(parent)
+
+        self.view = FilteredListWidget(self)
+
+        self.model = QStringListModel([])
+        self.view.tableview.horizontalHeader().hide()
+        self.view.set_model(self.model)
+
+        self.clear_selection_btn = QPushButton(self.tr("Clear list"), self)
+        self.remove_selection_item_btn = QPushButton(
+            self.tr("Remove selected gene(s)"), self
+        )
+        self.view.tableview.setSelectionMode(QAbstractItemView.ExtendedSelection)
+
+        self.buttons_layout = QHBoxLayout()
+        self.buttons_layout.addWidget(self.clear_selection_btn)
+        self.buttons_layout.addWidget(self.remove_selection_item_btn)
+
+        self.exit_btn_box = QDialogButtonBox(self)
+        self.exit_btn_box.setStandardButtons(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+        )
+        self.exit_btn_box.rejected.connect(self.reject)
+        self.exit_btn_box.accepted.connect(self.accept)
+
+        layout = QVBoxLayout(self)
+
+        layout.addLayout(self.buttons_layout)
+        layout.addWidget(self.view)
+        layout.addWidget(self.exit_btn_box)
+
+        self.gene_selection = initial_selection
+
+        self.clear_selection_btn.clicked.connect(self.on_clear_selectiion_clicked)
+        self.remove_selection_item_btn.clicked.connect(
+            self.on_remove_selection_items_clicked
+        )
+
+    def on_remove_selection_items_clicked(self):
+        selected_genes = [
+            index.data(Qt.DisplayRole)
+            for index in self.view.tableview.selectionModel().selectedIndexes()
+        ]
+        self.gene_selection = list(set(self.gene_selection).difference(selected_genes))
+
+    def on_clear_selectiion_clicked(self):
+        self.gene_selection = []
+
+    @property
+    def gene_selection(self) -> typing.List[str]:
+        return self._gene_selection
+
+    @gene_selection.setter
+    def gene_selection(self, value: typing.List[str]):
+        self._gene_selection = value
+        self.model.setStringList(self._gene_selection)
 
 
 class HarmonizomeWidget(QWidget):
@@ -249,169 +433,89 @@ class HarmonizomeWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.combo = QComboBox()
-        self.geneset_view = QListView()
-        self.gene_view = QListView()
-        self.selection_view = QListView(self)
+        self.dataset_view = FilteredListWidget(self)
+        self.geneset_view = FilteredListWidget(self)
+        self.gene_view = FilteredListWidget(self)
 
         self.dataset_model = HZDataSetModel(self)
         self.geneset_model = HZGeneSetModel(self)
         self.gene_model = HZGeneModel(self)
 
-        self.geneset_proxymodel = QSortFilterProxyModel(self)
-        self.geneset_proxymodel.setSourceModel(self.geneset_model)
+        self.dataset_view.set_model(self.dataset_model)
+        self.geneset_view.set_model(self.geneset_model)
+        self.gene_view.set_model(self.gene_model)
 
-        self.gene_proxymodel = QSortFilterProxyModel(self)
-        self.gene_proxymodel.setSourceModel(self.gene_model)
+        # A bit cheating (directly accessing tableview member) but clearly NBD
+        self.dataset_view.tableview.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.geneset_view.tableview.setSelectionMode(QAbstractItemView.SingleSelection)
 
-        self.init_combo()
-        self.init_geneset_view()
-        self.init_geneview()
-        self.init_selection_view()
+        self.selection_info_button = QPushButton(
+            self.tr("My selection (0 genes)"), self
+        )
+        self.selection_add_button = QPushButton(self.tr("Add genes to selection"), self)
 
-        self.geneset_progressbar = QProgressBar(self)
-        self.genes_progressbar = QProgressBar(self)
-
-        self.geneset_progressbar.hide()
-        self.genes_progressbar.hide()
+        self._init_layout()
+        self._init_connections()
 
         self.dataset_model.load()
+        self.dataset_view.start_loading()
 
-        self.init_layouts()
+        self.selected_dataset = ("", "")  # Stores UserRole,DisplayRole (in this order)
+        self.selected_geneset = ("", "")  # Stores UserRole,DisplayRole (in this order)
 
-        self.init_connections()
-
-        self.selected_dataset = ("", "")  # Store both DisplayRole AND UserRole (href)
-        self.selected_geneset = ("", "")  # Store both DisplayRole AND UserRole (href)
+        # This set keeps track of the genes selection
         self.selected_genes = set()
 
-    def init_combo(self):
-        self.combo.setModel(self.dataset_model)
-        self.combo.setEditable(True)
-        self.combo.completer().setModel(self.dataset_model)
-        # Below is the missing line (found at 1:59 AM)
-        self.combo.completer().setCompletionRole(Qt.DisplayRole)
-        self.combo.completer().setCompletionMode(QCompleter.InlineCompletion)
-        self.combo.setInsertPolicy(QComboBox.NoInsert)
-        self.combo.activated.connect(self.on_dataset_combo_activated)
+    def _init_connections(self):
 
-    def init_geneset_view(self):
-        self.geneset_view.setModel(self.geneset_proxymodel)
-        self.geneset_view.activated.connect(self.on_geneset_activated)
+        # When the user selects another dataset
+        self.dataset_view.current_index_changed.connect(self.on_dataset_index_changed)
 
-        self.geneset_filter_le = QLineEdit(self)
-        self.geneset_filter_le.setPlaceholderText(self.tr("Search geneset..."))
+        # When the user selects another gene set
+        self.geneset_view.current_index_changed.connect(self.on_geneset_index_changed)
 
-        self.geneset_filter_le.textChanged.connect(
-            self.geneset_proxymodel.setFilterRegExp
+        # Setup connections that tell fancy loading states to hide
+        self.dataset_model.finished.connect(self.dataset_view.stop_loading)
+        self.geneset_model.finished.connect(self.geneset_view.stop_loading)
+        self.gene_model.finished.connect(self.gene_view.stop_loading)
+
+        # Connect add genes to selection
+        self.selection_add_button.pressed.connect(
+            self.on_add_genes_to_selection_pressed
         )
 
-    def init_geneview(self):
-        self.gene_view.setModel(self.gene_proxymodel)
+        self.selection_info_button.pressed.connect(self.on_selection_info_pressed)
 
-        self.gene_filter_le = QLineEdit(self)
-        self.gene_filter_le.setPlaceholderText(self.tr("Search gene..."))
+    def _init_layout(self):
+        layout = QHBoxLayout(self)
+        layout.setMargin(0)
+        layout.addWidget(self.dataset_view)
+        layout.addWidget(self.geneset_view)
+        layout.addWidget(self.gene_view)
 
-        self.button_add_selected_genes = QPushButton(
-            self.tr("Add selected genes"), self
+        buttons_layout = QVBoxLayout()
+        buttons_layout.addWidget(self.selection_info_button)
+        buttons_layout.addWidget(self.selection_add_button)
+        buttons_layout.addItem(
+            QSpacerItem(0, 30, QSizePolicy.Fixed, QSizePolicy.Expanding)
         )
-        self.button_add_selected_genes.clicked.connect(
-            self.on_add_selected_genes_pressed
-        )
+        layout.addLayout(buttons_layout)
 
-        self.gene_filter_le.textChanged.connect(self.gene_proxymodel.setFilterRegExp)
-
-        self.gene_view.setSelectionMode(QAbstractItemView.ExtendedSelection)
-
-    def init_selection_view(self):
-        self.selected_genes_model = QStringListModel([], self)
-        self.selection_view.setModel(self.selected_genes_model)
-        self.selection_view.setSelectionMode(QAbstractItemView.ExtendedSelection)
-        self.selection_view_remove_act = QAction(self.tr("Remove"), self)
-        self.selection_view_remove_act.setShortcut(QKeySequence.Delete)
-        self.selection_view.setAlternatingRowColors(True)
-
-        # Does not work for some reason... Have to use a QPushButton
-        self.selection_view.setContextMenuPolicy(Qt.ActionsContextMenu)
-        self.selection_view_remove_act.triggered.connect(
-            self.on_remove_selected_genes_triggered
-        )
-
-        self.selection_view_remove_button = QPushButton(
-            self.tr("Remove selected gene"), self
-        )
-        self.selection_view_remove_button.clicked.connect(
-            self.on_remove_selected_genes_triggered
-        )
-
-    def init_connections(self):
-        # Connect geneset model signals (basically this means updating progress bar)
-        self.geneset_model.progress.connect(self.on_geneset_progress_changed)
-        self.geneset_model.finished.connect(lambda: self.geneset_progressbar.hide())
-
-        # Connect genes model signals (basically this means updating progress bar)
-        self.gene_model.progress.connect(self.on_gene_progress_changed)
-        self.gene_model.finished.connect(lambda: self.genes_progressbar.hide())
-
-    def init_layouts(self):
-        # Layout for the geneset view (also holds the combobox)
-        self.db_and_geneset = QVBoxLayout()
-        # self.db_and_geneset.addWidget(QLabel(self.tr("Selected database:"), self))
-        self.db_and_geneset.addWidget(self.combo)
-
-        # self.db_and_geneset.addWidget(
-        #     QLabel(self.tr("Genesets in selected database:"), self)
-        # )
-        self.db_and_geneset.addWidget(self.geneset_view)
-
-        self.db_and_geneset.addWidget(self.geneset_progressbar)
-        self.db_and_geneset.addWidget(self.geneset_filter_le)
-
-        # Layout for the gene view and its progressbar
-        self.gene_view_layout = QVBoxLayout()
-        # self.gene_view_layout.addWidget(
-        #     QLabel(self.tr("Genes in selected geneset:"), self)
-        # )
-        selection_button_layout = QHBoxLayout()
-        selection_button_layout.addWidget(self.button_add_selected_genes)
-
-        self.gene_view_layout.addLayout(selection_button_layout)
-        self.gene_view_layout.addWidget(self.gene_view)
-        self.gene_view_layout.addWidget(self.genes_progressbar)
-        self.gene_view_layout.addWidget(self.gene_filter_le)
-
-        self.selected_genes_layout = QVBoxLayout()
-        self.selected_genes_layout.addWidget(self.selection_view_remove_button)
-        self.selected_genes_layout.addWidget(QLabel(self.tr("Selected genes:"), self))
-        self.selected_genes_layout.addWidget(self.selection_view)
-
-        hlayout = QHBoxLayout(self)
-
-        hlayout.addLayout(self.db_and_geneset)
-        hlayout.addLayout(self.gene_view_layout)
-        hlayout.addLayout(self.selected_genes_layout)
-
-    def on_dataset_combo_activated(self):
+    def on_dataset_index_changed(self, index: QModelIndex):
         """Called when the dataset combo gets activated"""
-
-        # A bit weird, but because of the autocompletion this was the only way...
-        self.combo.setCurrentText(self.combo.currentData(Qt.DisplayRole))
-
-        # It has been activated, this is the only way I found to avoid double activating
-        self.focusNextChild()
-
         # This is because activated combo doesn't mean the current index has changed...
-        if self.combo.currentData(Qt.DisplayRole) != self.selected_dataset[0]:
+        if self.dataset_model.data(index, Qt.DisplayRole) != self.selected_dataset[0]:
             self.selected_dataset = (
-                self.combo.currentData(Qt.DisplayRole),
-                self.combo.currentData(Qt.UserRole),
+                self.dataset_model.data(index, Qt.UserRole),
+                self.dataset_model.data(index, Qt.DisplayRole),
             )
-            self.geneset_progressbar.show()
+            # In selected_dataset, first role is UserRole (href), second is DisplayRole
 
-            href = self.combo.currentData(Qt.UserRole)
-            self.geneset_model.load(href)
+            self.geneset_model.load(*self.selected_dataset)
+            self.geneset_view.start_loading()
+            self.gene_model.clear()
 
-    def on_geneset_activated(self, index: QModelIndex):
+    def on_geneset_index_changed(self, index: QModelIndex):
         """Called when the user selected another gene set
 
         Args:
@@ -419,42 +523,32 @@ class HarmonizomeWidget(QWidget):
         """
 
         # Test if the index actually changed
-        if (
-            self.geneset_proxymodel.data(index, Qt.DisplayRole)
-            != self.selected_geneset[0]
-        ):
+        if self.geneset_model.data(index, Qt.DisplayRole) != self.selected_geneset[0]:
             self.selected_geneset = (
-                self.geneset_proxymodel.data(index, Qt.DisplayRole),
-                self.geneset_proxymodel.data(index, Qt.UserRole),
+                self.geneset_model.data(index, Qt.UserRole),
+                self.geneset_model.data(index, Qt.DisplayRole),
             )
-            self.genes_progressbar.show()
+            self.gene_model.load(*self.selected_geneset)
+            self.gene_view.start_loading()
 
-            href = index.data(Qt.UserRole)
-            self.gene_model.load(href)
-
-    def on_geneset_progress_changed(self, cur: int, tot: int):
-        self.geneset_progressbar.setMaximum(tot)
-        self.geneset_progressbar.setValue(cur)
-
-    def on_gene_progress_changed(self, cur: int, tot: int):
-        self.genes_progressbar.setMaximum(tot)
-        self.genes_progressbar.setValue(cur)
-
-    def on_add_selected_genes_pressed(self):
+    def on_add_genes_to_selection_pressed(self):
         selected_genes = [
             index.data(Qt.DisplayRole)
-            for index in self.gene_view.selectionModel().selectedIndexes()
+            for index in self.gene_view.tableview.selectionModel().selectedIndexes()
         ]
-        self.selected_genes = self.selected_genes.union(selected_genes)
-        self.selected_genes_model.setStringList(self.selected_genes)
+        self.selected_genes.update(selected_genes)
+        self.selection_info_button.setText(
+            self.tr(f"My selection ({len(self.selected_genes)}) genes")
+        )
 
-    def on_remove_selected_genes_triggered(self):
-        selected_genes = [
-            index.data(Qt.DisplayRole)
-            for index in self.selection_view.selectionModel().selectedIndexes()
-        ]
-        self.selected_genes = self.selected_genes.difference(selected_genes)
-        self.selected_genes_model.setStringList(self.selected_genes)
+    def on_selection_info_pressed(self):
+        dlg = GeneSelectionDialog(self.get_selected_genes(), self)
+        # We don't change selected_genes if cancel was pressed !
+        if dlg.exec_() == QDialog.Accepted:
+            self.selected_genes = set(dlg.gene_selection)
+            self.selection_info_button.setText(
+                self.tr(f"My selection ({len(self.selected_genes)}) genes")
+            )
 
     def get_selected_genes(self):
         return list(self.selected_genes)
