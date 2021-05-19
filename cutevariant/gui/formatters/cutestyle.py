@@ -30,9 +30,9 @@ class CutestyleFormatter(Formatter):
     ACMG_ICON = {
         "0": FIcon(0xF03A1, "lightgray"),
         "1": FIcon(0xF03A4, "#71e096"),
-        "2": FIcon(0xF03A7, "#71e096"),
+        "2": FIcon(0xF03A7, "#a7ecbe"),
         "3": FIcon(0xF03AA, "#f5a26f"),
-        "4": FIcon(0xF03AD, "#ed6d79"),
+        "4": FIcon(0xF03AD, "#f9cdd1"),
         "5": FIcon(0xF03B1, "#ed6d79"),
     }
 
