@@ -43,6 +43,7 @@ class HZDataSetModel(QAbstractListModel):
     def load(self):
         """Initiates model loading."""
         if self.current_download:
+            self._part_entities.clear()
             self.current_download.abort()
 
         self.current_download = self.downloader.get(
@@ -52,17 +53,19 @@ class HZDataSetModel(QAbstractListModel):
 
     def on_batch_loaded(self):
         data = str(self.current_download.readAll(), encoding="utf-8")
-        data = json.loads(data)
-        self.current_download.close()
-        if "next" in data and data["next"]:
-            self._part_entities += data["entities"]
-            self.current_download = self.downloader.get(
-                QNetworkRequest(QUrl(f"{URL_PREFIX}{data['next']}"))
-            )
-            self.current_download.finished.connect(self.on_batch_loaded)
-        else:
-            self.current_download = None
-            self.on_download_finished()
+        if data:
+            data = json.loads(data)
+            if "entities" in data:
+                self.current_download.close()
+                self._part_entities += data["entities"]
+                if "next" in data and data["next"]:
+                    self.current_download = self.downloader.get(
+                        QNetworkRequest(QUrl(f"{URL_PREFIX}{data['next']}"))
+                    )
+                    self.current_download.finished.connect(self.on_batch_loaded)
+                else:
+                    self.current_download = None
+                    self.on_download_finished()
 
     def on_download_finished(self):
         self.beginResetModel()
@@ -260,14 +263,17 @@ class HarmonizomeWidget(QWidget):
         # Below is the missing line (found at 1:59 AM)
         self.combo.completer().setCompletionRole(Qt.DisplayRole)
         self.combo.completer().setCompletionMode(QCompleter.InlineCompletion)
-        self.combo.activated.connect(self.on_dataset_changed)
+        self.combo.setInsertPolicy(QComboBox.NoInsert)
+        self.combo.activated.connect(self.on_dataset_combo_activated)
 
         self.geneset_view.setModel(self.geneset_proxymodel)
-        self.geneset_view.activated.connect(self.on_geneset_changed)
+        self.geneset_view.activated.connect(self.on_geneset_activated)
         self.gene_view.setModel(self.gene_proxymodel)
 
         self.geneset_filter_le = QLineEdit(self)
+        self.geneset_filter_le.setPlaceholderText(self.tr("Search..."))
         self.gene_filter_le = QLineEdit(self)
+        self.gene_filter_le.setPlaceholderText(self.tr("Search..."))
 
         self.geneset_filter_le.textChanged.connect(
             self.geneset_proxymodel.setFilterRegExp
@@ -276,54 +282,98 @@ class HarmonizomeWidget(QWidget):
         self.geneset_progressbar = QProgressBar(self)
         self.genes_progressbar = QProgressBar(self)
 
-        # Layout for the geneset view (also holds the combobox)
-        self.db_and_geneset = QVBoxLayout()
-        self.db_and_geneset.addWidget(self.combo)
-        self.db_and_geneset.addWidget(self.geneset_view)
-        self.db_and_geneset.addWidget(self.geneset_progressbar)
-        self.db_and_geneset.addWidget(self.geneset_filter_le)
-
-        # Layout for the gene view and its progressbar
-        self.gene_view_layout = QVBoxLayout()
-        self.gene_view_layout.addWidget(self.gene_view)
-        self.gene_view_layout.addWidget(self.genes_progressbar)
-        self.gene_view_layout.addWidget(self.gene_filter_le)
-
-        glayout = QGridLayout(self)
-
-        glayout.addLayout(self.db_and_geneset, 0, 0)
-        glayout.addLayout(self.gene_view_layout, 0, 1)
-
         self.geneset_progressbar.hide()
         self.genes_progressbar.hide()
 
         self.dataset_model.load()
 
-    def on_dataset_changed(self):
-        """Called when the user chooses another dataset"""
-        # A bit weird, but because of the autocompletion this was the only way...
-        self.combo.setCurrentText(self.combo.currentData(Qt.DisplayRole))
+        self.init_layouts()
 
-        self.geneset_progressbar.show()
+        self.init_connections()
+
+        self.selected_dataset = ("", "")  # Store both DisplayRole AND UserRole (href)
+        self.selected_geneset = ("", "")  # Store both DisplayRole AND UserRole (href)
+        self.selected_genes = set()
+
+    def init_connections(self):
+        # Connect geneset model signals (basically this means updating progress bar)
         self.geneset_model.progress.connect(self.on_geneset_progress_changed)
         self.geneset_model.finished.connect(lambda: self.geneset_progressbar.hide())
 
-        href = self.combo.currentData(Qt.UserRole)
-        self.geneset_model.load(href)
-
-    def on_geneset_changed(self, index: QModelIndex):
-        """Called when the user selected another gene set
-
-        Args:
-            index (QMOdelIndex): Index of the selected gene set in the gene set model
-        """
-
-        self.genes_progressbar.show()
+        # Connect genes model signals (basically this means updating progress bar)
         self.gene_model.progress.connect(self.on_gene_progress_changed)
         self.gene_model.finished.connect(lambda: self.genes_progressbar.hide())
 
-        href = index.data(Qt.UserRole)
-        self.gene_model.load(href)
+    def init_layouts(self):
+        # Layout for the geneset view (also holds the combobox)
+        self.db_and_geneset = QVBoxLayout()
+        self.db_and_geneset.addWidget(QLabel(self.tr("Selected database:"), self))
+        self.db_and_geneset.addWidget(self.combo)
+
+        self.db_and_geneset.addWidget(
+            QLabel(self.tr("Genesets in selected database:"), self)
+        )
+        self.db_and_geneset.addWidget(self.geneset_view)
+
+        self.db_and_geneset.addWidget(self.geneset_progressbar)
+        self.db_and_geneset.addWidget(self.geneset_filter_le)
+
+        # Layout for the gene view and its progressbar
+        self.gene_view_layout = QVBoxLayout()
+        self.gene_view_layout.addWidget(
+            QLabel(self.tr("Genes in selected geneset:"), self)
+        )
+        self.gene_view_layout.addWidget(self.gene_view)
+        self.gene_view_layout.addWidget(self.genes_progressbar)
+        self.gene_view_layout.addWidget(self.gene_filter_le)
+
+        hlayout = QHBoxLayout(self)
+
+        hlayout.addLayout(self.db_and_geneset)
+        hlayout.addLayout(self.gene_view_layout)
+
+    def on_dataset_combo_activated(self):
+        """Called when the dataset combo gets activated"""
+
+        print(self.combo.currentIndex())
+
+        # A bit weird, but because of the autocompletion this was the only way...
+        self.combo.setCurrentText(self.combo.currentData(Qt.DisplayRole))
+
+        # It has been activated, this is the only way I found to avoid double activating
+        self.focusNextChild()
+
+        # This is because activated combo doesn't mean the current index has changed...
+        if self.combo.currentData(Qt.DisplayRole) != self.selected_dataset[0]:
+            self.selected_dataset = (
+                self.combo.currentData(Qt.DisplayRole),
+                self.combo.currentData(Qt.UserRole),
+            )
+            self.geneset_progressbar.show()
+
+            href = self.combo.currentData(Qt.UserRole)
+            self.geneset_model.load(href)
+
+    def on_geneset_activated(self, index: QModelIndex):
+        """Called when the user selected another gene set
+
+        Args:
+            index (QModelIndex): Index of the selected gene set in the gene set model
+        """
+
+        # Test if the index actually changed
+        if (
+            self.geneset_proxymodel.data(index, Qt.DisplayRole)
+            != self.selected_geneset[0]
+        ):
+            self.selected_geneset = (
+                self.geneset_proxymodel.data(index, Qt.DisplayRole),
+                self.geneset_proxymodel.data(index, Qt.UserRole),
+            )
+            self.genes_progressbar.show()
+
+            href = index.data(Qt.UserRole)
+            self.gene_model.load(href)
 
     def on_geneset_progress_changed(self, cur: int, tot: int):
         self.geneset_progressbar.setMaximum(tot)
@@ -344,14 +394,8 @@ class HarmonizomeDialog(QDialog):
         self.buttons.accepted.connect(self.accept)
         self.buttons.rejected.connect(self.reject)
 
-        self.add_button = QPushButton(self.tr("Add selected genes"), self)
-
-        self.selected_genes_view = QListView(self)
-
         layout = QGridLayout(self)
         layout.addWidget(self.harmonizome_widget, 0, 0)
-        layout.addWidget(self.add_button, 0, 1)
-        layout.addWidget(self.selected_genes_view, 0, 2)
         layout.addWidget(self.buttons, 1, 0)
 
 
