@@ -50,8 +50,6 @@ class MainWindow(QMainWindow):
 
     """
 
-    variants_load_finished = Signal(int, float)
-
     def __init__(self, parent=None):
 
         super().__init__(parent)
@@ -155,7 +153,8 @@ class MainWindow(QMainWindow):
         Note:
             Adding panel will append a hide/show action in the view menu
 
-        Args:
+        Args:                LOGGER.debug("Connected variant view signals to mainwindow")
+
             widget (QWidget): a standard QWidget like a PluginWidget
             area: Area location. Defaults to Qt.LeftDockWidgetArea.
         """
@@ -213,16 +212,6 @@ class MainWindow(QMainWindow):
             # Setup new widget
             widget = plugin_widget_class(parent=self)
             widget.setDisabled(True)
-
-            """Variant view is a special widget that loads variants and counts them.
-            Every plugin should be warned whenever the variants get loaded, so we need to connect variant view's signals to mainwindow's signals"""
-            if name == "variant_view":
-                # TODO : Use STATE DATA
-                LOGGER.debug("Loading variant view")
-                widget.variants_load_finished.connect(
-                    lambda count, time: self.variants_load_finished.emit(count, time)
-                )
-                LOGGER.debug("Connected variant view signals to mainwindow")
 
             if not widget.objectName():
                 LOGGER.debug(

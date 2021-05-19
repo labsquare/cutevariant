@@ -25,7 +25,7 @@ from cutevariant.core.querybuilder import build_sql_query
 from cutevariant.core import sql
 
 from cutevariant.core import command as cmd
-from cutevariant.gui import plugin, FIcon, formatter, style
+from cutevariant.gui import mainwindow, plugin, FIcon, formatter, style
 from cutevariant.gui.sql_thread import SqlThread
 from cutevariant.gui.widgets import MarkdownEditor
 import cutevariant.commons as cm
@@ -1274,9 +1274,6 @@ class VariantViewWidget(plugin.PluginWidget):
     variant_clicked = Signal(dict)
     LOCATION = plugin.CENTRAL_LOCATION
 
-    # Emitted when the variants are both counted and loaded in the view. Provides the variants count and the elapsed time (in seconds) to execute the query
-    variants_load_finished = Signal(int, float)
-
     ENABLE = True
     REFRESH_STATE_DATA = {"fields", "filters", "source"}
 
@@ -1361,17 +1358,22 @@ class VariantViewWidget(plugin.PluginWidget):
         )
 
         self.main_right_pane.error_raised.connect(self.set_message)
+        self.main_right_pane.model.load_finished.connect(self.on_load_finished)
 
-        # Connect model's signal load_finished to this signal's load_finished
-        self.main_right_pane.model.load_finished.connect(
-            lambda: self.variants_load_finished.emit(
-                self.main_right_pane.model.total,
-                self.main_right_pane.model.elapsed_time,
-            )
-        )
+    def on_load_finished(self):
+        """Triggered when variant load is finished
 
-        # Default group
-        self.last_group = ["chr"]
+        Notify all plugins registered to "executed_query_data"
+
+        """
+
+        executed_query_data = {
+            "count": self.main_right_pane.model.total,
+            "elapsed_time": self.main_right_pane.model.elapsed_time,
+        }
+
+        self.mainwindow.set_state_data("executed_query_data", executed_query_data)
+        self.mainwindow.refresh_plugins()
 
     def add_available_formatters(self):
         """Populate the formatters
