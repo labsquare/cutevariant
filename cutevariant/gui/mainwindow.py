@@ -39,7 +39,16 @@ LOGGER = cm.logger()
 
 
 class MainWindow(QMainWindow):
-    """Main window of Cutevariant"""
+    """Cutevariant mainwindow
+
+    The mainwindow is build by with plugins loaded from /cutevariant/gui/plugins.
+    It also plays the role of a mediator between plugins where data are read and write from the state_data attributes.
+
+    Attributes:
+        conn (sqlite.Connection): the sqlite databases
+        plugins : a dictionnary of plugins with plugin name as key
+
+    """
 
     variants_load_finished = Signal(int, float)
 
@@ -47,58 +56,57 @@ class MainWindow(QMainWindow):
 
         super().__init__(parent)
 
-        self.setWindowTitle("Cutevariant")
-        self.toolbar = self.addToolBar("maintoolbar")
-        self.toolbar.setObjectName("maintoolbar")  # For window saveState
-        self.setWindowIcon(QIcon(DIR_ICONS + "app.png"))
-        self.setWindowFlags(Qt.WindowContextHelpButtonHint | self.windowFlags())
-
-        # Keep sqlite connection
+        ## ===== CLASS ATTRIBUTES =====
         self.conn = None
+        # Plugins
+        self.plugins = {}  # dict of plugins with plugin name as key
+        self.dialog_plugins = {}  # dict of dialog plugins
 
-        # App settings
+        # Settings
         self.app_settings = QSettings()
 
-        # State variable of application
-        # store fields, source, filters, group_by, having data
-        # Often changed by plugins
+        # State variable of application changed by plugins
         self._state_data = {
             "fields": ["chr", "pos", "ref", "alt"],
             "source": "variants",
             "filters": {},
         }
-
         self._state_data_changed = set()
 
-        # Central workspace
+        ## ===== GUI Setup =====
+
+        self.setWindowTitle("Cutevariant")
+        self.setWindowIcon(QIcon(DIR_ICONS + "app.png"))
+        self.setWindowFlags(Qt.WindowContextHelpButtonHint | self.windowFlags())
+
+        # Setup menu bar
+        self.setup_menubar()
+
+        # Setup ToolBar
+        self.toolbar = self.addToolBar("maintoolbar")
+        self.toolbar.setObjectName("maintoolbar")  # For window saveState
+        self.setup_toolbar()
+
+        # Setup Central widget
         self.central_tab = QTabWidget()
         self.footer_tab = QTabWidget()
         self.vsplit = QSplitter(Qt.Vertical)
         self.vsplit.addWidget(self.central_tab)
         self.vsplit.addWidget(self.footer_tab)
         self.setCentralWidget(self.vsplit)
+        self.setTabPosition(Qt.AllDockWidgetAreas, QTabWidget.North)
+        # registers plugins
+        self.register_plugins()
 
-        # Status Bar
+        # Setup status bar
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
-
-        # Setup menubar
-        self.setup_menubar()
-        # Setup toobar under the menu bar
-        self.setup_toolbar()
-
-        # Register plugins
-        self.plugins = {}  # dict of names (not titles) as keys and widgets as values
-        self.dialog_plugins = {}  # dict of actions as keys and classes as values
-        self.register_plugins()
 
         # Window geometry
         self.resize(600, 400)
         self.setGeometry(
             QApplication.instance().desktop().rect().adjusted(100, 100, -100, -100)
         )
-
-        self.setTabPosition(Qt.AllDockWidgetAreas, QTabWidget.North)
 
         # If True, the GUI settings are deleted when the app is closed
         self.requested_reset_ui = False
@@ -113,8 +121,11 @@ class MainWindow(QMainWindow):
     def set_state_data(self, key: str, value: typing.Any):
         """set state data value from key
 
+        This method must be called by plugins to change state_data.
+        Do not use the  protected attribut (`self._state_data`) because the following method store and detect changes
+
         Args:
-            key (str): Name of the state variable
+            key (str): Name of the state variable ( fields, source, filters )
             value (Any): a value
         """
         previous_state = dict(self._state_data)
@@ -124,6 +135,8 @@ class MainWindow(QMainWindow):
 
     def get_state_data(self, key: str) -> typing.Any:
         """Get state data value from from key
+
+        This method must be called by plugins to reads state_data
 
         Args:
             key (str): Name of the state variable
@@ -135,7 +148,17 @@ class MainWindow(QMainWindow):
         return self._state_data.get(key, None)
 
     def add_panel(self, widget, area=Qt.LeftDockWidgetArea):
-        """Add given widget to a new QDockWidget and to view menu in menubar"""
+        """Add the given widget to a new QDockWidget.
+
+        It the most of the case, it is a PlufinWidget with PluginWidget.LOCATION equal to DOCK_LOCATION
+
+        Note:
+            Adding panel will append a hide/show action in the view menu
+
+        Args:
+            widget (QWidget): a standard QWidget like a PluginWidget
+            area: Area location. Defaults to Qt.LeftDockWidgetArea.
+        """
         dock = QDockWidget()
         dock.setWindowTitle(widget.windowTitle())
         dock.setWidget(widget)
@@ -154,34 +177,28 @@ class MainWindow(QMainWindow):
         self.toolbar.addAction(action)
 
     def register_plugins(self):
-        """Dynamically load plugins to the window
+        """Load all plugins to the window
 
-        Wrapper of :meth:`register_plugin`
+        See self.register_plugin
 
-        Two types of plugins can be registered:
-        - widget: Added to the GUI,
-        - dialog: DialogBox accessible from the tool menu.
-
-        `setting` type is handled separately in :meth:`cutevariant.gui.settings.load_plugins`
         """
         LOGGER.info("MainWindow:: Registering plugins...")
-
         # Get classes of plugins
-        # Don't forget to skip disabled plugins
         for extension in plugin.find_plugins():
             self.register_plugin(extension)
 
     def register_plugin(self, extension):
-        """Dynamically load plugins to the window
+        """Load a plugin to the Mainwindow
 
-        Two types of plugins can be registered:
-        - widget: Added to the GUI,
-        - dialog: DialogBox accessible from the tool menu.
+        There are Two kinds of plugins which can be registered:
+        - PluginWidget: Added to the mainwindow as QDockWidget or TabWidget
+        - PluginDialog: DialogBox accessible from the tool menu.
 
-        `setting` type is handled separately in :meth:`cutevariant.gui.settings.load_plugins`
+        Note:
+            PluginSettingsWidget is handled separately in`cutevariant.gui.settings.load_plugins`
 
         Args:
-            extension (dict): Extension dict. See :meth:`cutevariant.gui.plugin.find_plugins`
+            extension (dict): Extension dict returned by `cutevariant.gui.plugin.find_plugins`
         """
         LOGGER.debug("Extension: %s", extension)
 
@@ -200,7 +217,7 @@ class MainWindow(QMainWindow):
             """Variant view is a special widget that loads variants and counts them.
             Every plugin should be warned whenever the variants get loaded, so we need to connect variant view's signals to mainwindow's signals"""
             if name == "variant_view":
-
+                # TODO : Use STATE DATA
                 LOGGER.debug("Loading variant view")
                 widget.variants_load_finished.connect(
                     lambda count, time: self.variants_load_finished.emit(count, time)
@@ -224,31 +241,27 @@ class MainWindow(QMainWindow):
                 long_description = extension.get("description")
             widget.setWhatsThis(long_description)
             # Register (launch first init on some of them)
+            widget.mainwindow = self
             widget.on_register(self)
-            if self.conn:
-                # If register occurs after a project is loaded we must set its
-                # connection attribute
-                widget.on_open_project(self.conn)
+            # if self.conn:
+            #     # If register occurs after a project is loaded we must set its
+            #     # connection attribute
+            #     widget.on_open_project(self.conn)
 
             # Init mainwindow via the constructor or on_register
-            if widget.mainwindow != self:
-                LOGGER.error(
-                    "Bad plugin implementation, <mainwindow> plugin attribute is not set."
-                )
-                widget.on_close()
-            else:
-                # Add new plugin to plugins already registered
-                self.plugins[name] = widget
 
-                # Set position on the GUI
-                if plugin_widget_class.LOCATION == plugin.DOCK_LOCATION:
-                    self.add_panel(widget)
+            # Add new plugin to plugins already registered
+            self.plugins[name] = widget
 
-                if plugin_widget_class.LOCATION == plugin.CENTRAL_LOCATION:
-                    self.central_tab.addTab(widget, widget.windowTitle())
+            # Set position on the GUI
+            if plugin_widget_class.LOCATION == plugin.DOCK_LOCATION:
+                self.add_panel(widget)
 
-                if plugin_widget_class.LOCATION == plugin.FOOTER_LOCATION:
-                    self.footer_tab.addTab(widget, widget.windowTitle())
+            if plugin_widget_class.LOCATION == plugin.CENTRAL_LOCATION:
+                self.central_tab.addTab(widget, widget.windowTitle())
+
+            if plugin_widget_class.LOCATION == plugin.FOOTER_LOCATION:
+                self.footer_tab.addTab(widget, widget.windowTitle())
 
         if "dialog" in extension and extension["dialog"].ENABLE:
             # New tool menu entry
