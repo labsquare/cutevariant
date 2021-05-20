@@ -137,6 +137,9 @@ class HZGeneSetModel(QAbstractListModel):
         if role == Qt.UserRole:
             return self.genesets[index.row()]["href"]
 
+        if role == Qt.DecorationRole:
+            return QIcon(FIcon(0xF0436))
+
     def headerData(
         self, section: int, orientation: Qt.Orientation, role: int
     ) -> typing.Any:
@@ -227,6 +230,9 @@ class HZGeneModel(QAbstractListModel):
 
         if role == Qt.DisplayRole:
             return self.genes[index.row()]["gene"]["symbol"]
+
+        if role == Qt.DecorationRole:
+            return QIcon(FIcon(0xF0684))
 
     def headerData(
         self, section: int, orientation: Qt.Orientation, role: int
@@ -340,6 +346,7 @@ class FilteredListWidget(QWidget):
         self.search_edit.textChanged.connect(self.proxy.setFilterRegExp)
 
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.tableview)
         layout.addWidget(self.search_edit)
 
@@ -544,12 +551,14 @@ class HarmonizomeWordsetDialog(PluginDialog):
 
         self.add_wordset_btn = QPushButton(self.tr("Create wordset"), self)
         self.cancel_btn = QPushButton(self.tr("Cancel"), self)
-        self.selection_info_button = QPushButton(self.tr("My selection (0 genes)"))
+        self.selection_info_button = QPushButton(self.tr("0 genes in selection"))
+        self.selection_info_button.setIcon(FIcon(0xF1296))
         self.selection_add_button = QPushButton(self.tr("Add genes to selection"), self)
+        self.selection_add_button.setIcon(FIcon(0xF1298))
 
         self.label_hyperlink = QLabel(
             self.tr(
-                "<b>Harmonizome</b> can be found <a href='https://maayanlab.cloud/Harmonizome/'>here</a>"
+                "This plugin uses <b>Harmonizome</b>, which can be found at <a href='https://maayanlab.cloud/Harmonizome/'>https://maayanlab.cloud/Harmonizome/</a>"
             ),
             self,
         )
@@ -560,14 +569,10 @@ class HarmonizomeWordsetDialog(PluginDialog):
         self.cancel_btn.clicked.connect(self.reject)
 
         self.selection_add_button.clicked.connect(
-            self.harmonizome_widget.on_add_genes_to_selection_pressed
+            self.on_add_genes_to_selection_pressed
         )
-        self.selection_add_button.clicked.connect(self.update_selection_info_button)
-        self.selection_info_button.clicked.connect(
-            self.harmonizome_widget.on_selection_info_pressed
-        )
-        self.selection_info_button.clicked.connect(self.update_selection_info_button)
-        self.add_wordset_btn.clicked.connect(self.add_wordset)
+        self.selection_info_button.clicked.connect(self.on_selection_info_pressed)
+        self.add_wordset_btn.clicked.connect(self.create_wordset)
 
         self.buttons_layout = QHBoxLayout()
         self.buttons_layout.addWidget(self.cancel_btn)
@@ -595,9 +600,11 @@ class HarmonizomeWordsetDialog(PluginDialog):
     def conn(self, value: sqlite3.Connection):
         self._conn = value
         # We just changed conn, so the set_names are not relevant anymore
-        self.set_names.clear()
-        if self._conn:
-            self.set_names = [data["name"] for data in get_wordsets(self._conn)]
+        # Need to check for attribute because the parent constructor initializes conn before us
+        if hasattr(self, "set_names"):
+            self.set_names.clear()
+            if self._conn:
+                self.set_names = [data["name"] for data in get_wordsets(self._conn)]
 
     def import_wordset(self, words, wordset_name):
         """Import given words into a new wordset in database
@@ -636,7 +643,7 @@ class HarmonizomeWordsetDialog(PluginDialog):
             os.remove(filename)
             return result["success"]
 
-    def add_wordset(self):
+    def create_wordset(self):
         """Display a window to allow to add/edit/remove word sets
 
         The set is then imported in database.
@@ -669,17 +676,29 @@ class HarmonizomeWordsetDialog(PluginDialog):
                 self.tr("Success!"),
                 self.tr(f"Successfully imported wordset {wordset_name}"),
             )
+            filter_with_wordset = {
+                "$and": [{"ann.gene": {"$in": {"$wordset": wordset_name}}}]
+            }
 
-            self.mainwindow.set_state_data("source", wordset_name)
+            self.mainwindow.set_state_data("filters", filter_with_wordset)
             self.mainwindow.refresh_plugins()
+            self.mainwindow.refresh_plugin("word_set")
             self.accept()
+
+    @Slot()
+    def on_add_genes_to_selection_pressed(self):
+        self.harmonizome_widget.on_add_genes_to_selection_pressed()
+        self.update_selection_info_button()
+
+    @Slot()
+    def on_selection_info_pressed(self):
+        self.harmonizome_widget.on_selection_info_pressed()
+        self.update_selection_info_button()
 
     @Slot()
     def update_selection_info_button(self):
         self.selection_info_button.setText(
-            self.tr(
-                f"My selection ({len(self.harmonizome_widget.selected_genes)}) genes"
-            )
+            self.tr(f"{len(self.harmonizome_widget.selected_genes)} genes in selection")
         )
 
 
