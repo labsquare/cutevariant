@@ -449,11 +449,6 @@ class HarmonizomeWidget(QWidget):
         self.dataset_view.tableview.setSelectionMode(QAbstractItemView.SingleSelection)
         self.geneset_view.tableview.setSelectionMode(QAbstractItemView.SingleSelection)
 
-        self.selection_info_button = QPushButton(
-            self.tr("My selection (0 genes)"), self
-        )
-        self.selection_add_button = QPushButton(self.tr("Add genes to selection"), self)
-
         self._init_layout()
         self._init_connections()
 
@@ -479,27 +474,12 @@ class HarmonizomeWidget(QWidget):
         self.geneset_model.finished.connect(self.geneset_view.stop_loading)
         self.gene_model.finished.connect(self.gene_view.stop_loading)
 
-        # Connect add genes to selection
-        self.selection_add_button.pressed.connect(
-            self.on_add_genes_to_selection_pressed
-        )
-
-        self.selection_info_button.pressed.connect(self.on_selection_info_pressed)
-
     def _init_layout(self):
         layout = QHBoxLayout(self)
         layout.setMargin(0)
         layout.addWidget(self.dataset_view)
         layout.addWidget(self.geneset_view)
         layout.addWidget(self.gene_view)
-
-        buttons_layout = QVBoxLayout()
-        buttons_layout.addWidget(self.selection_info_button)
-        buttons_layout.addWidget(self.selection_add_button)
-        buttons_layout.addItem(
-            QSpacerItem(0, 30, QSizePolicy.Fixed, QSizePolicy.Expanding)
-        )
-        layout.addLayout(buttons_layout)
 
     def on_dataset_index_changed(self, index: QModelIndex):
         """Called when the dataset combo gets activated"""
@@ -531,24 +511,21 @@ class HarmonizomeWidget(QWidget):
             self.gene_model.load(*self.selected_geneset)
             self.gene_view.start_loading()
 
+    @Slot()
     def on_add_genes_to_selection_pressed(self):
         selected_genes = [
             index.data(Qt.DisplayRole)
             for index in self.gene_view.tableview.selectionModel().selectedIndexes()
         ]
+        # We can only add from the view. Thus, update is the most appropriate
         self.selected_genes.update(selected_genes)
-        self.selection_info_button.setText(
-            self.tr(f"My selection ({len(self.selected_genes)}) genes")
-        )
 
+    @Slot()
     def on_selection_info_pressed(self):
         dlg = GeneSelectionDialog(self.get_selected_genes(), self)
         # We don't change selected_genes if cancel was pressed !
         if dlg.exec_() == QDialog.Accepted:
             self.selected_genes = set(dlg.gene_selection)
-            self.selection_info_button.setText(
-                self.tr(f"My selection ({len(self.selected_genes)}) genes")
-            )
 
     def get_selected_genes(self):
         return list(self.selected_genes)
@@ -557,22 +534,48 @@ class HarmonizomeWidget(QWidget):
 class HarmonizomeDialog(QDialog):
     def __init__(self, conn: sqlite3.Connection = None, parent: QWidget = None) -> None:
         super().__init__(parent)
+
+        self.setWindowTitle(self.tr("Create wordset from harmonizome database"))
         self.harmonizome_widget = HarmonizomeWidget(self)
+
         self.add_wordset_btn = QPushButton(self.tr("Create wordset"), self)
         self.cancel_btn = QPushButton(self.tr("Cancel"), self)
+        self.selection_info_button = QPushButton(self.tr("My selection (0 genes)"))
+        self.selection_add_button = QPushButton(self.tr("Add genes to selection"), self)
+
+        self.label_hyperlink = QLabel(
+            self.tr(
+                "<b>Harmonizome</b> can be found <a href='https://maayanlab.cloud/Harmonizome/'>here</a>"
+            ),
+            self,
+        )
+        self.label_hyperlink.setOpenExternalLinks(True)
+
         self.cancel_btn.setDefault(True)
 
         self.cancel_btn.clicked.connect(self.reject)
+
+        self.selection_add_button.clicked.connect(
+            self.harmonizome_widget.on_add_genes_to_selection_pressed
+        )
+        self.selection_add_button.clicked.connect(self.update_selection_info_button)
+        self.selection_info_button.clicked.connect(
+            self.harmonizome_widget.on_selection_info_pressed
+        )
+        self.selection_info_button.clicked.connect(self.update_selection_info_button)
         self.add_wordset_btn.clicked.connect(self.add_wordset)
 
         self.buttons_layout = QHBoxLayout()
+        self.buttons_layout.addWidget(self.cancel_btn)
         self.buttons_layout.addItem(
             QSpacerItem(30, 0, QSizePolicy.Expanding, QSizePolicy.Fixed)
         )
-        self.buttons_layout.addWidget(self.cancel_btn)
+        self.buttons_layout.addWidget(self.selection_add_button)
+        self.buttons_layout.addWidget(self.selection_info_button)
         self.buttons_layout.addWidget(self.add_wordset_btn)
 
         layout = QVBoxLayout(self)
+        layout.addWidget(self.label_hyperlink)
         layout.addWidget(self.harmonizome_widget)
         layout.addLayout(self.buttons_layout)
 
@@ -663,6 +666,14 @@ class HarmonizomeDialog(QDialog):
                 self.tr(f"Successfully imported wordset {wordset_name}"),
             )
         self.accept()
+
+    @Slot()
+    def update_selection_info_button(self):
+        self.selection_info_button.setText(
+            self.tr(
+                f"My selection ({len(self.harmonizome_widget.selected_genes)}) genes"
+            )
+        )
 
 
 if __name__ == "__main__":
