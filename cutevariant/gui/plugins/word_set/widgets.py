@@ -277,6 +277,7 @@ class WordSetWidget(PluginWidget):
         self.setWindowIcon(FIcon(0xF10E3))
         self.toolbar = QToolBar(self)
         self.view = SearchableTableWidget(self)
+        self.view.tableview.setSortingEnabled(True)
         self.view.proxy.setSourceModel(self.model)
         self.view.tableview.setIconSize(QSize(16, 16))
         self.view.tableview.doubleClicked.connect(self.open_wordset)
