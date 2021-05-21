@@ -1,6 +1,5 @@
 import typing
 
-from PySide2 import Qt
 from PySide2.QtWidgets import (
     QTableView,
     QWidget,
@@ -13,6 +12,7 @@ from PySide2.QtCore import (
     QSortFilterProxyModel,
     QAbstractItemModel,
     Signal,
+    Qt,
 )
 from PySide2.QtGui import QPainter
 
