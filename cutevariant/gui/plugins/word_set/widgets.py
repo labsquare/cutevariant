@@ -1,14 +1,18 @@
 # Standard imports
 import os
+import sqlite3
 import tempfile
+import typing
+
 
 # Qt imports
+
 from PySide2.QtWidgets import (
+    QLineEdit,
     QToolBar,
-    QListWidget,
     QListView,
     QAbstractItemView,
-    QListWidgetItem,
+    QHeaderView,
     QVBoxLayout,
     QHBoxLayout,
     QFileDialog,
@@ -17,9 +21,21 @@ from PySide2.QtWidgets import (
     QPushButton,
     QLabel,
     QInputDialog,
+    QMenu,
 )
-from PySide2.QtCore import QStringListModel, QSize, QDir, QSettings
-from PySide2.QtGui import QIcon
+
+from PySide2.QtCore import (
+    QAbstractTableModel,
+    QModelIndex,
+    QObject,
+    QStringListModel,
+    QSize,
+    QDir,
+    QSettings,
+    QItemSelectionModel,
+    Qt,
+)
+from PySide2.QtGui import QIcon, QContextMenuEvent
 
 # Custom imports
 from cutevariant.gui.plugin import PluginWidget
@@ -28,10 +44,14 @@ from cutevariant.core.sql import (
     get_wordsets,
     get_words_in_set,
     sanitize_words,
+    intersect_wordset,
+    union_wordset,
+    subtract_wordset,
 )
 from cutevariant.core.command import import_cmd, drop_cmd
 from cutevariant import commons as cm
 from cutevariant.gui.ficon import FIcon
+from cutevariant.gui.widgets import FilteredListWidget
 
 LOGGER = cm.logger()
 
@@ -184,6 +204,65 @@ class WordListDialog(QDialog):
         self.model.rowsInserted.emit(0, 0, 0)
 
 
+class WordsetCollectionModel(QAbstractTableModel):
+    def __init__(self, parent: QObject) -> None:
+        super().__init__(parent)
+        self._raw_data = []
+
+    def data(self, index: QModelIndex, role: int) -> typing.Any:
+
+        if (
+            index.row() < 0
+            or index.row() >= self.rowCount()
+            or index.column() not in (0, 1)
+        ):
+            return
+
+        if role == Qt.DecorationRole and index.column() == 0:
+            return QIcon(FIcon(0xF0A38))
+
+        if role == Qt.TextAlignmentRole and index.column() == 1:
+            return Qt.AlignCenter
+
+        if role == Qt.DisplayRole:
+            return self._raw_data[index.row()][index.column()]
+
+    def headerData(
+        self, section: int, orientation: Qt.Orientation, role: int
+    ) -> typing.Any:
+        if (
+            orientation != Qt.Horizontal
+            or section not in (0, 1)
+            or role != Qt.DisplayRole
+        ):
+            return
+
+        if section == 0:
+            return self.tr("Wordset name")
+        if section == 1:
+            return self.tr("Count")
+
+    def load(self, conn):
+        self._set_dict({data["name"]: data["count"] for data in get_wordsets(conn)})
+
+    def _set_dict(self, data: dict):
+        self.beginResetModel()
+        self._raw_data = [(k, v) for k, v in data.items()]
+        self.endResetModel()
+
+    def clear(self):
+        self._set_dict({})
+
+    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
+        return len(self._raw_data)
+
+    def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
+        return 2
+
+    def wordset_names(self):
+        return list(dict(self._raw_data).keys())
+
+
 class WordSetWidget(PluginWidget):
     """Plugin to show handle word sets from user and gather matching variants
     as a new selection.
@@ -194,13 +273,15 @@ class WordSetWidget(PluginWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.conn = None
-        self.set_names = list()
+        self.model = WordsetCollectionModel(self)
         self.setWindowIcon(FIcon(0xF10E3))
-        self.toolbar = QToolBar()
-        self.view = QListWidget()
-        self.view.setIconSize(QSize(16, 16))
-        self.view.itemDoubleClicked.connect(self.open_wordset)
-        self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.toolbar = QToolBar(self)
+        self.view = FilteredListWidget(self)
+        self.view.proxy.setSourceModel(self.model)
+        self.view.tableview.setIconSize(QSize(16, 16))
+        self.view.tableview.doubleClicked.connect(self.open_wordset)
+        self.view.tableview.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.view.tableview.setSelectionBehavior(QAbstractItemView.SelectRows)
 
         # setup tool bar
         self.toolbar.setIconSize(QSize(16, 16))
@@ -213,8 +294,27 @@ class WordSetWidget(PluginWidget):
         self.remove_action = self.toolbar.addAction(
             FIcon(0xF0A7A), self.tr("Remove Word set"), self.remove_wordset
         )
+        self.intersect_action = self.toolbar.addAction(
+            FIcon(0xF0779),
+            self.tr("Intersection of selected wordset"),
+            lambda: self.on_apply_set_operation("intersect"),
+        )
+        self.union_action = self.toolbar.addAction(
+            FIcon(0xF0778),
+            self.tr("Union of selected wordset"),
+            lambda: self.on_apply_set_operation("union"),
+        )
+        self.difference_action = self.toolbar.addAction(
+            FIcon(0xF077B),
+            self.tr("Difference of selected wordsets"),
+            lambda: self.on_apply_set_operation("subtract"),
+        )
+
         self.edit_action.setEnabled(False)
         self.remove_action.setEnabled(False)
+        self.intersect_action.setEnabled(False)
+        self.union_action.setEnabled(False)
+        self.difference_action.setEnabled(False)
 
         v_layout = QVBoxLayout()
         v_layout.setContentsMargins(0, 0, 0, 0)
@@ -226,17 +326,23 @@ class WordSetWidget(PluginWidget):
         self.setLayout(v_layout)
 
         # Item selected in view
-        self.view.selectionModel().selectionChanged.connect(self.on_item_selected)
+        self.view.tableview.selectionModel().selectionChanged.connect(
+            self.on_item_selected
+        )
+
+        self.addActions(self.toolbar.actions())
+        self.setContextMenuPolicy(Qt.ActionsContextMenu)
 
     def on_item_selected(self, *args):
         """Enable the remove button when an item is selected"""
         # Get list of all selected model item indexes
-        if self.view.selectionModel().selectedIndexes():
-            self.edit_action.setEnabled(True)
-            self.remove_action.setEnabled(True)
-        else:
-            self.edit_action.setEnabled(False)
-            self.remove_action.setEnabled(False)
+        enable = bool(self.view.tableview.selectionModel().selectedIndexes())
+
+        self.edit_action.setEnabled(enable)
+        self.remove_action.setEnabled(enable)
+        self.intersect_action.setEnabled(enable)
+        self.union_action.setEnabled(enable)
+        self.difference_action.setEnabled(enable)
 
     def import_wordset(self, words, wordset_name):
         """Import given words into a new wordset in database
@@ -289,7 +395,7 @@ class WordSetWidget(PluginWidget):
             if not wordset_name:
                 return
 
-            if wordset_name in self.set_names:
+            if wordset_name in self.model.wordset_names():
                 # Name already used
                 QMessageBox.critical(
                     self,
@@ -305,7 +411,7 @@ class WordSetWidget(PluginWidget):
 
     def remove_wordset(self):
         """Delete word set from database"""
-        if len(self.view.selectedItems()) == 0:
+        if not self.view.tableview.selectionModel().selectedIndexes():
             # if selection is empty
             return
 
@@ -319,15 +425,18 @@ class WordSetWidget(PluginWidget):
             return
 
         # Delete all selected sets
-        for i in self.view.selectedItems():
-            result = drop_cmd(self.conn, "wordsets", i.text())
+        for selected_index in self.view.tableview.selectionModel().selectedRows(0):
+            result = drop_cmd(
+                self.conn, "wordsets", selected_index.data(Qt.DisplayRole)
+            )
 
             if not result["success"]:
                 LOGGER.error(result)
                 QMessageBox.critical(
                     self,
                     self.tr("Error while deleting set"),
-                    self.tr("Error while deleting set '%s'") % i.text(),
+                    self.tr("Error while deleting set '%s'")
+                    % selected_index.data(Qt.DisplayRole),
                 )
 
         self.populate()
@@ -337,40 +446,99 @@ class WordSetWidget(PluginWidget):
 
         The previous set is dropped and the new is then imported in database.
         """
-        wordset_name = self.view.currentItem().text()
+        wordset_index = (
+            self.view.tableview.selectionModel().selectedRows(0)[0]
+            if self.view.tableview.selectionModel().selectedRows(0)
+            else None
+        )
+        if not wordset_index:
+            return
+        wordset_name = wordset_index.data(Qt.DisplayRole)
         dialog = WordListDialog()
 
         # populate dialog
         dialog.model.setStringList(list(get_words_in_set(self.conn, wordset_name)))
 
         if dialog.exec_() == QDialog.Accepted:
-            # Drop previous
-            drop_cmd(self.conn, "wordsets", wordset_name)
-            # Import new
-            self.import_wordset(dialog.model.stringList(), wordset_name)
-            self.populate()
+            # # Drop previous
+            # drop_cmd(self.conn, "wordsets", wordset_name)
+            # # Import new
+            # self.import_wordset(dialog.model.stringList(), wordset_name)
+            # self.populate()
+            print(wordset_name)
 
     def on_open_project(self, conn):
-        """ override """
+        """override"""
         self.conn = conn
         self.on_refresh()
 
     def on_refresh(self):
-        """ override """
+        """override"""
         if self.conn:
             self.populate()
+        else:
+            self.model.clear()
 
     def populate(self):
         """Actualize the list of word sets"""
-        self.view.clear()
-        self.set_names = list()
-        for data in get_wordsets(self.conn):
-            set_name = data["name"]
-            item = QListWidgetItem()
-            item.setText(set_name)
-            item.setIcon(FIcon(0xF0A38))
-            self.view.addItem(item)
-            self.set_names.append(set_name)
+        self.model.load(self.conn)
+        self.view.tableview.horizontalHeader().setStretchLastSection(False)
+        self.view.tableview.horizontalHeader().setSectionResizeMode(
+            0, QHeaderView.Stretch
+        )
+        self.view.tableview.horizontalHeader().setSectionResizeMode(
+            1, QHeaderView.ResizeToContents
+        )
+
+    def on_apply_set_operation(self, operation="intersect"):
+        """Creates a new wordset from the union of selected wordsets.
+        The resulting wordset will contain all elements from all selected wordsets, without double.
+        """
+        operations = {
+            "intersect": (intersect_wordset, self.tr("Intersect")),
+            "union": (union_wordset, self.tr("Union")),
+            "subtract": (subtract_wordset, self.tr("Subtract")),
+        }
+        selected_wordsets = [
+            index.data(Qt.DisplayRole)
+            for index in self.view.tableview.selectionModel().selectedRows(0)
+        ]
+        if not selected_wordsets:
+            return
+        else:
+            wordset_name = None
+            while not wordset_name:
+                wordset_name, _ = QInputDialog.getText(
+                    self,
+                    self.tr(f"New set ({operations[operation][1]})"),
+                    self.tr("Name of the new set"),
+                    QLineEdit.Normal,
+                    self.tr(f"Wordset n°{self.model.rowCount()+1}"),
+                )
+                # self.tr(f"from {', '.join(selected_wordsets)}")
+                if not wordset_name:
+                    return
+
+                if wordset_name in self.model.wordset_names():
+                    # Name already used
+                    QMessageBox.critical(
+                        self,
+                        self.tr("Error while creating set"),
+                        self.tr("Error while creating set '%s'; Name is already used")
+                        % wordset_name,
+                    )
+                    wordset_name = None
+            operator_fn = operations.get(operation, intersect_wordset)[0]
+            operator_fn(self.conn, wordset_name, selected_wordsets)
+            self.populate()
+
+    def contextMenuEvent(self, event: QContextMenuEvent) -> None:
+        """[summary]
+
+        Args:
+            event (QContextMenuEvent): context menu event (with click position and so on)
+        """
+        pass
 
 
 if __name__ == "__main__":
