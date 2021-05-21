@@ -133,12 +133,12 @@ class VariantModel(QAbstractTableModel):
 
     @property
     def conn(self):
-        """ Return sqlite connection """
+        """Return sqlite connection"""
         return self._conn
 
     @conn.setter
     def conn(self, conn):
-        """ Set sqlite connection """
+        """Set sqlite connection"""
         self._conn = conn
         if conn:
             # Note: model is initialized with None connection during start
@@ -176,7 +176,7 @@ class VariantModel(QAbstractTableModel):
         return 0
 
     def clear_all_cache(self):
-        """ clear cache """
+        """clear cache"""
         self.clear_count_cache()
         self.clear_variant_cache()
 
@@ -187,7 +187,7 @@ class VariantModel(QAbstractTableModel):
         self._load_count_cache.clear()
 
     def cache_size(self):
-        """ Return total cache size """
+        """Return total cache size"""
         return self._load_variant_cache.currsize
 
     def max_cache_size(self):
@@ -463,9 +463,6 @@ class VariantModel(QAbstractTableModel):
 
         #  Compute time elapsed since loading
 
-        self._end_timer = time.perf_counter()
-        self.elapsed_time = self._end_timer - self._start_timer
-
         self.beginResetModel()
         self.variants.clear()
 
@@ -493,6 +490,8 @@ class VariantModel(QAbstractTableModel):
         #  Test if both thread are finished
         self._finished_thread_count += 1
         if self._finished_thread_count == 2:
+            self._end_timer = time.perf_counter()
+            self.elapsed_time = self._end_timer - self._start_timer
             self.load_finished.emit()
 
     def _on_count_loaded(self):
@@ -511,38 +510,40 @@ class VariantModel(QAbstractTableModel):
         #  Test if both thread are finished
         self._finished_thread_count += 1
         if self._finished_thread_count == 2:
+            self._end_timer = time.perf_counter()
+            self.elapsed_time = self._end_timer - self._start_timer
             self.load_finished.emit()
 
     def hasPage(self, page: int) -> bool:
-        """ Return True if <page> exists otherwise return False """
+        """Return True if <page> exists otherwise return False"""
         return (page - 1) >= 0 and (page - 1) * self.limit < self.total
 
     def setPage(self, page: int):
-        """ set the page of the model """
+        """set the page of the model"""
         if self.hasPage(page):
             self.page = page
 
     def nextPage(self):
-        """ Set model to the next page """
+        """Set model to the next page"""
         if self.hasPage(self.page + 1):
             self.setPage(self.page + 1)
 
     def previousPage(self):
-        """ Set model to the previous page """
+        """Set model to the previous page"""
         if self.hasPage(self.page - 1):
             self.setPage(self.page - 1)
 
     def firstPage(self):
-        """ Set model to the first page """
+        """Set model to the first page"""
         self.setPage(1)
 
     def lastPage(self):
-        """ Set model to the last page """
+        """Set model to the last page"""
 
         self.setPage(self.pageCount())
 
     def pageCount(self):
-        """ Return total page count """
+        """Return total page count"""
         return math.ceil(self.total / self.limit)
 
     def sort(self, column: int, order):
@@ -787,6 +788,7 @@ class VariantView(QWidget):
         # Queries are finished (yes its redundant with loading signal...)
         self.model.variant_loaded.connect(self._on_variant_loaded)
         self.model.count_loaded.connect(self._on_count_loaded)
+        self.model.load_finished.connect(self._on_load_finished)
 
         self.model.count_is_loading.connect(self.set_tool_loading)
         self.model.variant_is_loading.connect(self.set_view_loading)
@@ -819,7 +821,7 @@ class VariantView(QWidget):
     #         self.view.stop_loading()
 
     def set_auto_resize(self, accept=True):
-        """ change column resize mode """
+        """change column resize mode"""
         mode = QHeaderView.ResizeToContents if accept else QHeaderView.Interactive
         self.view.horizontalHeader().setSectionResizeMode(mode)
 
@@ -852,8 +854,6 @@ class VariantView(QWidget):
         #         self.select_row(0)
         #     else:
         #         self.no_variant.emit()
-
-        self.time_label.setText(str(" Executed in %.2gs " % (self.model.elapsed_time)))
         cache = cm.bytes_to_readable(self.model.cache_size())
         max_cache = cm.bytes_to_readable(self.model.max_cache_size())
         self.cache_label.setText(str(" Cache {} of {}".format(cache, max_cache)))
@@ -882,6 +882,9 @@ class VariantView(QWidget):
 
         #  Set focus to view ! Otherwise it stay on page_box
         self.view.setFocus(Qt.ActiveWindowFocusReason)
+
+    def _on_load_finished(self):
+        self.time_label.setText(str(" Executed in %.2gs " % (self.model.elapsed_time)))
 
     def set_formatter(self, formatter):
         self.delegate.formatter = formatter
