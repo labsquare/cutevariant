@@ -1,6 +1,8 @@
+from cutevariant.gui.ficon import FIcon
 import typing
 
 from PySide2.QtWidgets import (
+    QAction,
     QTableView,
     QWidget,
     QAbstractItemView,
@@ -46,7 +48,7 @@ class LoadingTableView(QTableView):
         self.viewport().update()
 
 
-class FilteredListWidget(QWidget):
+class SearchableTableWidget(QWidget):
     """Convenient widget that displays a QTableView along with a search line edit.
     This class takes care of displaying a loading message when start_loading is called (and removes the message when stop_loading is called).
     """
@@ -67,6 +69,7 @@ class FilteredListWidget(QWidget):
         self.search_edit = QLineEdit(self)
 
         self.search_edit.textChanged.connect(self.proxy.setFilterRegExp)
+        self.search_edit.setPlaceholderText(self.tr("Search..."))
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -76,7 +79,7 @@ class FilteredListWidget(QWidget):
         self.tableview.verticalHeader().hide()
 
         self.tableview.selectionModel().currentChanged.connect(
-            self.on_current_index_changed
+            lambda cur, prev: self.current_index_changed.emit(cur)
         )
 
     def set_model(self, model: QAbstractItemModel):
@@ -91,9 +94,6 @@ class FilteredListWidget(QWidget):
         else:
             return []
 
-    def current_index(self):
-        return self.proxy.mapToSource(self.tableview.currentIndex())
-
     def start_loading(self):
         self.search_edit.hide()
         self.tableview.start_loading()
@@ -101,8 +101,3 @@ class FilteredListWidget(QWidget):
     def stop_loading(self):
         self.tableview.stop_loading()
         self.search_edit.show()
-
-    def on_current_index_changed(self, current: QModelIndex, previous: QModelIndex):
-        # Prevents errors when filtering an empty list
-        if current.isValid() and self.proxy.sourceModel():
-            self.current_index_changed.emit(self.proxy.mapToSource(current))

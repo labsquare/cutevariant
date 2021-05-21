@@ -8,7 +8,6 @@ import sqlite3
 import typing
 
 # Qt imports
-from PySide2 import Qt
 from PySide2.QtWidgets import (
     QApplication,
     QWidget,
@@ -25,6 +24,7 @@ from PySide2.QtWidgets import (
     QSpacerItem,
 )
 from PySide2.QtCore import (
+    Qt,
     QModelIndex,
     QSortFilterProxyModel,
     QAbstractListModel,
@@ -44,7 +44,7 @@ from cutevariant.core.command import import_cmd
 from cutevariant.gui.plugin import PluginDialog
 from cutevariant.commons import GENOTYPE_DESC
 
-from cutevariant.gui.widgets import FilteredListWidget
+from cutevariant.gui.widgets import SearchableTableWidget
 
 URL_PREFIX = "https://maayanlab.cloud/Harmonizome"
 VERSION = "/api/1.0"
@@ -324,7 +324,7 @@ class GeneSelectionDialog(QDialog):
     ):
         super().__init__(parent)
 
-        self.view = FilteredListWidget(self)
+        self.view = SearchableTableWidget(self)
 
         self.model = QStringListModel([])
         self.view.tableview.horizontalHeader().hide()
@@ -386,9 +386,9 @@ class HarmonizomeWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.dataset_view = FilteredListWidget(self)
-        self.geneset_view = FilteredListWidget(self)
-        self.gene_view = FilteredListWidget(self)
+        self.dataset_view = SearchableTableWidget(self)
+        self.geneset_view = SearchableTableWidget(self)
+        self.gene_view = SearchableTableWidget(self)
 
         self.dataset_model = HZDataSetModel(self)
         self.geneset_model = HZGeneSetModel(self)
@@ -437,10 +437,10 @@ class HarmonizomeWidget(QWidget):
     def on_dataset_index_changed(self, index: QModelIndex):
         """Called when the dataset combo gets activated"""
         # This is because activated combo doesn't mean the current index has changed...
-        if self.dataset_model.data(index, Qt.DisplayRole) != self.selected_dataset[0]:
+        if index.data(Qt.DisplayRole) != self.selected_dataset[0]:
             self.selected_dataset = (
-                self.dataset_model.data(index, Qt.UserRole),
-                self.dataset_model.data(index, Qt.DisplayRole),
+                index.data(Qt.UserRole),
+                index.data(Qt.DisplayRole),
             )
             # In selected_dataset, first role is UserRole (href), second is DisplayRole
 
@@ -456,10 +456,10 @@ class HarmonizomeWidget(QWidget):
         """
 
         # Test if the index actually changed
-        if self.geneset_model.data(index, Qt.DisplayRole) != self.selected_geneset[0]:
+        if index.data(Qt.DisplayRole) != self.selected_geneset[0]:
             self.selected_geneset = (
-                self.geneset_model.data(index, Qt.UserRole),
-                self.geneset_model.data(index, Qt.DisplayRole),
+                index.data(Qt.UserRole),
+                index.data(Qt.DisplayRole),
             )
             self.gene_model.load(*self.selected_geneset)
             self.gene_view.start_loading()

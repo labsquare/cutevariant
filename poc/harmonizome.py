@@ -485,10 +485,10 @@ class HarmonizomeWidget(QWidget):
     def on_dataset_index_changed(self, index: QModelIndex):
         """Called when the dataset combo gets activated"""
         # This is because activated combo doesn't mean the current index has changed...
-        if self.dataset_model.data(index, Qt.DisplayRole) != self.selected_dataset[0]:
+        if index.data(Qt.DisplayRole) != self.selected_dataset[0]:
             self.selected_dataset = (
-                self.dataset_model.data(index, Qt.UserRole),
-                self.dataset_model.data(index, Qt.DisplayRole),
+                index.data(Qt.UserRole),
+                index.data(Qt.DisplayRole),
             )
             # In selected_dataset, first role is UserRole (href), second is DisplayRole
 
@@ -504,10 +504,10 @@ class HarmonizomeWidget(QWidget):
         """
 
         # Test if the index actually changed
-        if self.geneset_model.data(index, Qt.DisplayRole) != self.selected_geneset[0]:
+        if index.data(Qt.DisplayRole) != self.selected_geneset[0]:
             self.selected_geneset = (
-                self.geneset_model.data(index, Qt.UserRole),
-                self.geneset_model.data(index, Qt.DisplayRole),
+                index.data(Qt.UserRole),
+                index.data(Qt.DisplayRole),
             )
             self.gene_model.load(*self.selected_geneset)
             self.gene_view.start_loading()

@@ -51,7 +51,7 @@ from cutevariant.core.sql import (
 from cutevariant.core.command import import_cmd, drop_cmd
 from cutevariant import commons as cm
 from cutevariant.gui.ficon import FIcon
-from cutevariant.gui.widgets import FilteredListWidget
+from cutevariant.gui.widgets import SearchableTableWidget
 
 LOGGER = cm.logger()
 
@@ -276,7 +276,7 @@ class WordSetWidget(PluginWidget):
         self.model = WordsetCollectionModel(self)
         self.setWindowIcon(FIcon(0xF10E3))
         self.toolbar = QToolBar(self)
-        self.view = FilteredListWidget(self)
+        self.view = SearchableTableWidget(self)
         self.view.proxy.setSourceModel(self.model)
         self.view.tableview.setIconSize(QSize(16, 16))
         self.view.tableview.doubleClicked.connect(self.open_wordset)
