@@ -11,10 +11,8 @@ import typing
 from PySide2 import Qt
 from PySide2.QtWidgets import (
     QApplication,
-    QTableView,
     QWidget,
     QAbstractItemView,
-    QLineEdit,
     QVBoxLayout,
     QDialog,
     QPushButton,
@@ -37,7 +35,7 @@ from PySide2.QtCore import (
     Slot,
 )
 from PySide2.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
-from PySide2.QtGui import QPainter, QIcon
+from PySide2.QtGui import QIcon
 
 # Cutevariant imports
 from cutevariant.gui.ficon import FIcon
@@ -92,9 +90,7 @@ class HZDataSetModel(QAbstractListModel):
 
         return None
 
-    def headerData(
-        self, section: int, orientation: Qt.Orientation, role: int
-    ) -> typing.Any:
+    def headerData(self, section: int, orientation, role: int) -> typing.Any:
         if section > 0 or orientation == Qt.Vertical or role != Qt.DisplayRole:
             return
 
@@ -170,9 +166,7 @@ class HZGeneSetModel(QAbstractListModel):
         if role == Qt.DecorationRole:
             return QIcon(FIcon(0xF0436))
 
-    def headerData(
-        self, section: int, orientation: Qt.Orientation, role: int
-    ) -> typing.Any:
+    def headerData(self, section: int, orientation, role: int) -> typing.Any:
         if (
             section > 0
             or orientation == Qt.Vertical
@@ -264,9 +258,7 @@ class HZGeneModel(QAbstractListModel):
         if role == Qt.DecorationRole:
             return QIcon(FIcon(0xF0684))
 
-    def headerData(
-        self, section: int, orientation: Qt.Orientation, role: int
-    ) -> typing.Any:
+    def headerData(self, section: int, orientation, role: int) -> typing.Any:
         if (
             section > 0
             or orientation == Qt.Vertical
