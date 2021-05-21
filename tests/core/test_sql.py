@@ -412,6 +412,17 @@ def test_insert_set_from_file(conn, wordset):
     # os.remove(wordset_file)
 
 
+def test_insert_set_from_list(conn):
+
+    expected = set(["CFTR", "GJB2"])
+    sql.import_wordset_from_list(conn, "name", expected)
+    observed = set(
+        [i["value"] for i in conn.execute("SELECT * FROM wordsets").fetchall()]
+    )
+
+    assert expected == observed
+
+
 def test_get_sets(conn, kindly_wordset_fixture):
     """Test get_wordsets: Word set group by results"""
     wordset_file, _ = kindly_wordset_fixture
@@ -447,6 +458,24 @@ def test_get_words_in_set(conn, wordset):
     assert set(expected_data) == found
 
     # os.remove(wordset_file)
+
+
+def test_wordset_operation(conn):
+    """Test wordset operation union, intersection and difference
+    """    
+    set1 = {"CFTR", "GJB2"}
+    set2 = {"CFTR", "KRAS", "BRAF"}
+
+    sql.import_wordset_from_list(conn, "A", set1)
+    sql.import_wordset_from_list(conn, "B", set2)
+
+    sql.intersect_wordset(conn, "C", ["A", "B"])
+    sql.union_wordset(conn, "D", ["A", "B"])
+    sql.subtract_wordset(conn, "E", ["A", "B"])
+
+    assert set(sql.get_words_in_set(conn, "C")) == set1 & set2
+    assert set(sql.get_words_in_set(conn, "D")) == set1 | set2
+    assert set(sql.get_words_in_set(conn, "E")) == set1 - set2
 
 
 def test_selections(conn):
