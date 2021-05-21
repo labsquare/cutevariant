@@ -1,22 +1,52 @@
-from cutevariant.commons import GENOTYPE_DESC
-import sqlite3
-from PySide2.QtWidgets import *
-from PySide2.QtCore import *
-from PySide2.QtGui import *
-from PySide2.QtNetwork import *
+# Standard imports
 import sys
 import json
 import re
 import os
 import tempfile
+import sqlite3
+import typing
 
+# Qt imports
+from PySide2 import Qt
+from PySide2.QtWidgets import (
+    QApplication,
+    QTableView,
+    QWidget,
+    QAbstractItemView,
+    QLineEdit,
+    QVBoxLayout,
+    QDialog,
+    QPushButton,
+    QHBoxLayout,
+    QDialogButtonBox,
+    QLabel,
+    QSizePolicy,
+    QMessageBox,
+    QInputDialog,
+    QSpacerItem,
+)
+from PySide2.QtCore import (
+    QModelIndex,
+    QSortFilterProxyModel,
+    QAbstractListModel,
+    QAbstractItemModel,
+    QStringListModel,
+    QUrl,
+    Signal,
+    Slot,
+)
+from PySide2.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
+from PySide2.QtGui import QPainter, QIcon
+
+# Cutevariant imports
 from cutevariant.gui.ficon import FIcon
 from cutevariant.core.sql import get_sql_connection, get_wordsets
 from cutevariant.core.command import import_cmd
 from cutevariant.gui.plugin import PluginDialog
+from cutevariant.commons import GENOTYPE_DESC
 
-import typing
-
+from cutevariant.gui.widgets import FilteredListWidget
 
 URL_PREFIX = "https://maayanlab.cloud/Harmonizome"
 VERSION = "/api/1.0"
@@ -294,83 +324,6 @@ class HZGeneModel(QAbstractListModel):
         self.genes.clear()
         self.gene_set = ""
         self.endResetModel()
-
-
-class LoadingTableView(QTableView):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-        self._is_loading = False
-
-    def paintEvent(self, event: QPainter):
-
-        if self._is_loading:
-            painter = QPainter(self.viewport())
-
-            painter.drawText(
-                self.viewport().rect(), Qt.AlignCenter, self.tr("Loading ...")
-            )
-
-        else:
-            super().paintEvent(event)
-
-    def start_loading(self):
-        self._is_loading = True
-        self.viewport().update()
-
-    def stop_loading(self):
-        self._is_loading = False
-        self.viewport().update()
-
-
-class FilteredListWidget(QWidget):
-    """Convenient widget that displays a QTableView along with a search line edit.
-    This class takes care of displaying a loading message when start_loading is called (and removes the message when stop_loading is called).
-    """
-
-    # Convenient signal to tell when current index changes. Returns index in **source** coordinates
-    current_index_changed = Signal(QModelIndex)
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.tableview = LoadingTableView(self)
-        self.proxy = QSortFilterProxyModel(self)
-
-        self.tableview.setModel(self.proxy)
-        self.tableview.horizontalHeader().setStretchLastSection(True)
-        self.tableview.setAlternatingRowColors(True)
-        self.tableview.setSelectionMode(QAbstractItemView.ExtendedSelection)
-
-        self.search_edit = QLineEdit(self)
-
-        self.search_edit.textChanged.connect(self.proxy.setFilterRegExp)
-
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(self.tableview)
-        layout.addWidget(self.search_edit)
-
-        self.tableview.verticalHeader().hide()
-
-        self.tableview.selectionModel().currentChanged.connect(
-            self.on_current_index_changed
-        )
-
-    def set_model(self, model: QAbstractItemModel):
-        self.proxy.setSourceModel(model)
-
-    def start_loading(self):
-        self.search_edit.hide()
-        self.tableview.start_loading()
-
-    def stop_loading(self):
-        self.tableview.stop_loading()
-        self.search_edit.show()
-
-    def on_current_index_changed(self, current: QModelIndex, previous: QModelIndex):
-        # Prevents errors when filtering an empty list
-        if current.isValid():
-            self.current_index_changed.emit(self.proxy.mapToSource(current))
 
 
 class GeneSelectionDialog(QDialog):
