@@ -12,8 +12,10 @@ from PySide2.QtGui import *
 
 # Custom imports
 from cutevariant.core import sql, command
+from cutevariant.core.sql import intersect_variants, union_variants, subtract_variants
 from cutevariant.core.reader import BedReader
 from cutevariant.gui import plugin, FIcon
+from cutevariant.gui.widgets import SearchableTableWidget
 from cutevariant.commons import logger, DEFAULT_SELECTION_NAME
 
 
@@ -45,7 +47,7 @@ class SourceModel(QAbstractTableModel):
         """Overrided from QAbstractTableModel"""
         return 2  # value and count
 
-    def data(self, index: QModelIndex(), role=Qt.DisplayRole) -> typing.Any:
+    def data(self, index: QModelIndex, role=Qt.DisplayRole) -> typing.Any:
         """Override from QAbstractTableModel
 
         Args:
@@ -82,6 +84,9 @@ class SourceModel(QAbstractTableModel):
                 font.setBold(True)
                 return font
 
+        if role == Qt.UserRole:
+            return self.records[index.row()]
+
         return None
 
     def headerData(
@@ -110,21 +115,6 @@ class SourceModel(QAbstractTableModel):
             return self.records[section].get(
                 "id", None
             )  # For debug purpose . displayed in vertical header
-
-    def record(self, index: QModelIndex()) -> dict:
-        """Return source item
-
-        See ```cutevariant.sql.get_selection```
-
-        Args:
-            index (QModelIndex)
-
-        Returns:
-            dict
-        """
-        if not index.isValid():
-            return None
-        return self.records[index.row()]
 
     def find_record(self, name: str) -> QModelIndex:
         """Find a record by name
@@ -170,6 +160,9 @@ class SourceModel(QAbstractTableModel):
         self.records = list(sql.get_selections(self.conn))
         self.endResetModel()
 
+    def get_source_names(self):
+        return [rec["name"] for rec in self.records]
+
 
 # =================== SELECTION VIEW ===========================
 
@@ -193,25 +186,24 @@ class SourceEditorWidget(plugin.PluginWidget):
         self.setWindowIcon(FIcon(0xF10E4))
         # conn is always None here but initialized in on_open_project()
         self.model = SourceModel(conn)
-        self.view = QTableView()
-        self.view.setModel(self.model)
-        self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.view.setSelectionMode(QAbstractItemView.SingleSelection)
-        self.view.horizontalHeader().show()
-        self.view.horizontalHeader().setStretchLastSection(False)
-        self.view.horizontalHeader().setSectionResizeMode(
-            0, QHeaderView.ResizeToContents
+        self.view = SearchableTableWidget()
+        self.view.proxy.setSourceModel(self.model)
+        self.view.tableview.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.view.tableview.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.view.tableview.horizontalHeader().setStretchLastSection(False)
+        self.view.tableview.horizontalHeader().setSectionResizeMode(
+            0, QHeaderView.Stretch
         )
-        self.view.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
-        self.view.horizontalHeader().hide()
+        self.view.tableview.horizontalHeader().setSectionResizeMode(
+            1, QHeaderView.ResizeToContents
+        )
 
         self.toolbar = QToolBar()
         self.toolbar.setIconSize(QSize(16, 16))
+        self.toolbar.setToolButtonStyle(Qt.ToolButtonIconOnly)
 
-        self.view.verticalHeader().hide()
-        self.view.verticalHeader().setDefaultSectionSize(26)
-        self.view.setShowGrid(False)
-        self.view.setAlternatingRowColors(True)
+        self.view.tableview.verticalHeader().hide()
+        # self.view.tableview.verticalHeader().setDefaultSectionSize(26)
 
         layout = QVBoxLayout()
         layout.addWidget(self.toolbar)
@@ -224,15 +216,8 @@ class SourceEditorWidget(plugin.PluginWidget):
         # Used to block signals during the insertions (if set to True)
         self.is_loading = False
 
-        # Map the operations of context menu with an internal id not visible
-        # from the user
-        # This id is used by _create_set_operation_menu
-        # Keys: user text; values: set operators
-        # See _create_menu()
-        self.set_operations_mapping = dict()
-
         # call on_current_row_changed when item selection changed
-        self.view.selectionModel().currentRowChanged.connect(
+        self.view.tableview.selectionModel().currentRowChanged.connect(
             self.on_current_row_changed
         )
 
@@ -277,7 +262,7 @@ class SourceEditorWidget(plugin.PluginWidget):
 
             executed_query_data = self.mainwindow.get_state_data("executed_query_data")
 
-            result = cmd.create_cmd(
+            result = command.create_cmd(
                 self.conn,
                 name,
                 source=self.mainwindow.get_state_data("source"),
@@ -326,13 +311,13 @@ class SourceEditorWidget(plugin.PluginWidget):
         self.model.load()
 
     def on_open_project(self, conn):
-        """ override from PluginWidget """
+        """override from PluginWidget"""
         self.model.conn = conn
         self.conn = conn
         self.on_refresh()
 
     def on_refresh(self):
-        """ override from PluginWidget """
+        """override from PluginWidget"""
         self.view.selectionModel().blockSignals(True)
         self.model.load()
         self.source = self.mainwindow.get_state_data("source")
@@ -340,19 +325,21 @@ class SourceEditorWidget(plugin.PluginWidget):
         self.view.setCurrentIndex(model_index)
         self.view.selectionModel().blockSignals(False)
 
-    @Slot()
-    def on_current_row_changed(self):
+    @Slot(QModelIndex, QModelIndex)
+    def on_current_row_changed(self, current: QModelIndex, previous: QModelIndex):
         """This methods trigger the signal for the view
         Note:
             I don't broadcast the signal rowChanged to selectionChanged directly
             because I need to block signals for the view only
         """
-
-        index = self.view.currentIndex()
-        source = self.model.record(index)["name"]
-
-        self.mainwindow.set_state_data("source", source)
-        self.mainwindow.refresh_plugins(sender=self)
+        source = (
+            self.view.tableview.selectedIndexes()[0].data(Qt.DisplayRole)
+            if self.view.tableview.selectedIndexes()
+            else None
+        )
+        if source:
+            self.mainwindow.set_state_data("source", source)
+            self.mainwindow.refresh_plugins(sender=self)
 
     def _create_menu(self, editable: bool = False) -> QMenu:
         """Create popup menu
@@ -432,7 +419,7 @@ class SourceEditorWidget(plugin.PluginWidget):
                 self.tr("Error while creating the selection"),
                 self.tr("'%s' is a reserved name for a selection!") % name,
             )
-        elif name in {record["name"] for record in self.model.records}:
+        elif name in self.model.get_source_names():
             LOGGER.error(
                 "SourceEditorWidget:save_current_query:: '%s' is already used!", name
             )
@@ -490,46 +477,6 @@ class SourceEditorWidget(plugin.PluginWidget):
 
         return menu
 
-    def _make_set_operation(self):
-        """Do set operation
-        .. note:: Called when a "set" submenu of the popup menu is triggered.
-        """
-        action = self.sender()
-
-        selection_name = self.ask_and_check_selection_name()
-        if not selection_name:
-            return
-
-        # Get the action's internal data to know which set operation to do
-        # See setData()
-        set_operator = action.data()
-
-        # Get the records and extract their database id to build 2 Selections objects
-        # {'id': 2, 'name': 'dqzdezd', 'count': 3, 'query': 'SELECT variants.id ...}
-        # {'id': 1, 'name': 'variants', 'count': 11, 'query': ''}
-        record_1 = self.model.record(self.view.selectionModel().currentIndex())
-        record_2 = self.model.record(self.model.find_record(action.text()))
-
-        ret = command.set_cmd(
-            self.model.conn,
-            selection_name,
-            record_1["name"],
-            record_2["name"],
-            set_operator,
-        )
-        if not ret:
-            QMessageBox.critical(
-                self,
-                self.tr("Error while creating the selection"),
-                self.tr("Error while creating the selection, please check the logs"),
-            )
-            self.mainwindow.status_bar.showMessage(
-                self.tr("Fail to create the selection!")
-            )
-            return
-
-        self.load()
-
     def remove_selection(self):
         """Remove a selection from the database"""
 
@@ -572,6 +519,63 @@ class SourceEditorWidget(plugin.PluginWidget):
         if current_index and selection_name:
             old_record["name"] = selection_name
             self.model.edit_record(current_index, old_record)
+
+    def on_apply_set_operation(self, operation="intersect"):
+        """Creates a new wordset from the union of selected wordsets.
+        The resulting wordset will contain all elements from all selected wordsets, without double.
+        """
+        operations = {
+            "intersect": (
+                lambda name, first, last: command.set_cmd(
+                    self.conn, name, first, last, "&"
+                ),
+                self.tr("intersection"),
+            ),
+            "union": (
+                lambda name, first, last: command.set_cmd(
+                    self.conn, name, first, last, "|"
+                ),
+                self.tr("union"),
+            ),
+            "subtract": (
+                lambda name, first, last: command.set_cmd(
+                    self.conn, name, first, last, "-"
+                ),
+                self.tr("difference"),
+            ),
+        }
+        selected_sources = [
+            index.data(Qt.DisplayRole)
+            for index in self.view.tableview.selectionModel().selectedRows(0)
+        ]
+        if not selected_sources:
+            return
+        else:
+            selection_name = None
+            while not selection_name:
+                selection_name, _ = QInputDialog.getText(
+                    self,
+                    self.tr(f"New source from {operations[operation][1]}"),
+                    self.tr("Name of the new source"),
+                    QLineEdit.Normal,
+                    self.tr(f"Source n°{self.model.rowCount()+1}"),
+                )
+                if not selection_name:
+                    return
+
+                if selection_name in self.model.get_source_names():
+                    # Name already used
+                    QMessageBox.critical(
+                        self,
+                        self.tr("Error while creating set"),
+                        self.tr("Error while creating set '%s'; Name is already used")
+                        % selection_name,
+                    )
+                    selection_name = None
+            if operation not in operations:
+                return
+            operator_fn = operations[operation][0]
+            print(selected_sources)
 
 
 if __name__ == "__main__":
