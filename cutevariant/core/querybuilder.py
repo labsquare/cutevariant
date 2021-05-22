@@ -322,7 +322,9 @@ def fields_to_sql_refactored(fields):
             sql_fields.append((sql_field, sql_field_alias))
 
         else:
-            sql_fields.append(f"`variants`.`{field}`")
+            sql_field = f"`variants`.`{field}`"
+            sql_field_alias = f"`{field}`"
+            sql_fields.append((sql_field, sql_field_alias))
 
     return sql_fields
 
@@ -729,6 +731,9 @@ def build_count_unique(
     # get samples ids
 
     samples_ids = {i["name"]: i["id"] for i in sql.get_samples(conn)}
+
+    if not fields:
+        return
 
     sql_fields, field_aliases = zip(*fields_to_sql_refactored(fields))
 
