@@ -35,7 +35,7 @@ from PySide2.QtCore import (
     QItemSelectionModel,
     Qt,
 )
-from PySide2.QtGui import QIcon, QContextMenuEvent
+from PySide2.QtGui import QIcon, QContextMenuEvent, QKeyEvent, QKeySequence
 
 # Custom imports
 from cutevariant.gui.plugin import PluginWidget
@@ -295,6 +295,8 @@ class WordSetWidget(PluginWidget):
         self.remove_action = self.toolbar.addAction(
             FIcon(0xF0A7A), self.tr("Remove Word set"), self.remove_wordset
         )
+        self.remove_action.setShortcut(QKeySequence.Delete)
+
         self.intersect_action = self.toolbar.addAction(
             FIcon(0xF0779),
             self.tr("Intersection of selected wordset"),
@@ -334,8 +336,7 @@ class WordSetWidget(PluginWidget):
         self.addActions(self.toolbar.actions())
         self.setContextMenuPolicy(Qt.ActionsContextMenu)
 
-    def on_item_selected(self, *args):
-        """Enable the remove button when an item is selected"""
+    def update_action_availabilty(self):
         # Get list of all selected model item indexes
         enable = bool(self.view.tableview.selectionModel().selectedIndexes())
 
@@ -344,6 +345,10 @@ class WordSetWidget(PluginWidget):
         self.intersect_action.setEnabled(enable)
         self.union_action.setEnabled(enable)
         self.difference_action.setEnabled(enable)
+
+    def on_item_selected(self, *args):
+        """Enable actions when an item is selected"""
+        self.update_action_availabilty()
 
     def import_wordset(self, words, wordset_name):
         """Import given words into a new wordset in database
@@ -490,6 +495,7 @@ class WordSetWidget(PluginWidget):
         self.view.tableview.horizontalHeader().setSectionResizeMode(
             1, QHeaderView.ResizeToContents
         )
+        self.update_action_availabilty()
 
     def on_apply_set_operation(self, operation="intersect"):
         """Creates a new wordset from the union of selected wordsets.
