@@ -17,6 +17,7 @@ from PySide2.QtGui import QIcon, QKeySequence, QDesktopServices
 
 # Custom imports
 from cutevariant.core import get_sql_connection, get_metadatas, command
+from cutevariant.core import sql
 from cutevariant.core.sql import get_database_file_name
 from cutevariant.core.writer import CsvWriter, PedWriter
 from cutevariant.gui import FIcon
@@ -498,6 +499,7 @@ class MainWindow(QMainWindow):
         self.conn = conn
 
         # Clear memoization cache for count_cmd
+        sql.clear_lru_cache()
         # Clear State variable of application
         # store fields, source, filters, group_by, having data
         self.state = {"fields": ["chr"], "source": "variants", "filters": {}}
@@ -753,7 +755,7 @@ class MainWindow(QMainWindow):
         super().closeEvent(event)
 
     def save_session(self):
-        """ save plugin state into a json file """
+        """save plugin state into a json file"""
 
         filename, _ = QFileDialog.getSaveFileName(
             self,

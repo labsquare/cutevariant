@@ -33,11 +33,11 @@ from pkg_resources import parse_version
 from functools import partial, lru_cache
 import itertools as it
 import numpy as np
-
+import json
 
 # Custom imports
 import cutevariant.commons as cm
-from cutevariant.core.querybuilder import build_sql_query
+import cutevariant.core.querybuilder as qb
 from cutevariant.core.sql_aggregator import StdevFunc
 
 LOGGER = cm.logger()
@@ -168,6 +168,58 @@ def count_query(conn, query):
     return conn.execute(f"SELECT COUNT(*) as count FROM ({query})").fetchone()[0]
 
 
+# Helper functions. TODO: move them somewhere more relevant
+
+
+def clear_lru_cache():
+    count_unique.cache_clear()
+    get_fields.cache_clear()
+    get_field_by_category.cache_clear()
+
+
+@lru_cache()
+def count_unique(
+    conn: sqlite3.Connection,
+    field_name: str,
+    source: str,
+    filters: str,
+    order_desc: bool,
+    order_by_count: bool,
+    limit: int,
+    offset: int,
+):
+    """Counts unique values of field 'field_name' in selection 'source', after applying filters 'filters'.
+    Returns at most 'limit' unique values as a list of dictionnaries in the form {'field_name':'unique value A','count':number_of_values}
+
+    Args:
+        conn (sqlite3.Connection): Cutevariant database you want de info from
+        field_name (str): Name of the field to get unique values of
+        source (str): Name of the selection from which to count unique values ('variants' if there is no selection in the project)
+        filters (str): A filter (dict object) to apply when counting unique values of field. Should be passed as a json string
+        order_desc (bool): Sort the results in descending order (i.e. most frequent occurence first)
+        limit (int): [description]
+
+    Returns:
+        [type]: [description]
+    """
+    filters = json.loads(filters) if filters else {}
+    return [
+        dict(d)
+        for d in conn.execute(
+            qb.build_count_unique(
+                conn,
+                [field_name],
+                source,
+                filters,
+                order_desc,
+                order_by_count,
+                limit,
+                offset,
+            )
+        )
+    ]
+
+
 # Statistical data
 
 
@@ -214,7 +266,7 @@ def get_field_info(conn, field, source="variants", filters={}, metrics=["mean", 
     }
 
     conn.row_factory = None
-    query = build_sql_query(conn, [field], source, filters, limit=None)
+    query = qb.build_sql_query(conn, [field], source, filters, limit=None)
 
     data = [i[0] for i in conn.execute(query)]
 
@@ -1353,7 +1405,7 @@ def get_variants(
 
     # TODO : rename as get_variant_as_tables ?
 
-    query = build_sql_query(
+    query = qb.build_sql_query(
         conn,
         fields=fields,
         source=source,
