@@ -2,6 +2,7 @@ import pytest
 import tempfile
 import copy
 import os
+from collections import Counter
 
 from cutevariant.core import sql
 from cutevariant.core.reader import BedReader
@@ -333,6 +334,37 @@ def test_get_variants(conn):
             assert field in variant
 
 
+def test_get_variant_as_group(conn):
+    # TODO : make test better with different group_by
+    # Currently, it only tests genes
+    group_by = "gene"
+    fields = ["chr", "pos", "ref", "alt", "ann.gene"]
+
+    # Compute expected
+    # Takes duplicate into account
+    # This is ugly.. need to refactor
+    expected_genes = Counter()
+    for variant in VARIANTS:
+        if "annotations" in variant:
+            fields_to_count = set()
+            for ann in variant["annotations"]:
+                if "gene" in ann:
+                    fields_to_count.add(ann[group_by])
+            for g in fields_to_count:
+                expected_genes[g] += 1
+
+    observed_genes = dict(
+        [
+            (i["ann." + group_by], i["count"])
+            for i in sql.get_variant_as_group(
+                conn, "ann." + group_by, fields, "variants", {}
+            )
+        ]
+    )
+
+    assert observed_genes == expected_genes
+
+
 def test_get_samples(conn):
     """Test default values of samples"""
     assert [sample["name"] for sample in sql.get_samples(conn)] == SAMPLES
@@ -461,8 +493,7 @@ def test_get_words_in_set(conn, wordset):
 
 
 def test_wordset_operation(conn):
-    """Test wordset operation union, intersection and difference
-    """    
+    """Test wordset operation union, intersection and difference"""
     set1 = {"CFTR", "GJB2"}
     set2 = {"CFTR", "KRAS", "BRAF"}
 

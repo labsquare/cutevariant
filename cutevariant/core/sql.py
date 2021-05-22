@@ -37,6 +37,7 @@ import numpy as np
 
 # Custom imports
 import cutevariant.commons as cm
+from cutevariant.core import querybuilder
 from cutevariant.core.querybuilder import build_sql_query
 from cutevariant.core.sql_aggregator import StdevFunc
 
@@ -1610,6 +1611,26 @@ def insert_many_variants(conn, data, **kwargs):
     """Wrapper for debugging purpose"""
     for _, _ in async_insert_many_variants(conn, data, kwargs):
         pass
+
+
+def get_variant_as_group(
+    conn,
+    groupby: str,
+    fields: list,
+    source: str,
+    filters: dict,
+    order_by="count",
+    limit=50,
+):
+
+    subquery = build_sql_query(
+        conn, fields=fields, source=source, filters=filters, limit=None
+    )
+
+    query = f"""SELECT `{groupby}`, COUNT(`{groupby}`) AS count 
+    FROM ({subquery}) GROUP BY `{groupby}` ORDER BY count LIMIT {limit}"""
+    for i in conn.execute(query):
+        yield dict(i)
 
 
 ## samples table ===============================================================
