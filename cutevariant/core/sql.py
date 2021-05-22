@@ -172,52 +172,8 @@ def count_query(conn, query):
 
 
 def clear_lru_cache():
-    count_unique.cache_clear()
     get_fields.cache_clear()
     get_field_by_category.cache_clear()
-
-
-@lru_cache()
-def count_unique(
-    conn: sqlite3.Connection,
-    field_name: str,
-    source: str,
-    filters: str,
-    order_desc: bool,
-    order_by_count: bool,
-    limit: int,
-    offset: int,
-):
-    """Counts unique values of field 'field_name' in selection 'source', after applying filters 'filters'.
-    Returns at most 'limit' unique values as a list of dictionnaries in the form {'field_name':'unique value A','count':number_of_values}
-
-    Args:
-        conn (sqlite3.Connection): Cutevariant database you want de info from
-        field_name (str): Name of the field to get unique values of
-        source (str): Name of the selection from which to count unique values ('variants' if there is no selection in the project)
-        filters (str): A filter (dict object) to apply when counting unique values of field. Should be passed as a json string
-        order_desc (bool): Sort the results in descending order (i.e. most frequent occurence first)
-        limit (int): [description]
-
-    Returns:
-        [type]: [description]
-    """
-    filters = json.loads(filters) if filters else {}
-    return [
-        dict(d)
-        for d in conn.execute(
-            qb.build_count_unique(
-                conn,
-                [field_name],
-                source,
-                filters,
-                order_desc,
-                order_by_count,
-                limit,
-                offset,
-            )
-        )
-    ]
 
 
 # Statistical data
@@ -1662,6 +1618,26 @@ def insert_many_variants(conn, data, **kwargs):
     """Wrapper for debugging purpose"""
     for _, _ in async_insert_many_variants(conn, data, kwargs):
         pass
+
+
+def get_variant_as_group(
+    conn,
+    groupby: str,
+    fields: list,
+    source: str,
+    filters: dict,
+    order_by="count",
+    limit=50,
+):
+
+    subquery = qb.build_sql_query(
+        conn, fields=fields, source=source, filters=filters, limit=None
+    )
+
+    query = f"""SELECT `{groupby}`, COUNT(`{groupby}`) AS count
+    FROM ({subquery}) GROUP BY `{groupby}` ORDER BY count DESC LIMIT {limit}"""
+    for i in conn.execute(query):
+        yield dict(i)
 
 
 ## samples table ===============================================================
