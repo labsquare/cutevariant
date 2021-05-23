@@ -110,9 +110,9 @@ def test_fields_to_vql():
         "ref",
         "ann.gene",
         "ann.impact",
-        "sample['boby'].gt",
-        "sample['boby'].dp",
-        "sample['charles'].gt",
+        "samples['boby'].gt",
+        "samples['boby'].dp",
+        "samples['charles'].gt",
     ]
 
     assert querybuilder.fields_to_vql(fields) == expected_fields
@@ -191,7 +191,7 @@ def test_filters_to_vql():
     observed = querybuilder.filters_to_vql(filters)
 
     print(observed)
-    expected = "chr = 'chr1' AND pos > 111 AND ann.gene = 'CFTR' AND ann.gene > 'LOW' AND sample['boby'].gt = 1 AND (pos >= 10 OR pos <= 100)"
+    expected = "chr = 'chr1' AND pos > 111 AND ann.gene = 'CFTR' AND ann.gene > 'LOW' AND samples['boby'].gt = 1 AND (pos >= 10 OR pos <= 100)"
     assert observed == expected
 
 
@@ -237,7 +237,7 @@ FILTERS_VS_SQL_VQL = [
     (
         {"$and": [{"alt": "C"}, {"samples.sacha.gt": 4}]},
         "(`variants`.`alt` = 'C' AND `sample_sacha`.`gt` = 4)",
-        "alt = 'C' AND sample['sacha'].gt = 4",
+        "alt = 'C' AND samples['sacha'].gt = 4",
     ),
     # Test nested filters
     (
@@ -379,7 +379,7 @@ QUERY_TESTS = [
             " INNER JOIN sample_has_variant `sample_TUMOR` ON `sample_TUMOR`.variant_id = variants.id AND `sample_TUMOR`.sample_id = 1"
             " LIMIT 50 OFFSET 0"
         ),
-        "SELECT chr,pos,sample['TUMOR'].gt FROM variants",
+        "SELECT chr,pos,samples['TUMOR'].gt FROM variants",
     ),
     # Test genotype in filters
     (
@@ -393,7 +393,7 @@ QUERY_TESTS = [
             " INNER JOIN sample_has_variant `sample_TUMOR` ON `sample_TUMOR`.variant_id = variants.id AND `sample_TUMOR`.sample_id = 1"
             " WHERE (`sample_TUMOR`.`gt` = 1) LIMIT 50 OFFSET 0"
         ),
-        "SELECT chr,pos FROM variants WHERE sample['TUMOR'].gt = 1",
+        "SELECT chr,pos FROM variants WHERE samples['TUMOR'].gt = 1",
     ),
     # Test genotype with 2 filters
     (
@@ -413,7 +413,7 @@ QUERY_TESTS = [
             " WHERE (`sample_TUMOR`.`gt` = 1 AND `sample_TUMOR`.`dp` > 10)"
             " LIMIT 50 OFFSET 0"
         ),
-        "SELECT chr,pos FROM variants WHERE sample['TUMOR'].gt = 1 AND sample['TUMOR'].dp > 10",
+        "SELECT chr,pos FROM variants WHERE samples['TUMOR'].gt = 1 AND samples['TUMOR'].dp > 10",
     ),
     # Test genotype in both filters and fields
     (
@@ -432,7 +432,7 @@ QUERY_TESTS = [
             " WHERE (`sample_TUMOR`.`gt` = 1)"
             " LIMIT 50 OFFSET 0"
         ),
-        "SELECT chr,pos,sample['TUMOR'].gt FROM variants WHERE sample['TUMOR'].gt = 1",
+        "SELECT chr,pos,samples['TUMOR'].gt FROM variants WHERE samples['TUMOR'].gt = 1",
     ),
     # Test IN SET
     (
