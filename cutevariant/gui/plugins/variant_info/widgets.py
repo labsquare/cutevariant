@@ -68,7 +68,7 @@ class VariantInfoWidget(PluginWidget):
         self.view = QTreeView()
         self.model = VariantInfoModel()
         self.view.setModel(self.model)
-        self.view.setAlternatingRowColors(True)
+        self.view.setAlternatingRowColors(False)
         vlayout = QVBoxLayout()
         vlayout.addWidget(self.view)
         vlayout.setContentsMargins(0, 0, 0, 0)

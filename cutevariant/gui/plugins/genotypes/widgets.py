@@ -93,6 +93,7 @@ class GenotypesWidget(plugin.PluginWidget):
         super().__init__(parent)
 
         self.view = QTableView()
+        self.view.setShowGrid(False)
         self.model = GenotypesModel()
 
         self.view.setModel(self.model)
