@@ -126,16 +126,15 @@ class GroupbyModel(QAbstractTableModel):
         self.groubpby_finished.emit()
 
     def _on_error(self):
-        print(self.load_groupby_thread.last_error)
+        QMessageBox.critical(
+            None,
+            self.tr("Error!"),
+            self.tr(f"Cannot load field {self._field_name}"),
+        )
         self.groupby_error.emit()
 
     def _set_raw_data(self, raw_data: list):
         if self._field_name not in raw_data[0]:
-            QMessageBox.critical(
-                None,
-                self.tr("Error!"),
-                self.tr(f"Cannot load field {self._field_name}"),
-            )
             self.clear()
             return
         self.beginResetModel()
