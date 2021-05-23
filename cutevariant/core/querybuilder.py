@@ -253,7 +253,7 @@ def fields_to_sql(fields, use_as=False) -> list:
 
             sql_field = f"`sample_{name}`.`{value}`"
             if use_as:
-                sql_field = f"{sql_field} AS `sample.{name}.{value}`"
+                sql_field = f"{sql_field} AS `samples.{name}.{value}`"
             sql_fields.append(sql_field)
 
         else:

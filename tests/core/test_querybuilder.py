@@ -145,9 +145,9 @@ def test_fields_to_sql():
 
     expected_fields[3] = "`annotations`.`gene` AS `ann.gene`"
     expected_fields[4] = "`annotations`.`impact` AS `ann.impact`"
-    expected_fields[5] = "`sample_boby`.`gt` AS `sample.boby.gt`"
-    expected_fields[6] = "`sample_boby`.`dp` AS `sample.boby.dp`"
-    expected_fields[7] = "`sample_charles`.`gt` AS `sample.charles.gt`"
+    expected_fields[5] = "`sample_boby`.`gt` AS `samples.boby.gt`"
+    expected_fields[6] = "`sample_boby`.`dp` AS `samples.boby.dp`"
+    expected_fields[7] = "`sample_charles`.`gt` AS `samples.charles.gt`"
 
     assert querybuilder.fields_to_sql(fields, use_as=True) == expected_fields
 
@@ -375,7 +375,7 @@ QUERY_TESTS = [
             "source": "variants",
         },
         (
-            "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`sample_TUMOR`.`gt` AS `sample.TUMOR.gt` FROM variants"
+            "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`sample_TUMOR`.`gt` AS `samples.TUMOR.gt` FROM variants"
             " INNER JOIN sample_has_variant `sample_TUMOR` ON `sample_TUMOR`.variant_id = variants.id AND `sample_TUMOR`.sample_id = 1"
             " LIMIT 50 OFFSET 0"
         ),
@@ -427,7 +427,7 @@ QUERY_TESTS = [
             },
         },
         (
-            "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`sample_TUMOR`.`gt` AS `sample.TUMOR.gt` FROM variants"
+            "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`sample_TUMOR`.`gt` AS `samples.TUMOR.gt` FROM variants"
             " INNER JOIN sample_has_variant `sample_TUMOR` ON `sample_TUMOR`.variant_id = variants.id AND `sample_TUMOR`.sample_id = 1"
             " WHERE (`sample_TUMOR`.`gt` = 1)"
             " LIMIT 50 OFFSET 0"
