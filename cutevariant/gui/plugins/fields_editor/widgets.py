@@ -159,7 +159,7 @@ class FieldsModel(QStandardItemModel):
                     field_name_item.setFont(font)
                     field_type = style.FIELD_TYPE.get(fields[field]["type"])
                     field_name_item.setIcon(
-                        FIcon(field_type["icon"], "white", field_type["color"])
+                        FIcon(field_type["icon"], field_type["color"])
                     )
 
                     self._checkable_items.append(field_name_item)
