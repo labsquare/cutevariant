@@ -108,7 +108,7 @@ class FilterTerm(metaclass=model_class):
         op = OPERATORS.get(self.op, "$eq")
 
         if isinstance(field, tuple):
-            if field[0] == "sample":
+            if field[0] == "samples":
                 field = f"samples.{field[1]}.{field[2]}"
 
         return {field: {op: val}}
@@ -173,7 +173,7 @@ class SelectCmd(metaclass=model_class):
             # Manage function like sample("boby").gt
             if isinstance(col, Function):
                 fct_name, fct_param, fct_field = col.value
-                if fct_name == "sample":
+                if fct_name == "samples":
                     fields.append(f"samples.{fct_param}.{fct_field}")
             else:
                 fields.append(col)

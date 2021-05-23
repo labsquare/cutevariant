@@ -160,7 +160,7 @@ class VqlEditorWidget(plugin.PluginWidget):
             if field["category"] == "samples":
                 # Overwrite name
                 for sample in samples:
-                    name = "sample['{}'].{}".format(sample, field["name"])
+                    name = "samples['{}'].{}".format(sample, field["name"])
                     description = "<b>{}</b> ({}) from {} {} <br/><br/> {}".format(
                         field["name"],
                         field["type"],
