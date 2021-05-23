@@ -37,6 +37,41 @@ from cutevariant.gui import plugin
 
 LOGGER = cm.logger()
 
+import copy
+
+
+class StateData:
+    """A dictonnary like object which monitor which key changed
+
+    This is used to store application data and refresh plugins if it is required
+
+    """
+
+    def __init__(self, data=None):
+        self._data = data if data else {}
+        self._changed = set()
+
+    def __setitem__(self, key, value):
+
+        if key in self._data:
+            if self._data[key] == value:
+                return
+
+        self._changed.add(key)
+        self._data[key] = copy.deepcopy(value)
+
+    def __getitem__(self, key):
+        if key in self._data:
+            return self._data[key]
+        return None
+
+    def clear_changed(self):
+        self._changed.clear()
+
+    @property
+    def changed(self):
+        return self._changed
+
 
 class MainWindow(QMainWindow):
     """Cutevariant mainwindow
@@ -64,12 +99,13 @@ class MainWindow(QMainWindow):
         self.app_settings = QSettings()
 
         # State variable of application changed by plugins
-        self._state_data = {
-            "fields": ["chr", "pos", "ref", "alt"],
-            "source": "variants",
-            "filters": {},
-        }
-        self._state_data_changed = set()
+        self._state_data = StateData(
+            {
+                "fields": ["chr", "pos", "ref", "alt"],
+                "source": "variants",
+                "filters": {},
+            }
+        )
 
         ## ===== GUI Setup =====
 
@@ -126,10 +162,7 @@ class MainWindow(QMainWindow):
             key (str): Name of the state variable ( fields, source, filters )
             value (Any): a value
         """
-        previous_state = dict(self._state_data)
         self._state_data[key] = value
-        if previous_state != self._state_data:
-            self._state_data_changed.add(key)
 
     def get_state_data(self, key: str) -> typing.Any:
         """Get state data value from from key
@@ -143,7 +176,7 @@ class MainWindow(QMainWindow):
             typing.Any: Return a value
         """
 
-        return self._state_data.get(key, None)
+        return self._state_data[key]
 
     def add_panel(self, widget, area=Qt.LeftDockWidgetArea):
         """Add the given widget to a new QDockWidget.
@@ -278,7 +311,7 @@ class MainWindow(QMainWindow):
             need_refresh = (
                 plugin_obj is not sender
                 and (plugin_obj.isVisible() or not plugin_obj.REFRESH_ONLY_VISIBLE)
-                and (set(plugin_obj.REFRESH_STATE_DATA) & self._state_data_changed)
+                and (set(plugin_obj.REFRESH_STATE_DATA) & self._state_data.changed)
             )
 
             if need_refresh:
@@ -290,7 +323,7 @@ class MainWindow(QMainWindow):
                     LOGGER.exception(e)
 
         # Clear state_changed set
-        self._state_data_changed = set()
+        self._state_data.clear_changed()
 
     def refresh_plugin(self, plugin_name: str):
         """Refresh a widget plugin identified by plugin_name
