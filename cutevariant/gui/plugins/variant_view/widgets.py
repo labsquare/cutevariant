@@ -608,8 +608,81 @@ class VariantDelegate(QStyledItemDelegate):
         # Draw formatters
         option.rect = option.rect.adjusted(
             3, 0, 0, 0
-        )  # Don't know why I need to adjust the left margin .. .
-        self.formatter.paint(painter, option, index)
+        )  # Don't know why I need to adjust the left margin ..
+
+        field_name = index.model().headerData(index.column(), Qt.Horizontal)
+        field_value = index.data(Qt.DisplayRole)
+        is_selected = option.state & QStyle.State_Selected
+        style = self.formatter.format(field_name, field_value, option, is_selected)
+
+        font = style.get("font", QFont())
+        text = style.get("text", str(field_value))
+        icon = style.get("icon", None)
+        color = style.get(
+            "color",
+            option.palette.color(
+                QPalette.Normal,
+                QPalette.BrightText if is_selected else QPalette.Text,
+            ),
+        )
+        text_align = style.get("text-align", Qt.AlignVCenter | Qt.AlignLeft)
+        icon_align = style.get("icon-align", Qt.AlignCenter)
+
+        pixmap = style.get("pixmap", None)
+        link = style.get("link", None)
+
+        if pixmap:
+            painter.drawPixmap(
+                option.rect.x(),
+                option.rect.y(),
+                pixmap.width(),
+                pixmap.height(),
+                pixmap,
+            )
+            return
+
+        if link:
+            self.draw_url(painter, option.rect, text, text_align)
+            return
+
+        if icon:
+            self.draw_icon(painter, option.rect, icon, icon_align)
+
+        painter.setFont(font)
+        painter.setPen(QPen(color))
+        painter.drawText(option.rect, text_align, text)
+
+    def draw_icon(
+        self, painter: QPainter, rect: QRect, icon: QIcon, alignement=Qt.AlignCenter
+    ):
+        r = QRect(0, 0, rect.height(), rect.height())
+        r.moveCenter(rect.center())
+
+        if alignement & Qt.AlignLeft:
+            r.moveLeft(rect.left())
+
+        if alignement & Qt.AlignRight:
+            r.moveRight(rect.right())
+
+        painter.drawPixmap(r, icon.pixmap(r.width(), r.height()))
+
+    def draw_url(self, painter: QPainter, rect: QRect, value: str, align=Qt.AlignLeft):
+        font = QFont()
+        font.setUnderline(True)
+        painter.setFont(font)
+        painter.setPen(QPen(QColor("blue")))
+        painter.drawText(rect, align, value)
+
+    def editorEvent(self, event: QEvent, model, option, index: QModelIndex):
+        if not index.isValid():
+            return False
+
+        # Skip action with First LogicItem root item
+
+        if event.type() == QEvent.MouseButtonPress:
+            print("clicked")
+
+        pass
 
 
 class LoadingTableView(QTableView):
@@ -1276,7 +1349,8 @@ class VariantView(QWidget):
         TODO : duplicate code with ContextMenu Event ! Need to refactor a bit
         """
 
-        self._open_default_link(index)
+        pass
+        ##self._open_default_link(index)
 
 
 class VariantViewWidget(plugin.PluginWidget):
