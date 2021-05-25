@@ -188,7 +188,7 @@ def fields_to_vql(fields) -> list:
         if field.startswith("samples."):
             _, *name, param = field.split(".")
             name = ".".join(name)
-            vql_fields.append(f"sample['{name}'].{param}")
+            vql_fields.append(f"samples['{name}'].{param}")
         else:
             vql_fields.append(field)
 
@@ -253,7 +253,7 @@ def fields_to_sql(fields, use_as=False) -> list:
 
             sql_field = f"`sample_{name}`.`{value}`"
             if use_as:
-                sql_field = f"{sql_field} AS `sample.{name}.{value}`"
+                sql_field = f"{sql_field} AS `samples.{name}.{value}`"
             sql_fields.append(sql_field)
 
         else:
@@ -416,7 +416,7 @@ def condition_to_vql(item: dict) -> str:
     if k.startswith("samples."):
         _, *name, k = k.split(".")
         name = ".".join(name)
-        k = f"sample['{name}'].{k}"
+        k = f"samples['{name}'].{k}"
 
         # k = f"sample{name}`.`{k}` {sql_operator} {value}"
 

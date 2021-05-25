@@ -159,7 +159,7 @@ class FieldsModel(QStandardItemModel):
                     field_name_item.setFont(font)
                     field_type = style.FIELD_TYPE.get(fields[field]["type"])
                     field_name_item.setIcon(
-                        FIcon(field_type["icon"], "white", field_type["color"])
+                        FIcon(field_type["icon"], field_type["color"])
                     )
 
                     self._checkable_items.append(field_name_item)
@@ -232,12 +232,13 @@ class FieldsWidget(QWidget):
         proxy.setSourceModel(model)
 
         view.setModel(proxy)
+        view.setShowGrid(False)
         view.horizontalHeader().setStretchLastSection(True)
         view.setIconSize(QSize(16, 16))
         view.setEditTriggers(QAbstractItemView.NoEditTriggers)
         view.setSelectionMode(QAbstractItemView.SingleSelection)
         view.setSelectionBehavior(QAbstractItemView.SelectRows)
-        view.setAlternatingRowColors(True)
+        view.setAlternatingRowColors(False)
         view.setWordWrap(True)
         view.verticalHeader().hide()
         view.setSortingEnabled(True)
