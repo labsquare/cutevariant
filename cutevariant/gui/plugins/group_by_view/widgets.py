@@ -127,16 +127,13 @@ class GroupbyModel(QAbstractTableModel):
         fields: list = None,
         source: str = None,
         filters: dict = None,
-        order_desc=True,
-        order_by_count=True,
     ):
-        self._field_name = field_name or "chr"
-        self._fields = fields or ["chr", "pos", "ref", "alt"]
-        self._source = source or "variants"
-        self._filters = filters or {}
-
-        self._order_desc = order_desc
-        self._order_by_count = order_by_count
+        # if field_name != self._field_name:
+        # self._field_name = field_name or "chr"
+        self._field_name = field_name or self._field_name
+        self._fields = fields or self._fields
+        self._source = source or self._source
+        self._filters = filters or self._filters
 
     def load(self):
         """Counts unique values inside field_name
@@ -229,7 +226,10 @@ class GroupbyTable(QWidget):
     ):
         if self.conn:
             self.groupby_model.set_query_params(
-                field_name, fields, source, filters, order_desc
+                field_name,
+                fields,
+                source,
+                filters,
             )
             self.groupby_model.load()
 
@@ -292,12 +292,17 @@ class GroupByViewWidget(PluginWidget):
         Called by on_refresh
         """
         if self.conn:
+            previous_selection = self.field_select_combo.currentText()
+            current_fields = self.mainwindow.get_state_data("fields")
             self.field_select_combo.clear()
-            self.field_select_combo.addItems(self.mainwindow.get_state_data("fields"))
+            self.field_select_combo.addItems(current_fields)
+            if previous_selection in current_fields:
+                # Select the same field as previously selected for user's comfort
+                self.field_select_combo.setCurrentText(previous_selection)
             self._load_groupby()
         else:
             self.field_select_combo.clear()
-            self.groupby_model.clear()
+            self.view.groupby_model.clear()
 
     def _load_groupby(self):
         if self.conn:
@@ -329,11 +334,6 @@ class GroupByViewWidget(PluginWidget):
                 }
             # I know it has already been set since this dictionnary does shallow copy
             self.mainwindow: MainWindow
-            print(
-                "merde"
-                if filters == self.mainwindow.get_state_data("filters")
-                else "youpi"
-            )
             self.mainwindow.set_state_data("filters", filters)
             self.mainwindow.refresh_plugins(sender=self)
 
