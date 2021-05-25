@@ -222,7 +222,6 @@ class GroupbyTable(QWidget):
         fields: list,
         source: str,
         filters: dict,
-        order_desc: bool,
     ):
         if self.conn:
             self.groupby_model.set_query_params(
@@ -311,7 +310,6 @@ class GroupByViewWidget(PluginWidget):
                 self.mainwindow.get_state_data("fields"),
                 self.mainwindow.get_state_data("source"),
                 self.mainwindow.get_state_data("filters"),
-                self._order_desc,
             )
 
     def on_double_click(self):
