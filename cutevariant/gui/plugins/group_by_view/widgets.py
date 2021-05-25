@@ -30,12 +30,20 @@ from PySide2.QtGui import QIcon, QStandardItemModel, QStandardItem, QFont
 from cutevariant.gui.plugin import PluginWidget
 from cutevariant.core import sql
 from cutevariant.gui.sql_thread import SqlThread
-from cutevariant.gui.widgets import SearchableTableWidget
+from cutevariant.gui.widgets import LoadingTableView
 import cutevariant.commons as cm
 
 from cutevariant.gui import plugin, FIcon, style
 
 LOGGER = cm.logger()
+
+
+class FilterProxyModel(QSortFilterProxyModel):
+    """This class has only one purpose: calling the same sort method as its source model."""
+
+    def sort(self, column: int, order: Qt.SortOrder) -> None:
+        if self.sourceModel():
+            self.sourceModel().sort(column, order)
 
 
 class GroupbyModel(QAbstractTableModel):
@@ -176,11 +184,14 @@ class GroupbyModel(QAbstractTableModel):
         return self._field_name
 
 
-class GroupbyTable(SearchableTableWidget):
+class GroupbyTable(QWidget):
     def __init__(self, conn=None, parent=None):
         super().__init__(parent=parent)
         self.conn = conn
         self.groupby_model = GroupbyModel(self)
+        self.proxy = FilterProxyModel(self)
+        self.tableview = LoadingTableView(self)
+        self.tableview.setModel(self.proxy)
         self.proxy.setSourceModel(self.groupby_model)
         self.tableview.setSelectionMode(QAbstractItemView.SingleSelection)
         self.tableview.setSelectionBehavior(QAbstractItemView.SelectRows)
@@ -189,6 +200,9 @@ class GroupbyTable(SearchableTableWidget):
         self.groupby_model.groubpby_finished.connect(self.stop_loading)
 
         self.tableview.setSortingEnabled(True)
+
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.tableview)
 
     @property
     def conn(self):
@@ -216,8 +230,11 @@ class GroupbyTable(SearchableTableWidget):
             )
             self.groupby_model.load()
 
+    def start_loading(self):
+        self.tableview.start_loading()
+
     def stop_loading(self):
-        super().stop_loading()
+        self.tableview.stop_loading()
         self.tableview.horizontalHeader().setStretchLastSection(False)
         self.tableview.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         self.tableview.horizontalHeader().setSectionResizeMode(
@@ -238,6 +255,7 @@ class GroupByViewWidget(PluginWidget):
         self.field_select_combo = QComboBox(self)
 
         self.view = GroupbyTable(conn, self)
+        self.view.tableview.verticalHeader().hide()
         self.view.tableview.doubleClicked.connect(self.on_double_click)
 
         self.setWindowTitle(self.tr("Group By"))
