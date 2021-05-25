@@ -20,11 +20,13 @@ from PySide2.QtWidgets import (
     QComboBox,
     QHBoxLayout,
     QMessageBox,
+    QToolBar,
     QVBoxLayout,
     QWidget,
     QTabWidget,
     QTableView,
     QHeaderView,
+    QSizePolicy,
 )
 from PySide2.QtGui import QIcon, QStandardItemModel, QStandardItem, QFont
 
@@ -262,7 +264,39 @@ class GroupByViewWidget(PluginWidget):
         self.setWindowTitle(self.tr("Group By"))
         self.setWindowIcon(FIcon(0xF126F))
 
+        self.toolbar = QToolBar(self)
+        self.toolbar.setIconSize(QSize(16, 16))
+        self.toggle_add_to_selection_act = self.toolbar.addAction(
+            FIcon(0xF1281),
+            self.tr("Additive selection"),
+        )
+        self.toggle_add_to_selection_act.toggled.connect(
+            lambda checked: self.view.tableview.setSelectionMode(
+                QAbstractItemView.ExtendedSelection
+                if checked
+                else QAbstractItemView.SingleSelection
+            )
+        )
+
+        # Create spacer
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.toolbar.addWidget(spacer)
+
+        self.toolbar.addSeparator()
+        self.toggle_add_to_selection_act.setCheckable(True)
+
+        # Add apply button
+        apply_action = self.toolbar.addAction(self.tr("Apply"))
+        self.apply_button = self.toolbar.widgetForAction(apply_action)
+        self.apply_button.setIcon(FIcon(0xF0E1E, "white"))
+        self.apply_button.setStyleSheet("background-color: #038F6A; color:white")
+        self.apply_button.setAutoRaise(False)
+        self.apply_button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        self.apply_button.pressed.connect(self.on_apply)
+
         layout = QVBoxLayout(self)
+        layout.addWidget(self.toolbar)
         layout.addWidget(self.field_select_combo)
         layout.addWidget(self.view)
 
@@ -319,21 +353,37 @@ class GroupByViewWidget(PluginWidget):
             .siblingAtColumn(0)
             .data(Qt.DisplayRole)
         )
+        self.add_condition_to_filters()
         if self.mainwindow:
-            filters = copy.deepcopy(self.mainwindow.get_state_data("filters"))
+            self.add_condition_to_filters(
+                {self.view.groupby_model.get_field_name(): selected_value}
+            )
 
-            if "$and" in filters:
-                filters["$and"].append(
-                    {self.view.groupby_model.get_field_name(): selected_value}
-                )
-            else:
-                filters = {
-                    "$and": [{self.view.groupby_model.get_field_name(): selected_value}]
-                }
-            # I know it has already been set since this dictionnary does shallow copy
-            self.mainwindow: MainWindow
-            self.mainwindow.set_state_data("filters", filters)
-            self.mainwindow.refresh_plugins(sender=self)
+    def on_apply(self):
+        selected_values = [
+            idx.data(Qt.DisplayRole)
+            for idx in self.view.tableview.selectionModel().selectedRows(0)
+        ]
+        self.add_condition_to_filters(
+            {
+                "$or": [
+                    {self.view.groupby_model.get_field_name(): val}
+                    for val in selected_values
+                ]
+            }
+        )
+
+    def add_condition_to_filters(self, condition: dict):
+        filters = copy.deepcopy(self.mainwindow.get_state_data("filters"))
+
+        if "$and" in filters:
+            filters["$and"].append(condition)
+        else:
+            filters = {"$and": [condition]}
+        # I know it has already been set since this dictionnary does shallow copy
+        self.mainwindow: MainWindow
+        self.mainwindow.set_state_data("filters", filters)
+        self.mainwindow.refresh_plugins(sender=self)
 
 
 if __name__ == "__main__":
