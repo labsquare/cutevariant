@@ -1639,7 +1639,6 @@ def get_variant_as_group(
         fields=fields,
         source=source,
         filters=filters,
-        order_desc=order_desc,
         limit=None,
     )
 
