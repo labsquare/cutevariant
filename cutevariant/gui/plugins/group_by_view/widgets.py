@@ -55,6 +55,8 @@ class GroupbyModel(QAbstractTableModel):
     groubpby_finished = Signal()
     groupby_error = Signal()
 
+    GENOTYPE_ICONS = {key: FIcon(val) for key, val in cm.GENOTYPE_ICONS.items()}
+
     def __init__(self, parent: QObject = None, conn: sqlite3.Connection = None) -> None:
         super().__init__(parent)
         self._raw_data = []
@@ -67,6 +69,8 @@ class GroupbyModel(QAbstractTableModel):
         self.load_groupby_thread.error.connect(self._on_error)
 
         self._field_name = "chr"
+        self._field_info = {}
+
         self._fields = ["chr", "pos", "ref", "alt"]
         self._source = "variants"
         self._filters = {}
@@ -90,6 +94,7 @@ class GroupbyModel(QAbstractTableModel):
             return ["Value", "Count"][section]
 
     def data(self, index: QModelIndex, role: int):
+
         if not index.isValid():
             return
 
@@ -99,9 +104,21 @@ class GroupbyModel(QAbstractTableModel):
         if index.row() < 0 or index.row() >= self.rowCount():
             return
 
+        if self._field_info and self._field_name.split(".")[-1] == "gt":
+            if role == Qt.DecorationRole and index.column() == 0:
+                return QIcon(
+                    self.GENOTYPE_ICONS.get(
+                        self._raw_data[index.row()][self._field_name],
+                        self.GENOTYPE_ICONS[-1],
+                    )
+                )
+
         if role == Qt.DisplayRole:
             cols = {0: self._field_name, 1: "count"}
             return self._raw_data[index.row()][cols[index.column()]]
+
+        if self._field_info and self._field_info["category"] == "int":
+            self._is = True
 
     def clear(self):
         self._set_raw_data([])
@@ -132,7 +149,11 @@ class GroupbyModel(QAbstractTableModel):
     ):
         # if field_name != self._field_name:
         # self._field_name = field_name or "chr"
-        self._field_name = field_name or self._field_name
+        if field_name != self._field_name:
+            self._field_name = field_name
+            if self._conn:
+                raw_field_name = self._field_name.split(".")[-1]
+                self._field_info = sql.get_field_by_name(self._conn, raw_field_name)
         self._fields = fields or self._fields
         self._source = source or self._source
         self._filters = filters or self._filters
@@ -170,6 +191,7 @@ class GroupbyModel(QAbstractTableModel):
             self.tr("Error!"),
             self.tr(f"Cannot load field {self._field_name}"),
         )
+        self.clear()
         self.groupby_error.emit()
 
     def _set_raw_data(self, raw_data: list):
@@ -353,7 +375,9 @@ class GroupByViewWidget(PluginWidget):
             .siblingAtColumn(0)
             .data(Qt.DisplayRole)
         )
+        self.add_condition_to_filters(
         self.add_condition_to_filters()
+        )
         if self.mainwindow:
             self.add_condition_to_filters(
                 {self.view.groupby_model.get_field_name(): selected_value}
