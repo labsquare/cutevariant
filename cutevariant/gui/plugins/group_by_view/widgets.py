@@ -1,6 +1,7 @@
 from functools import lru_cache
 import sqlite3
 
+import copy
 import json
 from tests.gui.test_plugins import MainWindow
 
@@ -192,6 +193,7 @@ class GroupbyTable(QWidget):
         self.proxy = FilterProxyModel(self)
         self.tableview = LoadingTableView(self)
         self.tableview.setModel(self.proxy)
+        self.tableview.verticalHeader().hide()
         self.proxy.setSourceModel(self.groupby_model)
         self.tableview.setSelectionMode(QAbstractItemView.SingleSelection)
         self.tableview.setSelectionBehavior(QAbstractItemView.SelectRows)
@@ -199,6 +201,7 @@ class GroupbyTable(QWidget):
         self.groupby_model.groupby_started.connect(self.start_loading)
         self.groupby_model.groubpby_finished.connect(self.stop_loading)
 
+        self.tableview.sortByColumn(1, Qt.DescendingOrder)
         self.tableview.setSortingEnabled(True)
 
         layout = QVBoxLayout(self)
@@ -255,7 +258,6 @@ class GroupByViewWidget(PluginWidget):
         self.field_select_combo = QComboBox(self)
 
         self.view = GroupbyTable(conn, self)
-        self.view.tableview.verticalHeader().hide()
         self.view.tableview.doubleClicked.connect(self.on_double_click)
 
         self.setWindowTitle(self.tr("Group By"))
@@ -315,7 +317,7 @@ class GroupByViewWidget(PluginWidget):
             .data(Qt.DisplayRole)
         )
         if self.mainwindow:
-            filters = self.mainwindow.get_state_data("filters")
+            filters = copy.deepcopy(self.mainwindow.get_state_data("filters"))
 
             if "$and" in filters:
                 filters["$and"].append(
