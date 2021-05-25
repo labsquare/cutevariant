@@ -1631,7 +1631,7 @@ def get_variant_as_group(
     limit=50,
 ):
 
-    order_by = "count" if order_by_count else groupby
+    order_by = "count" if order_by_count else f"`{groupby}`"
     order_desc = "DESC" if order_desc else "ASC"
 
     subquery = qb.build_sql_query(
