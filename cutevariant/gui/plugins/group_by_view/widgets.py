@@ -376,7 +376,7 @@ class GroupByViewWidget(PluginWidget):
             .data(Qt.DisplayRole)
         )
         self.add_condition_to_filters(
-        self.add_condition_to_filters()
+            {self.view.groupby_model.get_field_name(): selected_value}
         )
         if self.mainwindow:
             self.add_condition_to_filters(
