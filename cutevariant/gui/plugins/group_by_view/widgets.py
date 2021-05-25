@@ -55,6 +55,12 @@ class GroupbyModel(QAbstractTableModel):
         self.load_groupby_thread.result_ready.connect(self._on_data_available)
         self.load_groupby_thread.error.connect(self._on_error)
 
+        self._field_name = "chr"
+        self._fields = ["chr", "pos", "ref", "alt"]
+        self._source = "variants"
+        self._filters = {}
+        self._order_by_count = True
+
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
         return len(self._raw_data)
 
@@ -93,26 +99,51 @@ class GroupbyModel(QAbstractTableModel):
         self._conn = conn
         self.load_groupby_thread.conn = self._conn
 
-    def load(
+    def sort(self, column: int, order: Qt.SortOrder):
+        """Overrided: Sort data by specified column
+
+        column (int): column id
+        order (Qt.SortOrder): Qt.AscendingOrder or Qt.DescendingOrder
+
+        """
+        if column < self.columnCount():
+
+            self._order_by_count = column == 1
+            self._order_desc = order == Qt.DescendingOrder
+            self.load()
+
+    def set_query_params(
         self,
-        field_name: str,
-        fields: list,
-        source="variants",
-        filters={},
+        field_name: str = None,
+        fields: list = None,
+        source: str = None,
+        filters: dict = None,
         order_desc=True,
         order_by_count=True,
-        limit=50,
-        offset=0,
     ):
+        self._field_name = field_name or "chr"
+        self._fields = fields or ["chr", "pos", "ref", "alt"]
+        self._source = source or "variants"
+        self._filters = filters or {}
+
+        self._order_desc = order_desc
+        self._order_by_count = order_by_count
+
+    def load(self):
         """Counts unique values inside field_name
 
         Args:
             conn (sqlite3.Connection): Access to cutevariant's project database
             field_name (str): The field you want the number of unique values of
         """
-        self._field_name = field_name
         groupby_func = lambda conn: sql.get_variant_as_group(
-            conn, field_name, fields, source, filters
+            conn,
+            self._field_name,
+            self._fields,
+            self._source,
+            self._filters,
+            self._order_by_count,
+            self._order_desc,
         )
         if self._conn:
             self.load_groupby_thread.start_function(
@@ -157,6 +188,8 @@ class GroupbyTable(SearchableTableWidget):
         self.groupby_model.groupby_started.connect(self.start_loading)
         self.groupby_model.groubpby_finished.connect(self.stop_loading)
 
+        self.tableview.setSortingEnabled(True)
+
     @property
     def conn(self):
         """Return sqlite connection"""
@@ -178,7 +211,10 @@ class GroupbyTable(SearchableTableWidget):
         order_desc: bool,
     ):
         if self.conn:
-            self.groupby_model.load(field_name, fields, source, filters, order_desc)
+            self.groupby_model.set_query_params(
+                field_name, fields, source, filters, order_desc
+            )
+            self.groupby_model.load()
 
     def stop_loading(self):
         super().stop_loading()
@@ -205,6 +241,7 @@ class GroupByViewWidget(PluginWidget):
         self.view.tableview.doubleClicked.connect(self.on_double_click)
 
         self.setWindowTitle(self.tr("Group By"))
+        self.setWindowIcon(FIcon(0xF126F))
 
         layout = QVBoxLayout(self)
         layout.addWidget(self.field_select_combo)

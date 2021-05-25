@@ -1626,16 +1626,25 @@ def get_variant_as_group(
     fields: list,
     source: str,
     filters: dict,
-    order_by="count",
+    order_by_count=True,
+    order_desc=True,
     limit=50,
 ):
 
+    order_by = "count" if order_by_count else groupby
+    order_desc = "DESC" if order_desc else "ASC"
+
     subquery = qb.build_sql_query(
-        conn, fields=fields, source=source, filters=filters, limit=None
+        conn,
+        fields=fields,
+        source=source,
+        filters=filters,
+        order_desc=order_desc,
+        limit=None,
     )
 
     query = f"""SELECT `{groupby}`, COUNT(`{groupby}`) AS count
-    FROM ({subquery}) GROUP BY `{groupby}` ORDER BY count DESC LIMIT {limit}"""
+    FROM ({subquery}) GROUP BY `{groupby}` ORDER BY {order_by} {order_desc} LIMIT {limit}"""
     for i in conn.execute(query):
         yield dict(i)
 
