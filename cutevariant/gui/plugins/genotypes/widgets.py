@@ -51,6 +51,10 @@ class GenotypesModel(QAbstractTableModel):
                 icon = style.GENOTYPE.get(gt, style.GENOTYPE[-1])["icon"]
                 return QIcon(FIcon(icon))
 
+        if role == Qt.ForegroundRole and index.column() == 1:
+            phenotype = self.items[index.row()]["phenotype"]
+            return QColor("red") if phenotype == 1 else QColor("green")
+
     def headerData(
         self, section: int, orientation: Qt.Orientation, role: int
     ) -> typing.Any:
@@ -75,6 +79,16 @@ class GenotypesModel(QAbstractTableModel):
 
             self.endResetModel()
 
+    def sort(self, column: int, order: Qt.SortOrder) -> None:
+        self.beginResetModel()
+        sorting_key = "phenotype" if column == 1 else "genotype"
+        self.items = sorted(
+            self.items,
+            key=lambda i: i[sorting_key],
+            reverse=order == Qt.DescendingOrder,
+        )
+        self.endResetModel()
+
 
 class GenotypesWidget(plugin.PluginWidget):
     """Widget displaying the list of avaible selections.
@@ -94,7 +108,10 @@ class GenotypesWidget(plugin.PluginWidget):
 
         self.view = QTableView()
         self.view.setShowGrid(False)
+        self.view.setSortingEnabled(True)
         self.model = GenotypesModel()
+
+        self.setWindowIcon(FIcon(0xF0A8C))
 
         self.view.setModel(self.model)
 
