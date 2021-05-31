@@ -43,7 +43,7 @@ class GenotypesModel(QAbstractTableModel):
 
             if index.column() == 1:
                 phenotype = self.items[index.row()]["phenotype"]
-                return PHENOTYPE_STR.get(phenotype, 0)
+                return PHENOTYPE_STR.get(phenotype, PHENOTYPE_STR[0])
 
         if role == Qt.DecorationRole:
             if index.column() == 0:
