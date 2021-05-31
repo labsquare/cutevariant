@@ -162,12 +162,12 @@ class FieldsCompleter(QCompleter):
         self.setModel(self.source_model)
 
     def setModel(self, model):
-        """ override """
+        """override"""
         self.source_model = model
         super().setModel(self.source_model)
 
     def updateModel(self):
-        """ update model from sql like """
+        """update model from sql like"""
         if not self.conn or not self.field_name:
             return
 
@@ -272,7 +272,7 @@ class IntFieldEditor(BaseFieldEditor):
         return value
 
     def set_range(self, min_, max_):
-        """ Limit editor with a range of value """
+        """Limit editor with a range of value"""
         self.validator.setRange(min_, max_)
 
 
@@ -401,7 +401,7 @@ class WordSetEditor(BaseFieldEditor):
         self.combo.addItems(wordsets)
 
     def set_mode(self, mode="list"):
-        """ set mode with either 'list' or 'wordset' """
+        """set mode with either 'list' or 'wordset'"""
 
         if mode == "list":
             self.stack.setCurrentIndex(0)
@@ -1128,7 +1128,7 @@ class FilterModel(QAbstractItemModel):
             return QModelIndex()
 
     def parent(self, index: QModelIndex) -> QModelIndex:
-        """Overrided Qt methods: Create parent from index """
+        """Overrided Qt methods: Create parent from index"""
         if not index.isValid():
             return QModelIndex()
 
@@ -1280,7 +1280,7 @@ class FilterModel(QAbstractItemModel):
             self.filtersChanged.emit()
 
     def rowCount(self, parent=QModelIndex()) -> int:
-        """Overrided Qt methods: return row count according parent """
+        """Overrided Qt methods: return row count according parent"""
         if parent.column() > 0:
             return 0
 
@@ -1292,12 +1292,12 @@ class FilterModel(QAbstractItemModel):
         return len(parent_item.children)
 
     def columnCount(self, parent=QModelIndex()) -> int:
-        """ Overrided Qt methods: return column count according parent """
+        """Overrided Qt methods: return column count according parent"""
 
         return 5
 
     def flags(self, index) -> Qt.ItemFlags:
-        """ Overrided Qt methods: return Qt flags to make item editable and selectable """
+        """Overrided Qt methods: return Qt flags to make item editable and selectable"""
 
         if not index.isValid():
             return 0
@@ -1390,9 +1390,9 @@ class FilterModel(QAbstractItemModel):
         Returns:
             Qt.DropAction
         """
-        return Qt.MoveAction
+        return Qt.MoveAction | Qt.CopyAction
 
-    def dropMimeData(self, data, action, row, column, parent) -> bool:
+    def dropMimeData(self, data: QMimeData, action, row, column, parent) -> bool:
         """Overrided Qt methods: This method is called when item is dropped by drag/drop.
         data is QMimeData and it contains a pickle serialization of current dragging item.
         Get back item by unserialize data.data().
@@ -1407,8 +1407,13 @@ class FilterModel(QAbstractItemModel):
         Returns:
             bool: return True if success otherwise return False
         """
-        if action != Qt.MoveAction:
+        if action != Qt.MoveAction or action != Qt.CopyAction:
             return False
+
+        if data.hasText():
+            field_names = json.loads(data.text()).get("fields")
+            print(field_names)
+            return True
 
         if not data.data(self._MIMEDATA):
             return False
@@ -2005,7 +2010,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.view.setAlternatingRowColors(True)
         self.view.setAcceptDrops(True)
         self.view.setDragEnabled(True)
-        self.view.setDragDropMode(QAbstractItemView.InternalMove)
+        self.view.setDragDropMode(QAbstractItemView.DragDrop)
         self.view.header().setStretchLastSection(False)
         self.view.header().setSectionResizeMode(COLUMN_FIELD, QHeaderView.Interactive)
         self.view.header().setSectionResizeMode(COLUMN_OPERATOR, QHeaderView.Fixed)
@@ -2174,7 +2179,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
     @property
     def filter_path(self):
-        """ Return filter path from settings """
+        """Return filter path from settings"""
         settings = QSettings()
         settings.beginGroup(self.plugin_name)
         return settings.value(
@@ -2241,12 +2246,12 @@ class FiltersEditorWidget(plugin.PluginWidget):
             self._update_view_geometry()
 
     def to_json(self):
-        """override """
+        """override"""
 
         return {"filters": self.filters}
 
     def from_json(self, data):
-        """ override """
+        """override"""
         if "filters" in data:
             self.filters = data["filters"]
 

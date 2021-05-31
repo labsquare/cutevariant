@@ -4,6 +4,7 @@ import json
 import os
 import glob
 from functools import lru_cache
+import typing
 
 from cutevariant.gui import plugin, FIcon, style
 from cutevariant.core import sql
@@ -111,6 +112,9 @@ class FieldsModel(QStandardItemModel):
                 selected_fields.append(item.data()["name"])
         return selected_fields
 
+    def flags(self, index: QModelIndex) -> Qt.ItemFlags:
+        return super().flags(index) | Qt.ItemIsDragEnabled
+
     @checked_fields.setter
     def checked_fields(self, fields: List[str]):
         """Check fields according name
@@ -177,6 +181,13 @@ class FieldsModel(QStandardItemModel):
                     self.appendRow([field_name_item, descr_item])
                     self.fields_loaded.emit()
 
+    def mimeData(self, indexes: typing.List[QModelIndex]) -> QMimeData:
+        field_names = [idx.data(Qt.DisplayRole) for idx in indexes if idx.column() == 0]
+        internal_dict = {"fields": field_names}
+        res = QMimeData()
+        res.setText(json.dumps(internal_dict))
+        return res
+
     def to_file(self, filename: str):
         """Serialize checked fields to a json file
 
@@ -242,6 +253,8 @@ class FieldsWidget(QWidget):
         view.setWordWrap(True)
         view.verticalHeader().hide()
         view.setSortingEnabled(True)
+
+        view.setDragEnabled(True)
 
         proxy.setRecursiveFilteringEnabled(True)
         proxy.setFilterCaseSensitivity(Qt.CaseInsensitive)
@@ -527,12 +540,12 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self.on_apply()
 
     def on_open_project(self, conn):
-        """ Overrided from PluginWidget """
+        """Overrided from PluginWidget"""
         self.widget_fields.conn = conn
         self.on_refresh()
 
     def on_refresh(self):
-        """ overrided from PluginWidget """
+        """overrided from PluginWidget"""
         if self.mainwindow:
             self._is_refreshing = True
             self.widget_fields.checked_fields = self.mainwindow.get_state_data("fields")
@@ -550,12 +563,12 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self.mainwindow.refresh_plugins(sender=self)
 
     def to_json(self):
-        """ override from plugins: Serialize plugin state """
+        """override from plugins: Serialize plugin state"""
 
         return {"checked_fields": self.widget_fields.checked_fields}
 
     def from_json(self, data):
-        """ override from plugins: Unzerialize plugin state """
+        """override from plugins: Unzerialize plugin state"""
 
         if "checked_fields" in data:
             self.widget_fields.checked_fields = data["checked_fields"]
