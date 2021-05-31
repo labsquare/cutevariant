@@ -69,7 +69,7 @@ class VcfReader(AbstractReader):
         """
         # Note: number of lines is computed in parent class
         super().__init__(device)
-        vcf_reader = vcf.VCFReader(device, strict_whitespace=True)
+        vcf_reader = vcf.VCFReader(device, strict_whitespace=True, encoding="utf-8")
         self.samples = vcf_reader.samples
         self.annotation_parser = None
         self.metadata = vcf_reader.metadata
@@ -165,7 +165,7 @@ class VcfReader(AbstractReader):
         # loop over record
         self.device.seek(0)
         vcf_reader = vcf.VCFReader(
-            self.device, strict_whitespace=True
+            self.device, strict_whitespace=True, encoding="utf-8"
         )  # TODO use class attr
 
         # Genotype format fields
@@ -294,7 +294,9 @@ class VcfReader(AbstractReader):
 
         # Read VCF
         self.device.seek(0)
-        vcf_reader = vcf.VCFReader(self.device, strict_whitespace=True)
+        vcf_reader = vcf.VCFReader(
+            self.device, strict_whitespace=True, encoding="utf-8"
+        )
 
         # Read VCF INFO fields
         for field_name, info in vcf_reader.infos.items():
