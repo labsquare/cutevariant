@@ -16,7 +16,8 @@ from cutevariant.commons import logger, DEFAULT_SELECTION_NAME
 
 LOGGER = logger()
 
-PHENOTYPE_STR = {0: "unaffected", 1: "affected"}
+PHENOTYPE_STR = {0: "Missing", 1: "Unaffected", 2: "Affected"}
+PHENOTYPE_COLOR = {0: QColor("lightgray"), 1: QColor("green"), 2: QColor("red")}
 
 
 class GenotypesModel(QAbstractTableModel):
@@ -24,7 +25,7 @@ class GenotypesModel(QAbstractTableModel):
         super().__init__(parent)
         self.items = []
         self.conn = None
-        self._headers = ["gene", "phenotype"]
+        self._headers = ["genotype", "phenotype"]
 
     def rowCount(self, parent: QModelIndex) -> int:
         return len(self.items)
@@ -53,7 +54,7 @@ class GenotypesModel(QAbstractTableModel):
 
         if role == Qt.ForegroundRole and index.column() == 1:
             phenotype = self.items[index.row()]["phenotype"]
-            return QColor("red") if phenotype == 1 else QColor("green")
+            return PHENOTYPE_COLOR.get(phenotype, PHENOTYPE_COLOR[0])
 
     def headerData(
         self, section: int, orientation: Qt.Orientation, role: int
