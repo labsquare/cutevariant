@@ -16,7 +16,8 @@ from cutevariant.commons import logger, DEFAULT_SELECTION_NAME
 
 LOGGER = logger()
 
-PHENOTYPE_STR = {0: "unaffected", 1: "affected"}
+PHENOTYPE_STR = {0: "Missing", 1: "Unaffected", 2: "Affected"}
+PHENOTYPE_COLOR = {0: QColor("lightgray"), 1: QColor("green"), 2: QColor("red")}
 
 
 class GenotypesModel(QAbstractTableModel):
@@ -24,7 +25,7 @@ class GenotypesModel(QAbstractTableModel):
         super().__init__(parent)
         self.items = []
         self.conn = None
-        self._headers = ["gene", "phenotype"]
+        self._headers = ["genotype", "phenotype"]
 
     def rowCount(self, parent: QModelIndex) -> int:
         return len(self.items)
@@ -43,13 +44,17 @@ class GenotypesModel(QAbstractTableModel):
 
             if index.column() == 1:
                 phenotype = self.items[index.row()]["phenotype"]
-                return PHENOTYPE_STR.get(phenotype, 0)
+                return PHENOTYPE_STR.get(phenotype, PHENOTYPE_STR[0])
 
         if role == Qt.DecorationRole:
             if index.column() == 0:
                 gt = self.items[index.row()]["genotype"]
                 icon = style.GENOTYPE.get(gt, style.GENOTYPE[-1])["icon"]
                 return QIcon(FIcon(icon))
+
+        if role == Qt.ForegroundRole and index.column() == 1:
+            phenotype = self.items[index.row()]["phenotype"]
+            return PHENOTYPE_COLOR.get(phenotype, PHENOTYPE_COLOR[0])
 
     def headerData(
         self, section: int, orientation: Qt.Orientation, role: int
@@ -75,6 +80,16 @@ class GenotypesModel(QAbstractTableModel):
 
             self.endResetModel()
 
+    def sort(self, column: int, order: Qt.SortOrder) -> None:
+        self.beginResetModel()
+        sorting_key = "phenotype" if column == 1 else "genotype"
+        self.items = sorted(
+            self.items,
+            key=lambda i: i[sorting_key],
+            reverse=order == Qt.DescendingOrder,
+        )
+        self.endResetModel()
+
 
 class GenotypesWidget(plugin.PluginWidget):
     """Widget displaying the list of avaible selections.
@@ -94,7 +109,10 @@ class GenotypesWidget(plugin.PluginWidget):
 
         self.view = QTableView()
         self.view.setShowGrid(False)
+        self.view.setSortingEnabled(True)
         self.model = GenotypesModel()
+
+        self.setWindowIcon(FIcon(0xF0A8C))
 
         self.view.setModel(self.model)
 
