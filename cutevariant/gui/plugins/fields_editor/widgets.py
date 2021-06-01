@@ -182,11 +182,16 @@ class FieldsModel(QStandardItemModel):
                     self.fields_loaded.emit()
 
     def mimeData(self, indexes: typing.List[QModelIndex]) -> QMimeData:
-        field_names = [idx.data(Qt.DisplayRole) for idx in indexes if idx.column() == 0]
+        field_names = [
+            idx.data(Qt.UserRole + 1)["name"] for idx in indexes if idx.column() == 0
+        ]
         internal_dict = {"fields": field_names}
         res = QMimeData()
         res.setText(json.dumps(internal_dict))
         return res
+
+    def mimeTypes(self) -> typing.List[str]:
+        return ["application/text"]
 
     def to_file(self, filename: str):
         """Serialize checked fields to a json file

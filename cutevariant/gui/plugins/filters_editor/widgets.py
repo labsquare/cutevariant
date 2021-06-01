@@ -1,4 +1,5 @@
 # Standard imports
+from logging import Filter
 import sys
 import json
 import os
@@ -1392,7 +1393,9 @@ class FilterModel(QAbstractItemModel):
         """
         return Qt.MoveAction | Qt.CopyAction
 
-    def dropMimeData(self, data: QMimeData, action, row, column, parent) -> bool:
+    def dropMimeData(
+        self, data: QMimeData, action, row, column, parent: QModelIndex
+    ) -> bool:
         """Overrided Qt methods: This method is called when item is dropped by drag/drop.
         data is QMimeData and it contains a pickle serialization of current dragging item.
         Get back item by unserialize data.data().
@@ -1407,13 +1410,22 @@ class FilterModel(QAbstractItemModel):
         Returns:
             bool: return True if success otherwise return False
         """
-        if action != Qt.MoveAction or action != Qt.CopyAction:
+
+        if action != Qt.MoveAction and action != Qt.CopyAction:
             return False
 
         if data.hasText():
             field_names = json.loads(data.text()).get("fields")
-            print(field_names)
-            return True
+            if parent and parent.internalPointer().type == FilterItem.LOGIC_TYPE:
+
+                return all(
+                    [
+                        self.add_condition_item((field_name, "$eq", ""), parent)
+                        for field_name in field_names
+                    ]
+                )
+
+            return False
 
         if not data.data(self._MIMEDATA):
             return False
@@ -1473,6 +1485,16 @@ class FilterModel(QAbstractItemModel):
         for row in range(self.rowCount(index)):
             cindex = self.index(row, 0, index)
             self.set_recursive_check_state(cindex, checked)
+
+    def canDropMimeData(
+        self,
+        data: QMimeData,
+        action: Qt.DropAction,
+        row: int,
+        column: int,
+        parent: QModelIndex,
+    ) -> bool:
+        return True
 
 
 class FilterDelegate(QStyledItemDelegate):
@@ -2011,6 +2033,8 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.view.setAcceptDrops(True)
         self.view.setDragEnabled(True)
         self.view.setDragDropMode(QAbstractItemView.DragDrop)
+        self.view.setAcceptDrops(True)
+        # self.view.setDropIndicatorShown(True)
         self.view.header().setStretchLastSection(False)
         self.view.header().setSectionResizeMode(COLUMN_FIELD, QHeaderView.Interactive)
         self.view.header().setSectionResizeMode(COLUMN_OPERATOR, QHeaderView.Fixed)
@@ -2554,7 +2578,7 @@ if __name__ == "__main__":
     view.setDragEnabled(True)
     view.setDropIndicatorShown(True)
     view.setSelectionBehavior(QAbstractItemView.SelectRows)
-    view.setDragDropMode(QAbstractItemView.InternalMove)
+    view.setDragDropMode(QAbstractItemView.DragDrop)
 
     model.conn = conn
     model.load(data)
