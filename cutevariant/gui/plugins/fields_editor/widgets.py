@@ -186,12 +186,12 @@ class FieldsModel(QStandardItemModel):
             idx.data(Qt.UserRole + 1)["name"] for idx in indexes if idx.column() == 0
         ]
         internal_dict = {"fields": field_names}
-        res = QMimeData()
+        res = QMimeData("application/json")
         res.setText(json.dumps(internal_dict))
         return res
 
     def mimeTypes(self) -> typing.List[str]:
-        return ["application/text"]
+        return ["application/json"]
 
     def to_file(self, filename: str):
         """Serialize checked fields to a json file
@@ -252,7 +252,7 @@ class FieldsWidget(QWidget):
         view.horizontalHeader().setStretchLastSection(True)
         view.setIconSize(QSize(16, 16))
         view.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        view.setSelectionMode(QAbstractItemView.SingleSelection)
+        view.setSelectionMode(QAbstractItemView.ExtendedSelection)
         view.setSelectionBehavior(QAbstractItemView.SelectRows)
         view.setAlternatingRowColors(False)
         view.setWordWrap(True)
