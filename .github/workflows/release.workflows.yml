@@ -35,17 +35,24 @@ jobs:
       - name: create binary 
         run: pyinstaller -i icon.ico --name="cutevariant_${{matrix.architecture}}" --hidden-import json --add-data "cutevariant;cutevariant" cutevariant\__main__.py
 
+      - name: Compress zip 
+        uses: papeloto/action-zip@v1
+        with:
+          files: dist/
+          dest: cutevariant-standalone-${{matrix.architecture}}.zip
+
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
           name: cutevariant-standalone-${{matrix.architecture}}
           path: dist
 
+
       - name: Publish 
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: 'dist/*cutevariant*'
+          files: '*.zip'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
