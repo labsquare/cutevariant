@@ -1,9 +1,8 @@
-site_name: Cutevariant Doc
+site_name: Cutevariant
 site_author: Sacha Schutz, Charles Monod-Broca
 site_description: >-
-  Find the documentation of cutevariant, with material for both developers and geneticians !
-  You will find how to use cutevariant, tips and tricks, and if you're a developer wishing to contribute,
-  here you will find a complete API reference to add features to cutevariant.
+  Cutevariant is a cross-plateform application dedicated to maniupulate and filter variation 
+  from annotated VCF file. Here you will find documentation for both user and developers wishing to contribute,
 theme:
   name: material
   features:
@@ -21,7 +20,7 @@ theme:
         icon: material/toggle-switch
         name: Switch to light mode
   favicon: 'assets/favicon.png'
-  logo: 'assets/favicon.png'
+  logo: 'assets/icon_white.png'
 markdown_extensions:
 - footnotes
 - pymdownx.emoji:
