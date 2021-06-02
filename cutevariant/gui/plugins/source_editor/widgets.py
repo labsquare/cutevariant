@@ -142,6 +142,21 @@ class SourceModel(QAbstractTableModel):
                 "id", None
             )  # For debug purpose . displayed in vertical header
 
+    def record(self, index: QModelIndex()) -> dict:
+        """Return source item
+
+        See ```cutevariant.sql.get_selection```
+
+        Args:
+            index (QModelIndex)
+
+        Returns:
+            dict
+        """
+        if not index.isValid():
+            return None
+        return self.records[index.row()]
+
     def find_record(self, name: str) -> QModelIndex:
         """Find a record by name
 
