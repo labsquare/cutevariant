@@ -41,6 +41,10 @@ nav:
     - Getting started:
       - Installation: 'installation.md'
       - Quick start: 'quick-start.md'
+    - Examples:
+      - Find CFTR tutorial (basic): 'tutorials/basic-tutorial.md'
+      - Add annotation reference database (intermediate): 'tutorials/add-annotation-reference.md'
+    - Documentation:
       - Plugins:
         - Fields : 'plugins/fields.md'
         - Filters : 'plugins/filters.md'
@@ -76,6 +80,5 @@ nav:
           #   - Ped Writer: ''
           #   - VCF Writer: ''
         - GUI classes: 'developer/api-documentation/gui-classes.md'
-    - About: 'about.md'
 
 repo_url: "https://github.com/labsquare/cutevariant"

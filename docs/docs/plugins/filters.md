@@ -62,7 +62,7 @@ Usage example:
 
 This will select every variant for which the gene annotation is in the wordset `My wordset`. Note the use of the `IN` operator, that can be negated with `NOT IN`.
 
-To keep track of existing wordsets, create new ones, and modify them, there is a wordset plugin, which usage is described [here](../quick-start/wordset.md).
+To keep track of existing wordsets, create new ones, and modify them, there is a wordset plugin, which usage is described [here](../plugins/wordset.md).
 
 #### Using string lists
 
@@ -77,7 +77,7 @@ You can specify as many values as you want, as long as you quote the reference s
 
 Note though, that if you have too many strings to test against one field, you may end up cluttering the VQL expression and make it hard to read.
 
-If you need to do really complex filtering operations, you can break them down by creating new [sources](../quick-start/selections.md)[^1], *a.k.a.* selections.
+If you need to do really complex filtering operations, you can break them down by creating new [sources](../plugins/selections.md)[^1], *a.k.a.* selections.
 
 ### Number operators
 
