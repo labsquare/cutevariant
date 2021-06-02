@@ -3,8 +3,68 @@ site_author: Sacha Schutz, Charles Monod-Broca
 site_description: >-
   Cutevariant is a cross-plateform application dedicated to maniupulate and filter variation 
   from annotated VCF file. Here you will find documentation for both user and developers wishing to contribute,
+
+
+# Setting up the headers
+nav:
+    - Home: 'index.md'
+    - Getting started:
+      - Installation: 'installation.md'
+      - Quick start: 'quick-start.md'
+    - Examples:
+      - Find CFTR tutorial (basic): 'tutorials/basic-tutorial.md'
+      - Add annotation reference database (intermediate): 'tutorials/add-annotation-reference.md'
+    - Documentation:
+      - Plugins:
+        - Fields : 'plugins/fields.md'
+        - Filters : 'plugins/filters.md'
+        - Wordsets : 'plugins/wordset.md'
+        - Selections : 'plugins/selections.md'
+        - Gene viewer : 'plugins/gene-viewer.md'
+        - Variant view : 'plugins/variant-view.md'
+        - VQL editor : 'plugins/vql-editor.md'
+      - VQL: 'vql.md'
+    - Developer:
+      - Installation: 'developer/install-for-dev.md'
+      - Customization:
+        - Create a plugin: 'developer/customization/create-plugin.md'
+        - Create a formatter: 'developer/customization/create-formatter.md'
+        - Create a writer: 'developer/customization/create-writer.md'
+        - Create a reader: 'developer/customization/create-reader.md'
+      # - API Documentation:
+      #   - Core classes:
+          # - SQL: 'developer/api-documentation/sql.md'
+          # - VQL: 'developer/api-documentation/vql.md'
+          # - Reader: 'developer/api-documentation/reader.md'
+          # - Writer: 'developer/api-documentation/writer.md'
+          # - VQL: ''
+          # - Readers:
+          #   - Abstract Reader: ''
+          #   - Annotation Parser: ''
+          #   - Bed Reader: ''
+          #   - CSV Reader: ''
+          #   - Fake Reader: ''
+          #   - Ped Reader: ''
+          #   - VCF Reader: ''
+          # - Writers:
+          #   - Abstract Writer: ''
+          #   - Bed Writer: ''
+          #   - CSV Writer: ''
+          #   - Ped Writer: ''
+          #   - VCF Writer: ''
+        - GUI classes: 'developer/api-documentation/gui-classes.md'
+
+
+extra_css:
+  - stylesheets/extra.css
+
 theme:
   name: material
+
+  custom_dir: docs/theme_override_home/
+  include_search_page: false
+  search_index_only: true
+
   features:
     - navigation.tabs
     - navigation.top
@@ -33,54 +93,5 @@ markdown_extensions:
 plugins:
   - search
   - mkdocstrings
-
-# Setting up the headers
-nav:
-    - Home: 'index.md'
-    - Getting started:
-      - Installation: 'installation.md'
-      - Quick start: 'quick-start.md'
-    - Examples:
-      - Find CFTR tutorial (basic): 'tutorials/basic-tutorial.md'
-      - Add annotation reference database (intermediate): 'tutorials/add-annotation-reference.md'
-    - Documentation:
-      - Plugins:
-        - Fields : 'plugins/fields.md'
-        - Filters : 'plugins/filters.md'
-        - Wordsets : 'plugins/wordset.md'
-        - Selections : 'plugins/selections.md'
-        - Gene viewer : 'plugins/gene-viewer.md'
-        - Variant view : 'plugins/variant-view.md'
-        - VQL editor : 'plugins/vql-editor.md'
-      - VQL: 'vql.md'
-    - Developer:
-      - Installation: 'developer/install-for-dev.md'
-      - Customization:
-        - Create a plugin: 'developer/customization/create-plugin.md'
-        - Create a formatter: 'developer/customization/create-formatter.md'
-        - Create a writer: 'developer/customization/create-writer.md'
-        - Create a reader: 'developer/customization/create-reader.md'
-      - API Documentation:
-        - Core classes:
-          - SQL: 'developer/api-documentation/sql.md'
-          - VQL: 'developer/api-documentation/vql.md'
-          - Reader: 'developer/api-documentation/reader.md'
-          - Writer: 'developer/api-documentation/writer.md'
-          # - VQL: ''
-          # - Readers:
-          #   - Abstract Reader: ''
-          #   - Annotation Parser: ''
-          #   - Bed Reader: ''
-          #   - CSV Reader: ''
-          #   - Fake Reader: ''
-          #   - Ped Reader: ''
-          #   - VCF Reader: ''
-          # - Writers:
-          #   - Abstract Writer: ''
-          #   - Bed Writer: ''
-          #   - CSV Writer: ''
-          #   - Ped Writer: ''
-          #   - VCF Writer: ''
-        - GUI classes: 'developer/api-documentation/gui-classes.md'
 
 repo_url: "https://github.com/labsquare/cutevariant"
