@@ -4,8 +4,7 @@
 
 A preprint is [available in bioRxiv](https://www.biorxiv.org/content/10.1101/2021.02.10.430619v1)
 
-![CI](https://github.com/labsquare/cutevariant/workflows/CI/badge.svg)
-
+[![Test](https://github.com/labsquare/cutevariant/actions/workflows/test.workflows.yml/badge.svg)](https://github.com/labsquare/cutevariant/actions/workflows/test.workflows.yml)
 
 
 Cutevariant is a cross-plateform application dedicated to maniupulate and filter variation from annotated VCF file. 
