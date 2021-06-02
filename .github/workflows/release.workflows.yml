@@ -1,10 +1,15 @@
 name: Release
 
+  
 # when it active ? 
 on: 
   push:
     tags:
       - '*'
+    branches:
+      - master
+
+jobs:
 
   # WINDOWS JOB 
   windows:
