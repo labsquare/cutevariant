@@ -110,6 +110,9 @@ class SourceModel(QAbstractTableModel):
         if role == Qt.UserRole:
             return self.records[index.row()]
 
+        if role == Qt.UserRole:
+            return self.records[index.row()]
+
         return None
 
     def headerData(
@@ -138,21 +141,6 @@ class SourceModel(QAbstractTableModel):
             return self.records[section].get(
                 "id", None
             )  # For debug purpose . displayed in vertical header
-
-    def record(self, index: QModelIndex()) -> dict:
-        """Return source item
-
-        See ```cutevariant.sql.get_selection```
-
-        Args:
-            index (QModelIndex)
-
-        Returns:
-            dict
-        """
-        if not index.isValid():
-            return None
-        return self.records[index.row()]
 
     def find_record(self, name: str) -> QModelIndex:
         """Find a record by name
