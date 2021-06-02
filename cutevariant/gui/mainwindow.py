@@ -932,9 +932,9 @@ class MainWindow(QMainWindow):
             self.conn,
             chosen_ext,
             file_name,
-            fields=self.state.fields,
-            source=self.state.source,
-            filters=self.state.filters,
+            fields=self.get_state_data("fields"),
+            source=self.get_state_data("source"),
+            filters=self.get_state_data("filters"),
         )
 
         # # TODO : refactor self.state
