@@ -2,6 +2,11 @@ name: CI
 
 # when it active ? 
 on: 
+  workflow_dispatch:
+    inputs:
+      name:
+        description: "run name"
+        default: "default"
   push:
     branches:
       - devel
