@@ -101,7 +101,7 @@ class MainWindow(QMainWindow):
         # State variable of application changed by plugins
         self._state_data = StateData(
             {
-                "fields": ["chr", "pos", "ref", "alt"],
+                "fields": ["favorite", "classification", "chr", "pos", "ref", "alt"],
                 "source": "variants",
                 "filters": {},
             }
@@ -533,7 +533,6 @@ class MainWindow(QMainWindow):
         # Clear memoization cache for count_cmd
         # Clear State variable of application
         # store fields, source, filters, group_by, having data
-        self.state = {"fields": ["chr"], "source": "variants", "filters": {}}
 
         # Load previous window state for this project (file_path being the key for the settings)
         file_path = get_database_file_name(conn)
