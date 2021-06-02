@@ -25,7 +25,7 @@ from cutevariant.core.querybuilder import build_sql_query
 from cutevariant.core import sql
 
 from cutevariant.core import command as cmd
-from cutevariant.gui import plugin, FIcon, formatter, style
+from cutevariant.gui import mainwindow, plugin, FIcon, formatter, style
 from cutevariant.gui.sql_thread import SqlThread
 from cutevariant.gui.widgets import MarkdownEditor
 import cutevariant.commons as cm
@@ -133,12 +133,12 @@ class VariantModel(QAbstractTableModel):
 
     @property
     def conn(self):
-        """ Return sqlite connection """
+        """Return sqlite connection"""
         return self._conn
 
     @conn.setter
     def conn(self, conn):
-        """ Set sqlite connection """
+        """Set sqlite connection"""
         self._conn = conn
         if conn:
             # Note: model is initialized with None connection during start
@@ -176,7 +176,7 @@ class VariantModel(QAbstractTableModel):
         return 0
 
     def clear_all_cache(self):
-        """ clear cache """
+        """clear cache"""
         self.clear_count_cache()
         self.clear_variant_cache()
 
@@ -187,7 +187,7 @@ class VariantModel(QAbstractTableModel):
         self._load_count_cache.clear()
 
     def cache_size(self):
-        """ Return total cache size """
+        """Return total cache size"""
         return self._load_variant_cache.currsize
 
     def max_cache_size(self):
@@ -270,6 +270,9 @@ class VariantModel(QAbstractTableModel):
                 if self.fields_descriptions and section != 0:
                     field_name = self.fields[section - 1]
                     return self.fields_descriptions.get(field_name)
+
+            if role == Qt.SizeHintRole:
+                return QSize(0, 20)
 
     def update_variant(self, row: int, variant: dict):
         """Update a variant at the given row with given content
@@ -460,9 +463,6 @@ class VariantModel(QAbstractTableModel):
 
         #  Compute time elapsed since loading
 
-        self._end_timer = time.perf_counter()
-        self.elapsed_time = self._end_timer - self._start_timer
-
         self.beginResetModel()
         self.variants.clear()
 
@@ -490,6 +490,8 @@ class VariantModel(QAbstractTableModel):
         #  Test if both thread are finished
         self._finished_thread_count += 1
         if self._finished_thread_count == 2:
+            self._end_timer = time.perf_counter()
+            self.elapsed_time = self._end_timer - self._start_timer
             self.load_finished.emit()
 
     def _on_count_loaded(self):
@@ -508,38 +510,40 @@ class VariantModel(QAbstractTableModel):
         #  Test if both thread are finished
         self._finished_thread_count += 1
         if self._finished_thread_count == 2:
+            self._end_timer = time.perf_counter()
+            self.elapsed_time = self._end_timer - self._start_timer
             self.load_finished.emit()
 
     def hasPage(self, page: int) -> bool:
-        """ Return True if <page> exists otherwise return False """
+        """Return True if <page> exists otherwise return False"""
         return (page - 1) >= 0 and (page - 1) * self.limit < self.total
 
     def setPage(self, page: int):
-        """ set the page of the model """
+        """set the page of the model"""
         if self.hasPage(page):
             self.page = page
 
     def nextPage(self):
-        """ Set model to the next page """
+        """Set model to the next page"""
         if self.hasPage(self.page + 1):
             self.setPage(self.page + 1)
 
     def previousPage(self):
-        """ Set model to the previous page """
+        """Set model to the previous page"""
         if self.hasPage(self.page - 1):
             self.setPage(self.page - 1)
 
     def firstPage(self):
-        """ Set model to the first page """
+        """Set model to the first page"""
         self.setPage(1)
 
     def lastPage(self):
-        """ Set model to the last page """
+        """Set model to the last page"""
 
         self.setPage(self.pageCount())
 
     def pageCount(self):
-        """ Return total page count """
+        """Return total page count"""
         return math.ceil(self.total / self.limit)
 
     def sort(self, column: int, order):
@@ -784,6 +788,7 @@ class VariantView(QWidget):
         # Queries are finished (yes its redundant with loading signal...)
         self.model.variant_loaded.connect(self._on_variant_loaded)
         self.model.count_loaded.connect(self._on_count_loaded)
+        self.model.load_finished.connect(self._on_load_finished)
 
         self.model.count_is_loading.connect(self.set_tool_loading)
         self.model.variant_is_loading.connect(self.set_view_loading)
@@ -815,6 +820,11 @@ class VariantView(QWidget):
     #     else:
     #         self.view.stop_loading()
 
+    def set_auto_resize(self, accept=True):
+        """change column resize mode"""
+        mode = QHeaderView.ResizeToContents if accept else QHeaderView.Interactive
+        self.view.horizontalHeader().setSectionResizeMode(mode)
+
     def setModel(self, model: VariantModel):
         self.model = model
         self.view.setModel(model)
@@ -844,8 +854,6 @@ class VariantView(QWidget):
         #         self.select_row(0)
         #     else:
         #         self.no_variant.emit()
-
-        self.time_label.setText(str(" Executed in %.2gs " % (self.model.elapsed_time)))
         cache = cm.bytes_to_readable(self.model.cache_size())
         max_cache = cm.bytes_to_readable(self.model.max_cache_size())
         self.cache_label.setText(str(" Cache {} of {}".format(cache, max_cache)))
@@ -874,6 +882,9 @@ class VariantView(QWidget):
 
         #  Set focus to view ! Otherwise it stay on page_box
         self.view.setFocus(Qt.ActiveWindowFocusReason)
+
+    def _on_load_finished(self):
+        self.time_label.setText(str(" Executed in %.2gs " % (self.model.elapsed_time)))
 
     def set_formatter(self, formatter):
         self.delegate.formatter = formatter
@@ -1274,10 +1285,8 @@ class VariantViewWidget(plugin.PluginWidget):
     variant_clicked = Signal(dict)
     LOCATION = plugin.CENTRAL_LOCATION
 
-    # Emitted when the variants are both counted and loaded in the view. Provides the variants count and the elapsed time (in seconds) to execute the query
-    variants_load_finished = Signal(int, float)
-
     ENABLE = True
+    REFRESH_STATE_DATA = {"fields", "filters", "source"}
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -1307,13 +1316,6 @@ class VariantViewWidget(plugin.PluginWidget):
         # PS: Actions with QAction::LowPriority will not show the text labels
         self.top_bar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
 
-        # Save selection
-        self.save_action = self.top_bar.addAction(
-            FIcon(0xF0F87), self.tr("Save selection"), self.on_save_selection
-        )
-        self.save_action.setToolTip(
-            self.tr("Save the current variants into a new selection")
-        )
         # self.save_action.setPriority(QAction.LowPriority)
 
         # Refresh UI button
@@ -1329,8 +1331,12 @@ class VariantViewWidget(plugin.PluginWidget):
         )
         action.setToolTip(self.tr("Stop current query"))
 
-        #  edit action
-        # TODO : move into view
+        self.resize_action = self.top_bar.addAction(
+            FIcon(0xF142A), self.tr("Auto resize")
+        )
+
+        self.resize_action.setCheckable(True)
+        self.resize_action.triggered.connect(self.main_right_pane.set_auto_resize)
 
         # Formatter tools
         self.top_bar.addSeparator()
@@ -1367,17 +1373,22 @@ class VariantViewWidget(plugin.PluginWidget):
         )
 
         self.main_right_pane.error_raised.connect(self.set_message)
+        self.main_right_pane.model.load_finished.connect(self.on_load_finished)
 
-        # Connect model's signal load_finished to this signal's load_finished
-        self.main_right_pane.model.load_finished.connect(
-            lambda: self.variants_load_finished.emit(
-                self.main_right_pane.model.total,
-                self.main_right_pane.model.elapsed_time,
-            )
-        )
+    def on_load_finished(self):
+        """Triggered when variant load is finished
 
-        # Default group
-        self.last_group = ["chr"]
+        Notify all plugins registered to "executed_query_data"
+
+        """
+
+        executed_query_data = {
+            "count": self.main_right_pane.model.total,
+            "elapsed_time": self.main_right_pane.model.elapsed_time,
+        }
+
+        self.mainwindow.set_state_data("executed_query_data", executed_query_data)
+        self.mainwindow.refresh_plugins()
 
     def add_available_formatters(self):
         """Populate the formatters
@@ -1433,12 +1444,12 @@ class VariantViewWidget(plugin.PluginWidget):
         # See load(), we use this attr to restore fields after grouping
 
         if self.mainwindow:
-            self.save_fields = self.mainwindow.state.fields
-            self.save_filters = self.mainwindow.state.filters
+            self.save_fields = self.mainwindow.get_state_data("fields")
+            self.save_filters = self.mainwindow.get_state_data("filters")
 
-            self.main_right_pane.fields = self.mainwindow.state.fields
-            self.main_right_pane.source = self.mainwindow.state.source
-            self.main_right_pane.filters = self.mainwindow.state.filters
+            self.main_right_pane.fields = self.mainwindow.get_state_data("fields")
+            self.main_right_pane.source = self.mainwindow.get_state_data("source")
+            self.main_right_pane.filters = self.mainwindow.get_state_data("filters")
 
         # Set formatter
         formatter_class = self.formatter_combo.currentData()
@@ -1455,44 +1466,45 @@ class VariantViewWidget(plugin.PluginWidget):
     def on_interrupt(self):
         self.main_right_pane.model.interrupt()
 
-    def on_save_selection(self):
-        """Triggered on 'save_selection' button
+    # def on_save_selection(self):
+    #     """Triggered on 'save_selection' button
 
-        - This slot creates a new selection (aka source) from the current state.
-        - `source_editor` plugin will be refreshed.
-        """
+    #     - This slot creates a new selection (aka source) from the current state.
+    #     - `source_editor` plugin will be refreshed.
+    #     """
 
-        selection_name, accept = QInputDialog.getText(
-            self,
-            self.tr("Create a new selection"),
-            self.tr("Name of the new selection:"),
-        )
+    #     selection_name, accept = QInputDialog.getText(
+    #         self,
+    #         self.tr("Create a new selection"),
+    #         self.tr("Name of the new selection:"),
+    #     )
 
-        if not accept or not selection_name:
-            return
+    #     if not accept or not selection_name:
+    #         return
 
-        try:
-            result = cmd.create_cmd(
-                self.conn,
-                selection_name,
-                source=self.mainwindow.state.source,
-                filters=self.mainwindow.state.filters,
-                count=self.main_right_pane.model.total,
-            )
-            if result:
-                self.mainwindow.refresh_plugin("source_editor")
-        except Exception as e:
-            LOGGER.exception(e)
+    #     try:
+    #         result = cmd.create_cmd(
+    #             self.conn,
+    #             selection_name,
+    #             source=self.mainwindow.get_state_data("source"),
+    #             filters=self.mainwindow.get_state_data("filters"),
+    #             count=self.main_right_pane.model.total,
+    #         )
+    #         if result:
+    #             self.mainwindow.refresh_plugin("source_editor")
 
-            # Name already used
-            QMessageBox.critical(
-                self,
-                self.tr("Error while creating selection"),
-                self.tr("Error while creating selection '%s'; Name is already used")
-                % selection_name,
-            )
-            # Retry
-            self.on_save_selection()
+    #     except Exception as e:
+    #         LOGGER.exception(e)
+
+    #         # Name already used
+    #         QMessageBox.critical(
+    #             self,
+    #             self.tr("Error while creating selection"),
+    #             self.tr("Error while creating selection '%s'; Name is already used")
+    #             % selection_name,
+    #         )
+    #         # Retry
+    #         self.on_save_selection()
 
     def on_no_variant(self):
         """Slot called when left pane hasn't any variant to display
@@ -1534,15 +1546,9 @@ class VariantViewWidget(plugin.PluginWidget):
             variant = self.main_right_pane.model.variant(index.row())
 
         if self.mainwindow:
-            self.mainwindow.state.current_variant = variant
+            self.mainwindow.set_state_data("current_variant", variant)
             # Request a refresh of the variant_info plugin
-            self.mainwindow.refresh_plugin("variant_info")
-
-    def _refresh_vql_editor(self):
-        """Force refresh of vql_editor if loaded"""
-        if "vql_editor" in self.mainwindow.plugins:
-            # Request a refresh of the vql_editor plugin
-            self.mainwindow.refresh_plugin("vql_editor")
+            self.mainwindow.refresh_plugins(self)
 
     def copy(self):
         """Copy the selected variant(s) into the clipboard

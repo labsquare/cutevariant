@@ -1,6 +1,6 @@
 from PySide2.QtWidgets import QApplication
 
-__title__ = "VQL Editor"
+__title__ = "VQL editor"
 __description__ = "A VQL editor"
 __long_description__ = QApplication.instance().translate(
     "vql_editor",

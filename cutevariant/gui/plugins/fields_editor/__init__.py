@@ -1,6 +1,6 @@
 from PySide2.QtWidgets import QApplication
 
-__title__ = "Columns selector"
+__title__ = "Fields editor"
 __description__ = "A plugin to display fields "
 __long_description__ = QApplication.instance().translate(
     "fields_editor",

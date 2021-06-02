@@ -119,6 +119,7 @@ class PluginWidget(QWidget):
     LOCATION = DOCK_LOCATION
     ENABLE = False
     REFRESH_ONLY_VISIBLE = True
+    REFRESH_STATE_DATA = set()
 
     # This variable is set to False by the showEvent
     #  It is a hack to avoid calling load() 2 time by the showEvent in startup

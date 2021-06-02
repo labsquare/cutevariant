@@ -329,6 +329,7 @@ class VqlHistoryWidget(plugin.PluginWidget):
     LOCATION = plugin.FOOTER_LOCATION
     ENABLE = True
     REFRESH_ONLY_VISIBLE = False
+    REFRESH_STATE_DATA = {"executed_query_data"}
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -425,7 +426,8 @@ class VqlHistoryWidget(plugin.PluginWidget):
 
     def on_register(self, mainwindow: MainWindow):
         """ override  """
-        mainwindow.variants_load_finished.connect(self.on_variants_load_finished)
+        # mainwindow.variants_load_finished.connect(self.on_variants_load_finished)
+        pass
 
     def on_variants_load_finished(self, count: int, elapsed_time: float):
         """Triggered when variant has been loaded from variant_view plugin and store a records if required
@@ -436,9 +438,9 @@ class VqlHistoryWidget(plugin.PluginWidget):
         """
 
         vql_query = build_vql_query(
-            self.mainwindow.state.fields,
-            self.mainwindow.state.source,
-            self.mainwindow.state.filters,
+            self.mainwindow.get_state_data("fields"),
+            self.mainwindow.get_state_data("source"),
+            self.mainwindow.get_state_data("filters"),
         )
 
         #  Do not store same query consecutively
@@ -452,7 +454,11 @@ class VqlHistoryWidget(plugin.PluginWidget):
 
     def on_refresh(self):
         """override"""
-        pass
+        executed_query_data = self.mainwindow.get_state_data("executed_query_data")
+        if executed_query_data:
+            count = executed_query_data.get("count", 0)
+            elapsed_time = executed_query_data.get("elapsed_time", 0.0)
+            self.on_variants_load_finished(count, elapsed_time)
 
     def to_json(self):
         """ override """
@@ -472,9 +478,9 @@ class VqlHistoryWidget(plugin.PluginWidget):
         parsed_query = next(vql.parse_vql(query))
         print(parsed_query)
 
-        self.mainwindow.state.fields = parsed_query["fields"]
-        self.mainwindow.state.source = parsed_query["source"]
-        self.mainwindow.state.filters = parsed_query["filters"]
+        self.mainwindow.set_state_data("fields", parsed_query["fields"])
+        self.mainwindow.set_state_data("source", parsed_query["source"])
+        self.mainwindow.set_state_data("filters", parsed_query["filters"])
 
         self.mainwindow.refresh_plugins(sender=self)
 

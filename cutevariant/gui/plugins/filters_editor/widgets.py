@@ -1,4 +1,5 @@
 # Standard imports
+from logging import Filter
 import sys
 import json
 import os
@@ -39,6 +40,7 @@ from PySide2.QtWidgets import (
     QAction,
 )
 from PySide2.QtCore import (
+    QAbstractListModel,
     Qt,
     QObject,
     Signal,
@@ -91,7 +93,7 @@ TYPE_OPERATORS = {
 
 DEFAULT_VALUES = {"str": "", "int": 0, "float": 0.0, "list": [], "bool": True}
 
-OPERATORS_PY_SQL = {
+OPERATORS_PY_VQL = {
     "$eq": "=",
     "$gt": ">",
     "$gte": ">=",
@@ -100,7 +102,7 @@ OPERATORS_PY_SQL = {
     "$in": "IN",
     "$ne": "!=",
     "$nin": "NOT IN",
-    "$regex": "REGEXP",
+    "$regex": "~",
     "$and": "AND",
     "$or": "OR",
 }
@@ -114,6 +116,12 @@ COLUMN_OPERATOR = 1
 COLUMN_VALUE = 2
 COLUMN_CHECKBOX = 3
 COLUMN_REMOVE = 4
+
+
+@lru_cache()
+def get_field_unique_values_cached(conn, field, like, limit):
+    print("cache me ")
+    return sql.get_field_unique_values(conn, field, like, limit)
 
 
 @lru_cache()
@@ -139,6 +147,44 @@ def prepare_fields(conn):
                 results[sample_field] = field["type"]
 
     return results
+
+
+class FieldsCompleter(QCompleter):
+    """A custom completer to load fields values dynamically thanks to a SQL LIKE statement"""
+
+    def __init__(self, conn=None, parent=None):
+        super().__init__(parent)
+        self.local_completion_prefix = ""
+        self.source_model = QStringListModel()
+        self.field_name = ""
+        self.limit = 50
+        self.conn = conn
+        self.setCompletionMode(QCompleter.PopupCompletion)
+        self.setModel(self.source_model)
+
+    def setModel(self, model):
+        """override"""
+        self.source_model = model
+        super().setModel(self.source_model)
+
+    def updateModel(self):
+        """update model from sql like"""
+        if not self.conn or not self.field_name:
+            return
+
+        local_completion_prefix = self.local_completion_prefix
+
+        like = f"{local_completion_prefix}%"
+        values = get_field_unique_values_cached(
+            self.conn, self.field_name, like, self.limit
+        )
+        self.source_model.setStringList(values)
+
+    def splitPath(self, path: str):
+        """override"""
+        self.local_completion_prefix = path
+        self.updateModel()
+        return ""
 
 
 class BaseFieldEditor(QFrame):
@@ -227,7 +273,7 @@ class IntFieldEditor(BaseFieldEditor):
         return value
 
     def set_range(self, min_, max_):
-        """ Limit editor with a range of value """
+        """Limit editor with a range of value"""
         self.validator.setRange(min_, max_)
 
 
@@ -309,14 +355,6 @@ class StrFieldEditor(BaseFieldEditor):
             value = None
         return value
 
-    def set_completion(self, items: list):
-        """Set a completer to autocomplete value"""
-        # self.edit.setCompleter(completer)
-        self.completer = QCompleter()
-        self.model = QStringListModel(items)
-        self.completer.setModel(self.model)
-        self.edit.setCompleter(self.completer)
-
 
 class WordSetEditor(BaseFieldEditor):
     """Editor for Boolean value
@@ -345,13 +383,15 @@ class WordSetEditor(BaseFieldEditor):
 
         hlayout.setContentsMargins(0, 0, 0, 0)
         hlayout.setSpacing(0)
-        self.setLayout(hlayout)
+        self.w.setLayout(hlayout)
         self.set_mode("list")
 
         # DisplayRole, UserRole
 
         self.edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.btn.clicked.connect(self.switch_mode)
+
+        self.set_widget(self.w)
 
     def switch_mode(self):
         next_mode = "list" if self.get_mode() == "wordset" else "wordset"
@@ -362,14 +402,16 @@ class WordSetEditor(BaseFieldEditor):
         self.combo.addItems(wordsets)
 
     def set_mode(self, mode="list"):
-        """ set mode with either 'list' or 'wordset' """
+        """set mode with either 'list' or 'wordset'"""
 
         if mode == "list":
             self.stack.setCurrentIndex(0)
             self.btn.setIcon(FIcon(0xF0B13))
+            self.btn.setToolTip(self.tr("Use wordset"))
         if mode == "wordset":
             self.stack.setCurrentIndex(1)
             self.btn.setIcon(FIcon(0xF0C2E))
+            self.btn.setToolTip(self.tr("Use list"))
 
     def get_mode(self):
         return "list" if self.stack.currentIndex() == 0 else "wordset"
@@ -470,6 +512,8 @@ class ComboFieldEditor(BaseFieldEditor):
     def fill(self, items):
         self.combo_box.clear()
         self.combo_box.addItems(items)
+        self.combo_box.completer().setFilterMode(Qt.MatchContains)
+        self.combo_box.completer().setCompletionMode(QCompleter.PopupCompletion)
 
     def set_editable(self, active):
         self.combo_box.setEditable(True)
@@ -499,7 +543,7 @@ class OperatorFieldEditor(BaseFieldEditor):
         """Init QComboBox with all supported operators"""
         self.combo_box.clear()
         for op in operators:
-            self.combo_box.addItem(OPERATORS_PY_SQL.get(op), op)
+            self.combo_box.addItem(OPERATORS_PY_VQL.get(op), op)
 
 
 class LogicFieldEditor(BaseFieldEditor):
@@ -510,8 +554,8 @@ class LogicFieldEditor(BaseFieldEditor):
         self.box = QComboBox()
 
         # DisplayRole, UserRole
-        self.box.addItem(OPERATORS_PY_SQL.get("$and"), "$and")
-        self.box.addItem(OPERATORS_PY_SQL.get("$or"), "$or")
+        self.box.addItem(OPERATORS_PY_VQL.get("$and"), "$and")
+        self.box.addItem(OPERATORS_PY_VQL.get("$or"), "$or")
 
         self.box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.set_widget(self.box)
@@ -569,8 +613,10 @@ class FieldFactory(QObject):
 
         if field_type == "str":
             w = StrFieldEditor(parent)
-            liste = sql.get_field_unique_values(self.conn, field, 50)
-            w.set_completion(liste)
+            w.cc = FieldsCompleter(conn=self.conn, parent=parent)
+            w.cc.field_name = field
+            w.edit.setCompleter(w.cc)
+
             return w
 
         if field_type == "bool":
@@ -800,7 +846,7 @@ class FilterModel(QAbstractItemModel):
     """
 
     # See self.headerData()
-    _HEADERS = ["field", "operator", "value", "visible", "remove"]
+    _HEADERS = ["field", "operator", "value", "", ""]
     _MIMEDATA = "application/x-qabstractitemmodeldatalist"
 
     # Custom type to get FilterItem.type. See self.data()
@@ -901,7 +947,7 @@ class FilterModel(QAbstractItemModel):
                 if item.type == FilterItem.LOGIC_TYPE:
                     val = item.get_value()
                     return (
-                        OPERATORS_PY_SQL.get(val, "$and") + f"  ({len(item.children)})"
+                        OPERATORS_PY_VQL.get(val, "$and") + f"  ({len(item.children)})"
                     )
 
             if item.type != FilterItem.CONDITION_TYPE:
@@ -909,7 +955,7 @@ class FilterModel(QAbstractItemModel):
 
             if index.column() == COLUMN_OPERATOR:
                 operator = item.get_operator()
-                return OPERATORS_PY_SQL.get(operator, "=")
+                return OPERATORS_PY_VQL.get(operator, "=")
 
             if index.column() == COLUMN_VALUE:
                 val = item.get_value()
@@ -1041,6 +1087,15 @@ class FilterModel(QAbstractItemModel):
             if orientation == Qt.Horizontal:
                 return self._HEADERS[section]
 
+        if role == Qt.TextAlignmentRole:
+            if orientation == Qt.Horizontal:
+                if section == COLUMN_FIELD:
+                    return Qt.AlignLeft
+                if section == COLUMN_OPERATOR:
+                    return Qt.AlignCenter
+                if section == COLUMN_VALUE:
+                    return Qt.AlignLeft
+
     def is_last(self, index: QModelIndex()) -> bool:
         """Return True if index is the last in the row
         This is used by draw_branch
@@ -1074,7 +1129,7 @@ class FilterModel(QAbstractItemModel):
             return QModelIndex()
 
     def parent(self, index: QModelIndex) -> QModelIndex:
-        """Overrided Qt methods: Create parent from index """
+        """Overrided Qt methods: Create parent from index"""
         if not index.isValid():
             return QModelIndex()
 
@@ -1226,7 +1281,7 @@ class FilterModel(QAbstractItemModel):
             self.filtersChanged.emit()
 
     def rowCount(self, parent=QModelIndex()) -> int:
-        """Overrided Qt methods: return row count according parent """
+        """Overrided Qt methods: return row count according parent"""
         if parent.column() > 0:
             return 0
 
@@ -1238,12 +1293,12 @@ class FilterModel(QAbstractItemModel):
         return len(parent_item.children)
 
     def columnCount(self, parent=QModelIndex()) -> int:
-        """ Overrided Qt methods: return column count according parent """
+        """Overrided Qt methods: return column count according parent"""
 
         return 5
 
     def flags(self, index) -> Qt.ItemFlags:
-        """ Overrided Qt methods: return Qt flags to make item editable and selectable """
+        """Overrided Qt methods: return Qt flags to make item editable and selectable"""
 
         if not index.isValid():
             return 0
@@ -1336,9 +1391,11 @@ class FilterModel(QAbstractItemModel):
         Returns:
             Qt.DropAction
         """
-        return Qt.MoveAction
+        return Qt.MoveAction | Qt.CopyAction
 
-    def dropMimeData(self, data, action, row, column, parent) -> bool:
+    def dropMimeData(
+        self, data: QMimeData, action, row, column, parent: QModelIndex
+    ) -> bool:
         """Overrided Qt methods: This method is called when item is dropped by drag/drop.
         data is QMimeData and it contains a pickle serialization of current dragging item.
         Get back item by unserialize data.data().
@@ -1353,7 +1410,21 @@ class FilterModel(QAbstractItemModel):
         Returns:
             bool: return True if success otherwise return False
         """
-        if action != Qt.MoveAction:
+
+        if action != Qt.MoveAction and action != Qt.CopyAction:
+            return False
+
+        if data.hasText():
+            field_names = json.loads(data.text()).get("fields")
+            if parent and parent.internalPointer().type == FilterItem.LOGIC_TYPE:
+
+                return all(
+                    [
+                        self.add_condition_item((field_name, "$eq", ""), parent)
+                        for field_name in field_names
+                    ]
+                )
+
             return False
 
         if not data.data(self._MIMEDATA):
@@ -1414,6 +1485,16 @@ class FilterModel(QAbstractItemModel):
         for row in range(self.rowCount(index)):
             cindex = self.index(row, 0, index)
             self.set_recursive_check_state(cindex, checked)
+
+    def canDropMimeData(
+        self,
+        data: QMimeData,
+        action: Qt.DropAction,
+        row: int,
+        column: int,
+        parent: QModelIndex,
+    ) -> bool:
+        return True
 
 
 class FilterDelegate(QStyledItemDelegate):
@@ -1928,6 +2009,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
     """Displayed widget plugin to allow creation/edition/deletion of filters"""
 
     ENABLE = True
+    REFRESH_STATE_DATA = {"filters"}
     changed = Signal()
 
     def __init__(self, conn=None, parent=None):
@@ -1950,10 +2032,12 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.view.setAlternatingRowColors(True)
         self.view.setAcceptDrops(True)
         self.view.setDragEnabled(True)
-        self.view.setDragDropMode(QAbstractItemView.InternalMove)
+        self.view.setDragDropMode(QAbstractItemView.DragDrop)
+        self.view.setAcceptDrops(True)
+        # self.view.setDropIndicatorShown(True)
         self.view.header().setStretchLastSection(False)
-        self.view.header().setSectionResizeMode(COLUMN_FIELD, QHeaderView.Stretch)
-        self.view.header().setSectionResizeMode(COLUMN_OPERATOR, QHeaderView.Stretch)
+        self.view.header().setSectionResizeMode(COLUMN_FIELD, QHeaderView.Interactive)
+        self.view.header().setSectionResizeMode(COLUMN_OPERATOR, QHeaderView.Fixed)
         self.view.header().setSectionResizeMode(COLUMN_VALUE, QHeaderView.Stretch)
         self.view.header().setSectionResizeMode(
             COLUMN_CHECKBOX, QHeaderView.ResizeToContents
@@ -1963,7 +2047,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
         )
         self.view.setEditTriggers(QAbstractItemView.DoubleClicked)
         self.view.selectionModel().selectionChanged.connect(self.on_selection_changed)
-        self.view.header().hide()
+        # self.view.header().hide()
 
         # Create toolbar
         self.toolbar = QToolBar()
@@ -1980,6 +2064,10 @@ class FiltersEditorWidget(plugin.PluginWidget):
             FIcon(0xF0EF0), "Add group", self.on_add_logic
         )
         self.add_group_action.setToolTip("Add Group")
+
+        self.clear_all_action = self.toolbar.addAction(
+            FIcon(0xF0234), self.tr("Clear all"), self.on_clear_all
+        )
 
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -2002,7 +2090,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
         # Preset combobox
         self.preset_combo = QComboBox(self)
-        self.preset_combo.currentIndexChanged.connect(self.on_select_preset)
+        self.preset_combo.activated.connect(self.on_select_preset)
         self.toolbar.addWidget(self.preset_combo)
 
         self.toolbar.addSeparator()
@@ -2043,7 +2131,21 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
         # Clear lru_cache
         prepare_fields.cache_clear()
+        get_field_unique_values_cached.cache_clear()
         self.on_refresh()
+
+    def on_duplicate_filter(self):
+        """Duplicate filter condition from context menu
+
+        See contextMenu()
+        """
+        item_index = self.view.selectionModel().currentIndex()
+        parent_index = item_index.parent()
+        if not parent_index:
+            return
+
+        data = self.model.item(item_index).data
+        self.model.add_condition_item(data, parent_index)
 
     def on_remove_filter(self):
         selected_index = self.view.selectionModel().currentIndex()
@@ -2088,19 +2190,20 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
     def on_refresh(self):
 
-        if self.filters == self.mainwindow.state.filters:
+        current_filters = self.mainwindow.get_state_data("filters")
+        if self.filters == current_filters:
             # No change in filters = no refresh
             return
 
         self.model.clear()
-        self.model.filters = self.mainwindow.state.filters
+        self.model.filters = current_filters
 
         self.refresh_buttons()
         self._update_view_geometry()
 
     @property
     def filter_path(self):
-        """ Return filter path from settings """
+        """Return filter path from settings"""
         settings = QSettings()
         settings.beginGroup(self.plugin_name)
         return settings.value(
@@ -2139,7 +2242,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
             # Close editor on validate, to avoid unset data
             self.close_current_editor()
             # Refresh other plugins only if the filters are modified
-            self.mainwindow.state.filters = self.filters
+            self.mainwindow.set_state_data("filters", self.filters)
             self.mainwindow.refresh_plugins(sender=self)
 
         self.refresh_buttons()
@@ -2167,12 +2270,12 @@ class FiltersEditorWidget(plugin.PluginWidget):
             self._update_view_geometry()
 
     def to_json(self):
-        """override """
+        """override"""
 
         return {"filters": self.filters}
 
     def from_json(self, data):
-        """ override """
+        """override"""
         if "filters" in data:
             self.filters = data["filters"]
 
@@ -2327,6 +2430,22 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self._update_view_geometry()
         self.refresh_buttons()
 
+    def on_clear_all(self):
+        """Clear all filters
+
+        Ask user to be sure
+
+        """
+
+        ret = QMessageBox.question(
+            self,
+            self.tr("Remove all filters"),
+            self.tr("Are you sure you want to remove all filters "),
+        )
+
+        if ret == QMessageBox.Yes:
+            self.model.clear()
+
     def on_open_condition_dialog(self):
         """Open the condition creation dialog
         TODO: not used anymore
@@ -2370,6 +2489,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
             # Check if this is not the root item
             if index.parent().isValid():
                 menu.addAction(self.tr("Remove"), self.on_remove_filter)
+                menu.addAction(self.tr("Duplicate"), self.on_duplicate_filter)
 
             menu.exec_(event.globalPos())
 
@@ -2458,7 +2578,7 @@ if __name__ == "__main__":
     view.setDragEnabled(True)
     view.setDropIndicatorShown(True)
     view.setSelectionBehavior(QAbstractItemView.SelectRows)
-    view.setDragDropMode(QAbstractItemView.InternalMove)
+    view.setDragDropMode(QAbstractItemView.DragDrop)
 
     model.conn = conn
     model.load(data)
