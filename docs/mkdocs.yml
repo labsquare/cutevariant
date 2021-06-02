@@ -62,7 +62,10 @@ nav:
         - Create a reader: 'developer/customization/create-reader.md'
       - API Documentation:
         - Core classes:
-          - SQL: 'developer/api-documentation/sql-module-doc.md'
+          - SQL: 'developer/api-documentation/sql.md'
+          - VQL: 'developer/api-documentation/vql.md'
+          - Reader: 'developer/api-documentation/reader.md'
+          - Writer: 'developer/api-documentation/writer.md'
           # - VQL: ''
           # - Readers:
           #   - Abstract Reader: ''
