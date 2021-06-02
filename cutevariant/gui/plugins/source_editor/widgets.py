@@ -3,6 +3,7 @@ from the GUI.
 SourceEditorWidget class is seen by the user and uses selectionModel class
 as a model that handles records from the database.
 """
+from cutevariant.gui.widgets.searchable_table_widget import LoadingTableView
 import typing
 
 # Qt imports
@@ -116,6 +117,21 @@ class SourceModel(QAbstractTableModel):
                 "id", None
             )  # For debug purpose . displayed in vertical header
 
+    def record(self, index: QModelIndex()) -> dict:
+        """Return source item
+
+        See ```cutevariant.sql.get_selection```
+
+        Args:
+            index (QModelIndex)
+
+        Returns:
+            dict
+        """
+        if not index.isValid():
+            return None
+        return self.records[index.row()]
+
     def find_record(self, name: str) -> QModelIndex:
         """Find a record by name
 
@@ -186,24 +202,26 @@ class SourceEditorWidget(plugin.PluginWidget):
         self.setWindowIcon(FIcon(0xF10E4))
         # conn is always None here but initialized in on_open_project()
         self.model = SourceModel(conn)
-        self.view = SearchableTableWidget()
-        self.view.proxy.setSourceModel(self.model)
-        self.view.tableview.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.view.tableview.setSelectionMode(QAbstractItemView.ExtendedSelection)
-        self.view.tableview.horizontalHeader().setStretchLastSection(False)
-        self.view.tableview.horizontalHeader().setSectionResizeMode(
-            0, QHeaderView.Stretch
-        )
-        self.view.tableview.horizontalHeader().setSectionResizeMode(
+        self.view = LoadingTableView()
+        self.view.setModel(self.model)
+        self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.view.horizontalHeader().setStretchLastSection(False)
+        self.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+        self.view.horizontalHeader().setSectionResizeMode(
             1, QHeaderView.ResizeToContents
         )
+        self.view.setSortingEnabled(True)
+        self.view.setShowGrid(False)
+        self.view.setAlternatingRowColors(False)
+        self.view.setIconSize(QSize(16, 16))
 
         self.toolbar = QToolBar()
         self.toolbar.setIconSize(QSize(16, 16))
         self.toolbar.setToolButtonStyle(Qt.ToolButtonIconOnly)
 
-        self.view.tableview.verticalHeader().hide()
-        # self.view.tableview.verticalHeader().setDefaultSectionSize(26)
+        self.view.verticalHeader().hide()
+        # self.view.verticalHeader().setDefaultSectionSize(26)
 
         layout = QVBoxLayout()
         layout.addWidget(self.toolbar)
@@ -217,7 +235,7 @@ class SourceEditorWidget(plugin.PluginWidget):
         self.is_loading = False
 
         # call on_current_row_changed when item selection changed
-        self.view.tableview.selectionModel().currentRowChanged.connect(
+        self.view.selectionModel().currentRowChanged.connect(
             self.on_current_row_changed
         )
 
@@ -332,11 +350,7 @@ class SourceEditorWidget(plugin.PluginWidget):
             I don't broadcast the signal rowChanged to selectionChanged directly
             because I need to block signals for the view only
         """
-        source = (
-            self.view.tableview.selectedIndexes()[0].data(Qt.DisplayRole)
-            if self.view.tableview.selectedIndexes()
-            else None
-        )
+        source = current.data(Qt.DisplayRole)
         if source:
             self.mainwindow.set_state_data("source", source)
             self.mainwindow.refresh_plugins(sender=self)
@@ -546,7 +560,7 @@ class SourceEditorWidget(plugin.PluginWidget):
         }
         selected_sources = [
             index.data(Qt.DisplayRole)
-            for index in self.view.tableview.selectionModel().selectedRows(0)
+            for index in self.view.selectionModel().selectedRows(0)
         ]
         if not selected_sources:
             return
