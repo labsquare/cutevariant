@@ -3,6 +3,7 @@ from the GUI.
 SourceEditorWidget class is seen by the user and uses selectionModel class
 as a model that handles records from the database.
 """
+from logging import currentframe
 from cutevariant.gui.widgets.searchable_table_widget import LoadingTableView
 import typing
 
@@ -39,6 +40,21 @@ class SourceModel(QAbstractTableModel):
         super().__init__()
         self.conn = conn
         self.records = []
+
+        self._current_source = "variants"
+
+    @property
+    def current_source(self) -> str:
+        return self._current_source
+
+    @current_source.setter
+    def current_source(self, value: str):
+        old_index = self.find_record(self._current_source)
+        self._current_source = value
+        new_index = self.find_record(self._current_source)
+        if old_index != new_index:
+            self.dataChanged.emit(old_index, old_index)
+            self.dataChanged.emit(new_index, new_index)
 
     def rowCount(self, parent=QModelIndex()) -> int:
         """Overrided from QAbstractTableModel"""
@@ -86,11 +102,10 @@ class SourceModel(QAbstractTableModel):
                     return QIcon(FIcon(0xF04EB))
 
         if role == Qt.FontRole:
-            if table_name == "variants":
-                font = QFont()
-                font.setItalic(True)
+            font = QFont()
+            if table_name == self.current_source:
                 font.setBold(True)
-                return font
+            return font
 
         if role == Qt.UserRole:
             return self.records[index.row()]
@@ -242,9 +257,7 @@ class SourceEditorWidget(plugin.PluginWidget):
         self.is_loading = False
 
         # call on_current_row_changed when item selection changed
-        self.view.selectionModel().currentRowChanged.connect(
-            self.on_current_row_changed
-        )
+        self.view.doubleClicked.connect(self.on_double_click)
 
         self.add_menu = QMenu(self)
         self.create_selection_action = self.add_menu.addAction(
@@ -298,6 +311,14 @@ class SourceEditorWidget(plugin.PluginWidget):
             if result:
                 self.on_refresh()
 
+    @Slot(QModelIndex)
+    def on_double_click(self, current: QModelIndex):
+        source = current.data(Qt.DisplayRole)
+        if source:
+            self.model.current_source = source
+            self.mainwindow.set_state_data("source", source)
+            self.mainwindow.refresh_plugins(sender=self)
+
     @Slot()
     def create_selection_from_bed(self):
         """Create a selection from a selected bed file
@@ -343,24 +364,25 @@ class SourceEditorWidget(plugin.PluginWidget):
 
     def on_refresh(self):
         """override from PluginWidget"""
-        self.view.selectionModel().blockSignals(True)
+        # self.view.selectionModel().blockSignals(True)
         self.model.load()
         self.source = self.mainwindow.get_state_data("source")
-        model_index = self.model.find_record(self.source)
-        self.view.setCurrentIndex(model_index)
-        self.view.selectionModel().blockSignals(False)
+        self.model.current_source = self.source
+        # model_index = self.model.find_record(self.source)
+        # self.view.setCurrentIndex(model_index)
+        # self.view.selectionModel().blockSignals(False)
 
-    @Slot(QModelIndex, QModelIndex)
-    def on_current_row_changed(self, current: QModelIndex, previous: QModelIndex):
-        """This methods trigger the signal for the view
-        Note:
-            I don't broadcast the signal rowChanged to selectionChanged directly
-            because I need to block signals for the view only
-        """
-        source = current.data(Qt.DisplayRole)
-        if source:
-            self.mainwindow.set_state_data("source", source)
-            self.mainwindow.refresh_plugins(sender=self)
+    # @Slot(QModelIndex, QModelIndex)
+    # def on_current_row_changed(self, current: QModelIndex, previous: QModelIndex):
+    #     """This methods trigger the signal for the view
+    #     Note:
+    #         I don't broadcast the signal rowChanged to selectionChanged directly
+    #         because I need to block signals for the view only
+    #     """
+    #     source = current.data(Qt.DisplayRole)
+    #     if source:
+    #         self.mainwindow.set_state_data("source", source)
+    #         self.mainwindow.refresh_plugins(sender=self)
 
     def _create_menu(self, editable: bool = False) -> QMenu:
         """Create popup menu
