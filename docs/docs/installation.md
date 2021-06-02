@@ -1,27 +1,50 @@
-# Installing cutevariant
+# Download and install
 
-## As a pip package
+## Windows binaries
 
-If you already have python, installation will be quite easy using pip.
+Windows binaries are available from [github](https://github.com/labsquare/cutevariant/releases).    
+They are generated for each release thanks to [github action](https://github.com/labsquare/cutevariant/actions).
+It has been tested on Windows 7 and Windows 10. 
 
-Just run the following command in your favorite shell:
+[:material-download: Download cutevariant - 32 bits](https://github.com/labsquare/cutevariant/releases/latest/download/cutevariant-standalone-x86.zip)    
+[:material-download: Download cutevariant - 64 bits](https://github.com/labsquare/cutevariant/releases/latest/download/cutevariant-standalone-x64.zip)
+
+
+## Install from Pypi
+
+Cutevariant is available from [pypi](https://pypi.org/project/cutevariant/).     
+You need [Python 3.8 or newer](https://www.python.org/). Older version of Python are not supported. 
 
 ```bash
-pip install cutevariant
+python -m pip install cutevariant
 ```
 
-> :material-information-outline: Please note that in order to avoid any conflict between python modules, it is strongly advised that you install cutevariant in its own python virtual environment. However, due to the very few dependencies of cutevariant (only PySide2 and numpy for now), this package will have very low impact on your python environment.
+!!! warning
+    If you get the following errors:
 
-## Download Windows binaries
+        Could not load the Qt platform plugin "xcb"
 
-If you run Windows and don't wish to install python along with pip, there is a binary executable for windows, published every realease.
+    You can fix it on Linux with the following command:
+    
+        sudo apt-get install libxcb-xinerama0.
 
-## Clone the github repository
 
-If you want the latest bug fixes, and newest features, you can head over to our github repository and clone it to get the most recent source code.
+## Install from source code
 
-Just run this in your shell:
+If you are a developer or need the latest bug fixes, and newest features, you can head over to our github repository and clone the devel branch to get the most recent version.
 
-`git clone https://github.com/labsquare/cutevariant.git`
+```bash
 
+# Create a virtual env and activate
+python -m virtualenv venv
+source venv/bin/activate
+# Clone the repository and switch to devel
+git clone https://github.com/labsquare/cutevariant.git
+git checkout devel
+# Install cutevariant dependencies  
+python -m pip install -e . 
+# Run cutevariant 
+python -m cutevariant 
+
+```
 

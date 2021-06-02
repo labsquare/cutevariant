@@ -1,0 +1,1 @@
+> :material-information-outline: Please note that in order to avoid any conflict between python modules, it is strongly advised that you install cutevariant in its own python virtual environment. However, due to the very few dependencies of cutevariant (only PySide2 and numpy for now), this package will have very low impact on your python environment.
