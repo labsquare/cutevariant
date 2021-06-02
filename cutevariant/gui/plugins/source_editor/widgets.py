@@ -59,7 +59,7 @@ class SourceModel(QAbstractTableModel):
             Any
         """
 
-        if not index.isValid():
+        if not index.isValid() or index.row() < 0 or index.row() >= self.rowCount():
             return None
 
         table_name = self.records[index.row()]["name"]
@@ -70,6 +70,13 @@ class SourceModel(QAbstractTableModel):
 
             if index.column() == 1:
                 return self.records[index.row()]["count"]
+
+        if role == Qt.ToolTipRole:
+            vql_query = self.records[index.row()]["query"]
+            if vql_query:
+                return vql_query.replace("SELECT id", "")
+            else:
+                return "All variants"
 
         if role == Qt.DecorationRole:
             if index.column() == 0:
