@@ -1,0 +1,102 @@
+name: Test
+
+# when it active ? 
+on: 
+  workflow_dispatch:
+    inputs:
+      name:
+        description: "run name"
+        default: "default"
+  push:
+    branches:
+      - devel
+      - github-ci
+ 
+  pull_request:
+    branches:
+      - devel
+
+jobs:
+  
+  # LINUX JOB 
+  linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python_version: ['3.7', '3.8']
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{matrix.python_version}}
+      - name: install_deps
+        run: "make install_deps"
+      - name: install PySide2    # Parce que @ysard veut absolument les version deprecated
+        run : pip install PySide2
+      - name: test 
+        run: python -m pytest tests/core
+
+  # WINDOWS JOB 
+
+  windows:
+    runs-on: windows-latest
+
+    strategy:
+      matrix:
+        architecture: ['x64', 'x86']
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+          architecture: ${{matrix.architecture}}
+      - name: install_deps
+        run: "make install_deps"
+      - name: install PySide2    # Parce que @ysard veut absolument les version deprecated
+        run : pip install PySide2
+      - name: install windows deps 
+        run: |
+            pip install pywin32
+            pip install PyInstaller==4.0
+      - name: test
+        run: python -m pytest tests/core
+
+      - name: create binary 
+        if: github.ref == 'refs/heads/master' || contains(github.event.head_commit.message, '[deploy]')  
+        run: pyinstaller -i icon.ico --name="cutevariant_${{matrix.architecture}}" --hidden-import json --add-data "cutevariant;cutevariant" cutevariant\__main__.py
+
+      - name: Upload artifact
+        if: github.ref == 'refs/heads/master' || contains(github.event.head_commit.message, '[deploy]')  
+        uses: actions/upload-artifact@v2
+        with:
+          name: cutevariant-standalone-${{matrix.architecture}}
+          path: dist
+      - name: Create release 
+        if: github.ref == 'refs/heads/master' || contains(github.event.head_commit.message, '[deploy]')  
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "cutevariant-standalone*"
+          token: ${{secrets.GITHUB_TOKEN}}
+
+
+
+
+  # MAC OS JOB 
+
+  # Macos:
+  #   runs-on: macOS-latest
+  #   if: "contains(github.event.head_commit.message, '[deploy]')"
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - uses: actions/setup-python@v2
+  #       with:
+  #         python-version: '3.8'
+  #     - name: install_deps
+  #       run: "make install"
+  #     - name: install PySide2    # Parce que @ysard veut absolument les version deprecated
+  #       run : pip install PySide2
+  #     - name: install mac deps 
+  #       run: |
+  #           pip install PyInstaller==4.0
+  #     - name: create binary 
+  #       run: pyinstaller -i icon.ico --name="cutevariant" --add-data cutevariant:cutevariant cutevariant/__main__.py;ls
