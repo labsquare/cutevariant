@@ -12,7 +12,10 @@ jobs:
     name: Create release
     runs-on: ubuntu-latest
     outputs:
+      id: ${{ steps.create_release.outputs.id }}
+      html_url: ${{ steps.create_release.outputs.html_url }}
       upload_url: ${{ steps.create_release.outputs.upload_url }}
+
     steps:
       - name: Create release
         id: create_release
