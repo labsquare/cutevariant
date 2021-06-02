@@ -2,19 +2,25 @@
 
 Filters are one of cutevariant's key features to select variants based on their properties.
 
-In this tutorial, we will show you how to use the dedicated user interface.
-
-## Filtering using the Filters editor plugin
-
-To make filtering easier if you don't want to type in complex VQL statements, we provided you with a tree-based filter editor.
 
 First, if you don't see the filters editor plugin, this may be because it's hidden. To show it, toggle its visibility in the top toolbar, you can see it with the :material-filter: icon.
 
-This is what the window should look like now:
+This is how the plugin looks like when you have a blank project:
 
 ![Filters plugin](../images/filters.png)
 
-Once you have the plugin opened, you will see a tree view with only one root item. This item represents the root of the filter, which means that everything you will add as child items will be chained with `AND` statements. Among these child statements, you can in turn add `OR` or `AND` statements.
+As you can see, the plugin is just a tree view with one root item. This item represents the root of the filter, which means that everything you will add as child items will be chained with `AND` statements. Among these child statements, you can in turn add `OR` or `AND` statements.
+
+The following example:
+
+![Filters example](../images/filters_example.png)
+
+will select variants where `ref = A AND ref = T`
+
+You can add as much nesting as you wish, so the following will work as well 
+
+!!! info
+    This example selects base transversions, see [wikipedia]().
 
 If you'd like to change any `AND` statement into an `OR`, you can do this by simply double-cliking the item and selecting the logical operator.
 
