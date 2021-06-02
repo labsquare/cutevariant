@@ -5,7 +5,7 @@ on:
   push:
     branches:
       - devel
-      - master 
+      - master
       - github-ci
  
   pull_request:
