@@ -915,11 +915,6 @@ class MainWindow(QMainWindow):
         )
 
         if not file_name:
-            QMessageBox.information(
-                self,
-                self.tr("Info"),
-                self.tr("No file name specified, nothing will be written"),
-            )
             return
 
         settings.setValue("last_save_file_dir", os.path.dirname(file_name))
