@@ -40,12 +40,12 @@ jobs:
         with:
           name: cutevariant-standalone-${{matrix.architecture}}
           path: dist
-          
+
       - name: Publish 
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: '*cutevariant*'
+          files: 'dist/*cutevariant*'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
