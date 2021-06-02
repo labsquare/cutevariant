@@ -101,7 +101,7 @@ class MainWindow(QMainWindow):
         # State variable of application changed by plugins
         self._state_data = StateData(
             {
-                "fields": ["chr", "pos", "ref", "alt"],
+                "fields": ["favorite", "classification", "chr", "pos", "ref", "alt"],
                 "source": "variants",
                 "filters": {},
             }
@@ -533,7 +533,6 @@ class MainWindow(QMainWindow):
         # Clear memoization cache for count_cmd
         # Clear State variable of application
         # store fields, source, filters, group_by, having data
-        self.state = {"fields": ["chr"], "source": "variants", "filters": {}}
 
         # Load previous window state for this project (file_path being the key for the settings)
         file_path = get_database_file_name(conn)
@@ -915,11 +914,6 @@ class MainWindow(QMainWindow):
         )
 
         if not file_name:
-            QMessageBox.information(
-                self,
-                self.tr("Info"),
-                self.tr("No file name specified, nothing will be written"),
-            )
             return
 
         settings.setValue("last_save_file_dir", os.path.dirname(file_name))
@@ -937,9 +931,9 @@ class MainWindow(QMainWindow):
             self.conn,
             chosen_ext,
             file_name,
-            fields=self.state.fields,
-            source=self.state.source,
-            filters=self.state.filters,
+            fields=self.get_state_data("fields"),
+            source=self.get_state_data("source"),
+            filters=self.get_state_data("filters"),
         )
 
         # # TODO : refactor self.state
