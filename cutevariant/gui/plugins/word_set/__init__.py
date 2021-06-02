@@ -1,6 +1,6 @@
 from PySide2.QtWidgets import QApplication
 
-__title__ = "WordSets"
+__title__ = "Wordsets editor"
 __description__ = "A plugin to manage word sets"
 __long_description__ = QApplication.instance().translate(
     "word_sets",

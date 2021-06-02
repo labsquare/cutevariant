@@ -1,22 +1,50 @@
-from cutevariant.commons import GENOTYPE_DESC
-import sqlite3
-from PySide2.QtWidgets import *
-from PySide2.QtCore import *
-from PySide2.QtGui import *
-from PySide2.QtNetwork import *
+# Standard imports
 import sys
 import json
 import re
 import os
 import tempfile
+import sqlite3
+import typing
 
+# Qt imports
+from PySide2.QtWidgets import (
+    QApplication,
+    QWidget,
+    QAbstractItemView,
+    QVBoxLayout,
+    QDialog,
+    QPushButton,
+    QHBoxLayout,
+    QDialogButtonBox,
+    QLabel,
+    QSizePolicy,
+    QMessageBox,
+    QInputDialog,
+    QSpacerItem,
+)
+from PySide2.QtCore import (
+    Qt,
+    QModelIndex,
+    QSortFilterProxyModel,
+    QAbstractListModel,
+    QAbstractItemModel,
+    QStringListModel,
+    QUrl,
+    Signal,
+    Slot,
+)
+from PySide2.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
+from PySide2.QtGui import QIcon
+
+# Cutevariant imports
 from cutevariant.gui.ficon import FIcon
 from cutevariant.core.sql import get_sql_connection, get_wordsets
 from cutevariant.core.command import import_cmd
 from cutevariant.gui.plugin import PluginDialog
+from cutevariant.commons import GENOTYPE_DESC
 
-import typing
-
+from cutevariant.gui.widgets import SearchableTableWidget
 
 URL_PREFIX = "https://maayanlab.cloud/Harmonizome"
 VERSION = "/api/1.0"
@@ -62,9 +90,7 @@ class HZDataSetModel(QAbstractListModel):
 
         return None
 
-    def headerData(
-        self, section: int, orientation: Qt.Orientation, role: int
-    ) -> typing.Any:
+    def headerData(self, section: int, orientation, role: int) -> typing.Any:
         if section > 0 or orientation == Qt.Vertical or role != Qt.DisplayRole:
             return
 
@@ -137,9 +163,10 @@ class HZGeneSetModel(QAbstractListModel):
         if role == Qt.UserRole:
             return self.genesets[index.row()]["href"]
 
-    def headerData(
-        self, section: int, orientation: Qt.Orientation, role: int
-    ) -> typing.Any:
+        if role == Qt.DecorationRole:
+            return QIcon(FIcon(0xF0436))
+
+    def headerData(self, section: int, orientation, role: int) -> typing.Any:
         if (
             section > 0
             or orientation == Qt.Vertical
@@ -228,9 +255,10 @@ class HZGeneModel(QAbstractListModel):
         if role == Qt.DisplayRole:
             return self.genes[index.row()]["gene"]["symbol"]
 
-    def headerData(
-        self, section: int, orientation: Qt.Orientation, role: int
-    ) -> typing.Any:
+        if role == Qt.DecorationRole:
+            return QIcon(FIcon(0xF0684))
+
+    def headerData(self, section: int, orientation, role: int) -> typing.Any:
         if (
             section > 0
             or orientation == Qt.Vertical
@@ -290,89 +318,13 @@ class HZGeneModel(QAbstractListModel):
         self.endResetModel()
 
 
-class LoadingTableView(QTableView):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-        self._is_loading = False
-
-    def paintEvent(self, event: QPainter):
-
-        if self._is_loading:
-            painter = QPainter(self.viewport())
-
-            painter.drawText(
-                self.viewport().rect(), Qt.AlignCenter, self.tr("Loading ...")
-            )
-
-        else:
-            super().paintEvent(event)
-
-    def start_loading(self):
-        self._is_loading = True
-        self.viewport().update()
-
-    def stop_loading(self):
-        self._is_loading = False
-        self.viewport().update()
-
-
-class FilteredListWidget(QWidget):
-    """Convenient widget that displays a QTableView along with a search line edit.
-    This class takes care of displaying a loading message when start_loading is called (and removes the message when stop_loading is called).
-    """
-
-    # Convenient signal to tell when current index changes. Returns index in **source** coordinates
-    current_index_changed = Signal(QModelIndex)
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.tableview = LoadingTableView(self)
-        self.proxy = QSortFilterProxyModel(self)
-
-        self.tableview.setModel(self.proxy)
-        self.tableview.horizontalHeader().setStretchLastSection(True)
-        self.tableview.setAlternatingRowColors(True)
-        self.tableview.setSelectionMode(QAbstractItemView.ExtendedSelection)
-
-        self.search_edit = QLineEdit(self)
-
-        self.search_edit.textChanged.connect(self.proxy.setFilterRegExp)
-
-        layout = QVBoxLayout(self)
-        layout.addWidget(self.tableview)
-        layout.addWidget(self.search_edit)
-
-        self.tableview.verticalHeader().hide()
-
-        self.tableview.selectionModel().currentChanged.connect(
-            self.on_current_index_changed
-        )
-
-    def set_model(self, model: QAbstractItemModel):
-        self.proxy.setSourceModel(model)
-
-    def start_loading(self):
-        self.search_edit.hide()
-        self.tableview.start_loading()
-
-    def stop_loading(self):
-        self.tableview.stop_loading()
-        self.search_edit.show()
-
-    def on_current_index_changed(self, current: QModelIndex, previous: QModelIndex):
-        # Prevents errors when filtering an empty list
-        if current.isValid():
-            self.current_index_changed.emit(self.proxy.mapToSource(current))
-
-
 class GeneSelectionDialog(QDialog):
     def __init__(
         self, initial_selection: typing.List[str] = None, parent: QWidget = None
     ):
         super().__init__(parent)
 
-        self.view = FilteredListWidget(self)
+        self.view = SearchableTableWidget(self)
 
         self.model = QStringListModel([])
         self.view.tableview.horizontalHeader().hide()
@@ -434,9 +386,9 @@ class HarmonizomeWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.dataset_view = FilteredListWidget(self)
-        self.geneset_view = FilteredListWidget(self)
-        self.gene_view = FilteredListWidget(self)
+        self.dataset_view = SearchableTableWidget(self)
+        self.geneset_view = SearchableTableWidget(self)
+        self.gene_view = SearchableTableWidget(self)
 
         self.dataset_model = HZDataSetModel(self)
         self.geneset_model = HZGeneSetModel(self)
@@ -544,12 +496,14 @@ class HarmonizomeWordsetDialog(PluginDialog):
 
         self.add_wordset_btn = QPushButton(self.tr("Create wordset"), self)
         self.cancel_btn = QPushButton(self.tr("Cancel"), self)
-        self.selection_info_button = QPushButton(self.tr("My selection (0 genes)"))
+        self.selection_info_button = QPushButton(self.tr("0 genes in selection"))
+        self.selection_info_button.setIcon(FIcon(0xF1296))
         self.selection_add_button = QPushButton(self.tr("Add genes to selection"), self)
+        self.selection_add_button.setIcon(FIcon(0xF1298))
 
         self.label_hyperlink = QLabel(
             self.tr(
-                "<b>Harmonizome</b> can be found <a href='https://maayanlab.cloud/Harmonizome/'>here</a>"
+                "This plugin uses <b>Harmonizome</b>, which can be found at <a href='https://maayanlab.cloud/Harmonizome/'>https://maayanlab.cloud/Harmonizome/</a>"
             ),
             self,
         )
@@ -560,14 +514,10 @@ class HarmonizomeWordsetDialog(PluginDialog):
         self.cancel_btn.clicked.connect(self.reject)
 
         self.selection_add_button.clicked.connect(
-            self.harmonizome_widget.on_add_genes_to_selection_pressed
+            self.on_add_genes_to_selection_pressed
         )
-        self.selection_add_button.clicked.connect(self.update_selection_info_button)
-        self.selection_info_button.clicked.connect(
-            self.harmonizome_widget.on_selection_info_pressed
-        )
-        self.selection_info_button.clicked.connect(self.update_selection_info_button)
-        self.add_wordset_btn.clicked.connect(self.add_wordset)
+        self.selection_info_button.clicked.connect(self.on_selection_info_pressed)
+        self.add_wordset_btn.clicked.connect(self.create_wordset)
 
         self.buttons_layout = QHBoxLayout()
         self.buttons_layout.addWidget(self.cancel_btn)
@@ -595,9 +545,11 @@ class HarmonizomeWordsetDialog(PluginDialog):
     def conn(self, value: sqlite3.Connection):
         self._conn = value
         # We just changed conn, so the set_names are not relevant anymore
-        self.set_names.clear()
-        if self._conn:
-            self.set_names = [data["name"] for data in get_wordsets(self._conn)]
+        # Need to check for attribute because the parent constructor initializes conn before us
+        if hasattr(self, "set_names"):
+            self.set_names.clear()
+            if self._conn:
+                self.set_names = [data["name"] for data in get_wordsets(self._conn)]
 
     def import_wordset(self, words, wordset_name):
         """Import given words into a new wordset in database
@@ -636,7 +588,7 @@ class HarmonizomeWordsetDialog(PluginDialog):
             os.remove(filename)
             return result["success"]
 
-    def add_wordset(self):
+    def create_wordset(self):
         """Display a window to allow to add/edit/remove word sets
 
         The set is then imported in database.
@@ -669,17 +621,29 @@ class HarmonizomeWordsetDialog(PluginDialog):
                 self.tr("Success!"),
                 self.tr(f"Successfully imported wordset {wordset_name}"),
             )
+            filter_with_wordset = {
+                "$and": [{"ann.gene": {"$in": {"$wordset": wordset_name}}}]
+            }
 
-            self.mainwindow.set_state_data("source", wordset_name)
+            self.mainwindow.set_state_data("filters", filter_with_wordset)
             self.mainwindow.refresh_plugins()
+            self.mainwindow.refresh_plugin("word_set")
             self.accept()
+
+    @Slot()
+    def on_add_genes_to_selection_pressed(self):
+        self.harmonizome_widget.on_add_genes_to_selection_pressed()
+        self.update_selection_info_button()
+
+    @Slot()
+    def on_selection_info_pressed(self):
+        self.harmonizome_widget.on_selection_info_pressed()
+        self.update_selection_info_button()
 
     @Slot()
     def update_selection_info_button(self):
         self.selection_info_button.setText(
-            self.tr(
-                f"My selection ({len(self.harmonizome_widget.selected_genes)}) genes"
-            )
+            self.tr(f"{len(self.harmonizome_widget.selected_genes)} genes in selection")
         )
 
 

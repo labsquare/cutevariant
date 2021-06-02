@@ -125,7 +125,7 @@ class TrioAnalysisDialog(PluginDialog):
         self.button_box.button(QDialogButtonBox.Apply).setEnabled(valid_form)
 
     def create_filter(self):
-        """ build filter and send to the mainwindow.state """
+        """ build filter and send to the mainwindow.set_state_data """
 
         filter_type = self.type_combo.currentData()
 
@@ -200,7 +200,7 @@ class TrioAnalysisDialog(PluginDialog):
                 ]
             }
 
-        self.mainwindow.state.filters = filters
+        self.mainwindow.set_state_data("filters",filters)
         self.mainwindow.refresh_plugins()
         self.close()
 

@@ -69,6 +69,12 @@ jobs:
         with:
           name: cutevariant-standalone-${{matrix.architecture}}
           path: dist
+      - name: Create release 
+        if: github.ref == 'refs/heads/master' || contains(github.event.head_commit.message, '[deploy]')  
+        uses: cipollo/release-action@v1
+        with:
+          artifacts: "cutevariant-standalone*"
+          token: ${{secrets.GITHUB_TOKEN}}
 
 
 

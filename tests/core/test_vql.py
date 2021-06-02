@@ -4,14 +4,14 @@ from cutevariant.core.vql import parse_one_vql
 # Test valid VQL cases
 VQL_TO_TREE_CASES = {
     # Test 1
-    'SELECT chr,pos,sample["sacha"] FROM variants ': {
+    'SELECT chr,pos,samples["sacha"] FROM variants ': {
         "cmd": "select_cmd",
         "fields": ["chr", "pos", "samples.sacha.gt"],
         "filters": {},
         "source": "variants",
     },
     # Test 1 bis
-    'SELECT chr,pos,sample["sacha"].gt FROM variants WHERE sample["sacha"].gt = 1': {
+    'SELECT chr,pos,samples["sacha"].gt FROM variants WHERE samples["sacha"].gt = 1': {
         "cmd": "select_cmd",
         "fields": ["chr", "pos", "samples.sacha.gt"],
         "filters": {"$and": [{"samples.sacha.gt": {"$eq": 1.0}}]},
@@ -55,14 +55,14 @@ VQL_TO_TREE_CASES = {
         },
     },
     # Test 4
-    'SELECT chr,pos, sample["sacha"] FROM variants # comments are handled': {
+    'SELECT chr,pos, samples["sacha"] FROM variants # comments are handled': {
         "cmd": "select_cmd",
         "fields": ["chr", "pos", "samples.sacha.gt"],
         "filters": {},
         "source": "variants",
     },
     # Test 7 - 4quater GROUP BY on genotypes
-    "SELECT chr, pos, sample['sacha'].gt FROM variants GROUP BY sample['sacha'].gt": {
+    "SELECT chr, pos, samples['sacha'].gt FROM variants GROUP BY samples['sacha'].gt": {
         "cmd": "select_cmd",
         "fields": ["chr", "pos", "samples.sacha.gt"],
         "filters": {},
@@ -131,6 +131,15 @@ VQL_TO_TREE_CASES = {
         "feature": "set",
         "path": "/home/truc/test.txt",
         "name": "boby",
+    },
+    # Test 18 Test regex
+    "SELECT chr,pos,ref,alt FROM variants WHERE ref ~'^[AG]$' AND alt ~'^[CT]$'": {
+        "cmd": "select_cmd",
+        "fields": ["chr", "pos", "ref", "alt"],
+        "filters": {
+            "$and": [{"ref": {"$regex": "^[AG]$"}}, {"alt": {"$regex": "^[CT]$"}}]
+        },
+        "source": "variants",
     },
 }
 

@@ -37,6 +37,7 @@ import numpy as np
 
 # Custom imports
 import cutevariant.commons as cm
+from cutevariant.core import querybuilder
 from cutevariant.core.querybuilder import build_sql_query
 from cutevariant.core.sql_aggregator import StdevFunc
 
@@ -598,7 +599,13 @@ def delete_selection(conn: sqlite3.Connection, selection_id: int):
     Returns:
         int: Number of rows affected
     """
+
+    # Ignore if it is the first selection name aka 'variants'
+    if selection_id <= 1:
+        return None
+
     cursor = conn.cursor()
+
     cursor.execute("DELETE FROM selections WHERE rowid = ?", (selection_id,))
     conn.commit()
     return cursor.rowcount
@@ -713,6 +720,45 @@ def import_wordset_from_file(conn: sqlite3.Connection, wordset_name, filename):
     return cursor.rowcount
 
 
+def import_wordset_from_list(conn: sqlite3.Connection, wordset_name, words: list):
+    r"""Create Word set from the given list
+
+    Args:
+        wordset_name: Name of the Word set
+        words: A list of words
+
+    Returns:
+        Number of rows affected during insertion (number of words inserted).
+        None if 0 word can be inserted.
+
+    Current data filtering (same as in the word_set plugin):
+        - Strip trailing spaces and EOL characters
+        - Skip empty lines
+        - Skip lines with whitespaces characters (``[ \t\n\r\f\v]``)
+
+    Examples:
+        - The following line will be skipped:
+          ``"abc  def\tghi\t  \r\n"``
+        - The following line will be cleaned:
+          ``"abc\r\n"``
+    """
+    # Search whitespaces
+
+    data = sanitize_words(words)
+
+    if not data:
+        return
+
+    # Insertion
+    cursor = conn.cursor()
+    cursor.executemany(
+        "INSERT INTO wordsets (name, value) VALUES (?,?)",
+        it.zip_longest(tuple(), data, fillvalue=wordset_name),
+    )
+    conn.commit()
+    return cursor.rowcount
+
+
 # Delete set by name
 delete_set_by_name = partial(delete_by_name, table_name="wordsets")
 
@@ -739,6 +785,79 @@ def get_words_in_set(conn, wordset_name):
         "SELECT DISTINCT value FROM wordsets WHERE name = ?", (wordset_name,)
     ):
         yield dict(row)["value"]
+
+
+def intersect_wordset(conn, name: str, wordsets: list):
+    """Create new `name` wordset from intersection of `wordsets`
+
+    Args:
+        conn (sqlite.Connection):
+        name (str): A wordset Name
+        wordsets (list): List of wordset name
+
+    """
+    query = f"""INSERT INTO wordsets (name, value) 
+            SELECT '{name}' as name,  value FROM """
+
+    query += (
+        "("
+        + " INTERSECT ".join(
+            [f"SELECT value FROM wordsets WHERE name = '{w}'" for w in wordsets]
+        )
+        + ")"
+    )
+
+    print(query)
+    conn.execute(query)
+    conn.commit()
+
+
+def union_wordset(conn, name: str, wordsets=[]):
+    """Create new `name` wordset from union of `wordsets`
+
+    Args:
+        conn (sqlite.Connection):
+        name (str): A wordset Name
+        wordsets (list): List of wordset name
+
+    """
+    query = f"""INSERT INTO wordsets (name, value) 
+            SELECT '{name}' as name,  value FROM """
+
+    query += (
+        "("
+        + " UNION ".join(
+            [f"SELECT value FROM wordsets WHERE name = '{w}'" for w in wordsets]
+        )
+        + ")"
+    )
+
+    conn.execute(query)
+    conn.commit()
+
+
+def subtract_wordset(conn, name: str, wordsets=[]):
+    """Create new `name` wordset from subtract of `wordsets`
+
+    Args:
+        conn (sqlite.Connection):
+        name (str): A wordset Name
+        wordsets (list): List of wordset name
+
+    """
+    query = f"""INSERT INTO wordsets (name, value) 
+            SELECT '{name}' as name,  value FROM """
+
+    query += (
+        "("
+        + " EXCEPT ".join(
+            [f"SELECT value FROM wordsets WHERE name = '{w}'" for w in wordsets]
+        )
+        + ")"
+    )
+
+    conn.execute(query)
+    conn.commit()
 
 
 ## Operations on sets of variants ==============================================
@@ -941,7 +1060,7 @@ def get_field_range(conn, field_name: str, sample_name=None):
     return result
 
 
-def get_field_unique_values(conn, field_name: str, limit=None):
+def get_field_unique_values(conn, field_name: str, like: str = None, limit=None):
     """Return unique record values for a field name
 
     :param conn: sqlite3.connect
@@ -973,8 +1092,12 @@ def get_field_unique_values(conn, field_name: str, limit=None):
     else:
         query = f"SELECT DISTINCT `{field_name}` FROM {table}"
 
+    if like:
+        query += f" WHERE `{field_name}` LIKE '{like}'"
+
     if limit:
         query += " LIMIT " + str(limit)
+
     return [i[field_name] for i in conn.execute(query)]
 
 
@@ -1488,6 +1611,26 @@ def insert_many_variants(conn, data, **kwargs):
     """Wrapper for debugging purpose"""
     for _, _ in async_insert_many_variants(conn, data, kwargs):
         pass
+
+
+def get_variant_as_group(
+    conn,
+    groupby: str,
+    fields: list,
+    source: str,
+    filters: dict,
+    order_by="count",
+    limit=50,
+):
+
+    subquery = build_sql_query(
+        conn, fields=fields, source=source, filters=filters, limit=None
+    )
+
+    query = f"""SELECT `{groupby}`, COUNT(`{groupby}`) AS count 
+    FROM ({subquery}) GROUP BY `{groupby}` ORDER BY count LIMIT {limit}"""
+    for i in conn.execute(query):
+        yield dict(i)
 
 
 ## samples table ===============================================================

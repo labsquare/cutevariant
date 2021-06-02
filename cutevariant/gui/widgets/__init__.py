@@ -9,3 +9,5 @@ from .codeedit import CodeEdit
 from .file_edit import FileEdit
 
 from .field_editor_widget import FieldsEditorWidget
+
+from .searchable_table_widget import SearchableTableWidget

@@ -188,7 +188,7 @@ def fields_to_vql(fields) -> list:
         if field.startswith("samples."):
             _, *name, param = field.split(".")
             name = ".".join(name)
-            vql_fields.append(f"sample['{name}'].{param}")
+            vql_fields.append(f"samples['{name}'].{param}")
         else:
             vql_fields.append(field)
 
@@ -253,7 +253,7 @@ def fields_to_sql(fields, use_as=False) -> list:
 
             sql_field = f"`sample_{name}`.`{value}`"
             if use_as:
-                sql_field = f"{sql_field} AS `sample.{name}.{value}`"
+                sql_field = f"{sql_field} AS `samples.{name}.{value}`"
             sql_fields.append(sql_field)
 
         else:
@@ -269,9 +269,9 @@ def condition_to_sql(item: dict) -> str:
     {"ann.gene": "CFTR"}
     Exemples:
 
-        condition_to_sql({"chr":3}) ==> variants.chr = 3
-        condition_to_sql({"chr":{"$gte": 30}}) ==> variants.chr >= 3
-        condition_to_sql({"ann.gene":{"$gte": 30}}) ==> annotation.gene >= 30
+        condition_to_sql({"chr":3}) ==> `variants`.`chr `= 3
+        condition_to_sql({"chr":{"$gte": 30}}) ==> `variants`.`chr `>= 3
+        condition_to_sql({"ann.gene":{"$gte": 30}}) ==> `annotation`.`gene` >= 30
 
     """
 
@@ -301,6 +301,14 @@ def condition_to_sql(item: dict) -> str:
 
     # MAP operator
     sql_operator = OPERATORS[operator]
+
+    # Optimisation REGEXP
+    # use LIKE IF REGEXP HAS NO special caractere
+    if sql_operator == "REGEXP":
+        special_caracter = "[]+.?*()^$"
+        if not set(str(value)) & set(special_caracter):
+            sql_operator = "LIKE"
+            value = f"%{value}%"
 
     # Cast value
     if isinstance(value, str):
@@ -408,7 +416,7 @@ def condition_to_vql(item: dict) -> str:
     if k.startswith("samples."):
         _, *name, k = k.split(".")
         name = ".".join(name)
-        k = f"sample['{name}'].{k}"
+        k = f"samples['{name}'].{k}"
 
         # k = f"sample{name}`.`{k}` {sql_operator} {value}"
 

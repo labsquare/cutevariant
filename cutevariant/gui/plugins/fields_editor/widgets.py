@@ -4,6 +4,7 @@ import json
 import os
 import glob
 from functools import lru_cache
+import typing
 
 from cutevariant.gui import plugin, FIcon, style
 from cutevariant.core import sql
@@ -111,6 +112,9 @@ class FieldsModel(QStandardItemModel):
                 selected_fields.append(item.data()["name"])
         return selected_fields
 
+    def flags(self, index: QModelIndex) -> Qt.ItemFlags:
+        return super().flags(index) | Qt.ItemIsDragEnabled
+
     @checked_fields.setter
     def checked_fields(self, fields: List[str]):
         """Check fields according name
@@ -159,7 +163,7 @@ class FieldsModel(QStandardItemModel):
                     field_name_item.setFont(font)
                     field_type = style.FIELD_TYPE.get(fields[field]["type"])
                     field_name_item.setIcon(
-                        FIcon(field_type["icon"], "white", field_type["color"])
+                        FIcon(field_type["icon"], field_type["color"])
                     )
 
                     self._checkable_items.append(field_name_item)
@@ -176,6 +180,18 @@ class FieldsModel(QStandardItemModel):
 
                     self.appendRow([field_name_item, descr_item])
                     self.fields_loaded.emit()
+
+    def mimeData(self, indexes: typing.List[QModelIndex]) -> QMimeData:
+        field_names = [
+            idx.data(Qt.UserRole + 1)["name"] for idx in indexes if idx.column() == 0
+        ]
+        internal_dict = {"fields": field_names}
+        res = QMimeData("application/json")
+        res.setText(json.dumps(internal_dict))
+        return res
+
+    def mimeTypes(self) -> typing.List[str]:
+        return ["application/json"]
 
     def to_file(self, filename: str):
         """Serialize checked fields to a json file
@@ -232,15 +248,18 @@ class FieldsWidget(QWidget):
         proxy.setSourceModel(model)
 
         view.setModel(proxy)
+        view.setShowGrid(False)
         view.horizontalHeader().setStretchLastSection(True)
         view.setIconSize(QSize(16, 16))
         view.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        view.setSelectionMode(QAbstractItemView.SingleSelection)
+        view.setSelectionMode(QAbstractItemView.ExtendedSelection)
         view.setSelectionBehavior(QAbstractItemView.SelectRows)
-        view.setAlternatingRowColors(True)
+        view.setAlternatingRowColors(False)
         view.setWordWrap(True)
         view.verticalHeader().hide()
         view.setSortingEnabled(True)
+
+        view.setDragEnabled(True)
 
         proxy.setRecursiveFilteringEnabled(True)
         proxy.setFilterCaseSensitivity(Qt.CaseInsensitive)
@@ -331,6 +350,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
     """
 
     ENABLE = True
+    REFRESH_STATE_DATA = {"fields"}
 
     DEFAULT_FIELDS = ["chr", "pos", "ref", "alt"]
 
@@ -525,15 +545,15 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self.on_apply()
 
     def on_open_project(self, conn):
-        """ Overrided from PluginWidget """
+        """Overrided from PluginWidget"""
         self.widget_fields.conn = conn
         self.on_refresh()
 
     def on_refresh(self):
-        """ overrided from PluginWidget """
+        """overrided from PluginWidget"""
         if self.mainwindow:
             self._is_refreshing = True
-            self.widget_fields.checked_fields = self.mainwindow.state.fields
+            self.widget_fields.checked_fields = self.mainwindow.get_state_data("fields")
             self._is_refreshing = False
 
     def on_apply(self):
@@ -544,16 +564,16 @@ class FieldsEditorWidget(plugin.PluginWidget):
             print(self.widget_fields.checked_fields)
             return
 
-        self.mainwindow.state.fields = self.widget_fields.checked_fields
+        self.mainwindow.set_state_data("fields", self.widget_fields.checked_fields)
         self.mainwindow.refresh_plugins(sender=self)
 
     def to_json(self):
-        """ override from plugins: Serialize plugin state """
+        """override from plugins: Serialize plugin state"""
 
         return {"checked_fields": self.widget_fields.checked_fields}
 
     def from_json(self, data):
-        """ override from plugins: Unzerialize plugin state """
+        """override from plugins: Unzerialize plugin state"""
 
         if "checked_fields" in data:
             self.widget_fields.checked_fields = data["checked_fields"]
