@@ -4,6 +4,7 @@ import sys
 import json
 import os
 import pickle
+import typing
 import uuid
 from ast import literal_eval
 from functools import lru_cache
@@ -1393,6 +1394,18 @@ class FilterModel(QAbstractItemModel):
         """
         return Qt.MoveAction | Qt.CopyAction
 
+    def _drop_fields_data(self, fields: typing.List[str], parent: QModelIndex):
+
+        if parent and parent.internalPointer().type == FilterItem.LOGIC_TYPE:
+
+            return all(
+                [
+                    self.add_condition_item((field_name, "$eq", ""), parent)
+                    for field_name in fields
+                ]
+            )
+        return False
+
     def dropMimeData(
         self, data: QMimeData, action, row, column, parent: QModelIndex
     ) -> bool:
@@ -1415,15 +1428,9 @@ class FilterModel(QAbstractItemModel):
             return False
 
         if data.hasText():
-            field_names = json.loads(data.text()).get("fields")
-            if parent and parent.internalPointer().type == FilterItem.LOGIC_TYPE:
-
-                return all(
-                    [
-                        self.add_condition_item((field_name, "$eq", ""), parent)
-                        for field_name in field_names
-                    ]
-                )
+            obj = json.loads(data.text())
+            if "fields" in obj:
+                return self._drop_fields_data(obj["fields"], parent)
 
             return False
 

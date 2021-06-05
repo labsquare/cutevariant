@@ -26,6 +26,7 @@ from PySide2.QtWidgets import (
 
 from PySide2.QtCore import (
     QAbstractTableModel,
+    QMimeData,
     QModelIndex,
     QObject,
     QStringListModel,
@@ -261,6 +262,12 @@ class WordsetCollectionModel(QAbstractTableModel):
 
     def wordset_names(self):
         return list(dict(self._raw_data).keys())
+
+    def mimeData(self, indexes: typing.List) -> QMimeData:
+        wordset_names = [
+            idx.data(Qt.DisplayRole) for idx in indexes if idx.column() == 0
+        ]
+        return super().mimeData(indexes)
 
 
 class WordSetWidget(PluginWidget):
