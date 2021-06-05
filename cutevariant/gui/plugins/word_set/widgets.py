@@ -278,6 +278,7 @@ class WordsetCollectionModel(QAbstractTableModel):
                 {
                     "type": "filter.condition",
                     "condition": {
+                        "field": "ann.gene",
                         "operator": "$in",
                         "value": {"$wordset": ser_wordset},
                     },

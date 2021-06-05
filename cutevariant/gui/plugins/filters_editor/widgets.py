@@ -1414,6 +1414,15 @@ class FilterModel(QAbstractItemModel):
             return False
         cond_item = self.item(parent.child(row, 0))
         if cond_item.type != FilterItem.CONDITION_TYPE:
+            if "field" in condition:
+                cond_item = self.add_condition_item(
+                    (
+                        condition["field"],
+                        condition.get("operator", "$eq"),
+                        condition["value"],
+                    ),
+                    parent,
+                )
             return False
         cond_item.set_value(condition["value"])
         cond_item.set_operator(condition.get("operator", "$eq"))
