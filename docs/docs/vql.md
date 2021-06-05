@@ -1,6 +1,6 @@
-VQL is a Domain Specific Language to perform several action on a cutevariant project. The main purpose is to filters variants in the same fashion as a SQL query. VQL language can be run from the user interface vql plugin or directly in command line. 
+VQL is a Domain Specific Language to perform several actions on a cutevariant project. The main purpose is to filter variants in the same fashion as a SQL query. VQL language can be run from the user interface vql plugin or directly in command line. 
 
-# SELECT clause 
+## SELECT clause
 
 *SELECT* clause is used to choose which fields are displayed.
 
@@ -9,54 +9,52 @@ VQL is a Domain Specific Language to perform several action on a cutevariant pro
 SELECT chr, pos FROM variants
 ```
 
-- Display annotations fields from variants tables 
+- Display impact, which is an annotation field, from variants tables 
 ```sql 
-SELECT chr, pos, annotations.impact FROM variants
-# You can omit annotations prefix 
-SELECT chr, pos, impact FROM variants
+SELECT chr, pos, ann.impact FROM variants
 ```
 
 - Display genotype field from "boby" sample 
 ```sql 
-SELECT sample['boby'].gt FROM variants
-# If you omit the field, by default it will takes gt 
-SELECT sample['boby'] FROM variants
+SELECT samples['boby'].gt FROM variants
+# If you omit the field, by default it will select gt 
+SELECT samples['boby'] FROM variants
 ```
 
-#### Special fields 
-there is special computed fields which allow to perform operation on genotype 
+## Special fields
+When importing a VCF file, cutevariant computes fields that are not usually present in VCF files. These fields describe genotype properties. Example:
 
-* **count_hom** : count how many homozygous mutant within samples   
-* **count_ref** : count how many homozygous wild within samples   
-* **count_het** : count how many heterozygous mutant within samples   
-* **count_var** : count how many variation (homozygous or heterozygous)  within samples   
+:material-numeric: **count_hom** : counts how many homozygous mutant within samples   
+:material-numeric: **count_ref** : counts how many homozygous wild within samples   
+:material-numeric: **count_het** : counts how many heterozygous mutant within samples   
+:material-numeric: **count_var** : counts how many variation (homozygous or heterozygous)  within samples   
 
-For instance, with a variant dataset of two sample (boby and raymond), the following lines are equivalents : 
+For instance, with a variant dataset of two samples (boby and raymond), the following lines are equivalent:
 
 ```sql 
-SELECT chr, pos FROM variants WHERE sample["boby"].gt = 1 AND sample["raymond"].gt = 2
+SELECT chr, pos FROM variants WHERE (samples["boby"].gt = 1 AND samples["raymond"].gt = 2) OR (samples["boby"].gt = 2 AND samples["raymond"].gt = 1)
 SELECT chr, pos FROM variants WHERE count_hom = 1 AND count_het=1
 ```
 
-If your dataset has been imported with a pedigree, you can also filter with case and control status of samples
+If your dataset was imported with a pedigree, cutevariant counted case and control status of samples, along with their genotype
 
-* **case_count_hom**    : count how many homozygous mutant within samples   
-* **case_count_ref**    : count how many homozygous wild within samples   
-* **case_count_het**    : count how many heterozygous mutant within samples   
-* **control_count_hom** : count how many homozygous mutant within samples   
-* **control_count_ref** : count how many homozygous wild within samples   
-* **control_count_het** : count how many heterozygous mutant within samples   
+:material-numeric: **case_count_hom**    : count how many homozygous mutant within samples   
+:material-numeric: **case_count_ref**    : count how many homozygous wild within samples   
+:material-numeric: **case_count_het**    : count how many heterozygous mutant within samples   
+:material-numeric: **control_count_hom** : count how many homozygous mutant within samples   
+:material-numeric: **control_count_ref** : count how many homozygous wild within samples   
+:material-numeric: **control_count_het** : count how many heterozygous mutant within samples   
 
-For instance, with 4 affected samples and 6 normal samples, look for all variant which are heterozygous in affected samples and homozygous in normal samples : 
+For instance, with 4 affected samples and 6 unaffected samples, look for all variant which are heterozygous in affected samples and homozygous in unaffected samples:
 
 ```sql
-SELECT chr, pos FROM variants WHERE case_count_ref = 4 AND control_count_hom = 6
+SELECT chr,pos FROM variants WHERE case_count_ref = 4 AND control_count_hom = 6
 ```
 
-# WHERE clause 
+## WHERE clause 
 *WHERE* clause is used to filter variants according to condition rules. 
 
-## List of accepted operators
+### List of accepted operators
 - Comparative operators:
 ```sql
 WHERE field = "value" 
@@ -91,6 +89,7 @@ WHERE field IS NOT NULL (opposite of 'IS NULL' expression)
 ```sql 
 SELECT chr,pos FROM variants WHERE pos > 3 
 ```
+
 - *WHERE* can be a nested condition of OR/AND statements:
 ```sql 
 SELECT chr,pos FROM variants WHERE (pos > 3 AND pos < 100) OR (impact = 'HIGH')
@@ -112,7 +111,7 @@ SELECT chr,pos FROM variants WHERE gene IN ("CFTR", "GJB2")
 SELECT chr,pos FROM variants WHERE gene IN WORDSET["genelist"] 
 ```
 
-# CREATE clause 
+## CREATE clause 
 *CREATE* clause is used to create a _selection_ or _tables_  of variants.
 For instance the following code create a new selection named *myselection*
 
@@ -140,7 +139,7 @@ You can also make an intersection with a bed file :
 CREATE myselection FROM variants INTERSECT "/home/boby/panel.bed"  
 ```
 
-# IMPORT clause 
+## IMPORT clause 
 VQL supports importation of different features. Currently, it supports only word WORDSETS. 
 For example, using a simple text file containing a list of words : 
 
@@ -166,18 +165,9 @@ DROP WORDSETS mygenes
 
 
 
-## Filtering with VQL
 
-To apply a filter on a VQL request, first add the `WHERE` keyword at the end of the query. For instance,
-
-`SELECT chr,pos,ref,alt FROM variants WHERE pos >= 10000`
-
-will filter out every variant with position smaller than 10000.
-The `WHERE` VQL statement supports two logical operators, `AND` and `OR`.
-
->
+!!! tip
 - You can use as many parenthesis as needed to separate the statements.
-- Other operators that apply to the field depend on their type.
 
 Currently, cutevariant supports 4 data types:
 - Strings
