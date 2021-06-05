@@ -1,4 +1,5 @@
 # Standard imports
+import json
 import os
 import sqlite3
 import tempfile
@@ -267,7 +268,29 @@ class WordsetCollectionModel(QAbstractTableModel):
         wordset_names = [
             idx.data(Qt.DisplayRole) for idx in indexes if idx.column() == 0
         ]
-        return super().mimeData(indexes)
+        if len(wordset_names) != 1:
+            # Currently, we don't support dragging more than one wordset
+            return None
+        res = QMimeData("application/json")
+        ser_wordset = wordset_names[0]
+        res.setText(
+            json.dumps(
+                {
+                    "type": "filter.condition",
+                    "condition": {
+                        "operator": "$in",
+                        "value": {"$wordset": ser_wordset},
+                    },
+                }
+            )
+        )
+        return res
+
+    def mimeTypes(self) -> typing.List:
+        return ["application/json"]
+
+    def flags(self, index: QModelIndex) -> Qt.ItemFlags:
+        return super().flags(index) | Qt.ItemIsDragEnabled
 
 
 class WordSetWidget(PluginWidget):
@@ -292,6 +315,8 @@ class WordSetWidget(PluginWidget):
         self.view.tableview.doubleClicked.connect(self.open_wordset)
         self.view.tableview.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.view.tableview.setSelectionBehavior(QAbstractItemView.SelectRows)
+
+        self.view.tableview.setDragEnabled(True)
 
         # setup tool bar
         self.toolbar.setIconSize(QSize(16, 16))

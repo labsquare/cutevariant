@@ -1406,6 +1406,20 @@ class FilterModel(QAbstractItemModel):
             )
         return False
 
+    def _drop_filters_condition(self, row, condition: dict, parent: QModelIndex):
+
+        if "value" not in condition:
+            return False
+        if self.item(parent).type != FilterItem.LOGIC_TYPE:
+            return False
+        cond_item = self.item(parent.child(row, 0))
+        if cond_item.type != FilterItem.CONDITION_TYPE:
+            return False
+        cond_item.set_value(condition["value"])
+        cond_item.set_operator(condition.get("operator", "$eq"))
+        self.dataChanged.emit(parent.child(row, 0), parent.child(row, 2))
+        return True
+
     def dropMimeData(
         self, data: QMimeData, action, row, column, parent: QModelIndex
     ) -> bool:
@@ -1431,7 +1445,11 @@ class FilterModel(QAbstractItemModel):
             obj = json.loads(data.text())
             if "fields" in obj:
                 return self._drop_fields_data(obj["fields"], parent)
-
+            if "type" in obj:
+                if obj["type"] == "filter.condition":
+                    return self._drop_filters_condition(
+                        row, obj.get("condition", {}), parent
+                    )
             return False
 
         if not data.data(self._MIMEDATA):
@@ -1493,6 +1511,9 @@ class FilterModel(QAbstractItemModel):
             cindex = self.index(row, 0, index)
             self.set_recursive_check_state(cindex, checked)
 
+    def mimeTypes(self) -> typing.List:
+        return [self._MIMEDATA, "text/plain"]
+
     def canDropMimeData(
         self,
         data: QMimeData,
@@ -1501,6 +1522,24 @@ class FilterModel(QAbstractItemModel):
         column: int,
         parent: QModelIndex,
     ) -> bool:
+
+        # Ask your father (literally). Check if data is in supportedMimeData(), action in supportedActions() etc
+        basic_answer = super().canDropMimeData(data, action, row, column, parent)
+
+        if not basic_answer:
+            return False
+
+        if data.hasText():
+            obj = json.loads(data.text())
+            if "fields" in obj:
+                return True
+            if "type" in obj:
+                if obj["type"] == "filter.condition":
+                    # if self.item(parent).type != FilterItem.LOGIC_TYPE:
+                    #     return False
+                    return True
+            return False
+
         return True
 
 
