@@ -1,8 +1,13 @@
-VQL is a Domain Specific Language to perform several actions on a cutevariant project. The main purpose is to filter variants in the same fashion as a SQL query. VQL language can be run from the user interface vql plugin or directly in command line. 
+VQL is a Domain Specific Language designed to perform several actions on a cutevariant project. The main purpose is to filter variants in the same fashion as a SQL query. VQL language can be run from the VQL editor.
 
 ## SELECT clause
 
-*SELECT* clause is used to choose which fields are displayed.
+Use the *SELECT* clause to query differents fields associated with variants.
+There are 3 categories of fields :  
+### Fields categories
+ Fields associated with a variants. For instance, the chromosome, the position, the quality and all all INFO fields of the VCF file. 
+
+
 
 - Display two fields from variants tables 
 ```sql 

@@ -8,22 +8,22 @@ site_description: >-
 # Setting up the headers
 nav:
     - Home: 'index.md'
-    - Getting started:
+    - Getting started: 
+      - Introduction: 'introduction.md'
       - Installation: 'installation.md'
       - Quick start: 'quick-start.md'
     - Examples:
-      - Find CFTR tutorial (basic): 'tutorials/basic-tutorial.md'
-      - Add annotation reference database (intermediate): 'tutorials/add-annotation-reference.md'
+      - Find a CFTR mutation: 'tutorials/basic-tutorial.md'
+      #- Add annotation reference database (intermediate): 'tutorials/add-annotation-reference.md'
     - Documentation:
+      - VQL query: 'vql.md'
       - Plugins:
         - Fields : 'plugins/fields.md'
+        - Source : 'plugins/selections.md'
         - Filters : 'plugins/filters.md'
-        - Wordsets : 'plugins/wordset.md'
-        - Selections : 'plugins/selections.md'
-        - Gene viewer : 'plugins/gene-viewer.md'
         - Variant view : 'plugins/variant-view.md'
-        - VQL editor : 'plugins/vql-editor.md'
-      - VQL: 'vql.md'
+        - Wordsets : 'plugins/wordset.md'
+
     - Developer:
       - Installation: 'developer/install-for-dev.md'
       - Customization:
