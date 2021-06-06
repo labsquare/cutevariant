@@ -16,7 +16,7 @@ class MainWindow(QMainWindow):
             "fields": ["chr", "pos", "ref", "alt"],
             "filters": {},
             "source": "variants",
-            "current_variant": {},
+            "current_variant": {"id": 1},
             "executed_query_data": {"count": 100, "elapsed_time": 3.0},
         }
 

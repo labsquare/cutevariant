@@ -20,7 +20,7 @@ from cutevariant import commons as cm
 from cutevariant.gui.widgets import DictWidget
 
 
-from cutevariant.gui.widgets.qjsonmodel import QJsonModel
+from cutevariant.gui.widgets.qjsonmodel import QJsonModel, QJsonTreeItem
 
 LOGGER = cm.logger()
 
@@ -28,7 +28,8 @@ LOGGER = cm.logger()
 class VariantInfoModel(QJsonModel):
     def data(self, index: QModelIndex, role: Qt.ItemDataRole):
 
-        value = index.internalPointer().value
+        item: QJsonTreeItem = index.internalPointer()
+        value = item.value
 
         if role == Qt.ForegroundRole and index.column() == 1:
 
@@ -45,7 +46,7 @@ class VariantInfoModel(QJsonModel):
 
         if role == Qt.DisplayRole and index.column() == 1:
             if value == "":
-                return "Null"
+                return item.childCount()
 
         return super().data(index, role)
 
@@ -68,7 +69,7 @@ class VariantInfoWidget(PluginWidget):
         self.view = QTreeView()
         self.model = VariantInfoModel()
         self.view.setModel(self.model)
-        self.view.setAlternatingRowColors(False)
+        self.view.setAlternatingRowColors(True)
         vlayout = QVBoxLayout()
         vlayout.addWidget(self.view)
         vlayout.setContentsMargins(0, 0, 0, 0)

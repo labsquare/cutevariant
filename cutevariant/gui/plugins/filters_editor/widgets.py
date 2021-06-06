@@ -1,4 +1,5 @@
 # Standard imports
+from logging import Filter
 import sys
 import json
 import os
@@ -162,12 +163,12 @@ class FieldsCompleter(QCompleter):
         self.setModel(self.source_model)
 
     def setModel(self, model):
-        """ override """
+        """override"""
         self.source_model = model
         super().setModel(self.source_model)
 
     def updateModel(self):
-        """ update model from sql like """
+        """update model from sql like"""
         if not self.conn or not self.field_name:
             return
 
@@ -272,7 +273,7 @@ class IntFieldEditor(BaseFieldEditor):
         return value
 
     def set_range(self, min_, max_):
-        """ Limit editor with a range of value """
+        """Limit editor with a range of value"""
         self.validator.setRange(min_, max_)
 
 
@@ -401,7 +402,7 @@ class WordSetEditor(BaseFieldEditor):
         self.combo.addItems(wordsets)
 
     def set_mode(self, mode="list"):
-        """ set mode with either 'list' or 'wordset' """
+        """set mode with either 'list' or 'wordset'"""
 
         if mode == "list":
             self.stack.setCurrentIndex(0)
@@ -1128,7 +1129,7 @@ class FilterModel(QAbstractItemModel):
             return QModelIndex()
 
     def parent(self, index: QModelIndex) -> QModelIndex:
-        """Overrided Qt methods: Create parent from index """
+        """Overrided Qt methods: Create parent from index"""
         if not index.isValid():
             return QModelIndex()
 
@@ -1280,7 +1281,7 @@ class FilterModel(QAbstractItemModel):
             self.filtersChanged.emit()
 
     def rowCount(self, parent=QModelIndex()) -> int:
-        """Overrided Qt methods: return row count according parent """
+        """Overrided Qt methods: return row count according parent"""
         if parent.column() > 0:
             return 0
 
@@ -1292,12 +1293,12 @@ class FilterModel(QAbstractItemModel):
         return len(parent_item.children)
 
     def columnCount(self, parent=QModelIndex()) -> int:
-        """ Overrided Qt methods: return column count according parent """
+        """Overrided Qt methods: return column count according parent"""
 
         return 5
 
     def flags(self, index) -> Qt.ItemFlags:
-        """ Overrided Qt methods: return Qt flags to make item editable and selectable """
+        """Overrided Qt methods: return Qt flags to make item editable and selectable"""
 
         if not index.isValid():
             return 0
@@ -1390,9 +1391,11 @@ class FilterModel(QAbstractItemModel):
         Returns:
             Qt.DropAction
         """
-        return Qt.MoveAction
+        return Qt.MoveAction | Qt.CopyAction
 
-    def dropMimeData(self, data, action, row, column, parent) -> bool:
+    def dropMimeData(
+        self, data: QMimeData, action, row, column, parent: QModelIndex
+    ) -> bool:
         """Overrided Qt methods: This method is called when item is dropped by drag/drop.
         data is QMimeData and it contains a pickle serialization of current dragging item.
         Get back item by unserialize data.data().
@@ -1407,7 +1410,21 @@ class FilterModel(QAbstractItemModel):
         Returns:
             bool: return True if success otherwise return False
         """
-        if action != Qt.MoveAction:
+
+        if action != Qt.MoveAction and action != Qt.CopyAction:
+            return False
+
+        if data.hasText():
+            field_names = json.loads(data.text()).get("fields")
+            if parent and parent.internalPointer().type == FilterItem.LOGIC_TYPE:
+
+                return all(
+                    [
+                        self.add_condition_item((field_name, "$eq", ""), parent)
+                        for field_name in field_names
+                    ]
+                )
+
             return False
 
         if not data.data(self._MIMEDATA):
@@ -1468,6 +1485,16 @@ class FilterModel(QAbstractItemModel):
         for row in range(self.rowCount(index)):
             cindex = self.index(row, 0, index)
             self.set_recursive_check_state(cindex, checked)
+
+    def canDropMimeData(
+        self,
+        data: QMimeData,
+        action: Qt.DropAction,
+        row: int,
+        column: int,
+        parent: QModelIndex,
+    ) -> bool:
+        return True
 
 
 class FilterDelegate(QStyledItemDelegate):
@@ -2005,7 +2032,9 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.view.setAlternatingRowColors(True)
         self.view.setAcceptDrops(True)
         self.view.setDragEnabled(True)
-        self.view.setDragDropMode(QAbstractItemView.InternalMove)
+        self.view.setDragDropMode(QAbstractItemView.DragDrop)
+        self.view.setAcceptDrops(True)
+        # self.view.setDropIndicatorShown(True)
         self.view.header().setStretchLastSection(False)
         self.view.header().setSectionResizeMode(COLUMN_FIELD, QHeaderView.Interactive)
         self.view.header().setSectionResizeMode(COLUMN_OPERATOR, QHeaderView.Fixed)
@@ -2174,7 +2203,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
     @property
     def filter_path(self):
-        """ Return filter path from settings """
+        """Return filter path from settings"""
         settings = QSettings()
         settings.beginGroup(self.plugin_name)
         return settings.value(
@@ -2241,12 +2270,12 @@ class FiltersEditorWidget(plugin.PluginWidget):
             self._update_view_geometry()
 
     def to_json(self):
-        """override """
+        """override"""
 
         return {"filters": self.filters}
 
     def from_json(self, data):
-        """ override """
+        """override"""
         if "filters" in data:
             self.filters = data["filters"]
 
@@ -2549,7 +2578,7 @@ if __name__ == "__main__":
     view.setDragEnabled(True)
     view.setDropIndicatorShown(True)
     view.setSelectionBehavior(QAbstractItemView.SelectRows)
-    view.setDragDropMode(QAbstractItemView.InternalMove)
+    view.setDragDropMode(QAbstractItemView.DragDrop)
 
     model.conn = conn
     model.load(data)
