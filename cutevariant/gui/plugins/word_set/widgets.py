@@ -271,24 +271,29 @@ class WordsetCollectionModel(QAbstractTableModel):
         if len(wordset_names) != 1:
             # Currently, we don't support dragging more than one wordset
             return None
-        res = QMimeData("application/json")
+        res = QMimeData()
         ser_wordset = wordset_names[0]
-        res.setText(
-            json.dumps(
-                {
-                    "type": "filter.condition",
-                    "condition": {
-                        "field": "ann.gene",
-                        "operator": "$in",
-                        "value": {"$wordset": ser_wordset},
-                    },
-                }
-            )
+        res.setText(json.dumps({"ann.gene": {"$in": {"$wordset": ser_wordset}}}))
+        res.setData(
+            "cutevariant/typed-json",
+            bytes(
+                json.dumps(
+                    {
+                        "type": "condition",
+                        "condition": {
+                            "field": "ann.gene",
+                            "operator": "$in",
+                            "value": {"$wordset": ser_wordset},
+                        },
+                    }
+                ),
+                "utf-8",
+            ),
         )
         return res
 
     def mimeTypes(self) -> typing.List:
-        return ["application/json"]
+        return ["cutevariant/typed-json", "text/plain"]
 
     def flags(self, index: QModelIndex) -> Qt.ItemFlags:
         return super().flags(index) | Qt.ItemIsDragEnabled
