@@ -849,7 +849,6 @@ class FilterModel(QAbstractItemModel):
 
     # See self.headerData()
     _HEADERS = ["field", "operator", "value", "", ""]
-    _MIMEDATA = "application/x-qabstractitemmodeldatalist"
 
     # Custom type to get FilterItem.type. See self.data()
     TypeRole = Qt.UserRole + 1
@@ -1206,10 +1205,21 @@ class FilterModel(QAbstractItemModel):
 
         return item
 
-    def to_dict(self, item=None) -> dict:
+    def to_dict(
+        self,
+        item: FilterItem = None,
+        checked_only: bool = True,
+    ) -> dict:
         """Recursive function to build a nested dictionnary from FilterItem structure
 
-        Notes:
+        Args:
+            item (FilterItem, optional): Top-most item to get the dict of. If None, root item is chosen. Defaults to None.
+            checked_only (bool, optional): Only select items that are checked. Defaults to True.
+
+        Returns:
+            dict: [description]
+
+        Note:
             We use data from FilterItems; i.e. the equivalent of UserRole data.
         """
 
@@ -1219,12 +1229,20 @@ class FilterModel(QAbstractItemModel):
         if item is None:
             item = self.root_item[0]
 
-        if item.type == FilterItem.LOGIC_TYPE and item.checked is True:
-            # Return dict with operator as key and item as value
-            operator_data = [
-                self.to_dict(child) for child in item.children if child.checked is True
-            ]
-            return {item.get_value(): operator_data}
+        if checked_only:
+            if item.type == FilterItem.LOGIC_TYPE and item.checked is True:
+                # Return dict with operator as key and item as value
+                operator_data = [
+                    self.to_dict(child)
+                    for child in item.children
+                    if child.checked is True
+                ]
+                return {item.get_value(): operator_data}
+        else:
+            if item.type == FilterItem.LOGIC_TYPE:
+                # Return dict with operator as key and item as value
+                operator_data = [self.to_dict(child) for child in item.children]
+                return {item.get_value(): operator_data}
 
         if item.type == FilterItem.CONDITION_TYPE:
             result = {}
@@ -1430,6 +1448,18 @@ class FilterModel(QAbstractItemModel):
         self.dataChanged.emit(parent.child(row, 0), parent.child(row, 2))
         return True
 
+    def _drop_internal_move(self, source_coords, destintation_parent, destination_row):
+        if not source_coords:
+            return False
+        index = QModelIndex()
+        # index is the modelindex of the item we want to move
+        for row in source_coords:
+            index = self.index(row, 0, index)
+        if index.isValid():
+            return self.moveRow(
+                index.parent(), index.row(), destintation_parent, destination_row
+            )
+
     def dropMimeData(
         self, data: QMimeData, action, row, column, parent: QModelIndex
     ) -> bool:
@@ -1462,6 +1492,10 @@ class FilterModel(QAbstractItemModel):
                     return self._drop_filters_condition(
                         row, obj.get("condition", {}), parent
                     )
+                if obj["type"] == "internal_move":
+                    if "coords" not in obj:
+                        return False
+                    return self._drop_internal_move(obj["coords"], parent, row)
             return False
 
         if data.hasUrls():
@@ -1485,28 +1519,7 @@ class FilterModel(QAbstractItemModel):
                     )
                     return False
 
-        if not data.data(self._MIMEDATA):
-            return False
-
-        # Unserialize
-        item = pickle.loads(data.data(self._MIMEDATA).data())
-
-        # Get index from item
-        source_parent = self.match(
-            self.index(0, 0),
-            FilterModel.UniqueIdRole,
-            item.parent.uuid,
-            1,
-            Qt.MatchRecursive,
-        )
-
-        if source_parent:
-            source_parent = source_parent[0]
-            return self.moveRow(source_parent, item.row(), parent, row)
-
-        return False
-
-    def mimeData(self, indexes) -> QMimeData:
+    def mimeData(self, indexes: typing.List[QModelIndex]) -> QMimeData:
         """Serialize item from indexes into a QMimeData
         Currently, it serializes only the first index from t he list.
         Args:
@@ -1519,9 +1532,18 @@ class FilterModel(QAbstractItemModel):
         if not indexes:
             return
 
-        data = QMimeData(self._MIMEDATA)
-        serialization = QByteArray(pickle.dumps(self.item(indexes[0])))
-        data.setData(self._MIMEDATA, serialization)
+        data = QMimeData()
+        parent = indexes[0]
+        coords = []
+        # Compute coords of index by recursively finding parent's row until root index.
+        # First number in the list is the row among root parent children. Always 0, since there can be only one root as a logical operator
+        while parent != QModelIndex():
+            coords.insert(0, parent.row())
+            parent = parent.parent()
+
+        data = QMimeData()
+        data.setText(json.dumps({"type": "internal_move", "coords": coords}))
+
         return data
 
     def set_recursive_check_state(self, index, checked=True):
@@ -1545,7 +1567,7 @@ class FilterModel(QAbstractItemModel):
             self.set_recursive_check_state(cindex, checked)
 
     def mimeTypes(self) -> typing.List:
-        return [self._MIMEDATA, "text/plain"]
+        return ["text/plain"]
 
     def canDropMimeData(
         self,
@@ -1560,6 +1582,7 @@ class FilterModel(QAbstractItemModel):
         basic_answer = super().canDropMimeData(data, action, row, column, parent)
 
         if not basic_answer:
+            print("NOPE")
             return False
 
         if data.hasText() and not data.hasUrls():
@@ -1570,6 +1593,8 @@ class FilterModel(QAbstractItemModel):
                 if obj["type"] == "filter.condition":
                     # if self.item(parent).type != FilterItem.LOGIC_TYPE:
                     #     return False
+                    return True
+                if obj["type"] == "internal_move":
                     return True
             return False
 
