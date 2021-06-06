@@ -42,6 +42,7 @@ from PySide2.QtWidgets import (
 )
 from PySide2.QtCore import (
     QAbstractListModel,
+    QUrl,
     Qt,
     QObject,
     Signal,
@@ -1450,7 +1451,7 @@ class FilterModel(QAbstractItemModel):
         if action != Qt.MoveAction and action != Qt.CopyAction:
             return False
 
-        if data.hasText():
+        if data.hasText() and not data.hasUrls():
             obj = json.loads(data.text())
             if "fields" in obj:
                 # Add a field condition
@@ -1464,10 +1465,12 @@ class FilterModel(QAbstractItemModel):
             return False
 
         if data.hasUrls():
-            urls = data.urls()
+            urls: typing.List[QUrl] = data.urls()
             if len(urls) != 1:
                 return False
-            with open(urls[0]) as f:
+            if not urls[0].toLocalFile():
+                return False
+            with open(urls[0].toLocalFile()) as f:
                 try:
                     obj = json.load(f)
                     if obj:
@@ -1559,7 +1562,7 @@ class FilterModel(QAbstractItemModel):
         if not basic_answer:
             return False
 
-        if data.hasText():
+        if data.hasText() and not data.hasUrls():
             obj = json.loads(data.text())
             if "fields" in obj:
                 return True
