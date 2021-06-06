@@ -1453,13 +1453,34 @@ class FilterModel(QAbstractItemModel):
         if data.hasText():
             obj = json.loads(data.text())
             if "fields" in obj:
+                # Add a field condition
                 return self._drop_fields_data(obj["fields"], parent)
             if "type" in obj:
                 if obj["type"] == "filter.condition":
+                    # Add condition contained in obj
                     return self._drop_filters_condition(
                         row, obj.get("condition", {}), parent
                     )
             return False
+
+        if data.hasUrls():
+            urls = data.urls()
+            if len(urls) != 1:
+                return False
+            with open(urls[0]) as f:
+                try:
+                    obj = json.load(f)
+                    if obj:
+                        # Should have a way to insert a portion of a tree
+                        pass
+
+                except Exception as e:
+                    QMessageBox.warning(
+                        None,
+                        self.tr("Warning"),
+                        self.tr("Dropped file contains no valid json! Aborting."),
+                    )
+                    return False
 
         if not data.data(self._MIMEDATA):
             return False
