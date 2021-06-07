@@ -1384,12 +1384,12 @@ class FilterModel(QAbstractItemModel):
         parent_source_item = self.item(sourceParent)
         parent_destination_item = self.item(destinationParent)
 
+        # Avoid segfault by returning False as soon as you are trying to drag drop the item on itself
+        if sourceParent == destinationParent:
+            return False
         #  if destination is - 1, it's mean we should append the item at the end of children
         if destinationChild < 0:
-            if sourceParent == destinationParent:
-                return False
-            else:
-                destinationChild = len(parent_destination_item.children)
+            destinationChild = len(parent_destination_item.children)
 
         # Don't move same same Item
         if sourceParent == destinationParent and sourceRow == destinationChild:
@@ -1634,7 +1634,6 @@ class FilterModel(QAbstractItemModel):
         basic_answer = super().canDropMimeData(data, action, row, column, parent)
 
         if not basic_answer:
-            print("NOPE")
             return False
 
         if data.hasText() and not data.hasUrls():
