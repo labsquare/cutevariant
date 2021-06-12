@@ -1645,7 +1645,9 @@ def get_variant_as_group(
     query = f"""SELECT `{groupby}`, COUNT(`{groupby}`) AS count
     FROM ({subquery}) GROUP BY `{groupby}` ORDER BY {order_by} {order_desc} LIMIT {limit}"""
     for i in conn.execute(query):
-        yield dict(i)
+        res = dict(i)
+        res["field"]=groupby
+        yield res
 
 
 ## samples table ===============================================================

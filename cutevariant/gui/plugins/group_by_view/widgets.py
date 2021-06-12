@@ -64,7 +64,7 @@ class GroupbyModel(QAbstractTableModel):
         self._conn = conn
         self.load_groupby_thread = SqlThread(self._conn)
         self.load_groupby_thread.started.connect(self.groupby_started)
-        self.load_groupby_thread.result_ready.connect(self.groubpby_finished)
+        self.load_groupby_thread.finished.connect(self.groubpby_finished)
         self.load_groupby_thread.result_ready.connect(self._on_data_available)
         self.load_groupby_thread.error.connect(self._on_error)
 
@@ -75,6 +75,8 @@ class GroupbyModel(QAbstractTableModel):
         self._source = "variants"
         self._filters = {}
         self._order_by_count = True
+
+        self.is_loading = False
 
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
         return len(self._raw_data)
@@ -95,6 +97,10 @@ class GroupbyModel(QAbstractTableModel):
 
     def data(self, index: QModelIndex, role: int):
 
+        if not self._raw_data:
+            # Shouldn't be called by anyone, since in such case rowCount will be 0...
+            return
+
         if not index.isValid():
             return
 
@@ -107,18 +113,23 @@ class GroupbyModel(QAbstractTableModel):
         if self._field_info and self._field_name.split(".")[-1] == "gt":
             if role == Qt.DecorationRole and index.column() == 0:
                 return QIcon(
-                    self.GENOTYPE_ICONS.get(
+                    self.__class__.GENOTYPE_ICONS.get(
                         self._raw_data[index.row()][self._field_name],
-                        self.GENOTYPE_ICONS[-1],
+                        self.__class__.GENOTYPE_ICONS[-1],
                     )
                 )
 
         if role == Qt.DisplayRole:
-            cols = {0: self._field_name, 1: "count"}
-            return self._raw_data[index.row()][cols[index.column()]]
-
-        if self._field_info and self._field_info["category"] == "int":
-            self._is = True
+            if self._field_name not in self._raw_data[0]:
+                return (
+                    self.tr(f"Invalid data. Loaded: {self._raw_data[0]['field']}")
+                    if index.column() == 0
+                    else self.tr(f"Current field name: {self._field_name}")
+                )
+            if index.column() == 0:
+                return self._raw_data[index.row()][self._field_name]
+            if index.column() == 1:
+                return self._raw_data[index.row()]["count"]
 
     def clear(self):
         self._set_raw_data([])
@@ -135,36 +146,35 @@ class GroupbyModel(QAbstractTableModel):
 
         """
         if column < self.columnCount():
-
             self._order_by_count = column == 1
             self._order_desc = order == Qt.DescendingOrder
-            self.load()
+            self.load(self._field_name, self._fields, self._source, self._filters)
 
-    def set_query_params(
+    def load(
         self,
-        field_name: str = None,
-        fields: list = None,
-        source: str = None,
-        filters: dict = None,
+        field_name,
+        fields,
+        source,
+        filters,
     ):
-        # if field_name != self._field_name:
-        # self._field_name = field_name or "chr"
-        if field_name != self._field_name:
-            self._field_name = field_name
-            if self._conn:
-                raw_field_name = self._field_name.split(".")[-1]
-                self._field_info = sql.get_field_by_name(self._conn, raw_field_name)
-        self._fields = fields or self._fields
-        self._source = source or self._source
-        self._filters = filters or self._filters
-
-    def load(self):
         """Counts unique values inside field_name
 
         Args:
             conn (sqlite3.Connection): Access to cutevariant's project database
             field_name (str): The field you want the number of unique values of
         """
+        if self.is_loading:
+            return
+        if not self._conn:
+            return
+
+        if field_name != self._field_name:
+            self._field_name = field_name
+            raw_field_name = self._field_name.split(".")[-1]
+            self._field_info = sql.get_field_by_name(self._conn, raw_field_name)
+        self._fields = fields or self._fields
+        self._source = source or self._source
+        self._filters = filters or self._filters
         groupby_func = lambda conn: sql.get_variant_as_group(
             conn,
             self._field_name,
@@ -174,30 +184,26 @@ class GroupbyModel(QAbstractTableModel):
             self._order_by_count,
             self._order_desc,
         )
-        if self._conn:
-            self.load_groupby_thread.start_function(
-                lambda conn: list(groupby_func(conn))
-            )
+        self.load_groupby_thread.start_function(lambda conn: list(groupby_func(conn)))
+        self.is_loading = True
 
     def _on_data_available(self):
         self._set_raw_data(self.load_groupby_thread.results)
-
-    def _on_load_finished(self):
-        self.groubpby_finished.emit()
+        self.is_loading = False
 
     def _on_error(self):
         QMessageBox.critical(
             None,
             self.tr("Error!"),
-            self.tr(f"Cannot load field {self._field_name}"),
+            self.tr(
+                f"Group by thread returned error {self.load_groupby_thread.last_error}"
+            ),
         )
         self.clear()
         self.groupby_error.emit()
+        self.is_loading = False
 
     def _set_raw_data(self, raw_data: list):
-        if self._field_name not in raw_data[0]:
-            self.clear()
-            return
         self.beginResetModel()
         self._raw_data = raw_data
         self.endResetModel()
@@ -248,13 +254,12 @@ class GroupbyTable(QWidget):
         filters: dict,
     ):
         if self.conn:
-            self.groupby_model.set_query_params(
+            self.groupby_model.load(
                 field_name,
                 fields,
                 source,
                 filters,
             )
-            self.groupby_model.load()
 
     def start_loading(self):
         self.tableview.start_loading()
@@ -324,6 +329,14 @@ class GroupByViewWidget(PluginWidget):
 
         self.field_select_combo.currentTextChanged.connect(self._load_groupby)
 
+        # Make sure that the combobox automatically gets enabled/disabled upon loading
+        self.view.groupby_model.groupby_started.connect(
+            lambda: self.field_select_combo.setEnabled(False)
+        )
+        self.view.groupby_model.groubpby_finished.connect(
+            lambda: self.field_select_combo.setEnabled(True)
+        )
+
         self._order_desc = True
         self._order_by_count = True
         self._limit = 50
@@ -361,6 +374,9 @@ class GroupByViewWidget(PluginWidget):
 
     def _load_groupby(self):
         if self.conn:
+            print(
+                self.field_select_combo.currentText(),
+            )
             self.view.load(
                 self.field_select_combo.currentText(),
                 self.mainwindow.get_state_data("fields"),
@@ -401,7 +417,6 @@ class GroupByViewWidget(PluginWidget):
             filters["$and"].append(condition)
         else:
             filters = {"$and": [condition]}
-        # I know it has already been set since this dictionnary does shallow copy
         self.mainwindow: MainWindow
         self.mainwindow.set_state_data("filters", filters)
         self.mainwindow.refresh_plugins(sender=self)
