@@ -3,7 +3,6 @@ import sqlite3
 
 import copy
 import json
-from tests.gui.test_plugins import MainWindow
 
 from PySide2.QtCore import (
     QAbstractTableModel,
