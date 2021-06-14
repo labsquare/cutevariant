@@ -19,6 +19,7 @@ from PySide2.QtWidgets import (
     QAbstractItemView,
     QComboBox,
     QHBoxLayout,
+    QInputDialog,
     QMessageBox,
     QToolBar,
     QVBoxLayout,
@@ -253,7 +254,6 @@ class GroupbyTable(QWidget):
         source: str,
         filters: dict,
     ):
-        print("CALLING LOAD WITH FIELD NAME ", field_name)
         if self.conn:
             self.groupby_model.load(
                 field_name,
@@ -294,6 +294,13 @@ class GroupByViewWidget(PluginWidget):
 
         self.toolbar = QToolBar(self)
         self.toolbar.setIconSize(QSize(16, 16))
+
+        self.add_selection_to_wordset_act = self.toolbar.addAction(
+            FIcon(0xF0412), self.tr("Add selection to wordset")
+        )
+        self.add_selection_to_wordset_act.triggered.connect(
+            self.add_selection_to_wordset
+        )
 
         # Below is for the 'Toggle additive selection' thing... Not a fan of it
         # self.toggle_add_to_selection_act = self.toolbar.addAction(
@@ -426,6 +433,26 @@ class GroupByViewWidget(PluginWidget):
         self.mainwindow: MainWindow
         self.mainwindow.set_state_data("filters", filters)
         self.mainwindow.refresh_plugins(sender=self)
+
+    def add_selection_to_wordset(self):
+        words = [
+            idx.data(Qt.DisplayRole)
+            for idx in self.view.tableview.selectionModel().selectedRows(0)
+        ]
+        if not words:
+            return
+        wordset_name = None
+        while not wordset_name:
+            wordset_name, _ = QInputDialog.getText(
+                self,
+                self.tr("Wordset to add selection to (can be an existing one)"),
+                self.tr("Name of the wordset"),
+            )
+            if not wordset_name:
+                return
+        sql.import_wordset_from_list(self.conn, wordset_name, words)
+        self.mainwindow: MainWindow
+        self.mainwindow.refresh_plugin("word_set")
 
 
 if __name__ == "__main__":
