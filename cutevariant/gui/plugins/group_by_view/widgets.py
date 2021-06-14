@@ -253,6 +253,7 @@ class GroupbyTable(QWidget):
         source: str,
         filters: dict,
     ):
+        print("CALLING LOAD WITH FIELD NAME ", field_name)
         if self.conn:
             self.groupby_model.load(
                 field_name,
@@ -293,25 +294,29 @@ class GroupByViewWidget(PluginWidget):
 
         self.toolbar = QToolBar(self)
         self.toolbar.setIconSize(QSize(16, 16))
-        self.toggle_add_to_selection_act = self.toolbar.addAction(
-            FIcon(0xF1281),
-            self.tr("Additive selection"),
-        )
-        self.toggle_add_to_selection_act.toggled.connect(
-            lambda checked: self.view.tableview.setSelectionMode(
-                QAbstractItemView.ExtendedSelection
-                if checked
-                else QAbstractItemView.SingleSelection
-            )
-        )
 
-        # Create spacer
+        # Below is for the 'Toggle additive selection' thing... Not a fan of it
+        # self.toggle_add_to_selection_act = self.toolbar.addAction(
+        #     FIcon(0xF1281),
+        #     self.tr("Additive selection"),
+        # )
+        # self.toggle_add_to_selection_act.toggled.connect(
+        #     lambda checked: self.view.tableview.setSelectionMode(
+        #         QAbstractItemView.ExtendedSelection
+        #         if checked
+        #         else QAbstractItemView.SingleSelection
+        #     )
+        # )
+
+        # # Create spacer
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.toolbar.addWidget(spacer)
 
         self.toolbar.addSeparator()
-        self.toggle_add_to_selection_act.setCheckable(True)
+        # self.toggle_add_to_selection_act.setCheckable(True)
+
+        self.view.tableview.setSelectionMode(QAbstractItemView.ExtendedSelection)
 
         # Add apply button
         apply_action = self.toolbar.addAction(self.tr("Apply"))
@@ -362,8 +367,12 @@ class GroupByViewWidget(PluginWidget):
         if self.conn:
             previous_selection = self.field_select_combo.currentText()
             current_fields = self.mainwindow.get_state_data("fields")
+
+            # Block signals before clearing so that the currentTextChanged signal doesn't fire with empty text...
+            self.field_select_combo.blockSignals(True)
             self.field_select_combo.clear()
             self.field_select_combo.addItems(current_fields)
+            self.field_select_combo.blockSignals(False)
             if previous_selection in current_fields:
                 # Select the same field as previously selected for user's comfort
                 self.field_select_combo.setCurrentText(previous_selection)
@@ -374,9 +383,6 @@ class GroupByViewWidget(PluginWidget):
 
     def _load_groupby(self):
         if self.conn:
-            print(
-                self.field_select_combo.currentText(),
-            )
             self.view.load(
                 self.field_select_combo.currentText(),
                 self.mainwindow.get_state_data("fields"),
