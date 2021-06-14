@@ -36,7 +36,7 @@ from cutevariant.gui.sql_thread import SqlThread
 from cutevariant.gui.widgets import LoadingTableView
 import cutevariant.commons as cm
 
-from cutevariant.gui import plugin, FIcon, style
+from cutevariant.gui import plugin, FIcon, style, MainWindow
 
 LOGGER = cm.logger()
 
@@ -233,6 +233,7 @@ class GroupbyTable(QWidget):
 
         layout = QVBoxLayout(self)
         layout.addWidget(self.tableview)
+        layout.setContentsMargins(0, 0, 0, 0)
 
     @property
     def conn(self):
@@ -301,42 +302,18 @@ class GroupByViewWidget(PluginWidget):
             self.add_selection_to_wordset
         )
 
-        # Below is for the 'Toggle additive selection' thing... Not a fan of it
-        # self.toggle_add_to_selection_act = self.toolbar.addAction(
-        #     FIcon(0xF1281),
-        #     self.tr("Additive selection"),
-        # )
-        # self.toggle_add_to_selection_act.toggled.connect(
-        #     lambda checked: self.view.tableview.setSelectionMode(
-        #         QAbstractItemView.ExtendedSelection
-        #         if checked
-        #         else QAbstractItemView.SingleSelection
-        #     )
-        # )
-
-        # # Create spacer
-        spacer = QWidget()
-        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.toolbar.addWidget(spacer)
-
-        self.toolbar.addSeparator()
-        # self.toggle_add_to_selection_act.setCheckable(True)
-
         self.view.tableview.setSelectionMode(QAbstractItemView.ExtendedSelection)
 
         # Add apply button
-        apply_action = self.toolbar.addAction(self.tr("Apply"))
-        self.apply_button = self.toolbar.widgetForAction(apply_action)
-        self.apply_button.setIcon(FIcon(0xF0E1E, "white"))
-        self.apply_button.setStyleSheet("background-color: #038F6A; color:white")
-        self.apply_button.setAutoRaise(False)
-        self.apply_button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-        self.apply_button.pressed.connect(self.on_apply)
+        self.apply_action = self.toolbar.addAction(
+            FIcon(0xF0412), self.tr("Create filter from selection")
+        )
+        self.apply_action.triggered.connect(self.on_apply)
 
         layout = QVBoxLayout(self)
         layout.addWidget(self.toolbar)
-        layout.addWidget(self.field_select_combo)
         layout.addWidget(self.view)
+        layout.addWidget(self.field_select_combo)
 
         self.field_select_combo.currentTextChanged.connect(self._load_groupby)
 
@@ -414,12 +391,7 @@ class GroupByViewWidget(PluginWidget):
             for idx in self.view.tableview.selectionModel().selectedRows(0)
         ]
         self.add_condition_to_filters(
-            {
-                "$or": [
-                    {self.view.groupby_model.get_field_name(): val}
-                    for val in selected_values
-                ]
-            }
+            {self.view.groupby_model.get_field_name(): {"$in": selected_values}}
         )
 
     def add_condition_to_filters(self, condition: dict):
@@ -431,7 +403,7 @@ class GroupByViewWidget(PluginWidget):
             filters = {"$and": [condition]}
         self.mainwindow: MainWindow
         self.mainwindow.set_state_data("filters", filters)
-        self.mainwindow.refresh_plugins(sender=self)
+        self.mainwindow.refresh_plugins(sender=None)
 
     def add_selection_to_wordset(self):
         words = [
