@@ -816,7 +816,7 @@ def intersect_wordset(conn: sqlite3.Connection, name: str, wordsets: list):
     cursor = conn.cursor()
     cursor.execute(query)
     conn.commit()
-    return cursor.lastrowid
+    return cursor.rowcount
 
 
 def union_wordset(conn, name: str, wordsets=[]):
@@ -841,7 +841,7 @@ def union_wordset(conn, name: str, wordsets=[]):
     cursor = conn.cursor()
     cursor.execute(query)
     conn.commit()
-    return cursor.lastrowid
+    return cursor.rowcount
 
 
 def subtract_wordset(conn, name: str, wordsets=[]):
@@ -866,7 +866,7 @@ def subtract_wordset(conn, name: str, wordsets=[]):
     cursor = conn.cursor()
     cursor.execute(query)
     conn.commit()
-    return cursor.lastrowid
+    return cursor.rowcount
 
 
 ## Operations on sets of variants ==============================================
