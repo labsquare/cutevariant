@@ -450,7 +450,21 @@ class GroupByViewWidget(PluginWidget):
             )
             if not wordset_name:
                 return
-        sql.import_wordset_from_list(self.conn, wordset_name, words)
+        inserted = sql.import_wordset_from_list(self.conn, wordset_name, words)
+        if inserted > 0:
+            QMessageBox.information(
+                self,
+                self.tr("Information"),
+                self.tr(
+                    "{0} words added to wordset {1}".format(inserted, wordset_name)
+                ),
+            )
+        else:
+            QMessageBox.information(
+                self,
+                self.tr("Information"),
+                self.tr("Empty wordset, none created !"),
+            )
         self.mainwindow: MainWindow
         self.mainwindow.refresh_plugin("word_set")
 
