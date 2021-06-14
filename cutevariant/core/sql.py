@@ -794,7 +794,7 @@ def get_words_in_set(conn, wordset_name):
         yield dict(row)["value"]
 
 
-def intersect_wordset(conn, name: str, wordsets: list):
+def intersect_wordset(conn: sqlite3.Connection, name: str, wordsets: list):
     """Create new `name` wordset from intersection of `wordsets`
 
     Args:
@@ -813,10 +813,10 @@ def intersect_wordset(conn, name: str, wordsets: list):
         )
         + ")"
     )
-
-    print(query)
-    conn.execute(query)
+    cursor = conn.cursor()
+    cursor.execute(query)
     conn.commit()
+    return cursor.lastrowid
 
 
 def union_wordset(conn, name: str, wordsets=[]):
@@ -838,9 +838,10 @@ def union_wordset(conn, name: str, wordsets=[]):
         )
         + ")"
     )
-
-    conn.execute(query)
+    cursor = conn.cursor()
+    cursor.execute(query)
     conn.commit()
+    return cursor.lastrowid
 
 
 def subtract_wordset(conn, name: str, wordsets=[]):
@@ -862,9 +863,10 @@ def subtract_wordset(conn, name: str, wordsets=[]):
         )
         + ")"
     )
-
-    conn.execute(query)
+    cursor = conn.cursor()
+    cursor.execute(query)
     conn.commit()
+    return cursor.lastrowid
 
 
 ## Operations on sets of variants ==============================================
@@ -1646,7 +1648,7 @@ def get_variant_as_group(
     FROM ({subquery}) GROUP BY `{groupby}` ORDER BY {order_by} {order_desc} LIMIT {limit}"""
     for i in conn.execute(query):
         res = dict(i)
-        res["field"]=groupby
+        res["field"] = groupby
         yield res
 
 
