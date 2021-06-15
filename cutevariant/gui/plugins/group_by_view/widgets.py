@@ -63,7 +63,6 @@ class GroupbyModel(QAbstractTableModel):
     def __init__(self, parent: QObject = None, conn: sqlite3.Connection = None) -> None:
         super().__init__(parent)
         self._raw_data = []
-        self._field_name = ""
         self._conn = conn
         self.load_groupby_thread = SqlThread(self._conn)
         self.load_groupby_thread.started.connect(self.groupby_started)
@@ -72,7 +71,6 @@ class GroupbyModel(QAbstractTableModel):
         self.load_groupby_thread.error.connect(self._on_error)
 
         self._field_name = "chr"
-        self._field_info = {}
 
         self._fields = ["chr", "pos", "ref", "alt"]
         self._source = "variants"
@@ -82,17 +80,17 @@ class GroupbyModel(QAbstractTableModel):
         self.is_loading = False
 
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
-        """ override """
+        """override"""
         return len(self._raw_data)
 
     def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
-        """ override """
+        """override"""
         if parent == QModelIndex():
             return 2
         return 0
 
     def headerData(self, section: int, orientation: Qt.Orientation, role: int):
-        """ override """
+        """override"""
         if section not in (0, 1):
             return
 
@@ -103,7 +101,7 @@ class GroupbyModel(QAbstractTableModel):
             return ["Value", "Count"][section]
 
     def data(self, index: QModelIndex, role: int):
-        """ override """
+        """override"""
 
         if not self._raw_data:
             # Shouldn't be called by anyone, since in such case rowCount will be 0...
@@ -118,7 +116,7 @@ class GroupbyModel(QAbstractTableModel):
         if index.row() < 0 or index.row() >= self.rowCount():
             return
 
-        if self._field_info and self._field_name.split(".")[-1] == "gt":
+        if self._field_name.split(".")[-1] == "gt":
             if role == Qt.DecorationRole and index.column() == 0:
                 return QIcon(
                     self.__class__.GENOTYPE_ICONS.get(
@@ -176,13 +174,10 @@ class GroupbyModel(QAbstractTableModel):
         if not self._conn:
             return
 
-        if field_name != self._field_name:
-            self._field_name = field_name
-            raw_field_name = self._field_name.split(".")[-1]
-            self._field_info = sql.get_field_by_name(self._conn, raw_field_name)
-        self._fields = fields or self._fields
-        self._source = source or self._source
-        self._filters = filters or self._filters
+        self._field_name = field_name
+        self._fields = fields
+        self._source = source
+        self._filters = filters
         groupby_func = lambda conn: sql.get_variant_as_group(
             conn,
             self._field_name,
@@ -303,7 +298,7 @@ class GroupByViewWidget(PluginWidget):
         self.toolbar = QToolBar(self)
         self.toolbar.setIconSize(QSize(16, 16))
 
-        # HIDE wordset button   
+        # HIDE wordset button
         # self.add_selection_to_wordset_act = self.toolbar.addAction(
         #     FIcon(0xF0415), self.tr("Add selection to wordset")
         # )
@@ -353,7 +348,7 @@ class GroupByViewWidget(PluginWidget):
         self._offset = 0
 
     def on_open_project(self, conn: sqlite3.Connection):
-        """ override """
+        """override"""
         self.conn = conn
         self.view.conn = conn
         self.on_refresh()
