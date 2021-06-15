@@ -424,40 +424,6 @@ class GroupByViewWidget(PluginWidget):
         self.mainwindow.set_state_data("filters", filters)
         self.mainwindow.refresh_plugins(sender=None)
 
-    def add_selection_to_wordset(self):
-        words = [
-            idx.data(Qt.DisplayRole)
-            for idx in self.view.tableview.selectionModel().selectedRows(0)
-        ]
-        if not words:
-            return
-        wordset_name = None
-        while not wordset_name:
-            wordset_name, _ = QInputDialog.getText(
-                self,
-                self.tr("Wordset to add selection to (can be an existing one)"),
-                self.tr("Name of the wordset"),
-            )
-            if not wordset_name:
-                return
-        inserted = sql.import_wordset_from_list(self.conn, wordset_name, words)
-        if inserted > 0:
-            QMessageBox.information(
-                self,
-                self.tr("Information"),
-                self.tr(
-                    "{0} words added to wordset {1}".format(inserted, wordset_name)
-                ),
-            )
-        else:
-            QMessageBox.information(
-                self,
-                self.tr("Information"),
-                self.tr("Empty wordset, none created !"),
-            )
-        self.mainwindow: MainWindow
-        self.mainwindow.refresh_plugin("word_set")
-
 
 if __name__ == "__main__":
     import sys
