@@ -6,6 +6,7 @@ import json
 
 from PySide2.QtCore import (
     QAbstractTableModel,
+    QItemSelection,
     QModelIndex,
     Qt,
     Signal,
@@ -16,6 +17,7 @@ from PySide2.QtCore import (
 )
 from PySide2.QtWidgets import (
     QAbstractItemView,
+    QAction,
     QComboBox,
     QHBoxLayout,
     QInputDialog,
@@ -307,7 +309,7 @@ class GroupByViewWidget(PluginWidget):
         self.view.tableview.setSelectionMode(QAbstractItemView.ExtendedSelection)
 
         # Add apply button
-        self.apply_action = self.toolbar.addAction(
+        self.apply_action: QAction = self.toolbar.addAction(
             FIcon(0xF0EF1), self.tr("Create filter from selection")
         )
         self.apply_action.triggered.connect(self.on_apply)
@@ -329,8 +331,15 @@ class GroupByViewWidget(PluginWidget):
         self.view.groupby_model.groupby_started.connect(
             lambda: self.field_select_combo.setEnabled(False)
         )
+
+        self.apply_action.setEnabled(False)
+
         self.view.groupby_model.groubpby_finished.connect(
             lambda: self.field_select_combo.setEnabled(True)
+        )
+
+        self.view.tableview.selectionModel().selectionChanged.connect(
+            lambda s, d: self.apply_action.setEnabled(len(s) != 0)
         )
 
         self._order_desc = True
@@ -398,9 +407,10 @@ class GroupByViewWidget(PluginWidget):
             idx.data(Qt.DisplayRole)
             for idx in self.view.tableview.selectionModel().selectedRows(0)
         ]
-        self.add_condition_to_filters(
-            {self.view.groupby_model.get_field_name(): {"$in": selected_values}}
-        )
+        if selected_values:
+            self.add_condition_to_filters(
+                {self.view.groupby_model.get_field_name(): {"$in": selected_values}}
+            )
 
     def add_condition_to_filters(self, condition: dict):
         filters = copy.deepcopy(self.mainwindow.get_state_data("filters"))
