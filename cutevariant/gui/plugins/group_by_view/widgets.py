@@ -296,7 +296,7 @@ class GroupByViewWidget(PluginWidget):
         self.toolbar.setIconSize(QSize(16, 16))
 
         self.add_selection_to_wordset_act = self.toolbar.addAction(
-            FIcon(0xF0412), self.tr("Add selection to wordset")
+            FIcon(0xF0415), self.tr("Add selection to wordset")
         )
         self.add_selection_to_wordset_act.triggered.connect(
             self.add_selection_to_wordset
@@ -306,14 +306,14 @@ class GroupByViewWidget(PluginWidget):
 
         # Add apply button
         self.apply_action = self.toolbar.addAction(
-            FIcon(0xF0412), self.tr("Create filter from selection")
+            FIcon(0xF0EF1), self.tr("Create filter from selection")
         )
         self.apply_action.triggered.connect(self.on_apply)
 
         layout = QVBoxLayout(self)
         layout.addWidget(self.toolbar)
-        layout.addWidget(self.view)
         layout.addWidget(self.field_select_combo)
+        layout.addWidget(self.view)
 
         self.field_select_combo.currentTextChanged.connect(self._load_groupby)
 
