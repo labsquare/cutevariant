@@ -82,13 +82,17 @@ class GroupbyModel(QAbstractTableModel):
         self.is_loading = False
 
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
+        """ override """
         return len(self._raw_data)
 
     def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
-        return 2
+        """ override """
+        if parent == QModelIndex():
+            return 2
+        return 0
 
     def headerData(self, section: int, orientation: Qt.Orientation, role: int):
-
+        """ override """
         if section not in (0, 1):
             return
 
@@ -99,6 +103,7 @@ class GroupbyModel(QAbstractTableModel):
             return ["Value", "Count"][section]
 
     def data(self, index: QModelIndex, role: int):
+        """ override """
 
         if not self._raw_data:
             # Shouldn't be called by anyone, since in such case rowCount will be 0...
@@ -298,7 +303,7 @@ class GroupByViewWidget(PluginWidget):
         self.toolbar = QToolBar(self)
         self.toolbar.setIconSize(QSize(16, 16))
 
-        # HIDE wordset button
+        # HIDE wordset button   
         # self.add_selection_to_wordset_act = self.toolbar.addAction(
         #     FIcon(0xF0415), self.tr("Add selection to wordset")
         # )
@@ -347,7 +352,8 @@ class GroupByViewWidget(PluginWidget):
         self._limit = 50
         self._offset = 0
 
-    def on_open_project(self, conn):
+    def on_open_project(self, conn: sqlite3.Connection):
+        """ override """
         self.conn = conn
         self.view.conn = conn
         self.on_refresh()
