@@ -22,6 +22,7 @@ from PySide2.QtWidgets import (
     QMessageBox,
     QToolBar,
     QVBoxLayout,
+    QLabel,
     QWidget,
     QTabWidget,
     QTableView,
@@ -295,12 +296,13 @@ class GroupByViewWidget(PluginWidget):
         self.toolbar = QToolBar(self)
         self.toolbar.setIconSize(QSize(16, 16))
 
-        self.add_selection_to_wordset_act = self.toolbar.addAction(
-            FIcon(0xF0415), self.tr("Add selection to wordset")
-        )
-        self.add_selection_to_wordset_act.triggered.connect(
-            self.add_selection_to_wordset
-        )
+        # HIDE wordset button
+        # self.add_selection_to_wordset_act = self.toolbar.addAction(
+        #     FIcon(0xF0415), self.tr("Add selection to wordset")
+        # )
+        # self.add_selection_to_wordset_act.triggered.connect(
+        #     self.add_selection_to_wordset
+        # )
 
         self.view.tableview.setSelectionMode(QAbstractItemView.ExtendedSelection)
 
@@ -310,10 +312,16 @@ class GroupByViewWidget(PluginWidget):
         )
         self.apply_action.triggered.connect(self.on_apply)
 
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.toolbar.addWidget(spacer)
+        self.toolbar.addWidget(QLabel("Group by: "))
+        self.toolbar.addWidget(self.field_select_combo)
+
         layout = QVBoxLayout(self)
         layout.addWidget(self.toolbar)
-        layout.addWidget(self.field_select_combo)
         layout.addWidget(self.view)
+        layout.setSpacing(0)
 
         self.field_select_combo.currentTextChanged.connect(self._load_groupby)
 
