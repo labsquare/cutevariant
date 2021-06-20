@@ -468,14 +468,14 @@ def create_selection(
     cursor = conn.cursor()
 
     filters = filters or {}
-    sql_query = build_sql_query(
+    sql_query = qb.build_sql_query(
         conn,
         fields=[],
         source=source,
         filters=filters,
         limit=None,
     )
-    vql_query = build_vql_query(fields=["id"], source=source, filters=filters)
+    vql_query = qb.build_vql_query(fields=["id"], source=source, filters=filters)
 
     # Compute query count
     # TODO : this can take a while .... need to compute only one from elsewhere
