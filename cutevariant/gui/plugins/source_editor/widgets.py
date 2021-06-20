@@ -53,8 +53,8 @@ class SourceModel(QAbstractTableModel):
         self._current_source = value
         new_index = self.find_record(self._current_source)
         if old_index != new_index:
-            self.dataChanged.emit(old_index, old_index)
-            self.dataChanged.emit(new_index, new_index)
+            self.dataChanged.emit(old_index, old_index.siblingAtColumn(1))
+            self.dataChanged.emit(new_index, new_index.siblingAtColumn(1))
 
     def rowCount(self, parent=QModelIndex()) -> int:
         """Overrided from QAbstractTableModel"""
