@@ -381,7 +381,7 @@ class SourceEditorWidget(plugin.PluginWidget):
 
         filepath, _ = QFileDialog.getOpenFileName(
             self,
-            self.tr("Intersect source with a bed file"),
+            self.tr("Intersect variants with a bed file"),
             last_directory,
             self.tr("BED - Browser Extensible Data (*.bed)"),
         )
@@ -392,14 +392,10 @@ class SourceEditorWidget(plugin.PluginWidget):
         if not selection_name:
             return
 
-        current_index = self.view.selectionModel().currentIndex()
-        current_selection = self.model.record(current_index)
-        source = current_selection["name"]
-
         # Open bed intervals & create selection
         intervals = BedReader(filepath)
         sql.create_selection_from_bed(
-            self.model.conn, source, selection_name, intervals
+            self.model.conn, DEFAULT_SELECTION_NAME, selection_name, intervals
         )
         # Refresh UI
         self.model.load()
@@ -544,9 +540,7 @@ class SourceEditorWidget(plugin.PluginWidget):
             for index in self.view.selectionModel().selectedRows():
                 self.model.remove_record(index)
 
-            # Reload the UI, otherwise, the old selection is still in popup menu
-            # self.load()
-            self.mainwindow.set_state_data("source", item["name"])
+            self.mainwindow.set_state_data("source", DEFAULT_SELECTION_NAME)
             self.mainwindow.refresh_plugins(sender=None)
 
     def edit_selection(self):
