@@ -262,39 +262,23 @@ class SourceEditorWidget(plugin.PluginWidget):
         # call on_current_row_changed when item selection changed
         self.view.doubleClicked.connect(self.on_double_click)
 
-        self.add_menu = QMenu(self)
-
-        self.create_selection_action = self.add_menu.addAction(
+        self.create_selection_action = self.toolbar.addAction(
             FIcon(0xF0F87),
-            self.tr("Create source from current variants"),
+            self.tr("New source..."),
             self.create_selection,
         )
-        self.create_from_bed_action = self.add_menu.addAction(
-            FIcon(0xF0F87),
-            self.tr("Create source from bed file ... "),
-            self.create_selection_from_bed,
-        )
-
-        # Tool button with drop down, to create a new source (either from current selection or from bed intersection)
-        add_action = QToolButton()
-        add_action.setIcon(FIcon(0xF0415))
-        add_action.setPopupMode(QToolButton.InstantPopup)
-        self.toolbar.addWidget(add_action)
-
-        # Populate add_action's add_menu with the 'create selection' and 'create selection from bed' actions
-        self.add_menu.addAction(self.create_selection_action)
-        self.add_menu.addAction(self.create_from_bed_action)
-        add_action.setMenu(self.add_menu)
 
         # Add action to rename source
         self.edit_action = self.toolbar.addAction(
             FIcon(0xF04F0), self.tr("Rename source"), self.edit_selection
         )
+        self.edit_action.setEnabled(False)
 
         # Add action to delete source
         self.del_action = self.toolbar.addAction(
             FIcon(0xF0A76), self.tr("Delete source"), self.remove_selection
         )
+        self.del_action.setEnabled(False)
 
         # Add all three set operations
         self.intersect_action = self.toolbar.addAction(
@@ -318,19 +302,15 @@ class SourceEditorWidget(plugin.PluginWidget):
         self.difference_action.setEnabled(False)
 
         # Add all actions from toolbar to this widget's actions (except for the drop down 'add' action that has no text)
-        self.addActions([ac for ac in self.toolbar.actions() if ac.text() != ""])
+        self.addActions(self.toolbar.actions())
 
         # When right cliking, this will show the same actions as the toolbar
         self.setContextMenuPolicy(Qt.ActionsContextMenu)
 
-        self.view.selectionModel().currentRowChanged.connect(
-            self.on_current_row_changed
-        )
         self.view.selectionModel().selectionChanged.connect(self.on_selection_changed)
 
         # self.toolbar.addAction(FIcon(0xF0453), self.tr("Reload"), self.load)
 
-    @Slot()
     def create_selection(self):
         """Create a selection from the current data_state
 
@@ -339,6 +319,38 @@ class SourceEditorWidget(plugin.PluginWidget):
 
         """
 
+        # Get current selection to check availability of the 'Create source'
+        current_selection = (
+            self.view.currentIndex().siblingAtColumn(0).data(Qt.DisplayRole)
+        )
+        choices = {
+            self.tr("Current selection"): self.create_selection_from_current,
+            self.tr("BED file"): self.create_selection_from_bed,
+        }
+
+        # Intersection from BED file is only available for source variants
+        if current_selection != DEFAULT_SELECTION_NAME:
+            choices.pop(self.tr("BED file"))
+
+        choice, ok = QInputDialog.getItem(
+            self,
+            self.tr("Create new source"),
+            self.tr("Create source from..."),
+            choices.keys(),
+            editable=False,
+        )
+        if ok:
+            choices[choice]()
+
+    @Slot(QModelIndex)
+    def on_double_click(self, current: QModelIndex):
+        source = current.data(Qt.DisplayRole)
+        if source:
+            self.model.current_source = source
+            self.mainwindow.set_state_data("source", source)
+            self.mainwindow.refresh_plugins(sender=self)
+
+    def create_selection_from_current(self):
         name = self.ask_and_check_selection_name()
 
         if name:
@@ -356,15 +368,6 @@ class SourceEditorWidget(plugin.PluginWidget):
             if result:
                 self.on_refresh()
 
-    @Slot(QModelIndex)
-    def on_double_click(self, current: QModelIndex):
-        source = current.data(Qt.DisplayRole)
-        if source:
-            self.model.current_source = source
-            self.mainwindow.set_state_data("source", source)
-            self.mainwindow.refresh_plugins(sender=self)
-
-    @Slot()
     def create_selection_from_bed(self):
         """Create a selection from a selected bed file
 
@@ -430,21 +433,25 @@ class SourceEditorWidget(plugin.PluginWidget):
             for index in self.view.selectionModel().selectedRows(0)
         ]
 
+        if not selected_sources:
+            # No source selected whatsoever, cannot apply any operation. Disable every action (except create selection from source)
+            self.intersect_action.setEnabled(False)
+            self.difference_action.setEnabled(False)
+            self.union_action.setEnabled(False)
+
+            self.edit_action.setEnabled(False)
+            self.del_action.setEnabled(False)
+            return
+
         # Set operations are enable iff the number of selected sources is exactly two
         is_selection_count_valid = len(selected_sources) == 2
         self.intersect_action.setEnabled(is_selection_count_valid)
         self.difference_action.setEnabled(is_selection_count_valid)
         self.union_action.setEnabled(is_selection_count_valid)
 
-    @Slot(QModelIndex, QModelIndex)
-    def on_current_row_changed(self, current: QModelIndex, previous: QModelIndex):
-        """This methods trigger the signal for the view
-        Note:
-            I don't broadcast the signal rowChanged to selectionChanged directly
-            because I need to block signals for the view only
-        """
-        source = current.data(Qt.DisplayRole)
-        if source == DEFAULT_SELECTION_NAME:
+        current = self.view.selectionModel().currentIndex()
+
+        if any(source == DEFAULT_SELECTION_NAME for source in selected_sources):
             self.edit_action.setEnabled(False)
             self.del_action.setEnabled(False)
         else:
@@ -511,14 +518,17 @@ class SourceEditorWidget(plugin.PluginWidget):
     def remove_selection(self):
         """Remove a selection from the database"""
 
-        # ignore if selection is 'variants'
-        if not self.view.currentIndex().isValid():
+        if not self.view.selectionModel().selectedRows(0):
+            QMessageBox.information(
+                self, self.tr("Info"), self.tr("No source to remove!")
+            )
             return
 
-        item = self.model.record(self.view.currentIndex())
-
         # This should not even be called, since remove/edit actions are supposed to be disabled by the widget
-        if item["name"] == "variants":
+        if any(
+            self.model.record(row) == DEFAULT_SELECTION_NAME
+            for row in self.view.selectionModel().selectedRows(0)
+        ):
             QMessageBox.warning(
                 self,
                 self.tr("Remove source"),
@@ -544,6 +554,10 @@ class SourceEditorWidget(plugin.PluginWidget):
         .. note:: We do not reload all the UI for this
         """
         current_index = self.view.selectionModel().currentIndex()
+        if not current_index.isValid():
+            QMessageBox.information(
+                self, self.tr("Info"), self.tr("No source to edit!")
+            )
         old_record = self.model.record(current_index)
 
         selection_name = self.ask_and_check_selection_name(
@@ -552,6 +566,8 @@ class SourceEditorWidget(plugin.PluginWidget):
         if current_index and selection_name:
             old_record["name"] = selection_name
             self.model.edit_record(current_index, old_record)
+            self.mainwindow.set_state_data("source", selection_name)
+            self.mainwindow.refresh_plugins(sender=None)
 
     def on_apply_set_operation(self, operation="intersect"):
         """Creates a new wordset from the union of selected wordsets.
