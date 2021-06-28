@@ -25,7 +25,7 @@ def detect_vcf_annotation(filepath):
     else:
         device = open(filepath, "r")
 
-    std_reader = vcf.VCFReader(device)
+    std_reader = vcf.VCFReader(device, encoding="utf-8")
     # print(std_reader.metadata)
 
     if "VEP" in std_reader.metadata:
@@ -33,17 +33,16 @@ def detect_vcf_annotation(filepath):
             device.close()
             return "vep"
 
-    if "SnpEffVersion" in std_reader.metadata:
-        if "ANN" in std_reader.infos:
-            device.close()
-            return "snpeff"
-        if "EFF" in std_reader.infos:
-            device.close()
-            return "snpeff3"
+    if "ANN" in std_reader.infos:
+        device.close()
+        return "snpeff"
+    if "EFF" in std_reader.infos:
+        device.close()
+        return "snpeff3"
 
 
 @contextmanager
-def create_reader(filepath):
+def create_reader(filepath, vcf_annotation_parser=None):
     """Context manager that wraps the given file and return an accurate reader
 
     A detection of the file type is made as well as a detection of the
@@ -64,7 +63,9 @@ def create_reader(filepath):
     )
 
     if ".vcf" in path.suffixes and ".gz" in path.suffixes:
-        annotation_detected = detect_vcf_annotation(filepath)
+
+        annotation_detected = vcf_annotation_parser or detect_vcf_annotation(filepath)
+
         device = open(filepath, "rb")
         reader = VcfReader(device, annotation_parser=annotation_detected)
         yield reader

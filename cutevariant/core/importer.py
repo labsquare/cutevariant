@@ -122,7 +122,14 @@ def async_import_reader(
     # session.add(Selection(name="favoris", description="favoris", count = 0))
 
 
-def async_import_file(conn, filename, pedfile=None, ignored_fields=set(), project={}):
+def async_import_file(
+    conn,
+    filename,
+    pedfile=None,
+    ignored_fields=set(),
+    project={},
+    vcf_annotation_parser=None,
+):
     """Import filename into SQLite database
 
     :param conn: sqlite connection
@@ -134,17 +141,24 @@ def async_import_file(conn, filename, pedfile=None, ignored_fields=set(), projec
     :return: yield progression and message
     """
     # Context manager that wraps the given file and creates an apropriate reader
-    with create_reader(filename) as reader:
+    with create_reader(filename, vcf_annotation_parser=vcf_annotation_parser) as reader:
         yield from async_import_reader(conn, reader, pedfile, ignored_fields, project)
 
 
-def import_file(conn, filename, pedfile=None, ignored_fields=set(), project={}):
+def import_file(
+    conn,
+    filename,
+    pedfile=None,
+    ignored_fields=set(),
+    project={},
+    vcf_annotation_parser=None,
+):
     """Wrapper for debugging purpose
 
     TODO: to be deleted
     """
     for progress, message in async_import_file(
-        conn, filename, pedfile, ignored_fields, project
+        conn, filename, pedfile, ignored_fields, project, vcf_annotation_parser
     ):
         # don't show message
         pass

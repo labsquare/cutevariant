@@ -1,4 +1,5 @@
 # Standard imports
+from cutevariant.core.reader.vcfreader import VcfReader
 import os
 import copy
 import time
@@ -13,8 +14,9 @@ from cutevariant.core.importer import async_import_file
 from cutevariant.core import get_sql_connection
 import cutevariant.commons as cm
 from cutevariant.core.readerfactory import detect_vcf_annotation, create_reader
-from cutevariant.core.reader import PedReader
+from cutevariant.core.reader import PedReader, annotationparser
 from cutevariant.gui.model_view import PedView
+from cutevariant.gui.ficon import FIcon
 
 LOGGER = cm.logger()
 
@@ -124,17 +126,34 @@ class FilePage(QWizardPage):
         self.setSubTitle(self.tr("Supported file are vcf, vcf.gz, vep.txt."))
 
         self.file_path_edit = QLineEdit()
-
+        self.annotation_box = QComboBox()
+        self.lock_button = QPushButton(self.tr("Edit"))
         self.anotation_detect_label = QLabel()
         self.button = QPushButton(self.tr("Browse"))
+        self.button.setIcon(FIcon(0xF0DCF))
         h_layout = QHBoxLayout()
+
+        self.lock_button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Preferred)
+        self.lock_button.setCheckable(True)
+        self.lock_button.setIcon(FIcon(0xF08EE))
+
+        self.annotation_box.setEnabled(False)
+        self.lock_button.toggled.connect(lambda x: self.annotation_box.setEnabled(x))
+
+        self.file_path_edit.setToolTip(
+            self.tr("Path to a supported input file. (e.g: VCF  file ) ")
+        )
 
         h_layout.addWidget(self.file_path_edit)
         h_layout.addWidget(self.button)
 
-        self.v_layout = QVBoxLayout()
-        self.v_layout.addLayout(h_layout)
-        self.v_layout.addWidget(self.anotation_detect_label)
+        h2_layout = QHBoxLayout()
+        h2_layout.addWidget(self.annotation_box)
+        h2_layout.addWidget(self.lock_button)
+
+        self.v_layout = QFormLayout()
+        self.v_layout.addRow("Input File", h_layout)
+        self.v_layout.addRow("Annotation", h2_layout)
         self.setLayout(self.v_layout)
 
         self.button.clicked.connect(self._browse)
@@ -142,7 +161,14 @@ class FilePage(QWizardPage):
 
         self.registerField("filename", self.file_path_edit, "text")
         # annotation ? should be an option or not ?
-        self.registerField("annotation", self.anotation_detect_label, "text")
+        self.registerField("annotation_parser", self.annotation_box, "currentData")
+
+        # Fill supported format
+        self.annotation_box.addItem(
+            FIcon(0xF13CF), "No Annotation detected", userData=None
+        )
+        for parser in VcfReader.ANNOTATION_PARSERS:
+            self.annotation_box.addItem(FIcon(0xF08BB), parser, userData=parser)
 
     @Slot()
     def _browse(self):
@@ -169,12 +195,10 @@ class FilePage(QWizardPage):
             if "vcf" in filepath:
                 # TODO: detect annotations on other tyes of files...
                 annotation_type = detect_vcf_annotation(filepath)
-                if annotation_type:
-                    text = self.tr("<b>%s annotations detected!</b>") % annotation_type
+                if annotation_type == None:
+                    self.annotation_box.setCurrentIndex(0)
                 else:
-                    text = self.tr("<b>No annotation data has been detected!</b>")
-
-                self.anotation_detect_label.setText(text)
+                    self.annotation_box.setCurrentText(annotation_type)
 
     def isComplete(self):
         """Conditions to unlock next button"""
@@ -400,6 +424,8 @@ class ImportThread(QThread):
         self.pedfile = None
         # Ignored fields
         self.ignored_fields = set()
+        # annotation parser
+        self.annotation_parser = None
 
         self.project_settings = dict()
 
@@ -408,6 +434,7 @@ class ImportThread(QThread):
         filename,
         db_filename,
         pedfile=None,
+        annotation_parser=None,
         ignored_fields=set(),
         project_settings={},
     ):
@@ -434,6 +461,8 @@ class ImportThread(QThread):
         # Ignored fields
         self.ignored_fields = ignored_fields
 
+        self.annotation_parser = annotation_parser
+
     def run(self):
         """Overrided QThread method
 
@@ -458,6 +487,7 @@ class ImportThread(QThread):
                 pedfile=self.pedfile,
                 ignored_fields=self.ignored_fields,
                 project=self.project_settings,
+                vcf_annotation_parser=self.annotation_parser,
             ):
                 if self._stop:
                     self.conn.close()
@@ -524,6 +554,8 @@ class ImportPage(QWizardPage):
 
         # Ignored field from previous page; see initializePage()
         self.ignored_fields = set()
+
+        self.annotation_parser = None
 
         self.thread.started.connect(
             lambda: self.log_edit.appendPlainText(self.tr("Started"))
@@ -615,11 +647,15 @@ class ImportPage(QWizardPage):
                 pedfile=self.field("pedfile"),
                 # Ignored fields
                 ignored_fields=self.ignored_fields,
+                annotation_parser=self.field("annotation_parser"),
                 # Project's settings
                 project_settings={
                     # Project's name
                     "project_name": self.field("project_name"),
                 },
+            )
+            self.log_edit.appendPlainText(
+                "Annotation parser: " + str(self.field("annotation_parser"))
             )
 
             self.log_edit.appendPlainText(self.tr("Import ") + self.thread.filename)
