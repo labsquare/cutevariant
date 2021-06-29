@@ -14,7 +14,12 @@ from PySide2.QtGui import *
 
 # Custom imports
 from cutevariant.core import sql, command
-from cutevariant.core.sql import intersect_variants, union_variants, subtract_variants
+from cutevariant.core.sql import (
+    create_selection,
+    intersect_variants,
+    union_variants,
+    subtract_variants,
+)
 from cutevariant.core.reader import BedReader
 from cutevariant.gui import plugin, FIcon
 from cutevariant.gui.widgets import SearchableTableWidget
@@ -267,7 +272,13 @@ class SourceEditorWidget(plugin.PluginWidget):
         self.create_selection_action = self.toolbar.addAction(
             FIcon(0xF0F87),
             self.tr("New source..."),
-            self.create_selection,
+            self.create_selection_from_current,
+        )
+        self.create_selection_from_bed_action = self.toolbar.addAction(
+            FIcon(0xF0965), self.tr("BED"), self.create_selection_from_bed
+        )
+        self.create_selection_from_bed_action.setToolTip(
+            "Create new source from intersection with BED file"
         )
 
         # Add action to rename source
@@ -312,37 +323,6 @@ class SourceEditorWidget(plugin.PluginWidget):
         self.view.selectionModel().selectionChanged.connect(self.on_selection_changed)
 
         # self.toolbar.addAction(FIcon(0xF0453), self.tr("Reload"), self.load)
-
-    def create_selection(self):
-        """Create a selection from the current data_state
-
-        Note:
-            This method is called by a toolbar QAction
-
-        """
-
-        # Get current selection to check availability of the 'Create source'
-        current_selection = (
-            self.view.currentIndex().siblingAtColumn(0).data(Qt.DisplayRole)
-        )
-        choices = {
-            self.tr("Current selection"): self.create_selection_from_current,
-            self.tr("BED file"): self.create_selection_from_bed,
-        }
-
-        # Intersection from BED file is only available for source variants
-        if current_selection != DEFAULT_SELECTION_NAME:
-            choices.pop(self.tr("BED file"))
-
-        choice, ok = QInputDialog.getItem(
-            self,
-            self.tr("Create new source"),
-            self.tr("Create source from..."),
-            choices.keys(),
-            editable=False,
-        )
-        if ok:
-            choices[choice]()
 
     @Slot(QModelIndex)
     def on_double_click(self, current: QModelIndex):
@@ -448,6 +428,10 @@ class SourceEditorWidget(plugin.PluginWidget):
         self.union_action.setEnabled(is_selection_count_valid)
 
         current = self.view.selectionModel().currentIndex()
+
+        self.create_selection_from_bed_action.setEnabled(
+            current.data(Qt.DisplayRole) == DEFAULT_SELECTION_NAME
+        )
 
         if any(source == DEFAULT_SELECTION_NAME for source in selected_sources):
             self.edit_action.setEnabled(False)
