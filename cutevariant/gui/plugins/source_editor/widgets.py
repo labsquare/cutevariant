@@ -101,7 +101,7 @@ class SourceModel(QAbstractTableModel):
 
         if role == Qt.DecorationRole:
             if index.column() == 0:
-                if table_name == "variants":
+                if table_name == DEFAULT_SELECTION_NAME:
                     return QIcon(FIcon(0xF13C6))
                 else:
                     return QIcon(FIcon(0xF04EB))
@@ -179,17 +179,28 @@ class SourceModel(QAbstractTableModel):
             bool: Return True if the deletion has been made, False otherwise.
         """
         # Get selected record
-        record = self.record(index)
+        return self.remove_records([index])
 
-        if sql.delete_selection(self.conn, record["id"]):
-            self.beginRemoveRows(QModelIndex(), index.row(), index.row())
-            # Delete in model; triggers currentRowChanged signal
-            #  Magic... the record disapear ...  ??
-            # No, it didn't. But below line does
-            del self.records[index.row()]
-            self.endRemoveRows()
-            return True
-        return False
+    def remove_records(self, indexes: typing.List[QModelIndex]) -> bool:
+        """Delete the selection with the given id in the database
+        Returns:
+            bool: Return True if the deletion has been made, False otherwise.
+        """
+        # Get selected record
+        rows = sorted([index.row() for index in indexes], reverse=True)
+        for row in rows:
+            record = self.record(self.index(row, 0))
+
+            if sql.delete_selection(self.conn, record["id"]):
+                self.beginRemoveRows(QModelIndex(), row, row)
+                # Delete in model; triggers currentRowChanged signal
+                #  Magic... the record disapear ...  ??
+                # No, it didn't. But below line does
+                del self.records[row]
+                self.endRemoveRows()
+            else:
+                return False
+        return True
 
     def edit_record(self, index: QModelIndex, record: dict):
         """Edit the given selection in the database and emit `dataChanged` signal"""
@@ -246,7 +257,7 @@ class SourceEditorWidget(plugin.PluginWidget):
         self.view.setSortingEnabled(True)
         self.view.setShowGrid(False)
         self.view.setAlternatingRowColors(False)
-        self.view.setIconSize(QSize(16, 16))
+        self.view.setIconSize(QSize(22, 22))
 
         self.toolbar = QToolBar()
         self.toolbar.setIconSize(QSize(16, 16))
@@ -523,8 +534,7 @@ class SourceEditorWidget(plugin.PluginWidget):
         msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
 
         if msg.exec_() == QMessageBox.Yes:
-            for index in self.view.selectionModel().selectedRows():
-                self.model.remove_record(index)
+            self.model.remove_records(self.view.selectionModel().selectedRows(0))
 
             self.mainwindow.set_state_data("source", DEFAULT_SELECTION_NAME)
             self.mainwindow.refresh_plugins(sender=None)
