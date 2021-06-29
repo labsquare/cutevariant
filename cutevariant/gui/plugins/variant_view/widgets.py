@@ -1098,7 +1098,8 @@ class VariantView(QWidget):
             url = self._create_url(link["url"], full_variant)
             if url:
                 func_slot = functools.partial(self._open_url, url, link["is_browser"])
-                action = links_menu.addAction(link["url"], func_slot)
+                action = links_menu.addAction(link["name"], func_slot)
+                action.setIcon(FIcon(0xF0866))
 
         # Comment action
         on_edit = functools.partial(self.edit_comment, current_index)

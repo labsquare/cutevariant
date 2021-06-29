@@ -27,6 +27,7 @@ class LinkSettings(AbstractSettingsWidget):
         self.view = QListWidget()
         self.add_button = QPushButton(self.tr("Add"))
         self.edit_button = QPushButton(self.tr("Edit"))
+        self.load_presets_button = QPushButton(self.tr("Load presets"))
         self.set_default_button = QPushButton(self.tr("Set as default"))
         self.set_default_button.setToolTip(self.tr("Double click will open this link"))
         self.remove_button = QPushButton(self.tr("Remove"))
@@ -34,6 +35,7 @@ class LinkSettings(AbstractSettingsWidget):
         v_layout = QVBoxLayout()
         v_layout.addWidget(self.add_button)
         v_layout.addWidget(self.edit_button)
+        v_layout.addWidget(self.load_presets_button)
         v_layout.addStretch()
         v_layout.addWidget(self.set_default_button)
         v_layout.addWidget(self.remove_button)
@@ -53,6 +55,7 @@ class LinkSettings(AbstractSettingsWidget):
         self.view.itemDoubleClicked.connect(self.add_url)
         self.set_default_button.clicked.connect(self.set_default_link)
         self.remove_button.clicked.connect(self.remove_item)
+        self.load_presets_button.clicked.connect(self.load_default_external_links)
 
     def save(self):
         """Override from PageWidget"""
@@ -210,19 +213,25 @@ https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg19&position={chr}:{pos}
 
     def load_default_external_links(self):
         """Load default external DB links"""
-        settings = QSettings()
-        settings.beginWriteArray("plugins/variant_view/links")
 
-        for index, item in enumerate(cm.WEBSITES_URLS.items()):
-            settings.settings.setArrayIndex(index)
-            db_name, db_url = item
-            is_default = False if index else True
-            self.add_list_widget_item(db_name, db_url, is_default)
+        for name, (url, is_browser) in cm.WEBSITES_URLS.items():
+            self.add_list_widget_item(name, url, False, is_browser)
 
-        settings.endArray()
+    # def load_default_external_links(self):
+    #     """Load default external DB links"""
+    #     settings = QSettings()
+    #     settings.beginWriteArray("plugins/variant_view/links")
+
+    #     for index, (item, is_browser) in enumerate(cm.WEBSITES_URLS.items()):
+    #         settings.settings.setArrayIndex(index)
+    #         db_name, db_url = item
+    #         is_default = False if index else True
+    #         self.add_list_widget_item(db_name, db_url, is_default, is_browser)
+
+    #     settings.endArray()
 
     def set_default_link(self):
-        """ set current item as default link """
+        """set current item as default link"""
         current_item = self.view.currentItem()
 
         for row in range(self.view.count()):
@@ -246,11 +255,11 @@ class MemorySettings(AbstractSettingsWidget):
         layout.addRow(self.tr("Cache size"), self.spinbox)
 
     def save(self):
-        """ overload """
+        """overload"""
         pass
 
     def load(self):
-        """ load """
+        """load"""
         pass
 
 
