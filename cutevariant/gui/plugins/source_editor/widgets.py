@@ -180,6 +180,8 @@ class SourceModel(QAbstractTableModel):
             self.beginRemoveRows(QModelIndex(), index.row(), index.row())
             # Delete in model; triggers currentRowChanged signal
             #  Magic... the record disapear ...  ??
+            # No, it didn't. But below line does
+            del self.records[index.row()]
             self.endRemoveRows()
             return True
         return False
