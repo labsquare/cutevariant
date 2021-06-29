@@ -630,10 +630,10 @@ def create_selection_from_bed(
     )
 
     if source == "variants":
-        source_query = "SELECT variants.id AS variant_id FROM variants"
+        source_query = "SELECT DISTINCT variants.id AS variant_id FROM variants"
     else:
         source_query = f"""
-        SELECT variants.id AS variant_id FROM variants
+        SELECT DISTINCT variants.id AS variant_id FROM variants
         INNER JOIN selections ON selections.name = '{source}'
         INNER JOIN selection_has_variant AS sv ON sv.selection_id = selections.id AND sv.variant_id = variants.id
         """
