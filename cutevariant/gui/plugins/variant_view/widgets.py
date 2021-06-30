@@ -3,6 +3,7 @@ import functools
 import math
 import csv
 import io
+import re
 import time
 import itertools as it
 from collections import defaultdict
@@ -1136,14 +1137,23 @@ class VariantView(QWidget):
             QUrl: return url or return None
 
         """
-        field_names = {
-            name
-            for _, name, _, _ in string.Formatter().parse(format_string)
-            if name is not None
-        }
-        if field_names & variant.keys():
-            # Full or partial mapping => accepted link
-            return QUrl(format_string.format(**variant), QUrl.TolerantMode)
+
+        regex = re.compile(r"{([^{}]+)}")
+        # First, make sure there are some fields to format
+        if regex.findall(format_string):
+
+            # Using this yields us two lists with fields (ex: "{ann.gene}") and their associated field name (ex: "ann.gene")
+            fields, field_names = zip(
+                *[(m.group(0), m.group(1)) for m in regex.finditer(format_string)]
+            )
+
+            # For every field, replace field names with variant value for the respective key
+            for field, field_name in zip(fields, field_names):
+                format_string = format_string.replace(
+                    field, str(variant.get(field_name, field))
+                )
+
+            return QUrl(format_string, QUrl.TolerantMode)
         else:
             return format_string
 

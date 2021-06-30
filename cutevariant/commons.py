@@ -98,6 +98,13 @@ WEBSITES_URLS = {
         "https://varsome.com/variant/hg19/{chr}-{pos}-{ref}-{alt}",
         True,
     ),
+    "Google - Gene": ("https://google.com/search?q={ann.gene}", True),
+    "Google - Gene ID": ("https://google.com/search?q={ann.gene_id}", True),
+    "dbSNP": ("https://www.ncbi.nlm.nih.gov/snp/{rs}", True),
+    "Clinvar - Allele ID": (
+        "http://www.ncbi.nlm.nih.gov/clinvar/?term={alleleid}[alleleid]",
+        True,
+    ),
 }
 
 REPORT_BUG_URL = "https://github.com/labsquare/cutevariant/issues/new"
