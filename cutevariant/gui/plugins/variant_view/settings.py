@@ -1,6 +1,9 @@
 ## ================= Settings widgets ===================
 # Qt imports
+from os import RTLD_DEEPBIND
+from typing import List
 from PySide2.QtCore import *
+from PySide2.QtGui import QFont, QIcon
 from PySide2.QtWidgets import *
 
 # Custom imports
@@ -8,6 +11,155 @@ from cutevariant.gui.plugin import PluginSettingsWidget
 from cutevariant.gui.settings import AbstractSettingsWidget
 from cutevariant.gui import FIcon
 import cutevariant.commons as cm
+
+
+class LinksModel(QAbstractListModel):
+    def __init__(self) -> None:
+        super().__init__()
+        self.links = []
+
+    def add_link(
+        self,
+        name: str,
+        masked_url: str,
+        is_browser: bool = True,
+        is_default: bool = False,
+    ) -> bool:
+        """Adds a link to the model.
+        Links are dictionnaries with:
+            - name: How the user refers to the feature
+            - url: A masked url (using curly brackets for named fields), target of the feature
+            - is_browser: Whether this link will be opened with the default browser or not. If not, a single get request will be sent
+            - is_default: Whether this link defines the double-click behavior in the variant view
+
+        Args:
+            name (str): The name of the link, as displayed to the user
+            masked_url (str): The target of the link. Should contain named fields in curly brackets, each name referring to a variant field name
+            is_browser (bool, optional): Whether the link will be opened in the default browser. Defaults to True.
+            is_default (bool, optional): Whether this link is the default one. Defaults to False.
+
+        Returns:
+            bool: True on success
+        """
+        if any(link["name"] == name for link in self.links):
+            # If there is already a link with the same name in the model, don't add it (avoid doubles)
+            return False
+
+        new_link = {
+            "name": name,
+            "url": masked_url,
+            "is_browser": is_browser,
+            "is_default": is_default,
+        }
+
+        # Add the new link to the model. Potentially affects current default link, so reset the whole model
+        self.beginResetModel()
+
+        self.links.append(new_link)
+
+        # If the newly added link is set to default, make sure to put default to False for every other
+        if is_default:
+            for link in self.links:
+                # There is a default link, but not the one we've just added
+                if link["is_default"] and link is not new_link:
+                    link["is_default"] = False
+
+        self.endResetModel()
+        return True
+
+    def remove_links(self, indexes: List[QModelIndex]) -> bool:
+        """Safely removes several links from a list of their indexes
+
+        Args:
+            indexes (List[QModelIndex]): List of indexes to remove
+
+        Returns:
+            bool: True on success
+        """
+        rows = sorted([index.row() for index in indexes], reverse=True)
+        for row in rows:
+            self.beginRemoveRows(QModelIndex(), row, row)
+            del self.links[row]
+            self.endRemoveRows()
+        return True
+
+    def remove_link(self, index: QModelIndex):
+        return self.remove_links([index])
+
+    def edit_link(
+        self,
+        index: QModelIndex,
+        name: str,
+        url: str,
+        is_browser: bool,
+        is_default: bool,
+    ):
+
+        edited_link = {
+            "name": name,
+            "url": url,
+            "is_browser": is_browser,
+            "is_default": is_default,
+        }
+
+        # Add the new link to the model. Potentially affects current default link, so reset the whole model
+        self.beginResetModel()
+
+        self.links[index.row()] = edited_link
+
+        # If the newly added link is set to default, make sure to put default to False for every other
+        if is_default:
+            for link in self.links:
+                # There is a default link, but not the one we've just added
+                if link["is_default"] and link is not edited_link:
+                    link["is_default"] = False
+
+        self.endResetModel()
+        return True
+
+    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
+        return len(self.links)
+
+    def clear(self):
+        self.beginResetModel()
+        self.links.clear()
+        self.endResetModel()
+
+    def make_default(self, index: QModelIndex):
+        self.beginResetModel()
+        # First, set every item to 'not default'
+        for link in self.links:
+            link["is_default"] = False
+
+        # And now, set default for the selected index
+        self.links[index.row()]["is_default"] = True
+        self.endResetModel()
+
+    def data(self, index: QModelIndex, role: int):
+        if index.row() < 0 or index.row() >= self.rowCount():
+            return
+
+        if role == Qt.DisplayRole:
+            return self.links[index.row()]["name"]
+
+        if role == Qt.ToolTipRole:
+            return self.links[index.row()]["url"]
+
+        if role == Qt.FontRole:
+            font = QFont()
+            if self.links[index.row()]["is_default"]:
+                font.setBold(True)
+                return font
+            return font
+
+        if role == Qt.UserRole:
+            return self.links[index.row()]["is_default"]
+
+        if role == Qt.UserRole + 1:
+            return self.links[index.row()]["is_browser"]
+
+        if role == Qt.DecorationRole:
+            return QIcon(FIcon(0xF0866))
 
 
 class LinkSettings(AbstractSettingsWidget):
@@ -24,7 +176,10 @@ class LinkSettings(AbstractSettingsWidget):
             )
         )
 
-        self.view = QListWidget()
+        self.view = QListView()
+        self.link_model = LinksModel()
+
+        self.view.setModel(self.link_model)
         self.add_button = QPushButton(self.tr("Add"))
         self.edit_button = QPushButton(self.tr("Edit"))
         self.load_presets_button = QPushButton(self.tr("Load presets"))
@@ -52,7 +207,7 @@ class LinkSettings(AbstractSettingsWidget):
         # Signals
         self.add_button.clicked.connect(self.add_url)
         self.edit_button.clicked.connect(self.edit_item)
-        self.view.itemDoubleClicked.connect(self.add_url)
+        self.view.doubleClicked.connect(lambda index: self.add_url(index))
         self.set_default_button.clicked.connect(self.set_default_link)
         self.remove_button.clicked.connect(self.remove_item)
         self.load_presets_button.clicked.connect(self.load_default_external_links)
@@ -64,17 +219,10 @@ class LinkSettings(AbstractSettingsWidget):
         # Bug from Pyside2.QSettings which don't return boolean
         settings.remove("links")
         settings.beginWriteArray("links")
-        for i in range(self.view.count()):
+        for i in range(self.link_model.rowCount()):
             settings.setArrayIndex(i)
-            item = self.view.item(i)
-            name = item.text()
-            url = item.data(Qt.UserRole)
-            is_default = bool(item.data(Qt.UserRole + 1))
-            is_browser = bool(item.data(Qt.UserRole + 2))
-            settings.setValue("name", name)
-            settings.setValue("url", url)
-            settings.setValue("is_default", is_default)
-            settings.setValue("is_browser", is_browser)
+            for k, v in self.link_model.links[i].items():
+                settings.setValue(k, v)
 
         settings.endArray()
 
@@ -82,7 +230,7 @@ class LinkSettings(AbstractSettingsWidget):
         """Override from PageWidget"""
         settings = self.create_settings()
         size = settings.beginReadArray("links")
-        self.view.clear()
+        self.link_model.clear()
 
         #  If no links available, load default one
         # if size == 0:
@@ -97,43 +245,22 @@ class LinkSettings(AbstractSettingsWidget):
             is_default = settings.value("is_default", False, type=bool)
             is_browser = settings.value("is_browser", False, type=bool)
 
-            self.add_list_widget_item(name, url, is_default, is_browser)
+            self.link_model.add_link(name, url, bool(is_browser), bool(is_default))
 
         settings.endArray()
 
-    def add_list_widget_item(
-        self, db_name: str, url: str, is_default=False, is_browser=False
-    ):
-        """Add an item to the QListWidget of the current view"""
-        # Key is the name of the database, value is its url
-        item = QListWidgetItem(db_name)
-        item.setIcon(FIcon(0xF0866))
-        item.setData(Qt.UserRole, str(url))  #  UserRole = Link
-        item.setData(Qt.UserRole + 1, bool(is_default))  # UserRole+1 = is default link
-        item.setData(Qt.UserRole + 2, bool(is_browser))  # UserRole+1 = is default link
-        item.setToolTip(str(url))
-
-        font = item.font()
-        font.setBold(is_default)
-        item.setFont(font)
-
-        self.view.addItem(item)
-
-    def edit_list_widget_item(
+    def edit_item(
         self,
-        item: QListWidgetItem,
+        index: QModelIndex,
         db_name: str,
         url: str,
         is_default=False,
         is_browser=False,
     ):
         """Modify the given item"""
-        item.setText(db_name)
-        item.setData(Qt.UserRole, url)
-        item.setData(Qt.UserRole + 1, is_default)
-        item.setData(Qt.UserRole + 2, is_browser)
+        self.link_model.edit_link(index, db_name, url, is_browser, is_default)
 
-    def add_url(self, item=None):
+    def add_url(self, index: QModelIndex = None):
         """Allow the user to insert and save custom database URL"""
         # Display dialog box to let the user enter it's own url
         dialog = QDialog()
@@ -164,26 +291,28 @@ https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg19&position={chr}:{pos}
 
         dialog.setLayout(main_layout)
 
-        if item:
+        if index:
             # Called by itemDoubleClicked or edit_item
             # Fill forms with item data
-            name.setText(item.text())
-            url.setText(item.data(Qt.UserRole))
-            is_browser = Qt.Checked if item.data(Qt.UserRole + 2) == 1 else Qt.Unchecked
+            name.setText(index.data(Qt.DisplayRole))
+            url.setText(index.data(Qt.ToolTipRole))
+            is_browser = (
+                Qt.Checked if bool(index.data(Qt.UserRole + 1)) else Qt.Unchecked
+            )
             browser.setChecked(is_browser)
 
         # Also do a minimal check on the data inserted
         if dialog.exec_() == QDialog.Accepted and name.text() and url.text():
 
-            if item:
+            if index:
                 # Edit the current item in the list
-                self.edit_list_widget_item(
-                    item, name.text(), url.text(), False, bool(browser.checkState())
+                self.link_model.edit_link(
+                    index, name.text(), url.text(), bool(browser.checkState()), False
                 )
             else:
                 # Add the item to the list
-                self.add_list_widget_item(
-                    name.text(), url.text(), False, bool(browser.checkState())
+                self.link_model.add_link(
+                    name.text(), url.text(), bool(browser.checkState()), False
                 )
 
             # Save the item in settings
@@ -196,51 +325,30 @@ https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg19&position={chr}:{pos}
         """
         # Get selected item
         # Always use the first selected item returned
-        self.add_url(self.view.selectedItems()[0])
+        self.add_url(self.view.currentIndex())
 
     def remove_item(self):
         """Remove the selected item
 
         .. todo:: removeItemWidget() is not functional?
         """
-        # Get selected item
-        if self.view.selectedItems():
-            item = self.view.selectedItems()[0]
-
-            # Delete the item
-            self.view.takeItem(self.view.row(item))
-            del item  # Is it mandatory in Python ?
+        # Get selected rows
+        if self.view.selectionModel().selectedRows():
+            self.link_model.remove_links(self.view.selectionModel().selectedRows())
 
     def load_default_external_links(self):
         """Load default external DB links"""
 
         for name, (url, is_browser) in cm.WEBSITES_URLS.items():
-            self.add_list_widget_item(name, url, False, is_browser)
-
-    # def load_default_external_links(self):
-    #     """Load default external DB links"""
-    #     settings = QSettings()
-    #     settings.beginWriteArray("plugins/variant_view/links")
-
-    #     for index, (item, is_browser) in enumerate(cm.WEBSITES_URLS.items()):
-    #         settings.settings.setArrayIndex(index)
-    #         db_name, db_url = item
-    #         is_default = False if index else True
-    #         self.add_list_widget_item(db_name, db_url, is_default, is_browser)
-
-    #     settings.endArray()
+            self.link_model.add_link(name, url, is_browser, False)
 
     def set_default_link(self):
         """set current item as default link"""
-        current_item = self.view.currentItem()
 
-        for row in range(self.view.count()):
-            item = self.view.item(row)
-            font = item.font()
-            is_default = True if item is current_item else False
-            item.setData(Qt.UserRole + 1, is_default)
-            font.setBold(is_default)
-            item.setFont(font)
+        if not self.view.currentIndex() or not self.view.currentIndex().isValid():
+            return
+
+        self.link_model.make_default(self.view.currentIndex())
 
 
 class MemorySettings(AbstractSettingsWidget):
