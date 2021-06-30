@@ -250,7 +250,8 @@ class FieldsWidget(QWidget):
         view.setModel(proxy)
         view.setShowGrid(False)
         view.horizontalHeader().setStretchLastSection(True)
-        view.setIconSize(QSize(16, 16))
+        view.setIconSize(QSize(24, 24))
+        
         view.setEditTriggers(QAbstractItemView.NoEditTriggers)
         view.setSelectionMode(QAbstractItemView.ExtendedSelection)
         view.setSelectionBehavior(QAbstractItemView.SelectRows)

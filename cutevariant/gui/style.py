@@ -26,10 +26,10 @@ GENOTYPE = {
 
 
 FIELD_TYPE = {
-    "float": {"name": "floating ", "icon": 0xF03A0, "color": "#ae81ff"},
-    "int": {"name": "integer", "icon": 0xF03A0, "color": "#a6e22e"},
-    "str": {"name": "text", "icon": 0xF100D, "color": "#fd971f"},
-    "bool": {"name": "boolean", "icon": 0xF023B, "color": "#66d9ef"},
+    "float": {"name": "floating ", "icon": 0xF0B0D, "color": "#2e9599"},
+    "int": {"name": "integer", "icon": 0xF0B10, "color": "#f7dc68"},
+    "str": {"name": "text", "icon": 0xF0B1A, "color": "#f46c3f"},
+    "bool": {"name": "boolean", "icon": 0xF0B09, "color": "#a7226f"},
 }
 
 FIELD_CATEGORY = {
