@@ -286,12 +286,9 @@ class VariantModel(QAbstractTableModel):
         # Update in database
         variant_id = self.variants[row]["id"]
 
-        print("variant", variant)
-
         # Update all variant with same variant_id
         # Use case : When several transcript are displayed
         for row in self.find_row_id_from_variant_id(variant_id):
-            print(row)
             left = self.index(row, 0)
             right = self.index(row, self.columnCount() - 1)
 
