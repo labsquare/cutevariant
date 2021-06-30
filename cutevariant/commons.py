@@ -105,6 +105,7 @@ WEBSITES_URLS = {
         "http://www.ncbi.nlm.nih.gov/clinvar/?term={alleleid}[alleleid]",
         True,
     ),
+    "IGV": ("http://localhost:60151/goto?locus=chr{chr}:{pos}", False),
 }
 
 REPORT_BUG_URL = "https://github.com/labsquare/cutevariant/issues/new"

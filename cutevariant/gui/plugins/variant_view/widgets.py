@@ -1124,7 +1124,18 @@ class VariantView(QWidget):
             QDesktopServices.openUrl(url)
 
         else:
-            urllib.request.urlopen(url.toString(), timeout=10)
+            try:
+                urllib.request.urlopen(url.toString(), timeout=10)
+            except Exception as e:
+                LOGGER.error(*e.args)
+                cr = "\n"
+                QMessageBox.critical(
+                    self,
+                    self.tr("Error !"),
+                    self.tr(
+                        f"Error while trying to access {url.toString()}:{cr}{cr.join([str(a) for a in e.args])}"
+                    ),
+                )
 
     def _create_url(self, format_string: str, variant: dict) -> QUrl:
         """Create a link from a format string and a variant data
