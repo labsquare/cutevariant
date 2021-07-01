@@ -1092,12 +1092,6 @@ class VariantView(QWidget):
         links_menu = menu.addMenu(self.tr("External links"))
 
         # Display only exec_ternal links with placeholders that can be mapped
-        for link in self._get_links():
-            url = self._create_url(link["url"], full_variant)
-            if url:
-                func_slot = functools.partial(self._open_url, url, link["is_browser"])
-                action = links_menu.addAction(link["name"], func_slot)
-                action.setIcon(FIcon(0xF0866))
 
         # Comment action
         on_edit = functools.partial(self.edit_comment, current_index)
@@ -1118,7 +1112,12 @@ class VariantView(QWidget):
         # Display
         menu.exec_(event.globalPos())
 
-    def _open_url(self, url: QUrl, in_browser=False):
+    def _open_url(self, url_template: str, in_browser=False):
+
+        variant = self.model.variant(self.view.currentIndex().row())
+
+        # TODO create_url should be able to read deep variant (with unflattened annotations)
+        url = self._create_url(url_template, variant)
 
         if in_browser:
             QDesktopServices.openUrl(url)
@@ -1207,9 +1206,10 @@ class VariantView(QWidget):
 
             self.model.update_variant(index.row(), update_data)
 
-    def update_classification(self, index: QModelIndex, value=3):
+    def update_classification(self, value=3):
         """Update classification level of the variant at the given index"""
-        if index.isValid():
+        indexes = self.view.selectionModel().selectedRows()
+        for index in indexes:
             update_data = {"classification": int(value)}
             self.model.update_variant(index.row(), update_data)
 
@@ -1343,17 +1343,17 @@ class VariantViewWidget(plugin.PluginWidget):
         # self.save_action.setPriority(QAction.LowPriority)
 
         # Refresh UI button
-        action = self.top_bar.addAction(
+        self.refresh_action = self.top_bar.addAction(
             FIcon(0xF0450), self.tr("Refresh"), self.on_refresh
         )
-        action.setToolTip(self.tr("Refresh the current list of variants"))
+        self.refresh_action.setToolTip(self.tr("Refresh the current list of variants"))
         # action.setPriority(QAction.LowPriority)
 
         # Interrupt current query
-        action = self.top_bar.addAction(
+        self.interrupt_action = self.top_bar.addAction(
             FIcon(0xF04DB), self.tr("Stop"), self.on_interrupt
         )
-        action.setToolTip(self.tr("Stop current query"))
+        self.interrupt_action.setToolTip(self.tr("Stop current query"))
 
         self.resize_action = self.top_bar.addAction(
             FIcon(0xF142A), self.tr("Auto resize")
@@ -1361,6 +1361,36 @@ class VariantViewWidget(plugin.PluginWidget):
 
         self.resize_action.setCheckable(True)
         self.resize_action.triggered.connect(self.main_right_pane.set_auto_resize)
+
+        # Classification menu
+        self.classification_action: QAction = self.top_bar.addAction(
+            FIcon(0xF01F7), self.tr("Classification")
+        )
+        self.classification_action.setToolTip(
+            self.tr("Set ACMG classification for current selection")
+        )
+        self.top_bar.widgetForAction(self.classification_action).setPopupMode(
+            QToolButton.InstantPopup
+        )
+        self.classification_action.setMenu(self.create_classification_menu())
+
+        self.favorite_action: QAction = self.top_bar.addAction(
+            FIcon(0xF00C0), self.tr("Favorite")
+        )
+        self.favorite_action.setCheckable(True)
+        self.favorite_action.toggled.connect(
+            lambda x: self.main_right_pane.update_favorites(x)
+        )
+
+        # External links menu
+        self.links_action: QAction = self.top_bar.addAction(
+            FIcon(0xF0339), self.tr("Link to")
+        )
+        self.links_action.setToolTip(self.tr("Open variant info with website"))
+        self.top_bar.widgetForAction(self.links_action).setPopupMode(
+            QToolButton.InstantPopup
+        )
+        self.links_action.setMenu(self.create_external_links_menu())
 
         # Formatter tools
         self.top_bar.addSeparator()
@@ -1398,6 +1428,31 @@ class VariantViewWidget(plugin.PluginWidget):
 
         self.main_right_pane.error_raised.connect(self.set_message)
         self.main_right_pane.model.load_finished.connect(self.on_load_finished)
+
+    def create_classification_menu(self):
+        # Create classication action
+        class_menu = QMenu(self.tr("Classification"))
+
+        for key, value in cm.CLASSIFICATION.items():
+
+            action = class_menu.addAction(FIcon(cm.CLASSIFICATION_ICONS[key]), value)
+            action.setData(key)
+            on_click = functools.partial(
+                self.main_right_pane.update_classification, key
+            )
+            action.triggered.connect(on_click)
+
+        return class_menu
+
+    def create_external_links_menu(self):
+        menu = QMenu(self.tr("Browse to ..."))
+        for link in self.main_right_pane._get_links():
+            func_slot = functools.partial(
+                self.main_right_pane._open_url, link["url"], link["is_browser"]
+            )
+            action = menu.addAction(link["name"], func_slot)
+            action.setIcon(FIcon(0xF0866))
+        return menu
 
     def on_load_finished(self):
         """Triggered when variant load is finished
@@ -1567,7 +1622,13 @@ class VariantViewWidget(plugin.PluginWidget):
 
         if index.model() == self.main_right_pane.view.model():
             # Variant clicked on right pane
+
+            # TODO Make current_variant state data take the value of the whole variant (with annotations and samples!)
             variant = self.main_right_pane.model.variant(index.row())
+            full_variant = sql.get_one_variant(self.conn, variant["id"])
+            self.favorite_action.blockSignals(True)
+            self.favorite_action.setChecked(bool(full_variant["favorite"]))
+            self.favorite_action.blockSignals(False)
 
         if self.mainwindow:
             self.mainwindow.set_state_data("current_variant", variant)
