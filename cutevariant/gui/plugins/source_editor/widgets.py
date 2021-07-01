@@ -286,7 +286,9 @@ class SourceEditorWidget(plugin.PluginWidget):
             self.create_selection_from_current,
         )
         self.create_selection_from_bed_action = self.toolbar.addAction(
-            FIcon(0xF0965), self.tr("BED"), self.create_selection_from_bed
+            FIcon(0xF0965),
+            self.tr("Intersect with BED file"),
+            self.create_selection_from_bed,
         )
         self.create_selection_from_bed_action.setToolTip(
             "Create new source from intersection with BED file"
