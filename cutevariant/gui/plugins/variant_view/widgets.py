@@ -3,6 +3,7 @@ import functools
 import math
 import csv
 import io
+import re
 import time
 import itertools as it
 from collections import defaultdict
@@ -1095,7 +1096,8 @@ class VariantView(QWidget):
             url = self._create_url(link["url"], full_variant)
             if url:
                 func_slot = functools.partial(self._open_url, url, link["is_browser"])
-                action = links_menu.addAction(link["url"], func_slot)
+                action = links_menu.addAction(link["name"], func_slot)
+                action.setIcon(FIcon(0xF0866))
 
         # Comment action
         on_edit = functools.partial(self.edit_comment, current_index)
@@ -1122,7 +1124,23 @@ class VariantView(QWidget):
             QDesktopServices.openUrl(url)
 
         else:
-            urllib.request.urlopen(url.toString(), timeout=10)
+            try:
+                urllib.request.urlopen(url.toString(), timeout=10)
+            except Exception as e:
+                LOGGER.error(
+                    "Error while trying to access "
+                    + url.toString()
+                    + "\n%s" * len(e.args),
+                    *e.args,
+                )
+                cr = "\n"
+                QMessageBox.critical(
+                    self,
+                    self.tr("Error !"),
+                    self.tr(
+                        f"Error while trying to access {url.toString()}:{cr}{cr.join([str(a) for a in e.args])}"
+                    ),
+                )
 
     def _create_url(self, format_string: str, variant: dict) -> QUrl:
         """Create a link from a format string and a variant data
@@ -1135,14 +1153,23 @@ class VariantView(QWidget):
             QUrl: return url or return None
 
         """
-        field_names = {
-            name
-            for _, name, _, _ in string.Formatter().parse(format_string)
-            if name is not None
-        }
-        if field_names & variant.keys():
-            # Full or partial mapping => accepted link
-            return QUrl(format_string.format(**variant), QUrl.TolerantMode)
+
+        regex = re.compile(r"{([^{}]+)}")
+        # First, make sure there are some fields to format
+        if regex.findall(format_string):
+
+            # Using this yields us two lists with fields (ex: "{ann.gene}") and their associated field name (ex: "ann.gene")
+            fields, field_names = zip(
+                *[(m.group(0), m.group(1)) for m in regex.finditer(format_string)]
+            )
+
+            # For every field, replace field names with variant value for the respective key
+            for field, field_name in zip(fields, field_names):
+                format_string = format_string.replace(
+                    field, str(variant.get(field_name, field))
+                )
+
+            return QUrl(format_string, QUrl.TolerantMode)
         else:
             return format_string
 

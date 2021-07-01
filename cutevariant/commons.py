@@ -89,9 +89,23 @@ FONT_FILE = DIR_FONTS + "materialdesignicons-webfont.ttf"
 
 # Websites and variant query
 WEBSITES_URLS = {
-    "GenCards - The human gene database": "https://www.genecards.org/cgi-bin/carddisp.pl?gene={gene}",
-    "Varsome - Genes": "https://varsome.com/gene/{gene}",
-    "Varsome - Variants": "https://varsome.com/variant/hg19/{chr}-{pos}-{ref}-{alt}",
+    "GenCards - The human gene database": (
+        "https://www.genecards.org/cgi-bin/carddisp.pl?gene={ann.gene}",
+        True,
+    ),
+    "Varsome - Genes": ("https://varsome.com/gene/{ann.gene}", True),
+    "Varsome - Variants": (
+        "https://varsome.com/variant/hg19/{chr}-{pos}-{ref}-{alt}",
+        True,
+    ),
+    "Google - Gene": ("https://google.com/search?q={ann.gene}", True),
+    "Google - Gene ID": ("https://google.com/search?q={ann.gene_id}", True),
+    "dbSNP": ("https://www.ncbi.nlm.nih.gov/snp/{rs}", True),
+    "Clinvar - Allele ID": (
+        "http://www.ncbi.nlm.nih.gov/clinvar/?term={alleleid}[alleleid]",
+        True,
+    ),
+    "IGV": ("http://localhost:60151/goto?locus=chr{chr}:{pos}", False),
 }
 
 REPORT_BUG_URL = "https://github.com/labsquare/cutevariant/issues/new"
