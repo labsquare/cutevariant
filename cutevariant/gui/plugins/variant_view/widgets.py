@@ -1127,7 +1127,12 @@ class VariantView(QWidget):
             try:
                 urllib.request.urlopen(url.toString(), timeout=10)
             except Exception as e:
-                LOGGER.error(*e.args)
+                LOGGER.error(
+                    "Error while trying to access "
+                    + url.toString()
+                    + "\n%s" * len(e.args),
+                    *e.args,
+                )
                 cr = "\n"
                 QMessageBox.critical(
                     self,
