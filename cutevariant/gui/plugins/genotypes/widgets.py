@@ -90,6 +90,11 @@ class GenotypesModel(QAbstractTableModel):
         )
         self.endResetModel()
 
+    def clear(self):
+        self.beginResetModel()
+        self.items = []
+        self.endResetModel()
+
 
 class GenotypesWidget(plugin.PluginWidget):
     """Widget displaying the list of avaible selections.
@@ -134,6 +139,7 @@ class GenotypesWidget(plugin.PluginWidget):
 
     def on_open_project(self, conn):
         self.model.conn = conn
+        self.model.clear()
 
     def on_refresh(self):
         self.current_variant = self.mainwindow.get_state_data("current_variant")

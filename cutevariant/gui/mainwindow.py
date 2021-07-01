@@ -48,9 +48,9 @@ class StateData:
 
     """
 
-    def __init__(self, data=None):
-        self._data = data if data else {}
+    def __init__(self):
         self._changed = set()
+        self.reset()
 
     def __setitem__(self, key, value):
 
@@ -72,6 +72,13 @@ class StateData:
     @property
     def changed(self):
         return self._changed
+
+    def reset(self):
+        self._data = {
+            "fields": ["favorite", "classification", "chr", "pos", "ref", "alt"],
+            "source": "variants",
+            "filters": {},
+        }
 
 
 class MainWindow(QMainWindow):
@@ -100,13 +107,7 @@ class MainWindow(QMainWindow):
         self.app_settings = QSettings()
 
         # State variable of application changed by plugins
-        self._state_data = StateData(
-            {
-                "fields": ["favorite", "classification", "chr", "pos", "ref", "alt"],
-                "source": "variants",
-                "filters": {},
-            }
-        )
+        self._state_data = StateData()
 
         ## ===== GUI Setup =====
 
@@ -530,6 +531,8 @@ class MainWindow(QMainWindow):
             conn (sqlite3.Connection): Sqlite3 Connection
         """
         self.conn = conn
+
+        self._state_data.reset()
 
         # Clear memoization cache for count_cmd
         sql.clear_lru_cache()
