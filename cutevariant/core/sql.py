@@ -446,6 +446,80 @@ def insert_selection(conn, query: str, name="no_name", count=0):
 delete_selection_by_name = partial(delete_by_name, table_name="selections")
 
 
+def create_selection(
+    conn: sqlite3.Connection,
+    name: str,
+    source: str = "variants",
+    filters=None,
+    count=None,
+):
+    """Create a selection record from sql variant query
+
+    Args:
+        conn (sqlite3.connection): Sqlite3 connection
+        name (str): Name of selection
+        source (str): Source to select from
+        filters (dict/None, optional): Filters to create selection
+        count (int/None, optional): Variant count
+
+    Returns:
+        selection_id, if lines have been inserted; None otherwise (rollback).
+    """
+    cursor = conn.cursor()
+
+    filters = filters or {}
+    sql_query = qb.build_sql_query(
+        conn,
+        fields=[],
+        source=source,
+        filters=filters,
+        limit=None,
+    )
+    vql_query = qb.build_vql_query(fields=["id"], source=source, filters=filters)
+
+    # Compute query count
+    # TODO : this can take a while .... need to compute only one from elsewhere
+    if count is None:
+        count = count_query(cursor, sql_query)
+
+    # Create selection
+    selection_id = insert_selection(cursor, vql_query, name=name, count=count)
+
+    # DROP indexes
+    # For joins between selections and variants tables
+    try:
+        cursor.execute("""DROP INDEX idx_selection_has_variant""")
+    except sqlite3.OperationalError:
+        pass
+
+    # Insert into selection_has_variant table
+    # PS: We use DISTINCT keyword to statisfy the unicity constraint on
+    # (variant_id, selection_id) of "selection_has_variant" table.
+    # TODO: is DISTINCT useful here? How a variant could be associated several
+    # times with an association?
+
+    # Optimized only for the creation of a selection from set operations
+    # variant_id is the only useful column here
+    q = f"""
+    INSERT INTO selection_has_variant
+    SELECT DISTINCT id, {selection_id} FROM ({sql_query})
+    """
+
+    cursor.execute(q)
+    affected_rows = cursor.rowcount
+
+    # REBUILD INDEXES
+    # For joints between selections and variants tables
+    create_selection_has_variant_indexes(cursor)
+
+    if affected_rows:
+        conn.commit()
+        return selection_id
+    # Must alert a user because no selection is created here
+    conn.rollback()
+    return None
+
+
 def create_selection_from_sql(
     conn: sqlite3.Connection, query: str, name: str, count=None, from_selection=False
 ):
@@ -556,10 +630,10 @@ def create_selection_from_bed(
     )
 
     if source == "variants":
-        source_query = "SELECT variants.id AS variant_id FROM variants"
+        source_query = "SELECT DISTINCT variants.id AS variant_id FROM variants"
     else:
         source_query = f"""
-        SELECT variants.id AS variant_id FROM variants
+        SELECT DISTINCT variants.id AS variant_id FROM variants
         INNER JOIN selections ON selections.name = '{source}'
         INNER JOIN selection_has_variant AS sv ON sv.selection_id = selections.id AND sv.variant_id = variants.id
         """

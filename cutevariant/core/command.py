@@ -231,9 +231,7 @@ def create_cmd(
     )
 
     LOGGER.debug("command:create_cmd:: %s", sql_query)
-    selection_id = sql.create_selection_from_sql(
-        conn, sql_query, target, count=count, from_selection=False
-    )
+    selection_id = sql.create_selection(conn, target, source, filters, count)
     return dict() if selection_id is None else {"id": selection_id}
 
 
