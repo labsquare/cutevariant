@@ -762,16 +762,6 @@ class VariantView(QWidget):
         action.setToolTip(self.tr("Last page (%s)" % action.shortcut().toString()))
         self.pagging_actions.append(action)
 
-        self.fav_action = QAction(FIcon(0xF00C0), self.tr("Toggle favorite "))
-        self.fav_action.triggered.connect(lambda: self.update_favorites())
-        self.fav_action.setShortcut(QKeySequence(Qt.Key_Space))
-        self.fav_action.setShortcutContext(Qt.WidgetShortcut)
-        self.fav_action.setAutoRepeat(False)
-        self.fav_action.setToolTip(
-            self.tr("Toggle favorite (%s)" % self.fav_action.shortcut().toString())
-        )
-        self.view.addAction(self.fav_action)
-
         main_layout = QVBoxLayout()
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.addWidget(self.view)
@@ -795,33 +785,49 @@ class VariantView(QWidget):
         self.model.error_raised.connect(self.error_raised)
         #  connect double clicke
         self.view.doubleClicked.connect(self.on_double_clicked)
+        self.view.selectionModel().currentChanged.connect(self.on_variant_clicked)
 
-    # def _set_loading(self, active=True):
-    #     """Slot to obtain the status of async load: started/finished
+        self._create_actions()
 
-    #     Start/Stop the movie animation on the view.
+    def _create_actions(self):
 
-    #     Keyword Args:
-    #         active (bool): True if loaded, False if finished
-    #     """
-    #     self.setDisabled(active)
-    #     if active:
-    #         QTimer.singleShot(1000, self.start_loading_after_delay)
-    #     else:
-    #         self.view.stop_loading()
+        self.favorite_action = QAction(self.tr("Favorite"))
+        favicon = QIcon()
+        favicon.addPixmap(FIcon(0xF00C3).pixmap(22, 22), QIcon.Normal, QIcon.Off)
+        favicon.addPixmap(FIcon(0xF00C0).pixmap(22, 22), QIcon.Normal, QIcon.On)
+        self.favorite_action.setIcon(favicon)
+        self.addAction(self.favorite_action)
+        self.favorite_action.setCheckable(True)
+        self.favorite_action.toggled.connect(lambda x: self.update_favorites(x))
+        self.favorite_action.setShortcut(QKeySequence(Qt.Key_Space))
+        self.favorite_action.setShortcutContext(Qt.WidgetShortcut)
+        self.favorite_action.setToolTip(
+            self.tr("Toggle favorite (%s)" % self.favorite_action.shortcut().toString())
+        )
+        self.view.addAction(self.favorite_action)
 
-    # def start_loading_after_delay(self):
-    #     self.setDisabled(self.model.is_loading)
+        # Classification menu
+        self.classification_action = QAction(FIcon(0xF04FD), self.tr("Classification"))
+        self.addAction(self.classification_action)
+        self.classification_action.setToolTip(
+            self.tr("Set ACMG classification for current selection")
+        )
+        self.classification_action.setMenu(self.create_classification_menu())
 
-    #     if self.model.is_loading:
-    #         self.view.start_loading()
-    #     else:
-    #         self.view.stop_loading()
+        # External links menu
+        self.links_action = QAction(FIcon(0xF0339), self.tr("Link to"))
+        self.addAction(self.links_action)
+        self.links_action.setToolTip(self.tr("Open variant info with website"))
+        # self.widgetForAction(self.links_action).setPopupMode(
+        #     QToolButton.InstantPopup
+        # )
+        self.links_action.setMenu(self.create_external_links_menu())
 
-    def set_auto_resize(self, accept=True):
-        """change column resize mode"""
-        mode = QHeaderView.ResizeToContents if accept else QHeaderView.Interactive
-        self.view.horizontalHeader().setSectionResizeMode(mode)
+    def auto_resize(self):
+        """Resize columns to content"""
+        self.view.resizeColumnsToContents()
+        self.view.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
+        self.view.horizontalHeader().setStretchLastSection(True)
 
     def setModel(self, model: VariantModel):
         self.model = model
@@ -957,6 +963,13 @@ class VariantView(QWidget):
             self.model.setPage(page)
             self.load()
 
+    def on_variant_clicked(self, index: QModelIndex):
+        variant = self.model.variant(index.row())
+        full_variant = sql.get_one_variant(self.conn, variant["id"])
+        self.favorite_action.blockSignals(True)
+        self.favorite_action.setChecked(bool(full_variant["favorite"]))
+        self.favorite_action.blockSignals(False)
+
     def on_show_sql(self):
         """Display debug sql query"""
         msg_box = QMessageBox()
@@ -1069,34 +1082,8 @@ class VariantView(QWidget):
             ),
         )
 
-        # Create favorite action
-        fav_action = menu.addAction(
-            self.tr("&Unmark favorite")
-            if bool(full_variant["favorite"])
-            else self.tr("&Mark as favorite")
-        )
-        fav_action.setCheckable(True)
-        fav_action.setChecked(bool(full_variant["favorite"]))
-        fav_action.toggled.connect(self.update_favorites)
-
-        # Create classication action
-        class_menu = menu.addMenu(self.tr("Classification"))
-        for key, value in cm.CLASSIFICATION.items():
-
-            action = class_menu.addAction(FIcon(cm.CLASSIFICATION_ICONS[key]), value)
-            action.setData(key)
-            on_click = functools.partial(self.update_classification, current_index, key)
-            action.triggered.connect(on_click)
-
-        # Create external links
-        links_menu = menu.addMenu(self.tr("External links"))
-
-        # Display only exec_ternal links with placeholders that can be mapped
-
-        # Comment action
-        on_edit = functools.partial(self.edit_comment, current_index)
-        menu.addAction(self.tr("&Edit comment ..."), on_edit)
-
+        menu.addActions(self.actions())
+        
         # Edit menu
         menu.addSeparator()
         menu.addAction(
@@ -1302,6 +1289,29 @@ class VariantView(QWidget):
 
         self._open_default_link(index)
 
+    def create_classification_menu(self):
+        # Create classication action
+        class_menu = QMenu(self.tr("Classification"))
+
+        for key, value in cm.CLASSIFICATION.items():
+
+            action = class_menu.addAction(FIcon(cm.CLASSIFICATION_ICONS[key]), value)
+            action.setData(key)
+            on_click = functools.partial(self.update_classification, key)
+            action.triggered.connect(on_click)
+
+        return class_menu
+
+    def create_external_links_menu(self):
+        menu = QMenu(self.tr("Browse to ..."))
+        for link in self._get_links():
+            func_slot = functools.partial(
+                self._open_url, link["url"], link["is_browser"]
+            )
+            action = menu.addAction(link["name"], func_slot)
+            action.setIcon(FIcon(0xF0866))
+        return menu
+
 
 class VariantViewWidget(plugin.PluginWidget):
     """Contains the view of query with several controller"""
@@ -1342,6 +1352,22 @@ class VariantViewWidget(plugin.PluginWidget):
 
         # self.save_action.setPriority(QAction.LowPriority)
 
+        self.top_bar.addActions(self.main_right_pane.actions())
+        for action in self.main_right_pane.actions():
+            self.top_bar.widgetForAction(action).setPopupMode(QToolButton.InstantPopup)
+
+        # Formatter tools
+        self.top_bar.addSeparator()
+
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        self.top_bar.addWidget(spacer)
+
+        self.resize_action = self.top_bar.addAction(
+            FIcon(0xF142A), self.tr("Auto resize")
+        )
+        self.resize_action.triggered.connect(self.main_right_pane.auto_resize)
+
         # Refresh UI button
         self.refresh_action = self.top_bar.addAction(
             FIcon(0xF0450), self.tr("Refresh"), self.on_refresh
@@ -1354,49 +1380,6 @@ class VariantViewWidget(plugin.PluginWidget):
             FIcon(0xF04DB), self.tr("Stop"), self.on_interrupt
         )
         self.interrupt_action.setToolTip(self.tr("Stop current query"))
-
-        self.resize_action = self.top_bar.addAction(
-            FIcon(0xF142A), self.tr("Auto resize")
-        )
-
-        self.resize_action.setCheckable(True)
-        self.resize_action.triggered.connect(self.main_right_pane.set_auto_resize)
-
-        # Classification menu
-        self.classification_action: QAction = self.top_bar.addAction(
-            FIcon(0xF01F7), self.tr("Classification")
-        )
-        self.classification_action.setToolTip(
-            self.tr("Set ACMG classification for current selection")
-        )
-        self.top_bar.widgetForAction(self.classification_action).setPopupMode(
-            QToolButton.InstantPopup
-        )
-        self.classification_action.setMenu(self.create_classification_menu())
-
-        self.favorite_action: QAction = self.top_bar.addAction(
-            FIcon(0xF00C0), self.tr("Favorite")
-        )
-        self.favorite_action.setCheckable(True)
-        self.favorite_action.toggled.connect(
-            lambda x: self.main_right_pane.update_favorites(x)
-        )
-
-        # External links menu
-        self.links_action: QAction = self.top_bar.addAction(
-            FIcon(0xF0339), self.tr("Link to")
-        )
-        self.links_action.setToolTip(self.tr("Open variant info with website"))
-        self.top_bar.widgetForAction(self.links_action).setPopupMode(
-            QToolButton.InstantPopup
-        )
-        self.links_action.setMenu(self.create_external_links_menu())
-
-        # Formatter tools
-        self.top_bar.addSeparator()
-        spacer = QWidget()
-        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        self.top_bar.addWidget(spacer)
 
         # Add formatters to combobox
         self.formatter_combo = QComboBox()
@@ -1428,31 +1411,6 @@ class VariantViewWidget(plugin.PluginWidget):
 
         self.main_right_pane.error_raised.connect(self.set_message)
         self.main_right_pane.model.load_finished.connect(self.on_load_finished)
-
-    def create_classification_menu(self):
-        # Create classication action
-        class_menu = QMenu(self.tr("Classification"))
-
-        for key, value in cm.CLASSIFICATION.items():
-
-            action = class_menu.addAction(FIcon(cm.CLASSIFICATION_ICONS[key]), value)
-            action.setData(key)
-            on_click = functools.partial(
-                self.main_right_pane.update_classification, key
-            )
-            action.triggered.connect(on_click)
-
-        return class_menu
-
-    def create_external_links_menu(self):
-        menu = QMenu(self.tr("Browse to ..."))
-        for link in self.main_right_pane._get_links():
-            func_slot = functools.partial(
-                self.main_right_pane._open_url, link["url"], link["is_browser"]
-            )
-            action = menu.addAction(link["name"], func_slot)
-            action.setIcon(FIcon(0xF0866))
-        return menu
 
     def on_load_finished(self):
         """Triggered when variant load is finished
@@ -1625,10 +1583,6 @@ class VariantViewWidget(plugin.PluginWidget):
 
             # TODO Make current_variant state data take the value of the whole variant (with annotations and samples!)
             variant = self.main_right_pane.model.variant(index.row())
-            full_variant = sql.get_one_variant(self.conn, variant["id"])
-            self.favorite_action.blockSignals(True)
-            self.favorite_action.setChecked(bool(full_variant["favorite"]))
-            self.favorite_action.blockSignals(False)
 
         if self.mainwindow:
             self.mainwindow.set_state_data("current_variant", variant)
