@@ -1083,7 +1083,7 @@ class VariantView(QWidget):
         )
 
         menu.addActions(self.actions())
-        
+
         # Edit menu
         menu.addSeparator()
         menu.addAction(
@@ -1192,13 +1192,32 @@ class VariantView(QWidget):
                 update_data = {"favorite": int(checked)}
 
             self.model.update_variant(index.row(), update_data)
+            self.parent.mainwindow.refresh_plugin("variant_edit")
 
-    def update_classification(self, value=3):
-        """Update classification level of the variant at the given index"""
-        indexes = self.view.selectionModel().selectedRows()
-        for index in indexes:
+    def update_classification(self, value: int = 3):
+        """Update classification level of the variant at the given index
+        This function applies the same level to all the variants selected in the view
+
+        Args:
+            value (int, optional): ACMG classification value to apply. Defaults to 3.
+        """
+
+        # Do not update the same variant multiple times
+        unique_ids = set()
+        for index in self.view.selectionModel().selectedRows():
+            if not index.isValid():
+                continue
+
+            # Get variant id
+            variant = self.model.variants[index.row()]
+            variant_id = variant["id"]
+
+            if variant_id in unique_ids:
+                continue
+            unique_ids.add(variant_id)
             update_data = {"classification": int(value)}
             self.model.update_variant(index.row(), update_data)
+            self.parent.mainwindow.refresh_plugin("variant_edit")
 
     def edit_comment(self, index: QModelIndex):
         """Allow a user to add a comment for the selected variant"""
@@ -1216,8 +1235,8 @@ class VariantView(QWidget):
             # Save in DB
             self.model.update_variant(index.row(), {"comment": editor.toPlainText()})
 
-            # Request a refresh of the variant_info plugin
-            self.parent.mainwindow.refresh_plugin("variant_info")
+            # Request a refresh of the variant_edit plugin
+            self.parent.mainwindow.refresh_plugin("variant_edit")
 
     def select_all(self):
         """Select all variants in the view"""
