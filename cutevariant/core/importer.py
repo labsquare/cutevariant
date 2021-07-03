@@ -27,7 +27,14 @@ LOGGER = logger()
 
 
 def async_import_reader(
-    conn, reader: AbstractReader, pedfile=None, ignored_fields=set(), indexed_fields =set(), project={}
+    conn,
+    reader: AbstractReader,
+    pedfile=None,
+    ignored_fields=set(),  # TODO none
+    indexed_variant_fields=None,
+    indexed_annotation_fields=None,
+    indexed_sample_fields=None,
+    project=None,
 ):
     """Import data via the given reader into a SQLite database via the given connection
 
@@ -42,11 +49,11 @@ def async_import_reader(
     """
     # Create project
     yield 0, f"Importing data with {reader}"
-    create_table_project(
-        conn,
-        name=project.get("project_name", "UKN"),
-        reference=project.get("reference", "UKN"),
-    )
+
+    if not project:
+        project = {"name": "Unknown", "reference": "Unknown"}
+
+    create_table_project(conn, **project)
 
     # Create metadatas
     create_table_metadatas(conn)
@@ -57,8 +64,7 @@ def async_import_reader(
 
     yield 0, "Creating table shema..."
 
-    # Setup ignored fields
-    reader.ignored_fields = ignored_fields
+    reader.ignored_fields = ignored_fields or set()
 
     # Create table fields
     create_table_fields(conn)
@@ -116,11 +122,13 @@ def async_import_reader(
 
     # Create indexes
     yield 99, "Creating indexes..."
-    # index by default 
-    if indexed_fields is None:
-        indexed_fields = {"pos","ref","alt"}
+    # index by default
+    if indexed_variant_fields is None:
+        indexed_variant_fields = {"pos", "ref", "alt"}
 
-    create_indexes(conn, indexed_fields)
+    create_indexes(
+        conn, indexed_variant_fields, indexed_annotation_fields, indexed_sample_fields
+    )
     yield 100, "Indexes created."
 
     # session.add(Selection(name="favoris", description="favoris", count = 0))
@@ -130,9 +138,11 @@ def async_import_file(
     conn,
     filename,
     pedfile=None,
-    ignored_fields=set(),
-    indexed_fields=set(),
-    project={},
+    ignored_fields=None,
+    indexed_variant_fields=None,
+    indexed_annotation_fields=None,
+    indexed_sample_fields=None,
+    project=None,
     vcf_annotation_parser=None,
 ):
     """Import filename into SQLite database
@@ -147,16 +157,27 @@ def async_import_file(
     """
     # Context manager that wraps the given file and creates an apropriate reader
     with create_reader(filename, vcf_annotation_parser=vcf_annotation_parser) as reader:
-        yield from async_import_reader(conn, reader, pedfile, ignored_fields,indexed_fields, project)
+        yield from async_import_reader(
+            conn,
+            reader,
+            pedfile,
+            ignored_fields,
+            indexed_variant_fields,
+            indexed_annotation_fields,
+            indexed_sample_fields,
+            project,
+        )
 
 
 def import_file(
     conn,
     filename,
     pedfile=None,
-    ignored_fields=set(),
-    indexed_fields = set(),
-    project={},
+    ignored_fields=None,
+    indexed_variant_fields=None,
+    indexed_annotation_fields=None,
+    indexed_sample_fields=None,
+    project=None,
     vcf_annotation_parser=None,
 ):
     """Wrapper for debugging purpose
@@ -164,19 +185,43 @@ def import_file(
     TODO: to be deleted
     """
     for progress, message in async_import_file(
-        conn, filename, pedfile, ignored_fields, indexed_fields, project, vcf_annotation_parser
+        conn,
+        filename,
+        pedfile,
+        ignored_fields,
+        indexed_variant_fields,
+        indexed_annotation_fields,
+        indexed_sample_fields,
+        project,
+        vcf_annotation_parser,
     ):
         # don't show message
         pass
 
 
-def import_reader(conn, reader, pedfile=None, ignored_fields=set(), indexed_fields=set(), project={}):
+def import_reader(
+    conn,
+    reader,
+    pedfile=None,
+    ignored_fields=None,
+    indexed_variant_fields=None,
+    indexed_annotation_fields=None,
+    indexed_sample_fields=None,
+    project={},
+):
     """Wrapper for debugging purpose
 
     TODO: to be deleted
     """
     for progress, message in async_import_reader(
-        conn, reader, pedfile, ignored_fields, project
+        conn,
+        reader,
+        pedfile,
+        ignored_fields,
+        indexed_variant_fields,
+        indexed_annotation_fields,
+        indexed_sample_fields,
+        project,
     ):
         # don't show message
         pass

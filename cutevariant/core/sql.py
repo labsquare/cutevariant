@@ -142,7 +142,12 @@ def get_table_columns(conn: sqlite3.Connection, table_name):
     ]
 
 
-def create_indexes(conn: sqlite3.Connection, indexed_fields = {"pos","ref","alt"}):
+def create_indexes(
+    conn: sqlite3.Connection,
+    indexed_variant_fields=("pos", "ref", "alt"),
+    indexed_annotation_fields=None,
+    indexed_sample_fields=None,
+):
     """Create extra indexes on tables
 
     Args:
@@ -153,8 +158,12 @@ def create_indexes(conn: sqlite3.Connection, indexed_fields = {"pos","ref","alt"
         You should use this function instead of individual functions.
 
     """
-    create_variants_indexes(conn, indexed_fields)
+
     create_selections_indexes(conn)
+
+    create_variants_indexes(conn, indexed_variant_fields)
+    create_annotations_indexes(conn, indexed_annotation_fields)
+    create_samples_indexes(conn, indexed_sample_fields)
 
     try:
         # Some databases have not annotations table
@@ -1216,7 +1225,7 @@ def create_table_annotations(conn, fields):
     conn.commit()
 
 
-def create_annotations_indexes(conn):
+def create_annotations_indexes(conn, indexed_annotation_fields=None):
     """Create indexes on the "annotations" table
 
     .. warning: This function must be called after batch insertions.
@@ -1233,6 +1242,11 @@ def create_annotations_indexes(conn):
     """
     # Allow search on variant_id
     conn.execute("CREATE INDEX idx_annotations ON annotations (variant_id)")
+
+    if indexed_annotation_fields is None:
+        return
+    for field in indexed_annotation_fields:
+        conn.execute(f"CREATE INDEX idx_annotations_{field} ON annotations ({field})")
 
 
 def get_annotations(conn, variant_id: int):
@@ -1296,7 +1310,7 @@ def create_table_variants(conn, fields):
     conn.commit()
 
 
-def create_variants_indexes(conn, indexed_fields = {"pos","ref","alt"}):
+def create_variants_indexes(conn, indexed_fields={"pos", "ref", "alt"}):
     """Create indexes on the "variants" table
 
     .. warning:: This function must be called after batch insertions.
@@ -1318,8 +1332,6 @@ def create_variants_indexes(conn, indexed_fields = {"pos","ref","alt"}):
 
     for field in indexed_fields:
         conn.execute(f"CREATE INDEX idx_variants_{field} ON variants ({field})")
-
-
 
 
 def get_one_variant(
@@ -1778,6 +1790,17 @@ def create_table_samples(conn, fields=[]):
     )
 
     conn.commit()
+
+
+def create_samples_indexes(conn, indexed_samples_fields=None):
+    """Create indexes on the "samples" table"""
+    if indexed_samples_fields is None:
+        return
+
+    for field in indexed_samples_fields:
+        conn.execute(
+            f"CREATE INDEX idx_samples_{field} ON sample_has_variant ({field})"
+        )
 
 
 def insert_sample(conn, name="no_name"):
