@@ -6,7 +6,7 @@ import time
 
 # Qt imports
 from PySide2.QtWidgets import *
-from PySide2.QtCore import QThread, Signal, QDir, QSettings, QFile, Slot, Qt
+from PySide2.QtCore import QAbstractListModel, QAbstractTableModel, QModelIndex, QThread, Signal, QDir, QSettings, QFile, Slot, Qt
 from PySide2.QtGui import QIcon, QStandardItem, QStandardItemModel
 
 # Custom imports
@@ -325,10 +325,75 @@ class SamplePage(QWizardPage):
         self.ped_message.setText(message)
 
 
-class FieldsPage(QWizardPage):
-    """Allow user to skip too import some fields"""
+
+class FieldsModel(QAbstractTableModel):
 
     MANDATORY_FIELDS = ["chr", "pos", "ref", "alt", "gt"]
+
+    def __init__(self, parent = None):
+        super().__init__(parent=parent)
+        self._items = []
+        self._headers = ["name", "category", "description", "type", "use index"]
+
+    def rowCount(self, parent: QModelIndex) -> int:
+        """ override """
+        return len(self._items)
+
+    def columnCount(self, parent: QModelIndex) -> int:
+        """ override """
+        return len(self._headers) 
+
+    def data(self, index: QModelIndex, role: int):
+        """ override """
+        if not index.isValid():
+            return None
+
+        item = self._items[index.row()]
+        if role == Qt.DisplayRole:
+            
+            if index.column() == 0:
+                return item["name"]
+            if index.column() == 1:
+                return item["category"]
+            if index.column() == 2:
+                return item["description"]
+            if index.column() == 3:
+                return item["type"]
+        
+        if role == Qt.CheckStateRole:
+            if index.column() == 0:
+                return item["enabled"]
+            if index.column() == 4:
+                return item["index"]
+        return None
+            
+    def headerData(self, section: int, orientation: Qt.Orientation, role: int):
+       
+        if orientation == Qt.Horizontal and role == Qt.DisplayRole:
+            return self._headers[section]
+        
+        return None
+
+
+
+
+
+    def load(self, filename:str):
+        """ load fields """
+        self.beginResetModel()
+        self._items.clear()
+
+        with create_reader(filename) as reader:
+            for field in reader.get_fields():
+                field["enabled"] = True
+                field["index"] = True
+                self._items.append(field)
+
+        self.endResetModel()
+
+
+class FieldsPage(QWizardPage):
+    """Allow user to skip too import some fields"""
 
     def __init__(self):
         super().__init__()
@@ -338,7 +403,7 @@ class FieldsPage(QWizardPage):
         self.help_text = QLabel(self.tr("Check fields you want to import "))
         self.select_button = QPushButton(self.tr("(Un)Select all"))
         self.view = QTableView()
-        self.model = QStandardItemModel()
+        self.model = FieldsModel()
         self.view.setModel(self.model)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setSelectionMode(QAbstractItemView.SingleSelection)
@@ -353,36 +418,10 @@ class FieldsPage(QWizardPage):
     def initializePage(self):
         """ overload """
 
-        # Load fields
-        self.model.clear()
-        self.model.setColumnCount(4)
-        self.model.setHorizontalHeaderLabels(
-            ["name", "category", "description", "type"]
-        )
-
-        # Open variant file of the project and read its headers
+               # Open variant file of the project and read its headers
         filename = self.field("filename")
+        self.model.load(filename)
 
-        with create_reader(filename) as reader:
-
-            for field in reader.get_fields():
-
-                name_item = QStandardItem(field["name"])
-                cat_item = QStandardItem(field["category"])
-                desc_item = QStandardItem(field["description"])
-                type_item = QStandardItem(field["type"])
-
-                name_item.setCheckable(True)
-                name_item.setCheckState(Qt.Checked)
-                name_item.setData(field)
-
-                line = [name_item, cat_item, desc_item, type_item]
-
-                for item in line:
-                    item.setEditable(False)
-                    item.setEnabled(not field["name"] in self.MANDATORY_FIELDS)
-
-                self.model.appendRow(line)
 
         self.view.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
 
@@ -694,15 +733,16 @@ class ProjectWizard(QWizard):
         self.setWindowTitle(self.tr("Cutevariant - Project creation wizard"))
         self.setWindowIcon(QIcon(cm.DIR_ICONS + "app.png"))
         self.setWizardStyle(QWizard.ClassicStyle)
-        self.addPage(ProjectPage())
+        # self.addPage(ProjectPage())
         self.addPage(FilePage())
-        self.addPage(SamplePage())
+        # self.addPage(SamplePage())
         self.addPage(FieldsPage())
         self.addPage(ImportPage())
 
         # Stored all data filled by the wizard
         # Better than using cumberstome setField...
         self.config = {}
+        self.resize(600,400)
 
 
 if __name__ == "__main__":
