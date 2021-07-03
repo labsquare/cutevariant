@@ -375,7 +375,9 @@ class AbstractReader(ABC):
                 variant["control_count_ref"] = control_counter[0]
 
             # Remove ignore variants
-            for name, category in self.ignored_fields:
+            for field in self.ignored_fields:
+                name = field["name"]
+                category = field["category"]
                 if category == "variants":
                     if name in variant:
                         del variant[name]
@@ -582,7 +584,7 @@ def nullify(variant: dict) -> dict:
     """
 
     def convert_to_none(value):
-        """ convert value to None according type """
+        """convert value to None according type"""
         EMPTY_STRING = ["", "."]
         if isinstance(value, str):
             if value in EMPTY_STRING:

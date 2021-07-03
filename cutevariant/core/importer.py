@@ -50,10 +50,11 @@ def async_import_reader(
     # Create project
     yield 0, f"Importing data with {reader}"
 
-    if not project:
-        project = {"name": "Unknown", "reference": "Unknown"}
+    project = project or dict()
 
-    create_table_project(conn, **project)
+    _project = {"name": "Unknown", "reference": "Unknown"}
+    _project.update(project)
+    create_table_project(conn, **_project)
 
     # Create metadatas
     create_table_metadatas(conn)

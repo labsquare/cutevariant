@@ -6,7 +6,18 @@ import time
 
 # Qt imports
 from PySide2.QtWidgets import *
-from PySide2.QtCore import QAbstractListModel, QAbstractTableModel, QModelIndex, QThread, Signal, QDir, QSettings, QFile, Slot, Qt
+from PySide2.QtCore import (
+    QAbstractListModel,
+    QAbstractTableModel,
+    QModelIndex,
+    QThread,
+    Signal,
+    QDir,
+    QSettings,
+    QFile,
+    Slot,
+    Qt,
+)
 from PySide2.QtGui import QIcon, QStandardItem, QStandardItemModel, QColor, QFont
 
 # Custom imports
@@ -325,32 +336,31 @@ class SamplePage(QWizardPage):
         self.ped_message.setText(message)
 
 
-
 class FieldsModel(QAbstractTableModel):
 
     MANDATORY_FIELDS = ["chr", "pos", "ref", "alt", "gt"]
 
-    def __init__(self, parent = None):
+    def __init__(self, parent=None):
         super().__init__(parent=parent)
         self._items = []
         self._headers = ["name", "category", "description", "type", "use index"]
 
     def rowCount(self, parent: QModelIndex) -> int:
-        """ override """
+        """override"""
         return len(self._items)
 
     def columnCount(self, parent: QModelIndex) -> int:
-        """ override """
-        return len(self._headers) 
+        """override"""
+        return len(self._headers)
 
     def data(self, index: QModelIndex, role: int):
-        """ override """
+        """override"""
         if not index.isValid():
             return None
 
         item = self._items[index.row()]
         if role == Qt.DisplayRole:
-            
+
             if index.column() == 0:
                 return item["name"]
             if index.column() == 1:
@@ -359,11 +369,11 @@ class FieldsModel(QAbstractTableModel):
                 return item["description"]
             if index.column() == 3:
                 return item["type"]
-        
+
         if role == Qt.ForegroundRole:
             if not item["enabled"]:
                 return QColor("darkgray")
-    
+
         if role == Qt.TextAlignmentRole:
             if index.column() == 4:
                 return Qt.AlignCenter
@@ -375,25 +385,25 @@ class FieldsModel(QAbstractTableModel):
                 return font
 
         if role == Qt.CheckStateRole:
-          
+
             if index.column() == 0:
-                return  Qt.Checked if item["enabled"] else Qt.Unchecked
+                return Qt.Checked if item["enabled"] else Qt.Unchecked
             if index.column() == 4:
-                return  Qt.Checked if item["index"] else Qt.Unchecked
+                return Qt.Checked if item["index"] else Qt.Unchecked
         return None
-            
+
     def headerData(self, section: int, orientation: Qt.Orientation, role: int):
-       
+
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
             return self._headers[section]
-        
+
         return None
 
     def setData(self, index: QModelIndex, value, role: int) -> bool:
-        """ override """
+        """override"""
         if role == Qt.CheckStateRole and index.column() == 0:
             self._items[index.row()]["enabled"] = bool(value)
-            self.dataChanged.emit(index.siblingAtColumn(0),index.siblingAtColumn(4))
+            self.dataChanged.emit(index.siblingAtColumn(0), index.siblingAtColumn(4))
             return True
 
         if role == Qt.CheckStateRole and index.column() == 4:
@@ -406,26 +416,23 @@ class FieldsModel(QAbstractTableModel):
     def get_ignore_fields(self):
         return [field for field in self._items if field["enabled"] == True]
 
-    def get_indexed_field(self):
+    def get_indexed_fields(self):
         return [field for field in self._items if field["index"] == True]
 
-    
     def flags(self, index: QModelIndex) -> Qt.ItemFlags:
-        
+
         item = self._items[index.row()]
 
         if item["name"] in self.MANDATORY_FIELDS:
             return Qt.ItemIsSelectable
 
         if index.column() == 0 or index.column() == 4:
-            return Qt.ItemIsSelectable|Qt.ItemIsEnabled | Qt.ItemIsUserCheckable
+            return Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsUserCheckable
 
-        return Qt.ItemIsSelectable|Qt.ItemIsEnabled
+        return Qt.ItemIsSelectable | Qt.ItemIsEnabled
 
-
-    
-    def load(self, filename:str):
-        """ load fields """
+    def load(self, filename: str):
+        """load fields"""
         self.beginResetModel()
         self._items.clear()
 
@@ -445,7 +452,11 @@ class FieldsPage(QWizardPage):
         super().__init__()
 
         self.setTitle(self.tr("Fields"))
-        self.setSubTitle(self.tr("Select fields you want to import. Mandatory fields cannot be edited.\n Indexed fields will improve query execution but database will takes more space"))
+        self.setSubTitle(
+            self.tr(
+                "Select fields you want to import. Mandatory fields cannot be edited.\n Indexed fields will improve query execution but database will takes more space"
+            )
+        )
         self.help_text = QLabel(self.tr("Check fields you want to import "))
         self.select_button = QPushButton(self.tr("(Un)Select all"))
         self.view = QTableView()
@@ -462,22 +473,43 @@ class FieldsPage(QWizardPage):
         self.setLayout(main_layout)
 
     def initializePage(self):
-        """ overload """
+        """overload"""
 
-               # Open variant file of the project and read its headers
+        # Open variant file of the project and read its headers
         filename = self.field("filename")
         self.model.load(filename)
-
 
         self.view.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
 
     def validatePage(self):
-        """ override """
+        """override"""
 
         # Loop over fields a create a ignored fields set e.g (("qual","variants"))
-      
-        self.wizard().config["ignored_fields"] = self.model.get_ignore_fields()
-        self.wizard().config["indexed_fields"] = self.model.get_indexed_field()
+
+        config = {}
+        config["ignored_fields"] = self.model.get_ignore_fields()
+
+        config["indexed_variant_fields"] = [
+            i["name"]
+            for i in self.model.get_indexed_fields()
+            if i["category"] == "variants"
+        ]
+
+        config["indexed_annotation_fields"] = [
+            i["name"]
+            for i in self.model.get_indexed_fields()
+            if i["category"] == "annotations"
+        ]
+
+        config["indexed_sample_fields"] = [
+            i["name"]
+            for i in self.model.get_indexed_fields()
+            if i["category"] == "samples"
+        ]
+
+        self.wizard().config.update(config)
+
+        print(self.wizard().config["ignored_fields"])
 
         return True
 
@@ -503,47 +535,16 @@ class ImportThread(QThread):
         # Facultative PED file
         self.pedfile = None
         # Ignored fields
-        self.ignored_fields = set()
-        # Fields with indedx
-        self.indexed_fields = set()
+        self.mmmmm = None
+        # Fields with index
+        self.indexed_variant_fields = None
+        self.indexed_annotation_fields = None
+        self.indexed_sample_fields = None
+
         # annotation parser
         self.annotation_parser = None
 
         self.project_settings = dict()
-
-    def set_importer_settings(
-        self,
-        filename,
-        db_filename,
-        pedfile=None,
-        annotation_parser=None,
-        ignored_fields=set(),
-        project_settings={},
-    ):
-        """Init settings of the importer
-
-        :param filename: File to be opened.
-        :param db_filename: Filepath of the new project.
-        :key pedfile: PED file to be opened.
-        :key project_settings: The reference genome and the name of the project.
-            Keys have to be at least "reference" and "project_name".
-        :type filename: <str>
-        :type pedfile: <str>
-        :type db_filename: <str>
-        :type project_settings: <dict>
-        """
-        # File top open
-        self.filename = filename
-        # Project's filepath
-        self.db_filename = db_filename
-        # Project settings
-        self.project_settings = project_settings
-        # Ped file
-        self.pedfile = pedfile
-        # Ignored fields
-        self.ignored_fields = ignored_fields
-
-        self.annotation_parser = annotation_parser
 
     def run(self):
         """Overrided QThread method
@@ -567,7 +568,10 @@ class ImportThread(QThread):
                 self.conn,
                 self.filename,
                 pedfile=self.pedfile,
-                ignored_fields=self.ignored_fields,
+                ignored_fields=None,
+                indexed_variant_fields=self.indexed_variant_fields,
+                indexed_annotation_fields=self.indexed_annotation_fields,
+                indexed_sample_fields=self.indexed_sample_fields,
                 project=self.project_settings,
                 vcf_annotation_parser=self.annotation_parser,
             ):
@@ -611,7 +615,7 @@ class ImportPage(QWizardPage):
 
         # Async stuff
         self.thread_finished = False  # True if import process is correctly finished
-        self.thread = ImportThread()
+        self.thread: ImportThread = ImportThread()
         self.progress = QProgressBar()
         self.import_button = QPushButton(self.text_buttons[0])
 
@@ -662,9 +666,6 @@ class ImportPage(QWizardPage):
             + self.field("project_name")
             + ".db"
         )
-
-        self.ignored_fields = self.wizard().config["ignored_fields"]
-        
 
         self.run()
         self.import_button.setDisabled(False)
@@ -721,22 +722,19 @@ class ImportPage(QWizardPage):
         if self.thread.isRunning():
             self.thread_stop()
         else:
-            self.thread.set_importer_settings(
-                # File to open
-                filename=self.field("filename"),
-                # Project's filepath
-                db_filename=self.db_filename,
-                # PED file to use with samples
-                pedfile=self.field("pedfile"),
-                # Ignored fields
-                ignored_fields=self.ignored_fields,
-                annotation_parser=self.field("annotation_parser"),
-                # Project's settings
-                project_settings={
-                    # Project's name
-                    "project_name": self.field("project_name"),
-                },
-            )
+            # init thread
+            config = self.wizard().config
+            self.thread.filename = self.field("filename")
+            self.thread.db_filename = self.db_filename
+            self.thread.pedfile = self.field("pedfile")
+            self.thread.ignored_fields = config["ignored_fields"]
+            self.thread.indexed_variant_fields = config["indexed_variant_fields"]
+            self.thread.indexed_annotation_fields = config["indexed_annotation_fields"]
+            self.thread.indexed_sample_fields = config["indexed_sample_fields"]
+
+            self.thread.annotation_parser = self.field("annotation_parser")
+            self.thread.project_settings = {"name": self.field("project_name")}
+
             self.log_edit.appendPlainText(
                 "Annotation parser: " + str(self.field("annotation_parser"))
             )
@@ -786,7 +784,7 @@ class ProjectWizard(QWizard):
         # Stored all data filled by the wizard
         # Better than using cumberstome setField...
         self.config = {}
-        self.resize(600,400)
+        self.resize(600, 400)
 
 
 if __name__ == "__main__":
