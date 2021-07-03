@@ -7,7 +7,7 @@ import time
 # Qt imports
 from PySide2.QtWidgets import *
 from PySide2.QtCore import QAbstractListModel, QAbstractTableModel, QModelIndex, QThread, Signal, QDir, QSettings, QFile, Slot, Qt
-from PySide2.QtGui import QIcon, QStandardItem, QStandardItemModel
+from PySide2.QtGui import QIcon, QStandardItem, QStandardItemModel, QColor, QFont
 
 # Custom imports
 from cutevariant.core.importer import async_import_file
@@ -360,11 +360,26 @@ class FieldsModel(QAbstractTableModel):
             if index.column() == 3:
                 return item["type"]
         
-        if role == Qt.CheckStateRole:
-            if index.column() == 0:
-                return item["enabled"]
+        if role == Qt.ForegroundRole:
+            if not item["enabled"]:
+                return QColor("darkgray")
+    
+        if role == Qt.TextAlignmentRole:
             if index.column() == 4:
-                return item["index"]
+                return Qt.AlignCenter
+
+        if role == Qt.FontRole:
+            if item["name"] in self.MANDATORY_FIELDS:
+                font = QFont()
+                font.setBold(True)
+                return font
+
+        if role == Qt.CheckStateRole:
+          
+            if index.column() == 0:
+                return  Qt.Checked if item["enabled"] else Qt.Unchecked
+            if index.column() == 4:
+                return  Qt.Checked if item["index"] else Qt.Unchecked
         return None
             
     def headerData(self, section: int, orientation: Qt.Orientation, role: int):
@@ -374,10 +389,34 @@ class FieldsModel(QAbstractTableModel):
         
         return None
 
+    def setData(self, index: QModelIndex, value, role: int) -> bool:
+        """ override """
+        if role == Qt.CheckStateRole and index.column() == 0:
+            self._items[index.row()]["enabled"] = bool(value)
+            self.dataChanged.emit(index.siblingAtColumn(0),index.siblingAtColumn(4))
+            return True
+
+        if role == Qt.CheckStateRole and index.column() == 4:
+            self._items[index.row()]["index"] = bool(value)
+            self.dataChanged.emit(index, index)
+            return True
+
+        return False
+    
+    def flags(self, index: QModelIndex) -> Qt.ItemFlags:
+        
+        item = self._items[index.row()]
+
+        if item["name"] in self.MANDATORY_FIELDS:
+            return Qt.ItemIsSelectable
+
+        if index.column() == 0 or index.column() == 4:
+            return Qt.ItemIsSelectable|Qt.ItemIsEnabled | Qt.ItemIsUserCheckable
+
+        return Qt.ItemIsSelectable|Qt.ItemIsEnabled
 
 
-
-
+    
     def load(self, filename:str):
         """ load fields """
         self.beginResetModel()
@@ -399,7 +438,7 @@ class FieldsPage(QWizardPage):
         super().__init__()
 
         self.setTitle(self.tr("Fields"))
-        self.setSubTitle(self.tr("Select fields you want to import"))
+        self.setSubTitle(self.tr("Select fields you want to import. Mandatory fields cannot be edited.\n Indexed fields will improve query execution but database will takes more space"))
         self.help_text = QLabel(self.tr("Check fields you want to import "))
         self.select_button = QPushButton(self.tr("(Un)Select all"))
         self.view = QTableView()
