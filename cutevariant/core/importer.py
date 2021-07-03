@@ -27,7 +27,7 @@ LOGGER = logger()
 
 
 def async_import_reader(
-    conn, reader: AbstractReader, pedfile=None, ignored_fields=set(), project={}
+    conn, reader: AbstractReader, pedfile=None, ignored_fields=set(), indexed_fields =set(), project={}
 ):
     """Import data via the given reader into a SQLite database via the given connection
 
@@ -116,7 +116,11 @@ def async_import_reader(
 
     # Create indexes
     yield 99, "Creating indexes..."
-    create_indexes(conn)
+    # index by default 
+    if indexed_fields is None:
+        indexed_fields = {"pos","ref","alt"}
+
+    create_indexes(conn, indexed_fields)
     yield 100, "Indexes created."
 
     # session.add(Selection(name="favoris", description="favoris", count = 0))
@@ -127,6 +131,7 @@ def async_import_file(
     filename,
     pedfile=None,
     ignored_fields=set(),
+    indexed_fields=set(),
     project={},
     vcf_annotation_parser=None,
 ):
@@ -142,7 +147,7 @@ def async_import_file(
     """
     # Context manager that wraps the given file and creates an apropriate reader
     with create_reader(filename, vcf_annotation_parser=vcf_annotation_parser) as reader:
-        yield from async_import_reader(conn, reader, pedfile, ignored_fields, project)
+        yield from async_import_reader(conn, reader, pedfile, ignored_fields,indexed_fields, project)
 
 
 def import_file(
@@ -150,6 +155,7 @@ def import_file(
     filename,
     pedfile=None,
     ignored_fields=set(),
+    indexed_fields = set(),
     project={},
     vcf_annotation_parser=None,
 ):
@@ -158,13 +164,13 @@ def import_file(
     TODO: to be deleted
     """
     for progress, message in async_import_file(
-        conn, filename, pedfile, ignored_fields, project, vcf_annotation_parser
+        conn, filename, pedfile, ignored_fields, indexed_fields, project, vcf_annotation_parser
     ):
         # don't show message
         pass
 
 
-def import_reader(conn, reader, pedfile=None, ignored_fields=set(), project={}):
+def import_reader(conn, reader, pedfile=None, ignored_fields=set(), indexed_fields=set(), project={}):
     """Wrapper for debugging purpose
 
     TODO: to be deleted

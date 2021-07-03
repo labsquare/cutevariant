@@ -142,7 +142,7 @@ def get_table_columns(conn: sqlite3.Connection, table_name):
     ]
 
 
-def create_indexes(conn: sqlite3.Connection):
+def create_indexes(conn: sqlite3.Connection, indexed_fields = {"pos","ref","alt"}):
     """Create extra indexes on tables
 
     Args:
@@ -153,7 +153,7 @@ def create_indexes(conn: sqlite3.Connection):
         You should use this function instead of individual functions.
 
     """
-    create_variants_indexes(conn)
+    create_variants_indexes(conn, indexed_fields)
     create_selections_indexes(conn)
 
     try:
@@ -1296,7 +1296,7 @@ def create_table_variants(conn, fields):
     conn.commit()
 
 
-def create_variants_indexes(conn):
+def create_variants_indexes(conn, indexed_fields = {"pos","ref","alt"}):
     """Create indexes on the "variants" table
 
     .. warning:: This function must be called after batch insertions.
@@ -1316,8 +1316,10 @@ def create_variants_indexes(conn):
         "CREATE INDEX idx_sample_has_variant ON sample_has_variant (variant_id)"
     )
 
-    conn.execute("CREATE INDEX idx_variants_pos ON variants (pos)")
-    conn.execute("CREATE INDEX idx_variants_ref_alt ON variants (ref, alt)")
+    for field in indexed_fields:
+        conn.execute(f"CREATE INDEX idx_variants_{field} ON variants ({field})")
+
+
 
 
 def get_one_variant(

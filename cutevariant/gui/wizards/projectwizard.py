@@ -402,6 +402,13 @@ class FieldsModel(QAbstractTableModel):
             return True
 
         return False
+
+    def get_ignore_fields(self):
+        return [field for field in self._items if field["enabled"] == True]
+
+    def get_indexed_field(self):
+        return [field for field in self._items if field["index"] == True]
+
     
     def flags(self, index: QModelIndex) -> Qt.ItemFlags:
         
@@ -468,14 +475,9 @@ class FieldsPage(QWizardPage):
         """ override """
 
         # Loop over fields a create a ignored fields set e.g (("qual","variants"))
-        ignored_fields = set()
-        for row in range(self.model.rowCount()):
-            item = self.model.item(row, 0)
-            if item.checkState() == Qt.Unchecked:
-                field = item.data()
-                ignored_fields.add((field["name"], field["category"]))
-
-        self.wizard().config["ignored_fields"] = ignored_fields
+      
+        self.wizard().config["ignored_fields"] = self.model.get_ignore_fields()
+        self.wizard().config["indexed_fields"] = self.model.get_indexed_field()
 
         return True
 
@@ -502,6 +504,8 @@ class ImportThread(QThread):
         self.pedfile = None
         # Ignored fields
         self.ignored_fields = set()
+        # Fields with indedx
+        self.indexed_fields = set()
         # annotation parser
         self.annotation_parser = None
 
@@ -660,6 +664,7 @@ class ImportPage(QWizardPage):
         )
 
         self.ignored_fields = self.wizard().config["ignored_fields"]
+        
 
         self.run()
         self.import_button.setDisabled(False)
@@ -772,9 +777,9 @@ class ProjectWizard(QWizard):
         self.setWindowTitle(self.tr("Cutevariant - Project creation wizard"))
         self.setWindowIcon(QIcon(cm.DIR_ICONS + "app.png"))
         self.setWizardStyle(QWizard.ClassicStyle)
-        # self.addPage(ProjectPage())
+        self.addPage(ProjectPage())
         self.addPage(FilePage())
-        # self.addPage(SamplePage())
+        self.addPage(SamplePage())
         self.addPage(FieldsPage())
         self.addPage(ImportPage())
 
