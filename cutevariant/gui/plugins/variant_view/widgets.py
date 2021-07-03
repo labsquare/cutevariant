@@ -1312,9 +1312,11 @@ class VariantView(QWidget):
         # Create classication action
         class_menu = QMenu(self.tr("Classification"))
 
-        for key, value in cm.CLASSIFICATION.items():
+        for key, item in style.CLASSIFICATION.items():
 
-            action = class_menu.addAction(FIcon(cm.CLASSIFICATION_ICONS[key]), value)
+            action = class_menu.addAction(
+                FIcon(item["icon"], item["color"]), item["name"]
+            )
             action.setData(key)
             on_click = functools.partial(self.update_classification, key)
             action.triggered.connect(on_click)
