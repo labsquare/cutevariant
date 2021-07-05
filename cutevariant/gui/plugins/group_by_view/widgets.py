@@ -223,6 +223,8 @@ class GroupbyTable(QWidget):
         self.proxy = FilterProxyModel(self)
         self.tableview = LoadingTableView(self)
         self.tableview.setModel(self.proxy)
+        self.tableview.setShowGrid(False)
+
         self.tableview.verticalHeader().hide()
         self.proxy.setSourceModel(self.groupby_model)
         self.tableview.setSelectionMode(QAbstractItemView.SingleSelection)
@@ -324,6 +326,7 @@ class GroupByViewWidget(PluginWidget):
         layout.addWidget(self.toolbar)
         layout.addWidget(self.view)
         layout.setSpacing(0)
+        layout.setContentsMargins(0, 0, 0, 0)
 
         self.field_select_combo.currentTextChanged.connect(self._load_groupby)
 
