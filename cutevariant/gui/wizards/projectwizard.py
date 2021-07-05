@@ -414,7 +414,7 @@ class FieldsModel(QAbstractTableModel):
         return False
 
     def get_ignore_fields(self):
-        return [field for field in self._items if field["enabled"] == True]
+        return [field for field in self._items if field["enabled"] == False]
 
     def get_indexed_fields(self):
         return [field for field in self._items if field["index"] == True]
@@ -535,7 +535,7 @@ class ImportThread(QThread):
         # Facultative PED file
         self.pedfile = None
         # Ignored fields
-        self.mmmmm = None
+        self.ignored_fields = None
         # Fields with index
         self.indexed_variant_fields = None
         self.indexed_annotation_fields = None
@@ -568,7 +568,7 @@ class ImportThread(QThread):
                 self.conn,
                 self.filename,
                 pedfile=self.pedfile,
-                ignored_fields=None,
+                ignored_fields=self.ignored_fields,
                 indexed_variant_fields=self.indexed_variant_fields,
                 indexed_annotation_fields=self.indexed_annotation_fields,
                 indexed_sample_fields=self.indexed_sample_fields,
@@ -728,6 +728,7 @@ class ImportPage(QWizardPage):
             self.thread.db_filename = self.db_filename
             self.thread.pedfile = self.field("pedfile")
             self.thread.ignored_fields = config["ignored_fields"]
+
             self.thread.indexed_variant_fields = config["indexed_variant_fields"]
             self.thread.indexed_annotation_fields = config["indexed_annotation_fields"]
             self.thread.indexed_sample_fields = config["indexed_sample_fields"]

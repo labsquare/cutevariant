@@ -1595,8 +1595,6 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
     variant_count = 0
     for variant_count, variant in enumerate(data, 1):
 
-        print(variant)
-
         # Insert current variant
         # Use default dict to handle missing values
         # LOGGER.debug(
