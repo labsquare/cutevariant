@@ -14,7 +14,12 @@ from PySide2.QtGui import *
 
 # Custom imports
 from cutevariant.core import sql, command
-from cutevariant.core.sql import intersect_variants, union_variants, subtract_variants
+from cutevariant.core.sql import (
+    create_selection,
+    intersect_variants,
+    union_variants,
+    subtract_variants,
+)
 from cutevariant.core.reader import BedReader
 from cutevariant.gui import plugin, FIcon
 from cutevariant.gui.widgets import SearchableTableWidget
@@ -53,8 +58,8 @@ class SourceModel(QAbstractTableModel):
         self._current_source = value
         new_index = self.find_record(self._current_source)
         if old_index != new_index:
-            self.dataChanged.emit(old_index, old_index)
-            self.dataChanged.emit(new_index, new_index)
+            self.dataChanged.emit(old_index, old_index.siblingAtColumn(1))
+            self.dataChanged.emit(new_index, new_index.siblingAtColumn(1))
 
     def rowCount(self, parent=QModelIndex()) -> int:
         """Overrided from QAbstractTableModel"""
@@ -96,7 +101,7 @@ class SourceModel(QAbstractTableModel):
 
         if role == Qt.DecorationRole:
             if index.column() == 0:
-                if table_name == "variants":
+                if table_name == DEFAULT_SELECTION_NAME:
                     return QIcon(FIcon(0xF13C6))
                 else:
                     return QIcon(FIcon(0xF04EB))
@@ -174,15 +179,28 @@ class SourceModel(QAbstractTableModel):
             bool: Return True if the deletion has been made, False otherwise.
         """
         # Get selected record
-        record = self.record(index)
+        return self.remove_records([index])
 
-        if sql.delete_selection(self.conn, record["id"]):
-            self.beginRemoveRows(QModelIndex(), index.row(), index.row())
-            # Delete in model; triggers currentRowChanged signal
-            #  Magic... the record disapear ...  ??
-            self.endRemoveRows()
-            return True
-        return False
+    def remove_records(self, indexes: typing.List[QModelIndex]) -> bool:
+        """Delete the selection with the given id in the database
+        Returns:
+            bool: Return True if the deletion has been made, False otherwise.
+        """
+        # Get selected record
+        rows = sorted([index.row() for index in indexes], reverse=True)
+        for row in rows:
+            record = self.record(self.index(row, 0))
+
+            if sql.delete_selection(self.conn, record["id"]):
+                self.beginRemoveRows(QModelIndex(), row, row)
+                # Delete in model; triggers currentRowChanged signal
+                #  Magic... the record disapear ...  ??
+                # No, it didn't. But below line does
+                del self.records[row]
+                self.endRemoveRows()
+            else:
+                return False
+        return True
 
     def edit_record(self, index: QModelIndex, record: dict):
         """Edit the given selection in the database and emit `dataChanged` signal"""
@@ -239,7 +257,7 @@ class SourceEditorWidget(plugin.PluginWidget):
         self.view.setSortingEnabled(True)
         self.view.setShowGrid(False)
         self.view.setAlternatingRowColors(False)
-        self.view.setIconSize(QSize(16, 16))
+        self.view.setIconSize(QSize(22, 22))
 
         self.toolbar = QToolBar()
         self.toolbar.setIconSize(QSize(16, 16))
@@ -262,41 +280,72 @@ class SourceEditorWidget(plugin.PluginWidget):
         # call on_current_row_changed when item selection changed
         self.view.doubleClicked.connect(self.on_double_click)
 
-        self.add_menu = QMenu(self)
-        self.create_selection_action = self.add_menu.addAction(
+        self.create_selection_action = self.toolbar.addAction(
             FIcon(0xF0F87),
-            self.tr("Create source from current variants"),
-            self.create_selection,
+            self.tr("New source..."),
+            self.create_selection_from_current,
         )
-        self.create_from_bed_action = self.add_menu.addAction(
-            FIcon(0xF0F87),
-            self.tr("Create source from bed file ... "),
+        self.create_selection_from_bed_action = self.toolbar.addAction(
+            FIcon(0xF0965),
+            self.tr("Intersect with BED file"),
             self.create_selection_from_bed,
         )
-        add_action = QToolButton()
-        add_action.setIcon(FIcon(0xF0415))
-        add_action.setPopupMode(QToolButton.InstantPopup)
-        add_action.setMenu(self.add_menu)
-        self.toolbar.addWidget(add_action)
-
-        self.edit_action = self.toolbar.addAction(
-            FIcon(0xF04F0), self.tr("Edit source"), self.edit_selection
+        self.create_selection_from_bed_action.setToolTip(
+            "Create new source from intersection with BED file"
         )
+
+        # Add action to rename source
+        self.edit_action = self.toolbar.addAction(
+            FIcon(0xF04F0), self.tr("Rename source"), self.edit_selection
+        )
+        self.edit_action.setEnabled(False)
+
+        # Add action to delete source
         self.del_action = self.toolbar.addAction(
             FIcon(0xF0A76), self.tr("Delete source"), self.remove_selection
         )
+        self.del_action.setEnabled(False)
+
+        # Add all three set operations
+        self.intersect_action = self.toolbar.addAction(
+            FIcon(0xF0779),
+            self.tr("Intersection of selected sources"),
+            lambda: self.on_apply_set_operation("intersect"),
+        )
+        self.union_action = self.toolbar.addAction(
+            FIcon(0xF0778),
+            self.tr("Union of selected sources"),
+            lambda: self.on_apply_set_operation("union"),
+        )
+        self.difference_action = self.toolbar.addAction(
+            FIcon(0xF077B),
+            self.tr("Difference between selected sources (First - Last)"),
+            lambda: self.on_apply_set_operation("subtract"),
+        )
+
+        self.intersect_action.setEnabled(False)
+        self.union_action.setEnabled(False)
+        self.difference_action.setEnabled(False)
+
+        # Add all actions from toolbar to this widget's actions (except for the drop down 'add' action that has no text)
+        self.addActions(self.toolbar.actions())
+
+        # When right cliking, this will show the same actions as the toolbar
+        self.setContextMenuPolicy(Qt.ActionsContextMenu)
+
+        self.view.selectionModel().selectionChanged.connect(self.on_selection_changed)
 
         # self.toolbar.addAction(FIcon(0xF0453), self.tr("Reload"), self.load)
 
-    @Slot()
-    def create_selection(self):
-        """Create a selection from the current data_state
+    @Slot(QModelIndex)
+    def on_double_click(self, current: QModelIndex):
+        source = current.data(Qt.DisplayRole)
+        if source:
+            self.model.current_source = source
+            self.mainwindow.set_state_data("source", source)
+            self.mainwindow.refresh_plugins(sender=self)
 
-        Note:
-            This method is called by a toolbar QAction
-
-        """
-
+    def create_selection_from_current(self):
         name = self.ask_and_check_selection_name()
 
         if name:
@@ -314,15 +363,6 @@ class SourceEditorWidget(plugin.PluginWidget):
             if result:
                 self.on_refresh()
 
-    @Slot(QModelIndex)
-    def on_double_click(self, current: QModelIndex):
-        source = current.data(Qt.DisplayRole)
-        if source:
-            self.model.current_source = source
-            self.mainwindow.set_state_data("source", source)
-            self.mainwindow.refresh_plugins(sender=self)
-
-    @Slot()
     def create_selection_from_bed(self):
         """Create a selection from a selected bed file
 
@@ -336,7 +376,7 @@ class SourceEditorWidget(plugin.PluginWidget):
 
         filepath, _ = QFileDialog.getOpenFileName(
             self,
-            self.tr("Intersect source with a bed file"),
+            self.tr("Intersect variants with a bed file"),
             last_directory,
             self.tr("BED - Browser Extensible Data (*.bed)"),
         )
@@ -347,14 +387,10 @@ class SourceEditorWidget(plugin.PluginWidget):
         if not selection_name:
             return
 
-        current_index = self.view.selectionModel().currentIndex()
-        current_selection = self.model.record(current_index)
-        source = current_selection["name"]
-
         # Open bed intervals & create selection
         intervals = BedReader(filepath)
         sql.create_selection_from_bed(
-            self.model.conn, source, selection_name, intervals
+            self.model.conn, DEFAULT_SELECTION_NAME, selection_name, intervals
         )
         # Refresh UI
         self.model.load()
@@ -375,53 +411,47 @@ class SourceEditorWidget(plugin.PluginWidget):
         # self.view.setCurrentIndex(model_index)
         # self.view.selectionModel().blockSignals(False)
 
-    # @Slot(QModelIndex, QModelIndex)
-    # def on_current_row_changed(self, current: QModelIndex, previous: QModelIndex):
-    #     """This methods trigger the signal for the view
-    #     Note:
-    #         I don't broadcast the signal rowChanged to selectionChanged directly
-    #         because I need to block signals for the view only
-    #     """
-    #     source = current.data(Qt.DisplayRole)
-    #     if source:
-    #         self.mainwindow.set_state_data("source", source)
-    #         self.mainwindow.refresh_plugins(sender=self)
-
-    def _create_menu(self, editable: bool = False) -> QMenu:
-        """Create popup menu
-
-        Args:
-            locked_selection(bool): Allow to mask edit/remove actions (default False)
-            Used on special selections like the default one (named variants).
-            locked_selection: <boolean>
+    def on_selection_changed(
+        self,
+        selected,
+        deselected,
+    ):
+        """Called when the source selection has changed. The change is already applied when this callback is triggered.
+        For this widget, it allows us to check whether the number of selected sources is exactly two, so we can enable/disable the set operations
         """
-        menu = QMenu()
-
-        if not editable:
-            menu.addAction(self.edit_action)
-
-        #  Create action for bed
-        menu.addAction(self.create_from_bed_action)
-
-        # Set operations on selections: create mapping and actions
-        set_icons_ids = (0xF0779, 0xF077C, 0xF0778)
-        set_texts = (self.tr("Intersect"), self.tr("Difference"), self.tr("Union"))
-        set_internal_ids = ("&", "-", "|")
-        # Map the operations with an internal id not visible for the user
-        # This id is used by _create_set_operation_menu
-        # Keys: user text; values: internal ids
-        self.set_operations_mapping = dict(zip(set_texts, set_internal_ids))
-
-        # Create actions
-        [
-            menu.addMenu(self._create_set_operation_menu(FIcon(icon_id), text))
-            for icon_id, text in zip(set_icons_ids, set_texts)
+        selected_sources = [
+            index.data(Qt.DisplayRole)
+            for index in self.view.selectionModel().selectedRows(0)
         ]
 
-        if not editable:
-            menu.addSeparator()
-            menu.addAction(FIcon(0xF0A7A), self.tr("Remove"), self.remove_selection)
-        return menu
+        if not selected_sources:
+            # No source selected whatsoever, cannot apply any operation. Disable every action (except create selection from source)
+            self.intersect_action.setEnabled(False)
+            self.difference_action.setEnabled(False)
+            self.union_action.setEnabled(False)
+
+            self.edit_action.setEnabled(False)
+            self.del_action.setEnabled(False)
+            return
+
+        # Set operations are enable iff the number of selected sources is exactly two
+        is_selection_count_valid = len(selected_sources) == 2
+        self.intersect_action.setEnabled(is_selection_count_valid)
+        self.difference_action.setEnabled(is_selection_count_valid)
+        self.union_action.setEnabled(is_selection_count_valid)
+
+        current = self.view.selectionModel().currentIndex()
+
+        self.create_selection_from_bed_action.setEnabled(
+            current.data(Qt.DisplayRole) == DEFAULT_SELECTION_NAME
+        )
+
+        if any(source == DEFAULT_SELECTION_NAME for source in selected_sources):
+            self.edit_action.setEnabled(False)
+            self.del_action.setEnabled(False)
+        else:
+            self.edit_action.setEnabled(True)
+            self.del_action.setEnabled(True)
 
     def load(self):
         """Load selection model and update the view"""
@@ -480,60 +510,20 @@ class SourceEditorWidget(plugin.PluginWidget):
         else:
             return name
 
-    # def save_current_query(self):
-    #     """Open a dialog box to save the current query into a selection
-    #     TODO: désactivé?
-    #     """
-    #     selection_name = self.ask_and_check_selection_name()
-    #     if selection_name:
-    #         self.model.save_current_query(selection_name)
-
-    def contextMenuEvent(self, event: QContextMenuEvent):
-        """Overrided: Show popup menu at the cursor position"""
-        if not self.model.records:
-            return
-        # Detect locked selection to mask edit/remove actions
-        locked_selection = False
-        current_index = self.view.selectionModel().currentIndex()
-        record = self.model.record(current_index)
-        if record["name"] == DEFAULT_SELECTION_NAME:
-            locked_selection = True
-        # Show the menu
-        menu = self._create_menu(locked_selection)
-        menu.exec_(event.globalPos())
-
-    def _create_set_operation_menu(self, icon, menu_name):
-        """Dynamically add submenu with the given name to popup menu"""
-        menu = QMenu(menu_name)
-        menu.setIcon(icon)
-
-        # Get all the names of selections except the current one
-        current_selection_name = self.model.record(self.view.currentIndex())["name"]
-        records_names = set(record["name"] for record in self.model.records)
-        records_names.remove(current_selection_name)
-
-        menu.addSeparator()
-        # Create an action in the menu for all the remaining elements
-        for record_name in records_names:
-            action = menu.addAction(record_name)
-            # This hidden data is used by _make_set_operation() to detect
-            # which operation to do
-            action.setData(self.set_operations_mapping[menu_name])
-            action.triggered.connect(self._make_set_operation)
-
-        return menu
-
     def remove_selection(self):
         """Remove a selection from the database"""
 
-        # ignore if selection is 'variants'
-
-        if not self.view.currentIndex().isValid():
+        if not self.view.selectionModel().selectedRows(0):
+            QMessageBox.information(
+                self, self.tr("Info"), self.tr("No source to remove!")
+            )
             return
 
-        item = self.model.record(self.view.currentIndex())
-
-        if item["name"] == "variants":
+        # This should not even be called, since remove/edit actions are supposed to be disabled by the widget
+        if any(
+            self.model.record(row) == DEFAULT_SELECTION_NAME
+            for row in self.view.selectionModel().selectedRows(0)
+        ):
             QMessageBox.warning(
                 self,
                 self.tr("Remove source"),
@@ -546,17 +536,20 @@ class SourceEditorWidget(plugin.PluginWidget):
         msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
 
         if msg.exec_() == QMessageBox.Yes:
-            for index in self.view.selectionModel().selectedRows():
-                self.model.remove_record(index)
+            self.model.remove_records(self.view.selectionModel().selectedRows(0))
 
-            # Reload the UI, otherwise, the old selection is still in popup menu
-            # self.load()
+            self.mainwindow.set_state_data("source", DEFAULT_SELECTION_NAME)
+            self.mainwindow.refresh_plugins(sender=None)
 
     def edit_selection(self):
         """Update a selection in the database
         .. note:: We do not reload all the UI for this
         """
         current_index = self.view.selectionModel().currentIndex()
+        if not current_index.isValid():
+            QMessageBox.information(
+                self, self.tr("Info"), self.tr("No source to edit!")
+            )
         old_record = self.model.record(current_index)
 
         selection_name = self.ask_and_check_selection_name(
@@ -565,11 +558,14 @@ class SourceEditorWidget(plugin.PluginWidget):
         if current_index and selection_name:
             old_record["name"] = selection_name
             self.model.edit_record(current_index, old_record)
+            self.mainwindow.set_state_data("source", selection_name)
+            self.mainwindow.refresh_plugins(sender=None)
 
     def on_apply_set_operation(self, operation="intersect"):
         """Creates a new wordset from the union of selected wordsets.
         The resulting wordset will contain all elements from all selected wordsets, without double.
         """
+        operators = {"intersect": "AND", "union": "OR", "subtract": "MINUS"}
         operations = {
             "intersect": (
                 lambda name, first, last: command.set_cmd(
@@ -597,6 +593,22 @@ class SourceEditorWidget(plugin.PluginWidget):
         if not selected_sources:
             return
         else:
+            # Kind reminder to the user of what the operation will be about
+            if (
+                QMessageBox.question(
+                    self,
+                    self.tr(f"Set operation on sources"),
+                    self.tr(
+                        'This will perform "{first}" {operator} "{last}". Continue?'
+                    ).format(
+                        first=selected_sources[0],
+                        operator=operators[operation],
+                        last=selected_sources[1],
+                    ),
+                )
+                != QMessageBox.Yes
+            ):
+                return
             selection_name = None
             while not selection_name:
                 selection_name, _ = QInputDialog.getText(
@@ -621,7 +633,22 @@ class SourceEditorWidget(plugin.PluginWidget):
             if operation not in operations:
                 return
             operator_fn = operations[operation][0]
-            print(selected_sources)
+            if operator_fn(selection_name, selected_sources[0], selected_sources[1]):
+                QMessageBox.information(
+                    self,
+                    self.tr("Success!"),
+                    self.tr(f"Successfully created source {selection_name} !"),
+                )
+                self.mainwindow.set_state_data("source", selection_name)
+                self.mainwindow.refresh_plugins(sender=None)
+            else:
+                QMessageBox.warning(
+                    self,
+                    self.tr("Warning!"),
+                    self.tr(
+                        "No source created! Usually, this is because the resulting selection is empty.\nDid you invert the order of difference operator?"
+                    ),
+                )
 
 
 if __name__ == "__main__":

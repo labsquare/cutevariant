@@ -138,7 +138,7 @@ def test_extra_variants(reader):
         assert "favorite" in variant
         assert "classification" in variant
         assert variant["favorite"] == False
-        assert variant["classification"] == 3
+        assert variant["classification"] == 0
 
     # test remove fields
     last_variant = variant

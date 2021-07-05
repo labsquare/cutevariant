@@ -4,6 +4,7 @@ import csv
 
 # Qt imports
 from PySide2.QtCore import (
+    QLine,
     Qt,
     QAbstractTableModel,
     QAbstractItemModel,
@@ -13,6 +14,7 @@ from PySide2.QtCore import (
 )
 
 from PySide2.QtWidgets import (
+    QLineEdit,
     QTableView,
     QItemDelegate,
     QWidget,
@@ -164,7 +166,7 @@ class PedModel(QAbstractTableModel):
         if not index.isValid():
             return
 
-        if index.column() > 1:
+        if index.column() != 1:
             # Family ids & Individual ids are NOT editable (we must fit with the VCF file)
             return Qt.ItemIsSelectable | Qt.ItemIsEditable | Qt.ItemIsEnabled
 
@@ -196,38 +198,45 @@ class PedDelegate(QItemDelegate):
         """
         # PS: index.model refer to SampleModel
 
-        if index.column() < 2:
-            # Family ids & Individual ids are NOT editable (we must fit with the VCF file)
+        if index.column() == 1:
+            # Individual ids are NOT editable (we must fit with the VCF file)
             return
 
-        widget = QComboBox(parent)
-        if index.column() == 2 or index.column() == 3:
-            # Forge a list of available individual ids except the current one
-            # Get individual_id of the current row/sample
-            current_individual_id = index.model().samples_data[index.row()][1]
-            # Remove current individual_id from propositions
-            individual_ids = set(index.model().get_data_list(1))
-            individual_ids.remove(current_individual_id)
-            # father_id or mother_id columns
-            widget.addItem("", "0")
-            for individual_id in individual_ids:
-                widget.addItem(individual_id, individual_id)
-
+        if index.column() == 0:
+            # Edit family name
+            widget = QLineEdit(parent)
             return widget
 
-        if index.column() == 4:
-            # Sex column
-            widget.addItem("Male", "1")
-            widget.addItem("Female", "2")
-            widget.addItem("", "0")
-            return widget
+        else:
 
-        if index.column() == 5:
-            # Genotype column
-            widget.addItem("Unaffected", "1")
-            widget.addItem("Affected", "2")
-            widget.addItem("", "0")
-            return widget
+            widget = QComboBox(parent)
+            if index.column() == 2 or index.column() == 3:
+                # Forge a list of available individual ids except the current one
+                # Get individual_id of the current row/sample
+                current_individual_id = index.model().samples_data[index.row()][1]
+                # Remove current individual_id from propositions
+                individual_ids = set(index.model().get_data_list(1))
+                individual_ids.remove(current_individual_id)
+                # father_id or mother_id columns
+                widget.addItem("", "0")
+                for individual_id in individual_ids:
+                    widget.addItem(individual_id, individual_id)
+
+                return widget
+
+            if index.column() == 4:
+                # Sex column
+                widget.addItem("Male", "1")
+                widget.addItem("Female", "2")
+                widget.addItem("", "0")
+                return widget
+
+            if index.column() == 5:
+                # Genotype column
+                widget.addItem("Unaffected", "1")
+                widget.addItem("Affected", "2")
+                widget.addItem("", "0")
+                return widget
 
         return super().createEditor(parent, option, index)
 
@@ -260,6 +269,8 @@ class PedDelegate(QItemDelegate):
                     )
                 )
             return
+        if isinstance(editor, QLineEdit):
+            model.setData(index, editor.text(), Qt.EditRole)
 
         # Basic text not editable
         return super().setModelData(editor, model, index)

@@ -90,6 +90,11 @@ class GenotypesModel(QAbstractTableModel):
         )
         self.endResetModel()
 
+    def clear(self):
+        self.beginResetModel()
+        self.items = []
+        self.endResetModel()
+
 
 class GenotypesWidget(plugin.PluginWidget):
     """Widget displaying the list of avaible selections.
@@ -121,8 +126,20 @@ class GenotypesWidget(plugin.PluginWidget):
         vlayout.addWidget(self.view)
         self.setLayout(vlayout)
 
+        self.view.doubleClicked.connect(self._on_double_clicked)
+
+    def _on_double_clicked(self, index: QModelIndex):
+        sample_name = index.siblingAtColumn(0).data()
+        if sample_name:
+            # samples['NA12877'].gt > 1
+            self.mainwindow.set_state_data(
+                "filters", {"$and": [{f"samples.{sample_name}.gt": {"$gte": 1}}]}
+            )
+            self.mainwindow.refresh_plugins(sender=None)
+
     def on_open_project(self, conn):
         self.model.conn = conn
+        self.model.clear()
 
     def on_refresh(self):
         self.current_variant = self.mainwindow.get_state_data("current_variant")

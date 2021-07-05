@@ -17,6 +17,7 @@ from PySide2.QtGui import QIcon, QKeySequence, QDesktopServices
 
 # Custom imports
 from cutevariant.core import get_sql_connection, get_metadatas, command
+from cutevariant.core import sql
 from cutevariant.core.sql import get_database_file_name
 from cutevariant.core.writer import CsvWriter, PedWriter
 from cutevariant.gui import FIcon
@@ -47,9 +48,9 @@ class StateData:
 
     """
 
-    def __init__(self, data=None):
-        self._data = data if data else {}
+    def __init__(self):
         self._changed = set()
+        self.reset()
 
     def __setitem__(self, key, value):
 
@@ -71,6 +72,13 @@ class StateData:
     @property
     def changed(self):
         return self._changed
+
+    def reset(self):
+        self._data = {
+            "fields": ["favorite", "classification", "chr", "pos", "ref", "alt"],
+            "source": "variants",
+            "filters": {},
+        }
 
 
 class MainWindow(QMainWindow):
@@ -99,13 +107,7 @@ class MainWindow(QMainWindow):
         self.app_settings = QSettings()
 
         # State variable of application changed by plugins
-        self._state_data = StateData(
-            {
-                "fields": ["chr", "pos", "ref", "alt"],
-                "source": "variants",
-                "filters": {},
-            }
-        )
+        self._state_data = StateData()
 
         ## ===== GUI Setup =====
 
@@ -530,10 +532,12 @@ class MainWindow(QMainWindow):
         """
         self.conn = conn
 
+        self._state_data.reset()
+
         # Clear memoization cache for count_cmd
+        sql.clear_lru_cache()
         # Clear State variable of application
         # store fields, source, filters, group_by, having data
-        self.state = {"fields": ["chr"], "source": "variants", "filters": {}}
 
         # Load previous window state for this project (file_path being the key for the settings)
         file_path = get_database_file_name(conn)
@@ -786,7 +790,7 @@ class MainWindow(QMainWindow):
         super().closeEvent(event)
 
     def save_session(self):
-        """ save plugin state into a json file """
+        """save plugin state into a json file"""
 
         filename, _ = QFileDialog.getSaveFileName(
             self,
@@ -915,11 +919,6 @@ class MainWindow(QMainWindow):
         )
 
         if not file_name:
-            QMessageBox.information(
-                self,
-                self.tr("Info"),
-                self.tr("No file name specified, nothing will be written"),
-            )
             return
 
         settings.setValue("last_save_file_dir", os.path.dirname(file_name))
@@ -937,9 +936,9 @@ class MainWindow(QMainWindow):
             self.conn,
             chosen_ext,
             file_name,
-            fields=self.state.fields,
-            source=self.state.source,
-            filters=self.state.filters,
+            fields=self.get_state_data("fields"),
+            source=self.get_state_data("source"),
+            filters=self.get_state_data("filters"),
         )
 
         # # TODO : refactor self.state

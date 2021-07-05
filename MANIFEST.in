@@ -5,9 +5,12 @@ exclude *.sublime-*
 exclude *.txt
 exclude *.xmi
 exclude *.ico
+exclude *.png
+exclude *.gif
 exclude *.properties
 exclude *.yml
 exclude *.yaml
+exclude *.md
 exclude Makefile
 exclude pytest.ini
 prune .vscode
@@ -20,6 +23,7 @@ prune tests
 include setup.py
 recursive-exclude cutevariant *.txt
 recursive-include cutevariant *.png
+recursive-include cutevariant *.gif
 recursive-include cutevariant *.py
 recursive-include cutevariant *.tx
 recursive-include cutevariant *.ttf

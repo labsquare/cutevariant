@@ -328,7 +328,7 @@ class AbstractReader(ABC):
         for variant in self.get_variants():
             variant["favorite"] = False
             variant["comment"] = ""
-            variant["classification"] = 3
+            variant["classification"] = 0
 
             # For now set the first annotation as a major transcripts
             if "annotations" in variant:
