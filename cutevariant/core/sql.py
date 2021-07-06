@@ -1241,12 +1241,16 @@ def create_annotations_indexes(conn, indexed_annotation_fields=None):
         LIMIT 100
     """
     # Allow search on variant_id
-    conn.execute("CREATE INDEX idx_annotations ON annotations (variant_id)")
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_annotations ON annotations (variant_id)"
+    )
 
     if indexed_annotation_fields is None:
         return
     for field in indexed_annotation_fields:
-        conn.execute(f"CREATE INDEX idx_annotations_{field} ON annotations ({field})")
+        conn.execute(
+            f"CREATE INDEX IF NOT EXISTS idx_annotations_{field} ON annotations ({field})"
+        )
 
 
 def get_annotations(conn, variant_id: int):
@@ -1327,11 +1331,13 @@ def create_variants_indexes(conn, indexed_fields={"pos", "ref", "alt"}):
     """
     # Complementary index of the primary key (sample_id, variant_id)
     conn.execute(
-        "CREATE INDEX idx_sample_has_variant ON sample_has_variant (variant_id)"
+        "CREATE INDEX IF NOT EXISTS idx_sample_has_variant ON sample_has_variant (variant_id)"
     )
 
     for field in indexed_fields:
-        conn.execute(f"CREATE INDEX idx_variants_{field} ON variants ({field})")
+        conn.execute(
+            f"CREATE INDEX IF NOT EXISTS idx_variants_{field} ON variants ({field})"
+        )
 
 
 def get_one_variant(
@@ -1799,7 +1805,7 @@ def create_samples_indexes(conn, indexed_samples_fields=None):
 
     for field in indexed_samples_fields:
         conn.execute(
-            f"CREATE INDEX idx_samples_{field} ON sample_has_variant ({field})"
+            f"CREATE INDEX IF NOT EXISTS idx_samples_{field} ON sample_has_variant ({field})"
         )
 
 
