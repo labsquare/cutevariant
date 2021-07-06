@@ -582,7 +582,7 @@ def nullify(variant: dict) -> dict:
     """
 
     def convert_to_none(value):
-        """ convert value to None according type """
+        """convert value to None according type"""
         EMPTY_STRING = ["", "."]
         if isinstance(value, str):
             if value in EMPTY_STRING:

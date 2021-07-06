@@ -2,6 +2,7 @@ import pytest
 import tempfile
 import copy
 import os
+import re
 from collections import Counter
 
 from cutevariant.core import sql
@@ -215,6 +216,29 @@ def hasardous_wordset():
 ################################################################################
 
 
+def test_create_indexes(conn):
+
+    VARIANT_IDX = ["dp"]
+    ANN_IDX = ["gene"]
+    SAMPLE_IDX = ["gt"]
+    sql.create_indexes(
+        conn,
+        indexed_variant_fields=VARIANT_IDX,
+        indexed_annotation_fields=ANN_IDX,
+        indexed_sample_fields=SAMPLE_IDX,
+    )
+
+    # test if index exists
+    idx = [
+        re.sub(r"idx_\w+_", "", dict(idx)["name"])
+        for idx in conn.execute("SELECT name FROM sqlite_master WHERE type='index'")
+    ]
+
+    assert len(set(VARIANT_IDX) & set(idx)) == len(VARIANT_IDX)
+    assert len(set(ANN_IDX) & set(idx)) == len(ANN_IDX)
+    assert len(set(SAMPLE_IDX) & set(idx)) == len(SAMPLE_IDX)
+
+
 @pytest.mark.parametrize("field", ["pos", "qual"])
 def test_get_field_info(conn, field):
     # TODO ...
@@ -324,7 +348,7 @@ def test_get_fields(conn):
 
 
 def test_get_variants(conn):
-    """ More complexe query are actually tested from query builder """
+    """More complexe query are actually tested from query builder"""
 
     fields = ["chr", "pos", "ref", "alt", "ann.gene"]
 
