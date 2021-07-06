@@ -248,9 +248,10 @@ class WordsetCollectionModel(QAbstractTableModel):
             return self.tr("Count")
 
     def load(self):
-        self._set_dict(
-            {data["name"]: data["count"] for data in get_wordsets(self.conn)}
-        )
+        if self.conn:
+            self._set_dict(
+                {data["name"]: data["count"] for data in get_wordsets(self.conn)}
+            )
 
     def _set_dict(self, data: dict):
         self.beginResetModel()
