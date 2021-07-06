@@ -124,8 +124,21 @@ def async_import_reader(
     # Create indexes
     yield 99, "Creating indexes..."
     # index by default
-    if indexed_variant_fields is None:
-        indexed_variant_fields = {"pos", "ref", "alt"}
+    indexed_variant_fields = indexed_variant_fields or {"pos", "ref", "alt"}
+    indexed_annotation_fields = indexed_annotation_fields or set()
+    indexed_sample_fields = indexed_sample_fields or set()
+
+    ignored_field_names = {ign[0] for ign in ignored_fields}
+
+    # Very important, before indexing variants: make sure that there are no ignored fields among those we want to index!
+    # Ignored fields is a set of (name,category) tuples to ignore
+
+    indexed_variant_fields = indexed_variant_fields.difference(ignored_field_names)
+
+    indexed_annotation_fields = indexed_annotation_fields.difference(
+        ignored_field_names
+    )
+    indexed_sample_fields = indexed_sample_fields.difference(ignored_field_names)
 
     create_indexes(
         conn, indexed_variant_fields, indexed_annotation_fields, indexed_sample_fields

@@ -499,23 +499,23 @@ class FieldsPage(QWizardPage):
         config = {}
         config["ignored_fields"] = self.model.get_ignore_fields()
 
-        config["indexed_variant_fields"] = [
+        config["indexed_variant_fields"] = {
             i["name"]
             for i in self.model.get_indexed_fields()
             if i["category"] == "variants"
-        ]
+        }
 
-        config["indexed_annotation_fields"] = [
+        config["indexed_annotation_fields"] = {
             i["name"]
             for i in self.model.get_indexed_fields()
             if i["category"] == "annotations"
-        ]
+        }
 
-        config["indexed_sample_fields"] = [
+        config["indexed_sample_fields"] = {
             i["name"]
             for i in self.model.get_indexed_fields()
             if i["category"] == "samples"
-        ]
+        }
 
         self.wizard().config.update(config)
 

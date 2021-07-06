@@ -144,7 +144,7 @@ def get_table_columns(conn: sqlite3.Connection, table_name):
 
 def create_indexes(
     conn: sqlite3.Connection,
-    indexed_variant_fields=("pos", "ref", "alt"),
+    indexed_variant_fields=None,
     indexed_annotation_fields=None,
     indexed_sample_fields=None,
 ):
@@ -162,12 +162,12 @@ def create_indexes(
     create_selections_indexes(conn)
 
     create_variants_indexes(conn, indexed_variant_fields)
-    create_annotations_indexes(conn, indexed_annotation_fields)
+
     create_samples_indexes(conn, indexed_sample_fields)
 
     try:
         # Some databases have not annotations table
-        create_annotations_indexes(conn)
+        create_annotations_indexes(conn, indexed_annotation_fields)
     except sqlite3.OperationalError as e:
         LOGGER.debug("create_indexes:: sqlite3.%s: %s", e.__class__.__name__, str(e))
 
