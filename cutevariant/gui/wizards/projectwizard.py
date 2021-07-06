@@ -742,7 +742,10 @@ class ImportPage(QWizardPage):
 
             self.log_edit.appendPlainText(self.tr("Import ") + self.thread.filename)
 
-            show_ignored_fields = ",".join([i[0] for i in self.ignored_fields])
+            show_ignored_fields = ",".join(
+                [i["name"] for i in self.thread.ignored_fields]
+            )
+
             self.log_edit.appendPlainText("Ignored fields: " + show_ignored_fields)
             # display stop on the button
             self.import_button.setText(self.text_buttons[1])

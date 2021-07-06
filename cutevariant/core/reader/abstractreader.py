@@ -45,7 +45,7 @@ class AbstractReader(ABC):
 
         self.file_size = 0
 
-        self.ignored_fields = set()
+        self.ignored_fields = []
 
     @classmethod
     @abstractmethod
@@ -251,23 +251,16 @@ class AbstractReader(ABC):
             # Create unique identifiant by categories
             unique_key = field["category"] + "." + field["name"]
             is_unique = unique_key not in duplicates
-            is_ignored = (field["name"], field["category"]) in self.ignored_fields
+
+            # TODO simplify... It is now clearer than ever that self.ignored_fields is a LIST (and should always be)
+            # However maybe a set of tuples was a better idea and the add_ignored_fields method was not so bad.
+            is_ignored = (field["name"], field["category"]) in [
+                (ign["name"], ign["category"]) for ign in self.ignored_fields
+            ]
             if is_unique and not is_ignored:
                 yield field
 
             duplicates.add(unique_key)
-
-    def add_ignored_field(self, field_name: str, field_category: str):
-        """Add new field to the ignored_fields list.
-        ignored fields will not returned by get_extra_fields and then are not imporpted
-        into the database
-
-        Args:
-            field_name (str): a field name
-            field_category (str): the category field name (variant,annotation,sample)
-        """
-
-        self.ignored_fields.add((field_name, field_category))
 
     def get_extra_variants(self, **kwargs):
         """Yield variants with extra information computed and format if necessary

@@ -77,8 +77,10 @@ def test_extra_fields(reader):
     ## test to remove the  fields
     if "qual" in field_names and "dp" in field_names:
 
-        reader.add_ignored_field("qual", "variants")
-        reader.add_ignored_field("dp", "variants")
+        reader.ignored_fields = [
+            {"name": "qual", "category": "variants"},
+            {"name": "dp", "category": "variants"},
+        ]
 
         fields = tuple(reader.get_extra_fields())
         field_names = [f["name"] for f in fields if f["category"] == "variants"]
@@ -143,7 +145,7 @@ def test_extra_variants(reader):
     # test remove fields
     last_variant = variant
     ## remove qual
-    reader.add_ignored_field("qual", "variants")
+    reader.ignored_fields = [{"name": "qual", "category": "variants"}]
     for variant in reader.get_extra_variants():
         assert "qual" not in variant
         for key, value in variant.items():
@@ -152,7 +154,7 @@ def test_extra_variants(reader):
     ## remove annotation
     if "annotations" in last_variant:
         if "impact" in last_variant["annotations"][0]:
-            reader.add_ignored_field("impact", "annotations")
+            reader.ignored_fields = [{"name": "impact", "category": "annotations"}]
             for variant in reader.get_extra_variants():
                 for ann in variant["annotations"]:
                     assert "impact" not in ann
@@ -162,7 +164,7 @@ def test_extra_variants(reader):
     ## remove sample annotations foxog
     if "samples" in last_variant:
         if "foxog" in last_variant["samples"][0]:
-            reader.add_ignored_field("foxog", "samples")
+            reader.ignored_fields = [{"name": "foxog", "category": "samples"}]
             for variant in reader.get_extra_variants():
                 for sample in variant["samples"]:
                     assert "foxog" not in sample
