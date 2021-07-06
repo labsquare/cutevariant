@@ -403,6 +403,7 @@ class FieldsModel(QAbstractTableModel):
         """override"""
         if role == Qt.CheckStateRole and index.column() == 0:
             self._items[index.row()]["enabled"] = bool(value)
+            self._items[index.row()]["index"] = bool(value)
             self.dataChanged.emit(index.siblingAtColumn(0), index.siblingAtColumn(4))
             return True
 
