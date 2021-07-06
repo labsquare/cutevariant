@@ -65,8 +65,7 @@ def async_import_reader(
 
     yield 0, "Creating table shema..."
 
-    # Each ignored field is a dict, thus unhashable, thus not storable in a set!
-    reader.ignored_fields = ignored_fields or []
+    reader.ignored_fields = ignored_fields or set()
 
     # Create table fields
     create_table_fields(conn)

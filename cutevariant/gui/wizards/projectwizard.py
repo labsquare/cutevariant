@@ -413,8 +413,18 @@ class FieldsModel(QAbstractTableModel):
 
         return False
 
-    def get_ignore_fields(self):
-        return [field for field in self._items if field["enabled"] == False]
+    def get_ignore_fields(self) -> set:
+        """Returns a set of ignored fields, as a set of tuples (field_name,field_category)
+        Why return tuple instead of dict ? Well, dicts are not hashable because they are mutable. So they cannot be put in a set.
+
+        Returns:
+            set: A set with every ignored field (i.e. every field that was ticked off in self's model)
+        """
+        return {
+            (field["name"], field["category"])
+            for field in self._items
+            if field["enabled"] == False
+        }
 
     def get_indexed_fields(self):
         return [field for field in self._items if field["index"] == True]
@@ -508,8 +518,6 @@ class FieldsPage(QWizardPage):
         ]
 
         self.wizard().config.update(config)
-
-        print(self.wizard().config["ignored_fields"])
 
         return True
 
@@ -742,9 +750,7 @@ class ImportPage(QWizardPage):
 
             self.log_edit.appendPlainText(self.tr("Import ") + self.thread.filename)
 
-            show_ignored_fields = ",".join(
-                [i["name"] for i in self.thread.ignored_fields]
-            )
+            show_ignored_fields = ",".join([i[0] for i in self.thread.ignored_fields])
 
             self.log_edit.appendPlainText("Ignored fields: " + show_ignored_fields)
             # display stop on the button
