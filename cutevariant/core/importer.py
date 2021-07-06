@@ -65,7 +65,9 @@ def async_import_reader(
 
     yield 0, "Creating table shema..."
 
-    reader.ignored_fields = ignored_fields or set()
+    ignored_fields = ignored_fields or set()
+
+    reader.ignored_fields = ignored_fields
 
     # Create table fields
     create_table_fields(conn)
