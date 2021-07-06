@@ -244,6 +244,13 @@ class FieldsWidget(QWidget):
     def add_view(self, conn, category):
         model = FieldsModel(conn, category)
         view = QTableView()
+        view.setContextMenuPolicy(Qt.ActionsContextMenu)
+        index_field_action = QAction(self.tr("Index field"), view)
+        index_field_action.triggered.connect(
+            lambda: self._on_index_field_clicked(view, category)
+        )
+
+        view.addAction(index_field_action)
         proxy = QSortFilterProxyModel()
         proxy.setSourceModel(model)
 
@@ -251,7 +258,7 @@ class FieldsWidget(QWidget):
         view.setShowGrid(False)
         view.horizontalHeader().setStretchLastSection(True)
         view.setIconSize(QSize(24, 24))
-        
+
         view.setEditTriggers(QAbstractItemView.NoEditTriggers)
         view.setSelectionMode(QAbstractItemView.ExtendedSelection)
         view.setSelectionBehavior(QAbstractItemView.SelectRows)
@@ -274,6 +281,18 @@ class FieldsWidget(QWidget):
         self.tab_widget.addTab(
             view, FIcon(style.FIELD_CATEGORY.get(category, None)["icon"]), category
         )
+
+    def _on_index_field_clicked(self, view: QTableView, category: str):
+        field_name = view.currentIndex().siblingAtColumn(0).data()
+        if category == "samples":
+            field_name = field_name.split(".")[-1]
+
+        if category == "variants":
+            sql.create_variants_indexes(self.conn, {field_name})
+        if category == "annotations":
+            sql.create_annotations_indexes(self.conn, {field_name})
+        if category == "samples":
+            sql.create_samples_indexes(self.conn, {field_name})
 
     def update_filter(self, text: str):
         """
