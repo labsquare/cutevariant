@@ -274,37 +274,19 @@ class FieldsWidget(QWidget):
 
         # Setup actions
 
-        # Setup field select action...
-        select_field_action = QAction(self.tr("Select field"), view)
-        select_field_action.setCheckable(True)
-        select_field_action.toggled.connect(
-            lambda checked: self._on_select_field_clicked(view, model, proxy, checked)
-        )
-        select_field_action.setIcon(FIcon(0xF012C))
-        tick_icon = QIcon()
-        tick_icon.addPixmap(FIcon(0xF0131).pixmap(22, 22), QIcon.Normal, QIcon.Off)
-        tick_icon.addPixmap(FIcon(0xF0132).pixmap(22, 22), QIcon.Normal, QIcon.On)
-        select_field_action.setIcon(tick_icon)
-
-        # Hacky... Passing the action to on_field_clicked because the action is not a proper member
-        view.selectionModel().currentChanged.connect(
-            lambda index: self.on_field_clicked(index, select_field_action)
-        )
-
         # Setup the filter field action. Will filter out NULL values (thus the broom icon)
-        filter_field_action = QAction(self.tr("Filter out NULL values"), view)
+        filter_field_action = QAction(self.tr("Create filter on null values"), view)
         filter_field_action.triggered.connect(
             lambda: self._on_filter_field_clicked(view, category)
         )
         filter_field_action.setIcon(FIcon(0xF00E2))
-
-        index_field_action = QAction(self.tr("Index field"), view)
+        index_field_action = QAction(self.tr("Create index ..."), view)
         index_field_action.triggered.connect(
             lambda: self._on_index_field_clicked(view, category)
         )
         index_field_action.setIcon(FIcon(0xF082E))
 
-        view.addActions([select_field_action, filter_field_action, index_field_action])
+        view.addActions([filter_field_action, index_field_action])
 
         self.views.append(
             {"view": view, "proxy": proxy, "model": model, "name": category}
@@ -312,17 +294,6 @@ class FieldsWidget(QWidget):
         self.tab_widget.addTab(
             view, FIcon(style.FIELD_CATEGORY.get(category, None)["icon"]), category
         )
-
-    def on_field_clicked(self, index: QModelIndex, favorite_action: QAction):
-
-        check = bool(index.siblingAtColumn(0).data(Qt.CheckStateRole))
-        favorite_action.blockSignals(True)
-        favorite_action.setChecked(check)
-        if check:
-            favorite_action.setText(self.tr("Deselect field"))
-        else:
-            favorite_action.setText(self.tr("Select field"))
-        favorite_action.blockSignals(False)
 
     def _on_index_field_clicked(
         self,
@@ -351,33 +322,6 @@ class FieldsWidget(QWidget):
             sql.create_annotations_indexes(self.conn, {field_name})
         if category == "samples":
             sql.create_samples_indexes(self.conn, {field_name})
-
-    def _on_select_field_clicked(
-        self,
-        view: QTableView,
-        model: FieldsModel,
-        proxy: QSortFilterProxyModel,
-        checked: bool,
-    ):
-        """When the user triggers the select field action.
-        Select field and apply it immediately
-
-        Args:
-            view (QTableView): The view showing a selected field
-            category (str): (not used) The category the selected field belongs to
-            model (FieldsModel): The actual model containing the data
-            proxy (QSortFilterProxyModel): The proxymodel used by the view
-            checked (bool): New state for the checked field as requested by the action
-        """
-        if not view.currentIndex():
-            return
-        field_item = model.item(
-            proxy.mapToSource(view.currentIndex().siblingAtColumn(0)).row()
-        )
-        field_item.setCheckState(Qt.Checked if checked else Qt.Unchecked)
-
-        # Kinda hacky, but I saw it in other plugins
-        self.parent().on_apply()
 
     def _on_filter_field_clicked(self, view: QTableView, category: str):
         """When the user triggers the "filter not null" field action.
