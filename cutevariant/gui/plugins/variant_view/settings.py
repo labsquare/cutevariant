@@ -1,6 +1,5 @@
 ## ================= Settings widgets ===================
 # Qt imports
-from os import RTLD_DEEPBIND
 from typing import List
 from PySide2.QtCore import *
 from PySide2.QtGui import QFont, QIcon
