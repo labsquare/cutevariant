@@ -1335,8 +1335,9 @@ def create_variants_indexes(conn, indexed_fields={"pos", "ref", "alt"}):
     )
 
     for field in indexed_fields:
+        print("ERRREUR", field)
         conn.execute(
-            f"CREATE INDEX IF NOT EXISTS idx_variants_{field} ON variants ({field})"
+            f"CREATE INDEX IF NOT EXISTS idx_variants_{field} ON variants (`{field}`)"
         )
 
 
