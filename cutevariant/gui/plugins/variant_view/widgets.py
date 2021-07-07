@@ -1285,10 +1285,6 @@ class VariantView(QWidget):
 
     def _open_default_link(self, index: QModelIndex):
 
-        current_variant = self.model.variant(index.row())
-        full_variant = sql.get_one_variant(self.conn, current_variant["id"])
-        # Update variant with annotation data visible in the view ...
-        full_variant.update(current_variant)
         #  get default link
         link = [i for i in self._get_links() if i["is_default"] is True]
         if not link:
@@ -1296,9 +1292,8 @@ class VariantView(QWidget):
 
         link = link[0]
 
-        url = self._create_url(link["url"], full_variant)
-        if url:
-            self._open_url(url, link["is_browser"])
+        if link:
+            self._open_url(link["url"], link["is_browser"])
 
     def on_double_clicked(self, index: QModelIndex):
         """
