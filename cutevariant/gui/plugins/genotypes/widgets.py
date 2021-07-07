@@ -1,6 +1,7 @@
 """Plugin to Display genotypes variants 
 """
 import typing
+from functools import partial
 
 # Qt imports
 from PySide2.QtWidgets import *
@@ -25,7 +26,7 @@ class GenotypesModel(QAbstractTableModel):
         super().__init__(parent)
         self.items = []
         self.conn = None
-        self._fields = ["gt", "ad", "gq", "pl"]
+        self._fields = ["gt", "ad", "gq", "pl", "dp", "vaf"]
 
     def rowCount(self, parent: QModelIndex = QModelIndex) -> int:
         """ override """
@@ -40,15 +41,26 @@ class GenotypesModel(QAbstractTableModel):
         if not index.isValid():
             return None
 
-        if role == Qt.DisplayRole:
-            item = self.items[index.row()]
+        item = self.items[index.row()]
+        field = self.headerData(index.column(), Qt.Horizontal, Qt.DisplayRole)
 
+        if role == Qt.DisplayRole:
             if index.column() == 0:
                 return item["name"]
 
             else:
-                field = self.headerData(index.column(), Qt.Horizontal, Qt.DisplayRole)
                 return item.get(field, "error")
+
+        if role == Qt.DecorationRole:
+            if index.column() == 0:
+                return QIcon(FIcon(0xF0009))
+            if field == "gt":
+                icon = style.GENOTYPE.get(item[field], style.GENOTYPE[-1])["icon"]
+                return QIcon(FIcon(icon))
+
+        if role == Qt.ForegroundRole and index.column() == 1:
+            phenotype = self.items[index.row()]["phenotype"]
+            return
 
     def headerData(
         self, section: int, orientation: Qt.Orientation, role: int
@@ -128,23 +140,30 @@ class GenotypesWidget(plugin.PluginWidget):
         self.view.doubleClicked.connect(self._on_double_clicked)
 
         self.field_action = self.toolbar.addAction("Field")
+        self.toolbar.widgetForAction(self.field_action).setPopupMode(
+            QToolButton.InstantPopup
+        )
 
     def _create_field_menu(self):
 
-        menu = QMenu()
+        self.menu = QMenu(self)
+        self.field_action.setMenu(self.menu)
 
-        for col in range(self.model.columnCount()):
+        for col in range(1, self.model.columnCount()):
             field = self.model.headerData(col, Qt.Horizontal, Qt.DisplayRole)
-            action = QAction(field)
+            action = QAction(field, self)
+            self.menu.addAction(action)
             action.setCheckable(True)
-            print(col, field)
-            action.toggled.connect(
-                lambda x: self.view.showColumn(col) if x else self.view.hideColumn(col)
-            )
+            action.setChecked(True)
+            fct = partial(self._toggle_column, col)
+            action.toggled.connect(fct)
 
-            menu.addAction(action)
-
-        self.field_action.setMenu(menu)
+    def _toggle_column(self, col: int, show: bool):
+        """ hide/show columns """
+        if show:
+            self.view.showColumn(col)
+        else:
+            self.view.hideColumn(col)
 
     def _on_double_clicked(self, index: QModelIndex):
         sample_name = index.siblingAtColumn(0).data()
@@ -158,8 +177,6 @@ class GenotypesWidget(plugin.PluginWidget):
     def on_open_project(self, conn):
         self.model.conn = conn
         self.model.clear()
-        self.model.load(1)
-
         self._create_field_menu()
 
     def on_refresh(self):
@@ -168,8 +185,13 @@ class GenotypesWidget(plugin.PluginWidget):
 
         self.model.load(variant_id)
 
+        self.view.horizontalHeader().setSectionResizeMode(
+            0, QHeaderView.ResizeToContents
+        )
+        # self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
+        # self.view.horizontalHeader().setStretchLastSection(True)
+        self.view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
-        self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
 
 
 if __name__ == "__main__":
