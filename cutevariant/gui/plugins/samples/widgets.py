@@ -63,9 +63,9 @@ class SamplesModel(QAbstractTableModel):
         if role == Qt.ToolTipRole:
             return f"""{item['name']} (<span style="color:{PHENOTYPE_COLOR.get(item['phenotype'],'lightgray')}";>{PHENOTYPE_STR.get(item['phenotype'],'Unknown phenotype')}</span>)"""
 
-        if role == Qt.ForegroundRole and index.column() == 0:
-            phenotype = self.items[index.row()]["phenotype"]
-            return QColor(PHENOTYPE_COLOR.get(phenotype, "#FF00FF"))
+        # if role == Qt.ForegroundRole and index.column() == 0:
+        #     phenotype = self.items[index.row()]["phenotype"]
+        #     return QColor(PHENOTYPE_COLOR.get(phenotype, "#FF00FF"))
 
     def headerData(
         self, section: int, orientation: Qt.Orientation, role: int
