@@ -324,6 +324,16 @@ def test_get_annotations(conn):
         assert read_tx == expected_tx
 
 
+def test_get_sample_annotations_by_variant(conn):
+
+    expected = [dict(i, phenotype=0, sex=0) for i in VARIANTS[0]["samples"]]
+    observed = [
+        i for i in sql.get_sample_annotations_by_variant(conn, 1, fields=["gt", "dp"])
+    ]
+
+    assert expected == observed
+
+
 def test_get_sample_annotations(conn, variants_data):
     """Compare sample annotations from DB with expected samples annotations
 
