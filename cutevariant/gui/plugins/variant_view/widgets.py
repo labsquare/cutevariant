@@ -1219,6 +1219,31 @@ class VariantView(QWidget):
             self.model.update_variant(index.row(), update_data)
             self.parent.mainwindow.refresh_plugin("variant_edit")
 
+    def update_tags(self, tags: list = []):
+        """Update tags of the variant
+
+        Args:
+            tags(list): A list of tags
+
+        Todo:
+            Use custom sqlite type ?
+        """
+        tags = "&".join(tags)
+        unique_ids = set()
+        for index in self.view.selectionModel().selectedRows():
+            if not index.isValid():
+                continue
+
+            # Get variant id
+            variant = self.model.variants[index.row()]
+            variant_id = variant["id"]
+
+            if variant_id in unique_ids:
+                continue
+            unique_ids.add(variant_id)
+            update_data = {"tags": tags}
+            self.model.update_variant(index.row(), update_data)
+
     def edit_comment(self, index: QModelIndex):
         """Allow a user to add a comment for the selected variant"""
         if not index.isValid():
@@ -1453,8 +1478,14 @@ class TagsModel(QAbstractListModel):
         self.items = []
         self.endResetModel()
 
+    def checked_tags(self):
+        return [item["name"] for item in self.items if item["checked"]]
+
 
 class TagsWidget(QWidget):
+
+    tags_selected = Signal(list)
+
     def __init__(self, parent=None):
         super().__init__()
 
@@ -1476,6 +1507,10 @@ class TagsWidget(QWidget):
         self.setLayout(vlayout)
 
         self._search_line.textChanged.connect(self._proxy_model.setFilterFixedString)
+        self._apply_btn.clicked.connect(self.on_apply)
+
+    def on_apply(self):
+        self.tags_selected.emit(self._model.checked_tags())
 
 
 class VariantViewWidget(plugin.PluginWidget):
@@ -1534,6 +1569,7 @@ class VariantViewWidget(plugin.PluginWidget):
         self.widget_action.setDefaultWidget(self._tag_widget)
 
         self._tag_action_menu.addAction(self.widget_action)
+        self._tag_widget.tags_selected.connect(self.main_right_pane.update_tags)
 
         # Formatter tools
         self.top_bar.addSeparator()
