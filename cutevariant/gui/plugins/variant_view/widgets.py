@@ -1329,6 +1329,155 @@ class VariantView(QWidget):
         return menu
 
 
+class TagsModel(QAbstractListModel):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.items = []
+
+    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
+        return len(self.items)
+
+    def data(self, index: QModelIndex, role: Qt.ItemDataRole) -> typing.Any:
+
+        if not index.isValid():
+            return None
+
+        if role == Qt.CheckStateRole:
+            return Qt.Checked if self.items[index.row()]["checked"] else Qt.Unchecked
+
+        if role == Qt.DisplayRole:
+            return self.items[index.row()]["name"]
+
+        if role == Qt.ToolTipRole:
+            return self.items[index.row()]["description"]
+
+        if role == Qt.DecorationRole:
+            return QIcon(FIcon(0xF012F, self.items[index.row()]["color"]))
+
+        return None
+
+    def setData(self, index: QModelIndex, value, role: Qt.ItemDataRole):
+        """ override """
+
+        if role == Qt.CheckStateRole:
+            self.items[index.row()]["checked"] = bool(value)
+            return True
+
+        return False
+
+    def flags(self, index: QModelIndex) -> Qt.ItemFlags:
+
+        if index.column() == 0:
+            return Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsUserCheckable
+
+        return Qt.ItemIsEnabled
+
+    def set_checked_tags(self, tags: str, separator="&"):
+
+        tags = tags.split(separator)
+
+        self.beginResetModel()
+        for row in range(self.rowCount()):
+            print("ROW", row, tags)
+            if self.items[row]["name"] in tags:
+                self.items[row]["checked"] = True
+            else:
+                self.items[row]["checked"] = False
+
+        self.endResetModel()
+
+    def load(self):
+        self.beginResetModel()
+
+        self.items = [
+            {
+                "name": "urgent",
+                "description": "blablba ",
+                "color": "#71e096",
+                "checked": True,
+            },
+            {
+                "name": "bruit",
+                "description": "blablba ",
+                "color": "#ed6d79",
+                "checked": True,
+            },
+            {
+                "name": "pass",
+                "description": "blablba ",
+                "color": "#f7dc68",
+                "checked": True,
+            },
+            {
+                "name": "urgent",
+                "description": "blablba ",
+                "color": "#71e096",
+                "checked": True,
+            },
+            {
+                "name": "test_wordset",
+                "description": "blablba ",
+                "color": "#ed6d79",
+                "checked": True,
+            },
+            {
+                "name": "sdfsf ",
+                "description": "blablba ",
+                "color": "#f7dc68",
+                "checked": True,
+            },
+            {
+                "name": "urgent",
+                "description": "blablba ",
+                "color": "#71e096",
+                "checked": True,
+            },
+            {
+                "name": "test_wordset",
+                "description": "blablba ",
+                "color": "#ed6d79",
+                "checked": True,
+            },
+            {
+                "name": "sdfsf ",
+                "description": "blablba ",
+                "color": "#f7dc68",
+                "checked": True,
+            },
+        ]
+
+        self.endResetModel()
+
+    def clear(self):
+        self.beginResetModel()
+        self.items = []
+        self.endResetModel()
+
+
+class TagsWidget(QWidget):
+    def __init__(self, parent=None):
+        super().__init__()
+
+        self._search_line = QLineEdit()
+        self._listview = QListView()
+        self._search_line.addAction(QIcon(FIcon(0xF0349)), QLineEdit.LeadingPosition)
+        self._apply_btn = QPushButton("Apply")
+        self._model = TagsModel()
+        self._proxy_model = QSortFilterProxyModel()
+        self._proxy_model.setSourceModel(self._model)
+        self._model.load()
+
+        self._listview.setModel(self._proxy_model)
+
+        vlayout = QVBoxLayout()
+        vlayout.addWidget(self._search_line)
+        vlayout.addWidget(self._listview)
+        vlayout.addWidget(self._apply_btn)
+        self.setLayout(vlayout)
+
+        self._search_line.textChanged.connect(self._proxy_model.setFilterFixedString)
+
+
 class VariantViewWidget(plugin.PluginWidget):
     """Contains the view of query with several controller"""
 
@@ -1371,6 +1520,20 @@ class VariantViewWidget(plugin.PluginWidget):
         self.top_bar.addActions(self.main_right_pane.actions())
         for action in self.main_right_pane.actions():
             self.top_bar.widgetForAction(action).setPopupMode(QToolButton.InstantPopup)
+
+        # Tag actions
+        self._tag_action = self.top_bar.addAction(FIcon(0xF12F7), "Tags")
+        self.top_bar.widgetForAction(self._tag_action).setPopupMode(
+            QToolButton.InstantPopup
+        )
+        self._tag_action_menu = QMenu()
+        self._tag_widget = TagsWidget()
+        self._tag_action.setMenu(self._tag_action_menu)
+
+        self.widget_action = QWidgetAction(self)
+        self.widget_action.setDefaultWidget(self._tag_widget)
+
+        self._tag_action_menu.addAction(self.widget_action)
 
         # Formatter tools
         self.top_bar.addSeparator()
