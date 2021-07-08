@@ -19,6 +19,7 @@ LOGGER = logger()
 
 PHENOTYPE_STR = {0: "Missing", 1: "Unaffected", 2: "Affected"}
 PHENOTYPE_COLOR = {0: QColor("lightgray"), 1: QColor("green"), 2: QColor("red")}
+SEX_ICON = {0: 0xF0766, 1: 0xF029D, 2: 0xF029C}
 
 
 class GenotypesModel(QAbstractTableModel):
@@ -26,14 +27,14 @@ class GenotypesModel(QAbstractTableModel):
         super().__init__(parent)
         self.items = []
         self.conn = None
-        self._fields = ["gt", "ad", "gq", "pl", "dp", "vaf"]
+        self._fields = []
 
     def rowCount(self, parent: QModelIndex = QModelIndex) -> int:
-        """ override """
+        """override"""
         return len(self.items)
 
     def columnCount(self, parent: QModelIndex = QModelIndex) -> int:
-        """override """
+        """override"""
         return len(self._fields) + 1
 
     def data(self, index: QModelIndex, role: Qt.ItemDataRole) -> typing.Any:
@@ -53,14 +54,20 @@ class GenotypesModel(QAbstractTableModel):
 
         if role == Qt.DecorationRole:
             if index.column() == 0:
-                return QIcon(FIcon(0xF0009))
+                return QIcon(FIcon(SEX_ICON.get(item["sex"], 0xF02D6)))
             if field == "gt":
                 icon = style.GENOTYPE.get(item[field], style.GENOTYPE[-1])["icon"]
                 return QIcon(FIcon(icon))
 
-        if role == Qt.ForegroundRole and index.column() == 1:
+        if role == Qt.ToolTipRole:
+            return f"""
+            <b>Sample</b>: {item["name"]}</br>
+            <b>Phenotype</b>:{item["phenotype"]}</br>
+            """
+
+        if role == Qt.ForegroundRole and index.column() == 0:
             phenotype = self.items[index.row()]["phenotype"]
-            return
+            return PHENOTYPE_COLOR.get(phenotype, QColor("#FF00FF"))
 
     def headerData(
         self, section: int, orientation: Qt.Orientation, role: int
@@ -125,6 +132,7 @@ class GenotypesWidget(plugin.PluginWidget):
         self.view = QTableView()
         self.view.setShowGrid(False)
         self.view.setSortingEnabled(True)
+        self.view.setIconSize(QSize(22, 22))
         self.model = GenotypesModel()
 
         self.setWindowIcon(FIcon(0xF0A8C))
@@ -154,12 +162,16 @@ class GenotypesWidget(plugin.PluginWidget):
             action = QAction(field, self)
             self.menu.addAction(action)
             action.setCheckable(True)
-            action.setChecked(True)
+            action.setChecked(field == "gt")
+            if field != "gt":
+                self.view.horizontalHeader().hideSection(col)
+            else:
+                self.view.horizontalHeader().hideSection(col)
             fct = partial(self._toggle_column, col)
             action.toggled.connect(fct)
 
     def _toggle_column(self, col: int, show: bool):
-        """ hide/show columns """
+        """hide/show columns"""
         if show:
             self.view.showColumn(col)
         else:
@@ -177,6 +189,9 @@ class GenotypesWidget(plugin.PluginWidget):
     def on_open_project(self, conn):
         self.model.conn = conn
         self.model.clear()
+        self.model._fields = [
+            i["name"] for i in sql.get_field_by_category(conn, "samples")
+        ]
         self._create_field_menu()
 
     def on_refresh(self):
