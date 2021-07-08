@@ -18,7 +18,10 @@ class Config:
         )
 
         self.root = root
-        self._create_user_config()
+
+        self.default_config = {}
+        self.user_config = {}
+
         self.load()
 
     @property
@@ -31,8 +34,8 @@ class Config:
         # TODO : check if value is global or plugins
         self._root = value
 
-    def _create_user_config(self, remove=False):
-        """ create user config file """
+    def _create_user_config(self, remove=True):
+        """ create user config directory """
         if not os.path.exists(os.path.dirname(self.user_config_path)):
             try:
                 os.makedirs(os.path.dirname(self.user_config_path))
@@ -40,30 +43,23 @@ class Config:
                 if exc.errno != errno.EEXIST:
                     raise
 
-        if not os.path.exists(self.user_config_path) or remove is True:
-            with open(self.user_config_path, "w") as file:
-                data = {"global": {"style": "dark"}}
-                yaml.dump(data, file)
+        self.reset()
+        self.save()
 
     def load(self):
 
-        # Load user config
-        with open(self.user_config_path, "r") as file:
-            try:
-                self.user_config = yaml.safe_load(file)
-            except yaml.YAMLError as exc:
-                print("cannot read user config")
-
         # Load default config
+        self.default_config = {}
+
         ## Load global config
         with open(os.getcwd() + os.path.sep + "config.yml", "r") as file:
             try:
-                self.default_global_config = yaml.safe_load(file)
+                self.default_config["global"] = yaml.safe_load(file)
             except yaml.YAMLError as exc:
                 print("cannot read default global config")
 
-        ## Load plugins
-        self.default_plugin_config = {}
+        ## Load plugins config
+        self.default_config["plugins"] = {}
         for plugin in QDir(self.plugins_path).entryInfoList(
             QDir.Dirs | QDir.NoDotDot | QDir.NoDot
         ):
@@ -73,30 +69,80 @@ class Config:
             if os.path.exists(config_file):
                 with open(config_file, "r") as file:
                     try:
-                        self.default_plugin_config[plugin_name] = yaml.safe_load(file)
+                        self.default_config["plugins"][plugin_name] = yaml.safe_load(
+                            file
+                        )
                     except yaml.YAMLError as exc:
                         print(f"cannot read plugin {plugin_name} config")
             else:
-                self.default_plugin_config[plugin_name] = {}
+                self.default_config["plugins"][plugin_name] = {}
 
-            # self.default_plugin_config
+        # Load user config
+        self.user_config = {}
+
+        """ create user config if not exists """
+        if not os.path.exists(self.user_config_path):
+            self._create_user_config()
+
+        with open(self.user_config_path, "r") as file:
+            try:
+                self.user_config = yaml.safe_load(file)
+            except yaml.YAMLError as exc:
+                print("cannot read user config")
+
+    def save(self):
+        with open(self.user_config_path, "w") as file:
+            yaml.dump(self.user_config, file)
+
+    def reset(self):
+        self.user_config = self.default_config
 
     def __getitem__(self, key):
         """ Return user config if exists. Otherwise, returns default settings  """
+
+        # It is a global
         if self.root == "global":
-            if "global" in self.user_config:
-                return ChainMap(self.user_config["global"], self.default_global_config)[
-                    key
-                ]
+            if self.root in self.user_config:
+                return ChainMap(
+                    self.user_config[self.root], self.default_config[self.root]
+                )[key]
+
             else:
-                return self.default_global_config[key]
+                return self.default_config[self.root][key]
 
         # It is a plugins
-        elif self.root in self.default_plugin_config:
+        elif self.root in self.default_config["plugins"]:
             if self.root in self.user_config.get("plugins", ()):
                 return ChainMap(
                     self.user_config["plugins"][self.root],
-                    self.default_plugin_config[self.root],
+                    self.default_config["plugins"][self.root],
                 )[key]
             else:
-                return self.default_plugin_config[self.root][key]
+                return self.default_plugin_config["plugins"][self.root][key]
+
+    def __setitem__(self, key, value):
+        """ Set user config """
+
+        # check if root is a valid root by comparing with default config
+        if self.root not in ["global"] + list(self.default_config["plugins"].keys()):
+            return
+
+        if self.root not in self.user_config:
+            self.user_config[self.root] = {}
+
+        if self.root == "global":
+            self.user_config[self.root][key] = value
+        else:
+            self.user_config[self.root]["plugins"][key] = value
+
+
+config = Config("global")
+config["style"] = "blue"
+print(config["style"])
+
+config.root = "variant_view"
+config["memory_cache"] = 100
+print("dd", config["memory_cache"])
+
+
+config.save()
