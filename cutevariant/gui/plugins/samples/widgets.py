@@ -81,10 +81,12 @@ class SamplesModel(QAbstractTableModel):
         return None
 
     def load_fields(self):
+        self.beginResetModel()
         if self.conn:
             self._fields = [
                 i["name"] for i in sql.get_field_by_category(self.conn, "samples")
             ]
+        self.endResetModel()
 
     def load(self, variant_id):
 
@@ -157,16 +159,21 @@ class SamplesWidget(plugin.PluginWidget):
         self.menu = QMenu(self)
         self.field_action.setMenu(self.menu)
 
+        # Obligé de faire un truc degeulasse pour avoir un
+
         for col in range(1, self.model.columnCount()):
             field = self.model.headerData(col, Qt.Horizontal, Qt.DisplayRole)
             action = QAction(field, self)
             self.menu.addAction(action)
             action.setCheckable(True)
-            action.setChecked(field == "gt")
-            if field != "gt":
-                self.view.horizontalHeader().hideSection(col)
+
+            if field == "gt":
+                action.setChecked(True)
+                self.view.showColumn(col)
             else:
-                self.view.horizontalHeader().showSection(col)
+                action.setChecked(False)
+                self.view.hideColumn(col)
+
             fct = partial(self._toggle_column, col)
             action.toggled.connect(fct)
 
@@ -189,13 +196,13 @@ class SamplesWidget(plugin.PluginWidget):
     def on_open_project(self, conn):
         self.model.conn = conn
         self.model.load_fields()
+        self._create_field_menu()
 
     def on_refresh(self):
         self.current_variant = self.mainwindow.get_state_data("current_variant")
         variant_id = self.current_variant["id"]
 
         self.model.load(variant_id)
-        self._create_field_menu()
 
         self.view.horizontalHeader().setSectionResizeMode(
             0, QHeaderView.ResizeToContents
