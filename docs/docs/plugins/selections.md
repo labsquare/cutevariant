@@ -1,12 +1,12 @@
-Selections in cutevariant is used to create new source tables for your requests (the FROM part in a VQL statement).
+Selections in cutevariant are used to create new source tables for your requests (the FROM part in a VQL statement).
 
-There are three main ways to create a selection, they are lsited below.
+There are three main ways to create a selection, they are listed below.
 
 ## Create source from current selection
 
-In the variant view, you can see the results of your query. If you've just applied a filter that took some time to compute, there is a way to save all the variants that just passed the test, so you won't have to wait again.
+In the variant view, you can see the results of your query. If you've just ran a query that took some time to compute, there is a way to save all the variants that got selected, so you won't have to wait again.
 
-To save a selection, just click the '' button in the source editor.
+To save a selection, just click the 'new source' button in the source editor (image below).
 
 ## Create source from intersection with a BED file
 
