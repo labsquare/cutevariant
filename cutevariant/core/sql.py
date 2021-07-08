@@ -414,7 +414,7 @@ def create_selection_has_variant_indexes(conn: sqlite3.Connection):
         conn (sqlite3.Connection/sqlite3.Cursor): Sqlite3 connection
     """
     conn.execute(
-        "CREATE INDEX idx_selection_has_variant ON selection_has_variant (selection_id)"
+        "CREATE INDEX `idx_selection_has_variant` ON selection_has_variant (`selection_id`)"
     )
 
 
@@ -1242,14 +1242,14 @@ def create_annotations_indexes(conn, indexed_annotation_fields=None):
     """
     # Allow search on variant_id
     conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_annotations ON annotations (variant_id)"
+        "CREATE INDEX IF NOT EXISTS `idx_annotations` ON annotations (`variant_id`)"
     )
 
     if indexed_annotation_fields is None:
         return
     for field in indexed_annotation_fields:
         conn.execute(
-            f"CREATE INDEX IF NOT EXISTS idx_annotations_{field} ON annotations ({field})"
+            f"CREATE INDEX IF NOT EXISTS `idx_annotations_{field}` ON annotations (`{field}`)"
         )
 
 
@@ -1331,12 +1331,12 @@ def create_variants_indexes(conn, indexed_fields={"pos", "ref", "alt"}):
     """
     # Complementary index of the primary key (sample_id, variant_id)
     conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_sample_has_variant ON sample_has_variant (variant_id)"
+        "CREATE INDEX IF NOT EXISTS `idx_sample_has_variant` ON sample_has_variant (`variant_id`)"
     )
 
     for field in indexed_fields:
         conn.execute(
-            f"CREATE INDEX IF NOT EXISTS idx_variants_{field} ON variants (`{field}`)"
+            f"CREATE INDEX IF NOT EXISTS `idx_variants_{field}` ON variants (`{field}`)"
         )
 
 
@@ -1805,7 +1805,7 @@ def create_samples_indexes(conn, indexed_samples_fields=None):
 
     for field in indexed_samples_fields:
         conn.execute(
-            f"CREATE INDEX IF NOT EXISTS idx_samples_{field} ON sample_has_variant ({field})"
+            f"CREATE INDEX IF NOT EXISTS `idx_samples_{field}` ON sample_has_variant (`{field}`)"
         )
 
 
