@@ -1419,55 +1419,55 @@ class TagsModel(QAbstractListModel):
                 "name": "urgent",
                 "description": "blablba ",
                 "color": "#71e096",
-                "checked": True,
+                "checked": False,
             },
             {
                 "name": "bruit",
                 "description": "blablba ",
                 "color": "#ed6d79",
-                "checked": True,
+                "checked": False,
             },
             {
                 "name": "pass",
                 "description": "blablba ",
                 "color": "#f7dc68",
-                "checked": True,
+                "checked": False,
             },
             {
                 "name": "urgent",
                 "description": "blablba ",
                 "color": "#71e096",
-                "checked": True,
+                "checked": False,
             },
             {
                 "name": "test_wordset",
                 "description": "blablba ",
                 "color": "#ed6d79",
-                "checked": True,
+                "checked": False,
             },
             {
                 "name": "sdfsf ",
                 "description": "blablba ",
                 "color": "#f7dc68",
-                "checked": True,
+                "checked": False,
             },
             {
                 "name": "urgent",
                 "description": "blablba ",
                 "color": "#71e096",
-                "checked": True,
+                "checked": False,
             },
             {
                 "name": "test_wordset",
                 "description": "blablba ",
                 "color": "#ed6d79",
-                "checked": True,
+                "checked": False,
             },
             {
                 "name": "sdfsf ",
                 "description": "blablba ",
                 "color": "#f7dc68",
-                "checked": True,
+                "checked": False,
             },
         ]
 
@@ -1511,6 +1511,7 @@ class TagsWidget(QWidget):
 
     def on_apply(self):
         self.tags_selected.emit(self._model.checked_tags())
+        self.parent().close()
 
 
 class VariantViewWidget(plugin.PluginWidget):
