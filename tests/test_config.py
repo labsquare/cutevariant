@@ -30,6 +30,9 @@ def test_config():
 
     # Test READ
     config = Config("app", config_path)
+
+    unknown = config.get("unknown", None)
+
     assert config["memory"] == 10
     # Test if default config exist
     assert os.path.exists(config.default_config_path)

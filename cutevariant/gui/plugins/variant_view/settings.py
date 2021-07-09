@@ -10,6 +10,7 @@ from cutevariant.gui.plugin import PluginSettingsWidget
 from cutevariant.gui.settings import AbstractSettingsWidget
 from cutevariant.gui import FIcon
 import cutevariant.commons as cm
+from cutevariant.config import Config
 
 
 class LinksModel(QAbstractListModel):
@@ -20,7 +21,7 @@ class LinksModel(QAbstractListModel):
     def add_link(
         self,
         name: str,
-        masked_url: str,
+        url: str,
         is_browser: bool = True,
         is_default: bool = False,
     ) -> bool:
@@ -33,7 +34,7 @@ class LinksModel(QAbstractListModel):
 
         Args:
             name (str): The name of the link, as displayed to the user
-            masked_url (str): The target of the link. Should contain named fields in curly brackets, each name referring to a variant field name
+            url (str): The target of the link. Should contain named fields in curly brackets, each name referring to a variant field name
             is_browser (bool, optional): Whether the link will be opened in the default browser. Defaults to True.
             is_default (bool, optional): Whether this link is the default one. Defaults to False.
 
@@ -46,7 +47,7 @@ class LinksModel(QAbstractListModel):
 
         new_link = {
             "name": name,
-            "url": masked_url,
+            "url": url,
             "is_browser": is_browser,
             "is_default": is_default,
         }
@@ -161,10 +162,40 @@ class LinksModel(QAbstractListModel):
             return QIcon(FIcon(0xF0866))
 
 
+class GeneralSettings(AbstractSettingsWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle(self.tr("General"))
+        self.setWindowIcon(FIcon(0xF070F))
+
+        self.row_count_box = QSpinBox()
+        self.memory_box = QSpinBox()
+
+        self.memory_box.setSuffix(" MB")
+
+        self.memory_box.setRange(0, 1000)
+        self.row_count_box.setRange(5, 100)
+
+        f_layout = QFormLayout(self)
+        f_layout.addRow(self.tr("Rows per page"), self.row_count_box)
+        f_layout.addRow(self.tr("Memory Cache"), self.memory_box)
+
+    def save(self):
+        config = self.section_widget.create_config()
+        config["rows_per_page"] = self.row_count_box.value()
+        config["memory_cache"] = self.memory_box.value()
+        config.save()
+
+    def load(self):
+        config = self.section_widget.create_config()
+        self.row_count_box.setValue(config.get("rows_per_page", 50))
+        self.memory_box.setValue(config.get("memory_cache", 32))
+
+
 class LinkSettings(AbstractSettingsWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle(self.tr("Cross databases links"))
+        self.setWindowTitle(self.tr("External links"))
         self.setWindowIcon(FIcon(0xF070F))
 
         help_label = QLabel(
@@ -213,40 +244,19 @@ class LinkSettings(AbstractSettingsWidget):
 
     def save(self):
         """Override from PageWidget"""
-        settings = self.create_settings()
 
         # Bug from Pyside2.QSettings which don't return boolean
-        settings.remove("links")
-        settings.beginWriteArray("links")
-        for i in range(self.link_model.rowCount()):
-            settings.setArrayIndex(i)
-            for k, v in self.link_model.links[i].items():
-                settings.setValue(k, v)
-
-        settings.endArray()
+        config = self.section_widget.create_config()
+        config["links"] = self.link_model.links
+        config.save()
 
     def load(self):
         """Override from PageWidget"""
-        settings = self.create_settings()
-        size = settings.beginReadArray("links")
+        config = self.section_widget.create_config()
         self.link_model.clear()
 
-        #  If no links available, load default one
-        # if size == 0:
-        #     self.load_default_external_links()
-
-        for i in range(size):
-            settings.setArrayIndex(i)
-            name = settings.value("name")
-            url = settings.value("url")
-
-            # Bug from Pyside2.QSettings which don't return boolean
-            is_default = settings.value("is_default", False, type=bool)
-            is_browser = settings.value("is_browser", False, type=bool)
-
-            self.link_model.add_link(name, url, bool(is_browser), bool(is_default))
-
-        settings.endArray()
+        for link in config["links"]:
+            self.link_model.add_link(**link)
 
     def edit_item(
         self,
@@ -384,4 +394,5 @@ class VariantViewSettingsWidget(PluginSettingsWidget):
         self.setWindowIcon(FIcon(0xF035C))
         self.setWindowTitle("Variant view")
         # self.add_settings_widget(MemorySettings())
+        self.add_page(GeneralSettings())
         self.add_page(LinkSettings())

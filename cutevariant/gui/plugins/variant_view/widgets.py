@@ -22,6 +22,7 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 
 # Custom imports
+from cutevariant.config import Config
 from cutevariant.core.querybuilder import build_sql_query
 from cutevariant.core import sql
 
@@ -73,11 +74,10 @@ class VariantModel(QAbstractTableModel):
     error_raised = Signal(str)
     interrupted = Signal()
 
-    DEFAUT_CACHE_SIZE = 1_048_576 * 32  # Default cache size of 32 Mo
-
     def __init__(self, conn=None, parent=None):
         super().__init__()
         self.limit = 50
+        self.memory_cache = 32
         self.page = 1  #
         self.total = 0
         self.variants = []
@@ -126,11 +126,7 @@ class VariantModel(QAbstractTableModel):
 
         # Create results cache because Thread doesn't use the memoization cache from command.py.
         # This is because Thread create a new connection and change the function signature used by the cache.
-
-        self._load_variant_cache = cachetools.LFUCache(
-            maxsize=self.DEFAUT_CACHE_SIZE, getsizeof=sys.getsizeof
-        )
-        self._load_count_cache = cachetools.LFUCache(maxsize=1000)
+        self.set_cache(32)
 
     @property
     def conn(self):
@@ -186,6 +182,19 @@ class VariantModel(QAbstractTableModel):
 
     def clear_count_cache(self):
         self._load_count_cache.clear()
+
+    def set_cache(self, cachesize=32):
+
+        if hasattr(self, "_load_variant_cache"):
+            self._load_variant_cache.clear()
+
+        if hasattr(self, "_load_count_cache"):
+            self._load_count_cache.clear()
+
+        self._load_variant_cache = cachetools.LFUCache(
+            maxsize=cachesize * 1_048_576, getsizeof=sys.getsizeof
+        )
+        self._load_count_cache = cachetools.LFUCache(maxsize=1000)
 
     def cache_size(self):
         """Return total cache size"""
@@ -1488,6 +1497,11 @@ class VariantViewWidget(plugin.PluginWidget):
         self.conn = conn
         # Set connections of models
         self.main_right_pane.conn = self.conn
+
+        # Setup config
+        config = self.create_config()
+        self.main_right_pane.model.limit = config.get("rows_per_page", 50)
+        self.main_right_pane.model.set_cache(config.get("memory_cache", 32))
 
         self.on_refresh()
 
