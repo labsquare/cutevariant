@@ -1,0 +1,6 @@
+
+
+network.host: "yahoo"
+network.port: 20
+
+style: "bright"
