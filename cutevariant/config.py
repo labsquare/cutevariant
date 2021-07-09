@@ -5,18 +5,23 @@ from PySide2.QtCore import QStandardPaths, QDir, QFile, QFileInfo
 
 
 class Config:
-    def __init__(self, root="global"):
+    def __init__(self, root="global", user_config_path=None):
 
-        self.user_config_path = QDir(
+        self.user_config_path = user_config_path or QDir(
             QStandardPaths.writableLocation(QStandardPaths.ConfigLocation)
             + QDir.separator()
             + "cutevariant"
         ).absoluteFilePath("config.yml")
 
         self.plugins_path = (
-            os.getcwd() + QDir.separator() + "gui" + QDir.separator() + "plugins"
+            os.path.dirname(__file__)
+            + QDir.separator()
+            + "gui"
+            + QDir.separator()
+            + "plugins"
         )
 
+        # Either 'global' or the name of a plugin
         self.root = root
 
         self.default_config = {}
@@ -26,7 +31,7 @@ class Config:
 
     @property
     def root(self):
-        """ return config root"""
+        """return config root"""
         return self._root
 
     @root.setter
@@ -35,7 +40,7 @@ class Config:
         self._root = value
 
     def _create_user_config(self, remove=True):
-        """ create user config directory """
+        """create user config directory"""
         if not os.path.exists(os.path.dirname(self.user_config_path)):
             try:
                 os.makedirs(os.path.dirname(self.user_config_path))
@@ -52,7 +57,7 @@ class Config:
         self.default_config = {}
 
         ## Load global config
-        with open(os.getcwd() + os.path.sep + "config.yml", "r") as file:
+        with open(os.path.dirname(__file__) + os.path.sep + "config.yml", "r") as file:
             try:
                 self.default_config["global"] = yaml.safe_load(file)
             except yaml.YAMLError as exc:
@@ -98,7 +103,7 @@ class Config:
         self.user_config = self.default_config
 
     def __getitem__(self, key):
-        """ Return user config if exists. Otherwise, returns default settings  """
+        """Return user config if exists. Otherwise, returns default settings"""
 
         # It is a global
         if self.root == "global":
@@ -121,7 +126,7 @@ class Config:
                 return self.default_plugin_config["plugins"][self.root][key]
 
     def __setitem__(self, key, value):
-        """ Set user config """
+        """Set user config"""
 
         # check if root is a valid root by comparing with default config
         if self.root not in ["global"] + list(self.default_config["plugins"].keys()):
@@ -136,13 +141,14 @@ class Config:
             self.user_config[self.root]["plugins"][key] = value
 
 
-config = Config("global")
-config["style"] = "blue"
-print(config["style"])
+if __name__ == "__main__":
 
-config.root = "variant_view"
-config["memory_cache"] = 100
-print("dd", config["memory_cache"])
+    config = Config("global")
+    config["style"] = "blue"
+    print(config["style"])
 
+    config.root = "variant_view"
+    config["memory_cache"] = 100
+    print("dd", config["memory_cache"])
 
-config.save()
+    config.save()
