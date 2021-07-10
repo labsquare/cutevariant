@@ -3,6 +3,7 @@ import functools
 import math
 import csv
 import io
+import re
 import time
 import itertools as it
 from collections import defaultdict
@@ -286,12 +287,9 @@ class VariantModel(QAbstractTableModel):
         # Update in database
         variant_id = self.variants[row]["id"]
 
-        print("variant", variant)
-
         # Update all variant with same variant_id
         # Use case : When several transcript are displayed
         for row in self.find_row_id_from_variant_id(variant_id):
-            print(row)
             left = self.index(row, 0)
             right = self.index(row, self.columnCount() - 1)
 
@@ -837,16 +835,6 @@ class VariantView(QWidget):
         action.setToolTip(self.tr("Last page (%s)" % action.shortcut().toString()))
         self.pagging_actions.append(action)
 
-        self.fav_action = QAction(FIcon(0xF00C0), self.tr("Toggle favorite "))
-        self.fav_action.triggered.connect(lambda: self.update_favorites())
-        self.fav_action.setShortcut(QKeySequence(Qt.Key_Space))
-        self.fav_action.setShortcutContext(Qt.WidgetShortcut)
-        self.fav_action.setAutoRepeat(False)
-        self.fav_action.setToolTip(
-            self.tr("Toggle favorite (%s)" % self.fav_action.shortcut().toString())
-        )
-        self.view.addAction(self.fav_action)
-
         main_layout = QVBoxLayout()
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.addWidget(self.view)
@@ -870,33 +858,49 @@ class VariantView(QWidget):
         self.model.error_raised.connect(self.error_raised)
         #  connect double clicke
         self.view.doubleClicked.connect(self.on_double_clicked)
+        self.view.selectionModel().currentChanged.connect(self.on_variant_clicked)
 
-    # def _set_loading(self, active=True):
-    #     """Slot to obtain the status of async load: started/finished
+        self._create_actions()
 
-    #     Start/Stop the movie animation on the view.
+    def _create_actions(self):
 
-    #     Keyword Args:
-    #         active (bool): True if loaded, False if finished
-    #     """
-    #     self.setDisabled(active)
-    #     if active:
-    #         QTimer.singleShot(1000, self.start_loading_after_delay)
-    #     else:
-    #         self.view.stop_loading()
+        self.favorite_action = QAction(self.tr("Favorite"))
+        favicon = QIcon()
+        favicon.addPixmap(FIcon(0xF00C3).pixmap(22, 22), QIcon.Normal, QIcon.Off)
+        favicon.addPixmap(FIcon(0xF00C0).pixmap(22, 22), QIcon.Normal, QIcon.On)
+        self.favorite_action.setIcon(favicon)
+        self.addAction(self.favorite_action)
+        self.favorite_action.setCheckable(True)
+        self.favorite_action.toggled.connect(lambda x: self.update_favorites(x))
+        self.favorite_action.setShortcut(QKeySequence(Qt.Key_Space))
+        self.favorite_action.setShortcutContext(Qt.WidgetShortcut)
+        self.favorite_action.setToolTip(
+            self.tr("Toggle favorite (%s)" % self.favorite_action.shortcut().toString())
+        )
+        self.view.addAction(self.favorite_action)
 
-    # def start_loading_after_delay(self):
-    #     self.setDisabled(self.model.is_loading)
+        # Classification menu
+        self.classification_action = QAction(FIcon(0xF04FD), self.tr("Classification"))
+        self.addAction(self.classification_action)
+        self.classification_action.setToolTip(
+            self.tr("Set ACMG classification for current selection")
+        )
+        self.classification_action.setMenu(self.create_classification_menu())
 
-    #     if self.model.is_loading:
-    #         self.view.start_loading()
-    #     else:
-    #         self.view.stop_loading()
+        # External links menu
+        self.links_action = QAction(FIcon(0xF0339), self.tr("Link to"))
+        self.addAction(self.links_action)
+        self.links_action.setToolTip(self.tr("Open variant info with website"))
+        # self.widgetForAction(self.links_action).setPopupMode(
+        #     QToolButton.InstantPopup
+        # )
+        self.links_action.setMenu(self.create_external_links_menu())
 
-    def set_auto_resize(self, accept=True):
-        """change column resize mode"""
-        mode = QHeaderView.ResizeToContents if accept else QHeaderView.Interactive
-        self.view.horizontalHeader().setSectionResizeMode(mode)
+    def auto_resize(self):
+        """Resize columns to content"""
+        self.view.resizeColumnsToContents()
+        self.view.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
+        self.view.horizontalHeader().setStretchLastSection(True)
 
     def setModel(self, model: VariantModel):
         self.model = model
@@ -1032,6 +1036,13 @@ class VariantView(QWidget):
             self.model.setPage(page)
             self.load()
 
+    def on_variant_clicked(self, index: QModelIndex):
+        variant = self.model.variant(index.row())
+        full_variant = sql.get_one_variant(self.conn, variant["id"])
+        self.favorite_action.blockSignals(True)
+        self.favorite_action.setChecked(bool(full_variant["favorite"]))
+        self.favorite_action.blockSignals(False)
+
     def on_show_sql(self):
         """Display debug sql query"""
         msg_box = QMessageBox()
@@ -1144,38 +1155,7 @@ class VariantView(QWidget):
             ),
         )
 
-        # Create favorite action
-        fav_action = menu.addAction(
-            self.tr("&Unmark favorite")
-            if bool(full_variant["favorite"])
-            else self.tr("&Mark as favorite")
-        )
-        fav_action.setCheckable(True)
-        fav_action.setChecked(bool(full_variant["favorite"]))
-        fav_action.toggled.connect(self.update_favorites)
-
-        # Create classication action
-        class_menu = menu.addMenu(self.tr("Classification"))
-        for key, value in cm.CLASSIFICATION.items():
-
-            action = class_menu.addAction(FIcon(cm.CLASSIFICATION_ICONS[key]), value)
-            action.setData(key)
-            on_click = functools.partial(self.update_classification, current_index, key)
-            action.triggered.connect(on_click)
-
-        # Create external links
-        links_menu = menu.addMenu(self.tr("External links"))
-
-        # Display only exec_ternal links with placeholders that can be mapped
-        for link in self._get_links():
-            url = self._create_url(link["url"], full_variant)
-            if url:
-                func_slot = functools.partial(self._open_url, url, link["is_browser"])
-                action = links_menu.addAction(link["url"], func_slot)
-
-        # Comment action
-        on_edit = functools.partial(self.edit_comment, current_index)
-        menu.addAction(self.tr("&Edit comment ..."), on_edit)
+        menu.addActions(self.actions())
 
         # Edit menu
         menu.addSeparator()
@@ -1192,13 +1172,34 @@ class VariantView(QWidget):
         # Display
         menu.exec_(event.globalPos())
 
-    def _open_url(self, url: QUrl, in_browser=False):
+    def _open_url(self, url_template: str, in_browser=False):
+
+        variant = self.model.variant(self.view.currentIndex().row())
+
+        # TODO create_url should be able to read deep variant (with unflattened annotations)
+        url = self._create_url(url_template, variant)
 
         if in_browser:
             QDesktopServices.openUrl(url)
 
         else:
-            urllib.request.urlopen(url.toString(), timeout=10)
+            try:
+                urllib.request.urlopen(url.toString(), timeout=10)
+            except Exception as e:
+                LOGGER.error(
+                    "Error while trying to access "
+                    + url.toString()
+                    + "\n%s" * len(e.args),
+                    *e.args,
+                )
+                cr = "\n"
+                QMessageBox.critical(
+                    self,
+                    self.tr("Error !"),
+                    self.tr(
+                        f"Error while trying to access {url.toString()}:{cr}{cr.join([str(a) for a in e.args])}"
+                    ),
+                )
 
     def _create_url(self, format_string: str, variant: dict) -> QUrl:
         """Create a link from a format string and a variant data
@@ -1211,14 +1212,23 @@ class VariantView(QWidget):
             QUrl: return url or return None
 
         """
-        field_names = {
-            name
-            for _, name, _, _ in string.Formatter().parse(format_string)
-            if name is not None
-        }
-        if field_names & variant.keys():
-            # Full or partial mapping => accepted link
-            return QUrl(format_string.format(**variant), QUrl.TolerantMode)
+
+        regex = re.compile(r"{([^{}]+)}")
+        # First, make sure there are some fields to format
+        if regex.findall(format_string):
+
+            # Using this yields us two lists with fields (ex: "{ann.gene}") and their associated field name (ex: "ann.gene")
+            fields, field_names = zip(
+                *[(m.group(0), m.group(1)) for m in regex.finditer(format_string)]
+            )
+
+            # For every field, replace field names with variant value for the respective key
+            for field, field_name in zip(fields, field_names):
+                format_string = format_string.replace(
+                    field, str(variant.get(field_name, field))
+                )
+
+            return QUrl(format_string, QUrl.TolerantMode)
         else:
             return format_string
 
@@ -1255,11 +1265,56 @@ class VariantView(QWidget):
                 update_data = {"favorite": int(checked)}
 
             self.model.update_variant(index.row(), update_data)
+            self.parent.mainwindow.refresh_plugin("variant_edit")
 
-    def update_classification(self, index: QModelIndex, value=3):
-        """Update classification level of the variant at the given index"""
-        if index.isValid():
+    def update_classification(self, value: int = 3):
+        """Update classification level of the variant at the given index
+        This function applies the same level to all the variants selected in the view
+
+        Args:
+            value (int, optional): ACMG classification value to apply. Defaults to 3.
+        """
+
+        # Do not update the same variant multiple times
+        unique_ids = set()
+        for index in self.view.selectionModel().selectedRows():
+            if not index.isValid():
+                continue
+
+            # Get variant id
+            variant = self.model.variants[index.row()]
+            variant_id = variant["id"]
+
+            if variant_id in unique_ids:
+                continue
+            unique_ids.add(variant_id)
             update_data = {"classification": int(value)}
+            self.model.update_variant(index.row(), update_data)
+            self.parent.mainwindow.refresh_plugin("variant_edit")
+
+    def update_tags(self, tags: list = []):
+        """Update tags of the variant
+
+        Args:
+            tags(list): A list of tags
+
+        Todo:
+            Use custom sqlite type ?
+        """
+        tags = "&".join(tags)
+        unique_ids = set()
+        for index in self.view.selectionModel().selectedRows():
+            if not index.isValid():
+                continue
+
+            # Get variant id
+            variant = self.model.variants[index.row()]
+            variant_id = variant["id"]
+
+            if variant_id in unique_ids:
+                continue
+            unique_ids.add(variant_id)
+            update_data = {"tags": tags}
             self.model.update_variant(index.row(), update_data)
 
     def edit_comment(self, index: QModelIndex):
@@ -1278,8 +1333,8 @@ class VariantView(QWidget):
             # Save in DB
             self.model.update_variant(index.row(), {"comment": editor.toPlainText()})
 
-            # Request a refresh of the variant_info plugin
-            self.parent.mainwindow.refresh_plugin("variant_info")
+            # Request a refresh of the variant_edit plugin
+            self.parent.mainwindow.refresh_plugin("variant_edit")
 
     def select_all(self):
         """Select all variants in the view"""
@@ -1328,10 +1383,6 @@ class VariantView(QWidget):
 
     def _open_default_link(self, index: QModelIndex):
 
-        current_variant = self.model.variant(index.row())
-        full_variant = sql.get_one_variant(self.conn, current_variant["id"])
-        # Update variant with annotation data visible in the view ...
-        full_variant.update(current_variant)
         #  get default link
         link = [i for i in self._get_links() if i["is_default"] is True]
         if not link:
@@ -1339,9 +1390,8 @@ class VariantView(QWidget):
 
         link = link[0]
 
-        url = self._create_url(link["url"], full_variant)
-        if url:
-            self._open_url(url, link["is_browser"])
+        if link:
+            self._open_url(link["url"], link["is_browser"])
 
     def on_double_clicked(self, index: QModelIndex):
         """
@@ -1351,6 +1401,191 @@ class VariantView(QWidget):
 
         pass
         ##self._open_default_link(index)
+
+    def create_classification_menu(self):
+        # Create classication action
+        class_menu = QMenu(self.tr("Classification"))
+
+        for key, item in style.CLASSIFICATION.items():
+
+            action = class_menu.addAction(
+                FIcon(item["icon"], item["color"]), item["name"]
+            )
+            action.setData(key)
+            on_click = functools.partial(self.update_classification, key)
+            action.triggered.connect(on_click)
+
+        return class_menu
+
+    def create_external_links_menu(self):
+        menu = QMenu(self.tr("Browse to ..."))
+        for link in self._get_links():
+            func_slot = functools.partial(
+                self._open_url, link["url"], link["is_browser"]
+            )
+            action = menu.addAction(link["name"], func_slot)
+            action.setIcon(FIcon(0xF0866))
+        return menu
+
+
+class TagsModel(QAbstractListModel):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.items = []
+
+    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
+        return len(self.items)
+
+    def data(self, index: QModelIndex, role: Qt.ItemDataRole) -> typing.Any:
+
+        if not index.isValid():
+            return None
+
+        if role == Qt.CheckStateRole:
+            return Qt.Checked if self.items[index.row()]["checked"] else Qt.Unchecked
+
+        if role == Qt.DisplayRole:
+            return self.items[index.row()]["name"]
+
+        if role == Qt.ToolTipRole:
+            return self.items[index.row()]["description"]
+
+        if role == Qt.DecorationRole:
+            return QIcon(FIcon(0xF012F, self.items[index.row()]["color"]))
+
+        return None
+
+    def setData(self, index: QModelIndex, value, role: Qt.ItemDataRole):
+        """ override """
+
+        if role == Qt.CheckStateRole:
+            self.items[index.row()]["checked"] = bool(value)
+            return True
+
+        return False
+
+    def flags(self, index: QModelIndex) -> Qt.ItemFlags:
+
+        if index.column() == 0:
+            return Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsUserCheckable
+
+        return Qt.ItemIsEnabled
+
+    def set_checked_tags(self, tags: str, separator="&"):
+
+        tags = tags.split(separator)
+
+        self.beginResetModel()
+        for row in range(self.rowCount()):
+            print("ROW", row, tags)
+            if self.items[row]["name"] in tags:
+                self.items[row]["checked"] = True
+            else:
+                self.items[row]["checked"] = False
+
+        self.endResetModel()
+
+    def load(self):
+        self.beginResetModel()
+
+        self.items = [
+            {
+                "name": "urgent",
+                "description": "blablba ",
+                "color": "#71e096",
+                "checked": False,
+            },
+            {
+                "name": "bruit",
+                "description": "blablba ",
+                "color": "#ed6d79",
+                "checked": False,
+            },
+            {
+                "name": "pass",
+                "description": "blablba ",
+                "color": "#f7dc68",
+                "checked": False,
+            },
+            {
+                "name": "urgent",
+                "description": "blablba ",
+                "color": "#71e096",
+                "checked": False,
+            },
+            {
+                "name": "test_wordset",
+                "description": "blablba ",
+                "color": "#ed6d79",
+                "checked": False,
+            },
+            {
+                "name": "sdfsf ",
+                "description": "blablba ",
+                "color": "#f7dc68",
+                "checked": False,
+            },
+            {
+                "name": "urgent",
+                "description": "blablba ",
+                "color": "#71e096",
+                "checked": False,
+            },
+            {
+                "name": "test_wordset",
+                "description": "blablba ",
+                "color": "#ed6d79",
+                "checked": False,
+            },
+            {
+                "name": "sdfsf ",
+                "description": "blablba ",
+                "color": "#f7dc68",
+                "checked": False,
+            },
+        ]
+
+        self.endResetModel()
+
+    def clear(self):
+        self.beginResetModel()
+        self.items = []
+        self.endResetModel()
+
+    def checked_tags(self):
+        return [item["name"] for item in self.items if item["checked"]]
+
+
+class TagsWidget(QWidget):
+
+    tags_selected = Signal(list)
+
+    def __init__(self, parent=None):
+        super().__init__()
+
+        self._search_line = QLineEdit()
+        self._listview = QListView()
+        self._search_line.addAction(QIcon(FIcon(0xF0349)), QLineEdit.LeadingPosition)
+        self._apply_btn = QPushButton("Apply")
+        self._model = TagsModel()
+        self._proxy_model = QSortFilterProxyModel()
+        self._proxy_model.setSourceModel(self._model)
+        self._model.load()
+
+        self._listview.setModel(self._proxy_model)
+
+        vlayout = QVBoxLayout()
+        vlayout.addWidget(self._search_line)
+        vlayout.addWidget(self._listview)
+        vlayout.addWidget(self._apply_btn)
+        self.setLayout(vlayout)
+
+        self._search_line.textChanged.connect(self._proxy_model.setFilterFixedString)
+        self._apply_btn.clicked.connect(self.on_apply)
+
+    def on_apply(self):
+        self.tags_selected.emit(self._model.checked_tags())
+        self.parent().close()
 
 
 class VariantViewWidget(plugin.PluginWidget):
@@ -1392,31 +1627,49 @@ class VariantViewWidget(plugin.PluginWidget):
 
         # self.save_action.setPriority(QAction.LowPriority)
 
-        # Refresh UI button
-        action = self.top_bar.addAction(
-            FIcon(0xF0450), self.tr("Refresh"), self.on_refresh
-        )
-        action.setToolTip(self.tr("Refresh the current list of variants"))
-        # action.setPriority(QAction.LowPriority)
+        self.top_bar.addActions(self.main_right_pane.actions())
+        for action in self.main_right_pane.actions():
+            self.top_bar.widgetForAction(action).setPopupMode(QToolButton.InstantPopup)
 
-        # Interrupt current query
-        action = self.top_bar.addAction(
-            FIcon(0xF04DB), self.tr("Stop"), self.on_interrupt
+        # Tag actions
+        self._tag_action = self.top_bar.addAction(FIcon(0xF12F7), "Tags")
+        self.top_bar.widgetForAction(self._tag_action).setPopupMode(
+            QToolButton.InstantPopup
         )
-        action.setToolTip(self.tr("Stop current query"))
+        self._tag_action_menu = QMenu()
+        self._tag_widget = TagsWidget()
+        self._tag_action.setMenu(self._tag_action_menu)
+
+        self.widget_action = QWidgetAction(self)
+        self.widget_action.setDefaultWidget(self._tag_widget)
+
+        self._tag_action_menu.addAction(self.widget_action)
+        self._tag_widget.tags_selected.connect(self.main_right_pane.update_tags)
+
+        # Formatter tools
+        self.top_bar.addSeparator()
+
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        self.top_bar.addWidget(spacer)
 
         self.resize_action = self.top_bar.addAction(
             FIcon(0xF142A), self.tr("Auto resize")
         )
+        self.resize_action.triggered.connect(self.main_right_pane.auto_resize)
 
-        self.resize_action.setCheckable(True)
-        self.resize_action.triggered.connect(self.main_right_pane.set_auto_resize)
+        # Refresh UI button
+        self.refresh_action = self.top_bar.addAction(
+            FIcon(0xF0450), self.tr("Refresh"), self.on_refresh
+        )
+        self.refresh_action.setToolTip(self.tr("Refresh the current list of variants"))
+        # action.setPriority(QAction.LowPriority)
 
-        # Formatter tools
-        self.top_bar.addSeparator()
-        spacer = QWidget()
-        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        self.top_bar.addWidget(spacer)
+        # Interrupt current query
+        self.interrupt_action = self.top_bar.addAction(
+            FIcon(0xF04DB), self.tr("Stop"), self.on_interrupt
+        )
+        self.interrupt_action.setToolTip(self.tr("Stop current query"))
 
         # Add formatters to combobox
         self.formatter_combo = QComboBox()
@@ -1617,6 +1870,8 @@ class VariantViewWidget(plugin.PluginWidget):
 
         if index.model() == self.main_right_pane.view.model():
             # Variant clicked on right pane
+
+            # TODO Make current_variant state data take the value of the whole variant (with annotations and samples!)
             variant = self.main_right_pane.model.variant(index.row())
 
         if self.mainwindow:

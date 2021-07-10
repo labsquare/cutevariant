@@ -33,12 +33,11 @@ from pkg_resources import parse_version
 from functools import partial, lru_cache
 import itertools as it
 import numpy as np
-
+import json
 
 # Custom imports
 import cutevariant.commons as cm
-from cutevariant.core import querybuilder
-from cutevariant.core.querybuilder import build_sql_query
+import cutevariant.core.querybuilder as qb
 from cutevariant.core.sql_aggregator import StdevFunc
 
 LOGGER = cm.logger()
@@ -143,7 +142,12 @@ def get_table_columns(conn: sqlite3.Connection, table_name):
     ]
 
 
-def create_indexes(conn: sqlite3.Connection):
+def create_indexes(
+    conn: sqlite3.Connection,
+    indexed_variant_fields=None,
+    indexed_annotation_fields=None,
+    indexed_sample_fields=None,
+):
     """Create extra indexes on tables
 
     Args:
@@ -154,12 +158,16 @@ def create_indexes(conn: sqlite3.Connection):
         You should use this function instead of individual functions.
 
     """
-    create_variants_indexes(conn)
+
     create_selections_indexes(conn)
+
+    create_variants_indexes(conn, indexed_variant_fields)
+
+    create_samples_indexes(conn, indexed_sample_fields)
 
     try:
         # Some databases have not annotations table
-        create_annotations_indexes(conn)
+        create_annotations_indexes(conn, indexed_annotation_fields)
     except sqlite3.OperationalError as e:
         LOGGER.debug("create_indexes:: sqlite3.%s: %s", e.__class__.__name__, str(e))
 
@@ -167,6 +175,14 @@ def create_indexes(conn: sqlite3.Connection):
 def count_query(conn, query):
     """Count elements from the given query or table"""
     return conn.execute(f"SELECT COUNT(*) as count FROM ({query})").fetchone()[0]
+
+
+# Helper functions. TODO: move them somewhere more relevant
+
+
+def clear_lru_cache():
+    get_fields.cache_clear()
+    get_field_by_category.cache_clear()
 
 
 # Statistical data
@@ -215,7 +231,7 @@ def get_field_info(conn, field, source="variants", filters={}, metrics=["mean", 
     }
 
     conn.row_factory = None
-    query = build_sql_query(conn, [field], source, filters, limit=None)
+    query = qb.build_sql_query(conn, [field], source, filters, limit=None)
 
     data = [i[0] for i in conn.execute(query)]
 
@@ -398,7 +414,7 @@ def create_selection_has_variant_indexes(conn: sqlite3.Connection):
         conn (sqlite3.Connection/sqlite3.Cursor): Sqlite3 connection
     """
     conn.execute(
-        "CREATE INDEX idx_selection_has_variant ON selection_has_variant (selection_id)"
+        "CREATE INDEX `idx_selection_has_variant` ON selection_has_variant (`selection_id`)"
     )
 
 
@@ -437,6 +453,80 @@ def insert_selection(conn, query: str, name="no_name", count=0):
 
 # Delete selections by name
 delete_selection_by_name = partial(delete_by_name, table_name="selections")
+
+
+def create_selection(
+    conn: sqlite3.Connection,
+    name: str,
+    source: str = "variants",
+    filters=None,
+    count=None,
+):
+    """Create a selection record from sql variant query
+
+    Args:
+        conn (sqlite3.connection): Sqlite3 connection
+        name (str): Name of selection
+        source (str): Source to select from
+        filters (dict/None, optional): Filters to create selection
+        count (int/None, optional): Variant count
+
+    Returns:
+        selection_id, if lines have been inserted; None otherwise (rollback).
+    """
+    cursor = conn.cursor()
+
+    filters = filters or {}
+    sql_query = qb.build_sql_query(
+        conn,
+        fields=[],
+        source=source,
+        filters=filters,
+        limit=None,
+    )
+    vql_query = qb.build_vql_query(fields=["id"], source=source, filters=filters)
+
+    # Compute query count
+    # TODO : this can take a while .... need to compute only one from elsewhere
+    if count is None:
+        count = count_query(cursor, sql_query)
+
+    # Create selection
+    selection_id = insert_selection(cursor, vql_query, name=name, count=count)
+
+    # DROP indexes
+    # For joins between selections and variants tables
+    try:
+        cursor.execute("""DROP INDEX idx_selection_has_variant""")
+    except sqlite3.OperationalError:
+        pass
+
+    # Insert into selection_has_variant table
+    # PS: We use DISTINCT keyword to statisfy the unicity constraint on
+    # (variant_id, selection_id) of "selection_has_variant" table.
+    # TODO: is DISTINCT useful here? How a variant could be associated several
+    # times with an association?
+
+    # Optimized only for the creation of a selection from set operations
+    # variant_id is the only useful column here
+    q = f"""
+    INSERT INTO selection_has_variant
+    SELECT DISTINCT id, {selection_id} FROM ({sql_query})
+    """
+
+    cursor.execute(q)
+    affected_rows = cursor.rowcount
+
+    # REBUILD INDEXES
+    # For joints between selections and variants tables
+    create_selection_has_variant_indexes(cursor)
+
+    if affected_rows:
+        conn.commit()
+        return selection_id
+    # Must alert a user because no selection is created here
+    conn.rollback()
+    return None
 
 
 def create_selection_from_sql(
@@ -549,10 +639,10 @@ def create_selection_from_bed(
     )
 
     if source == "variants":
-        source_query = "SELECT variants.id AS variant_id FROM variants"
+        source_query = "SELECT DISTINCT variants.id AS variant_id FROM variants"
     else:
         source_query = f"""
-        SELECT variants.id AS variant_id FROM variants
+        SELECT DISTINCT variants.id AS variant_id FROM variants
         INNER JOIN selections ON selections.name = '{source}'
         INNER JOIN selection_has_variant AS sv ON sv.selection_id = selections.id AND sv.variant_id = variants.id
         """
@@ -787,7 +877,7 @@ def get_words_in_set(conn, wordset_name):
         yield dict(row)["value"]
 
 
-def intersect_wordset(conn, name: str, wordsets: list):
+def intersect_wordset(conn: sqlite3.Connection, name: str, wordsets: list):
     """Create new `name` wordset from intersection of `wordsets`
 
     Args:
@@ -806,10 +896,10 @@ def intersect_wordset(conn, name: str, wordsets: list):
         )
         + ")"
     )
-
-    print(query)
-    conn.execute(query)
+    cursor = conn.cursor()
+    cursor.execute(query)
     conn.commit()
+    return cursor.rowcount
 
 
 def union_wordset(conn, name: str, wordsets=[]):
@@ -831,9 +921,10 @@ def union_wordset(conn, name: str, wordsets=[]):
         )
         + ")"
     )
-
-    conn.execute(query)
+    cursor = conn.cursor()
+    cursor.execute(query)
     conn.commit()
+    return cursor.rowcount
 
 
 def subtract_wordset(conn, name: str, wordsets=[]):
@@ -855,9 +946,10 @@ def subtract_wordset(conn, name: str, wordsets=[]):
         )
         + ")"
     )
-
-    conn.execute(query)
+    cursor = conn.cursor()
+    cursor.execute(query)
     conn.commit()
+    return cursor.rowcount
 
 
 ## Operations on sets of variants ==============================================
@@ -1133,7 +1225,7 @@ def create_table_annotations(conn, fields):
     conn.commit()
 
 
-def create_annotations_indexes(conn):
+def create_annotations_indexes(conn, indexed_annotation_fields=None):
     """Create indexes on the "annotations" table
 
     .. warning: This function must be called after batch insertions.
@@ -1149,7 +1241,16 @@ def create_annotations_indexes(conn):
         LIMIT 100
     """
     # Allow search on variant_id
-    conn.execute("CREATE INDEX idx_annotations ON annotations (variant_id)")
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS `idx_annotations` ON annotations (`variant_id`)"
+    )
+
+    if indexed_annotation_fields is None:
+        return
+    for field in indexed_annotation_fields:
+        conn.execute(
+            f"CREATE INDEX IF NOT EXISTS `idx_annotations_{field}` ON annotations (`{field}`)"
+        )
 
 
 def get_annotations(conn, variant_id: int):
@@ -1213,7 +1314,7 @@ def create_table_variants(conn, fields):
     conn.commit()
 
 
-def create_variants_indexes(conn):
+def create_variants_indexes(conn, indexed_fields={"pos", "ref", "alt"}):
     """Create indexes on the "variants" table
 
     .. warning:: This function must be called after batch insertions.
@@ -1230,11 +1331,13 @@ def create_variants_indexes(conn):
     """
     # Complementary index of the primary key (sample_id, variant_id)
     conn.execute(
-        "CREATE INDEX idx_sample_has_variant ON sample_has_variant (variant_id)"
+        "CREATE INDEX IF NOT EXISTS `idx_sample_has_variant` ON sample_has_variant (`variant_id`)"
     )
 
-    conn.execute("CREATE INDEX idx_variants_pos ON variants (pos)")
-    conn.execute("CREATE INDEX idx_variants_ref_alt ON variants (ref, alt)")
+    for field in indexed_fields:
+        conn.execute(
+            f"CREATE INDEX IF NOT EXISTS `idx_variants_{field}` ON variants (`{field}`)"
+        )
 
 
 def get_one_variant(
@@ -1354,7 +1457,7 @@ def get_variants(
 
     # TODO : rename as get_variant_as_tables ?
 
-    query = build_sql_query(
+    query = qb.build_sql_query(
         conn,
         fields=fields,
         source=source,
@@ -1619,18 +1722,28 @@ def get_variant_as_group(
     fields: list,
     source: str,
     filters: dict,
-    order_by="count",
+    order_by_count=True,
+    order_desc=True,
     limit=50,
 ):
 
-    subquery = build_sql_query(
-        conn, fields=fields, source=source, filters=filters, limit=None
+    order_by = "count" if order_by_count else f"`{groupby}`"
+    order_desc = "DESC" if order_desc else "ASC"
+
+    subquery = qb.build_sql_query(
+        conn,
+        fields=fields,
+        source=source,
+        filters=filters,
+        limit=None,
     )
 
-    query = f"""SELECT `{groupby}`, COUNT(`{groupby}`) AS count 
-    FROM ({subquery}) GROUP BY `{groupby}` ORDER BY count LIMIT {limit}"""
+    query = f"""SELECT `{groupby}`, COUNT(`{groupby}`) AS count
+    FROM ({subquery}) GROUP BY `{groupby}` ORDER BY {order_by} {order_desc} LIMIT {limit}"""
     for i in conn.execute(query):
-        yield dict(i)
+        res = dict(i)
+        res["field"] = groupby
+        yield res
 
 
 ## samples table ===============================================================
@@ -1685,6 +1798,17 @@ def create_table_samples(conn, fields=[]):
     conn.commit()
 
 
+def create_samples_indexes(conn, indexed_samples_fields=None):
+    """Create indexes on the "samples" table"""
+    if indexed_samples_fields is None:
+        return
+
+    for field in indexed_samples_fields:
+        conn.execute(
+            f"CREATE INDEX IF NOT EXISTS `idx_samples_{field}` ON sample_has_variant (`{field}`)"
+        )
+
+
 def insert_sample(conn, name="no_name"):
     """Insert one sample in samples table (USED in TESTS)
 
@@ -1736,15 +1860,15 @@ def get_sample_annotations(conn, variant_id: int, sample_id: int):
     )
 
 
-def get_sample_annotations_by_variant(conn, variant_id: int):
+def get_sample_annotations_by_variant(conn, variant_id: int, fields=["gt"]):
 
-    conn.row_factory = sqlite3.Row
-    return [
-        dict(data)
-        for data in conn.execute(
-            f"SELECT * FROM sample_has_variant WHERE variant_id = {variant_id}"
-        )
-    ]
+    sql_fields = ",".join([f"sv.{f}" for f in fields])
+
+    query = f"""SELECT samples.name, samples.phenotype, samples.sex, {sql_fields} FROM samples
+    LEFT JOIN sample_has_variant sv 
+    ON sv.sample_id = samples.id AND sv.variant_id = {variant_id}"""
+
+    return (dict(data) for data in conn.execute(query))
 
 
 def update_sample(conn, sample: dict):

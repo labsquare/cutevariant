@@ -4,8 +4,11 @@ import json
 import os
 import glob
 from functools import lru_cache
+import typing
+import copy
 
 from cutevariant.gui import plugin, FIcon, style
+from cutevariant.gui.mainwindow import MainWindow
 from cutevariant.core import sql
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
@@ -111,6 +114,9 @@ class FieldsModel(QStandardItemModel):
                 selected_fields.append(item.data()["name"])
         return selected_fields
 
+    def flags(self, index: QModelIndex) -> Qt.ItemFlags:
+        return super().flags(index) | Qt.ItemIsDragEnabled
+
     @checked_fields.setter
     def checked_fields(self, fields: List[str]):
         """Check fields according name
@@ -177,6 +183,18 @@ class FieldsModel(QStandardItemModel):
                     self.appendRow([field_name_item, descr_item])
                     self.fields_loaded.emit()
 
+    def mimeData(self, indexes: typing.List[QModelIndex]) -> QMimeData:
+        field_names = [
+            idx.data(Qt.UserRole + 1)["name"] for idx in indexes if idx.column() == 0
+        ]
+        internal_dict = {"fields": field_names}
+        res = QMimeData("application/json")
+        res.setText(json.dumps(internal_dict))
+        return res
+
+    def mimeTypes(self) -> typing.List[str]:
+        return ["application/json"]
+
     def to_file(self, filename: str):
         """Serialize checked fields to a json file
 
@@ -228,20 +246,25 @@ class FieldsWidget(QWidget):
     def add_view(self, conn, category):
         model = FieldsModel(conn, category)
         view = QTableView()
+        view.setContextMenuPolicy(Qt.ActionsContextMenu)
+
         proxy = QSortFilterProxyModel()
         proxy.setSourceModel(model)
 
         view.setModel(proxy)
         view.setShowGrid(False)
         view.horizontalHeader().setStretchLastSection(True)
-        view.setIconSize(QSize(16, 16))
+        view.setIconSize(QSize(24, 24))
+
         view.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        view.setSelectionMode(QAbstractItemView.SingleSelection)
+        view.setSelectionMode(QAbstractItemView.ExtendedSelection)
         view.setSelectionBehavior(QAbstractItemView.SelectRows)
         view.setAlternatingRowColors(False)
         view.setWordWrap(True)
         view.verticalHeader().hide()
         view.setSortingEnabled(True)
+
+        view.setDragEnabled(True)
 
         proxy.setRecursiveFilteringEnabled(True)
         proxy.setFilterCaseSensitivity(Qt.CaseInsensitive)
@@ -249,12 +272,85 @@ class FieldsWidget(QWidget):
 
         model.itemChanged.connect(lambda: self.fields_changed.emit())
 
+        # Setup actions
+
+        # Setup the filter field action. Will filter out NULL values (thus the broom icon)
+        filter_field_action = QAction(self.tr("Create filter on null values"), view)
+        filter_field_action.triggered.connect(
+            lambda: self._on_filter_field_clicked(view, category)
+        )
+        filter_field_action.setIcon(FIcon(0xF00E2))
+        index_field_action = QAction(self.tr("Create index ..."), view)
+        index_field_action.triggered.connect(
+            lambda: self._on_index_field_clicked(view, category)
+        )
+        index_field_action.setIcon(FIcon(0xF082E))
+
+        view.addActions([filter_field_action, index_field_action])
+
         self.views.append(
             {"view": view, "proxy": proxy, "model": model, "name": category}
         )
         self.tab_widget.addTab(
             view, FIcon(style.FIELD_CATEGORY.get(category, None)["icon"]), category
         )
+
+    def _on_index_field_clicked(
+        self,
+        view: QTableView,
+        category: str,
+    ):
+
+        field_name = view.currentIndex().siblingAtColumn(0).data()
+        if (
+            QMessageBox.question(
+                self,
+                self.tr("Please confirm"),
+                self.tr(
+                    f"Indexing a field increases database file size.\nAre you sure you want to index {field_name}?"
+                ),
+            )
+            != QMessageBox.Yes
+        ):
+            return
+        if category == "samples":
+            field_name = field_name.split(".")[-1]
+
+        if category == "variants":
+            sql.create_variants_indexes(self.conn, {field_name})
+        if category == "annotations":
+            sql.create_annotations_indexes(self.conn, {field_name})
+        if category == "samples":
+            sql.create_samples_indexes(self.conn, {field_name})
+
+    def _on_filter_field_clicked(self, view: QTableView, category: str):
+        """When the user triggers the "filter not null" field action.
+        Applies immediately a filter on this field, with a not-null condition
+
+        Args:
+            view (QTableView): The view showing a selected field
+            category (str): (not used) The category the selected field belongs to
+            model (FieldsModel): The actual model containing the data
+            proxy (QSortFilterProxyModel): The proxymodel used by the view
+        """
+        parent: FieldsEditorWidget = self.parent()
+        mainwindow: MainWindow = parent.mainwindow
+        filters = copy.deepcopy(mainwindow.get_state_data("filters"))
+        field_name = view.currentIndex().siblingAtColumn(0).data()
+
+        if category == "annotations":
+            field_name = f"ann.{field_name}"
+        if category == "samples":
+            field_name = f"samples.{field_name}"
+
+        # TODO: filters should start with below expression application-wide...
+        if not filters:
+            filters = {"$and": []}
+
+        if "$and" in filters:
+            filters["$and"].append({field_name: {"$ne": None}})
+            mainwindow.set_state_data("filters", filters)
+            mainwindow.refresh_plugins(sender=self)
 
     def update_filter(self, text: str):
         """
@@ -527,12 +623,12 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self.on_apply()
 
     def on_open_project(self, conn):
-        """ Overrided from PluginWidget """
+        """Overrided from PluginWidget"""
         self.widget_fields.conn = conn
         self.on_refresh()
 
     def on_refresh(self):
-        """ overrided from PluginWidget """
+        """overrided from PluginWidget"""
         if self.mainwindow:
             self._is_refreshing = True
             self.widget_fields.checked_fields = self.mainwindow.get_state_data("fields")
@@ -550,12 +646,12 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self.mainwindow.refresh_plugins(sender=self)
 
     def to_json(self):
-        """ override from plugins: Serialize plugin state """
+        """override from plugins: Serialize plugin state"""
 
         return {"checked_fields": self.widget_fields.checked_fields}
 
     def from_json(self, data):
-        """ override from plugins: Unzerialize plugin state """
+        """override from plugins: Unzerialize plugin state"""
 
         if "checked_fields" in data:
             self.widget_fields.checked_fields = data["checked_fields"]
