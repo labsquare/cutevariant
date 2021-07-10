@@ -1860,15 +1860,15 @@ def get_sample_annotations(conn, variant_id: int, sample_id: int):
     )
 
 
-def get_sample_annotations_by_variant(conn, variant_id: int):
+def get_sample_annotations_by_variant(conn, variant_id: int, fields=["gt"]):
 
-    conn.row_factory = sqlite3.Row
-    return [
-        dict(data)
-        for data in conn.execute(
-            f"SELECT * FROM sample_has_variant WHERE variant_id = {variant_id}"
-        )
-    ]
+    sql_fields = ",".join([f"sv.{f}" for f in fields])
+
+    query = f"""SELECT samples.name, samples.phenotype, samples.sex, {sql_fields} FROM samples
+    LEFT JOIN sample_has_variant sv 
+    ON sv.sample_id = samples.id AND sv.variant_id = {variant_id}"""
+
+    return (dict(data) for data in conn.execute(query))
 
 
 def update_sample(conn, sample: dict):

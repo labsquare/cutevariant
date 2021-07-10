@@ -615,8 +615,81 @@ class VariantDelegate(QStyledItemDelegate):
         # Draw formatters
         option.rect = option.rect.adjusted(
             3, 0, 0, 0
-        )  # Don't know why I need to adjust the left margin .. .
-        self.formatter.paint(painter, option, index)
+        )  # Don't know why I need to adjust the left margin ..
+
+        field_name = index.model().headerData(index.column(), Qt.Horizontal)
+        field_value = index.data(Qt.DisplayRole)
+        is_selected = option.state & QStyle.State_Selected
+        style = self.formatter.format(field_name, field_value, option, is_selected)
+
+        font = style.get("font", QFont())
+        text = style.get("text", str(field_value))
+        icon = style.get("icon", None)
+        color = style.get(
+            "color",
+            option.palette.color(
+                QPalette.Normal,
+                QPalette.BrightText if is_selected else QPalette.Text,
+            ),
+        )
+        text_align = style.get("text-align", Qt.AlignVCenter | Qt.AlignLeft)
+        icon_align = style.get("icon-align", Qt.AlignCenter)
+
+        pixmap = style.get("pixmap", None)
+        link = style.get("link", None)
+
+        if pixmap:
+            painter.drawPixmap(
+                option.rect.x(),
+                option.rect.y(),
+                pixmap.width(),
+                pixmap.height(),
+                pixmap,
+            )
+            return
+
+        if link:
+            self.draw_url(painter, option.rect, text, text_align)
+            return
+
+        if icon:
+            self.draw_icon(painter, option.rect, icon, icon_align)
+
+        painter.setFont(font)
+        painter.setPen(QPen(color))
+        painter.drawText(option.rect, text_align, text)
+
+    def draw_icon(
+        self, painter: QPainter, rect: QRect, icon: QIcon, alignement=Qt.AlignCenter
+    ):
+        r = QRect(0, 0, rect.height(), rect.height())
+        r.moveCenter(rect.center())
+
+        if alignement & Qt.AlignLeft:
+            r.moveLeft(rect.left())
+
+        if alignement & Qt.AlignRight:
+            r.moveRight(rect.right())
+
+        painter.drawPixmap(r, icon.pixmap(r.width(), r.height()))
+
+    def draw_url(self, painter: QPainter, rect: QRect, value: str, align=Qt.AlignLeft):
+        font = QFont()
+        font.setUnderline(True)
+        painter.setFont(font)
+        painter.setPen(QPen(QColor("blue")))
+        painter.drawText(rect, align, value)
+
+    def editorEvent(self, event: QEvent, model, option, index: QModelIndex):
+        if not index.isValid():
+            return False
+
+        # Skip action with First LogicItem root item
+
+        if event.type() == QEvent.MouseButtonPress:
+            print("clicked")
+
+        pass
 
 
 class LoadingTableView(QTableView):
@@ -1228,6 +1301,31 @@ class VariantView(QWidget):
             self.model.update_variant(index.row(), update_data)
             self.parent.mainwindow.refresh_plugin("variant_edit")
 
+    def update_tags(self, tags: list = []):
+        """Update tags of the variant
+
+        Args:
+            tags(list): A list of tags
+
+        Todo:
+            Use custom sqlite type ?
+        """
+        tags = "&".join(tags)
+        unique_ids = set()
+        for index in self.view.selectionModel().selectedRows():
+            if not index.isValid():
+                continue
+
+            # Get variant id
+            variant = self.model.variants[index.row()]
+            variant_id = variant["id"]
+
+            if variant_id in unique_ids:
+                continue
+            unique_ids.add(variant_id)
+            update_data = {"tags": tags}
+            self.model.update_variant(index.row(), update_data)
+
     def edit_comment(self, index: QModelIndex):
         """Allow a user to add a comment for the selected variant"""
         if not index.isValid():
@@ -1310,7 +1408,8 @@ class VariantView(QWidget):
         TODO : duplicate code with ContextMenu Event ! Need to refactor a bit
         """
 
-        self._open_default_link(index)
+        pass
+        ##self._open_default_link(index)
 
     def create_classification_menu(self):
         # Create classication action
@@ -1336,6 +1435,166 @@ class VariantView(QWidget):
             action = menu.addAction(link["name"], func_slot)
             action.setIcon(FIcon(0xF0866))
         return menu
+
+
+class TagsModel(QAbstractListModel):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.items = []
+
+    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
+        return len(self.items)
+
+    def data(self, index: QModelIndex, role: Qt.ItemDataRole) -> typing.Any:
+
+        if not index.isValid():
+            return None
+
+        if role == Qt.CheckStateRole:
+            return Qt.Checked if self.items[index.row()]["checked"] else Qt.Unchecked
+
+        if role == Qt.DisplayRole:
+            return self.items[index.row()]["name"]
+
+        if role == Qt.ToolTipRole:
+            return self.items[index.row()]["description"]
+
+        if role == Qt.DecorationRole:
+            return QIcon(FIcon(0xF012F, self.items[index.row()]["color"]))
+
+        return None
+
+    def setData(self, index: QModelIndex, value, role: Qt.ItemDataRole):
+        """ override """
+
+        if role == Qt.CheckStateRole:
+            self.items[index.row()]["checked"] = bool(value)
+            return True
+
+        return False
+
+    def flags(self, index: QModelIndex) -> Qt.ItemFlags:
+
+        if index.column() == 0:
+            return Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsUserCheckable
+
+        return Qt.ItemIsEnabled
+
+    def set_checked_tags(self, tags: str, separator="&"):
+
+        tags = tags.split(separator)
+
+        self.beginResetModel()
+        for row in range(self.rowCount()):
+            print("ROW", row, tags)
+            if self.items[row]["name"] in tags:
+                self.items[row]["checked"] = True
+            else:
+                self.items[row]["checked"] = False
+
+        self.endResetModel()
+
+    def load(self):
+        self.beginResetModel()
+
+        self.items = [
+            {
+                "name": "urgent",
+                "description": "blablba ",
+                "color": "#71e096",
+                "checked": False,
+            },
+            {
+                "name": "bruit",
+                "description": "blablba ",
+                "color": "#ed6d79",
+                "checked": False,
+            },
+            {
+                "name": "pass",
+                "description": "blablba ",
+                "color": "#f7dc68",
+                "checked": False,
+            },
+            {
+                "name": "urgent",
+                "description": "blablba ",
+                "color": "#71e096",
+                "checked": False,
+            },
+            {
+                "name": "test_wordset",
+                "description": "blablba ",
+                "color": "#ed6d79",
+                "checked": False,
+            },
+            {
+                "name": "sdfsf ",
+                "description": "blablba ",
+                "color": "#f7dc68",
+                "checked": False,
+            },
+            {
+                "name": "urgent",
+                "description": "blablba ",
+                "color": "#71e096",
+                "checked": False,
+            },
+            {
+                "name": "test_wordset",
+                "description": "blablba ",
+                "color": "#ed6d79",
+                "checked": False,
+            },
+            {
+                "name": "sdfsf ",
+                "description": "blablba ",
+                "color": "#f7dc68",
+                "checked": False,
+            },
+        ]
+
+        self.endResetModel()
+
+    def clear(self):
+        self.beginResetModel()
+        self.items = []
+        self.endResetModel()
+
+    def checked_tags(self):
+        return [item["name"] for item in self.items if item["checked"]]
+
+
+class TagsWidget(QWidget):
+
+    tags_selected = Signal(list)
+
+    def __init__(self, parent=None):
+        super().__init__()
+
+        self._search_line = QLineEdit()
+        self._listview = QListView()
+        self._search_line.addAction(QIcon(FIcon(0xF0349)), QLineEdit.LeadingPosition)
+        self._apply_btn = QPushButton("Apply")
+        self._model = TagsModel()
+        self._proxy_model = QSortFilterProxyModel()
+        self._proxy_model.setSourceModel(self._model)
+        self._model.load()
+
+        self._listview.setModel(self._proxy_model)
+
+        vlayout = QVBoxLayout()
+        vlayout.addWidget(self._search_line)
+        vlayout.addWidget(self._listview)
+        vlayout.addWidget(self._apply_btn)
+        self.setLayout(vlayout)
+
+        self._search_line.textChanged.connect(self._proxy_model.setFilterFixedString)
+        self._apply_btn.clicked.connect(self.on_apply)
+
+    def on_apply(self):
+        self.tags_selected.emit(self._model.checked_tags())
+        self.parent().close()
 
 
 class VariantViewWidget(plugin.PluginWidget):
@@ -1380,6 +1639,21 @@ class VariantViewWidget(plugin.PluginWidget):
         self.top_bar.addActions(self.main_right_pane.actions())
         for action in self.main_right_pane.actions():
             self.top_bar.widgetForAction(action).setPopupMode(QToolButton.InstantPopup)
+
+        # Tag actions
+        self._tag_action = self.top_bar.addAction(FIcon(0xF12F7), "Tags")
+        self.top_bar.widgetForAction(self._tag_action).setPopupMode(
+            QToolButton.InstantPopup
+        )
+        self._tag_action_menu = QMenu()
+        self._tag_widget = TagsWidget()
+        self._tag_action.setMenu(self._tag_action_menu)
+
+        self.widget_action = QWidgetAction(self)
+        self.widget_action.setDefaultWidget(self._tag_widget)
+
+        self._tag_action_menu.addAction(self.widget_action)
+        self._tag_widget.tags_selected.connect(self.main_right_pane.update_tags)
 
         # Formatter tools
         self.top_bar.addSeparator()

@@ -20,32 +20,46 @@ class Formatter(object):
 
     DISPLAY_NAME = ""
 
-    def __init__(self):
-        super().__init__()
+    def format(self, field: str, value: str, option, is_selected: bool = False):
 
-    def paint(
-        self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex
-    ):
-        painter.drawText(option.rect, option.displayAlignment, self.value(index))
+        # return {
+        #     "text": str(field_value),
+        #     "color": "white",
+        #     "background-color": "red",
+        #     "alignement": Qt.AlignCenter,
+        #     "icon": QIcon(),
+        #     "link": "http://www.google.fr",
+        #     "pixmap": QPixmap(),
+        # }
 
-    def field_name(self, index: QModelIndex):
-        return index.model().headerData(index.column(), Qt.Horizontal)
+        return {"text": str(value)}
 
-    def value(self, index: QModelIndex):
-        return index.data(Qt.DisplayRole)
+    # def __init__(self):
+    #     super().__init__()
 
-    def draw_icon(self, painter: QPainter, rect: QRect, icon: QIcon):
+    # def paint(
+    #     self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex
+    # ):
+    #     painter.drawText(option.rect, option.displayAlignment, self.value(index))
 
-        r = QRect(0, 0, rect.height(), rect.height())
-        r.moveCenter(rect.center())
-        painter.drawPixmap(r, icon.pixmap(r.width(), r.height()))
+    # def field_name(self, index: QModelIndex):
+    #     return index.model().headerData(index.column(), Qt.Horizontal)
 
-    def draw_url(self, painter: QPainter, rect: QRect, value: str):
-        font = QFont()
-        font.setUnderline(True)
-        painter.setFont(font)
-        painter.setPen(QPen(QColor("blue")))
-        painter.drawText(rect, Qt.AlignCenter, value)
+    # def value(self, index: QModelIndex):
+    #     return index.data(Qt.DisplayRole)
+
+    # def draw_icon(self, painter: QPainter, rect: QRect, icon: QIcon):
+
+    #     r = QRect(0, 0, rect.height(), rect.height())
+    #     r.moveCenter(rect.center())
+    #     painter.drawPixmap(r, icon.pixmap(r.width(), r.height()))
+
+    # def draw_url(self, painter: QPainter, rect: QRect, value: str):
+    #     font = QFont()
+    #     font.setUnderline(True)
+    #     painter.setFont(font)
+    #     painter.setPen(QPen(QColor("blue")))
+    #     painter.drawText(rect, Qt.AlignCenter, value)
 
 
 ################################################################################
