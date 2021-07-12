@@ -4,10 +4,23 @@ VariantInfoWidget is showed on the GUI, it uses VariantPopupMenu to display a
 contextual menu about the variant which is selected.
 VariantPopupMenu is also used in viewquerywidget for the same purpose.
 """
+import collections
 from logging import DEBUG
+import sqlite3
+
+import typing
 
 # Qt imports
-from PySide2.QtCore import QModelIndex, Qt, Slot, QSize
+from PySide2.QtCore import (
+    QAbstractItemModel,
+    QAbstractTableModel,
+    QItemSelection,
+    QModelIndex,
+    QObject,
+    Qt,
+    Slot,
+    QSize,
+)
 from PySide2.QtWidgets import *
 from PySide2.QtGui import QFont, QColor
 
@@ -48,10 +61,131 @@ class VariantInfoModel(QJsonModel):
             if value == "":
                 return item.childCount()
 
+        # TODO: make it smarter...
+        if role == Qt.UserRole:
+
+            # Returns a list indicating the path in the variant dictionnary
+            path = [item.key]
+            while item.parent():
+                path.insert(0, item.parent().key)
+                item = item.parent()
+
+            # Root item is always called root (as defined in qjsonmodel)
+            path.remove("root")
+            return path
+
         return super().data(index, role)
 
     def flags(self, index):
         return Qt.ItemIsEnabled | Qt.ItemIsSelectable
+
+
+class WatchModel(QAbstractTableModel):
+    def __init__(self, parent: QObject) -> None:
+        super().__init__(parent=parent)
+        self._data = []
+        self._watched_fields: typing.List[str] = []
+
+    def data(
+        self, index: QModelIndex = QModelIndex(), role: int = Qt.DisplayRole
+    ) -> typing.Any:
+        if not (
+            0 <= index.row() < self.rowCount()
+            and 0 <= index.column() < self.columnCount()
+        ):
+            return
+        if role == Qt.DisplayRole:
+            if index.column() == 0:
+                return self._data[index.row()][index.column()]
+            elif index.column() == 1:
+                return self._data[index.row()][index.column()][0]
+        if role == Qt.UserRole:
+            # Returns the field, basically
+            return self._data[index.row()][0][1]
+
+    def headerData(
+        self, section: int, orientation: Qt.Orientation, role: int
+    ) -> typing.Any:
+        if orientation == Qt.Horizontal and role == Qt.DisplayRole:
+            return [self.tr("Field name"), self.tr("Field value")][section]
+
+    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
+        return len(self._data)
+
+    def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
+        return 2
+
+    def add_to_watch(self, field_name: str):
+        """Adds a field to the watch
+
+        Args:
+            field_name (str): Name of the field to watch
+        """
+        if field_name not in self._watched_fields:
+            self._watched_fields.append(field_name)
+
+    def remove_from_watch(self, index: QModelIndex):
+        if isinstance(index.model(), WatchModel):
+            print(index.data(Qt.UserRole))
+        else:
+            print("Error, this function should never be called from elsewhere")
+        # if field_name in self._watched_fields:
+        #     self._watched_fields.remove(field_name)
+
+    def load(self, variant: dict):
+        """Updates the model with the currently selected variant
+        Computes the whole internal dict structure again
+
+        Args:
+            variant (dict): Full variant dict. Should contain all watched fields
+        """
+        self.beginResetModel()
+        row_count = 0
+        _data = {}  # A temporary dict to store key value pairs
+        self._data.clear()
+        for f in self._watched_fields:
+
+            # Annotation fields
+            if f.startswith("ann."):
+                # Safe to go through annotations, if empty will not enter loop
+                for i, ann in enumerate(variant["annotations"]):
+                    field_name = f.replace("ann.", "")
+                    _data[f"ann.{field_name}[{i}]"] = (
+                        ann.get(field_name, self.tr("Annotation field not found!")),
+                        f,
+                    )
+                    row_count += 1
+
+            # Sample fields
+            elif f.startswith("samples."):
+                _, *sample_name, field = f.split(".")
+                sample_name = ".".join(sample_name)
+
+                # Just retrieving sample field for sample_name, in the whole variant dict
+                _data[f"{sample_name}.{field}"] = (
+                    next(
+                        item
+                        for item in variant["samples"]
+                        if item["name"] == sample_name
+                    )[field],
+                    f,
+                )
+                row_count += 1
+
+            # Variant fields
+            else:
+                _data[f] = variant.get(f, "Variants field not found!"), f
+                row_count += 1
+
+        # Turn dict into a list of key value pairs (a lot easier to use in a model than a dict)
+        self._data = list(_data.items())
+        print(self._data)
+        self.endResetModel()
+
+    def clear(self):
+        self.beginResetModel()
+        self._data = []
+        self.endResetModel()
 
 
 class VariantInfoWidget(PluginWidget):
@@ -66,108 +200,129 @@ class VariantInfoWidget(PluginWidget):
         self.setWindowIcon(FIcon(0xF0B73))
         # Current variant => set by on_refresh and on_open_project
         self.current_variant = None
-        self.view = QTreeView()
+        self.view = QTreeView(self)
+
         self.model = VariantInfoModel()
         self.view.setModel(self.model)
+        self.view.setContextMenuPolicy(Qt.ActionsContextMenu)
+
         self.view.setAlternatingRowColors(True)
-        vlayout = QVBoxLayout()
-        vlayout.addWidget(self.view)
+        self.view.header().hide()
+
+        self.watch_view = QTableView(self)
+
+        # Make it look nice
+        self.watch_view.horizontalHeader().setStretchLastSection(True)
+        self.watch_view.verticalHeader().hide()
+        self.watch_view.setAlternatingRowColors(True)
+        self.watch_view.setShowGrid(False)
+        self.watch_view.setSelectionBehavior(QAbstractItemView.SelectRows)
+
+        self.watch_model = WatchModel(self)
+        self.watch_view.setModel(self.watch_model)
+        self.watch_view.setContextMenuPolicy(Qt.ActionsContextMenu)
+
+        self.splitter = QSplitter(self)
+        self.splitter.setOrientation(Qt.Vertical)
+        self.splitter.addWidget(self.watch_view)
+
+        self.splitter.addWidget(self.view)
+        self.splitter.setContentsMargins(0, 0, 0, 0)
+
+        vlayout = QVBoxLayout(self)
         vlayout.setContentsMargins(0, 0, 0, 0)
-        self.setLayout(vlayout)
 
-    #     self.view = QTabWidget()
-    #     self.toolbar = QToolBar()
-    #     # self.toolbar.setIconSize(QSize(16, 16))
+        self.toolbar = QToolBar("", self)
 
-    #     # Build comments tab
-    #     self.edit_panel = EditPanel()
-    #     self.edit_panel.saved.connect(self.on_save_variant)
-    #     self.view.addTab(self.edit_panel, self.tr("User"))
+        vlayout.addWidget(self.toolbar)
+        vlayout.addWidget(self.splitter)
 
-    #     # Build variant tab
-    #     self.variant_view = DictWidget()
-    #     self.variant_view.set_header_visible(True)
+        self.add_actions()
 
-    #     self.view.addTab(self.variant_view, self.tr("Variant"))
+        # When the current index in the main view changes, we must update its 'add to watch' action
+        self.view.selectionModel().currentChanged.connect(self._update_watchable_field)
 
-    #     # Build transcript tab
-    #     self.transcript_combo = QComboBox()
-    #     self.transcript_view = DictWidget()
-    #     self.transcript_view.set_header_visible(True)
-    #     tx_layout = QVBoxLayout()
-    #     tx_layout.addWidget(self.transcript_combo)
-    #     tx_layout.addWidget(self.transcript_view)
-    #     tx_widget = QWidget()
-    #     tx_widget.setLayout(tx_layout)
-    #     self.view.addTab(tx_widget, self.tr("Transcripts"))
-    #     self.transcript_combo.currentIndexChanged.connect(self.on_transcript_changed)
+    def add_actions(self):
 
-    #     # Build Samples tab
-    #     self.sample_combo = QComboBox()
-    #     self.sample_view = DictWidget()
-    #     self.sample_view.set_header_visible(True)
+        self.add_to_watch_action = QAction(self.tr("Add to watch"), self)
+        self.add_to_watch_action.setIcon(FIcon(0xF04FE))
+        self.add_to_watch_action.triggered.connect(self._on_add_to_watch)
 
-    #     tx_layout = QVBoxLayout()
-    #     tx_layout.addWidget(self.sample_combo)
-    #     tx_layout.addWidget(self.sample_view)
-    #     tx_widget = QWidget()
-    #     tx_widget.setLayout(tx_layout)
-    #     self.view.addTab(tx_widget, self.tr("Samples"))
-    #     self.sample_combo.currentIndexChanged.connect(self.on_sample_changed)
+        self.remove_from_watch_action = QAction(self.tr("Remove from watch"))
+        self.remove_from_watch_action.setIcon(FIcon(0xF0374))
+        self.remove_from_watch_action.triggered.connect(self._on_remove_from_watch)
 
-    #     # Build genotype tab
-    #     self.genotype_view = QListWidget()
-    #     # self.genotype_view.setIconSize(QSize(20, 20))
-    #     self.view.addTab(self.genotype_view, self.tr("Genotypes"))
+        self.clear_watch_action = QAction(self.tr("Clear watched fields"))
+        self.clear_watch_action.setIcon(FIcon(0xF0A7A))
+        self.clear_watch_action.triggered.connect(self._on_clear_watch)
 
-    #     v_layout = QVBoxLayout()
-    #     v_layout.setContentsMargins(0, 0, 0, 0)
-    #     v_layout.addWidget(self.view)
-    #     self.setLayout(v_layout)
+        self.view.addAction(self.add_to_watch_action)
 
-    #     # # Create menu
-    #     # TODO: restore this
-    #     # self.context_menu = VariantPopupMenu()
-    #     # # Ability to trigger the menu
-    #     # self.view.setContextMenuPolicy(Qt.CustomContextMenu)
-    #     # self.view.customContextMenuRequested.connect(self.show_menu)
-    #     # self.add_tab("variants")
+        # Field can be removed from the watch, either from the watch view OR from the main tree view
 
-    #     # Cache all database fields and their descriptions for tooltips
-    #     # Field names as keys, descriptions as values
-    #     self.fields_descriptions = None
+        self.watch_view.addAction(self.remove_from_watch_action)
 
-    #     # Cache genotype icons
-    #     # Values in gt field as keys (str), FIcon as values
-    #     self.genotype_icons = {
-    #         key: FIcon(val) for key, val in cm.GENOTYPE_ICONS.items()
-    #     }
+        self.toolbar.addAction(self.add_to_watch_action)
+        self.toolbar.addAction(self.remove_from_watch_action)
+        self.toolbar.addAction(self.clear_watch_action)
 
-    # def clear(self):
-    #     """ Clear all view """
-    #     self.variant_view.clear()
-    #     self.transcript_view.clear()
-    #     self.sample_view.clear()
-    #     self.genotype_view.clear()
-    #     self.edit_panel.clear()
+    def _on_remove_from_watch(self):
+        """Called when the user triggers the 'remove from watch' action.
+        Beware, it only applies to the watch view. If you've selected a field inside the main view, you
+        may have some surprises
+        """
+        action: QAction = self.sender()
+        if isinstance(action.data(), str):
+            field_name = action.data()
+            if field_name:
+                self.watch_model.remove_from_watch(self.watch_view.currentIndex())
 
-    # def on_save_variant(self):
+    def _on_add_to_watch(self):
+        action: QAction = self.sender()
+        if isinstance(action.data(), str):
+            field_name = action.data()
+            if field_name:
+                self.watch_model.add_to_watch(field_name)
+                # We've just added a variant to the watch, so we refresh
+                # Reload only watch_model, so the main view doesn't reset and fold everything...
+                self.watch_model.load(self.full_variant)
 
-    #     # if view is visible
-    #     if "variant_view" in self.mainwindow.plugins:
-    #         variant_view = self.mainwindow.plugins["variant_view"]
+    def _on_clear_watch(self):
+        self.watch_model.clear()
 
-    #         update_data = self.edit_panel.get_data()
+    def _update_watchable_field(self, index: QModelIndex):
+        """When current index in the main view changes, add the field to watch to its respective action.
+        This function also takes care of enabling/disabling the action everytime the current item changes
 
-    #         index = variant_view.main_right_pane.view.currentIndex()
-    #         variant_view.main_right_pane.model.update_variant(index.row(), update_data)
+        Args:
+            index (QModelIndex): Main view's current index
+        """
+        watched_field = None
+        if index and index.isValid():
+            path = index.data(Qt.UserRole)
 
-    #         # variant_view.main_right_pane.model.update_variant(index.row(), update_data)
+            # Simple: if the field is in the variant table, path is only one key
+            if len(path) == 1:
+                if path[0] not in ("annotations", "samples"):
+                    watched_field = path[0]
+                else:
+                    # path is only one element, but is a category. So we cannot add to watch
+                    pass
+            # If the path starts with annotations
+            if len(path) == 3:
+                category = path[0]
+                if category == "annotations":
+                    watched_field = f"ann.{path[2]}"
 
-    #     else:
-    #         # TODO BUT UNNECESSARY because we always have a variant_viex ...
-    #         # Save directly in database ?
-    #         pass
+                if category == "samples":
+                    _, sample_idx, field = path
+                    sample_name = self.full_variant["samples"][int(sample_idx)]["name"]
+                    watched_field = f"samples.{sample_name}.{field}"
+
+        self.add_to_watch_action.setData(watched_field)
+        self.add_to_watch_action.setEnabled(bool(watched_field))
+        self.remove_from_watch_action.setData(watched_field)
+        self.remove_from_watch_action.setEnabled(bool(watched_field))
 
     def on_open_project(self, conn):
         self.conn = conn
@@ -176,35 +331,11 @@ class VariantInfoWidget(PluginWidget):
         """Set the current variant by the variant displayed in the GUI"""
         self.current_variant = self.mainwindow.get_state_data("current_variant")
 
-        results = sql.get_one_variant(self.conn, self.current_variant["id"], True, True)
-
-        self.model.load(results)
-
-    # @Slot()
-    # def on_save_clicked(self):
-    #     """Save button
-    #     """
-    #     classification = self.classification_box.currentIndex()
-    #     favorite = self.favorite_checkbox.isChecked()
-    #     comment = self.comment_input.toPlainText()
-
-    #     updated = {
-    #         "classification": classification,
-    #         "favorite": favorite,
-    #         "comment": comment,
-    #     }
-
-    #     if "variant_view" in self.mainwindow.plugins:
-    #         main_view = self.mainwindow.plugins["variant_view"]
-    #         print(main_view)
-
-    # sql.update_variant(self.conn, updated)
-
-    # def show_menu(self, pos: QPoint):
-    #     """Show context menu associated to the current variant"""
-    #     if not self.current_variant:
-    #         return
-    #     self.context_menu.popup(self.current_variant, self.view.mapToGlobal(pos))
+        self.full_variant = sql.get_one_variant(
+            self.conn, self.current_variant["id"], True, True
+        )
+        self.model.load(self.full_variant)
+        self.watch_model.load(self.full_variant)
 
 
 if __name__ == "__main__":
