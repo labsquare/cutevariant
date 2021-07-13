@@ -17,6 +17,7 @@ from PySide2.QtCore import (
     QItemSelection,
     QModelIndex,
     QObject,
+    QSortFilterProxyModel,
     Qt,
     Slot,
     QSize,
@@ -83,7 +84,6 @@ class WatchModel(QAbstractTableModel):
     def __init__(self, parent: QObject) -> None:
         super().__init__(parent=parent)
         self._data = []
-        self._field_names = []
         self._watched_fields: typing.List[str] = []
         self._cached_dict = {}
 
@@ -99,7 +99,7 @@ class WatchModel(QAbstractTableModel):
             return self._data[index.row()][index.column()]
         if role == Qt.UserRole:
             # Returns the field, basically
-            return self._field_names[index.row()]
+            return self._data[index.row()][2]
         return
 
     def headerData(
@@ -122,6 +122,8 @@ class WatchModel(QAbstractTableModel):
         """
         if field_name not in self._watched_fields:
             self._watched_fields.append(field_name)
+            # Load using cached dictionnary
+            self.load()
 
     def remove_from_watch(self, index: QModelIndex):
         field_name = index.data(Qt.UserRole)
@@ -137,12 +139,11 @@ class WatchModel(QAbstractTableModel):
         Args:
             variant (dict): Full variant dict. Should contain all watched fields
         """
+        # Cached dict is useful when rebuilding the model after adding/removing a watched field
         variant = variant or self._cached_dict
         self._cached_dict = variant
         self.beginResetModel()
-        _data = {}  # A temporary dict to store key value pairs
         self._data.clear()
-        self._field_names.clear()
         for f in self._watched_fields:
 
             # Annotation fields
@@ -150,10 +151,16 @@ class WatchModel(QAbstractTableModel):
                 # Safe to go through annotations, if empty will not enter loop
                 for i, ann in enumerate(variant["annotations"]):
                     field_name = f.replace("ann.", "")
-                    _data[f"ann.{field_name}[{i+1}]"] = ann.get(
-                        field_name, self.tr("Annotation field not found!")
+                    self._data.append(
+                        (
+                            f"ann.{field_name}[{i+1}]",
+                            ann.get(
+                                field_name,
+                                self.tr(f"Annotation field {field_name} not found!"),
+                            ),
+                            f,
+                        )
                     )
-                    self._field_names.append(f)
 
             # Sample fields
             elif f.startswith("samples."):
@@ -161,18 +168,24 @@ class WatchModel(QAbstractTableModel):
                 sample_name = ".".join(sample_name)
 
                 # Just retrieving sample field for sample_name, in the whole variant dict
-                _data[f"samples.{sample_name}.{field}"] = next(
-                    item for item in variant["samples"] if item["name"] == sample_name
-                ).get(field, f"{field} is not a valid field name!")
-                self._field_names.append(f)
+                self._data.append(
+                    (
+                        f"samples.{sample_name}.{field}",
+                        next(
+                            item
+                            for item in variant["samples"]
+                            if item["name"] == sample_name
+                        ).get(field, f"Sample field {field} not found!"),
+                        f,
+                    )
+                )
 
             # Variant fields
             else:
-                _data[f] = variant.get(f, "Variants field not found!")
-                self._field_names.append(f)
+                self._data.append(
+                    (f, variant.get(f, f"Variant field {f} not found!"), f)
+                )
 
-        # Turn dict into a list of key value pairs (a lot easier to use in a model than a dict)
-        self._data = list(_data.items())
         self.endResetModel()
 
     def clear(self):
@@ -199,15 +212,28 @@ class VariantInfoWidget(PluginWidget):
         self.setWindowIcon(FIcon(0xF0B73))
         # Current variant => set by on_refresh and on_open_project
         self.current_variant = None
+
+        # Initialize Variant Info part (model, filter, view)
+        self.model = VariantInfoModel()
+        self.filter_model = QSortFilterProxyModel(self)
+        self.filter_model.setSourceModel(self.model)
+        self.filter_model.setRecursiveFilteringEnabled(True)
         self.view = QTreeView(self)
 
-        self.model = VariantInfoModel()
-        self.view.setModel(self.model)
+        self.view.setModel(self.filter_model)
         self.view.setContextMenuPolicy(Qt.ActionsContextMenu)
 
         self.view.setAlternatingRowColors(True)
 
+        # Initialize Watcher part (model, filter, view)
+        self.watch_model = WatchModel(self)
+        self.watch_filter_model = QSortFilterProxyModel(self)
+        self.watch_filter_model.setSourceModel(self.watch_model)
+        self.watch_filter_model.setRecursiveFilteringEnabled(True)
         self.watch_view = QTableView(self)
+
+        self.watch_view.setModel(self.watch_filter_model)
+        self.watch_view.setContextMenuPolicy(Qt.ActionsContextMenu)
 
         # Make it look nice
         self.watch_view.horizontalHeader().setStretchLastSection(True)
@@ -215,10 +241,6 @@ class VariantInfoWidget(PluginWidget):
         self.watch_view.setAlternatingRowColors(True)
         self.watch_view.setShowGrid(False)
         self.watch_view.setSelectionBehavior(QAbstractItemView.SelectRows)
-
-        self.watch_model = WatchModel(self)
-        self.watch_view.setModel(self.watch_model)
-        self.watch_view.setContextMenuPolicy(Qt.ActionsContextMenu)
 
         self.splitter = QSplitter(self)
         self.splitter.setOrientation(Qt.Vertical)
@@ -232,7 +254,15 @@ class VariantInfoWidget(PluginWidget):
 
         self.toolbar = QToolBar("", self)
 
+        self.searchbar = QLineEdit(self)
+        self.searchbar.setPlaceholderText(self.tr("Search for field by name or value"))
+        self.searchbar.hide()
+
+        self.searchbar.textChanged.connect(self.filter_model.setFilterRegExp)
+        self.searchbar.textChanged.connect(self.watch_filter_model.setFilterRegExp)
+
         vlayout.addWidget(self.toolbar)
+        vlayout.addWidget(self.searchbar)
         vlayout.addWidget(self.splitter)
 
         self.add_actions()
@@ -260,6 +290,13 @@ class VariantInfoWidget(PluginWidget):
 
         self.watch_view.addAction(self.remove_from_watch_action)
 
+        self.search_action = self.toolbar.addAction(FIcon(0xF0349), "Search")
+        self.search_action.setCheckable(True)
+        self.search_action.setToolTip(self.tr("Search for a fields"))
+        self.search_action.toggled.connect(
+            lambda x: self.searchbar.show() if x else self.searchbar.hide()
+        )
+
         self.toolbar.addAction(self.add_to_watch_action)
         self.toolbar.addAction(self.remove_from_watch_action)
         self.toolbar.addAction(self.clear_watch_action)
@@ -281,9 +318,6 @@ class VariantInfoWidget(PluginWidget):
             field_name = action.data()
             if field_name:
                 self.watch_model.add_to_watch(field_name)
-                # We've just added a variant to the watch, so we refresh
-                # Reload only watch_model, so the main view doesn't reset and fold everything...
-                self.watch_model.load(self.full_variant)
 
     def _on_clear_watch(self):
         self.watch_model.clear()
