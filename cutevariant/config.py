@@ -74,13 +74,11 @@ class Config:
             except KeyError as err:
                 print(f"cannot read section {self.section} from config ")
 
-
-
     def save(self):
         if not os.path.exists(os.path.dirname(self.config_path)):
             try:
                 os.makedirs(os.path.dirname(self.config_path))
-            except OSError as exc: # Guard against race condition
+            except OSError as exc:  # Guard against race condition
                 if exc.errno != errno.EEXIST:
                     raise
 
@@ -88,17 +86,20 @@ class Config:
             yaml.dump(self._user_config, stream)
 
     def reset(self):
-        defaut_config = Config(config_path = self.default_config_path)
+        defaut_config = Config(config_path=self.default_config_path)
         self._user_config = defaut_config._user_config
 
     def __getitem__(self, key: str):
-        return self._user_config[self.section][key]
+        if self.section in self._user_config:
+            return self._user_config[self.section][key]
 
     def __setitem__(self, key: str, value: typing.Any):
         self.set(key, value)
 
     def __contains__(self, key):
-        return key in self._user_config[self.section]
+        return (
+            self.section in self._user_config and key in self._user_config[self.section]
+        )
 
 
 if __name__ == "__main__":

@@ -255,8 +255,9 @@ class LinkSettings(AbstractSettingsWidget):
         config = self.section_widget.create_config()
         self.link_model.clear()
 
-        for link in config["links"]:
-            self.link_model.add_link(**link)
+        if "links" in config:
+            for link in config["links"]:
+                self.link_model.add_link(**link)
 
     def edit_item(
         self,
