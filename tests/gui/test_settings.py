@@ -6,7 +6,7 @@ import tempfile
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 from cutevariant.gui import settings
-
+from cutevariant.config import Config
 import os
 
 # Standard imports

@@ -12,6 +12,7 @@ import sys
 import string
 import urllib.request  # STRANGE: CANNOT IMPORT URLLIB ALONE
 from logging import DEBUG
+import typing
 
 # dependency
 import cachetools
