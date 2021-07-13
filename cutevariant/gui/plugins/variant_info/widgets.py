@@ -64,15 +64,14 @@ class VariantInfoModel(QJsonModel):
         # TODO: make it smarter...
         if role == Qt.UserRole:
 
-            # Returns a list indicating the path in the variant dictionnary
+            # Returns a list indicating the path of this item in the variant dictionnary
             path = [item.key]
             while item.parent():
                 path.insert(0, item.parent().key)
                 item = item.parent()
 
-            # Root item is always called root (as defined in qjsonmodel)
-            path.remove("root")
-            return path
+            # Remove root item
+            return path[1:]
 
         return super().data(index, role)
 
@@ -84,7 +83,9 @@ class WatchModel(QAbstractTableModel):
     def __init__(self, parent: QObject) -> None:
         super().__init__(parent=parent)
         self._data = []
+        self._field_names = []
         self._watched_fields: typing.List[str] = []
+        self._cached_dict = {}
 
     def data(
         self, index: QModelIndex = QModelIndex(), role: int = Qt.DisplayRole
@@ -95,13 +96,11 @@ class WatchModel(QAbstractTableModel):
         ):
             return
         if role == Qt.DisplayRole:
-            if index.column() == 0:
-                return self._data[index.row()][index.column()]
-            elif index.column() == 1:
-                return self._data[index.row()][index.column()][0]
+            return self._data[index.row()][index.column()]
         if role == Qt.UserRole:
             # Returns the field, basically
-            return self._data[index.row()][0][1]
+            return self._field_names[index.row()]
+        return
 
     def headerData(
         self, section: int, orientation: Qt.Orientation, role: int
@@ -125,24 +124,25 @@ class WatchModel(QAbstractTableModel):
             self._watched_fields.append(field_name)
 
     def remove_from_watch(self, index: QModelIndex):
-        if isinstance(index.model(), WatchModel):
-            print(index.data(Qt.UserRole))
-        else:
-            print("Error, this function should never be called from elsewhere")
-        # if field_name in self._watched_fields:
-        #     self._watched_fields.remove(field_name)
+        field_name = index.data(Qt.UserRole)
+        if field_name in self._watched_fields:
+            self._watched_fields.remove(field_name)
+            # Load using cached dictionnary
+            self.load()
 
-    def load(self, variant: dict):
+    def load(self, variant: dict = None):
         """Updates the model with the currently selected variant
         Computes the whole internal dict structure again
 
         Args:
             variant (dict): Full variant dict. Should contain all watched fields
         """
+        variant = variant or self._cached_dict
+        self._cached_dict = variant
         self.beginResetModel()
-        row_count = 0
         _data = {}  # A temporary dict to store key value pairs
         self._data.clear()
+        self._field_names.clear()
         for f in self._watched_fields:
 
             # Annotation fields
@@ -150,11 +150,10 @@ class WatchModel(QAbstractTableModel):
                 # Safe to go through annotations, if empty will not enter loop
                 for i, ann in enumerate(variant["annotations"]):
                     field_name = f.replace("ann.", "")
-                    _data[f"ann.{field_name}[{i}]"] = (
-                        ann.get(field_name, self.tr("Annotation field not found!")),
-                        f,
+                    _data[f"ann.{field_name}[{i+1}]"] = ann.get(
+                        field_name, self.tr("Annotation field not found!")
                     )
-                    row_count += 1
+                    self._field_names.append(f)
 
             # Sample fields
             elif f.startswith("samples."):
@@ -162,29 +161,29 @@ class WatchModel(QAbstractTableModel):
                 sample_name = ".".join(sample_name)
 
                 # Just retrieving sample field for sample_name, in the whole variant dict
-                _data[f"{sample_name}.{field}"] = (
-                    next(
-                        item
-                        for item in variant["samples"]
-                        if item["name"] == sample_name
-                    )[field],
-                    f,
-                )
-                row_count += 1
+                _data[f"samples.{sample_name}.{field}"] = next(
+                    item for item in variant["samples"] if item["name"] == sample_name
+                ).get(field, f"{field} is not a valid field name!")
+                self._field_names.append(f)
 
             # Variant fields
             else:
-                _data[f] = variant.get(f, "Variants field not found!"), f
-                row_count += 1
+                _data[f] = variant.get(f, "Variants field not found!")
+                self._field_names.append(f)
 
         # Turn dict into a list of key value pairs (a lot easier to use in a model than a dict)
         self._data = list(_data.items())
-        print(self._data)
         self.endResetModel()
 
     def clear(self):
+        """Clear the model.
+        This means clearing the data array,
+        every watched field, as well as the cached dict
+        """
         self.beginResetModel()
-        self._data = []
+        self._data.clear()
+        self._watched_fields.clear()
+        self._cached_dict = {}
         self.endResetModel()
 
 
@@ -207,7 +206,6 @@ class VariantInfoWidget(PluginWidget):
         self.view.setContextMenuPolicy(Qt.ActionsContextMenu)
 
         self.view.setAlternatingRowColors(True)
-        self.view.header().hide()
 
         self.watch_view = QTableView(self)
 
@@ -334,6 +332,16 @@ class VariantInfoWidget(PluginWidget):
         self.full_variant = sql.get_one_variant(
             self.conn, self.current_variant["id"], True, True
         )
+
+        # Remove variant_id and sample_id from watchable fields... These should not be accessible to the user, they are cutevariant internals
+        self.full_variant["annotations"] = [
+            {k: v for k, v in annotation.items() if k != "variant_id"}
+            for annotation in self.full_variant["annotations"]
+        ]
+        self.full_variant["samples"] = [
+            {k: v for k, v in sample.items() if k not in ("variant_id", "sample_id")}
+            for sample in self.full_variant["samples"]
+        ]
         self.model.load(self.full_variant)
         self.watch_model.load(self.full_variant)
 
