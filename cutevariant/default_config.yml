@@ -1,0 +1,20 @@
+
+app:
+  network.host: yahoo
+  network.port: 20
+  style: 
+    theme: Bright
+
+variant_view:
+  memory_cache: 32
+  rows_per_page: 50
+  links: 
+    - name: google
+      url: http://www.google.fr
+      is_default: True
+      is_browser: True
+
+    - name: ucsc
+      url: http://www.google.fr
+      is_default: True
+      is_browser: True
