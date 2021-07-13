@@ -613,10 +613,21 @@ def build_sql_query(
         )
 
     ## Create Sample Join
+    groupby = None
+
+
     for sample_name in samples_join_required(fields, filters):
         # Optimisation ?
         # sample_id = self.cache_samples_ids[sample_name]
-        if sample_name in samples_ids:
+
+
+        if sample_name == "*":
+            sql_query += f""" INNER JOIN sample_has_variant `sample_{sample_name}` ON `sample_{sample_name}`.variant_id = variants.id """
+            groupby = (
+                f" GROUP BY variants.id HAVING SUM(`sample_{sample_name}`.gt >= 2) >=17"
+            )
+
+        elif sample_name in samples_ids:
             sample_id = samples_ids[sample_name]
             sql_query += f""" INNER JOIN sample_has_variant `sample_{sample_name}` ON `sample_{sample_name}`.variant_id = variants.id AND `sample_{sample_name}`.sample_id = {sample_id}"""
 
@@ -626,13 +637,16 @@ def build_sql_query(
         if where_clause and where_clause != "()":
             sql_query += " WHERE " + where_clause
 
-    # Add Group By
-    if group_by:
-        sql_query += " GROUP BY " + ",".join(fields_to_sql(group_by, use_as=False))
-        if having:
-            operator = having["op"]
-            val = having["value"]
-            sql_query += f" HAVING count {operator} {val}"
+    if groupby:
+        sql_query += groupby
+
+    # # Add Group By
+    # if group_by:
+    #     sql_query += " GROUP BY " + ",".join(fields_to_sql(group_by, use_as=False))
+    #     if having:
+    #         operator = having["op"]
+    #         val = having["value"]
+    #         sql_query += f" HAVING count {operator} {val}"
 
     # Add Order By
     if order_by:

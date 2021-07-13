@@ -85,7 +85,7 @@ Comment: /\#.*$/;
 FieldId:/[^\d\W](\w*\.)?\w*\b/;
 FieldIdentifier: Function|FieldId;
 ValueIdentifier: (NUMBER|STRING|BOOL|Tuple|WordSetIdentifier|"NULL");
-ARGS: STRING;
+ARGS: STRING|'*';
 Function: func=ID '[' arg=ARGS ']' ('.' extra=ID)?;
 WordSetIdentifier: 'WORDSET[' arg=ARGS ']';
 
