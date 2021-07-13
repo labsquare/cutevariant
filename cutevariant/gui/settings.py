@@ -312,6 +312,8 @@ class StyleSettingsWidget(AbstractSettingsWidget):
         available_styles = list(available_styles.keys()) + [cm.BASIC_STYLE]
         self.styles_combobox.addItems(available_styles)
 
+        print(available_styles)
+
         # Display current style
         # Dark is the default style
         config = Config("app")

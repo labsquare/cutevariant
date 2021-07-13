@@ -28,7 +28,7 @@ class Config:
 
     """
 
-    def __init__(self, section="app", config_path=None, load=True):
+    def __init__(self, section="app", config_path=None):
         self.section = section
         self.config_path = config_path or QDir(
             QStandardPaths.writableLocation(QStandardPaths.ConfigLocation)
@@ -38,8 +38,7 @@ class Config:
 
         self._user_config = dict()
 
-        if load:
-            self.load()
+        self.load()
 
     @property
     def default_config_path(self):
@@ -60,11 +59,14 @@ class Config:
         self._user_config[self.section][key] = value
 
     def load(self):
-
         if not os.path.exists(self.config_path):
+            self._load_from_path(self.default_config_path)
             self.save()
 
-        with open(self.config_path, "r") as stream:
+        self._load_from_path(self.config_path)
+
+    def _load_from_path(self, config_path):
+        with open(config_path, "r") as stream:
             try:
                 self._user_config = yaml.safe_load(stream)
             except yaml.YAMLError as exc:
@@ -72,16 +74,22 @@ class Config:
             except KeyError as err:
                 print(f"cannot read section {self.section} from config ")
 
+
+
     def save(self):
+        if not os.path.exists(os.path.dirname(self.config_path)):
+            try:
+                os.makedirs(os.path.dirname(self.config_path))
+            except OSError as exc: # Guard against race condition
+                if exc.errno != errno.EEXIST:
+                    raise
+
         with open(self.config_path, "w") as stream:
             yaml.dump(self._user_config, stream)
 
     def reset(self):
-        previous_path = self.config_path
-        self.config_path = self.default_config_path
-        self.load()
-        self.config_path = previous_path
-        self.save()
+        defaut_config = Config(config_path = self.default_config_path)
+        self._user_config = defaut_config._user_config
 
     def __getitem__(self, key: str):
         return self._user_config[self.section][key]
