@@ -29,6 +29,7 @@ import sqlite3
 from collections import defaultdict
 import re
 import logging
+import typing
 from pkg_resources import parse_version
 from functools import partial, lru_cache
 import itertools as it
@@ -82,6 +83,35 @@ def get_sql_connection(filepath):
 
 def get_database_file_name(conn):
     return conn.execute("PRAGMA database_list").fetchone()["file"]
+
+
+def remove_indexed_field(conn: sqlite3.Connection, category: str, field_name: str):
+    conn.execute(f"DROP INDEX IF EXISTS idx_{category}_{field_name}")
+    conn.commit()
+
+
+def get_indexed_fields(conn: sqlite3.Connection) -> typing.List[tuple]:
+    """Returns, for this connection, a list of indexed fields
+    Each element of the returned list is a tuple of (category,field_name)
+
+    Args:
+        conn (sqlite3.Connection): Sqlite3 connection
+
+    Returns:
+        typing.List[tuple]: (category, field_name) of all the indexed fields
+    """
+    indexed_fields = [
+        dict(res)["name"]
+        for res in conn.execute("SELECT name FROM sqlite_master WHERE type='index'")
+    ]
+    result = []
+    find_indexed = re.compile(r"idx_(variants|annotations|samples)_(.+)")
+    for index in indexed_fields:
+        matches = find_indexed.findall(index)
+        if matches and len(matches[0]) == 2:
+            category, field_name = matches[0]
+            result.append((category, field_name))
+    return result
 
 
 def table_exists(conn: sqlite3.Connection, name: str) -> bool:

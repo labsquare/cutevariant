@@ -280,13 +280,20 @@ class FieldsWidget(QWidget):
             lambda: self._on_filter_field_clicked(view, category)
         )
         filter_field_action.setIcon(FIcon(0xF00E2))
-        index_field_action = QAction(self.tr("Create index ..."), view)
+
+        index_field_action = QAction(self.tr("Create index..."), view)
         index_field_action.triggered.connect(
             lambda: self._on_index_field_clicked(view, category)
         )
-        index_field_action.setIcon(FIcon(0xF082E))
+        index_field_action.setIcon(FIcon(0xF05DB))
 
-        view.addActions([filter_field_action, index_field_action])
+        remove_index_action = QAction(self.tr("Remove index..."), view)
+        remove_index_action.triggered.connect(
+            lambda: self._on_remove_index_clicked(view, category)
+        )
+        remove_index_action.setIcon(FIcon(0xF0A97))
+
+        view.addActions([filter_field_action, index_field_action, remove_index_action])
 
         self.views.append(
             {"view": view, "proxy": proxy, "model": model, "name": category}
@@ -322,6 +329,58 @@ class FieldsWidget(QWidget):
             sql.create_annotations_indexes(self.conn, {field_name})
         if category == "samples":
             sql.create_samples_indexes(self.conn, {field_name})
+
+        if (category, field_name) not in sql.get_indexed_fields(self.conn):
+            QMessageBox.warning(
+                self,
+                self.tr("Indexing failed!"),
+                self.tr(f"Could not index column {field_name}!"),
+            )
+        else:
+            QMessageBox.information(
+                self,
+                self.tr("Done indexing!"),
+                self.tr(f"Successfully indexed column {field_name}!"),
+            )
+
+    def _on_remove_index_clicked(self, view: QTableView, category: str):
+        field_name = view.currentIndex().siblingAtColumn(0).data()
+        if (
+            QMessageBox.question(
+                self,
+                self.tr("Please confirm"),
+                self.tr(
+                    f"Removing index will make queries on this field slower.\nAre you sure you want to remove {field_name} from indexed fields?"
+                ),
+            )
+            != QMessageBox.Yes
+        ):
+            return
+        if category == "samples":
+            field_name = field_name.split(".")[-1]
+
+        if category == "variants":
+            sql.create_variants_indexes(self.conn, {field_name})
+        if category == "annotations":
+            sql.create_annotations_indexes(self.conn, {field_name})
+        if category == "samples":
+            sql.create_samples_indexes(self.conn, {field_name})
+
+        # The field is still in indexed fields... Removing failed!
+        if (category, field_name) in sql.get_indexed_fields(self.conn):
+            QMessageBox.warning(
+                self,
+                self.tr("Removing index failed!"),
+                self.tr(f"Could not remove column {field_name} from indexed fields!"),
+            )
+        else:
+            QMessageBox.information(
+                self,
+                self.tr("Success!"),
+                self.tr(
+                    f"Successfully removed column {field_name} from indexed fields!"
+                ),
+            )
 
     def _on_filter_field_clicked(self, view: QTableView, category: str):
         """When the user triggers the "filter not null" field action.
