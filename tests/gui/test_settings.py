@@ -23,12 +23,13 @@ class PageTest(settings.AbstractSettingsWidget):
         self.value = None
 
     def save(self):
-        settings = self.create_settings()
-        settings.setValue("value", self.value)
+        config = Config("test")
+        config["value"] = self.value
+        config.save()
 
     def load(self):
-        settings = self.create_settings()
-        self.value = settings.value("value", None)
+        config = Config("test")
+        self.value = config.get("value", None)
 
 
 def test_settings_dialog(qtbot):
@@ -40,9 +41,9 @@ def test_settings_dialog(qtbot):
     section.add_page(page)
     dialog.add_section(section)
 
-    #  clear settings
-    page.create_settings().clear()
-    path = page.create_settings().fileName()
+    # #  clear settings
+    # page.create_settings().clear()
+    # path = page.create_settings().fileName()
 
     qtbot.addWidget(dialog)
     dialog.show()
@@ -56,9 +57,9 @@ def test_settings_dialog(qtbot):
     assert not dialog.isVisible()
 
     ## is saved ?
-    print(path)
-    s = QSettings()
-    assert s.value("value") == 32
+    config = Config("test")
+
+    assert config["value"] == 32
 
     # Test Loading
     page.value = None
