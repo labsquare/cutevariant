@@ -897,6 +897,14 @@ class VariantView(QWidget):
         )
         self.classification_action.setMenu(self.create_classification_menu())
 
+        # Comment action
+        self.comment_action = QAction(FIcon(0xF0182), self.tr("Comments"))
+        self.addAction(self.comment_action)
+        self.comment_action.setToolTip(self.tr("Edit comment of selected variant ..."))
+        self.comment_action.triggered.connect(
+            lambda x: self.edit_comment(self.view.selectionModel().selectedRows()[0])
+        )
+
         # External links menu
         self.links_action = QAction(FIcon(0xF0339), self.tr("Link to"))
         self.addAction(self.links_action)

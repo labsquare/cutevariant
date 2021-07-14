@@ -133,6 +133,7 @@ class SamplesWidget(plugin.PluginWidget):
         self.toolbar = QToolBar()
         self.view = QTableView()
         self.view.setShowGrid(False)
+        self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setSortingEnabled(True)
         self.view.setIconSize(QSize(22, 22))
         self.model = SamplesModel()
