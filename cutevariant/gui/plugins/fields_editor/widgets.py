@@ -1,3 +1,4 @@
+import functools
 from typing import List
 import sqlite3
 import json
@@ -88,6 +89,7 @@ class FieldsModel(QStandardItemModel):
         self._checkable_items = []
         self.conn = conn
         self._category = category
+        self.setColumnCount(2)
 
     @property
     def conn(self):
@@ -147,6 +149,9 @@ class FieldsModel(QStandardItemModel):
             if not fields:
                 LOGGER.warning("Cannot load field category %s", self._category)
             else:
+                # This piece of code uses the get_indexed_fields function to retrieve the list of indexed fields in this category
+                indexed_fields = sql.get_indexed_fields(self.conn)
+
                 for field in fields:
                     field_name = field
                     if self._category == "annotations":
@@ -159,8 +164,15 @@ class FieldsModel(QStandardItemModel):
                     field_desc = fields[field]["description"]
 
                     field_name_item = QStandardItem(field_name)
+
                     field_name_item.setCheckable(True)
                     font = QFont()
+
+                    field_name_item.setData(False, Qt.UserRole)
+
+                    if (self._category, field_name.split(".")[-1]) in indexed_fields:
+                        font.setUnderline(True)
+                        field_name_item.setData(True, Qt.UserRole)
                     font.setBold(True)
                     field_name_item.setFont(font)
                     field_type = style.FIELD_TYPE.get(fields[field]["type"])
@@ -182,6 +194,52 @@ class FieldsModel(QStandardItemModel):
 
                     self.appendRow([field_name_item, descr_item])
                     self.fields_loaded.emit()
+
+    def remove_field_from_index(self, index: QModelIndex):
+        field_name = index.siblingAtColumn(0).data()
+        # To have sample field only, without the sample name
+        if self._category == "samples":
+            field_name = field_name.split(".")[-1]
+
+        sql.remove_indexed_field(self.conn, self._category, field_name)
+
+        # Return True on success (i.e. the field is not in the indexed fields anymore)
+        success = (self._category, field_name) not in sql.get_indexed_fields(self.conn)
+        item = self.itemFromIndex(index)
+        item.setData(success, Qt.UserRole)
+        if success:
+            font = item.font()
+            font.setUnderline(False)
+            item.setFont(font)
+        return success
+
+    def add_field_to_index(self, index: QModelIndex):
+        field_name = index.siblingAtColumn(0).data()
+
+        # To have sample field only, without the sample name
+        if self._category == "samples":
+            field_name = field_name.split(".")[-1]
+
+        if self._category == "variants":
+            sql.create_variants_indexes(self.conn, {field_name})
+        if self._category == "annotations":
+            sql.create_annotations_indexes(self.conn, {field_name})
+        if self._category == "samples":
+            sql.create_samples_indexes(self.conn, {field_name})
+
+        # Return True on success (i.e. the field is now in the index field)
+        success = (self._category, field_name) in sql.get_indexed_fields(self.conn)
+
+        item = self.itemFromIndex(index)
+
+        # User role holds whether the item is an indexed field or not
+        item.setData(success, Qt.UserRole)
+        if success:
+            font = item.font()
+            font.setUnderline(True)
+            item.setFont(font)
+
+        return success
 
     def mimeData(self, indexes: typing.List[QModelIndex]) -> QMimeData:
         field_names = [
@@ -253,7 +311,6 @@ class FieldsWidget(QWidget):
 
         view.setModel(proxy)
         view.setShowGrid(False)
-        view.horizontalHeader().setStretchLastSection(True)
         view.setIconSize(QSize(24, 24))
 
         view.setEditTriggers(QAbstractItemView.NoEditTriggers)
@@ -262,9 +319,10 @@ class FieldsWidget(QWidget):
         view.setAlternatingRowColors(False)
         view.setWordWrap(True)
         view.verticalHeader().hide()
-        view.setSortingEnabled(True)
 
+        view.setSortingEnabled(True)
         view.setDragEnabled(True)
+        view.horizontalHeader().setStretchLastSection(True)
 
         proxy.setRecursiveFilteringEnabled(True)
         proxy.setFilterCaseSensitivity(Qt.CaseInsensitive)
@@ -277,60 +335,74 @@ class FieldsWidget(QWidget):
         # Setup the filter field action. Will filter out NULL values (thus the broom icon)
         filter_field_action = QAction(self.tr("Create filter on null values"), view)
         filter_field_action.triggered.connect(
-            lambda: self._on_filter_field_clicked(view, category)
+            functools.partial(self._on_filter_field_clicked, view, proxy, category)
         )
         filter_field_action.setIcon(FIcon(0xF00E2))
 
         index_field_action = QAction(self.tr("Create index..."), view)
         index_field_action.triggered.connect(
-            lambda: self._on_index_field_clicked(view, category)
+            functools.partial(self._on_index_field_clicked, view, proxy, category)
         )
         index_field_action.setIcon(FIcon(0xF05DB))
 
         remove_index_action = QAction(self.tr("Remove index..."), view)
         remove_index_action.triggered.connect(
-            lambda: self._on_remove_index_clicked(view, category)
+            functools.partial(self._on_remove_index_clicked, view, proxy, category)
         )
         remove_index_action.setIcon(FIcon(0xF0A97))
 
         view.addActions([filter_field_action, index_field_action, remove_index_action])
 
+        view.selectionModel().currentChanged.connect(self._update_actions)
+
         self.views.append(
-            {"view": view, "proxy": proxy, "model": model, "name": category}
+            {
+                "view": view,
+                "proxy": proxy,
+                "model": model,
+                "name": category,
+                "actions": {
+                    "filter": filter_field_action,
+                    "index": index_field_action,
+                    "drop_index": remove_index_action,
+                },
+            }
         )
         self.tab_widget.addTab(
             view, FIcon(style.FIELD_CATEGORY.get(category, None)["icon"]), category
         )
 
+    def _update_actions(self, current: QModelIndex, previous: QModelIndex):
+        is_indexed = current.siblingAtColumn(0).data(Qt.UserRole)
+        for view in self.views:
+            act_index: QAction = view["actions"].get("index", None)
+            act_drop_index: QAction = view["actions"].get("drop_index", None)
+            act_index.setEnabled(not is_indexed)
+            act_drop_index.setEnabled(is_indexed)
+
     def _on_index_field_clicked(
         self,
         view: QTableView,
+        proxy: QSortFilterProxyModel,
         category: str,
     ):
-
-        field_name = view.currentIndex().siblingAtColumn(0).data()
+        field_index = view.currentIndex().siblingAtColumn(0)
+        field_name = field_index.data()
         if (
             QMessageBox.question(
                 self,
                 self.tr("Please confirm"),
                 self.tr(
-                    f"Indexing a field increases database file size.\nAre you sure you want to index {field_name}?"
+                    f"Removing index will make queries on this field slower.\nAre you sure you want to remove {field_name} from indexed fields?"
                 ),
             )
             != QMessageBox.Yes
         ):
             return
-        if category == "samples":
-            field_name = field_name.split(".")[-1]
 
-        if category == "variants":
-            sql.create_variants_indexes(self.conn, {field_name})
-        if category == "annotations":
-            sql.create_annotations_indexes(self.conn, {field_name})
-        if category == "samples":
-            sql.create_samples_indexes(self.conn, {field_name})
+        model: FieldsModel = proxy.sourceModel()
 
-        if (category, field_name) not in sql.get_indexed_fields(self.conn):
+        if not model.add_field_to_index(proxy.mapToSource(field_index)):
             QMessageBox.warning(
                 self,
                 self.tr("Indexing failed!"),
@@ -343,8 +415,11 @@ class FieldsWidget(QWidget):
                 self.tr(f"Successfully indexed column {field_name}!"),
             )
 
-    def _on_remove_index_clicked(self, view: QTableView, category: str):
-        field_name = view.currentIndex().siblingAtColumn(0).data()
+    def _on_remove_index_clicked(
+        self, view: QTableView, proxy: QSortFilterProxyModel, category: str
+    ):
+        field_index = view.currentIndex().siblingAtColumn(0)
+        field_name = field_index.data()
         if (
             QMessageBox.question(
                 self,
@@ -359,15 +434,9 @@ class FieldsWidget(QWidget):
         if category == "samples":
             field_name = field_name.split(".")[-1]
 
-        if category == "variants":
-            sql.create_variants_indexes(self.conn, {field_name})
-        if category == "annotations":
-            sql.create_annotations_indexes(self.conn, {field_name})
-        if category == "samples":
-            sql.create_samples_indexes(self.conn, {field_name})
+        model: FieldsModel = proxy.sourceModel()
 
-        # The field is still in indexed fields... Removing failed!
-        if (category, field_name) in sql.get_indexed_fields(self.conn):
+        if not model.remove_field_from_index(proxy.mapToSource(field_index)):
             QMessageBox.warning(
                 self,
                 self.tr("Removing index failed!"),
@@ -382,7 +451,9 @@ class FieldsWidget(QWidget):
                 ),
             )
 
-    def _on_filter_field_clicked(self, view: QTableView, category: str):
+    def _on_filter_field_clicked(
+        self, view: QTableView, proxy: QSortFilterProxyModel, category: str
+    ):
         """When the user triggers the "filter not null" field action.
         Applies immediately a filter on this field, with a not-null condition
 
