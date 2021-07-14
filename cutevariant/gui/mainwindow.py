@@ -667,7 +667,12 @@ class MainWindow(QMainWindow):
     def show_settings(self):
         """Slot to show settings window"""
         widget = SettingsDialog(self)
-        widget.exec_()
+
+        if widget.exec_():
+            self.reload()
+
+    def reload(self):
+        self.open_database(self.conn)
 
     def show_dialog(self):
         """Show Plugin dialog box after a click on the tool menu"""

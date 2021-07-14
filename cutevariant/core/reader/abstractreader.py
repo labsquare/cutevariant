@@ -158,6 +158,13 @@ class AbstractReader(ABC):
         }
 
         yield {
+            "name": "tags",
+            "type": "str",
+            "category": "variants",
+            "description": "list of tags",
+        }
+
+        yield {
             "name": "count_hom",
             "type": "int",
             "category": "variants",
@@ -329,6 +336,7 @@ class AbstractReader(ABC):
             variant["favorite"] = False
             variant["comment"] = ""
             variant["classification"] = 0
+            variant["tags"] = ""
 
             # For now set the first annotation as a major transcripts
             if "annotations" in variant:
@@ -582,7 +590,7 @@ def nullify(variant: dict) -> dict:
     """
 
     def convert_to_none(value):
-        """ convert value to None according type """
+        """convert value to None according type"""
         EMPTY_STRING = ["", "."]
         if isinstance(value, str):
             if value in EMPTY_STRING:

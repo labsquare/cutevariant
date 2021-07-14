@@ -37,6 +37,7 @@ from PySide2.QtWidgets import QApplication, QSplashScreen
 from PySide2.QtGui import QPixmap
 
 # Custom imports
+from cutevariant.config import Config
 from cutevariant.gui import MainWindow, setFontPath, style
 import cutevariant.commons as cm
 from cutevariant import __version__
@@ -115,13 +116,13 @@ def load_styles(app):
     app.setStyle("fusion")
 
     # Load style from settings if exists
-    app_settings = QSettings()
+    config = Config("app")
     # Display current style
-    style_name = app_settings.value("ui/style", cm.BASIC_STYLE)
-
+    style_config = config.get("style", {})
+    theme = style_config.get("theme", cm.BASIC_STYLE)
     # Apply selected style by calling on the method in style module based on its
     # name; equivalent of style.dark(app)
-    getattr(style, style_name.lower())(app)
+    getattr(style, theme.lower())(app)
 
 
 def load_translations(app):

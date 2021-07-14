@@ -8,6 +8,7 @@ from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 from PySide2.QtGui import *
 
+
 # Custom imports
 from cutevariant.core import sql, command
 from cutevariant.core.reader import BedReader
@@ -17,16 +18,16 @@ from cutevariant.commons import logger, DEFAULT_SELECTION_NAME
 
 LOGGER = logger()
 
-PHENOTYPE_STR = {0: "Missing", 1: "Unaffected", 2: "Affected"}
-PHENOTYPE_COLOR = {0: QColor("lightgray"), 1: QColor("green"), 2: QColor("red")}
+PHENOTYPE_STR = {0: "Unknown phenotype", 1: "Unaffected", 2: "Affected"}
+PHENOTYPE_COLOR = {0: "#d3d3d3", 1: "#006400", 2: "#ff0000"}
 SEX_ICON = {0: 0xF0766, 1: 0xF029D, 2: 0xF029C}
 
 
-class GenotypesModel(QAbstractTableModel):
+class SamplesModel(QAbstractTableModel):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.items = []
         self.conn = None
+        self.items = []
         self._fields = []
 
     def rowCount(self, parent: QModelIndex = QModelIndex) -> int:
@@ -60,14 +61,11 @@ class GenotypesModel(QAbstractTableModel):
                 return QIcon(FIcon(icon))
 
         if role == Qt.ToolTipRole:
-            return f"""
-            <b>Sample</b>: {item["name"]}</br>
-            <b>Phenotype</b>:{item["phenotype"]}</br>
-            """
+            return f"""{item['name']} (<span style="color:{PHENOTYPE_COLOR.get(item['phenotype'],'lightgray')}";>{PHENOTYPE_STR.get(item['phenotype'],'Unknown phenotype')}</span>)"""
 
-        if role == Qt.ForegroundRole and index.column() == 0:
-            phenotype = self.items[index.row()]["phenotype"]
-            return PHENOTYPE_COLOR.get(phenotype, QColor("#FF00FF"))
+        # if role == Qt.ForegroundRole and index.column() == 0:
+        #     phenotype = self.items[index.row()]["phenotype"]
+        #     return QColor(PHENOTYPE_COLOR.get(phenotype, "#FF00FF"))
 
     def headerData(
         self, section: int, orientation: Qt.Orientation, role: int
@@ -82,16 +80,25 @@ class GenotypesModel(QAbstractTableModel):
 
         return None
 
+    def load_fields(self):
+        self.beginResetModel()
+        if self.conn:
+            self._fields = [
+                i["name"] for i in sql.get_field_by_category(self.conn, "samples")
+            ]
+        self.endResetModel()
+
     def load(self, variant_id):
 
         if self.conn:
             self.beginResetModel()
             self.items.clear()
-            self.items = list(
-                sql.get_sample_annotations_by_variant(
-                    self.conn, variant_id, self._fields
+            if self._fields:
+                self.items = list(
+                    sql.get_sample_annotations_by_variant(
+                        self.conn, variant_id, self._fields
+                    )
                 )
-            )
 
             self.endResetModel()
 
@@ -106,13 +113,8 @@ class GenotypesModel(QAbstractTableModel):
         # )
         # self.endResetModel()
 
-    def clear(self):
-        self.beginResetModel()
-        self.items = []
-        self.endResetModel()
 
-
-class GenotypesWidget(plugin.PluginWidget):
+class SamplesWidget(plugin.PluginWidget):
     """Widget displaying the list of avaible selections.
     User can select one of them to update Query::selection
     """
@@ -133,7 +135,7 @@ class GenotypesWidget(plugin.PluginWidget):
         self.view.setShowGrid(False)
         self.view.setSortingEnabled(True)
         self.view.setIconSize(QSize(22, 22))
-        self.model = GenotypesModel()
+        self.model = SamplesModel()
 
         self.setWindowIcon(FIcon(0xF0A8C))
 
@@ -157,16 +159,21 @@ class GenotypesWidget(plugin.PluginWidget):
         self.menu = QMenu(self)
         self.field_action.setMenu(self.menu)
 
+        # Obligé de faire un truc degeulasse pour avoir un
+
         for col in range(1, self.model.columnCount()):
             field = self.model.headerData(col, Qt.Horizontal, Qt.DisplayRole)
             action = QAction(field, self)
             self.menu.addAction(action)
             action.setCheckable(True)
-            action.setChecked(field == "gt")
-            if field != "gt":
-                self.view.horizontalHeader().hideSection(col)
+
+            if field == "gt":
+                action.setChecked(True)
+                self.view.showColumn(col)
             else:
-                self.view.horizontalHeader().hideSection(col)
+                action.setChecked(False)
+                self.view.hideColumn(col)
+
             fct = partial(self._toggle_column, col)
             action.toggled.connect(fct)
 
@@ -188,10 +195,7 @@ class GenotypesWidget(plugin.PluginWidget):
 
     def on_open_project(self, conn):
         self.model.conn = conn
-        self.model.clear()
-        self.model._fields = [
-            i["name"] for i in sql.get_field_by_category(conn, "samples")
-        ]
+        self.model.load_fields()
         self._create_field_menu()
 
     def on_refresh(self):
@@ -203,8 +207,6 @@ class GenotypesWidget(plugin.PluginWidget):
         self.view.horizontalHeader().setSectionResizeMode(
             0, QHeaderView.ResizeToContents
         )
-        # self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
-        # self.view.horizontalHeader().setStretchLastSection(True)
         self.view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
 
@@ -220,7 +222,7 @@ if __name__ == "__main__":
     conn = sqlite3.connect("/DATA/dev/cutevariant/corpos2.db")
     conn.row_factory = sqlite3.Row
 
-    view = GenotypesWidget()
+    view = SamplesWidget()
     view.on_open_project(conn)
     view.show()
 

@@ -83,9 +83,9 @@ import pkgutil
 
 # Qt imports
 from PySide2.QtWidgets import QWidget, QDialog
-from PySide2.QtCore import QSettings
 
 # Cutevariant import
+from cutevariant.config import Config
 from cutevariant.gui import settings
 import cutevariant.commons as cm
 
@@ -224,10 +224,8 @@ class PluginWidget(QWidget):
     def plugin_name(self):
         return cm.camel_to_snake(self.__class__.__name__.replace("Widget", ""))
 
-    def create_settings(self):
-        settings = QSettings()
-        settings.beginGroup(self.plugin_name)
-        return settings
+    def create_config(self):
+        return Config(self.plugin_name)
 
 
 class PluginDialog(QDialog):
@@ -251,10 +249,8 @@ class PluginDialog(QDialog):
     def plugin_name(self):
         return cm.camel_to_snake(self.__class__.__name__.replace("Dialog", ""))
 
-    def create_settings(self):
-        settings = QSettings()
-        settings.beginGroup(self.plugin_name)
-        return settings
+    def create_config(self):
+        return Config(self.plugin_name)
 
 
 class PluginSettingsWidget(settings.SectionWidget):
@@ -280,6 +276,9 @@ class PluginSettingsWidget(settings.SectionWidget):
     @property
     def plugin_name(self):
         return cm.camel_to_snake(self.__class__.__name__.replace("SettingsWidget", ""))
+
+    def create_config(self):
+        return Config(self.plugin_name)
 
 
 ################################################################################
@@ -409,10 +408,11 @@ def find_plugins(path=None):
             plugin_item[sub_module_type[:-1]] = class_item
 
             # Fix plugin status by user decision via app settings
-            if not class_item.ENABLE:
-                class_item.ENABLE = (
-                    QSettings().value(f"plugins/{plugin_item['name']}/status") == "true"
-                )
+            # TODO :
+            # if not class_item.ENABLE:
+            #     class_item.ENABLE = (
+            #         QSettings().value(f"plugins/{plugin_item['name']}/status") == "true"
+            #     )
 
         yield plugin_item
 
