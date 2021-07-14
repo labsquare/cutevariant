@@ -162,6 +162,72 @@ class LinksModel(QAbstractListModel):
             return QIcon(FIcon(0xF0866))
 
 
+class TagsSettings(AbstractSettingsWidget):
+    def __init__(self):
+        super().__init__()
+
+        self.setWindowTitle("Tags")
+        self.label = QLabel(
+            """
+            Set tags available
+            """
+        )
+        self.setWindowIcon(FIcon(0xF12F7))
+        self.view = QListView()
+        self.model = QStringListModel()
+        self.view.setModel(self.model)
+
+        self.add_button = QPushButton("add")
+        self.rem_button = QPushButton("remove")
+        self.clear_button = QPushButton("clear")
+
+        h_layout = QHBoxLayout(self)
+        h_layout.addWidget(self.view)
+        v_layout = QVBoxLayout()
+        v_layout.addWidget(self.add_button)
+        v_layout.addWidget(self.rem_button)
+        v_layout.addWidget(self.clear_button)
+        v_layout.addStretch()
+        h_layout.addLayout(v_layout)
+
+        self.add_button.clicked.connect(self.on_add)
+        self.rem_button.clicked.connect(self.on_rem)
+        self.clear_button.clicked.connect(self.on_clear)
+
+    def save(self):
+
+        config = self.section_widget.create_config()
+        config["tags"] = self.model.stringList()
+        config.save()
+
+    def load(self):
+        config = self.section_widget.create_config()
+        tags = config.get("tags", [])
+        if isinstance(tags, list):
+            self.model.setStringList(tags)
+
+    def on_add(self):
+
+        data = self.model.stringList()
+
+        name, accept = QInputDialog.getText(self, "tag name", "enter a tag name ")
+        if accept:
+            data.append(name)
+            self.model.setStringList(data)
+
+    def on_rem(self):
+
+        data = self.model.stringList()
+
+        for index in self.view.selectionModel().selectedRows():
+            data.remove(index.data())
+
+        self.model.setStringList(data)
+
+    def on_clear(self):
+        self.model.setStringList([])
+
+
 class GeneralSettings(AbstractSettingsWidget):
     def __init__(self):
         super().__init__()
@@ -394,6 +460,6 @@ class VariantViewSettingsWidget(PluginSettingsWidget):
         super().__init__(parent)
         self.setWindowIcon(FIcon(0xF035C))
         self.setWindowTitle("Variant view")
-        # self.add_settings_widget(MemorySettings())
         self.add_page(GeneralSettings())
         self.add_page(LinkSettings())
+        self.add_page(TagsSettings())

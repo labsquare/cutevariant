@@ -1497,63 +1497,20 @@ class TagsModel(QAbstractListModel):
 
     def load(self):
         self.beginResetModel()
+        self.items.clear()
+        config = Config("variant_view")
 
-        self.items = [
-            {
-                "name": "urgent",
-                "description": "blablba ",
-                "color": "#71e096",
-                "checked": False,
-            },
-            {
-                "name": "bruit",
-                "description": "blablba ",
-                "color": "#ed6d79",
-                "checked": False,
-            },
-            {
-                "name": "pass",
-                "description": "blablba ",
-                "color": "#f7dc68",
-                "checked": False,
-            },
-            {
-                "name": "urgent",
-                "description": "blablba ",
-                "color": "#71e096",
-                "checked": False,
-            },
-            {
-                "name": "test_wordset",
-                "description": "blablba ",
-                "color": "#ed6d79",
-                "checked": False,
-            },
-            {
-                "name": "sdfsf ",
-                "description": "blablba ",
-                "color": "#f7dc68",
-                "checked": False,
-            },
-            {
-                "name": "urgent",
-                "description": "blablba ",
-                "color": "#71e096",
-                "checked": False,
-            },
-            {
-                "name": "test_wordset",
-                "description": "blablba ",
-                "color": "#ed6d79",
-                "checked": False,
-            },
-            {
-                "name": "sdfsf ",
-                "description": "blablba ",
-                "color": "#f7dc68",
-                "checked": False,
-            },
-        ]
+        tags = config.get("tags", [])
+
+        for tag in tags:
+            self.items.append(
+                {
+                    "name": tag,
+                    "description": "blablba ",
+                    "color": "#71e096",
+                    "checked": False,
+                }
+            )
 
         self.endResetModel()
 
@@ -1596,6 +1553,11 @@ class TagsWidget(QWidget):
     def on_apply(self):
         self.tags_selected.emit(self._model.checked_tags())
         self.parent().close()
+
+    def showEvent(self, event):
+        """override """
+        super().showEvent(event)
+        self._model.load()
 
 
 class VariantViewWidget(plugin.PluginWidget):
