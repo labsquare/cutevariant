@@ -110,7 +110,7 @@ class MainWindow(QMainWindow):
         self._state_data = StateData()
 
         ## ===== GUI Setup =====
-
+        self.SENDER = None
         self.setWindowTitle("Cutevariant")
         self.setWindowIcon(QIcon(DIR_ICONS + "app.png"))
         self.setWindowFlags(Qt.WindowContextHelpButtonHint | self.windowFlags())
@@ -309,6 +309,8 @@ class MainWindow(QMainWindow):
             sender (PluginWidget): from a plugin, you can pass "self" as argument
         """
 
+        self.SENDER = sender
+        plugin_to_refresh = []
         for plugin_obj in self.plugins.values():
             need_refresh = (
                 plugin_obj is not sender
@@ -318,7 +320,8 @@ class MainWindow(QMainWindow):
 
             if need_refresh:
                 try:
-                    plugin_obj.on_refresh()
+                    plugin_to_refresh.append(plugin_obj)
+                    # plugin_obj.on_refresh()
                     print(plugin_obj)
 
                 except Exception as e:
@@ -326,6 +329,8 @@ class MainWindow(QMainWindow):
 
         # Clear state_changed set
         self._state_data.clear_changed()
+        for plugin in plugin_to_refresh:
+            plugin.on_refresh()
 
     def refresh_plugin(self, plugin_name: str):
         """Refresh a widget plugin identified by plugin_name
