@@ -3,9 +3,9 @@ import re
 
 # Custom imports
 from .abstractreader import sanitize_field_name
-from cutevariant.commons import logger
 
-LOGGER = logger()
+
+from cutevariant import LOGGER
 
 # Dicts of default fields depending to the type of files
 # Keys are based on fields in files (in lower case),

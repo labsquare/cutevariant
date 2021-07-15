@@ -28,9 +28,9 @@ from ast import literal_eval
 
 # Custom imports
 from cutevariant.core import sql
-from cutevariant.commons import logger
 
-LOGGER = logger()
+
+from cutevariant import LOGGER
 
 # TODO : can be move somewhere else ? In common ?
 # Function names used in VQL

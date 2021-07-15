@@ -29,7 +29,7 @@ from cutevariant.core.reader import PedReader, annotationparser
 from cutevariant.gui.model_view import PedView
 from cutevariant.gui.ficon import FIcon
 
-LOGGER = cm.logger()
+from cutevariant import LOGGER
 
 
 class ProjectPage(QWizardPage):

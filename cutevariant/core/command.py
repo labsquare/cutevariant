@@ -11,11 +11,11 @@ Command module is usefull for CLI and for running VQL scripts.
 
 Example:
 
-    >>> conn = sqlite.Connection("project.db")
-    >>> for variant in execute(conn, "SELECT chr, pos FROM variants"):
+    conn = sqlite.Connection("project.db")
+    for variant in execute(conn, "SELECT chr, pos FROM variants"):
     ...     print(variant)
-    >>> # How many variants ?
-    >>> print(execute(conn, "COUNT FROM variants"))
+    # How many variants ?
+    print(execute(conn, "COUNT FROM variants"))
 """
 # Standard imports
 import sqlite3
@@ -26,10 +26,10 @@ import functools
 # Custom imports
 from cutevariant.core.querybuilder import build_sql_query
 from cutevariant.core import sql, vql
-from cutevariant.commons import logger
+
 from cutevariant.core.reader import BedReader
 
-LOGGER = logger()
+from cutevariant import LOGGER
 
 
 def select_cmd(
@@ -79,7 +79,6 @@ def select_cmd(
         **kwargs,
     )
     LOGGER.debug("command:select_cmd:: %s", query)
-    print(query)
     for i in conn.execute(query):
         # THIS IS INSANE... SQLITE DOESNT RETURN ALIAS NAME WITH SQUARE BRACKET....
         # I HAVE TO replace [] by () and go back after...
@@ -428,8 +427,8 @@ def execute(conn: sqlite3.Connection, vql_source: str):
     """Execute a vql query
 
     Examples:
-        >>> for variant in execute(conn,"SELECT chr from variants"):
-        >>>     print(variant)
+        for variant in execute(conn,"SELECT chr from variants"):
+            print(variant)
 
     Args:
         conn (sqlite3.Connection): sqlite3 connection
@@ -449,7 +448,7 @@ def execute_all(conn: sqlite3.Connection, vql_source: str):
     """Execute a vql script
 
     Examples:
-        >>> execute_all(
+        execute_all(
         ...     "CREATE boby FROM variants; CREATE raymon FROM variants;"
         ...     "CREATE charles = boby - variants; COUNT(charles)"
         ... )

@@ -39,8 +39,16 @@ import json
 import cutevariant.commons as cm
 import cutevariant.core.querybuilder as qb
 from cutevariant.core.sql_aggregator import StdevFunc
+from cutevariant import LOGGER
 
-LOGGER = cm.logger()
+
+# content of mymodule.py
+def something():
+    """a doctest in a docstring
+    >>> something()
+    42
+    """
+    return 42
 
 
 def get_sql_connection(filepath):

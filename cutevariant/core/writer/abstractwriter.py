@@ -3,7 +3,7 @@ from cutevariant.core import command as cmd
 from cutevariant.core.querybuilder import build_sql_query
 import cutevariant.commons as cm
 
-LOGGER = cm.logger()
+from cutevariant import LOGGER
 
 
 class AbstractWriter:
@@ -17,9 +17,9 @@ class AbstractWriter:
 
     Example:
 
-        >>> with open(filename,"rw") as file:
-        ...    writer = MyWriter(file)
-        ...    writer.save(conn)
+        with open(filename,"rw") as file:
+            writer = MyWriter(file)
+            writer.save(conn)
     """
 
     def __init__(

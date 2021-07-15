@@ -82,7 +82,7 @@ from cutevariant.core.querybuilder import (
 import cutevariant.commons as cm
 from cutevariant.gui.sql_thread import SqlThread
 
-LOGGER = cm.logger()
+from cutevariant import LOGGER
 
 TYPE_OPERATORS = {
     "str": ["$eq", "$ne", "$in", "$nin", "$regex"],
