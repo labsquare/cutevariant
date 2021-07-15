@@ -1,4 +1,5 @@
 from collections import ChainMap
+from cutevariant import LOGGER
 import os
 import yaml
 import typing
@@ -70,7 +71,7 @@ class Config:
             try:
                 self._user_config = yaml.safe_load(stream)
             except yaml.YAMLError as exc:
-                print(exc)
+                LOGGER.critical(exc)
             except KeyError as err:
                 print(f"cannot read section {self.section} from config ")
 
@@ -106,5 +107,3 @@ if __name__ == "__main__":
 
     config = Config("global")
     config.load()
-
-    print(config["style"])

@@ -639,7 +639,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
             """
             Debugging (no window)
             """
-            print(self.widget_fields.checked_fields)
+            LOGGER.debug(self.widget_fields.checked_fields)
             return
 
         self.mainwindow.set_state_data("fields", self.widget_fields.checked_fields)

@@ -6,4 +6,4 @@ __version__ = "0.3.5.dev0"
 from .commons import create_logger
 
 LOGGER = create_logger()
-LOGGER.setLevel("DEBUG")
+# LOGGER.setLevel("DEBUG")

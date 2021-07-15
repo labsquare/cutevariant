@@ -208,7 +208,6 @@ class PluginWidget(QWidget):
         Args:
             event(PySide2.QtGui.QShowEvent):
         """
-        LOGGER.debug("Show event %s", self)
 
         if self.conn and not self._STARTUP:
             self.on_refresh()
@@ -317,7 +316,6 @@ def find_plugins(path=None):
     # Loop over packages in plugins directory
     for package in pkgutil.iter_modules([plugin_path]):
         package_path = os.path.join(plugin_path, package.name)
-        LOGGER.debug("Loading plugin at <%s>", package_path)
 
         spec = importlib.util.spec_from_file_location(
             package.name, os.path.join(package_path, "__init__.py")
@@ -327,6 +325,8 @@ def find_plugins(path=None):
         widget_class_name = cm.snake_to_camel(package.name) + "Widget"
         settings_class_name = cm.snake_to_camel(package.name) + "SettingsWidget"
         dialog_class_name = cm.snake_to_camel(package.name) + "Dialog"
+
+        LOGGER.info("Loading plugin <%s>", package.name)
 
         # Load __init__ file data of the module
         # We expect to load a plugin per module found in a plugin directory
@@ -354,7 +354,6 @@ def find_plugins(path=None):
 
         # Loop over modules in each plugin
         for sub_module_info in pkgutil.iter_modules([package_path]):
-            LOGGER.debug("Loading module <%s>", sub_module_info)
             sub_module_type = sub_module_info.name
 
             # Filter module filenames

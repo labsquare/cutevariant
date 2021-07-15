@@ -126,13 +126,13 @@ LOG_LEVELS = {
 def create_logger():
     logger = logging.getLogger(__name__)
     formatter = logging.Formatter(
-        "[%(dirname)s/%(filename)s:%(lineno)s:%(funcName)s()] %(message)s"
+        "%(levelname)s:[%(dirname)s/%(filename)s:%(lineno)s:%(funcName)s()] %(message)s"
     )
 
     stdout_handler = logging.StreamHandler()
     stdout_handler.setFormatter(formatter)
 
-    file_handler = logging.FileHandler("cutevariant.log", mode="a")
+    file_handler = logging.FileHandler("cutevariant.log", mode="w")
     file_handler.setFormatter(formatter)
 
     class MyCustomLogFilter(logging.Filter):

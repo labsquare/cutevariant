@@ -12,7 +12,7 @@ from PySide2.QtGui import *
 from cutevariant.core import sql, command
 from cutevariant.core.reader import BedReader
 from cutevariant.gui import plugin, FIcon, style
-from cutevariant.commons import logger, DEFAULT_SELECTION_NAME
+from cutevariant.commons import DEFAULT_SELECTION_NAME
 
 
 from cutevariant import LOGGER

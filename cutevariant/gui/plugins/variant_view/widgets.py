@@ -412,7 +412,7 @@ class VariantModel(QAbstractTableModel):
             having=self.having,
         )
 
-        print(self.debug_sql)
+        LOGGER.debug(self.debug_sql)
         # Create load_func to run asynchronously: load variants
         load_func = functools.partial(
             cmd.select_cmd,
@@ -687,9 +687,6 @@ class VariantDelegate(QStyledItemDelegate):
             return False
 
         # Skip action with First LogicItem root item
-
-        if event.type() == QEvent.MouseButtonPress:
-            print("clicked")
 
         pass
 
@@ -1184,7 +1181,7 @@ class VariantView(QWidget):
         # TODO create_url should be able to read deep variant (with unflattened annotations)
         url = self._create_url(url_template, full_variant)
 
-        print(url_template, url)
+        LOGGER.debug(url_template, url)
 
         if in_browser:
             QDesktopServices.openUrl(url)
@@ -1473,7 +1470,6 @@ class TagsModel(QAbstractListModel):
 
         self.beginResetModel()
         for row in range(self.rowCount()):
-            print("ROW", row, tags)
             if self.items[row]["name"] in tags:
                 self.items[row]["checked"] = True
             else:

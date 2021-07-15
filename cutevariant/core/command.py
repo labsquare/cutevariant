@@ -79,7 +79,6 @@ def select_cmd(
         **kwargs,
     )
     LOGGER.debug("command:select_cmd:: %s", query)
-    print(query)
     for i in conn.execute(query):
         # THIS IS INSANE... SQLITE DOESNT RETURN ALIAS NAME WITH SQUARE BRACKET....
         # I HAVE TO replace [] by () and go back after...
