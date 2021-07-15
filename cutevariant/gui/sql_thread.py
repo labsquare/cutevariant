@@ -7,9 +7,9 @@ from PySide2.QtCore import QThread, QObject, Signal
 
 # Custom imports
 from cutevariant.core.sql import get_sql_connection
-from cutevariant.commons import logger
 
-LOGGER = logger()
+
+from cutevariant import LOGGER
 
 
 class SqlThread(QThread):

@@ -8,7 +8,7 @@ from cutevariant.core import sql
 import cutevariant.commons as cm
 
 
-LOGGER = cm.logger()
+from cutevariant import LOGGER
 
 
 class PedWriter(AbstractWriter):

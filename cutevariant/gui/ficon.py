@@ -14,9 +14,9 @@ from PySide2.QtGui import (
 from PySide2.QtWidgets import QApplication
 
 # Custom imports
-from cutevariant.commons import logger
 
-LOGGER = logger()
+
+from cutevariant import LOGGER
 
 
 class FIconEngine(QIconEngine):

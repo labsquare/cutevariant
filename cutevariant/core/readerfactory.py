@@ -8,7 +8,7 @@ from cutevariant.core.reader import VcfReader, CsvReader
 import cutevariant.commons as cm
 
 
-LOGGER = cm.logger()
+from cutevariant import LOGGER
 
 
 def detect_vcf_annotation(filepath):

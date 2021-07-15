@@ -35,14 +35,14 @@ from PySide2.QtGui import QDesktopServices, QKeySequence
 # Custom imports
 from cutevariant.gui import style, plugin, FIcon, MainWindow
 from cutevariant.core.querybuilder import build_vql_query
-from cutevariant.commons import logger
+
 
 from cutevariant.core import sql
 
 from cutevariant.gui.widgets import VqlSyntaxHighlighter
 
 
-LOGGER = logger()
+from cutevariant import LOGGER
 
 """ 
 This plugin is intended to store VQL history and several information 

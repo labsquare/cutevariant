@@ -15,7 +15,7 @@ from cutevariant.gui import plugin, FIcon, style
 from cutevariant.commons import logger, DEFAULT_SELECTION_NAME
 
 
-LOGGER = logger()
+from cutevariant import LOGGER
 
 PHENOTYPE_STR = {0: "Missing", 1: "Unaffected", 2: "Affected"}
 PHENOTYPE_COLOR = {0: QColor("lightgray"), 1: QColor("green"), 2: QColor("red")}

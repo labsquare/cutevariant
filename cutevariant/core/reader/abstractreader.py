@@ -9,7 +9,7 @@ from urllib.parse import unquote
 
 import cutevariant.commons as cm
 
-LOGGER = cm.logger()
+from cutevariant import LOGGER
 
 
 class AbstractReader(ABC):

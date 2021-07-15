@@ -26,10 +26,10 @@ import functools
 # Custom imports
 from cutevariant.core.querybuilder import build_sql_query
 from cutevariant.core import sql, vql
-from cutevariant.commons import logger
+
 from cutevariant.core.reader import BedReader
 
-LOGGER = logger()
+from cutevariant import LOGGER
 
 
 def select_cmd(

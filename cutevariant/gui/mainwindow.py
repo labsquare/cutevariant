@@ -36,7 +36,7 @@ from cutevariant.gui.export import ExportDialogFactory, ExportDialog
 # Import plugins
 from cutevariant.gui import plugin
 
-LOGGER = cm.logger()
+from cutevariant import LOGGER
 
 import copy
 

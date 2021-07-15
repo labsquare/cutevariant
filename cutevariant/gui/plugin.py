@@ -89,7 +89,7 @@ from cutevariant.config import Config
 from cutevariant.gui import settings
 import cutevariant.commons as cm
 
-LOGGER = cm.logger()
+from cutevariant import LOGGER
 
 DOCK_LOCATION = 1
 CENTRAL_LOCATION = 2

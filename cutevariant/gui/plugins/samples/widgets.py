@@ -15,10 +15,10 @@ from PySide2.QtGui import *
 from cutevariant.core import sql, command
 from cutevariant.core.reader import BedReader
 from cutevariant.gui import plugin, FIcon, style
-from cutevariant.commons import logger, DEFAULT_SELECTION_NAME
+from cutevariant.commons import DEFAULT_SELECTION_NAME
 
 
-LOGGER = logger()
+from cutevariant import LOGGER
 
 PHENOTYPE_STR = {0: "Unknown phenotype", 1: "Unaffected", 2: "Affected"}
 PHENOTYPE_COLOR = {0: "#d3d3d3", 1: "#006400", 2: "#ff0000"}

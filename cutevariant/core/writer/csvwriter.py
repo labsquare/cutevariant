@@ -8,7 +8,7 @@ import cutevariant.commons as cm
 
 import time
 
-LOGGER = cm.logger()
+from cutevariant import LOGGER
 
 
 class CsvWriter(AbstractWriter):

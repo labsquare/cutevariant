@@ -4,9 +4,9 @@ import vcf
 # Custom imports
 from .abstractreader import AbstractReader, sanitize_field_name
 from .annotationparser import VepParser, SnpEffParser
-from cutevariant.commons import logger, get_uncompressed_size
+from cutevariant.commons import get_uncompressed_size
 
-LOGGER = logger()
+from cutevariant import LOGGER
 
 # Fixing PyVCF bug
 # https://github.com/jamescasbon/PyVCF/pull/320

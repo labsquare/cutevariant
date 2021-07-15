@@ -17,7 +17,7 @@ from PySide2.QtGui import *
 
 import cutevariant.commons as cm
 
-LOGGER = cm.logger()
+from cutevariant import LOGGER
 
 
 def prepare_fields_for_editor(conn):

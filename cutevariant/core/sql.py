@@ -39,8 +39,7 @@ import json
 import cutevariant.commons as cm
 import cutevariant.core.querybuilder as qb
 from cutevariant.core.sql_aggregator import StdevFunc
-
-LOGGER = cm.logger()
+from cutevariant import LOGGER
 
 
 # content of mymodule.py

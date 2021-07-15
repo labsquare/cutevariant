@@ -7,7 +7,7 @@ from cutevariant.core import command as cmd
 import cutevariant.commons as cm
 
 
-LOGGER = cm.logger()
+from cutevariant import LOGGER
 
 
 class BedWriter(AbstractWriter):
