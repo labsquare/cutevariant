@@ -1490,9 +1490,9 @@ class TagsModel(QAbstractListModel):
         for tag in tags:
             self.items.append(
                 {
-                    "name": tag,
-                    "description": "blablba ",
-                    "color": "#71e096",
+                    "name": tag["name"],
+                    "description": tag["description"],
+                    "color": tag["color"],
                     "checked": False,
                 }
             )
