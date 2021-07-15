@@ -2,7 +2,7 @@ from PySide2.QtWidgets import QApplication
 
 __title__ = "VQL history"
 __description__ = "A VQL history to store previous vql query"
-__long_description__ = QApplication.instance().translate(
+__long_description__ = (
     "vql_history",
     """
 <p>This plugin store all VQL queries previously executed </p>

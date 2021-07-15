@@ -43,6 +43,15 @@ from cutevariant.core.sql_aggregator import StdevFunc
 LOGGER = cm.logger()
 
 
+# content of mymodule.py
+def something():
+    """a doctest in a docstring
+    >>> something()
+    42
+    """
+    return 42
+
+
 def get_sql_connection(filepath):
     """Open a SQLite database and return the connection object
 

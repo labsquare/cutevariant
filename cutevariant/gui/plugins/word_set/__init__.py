@@ -2,7 +2,7 @@ from PySide2.QtWidgets import QApplication
 
 __title__ = "Wordsets editor"
 __description__ = "A plugin to manage word sets"
-__long_description__ = QApplication.instance().translate(
+__long_description__ = (
     "word_sets",
     """
 <p>This plugin allows to create sets of words that can be matched with the

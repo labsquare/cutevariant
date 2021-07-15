@@ -2,7 +2,7 @@ from PySide2.QtWidgets import QApplication
 
 __title__ = "Filters editor"
 __description__ = "A plugin to display filters"
-__long_description__ = QApplication.instance().translate(
+__long_description__ = (
     "filters_editor",
     """
 <p>This plugin is used to filter (show/hide) the variants displayed in the main window.</p>

@@ -2,7 +2,7 @@ from PySide2.QtWidgets import QApplication
 
 __title__ = "Group by"
 __description__ = "The groupby view for variant selection view"
-__long_description__ = QApplication.instance().translate(
+__long_description__ = (
     "group_by_view",
     """
     This widget is directly linked to the variant view.

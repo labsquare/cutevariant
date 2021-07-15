@@ -2,7 +2,7 @@ from PySide2.QtWidgets import QApplication
 
 __title__ = "Samples view"
 __description__ = "A plugin to display all FORMAT fields (sample-wise information) from the current variant"
-__long_description__ = QApplication.instance().translate(
+__long_description__ = (
     "Samples view",
     """
     Display all sample information available from the currently selected variant. 

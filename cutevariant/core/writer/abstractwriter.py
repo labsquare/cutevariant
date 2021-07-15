@@ -17,9 +17,9 @@ class AbstractWriter:
 
     Example:
 
-        >>> with open(filename,"rw") as file:
-        ...    writer = MyWriter(file)
-        ...    writer.save(conn)
+        with open(filename,"rw") as file:
+            writer = MyWriter(file)
+            writer.save(conn)
     """
 
     def __init__(

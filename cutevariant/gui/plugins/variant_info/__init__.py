@@ -2,7 +2,7 @@ from PySide2.QtWidgets import QApplication
 
 __title__ = "Variant info"
 __description__ = "A plugin to display variant info"
-__long_description__ = QApplication.instance().translate(
+__long_description__ = (
     "variant_info",
     """
 <p>This plugin allows you to view all the data attached to the currently selected

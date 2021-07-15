@@ -2,7 +2,7 @@ from PySide2.QtWidgets import QApplication
 
 __title__ = "Source editor"
 __description__ = "A plugin to display selections"
-__long_description__ = QApplication.instance().translate(
+__long_description__ = (
     "source_editor",
     """
 <p>It is a plugin allowing to work on a subset of variants.<br>

@@ -2,7 +2,7 @@ from PySide2.QtWidgets import QApplication
 
 __title__ = "Fields editor"
 __description__ = "A plugin to display fields "
-__long_description__ = QApplication.instance().translate(
+__long_description__ = (
     "fields_editor",
     """
 <p>This plugin is used to manage the fields visible from the main "variant view"

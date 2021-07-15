@@ -2,7 +2,7 @@ from PySide2.QtWidgets import QApplication
 
 __title__ = "Statistics"
 __description__ = "A plugin to display statistics for the selected "
-__long_description__ = QApplication.instance().translate(
+__long_description__ = (
     "stats_widget",
     """
 <p>This plugins shows general statistics about a selected column.</p>

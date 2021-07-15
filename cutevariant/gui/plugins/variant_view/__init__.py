@@ -2,7 +2,7 @@ from PySide2.QtWidgets import QApplication
 
 __title__ = "Variants"
 __description__ = "The default view for variants DB"
-__long_description__ = QApplication.instance().translate(
+__long_description__ = (
     "variant_view",
     """
 <p>This window is the main window of Cutevariant. Here you will find the variants

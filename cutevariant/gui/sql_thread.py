@@ -55,9 +55,9 @@ class SqlThread(QThread):
 
         Examples:
 
-            >>> thread = SqlThread(conn)
-            >>> thread.start_function(lambda conn: conn.execute("SELECT COUNT(*) FROM variants"))
-            >>> thread.result_ready.connect(self.on_received)
+            thread = SqlThread(conn)
+            thread.start_function(lambda conn: conn.execute("SELECT COUNT(*) FROM variants"))
+            thread.result_ready.connect(self.on_received)
 
 
 
@@ -141,7 +141,7 @@ class SqlThread(QThread):
             function (Callable): Function must take con as arguments
 
         Examples:
-            >>> thread.exec_function(lambda conn: conn.execute("SELECT ..."))
+            thread.exec_function(lambda conn: conn.execute("SELECT ..."))
 
         """
         assert isinstance(function, Callable)
