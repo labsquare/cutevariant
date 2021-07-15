@@ -2,6 +2,8 @@
 """
 import typing
 from functools import partial
+import copy
+import re
 
 # Qt imports
 from PySide2.QtWidgets import *
@@ -186,13 +188,27 @@ class SamplesWidget(plugin.PluginWidget):
             self.view.hideColumn(col)
 
     def _on_double_clicked(self, index: QModelIndex):
+
         sample_name = index.siblingAtColumn(0).data()
+
         if sample_name:
-            # samples['NA12877'].gt > 1
-            self.mainwindow.set_state_data(
-                "filters", {"$and": [{f"samples.{sample_name}.gt": {"$gte": 1}}]}
-            )
-            self.mainwindow.refresh_plugins(sender=None)
+            filters = copy.deepcopy(self.mainwindow.get_state_data("filters"))
+            key = f"samples.{sample_name}.gt"
+            condition = {key: {"$gte": 1}}
+
+            if "$and" in filters:
+                for index, field in enumerate(filters["$and"]):
+                    if re.match(r"samples\.\w+\.gt", list(field.keys())[0]):
+                        filters["$and"][index] = condition
+                        break
+                else:
+                    filters["$and"].append(condition)
+            else:
+                filters = {"$and": [condition]}
+
+            print("FILTERS", filters)
+            self.mainwindow.set_state_data("filters", filters)
+            self.mainwindow.refresh_plugins(sender=self)
 
     def on_open_project(self, conn):
         self.model.conn = conn
