@@ -112,7 +112,7 @@ REPORT_BUG_URL = "https://github.com/labsquare/cutevariant/issues/new"
 WIKI_URL = "https://github.com/labsquare/cutevariant/wiki"
 
 # Logging
-LOGGER_NAME = "cutevariant"
+log_NAME = "cutevariant"
 LOG_LEVEL = "INFO"
 LOG_LEVELS = {
     "debug": logging.DEBUG,
@@ -123,61 +123,33 @@ LOG_LEVELS = {
 }
 
 ################################################################################
+def create_logger():
+    logger = logging.getLogger(__name__)
+    formatter = logging.Formatter(
+        "[%(dirname)s/%(filename)s:%(lineno)s:%(funcName)s()] %(message)s"
+    )
 
+    stdout_handler = logging.StreamHandler()
+    stdout_handler.setFormatter(formatter)
 
-def logger(name=LOGGER_NAME, logfilename=None):
-    """Return logger of given name, without initialize it.
+    file_handler = logging.FileHandler("cutevariant.log", mode="a")
+    file_handler.setFormatter(formatter)
 
-    Equivalent of logging.getLogger() call.
-    """
-    logger = logging.getLogger(name)
-    FORMAT = "%(levelname)s: [%(filename)s:%(lineno)s:%(funcName)s()] %(message)s"
-    logging.basicConfig(format=FORMAT)
+    class MyCustomLogFilter(logging.Filter):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+
+        def filter(self, record):
+            dirname = os.path.basename(os.path.dirname(record.pathname))
+            record.dirname = dirname
+            return True
+
+    stdout_handler.addFilter(MyCustomLogFilter())
+
+    logger.addHandler(stdout_handler)
+    logger.addHandler(file_handler)
+
     return logger
-
-
-_logger = logging.getLogger(LOGGER_NAME)
-_logger.setLevel(LOG_LEVEL)
-
-# log file
-formatter = logging.Formatter("%(asctime)s :: %(levelname)s :: %(message)s")
-file_handler = RotatingFileHandler(
-    DIR_LOGS
-    + LOGGER_NAME
-    + "_"
-    + dt.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    + ".log",
-    "a",
-    100_000_000,
-    1,
-)
-file_handler.setLevel(LOG_LEVEL)
-file_handler.setFormatter(formatter)
-_logger.addHandler(file_handler)
-
-# terminal log
-# stream_handler = logging.StreamHandler()
-# formatter = logging.Formatter("%(levelname)s: %(message)s")
-# stream_handler.setFormatter(formatter)
-# stream_handler.setLevel(LOG_LEVEL)
-# _logger.addHandler(stream_handler)
-
-
-def log_level(level):
-    """Set terminal/file log level to given one.
-    .. note:: Don't forget the propagation system of messages:
-        From logger to handlers. Handlers receive log messages only if
-        the main logger doesn't filter them.
-    """
-    # Main logger
-    _logger.setLevel(level.upper())
-    # Handlers
-    [
-        handler.setLevel(level.upper())
-        for handler in _logger.handlers
-        if handler.__class__
-        in (logging.StreamHandler, logging.handlers.RotatingFileHandler)
-    ]
 
 
 def is_gz_file(filepath):
