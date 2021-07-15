@@ -82,7 +82,7 @@ FilterTerm:
 //################################## TERMINALS #########################
 Comment: /\#.*$/;
 
-FieldId:/[^\d\W](\w*\.)?\w*\b/;
+FieldId:/[^\d\W]([\w\.]*\.)?\w*\b/;
 FieldIdentifier: Function|FieldId;
 ValueIdentifier: (NUMBER|STRING|BOOL|Tuple|WordSetIdentifier|"NULL");
 ARGS: STRING|'*';
