@@ -1125,24 +1125,8 @@ class VariantView(QWidget):
             }
 
         """
-        links = []
-        settings = QSettings()
-        settings.beginGroup("variant_view")
-        size = settings.beginReadArray("links")
-        for index in range(size):
-            settings.setArrayIndex(index)
-
-            links.append(
-                {
-                    "name": settings.value("name"),
-                    "url": settings.value("url"),
-                    "is_default": settings.value("is_default", 0, type=bool),
-                    "is_browser": settings.value("is_browser", 0, type=bool),
-                }
-            )
-
-        settings.endArray()
-        settings.endGroup()
+        config = Config("variant_view")
+        links = config.get("links", [])
 
         return links
 
@@ -1193,9 +1177,13 @@ class VariantView(QWidget):
     def _open_url(self, url_template: str, in_browser=False):
 
         variant = self.model.variant(self.view.currentIndex().row())
+        variant_id = variant["id"]
+        full_variant = sql.get_one_variant(self.conn, variant_id, True, False)
 
         # TODO create_url should be able to read deep variant (with unflattened annotations)
-        url = self._create_url(url_template, variant)
+        url = self._create_url(url_template, full_variant)
+
+        print(url_template, url)
 
         if in_browser:
             QDesktopServices.openUrl(url)
@@ -1230,6 +1218,10 @@ class VariantView(QWidget):
             QUrl: return url or return None
 
         """
+        print(variant)
+        if "annotations" in variant:
+            for key, val in variant["annotations"][0].items():
+                variant[f"ann.{key}"] = val
 
         regex = re.compile(r"{([^{}]+)}")
         # First, make sure there are some fields to format
