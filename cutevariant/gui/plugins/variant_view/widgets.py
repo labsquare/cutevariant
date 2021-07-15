@@ -1395,8 +1395,7 @@ class VariantView(QWidget):
         TODO : duplicate code with ContextMenu Event ! Need to refactor a bit
         """
 
-        pass
-        ##self._open_default_link(index)
+        self._open_default_link(index)
 
     def create_classification_menu(self):
         # Create classication action
@@ -1452,7 +1451,7 @@ class TagsModel(QAbstractListModel):
         return None
 
     def setData(self, index: QModelIndex, value, role: Qt.ItemDataRole):
-        """ override """
+        """override"""
 
         if role == Qt.CheckStateRole:
             self.items[index.row()]["checked"] = bool(value)
@@ -1541,7 +1540,7 @@ class TagsWidget(QWidget):
         self.parent().close()
 
     def showEvent(self, event):
-        """override """
+        """override"""
         super().showEvent(event)
         self._model.load()
 

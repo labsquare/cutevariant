@@ -278,7 +278,6 @@ class LinkSettings(AbstractSettingsWidget):
         self.view.setModel(self.link_model)
         self.add_button = QPushButton(self.tr("Add"))
         self.edit_button = QPushButton(self.tr("Edit"))
-        self.load_presets_button = QPushButton(self.tr("Load presets"))
         self.set_default_button = QPushButton(self.tr("Set as default"))
         self.set_default_button.setToolTip(self.tr("Double click will open this link"))
         self.remove_button = QPushButton(self.tr("Remove"))
@@ -286,7 +285,6 @@ class LinkSettings(AbstractSettingsWidget):
         v_layout = QVBoxLayout()
         v_layout.addWidget(self.add_button)
         v_layout.addWidget(self.edit_button)
-        v_layout.addWidget(self.load_presets_button)
         v_layout.addStretch()
         v_layout.addWidget(self.set_default_button)
         v_layout.addWidget(self.remove_button)
@@ -306,7 +304,6 @@ class LinkSettings(AbstractSettingsWidget):
         self.view.doubleClicked.connect(lambda index: self.add_url(index))
         self.set_default_button.clicked.connect(self.set_default_link)
         self.remove_button.clicked.connect(self.remove_item)
-        self.load_presets_button.clicked.connect(self.load_default_external_links)
 
     def save(self):
         """Override from PageWidget"""
@@ -414,12 +411,6 @@ class LinkSettings(AbstractSettingsWidget):
         # Get selected rows
         if self.view.selectionModel().selectedRows():
             self.link_model.remove_links(self.view.selectionModel().selectedRows())
-
-    def load_default_external_links(self):
-        """Load default external DB links"""
-
-        for name, (url, is_browser) in cm.WEBSITES_URLS.items():
-            self.link_model.add_link(name, url, is_browser, False)
 
     def set_default_link(self):
         """set current item as default link"""
