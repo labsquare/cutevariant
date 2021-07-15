@@ -7,7 +7,7 @@ from cutevariant.core import command as cmd
 import cutevariant.commons as cm
 
 
-LOGGER = cm.logger()
+from cutevariant import LOGGER
 
 
 class BedWriter(AbstractWriter):
@@ -18,9 +18,9 @@ class BedWriter(AbstractWriter):
         device: a file object typically returned by open("w")
 
     Example:
-        >>> with open(filename,"rw") as file:
-        ...    writer = MyWriter(file)
-        ...    writer.save(conn)
+            with open(filename,"rw") as file:
+                writer = MyWriter(file)
+                writer.save(conn)
     """
 
     def __init__(

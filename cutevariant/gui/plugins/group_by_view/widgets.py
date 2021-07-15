@@ -41,7 +41,7 @@ import cutevariant.commons as cm
 
 from cutevariant.gui import plugin, FIcon, style, MainWindow
 
-LOGGER = cm.logger()
+from cutevariant import LOGGER
 
 
 class FilterProxyModel(QSortFilterProxyModel):

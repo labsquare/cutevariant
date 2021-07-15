@@ -23,10 +23,10 @@ from cutevariant.core.sql import (
 from cutevariant.core.reader import BedReader
 from cutevariant.gui import plugin, FIcon
 from cutevariant.gui.widgets import SearchableTableWidget
-from cutevariant.commons import logger, DEFAULT_SELECTION_NAME
+from cutevariant.commons import DEFAULT_SELECTION_NAME
 
 
-LOGGER = logger()
+from cutevariant import LOGGER
 
 # =================== SELECTION MODEL ===========================
 class SourceModel(QAbstractTableModel):

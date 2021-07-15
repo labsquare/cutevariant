@@ -71,7 +71,7 @@ from cutevariant.config import Config
 from cutevariant.gui.ficon import FIcon
 from cutevariant.gui import network, style, widgets
 
-LOGGER = cm.logger()
+from cutevariant import LOGGER
 
 
 class AbstractSettingsWidget(QWidget):

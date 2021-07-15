@@ -10,7 +10,7 @@ from columnar import columnar
 from cutevariant.core.importer import async_import_file
 from cutevariant.core import sql, vql, command
 from cutevariant.core.querybuilder import *
-from cutevariant.commons import log_level
+from cutevariant import LOGGER
 
 
 def display_sql_results(data, headers, *args, **kwargs):

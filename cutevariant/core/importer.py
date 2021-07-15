@@ -21,9 +21,9 @@ from .sql import (
     create_indexes,
     update_sample,
 )
-from cutevariant.commons import logger
 
-LOGGER = logger()
+
+from cutevariant import LOGGER
 
 
 def async_import_reader(

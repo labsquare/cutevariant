@@ -9,9 +9,9 @@ from PySide2.QtGui import (
     QTextCursor,
 )
 
-from cutevariant.commons import MIN_COMPLETION_LETTERS, logger
+from cutevariant.commons import MIN_COMPLETION_LETTERS
 
-LOGGER = logger()
+from cutevariant import LOGGER
 
 
 class VqlSyntaxHighlighter(QSyntaxHighlighter):

@@ -88,25 +88,18 @@ it pollutes the namespace. This is a real issue with Bio.bgzf (and the
 standard Python library gzip) because they contain a function called open
 i.e. Suppose you do this:
 
->>> from Bio.bgzf import *
->>> print(open.__module__)
 Bio.bgzf
 
 Or,
 
->>> from gzip import *
->>> print(open.__module__)
 gzip
 
 Notice that the open function has been replaced. You can "fix" this if you
 need to by importing the built-in open function:
 
->>> from builtins import open
 
 However, what we recommend instead is to use the explicit namespace, e.g.
 
->>> from Bio import bgzf
->>> print(bgzf.open.__module__)
 Bio.bgzf
 
 
@@ -115,44 +108,19 @@ Examples
 This is an ordinary GenBank file compressed using BGZF, so it can
 be decompressed using gzip,
 
->>> import gzip
->>> handle = gzip.open("GenBank/NC_000932.gb.bgz", "r")
->>> assert 0 == handle.tell()
->>> line = handle.readline()
->>> assert 80 == handle.tell()
->>> line = handle.readline()
->>> assert 143 == handle.tell()
->>> data = handle.read(70000)
->>> assert 70143 == handle.tell()
->>> handle.close()
 
 We can also access the file using the BGZF reader - but pay
 attention to the file offsets which will be explained below:
 
->>> handle = BgzfReader("GenBank/NC_000932.gb.bgz", "r")
->>> assert 0 == handle.tell()
->>> print(handle.readline().rstrip())
 LOCUS       NC_000932             154478 bp    DNA     circular PLN 15-APR-2009
->>> assert 80 == handle.tell()
->>> print(handle.readline().rstrip())
 DEFINITION  Arabidopsis thaliana chloroplast, complete genome.
->>> assert 143 == handle.tell()
->>> data = handle.read(70000)
->>> assert 987828735 == handle.tell()
->>> print(handle.readline().rstrip())
 f="GeneID:844718"
->>> print(handle.readline().rstrip())
      CDS             complement(join(84337..84771,85454..85843))
->>> offset = handle.seek(make_virtual_offset(55074, 126))
->>> print(handle.readline().rstrip())
     68521 tatgtcattc gaaattgtat aaagacaact cctatttaat agagctattt gtgcaagtat
->>> handle.close()
 
 Notice the handle's offset looks different as a BGZF file. This
 brings us to the key point about BGZF, which is the block structure:
 
->>> handle = open("GenBank/NC_000932.gb.bgz", "rb")
->>> for values in BgzfBlocks(handle):
 ...     print("Raw start %i, raw length %i; data start %i, data length %i" % values)
 Raw start 0, raw length 15073; data start 0, data length 65536
 Raw start 15073, raw length 17857; data start 65536, data length 65536
@@ -160,7 +128,6 @@ Raw start 32930, raw length 22144; data start 131072, data length 65536
 Raw start 55074, raw length 22230; data start 196608, data length 65536
 Raw start 77304, raw length 14939; data start 262144, data length 43478
 Raw start 92243, raw length 28; data start 305622, data length 0
->>> handle.close()
 
 In this example the first three blocks are 'full' and hold 65536 bytes
 of uncompressed data. The fourth block isn't full and holds 43478 bytes.
@@ -182,9 +149,7 @@ does not always hold) and starting at byte 126 of the fourth block
 offset of 55074 and the offset within the block of 126 to get the
 BGZF virtual offset.
 
->>> print(55074 << 16 | 126)
 3609329790
->>> print(bgzf.make_virtual_offset(55074, 126))
 3609329790
 
 Thus for this BGZF file, decompressed position 196734 corresponds
@@ -207,11 +172,6 @@ Of course you can parse this file with Bio.SeqIO using BgzfReader,
 although there isn't any benefit over using gzip.open(...), unless
 you want to index BGZF compressed sequence files:
 
->>> from Bio import SeqIO
->>> handle = BgzfReader("GenBank/NC_000932.gb.bgz")
->>> record = SeqIO.read(handle, "genbank")
->>> handle.close()
->>> print(record.id)
 NC_000932.1
 
 Text Mode
@@ -290,32 +250,21 @@ def make_virtual_offset(block_start_offset, within_block_offset):
     within_block_offset within the (decompressed) block (unsigned
     16 bit integer).
 
-    >>> make_virtual_offset(0, 0)
     0
-    >>> make_virtual_offset(0, 1)
     1
-    >>> make_virtual_offset(0, 2**16 - 1)
     65535
-    >>> make_virtual_offset(0, 2**16)
     Traceback (most recent call last):
     ...
     ValueError: Require 0 <= within_block_offset < 2**16, got 65536
 
-    >>> 65536 == make_virtual_offset(1, 0)
     True
-    >>> 65537 == make_virtual_offset(1, 1)
     True
-    >>> 131071 == make_virtual_offset(1, 2**16 - 1)
     True
 
-    >>> 6553600000 == make_virtual_offset(100000, 0)
     True
-    >>> 6553600001 == make_virtual_offset(100000, 1)
     True
-    >>> 6553600010 == make_virtual_offset(100000, 10)
     True
 
-    >>> make_virtual_offset(2**48, 0)
     Traceback (most recent call last):
     ...
     ValueError: Require 0 <= block_start_offset < 2**48, got 281474976710656
@@ -335,9 +284,7 @@ def make_virtual_offset(block_start_offset, within_block_offset):
 def split_virtual_offset(virtual_offset):
     """Divides a 64-bit BGZF virtual offset into block start & within block offsets.
 
-    >>> (100000, 0) == split_virtual_offset(6553600000)
     True
-    >>> (100000, 10) == split_virtual_offset(6553600010)
     True
 
     """
@@ -358,9 +305,6 @@ def BgzfBlocks(handle):
     decompressed length of the blocks contents (limited to 65536 in
     BGZF), as an iterator - one tuple per BGZF block.
 
-    >>> from builtins import open
-    >>> handle = open("SamBam/ex1.bam", "rb")
-    >>> for values in BgzfBlocks(handle):
     ...     print("Raw start %i, raw length %i; data start %i, data length %i" % values)
     Raw start 0, raw length 18239; data start 0, data length 65536
     Raw start 18239, raw length 18223; data start 65536, data length 65536
@@ -370,7 +314,6 @@ def BgzfBlocks(handle):
     Raw start 89536, raw length 17728; data start 327680, data length 65536
     Raw start 107264, raw length 17292; data start 393216, data length 63398
     Raw start 124556, raw length 28; data start 456614, data length 0
-    >>> handle.close()
 
     Indirectly we can tell this file came from an old version of
     samtools because all the blocks (except the final one and the
@@ -381,8 +324,6 @@ def BgzfBlocks(handle):
 
     samtools view -b ex1.bam > ex1_refresh.bam
 
-    >>> handle = open("SamBam/ex1_refresh.bam", "rb")
-    >>> for values in BgzfBlocks(handle):
     ...     print("Raw start %i, raw length %i; data start %i, data length %i" % values)
     Raw start 0, raw length 53; data start 0, data length 38
     Raw start 53, raw length 18195; data start 38, data length 65434
@@ -393,15 +334,12 @@ def BgzfBlocks(handle):
     Raw start 89503, raw length 17709; data start 327294, data length 65466
     Raw start 107212, raw length 17390; data start 392760, data length 63854
     Raw start 124602, raw length 28; data start 456614, data length 0
-    >>> handle.close()
 
     The above example has no embedded SAM header (thus the first block
     is very small at just 38 bytes of decompressed data), while the next
     example does (a larger block of 103 bytes). Notice that the rest of
     the blocks show the same sizes (they contain the same read data):
 
-    >>> handle = open("SamBam/ex1_header.bam", "rb")
-    >>> for values in BgzfBlocks(handle):
     ...     print("Raw start %i, raw length %i; data start %i, data length %i" % values)
     Raw start 0, raw length 104; data start 0, data length 103
     Raw start 104, raw length 18195; data start 103, data length 65434
@@ -412,7 +350,6 @@ def BgzfBlocks(handle):
     Raw start 89554, raw length 17709; data start 327359, data length 65466
     Raw start 107263, raw length 17390; data start 392825, data length 63854
     Raw start 124653, raw length 28; data start 456679, data length 0
-    >>> handle.close()
 
     """
     if isinstance(handle, BgzfReader):
@@ -493,9 +430,6 @@ class BgzfReader:
     Let's use the BgzfBlocks function to have a peak at the BGZF blocks
     in an example BAM file,
 
-    >>> from builtins import open
-    >>> handle = open("SamBam/ex1.bam", "rb")
-    >>> for values in BgzfBlocks(handle):
     ...     print("Raw start %i, raw length %i; data start %i, data length %i" % values)
     Raw start 0, raw length 18239; data start 0, data length 65536
     Raw start 18239, raw length 18223; data start 65536, data length 65536
@@ -505,45 +439,32 @@ class BgzfReader:
     Raw start 89536, raw length 17728; data start 327680, data length 65536
     Raw start 107264, raw length 17292; data start 393216, data length 63398
     Raw start 124556, raw length 28; data start 456614, data length 0
-    >>> handle.close()
 
     Now let's see how to use this block information to jump to
     specific parts of the decompressed BAM file:
 
-    >>> handle = BgzfReader("SamBam/ex1.bam", "rb")
-    >>> assert 0 == handle.tell()
-    >>> magic = handle.read(4)
-    >>> assert 4 == handle.tell()
 
     So far nothing so strange, we got the magic marker used at the
     start of a decompressed BAM file, and the handle position makes
     sense. Now however, let's jump to the end of this block and 4
     bytes into the next block by reading 65536 bytes,
 
-    >>> data = handle.read(65536)
-    >>> len(data)
     65536
-    >>> assert 1195311108 == handle.tell()
 
     Expecting 4 + 65536 = 65540 were you? Well this is a BGZF 64-bit
     virtual offset, which means:
 
-    >>> split_virtual_offset(1195311108)
     (18239, 4)
 
     You should spot 18239 as the start of the second BGZF block, while
     the 4 is the offset into this block. See also make_virtual_offset,
 
-    >>> make_virtual_offset(18239, 4)
     1195311108
 
     Let's jump back to almost the start of the file,
 
-    >>> make_virtual_offset(0, 2)
     2
-    >>> handle.seek(2)
     2
-    >>> handle.close()
 
     Note that you can use the max_cache argument to limit the number of
     BGZF blocks cached in memory. The default is 100, and since each

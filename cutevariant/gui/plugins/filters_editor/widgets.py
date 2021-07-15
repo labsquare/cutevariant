@@ -82,7 +82,7 @@ from cutevariant.core.querybuilder import (
 import cutevariant.commons as cm
 from cutevariant.gui.sql_thread import SqlThread
 
-LOGGER = cm.logger()
+from cutevariant import LOGGER
 
 TYPE_OPERATORS = {
     "str": ["$eq", "$ne", "$in", "$nin", "$regex"],
@@ -128,7 +128,7 @@ def get_field_unique_values_cached(conn, field, like, limit):
 def prepare_fields(conn):
     """Prepares a list of columns on which filters can be applied"""
     results = {}
-    samples = [sample["name"] for sample in sql.get_samples(conn)]
+    samples = [sample["name"] for sample in sql.get_samples(conn)] + ["*"]
 
     for field in sql.get_fields(conn):
 

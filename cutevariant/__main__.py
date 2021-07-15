@@ -40,6 +40,7 @@ from PySide2.QtGui import QPixmap
 from cutevariant.config import Config
 from cutevariant.gui import MainWindow, setFontPath, style
 import cutevariant.commons as cm
+from cutevariant import LOGGER
 from cutevariant import __version__
 
 
@@ -50,6 +51,8 @@ def main():
     # the empty constructor. This saves having to repeat this information
     # each time a QSettings object is created.
     # The default scope is QSettings::UserScope
+
+    LOGGER.info("Starting cutevariant")
     QCoreApplication.setOrganizationName("labsquare")
     QCoreApplication.setApplicationName("cutevariant")
     QCoreApplication.setApplicationVersion(__version__)
@@ -61,6 +64,7 @@ def main():
     process_arguments(app)
 
     # Load app styles
+    LOGGER.info("Load style")
     load_styles(app)
 
     # # Uncomment those line to clear settings
@@ -68,9 +72,11 @@ def main():
     # settings.clear()
 
     # Set icons set
+    LOGGER.info("Load font")
     setFontPath(cm.FONT_FILE)
 
     # Translations
+    LOGGER.info("Load translation")
     load_translations(app)
 
     # debug settings
@@ -78,6 +84,7 @@ def main():
     # w = SettingsWidget()
     # w.show()
 
+    LOGGER.info("Starting the GUI...")
     # Splash screen
     splash = QSplashScreen()
     splash.setPixmap(QPixmap(cm.DIR_ICONS + "splash.png"))
@@ -174,7 +181,7 @@ def process_arguments(app):
         ["v", "verbose"],
         QCoreApplication.translate("main", "Modify verbosity."),
         "notset|debug|info|error",  # options available (value name)
-        "notset",  # default value
+        "debug",  # default value
     )
     parser.addOption(modify_verbosity)
 
@@ -186,9 +193,9 @@ def process_arguments(app):
         print("Cutevariant " + __version__)
         exit()
 
-    if parser.isSet(modify_verbosity):
-        # Set log level
-        cm.log_level(parser.value(modify_verbosity).upper())
+    # if parser.isSet(modify_verbosity):
+    # Set log level
+    LOGGER.setLevel(parser.value(modify_verbosity).upper())
 
 
 if __name__ == "__main__":

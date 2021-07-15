@@ -9,7 +9,7 @@ from urllib.parse import unquote
 
 import cutevariant.commons as cm
 
-LOGGER = cm.logger()
+from cutevariant import LOGGER
 
 
 class AbstractReader(ABC):
@@ -32,9 +32,9 @@ class AbstractReader(ABC):
             A list of fields to skip [{field_name:"AF", "category":"variant"}]
 
     Example:
-        >>> with open(filename,"r") as file:
-        ...    reader = Reader(file)
-        ...    reader.get_variants()
+        with open(filename,"r") as file:
+            reader = Reader(file)
+            reader.get_variants()
     """
 
     def __init__(self, device):
@@ -90,8 +90,8 @@ class AbstractReader(ABC):
             dict: variant dictionnary
 
         Examples:
-            >>> for variant in reader.get_variants():
-            ...     print(variant["chr"], variant["pos"])
+                for variant in reader.get_variants():
+                    print(variant["chr"], variant["pos"])
 
         """
         raise NotImplementedError(cls.__class__.__name__)
@@ -117,8 +117,8 @@ class AbstractReader(ABC):
             dict: field dictionnary
 
         Examples:
-            >>> for field in reader.get_fields():
-            ...     print(field["name"], field["description"])
+            for field in reader.get_fields():
+                print(field["name"], field["description"])
         """
         raise NotImplementedError(cls.__class__.__name__)
 

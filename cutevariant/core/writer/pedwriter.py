@@ -8,7 +8,7 @@ from cutevariant.core import sql
 import cutevariant.commons as cm
 
 
-LOGGER = cm.logger()
+from cutevariant import LOGGER
 
 
 class PedWriter(AbstractWriter):
@@ -19,9 +19,9 @@ class PedWriter(AbstractWriter):
         device: a file object typically returned by open("w")
 
     Example:
-        >>> with open(filename,"rw") as file:
-        ...    writer = MyWriter(file)
-        ...    writer.save(conn)
+        with open(filename,"rw") as file:
+            writer = MyWriter(file)
+            writer.save(conn)
     """
 
     def __init__(self, conn, device):

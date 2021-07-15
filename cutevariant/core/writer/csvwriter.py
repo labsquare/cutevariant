@@ -8,7 +8,7 @@ import cutevariant.commons as cm
 
 import time
 
-LOGGER = cm.logger()
+from cutevariant import LOGGER
 
 
 class CsvWriter(AbstractWriter):
@@ -19,9 +19,9 @@ class CsvWriter(AbstractWriter):
         device: a file object typically returned by open("w")
 
     Example:
-        >>> with open(filename,"rw") as file:
-        ...    writer = MyWriter(file)
-        ...    writer.save(conn)
+            with open(filename,"rw") as file:
+                writer = MyWriter(file)
+                writer.save(conn)
     """
 
     def __init__(

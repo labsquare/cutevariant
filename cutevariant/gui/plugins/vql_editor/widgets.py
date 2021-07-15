@@ -31,9 +31,9 @@ from cutevariant.core.vql import VQLSyntaxError
 from cutevariant.core import command
 from cutevariant.core.querybuilder import build_vql_query
 from cutevariant.gui.widgets import CodeEdit
-from cutevariant.commons import logger
 
-LOGGER = logger()
+
+from cutevariant import LOGGER
 
 
 class VqlEditorWidget(plugin.PluginWidget):
