@@ -110,7 +110,6 @@ class MainWindow(QMainWindow):
         self._state_data = StateData()
 
         ## ===== GUI Setup =====
-        self.SENDER = None
         self.setWindowTitle("Cutevariant")
         self.setWindowIcon(QIcon(DIR_ICONS + "app.png"))
         self.setWindowFlags(Qt.WindowContextHelpButtonHint | self.windowFlags())
@@ -309,7 +308,6 @@ class MainWindow(QMainWindow):
             sender (PluginWidget): from a plugin, you can pass "self" as argument
         """
 
-        self.SENDER = sender
         plugin_to_refresh = []
         for plugin_obj in self.plugins.values():
             need_refresh = (
