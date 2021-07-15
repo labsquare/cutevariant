@@ -11,8 +11,9 @@ import copy
 import sys
 import string
 import urllib.request  # STRANGE: CANNOT IMPORT URLLIB ALONE
-from logging import DEBUG
+from logging import DEBUG, Logger
 import typing
+import jinja2
 
 # dependency
 import cachetools
@@ -1218,29 +1219,14 @@ class VariantView(QWidget):
             QUrl: return url or return None
 
         """
-        print(variant)
-        if "annotations" in variant:
-            for key, val in variant["annotations"][0].items():
-                variant[f"ann.{key}"] = val
+        env = jinja2.Environment()
 
-        regex = re.compile(r"{([^{}]+)}")
-        # First, make sure there are some fields to format
-        if regex.findall(format_string):
+        try:
+            return QUrl(env.from_string(format_string).render(variant))
 
-            # Using this yields us two lists with fields (ex: "{ann.gene}") and their associated field name (ex: "ann.gene")
-            fields, field_names = zip(
-                *[(m.group(0), m.group(1)) for m in regex.finditer(format_string)]
-            )
-
-            # For every field, replace field names with variant value for the respective key
-            for field, field_name in zip(fields, field_names):
-                format_string = format_string.replace(
-                    field, str(variant.get(field_name, field))
-                )
-
-            return QUrl(format_string, QUrl.TolerantMode)
-        else:
-            return format_string
+        except Exception as e:
+            Logger.warning(e)
+            return QUrl()
 
     def update_favorites(self, checked: bool = None):
         """Update favorite status of multiple selected variants

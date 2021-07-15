@@ -342,9 +342,12 @@ class LinkSettings(AbstractSettingsWidget):
         dialog = QDialog()
         title = QLabel(
             self.tr(
-                """Create a link using variant field as place holder.
-For instance, to open UCSC genom browser use :\n
-https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg19&position={chr}:{pos}
+                """<p>Create a link using variant fields as placeholders with <a href='https://jinja.palletsprojects.com/en/3.0.x/'>jinja2</a> syntax.<br/> 
+<b>For instance: </b> <br/>
+<code>https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg19&position={{chr}}:{{pos}}</code><br/>
+<code>https://www.google.fr?q={{ann[0].gene}}</code><br/>
+<code>https://www.google.fr?q={{chr|replace('chr','')}}</code>
+ </p>
             """
             )
         )
