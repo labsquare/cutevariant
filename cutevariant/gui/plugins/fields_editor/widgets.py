@@ -196,29 +196,48 @@ class FieldsModel(QStandardItemModel):
                     self.fields_loaded.emit()
 
     def remove_field_from_index(self, index: QModelIndex):
+
+        items_to_update = [self.itemFromIndex(index.siblingAtColumn(0))]
+
         field_name = index.siblingAtColumn(0).data()
         # To have sample field only, without the sample name
         if self._category == "samples":
             field_name = field_name.split(".")[-1]
+
+            # We want to schedule them all for update, because in the field editor, sample field appears once per sample...
+            items_to_update.clear()
+            for i in range(self.rowCount()):
+                if self.item(i, 0).data(Qt.DisplayRole).split(".")[-1] == field_name:
+                    items_to_update.append(self.item(i, 0))
 
         sql.remove_indexed_field(self.conn, self._category, field_name)
 
         # Return True on success (i.e. the field is not in the indexed fields anymore)
         success = (self._category, field_name) not in sql.get_indexed_fields(self.conn)
-        item = self.itemFromIndex(index)
-        item.setData(success, Qt.UserRole)
-        if success:
-            font = item.font()
-            font.setUnderline(False)
-            item.setFont(font)
+
+        for item in items_to_update:
+            # Weird, but positive success means UserRole should be False (i.e. the field is not indexed anymore)
+            item.setData(not success, Qt.UserRole)
+            if success:
+                font = item.font()
+                font.setUnderline(False)
+                item.setFont(font)
+
         return success
 
     def add_field_to_index(self, index: QModelIndex):
-        field_name = index.siblingAtColumn(0).data()
+        items_to_update = [self.itemFromIndex(index.siblingAtColumn(0))]
 
+        field_name = index.siblingAtColumn(0).data()
         # To have sample field only, without the sample name
         if self._category == "samples":
             field_name = field_name.split(".")[-1]
+
+            # We want to schedule them all for update, because in the field editor, sample field appears once per sample...
+            items_to_update.clear()
+            for i in range(self.rowCount()):
+                if self.item(i, 0).data(Qt.DisplayRole).split(".")[-1] == field_name:
+                    items_to_update.append(self.item(i, 0))
 
         if self._category == "variants":
             sql.create_variants_indexes(self.conn, {field_name})
@@ -230,14 +249,13 @@ class FieldsModel(QStandardItemModel):
         # Return True on success (i.e. the field is now in the index field)
         success = (self._category, field_name) in sql.get_indexed_fields(self.conn)
 
-        item = self.itemFromIndex(index)
+        for item in items_to_update:
 
-        # User role holds whether the item is an indexed field or not
-        item.setData(success, Qt.UserRole)
-        if success:
-            font = item.font()
-            font.setUnderline(True)
-            item.setFont(font)
+            item.setData(success, Qt.UserRole)
+            if success:
+                font = item.font()
+                font.setUnderline(True)
+                item.setFont(font)
 
         return success
 
@@ -353,7 +371,8 @@ class FieldsWidget(QWidget):
 
         view.addActions([filter_field_action, index_field_action, remove_index_action])
 
-        view.selectionModel().currentChanged.connect(self._update_actions)
+        # Update even if the index didn't change
+        view.pressed.connect(self._update_actions)
 
         self.views.append(
             {
@@ -372,7 +391,7 @@ class FieldsWidget(QWidget):
             view, FIcon(style.FIELD_CATEGORY.get(category, None)["icon"]), category
         )
 
-    def _update_actions(self, current: QModelIndex, previous: QModelIndex):
+    def _update_actions(self, current: QModelIndex):
         is_indexed = current.siblingAtColumn(0).data(Qt.UserRole)
         for view in self.views:
             view: dict
