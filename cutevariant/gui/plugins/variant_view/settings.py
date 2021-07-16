@@ -1,8 +1,9 @@
 ## ================= Settings widgets ===================
 # Qt imports
+from cutevariant.gui.plugins.harmonizome_wordset import dialogs
 from typing import List
 from PySide2.QtCore import *
-from PySide2.QtGui import QFont, QIcon
+from PySide2.QtGui import QColor, QFont, QIcon
 from PySide2.QtWidgets import *
 
 # Custom imports
@@ -11,6 +12,9 @@ from cutevariant.gui.settings import AbstractSettingsWidget
 from cutevariant.gui import FIcon
 import cutevariant.commons as cm
 from cutevariant.config import Config
+
+import typing
+import copy
 
 
 class LinksModel(QAbstractListModel):
@@ -162,6 +166,195 @@ class LinksModel(QAbstractListModel):
             return QIcon(FIcon(0xF0866))
 
 
+class TagModel(QAbstractListModel):
+    def __init__(self, parent: QObject = None) -> None:
+        super().__init__(parent=parent)
+        self.items = []
+
+    def data(self, index: QModelIndex, role: int) -> typing.Any:
+        if role == Qt.DisplayRole:
+            return self.items[index.row()]["name"]
+        if role == Qt.ToolTipRole:
+            return self.items[index.row()]["description"]
+        if role == Qt.DecorationRole:
+            # Color is stored as a string to help with serialization
+            return QColor(self.items[index.row()]["color"])
+
+    def setData(self, index: QModelIndex, value: typing.Any, role: int) -> bool:
+        if role == Qt.DisplayRole:
+            self.items[index.row()]["name"] = value
+        if role == Qt.ToolTipRole:
+            self.items[index.row()]["description"] = value
+        if role == Qt.DecorationRole:
+            # Color is stored as a string to help with serialization
+            self.items[index.row()]["color"] = value
+
+        self.dataChanged.emit(index, index)
+
+    def add_item(self, item: dict):
+        self.beginInsertRows(QModelIndex(), self.rowCount(), self.rowCount() + 1)
+        self.items.append(copy.deepcopy(item))
+        self.endInsertRows()
+
+    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
+        return len(self.items)
+
+    def remove_rows(self, indexes: typing.List[QModelIndex]):
+        self.beginResetModel()
+        indexes = sorted(indexes, reverse=True)
+        for idx in indexes:
+            data = {
+                "name": idx.data(Qt.DisplayRole),
+                "description": idx.data(Qt.ToolTipRole),
+                "color": idx.data(Qt.DecorationRole),
+            }
+            self.items.remove(data)
+        self.endResetModel()
+
+    def clear(self):
+        self.beginResetModel()
+        self.items.clear()
+        self.endResetModel()
+
+
+class TagDialog(QDialog):
+    def __init__(self, tag: dict = None, parent: QWidget = None) -> None:
+        super().__init__(parent=parent)
+
+        self.setWindowTitle(self.tr("Edit tag..."))
+
+        # Copy it, so we can cancel editing
+        self.tag = copy.deepcopy(tag)
+        self.tag = self.tag or {
+            "name": "Tag name",
+            "description": "Tag description",
+            "color": "#FF0000",
+        }
+
+        self._layout = QVBoxLayout(self)
+
+        self._button_box = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+        )
+        self._button_box.accepted.connect(self.accept)
+        self._button_box.rejected.connect(self.reject)
+
+        self.form_layout = QFormLayout()
+        self.tag_le = QLineEdit(self)
+        self.descr_le = QLineEdit(self)
+        self.color_pick = QPushButton(self.tr("Pick color..."), self)
+        self.color = QColor("#FF0000")
+
+        if "name" in self.tag:
+            self.tag_le.setText(self.tag["name"])
+        if "description" in self.tag:
+            self.descr_le.setText(self.tag["description"])
+        if "color" in self.tag:
+            self.color = QColor(self.tag["color"])
+
+        # When we click, we change tag's color
+        self.color_pick.clicked.connect(self.get_tag_color)
+
+        self.form_layout.addRow(self.tr("Name"), self.tag_le)
+        self.form_layout.addRow(self.tr("Description"), self.descr_le)
+        self.form_layout.addRow(self.tr("Color"), self.color_pick)
+
+        self._layout.addLayout(self.form_layout)
+        self._layout.addWidget(self._button_box)
+
+    def get_tag_color(self):
+        self.tag["color"] = QColorDialog.getColor(
+            QColor(self.tag["color"]), self.color_pick
+        ).name()
+
+    def accept(self) -> None:
+        self.tag["name"] = self.tag_le.text()
+        self.tag["description"] = self.descr_le.text()
+        super().accept()
+
+
+class TagsSettings(AbstractSettingsWidget):
+    def __init__(self):
+        super().__init__()
+
+        self.setWindowTitle("Tags")
+        self.label = QLabel(
+            """
+            Set tags available
+            """
+        )
+        self.setWindowIcon(FIcon(0xF12F7))
+        self.view = QListView()
+        self.model = TagModel()
+
+        self.view.setModel(self.model)
+        self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
+
+        self.add_button = QPushButton(self.tr("Add"))
+        self.rem_button = QPushButton(self.tr("Remove"))
+        self.clear_button = QPushButton(self.tr("Clear"))
+        self.edit_button = QPushButton(self.tr("Edit"))
+
+        h_layout = QHBoxLayout(self)
+        h_layout.addWidget(self.view)
+        v_layout = QVBoxLayout()
+        v_layout.addWidget(self.add_button)
+        v_layout.addWidget(self.edit_button)
+        v_layout.addWidget(self.rem_button)
+        v_layout.addStretch()
+        v_layout.addWidget(self.clear_button)
+        h_layout.addLayout(v_layout)
+
+        self.add_button.clicked.connect(self.on_add)
+        self.rem_button.clicked.connect(self.on_rem)
+        self.clear_button.clicked.connect(self.on_clear)
+        self.edit_button.clicked.connect(self.on_edit)
+
+    def save(self):
+
+        config = self.section_widget.create_config()
+        config["tags"] = self.model.items
+        config.save()
+
+    def load(self):
+        config: Config = self.section_widget.create_config()
+        tags = config.get("tags", [])
+        if isinstance(tags, list):
+            if all(isinstance(tag, dict) for tag in tags):
+                self.model.items = tags
+
+    def on_add(self):
+        dialog = TagDialog(parent=self)
+        if dialog.exec_() == QDialog.Accepted:
+            self.model.add_item(
+                dialog.tag
+                or {
+                    "name": "Untitled",
+                    "description": "No description",
+                    "color": "#FF00FF",
+                }
+            )
+
+    def on_edit(self):
+        index = self.view.currentIndex()
+        name = index.data(Qt.DisplayRole)
+        description = index.data(Qt.ToolTipRole)
+        color = index.data(Qt.DecorationRole).name()
+        dialog = TagDialog(
+            {"name": name, "description": description, "color": color}, self
+        )
+        if dialog.exec_() == QDialog.Accepted:
+            self.model.setData(index, dialog.tag["name"], Qt.DisplayRole)
+            self.model.setData(index, dialog.tag["description"], Qt.ToolTipRole)
+            self.model.setData(index, dialog.tag["color"], Qt.DecorationRole)
+
+    def on_rem(self):
+        self.model.remove_rows(self.view.selectionModel().selectedRows())
+
+    def on_clear(self):
+        self.model.clear()
+
+
 class GeneralSettings(AbstractSettingsWidget):
     def __init__(self):
         super().__init__()
@@ -212,7 +405,6 @@ class LinkSettings(AbstractSettingsWidget):
         self.view.setModel(self.link_model)
         self.add_button = QPushButton(self.tr("Add"))
         self.edit_button = QPushButton(self.tr("Edit"))
-        self.load_presets_button = QPushButton(self.tr("Load presets"))
         self.set_default_button = QPushButton(self.tr("Set as default"))
         self.set_default_button.setToolTip(self.tr("Double click will open this link"))
         self.remove_button = QPushButton(self.tr("Remove"))
@@ -220,7 +412,6 @@ class LinkSettings(AbstractSettingsWidget):
         v_layout = QVBoxLayout()
         v_layout.addWidget(self.add_button)
         v_layout.addWidget(self.edit_button)
-        v_layout.addWidget(self.load_presets_button)
         v_layout.addStretch()
         v_layout.addWidget(self.set_default_button)
         v_layout.addWidget(self.remove_button)
@@ -240,7 +431,6 @@ class LinkSettings(AbstractSettingsWidget):
         self.view.doubleClicked.connect(lambda index: self.add_url(index))
         self.set_default_button.clicked.connect(self.set_default_link)
         self.remove_button.clicked.connect(self.remove_item)
-        self.load_presets_button.clicked.connect(self.load_default_external_links)
 
     def save(self):
         """Override from PageWidget"""
@@ -276,9 +466,12 @@ class LinkSettings(AbstractSettingsWidget):
         dialog = QDialog()
         title = QLabel(
             self.tr(
-                """Create a link using variant field as place holder.
-For instance, to open UCSC genom browser use :\n
-https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg19&position={chr}:{pos}
+                """<p>Create a link using variant fields as placeholders with <a href='https://jinja.palletsprojects.com/en/3.0.x/'>jinja2</a> syntax.<br/> 
+<b>For instance: </b> <br/>
+<code>https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg19&position={{chr}}:{{pos}}</code><br/>
+<code>https://www.google.fr?q={{ann[0].gene}}</code><br/>
+<code>https://www.google.fr?q={{chr|replace('chr','')}}</code>
+ </p>
             """
             )
         )
@@ -346,12 +539,6 @@ https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg19&position={chr}:{pos}
         if self.view.selectionModel().selectedRows():
             self.link_model.remove_links(self.view.selectionModel().selectedRows())
 
-    def load_default_external_links(self):
-        """Load default external DB links"""
-
-        for name, (url, is_browser) in cm.WEBSITES_URLS.items():
-            self.link_model.add_link(name, url, is_browser, False)
-
     def set_default_link(self):
         """set current item as default link"""
 
@@ -394,6 +581,6 @@ class VariantViewSettingsWidget(PluginSettingsWidget):
         super().__init__(parent)
         self.setWindowIcon(FIcon(0xF035C))
         self.setWindowTitle("Variant view")
-        # self.add_settings_widget(MemorySettings())
         self.add_page(GeneralSettings())
         self.add_page(LinkSettings())
+        self.add_page(TagsSettings())

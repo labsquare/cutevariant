@@ -1,0 +1,5 @@
+__title__ = "Validation saver plugin"
+__description__ = "A dialog to export favorites, classification and comments to an exterior database, and import them to other projects"
+__long_description__ = ""
+__author__ = "Samuel Nicaise"
+__version__ = "1.0.0"

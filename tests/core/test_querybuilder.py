@@ -91,6 +91,11 @@ def test_condition_to_sql():
         == "`variants`.`gene` REGEXP 'CFTR.+'"
     )
 
+    assert (
+        querybuilder.condition_to_sql({"samples.*.gt": 1}, ["boby", "charles"])
+        == "(`sample_boby`.`gt` = 1 AND `sample_charles`.`gt` = 1)"
+    )
+
 
 def test_fields_to_vql():
     fields = [
@@ -169,8 +174,21 @@ def test_filters_to_sql():
 
     observed = querybuilder.filters_to_sql(filters)
 
-    print(observed)
     expected = "(`variants`.`chr` = 'chr1' AND `variants`.`pos` > 111 AND `annotations`.`gene` = 'CFTR' AND `annotations`.`gene` > 'LOW' AND `sample_boby`.`gt` = 1 AND (`variants`.`pos` >= 10 OR `variants`.`pos` <= 100))"
+    assert observed == expected
+
+    # Test with Any sample special fields
+
+    filters = {
+        "$and": [
+            {"pos": 10},
+            {"samples.*.gt": 1},
+        ]
+    }
+
+    observed = querybuilder.filters_to_sql(filters, ["boby", "charles"])
+    expected = "(`variants`.`pos` = 10 AND (`sample_boby`.`gt` = 1 AND `sample_charles`.`gt` = 1))"
+
     assert observed == expected
 
 
@@ -195,13 +213,18 @@ def test_filters_to_vql():
     assert observed == expected
 
 
-# def test_build_sql_query():
+def test_sample_any_query():
 
-#     fields = {"variants": ["chr", "pos"], "annotations": ["gene"]}
+    conn = sql.get_sql_connection(":memory:")
+    sql.create_table_samples(conn)
+    sql.insert_sample(conn, "TUMOR")
+    sql.insert_sample(conn, "NORMAL")
 
-#     sql = querybuilder.build_sql_query(fields)
+    fields = ["chr", "pos"]
+    filters = {"$and": [{"samples.*.gt": 2}]}
+    query = querybuilder.build_sql_query(conn, fields=fields, filters=filters)
 
-#     print(sql)
+    print(query)
 
 
 # Structure: (filter dict, expected SQL, expected VQL)

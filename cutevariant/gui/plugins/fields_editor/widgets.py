@@ -18,7 +18,7 @@ from PySide2.QtGui import *
 
 import cutevariant.commons as cm
 
-LOGGER = cm.logger()
+from cutevariant import LOGGER
 
 
 def prepare_fields_for_editor(conn):
@@ -769,7 +769,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
             """
             Debugging (no window)
             """
-            print(self.widget_fields.checked_fields)
+            LOGGER.debug(self.widget_fields.checked_fields)
             return
 
         self.mainwindow.set_state_data("fields", self.widget_fields.checked_fields)

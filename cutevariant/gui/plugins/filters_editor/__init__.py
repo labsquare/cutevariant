@@ -1,10 +1,6 @@
-from PySide2.QtWidgets import QApplication
-
 __title__ = "Filters editor"
 __description__ = "A plugin to display filters"
-__long_description__ = QApplication.instance().translate(
-    "filters_editor",
-    """
+__long_description__ = """
 <p>This plugin is used to filter (show/hide) the variants displayed in the main window.</p>
 
 <p>Start by clicking on the <em>"+"</em> button (Add Condition), an example is displayed.</p>
@@ -55,7 +51,6 @@ To do so, simply right-click on the first item of your filter (<em>AND</em>
 by default) and select "Add condition";</li>
 <li>each subcondition can be dragged and dropped from one logical group to another.</li>
 </ul>
-""",
-)
+"""
 __author__ = "Sacha schutz"
 __version__ = "1.0.0"
