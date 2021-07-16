@@ -1163,6 +1163,11 @@ class VariantView(QWidget):
             FIcon(0xF018F), self.tr("&Copy"), self.copy_to_clipboard, QKeySequence.Copy
         )
         menu.addAction(
+            FIcon(0xF018F),
+            self.tr("Copy cell value"),
+            self.copy_cell_to_clipboard,
+        )
+        menu.addAction(
             FIcon(0xF0486),
             self.tr("&Select all"),
             self.select_all,
@@ -1374,6 +1379,13 @@ class VariantView(QWidget):
         QApplication.instance().clipboard().setText(output.getvalue())
         output.close()
 
+    def copy_cell_to_clipboard(self):
+        index = self.view.currentIndex()
+        if not index:
+            return
+        data = index.data()
+        QApplication.instance().clipboard().setText(data)
+
     def _open_default_link(self, index: QModelIndex):
 
         #  get default link
@@ -1483,15 +1495,17 @@ class TagsModel(QAbstractListModel):
 
         tags = config.get("tags", [])
 
-        for tag in tags:
-            self.items.append(
-                {
-                    "name": tag["name"],
-                    "description": tag["description"],
-                    "color": tag["color"],
-                    "checked": False,
-                }
-            )
+        if all(isinstance(tag, dict) for tag in tags):
+
+            for tag in tags:
+                self.items.append(
+                    {
+                        "name": tag["name"],
+                        "description": tag["description"],
+                        "color": tag["color"],
+                        "checked": False,
+                    }
+                )
 
         self.endResetModel()
 
