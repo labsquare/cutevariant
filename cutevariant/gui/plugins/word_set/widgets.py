@@ -57,7 +57,7 @@ from cutevariant import commons as cm
 from cutevariant.gui.ficon import FIcon
 from cutevariant.gui.widgets import SearchableTableWidget
 
-LOGGER = cm.logger()
+from cutevariant import LOGGER
 
 
 class WordListDialog(QDialog):

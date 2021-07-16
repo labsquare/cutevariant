@@ -2,6 +2,8 @@
 """
 import typing
 from functools import partial
+import copy
+import re
 
 # Qt imports
 from PySide2.QtWidgets import *
@@ -13,10 +15,10 @@ from PySide2.QtGui import *
 from cutevariant.core import sql, command
 from cutevariant.core.reader import BedReader
 from cutevariant.gui import plugin, FIcon, style
-from cutevariant.commons import logger, DEFAULT_SELECTION_NAME
+from cutevariant.commons import DEFAULT_SELECTION_NAME
 
 
-LOGGER = logger()
+from cutevariant import LOGGER
 
 PHENOTYPE_STR = {0: "Unknown phenotype", 1: "Unaffected", 2: "Affected"}
 PHENOTYPE_COLOR = {0: "#d3d3d3", 1: "#006400", 2: "#ff0000"}
@@ -133,6 +135,7 @@ class SamplesWidget(plugin.PluginWidget):
         self.toolbar = QToolBar()
         self.view = QTableView()
         self.view.setShowGrid(False)
+        self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setSortingEnabled(True)
         self.view.setIconSize(QSize(22, 22))
         self.model = SamplesModel()
@@ -185,13 +188,27 @@ class SamplesWidget(plugin.PluginWidget):
             self.view.hideColumn(col)
 
     def _on_double_clicked(self, index: QModelIndex):
+
         sample_name = index.siblingAtColumn(0).data()
+
         if sample_name:
-            # samples['NA12877'].gt > 1
-            self.mainwindow.set_state_data(
-                "filters", {"$and": [{f"samples.{sample_name}.gt": {"$gte": 1}}]}
-            )
-            self.mainwindow.refresh_plugins(sender=None)
+            filters = copy.deepcopy(self.mainwindow.get_state_data("filters"))
+            key = f"samples.{sample_name}.gt"
+            condition = {key: {"$gte": 1}}
+
+            if "$and" in filters:
+                for index, field in enumerate(filters["$and"]):
+                    if re.match(r"samples\.\w+\.gt", list(field.keys())[0]):
+                        filters["$and"][index] = condition
+                        break
+                else:
+                    filters["$and"].append(condition)
+            else:
+                filters = {"$and": [condition]}
+
+            print("FILTERS", filters)
+            self.mainwindow.set_state_data("filters", filters)
+            self.mainwindow.refresh_plugins(sender=self)
 
     def on_open_project(self, conn):
         self.model.conn = conn

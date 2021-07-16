@@ -11,8 +11,9 @@ import copy
 import sys
 import string
 import urllib.request  # STRANGE: CANNOT IMPORT URLLIB ALONE
-from logging import DEBUG
+from logging import DEBUG, Logger
 import typing
+import jinja2
 
 # dependency
 import cachetools
@@ -33,7 +34,7 @@ from cutevariant.gui.sql_thread import SqlThread
 from cutevariant.gui.widgets import MarkdownEditor
 import cutevariant.commons as cm
 
-LOGGER = cm.logger()
+from cutevariant import LOGGER
 
 
 class VariantModel(QAbstractTableModel):
@@ -411,7 +412,7 @@ class VariantModel(QAbstractTableModel):
             having=self.having,
         )
 
-        print(self.debug_sql)
+        LOGGER.debug(self.debug_sql)
         # Create load_func to run asynchronously: load variants
         load_func = functools.partial(
             cmd.select_cmd,
@@ -687,9 +688,6 @@ class VariantDelegate(QStyledItemDelegate):
 
         # Skip action with First LogicItem root item
 
-        if event.type() == QEvent.MouseButtonPress:
-            print("clicked")
-
         pass
 
 
@@ -896,6 +894,14 @@ class VariantView(QWidget):
             self.tr("Set ACMG classification for current selection")
         )
         self.classification_action.setMenu(self.create_classification_menu())
+
+        # Comment action
+        self.comment_action = QAction(FIcon(0xF0182), self.tr("Comments"))
+        self.addAction(self.comment_action)
+        self.comment_action.setToolTip(self.tr("Edit comment of selected variant ..."))
+        self.comment_action.triggered.connect(
+            lambda x: self.edit_comment(self.view.selectionModel().selectedRows()[0])
+        )
 
         # External links menu
         self.links_action = QAction(FIcon(0xF0339), self.tr("Link to"))
@@ -1117,24 +1123,8 @@ class VariantView(QWidget):
             }
 
         """
-        links = []
-        settings = QSettings()
-        settings.beginGroup("variant_view")
-        size = settings.beginReadArray("links")
-        for index in range(size):
-            settings.setArrayIndex(index)
-
-            links.append(
-                {
-                    "name": settings.value("name"),
-                    "url": settings.value("url"),
-                    "is_default": settings.value("is_default", 0, type=bool),
-                    "is_browser": settings.value("is_browser", 0, type=bool),
-                }
-            )
-
-        settings.endArray()
-        settings.endGroup()
+        config = Config("variant_view")
+        links = config.get("links", [])
 
         return links
 
@@ -1173,6 +1163,11 @@ class VariantView(QWidget):
             FIcon(0xF018F), self.tr("&Copy"), self.copy_to_clipboard, QKeySequence.Copy
         )
         menu.addAction(
+            FIcon(0xF018F),
+            self.tr("Copy cell value"),
+            self.copy_cell_to_clipboard,
+        )
+        menu.addAction(
             FIcon(0xF0486),
             self.tr("&Select all"),
             self.select_all,
@@ -1185,9 +1180,13 @@ class VariantView(QWidget):
     def _open_url(self, url_template: str, in_browser=False):
 
         variant = self.model.variant(self.view.currentIndex().row())
+        variant_id = variant["id"]
+        full_variant = sql.get_one_variant(self.conn, variant_id, True, False)
 
         # TODO create_url should be able to read deep variant (with unflattened annotations)
-        url = self._create_url(url_template, variant)
+        url = self._create_url(url_template, full_variant)
+
+        LOGGER.debug(url_template, url)
 
         if in_browser:
             QDesktopServices.openUrl(url)
@@ -1222,25 +1221,14 @@ class VariantView(QWidget):
             QUrl: return url or return None
 
         """
+        env = jinja2.Environment()
 
-        regex = re.compile(r"{([^{}]+)}")
-        # First, make sure there are some fields to format
-        if regex.findall(format_string):
+        try:
+            return QUrl(env.from_string(format_string).render(variant))
 
-            # Using this yields us two lists with fields (ex: "{ann.gene}") and their associated field name (ex: "ann.gene")
-            fields, field_names = zip(
-                *[(m.group(0), m.group(1)) for m in regex.finditer(format_string)]
-            )
-
-            # For every field, replace field names with variant value for the respective key
-            for field, field_name in zip(fields, field_names):
-                format_string = format_string.replace(
-                    field, str(variant.get(field_name, field))
-                )
-
-            return QUrl(format_string, QUrl.TolerantMode)
-        else:
-            return format_string
+        except Exception as e:
+            Logger.warning(e)
+            return QUrl()
 
     def update_favorites(self, checked: bool = None):
         """Update favorite status of multiple selected variants
@@ -1391,6 +1379,13 @@ class VariantView(QWidget):
         QApplication.instance().clipboard().setText(output.getvalue())
         output.close()
 
+    def copy_cell_to_clipboard(self):
+        index = self.view.currentIndex()
+        if not index:
+            return
+        data = index.data()
+        QApplication.instance().clipboard().setText(data)
+
     def _open_default_link(self, index: QModelIndex):
 
         #  get default link
@@ -1409,8 +1404,7 @@ class VariantView(QWidget):
         TODO : duplicate code with ContextMenu Event ! Need to refactor a bit
         """
 
-        pass
-        ##self._open_default_link(index)
+        self._open_default_link(index)
 
     def create_classification_menu(self):
         # Create classication action
@@ -1466,7 +1460,7 @@ class TagsModel(QAbstractListModel):
         return None
 
     def setData(self, index: QModelIndex, value, role: Qt.ItemDataRole):
-        """ override """
+        """override"""
 
         if role == Qt.CheckStateRole:
             self.items[index.row()]["checked"] = bool(value)
@@ -1487,7 +1481,6 @@ class TagsModel(QAbstractListModel):
 
         self.beginResetModel()
         for row in range(self.rowCount()):
-            print("ROW", row, tags)
             if self.items[row]["name"] in tags:
                 self.items[row]["checked"] = True
             else:
@@ -1497,63 +1490,22 @@ class TagsModel(QAbstractListModel):
 
     def load(self):
         self.beginResetModel()
+        self.items.clear()
+        config = Config("variant_view")
 
-        self.items = [
-            {
-                "name": "urgent",
-                "description": "blablba ",
-                "color": "#71e096",
-                "checked": False,
-            },
-            {
-                "name": "bruit",
-                "description": "blablba ",
-                "color": "#ed6d79",
-                "checked": False,
-            },
-            {
-                "name": "pass",
-                "description": "blablba ",
-                "color": "#f7dc68",
-                "checked": False,
-            },
-            {
-                "name": "urgent",
-                "description": "blablba ",
-                "color": "#71e096",
-                "checked": False,
-            },
-            {
-                "name": "test_wordset",
-                "description": "blablba ",
-                "color": "#ed6d79",
-                "checked": False,
-            },
-            {
-                "name": "sdfsf ",
-                "description": "blablba ",
-                "color": "#f7dc68",
-                "checked": False,
-            },
-            {
-                "name": "urgent",
-                "description": "blablba ",
-                "color": "#71e096",
-                "checked": False,
-            },
-            {
-                "name": "test_wordset",
-                "description": "blablba ",
-                "color": "#ed6d79",
-                "checked": False,
-            },
-            {
-                "name": "sdfsf ",
-                "description": "blablba ",
-                "color": "#f7dc68",
-                "checked": False,
-            },
-        ]
+        tags = config.get("tags", [])
+
+        if all(isinstance(tag, dict) for tag in tags):
+
+            for tag in tags:
+                self.items.append(
+                    {
+                        "name": tag["name"],
+                        "description": tag["description"],
+                        "color": tag["color"],
+                        "checked": False,
+                    }
+                )
 
         self.endResetModel()
 
@@ -1596,6 +1548,11 @@ class TagsWidget(QWidget):
     def on_apply(self):
         self.tags_selected.emit(self._model.checked_tags())
         self.parent().close()
+
+    def showEvent(self, event):
+        """override"""
+        super().showEvent(event)
+        self._model.load()
 
 
 class VariantViewWidget(plugin.PluginWidget):

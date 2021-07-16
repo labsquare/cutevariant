@@ -41,7 +41,7 @@ import cutevariant.commons as cm
 
 from cutevariant.gui import plugin, FIcon, style, MainWindow
 
-LOGGER = cm.logger()
+from cutevariant import LOGGER
 
 
 class FilterProxyModel(QSortFilterProxyModel):
@@ -314,7 +314,11 @@ class GroupByViewWidget(PluginWidget):
         self.apply_action: QAction = self.toolbar.addAction(
             FIcon(0xF0EF1), self.tr("Create filter from selection")
         )
-        self.apply_action.triggered.connect(self.on_apply)
+
+        self.refresh_action: QAction = self.toolbar.addAction(
+            FIcon(0xF0450), self.tr("Rrfresh")
+        )
+        self.refresh_action.triggered.connect(self.load)
 
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
@@ -362,6 +366,7 @@ class GroupByViewWidget(PluginWidget):
         # See load(), we use this attr to restore fields after grouping
 
         # Load ui
+
         self.load()
 
     def load(self):
@@ -420,12 +425,18 @@ class GroupByViewWidget(PluginWidget):
         filters = copy.deepcopy(self.mainwindow.get_state_data("filters"))
 
         if "$and" in filters:
-            filters["$and"].append(condition)
+            for index, cond in enumerate(filters["$and"]):
+                if list(cond.keys())[0] == list(condition.keys())[0]:
+                    filters["$and"][index] = condition
+                    break
+            else:
+                filters["$and"].append(condition)
         else:
             filters = {"$and": [condition]}
+
         self.mainwindow: MainWindow
         self.mainwindow.set_state_data("filters", filters)
-        self.mainwindow.refresh_plugins(sender=None)
+        self.mainwindow.refresh_plugins(sender=self)
 
 
 if __name__ == "__main__":
