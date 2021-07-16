@@ -375,10 +375,20 @@ class FieldsWidget(QWidget):
     def _update_actions(self, current: QModelIndex, previous: QModelIndex):
         is_indexed = current.siblingAtColumn(0).data(Qt.UserRole)
         for view in self.views:
+            view: dict
+            tableview: QTableView = view["view"]
             act_index: QAction = view["actions"].get("index", None)
             act_drop_index: QAction = view["actions"].get("drop_index", None)
-            act_index.setEnabled(not is_indexed)
-            act_drop_index.setEnabled(is_indexed)
+            if act_index:
+                if is_indexed:
+                    tableview.removeAction(act_index)
+                else:
+                    tableview.addAction(act_index)
+            if act_drop_index:
+                if is_indexed:
+                    tableview.addAction(act_drop_index)
+                else:
+                    tableview.removeAction(act_drop_index)
 
     def _on_index_field_clicked(
         self,
