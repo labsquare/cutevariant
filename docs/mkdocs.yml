@@ -12,9 +12,8 @@ nav:
       - Introduction: 'introduction.md'
       - Installation: 'installation.md'
       - Quick start: 'quick-start.md'
-    - Examples:
-      - Find a CFTR mutation: 'tutorials/basic-tutorial.md'
-      #- Add annotation reference database (intermediate): 'tutorials/add-annotation-reference.md'
+      - Examples: 'tutorials/basic-tutorial.md'
+    
     - Documentation:
       - VQL query: 'vql.md'
       - Plugins:
@@ -26,11 +25,12 @@ nav:
 
     - Developer:
       - Installation: 'developer/install-for-dev.md'
-      - Customization:
-        - Create a plugin: 'developer/customization/create-plugin.md'
-        - Create a formatter: 'developer/customization/create-formatter.md'
-        - Create a writer: 'developer/customization/create-writer.md'
-        - Create a reader: 'developer/customization/create-reader.md'
+      - Architecture: 'developer/customization/architecture.md'
+      - Create a plugin: 'developer/customization/create-plugin.md'
+      - Create a formatter: 'developer/customization/create-formatter.md'
+      - Create a writer: 'developer/customization/create-writer.md'
+      - Create a reader: 'developer/customization/create-reader.md'
+      - GUI classes: 'developer/api-documentation/gui-classes.md'
       # - API Documentation:
       #   - Core classes:
           # - SQL: 'developer/api-documentation/sql.md'
@@ -52,7 +52,6 @@ nav:
           #   - CSV Writer: ''
           #   - Ped Writer: ''
           #   - VCF Writer: ''
-        - GUI classes: 'developer/api-documentation/gui-classes.md'
 
 
 extra_css:
@@ -68,17 +67,18 @@ theme:
   features:
     - navigation.tabs
     - navigation.top
+    - navigation.expand
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      toggle:
-        icon: material/toggle-switch-off-outline
-        name: Switch to dark mode
-    - media: "(prefers-color-scheme: dark)"
-      scheme: slate
-      toggle:
-        icon: material/toggle-switch
-        name: Switch to light mode
+      # toggle:
+      #   icon: material/toggle-switch-off-outline
+      #   name: Switch to dark mode
+    # - media: "(prefers-color-scheme: dark)"
+    #   scheme: slate
+    #   toggle:
+    #     icon: material/toggle-switch
+    #     name: Switch to light mode
   favicon: 'assets/favicon.png'
   logo: 'assets/icon_white.png'
 markdown_extensions:
