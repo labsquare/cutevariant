@@ -4,35 +4,34 @@
 {% block tabs %}
 {{ super() }}
 
-<link href="https://fonts.googleapis.com/icon?family=Material+Icons"
-      rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
 <style>
+    .material-icons {
+        font-family: 'Material Icons';
+        font-weight: normal;
+        font-style: normal;
+        font-size: 24px;
+        /* Preferred icon size */
+        display: inline-block;
+        line-height: 1;
+        text-transform: none;
+        letter-spacing: normal;
+        word-wrap: normal;
+        white-space: nowrap;
+        direction: ltr;
 
-.material-icons {
-  font-family: 'Material Icons';
-  font-weight: normal;
-  font-style: normal;
-  font-size: 24px;  /* Preferred icon size */
-  display: inline-block;
-  line-height: 1;
-  text-transform: none;
-  letter-spacing: normal;
-  word-wrap: normal;
-  white-space: nowrap;
-  direction: ltr;
+        /* Support for all WebKit browsers. */
+        -webkit-font-smoothing: antialiased;
+        /* Support for Safari and Chrome. */
+        text-rendering: optimizeLegibility;
 
-  /* Support for all WebKit browsers. */
-  -webkit-font-smoothing: antialiased;
-  /* Support for Safari and Chrome. */
-  text-rendering: optimizeLegibility;
+        /* Support for Firefox. */
+        -moz-osx-font-smoothing: grayscale;
 
-  /* Support for Firefox. */
-  -moz-osx-font-smoothing: grayscale;
-
-  /* Support for IE. */
-  font-feature-settings: 'liga';
-}
+        /* Support for IE. */
+        font-feature-settings: 'liga';
+    }
 
 
     .md-main {
@@ -68,7 +67,7 @@
     }
 
     .tx-hero__image {
-  
+
         order: 1;
         padding-right: 2.5rem;
         width: 900px;
@@ -254,7 +253,8 @@
     <div class="md-grid md-typeset">
         <div class="tx-hero">
             <div class="tx-hero__image">
-                <img src="https://raw.githubusercontent.com/labsquare/cutevariant/master/screenshot1.png" draggable="false">
+                <img src="https://raw.githubusercontent.com/labsquare/cutevariant/master/screenshot1.png"
+                    draggable="false">
             </div>
             <div class="tx-hero__content">
                 <h1> Cutevariant </h1>
@@ -263,7 +263,7 @@
                     class="md-button md-button--primary">
                     Get started
                 </a>
-                <a href="installation/" title="Download" class="md-button">
+                <a href="installation.html" title="Download" class="md-button">
                     Download now
                 </a>
             </div>
@@ -275,62 +275,72 @@
 <div class="top-hr">
     <div class="feature-item">
         <h2>
-        <span class="material-icons md-48">wysiwyg</span>
+            <span class="material-icons md-48">wysiwyg</span>
             A Standalone application
         </h2>
-        <p> Do not required any server. Your data stays with you. Filtering are faster and you don't have the latency of a web application. Easy to install on any computer using <b>Windows</b>, <b>Mac</b> or <b>Linux</b>. </p>
+        <p> Do not required any server. Your data stays with you. Filtering are faster and you don't have the latency of
+            a web application. Easy to install on any computer using <b>Windows</b>, <b>Mac</b> or <b>Linux</b>. </p>
     </div>
     <div class="feature-item">
         <h2>
-        <span class="material-icons">code</span>
-         VQL Language
+            <span class="material-icons">code</span>
+            VQL Language
         </h2>
         <p>
-            <b>Select</b> and <b>filters</b> variants directly from a domain specific language that looks like a subset of SQL. It makes possible to create all kinds of query that you could not do with any other user interface. If you don't like query manually, you can always build them indirectly from plugins available from the mainwindow.
+            <b>Select</b> and <b>filters</b> variants directly from a domain specific language that looks like a subset
+            of SQL. It makes possible to create all kinds of query that you could not do with any other user interface.
+            If you don't like query manually, you can always build them indirectly from plugins available from the
+            mainwindow.
         </p>
     </div>
     <div class="feature-item">
         <h2>
-        <span class="material-icons">extension</span>
+            <span class="material-icons">extension</span>
             Made with plugins
         </h2>
-        <p>Cutevariant is composed entirely of <b>plugins</b>. It means that it is easily customizable at will. You can create custom controllers, themes and support new file formats for importing or exporting.  </p>
+        <p>Cutevariant is composed entirely of <b>plugins</b>. It means that it is easily customizable at will. You can
+            create custom controllers, themes and support new file formats for importing or exporting. </p>
     </div>
     <div class="feature-item">
         <h2>
-           <span class="material-icons">people</span>
+            <span class="material-icons">people</span>
             Community
         </h2>
-        <p>Cutevariant is a new opensource project written in <a href="https://www.python.org/"><b>Python</b></a> and <a href="https://www.qt.io/qt-for-python"><b>Qt framework</b></a> and available on github. Contribution are welcome. You can create new plugin and share them with the community. Since it is a new project, bug report and any feedback will be highly appreciated.
+        <p>Cutevariant is a new opensource project written in <a href="https://www.python.org/"><b>Python</b></a> and <a
+                href="https://www.qt.io/qt-for-python"><b>Qt framework</b></a> and available on github. Contribution are
+            welcome. You can create new plugin and share them with the community. Since it is a new project, bug report
+            and any feedback will be highly appreciated.
 
 
-         </p>
+        </p>
     </div>
 </div>
 
 
-    </div>
+</div>
 </div>
 
 
 <!-- Custom narrow footer -->
 <div class="md-footer-meta__inner md-grid">
-    
-        <div class="feature-item">
-
-    <a href="https://www.chu-brest.fr/fr/notre-offre-soins/nos-specialites/biologie/genetique-moleculaire-histocompatibilite"><img  src="images/CHU_brest_logo.png"/></a>
-</div>
 
     <div class="feature-item">
-    <a href="https://www.univ-brest.fr/umr1078/"><img  src="images/inserm_logo.png"/></a>
-</div>
 
-
-    <div class="feature-item">
-    <a href="https://www.univ-brest.fr/"><img  src="images/ubo_logo.png"/></a>
-</div>
-
+        <a
+            href="https://www.chu-brest.fr/fr/notre-offre-soins/nos-specialites/biologie/genetique-moleculaire-histocompatibilite"><img
+                src="images/CHU_brest_logo.png" /></a>
     </div>
+
+    <div class="feature-item">
+        <a href="https://www.univ-brest.fr/umr1078/"><img src="images/inserm_logo.png" /></a>
+    </div>
+
+
+    <div class="feature-item">
+        <a href="https://www.univ-brest.fr/"><img src="images/ubo_logo.png" /></a>
+    </div>
+
+</div>
 
 
 {% endblock %}

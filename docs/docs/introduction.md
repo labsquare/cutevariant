@@ -1,18 +1,21 @@
 
-# What is cutevariant 
-Pk ? 
-Cutevariant est une application bureautique permettant d'explorer des variations génétique stocké dans des fichiers VCF.  
-Il a été concu pour que n'importe qui puisse facillement visualier et filter des variations génétique. En particulier ceux qui analyse des panel et des exomes humain. Cependant, n'importe quel VCF peut etre utilisé. Actuellement, il support le VCF annoté avec SnpEff et VEP. 
+# What is cutevariant?
 
-# How it works ?
+Cutevariant is a desktop application, useful to explore genetic variations stored into VCF files.
+It has been designed so that everyone can easily visualize and filter genetic variations, even with no prior knowledge in IT.
+Even though this software was especially tailored for panel and human exome analysis, it can be used with any VCF file. For now, only VCFs annotated with SnpEff and VEP are supported.
 
-Cutevariants imports VCF file into an Sqlite database. It can be done depuis le bouton créer un projet. 
-Les variants, les annotations ainsi que les samples sont stocké de façon normalisé. 
+# How dot it work?
 
-Une fois les variants chargé, vous pouvez interogger la base à partir d'un language ressemblant au SQL que nous avons appelé VQL. Executez ces requete directement depuis l'editeur VQL pour obtenir les variants voulu.
+Cutevariant imports VCF file fields into a Sqlite3 database. This is the first step to explore a VCF file, and is done exactly once for every project by pressing the ':material-database-plus: Create project' button in the toolbar. Variants, annotations and sample fields are stored in a normalized fashion.
 
-Si vous n'aimez pas le VQL, Vous pouvez crée votre selection de variant directement depuis les controlleurs présent sur l'interface. 
+Once the variants are loaded into the database, you can retrieve their information in a language that looks like SQL that we've called VQL.
 
-# Community 
-Cutevariant is an open source project crée par des gens passionnée.
-Grace à une architecture composé entierement de plugins, il est très facile pour les developpeur participer au projet. Nous utilisons Qt et python. 
+You can execute VQL requests directly inside the dedicated VQL editor, to obtain the information you need by specifying what fields you need, and what conditions they should meet.
+
+If you don't like VQL, you can select and filter your variants directly from dedicated controllers.
+# Community
+
+Cutevariant is an open source project created by passionate developers. Thanks to its modular architecture built around plugins, it is very easy for developers to participate in this project. The whole project is based on Qt for python (PySide2 for now), and requires very few dependencies to work.
+
+Every contribution is welcome, we have an active [:material-discord:Discord server](https://discord.gg/7sSH4VSPKK) where we discuss about cutevariant 
