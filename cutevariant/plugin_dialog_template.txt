@@ -1,0 +1,27 @@
+from cutevariant.gui.plugin import PluginDialog
+from PySide2.QtCore import *
+from PySide2.QtGui import *
+from PySide2.QtWidgets import *
+
+
+class {{name}}(PluginDialog):
+    """Model class for all tool menu plugins
+
+    These plugins are based on DialogBox; this means that they can be opened
+    from the tools menu.
+    """
+
+    def __init__(self, parent: MainWindow =None):
+        """
+        Keys:
+            parent (QMainWindow): cutevariant Mainwindow
+        """
+        super().__init__(parent)
+
+        self.button = QPushButton("hello", self)
+        self.button.clicked.connect(self.on_click)
+
+    def on_click(self):
+    	print("I'm using this sqlite connection", self.conn)
+
+

@@ -969,6 +969,12 @@ class MainWindow(QMainWindow):
                 self.tr(f"Cannot save file to {os.path.basename(file_name)}"),
             )
 
+    def setup_developers_menu(self):
+        result = QMenu(self.tr("Developers"))
+        result.setIcon(FIcon(0xF1064))
+
+        return result
+
     # @Slot()
     # def on_query_model_changed(self):
     #     for name, _plugin in self.plugins.items():
