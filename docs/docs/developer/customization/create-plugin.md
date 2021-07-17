@@ -129,7 +129,7 @@ from cutevariant.gui.settings import AbstractSettingsWidget
 from PySide2.QtWidgets import QSpinBox
 
 
-class MemorySettings(AbstractSettingsWidget):
+class SampleMemorySettings(AbstractSettingsWidget):
 
 	def __init__(self, parent = None):
 		super().__init__(parent)
@@ -146,13 +146,13 @@ class MemorySettings(AbstractSettingsWidget):
 		self.input.setValue(config.get("memory", 32))
 
 
-class PluginSettingsWidget(PluginSettingsWidget):
+class SamplePluginSettingsWidget(PluginSettingsWidget):
     """Model class for settings plugins"""
 
     def __init__(self, parent = None):
     	super().__init__()
 
-    	self.add_page(MemorySettings())
+    	self.add_page(SampleMemorySettings())
 
 
 
