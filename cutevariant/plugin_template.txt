@@ -1,7 +1,7 @@
 from cutevariant.gui.plugin import PluginWidget
 import sqlite3
 
-class PlotGraphPlugin(PluginWidget):
+class {{name}}Plugin(PluginWidget):
 
 	# Location of the plugin in the mainwindow
 	# Can be : DOCK_LOCATION, CENTRAL_LOCATION, FOOTER_LOCATION
@@ -21,7 +21,7 @@ class PlotGraphPlugin(PluginWidget):
         Args:
             mainwindow (MainWindow): cutevariant Mainwindow
         """
-        pass
+        self.mainwindow = mainwindow
 
     def on_open_project(self, conn: sqlite3.Connection):
         """This method is called when a project is opened

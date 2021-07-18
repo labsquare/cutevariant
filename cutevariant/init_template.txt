@@ -1,5 +1,5 @@
-__title__ = {{title}}
-__description__ = {{description}}
-__long_description__ = {{long_description}}
-__author__ = {{author}}
-__version__ = {{version}}
+__title__ = "{{title}}"
+__description__ = "{{description}}"
+__long_description__ = """{{long_description}}"""
+__author__ = "{{author}}"
+__version__ = "1.0.0"

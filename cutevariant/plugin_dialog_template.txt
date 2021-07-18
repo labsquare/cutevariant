@@ -4,7 +4,7 @@ from PySide2.QtGui import *
 from PySide2.QtWidgets import *
 
 
-class {{name}}(PluginDialog):
+class {{name}}Dialog(PluginDialog):
     """Model class for all tool menu plugins
 
     These plugins are based on DialogBox; this means that they can be opened

@@ -1,5 +1,5 @@
 
-class {{name}}Settings(AbstractSettingsWidget):
+class {{name}}GeneralSettings(AbstractSettingsWidget):
 
 	def __init__(self, parent = None):
 		super().__init__(parent)
@@ -7,21 +7,21 @@ class {{name}}Settings(AbstractSettingsWidget):
 		self.input = QSpinBox(self)
 
 	def save(self):
-		config = self.create_config("{{name|snake_case}}")
+		config = self.create_config("{{name|camel_to_snake}}")
 		config["param"]=self.input.value()
 		config.save() 
 
 	def load(self):
-		config = self.create_config("{{name|snake_case}}")
+		config = self.create_config("{{name|camel_to_snake}}")
 		self.input.setValue(config["param"])
 
 
-class SamplePluginSettingsWidget(PluginSettingsWidget):
+class {{name}}PluginSettingsWidget(PluginSettingsWidget):
     """Model class for settings plugins"""
 
     def __init__(self, parent = None):
     	super().__init__()
 
-    	self.add_page({{name}}Settings())
+    	self.add_page({{name}}GeneralSettings())
 
 
