@@ -11,10 +11,10 @@ from PySide2.QtWidgets import *
 from cutevariant.commons import camel_to_snake, snake_to_camel
 from cutevariant import LOGGER
 
-WIDGET_TEMPLATE = "plugin_template.txt"
-DIALOG_TEMPLATE = "plugin_dialog_template.txt"
-INIT_TEMPLATE = "init_template.txt"
-SETTINGS_TEMPLATE = "plugin_settings_template.txt"
+WIDGET_TEMPLATE = "plugin_widget_template.py.j2"
+DIALOG_TEMPLATE = "plugin_dialog_template.py.j2"
+INIT_TEMPLATE = "plugin_init_template.py.j2"
+SETTINGS_TEMPLATE = "plugin_settings_template.py.j2"
 
 
 def human_to_camel(words: str) -> str:
@@ -158,10 +158,10 @@ Try answering:
         # Layout these checkboxes vertically
         frame_layout = QVBoxLayout(self.frame_plugin_type)
 
-        # So that the checkbox always prints 'Widget plugin (MyTestPlugin)
+        # So that the checkbox always prints 'Widget plugin (MyTestWidget)
         self.le_name.textChanged.connect(
             lambda s: self.check_add_widget.setText(
-                f"{self.tr('Widget plugin ')}({human_to_camel(s)}Plugin)"
+                f"{self.tr('Widget plugin ')}({human_to_camel(s)}Widget)"
             )
         )
 
@@ -172,10 +172,10 @@ Try answering:
             )
         )
 
-        # So that the checkbox always prints 'Dialog plugin (MyTestSettings)
+        # So that the checkbox always prints 'Dialog plugin (MyTestSettingsWidget)
         self.le_name.textChanged.connect(
             lambda s: self.check_add_settings.setText(
-                f"{self.tr('Plugin settings ')}({human_to_camel(s)}Settings)"
+                f"{self.tr('Plugin settings ')}({human_to_camel(s)}SettingsWidget)"
             )
         )
 
@@ -236,6 +236,7 @@ Try answering:
             "add_settings": self.check_add_settings.isChecked(),
             "add_widget": self.check_add_widget.isChecked(),
             "add_dialog": self.check_add_dialog.isChecked(),
+            "refresh_state_data": ["fields", "filters"],
         }
         return super().accept()
 

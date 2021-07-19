@@ -35,7 +35,7 @@ from cutevariant.commons import (
 from cutevariant.gui.export import ExportDialogFactory, ExportDialog
 
 # Import plugins
-from cutevariant.gui import plugin
+from cutevariant.gui import plugin, plugin_form
 
 from cutevariant import LOGGER
 
@@ -360,6 +360,7 @@ class MainWindow(QMainWindow):
         )
         ### Recent projects
         self.recent_files_menu = self.file_menu.addMenu(self.tr("Open recent"))
+
         self.setup_recent_menu()
 
         self.file_menu.addAction(QIcon(), self.tr("Export..."), self.on_export_pressed)
@@ -451,6 +452,11 @@ class MainWindow(QMainWindow):
         )
 
         self.help_menu.addSeparator()
+        # Setup developers menu
+        self.developers_menu = QMenu(self.tr("Developers..."))
+        self.setup_developers_menu()
+        self.help_menu.addMenu(self.developers_menu)
+
         self.help_menu.addAction(
             self.tr("About Qt..."), QApplication.instance().aboutQt
         )
@@ -970,10 +976,15 @@ class MainWindow(QMainWindow):
             )
 
     def setup_developers_menu(self):
-        result = QMenu(self.tr("Developers"))
-        result.setIcon(FIcon(0xF1064))
+        self.developers_menu.setIcon(FIcon(0xF1064))
+        self.create_plugin_action: QAction = self.developers_menu.addAction(
+            self.tr("Create new plugin")
+        )
+        self.create_plugin_action.setIcon(FIcon(0xF14D0))
+        # The resulting dialog is created and generates the plugin
+        self.create_plugin_action.triggered.connect(plugin_form.create_dialog_plugin)
 
-        return result
+        return self.developers_menu
 
     # @Slot()
     # def on_query_model_changed(self):

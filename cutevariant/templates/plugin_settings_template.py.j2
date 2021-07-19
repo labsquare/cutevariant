@@ -15,8 +15,13 @@ class {{name}}GeneralSettings(AbstractSettingsWidget):
 		config = self.create_config("{{name|camel_to_snake}}")
 		self.input.setValue(config["param"])
 
+	def reset(self):
+		config = self.create_config("{{name|camel_to_snake}}")
+		config.reset()
+		config.save()
 
-class {{name}}PluginSettingsWidget(PluginSettingsWidget):
+
+class {{name}}SettingsWidget(PluginSettingsWidget):
     """Model class for settings plugins"""
 
     def __init__(self, parent = None):
