@@ -3,7 +3,7 @@
 from cutevariant.gui.plugins.harmonizome_wordset import dialogs
 from typing import List
 from PySide2.QtCore import *
-from PySide2.QtGui import QColor, QFont, QIcon
+from PySide2.QtGui import QColor, QFont, QIcon, QPixmap
 from PySide2.QtWidgets import *
 
 # Custom imports
@@ -218,18 +218,12 @@ class TagModel(QAbstractListModel):
 
 
 class TagDialog(QDialog):
-    def __init__(self, tag: dict = None, parent: QWidget = None) -> None:
+    def __init__(
+        self, name="", description="", color="#FF00FF", parent: QWidget = None
+    ) -> None:
         super().__init__(parent=parent)
 
-        self.setWindowTitle(self.tr("Edit tag..."))
-
-        # Copy it, so we can cancel editing
-        self.tag = copy.deepcopy(tag)
-        self.tag = self.tag or {
-            "name": "Tag name",
-            "description": "Tag description",
-            "color": "#FF0000",
-        }
+        self.setWindowTitle(self.tr("Edit tag"))
 
         self._layout = QVBoxLayout(self)
 
@@ -245,15 +239,12 @@ class TagDialog(QDialog):
         self.color_pick = QPushButton(self.tr("Pick color..."), self)
         self.color = QColor("#FF0000")
 
-        if "name" in self.tag:
-            self.tag_le.setText(self.tag["name"])
-        if "description" in self.tag:
-            self.descr_le.setText(self.tag["description"])
-        if "color" in self.tag:
-            self.color = QColor(self.tag["color"])
+        self.tag_le.setPlaceholderText(self.tr("Name"))
+        self.descr_le.setPlaceholderText(self.tr("Description"))
+        self.color = QColor("red")
 
         # When we click, we change tag's color
-        self.color_pick.clicked.connect(self.get_tag_color)
+        self.color_pick.clicked.connect(self._get_tag_color)
 
         self.form_layout.addRow(self.tr("Name"), self.tag_le)
         self.form_layout.addRow(self.tr("Description"), self.descr_le)
@@ -262,15 +253,41 @@ class TagDialog(QDialog):
         self._layout.addLayout(self.form_layout)
         self._layout.addWidget(self._button_box)
 
-    def get_tag_color(self):
-        self.tag["color"] = QColorDialog.getColor(
-            QColor(self.tag["color"]), self.color_pick
-        ).name()
+        self.set_tag(name, description, color)
 
-    def accept(self) -> None:
-        self.tag["name"] = self.tag_le.text()
-        self.tag["description"] = self.descr_le.text()
-        super().accept()
+    def set_tag(self, name: str = "", description: str = "", color: str = "#FF00FF"):
+        """Set tag
+
+        Args:
+            name (str, optional):
+            description (str, optional):
+            color (str, optional):
+        """
+        self.tag_le.setText(name)
+        self.descr_le.setText(description)
+        self.color = color
+        self.color_pick.setIcon(FIcon(0xF0765, QColor(self.color)))
+
+    def get_tag(self) -> dict:
+        """Summary
+
+        Returns:
+            dict: return name, description, color
+        """
+
+        return {
+            "name": self.tag_le.text(),
+            "description": self.descr_le.text(),
+            "color": self.color,
+        }
+
+    def _get_tag_color(self):
+        color = QColorDialog.getColor(QColor(self.color), self.color_pick).name()
+
+        if color:
+            current_tag = self.get_tag()
+            current_tag["color"] = color
+            self.set_tag(**current_tag)
 
 
 class TagsSettings(AbstractSettingsWidget):
@@ -326,23 +343,15 @@ class TagsSettings(AbstractSettingsWidget):
     def on_add(self):
         dialog = TagDialog(parent=self)
         if dialog.exec_() == QDialog.Accepted:
-            self.model.add_item(
-                dialog.tag
-                or {
-                    "name": "Untitled",
-                    "description": "No description",
-                    "color": "#FF00FF",
-                }
-            )
+            self.model.add_item(dialog.get_tag())
 
     def on_edit(self):
         index = self.view.currentIndex()
         name = index.data(Qt.DisplayRole)
         description = index.data(Qt.ToolTipRole)
         color = index.data(Qt.DecorationRole).name()
-        dialog = TagDialog(
-            {"name": name, "description": description, "color": color}, self
-        )
+        dialog = TagDialog(name, description, color)
+
         if dialog.exec_() == QDialog.Accepted:
             self.model.setData(index, dialog.tag["name"], Qt.DisplayRole)
             self.model.setData(index, dialog.tag["description"], Qt.ToolTipRole)
