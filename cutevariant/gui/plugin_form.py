@@ -51,10 +51,12 @@ def generate_file(template_file: str, **kwargs):
 
     # name (the plugin name in camelCase) is required. Should be something like: MySample
     if "name" not in kwargs:
+        LOGGER.debug("Missing required field 'name'")
         return
 
     # module name (the plugin name in snake_case) is required. Should be something like: my_sample
     if "module_name" not in kwargs:
+        LOGGER.debug("Missing required field 'module_name'")
         return
 
     # So that we can safely map a template name to its end target
@@ -63,17 +65,17 @@ def generate_file(template_file: str, **kwargs):
 
     module_name = kwargs["module_name"]
 
-    template_path = os.path.abspath(os.path.join(f"{os.path.dirname(__file__)}/../"))
-    template_loader = jinja2.FileSystemLoader(searchpath=template_path)
+    template_loader = jinja2.PackageLoader("cutevariant")
 
-    if not os.path.isfile(os.path.join(template_path, template_file)):
-        LOGGER.debug("Template %s not found!", template_file)
-        return
     template_env = jinja2.Environment(loader=template_loader)
     template_env.filters["camel_to_snake"] = camel_to_snake
-    template = template_env.get_template(template_file)
 
-    # Find path to this plugin
+    try:
+        template = template_env.get_template(template_file)
+    except Exception as e:
+        LOGGER.error("Cannot find template %s", template_file, exc_info=True)
+
+    # Find path to this plugin (directory to store generated file in)
     plugin_path = os.path.join(os.path.dirname(__file__), "plugins", module_name)
 
     if not os.path.isdir(plugin_path):
