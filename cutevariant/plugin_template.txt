@@ -12,7 +12,7 @@ class {{name}}Plugin(plugin.PluginWidget):
     # Refresh the plugin only if the following state variable changed.
     # Can be : fields, filters, source
     {%if refresh_state_data %}
-    REFRESH_STATE_DATA = {{{ refresh_state_data|join(', ') }}}
+    REFRESH_STATE_DATA = '{'{{ refresh_state_data|join(', ') }}'}'
     {% else %}
     REFRESH_STATE_DATA = set()
     {% endif %}

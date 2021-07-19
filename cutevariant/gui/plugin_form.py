@@ -61,7 +61,6 @@ def generate_file(template_file: str, **kwargs):
     if template_file not in template_to_file_name.keys():
         return
 
-    name = kwargs["name"]
     module_name = kwargs["module_name"]
 
     template_path = os.path.abspath(os.path.join(f"{os.path.dirname(__file__)}/../"))
