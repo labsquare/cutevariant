@@ -12,7 +12,7 @@ from PySide2.QtGui import (
     QPalette,
     QPixmap,
 )
-from PySide2.QtCore import Qt, QModelIndex, QRect, QUrl
+from PySide2.QtCore import Qt, QModelIndex, QRect, QUrl, QPoint
 from PySide2.QtWidgets import QStyleOptionViewItem, QStyle
 
 # Custom imports
@@ -119,16 +119,17 @@ class CutestyleFormatter(Formatter):
             values = str(value).split("&")
             font = QFont()
             metrics = QFontMetrics(font)
-            x = option.rect.x() + 5
+            x = 0
             # y = option.rect.center().y()
             pix = QPixmap(option.rect.size())
             pix.fill(Qt.transparent)
             painter = QPainter(pix)
-            for value in values:
+            for index, value in enumerate(values):
                 width = metrics.width(value)
                 height = metrics.height()
-                rect = QRect(0, 0, width + 15, height + 10)
-                # rect.moveCenter(option.rect.center())
+                rect = QRect(x, 0, width + 15, height + 10)
+
+                rect.moveCenter(QPoint(rect.center().x(), option.rect.center().y()))
                 # rect.moveLeft(x)
                 painter.setFont(font)
                 # painter.setClipRect(option.rect, Qt.IntersectClip)
