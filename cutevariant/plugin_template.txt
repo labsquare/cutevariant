@@ -1,17 +1,24 @@
-from cutevariant.gui.plugin import PluginWidget
+from cutevariant.gui import PluginWidget
 import sqlite3
 
-class {{name}}Plugin(PluginWidget):
+class {{name}}Plugin(plugin.PluginWidget):
 
 	# Location of the plugin in the mainwindow
 	# Can be : DOCK_LOCATION, CENTRAL_LOCATION, FOOTER_LOCATION
-    LOCATION = DOCK_LOCATION
+    LOCATION = plugin.DOCK_LOCATION
     # Make the plugin enable. Otherwise, it will be not loaded
     ENABLE = TRUE
 
     # Refresh the plugin only if the following state variable changed.
-    # Can be : fields, filters, source 
-    REFRESH_STATE_DATA = {"fields","filters"}
+    # Can be : fields, filters, source
+    {%if refresh_state_data %}
+    REFRESH_STATE_DATA = {{{ refresh_state_data|join(', ') }}}
+    {% else %}
+    REFRESH_STATE_DATA = set()
+    {% endif %}
+
+    def __init__(self,parent=None):
+        super().__init__(parent)
 
     def on_register(self, mainwindow: MainWindow):
         """This method is called when the plugin is registered from the mainwindow. 

@@ -1,8 +1,9 @@
-from cutevariant.gui.plugin import PluginDialog
 from PySide2.QtCore import *
 from PySide2.QtGui import *
 from PySide2.QtWidgets import *
 
+from cutevariant.gui.plugin import PluginDialog
+from cutevariant.gui import MainWindow
 
 class {{name}}Dialog(PluginDialog):
     """Model class for all tool menu plugins
@@ -24,4 +25,12 @@ class {{name}}Dialog(PluginDialog):
     def on_click(self):
     	print("I'm using this sqlite connection", self.conn)
 
+if __name__ == "__main__":
+    import sys
 
+    app = QApplication(sys.argv)
+    dialog = {{name}}Dialog()
+    conn = sqlite3.connect("path_to_test_database.db")
+    conn.row_factory = sqlite3.Row
+    dialog.conn = conn
+    dialog.exec_()
