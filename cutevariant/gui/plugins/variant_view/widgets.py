@@ -1299,8 +1299,14 @@ class VariantView(QWidget):
         Todo:
             Use custom sqlite type ?
         """
-        tags = "&".join(tags)
         unique_ids = set()
+
+        # variant_data = None
+        # if len(self.view.selectionModel().selectedRows()) == 1:
+        #     variant_data = sql.get_one_variant(
+        #         self.model.conn, self.model.variant(index.row())["id"]
+        #     )
+
         for index in self.view.selectionModel().selectedRows():
             if not index.isValid():
                 continue
@@ -1311,8 +1317,19 @@ class VariantView(QWidget):
 
             if variant_id in unique_ids:
                 continue
+
             unique_ids.add(variant_id)
-            update_data = {"tags": tags}
+            update_tags = tags
+
+            if len(self.view.selectionModel().selectedRows()) > 1:
+                current_tags = sql.get_one_variant(self.conn, variant_id)["tags"].split(
+                    "&"
+                )
+                update_tags = set(tags + current_tags)
+
+            update_tags = "&".join(update_tags)
+
+            update_data = {"tags": update_tags}
             self.model.update_variant(index.row(), update_data)
 
     def edit_comment(self, index: QModelIndex):
@@ -1509,6 +1526,17 @@ class TagsModel(QAbstractListModel):
 
         self.endResetModel()
 
+    def set_checked(self, checked_tags: list):
+
+        self.beginResetModel()
+        for tag in self.items:
+            if tag["name"] in checked_tags:
+                tag["checked"] = True
+            else:
+                tag["checked"] = False
+
+        self.endResetModel()
+
     def clear(self):
         self.beginResetModel()
         self.items = []
@@ -1521,6 +1549,7 @@ class TagsModel(QAbstractListModel):
 class TagsWidget(QWidget):
 
     tags_selected = Signal(list)
+    visibility_changed = Signal()
 
     def __init__(self, parent=None):
         super().__init__()
@@ -1532,8 +1561,6 @@ class TagsWidget(QWidget):
         self._model = TagsModel()
         self._proxy_model = QSortFilterProxyModel()
         self._proxy_model.setSourceModel(self._model)
-        self._model.load()
-
         self._listview.setModel(self._proxy_model)
 
         vlayout = QVBoxLayout()
@@ -1549,10 +1576,15 @@ class TagsWidget(QWidget):
         self.tags_selected.emit(self._model.checked_tags())
         self.parent().close()
 
+    def set_checked(self, tags):
+        self._model.set_checked(tags)
+
     def showEvent(self, event):
         """override"""
+
         super().showEvent(event)
         self._model.load()
+        self.visibility_changed.emit()
 
 
 class VariantViewWidget(plugin.PluginWidget):
@@ -1606,9 +1638,9 @@ class VariantViewWidget(plugin.PluginWidget):
         self._tag_action_menu = QMenu()
         self._tag_widget = TagsWidget()
         self._tag_action.setMenu(self._tag_action_menu)
-
         self.widget_action = QWidgetAction(self)
         self.widget_action.setDefaultWidget(self._tag_widget)
+        self._tag_widget.visibility_changed.connect(self.on_tag_widget_show)
 
         self._tag_action_menu.addAction(self.widget_action)
         self._tag_widget.tags_selected.connect(self.main_right_pane.update_tags)
@@ -1668,6 +1700,15 @@ class VariantViewWidget(plugin.PluginWidget):
 
         self.main_right_pane.error_raised.connect(self.set_message)
         self.main_right_pane.model.load_finished.connect(self.on_load_finished)
+
+    def on_tag_widget_show(self):
+        """ Triggered when tagDialog is displayed """
+        selected_rows = self.main_right_pane.view.selectionModel().selectedRows()
+        if len(selected_rows) == 1:
+            index = selected_rows[0]
+            variant_id = self.main_right_pane.model.variant(index.row())["id"]
+            variant = sql.get_one_variant(self.conn, variant_id)
+            self._tag_widget.set_checked(variant["tags"].split("&"))
 
     def on_load_finished(self):
         """Triggered when variant load is finished
