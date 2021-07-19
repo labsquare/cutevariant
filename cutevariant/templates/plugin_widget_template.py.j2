@@ -1,5 +1,6 @@
-from cutevariant.gui import PluginWidget
 import sqlite3
+from cutevariant.gui import plugin
+from cutevariant.gui import MainWindow
 
 class {{name}}Widget(plugin.PluginWidget):
 
@@ -7,7 +8,7 @@ class {{name}}Widget(plugin.PluginWidget):
 	# Can be : DOCK_LOCATION, CENTRAL_LOCATION, FOOTER_LOCATION
     LOCATION = plugin.DOCK_LOCATION
     # Make the plugin enable. Otherwise, it will be not loaded
-    ENABLE = TRUE
+    ENABLE = True
 
     # Refresh the plugin only if the following state variable changed.
     # Can be : fields, filters, source

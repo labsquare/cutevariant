@@ -1,3 +1,5 @@
+import sqlite3
+
 from PySide2.QtCore import *
 from PySide2.QtGui import *
 from PySide2.QtWidgets import *
@@ -30,7 +32,7 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
     dialog = {{name}}Dialog()
-    conn = sqlite3.connect("path_to_test_database.db")
-    conn.row_factory = sqlite3.Row
-    dialog.conn = conn
+    # conn = sqlite3.connect("path_to_test_database.db")
+    # conn.row_factory = sqlite3.Row
+    # dialog.conn = conn
     dialog.exec_()
