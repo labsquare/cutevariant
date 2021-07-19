@@ -251,6 +251,10 @@ class VariantModel(QAbstractTableModel):
                 value = str(self.variant(index.row())[column_name])
                 return value
 
+            if role == Qt.DecorationRole:
+                if column_name == "tags":
+                    return QColor("red")
+
         return None
 
     def headerData(self, section, orientation=Qt.Horizontal, role=Qt.DisplayRole):
@@ -1322,15 +1326,16 @@ class VariantView(QWidget):
             update_tags = tags
 
             if len(self.view.selectionModel().selectedRows()) > 1:
-                current_tags = sql.get_one_variant(self.conn, variant_id)["tags"].split(
-                    "&"
-                )
-                update_tags = set(tags + current_tags)
+                current_tags = sql.get_one_variant(self.conn, variant_id)["tags"]
 
-            update_tags = "&".join(update_tags)
+                if current_tags:
+                    update_tags = set(tags + current_tags)
 
-            update_data = {"tags": update_tags}
-            self.model.update_variant(index.row(), update_data)
+            if update_tags:
+                update_tags = "&".join(update_tags)
+                update_data = {"tags": update_tags}
+
+                self.model.update_variant(index.row(), update_data)
 
     def edit_comment(self, index: QModelIndex):
         """Allow a user to add a comment for the selected variant"""
@@ -1708,7 +1713,8 @@ class VariantViewWidget(plugin.PluginWidget):
             index = selected_rows[0]
             variant_id = self.main_right_pane.model.variant(index.row())["id"]
             variant = sql.get_one_variant(self.conn, variant_id)
-            self._tag_widget.set_checked(variant["tags"].split("&"))
+            if variant["tags"]:
+                self._tag_widget.set_checked(variant["tags"].split("&"))
 
     def on_load_finished(self):
         """Triggered when variant load is finished

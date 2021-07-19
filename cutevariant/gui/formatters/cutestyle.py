@@ -20,6 +20,8 @@ from cutevariant.gui.formatter import Formatter
 from cutevariant.gui import FIcon
 import cutevariant.commons as cm
 
+from cutevariant.config import Config
+
 
 class CutestyleFormatter(Formatter):
 
@@ -57,6 +59,11 @@ class CutestyleFormatter(Formatter):
     # Cache genotype icons
     # Values in gt field as keys (str), FIcon as values
     GENOTYPE_ICONS = {key: FIcon(val) for key, val in cm.GENOTYPE_ICONS.items()}
+
+    def __init__(self):
+        super().__init__()
+        config = Config("variant_view")
+        self.TAGS_COLOR = {tag["name"]: tag["color"] for tag in config.get("tags", [])}
 
     def format(self, field: str, value: str, option, is_selected):
 
@@ -127,13 +134,36 @@ class CutestyleFormatter(Formatter):
             for index, value in enumerate(values):
                 width = metrics.width(value)
                 height = metrics.height()
-                rect = QRect(x, 0, width + 15, height + 10)
+                rect = QRect(x, 2, width + 15, height + 10)
 
-                rect.moveCenter(QPoint(rect.center().x(), option.rect.center().y()))
-                # rect.moveLeft(x)
                 painter.setFont(font)
                 # painter.setClipRect(option.rect, Qt.IntersectClip)
                 painter.setBrush(QBrush(QColor(self.SO_COLOR.get(value, "#90d4f7"))))
+                painter.setPen(Qt.NoPen)
+                painter.drawRoundedRect(rect, 3, 3)
+                painter.setPen(QPen(QColor("white")))
+                painter.drawText(rect, Qt.AlignCenter | Qt.AlignVCenter, value)
+                x += width + 20
+
+            return {"pixmap": pix}
+
+        if field == "tags":
+            values = str(value).split("&")
+            font = QFont()
+            metrics = QFontMetrics(font)
+            x = 0
+            # y = option.rect.center().y()
+            pix = QPixmap(option.rect.size())
+            pix.fill(Qt.transparent)
+            painter = QPainter(pix)
+            for index, value in enumerate(values):
+                width = metrics.width(value)
+                height = metrics.height()
+                rect = QRect(x, 2, width + 15, height + 10)
+
+                painter.setFont(font)
+                # painter.setClipRect(option.rect, Qt.IntersectClip)
+                painter.setBrush(QBrush(QColor(self.TAGS_COLOR.get(value, "#90d4f7"))))
                 painter.setPen(Qt.NoPen)
                 painter.drawRoundedRect(rect, 3, 3)
                 painter.setPen(QPen(QColor("white")))
