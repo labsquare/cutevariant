@@ -212,7 +212,7 @@ class ProxySettingsWidget(AbstractSettingsWidget):
         network["host"] = self.host_edit.text()
         network["port"] = self.port_edit.value()
         network["username"] = self.user_edit.text()
-        network["password"] = self.user_edit.text()
+        network["password"] = self.pass_edit.text()
 
         config["network"] = network
         config.save()
@@ -238,14 +238,14 @@ class ProxySettingsWidget(AbstractSettingsWidget):
         self.pass_edit.setText(network.get("password", ""))
 
     def on_combo_changed(self, index):
-        """ disable formular when No proxy """
+        """disable formular when No proxy"""
         if index == 0:
             self._disable_form(True)
         else:
             self._disable_form(False)
 
     def _disable_form(self, disabled=True):
-        """ Disabled formular """
+        """Disabled formular"""
         self.host_edit.setDisabled(disabled)
         self.port_edit.setDisabled(disabled)
         self.user_edit.setDisabled(disabled)
@@ -564,7 +564,7 @@ class SettingsDialog(QDialog):
         [widget.load() for widget in self.widgets]
 
     def load_plugins(self):
-        """ Add plugins settings """
+        """Add plugins settings"""
         from cutevariant.gui import plugin
 
         for extension in plugin.find_plugins():
