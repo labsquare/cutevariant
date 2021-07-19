@@ -66,7 +66,7 @@ def generate_file(template_file: str, **kwargs):
 
     module_name = kwargs["module_name"]
 
-    template_loader = jinja2.PackageLoader("cutevariant")
+    template_loader = jinja2.PackageLoader("cutevariant", "assets/templates")
 
     template_env = jinja2.Environment(loader=template_loader)
     template_env.filters["camel_to_snake"] = camel_to_snake
