@@ -1,3 +1,4 @@
+from jinja2.defaults import LINE_STATEMENT_PREFIX
 from cutevariant.gui import plugin
 import jinja2
 import os
@@ -98,18 +99,18 @@ class PluginCreator(QDialog):
         vlayout = QVBoxLayout(self)
         self.form_layout = QFormLayout()
 
+        # Setup name QLineEdit
         self.le_name = QLineEdit()
+        self.le_name.setPlaceholderText(
+            self.tr("The plugin name, as a space-separated class name")
+        )
+        self.le_name.setToolTip(self.le_name.placeholderText())
         self.name_validator = QRegularExpressionValidator()
         # Allow letters only
         self.name_validator.setRegularExpression(QRegularExpression(r"([a-zA-Z ])+"))
         self.le_name.setValidator(self.name_validator)
 
-        self.le_resulting_name = QLineEdit("")
-        self.le_resulting_name.setReadOnly(True)
-        self.le_name.textChanged.connect(
-            lambda s: self.le_resulting_name.setText(f"{human_to_camel(s)}Plugin")
-        )
-
+        # Setup the read-only, resulting module name QLineEdit
         self.le_resulting_module = QLineEdit("")
         self.le_resulting_module.setReadOnly(True)
         self.le_name.textChanged.connect(
@@ -117,18 +118,72 @@ class PluginCreator(QDialog):
                 camel_to_snake(human_to_camel(s))
             )
         )
+        self.le_resulting_module.setPlaceholderText(
+            self.tr(
+                "The name of the resulting python module (generated from plugin name)"
+            )
+        )
+        self.le_resulting_module.setToolTip(self.le_resulting_module.placeholderText())
 
+        # Setup the description QLineEdit
         self.le_description = QLineEdit()
-        self.te_long_description = QTextEdit()
-        self.le_author = QLineEdit()
+        self.le_description.setPlaceholderText(
+            self.tr("A short description of the plugin (why is it used for?)")
+        )
+        self.le_description.setToolTip(self.le_description.placeholderText())
 
+        # Setup the long description QLineEdit
+        self.te_long_description = QTextEdit()
+        self.te_long_description.setPlaceholderText(
+            self.tr(
+                """A longer description of the plugin, as a short documentation.
+Try answering:
+- Why does the user need this plugin?
+- How to use this plugin?
+- What should the user expect from this plugin?"""
+            )
+        )
+        self.te_long_description.setToolTip(self.te_long_description.placeholderText())
+
+        # Setup the author QLineEdit
+        self.le_author = QLineEdit()
+        # Pre-fill user's name
+        self.le_author.setText(QDir.home().dirName().capitalize())
+        self.le_author.setPlaceholderText(self.tr("Author name for this plugin"))
+        self.le_author.setToolTip(self.le_author.placeholderText())
+
+        # Setup the checkboxes that select generated file types (widgets.py, dialogs.py, settings.py)
         self.frame_plugin_type = QFrame(self)
+
+        # Layout these checkboxes vertically
         frame_layout = QVBoxLayout(self.frame_plugin_type)
-        self.check_add_dialog = QCheckBox(self.tr("Dialog plugin"), self)
+
+        # So that the checkbox always prints 'Widget plugin (MyTestPlugin)
+        self.le_name.textChanged.connect(
+            lambda s: self.check_add_widget.setText(
+                f"{self.tr('Widget plugin ')}({human_to_camel(s)}Plugin)"
+            )
+        )
+
+        # So that the checkbox always prints 'Dialog plugin (MyTestDialog)
+        self.le_name.textChanged.connect(
+            lambda s: self.check_add_dialog.setText(
+                f"{self.tr('Dialog plugin ')}({human_to_camel(s)}Dialog)"
+            )
+        )
+
+        # So that the checkbox always prints 'Dialog plugin (MyTestSettings)
+        self.le_name.textChanged.connect(
+            lambda s: self.check_add_settings.setText(
+                f"{self.tr('Plugin settings ')}({human_to_camel(s)}Settings)"
+            )
+        )
+
         self.check_add_widget = QCheckBox(self.tr("Widget plugin"), self)
-        self.check_add_settings = QCheckBox(self.tr("Add plugin settings"), self)
-        frame_layout.addWidget(self.check_add_dialog)
+        self.check_add_dialog = QCheckBox(self.tr("Dialog plugin"), self)
+        self.check_add_settings = QCheckBox(self.tr("Plugin settings"), self)
         frame_layout.addWidget(self.check_add_widget)
+        frame_layout.addWidget(self.check_add_dialog)
         frame_layout.addWidget(self.check_add_settings)
 
         self.dialog_box = QDialogButtonBox(
@@ -137,8 +192,14 @@ class PluginCreator(QDialog):
         self.dialog_box.button(QDialogButtonBox.Ok).clicked.connect(self.accept)
         self.dialog_box.button(QDialogButtonBox.Cancel).clicked.connect(self.reject)
 
-        self.form_layout.addRow(self.tr("Name (space separated):"), self.le_name)
-        self.form_layout.addRow(self.tr("Class name:"), self.le_resulting_name)
+        # Disable the OK button as long as the name is empty
+        self.le_name.textChanged.connect(
+            lambda s: self.dialog_box.button(QDialogButtonBox.Ok).setEnabled(bool(s))
+        )
+        # Start disabled
+        self.dialog_box.button(QDialogButtonBox.Ok).setEnabled(False)
+
+        self.form_layout.addRow(self.tr("Name:"), self.le_name)
         self.form_layout.addRow(self.tr("Module name:"), self.le_resulting_module)
         self.form_layout.addRow(self.tr("Description:"), self.le_description)
         self.form_layout.addRow(self.tr("Long description:"), self.te_long_description)

@@ -12,7 +12,7 @@ class {{name}}Dialog(PluginDialog):
     from the tools menu.
     """
 
-    def __init__(self, parent: MainWindow =None):
+    def __init__(self, parent: MainWindow=None):
         """
         Keys:
             parent (QMainWindow): cutevariant Mainwindow
