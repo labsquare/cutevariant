@@ -168,7 +168,9 @@ class CutestyleFormatter(Formatter):
 
                 painter.setFont(font)
                 # painter.setClipRect(option.rect, Qt.IntersectClip)
-                painter.setBrush(QBrush(QColor(self.TAGS_COLOR.get(value, "#90d4f7"))))
+                painter.setBrush(
+                    QBrush(QColor(self.TAGS_COLOR.get(value, "lightgray")))
+                )
                 painter.setPen(Qt.NoPen)
                 painter.drawRoundedRect(rect, 3, 3)
                 painter.setPen(QPen(QColor("white")))
