@@ -1303,39 +1303,35 @@ class VariantView(QWidget):
         Todo:
             Use custom sqlite type ?
         """
-        unique_ids = set()
 
-        # variant_data = None
-        # if len(self.view.selectionModel().selectedRows()) == 1:
-        #     variant_data = sql.get_one_variant(
-        #         self.model.conn, self.model.variant(index.row())["id"]
-        #     )
+        update_data = {}
+
+        is_multi_selection = len(self.view.selectionModel().selectedRows()) > 1
 
         for index in self.view.selectionModel().selectedRows():
-            if not index.isValid():
-                continue
 
-            # Get variant id
             variant = self.model.variants[index.row()]
             variant_id = variant["id"]
+            update_data[index.row()] = copy.copy(tags)
 
-            if variant_id in unique_ids:
-                continue
+            if is_multi_selection:
+                # Keep previous tags
+                current_variant = sql.get_one_variant(self.conn, variant_id)
+                current_tag = current_variant.get("tags", "")
 
-            unique_ids.add(variant_id)
-            update_tags = tags
+                if current_tag:
+                    update_data[index.row()] += current_tag.split("&")
 
-            if len(self.view.selectionModel().selectedRows()) > 1:
-                current_tags = sql.get_one_variant(self.conn, variant_id)["tags"]
+        # Write to sql
+        print(update_data)
+        for row, data in update_data.items():
+            variant_id = self.model.variants[row]["id"]
+            print(row, variant_id, data)
+            sql_tags = "&".join(set(data))
+            if not sql_tags:
+                sql_tags = None
 
-                if current_tags:
-                    update_tags = set(tags + current_tags)
-
-            if update_tags:
-                update_tags = "&".join(update_tags)
-                update_data = {"tags": update_tags}
-
-                self.model.update_variant(index.row(), update_data)
+            self.model.update_variant(row, {"tags": sql_tags})
 
     def edit_comment(self, index: QModelIndex):
         """Allow a user to add a comment for the selected variant"""

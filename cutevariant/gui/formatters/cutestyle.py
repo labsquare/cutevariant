@@ -148,6 +148,9 @@ class CutestyleFormatter(Formatter):
             return {"pixmap": pix}
 
         if field == "tags":
+            if value is None or value == "":
+                return {}
+
             values = str(value).split("&")
             font = QFont()
             metrics = QFontMetrics(font)
