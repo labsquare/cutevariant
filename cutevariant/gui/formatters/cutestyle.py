@@ -61,7 +61,9 @@ class CutestyleFormatter(Formatter):
     GENOTYPE_ICONS = {key: FIcon(val) for key, val in cm.GENOTYPE_ICONS.items()}
 
     def __init__(self):
-        super().__init__()
+        self.refresh()
+
+    def refresh(self):
         config = Config("variant_view")
         self.TAGS_COLOR = {tag["name"]: tag["color"] for tag in config.get("tags", [])}
 

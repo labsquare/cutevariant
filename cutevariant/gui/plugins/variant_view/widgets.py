@@ -985,6 +985,7 @@ class VariantView(QWidget):
 
     def set_formatter(self, formatter):
         self.delegate.formatter = formatter
+        self.delegate.formatter.refresh()
         self.view.reset()
 
     @property

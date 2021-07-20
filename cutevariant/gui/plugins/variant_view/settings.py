@@ -353,9 +353,10 @@ class TagsSettings(AbstractSettingsWidget):
         dialog = TagDialog(name, description, color)
 
         if dialog.exec_() == QDialog.Accepted:
-            self.model.setData(index, dialog.tag["name"], Qt.DisplayRole)
-            self.model.setData(index, dialog.tag["description"], Qt.ToolTipRole)
-            self.model.setData(index, dialog.tag["color"], Qt.DecorationRole)
+            tag = dialog.get_tag()
+            self.model.setData(index, tag["name"], Qt.DisplayRole)
+            self.model.setData(index, tag["description"], Qt.ToolTipRole)
+            self.model.setData(index, tag["color"], Qt.DecorationRole)
 
     def on_rem(self):
         self.model.remove_rows(self.view.selectionModel().selectedRows())
