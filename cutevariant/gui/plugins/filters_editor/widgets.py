@@ -87,7 +87,7 @@ from cutevariant.gui.sql_thread import SqlThread
 from cutevariant import LOGGER
 
 TYPE_OPERATORS = {
-    "str": ["$eq", "$ne", "$in", "$nin", "$regex"],
+    "str": ["$eq", "$ne", "$in", "$nin", "$regex", "$has"],
     "float": ["$eq", "$ne", "$gte", "$gt", "$lt", "$lte"],
     "int": ["$eq", "$ne", "$gte", "$gt", "$lt", "$lte"],
     "bool": ["$eq"],
@@ -107,6 +107,7 @@ OPERATORS_PY_VQL = {
     "$regex": "~",
     "$and": "AND",
     "$or": "OR",
+    "$has": "HAS",
 }
 
 NULL_REPR = "@NULL"
