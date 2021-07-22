@@ -415,13 +415,10 @@ def create_table_selections(conn: sqlite3.Connection):
     # Association table: do not use useless rowid column
     cursor.execute(
         """CREATE TABLE selection_has_variant (
-        variant_id INTEGER NOT NULL,
-        selection_id INTEGER NOT NULL,
-        PRIMARY KEY (variant_id, selection_id),
-        FOREIGN KEY (selection_id) REFERENCES selections (id)
-          ON DELETE CASCADE
-          ON UPDATE NO ACTION
-        ) WITHOUT ROWID"""
+        variant_id INTEGER NOT NULL REFERENCES variants(id) ON DELETE CASCADE,
+        selection_id INTEGER NOT NULL REFERENCES selections(id) ON DELETE CASCADE,
+        PRIMARY KEY (variant_id, selection_id)
+        )"""
     )
     conn.commit()
 
@@ -1258,7 +1255,13 @@ def create_table_annotations(conn, fields):
     cursor = conn.cursor()
     # TODO: no primary key/unique index for this table?
 
-    cursor.execute(f"CREATE TABLE annotations (variant_id INTEGER NOT NULL, {schema})")
+    cursor.execute(
+        f"""CREATE TABLE annotations (variant_id 
+        INTEGER REFERENCES variants(id) ON UPDATE CASCADE,
+         {schema})
+
+        """
+    )
 
     conn.commit()
 
