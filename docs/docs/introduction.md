@@ -1,15 +1,15 @@
 
 # What is cutevariant?
 
-Cutevariant is a desktop application, useful to explore genetic variations stored into VCF files.
+Cutevariant is a desktop application, useful to explore genetic variations from [Next Generation Sequencing](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3841808/) results stored into [VCF files](https://samtools.github.io/hts-specs/VCFv4.2.pdf).
 It has been designed so that everyone can easily visualize and filter genetic variations, even with no prior knowledge in IT.
-Even though this software was especially tailored for panel and human exome analysis, it can be used with any VCF file. For now, only VCFs annotated with SnpEff and VEP are supported.
+Even though this software was especially tailored for panel and human [exome](https://fr.wikipedia.org/wiki/Exome) analysis, it can be used with any VCF file. For now, only VCFs annotated with [SnpEff](http://pcingola.github.io/SnpEff/) and [VEP](https://www.ensembl.org/info/docs/tools/vep/index.html) are supported.
 
 # How dot it work?
 
-Cutevariant imports VCF file fields into a Sqlite3 database. This is the first step to explore a VCF file, and is done exactly once for every project by pressing the ':material-database-plus: Create project' button in the toolbar. Variants, annotations and sample fields are stored in a normalized fashion.
+Cutevariant imports VCF file fields into a [Sqlite3](https://www.sqlite.org/index.html) database. This is the first step to explore a VCF file, and is done exactly once for every project by pressing the ':material-database-plus: Create project' button in the toolbar. Variants, annotations and sample fields are stored in a normalized table.
 
-Once the variants are loaded into the database, you can retrieve their information in a language that looks like SQL that we've called VQL.
+Once the variants are loaded into the database, you can retrieve their information in a language that looks like SQL that we've called [VQL](/vql/).
 
 You can execute VQL requests directly inside the dedicated VQL editor, to obtain the information you need by specifying what fields you need, and what conditions they should meet.
 
