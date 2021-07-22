@@ -1,12 +1,11 @@
 
-# Architecture 
+# Database schema 
 
-## Database 
 
 Variants data are stored into normalized tables as follow.
 The database shema is dynamically built according VCF input. That is, columns from **variants**, **annotations** and **sample_has_variant** tables are created on the fly.
 
-![database shema](../../images/diagram.svg)
+![database schema](../../images/diagram.svg)
 
 #### Fields table 
 Contains a description of all fields available in cutevariant database. 
@@ -31,28 +30,7 @@ Contains information about a transcript. One variant may have multiple transcrip
 Samples are stored here with their pedigree relation comming from a ped file. This table is in a *many-to-many* relation with the **variant** table trough the **sample_has_variant** table.
 The **sample_has_variant** table give the genotype for one variant and one sample. Extra fields from VCF file FORMAT section are stored here. 
 
-#### selections
+#### selections table
 Selection are subset of variant. It is connected to the **variant** table through the **selection_has_variant** table which contains id of selected variants.
 
-
-
-## core Package
-
-Non-GUI API are located in the core package.
-
-### Sql module
-Here, sql.py is the most useful module. It contains all function to read and write into the database without having to write a SQLite query. The API is designed so that the returns are always dictionaries.      
-For instance, to read fields from the database : 
-
-```python
-from cutevariant.core import sql
-
-conn = sql.get_sql_connection("project.db")
-
-for field in sql.get_fields(conn):
-	print(field["name"])
-	print(field["description"])
-	print(field["type"])
-
-```
 

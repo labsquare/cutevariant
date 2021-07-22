@@ -24,8 +24,8 @@ nav:
         - Wordsets : 'plugins/wordset.md'
 
     - Developer:
-      - Installation: 'developer/install-for-dev.md'
-      - Architecture: 'developer/customization/architecture.md'
+      - Setup environment: 'developer/install-for-dev.md'
+      - Database: 'developer/customization/database.md'
       - Create a plugin: 'developer/customization/create-plugin.md'
       - Create a formatter: 'developer/customization/create-formatter.md'
       - Create a writer: 'developer/customization/create-writer.md'
@@ -90,6 +90,8 @@ markdown_extensions:
 - pymdownx.highlight
 - pymdownx.superfences
 - admonition
+
+
 plugins:
   - search
   - mkdocstrings
