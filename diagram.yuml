@@ -1,0 +1,18 @@
+[fields|name;table;type;description] 
+
+[variants {bg:green}]1-0..n[annotations]
+
+[variants {bg:green}]1-1..*[sample_has_variant]
+[samples]1-1..*[sample_has_variant]
+
+[selections]1-0..*[selection_has_variant]
+[variants {bg:green}]1-0..*[selection_has_variant]
+
+[variants {bg:green}|chr;pos;ref;alt; extra fields ...]
+[annotations|transcript;gene;consequence; extra fields ...]
+
+[samples|name;family;father_id;mother_id;sex;phenotype]
+[sample_has_variant|genotype;dp; extra fields ...]
+
+[selections|name;count]
+

@@ -14,7 +14,17 @@
     --md-accent-bg-color: hsla(0, 0%, 100%, 1);
     --md-accent-bg-color--light: hsla(0, 0%, 100%, 0.7);
   }
-  
+
+p a:link {
+  color: #6D468B;
+}
+
+/* visited link */
+p a:visited {
+  color: #6D468B;
+}
+
+
   :root > * {
   
     /* Code block color shades */
