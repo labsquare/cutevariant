@@ -20,7 +20,7 @@ position on the chromsome (starting at 1), the chromosome the variant was found 
 
 ### Annotations
 
-Because DNA is transcripted to RNA, one variant can have consequences on one or more transcript. The annotations category reflects that, given that there should be as many annotations fields as there are transcripts at the given locus. This information comes from the VCF file and is not computed by cutevariant itself.
+Because DNA is transcripted to RNA, one variant can have consequences on one or more transcript(s). The annotations category reflects that, meaning that there should be as many annotations fields as there are transcripts at the given locus. This information comes from the VCF file and is not computed by cutevariant itself.
 
 !!! tip
     If you want to know if a variant has several annotations associated with it, you can do so by checking, in the variants category, a field called <kbd>annotation_count</kbd>
