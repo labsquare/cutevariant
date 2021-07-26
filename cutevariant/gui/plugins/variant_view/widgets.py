@@ -1184,36 +1184,48 @@ class VariantView(QWidget):
 
     def _open_url(self, url_template: str, in_browser=False):
 
-        variant = self.model.variant(self.view.currentIndex().row())
-        variant_id = variant["id"]
-        full_variant = sql.get_one_variant(self.conn, variant_id, True, False)
+        config = Config("variant_view")
 
-        # TODO create_url should be able to read deep variant (with unflattened annotations)
-        url = self._create_url(url_template, full_variant)
+        batch_open = False
 
-        LOGGER.debug(url_template, url)
+        if "batch_open_links" in config:
+            batch_open = bool(config["batch_open_links"])
 
-        if in_browser:
-            QDesktopServices.openUrl(url)
-
+        # To avoid code repeating, iterate through list, even if it has only one element
+        if batch_open:
+            indexes = self.view.selectionModel().selectedRows(0)
         else:
-            try:
-                urllib.request.urlopen(url.toString(), timeout=10)
-            except Exception as e:
-                LOGGER.error(
-                    "Error while trying to access "
-                    + url.toString()
-                    + "\n%s" * len(e.args),
-                    *e.args,
-                )
-                cr = "\n"
-                QMessageBox.critical(
-                    self,
-                    self.tr("Error !"),
-                    self.tr(
-                        f"Error while trying to access {url.toString()}:{cr}{cr.join([str(a) for a in e.args])}"
-                    ),
-                )
+            indexes = [self.view.currentIndex().siblingAtColumn(0)]
+
+        for row_index in indexes:
+
+            variant = self.model.variant(row_index.row())
+            variant_id = variant["id"]
+            full_variant = sql.get_one_variant(self.conn, variant_id, True, False)
+
+            url = self._create_url(url_template, full_variant)
+
+            if in_browser:
+                QDesktopServices.openUrl(url)
+
+            else:
+                try:
+                    urllib.request.urlopen(url.toString(), timeout=10)
+                except Exception as e:
+                    LOGGER.error(
+                        "Error while trying to access "
+                        + url.toString()
+                        + "\n%s" * len(e.args),
+                        *e.args,
+                    )
+                    cr = "\n"
+                    QMessageBox.critical(
+                        self,
+                        self.tr("Error !"),
+                        self.tr(
+                            f"Error while trying to access {url.toString()}:{cr}{cr.join([str(a) for a in e.args])}"
+                        ),
+                    )
 
     def _create_url(self, format_string: str, variant: dict) -> QUrl:
         """Create a link from a format string and a variant data
@@ -1704,7 +1716,7 @@ class VariantViewWidget(plugin.PluginWidget):
         self.main_right_pane.model.load_finished.connect(self.on_load_finished)
 
     def on_tag_widget_show(self):
-        """ Triggered when tagDialog is displayed """
+        """Triggered when tagDialog is displayed"""
         selected_rows = self.main_right_pane.view.selectionModel().selectedRows()
         if len(selected_rows) == 1:
             index = selected_rows[0]
