@@ -35,12 +35,11 @@ from PySide2.QtCore import (
 )
 from PySide2.QtWidgets import QApplication, QSplashScreen
 from PySide2.QtGui import QPixmap
+from PySide2.QtWebEngineWidgets import *
 
 # Custom imports
-from cutevariant.config import Config
 from cutevariant.gui import MainWindow, setFontPath, style
 import cutevariant.commons as cm
-from cutevariant import LOGGER
 from cutevariant import __version__
 
 
@@ -51,20 +50,20 @@ def main():
     # the empty constructor. This saves having to repeat this information
     # each time a QSettings object is created.
     # The default scope is QSettings::UserScope
-
-    LOGGER.info("Starting cutevariant")
     QCoreApplication.setOrganizationName("labsquare")
     QCoreApplication.setApplicationName("cutevariant")
     QCoreApplication.setApplicationVersion(__version__)
     QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
     QCoreApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
 
+    QCoreApplication.setAttribute(Qt.AA_ShareOpenGLContexts, True)
+
     # Process command line arguments
     app = QApplication(sys.argv)
+
     process_arguments(app)
 
     # Load app styles
-    LOGGER.info("Load style")
     load_styles(app)
 
     # # Uncomment those line to clear settings
@@ -72,11 +71,9 @@ def main():
     # settings.clear()
 
     # Set icons set
-    LOGGER.info("Load font")
     setFontPath(cm.FONT_FILE)
 
     # Translations
-    LOGGER.info("Load translation")
     load_translations(app)
 
     # debug settings
@@ -84,7 +81,6 @@ def main():
     # w = SettingsWidget()
     # w.show()
 
-    LOGGER.info("Starting the GUI...")
     # Splash screen
     splash = QSplashScreen()
     splash.setPixmap(QPixmap(cm.DIR_ICONS + "splash.png"))
@@ -123,13 +119,13 @@ def load_styles(app):
     app.setStyle("fusion")
 
     # Load style from settings if exists
-    config = Config("app")
+    app_settings = QSettings()
     # Display current style
-    style_config = config.get("style", {})
-    theme = style_config.get("theme", cm.BASIC_STYLE)
+    style_name = app_settings.value("ui/style", cm.BASIC_STYLE)
+
     # Apply selected style by calling on the method in style module based on its
     # name; equivalent of style.dark(app)
-    getattr(style, theme.lower())(app)
+    getattr(style, style_name.lower())(app)
 
 
 def load_translations(app):
@@ -181,7 +177,7 @@ def process_arguments(app):
         ["v", "verbose"],
         QCoreApplication.translate("main", "Modify verbosity."),
         "notset|debug|info|error",  # options available (value name)
-        "debug",  # default value
+        "notset",  # default value
     )
     parser.addOption(modify_verbosity)
 
@@ -193,9 +189,9 @@ def process_arguments(app):
         print("Cutevariant " + __version__)
         exit()
 
-    # if parser.isSet(modify_verbosity):
-    # Set log level
-    LOGGER.setLevel(parser.value(modify_verbosity).upper())
+    if parser.isSet(modify_verbosity):
+        # Set log level
+        cm.log_level(parser.value(modify_verbosity).upper())
 
 
 if __name__ == "__main__":
