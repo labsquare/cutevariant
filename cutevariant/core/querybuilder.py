@@ -28,9 +28,9 @@ from ast import literal_eval
 
 # Custom imports
 from cutevariant.core import sql
-from cutevariant.commons import logger
 
-LOGGER = logger()
+
+from cutevariant import LOGGER
 
 # TODO : can be move somewhere else ? In common ?
 # Function names used in VQL
@@ -50,6 +50,7 @@ OPERATORS = {
     "$regex": "REGEXP",
     "$and": "AND",
     "$or": "OR",
+    "$has": "HAS",
 }
 
 
@@ -263,7 +264,7 @@ def fields_to_sql(fields, use_as=False) -> list:
 
 
 # refactor
-def condition_to_sql(item: dict) -> str:
+def condition_to_sql(item: dict, samples=None) -> str:
     """
     Convert a key, value items from fiters into SQL query
     {"ann.gene": "CFTR"}
@@ -272,6 +273,7 @@ def condition_to_sql(item: dict) -> str:
         condition_to_sql({"chr":3}) ==> `variants`.`chr `= 3
         condition_to_sql({"chr":{"$gte": 30}}) ==> `variants`.`chr `>= 3
         condition_to_sql({"ann.gene":{"$gte": 30}}) ==> `annotation`.`gene` >= 30
+        condition_to_sql({"samples.*.gt": 1 }) ==> (`samples.boby.gt = 1 AND samples.charles.gt = 1)
 
     """
 
@@ -291,6 +293,8 @@ def condition_to_sql(item: dict) -> str:
     else:
         table = "variants"
 
+    field = f"`{table}`.`{k}`"
+
     if isinstance(v, dict):
         vk, vv = list(v.items())[0]
         operator = vk
@@ -309,6 +313,14 @@ def condition_to_sql(item: dict) -> str:
         if not set(str(value)) & set(special_caracter):
             sql_operator = "LIKE"
             value = f"%{value}%"
+
+    if sql_operator == "HAS":
+
+        field = f"'&' || {field} || '&'"
+        sql_operator = "LIKE"
+        value = f"%&{value}&%"
+
+        # WHERE '&' || consequence || '&' LIKE "%&missense_variant&%"
 
     # Cast value
     if isinstance(value, str):
@@ -342,10 +354,24 @@ def condition_to_sql(item: dict) -> str:
         )
 
     if table == "samples":
-        condition = f"`sample_{name}`.`{k}` {sql_operator} {value}"
+        if name == "*" and samples:
+
+            condition = (
+                "("
+                + " AND ".join(
+                    [
+                        f"`sample_{sample}`.`{k}` {sql_operator} {value}"
+                        for sample in samples
+                    ]
+                )
+                + ")"
+            )
+
+        else:
+            condition = f"`sample_{name}`.`{k}` {sql_operator} {value}"
 
     else:
-        condition = f"`{table}`.`{k}` {sql_operator} {value}"
+        condition = f"{field} {sql_operator} {value}"
 
     return condition
 
@@ -425,7 +451,7 @@ def condition_to_vql(item: dict) -> str:
     return condition
 
 
-def filters_to_sql(filters: dict) -> str:
+def filters_to_sql(filters: dict, samples=None) -> str:
     """Build a the SQL where clause from the nested set defined in filters
 
     Examples:
@@ -464,7 +490,7 @@ def filters_to_sql(filters: dict) -> str:
                 )
 
             else:
-                conditions += condition_to_sql(obj)
+                conditions += condition_to_sql(obj, samples)
 
         return conditions
 
@@ -613,26 +639,37 @@ def build_sql_query(
         )
 
     ## Create Sample Join
-    for sample_name in samples_join_required(fields, filters):
-        # Optimisation ?
-        # sample_id = self.cache_samples_ids[sample_name]
+    groupby = None
+
+    # Test if sample*
+    filters_fields = " ".join([list(i.keys())[0] for i in filters_to_flat(filters)])
+    if "samples.*." in filters_fields:
+        join_samples = list(samples_ids.keys())
+
+    else:
+        join_samples = samples_join_required(fields, filters)
+
+    for sample_name in join_samples:
         if sample_name in samples_ids:
             sample_id = samples_ids[sample_name]
             sql_query += f""" INNER JOIN sample_has_variant `sample_{sample_name}` ON `sample_{sample_name}`.variant_id = variants.id AND `sample_{sample_name}`.sample_id = {sample_id}"""
 
     # Add Where Clause
     if filters:
-        where_clause = filters_to_sql(filters)
+        where_clause = filters_to_sql(filters, join_samples)
         if where_clause and where_clause != "()":
             sql_query += " WHERE " + where_clause
 
-    # Add Group By
-    if group_by:
-        sql_query += " GROUP BY " + ",".join(fields_to_sql(group_by, use_as=False))
-        if having:
-            operator = having["op"]
-            val = having["value"]
-            sql_query += f" HAVING count {operator} {val}"
+    if groupby:
+        sql_query += groupby
+
+    # # Add Group By
+    # if group_by:
+    #     sql_query += " GROUP BY " + ",".join(fields_to_sql(group_by, use_as=False))
+    #     if having:
+    #         operator = having["op"]
+    #         val = having["value"]
+    #         sql_query += f" HAVING count {operator} {val}"
 
     # Add Order By
     if order_by:

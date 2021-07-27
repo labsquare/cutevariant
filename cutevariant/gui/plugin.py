@@ -83,13 +83,13 @@ import pkgutil
 
 # Qt imports
 from PySide2.QtWidgets import QWidget, QDialog
-from PySide2.QtCore import QSettings
 
 # Cutevariant import
+from cutevariant.config import Config
 from cutevariant.gui import settings
 import cutevariant.commons as cm
 
-LOGGER = cm.logger()
+from cutevariant import LOGGER
 
 DOCK_LOCATION = 1
 CENTRAL_LOCATION = 2
@@ -208,7 +208,6 @@ class PluginWidget(QWidget):
         Args:
             event(PySide2.QtGui.QShowEvent):
         """
-        LOGGER.debug("Show event %s", self)
 
         if self.conn and not self._STARTUP:
             self.on_refresh()
@@ -224,10 +223,8 @@ class PluginWidget(QWidget):
     def plugin_name(self):
         return cm.camel_to_snake(self.__class__.__name__.replace("Widget", ""))
 
-    def create_settings(self):
-        settings = QSettings()
-        settings.beginGroup(self.plugin_name)
-        return settings
+    def create_config(self):
+        return Config(self.plugin_name)
 
 
 class PluginDialog(QDialog):
@@ -251,10 +248,8 @@ class PluginDialog(QDialog):
     def plugin_name(self):
         return cm.camel_to_snake(self.__class__.__name__.replace("Dialog", ""))
 
-    def create_settings(self):
-        settings = QSettings()
-        settings.beginGroup(self.plugin_name)
-        return settings
+    def create_config(self):
+        return Config(self.plugin_name)
 
 
 class PluginSettingsWidget(settings.SectionWidget):
@@ -280,6 +275,9 @@ class PluginSettingsWidget(settings.SectionWidget):
     @property
     def plugin_name(self):
         return cm.camel_to_snake(self.__class__.__name__.replace("SettingsWidget", ""))
+
+    def create_config(self):
+        return Config(self.plugin_name)
 
 
 ################################################################################
@@ -318,7 +316,6 @@ def find_plugins(path=None):
     # Loop over packages in plugins directory
     for package in pkgutil.iter_modules([plugin_path]):
         package_path = os.path.join(plugin_path, package.name)
-        LOGGER.debug("Loading plugin at <%s>", package_path)
 
         spec = importlib.util.spec_from_file_location(
             package.name, os.path.join(package_path, "__init__.py")
@@ -328,6 +325,8 @@ def find_plugins(path=None):
         widget_class_name = cm.snake_to_camel(package.name) + "Widget"
         settings_class_name = cm.snake_to_camel(package.name) + "SettingsWidget"
         dialog_class_name = cm.snake_to_camel(package.name) + "Dialog"
+
+        LOGGER.info("Loading plugin <%s>", package.name)
 
         # Load __init__ file data of the module
         # We expect to load a plugin per module found in a plugin directory
@@ -355,7 +354,6 @@ def find_plugins(path=None):
 
         # Loop over modules in each plugin
         for sub_module_info in pkgutil.iter_modules([package_path]):
-            LOGGER.debug("Loading module <%s>", sub_module_info)
             sub_module_type = sub_module_info.name
 
             # Filter module filenames
@@ -409,10 +407,11 @@ def find_plugins(path=None):
             plugin_item[sub_module_type[:-1]] = class_item
 
             # Fix plugin status by user decision via app settings
-            if not class_item.ENABLE:
-                class_item.ENABLE = (
-                    QSettings().value(f"plugins/{plugin_item['name']}/status") == "true"
-                )
+            # TODO :
+            # if not class_item.ENABLE:
+            #     class_item.ENABLE = (
+            #         QSettings().value(f"plugins/{plugin_item['name']}/status") == "true"
+            #     )
 
         yield plugin_item
 

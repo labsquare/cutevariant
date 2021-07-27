@@ -23,7 +23,7 @@ import cutevariant.commons as cm
 from cutevariant.core import sql
 
 
-LOGGER = cm.logger()
+from cutevariant import LOGGER
 
 
 class ExportDialog(QDialog):

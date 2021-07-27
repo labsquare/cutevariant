@@ -67,10 +67,11 @@ from PySide2.QtGui import *  # QIcon, QPalette
 
 # Custom imports
 import cutevariant.commons as cm
+from cutevariant.config import Config
 from cutevariant.gui.ficon import FIcon
 from cutevariant.gui import network, style, widgets
 
-LOGGER = cm.logger()
+from cutevariant import LOGGER
 
 
 class AbstractSettingsWidget(QWidget):
@@ -96,28 +97,12 @@ class AbstractSettingsWidget(QWidget):
         """Load settings from QSettings"""
         raise NotImplementedError(self.__class__.__name__)
 
-    @property
-    def prefix_settings(self) -> str:
-        """Return prefix settings from section parent
-        Returns:
-            str
-        """
-        if self.section_widget:
-            return self.section_widget.prefix_settings
-        return None
-
-    def create_settings(self):
-        settings = QSettings()
-        settings.beginGroup(self.prefix_settings)
-        return settings
-
 
 class SectionWidget(QTabWidget):
     """Handy class to group similar settings page in tabs"""
 
-    def __init__(self, prefix_settings="", parent=None):
+    def __init__(self, parent=None):
         super().__init__(parent)
-        self.prefix_settings = prefix_settings
 
     def add_page(self, widget: AbstractSettingsWidget):
         widget.section_widget = self
@@ -133,59 +118,58 @@ class SectionWidget(QTabWidget):
 
 
 ################################################################################
-class TranslationSettingsWidget(AbstractSettingsWidget):
-    """Allow to choose a language for the interface"""
+# class TranslationSettingsWidget(AbstractSettingsWidget):
+#     """Allow to choose a language for the interface"""
 
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle(self.tr("Translation"))
-        self.setWindowIcon(FIcon(0xF05CA))
-        self.locales_combobox = QComboBox()
-        mainLayout = QFormLayout()
-        mainLayout.addRow(self.tr("&Choose a locale:"), self.locales_combobox)
+#     def __init__(self):
+#         super().__init__()
+#         self.setWindowTitle(self.tr("Translation"))
+#         self.setWindowIcon(FIcon(0xF05CA))
+#         self.locales_combobox = QComboBox()
+#         mainLayout = QFormLayout()
+#         mainLayout.addRow(self.tr("&Choose a locale:"), self.locales_combobox)
 
-        self.setLayout(mainLayout)
-        # self.locales_combobox.currentTextChanged.connect(self.switchTranslator)
+#         self.setLayout(mainLayout)
+#         # self.locales_combobox.currentTextChanged.connect(self.switchTranslator)
 
-    def save(self):
-        """Switch QApplication.instance() translator with the selected one and save it into config
+#     def save(self):
+#         """Switch QApplication.instance() translator with the selected one and save it into config
 
-        .. note:: settings are stored in "ui" group
-        .. todo:: Handle the propagation the LanguageChange event
-            https://doc.qt.io/Qt-5/qcoreapplication.html#installTranslator
-            https://wiki.qt.io/How_to_create_a_multi_language_application
-        """
+#         .. note:: settings are stored in "ui" group
+#         .. todo:: Handle the propagation the LanguageChange event
+#             https://doc.qt.io/Qt-5/qcoreapplication.html#installTranslator
+#             https://wiki.qt.io/How_to_create_a_multi_language_application
+#         """
 
-        # Remove the old translator
-        # QApplication.instance().removeTranslator(translator)
+#         # Remove the old translator
+#         # QApplication.instance().removeTranslator(translator)
 
-        # Load the new translator
+#         # Load the new translator
 
-        # Save locale setting
-        locale_name = self.locales_combobox.currentText()
-        settings = self.create_settings()
-        settings.setValue("ui/locale", locale_name)
-        app_translator = QTranslator(QApplication.instance())
-        if app_translator.load(locale_name, cm.DIR_TRANSLATIONS):
-            QApplication.instance().installTranslator(app_translator)
+#         # Save locale setting
+#         locale_name = self.locales_combobox.currentText()
 
-    def load(self):
-        """Setup widgets in TranslationSettingsWidget"""
-        self.locales_combobox.clear()
-        # Get names of locales based on available files
-        available_translations = {
-            os.path.basename(os.path.splitext(file)[0]): file
-            for file in glob.glob(cm.DIR_TRANSLATIONS + "*.qm")
-        }
-        # English is the default language
-        available_locales = list(available_translations.keys()) + ["en"]
-        self.locales_combobox.addItems(available_locales)
+#         app_translator = QTranslator(QApplication.instance())
+#         if app_translator.load(locale_name, cm.DIR_TRANSLATIONS):
+#             QApplication.instance().installTranslator(app_translator)
 
-        # Display current locale
-        settings = self.create_settings()
-        locale_name = settings.value("ui/locale", "en")
+#     def load(self):
+#         """Setup widgets in TranslationSettingsWidget"""
+#         self.locales_combobox.clear()
+#         # Get names of locales based on available files
+#         available_translations = {
+#             os.path.basename(os.path.splitext(file)[0]): file
+#             for file in glob.glob(cm.DIR_TRANSLATIONS + "*.qm")
+#         }
+#         # English is the default language
+#         available_locales = list(available_translations.keys()) + ["en"]
+#         self.locales_combobox.addItems(available_locales)
 
-        self.locales_combobox.setCurrentIndex(available_locales.index(locale_name))
+#         # Display current locale
+#         settings = self.create_settings()
+#         locale_name = settings.value("ui/locale", "en")
+
+#         self.locales_combobox.setCurrentIndex(available_locales.index(locale_name))
 
 
 class ProxySettingsWidget(AbstractSettingsWidget):
@@ -222,45 +206,46 @@ class ProxySettingsWidget(AbstractSettingsWidget):
 
     def save(self):
         """Save settings under "proxy" group"""
-        settings = self.create_settings()
-        settings.beginGroup("proxy")
-        settings.setValue("type", self.combo_box.currentIndex())
-        settings.setValue("host", self.host_edit.text())
-        settings.setValue("port", self.port_edit.value())
-        settings.setValue("username", self.user_edit.text())
-        settings.setValue("password", self.user_edit.text())
-        settings.endGroup()
+        config = Config("app")
+        network = {}
+        network["type"] = self.combo_box.currentIndex()
+        network["host"] = self.host_edit.text()
+        network["port"] = self.port_edit.value()
+        network["username"] = self.user_edit.text()
+        network["password"] = self.pass_edit.text()
+
+        config["network"] = network
+        config.save()
 
     def load(self):
         """Load "proxy" group settings"""
 
-        settings = self.create_settings()
+        config = Config("app")
 
-        settings.beginGroup("proxy")
+        network = config.get("network", {})
 
-        s_type = settings.value("type", 0)
+        s_type = network.get("type", 0)
         if s_type:
             self.combo_box.setCurrentIndex(int(s_type))
 
-        self.host_edit.setText(settings.value("host"))
+        self.host_edit.setText(network.get("host", ""))
 
-        s_port = settings.value("port", 0)
+        s_port = network.get("port", 0)
         if s_port:
             self.port_edit.setValue(int(s_port))
 
-        self.user_edit.setText(settings.value("username"))
-        self.pass_edit.setText(settings.value("password"))
-        settings.endGroup()
+        self.user_edit.setText(network.get("username", ""))
+        self.pass_edit.setText(network.get("password", ""))
 
     def on_combo_changed(self, index):
-        """ disable formular when No proxy """
+        """disable formular when No proxy"""
         if index == 0:
             self._disable_form(True)
         else:
             self._disable_form(False)
 
     def _disable_form(self, disabled=True):
-        """ Disabled formular """
+        """Disabled formular"""
         self.host_edit.setDisabled(disabled)
         self.port_edit.setDisabled(disabled)
         self.user_edit.setDisabled(disabled)
@@ -291,15 +276,20 @@ class StyleSettingsWidget(AbstractSettingsWidget):
         """Save the selected style in config"""
         # Get previous style
 
-        settings = self.create_settings()
-        old_style_name = settings.value("ui/style", cm.BASIC_STYLE)
+        config = Config("app")
+        style = config.get("style", {})
+
+        old_style_name = style.get("theme", cm.BASIC_STYLE)
 
         # Save style setting
         style_name = self.styles_combobox.currentText()
         if old_style_name == style_name:
             return
 
-        settings.setValue("ui/style", style_name)
+        style["theme"] = style_name
+
+        config["style"] = style
+        config.save()
 
         QMessageBox.information(
             self, "restart", self.tr("Please restart application to apply theme")
@@ -322,10 +312,13 @@ class StyleSettingsWidget(AbstractSettingsWidget):
         available_styles = list(available_styles.keys()) + [cm.BASIC_STYLE]
         self.styles_combobox.addItems(available_styles)
 
+        print(available_styles)
+
         # Display current style
         # Dark is the default style
-        settings = self.create_settings()
-        style_name = settings.value("ui/style", cm.BASIC_STYLE)
+        config = Config("app")
+        style = config.get("style", {})
+        style_name = style.get("theme", cm.BASIC_STYLE)
         self.styles_combobox.setCurrentIndex(available_styles.index(style_name))
 
 
@@ -349,6 +342,7 @@ class PluginsSettingsWidget(AbstractSettingsWidget):
         self.setLayout(main_layout)
 
     def save(self):
+        pass
         """Save the check status of enabled plugins in app settings and update UI
 
         Emit a `register_plugin` or `deregister_plugin` signal for the mainwindow.
@@ -356,113 +350,118 @@ class PluginsSettingsWidget(AbstractSettingsWidget):
         Notes:
             Called only if the user clicks on "save all" button.
         """
-        for iterator in QTreeWidgetItemIterator(
-            self.view, QTreeWidgetItemIterator.Enabled
-        ):
-            item = iterator.value()
-            # Get extension and check state
-            extension = item.data(0, Qt.UserRole)
-            check_state = item.checkState(0) == Qt.Checked
-            # Save status
+        # for iterator in QTreeWidgetItemIterator(
+        #     self.view, QTreeWidgetItemIterator.Enabled
+        # ):
+        #     item = iterator.value()
+        #     # Get extension and check state
+        #     extension = item.data(0, Qt.UserRole)
+        #     check_state = item.checkState(0) == Qt.Checked
+        #     # Save status
 
-            settings = self.create_settings()
-            settings.setValue(f"plugins/{extension['name']}/status", check_state)
+        #     config = Config("app")
 
-            # Set the enable status of the extension
-            for sub_extension_type in {
-                "widget",
-                "dialog",
-                "setting",
-            } & extension.keys():
-                extension[sub_extension_type].ENABLE = check_state
+        #     plugin_conf = {}
 
-            if check_state:
-                # Register plugin in UI
-                self.registerPlugin.emit(extension)
-            else:
-                # Deregister plugin in UI
-                self.deregisterPlugin.emit(extension)
+        #     plugin_conf[""]
+        #     settings.setValue(f"plugins/{extension['name']}/status", check_state)
+
+        #     # Set the enable status of the extension
+        #     for sub_extension_type in {
+        #         "widget",
+        #         "dialog",
+        #         "setting",
+        #     } & extension.keys():
+        #         extension[sub_extension_type].ENABLE = check_state
+
+        #     if check_state:
+        #         # Register plugin in UI
+        #         self.registerPlugin.emit(extension)
+        #     else:
+        #         # Deregister plugin in UI
+        #         self.deregisterPlugin.emit(extension)
 
     def load(self):
+        pass
         """Display the plugins and their status"""
-        self.view.clear()
-        from cutevariant.gui import plugin
+        # self.view.clear()
+        # from cutevariant.gui import plugin
 
-        settings = self.create_settings()
+        # settings = self.create_settings()
 
-        settings_keys = set(settings.allKeys())
+        # settings_keys = set(settings.allKeys())
 
-        for extension in plugin.find_plugins():
-            displayed_title = (
-                extension["name"]
-                if LOGGER.getEffectiveLevel() == DEBUG
-                else extension["title"]
-            )
-            item = QTreeWidgetItem()
-            item.setText(0, displayed_title)
-            item.setText(1, extension["description"])
-            item.setText(2, extension["version"])
+        # for extension in plugin.find_plugins():
+        #     displayed_title = (
+        #         extension["name"]
+        #         if LOGGER.getEffectiveLevel() == DEBUG
+        #         else extension["title"]
+        #     )
+        #     item = QTreeWidgetItem()
+        #     item.setText(0, displayed_title)
+        #     item.setText(1, extension["description"])
+        #     item.setText(2, extension["version"])
 
-            # Is an extension enabled ?
-            is_enabled = False
+        #     # Is an extension enabled ?
+        #     is_enabled = False
 
-            # Get activation status
-            # Only disabled extensions can be in settings
-            key = f"plugins/{extension['name']}/status"
-            activated_by_user = (
-                settings.value(key) == "true" if key in settings_keys else None
-            )
+        #     # Get activation status
+        #     # Only disabled extensions can be in settings
+        #     key = f"plugins/{extension['name']}/status"
+        #     activated_by_user = (
+        #         settings.value(key) == "true" if key in settings_keys else None
+        #     )
 
-            for sub_extension_type in {
-                "widget",
-                "dialog",
-                "setting",
-            } & extension.keys():
-                if activated_by_user is None and extension[sub_extension_type].ENABLE:
-                    is_enabled = True
-                    # Only disabled plugins can be reactivated by the user
-                    item.setDisabled(True)
-                    break
-                if activated_by_user:
-                    is_enabled = True
-                    break
+        #     for sub_extension_type in {
+        #         "widget",
+        #         "dialog",
+        #         "setting",
+        #     } & extension.keys():
+        #         if activated_by_user is None and extension[sub_extension_type].ENABLE:
+        #             is_enabled = True
+        #             # Only disabled plugins can be reactivated by the user
+        #             item.setDisabled(True)
+        #             break
+        #         if activated_by_user:
+        #             is_enabled = True
+        #             break
 
-            item.setCheckState(0, Qt.Checked if is_enabled else Qt.Unchecked)
-            # Attach the extension for its further activation/desactivation
-            item.setData(0, Qt.UserRole, extension)
+        #     item.setCheckState(0, Qt.Checked if is_enabled else Qt.Unchecked)
+        #     # Attach the extension for its further activation/desactivation
+        #     item.setData(0, Qt.UserRole, extension)
 
-            self.view.addTopLevelItem(item)
+        #     self.view.addTopLevelItem(item)
 
 
-class PathSettingsWidget(AbstractSettingsWidget):
-    """ Path settings where to store shared data """
+# class PathSettingsWidget(AbstractSettingsWidget):
+#     """ Path settings where to store shared data """
 
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle(self.tr("Global settings"))
-        self.setWindowIcon(FIcon(0xF1080))
+#     def __init__(self):
+#         super().__init__()
+#         self.setWindowTitle(self.tr("Global settings"))
+#         self.setWindowIcon(FIcon(0xF1080))
 
-        self.edit = widgets.FileEdit()
-        self.edit.set_path_type("dir")
-        main_layout = QFormLayout()
-        main_layout.addRow("Preset path", self.edit)
+#         self.edit = widgets.FileEdit()
+#         self.edit.set_path_type("dir")
+#         main_layout = QFormLayout()
+#         main_layout.addRow("Preset path", self.edit)
 
-        self.setLayout(main_layout)
+#         self.setLayout(main_layout)
 
-    def save(self):
-        settings = QSettings()
-        if self.edit.exists():
-            settings.setValue("preset_path", self.edit.text())
+#     def save(self):
+#         settings = QSettings()
+#         if self.edit.exists():
+#             settings.setValue("preset_path", self.edit.text())
 
-    def load(self):
+#     def load(self):
 
-        settings = QSettings()
-        path = settings.value(
-            "preset_path",
-            QStandardPaths.writableLocation(QStandardPaths.GenericDataLocation),
-        )
+#         settings = QSettings()
+#         path = settings.value(
+#             "preset_path",
+#             QStandardPaths.writableLocation(QStandardPaths.GenericDataLocation),
+#         )
 
-        self.edit.setText(path)
+#         self.edit.setText(path)
 
 
 class SettingsDialog(QDialog):
@@ -509,7 +508,7 @@ class SettingsDialog(QDialog):
         general_settings.setWindowTitle(self.tr("General"))
         general_settings.setWindowIcon(FIcon(0xF0614))
 
-        general_settings.add_page(PathSettingsWidget())
+        # general_settings.add_page(PathSettingsWidget())
 
         # Cutevariant is  not yet translated ..
         # general_settings.add_page(TranslationSettingsWidget())
@@ -527,7 +526,7 @@ class SettingsDialog(QDialog):
 
         # Specialized widgets on panels
         self.add_section(general_settings)
-        # self.add_section(plugin_settings)
+        self.add_section(plugin_settings)
         self.load_plugins()
 
         self.resize(800, 400)
@@ -558,14 +557,14 @@ class SettingsDialog(QDialog):
     def save_all(self):
         """Call save() method of all widgets"""
         [widget.save() for widget in self.widgets]
-        self.accepted.emit()
+        self.accept()
 
     def load_all(self):
         """Call load() method of all widgets"""
         [widget.load() for widget in self.widgets]
 
     def load_plugins(self):
-        """ Add plugins settings """
+        """Add plugins settings"""
         from cutevariant.gui import plugin
 
         for extension in plugin.find_plugins():

@@ -31,9 +31,9 @@ from cutevariant.core.vql import VQLSyntaxError
 from cutevariant.core import command
 from cutevariant.core.querybuilder import build_vql_query
 from cutevariant.gui.widgets import CodeEdit
-from cutevariant.commons import logger
 
-LOGGER = logger()
+
+from cutevariant import LOGGER
 
 
 class VqlEditorWidget(plugin.PluginWidget):
@@ -158,6 +158,12 @@ class VqlEditorWidget(plugin.PluginWidget):
                 )
 
             if field["category"] == "samples":
+
+                # Add AnySamples special keywords
+                # samples["*"].gt
+                name = "samples['*'].{}".format(field["name"])
+                self.text_edit.completer.model.add_item(name, description, icon, color)
+
                 # Overwrite name
                 for sample in samples:
                     name = "samples['{}'].{}".format(sample, field["name"])

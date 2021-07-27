@@ -6,13 +6,13 @@ from PySide2.QtCore import *
 
 from cutevariant.core.sql import get_sql_connection, get_field_info, get_fields
 
-from cutevariant.commons import logger
+
 
 from cutevariant.gui.sql_thread import SqlThread
 
 from cutevariant.gui import style, plugin, FIcon
 
-LOGGER = logger()
+from cutevariant import LOGGER
 
 
 class StatsModel(QAbstractTableModel):

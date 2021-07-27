@@ -2,9 +2,7 @@ from PySide2.QtWidgets import QApplication
 
 __title__ = "Wordsets editor"
 __description__ = "A plugin to manage word sets"
-__long_description__ = QApplication.instance().translate(
-    "word_sets",
-    """
+__long_description__ = """
 <p>This plugin allows to create sets of words that can be matched with the
 attributes of the project's variants.</p>
 <p>
@@ -27,7 +25,6 @@ He therefore creates a word set and then makes a selection via:</i>
 <li>the <em>VQL Editor</em> plugin with a VQL request of the type:
 <pre>SELECT chr,pos,ref,alt,gene FROM variants WHERE gene IN WORDSET['my_word_set']</pre></li>
 </ul>
-""",
-)
+"""
 __author__ = "Sacha schutz"
 __version__ = "1.0.0"
