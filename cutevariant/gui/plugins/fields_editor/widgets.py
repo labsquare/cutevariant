@@ -1,3 +1,4 @@
+from cutevariant.config import Config
 import functools
 from typing import List
 import sqlite3
@@ -73,6 +74,81 @@ def prepare_fields_for_editor(conn):
                 }
 
     return results
+
+
+class FieldsPresetModel(QAbstractListModel):
+    def __init__(self, parent: QObject = None) -> None:
+        super().__init__(parent=parent)
+        self._presets = []
+        self.filename = None
+
+    def data(self, index: QModelIndex, role: int) -> typing.Any:
+        if role == Qt.DisplayRole:
+            if index.row() >= 0 and index.row() < self.rowCount():
+                return self._presets[index.row()][0]
+        if role == Qt.UserRole:
+            if index.row() >= 0 and index.row() < self.rowCount():
+                return self._presets[index.row()][1]
+
+        return
+
+    def preset(self, row: int):
+        """Returns a tuple (preset name, fields)
+        Args:
+            row (int): index of the preset
+
+        Returns:
+            str,list: Preset name and list of fields
+        """
+        return self._presets[row]
+
+    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
+        return len(self._presets)
+
+    def add_preset(self, name: str, fields: list):
+        """Add fields preset
+
+        Args:
+            name (str): preset name
+            fields (list): list of field names
+        """
+        self.beginInsertRows(QModelIndex(), 0, 0)
+        self._presets.insert(0, (name, fields))
+        self.endInsertRows()
+        print(self._presets)
+
+    def rem_preset(self, name: str):
+        try:
+            idx = next(i for i, x in enumerate(self._presets) if x[0] == name)
+            self.beginRemoveRows(QModelIndex(), idx, idx)
+            del self._presets[idx]
+            self.endRemoveRows()
+
+        except Exception as e:
+            LOGGER.error("%s does not name a preset", name)
+            pass
+
+    def load(self):
+        if self.filename:
+            self.beginResetModel()
+            with open(self.filename) as f:
+                self._presets = [
+                    (preset_name, fields)
+                    for preset_name, fields in json.load(f).items()
+                ]
+            self.endResetModel()
+
+    def save(self):
+        if self.filename:
+            with open(self.filename, "w") as f:
+                json.dump(
+                    {preset_name: fields for preset_name, fields in self._presets}, f
+                )
+
+    def clear(self):
+        self.beginResetModel()
+        self._presets.clear()
+        self.endResetModel()
 
 
 class FieldsModel(QStandardItemModel):
@@ -576,6 +652,35 @@ class FieldsWidget(QWidget):
                 )
 
 
+class PresetButton(QToolButton):
+    """A toolbutton that works with a drop down menu filled with a model"""
+
+    preset_clicked = Signal(QAction)
+
+    def __init__(self, parent: QWidget = None) -> None:
+        super().__init__(parent=parent)
+        self._menu = QMenu(self.tr("Presets"), self)
+        self._menu.triggered.connect(self.preset_clicked)
+        self.setPopupMode(QToolButton.InstantPopup)
+        self._model: QAbstractItemModel = None
+        self.setMenu(self._menu)
+        self.setText(self.tr("Presets"))
+
+    def set_model(self, model: QAbstractItemModel):
+        self._model = model
+
+    def mousePressEvent(self, arg__1: QMouseEvent) -> None:
+        if self._model:
+            self._menu.clear()
+            for i in range(self._model.rowCount()):
+                index = self._model.index(i, 0)
+                preset_name = index.data(Qt.DisplayRole)
+                fields = index.data(Qt.UserRole)
+                act: QAction = self._menu.addAction(preset_name)
+                act.setData(fields)
+        return super().mousePressEvent(arg__1)
+
+
 class FieldsEditorWidget(plugin.PluginWidget):
     """Display all fields according categories
 
@@ -643,23 +748,27 @@ class FieldsEditorWidget(plugin.PluginWidget):
 
         # Create preset combobox with actions
         self.toolbar.addSeparator()
+
+        # Presets model
+        self.presets_model = FieldsPresetModel(self)
+        self.presets_model.filename = "/tmp/fields_presets.json"
+        # config = self.create_config()
+        # config.get("presets","")
+        self.presets_model.load()
+
+        # Preset toolbutton
+
+        self.presets_button = PresetButton(self)
+        self.presets_button.set_model(self.presets_model)
+        self.presets_button.preset_clicked.connect(self.on_select_preset)
+
+        self.toolbar.addWidget(self.presets_button)
+
         # Save button
         self.save_action = self.toolbar.addAction(self.tr("Save Preset"))
         self.save_action.setIcon(FIcon(0xF0818))
         self.save_action.triggered.connect(self.on_save_preset)
         self.save_action.setToolTip(self.tr("Save as a new Preset"))
-
-        # Remove button
-        self.remove_action = self.toolbar.addAction(self.tr("Remove Preset"))
-        self.remove_action.setIcon(FIcon(0xF0B89))
-        self.remove_action.triggered.connect(self.on_remove_preset)
-        self.remove_action.setToolTip(self.tr("Remove current preset"))
-        self.remove_action.setDisabled(True)
-
-        # Preset combobox
-        self.preset_combo = QComboBox(self)
-        self.preset_combo.currentIndexChanged.connect(self.on_select_preset)
-        self.toolbar.addWidget(self.preset_combo)
 
         self.toolbar.addSeparator()
 
@@ -673,7 +782,6 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self.apply_button.pressed.connect(self.on_apply)
 
         self.setFocusPolicy(Qt.ClickFocus)
-        self.load_presets()
 
     def toggle_search_bar(self, show=True):
         """Make search bar visible or not
@@ -695,43 +803,18 @@ class FieldsEditorWidget(plugin.PluginWidget):
         """
         self.widget_fields.show_checked_only(show)
 
-    def load_presets(self):
-        """
-        Loads/updates all saved presets
-        """
+    def _create_presets_menu(self):
+        if self.presets_model:
+            menu = QMenu(self)
+            for i in range(self.presets_model.rowCount()):
+                preset_name, fields = self.presets_model.preset(i)
+                act: QAction = menu.addAction(preset_name)
+                act.setData(fields)
 
-        self.preset_combo.blockSignals(True)
-        self.preset_combo.clear()
-        self.preset_combo.addItem(FIcon(0xF1038), "Default", userData="default")
-
-        # get default application directory
-        settings = QSettings()
-        preset_path = settings.value(
-            "preset_path",
-            QStandardPaths.writableLocation(QStandardPaths.GenericDataLocation),
-        )
-
-        filenames = glob.glob(f"{preset_path}/*.fields.json")
-        #  Sort file by date
-        filenames.sort(key=os.path.getmtime)
-
-        # Load all user presets
-        for filename in filenames:
-            with open(filename) as file:
-                obj = json.load(file)
-                name = obj.get("name", "")
-                if name:
-                    # we store the filename as data.
-                    self.preset_combo.addItem(FIcon(0xF1038), name, filename)
-        self.preset_combo.blockSignals(False)
+            return menu
 
     def on_save_preset(self):
         """Save preset a file into the default directory"""
-        settings = QSettings()
-        preset_path = settings.value(
-            "preset_path",
-            QStandardPaths.writableLocation(QStandardPaths.GenericDataLocation),
-        )
 
         name, ok = QInputDialog.getText(
             self,
@@ -742,43 +825,12 @@ class FieldsEditorWidget(plugin.PluginWidget):
         )
 
         if ok:
-            with open(f"{preset_path}/{name}.fields.json", "w") as file:
-                obj = self.to_json()
-                obj["name"] = name
-                json.dump(obj, file)
+            self.presets_model.add_preset(name, self.widget_fields.checked_fields)
+            self.presets_model.save()
 
-            self.load_presets()
-            # set last presets
-            if self.preset_combo.count() > 0:
-                self.preset_combo.setCurrentIndex(self.preset_combo.count() - 1)
-
-    def on_remove_preset(self):
-
-        filename = self.preset_combo.currentData()
-        if os.path.exists(filename):
-            reply = QMessageBox.question(
-                self,
-                self.tr("Remove preset ..."),
-                self.tr(f"Do you want to remove the preset {filename}?"),
-                QMessageBox.Yes | QMessageBox.No,
-            )
-
-            if reply == QMessageBox.Yes:
-                os.remove(filename)
-                self.load_presets()
-
-    def on_select_preset(self):
+    def on_select_preset(self, action: QAction):
         """Activate when preset has changed from preset_combobox"""
-        filename = self.preset_combo.currentData()
-
-        if filename == "default":
-            self.widget_fields.checked_fields = self.DEFAULT_FIELDS
-            self.remove_action.setDisabled(True)
-
-        elif os.path.exists(filename):
-            self.remove_action.setDisabled(False)
-            with open(filename) as file:
-                self.from_json(json.load(file))
+        self.widget_fields.checked_fields = action.data()
 
         self.on_apply()
 
