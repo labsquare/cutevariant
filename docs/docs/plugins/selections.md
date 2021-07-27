@@ -1,6 +1,6 @@
-Selections in cutevariant are used to create new source tables that you can query your variants from.
+**Sources** in cutevariant are used to create variant subsets that you can query from later. You can also apply set operation or intersection with a [BED file](https://fr.wikipedia.org/wiki/BED_(format_de_fichier)).
 
-There are three main ways to create a selection, they are listed below.
+There are three main ways to create a source, they are listed below.
 
 ## Create source from current selection
 
@@ -11,7 +11,7 @@ To save a selection, just click the 'new source' button in the source editor.
 
 ## Create source from intersection with a BED file
 
-You can also create sources from a BED file. These files are just tab seperated text, where the first column identifies the contig ID (*i.e.* the chromosome name usually), and the next two columns indicate the range the feature is in (the latter is decribed by every following column).
+You can also create sources from a [BED file](https://fr.wikipedia.org/wiki/BED_(format_de_fichier)). These files are just tab seperated text, where the first column identifies the contig ID (*i.e.* the chromosome name usually), and the next two columns indicate the range the feature is in (the latter is decribed by every following column).
 
 Creating an intersection with a BED file means that you will deselect variants that fall outside the features described by the BED file, and save it to a new table.
 
