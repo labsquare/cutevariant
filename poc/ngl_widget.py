@@ -48,17 +48,21 @@ class NGLWidget(QWebEngineView):
         self.spin = "false"
         self.mol_loaded = False
         self.sized = False
+        self.setHtml(self.TEMPLATE)
         self.settings().setAttribute(
             QWebEngineSettings.LocalContentCanAccessRemoteUrls, True
         )
         self.settings().setAttribute(QWebEngineSettings.LocalStorageEnabled, True)
         self.settings().setAttribute(QWebEngineSettings.FullScreenSupportEnabled, True)
-        self.setHtml(self.TEMPLATE)
+        self.settings().setAttribute(
+            QWebEngineSettings.LocalContentCanAccessFileUrls, True
+        )
+
         self.loadFinished.connect(self.load_tools)
         self.loadFinished.connect(self.set_window_size)
         self.page().setBackgroundColor(QColor("white"))
 
-    def set_window_size(self, width: int = 0, height: int = 0) -> None:
+    def set_window_size(self, width: int = 500, height: int = 500) -> None:
         """set to the window size
         Args:
             width (int, optional): width in pixel. Defaults to 0.
@@ -112,36 +116,19 @@ class NGLWidget(QWebEngineView):
         Args:
             protein (str, optional): choose file to give. Defaults to "rcsb://1crn".
         """
-
         self.page().runJavaScript(
             """
 
-        position_prot = "%s";
-        representation_prot = "%s";
-
-        function structure_representation(component, position = position_prot, representation = representation_prot) {
-                // bail out if the component does not contain a structure
-            if (component.type !== "structure") return;
-                create_representation_scheme(component, "1", representation, "*", schemeId);
-                create_representation_scheme(component, "1", representation, position, schemeId1);
-                create_representation_scheme(component, "10", representation, position, schemeId1, 0.5);
-                
-                component.autoView(position, 2000);
-            };
             stage.removeAllComponents();
-            stage.loadFile("%s").then(structure_representation);
-            stage.setSpin(%s);
-            stage.handleResize();
+            stage.loadFile("rcsb://1crn").then(function (component) {
+            component.addRepresentation("licorice");
+            component.autoView();
 
+
+            });
             """
-            % (
-                self.position,
-                self.representation,
-                protein,
-                self.spin,
-            )
         )
-        print("molecule load")
+
         self.mol_loaded = True
 
     def main_view(self) -> None:
