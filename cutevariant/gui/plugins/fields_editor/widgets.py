@@ -1,4 +1,3 @@
-from cutevariant.config import Config
 import functools
 from typing import List
 import sqlite3
@@ -12,6 +11,8 @@ import copy
 from cutevariant.gui import plugin, FIcon, style
 from cutevariant.gui.mainwindow import MainWindow
 from cutevariant.core import sql
+from cutevariant.config import Config
+
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 from PySide2.QtGui import *
@@ -83,7 +84,7 @@ class FieldsPresetModel(QAbstractListModel):
         self.filename = None
 
     def data(self, index: QModelIndex, role: int) -> typing.Any:
-        if role == Qt.DisplayRole:
+        if role == Qt.DisplayRole or role == Qt.EditRole:
             if index.row() >= 0 and index.row() < self.rowCount():
                 return self._presets[index.row()][0]
         if role == Qt.UserRole:
@@ -91,6 +92,16 @@ class FieldsPresetModel(QAbstractListModel):
                 return self._presets[index.row()][1]
 
         return
+
+    def setData(self, index: QModelIndex, value: str, role: int) -> bool:
+        if role == Qt.EditRole:
+            self._presets[index.row()] = (value, self._presets[index.row()][1])
+            return True
+        else:
+            return False
+
+    def flags(self, index: QModelIndex) -> Qt.ItemFlags:
+        return super().flags(index) | Qt.ItemIsEditable
 
     def preset(self, row: int):
         """Returns a tuple (preset name, fields)
@@ -115,7 +126,6 @@ class FieldsPresetModel(QAbstractListModel):
         self.beginInsertRows(QModelIndex(), 0, 0)
         self._presets.insert(0, (name, fields))
         self.endInsertRows()
-        print(self._presets)
 
     def rem_preset(self, name: str):
         try:
@@ -128,19 +138,29 @@ class FieldsPresetModel(QAbstractListModel):
             LOGGER.error("%s does not name a preset", name)
             pass
 
+    @property
+    def default_path(self):
+        return (
+            QStandardPaths.writableLocation(QStandardPaths.GenericDataLocation)
+            + QDir.separator()
+            + "cutevariant.default.fields.presets.json"
+        )
+
     def load(self):
         if self.filename:
             self.beginResetModel()
-            with open(self.filename) as f:
-                self._presets = [
-                    (preset_name, fields)
-                    for preset_name, fields in json.load(f).items()
-                ]
+            # Make sure we can read. Even though the file doesn't exist, it doesn't mean there is nothing to write to
+            if os.path.isfile(self.filename):
+                with open(self.filename) as f:
+                    self._presets = [
+                        (preset_name, fields)
+                        for preset_name, fields in json.load(f).items()
+                    ]
             self.endResetModel()
 
     def save(self):
         if self.filename:
-            with open(self.filename, "w") as f:
+            with open(self.filename, "w+") as f:
                 json.dump(
                     {preset_name: fields for preset_name, fields in self._presets}, f
                 )
@@ -606,7 +626,6 @@ class FieldsWidget(QWidget):
             view["proxy"].setFilterKeyColumn(0)
             # Checked = "2" / Unchecked = "0" / All : ""
             is_checked_str = "2" if active else ""
-            print(is_checked_str)
             view["proxy"].setFilterFixedString(is_checked_str)
             count = view["proxy"].rowCount()
             name = view["name"]
@@ -751,10 +770,8 @@ class FieldsEditorWidget(plugin.PluginWidget):
 
         # Presets model
         self.presets_model = FieldsPresetModel(self)
-        self.presets_model.filename = "/tmp/fields_presets.json"
-        # config = self.create_config()
-        # config.get("presets","")
-        self.presets_model.load()
+
+        self.update_presets()
 
         # Preset toolbutton
 
@@ -783,6 +800,15 @@ class FieldsEditorWidget(plugin.PluginWidget):
 
         self.setFocusPolicy(Qt.ClickFocus)
 
+    def update_presets(self):
+        """Refresh self's preset model
+        This method should be called by __init__ and on refresh
+        """
+        config = self.create_config()
+        preset_path = config.get("presets_path", self.presets_model.default_path)
+        self.presets_model.filename = preset_path
+        self.presets_model.load()
+
     def toggle_search_bar(self, show=True):
         """Make search bar visible or not
 
@@ -803,18 +829,11 @@ class FieldsEditorWidget(plugin.PluginWidget):
         """
         self.widget_fields.show_checked_only(show)
 
-    def _create_presets_menu(self):
-        if self.presets_model:
-            menu = QMenu(self)
-            for i in range(self.presets_model.rowCount()):
-                preset_name, fields = self.presets_model.preset(i)
-                act: QAction = menu.addAction(preset_name)
-                act.setData(fields)
-
-            return menu
-
     def on_save_preset(self):
         """Save preset a file into the default directory"""
+
+        # So we don't accidentally save a preset that has not been applied yet...
+        self.on_apply()
 
         name, ok = QInputDialog.getText(
             self,
@@ -825,13 +844,18 @@ class FieldsEditorWidget(plugin.PluginWidget):
         )
 
         if ok:
-            self.presets_model.add_preset(name, self.widget_fields.checked_fields)
+            self.mainwindow: MainWindow
+            self.presets_model.add_preset(
+                name, self.mainwindow.get_state_data("fields")
+            )
             self.presets_model.save()
 
     def on_select_preset(self, action: QAction):
         """Activate when preset has changed from preset_combobox"""
+        # TODO Should be
+        # self.mainwindow.set_state_data("fields",action.data())
+        # self.mainwindow.refresh_plugins(sender=self)
         self.widget_fields.checked_fields = action.data()
-
         self.on_apply()
 
     def on_open_project(self, conn):
@@ -845,6 +869,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
             self._is_refreshing = True
             self.widget_fields.checked_fields = self.mainwindow.get_state_data("fields")
             self._is_refreshing = False
+        self.update_presets()
 
     def on_apply(self):
         if self.mainwindow is None or self._is_refreshing:
