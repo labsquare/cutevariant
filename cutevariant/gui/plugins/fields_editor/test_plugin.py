@@ -47,7 +47,7 @@ def test_plugin(conn, qtbot):
 
 
 def test_presets_model(qtmodeltester):
-    _, filename = tempfile.mkstemp()
+    filename = tempfile.mktemp()
     model = widgets.FieldsPresetModel(config_path=filename)
 
     model.add_preset("preset A", ["chr", "pos", "ref"])

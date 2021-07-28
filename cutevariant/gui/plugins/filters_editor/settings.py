@@ -18,25 +18,25 @@ from cutevariant.gui import FIcon
 import cutevariant.commons as cm
 from cutevariant.config import Config
 
-from cutevariant.gui.plugins.fields_editor.widgets import FieldsPresetModel
+from cutevariant.gui.plugins.filters_editor.widgets import FiltersPresetModel
 
 
 class PresetsSettings(AbstractSettingsWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Presets"))
-        self.setWindowIcon(FIcon(0xF08DF))
+        self.setWindowIcon(FIcon(0xF0232))
 
         self.label_description = QLabel(
             self.tr(
-                """In this settings page, you can see the list of field presets. If you need to, you can rename or remove them.
-To create new presets, hit the save button in the fields editor"""
+                """In this settings page, you can see the list of filter presets. If you need to, you can rename or remove them.
+To create new presets, hit the save button in the filters editor"""
             ),
             self,
         )
 
         self.presets_view = QListView(self)
-        self.presets_model = FieldsPresetModel(parent=self)
+        self.presets_model = FiltersPresetModel(parent=self)
         self.presets_view.setModel(self.presets_model)
 
         self.delete_preset_action = QAction(self.tr("Delete preset"), self)
@@ -71,7 +71,7 @@ To create new presets, hit the save button in the fields editor"""
         )
 
 
-class FieldsEditorSettingsWidget(PluginSettingsWidget):
+class FiltersEditorSettingsWidget(PluginSettingsWidget):
     """Instantiated plugin in the settings panel of Cutevariant
 
     Allow users to set predefined masks for urls pointing in various databases
@@ -82,6 +82,6 @@ class FieldsEditorSettingsWidget(PluginSettingsWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowIcon(FIcon(0xF08DF))
-        self.setWindowTitle("Fields editor")
+        self.setWindowIcon(FIcon(0xF0232))
+        self.setWindowTitle("Filters editor")
         self.add_page(PresetsSettings())
