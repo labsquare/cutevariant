@@ -3,19 +3,20 @@ from typing import List
 import sqlite3
 import json
 import os
-import glob
 from functools import lru_cache
 import typing
 import copy
+import re
+
+from PySide2.QtWidgets import *
+from PySide2.QtCore import *
+from PySide2.QtGui import *
+from cutevariant import config
 
 from cutevariant.gui import plugin, FIcon, style
 from cutevariant.gui.mainwindow import MainWindow
 from cutevariant.core import sql
 from cutevariant.config import Config
-
-from PySide2.QtWidgets import *
-from PySide2.QtCore import *
-from PySide2.QtGui import *
 
 
 import cutevariant.commons as cm
@@ -78,10 +79,10 @@ def prepare_fields_for_editor(conn):
 
 
 class FieldsPresetModel(QAbstractListModel):
-    def __init__(self, parent: QObject = None) -> None:
+    def __init__(self, config_path=None, parent: QObject = None) -> None:
         super().__init__(parent=parent)
+        self.config_path = config_path
         self._presets = []
-        self.filename = None
 
     def data(self, index: QModelIndex, role: int) -> typing.Any:
         if role == Qt.DisplayRole or role == Qt.EditRole:
@@ -94,6 +95,17 @@ class FieldsPresetModel(QAbstractListModel):
         return
 
     def setData(self, index: QModelIndex, value: str, role: int) -> bool:
+        """Renames the preset
+        The content is read-only from the model's point of view
+
+        Args:
+            index (QModelIndex): [description]
+            value (str): [description]
+            role (int): [description]
+
+        Returns:
+            bool: True on success
+        """
         if role == Qt.EditRole:
             self._presets[index.row()] = (value, self._presets[index.row()][1])
             return True
@@ -101,17 +113,9 @@ class FieldsPresetModel(QAbstractListModel):
             return False
 
     def flags(self, index: QModelIndex) -> Qt.ItemFlags:
+        if not index.isValid():
+            return Qt.NoItemFlags
         return super().flags(index) | Qt.ItemIsEditable
-
-    def preset(self, row: int):
-        """Returns a tuple (preset name, fields)
-        Args:
-            row (int): index of the preset
-
-        Returns:
-            str,list: Preset name and list of fields
-        """
-        return self._presets[row]
 
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
         return len(self._presets)
@@ -127,48 +131,36 @@ class FieldsPresetModel(QAbstractListModel):
         self._presets.insert(0, (name, fields))
         self.endInsertRows()
 
-    def rem_preset(self, name: str):
-        try:
-            idx = next(i for i, x in enumerate(self._presets) if x[0] == name)
-            self.beginRemoveRows(QModelIndex(), idx, idx)
+    def rem_presets(self, indexes: List[int]):
+        indexes.sort(reverse=True)
+        self.beginResetModel()
+        for idx in indexes:
             del self._presets[idx]
-            self.endRemoveRows()
-
-        except Exception as e:
-            LOGGER.error("%s does not name a preset", name)
-            pass
-
-    @property
-    def default_path(self):
-        return (
-            QStandardPaths.writableLocation(QStandardPaths.GenericDataLocation)
-            + QDir.separator()
-            + "cutevariant.default.fields.presets.json"
-        )
+        self.endResetModel()
 
     def load(self):
-        if self.filename:
-            self.beginResetModel()
-            # Make sure we can read. Even though the file doesn't exist, it doesn't mean there is nothing to write to
-            if os.path.isfile(self.filename):
-                with open(self.filename) as f:
-                    self._presets = [
-                        (preset_name, fields)
-                        for preset_name, fields in json.load(f).items()
-                    ]
-            self.endResetModel()
+        self.beginResetModel()
+        config = Config("fields_editor")
+        presets = config.get("presets", {})
+        self._presets = [
+            (preset_name, fields) for preset_name, fields in presets.items()
+        ]
+        self.endResetModel()
 
     def save(self):
-        if self.filename:
-            with open(self.filename, "w+") as f:
-                json.dump(
-                    {preset_name: fields for preset_name, fields in self._presets}, f
-                )
+        config = Config("fields_editor", self.config_path)
+        config["presets"] = {
+            preset_name: fields for preset_name, fields in self._presets
+        }
+        config.save()
 
     def clear(self):
         self.beginResetModel()
         self._presets.clear()
         self.endResetModel()
+
+    def preset_names(self):
+        return [p[0] for p in self._presets]
 
 
 class FieldsModel(QStandardItemModel):
@@ -769,7 +761,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self.toolbar.addSeparator()
 
         # Presets model
-        self.presets_model = FieldsPresetModel(self)
+        self.presets_model = FieldsPresetModel(parent=self)
 
         self.update_presets()
 
@@ -804,9 +796,6 @@ class FieldsEditorWidget(plugin.PluginWidget):
         """Refresh self's preset model
         This method should be called by __init__ and on refresh
         """
-        config = self.create_config()
-        preset_path = config.get("presets_path", self.presets_model.default_path)
-        self.presets_model.filename = preset_path
         self.presets_model.load()
 
     def toggle_search_bar(self, show=True):
@@ -842,6 +831,10 @@ class FieldsEditorWidget(plugin.PluginWidget):
             QLineEdit.Normal,
             QDir.home().dirName(),
         )
+        i = 1
+        while name in self.presets_model.preset_names():
+            name = re.sub(r"\(\d+\)", "", name) + f" ({i})"
+            i += 1
 
         if ok:
             self.mainwindow: MainWindow

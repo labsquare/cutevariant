@@ -47,8 +47,8 @@ def test_plugin(conn, qtbot):
 
 
 def test_presets_model(qtmodeltester):
-    model = widgets.FieldsPresetModel()
-    model.filename = tempfile.mkstemp()
+    _, filename = tempfile.mkstemp()
+    model = widgets.FieldsPresetModel(config_path=filename)
 
     model.add_preset("preset A", ["chr", "pos", "ref"])
     model.add_preset("preset B", ["chr", "rs", "ann.gene"])
@@ -56,12 +56,10 @@ def test_presets_model(qtmodeltester):
 
     assert model.rowCount() == 3
 
-    model.rem_preset("preset B")
+    model.rem_presets([1])
     assert model.rowCount() == 2
 
     model.save()
-
-    assert os.path.isfile(model.filename)
 
     model.clear()
 
@@ -72,6 +70,8 @@ def test_presets_model(qtmodeltester):
     assert model.rowCount() == 2
 
     qtmodeltester.check(model)
+
+    os.remove(filename)
 
 
 # def test_model_load(qtmodeltester, conn):
