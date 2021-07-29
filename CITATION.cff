@@ -1,0 +1,15 @@
+cff-version: 1.1.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: Schutz
+    given-names: Sacha
+    affiliation: CHRU Brest, Hôpital Morvan, Laboratoire de Génétique Moléculaire, Brest, France
+    orcid: https://orcid.org/0000-0002-4563-7537
+  - family-names: Monod-Broca
+    given-names: Charles
+    affiliation: Univ Brest, Inserm, EFS, UMR 1078, GGB, 29200
+    orcid: https://orcid.org/0000-0003-4095-8099
+    
+title: labsquare/cutevariant
+version: 0.3.4
+date-released: 2021-06-02
