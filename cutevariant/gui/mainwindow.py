@@ -424,6 +424,17 @@ class MainWindow(QMainWindow):
         show_action.setCheckable(True)
         show_action.setChecked(True)
         show_action.toggled.connect(self.toggle_footer_visibility)
+
+        fullscreen_action = self.view_menu.addAction(
+            self.tr("Enter Full Screen"),
+        )
+
+        fullscreen_action.setShortcut(QKeySequence.FullScreen)
+        fullscreen_action.setCheckable(True)
+        fullscreen_action.toggled.connect(
+            lambda x: self.showFullScreen() if x else self.showNormal()
+        )
+
         self.view_menu.addSeparator()
 
         ## Tools
