@@ -10,7 +10,7 @@ from functools import partial
 from logging import DEBUG
 
 # Qt imports
-from PySide2.QtCore import Qt, QSettings, QByteArray, QDir, QUrl, Signal
+from PySide2.QtCore import Qt, QSettings, QByteArray, QDir, QUrl, Signal, QSize
 from PySide2.QtWidgets import *
 from PySide2.QtGui import QIcon, QKeySequence, QDesktopServices
 
@@ -472,7 +472,7 @@ class MainWindow(QMainWindow):
         .. note:: Require selection_widget and some actions of Menubar
         """
         # Tool bar
-        self.toolbar.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
+        self.toolbar.setToolButtonStyle(Qt.ToolButtonIconOnly)
         self.toolbar.addAction(self.new_project_action)
         self.toolbar.addAction(self.open_project_action)
         self.toolbar.addAction(

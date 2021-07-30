@@ -242,7 +242,7 @@ class GroupbyTable(QWidget):
         self.tableview = LoadingTableView(self)
         self.tableview.setModel(self.proxy)
         self.tableview.setShowGrid(False)
-
+        self.setBackgroundRole(QPalette.Base)
         self.tableview.verticalHeader().hide()
         self.tableview.horizontalHeader().hide()
         self.proxy.setSourceModel(self.groupby_model)
