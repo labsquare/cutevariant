@@ -43,7 +43,7 @@ class NGLWidget(QWebEngineView):
 
         super().__init__()
 
-        self.filename = "rcsb://1CRN"
+        self.filename = "rcsb://1crn"
         self.representation = ""
         self.position = 1
         self.colormol = ""
@@ -52,16 +52,35 @@ class NGLWidget(QWebEngineView):
         self.rock = False
         self.mol_loaded = False
         self.sized = False
+
         self.settings().setAttribute(
             QWebEngineSettings.LocalContentCanAccessRemoteUrls, True
         )
         self.settings().setAttribute(QWebEngineSettings.LocalStorageEnabled, True)
         self.settings().setAttribute(QWebEngineSettings.FullScreenSupportEnabled, True)
+
         self.setHtml(self.TEMPLATE)
         self.loadFinished.connect(self.load_tools)
         self.loadFinished.connect(self.set_window_size)
         self.page().setBackgroundColor(QColor("white"))
+        ########################################################
+        ########################################################
+        ########################################################
+        # js_code = """
 
+        #  """
+
+        # script = QWebEngineScript()
+        # script.setInjectionPoint(QWebEngineScript.DocumentCreation)
+        # script.setWorldId(QWebEngineScript.MainWorld)
+        # script.setSourceCode(js_code)
+
+        # profile = QWebEngineProfile("NGL")
+        # self.page().scripts().insert(script)
+
+    ########################################################
+    ########################################################
+    ########################################################
     def set_window_size(self, width: int = 0, height: int = 0) -> None:
         """set to the window size
         Args:
@@ -91,8 +110,8 @@ class NGLWidget(QWebEngineView):
 
         self.page().runJavaScript(
             """
-        
-        var stage = new NGL.Stage("viewport", {backgroundColor : "blue"});
+
+        var stage = new NGL.Stage("viewport", {backgroundColor : "black"});
         var schememol = NGL.ColormakerRegistry.addSelectionScheme([
             ["red", "*"]], "colormol");
         var schemeAA = NGL.ColormakerRegistry.addSelectionScheme([
@@ -107,22 +126,19 @@ class NGLWidget(QWebEngineView):
         function create_representation_scheme(component, scale, representation, position, colorScheme, opacity = 1){
             component.addRepresentation(representation, {
                     sele: position,
-                    scale : scale,
+                    scale  : scale,
                     colorScheme: colorScheme,
                     opacity : opacity
                 });
             return component
-        };
-
+            }
+    
         """
         )
-        print("loadind done")
+        print("loading done")
 
-    def load_mol(self, protein: str = "rcsb://1crn") -> None:
-        """load molecule
-        Args:
-            protein (str, optional): choose file to give. Defaults to "rcsb://1crn".
-        """
+    def load_mol(self) -> None:
+        """load molecule"""
 
         self.page().runJavaScript(
             """
@@ -131,6 +147,7 @@ class NGLWidget(QWebEngineView):
         representation_prot = "%s";
         colormol = "%s";
         colorAA = "%s";
+        protein = "%s"
 
         function structure_representation(component, position = position_prot, representation = representation_prot) {
             schememol = set_colorscheme(schememol, colormol);
@@ -144,8 +161,9 @@ class NGLWidget(QWebEngineView):
                 component.autoView(position, 2000);
             };
             stage.removeAllComponents();
-            stage.loadFile("%s").then(structure_representation);
+            stage.loadFile(protein).then(structure_representation);
             stage.handleResize();
+            print(stage.getBox());
 
             """
             % (
@@ -153,16 +171,33 @@ class NGLWidget(QWebEngineView):
                 self.representation,
                 self.colormol,
                 self.colorAA,
-                protein,
+                self.filename,
             )
         )
         print("molecule load")
         self.mol_loaded = True
 
-    def add_Component(self, component) -> None:
+    def add_component(self, component) -> None:
+        """add component to stage
+
+        Args:
+            component (Component): component to add
+        """
         self.page().runJavaScript(
-            """
-        stage.addComponennt(component))
+            f"""
+        stage.addComponennt({component})
+        """
+        )
+
+    def add_component_from_object(self, component) -> None:
+        """add component to stage
+
+        Args:
+            component (Component): component to add
+        """
+        self.page().runJavaScript(
+            f"""
+        stage.addComponenntFromObjetc({component})
         """
         )
 
@@ -172,7 +207,130 @@ class NGLWidget(QWebEngineView):
         self.page().runJavaScript(
             """
             stage.autoView(800)
+        """
+        )
 
+    def default_file_representation(self, component) -> None:
+        """set default representation for the component
+
+        Args:
+            component (Component): component set at default value
+        """
+        self.page().runJavaScript(
+            f"""
+        stage.defaultFileRepresentation({component})
+        """
+        )
+
+    def dispose(self) -> None:
+        """clean stage object"""
+        self.page().runJavaScript(
+            """stage.dispose()
+        """
+        )
+
+    def each_component(self, callback) -> None:
+        """Iterator over each component and executing the callback
+
+        Args:
+            callback ((comp: Component): void) (function): function to execute
+        """
+        self.page().runJavaScript(
+            f"""
+            stage.eachComponent({callback})"""
+        )
+
+    def each_representation(self, callback) -> None:
+        """Iterator over each representation and executing the callback
+
+        Args:
+            callback ((reprElem: RepresentationElement, comp: Component): void) (function): function to execute
+        """
+        self.page().runJavaScript(
+            f"""
+            stage.eachRepresentation({callback})"""
+        )
+
+    def handle_resize(self) -> None:
+        """Handle any size-changes of the container element"""
+        self.page().runJavaScript(
+            f"""
+            stage.handleResize()"""
+        )
+
+    def laod_file(self, path: str, params: dict = {}) -> any:
+        """Load a file onto the stage
+
+        Args:
+            path (str): either a URL or an object containing the file data
+            parmas (StageLoadingParameter): loading parameters
+        """
+        self.page().runJavaScript(
+            f"""
+            stage.laodFile({path}, {params})
+        """
+        )
+
+    def load_script(self, script: str) -> any:
+        """load script object
+
+        Args:
+            script (str): or file or blob
+
+        Returns:
+            any: [description]
+        """
+        self.page().runJavaScript(
+            f"""
+            stage.loadScript({script})
+        """
+        )
+
+    def log(self, msg: str) -> None:
+        """logging
+
+        Args:
+            msg (str): or file or blob
+
+        """
+        self.page().runJavaScript(
+            f"""
+            stage.log({msg})
+        """
+        )
+
+    def measure_clear(self) -> None:
+        """clear measure stage"""
+        self.page().runJavaScript(
+            """
+            stage.measureClear()
+        """
+        )
+
+    def measure_update(self) -> None:
+        """update measure stage"""
+        self.page().runJavaScript(
+            """
+            stage.measureUpdate()
+        """
+        )
+
+    def remove_all_components(self) -> None:
+        """remove all components from stage"""
+        self.page().runJavaScript(
+            """
+            stage.removeAllComponents()
+        """
+        )
+
+    def remove_components(self, component) -> None:
+        """remove component
+        Args:
+            component (Component): component to remove
+        """
+        self.page().runJavaScript(
+            f"""
+            stage.removeComponents({component})
         """
         )
 
@@ -232,7 +390,7 @@ class NGLWidget(QWebEngineView):
         """
         self.page().runJavaScript(
             f"""
-        stage.setParameters({params}))
+        stage.setParameters({params})
         """
         )
 
@@ -257,7 +415,7 @@ class NGLWidget(QWebEngineView):
         """
         self.page().runJavaScript(
             f"""
-        stage.setSize({width}, {height}))
+        stage.setSize({width}, {height})
         """
         )
 
@@ -288,6 +446,46 @@ class NGLWidget(QWebEngineView):
         self.spin = True
         if self.rock:
             self.rock = False
+
+    def toggle_full_screen(self, element: str) -> None:
+        """toggle the screen
+
+        Args:
+            element (str): HTMLElement
+        """
+        self.page().runJavaScript(
+            f"""
+        stage.togglFullScreen()
+        """
+        )
+
+    def toggle_full_screen(self, element: str) -> None:
+        """toggle the screen
+
+        Args:
+            element (str): HTMLElement
+        """
+        self.page().runJavaScript(
+            f"""
+        stage.togglFullScreen({element})
+        """
+        )
+
+    def toggle_rock(self) -> None:
+        """toggle the rock"""
+        self.page().runJavaScript(
+            """
+        stage.toggleRock()
+        """
+        )
+
+    def toggle_spin(self) -> None:
+        """toggle the spin"""
+        self.page().runJavaScript(
+            """
+        stage.toggleSpin()
+        """
+        )
 
     @classmethod
     def bool_python_to_js(cls, pythonbool: bool) -> bool:
@@ -367,6 +565,9 @@ class MainWindow(QMainWindow):
         self.selectpos.setFixedSize(80, 15)
         self.selectpos.editingFinished.connect(self.update_position)
 
+        self.selectmol = QLineEdit("1crn")
+        self.selectmol.setFixedSize(80, 15)
+
         self.toolbar2.addWidget(self.comborepresentation)
         self.toolbar2.addWidget(self.combomolcolor)
         self.toolbar2.addWidget(self.comboAAcolor)
@@ -374,6 +575,7 @@ class MainWindow(QMainWindow):
         self.toolbar2.addWidget(self.rock)
         self.toolbar2.addWidget(self.textpos)
         self.toolbar2.addWidget(self.selectpos)
+        self.toolbar2.addWidget(self.selectmol)
 
     def init(self) -> None:
         """init the value of ngl_Widget"""
@@ -385,6 +587,7 @@ class MainWindow(QMainWindow):
 
     def on_charger(self) -> None:
         """set the correct value and load the molecule"""
+        self.view.filename = "rcsb://" + self.selectmol.text()
         if not self.view.mol_loaded:
             self.init()
         if not (self.view.sized):
@@ -410,8 +613,15 @@ class MainWindow(QMainWindow):
             self.on_charger()
 
     def update_position(self) -> None:
-        """update selected position"""
+        """update selected position
+        doc : http://nglviewer.org/ngldev/api/manual/selection-language.html"""
         self.view.position = self.selectpos.text()
+        if self.view.mol_loaded:
+            self.on_charger()
+
+    def update_protein(self) -> None:
+        """update selected protein"""
+        self.view.filename = "rcsb://" + self.selectmol.text()
         if self.view.mol_loaded:
             self.on_charger()
 
