@@ -322,117 +322,6 @@ class StyleSettingsWidget(AbstractSettingsWidget):
         self.styles_combobox.setCurrentIndex(available_styles.index(style_name))
 
 
-class PluginsSettingsWidget(AbstractSettingsWidget):
-    """Display a list of found plugin and their status (enabled/disabled)"""
-
-    registerPlugin = Signal(dict)
-    deregisterPlugin = Signal(dict)
-
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle(self.tr("Plugins"))
-        self.setWindowIcon(FIcon(0xF0431))
-        self.view = QTreeWidget()
-        self.view.setColumnCount(3)
-        self.view.setHeaderLabels(["Name", "Description", "Version"])
-        self.view.header().setSectionResizeMode(QHeaderView.ResizeToContents)
-
-        main_layout = QVBoxLayout()
-        main_layout.addWidget(self.view)
-        self.setLayout(main_layout)
-
-    def save(self):
-        pass
-        """Save the check status of enabled plugins in app settings and update UI
-
-        Emit a `register_plugin` or `deregister_plugin` signal for the mainwindow.
-
-        Notes:
-            Called only if the user clicks on "save all" button.
-        """
-        # for iterator in QTreeWidgetItemIterator(
-        #     self.view, QTreeWidgetItemIterator.Enabled
-        # ):
-        #     item = iterator.value()
-        #     # Get extension and check state
-        #     extension = item.data(0, Qt.UserRole)
-        #     check_state = item.checkState(0) == Qt.Checked
-        #     # Save status
-
-        #     config = Config("app")
-
-        #     plugin_conf = {}
-
-        #     plugin_conf[""]
-        #     settings.setValue(f"plugins/{extension['name']}/status", check_state)
-
-        #     # Set the enable status of the extension
-        #     for sub_extension_type in {
-        #         "widget",
-        #         "dialog",
-        #         "setting",
-        #     } & extension.keys():
-        #         extension[sub_extension_type].ENABLE = check_state
-
-        #     if check_state:
-        #         # Register plugin in UI
-        #         self.registerPlugin.emit(extension)
-        #     else:
-        #         # Deregister plugin in UI
-        #         self.deregisterPlugin.emit(extension)
-
-    def load(self):
-        pass
-        """Display the plugins and their status"""
-        # self.view.clear()
-        # from cutevariant.gui import plugin
-
-        # settings = self.create_settings()
-
-        # settings_keys = set(settings.allKeys())
-
-        # for extension in plugin.find_plugins():
-        #     displayed_title = (
-        #         extension["name"]
-        #         if LOGGER.getEffectiveLevel() == DEBUG
-        #         else extension["title"]
-        #     )
-        #     item = QTreeWidgetItem()
-        #     item.setText(0, displayed_title)
-        #     item.setText(1, extension["description"])
-        #     item.setText(2, extension["version"])
-
-        #     # Is an extension enabled ?
-        #     is_enabled = False
-
-        #     # Get activation status
-        #     # Only disabled extensions can be in settings
-        #     key = f"plugins/{extension['name']}/status"
-        #     activated_by_user = (
-        #         settings.value(key) == "true" if key in settings_keys else None
-        #     )
-
-        #     for sub_extension_type in {
-        #         "widget",
-        #         "dialog",
-        #         "setting",
-        #     } & extension.keys():
-        #         if activated_by_user is None and extension[sub_extension_type].ENABLE:
-        #             is_enabled = True
-        #             # Only disabled plugins can be reactivated by the user
-        #             item.setDisabled(True)
-        #             break
-        #         if activated_by_user:
-        #             is_enabled = True
-        #             break
-
-        #     item.setCheckState(0, Qt.Checked if is_enabled else Qt.Unchecked)
-        #     # Attach the extension for its further activation/desactivation
-        #     item.setData(0, Qt.UserRole, extension)
-
-        #     self.view.addTopLevelItem(item)
-
-
 # class PathSettingsWidget(AbstractSettingsWidget):
 #     """ Path settings where to store shared data """
 
@@ -516,17 +405,8 @@ class SettingsDialog(QDialog):
         general_settings.add_page(ProxySettingsWidget())
         general_settings.add_page(StyleSettingsWidget())
 
-        # Activation status of plugins
-        plugin_settings = PluginsSettingsWidget()
-
-        #  BOF...
-        if parent:
-            plugin_settings.registerPlugin.connect(parent.register_plugin)
-            plugin_settings.deregisterPlugin.connect(parent.deregister_plugin)
-
         # Specialized widgets on panels
         self.add_section(general_settings)
-        self.add_section(plugin_settings)
         self.load_plugins()
 
         self.resize(800, 400)
