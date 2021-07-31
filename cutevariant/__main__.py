@@ -120,7 +120,7 @@ def load_styles(app):
     # desktop-oriented look'n'feel.
     # The Fusion style is not a native desktop style.
     # The style runs on any platform, and looks similar everywhere
-    app.setStyle("fusion")
+    # app.setStyle("fusion")
 
     # Load style from settings if exists
     config = Config("app")
