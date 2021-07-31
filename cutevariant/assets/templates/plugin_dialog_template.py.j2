@@ -14,15 +14,25 @@ class {{name}}Dialog(PluginDialog):
     from the tools menu.
     """
 
-    def __init__(self, parent: MainWindow=None):
+    ENABLE = True
+
+    def __init__(self, conn: sqlite3.Connection, parent: MainWindow=None):
         """
         Keys:
             parent (QMainWindow): cutevariant Mainwindow
         """
         super().__init__(parent)
 
-        self.button = QPushButton("hello", self)
+        self.conn = conn
+
+        self.vlayout = QVBoxLayout()
+        self.button = QPushButton("hello")
         self.button.clicked.connect(self.on_click)
+
+        self.vlayout.addWidget(self.button)
+        self.setLayout(self.vlayout)
+
+
 
     def on_click(self):
     	print("I'm using this sqlite connection", self.conn)

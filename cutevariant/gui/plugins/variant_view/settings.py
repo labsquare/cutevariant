@@ -353,9 +353,10 @@ class TagsSettings(AbstractSettingsWidget):
         dialog = TagDialog(name, description, color)
 
         if dialog.exec_() == QDialog.Accepted:
-            self.model.setData(index, dialog.tag["name"], Qt.DisplayRole)
-            self.model.setData(index, dialog.tag["description"], Qt.ToolTipRole)
-            self.model.setData(index, dialog.tag["color"], Qt.DecorationRole)
+            tag = dialog.get_tag()
+            self.model.setData(index, tag["name"], Qt.DisplayRole)
+            self.model.setData(index, tag["description"], Qt.ToolTipRole)
+            self.model.setData(index, tag["color"], Qt.DecorationRole)
 
     def on_rem(self):
         self.model.remove_rows(self.view.selectionModel().selectedRows())
@@ -418,6 +419,10 @@ class LinkSettings(AbstractSettingsWidget):
         self.set_default_button.setToolTip(self.tr("Double click will open this link"))
         self.remove_button = QPushButton(self.tr("Remove"))
 
+        self.batch_open_cb = QCheckBox(
+            self.tr("Allow batch opening of all selected variants")
+        )
+
         v_layout = QVBoxLayout()
         v_layout.addWidget(self.add_button)
         v_layout.addWidget(self.edit_button)
@@ -432,6 +437,7 @@ class LinkSettings(AbstractSettingsWidget):
         main_layout = QVBoxLayout()
         main_layout.addWidget(help_label)
         main_layout.addLayout(h_layout)
+        main_layout.addWidget(self.batch_open_cb)
         self.setLayout(main_layout)
 
         # Signals
@@ -447,6 +453,7 @@ class LinkSettings(AbstractSettingsWidget):
         # Bug from Pyside2.QSettings which don't return boolean
         config = self.section_widget.create_config()
         config["links"] = self.link_model.links
+        config["batch_open_links"] = self.batch_open_cb.isChecked()
         config.save()
 
     def load(self):
@@ -457,6 +464,8 @@ class LinkSettings(AbstractSettingsWidget):
         if "links" in config:
             for link in config["links"]:
                 self.link_model.add_link(**link)
+        if "batch_open_links" in config:
+            self.batch_open_cb.setChecked(bool(config["batch_open_links"]))
 
     def edit_item(
         self,

@@ -137,6 +137,24 @@ class GroupbyModel(QAbstractTableModel):
             if index.column() == 1:
                 return self._raw_data[index.row()]["count"]
 
+        if role == Qt.FontRole:
+            if index.column() == 0:
+                font = QFont()
+                font.setBold(True)
+                return font
+
+        if role == Qt.ForegroundRole:
+            if index.column() == 1:
+                return qApp.style().standardPalette().color(QPalette.Shadow)
+
+        if role == Qt.TextAlignmentRole:
+
+            if index.column() == 0:
+                return Qt.AlignmentFlag(Qt.AlignLeft | Qt.AlignVCenter)
+
+            if index.column() == 1:
+                return Qt.AlignmentFlag(Qt.AlignRight | Qt.AlignVCenter)
+
     def clear(self):
         self._set_raw_data([])
 
@@ -224,8 +242,9 @@ class GroupbyTable(QWidget):
         self.tableview = LoadingTableView(self)
         self.tableview.setModel(self.proxy)
         self.tableview.setShowGrid(False)
-
+        self.setBackgroundRole(QPalette.Base)
         self.tableview.verticalHeader().hide()
+        self.tableview.horizontalHeader().hide()
         self.proxy.setSourceModel(self.groupby_model)
         self.tableview.setSelectionMode(QAbstractItemView.SingleSelection)
         self.tableview.setSelectionBehavior(QAbstractItemView.SelectRows)
@@ -316,18 +335,17 @@ class GroupByViewWidget(PluginWidget):
         )
 
         self.refresh_action: QAction = self.toolbar.addAction(
-            FIcon(0xF0450), self.tr("Rrfresh")
+            FIcon(0xF0450), self.tr("Rerfresh")
         )
         self.refresh_action.triggered.connect(self.load)
 
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.toolbar.addWidget(spacer)
-        self.toolbar.addWidget(QLabel("Group by: "))
-        self.toolbar.addWidget(self.field_select_combo)
 
         layout = QVBoxLayout(self)
         layout.addWidget(self.toolbar)
+        layout.addWidget(self.field_select_combo)
         layout.addWidget(self.view)
         layout.setSpacing(0)
         layout.setContentsMargins(0, 0, 0, 0)

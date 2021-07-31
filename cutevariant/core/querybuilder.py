@@ -50,6 +50,7 @@ OPERATORS = {
     "$regex": "REGEXP",
     "$and": "AND",
     "$or": "OR",
+    "$has": "HAS",
 }
 
 
@@ -292,6 +293,8 @@ def condition_to_sql(item: dict, samples=None) -> str:
     else:
         table = "variants"
 
+    field = f"`{table}`.`{k}`"
+
     if isinstance(v, dict):
         vk, vv = list(v.items())[0]
         operator = vk
@@ -310,6 +313,14 @@ def condition_to_sql(item: dict, samples=None) -> str:
         if not set(str(value)) & set(special_caracter):
             sql_operator = "LIKE"
             value = f"%{value}%"
+
+    if sql_operator == "HAS":
+
+        field = f"'&' || {field} || '&'"
+        sql_operator = "LIKE"
+        value = f"%&{value}&%"
+
+        # WHERE '&' || consequence || '&' LIKE "%&missense_variant&%"
 
     # Cast value
     if isinstance(value, str):
@@ -360,7 +371,7 @@ def condition_to_sql(item: dict, samples=None) -> str:
             condition = f"`sample_{name}`.`{k}` {sql_operator} {value}"
 
     else:
-        condition = f"`{table}`.`{k}` {sql_operator} {value}"
+        condition = f"{field} {sql_operator} {value}"
 
     return condition
 

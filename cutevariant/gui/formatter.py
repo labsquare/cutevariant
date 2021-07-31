@@ -20,6 +20,9 @@ class Formatter(object):
 
     DISPLAY_NAME = ""
 
+    def refresh(self):
+        pass
+
     def format(self, field: str, value: str, option, is_selected: bool = False):
 
         # return {

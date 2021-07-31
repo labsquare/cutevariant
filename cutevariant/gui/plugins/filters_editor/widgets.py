@@ -1,4 +1,7 @@
 # Standard imports
+import re
+from cutevariant.gui.mainwindow import MainWindow
+from cutevariant.config import Config
 from logging import Filter
 import sys
 import json
@@ -14,6 +17,7 @@ import glob
 
 # Qt imports
 from PySide2.QtWidgets import (
+    QInputDialog,
     QWidget,
     QTreeView,
     QFrame,
@@ -61,6 +65,7 @@ from PySide2.QtCore import (
     QRect,
 )
 from PySide2.QtGui import (
+    QMouseEvent,
     QPainter,
     QPalette,
     QFont,
@@ -71,6 +76,7 @@ from PySide2.QtGui import (
     QDoubleValidator,
     QKeySequence,
     QContextMenuEvent,
+    QStandardItemModel,
 )
 
 # Custom imports
@@ -87,7 +93,7 @@ from cutevariant.gui.sql_thread import SqlThread
 from cutevariant import LOGGER
 
 TYPE_OPERATORS = {
-    "str": ["$eq", "$ne", "$in", "$nin", "$regex"],
+    "str": ["$eq", "$ne", "$in", "$nin", "$regex", "$has"],
     "float": ["$eq", "$ne", "$gte", "$gt", "$lt", "$lte"],
     "int": ["$eq", "$ne", "$gte", "$gt", "$lt", "$lte"],
     "bool": ["$eq"],
@@ -107,6 +113,7 @@ OPERATORS_PY_VQL = {
     "$regex": "~",
     "$and": "AND",
     "$or": "OR",
+    "$has": "HAS",
 }
 
 NULL_REPR = "@NULL"
@@ -149,6 +156,127 @@ def prepare_fields(conn):
                 results[sample_field] = field["type"]
 
     return results
+
+
+##------------PRESETS
+
+
+class FiltersPresetModel(QAbstractListModel):
+    def __init__(self, config_path=None, parent: QObject = None) -> None:
+        super().__init__(parent=parent)
+        self.config_path = config_path
+        self._presets = []
+
+    def data(self, index: QModelIndex, role: int) -> typing.Any:
+        if role == Qt.DisplayRole or role == Qt.EditRole:
+            if index.row() >= 0 and index.row() < self.rowCount():
+                return self._presets[index.row()][0]
+        if role == Qt.UserRole:
+            if index.row() >= 0 and index.row() < self.rowCount():
+                return self._presets[index.row()][1]
+
+        return
+
+    def setData(self, index: QModelIndex, value: str, role: int) -> bool:
+        """Renames the preset
+        The content is read-only from the model's point of view
+
+        Args:
+            index (QModelIndex): [description]
+            value (str): [description]
+            role (int): [description]
+
+        Returns:
+            bool: True on success
+        """
+        if role == Qt.EditRole:
+            self._presets[index.row()] = (value, self._presets[index.row()][1])
+            return True
+        else:
+            return False
+
+    def flags(self, index: QModelIndex) -> Qt.ItemFlags:
+        if not index.isValid():
+            return Qt.NoItemFlags
+        return super().flags(index) | Qt.ItemIsEditable
+
+    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
+        return len(self._presets)
+
+    def add_preset(self, name: str, filter: dict):
+        """Add filter preset
+
+        Args:
+            name (str): preset name
+            filter (dict): one filter dict
+        """
+        self.beginInsertRows(QModelIndex(), 0, 0)
+        self._presets.insert(0, (name, filter))
+        self.endInsertRows()
+
+    def rem_presets(self, indexes: typing.List[int]):
+        indexes.sort(reverse=True)
+        self.beginResetModel()
+        for idx in indexes:
+            del self._presets[idx]
+        self.endResetModel()
+
+    def load(self):
+        self.beginResetModel()
+        config = Config("filters_editor")
+        presets = config.get("presets", {})
+        self._presets = [
+            (preset_name, filters) for preset_name, filters in presets.items()
+        ]
+        self.endResetModel()
+
+    def save(self):
+        config = Config("filters_editor", self.config_path)
+        print(config._user_config)
+        config["presets"] = {
+            preset_name: filters for preset_name, filters in self._presets
+        }
+        config.save()
+
+    def clear(self):
+        self.beginResetModel()
+        self._presets.clear()
+        self.endResetModel()
+
+    def preset_names(self):
+        return [p[0] for p in self._presets]
+
+
+class PresetButton(QToolButton):
+    """A toolbutton that works with a drop down menu filled with a model"""
+
+    preset_clicked = Signal(QAction)
+
+    def __init__(self, parent: QWidget = None) -> None:
+        super().__init__(parent=parent)
+        self._menu = QMenu(self.tr("Presets"), self)
+        self._menu.triggered.connect(self.preset_clicked)
+        self.setPopupMode(QToolButton.InstantPopup)
+        self._model: QAbstractItemModel = None
+        self.setMenu(self._menu)
+        self.setText(self.tr("Presets"))
+
+    def set_model(self, model: QAbstractItemModel):
+        self._model = model
+
+    def mousePressEvent(self, e: QMouseEvent) -> None:
+        if self._model:
+            self._menu.clear()
+            for i in range(self._model.rowCount()):
+                index = self._model.index(i, 0)
+                preset_name = index.data(Qt.DisplayRole)
+                fields = index.data(Qt.UserRole)
+                act: QAction = self._menu.addAction(preset_name)
+                act.setData(fields)
+        return super().mousePressEvent(e)
+
+
+##------------END PRESETS
 
 
 class FieldsCompleter(QCompleter):
@@ -2203,8 +2331,6 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.toolbar.setIconSize(QSize(16, 16))
         self.toolbar.setToolButtonStyle(Qt.ToolButtonIconOnly)
 
-        self.presets_menu = QMenu()
-
         self.add_condition_action = self.toolbar.addAction(
             FIcon(0xF0EF1), "Add condition", self.on_add_condition
         )
@@ -2230,17 +2356,17 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.save_action.triggered.connect(self.on_save_preset)
         self.save_action.setToolTip(self.tr("Save as a new Preset"))
 
-        # Remove button
-        self.remove_action = self.toolbar.addAction(self.tr("Remove Preset"))
-        self.remove_action.setIcon(FIcon(0xF0B89))
-        self.remove_action.triggered.connect(self.on_remove_preset)
-        self.remove_action.setToolTip(self.tr("Remove current preset"))
-        self.remove_action.setDisabled(True)
+        # Presets model
+        self.presets_model = FiltersPresetModel(parent=self)
 
-        # Preset combobox
-        self.preset_combo = QComboBox(self)
-        self.preset_combo.activated.connect(self.on_select_preset)
-        self.toolbar.addWidget(self.preset_combo)
+        self.presets_button = PresetButton(self)
+        self.presets_button.set_model(self.presets_model)
+        self.presets_button.preset_clicked.connect(self.on_select_preset)
+
+        self.toolbar.addWidget(self.presets_button)
+
+        # Presets toolbutton (with dropdown menu)
+        self.update_presets()
 
         self.toolbar.addSeparator()
 
@@ -2259,8 +2385,6 @@ class FiltersEditorWidget(plugin.PluginWidget):
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(1)
         self.setLayout(main_layout)
-
-        self.load_presets()
 
         self.current_preset_name = ""
 
@@ -2350,21 +2474,6 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.refresh_buttons()
         self._update_view_geometry()
 
-    @property
-    def filter_path(self):
-        """Return filter path from settings"""
-        settings = QSettings()
-        settings.beginGroup(self.plugin_name)
-        return settings.value(
-            "filter_path", QStandardPaths.writableLocation(QStandardPaths.DataLocation)
-        )
-
-    @filter_path.setter
-    def filter_path(self, value: str):
-        settings = QSettings()
-        settings.beginGroup(self.plugin_name)
-        return settings.setValue("filter_path", value)
-
     def refresh_buttons(self):
         """Actualize the enable states of Add/Del buttons"""
 
@@ -2428,68 +2537,24 @@ class FiltersEditorWidget(plugin.PluginWidget):
         if "filters" in data:
             self.filters = data["filters"]
 
-    def load_presets(self):
+    def update_presets(self):
+        """Refresh self's preset model
+        This method should be called by __init__ and on refresh
         """
-        Loads/updates all saved presets
-        When called, the default preset will be selected and applied, to avoid any confusion
-        """
-        settings = QSettings()
-        preset_path = settings.value(
-            "preset_path",
-            QStandardPaths.writableLocation(QStandardPaths.GenericDataLocation),
-        )
-        self.preset_combo.blockSignals(True)
-        self.preset_combo.clear()
-        self.preset_combo.addItem(FIcon(0xF1038), self.tr("No Filters"), "default")
+        self.presets_model.load()
 
-        filenames = glob.glob(f"{preset_path}/*.filters.json")
-        #  Sort file by date
-        filenames.sort(key=os.path.getmtime)
-
-        for filename in filenames:
-            with open(filename) as file:
-                obj = json.load(file)
-                name = obj.get("name", "")
-                if name:
-                    # we store the filename as data.
-                    self.preset_combo.addItem(FIcon(0xF1038), name, filename)
-        self.preset_combo.blockSignals(False)
-
-    def on_remove_preset(self):
-        filename = self.preset_combo.currentData()
-        if os.path.exists(filename):
-            reply = QMessageBox.question(
-                self,
-                self.tr("Remove preset ..."),
-                self.tr(f"Do you want to remove the preset {filename}?"),
-                QMessageBox.Yes | QMessageBox.No,
-            )
-
-            if reply == QMessageBox.Yes:
-                os.remove(filename)
-                self.load_presets()
-
-    def on_select_preset(self):
+    def on_select_preset(self, action: QAction):
         """Activate when preset has changed from preset_combobox"""
-        filename = self.preset_combo.currentData()
-
-        if filename == "default":
-            self.model.filters = {"$and": []}
-            self.remove_action.setDisabled(True)
-
-        elif os.path.exists(filename):
-            self.remove_action.setDisabled(False)
-            with open(filename) as file:
-                self.from_json(json.load(file))
-
-        self.on_apply()
+        data = action.data()
+        print("GERONIMOOOOOOO", data)
+        if data:
+            self.filters = action.data()
+            self.on_apply()
 
     def on_save_preset(self):
-        settings = QSettings()
-        preset_path = settings.value(
-            "preset_path",
-            QStandardPaths.writableLocation(QStandardPaths.GenericDataLocation),
-        )
+
+        # So we don't accidentally save a preset that has not been applied yet...
+        self.on_apply()
 
         name, ok = QInputDialog.getText(
             self,
@@ -2498,45 +2563,17 @@ class FiltersEditorWidget(plugin.PluginWidget):
             QLineEdit.Normal,
             QDir.home().dirName(),
         )
+        i = 1
+        while name in self.presets_model.preset_names():
+            name = re.sub(r"\(\d+\)", "", name) + f" ({i})"
+            i += 1
 
         if ok:
-            with open(f"{preset_path}/{name}.filters.json", "w") as file:
-                obj = self.to_json()
-                obj["name"] = name
-                json.dump(obj, file)
-
-            self.load_presets()
-            # set last presets
-            if self.preset_combo.count() > 0:
-                self.preset_combo.setCurrentIndex(self.preset_combo.count() - 1)
-
-    # def on_preset_clicked(self):
-    #     action = self.sender()
-    #     data = action.data()
-
-    #     # Data is None or empty, we reset the filters
-    #     if not data:
-    #         data = {"filters": {"$and": []}}
-    #         # We created an empty thus valid filter, apply it
-    #         self.from_json(data)
-    #         self.on_filters_changed()
-    #         self.presets_button.setText(self.tr("Select preset"))
-
-    #         # So we don't need an else (the reset case has been correctly handled)
-    #         return
-
-    #     # Data is not empty, it's a preset with (hopefully) a name
-    #     if "name" in data:
-    #         self.presets_button.setText(data["name"])
-    #         self.current_preset_name = data["name"]
-    #     else:
-    #         self.presets_button.setText("")
-    #         self.current_preset_name = ""
-
-    #     # If data was None, it has been filled with an empty but valid filter
-    #     self.from_json(data)
-
-    #     self.on_filters_changed()
+            self.mainwindow: MainWindow
+            self.presets_model.add_preset(
+                name, self.mainwindow.get_state_data("filters")
+            )
+            self.presets_model.save()
 
     def _update_view_geometry(self):
         """Set column Spanned to True for all Logic Item

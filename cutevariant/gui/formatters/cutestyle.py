@@ -61,7 +61,9 @@ class CutestyleFormatter(Formatter):
     GENOTYPE_ICONS = {key: FIcon(val) for key, val in cm.GENOTYPE_ICONS.items()}
 
     def __init__(self):
-        super().__init__()
+        self.refresh()
+
+    def refresh(self):
         config = Config("variant_view")
         self.TAGS_COLOR = {tag["name"]: tag["color"] for tag in config.get("tags", [])}
 
@@ -148,6 +150,9 @@ class CutestyleFormatter(Formatter):
             return {"pixmap": pix}
 
         if field == "tags":
+            if value is None or value == "":
+                return {}
+
             values = str(value).split("&")
             font = QFont()
             metrics = QFontMetrics(font)
@@ -163,7 +168,9 @@ class CutestyleFormatter(Formatter):
 
                 painter.setFont(font)
                 # painter.setClipRect(option.rect, Qt.IntersectClip)
-                painter.setBrush(QBrush(QColor(self.TAGS_COLOR.get(value, "#90d4f7"))))
+                painter.setBrush(
+                    QBrush(QColor(self.TAGS_COLOR.get(value, "lightgray")))
+                )
                 painter.setPen(Qt.NoPen)
                 painter.drawRoundedRect(rect, 3, 3)
                 painter.setPen(QPen(QColor("white")))

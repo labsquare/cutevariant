@@ -985,6 +985,7 @@ class VariantView(QWidget):
 
     def set_formatter(self, formatter):
         self.delegate.formatter = formatter
+        self.delegate.formatter.refresh()
         self.view.reset()
 
     @property
@@ -1183,36 +1184,48 @@ class VariantView(QWidget):
 
     def _open_url(self, url_template: str, in_browser=False):
 
-        variant = self.model.variant(self.view.currentIndex().row())
-        variant_id = variant["id"]
-        full_variant = sql.get_one_variant(self.conn, variant_id, True, False)
+        config = Config("variant_view")
 
-        # TODO create_url should be able to read deep variant (with unflattened annotations)
-        url = self._create_url(url_template, full_variant)
+        batch_open = False
 
-        LOGGER.debug(url_template, url)
+        if "batch_open_links" in config:
+            batch_open = bool(config["batch_open_links"])
 
-        if in_browser:
-            QDesktopServices.openUrl(url)
-
+        # To avoid code repeating, iterate through list, even if it has only one element
+        if batch_open:
+            indexes = self.view.selectionModel().selectedRows(0)
         else:
-            try:
-                urllib.request.urlopen(url.toString(), timeout=10)
-            except Exception as e:
-                LOGGER.error(
-                    "Error while trying to access "
-                    + url.toString()
-                    + "\n%s" * len(e.args),
-                    *e.args,
-                )
-                cr = "\n"
-                QMessageBox.critical(
-                    self,
-                    self.tr("Error !"),
-                    self.tr(
-                        f"Error while trying to access {url.toString()}:{cr}{cr.join([str(a) for a in e.args])}"
-                    ),
-                )
+            indexes = [self.view.currentIndex().siblingAtColumn(0)]
+
+        for row_index in indexes:
+
+            variant = self.model.variant(row_index.row())
+            variant_id = variant["id"]
+            full_variant = sql.get_one_variant(self.conn, variant_id, True, False)
+
+            url = self._create_url(url_template, full_variant)
+
+            if in_browser:
+                QDesktopServices.openUrl(url)
+
+            else:
+                try:
+                    urllib.request.urlopen(url.toString(), timeout=10)
+                except Exception as e:
+                    LOGGER.error(
+                        "Error while trying to access "
+                        + url.toString()
+                        + "\n%s" * len(e.args),
+                        *e.args,
+                    )
+                    cr = "\n"
+                    QMessageBox.critical(
+                        self,
+                        self.tr("Error !"),
+                        self.tr(
+                            f"Error while trying to access {url.toString()}:{cr}{cr.join([str(a) for a in e.args])}"
+                        ),
+                    )
 
     def _create_url(self, format_string: str, variant: dict) -> QUrl:
         """Create a link from a format string and a variant data
@@ -1303,39 +1316,35 @@ class VariantView(QWidget):
         Todo:
             Use custom sqlite type ?
         """
-        unique_ids = set()
 
-        # variant_data = None
-        # if len(self.view.selectionModel().selectedRows()) == 1:
-        #     variant_data = sql.get_one_variant(
-        #         self.model.conn, self.model.variant(index.row())["id"]
-        #     )
+        update_data = {}
+
+        is_multi_selection = len(self.view.selectionModel().selectedRows()) > 1
 
         for index in self.view.selectionModel().selectedRows():
-            if not index.isValid():
-                continue
 
-            # Get variant id
             variant = self.model.variants[index.row()]
             variant_id = variant["id"]
+            update_data[index.row()] = copy.copy(tags)
 
-            if variant_id in unique_ids:
-                continue
+            if is_multi_selection:
+                # Keep previous tags
+                current_variant = sql.get_one_variant(self.conn, variant_id)
+                current_tag = current_variant.get("tags", "")
 
-            unique_ids.add(variant_id)
-            update_tags = tags
+                if current_tag:
+                    update_data[index.row()] += current_tag.split("&")
 
-            if len(self.view.selectionModel().selectedRows()) > 1:
-                current_tags = sql.get_one_variant(self.conn, variant_id)["tags"]
+        # Write to sql
+        print(update_data)
+        for row, data in update_data.items():
+            variant_id = self.model.variants[row]["id"]
+            print(row, variant_id, data)
+            sql_tags = "&".join(set(data))
+            if not sql_tags:
+                sql_tags = None
 
-                if current_tags:
-                    update_tags = set(tags + current_tags)
-
-            if update_tags:
-                update_tags = "&".join(update_tags)
-                update_data = {"tags": update_tags}
-
-                self.model.update_variant(index.row(), update_data)
+            self.model.update_variant(row, {"tags": sql_tags})
 
     def edit_comment(self, index: QModelIndex):
         """Allow a user to add a comment for the selected variant"""
@@ -1707,7 +1716,7 @@ class VariantViewWidget(plugin.PluginWidget):
         self.main_right_pane.model.load_finished.connect(self.on_load_finished)
 
     def on_tag_widget_show(self):
-        """ Triggered when tagDialog is displayed """
+        """Triggered when tagDialog is displayed"""
         selected_rows = self.main_right_pane.view.selectionModel().selectedRows()
         if len(selected_rows) == 1:
             index = selected_rows[0]
