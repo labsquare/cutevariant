@@ -1,0 +1,51 @@
+import sqlite3
+from cutevariant.gui import plugin
+from cutevariant.gui import MainWindow
+
+class {{name}}Widget(plugin.PluginWidget):
+
+	# Location of the plugin in the mainwindow
+	# Can be : DOCK_LOCATION, CENTRAL_LOCATION, FOOTER_LOCATION
+    LOCATION = plugin.DOCK_LOCATION
+    # Make the plugin enable. Otherwise, it will be not loaded
+    ENABLE = True
+
+    # Refresh the plugin only if the following state variable changed.
+    # Can be : fields, filters, source
+    {%if refresh_state_data %}
+    REFRESH_STATE_DATA = {{"{"}}{%for field in refresh_state_data%}"{{field}}"{% if not loop.last %}, {% endif %}{%endfor%}{{"}"}}
+    {% else %}
+    REFRESH_STATE_DATA = set()
+    {% endif %}
+
+    def __init__(self,parent=None):
+        super().__init__(parent)
+
+    def on_register(self, mainwindow: MainWindow):
+        """This method is called when the plugin is registered from the mainwindow. 
+        
+        This is called one time at the application startup.
+
+        Args:
+            mainwindow (MainWindow): cutevariant Mainwindow
+        """
+        self.mainwindow = mainwindow
+
+    def on_open_project(self, conn: sqlite3.Connection):
+        """This method is called when a project is opened
+		
+		Do your initialization here.
+        You may want to store the conn variable to use it later. 
+     
+        Args:
+            conn (sqlite3.connection): A connection to the sqlite project
+        """
+        pass
+
+    def on_refresh(self):
+        """This method is called from mainwindow.refresh_plugins()
+		
+		You may want to overload this method to update the plugin state 
+		when query changed
+        """
+        pass

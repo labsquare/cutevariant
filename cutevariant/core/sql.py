@@ -29,6 +29,7 @@ import sqlite3
 from collections import defaultdict
 import re
 import logging
+import typing
 from pkg_resources import parse_version
 from functools import partial, lru_cache
 import itertools as it
@@ -39,8 +40,16 @@ import json
 import cutevariant.commons as cm
 import cutevariant.core.querybuilder as qb
 from cutevariant.core.sql_aggregator import StdevFunc
+from cutevariant import LOGGER
 
-LOGGER = cm.logger()
+
+# content of mymodule.py
+def something():
+    """a doctest in a docstring
+    >>> something()
+    42
+    """
+    return 42
 
 
 def get_sql_connection(filepath):
@@ -82,6 +91,35 @@ def get_sql_connection(filepath):
 
 def get_database_file_name(conn):
     return conn.execute("PRAGMA database_list").fetchone()["file"]
+
+
+def remove_indexed_field(conn: sqlite3.Connection, category: str, field_name: str):
+    conn.execute(f"DROP INDEX IF EXISTS idx_{category}_{field_name}")
+    conn.commit()
+
+
+def get_indexed_fields(conn: sqlite3.Connection) -> typing.List[tuple]:
+    """Returns, for this connection, a list of indexed fields
+    Each element of the returned list is a tuple of (category,field_name)
+
+    Args:
+        conn (sqlite3.Connection): Sqlite3 connection
+
+    Returns:
+        typing.List[tuple]: (category, field_name) of all the indexed fields
+    """
+    indexed_fields = [
+        dict(res)["name"]
+        for res in conn.execute("SELECT name FROM sqlite_master WHERE type='index'")
+    ]
+    result = []
+    find_indexed = re.compile(r"idx_(variants|annotations|samples)_(.+)")
+    for index in indexed_fields:
+        matches = find_indexed.findall(index)
+        if matches and len(matches[0]) == 2:
+            category, field_name = matches[0]
+            result.append((category, field_name))
+    return result
 
 
 def table_exists(conn: sqlite3.Connection, name: str) -> bool:
@@ -377,13 +415,10 @@ def create_table_selections(conn: sqlite3.Connection):
     # Association table: do not use useless rowid column
     cursor.execute(
         """CREATE TABLE selection_has_variant (
-        variant_id INTEGER NOT NULL,
-        selection_id INTEGER NOT NULL,
-        PRIMARY KEY (variant_id, selection_id),
-        FOREIGN KEY (selection_id) REFERENCES selections (id)
-          ON DELETE CASCADE
-          ON UPDATE NO ACTION
-        ) WITHOUT ROWID"""
+        variant_id INTEGER NOT NULL REFERENCES variants(id) ON DELETE CASCADE,
+        selection_id INTEGER NOT NULL REFERENCES selections(id) ON DELETE CASCADE,
+        PRIMARY KEY (variant_id, selection_id)
+        )"""
     )
     conn.commit()
 
@@ -1220,7 +1255,13 @@ def create_table_annotations(conn, fields):
     cursor = conn.cursor()
     # TODO: no primary key/unique index for this table?
 
-    cursor.execute(f"CREATE TABLE annotations (variant_id INTEGER NOT NULL, {schema})")
+    cursor.execute(
+        f"""CREATE TABLE annotations (variant_id 
+        INTEGER REFERENCES variants(id) ON UPDATE CASCADE,
+         {schema})
+
+        """
+    )
 
     conn.commit()
 

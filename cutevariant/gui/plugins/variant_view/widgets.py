@@ -11,7 +11,9 @@ import copy
 import sys
 import string
 import urllib.request  # STRANGE: CANNOT IMPORT URLLIB ALONE
-from logging import DEBUG
+from logging import DEBUG, Logger
+import typing
+import jinja2
 
 # dependency
 import cachetools
@@ -22,6 +24,7 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 
 # Custom imports
+from cutevariant.config import Config
 from cutevariant.core.querybuilder import build_sql_query
 from cutevariant.core import sql
 
@@ -31,7 +34,7 @@ from cutevariant.gui.sql_thread import SqlThread
 from cutevariant.gui.widgets import MarkdownEditor
 import cutevariant.commons as cm
 
-LOGGER = cm.logger()
+from cutevariant import LOGGER
 
 
 class VariantModel(QAbstractTableModel):
@@ -73,11 +76,10 @@ class VariantModel(QAbstractTableModel):
     error_raised = Signal(str)
     interrupted = Signal()
 
-    DEFAUT_CACHE_SIZE = 1_048_576 * 32  # Default cache size of 32 Mo
-
     def __init__(self, conn=None, parent=None):
         super().__init__()
         self.limit = 50
+        self.memory_cache = 32
         self.page = 1  #
         self.total = 0
         self.variants = []
@@ -126,11 +128,7 @@ class VariantModel(QAbstractTableModel):
 
         # Create results cache because Thread doesn't use the memoization cache from command.py.
         # This is because Thread create a new connection and change the function signature used by the cache.
-
-        self._load_variant_cache = cachetools.LFUCache(
-            maxsize=self.DEFAUT_CACHE_SIZE, getsizeof=sys.getsizeof
-        )
-        self._load_count_cache = cachetools.LFUCache(maxsize=1000)
+        self.set_cache(32)
 
     @property
     def conn(self):
@@ -187,6 +185,19 @@ class VariantModel(QAbstractTableModel):
     def clear_count_cache(self):
         self._load_count_cache.clear()
 
+    def set_cache(self, cachesize=32):
+
+        if hasattr(self, "_load_variant_cache"):
+            self._load_variant_cache.clear()
+
+        if hasattr(self, "_load_count_cache"):
+            self._load_count_cache.clear()
+
+        self._load_variant_cache = cachetools.LFUCache(
+            maxsize=cachesize * 1_048_576, getsizeof=sys.getsizeof
+        )
+        self._load_count_cache = cachetools.LFUCache(maxsize=1000)
+
     def cache_size(self):
         """Return total cache size"""
         return self._load_variant_cache.currsize
@@ -239,6 +250,10 @@ class VariantModel(QAbstractTableModel):
             if role == Qt.ToolTipRole:
                 value = str(self.variant(index.row())[column_name])
                 return value
+
+            if role == Qt.DecorationRole:
+                if column_name == "tags":
+                    return QColor("red")
 
         return None
 
@@ -401,7 +416,7 @@ class VariantModel(QAbstractTableModel):
             having=self.having,
         )
 
-        print(self.debug_sql)
+        LOGGER.debug(self.debug_sql)
         # Create load_func to run asynchronously: load variants
         load_func = functools.partial(
             cmd.select_cmd,
@@ -606,8 +621,78 @@ class VariantDelegate(QStyledItemDelegate):
         # Draw formatters
         option.rect = option.rect.adjusted(
             3, 0, 0, 0
-        )  # Don't know why I need to adjust the left margin .. .
-        self.formatter.paint(painter, option, index)
+        )  # Don't know why I need to adjust the left margin ..
+
+        field_name = index.model().headerData(index.column(), Qt.Horizontal)
+        field_value = index.data(Qt.DisplayRole)
+        is_selected = option.state & QStyle.State_Selected
+        style = self.formatter.format(field_name, field_value, option, is_selected)
+
+        font = style.get("font", QFont())
+        text = style.get("text", str(field_value))
+        icon = style.get("icon", None)
+        color = style.get(
+            "color",
+            option.palette.color(
+                QPalette.Normal,
+                QPalette.BrightText if is_selected else QPalette.Text,
+            ),
+        )
+        text_align = style.get("text-align", Qt.AlignVCenter | Qt.AlignLeft)
+        icon_align = style.get("icon-align", Qt.AlignCenter)
+
+        pixmap = style.get("pixmap", None)
+        link = style.get("link", None)
+
+        if pixmap:
+            painter.drawPixmap(
+                option.rect.x(),
+                option.rect.y(),
+                pixmap.width(),
+                pixmap.height(),
+                pixmap,
+            )
+            return
+
+        if link:
+            self.draw_url(painter, option.rect, text, text_align)
+            return
+
+        if icon:
+            self.draw_icon(painter, option.rect, icon, icon_align)
+
+        painter.setFont(font)
+        painter.setPen(QPen(color))
+        painter.drawText(option.rect, text_align, text)
+
+    def draw_icon(
+        self, painter: QPainter, rect: QRect, icon: QIcon, alignement=Qt.AlignCenter
+    ):
+        r = QRect(0, 0, rect.height(), rect.height())
+        r.moveCenter(rect.center())
+
+        if alignement & Qt.AlignLeft:
+            r.moveLeft(rect.left())
+
+        if alignement & Qt.AlignRight:
+            r.moveRight(rect.right())
+
+        painter.drawPixmap(r, icon.pixmap(r.width(), r.height()))
+
+    def draw_url(self, painter: QPainter, rect: QRect, value: str, align=Qt.AlignLeft):
+        font = QFont()
+        font.setUnderline(True)
+        painter.setFont(font)
+        painter.setPen(QPen(QColor("blue")))
+        painter.drawText(rect, align, value)
+
+    def editorEvent(self, event: QEvent, model, option, index: QModelIndex):
+        if not index.isValid():
+            return False
+
+        # Skip action with First LogicItem root item
+
+        pass
 
 
 class LoadingTableView(QTableView):
@@ -814,6 +899,14 @@ class VariantView(QWidget):
         )
         self.classification_action.setMenu(self.create_classification_menu())
 
+        # Comment action
+        self.comment_action = QAction(FIcon(0xF0182), self.tr("Comments"))
+        self.addAction(self.comment_action)
+        self.comment_action.setToolTip(self.tr("Edit comment of selected variant ..."))
+        self.comment_action.triggered.connect(
+            lambda x: self.edit_comment(self.view.selectionModel().selectedRows()[0])
+        )
+
         # External links menu
         self.links_action = QAction(FIcon(0xF0339), self.tr("Link to"))
         self.addAction(self.links_action)
@@ -892,6 +985,7 @@ class VariantView(QWidget):
 
     def set_formatter(self, formatter):
         self.delegate.formatter = formatter
+        self.delegate.formatter.refresh()
         self.view.reset()
 
     @property
@@ -1034,24 +1128,8 @@ class VariantView(QWidget):
             }
 
         """
-        links = []
-        settings = QSettings()
-        settings.beginGroup("variant_view")
-        size = settings.beginReadArray("links")
-        for index in range(size):
-            settings.setArrayIndex(index)
-
-            links.append(
-                {
-                    "name": settings.value("name"),
-                    "url": settings.value("url"),
-                    "is_default": settings.value("is_default", 0, type=bool),
-                    "is_browser": settings.value("is_browser", 0, type=bool),
-                }
-            )
-
-        settings.endArray()
-        settings.endGroup()
+        config = Config("variant_view")
+        links = config.get("links", [])
 
         return links
 
@@ -1090,6 +1168,11 @@ class VariantView(QWidget):
             FIcon(0xF018F), self.tr("&Copy"), self.copy_to_clipboard, QKeySequence.Copy
         )
         menu.addAction(
+            FIcon(0xF018F),
+            self.tr("Copy cell value"),
+            self.copy_cell_to_clipboard,
+        )
+        menu.addAction(
             FIcon(0xF0486),
             self.tr("&Select all"),
             self.select_all,
@@ -1101,32 +1184,48 @@ class VariantView(QWidget):
 
     def _open_url(self, url_template: str, in_browser=False):
 
-        variant = self.model.variant(self.view.currentIndex().row())
+        config = Config("variant_view")
 
-        # TODO create_url should be able to read deep variant (with unflattened annotations)
-        url = self._create_url(url_template, variant)
+        batch_open = False
 
-        if in_browser:
-            QDesktopServices.openUrl(url)
+        if "batch_open_links" in config:
+            batch_open = bool(config["batch_open_links"])
 
+        # To avoid code repeating, iterate through list, even if it has only one element
+        if batch_open:
+            indexes = self.view.selectionModel().selectedRows(0)
         else:
-            try:
-                urllib.request.urlopen(url.toString(), timeout=10)
-            except Exception as e:
-                LOGGER.error(
-                    "Error while trying to access "
-                    + url.toString()
-                    + "\n%s" * len(e.args),
-                    *e.args,
-                )
-                cr = "\n"
-                QMessageBox.critical(
-                    self,
-                    self.tr("Error !"),
-                    self.tr(
-                        f"Error while trying to access {url.toString()}:{cr}{cr.join([str(a) for a in e.args])}"
-                    ),
-                )
+            indexes = [self.view.currentIndex().siblingAtColumn(0)]
+
+        for row_index in indexes:
+
+            variant = self.model.variant(row_index.row())
+            variant_id = variant["id"]
+            full_variant = sql.get_one_variant(self.conn, variant_id, True, False)
+
+            url = self._create_url(url_template, full_variant)
+
+            if in_browser:
+                QDesktopServices.openUrl(url)
+
+            else:
+                try:
+                    urllib.request.urlopen(url.toString(), timeout=10)
+                except Exception as e:
+                    LOGGER.error(
+                        "Error while trying to access "
+                        + url.toString()
+                        + "\n%s" * len(e.args),
+                        *e.args,
+                    )
+                    cr = "\n"
+                    QMessageBox.critical(
+                        self,
+                        self.tr("Error !"),
+                        self.tr(
+                            f"Error while trying to access {url.toString()}:{cr}{cr.join([str(a) for a in e.args])}"
+                        ),
+                    )
 
     def _create_url(self, format_string: str, variant: dict) -> QUrl:
         """Create a link from a format string and a variant data
@@ -1139,25 +1238,14 @@ class VariantView(QWidget):
             QUrl: return url or return None
 
         """
+        env = jinja2.Environment()
 
-        regex = re.compile(r"{([^{}]+)}")
-        # First, make sure there are some fields to format
-        if regex.findall(format_string):
+        try:
+            return QUrl(env.from_string(format_string).render(variant))
 
-            # Using this yields us two lists with fields (ex: "{ann.gene}") and their associated field name (ex: "ann.gene")
-            fields, field_names = zip(
-                *[(m.group(0), m.group(1)) for m in regex.finditer(format_string)]
-            )
-
-            # For every field, replace field names with variant value for the respective key
-            for field, field_name in zip(fields, field_names):
-                format_string = format_string.replace(
-                    field, str(variant.get(field_name, field))
-                )
-
-            return QUrl(format_string, QUrl.TolerantMode)
-        else:
-            return format_string
+        except Exception as e:
+            Logger.warning(e)
+            return QUrl()
 
     def update_favorites(self, checked: bool = None):
         """Update favorite status of multiple selected variants
@@ -1228,21 +1316,35 @@ class VariantView(QWidget):
         Todo:
             Use custom sqlite type ?
         """
-        tags = "&".join(tags)
-        unique_ids = set()
-        for index in self.view.selectionModel().selectedRows():
-            if not index.isValid():
-                continue
 
-            # Get variant id
+        update_data = {}
+
+        is_multi_selection = len(self.view.selectionModel().selectedRows()) > 1
+
+        for index in self.view.selectionModel().selectedRows():
+
             variant = self.model.variants[index.row()]
             variant_id = variant["id"]
+            update_data[index.row()] = copy.copy(tags)
 
-            if variant_id in unique_ids:
-                continue
-            unique_ids.add(variant_id)
-            update_data = {"tags": tags}
-            self.model.update_variant(index.row(), update_data)
+            if is_multi_selection:
+                # Keep previous tags
+                current_variant = sql.get_one_variant(self.conn, variant_id)
+                current_tag = current_variant.get("tags", "")
+
+                if current_tag:
+                    update_data[index.row()] += current_tag.split("&")
+
+        # Write to sql
+        print(update_data)
+        for row, data in update_data.items():
+            variant_id = self.model.variants[row]["id"]
+            print(row, variant_id, data)
+            sql_tags = "&".join(set(data))
+            if not sql_tags:
+                sql_tags = None
+
+            self.model.update_variant(row, {"tags": sql_tags})
 
     def edit_comment(self, index: QModelIndex):
         """Allow a user to add a comment for the selected variant"""
@@ -1307,6 +1409,13 @@ class VariantView(QWidget):
 
         QApplication.instance().clipboard().setText(output.getvalue())
         output.close()
+
+    def copy_cell_to_clipboard(self):
+        index = self.view.currentIndex()
+        if not index:
+            return
+        data = index.data()
+        QApplication.instance().clipboard().setText(data)
 
     def _open_default_link(self, index: QModelIndex):
 
@@ -1382,7 +1491,7 @@ class TagsModel(QAbstractListModel):
         return None
 
     def setData(self, index: QModelIndex, value, role: Qt.ItemDataRole):
-        """ override """
+        """override"""
 
         if role == Qt.CheckStateRole:
             self.items[index.row()]["checked"] = bool(value)
@@ -1403,7 +1512,6 @@ class TagsModel(QAbstractListModel):
 
         self.beginResetModel()
         for row in range(self.rowCount()):
-            print("ROW", row, tags)
             if self.items[row]["name"] in tags:
                 self.items[row]["checked"] = True
             else:
@@ -1413,63 +1521,33 @@ class TagsModel(QAbstractListModel):
 
     def load(self):
         self.beginResetModel()
+        self.items.clear()
+        config = Config("variant_view")
 
-        self.items = [
-            {
-                "name": "urgent",
-                "description": "blablba ",
-                "color": "#71e096",
-                "checked": False,
-            },
-            {
-                "name": "bruit",
-                "description": "blablba ",
-                "color": "#ed6d79",
-                "checked": False,
-            },
-            {
-                "name": "pass",
-                "description": "blablba ",
-                "color": "#f7dc68",
-                "checked": False,
-            },
-            {
-                "name": "urgent",
-                "description": "blablba ",
-                "color": "#71e096",
-                "checked": False,
-            },
-            {
-                "name": "test_wordset",
-                "description": "blablba ",
-                "color": "#ed6d79",
-                "checked": False,
-            },
-            {
-                "name": "sdfsf ",
-                "description": "blablba ",
-                "color": "#f7dc68",
-                "checked": False,
-            },
-            {
-                "name": "urgent",
-                "description": "blablba ",
-                "color": "#71e096",
-                "checked": False,
-            },
-            {
-                "name": "test_wordset",
-                "description": "blablba ",
-                "color": "#ed6d79",
-                "checked": False,
-            },
-            {
-                "name": "sdfsf ",
-                "description": "blablba ",
-                "color": "#f7dc68",
-                "checked": False,
-            },
-        ]
+        tags = config.get("tags", [])
+
+        if all(isinstance(tag, dict) for tag in tags):
+
+            for tag in tags:
+                self.items.append(
+                    {
+                        "name": tag["name"],
+                        "description": tag["description"],
+                        "color": tag["color"],
+                        "checked": False,
+                    }
+                )
+
+        self.endResetModel()
+
+    def set_checked(self, checked_tags: list):
+
+        self.beginResetModel()
+        for tag in self.items:
+            if tag["name"] in checked_tags:
+                tag["checked"] = True
+            else:
+                tag["checked"] = False
 
         self.endResetModel()
 
@@ -1485,6 +1563,7 @@ class TagsModel(QAbstractListModel):
 class TagsWidget(QWidget):
 
     tags_selected = Signal(list)
+    visibility_changed = Signal()
 
     def __init__(self, parent=None):
         super().__init__()
@@ -1496,8 +1575,6 @@ class TagsWidget(QWidget):
         self._model = TagsModel()
         self._proxy_model = QSortFilterProxyModel()
         self._proxy_model.setSourceModel(self._model)
-        self._model.load()
-
         self._listview.setModel(self._proxy_model)
 
         vlayout = QVBoxLayout()
@@ -1512,6 +1589,16 @@ class TagsWidget(QWidget):
     def on_apply(self):
         self.tags_selected.emit(self._model.checked_tags())
         self.parent().close()
+
+    def set_checked(self, tags):
+        self._model.set_checked(tags)
+
+    def showEvent(self, event):
+        """override"""
+
+        super().showEvent(event)
+        self._model.load()
+        self.visibility_changed.emit()
 
 
 class VariantViewWidget(plugin.PluginWidget):
@@ -1565,9 +1652,9 @@ class VariantViewWidget(plugin.PluginWidget):
         self._tag_action_menu = QMenu()
         self._tag_widget = TagsWidget()
         self._tag_action.setMenu(self._tag_action_menu)
-
         self.widget_action = QWidgetAction(self)
         self.widget_action.setDefaultWidget(self._tag_widget)
+        self._tag_widget.visibility_changed.connect(self.on_tag_widget_show)
 
         self._tag_action_menu.addAction(self.widget_action)
         self._tag_widget.tags_selected.connect(self.main_right_pane.update_tags)
@@ -1627,6 +1714,16 @@ class VariantViewWidget(plugin.PluginWidget):
 
         self.main_right_pane.error_raised.connect(self.set_message)
         self.main_right_pane.model.load_finished.connect(self.on_load_finished)
+
+    def on_tag_widget_show(self):
+        """Triggered when tagDialog is displayed"""
+        selected_rows = self.main_right_pane.view.selectionModel().selectedRows()
+        if len(selected_rows) == 1:
+            index = selected_rows[0]
+            variant_id = self.main_right_pane.model.variant(index.row())["id"]
+            variant = sql.get_one_variant(self.conn, variant_id)
+            if variant["tags"]:
+                self._tag_widget.set_checked(variant["tags"].split("&"))
 
     def on_load_finished(self):
         """Triggered when variant load is finished
@@ -1688,6 +1785,11 @@ class VariantViewWidget(plugin.PluginWidget):
         self.conn = conn
         # Set connections of models
         self.main_right_pane.conn = self.conn
+
+        # Setup config
+        config = self.create_config()
+        self.main_right_pane.model.limit = config.get("rows_per_page", 50)
+        self.main_right_pane.model.set_cache(config.get("memory_cache", 32))
 
         self.on_refresh()
 

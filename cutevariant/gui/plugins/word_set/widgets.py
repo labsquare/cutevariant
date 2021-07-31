@@ -1,4 +1,5 @@
 # Standard imports
+import json
 import os
 import sqlite3
 import tempfile
@@ -9,6 +10,7 @@ import typing
 
 from PySide2.QtWidgets import (
     QLineEdit,
+    QTableView,
     QToolBar,
     QListView,
     QAbstractItemView,
@@ -26,6 +28,7 @@ from PySide2.QtWidgets import (
 
 from PySide2.QtCore import (
     QAbstractTableModel,
+    QMimeData,
     QModelIndex,
     QObject,
     QStringListModel,
@@ -33,6 +36,7 @@ from PySide2.QtCore import (
     QDir,
     QSettings,
     QItemSelectionModel,
+    QUrl,
     Qt,
 )
 from PySide2.QtGui import QIcon, QContextMenuEvent, QKeyEvent, QKeySequence
@@ -53,7 +57,7 @@ from cutevariant import commons as cm
 from cutevariant.gui.ficon import FIcon
 from cutevariant.gui.widgets import SearchableTableWidget
 
-LOGGER = cm.logger()
+from cutevariant import LOGGER
 
 
 class WordListDialog(QDialog):
@@ -205,9 +209,10 @@ class WordListDialog(QDialog):
 
 
 class WordsetCollectionModel(QAbstractTableModel):
-    def __init__(self, parent: QObject) -> None:
+    def __init__(self, conn: sqlite3.Connection = None, parent: QObject = None) -> None:
         super().__init__(parent)
         self._raw_data = []
+        self.conn = conn
 
     def data(self, index: QModelIndex, role: int) -> typing.Any:
 
@@ -242,8 +247,11 @@ class WordsetCollectionModel(QAbstractTableModel):
         if section == 1:
             return self.tr("Count")
 
-    def load(self, conn):
-        self._set_dict({data["name"]: data["count"] for data in get_wordsets(conn)})
+    def load(self):
+        if self.conn:
+            self._set_dict(
+                {data["name"]: data["count"] for data in get_wordsets(self.conn)}
+            )
 
     def _set_dict(self, data: dict):
         self.beginResetModel()
@@ -262,6 +270,97 @@ class WordsetCollectionModel(QAbstractTableModel):
     def wordset_names(self):
         return list(dict(self._raw_data).keys())
 
+    def mimeData(self, indexes: typing.List) -> QMimeData:
+        wordset_names = [
+            idx.data(Qt.DisplayRole) for idx in indexes if idx.column() == 0
+        ]
+        if len(wordset_names) != 1:
+            # Currently, we don't support dragging more than one wordset
+            return None
+        res = QMimeData()
+        ser_wordset = wordset_names[0]
+        res.setText(json.dumps({"ann.gene": {"$in": {"$wordset": ser_wordset}}}))
+        res.setData(
+            "cutevariant/typed-json",
+            bytes(
+                json.dumps(
+                    {
+                        "type": "condition",
+                        "condition": {
+                            "field": "ann.gene",
+                            "operator": "$in",
+                            "value": {"$wordset": ser_wordset},
+                        },
+                    }
+                ),
+                "utf-8",
+            ),
+        )
+        return res
+
+    def import_from_file(self, filename: str):
+
+        if not self.conn:
+            return False
+        wordet_name = os.path.basename(filename).split(".")[0]
+
+        result = import_cmd(self.conn, "wordsets", wordet_name, filename)
+
+        # Load anyway. If there was an error, we still want the model to be valid with existing wordsets
+        self.load()
+
+        if not result["success"]:
+            LOGGER.error(result)
+            QMessageBox.critical(
+                self,
+                self.tr("Error while importing set"),
+                self.tr("Error while importing set '%s'") % filename,
+            )
+            return False
+        return True
+
+    def canDropMimeData(
+        self,
+        data: QMimeData,
+        action: Qt.DropAction,
+        row: int,
+        column: int,
+        parent: QModelIndex,
+    ) -> bool:
+
+        if data.hasFormat("text/uri-list") and action == Qt.CopyAction:
+            return True
+        return False
+
+    def dropMimeData(
+        self,
+        data: QMimeData,
+        action: Qt.DropAction,
+        row: int,
+        column: int,
+        parent: QModelIndex,
+    ) -> bool:
+        if action == Qt.CopyAction:
+            if data.hasFormat("text/uri-list"):
+                file_name = QUrl(
+                    str(data.data("text/uri-list"), encoding="utf-8").strip()
+                ).toLocalFile()
+
+                # The given URL was not a local file or the file does not exist
+                if not file_name or not os.path.isfile(file_name):
+                    return False
+                return self.import_from_file(file_name)
+            return False
+
+    def mimeTypes(self) -> typing.List:
+        return ["text/uri-list"]
+
+    def mimeTypes(self) -> typing.List:
+        return ["cutevariant/typed-json", "text/plain"]
+
+    def flags(self, index: QModelIndex) -> Qt.ItemFlags:
+        return super().flags(index) | Qt.ItemIsDragEnabled | Qt.ItemIsDropEnabled
+
 
 class WordSetWidget(PluginWidget):
     """Plugin to show handle word sets from user and gather matching variants
@@ -273,18 +372,21 @@ class WordSetWidget(PluginWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.conn = None
-        self.model = WordsetCollectionModel(self)
+        self.model = WordsetCollectionModel(parent=self)
         self.setWindowIcon(FIcon(0xF10E3))
         self.toolbar = QToolBar(self)
-        self.view = SearchableTableWidget(self)
-        self.view.tableview.setSortingEnabled(True)
-        self.view.tableview.setShowGrid(False)
-        self.view.tableview.setAlternatingRowColors(False)
-        self.view.proxy.setSourceModel(self.model)
-        self.view.tableview.setIconSize(QSize(16, 16))
-        self.view.tableview.doubleClicked.connect(self.open_wordset)
-        self.view.tableview.setSelectionMode(QAbstractItemView.ExtendedSelection)
-        self.view.tableview.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.view = QTableView(self)
+        self.view.setSortingEnabled(True)
+        self.view.setShowGrid(False)
+        self.view.setAlternatingRowColors(False)
+        self.view.setModel(self.model)
+        self.view.setIconSize(QSize(16, 16))
+        self.view.doubleClicked.connect(self.open_wordset)
+        self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
+
+        self.view.setDragEnabled(True)
+        self.view.setAcceptDrops(True)
 
         # setup tool bar
         self.toolbar.setIconSize(QSize(16, 16))
@@ -331,16 +433,14 @@ class WordSetWidget(PluginWidget):
         self.setLayout(v_layout)
 
         # Item selected in view
-        self.view.tableview.selectionModel().selectionChanged.connect(
-            self.on_item_selected
-        )
+        self.view.selectionModel().selectionChanged.connect(self.on_item_selected)
 
         self.addActions(self.toolbar.actions())
         self.setContextMenuPolicy(Qt.ActionsContextMenu)
 
     def update_action_availabilty(self):
         # Get list of all selected model item indexes
-        enable = bool(self.view.tableview.selectionModel().selectedIndexes())
+        enable = bool(self.view.selectionModel().selectedIndexes())
 
         self.edit_action.setEnabled(enable)
         self.remove_action.setEnabled(enable)
@@ -419,7 +519,7 @@ class WordSetWidget(PluginWidget):
 
     def remove_wordset(self):
         """Delete word set from database"""
-        if not self.view.tableview.selectionModel().selectedIndexes():
+        if not self.view.selectionModel().selectedIndexes():
             # if selection is empty
             return
 
@@ -433,7 +533,7 @@ class WordSetWidget(PluginWidget):
             return
 
         # Delete all selected sets
-        for selected_index in self.view.tableview.selectionModel().selectedRows(0):
+        for selected_index in self.view.selectionModel().selectedRows(0):
             result = drop_cmd(
                 self.conn, "wordsets", selected_index.data(Qt.DisplayRole)
             )
@@ -455,8 +555,8 @@ class WordSetWidget(PluginWidget):
         The previous set is dropped and the new is then imported in database.
         """
         wordset_index = (
-            self.view.tableview.selectionModel().selectedRows(0)[0]
-            if self.view.tableview.selectionModel().selectedRows(0)
+            self.view.selectionModel().selectedRows(0)[0]
+            if self.view.selectionModel().selectedRows(0)
             else None
         )
         if not wordset_index:
@@ -468,16 +568,15 @@ class WordSetWidget(PluginWidget):
         dialog.model.setStringList(list(get_words_in_set(self.conn, wordset_name)))
 
         if dialog.exec_() == QDialog.Accepted:
-            # # Drop previous
-            # drop_cmd(self.conn, "wordsets", wordset_name)
-            # # Import new
-            # self.import_wordset(dialog.model.stringList(), wordset_name)
-            # self.populate()
-            print(wordset_name)
+            drop_cmd(self.conn, "wordsets", wordset_name)
+            # Import new
+            self.import_wordset(dialog.model.stringList(), wordset_name)
+            self.populate()
 
     def on_open_project(self, conn):
         """override"""
         self.conn = conn
+        self.model.conn = conn
         self.on_refresh()
 
     def on_refresh(self):
@@ -489,12 +588,10 @@ class WordSetWidget(PluginWidget):
 
     def populate(self):
         """Actualize the list of word sets"""
-        self.model.load(self.conn)
-        self.view.tableview.horizontalHeader().setStretchLastSection(False)
-        self.view.tableview.horizontalHeader().setSectionResizeMode(
-            0, QHeaderView.Stretch
-        )
-        self.view.tableview.horizontalHeader().setSectionResizeMode(
+        self.model.load()
+        self.view.horizontalHeader().setStretchLastSection(False)
+        self.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+        self.view.horizontalHeader().setSectionResizeMode(
             1, QHeaderView.ResizeToContents
         )
         self.update_action_availabilty()
@@ -510,7 +607,7 @@ class WordSetWidget(PluginWidget):
         }
         selected_wordsets = [
             index.data(Qt.DisplayRole)
-            for index in self.view.tableview.selectionModel().selectedRows(0)
+            for index in self.view.selectionModel().selectedRows(0)
         ]
         if not selected_wordsets:
             return

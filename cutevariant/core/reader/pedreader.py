@@ -3,7 +3,7 @@ import csv
 
 import cutevariant.commons as cm
 
-LOGGER = cm.logger()
+from cutevariant import LOGGER
 
 
 class PedReader:

@@ -1,4 +1,5 @@
 import sqlite3
+from PySide2.QtWidgets import *
 
 
 def table_exists(conn: sqlite3.Connection, name):
@@ -33,4 +34,7 @@ def create_conn(file_name=None, annotation_parser=None):
 
 
 def create_qt_application():
-    pass
+    QApplication()
+    qApp.setOrganizationName("labsquare")
+    qApp.setApplicationName("cutevariantTest")
+    return qApp

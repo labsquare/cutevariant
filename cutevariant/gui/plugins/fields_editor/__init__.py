@@ -1,10 +1,6 @@
-from PySide2.QtWidgets import QApplication
-
 __title__ = "Fields editor"
 __description__ = "A plugin to display fields "
-__long_description__ = QApplication.instance().translate(
-    "fields_editor",
-    """
+__long_description__ = """
 <p>This plugin is used to manage the fields visible from the main "variant view"
 window.</p>
 
@@ -19,7 +15,6 @@ consequence of the variant, impact rating, etc.).</li>
 
 <p>As the number of fields is large, it may be interesting to <em>use the keyword
 search button</em> to quickly find those that are relevant in a study.</p>
-""",
-)
+"""
 __author__ = "Sacha schutz"
 __version__ = "1.0.0"

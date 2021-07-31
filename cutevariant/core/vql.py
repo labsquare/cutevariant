@@ -25,6 +25,7 @@ OPERATORS = {
     "~": "$regex",
     "AND": "$and",
     "OR": "$or",
+    "HAS": "$has",
 }
 
 
@@ -105,7 +106,7 @@ class FilterTerm(metaclass=model_class):
         val = self.val.value if hasattr(self.val, "value") else self.val
         if val == "NULL":
             val = None
-        op = OPERATORS.get(self.op, "$eq")
+        op = OPERATORS.get(self.op.upper(), "$eq")
 
         if isinstance(field, tuple):
             if field[0] == "samples":

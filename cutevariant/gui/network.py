@@ -1,10 +1,10 @@
 from PySide2.QtCore import QSettings
 from PySide2.QtNetwork import QNetworkAccessManager, QNetworkProxy
 
-from cutevariant.commons import logger
 
 
-LOGGER = logger()
+
+from cutevariant import LOGGER
 
 PROXY_TYPES = {
     "No Proxy": QNetworkProxy.NoProxy,
