@@ -52,51 +52,20 @@ class NGLWidget(QWebEngineView):
         self.rock = False
         self.mol_loaded = False
         self.sized = False
-<<<<<<< HEAD
+        self.focus_camera = False
 
-=======
-        self.setHtml(self.TEMPLATE)
->>>>>>> c3def206b6b7e7a3089ff5d1bd01c824108c1558
         self.settings().setAttribute(
             QWebEngineSettings.LocalContentCanAccessRemoteUrls, True
         )
         self.settings().setAttribute(QWebEngineSettings.LocalStorageEnabled, True)
         self.settings().setAttribute(QWebEngineSettings.FullScreenSupportEnabled, True)
-<<<<<<< HEAD
 
         self.setHtml(self.TEMPLATE)
-=======
-        self.settings().setAttribute(
-            QWebEngineSettings.LocalContentCanAccessFileUrls, True
-        )
-
->>>>>>> c3def206b6b7e7a3089ff5d1bd01c824108c1558
         self.loadFinished.connect(self.load_tools)
         self.loadFinished.connect(self.set_window_size)
         self.page().setBackgroundColor(QColor("white"))
-        ########################################################
-        ########################################################
-        ########################################################
-        # js_code = """
 
-        #  """
-
-        # script = QWebEngineScript()
-        # script.setInjectionPoint(QWebEngineScript.DocumentCreation)
-        # script.setWorldId(QWebEngineScript.MainWorld)
-        # script.setSourceCode(js_code)
-
-<<<<<<< HEAD
-        # profile = QWebEngineProfile("NGL")
-        # self.page().scripts().insert(script)
-
-    ########################################################
-    ########################################################
-    ########################################################
     def set_window_size(self, width: int = 0, height: int = 0) -> None:
-=======
-    def set_window_size(self, width: int = 500, height: int = 500) -> None:
->>>>>>> c3def206b6b7e7a3089ff5d1bd01c824108c1558
         """set to the window size
         Args:
             width (int, optional): width in pixel. Defaults to 0.
@@ -150,11 +119,13 @@ class NGLWidget(QWebEngineView):
     
         """
         )
+        self.focus_camera = self.bool_python_to_js(self.focus_camera)
         print("loading done")
 
-<<<<<<< HEAD
     def load_mol(self) -> None:
         """load molecule"""
+
+        print(self.focus_camera)
 
         self.page().runJavaScript(
             """
@@ -163,7 +134,8 @@ class NGLWidget(QWebEngineView):
         representation_prot = "%s";
         colormol = "%s";
         colorAA = "%s";
-        protein = "%s"
+        protein = "%s";
+        focus_camera = %s;
 
         function structure_representation(component, position = position_prot, representation = representation_prot) {
             schememol = set_colorscheme(schememol, colormol);
@@ -173,43 +145,25 @@ class NGLWidget(QWebEngineView):
                 create_representation_scheme(component, "1", representation, "*", schememol);
                 create_representation_scheme(component, "1", representation, position, schemeAA);
                 create_representation_scheme(component, "10", representation, position, schemeAA, 0.5);
-                
-                component.autoView(position, 2000);
+                if (focus_camera)
+                    component.autoView(position, 2000);
             };
             stage.removeAllComponents();
             stage.loadFile(protein).then(structure_representation);
             stage.handleResize();
             print(stage.getBox());
-=======
-    def load_mol(self, protein: str = "rcsb://1crn") -> None:
-        """load molecule
-        Args:
-            protein (str, optional): choose file to give. Defaults to "rcsb://1crn".
-        """
-        self.page().runJavaScript(
+
             """
-
-            stage.removeAllComponents();
-            stage.loadFile("rcsb://1crn").then(function (component) {
-            component.addRepresentation("licorice");
-            component.autoView();
->>>>>>> c3def206b6b7e7a3089ff5d1bd01c824108c1558
-
-
-            });
-            """
-<<<<<<< HEAD
             % (
                 self.position,
                 self.representation,
                 self.colormol,
                 self.colorAA,
                 self.filename,
+                self.focus_camera,
             )
-=======
->>>>>>> c3def206b6b7e7a3089ff5d1bd01c824108c1558
         )
-
+        print("molecule load")
         self.mol_loaded = True
 
     def add_component(self, component) -> None:
@@ -558,19 +512,17 @@ class MainWindow(QMainWindow):
                 "hyperball",
             ]
         )
-        self.comborepresentation.currentTextChanged.connect(
-            self.update_comborepresentation
-        )
+        self.comborepresentation.textActivated.connect(self.update_comborepresentation)
 
         self.combomolcolor = QComboBox()
         self.combomolcolor.addItems(
             ["red", "blue", "green", "pink", "purple", "orange"]
         )
-        self.combomolcolor.currentTextChanged.connect(self.update_combomolcolor)
+        self.combomolcolor.textActivated.connect(self.update_combomolcolor)
 
         self.comboAAcolor = QComboBox()
         self.comboAAcolor.addItems(["blue", "red", "green", "pink", "purple", "orange"])
-        self.comboAAcolor.currentTextChanged.connect(self.update_comboAAcolor)
+        self.comboAAcolor.textActivated.connect(self.update_comboAAcolor)
 
         self.toolbar = self.addToolBar("toolbar")
         self.toolbar.setMovable(False)
@@ -584,8 +536,9 @@ class MainWindow(QMainWindow):
         resizeaction = self.toolbar.addAction("resize")
         resizeaction.triggered.connect(self.resize)
 
-        cameraaction = self.toolbar.addAction("global view")
-        cameraaction.triggered.connect(self.view.auto_view)
+        self.combocamera = QComboBox()
+        self.combocamera.addItems(["global view", "focus view"])
+        self.combocamera.textActivated.connect(self.update_view)
 
         self.spin = QCheckBox("spin")
         self.spin.stateChanged.connect(self.view.set_spin)
@@ -603,6 +556,7 @@ class MainWindow(QMainWindow):
         self.selectmol = QLineEdit("1crn")
         self.selectmol.setFixedSize(80, 15)
 
+        self.toolbar2.addWidget(self.combocamera)
         self.toolbar2.addWidget(self.comborepresentation)
         self.toolbar2.addWidget(self.combomolcolor)
         self.toolbar2.addWidget(self.comboAAcolor)
@@ -644,6 +598,17 @@ class MainWindow(QMainWindow):
     def update_comboAAcolor(self) -> None:
         """update the color value and refresh"""
         self.view.colorAA = self.comboAAcolor.currentText()
+        if self.view.mol_loaded:
+            self.on_charger()
+
+    def update_view(self) -> None:
+        """update the view"""
+        if self.combocamera.currentText() == "global view":
+            self.view.focus_camera = False
+            self.view.auto_view()
+        if self.combocamera.currentText() == "focus view":
+            self.view.focus_camera = True
+        self.view.focus_camera = self.view.bool_python_to_js(self.view.focus_camera)
         if self.view.mol_loaded:
             self.on_charger()
 
