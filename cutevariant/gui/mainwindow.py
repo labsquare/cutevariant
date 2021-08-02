@@ -16,7 +16,9 @@ from PySide2.QtGui import QIcon, QKeySequence, QDesktopServices
 
 
 # Custom imports
+from cutevariant import LOGGER
 from cutevariant.core import get_sql_connection, get_metadatas, command
+from cutevariant.core import sql
 from cutevariant.core.sql import get_database_file_name
 from cutevariant.core.writer import CsvWriter, PedWriter
 from cutevariant.gui import FIcon
@@ -33,9 +35,9 @@ from cutevariant.commons import (
 from cutevariant.gui.export import ExportDialogFactory, ExportDialog
 
 # Import plugins
-from cutevariant.gui import plugin
+from cutevariant.gui import plugin, plugin_form
 
-LOGGER = cm.logger()
+from cutevariant import LOGGER
 
 import copy
 
@@ -47,9 +49,9 @@ class StateData:
 
     """
 
-    def __init__(self, data=None):
-        self._data = data if data else {}
+    def __init__(self):
         self._changed = set()
+        self.reset()
 
     def __setitem__(self, key, value):
 
@@ -71,6 +73,13 @@ class StateData:
     @property
     def changed(self):
         return self._changed
+
+    def reset(self):
+        self._data = {
+            "fields": ["favorite", "classification", "chr", "pos", "ref", "alt"],
+            "source": "variants",
+            "filters": {},
+        }
 
 
 class MainWindow(QMainWindow):
@@ -99,16 +108,9 @@ class MainWindow(QMainWindow):
         self.app_settings = QSettings()
 
         # State variable of application changed by plugins
-        self._state_data = StateData(
-            {
-                "fields": ["chr", "pos", "ref", "alt"],
-                "source": "variants",
-                "filters": {},
-            }
-        )
+        self._state_data = StateData()
 
         ## ===== GUI Setup =====
-
         self.setWindowTitle("Cutevariant")
         self.setWindowIcon(QIcon(DIR_ICONS + "app.png"))
         self.setWindowFlags(Qt.WindowContextHelpButtonHint | self.windowFlags())
@@ -214,7 +216,7 @@ class MainWindow(QMainWindow):
         See self.register_plugin
 
         """
-        LOGGER.info("MainWindow:: Registering plugins...")
+        LOGGER.info("Registering plugins...")
         # Get classes of plugins
         for extension in plugin.find_plugins():
             self.register_plugin(extension)
@@ -232,7 +234,6 @@ class MainWindow(QMainWindow):
         Args:
             extension (dict): Extension dict returned by `cutevariant.gui.plugin.find_plugins`
         """
-        LOGGER.debug("Extension: %s", extension)
 
         name = extension["name"]
         title = extension["title"]
@@ -307,6 +308,7 @@ class MainWindow(QMainWindow):
             sender (PluginWidget): from a plugin, you can pass "self" as argument
         """
 
+        plugin_to_refresh = []
         for plugin_obj in self.plugins.values():
             need_refresh = (
                 plugin_obj is not sender
@@ -316,14 +318,17 @@ class MainWindow(QMainWindow):
 
             if need_refresh:
                 try:
-                    plugin_obj.on_refresh()
-                    print(plugin_obj)
+                    plugin_to_refresh.append(plugin_obj)
+                    # plugin_obj.on_refresh()
+                    LOGGER.debug(f"refresh {plugin_obj.__class__}")
 
                 except Exception as e:
                     LOGGER.exception(e)
 
         # Clear state_changed set
         self._state_data.clear_changed()
+        for plugin in plugin_to_refresh:
+            plugin.on_refresh()
 
     def refresh_plugin(self, plugin_name: str):
         """Refresh a widget plugin identified by plugin_name
@@ -355,6 +360,7 @@ class MainWindow(QMainWindow):
         )
         ### Recent projects
         self.recent_files_menu = self.file_menu.addMenu(self.tr("Open recent"))
+
         self.setup_recent_menu()
 
         self.file_menu.addAction(QIcon(), self.tr("Export..."), self.on_export_pressed)
@@ -446,6 +452,11 @@ class MainWindow(QMainWindow):
         )
 
         self.help_menu.addSeparator()
+        # Setup developers menu
+        self.developers_menu = QMenu(self.tr("Developers..."))
+        self.setup_developers_menu()
+        self.help_menu.addMenu(self.developers_menu)
+
         self.help_menu.addAction(
             self.tr("About Qt..."), QApplication.instance().aboutQt
         )
@@ -530,10 +541,12 @@ class MainWindow(QMainWindow):
         """
         self.conn = conn
 
+        self._state_data.reset()
+
         # Clear memoization cache for count_cmd
+        sql.clear_lru_cache()
         # Clear State variable of application
         # store fields, source, filters, group_by, having data
-        self.state = {"fields": ["chr"], "source": "variants", "filters": {}}
 
         # Load previous window state for this project (file_path being the key for the settings)
         file_path = get_database_file_name(conn)
@@ -590,7 +603,6 @@ class MainWindow(QMainWindow):
     def on_recent_project_clicked(self):
         """Slot to load a recent project"""
         action = self.sender()
-        LOGGER.debug(action.text())
         self.open(action.text())
 
     def new_project(self):
@@ -663,7 +675,12 @@ class MainWindow(QMainWindow):
     def show_settings(self):
         """Slot to show settings window"""
         widget = SettingsDialog(self)
-        widget.exec_()
+
+        if widget.exec_():
+            self.reload()
+
+    def reload(self):
+        self.open_database(self.conn)
 
     def show_dialog(self):
         """Show Plugin dialog box after a click on the tool menu"""
@@ -786,7 +803,7 @@ class MainWindow(QMainWindow):
         super().closeEvent(event)
 
     def save_session(self):
-        """ save plugin state into a json file """
+        """save plugin state into a json file"""
 
         filename, _ = QFileDialog.getSaveFileName(
             self,
@@ -915,11 +932,6 @@ class MainWindow(QMainWindow):
         )
 
         if not file_name:
-            QMessageBox.information(
-                self,
-                self.tr("Info"),
-                self.tr("No file name specified, nothing will be written"),
-            )
             return
 
         settings.setValue("last_save_file_dir", os.path.dirname(file_name))
@@ -937,9 +949,9 @@ class MainWindow(QMainWindow):
             self.conn,
             chosen_ext,
             file_name,
-            fields=self.state.fields,
-            source=self.state.source,
-            filters=self.state.filters,
+            fields=self.get_state_data("fields"),
+            source=self.get_state_data("source"),
+            filters=self.get_state_data("filters"),
         )
 
         # # TODO : refactor self.state
@@ -962,6 +974,17 @@ class MainWindow(QMainWindow):
                 self.tr("Error!"),
                 self.tr(f"Cannot save file to {os.path.basename(file_name)}"),
             )
+
+    def setup_developers_menu(self):
+        self.developers_menu.setIcon(FIcon(0xF1064))
+        self.create_plugin_action: QAction = self.developers_menu.addAction(
+            self.tr("Create new plugin")
+        )
+        self.create_plugin_action.setIcon(FIcon(0xF14D0))
+        # The resulting dialog is created and generates the plugin
+        self.create_plugin_action.triggered.connect(plugin_form.create_dialog_plugin)
+
+        return self.developers_menu
 
     # @Slot()
     # def on_query_model_changed(self):

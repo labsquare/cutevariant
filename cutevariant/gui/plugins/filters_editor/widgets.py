@@ -4,6 +4,7 @@ import sys
 import json
 import os
 import pickle
+import typing
 import uuid
 from ast import literal_eval
 from functools import lru_cache
@@ -41,6 +42,7 @@ from PySide2.QtWidgets import (
 )
 from PySide2.QtCore import (
     QAbstractListModel,
+    QUrl,
     Qt,
     QObject,
     Signal,
@@ -82,10 +84,10 @@ from cutevariant.core.querybuilder import (
 import cutevariant.commons as cm
 from cutevariant.gui.sql_thread import SqlThread
 
-LOGGER = cm.logger()
+from cutevariant import LOGGER
 
 TYPE_OPERATORS = {
-    "str": ["$eq", "$ne", "$in", "$nin", "$regex"],
+    "str": ["$eq", "$ne", "$in", "$nin", "$regex", "$has"],
     "float": ["$eq", "$ne", "$gte", "$gt", "$lt", "$lte"],
     "int": ["$eq", "$ne", "$gte", "$gt", "$lt", "$lte"],
     "bool": ["$eq"],
@@ -105,6 +107,7 @@ OPERATORS_PY_VQL = {
     "$regex": "~",
     "$and": "AND",
     "$or": "OR",
+    "$has": "HAS",
 }
 
 NULL_REPR = "@NULL"
@@ -128,7 +131,7 @@ def get_field_unique_values_cached(conn, field, like, limit):
 def prepare_fields(conn):
     """Prepares a list of columns on which filters can be applied"""
     results = {}
-    samples = [sample["name"] for sample in sql.get_samples(conn)]
+    samples = [sample["name"] for sample in sql.get_samples(conn)] + ["*"]
 
     for field in sql.get_fields(conn):
 
@@ -847,7 +850,6 @@ class FilterModel(QAbstractItemModel):
 
     # See self.headerData()
     _HEADERS = ["field", "operator", "value", "", ""]
-    _MIMEDATA = "application/x-qabstractitemmodeldatalist"
 
     # Custom type to get FilterItem.type. See self.data()
     TypeRole = Qt.UserRole + 1
@@ -1204,10 +1206,21 @@ class FilterModel(QAbstractItemModel):
 
         return item
 
-    def to_dict(self, item=None) -> dict:
+    def to_dict(
+        self,
+        item: FilterItem = None,
+        checked_only: bool = True,
+    ) -> dict:
         """Recursive function to build a nested dictionnary from FilterItem structure
 
-        Notes:
+        Args:
+            item (FilterItem, optional): Top-most item to get the dict of. If None, root item is chosen. Defaults to None.
+            checked_only (bool, optional): Only select items that are checked. Defaults to True.
+
+        Returns:
+            dict: [description]
+
+        Note:
             We use data from FilterItems; i.e. the equivalent of UserRole data.
         """
 
@@ -1217,12 +1230,20 @@ class FilterModel(QAbstractItemModel):
         if item is None:
             item = self.root_item[0]
 
-        if item.type == FilterItem.LOGIC_TYPE and item.checked is True:
-            # Return dict with operator as key and item as value
-            operator_data = [
-                self.to_dict(child) for child in item.children if child.checked is True
-            ]
-            return {item.get_value(): operator_data}
+        if checked_only:
+            if item.type == FilterItem.LOGIC_TYPE and item.checked is True:
+                # Return dict with operator as key and item as value
+                operator_data = [
+                    self.to_dict(child)
+                    for child in item.children
+                    if child.checked is True
+                ]
+                return {item.get_value(): operator_data}
+        else:
+            if item.type == FilterItem.LOGIC_TYPE:
+                # Return dict with operator as key and item as value
+                operator_data = [self.to_dict(child) for child in item.children]
+                return {item.get_value(): operator_data}
 
         if item.type == FilterItem.CONDITION_TYPE:
             result = {}
@@ -1364,12 +1385,12 @@ class FilterModel(QAbstractItemModel):
         parent_source_item = self.item(sourceParent)
         parent_destination_item = self.item(destinationParent)
 
+        # Avoid segfault by returning False as soon as you are trying to drag drop the item on itself
+        if sourceParent == destinationParent:
+            return False
         #  if destination is - 1, it's mean we should append the item at the end of children
         if destinationChild < 0:
-            if sourceParent == destinationParent:
-                return False
-            else:
-                destinationChild = len(parent_destination_item.children)
+            destinationChild = len(parent_destination_item.children)
 
         # Don't move same same Item
         if sourceParent == destinationParent and sourceRow == destinationChild:
@@ -1393,6 +1414,95 @@ class FilterModel(QAbstractItemModel):
         """
         return Qt.MoveAction | Qt.CopyAction
 
+    def _drop_filter(self, filter_dict: dict, parent: QModelIndex) -> bool:
+        """Called when a drop operation contains raw, plain text
+
+        Args:
+            row (int): Row to drop filter_dict on
+            filter_dict (dict): A dict representing a valid filter item. Either a tree or a single condition
+            parent (QModelIndex): What index to drop filter_dict to
+
+        Returns:
+            bool: True if FilterItem was successfully added
+        """
+        try:
+            item_ = self.to_item(filter_dict)
+        except Exception as e:
+            # Invalid item
+            return False
+        if self.item(parent).type == FilterItem.LOGIC_TYPE:
+            self.beginInsertRows(
+                parent, self.rowCount(parent) - 1, self.rowCount(parent) - 1
+            )
+            self.item(parent).append(item_)
+            self.endInsertRows()
+            return True
+
+        else:
+            return False
+
+    def _drop_condition(self, row: int, condition: dict, parent: QModelIndex) -> bool:
+        """Called when a drop happens with cutevariant typed json data
+
+        Args:
+            row (int): Row to drop condition at
+            condition (dict): condition to add in the following format: {"field":$field_name,"operator":$operator,"value":$value}
+            parent (QModelIndex): Index on which the drop is performed at row *row*.
+
+        Returns:
+            bool: True if condition was successfully added
+        """
+
+        # First case: row is not valid (usually -1 when dropping on a parent logical item)
+        if row < 0 or row > self.rowCount(parent):
+            self.add_condition_item(
+                (
+                    condition.get("field", "chr"),
+                    condition.get("operator", "$eq"),
+                    condition.get("value", 7),
+                ),
+                parent,
+            )
+            return True
+
+        # Second case: row is valid. Only replace operator and value from condition, not
+        index = parent.child(row, 0)
+        if index.isValid():
+            # When we drop a condition, we don't want to change the field. Only condition and value
+            self.item(index).set_operator(condition.get("operator", "$eq"))
+            self.item(index).set_value(condition.get("value", 7))
+            self.dataChanged.emit(index, index)
+            return True
+        return False
+
+    def _drop_internal_move(
+        self,
+        source_coords: typing.List[int],
+        destintation_parent: QModelIndex,
+        destination_row: int,
+    ) -> bool:
+        """Special case where we drop a filter from self's tree. In that case, it comes from self's mimeData method.
+
+        Args:
+            source_coords (List[int]): List of integers (row numbers in tree, top to bottom) leading to the index that is being moved
+            destintation_parent (QModelIndex): Where to drop the filter that was self-dragged
+            destination_row (int):
+
+        Returns:
+            bool: True on success, False otherwise
+        """
+        if not source_coords:
+            return False
+        index = QModelIndex()
+        # index is the modelindex of the item we want to move
+        for row in source_coords:
+            index = self.index(row, 0, index)
+        if index.isValid():
+            return self.moveRow(
+                index.parent(), index.row(), destintation_parent, destination_row
+            )
+        return False
+
     def dropMimeData(
         self, data: QMimeData, action, row, column, parent: QModelIndex
     ) -> bool:
@@ -1414,41 +1524,52 @@ class FilterModel(QAbstractItemModel):
         if action != Qt.MoveAction and action != Qt.CopyAction:
             return False
 
-        if data.hasText():
-            field_names = json.loads(data.text()).get("fields")
-            if parent and parent.internalPointer().type == FilterItem.LOGIC_TYPE:
+        # Test for typed json first. This MIME type has higher precedence
+        if data.hasFormat("cutevariant/typed-json"):
+            obj = json.loads(str(data.data("cutevariant/typed-json"), "utf-8"))
 
-                return all(
-                    [
-                        self.add_condition_item((field_name, "$eq", ""), parent)
-                        for field_name in field_names
-                    ]
-                )
-
+            # The drop is a serialized object, we need to treat it differently than raw json
+            if "type" in obj:
+                # Special case where we need to know that the move is internal
+                if obj["type"] == "internal_move":
+                    if "coords" not in obj:
+                        return False
+                    return self._drop_internal_move(obj["coords"], parent, row)
+                if obj["type"] == "fields":
+                    if "fields" in obj:
+                        fields = obj["fields"]
+                        if isinstance(fields, list):
+                            if row < 0 or row > self.rowCount(parent):
+                                return self._drop_filter(
+                                    {
+                                        field_name: DEFAULT_VALUES.get(field_type, "")
+                                        for field_name, field_type in fields
+                                    },
+                                    parent,
+                                )
+                if obj["type"] == "condition":
+                    return self._drop_condition(row, obj["condition"], parent)
             return False
 
-        if not data.data(self._MIMEDATA):
-            return False
+        # Test for URIs first since they are also plain text. However pure plain text is never uri-list so we should test uri-list first...
+        if data.hasFormat("text/uri-list"):
+            urls = data.urls()
+            if urls:
+                url: QUrl = urls[0]
+                if url.isLocalFile():
+                    with open(url.toLocalFile()) as f:
+                        return self._drop_filter(json.load(f), parent)
 
-        # Unserialize
-        item = pickle.loads(data.data(self._MIMEDATA).data())
-
-        # Get index from item
-        source_parent = self.match(
-            self.index(0, 0),
-            FilterModel.UniqueIdRole,
-            item.parent.uuid,
-            1,
-            Qt.MatchRecursive,
-        )
-
-        if source_parent:
-            source_parent = source_parent[0]
-            return self.moveRow(source_parent, item.row(), parent, row)
+        # Fallback if drop didn't contain neither typed json, nor URL. This assumes that the text you are trying to drop is a valid filter
+        if data.hasFormat("text/plain"):
+            try:
+                return self._drop_filter(json.loads(data.text()), parent)
+            except Exception as e:
+                return False
 
         return False
 
-    def mimeData(self, indexes) -> QMimeData:
+    def mimeData(self, indexes: typing.List[QModelIndex]) -> QMimeData:
         """Serialize item from indexes into a QMimeData
         Currently, it serializes only the first index from t he list.
         Args:
@@ -1461,9 +1582,21 @@ class FilterModel(QAbstractItemModel):
         if not indexes:
             return
 
-        data = QMimeData(self._MIMEDATA)
-        serialization = QByteArray(pickle.dumps(self.item(indexes[0])))
-        data.setData(self._MIMEDATA, serialization)
+        data = QMimeData()
+        parent = indexes[0]
+        coords = []
+        # Compute coords of index by recursively finding parent's row until root index.
+        # First number in the list is the row among root parent children. Always 0, since there can be only one root as a logical operator
+        while parent != QModelIndex():
+            coords.insert(0, parent.row())
+            parent = parent.parent()
+
+        data = QMimeData()
+        data.setData(
+            "cutevariant/typed-json",
+            bytes(json.dumps({"type": "internal_move", "coords": coords}), "utf-8"),
+        )
+
         return data
 
     def set_recursive_check_state(self, index, checked=True):
@@ -1486,6 +1619,9 @@ class FilterModel(QAbstractItemModel):
             cindex = self.index(row, 0, index)
             self.set_recursive_check_state(cindex, checked)
 
+    def mimeTypes(self) -> typing.List:
+        return ["text/plain", "cutevariant/typed-json"]
+
     def canDropMimeData(
         self,
         data: QMimeData,
@@ -1494,6 +1630,20 @@ class FilterModel(QAbstractItemModel):
         column: int,
         parent: QModelIndex,
     ) -> bool:
+
+        # Ask your father (literally). Check if data is in supportedMimeData(), action in supportedActions() etc
+        basic_answer = super().canDropMimeData(data, action, row, column, parent)
+
+        if not basic_answer:
+            return False
+
+        if data.hasText() and not data.hasUrls():
+            obj = json.loads(data.text())
+            if "type" in obj:
+                if obj["type"] == "internal_move":
+                    return True
+            return True
+
         return True
 
 

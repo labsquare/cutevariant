@@ -35,6 +35,7 @@ from PySide2.QtCore import (
 )
 from PySide2.QtWidgets import QApplication, QSplashScreen
 from PySide2.QtGui import QPixmap
+from PySide2.QtWebEngineWidgets import *
 
 # Custom imports
 from cutevariant.gui import MainWindow, setFontPath, style
@@ -55,8 +56,11 @@ def main():
     QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
     QCoreApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
 
+    QCoreApplication.setAttribute(Qt.AA_ShareOpenGLContexts, True)
+
     # Process command line arguments
     app = QApplication(sys.argv)
+
     process_arguments(app)
 
     # Load app styles

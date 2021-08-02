@@ -20,7 +20,7 @@ from PySide2.QtWidgets import (
 from cutevariant.gui.ficon import FIcon
 from cutevariant import commons as cm
 
-LOGGER = cm.logger()
+from cutevariant import LOGGER
 
 
 class MarkdownEditor(QDialog):

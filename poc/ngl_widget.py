@@ -52,14 +52,25 @@ class NGLWidget(QWebEngineView):
         self.rock = False
         self.mol_loaded = False
         self.sized = False
+<<<<<<< HEAD
 
+=======
+        self.setHtml(self.TEMPLATE)
+>>>>>>> c3def206b6b7e7a3089ff5d1bd01c824108c1558
         self.settings().setAttribute(
             QWebEngineSettings.LocalContentCanAccessRemoteUrls, True
         )
         self.settings().setAttribute(QWebEngineSettings.LocalStorageEnabled, True)
         self.settings().setAttribute(QWebEngineSettings.FullScreenSupportEnabled, True)
+<<<<<<< HEAD
 
         self.setHtml(self.TEMPLATE)
+=======
+        self.settings().setAttribute(
+            QWebEngineSettings.LocalContentCanAccessFileUrls, True
+        )
+
+>>>>>>> c3def206b6b7e7a3089ff5d1bd01c824108c1558
         self.loadFinished.connect(self.load_tools)
         self.loadFinished.connect(self.set_window_size)
         self.page().setBackgroundColor(QColor("white"))
@@ -75,6 +86,7 @@ class NGLWidget(QWebEngineView):
         # script.setWorldId(QWebEngineScript.MainWorld)
         # script.setSourceCode(js_code)
 
+<<<<<<< HEAD
         # profile = QWebEngineProfile("NGL")
         # self.page().scripts().insert(script)
 
@@ -82,6 +94,9 @@ class NGLWidget(QWebEngineView):
     ########################################################
     ########################################################
     def set_window_size(self, width: int = 0, height: int = 0) -> None:
+=======
+    def set_window_size(self, width: int = 500, height: int = 500) -> None:
+>>>>>>> c3def206b6b7e7a3089ff5d1bd01c824108c1558
         """set to the window size
         Args:
             width (int, optional): width in pixel. Defaults to 0.
@@ -137,6 +152,7 @@ class NGLWidget(QWebEngineView):
         )
         print("loading done")
 
+<<<<<<< HEAD
     def load_mol(self) -> None:
         """load molecule"""
 
@@ -164,8 +180,25 @@ class NGLWidget(QWebEngineView):
             stage.loadFile(protein).then(structure_representation);
             stage.handleResize();
             print(stage.getBox());
-
+=======
+    def load_mol(self, protein: str = "rcsb://1crn") -> None:
+        """load molecule
+        Args:
+            protein (str, optional): choose file to give. Defaults to "rcsb://1crn".
+        """
+        self.page().runJavaScript(
             """
+
+            stage.removeAllComponents();
+            stage.loadFile("rcsb://1crn").then(function (component) {
+            component.addRepresentation("licorice");
+            component.autoView();
+>>>>>>> c3def206b6b7e7a3089ff5d1bd01c824108c1558
+
+
+            });
+            """
+<<<<<<< HEAD
             % (
                 self.position,
                 self.representation,
@@ -173,8 +206,10 @@ class NGLWidget(QWebEngineView):
                 self.colorAA,
                 self.filename,
             )
+=======
+>>>>>>> c3def206b6b7e7a3089ff5d1bd01c824108c1558
         )
-        print("molecule load")
+
         self.mol_loaded = True
 
     def add_component(self, component) -> None:

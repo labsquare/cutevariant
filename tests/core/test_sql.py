@@ -1,7 +1,9 @@
+import sqlite3
 import pytest
 import tempfile
 import copy
 import os
+import re
 from collections import Counter
 
 from cutevariant.core import sql
@@ -215,6 +217,88 @@ def hasardous_wordset():
 ################################################################################
 
 
+def test_create_indexes(conn):
+
+    VARIANT_IDX = ["dp"]
+    ANN_IDX = ["gene"]
+    SAMPLE_IDX = ["gt"]
+    sql.create_indexes(
+        conn,
+        indexed_variant_fields=VARIANT_IDX,
+        indexed_annotation_fields=ANN_IDX,
+        indexed_sample_fields=SAMPLE_IDX,
+    )
+
+    # test if index exists
+    idx = [
+        re.sub(r"idx_\w+_", "", dict(idx)["name"])
+        for idx in conn.execute("SELECT name FROM sqlite_master WHERE type='index'")
+    ]
+
+    assert len(set(VARIANT_IDX) & set(idx)) == len(VARIANT_IDX)
+    assert len(set(ANN_IDX) & set(idx)) == len(ANN_IDX)
+    assert len(set(SAMPLE_IDX) & set(idx)) == len(SAMPLE_IDX)
+
+
+def test_list_indexes(conn: sqlite3.Connection):
+    VARIANT_IDX = {"dp"}
+    ANN_IDX = {"gene"}
+    SAMPLE_IDX = {"gt"}
+    sql.create_indexes(
+        conn,
+        indexed_variant_fields=VARIANT_IDX,
+        indexed_annotation_fields=ANN_IDX,
+        indexed_sample_fields=SAMPLE_IDX,
+    )
+
+    indexes = sql.get_indexed_fields(conn)
+
+    indexed_fields = {"variants": [], "annotations": [], "samples": []}
+    for cat, field in indexes:
+        indexed_fields[cat].append(field)
+
+    assert set(indexed_fields["variants"]) == set(VARIANT_IDX)
+    assert set(indexed_fields["annotations"]) == set(ANN_IDX)
+    assert set(indexed_fields["samples"]) == set(SAMPLE_IDX)
+
+
+def test_remove_index(conn: sqlite3.Connection):
+    VARIANT_IDX = {"dp", "extra1", "extra2"}
+    ANN_IDX = {"gene", "transcript"}
+    SAMPLE_IDX = {"gt", "dp"}
+
+    sql.create_indexes(
+        conn,
+        indexed_variant_fields=VARIANT_IDX,
+        indexed_annotation_fields=ANN_IDX,
+        indexed_sample_fields=SAMPLE_IDX,
+    )
+
+    indexes = sql.get_indexed_fields(conn)
+    # extra1 was inserted
+    assert ("variants", "extra1") in indexes
+    sql.remove_indexed_field(conn, "variants", "extra1")
+    indexes = sql.get_indexed_fields(conn)
+    # extra1 was removed
+    assert ("variants", "extra1") not in indexes
+
+    indexes = sql.get_indexed_fields(conn)
+    # extra1 was inserted
+    assert ("annotations", "transcript") in indexes
+    sql.remove_indexed_field(conn, "annotations", "transcript")
+    indexes = sql.get_indexed_fields(conn)
+    # extra1 was removed
+    assert ("annotations", "transcript") not in indexes
+
+    indexes = sql.get_indexed_fields(conn)
+    # extra1 was inserted
+    assert ("samples", "gt") in indexes
+    sql.remove_indexed_field(conn, "samples", "gt")
+    indexes = sql.get_indexed_fields(conn)
+    # extra1 was removed
+    assert ("samples", "gt") not in indexes
+
+
 @pytest.mark.parametrize("field", ["pos", "qual"])
 def test_get_field_info(conn, field):
     # TODO ...
@@ -300,6 +384,16 @@ def test_get_annotations(conn):
         assert read_tx == expected_tx
 
 
+def test_get_sample_annotations_by_variant(conn):
+
+    expected = [dict(i, phenotype=0, sex=0) for i in VARIANTS[0]["samples"]]
+    observed = [
+        i for i in sql.get_sample_annotations_by_variant(conn, 1, fields=["gt", "dp"])
+    ]
+
+    assert expected == observed
+
+
 def test_get_sample_annotations(conn, variants_data):
     """Compare sample annotations from DB with expected samples annotations
 
@@ -324,7 +418,7 @@ def test_get_fields(conn):
 
 
 def test_get_variants(conn):
-    """ More complexe query are actually tested from query builder """
+    """More complexe query are actually tested from query builder"""
 
     fields = ["chr", "pos", "ref", "alt", "ann.gene"]
 

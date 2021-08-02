@@ -4,9 +4,9 @@ import csv
 # Custom imports
 from .abstractreader import AbstractReader
 from .annotationparser import VEP_ANNOTATION_DEFAULT_FIELDS, BaseParser
-from cutevariant.commons import logger
 
-LOGGER = logger()
+
+from cutevariant import LOGGER
 
 
 class CsvReader(AbstractReader):
