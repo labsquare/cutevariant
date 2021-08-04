@@ -92,12 +92,27 @@ from cutevariant.gui.sql_thread import SqlThread
 
 from cutevariant import LOGGER
 
-TYPE_OPERATORS = {
-    "str": ["$eq", "$ne", "$in", "$nin", "$regex", "$has"],
-    "float": ["$eq", "$ne", "$gte", "$gt", "$lt", "$lte"],
-    "int": ["$eq", "$ne", "$gte", "$gt", "$lt", "$lte"],
-    "bool": ["$eq"],
-}
+# TYPE_OPERATORS = {
+#     "str": ["$eq", "$ne", "$in", "$nin", "$regex", "$has"],
+#     "float": ["$eq", "$ne", "$gte", "$gt", "$lt", "$lte"],
+#     "int": ["$eq", "$ne", "$gte", "$gt", "$lt", "$lte"],
+#     "bool": ["$eq"],
+# }
+
+
+OPERATORS = [
+    "$eq",
+    "$ne",
+    "$in",
+    "$nin",
+    "$regex",
+    "$has",
+    "$gte",
+    "$gt",
+    "$lt",
+    "$lte",
+]
+
 
 DEFAULT_VALUES = {"str": "", "int": 0, "float": 0.0, "list": [], "bool": True}
 
@@ -669,7 +684,7 @@ class OperatorFieldEditor(BaseFieldEditor):
         # Return UserRole
         return self.combo_box.currentData()
 
-    def fill(self, operators=TYPE_OPERATORS["str"]):
+    def fill(self, operators=OPERATORS):
         """Init QComboBox with all supported operators"""
         self.combo_box.clear()
         for op in operators:
@@ -1854,7 +1869,7 @@ class FilterDelegate(QStyledItemDelegate):
             w = OperatorFieldEditor(parent)
             # Fill operator according fields
             field_type = factory.field_types_mapping[field]
-            w.fill(TYPE_OPERATORS[field_type])
+            w.fill()
             return w
 
         if index.column() == COLUMN_VALUE:
