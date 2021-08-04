@@ -22,7 +22,7 @@ from cutevariant.gui.widgets import DictWidget
 
 from cutevariant.gui.widgets.qjsonmodel import QJsonModel, QJsonTreeItem
 
-LOGGER = cm.logger()
+from cutevariant import LOGGER
 
 
 class VariantInfoModel(QJsonModel):

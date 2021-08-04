@@ -1,9 +1,13 @@
 # Standard imports
+import re
+from cutevariant.gui.mainwindow import MainWindow
+from cutevariant.config import Config
 from logging import Filter
 import sys
 import json
 import os
 import pickle
+import typing
 import uuid
 from ast import literal_eval
 from functools import lru_cache
@@ -13,6 +17,7 @@ import glob
 
 # Qt imports
 from PySide2.QtWidgets import (
+    QInputDialog,
     QWidget,
     QTreeView,
     QFrame,
@@ -41,6 +46,7 @@ from PySide2.QtWidgets import (
 )
 from PySide2.QtCore import (
     QAbstractListModel,
+    QUrl,
     Qt,
     QObject,
     Signal,
@@ -59,6 +65,7 @@ from PySide2.QtCore import (
     QRect,
 )
 from PySide2.QtGui import (
+    QMouseEvent,
     QPainter,
     QPalette,
     QFont,
@@ -69,6 +76,7 @@ from PySide2.QtGui import (
     QDoubleValidator,
     QKeySequence,
     QContextMenuEvent,
+    QStandardItemModel,
 )
 
 # Custom imports
@@ -82,14 +90,29 @@ from cutevariant.core.querybuilder import (
 import cutevariant.commons as cm
 from cutevariant.gui.sql_thread import SqlThread
 
-LOGGER = cm.logger()
+from cutevariant import LOGGER
 
-TYPE_OPERATORS = {
-    "str": ["$eq", "$ne", "$in", "$nin", "$regex"],
-    "float": ["$eq", "$ne", "$gte", "$gt", "$lt", "$lte"],
-    "int": ["$eq", "$ne", "$gte", "$gt", "$lt", "$lte"],
-    "bool": ["$eq"],
-}
+# TYPE_OPERATORS = {
+#     "str": ["$eq", "$ne", "$in", "$nin", "$regex", "$has"],
+#     "float": ["$eq", "$ne", "$gte", "$gt", "$lt", "$lte"],
+#     "int": ["$eq", "$ne", "$gte", "$gt", "$lt", "$lte"],
+#     "bool": ["$eq"],
+# }
+
+
+OPERATORS = [
+    "$eq",
+    "$ne",
+    "$in",
+    "$nin",
+    "$regex",
+    "$has",
+    "$gte",
+    "$gt",
+    "$lt",
+    "$lte",
+]
+
 
 DEFAULT_VALUES = {"str": "", "int": 0, "float": 0.0, "list": [], "bool": True}
 
@@ -105,6 +128,7 @@ OPERATORS_PY_VQL = {
     "$regex": "~",
     "$and": "AND",
     "$or": "OR",
+    "$has": "HAS",
 }
 
 NULL_REPR = "@NULL"
@@ -128,7 +152,7 @@ def get_field_unique_values_cached(conn, field, like, limit):
 def prepare_fields(conn):
     """Prepares a list of columns on which filters can be applied"""
     results = {}
-    samples = [sample["name"] for sample in sql.get_samples(conn)]
+    samples = [sample["name"] for sample in sql.get_samples(conn)] + ["*"]
 
     for field in sql.get_fields(conn):
 
@@ -147,6 +171,127 @@ def prepare_fields(conn):
                 results[sample_field] = field["type"]
 
     return results
+
+
+##------------PRESETS
+
+
+class FiltersPresetModel(QAbstractListModel):
+    def __init__(self, config_path=None, parent: QObject = None) -> None:
+        super().__init__(parent=parent)
+        self.config_path = config_path
+        self._presets = []
+
+    def data(self, index: QModelIndex, role: int) -> typing.Any:
+        if role == Qt.DisplayRole or role == Qt.EditRole:
+            if index.row() >= 0 and index.row() < self.rowCount():
+                return self._presets[index.row()][0]
+        if role == Qt.UserRole:
+            if index.row() >= 0 and index.row() < self.rowCount():
+                return self._presets[index.row()][1]
+
+        return
+
+    def setData(self, index: QModelIndex, value: str, role: int) -> bool:
+        """Renames the preset
+        The content is read-only from the model's point of view
+
+        Args:
+            index (QModelIndex): [description]
+            value (str): [description]
+            role (int): [description]
+
+        Returns:
+            bool: True on success
+        """
+        if role == Qt.EditRole:
+            self._presets[index.row()] = (value, self._presets[index.row()][1])
+            return True
+        else:
+            return False
+
+    def flags(self, index: QModelIndex) -> Qt.ItemFlags:
+        if not index.isValid():
+            return Qt.NoItemFlags
+        return super().flags(index) | Qt.ItemIsEditable
+
+    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
+        return len(self._presets)
+
+    def add_preset(self, name: str, filter: dict):
+        """Add filter preset
+
+        Args:
+            name (str): preset name
+            filter (dict): one filter dict
+        """
+        self.beginInsertRows(QModelIndex(), 0, 0)
+        self._presets.insert(0, (name, filter))
+        self.endInsertRows()
+
+    def rem_presets(self, indexes: typing.List[int]):
+        indexes.sort(reverse=True)
+        self.beginResetModel()
+        for idx in indexes:
+            del self._presets[idx]
+        self.endResetModel()
+
+    def load(self):
+        self.beginResetModel()
+        config = Config("filters_editor")
+        presets = config.get("presets", {})
+        self._presets = [
+            (preset_name, filters) for preset_name, filters in presets.items()
+        ]
+        self.endResetModel()
+
+    def save(self):
+        config = Config("filters_editor", self.config_path)
+        print(config._user_config)
+        config["presets"] = {
+            preset_name: filters for preset_name, filters in self._presets
+        }
+        config.save()
+
+    def clear(self):
+        self.beginResetModel()
+        self._presets.clear()
+        self.endResetModel()
+
+    def preset_names(self):
+        return [p[0] for p in self._presets]
+
+
+class PresetButton(QToolButton):
+    """A toolbutton that works with a drop down menu filled with a model"""
+
+    preset_clicked = Signal(QAction)
+
+    def __init__(self, parent: QWidget = None) -> None:
+        super().__init__(parent=parent)
+        self._menu = QMenu(self.tr("Presets"), self)
+        self._menu.triggered.connect(self.preset_clicked)
+        self.setPopupMode(QToolButton.InstantPopup)
+        self._model: QAbstractItemModel = None
+        self.setMenu(self._menu)
+        self.setText(self.tr("Presets"))
+
+    def set_model(self, model: QAbstractItemModel):
+        self._model = model
+
+    def mousePressEvent(self, e: QMouseEvent) -> None:
+        if self._model:
+            self._menu.clear()
+            for i in range(self._model.rowCount()):
+                index = self._model.index(i, 0)
+                preset_name = index.data(Qt.DisplayRole)
+                fields = index.data(Qt.UserRole)
+                act: QAction = self._menu.addAction(preset_name)
+                act.setData(fields)
+        return super().mousePressEvent(e)
+
+
+##------------END PRESETS
 
 
 class FieldsCompleter(QCompleter):
@@ -539,7 +684,7 @@ class OperatorFieldEditor(BaseFieldEditor):
         # Return UserRole
         return self.combo_box.currentData()
 
-    def fill(self, operators=TYPE_OPERATORS["str"]):
+    def fill(self, operators=OPERATORS):
         """Init QComboBox with all supported operators"""
         self.combo_box.clear()
         for op in operators:
@@ -847,7 +992,6 @@ class FilterModel(QAbstractItemModel):
 
     # See self.headerData()
     _HEADERS = ["field", "operator", "value", "", ""]
-    _MIMEDATA = "application/x-qabstractitemmodeldatalist"
 
     # Custom type to get FilterItem.type. See self.data()
     TypeRole = Qt.UserRole + 1
@@ -1204,10 +1348,21 @@ class FilterModel(QAbstractItemModel):
 
         return item
 
-    def to_dict(self, item=None) -> dict:
+    def to_dict(
+        self,
+        item: FilterItem = None,
+        checked_only: bool = True,
+    ) -> dict:
         """Recursive function to build a nested dictionnary from FilterItem structure
 
-        Notes:
+        Args:
+            item (FilterItem, optional): Top-most item to get the dict of. If None, root item is chosen. Defaults to None.
+            checked_only (bool, optional): Only select items that are checked. Defaults to True.
+
+        Returns:
+            dict: [description]
+
+        Note:
             We use data from FilterItems; i.e. the equivalent of UserRole data.
         """
 
@@ -1217,12 +1372,20 @@ class FilterModel(QAbstractItemModel):
         if item is None:
             item = self.root_item[0]
 
-        if item.type == FilterItem.LOGIC_TYPE and item.checked is True:
-            # Return dict with operator as key and item as value
-            operator_data = [
-                self.to_dict(child) for child in item.children if child.checked is True
-            ]
-            return {item.get_value(): operator_data}
+        if checked_only:
+            if item.type == FilterItem.LOGIC_TYPE and item.checked is True:
+                # Return dict with operator as key and item as value
+                operator_data = [
+                    self.to_dict(child)
+                    for child in item.children
+                    if child.checked is True
+                ]
+                return {item.get_value(): operator_data}
+        else:
+            if item.type == FilterItem.LOGIC_TYPE:
+                # Return dict with operator as key and item as value
+                operator_data = [self.to_dict(child) for child in item.children]
+                return {item.get_value(): operator_data}
 
         if item.type == FilterItem.CONDITION_TYPE:
             result = {}
@@ -1364,12 +1527,12 @@ class FilterModel(QAbstractItemModel):
         parent_source_item = self.item(sourceParent)
         parent_destination_item = self.item(destinationParent)
 
+        # Avoid segfault by returning False as soon as you are trying to drag drop the item on itself
+        if sourceParent == destinationParent:
+            return False
         #  if destination is - 1, it's mean we should append the item at the end of children
         if destinationChild < 0:
-            if sourceParent == destinationParent:
-                return False
-            else:
-                destinationChild = len(parent_destination_item.children)
+            destinationChild = len(parent_destination_item.children)
 
         # Don't move same same Item
         if sourceParent == destinationParent and sourceRow == destinationChild:
@@ -1393,6 +1556,95 @@ class FilterModel(QAbstractItemModel):
         """
         return Qt.MoveAction | Qt.CopyAction
 
+    def _drop_filter(self, filter_dict: dict, parent: QModelIndex) -> bool:
+        """Called when a drop operation contains raw, plain text
+
+        Args:
+            row (int): Row to drop filter_dict on
+            filter_dict (dict): A dict representing a valid filter item. Either a tree or a single condition
+            parent (QModelIndex): What index to drop filter_dict to
+
+        Returns:
+            bool: True if FilterItem was successfully added
+        """
+        try:
+            item_ = self.to_item(filter_dict)
+        except Exception as e:
+            # Invalid item
+            return False
+        if self.item(parent).type == FilterItem.LOGIC_TYPE:
+            self.beginInsertRows(
+                parent, self.rowCount(parent) - 1, self.rowCount(parent) - 1
+            )
+            self.item(parent).append(item_)
+            self.endInsertRows()
+            return True
+
+        else:
+            return False
+
+    def _drop_condition(self, row: int, condition: dict, parent: QModelIndex) -> bool:
+        """Called when a drop happens with cutevariant typed json data
+
+        Args:
+            row (int): Row to drop condition at
+            condition (dict): condition to add in the following format: {"field":$field_name,"operator":$operator,"value":$value}
+            parent (QModelIndex): Index on which the drop is performed at row *row*.
+
+        Returns:
+            bool: True if condition was successfully added
+        """
+
+        # First case: row is not valid (usually -1 when dropping on a parent logical item)
+        if row < 0 or row > self.rowCount(parent):
+            self.add_condition_item(
+                (
+                    condition.get("field", "chr"),
+                    condition.get("operator", "$eq"),
+                    condition.get("value", 7),
+                ),
+                parent,
+            )
+            return True
+
+        # Second case: row is valid. Only replace operator and value from condition, not
+        index = parent.child(row, 0)
+        if index.isValid():
+            # When we drop a condition, we don't want to change the field. Only condition and value
+            self.item(index).set_operator(condition.get("operator", "$eq"))
+            self.item(index).set_value(condition.get("value", 7))
+            self.dataChanged.emit(index, index)
+            return True
+        return False
+
+    def _drop_internal_move(
+        self,
+        source_coords: typing.List[int],
+        destintation_parent: QModelIndex,
+        destination_row: int,
+    ) -> bool:
+        """Special case where we drop a filter from self's tree. In that case, it comes from self's mimeData method.
+
+        Args:
+            source_coords (List[int]): List of integers (row numbers in tree, top to bottom) leading to the index that is being moved
+            destintation_parent (QModelIndex): Where to drop the filter that was self-dragged
+            destination_row (int):
+
+        Returns:
+            bool: True on success, False otherwise
+        """
+        if not source_coords:
+            return False
+        index = QModelIndex()
+        # index is the modelindex of the item we want to move
+        for row in source_coords:
+            index = self.index(row, 0, index)
+        if index.isValid():
+            return self.moveRow(
+                index.parent(), index.row(), destintation_parent, destination_row
+            )
+        return False
+
     def dropMimeData(
         self, data: QMimeData, action, row, column, parent: QModelIndex
     ) -> bool:
@@ -1414,41 +1666,52 @@ class FilterModel(QAbstractItemModel):
         if action != Qt.MoveAction and action != Qt.CopyAction:
             return False
 
-        if data.hasText():
-            field_names = json.loads(data.text()).get("fields")
-            if parent and parent.internalPointer().type == FilterItem.LOGIC_TYPE:
+        # Test for typed json first. This MIME type has higher precedence
+        if data.hasFormat("cutevariant/typed-json"):
+            obj = json.loads(str(data.data("cutevariant/typed-json"), "utf-8"))
 
-                return all(
-                    [
-                        self.add_condition_item((field_name, "$eq", ""), parent)
-                        for field_name in field_names
-                    ]
-                )
-
+            # The drop is a serialized object, we need to treat it differently than raw json
+            if "type" in obj:
+                # Special case where we need to know that the move is internal
+                if obj["type"] == "internal_move":
+                    if "coords" not in obj:
+                        return False
+                    return self._drop_internal_move(obj["coords"], parent, row)
+                if obj["type"] == "fields":
+                    if "fields" in obj:
+                        fields = obj["fields"]
+                        if isinstance(fields, list):
+                            if row < 0 or row > self.rowCount(parent):
+                                return self._drop_filter(
+                                    {
+                                        field_name: DEFAULT_VALUES.get(field_type, "")
+                                        for field_name, field_type in fields
+                                    },
+                                    parent,
+                                )
+                if obj["type"] == "condition":
+                    return self._drop_condition(row, obj["condition"], parent)
             return False
 
-        if not data.data(self._MIMEDATA):
-            return False
+        # Test for URIs first since they are also plain text. However pure plain text is never uri-list so we should test uri-list first...
+        if data.hasFormat("text/uri-list"):
+            urls = data.urls()
+            if urls:
+                url: QUrl = urls[0]
+                if url.isLocalFile():
+                    with open(url.toLocalFile()) as f:
+                        return self._drop_filter(json.load(f), parent)
 
-        # Unserialize
-        item = pickle.loads(data.data(self._MIMEDATA).data())
-
-        # Get index from item
-        source_parent = self.match(
-            self.index(0, 0),
-            FilterModel.UniqueIdRole,
-            item.parent.uuid,
-            1,
-            Qt.MatchRecursive,
-        )
-
-        if source_parent:
-            source_parent = source_parent[0]
-            return self.moveRow(source_parent, item.row(), parent, row)
+        # Fallback if drop didn't contain neither typed json, nor URL. This assumes that the text you are trying to drop is a valid filter
+        if data.hasFormat("text/plain"):
+            try:
+                return self._drop_filter(json.loads(data.text()), parent)
+            except Exception as e:
+                return False
 
         return False
 
-    def mimeData(self, indexes) -> QMimeData:
+    def mimeData(self, indexes: typing.List[QModelIndex]) -> QMimeData:
         """Serialize item from indexes into a QMimeData
         Currently, it serializes only the first index from t he list.
         Args:
@@ -1461,9 +1724,21 @@ class FilterModel(QAbstractItemModel):
         if not indexes:
             return
 
-        data = QMimeData(self._MIMEDATA)
-        serialization = QByteArray(pickle.dumps(self.item(indexes[0])))
-        data.setData(self._MIMEDATA, serialization)
+        data = QMimeData()
+        parent = indexes[0]
+        coords = []
+        # Compute coords of index by recursively finding parent's row until root index.
+        # First number in the list is the row among root parent children. Always 0, since there can be only one root as a logical operator
+        while parent != QModelIndex():
+            coords.insert(0, parent.row())
+            parent = parent.parent()
+
+        data = QMimeData()
+        data.setData(
+            "cutevariant/typed-json",
+            bytes(json.dumps({"type": "internal_move", "coords": coords}), "utf-8"),
+        )
+
         return data
 
     def set_recursive_check_state(self, index, checked=True):
@@ -1486,6 +1761,9 @@ class FilterModel(QAbstractItemModel):
             cindex = self.index(row, 0, index)
             self.set_recursive_check_state(cindex, checked)
 
+    def mimeTypes(self) -> typing.List:
+        return ["text/plain", "cutevariant/typed-json"]
+
     def canDropMimeData(
         self,
         data: QMimeData,
@@ -1494,6 +1772,20 @@ class FilterModel(QAbstractItemModel):
         column: int,
         parent: QModelIndex,
     ) -> bool:
+
+        # Ask your father (literally). Check if data is in supportedMimeData(), action in supportedActions() etc
+        basic_answer = super().canDropMimeData(data, action, row, column, parent)
+
+        if not basic_answer:
+            return False
+
+        if data.hasText() and not data.hasUrls():
+            obj = json.loads(data.text())
+            if "type" in obj:
+                if obj["type"] == "internal_move":
+                    return True
+            return True
+
         return True
 
 
@@ -1577,7 +1869,7 @@ class FilterDelegate(QStyledItemDelegate):
             w = OperatorFieldEditor(parent)
             # Fill operator according fields
             field_type = factory.field_types_mapping[field]
-            w.fill(TYPE_OPERATORS[field_type])
+            w.fill()
             return w
 
         if index.column() == COLUMN_VALUE:
@@ -2054,8 +2346,6 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.toolbar.setIconSize(QSize(16, 16))
         self.toolbar.setToolButtonStyle(Qt.ToolButtonIconOnly)
 
-        self.presets_menu = QMenu()
-
         self.add_condition_action = self.toolbar.addAction(
             FIcon(0xF0EF1), "Add condition", self.on_add_condition
         )
@@ -2081,17 +2371,17 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.save_action.triggered.connect(self.on_save_preset)
         self.save_action.setToolTip(self.tr("Save as a new Preset"))
 
-        # Remove button
-        self.remove_action = self.toolbar.addAction(self.tr("Remove Preset"))
-        self.remove_action.setIcon(FIcon(0xF0B89))
-        self.remove_action.triggered.connect(self.on_remove_preset)
-        self.remove_action.setToolTip(self.tr("Remove current preset"))
-        self.remove_action.setDisabled(True)
+        # Presets model
+        self.presets_model = FiltersPresetModel(parent=self)
 
-        # Preset combobox
-        self.preset_combo = QComboBox(self)
-        self.preset_combo.activated.connect(self.on_select_preset)
-        self.toolbar.addWidget(self.preset_combo)
+        self.presets_button = PresetButton(self)
+        self.presets_button.set_model(self.presets_model)
+        self.presets_button.preset_clicked.connect(self.on_select_preset)
+
+        self.toolbar.addWidget(self.presets_button)
+
+        # Presets toolbutton (with dropdown menu)
+        self.update_presets()
 
         self.toolbar.addSeparator()
 
@@ -2110,8 +2400,6 @@ class FiltersEditorWidget(plugin.PluginWidget):
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(1)
         self.setLayout(main_layout)
-
-        self.load_presets()
 
         self.current_preset_name = ""
 
@@ -2201,21 +2489,6 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.refresh_buttons()
         self._update_view_geometry()
 
-    @property
-    def filter_path(self):
-        """Return filter path from settings"""
-        settings = QSettings()
-        settings.beginGroup(self.plugin_name)
-        return settings.value(
-            "filter_path", QStandardPaths.writableLocation(QStandardPaths.DataLocation)
-        )
-
-    @filter_path.setter
-    def filter_path(self, value: str):
-        settings = QSettings()
-        settings.beginGroup(self.plugin_name)
-        return settings.setValue("filter_path", value)
-
     def refresh_buttons(self):
         """Actualize the enable states of Add/Del buttons"""
 
@@ -2279,68 +2552,24 @@ class FiltersEditorWidget(plugin.PluginWidget):
         if "filters" in data:
             self.filters = data["filters"]
 
-    def load_presets(self):
+    def update_presets(self):
+        """Refresh self's preset model
+        This method should be called by __init__ and on refresh
         """
-        Loads/updates all saved presets
-        When called, the default preset will be selected and applied, to avoid any confusion
-        """
-        settings = QSettings()
-        preset_path = settings.value(
-            "preset_path",
-            QStandardPaths.writableLocation(QStandardPaths.GenericDataLocation),
-        )
-        self.preset_combo.blockSignals(True)
-        self.preset_combo.clear()
-        self.preset_combo.addItem(FIcon(0xF1038), self.tr("No Filters"), "default")
+        self.presets_model.load()
 
-        filenames = glob.glob(f"{preset_path}/*.filters.json")
-        #  Sort file by date
-        filenames.sort(key=os.path.getmtime)
-
-        for filename in filenames:
-            with open(filename) as file:
-                obj = json.load(file)
-                name = obj.get("name", "")
-                if name:
-                    # we store the filename as data.
-                    self.preset_combo.addItem(FIcon(0xF1038), name, filename)
-        self.preset_combo.blockSignals(False)
-
-    def on_remove_preset(self):
-        filename = self.preset_combo.currentData()
-        if os.path.exists(filename):
-            reply = QMessageBox.question(
-                self,
-                self.tr("Remove preset ..."),
-                self.tr(f"Do you want to remove the preset {filename}?"),
-                QMessageBox.Yes | QMessageBox.No,
-            )
-
-            if reply == QMessageBox.Yes:
-                os.remove(filename)
-                self.load_presets()
-
-    def on_select_preset(self):
+    def on_select_preset(self, action: QAction):
         """Activate when preset has changed from preset_combobox"""
-        filename = self.preset_combo.currentData()
-
-        if filename == "default":
-            self.model.filters = {"$and": []}
-            self.remove_action.setDisabled(True)
-
-        elif os.path.exists(filename):
-            self.remove_action.setDisabled(False)
-            with open(filename) as file:
-                self.from_json(json.load(file))
-
-        self.on_apply()
+        data = action.data()
+        print("GERONIMOOOOOOO", data)
+        if data:
+            self.filters = action.data()
+            self.on_apply()
 
     def on_save_preset(self):
-        settings = QSettings()
-        preset_path = settings.value(
-            "preset_path",
-            QStandardPaths.writableLocation(QStandardPaths.GenericDataLocation),
-        )
+
+        # So we don't accidentally save a preset that has not been applied yet...
+        self.on_apply()
 
         name, ok = QInputDialog.getText(
             self,
@@ -2349,45 +2578,17 @@ class FiltersEditorWidget(plugin.PluginWidget):
             QLineEdit.Normal,
             QDir.home().dirName(),
         )
+        i = 1
+        while name in self.presets_model.preset_names():
+            name = re.sub(r"\(\d+\)", "", name) + f" ({i})"
+            i += 1
 
         if ok:
-            with open(f"{preset_path}/{name}.filters.json", "w") as file:
-                obj = self.to_json()
-                obj["name"] = name
-                json.dump(obj, file)
-
-            self.load_presets()
-            # set last presets
-            if self.preset_combo.count() > 0:
-                self.preset_combo.setCurrentIndex(self.preset_combo.count() - 1)
-
-    # def on_preset_clicked(self):
-    #     action = self.sender()
-    #     data = action.data()
-
-    #     # Data is None or empty, we reset the filters
-    #     if not data:
-    #         data = {"filters": {"$and": []}}
-    #         # We created an empty thus valid filter, apply it
-    #         self.from_json(data)
-    #         self.on_filters_changed()
-    #         self.presets_button.setText(self.tr("Select preset"))
-
-    #         # So we don't need an else (the reset case has been correctly handled)
-    #         return
-
-    #     # Data is not empty, it's a preset with (hopefully) a name
-    #     if "name" in data:
-    #         self.presets_button.setText(data["name"])
-    #         self.current_preset_name = data["name"]
-    #     else:
-    #         self.presets_button.setText("")
-    #         self.current_preset_name = ""
-
-    #     # If data was None, it has been filled with an empty but valid filter
-    #     self.from_json(data)
-
-    #     self.on_filters_changed()
+            self.mainwindow: MainWindow
+            self.presets_model.add_preset(
+                name, self.mainwindow.get_state_data("filters")
+            )
+            self.presets_model.save()
 
     def _update_view_geometry(self):
         """Set column Spanned to True for all Logic Item

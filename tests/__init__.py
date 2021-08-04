@@ -1,5 +1,4 @@
-from cutevariant.commons import logger, LOG_LEVELS
+from cutevariant import LOGGER
 
 # Enable debug loglevel for tests
-LOGGER = logger()
-LOGGER.setLevel(LOG_LEVELS["debug"])
+LOGGER.setLevel("DEBUG")
