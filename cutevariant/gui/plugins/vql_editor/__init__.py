@@ -8,10 +8,9 @@ Cutevariant project by writing and executing VQL queries.</p>
 
 <p>VQL is a <i>Domain Specific Language</i>, its main purpose is to filter variants
 in the same fashion as a SQL query.</p>
-<p>The VQL language can be run from the user interface via this plugin or directly
-via the command line of Cutevariant.</p>
 
-<p>Although the plugin offers auto-completion (do not forget the joker character '!')
+
+<p>Although the plugin offers auto-completion 
 and syntax highlighting, if you want to have more details on how to write your own VQL queries,
 as well as the keywords of the language, please see the project wiki page:</p>
 

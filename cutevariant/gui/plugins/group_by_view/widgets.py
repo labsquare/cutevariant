@@ -338,14 +338,14 @@ class GroupByViewWidget(PluginWidget):
             FIcon(0xF0450), self.tr("Rerfresh")
         )
         self.refresh_action.triggered.connect(self.load)
+        self.toolbar.addWidget(self.field_select_combo)
 
-        spacer = QWidget()
-        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        self.toolbar.addWidget(spacer)
+        # spacer = QWidget()
+        # spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        # self.toolbar.addWidget(spacer)
 
         layout = QVBoxLayout(self)
         layout.addWidget(self.toolbar)
-        layout.addWidget(self.field_select_combo)
         layout.addWidget(self.view)
         layout.setSpacing(0)
         layout.setContentsMargins(0, 0, 0, 0)

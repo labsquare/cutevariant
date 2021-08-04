@@ -13,7 +13,7 @@ consequence of the variant, impact rating, etc.).</li>
 <li><b>samples:</b> fields concerning the individuals sequenced in the project.</li>
 </ul>
 
-<p>As the number of fields is large, it may be interesting to <em>use the keyword
+<p>As the number of fields is large, it may be interesting to <em>use the 
 search button</em> to quickly find those that are relevant in a study.</p>
 """
 __author__ = "Sacha schutz"
