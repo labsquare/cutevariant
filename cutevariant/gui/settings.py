@@ -59,6 +59,7 @@ import os
 import glob
 from abc import abstractmethod
 from logging import DEBUG
+from PySide2.QtNetwork import QNetworkProxy
 
 # Qt imports
 from PySide2.QtWidgets import *
@@ -173,7 +174,9 @@ class SectionWidget(QTabWidget):
 
 
 class ProxySettingsWidget(AbstractSettingsWidget):
-    """Allow to configure proxy settings for widgets that require internet connection"""
+    """Allow to configure proxy settings for widgets that require internet connection
+    These settings will apply application-wide (i.e. every QNetworkAccessManager will have these as defaults)
+    """
 
     def __init__(self):
         super().__init__()
@@ -183,12 +186,14 @@ class ProxySettingsWidget(AbstractSettingsWidget):
         self.combo_box = QComboBox()
         self.host_edit = QLineEdit()
         self.port_edit = QSpinBox()
+        # Port number is a 16-bits unsigned integer
+        self.port_edit.setRange(0, 65535)
         self.user_edit = QLineEdit()
         self.pass_edit = QLineEdit()
 
         # Load proxy type
-        for key in network.PROXY_TYPES:
-            self.combo_box.addItem(key, network.PROXY_TYPES[key])
+        self.combo_box.clear()
+        self.combo_box.addItems(list(network.PROXY_TYPES.keys()))
 
         # edit restriction
         self.pass_edit.setEchoMode(QLineEdit.PasswordEchoOnEdit)
@@ -200,21 +205,41 @@ class ProxySettingsWidget(AbstractSettingsWidget):
         f_layout.addRow(self.tr("Username"), self.user_edit)
         f_layout.addRow(self.tr("Password"), self.pass_edit)
 
-        self.combo_box.currentIndexChanged.connect(self.on_combo_changed)
+        self.combo_box.currentTextChanged.connect(self.on_combo_changed)
 
         self.setLayout(f_layout)
 
     def save(self):
         """Save settings under "proxy" group"""
         config = Config("app")
-        network = {}
-        network["type"] = self.combo_box.currentIndex()
-        network["host"] = self.host_edit.text()
-        network["port"] = self.port_edit.value()
-        network["username"] = self.user_edit.text()
-        network["password"] = self.pass_edit.text()
+        _network = {}
+        _network["type"] = self.combo_box.currentText()
+        _network["host"] = self.host_edit.text()
+        _network["port"] = self.port_edit.value()
+        _network["username"] = self.user_edit.text()
+        _network["password"] = self.pass_edit.text()
 
-        config["network"] = network
+        config["network"] = _network
+
+        try:
+            proxy = QNetworkProxy(
+                network.PROXY_TYPES.get(
+                    self.combo_box.currentText(), QNetworkProxy.NoProxy
+                ),
+                self.host_edit.text(),
+                self.port_edit.value(),
+                self.user_edit.text(),
+                self.pass_edit.text(),
+            )
+        except Exception as e:
+            LOGGER.error(
+                "Could not build valid proxy with current settings\nType:%s\nHost:%s\nPort:%s\nUser name:%s",
+                self.combo_box.currentText(),
+                self.host_edit.text(),
+                self.port_edit.text(),
+                self.user_edit.text(),
+            )
+        QNetworkProxy.setApplicationProxy(proxy)
         config.save()
 
     def load(self):
@@ -224,22 +249,23 @@ class ProxySettingsWidget(AbstractSettingsWidget):
 
         network = config.get("network", {})
 
-        s_type = network.get("type", 0)
-        if s_type:
-            self.combo_box.setCurrentIndex(int(s_type))
+        s_type = network.get("type", "No Proxy")
+        self.combo_box.setCurrentText(str(s_type))
+        # We need to call disable form manually because setCurrentIndex(0) won't trigger currentIndexChanged
+        if self.combo_box.currentText() == "No Proxy":
+            self._disable_form()
 
         self.host_edit.setText(network.get("host", ""))
 
         s_port = network.get("port", 0)
-        if s_port:
-            self.port_edit.setValue(int(s_port))
+        self.port_edit.setValue(int(s_port))
 
         self.user_edit.setText(network.get("username", ""))
         self.pass_edit.setText(network.get("password", ""))
 
-    def on_combo_changed(self, index):
+    def on_combo_changed(self, text):
         """disable formular when No proxy"""
-        if index == 0:
+        if text == "No Proxy":
             self._disable_form(True)
         else:
             self._disable_form(False)

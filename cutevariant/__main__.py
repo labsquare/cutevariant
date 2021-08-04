@@ -35,10 +35,11 @@ from PySide2.QtCore import (
 )
 from PySide2.QtWidgets import QApplication, QSplashScreen
 from PySide2.QtGui import QPixmap
+from PySide2.QtNetwork import QNetworkProxy
 
 # Custom imports
 from cutevariant.config import Config
-from cutevariant.gui import MainWindow, setFontPath, style
+from cutevariant.gui import MainWindow, network, setFontPath, style
 import cutevariant.commons as cm
 from cutevariant import LOGGER
 from cutevariant import __version__
@@ -62,6 +63,10 @@ def main():
     # Process command line arguments
     app = QApplication(sys.argv)
     process_arguments(app)
+
+    # Load app network settings
+    LOGGER.info("Load network settings")
+    load_network_settings()
 
     # Load app styles
     LOGGER.info("Load style")
@@ -111,6 +116,37 @@ def main():
     w.show()
     splash.finish(w)
     app.exec_()
+
+
+def load_network_settings():
+    config = Config("app")
+    if "network" in config:
+        _network = config.get("network", {})
+        proxy_type = network.PROXY_TYPES.get(
+            _network.get("type"), QNetworkProxy.NoProxy
+        )
+        host_name = _network.get("host", "")
+        port_number = _network.get("port", "")
+        user_name = _network.get("username", "")
+        password = _network.get("password", "")
+        proxy = QNetworkProxy(proxy_type, host_name, port_number, user_name, password)
+        LOGGER.debug(
+            "Setting application proxy to\nType:%s\nHost:%s\nPort:%s\nUser name:%s",
+            proxy.type(),
+            proxy.hostName(),
+            proxy.port(),
+            proxy.user(),
+        )
+        QNetworkProxy.setApplicationProxy(proxy)
+        proxy = QNetworkProxy.applicationProxy()
+        # Make sure the application proxy was set successfully
+        LOGGER.debug(
+            "Application proxy set to\nType:%s\nHost:%s\nPort:%s\nUser name:%s",
+            proxy.type(),
+            proxy.hostName(),
+            proxy.port(),
+            proxy.user(),
+        )
 
 
 def load_styles(app):
