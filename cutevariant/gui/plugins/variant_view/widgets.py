@@ -882,7 +882,10 @@ class VariantView(QWidget):
         self.favorite_action.setShortcut(QKeySequence(Qt.Key_Space))
         self.favorite_action.setShortcutContext(Qt.WidgetShortcut)
         self.favorite_action.setToolTip(
-            self.tr("Toggle favorite (%s)" % self.favorite_action.shortcut().toString())
+            self.tr(
+                "Toggle the selected variant as favorite (%s). The field `favorite` must be selected."
+                % self.favorite_action.shortcut().toString()
+            )
         )
         self.view.addAction(self.favorite_action)
 
@@ -890,7 +893,9 @@ class VariantView(QWidget):
         self.classification_action = QAction(FIcon(0xF04FD), self.tr("Classification"))
         self.addAction(self.classification_action)
         self.classification_action.setToolTip(
-            self.tr("Set ACMG classification for current selection")
+            self.tr(
+                "Set ACMG classification for current selection. The field `classification` must be selected"
+            )
         )
         self.classification_action.setMenu(self.create_classification_menu())
 
