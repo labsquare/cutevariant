@@ -9,7 +9,7 @@ from urllib.parse import unquote
 
 import cutevariant.commons as cm
 
-LOGGER = cm.logger()
+from cutevariant import LOGGER
 
 
 class AbstractReader(ABC):
@@ -32,9 +32,9 @@ class AbstractReader(ABC):
             A list of fields to skip [{field_name:"AF", "category":"variant"}]
 
     Example:
-        >>> with open(filename,"r") as file:
-        ...    reader = Reader(file)
-        ...    reader.get_variants()
+        with open(filename,"r") as file:
+            reader = Reader(file)
+            reader.get_variants()
     """
 
     def __init__(self, device):
@@ -90,8 +90,8 @@ class AbstractReader(ABC):
             dict: variant dictionnary
 
         Examples:
-            >>> for variant in reader.get_variants():
-            ...     print(variant["chr"], variant["pos"])
+                for variant in reader.get_variants():
+                    print(variant["chr"], variant["pos"])
 
         """
         raise NotImplementedError(cls.__class__.__name__)
@@ -117,8 +117,8 @@ class AbstractReader(ABC):
             dict: field dictionnary
 
         Examples:
-            >>> for field in reader.get_fields():
-            ...     print(field["name"], field["description"])
+            for field in reader.get_fields():
+                print(field["name"], field["description"])
         """
         raise NotImplementedError(cls.__class__.__name__)
 
@@ -155,6 +155,13 @@ class AbstractReader(ABC):
             "type": "int",
             "category": "variants",
             "description": "ACMG score",
+        }
+
+        yield {
+            "name": "tags",
+            "type": "str",
+            "category": "variants",
+            "description": "list of tags",
         }
 
         yield {
@@ -328,7 +335,8 @@ class AbstractReader(ABC):
         for variant in self.get_variants():
             variant["favorite"] = False
             variant["comment"] = ""
-            variant["classification"] = 3
+            variant["classification"] = 0
+            variant["tags"] = ""
 
             # For now set the first annotation as a major transcripts
             if "annotations" in variant:
@@ -582,7 +590,7 @@ def nullify(variant: dict) -> dict:
     """
 
     def convert_to_none(value):
-        """ convert value to None according type """
+        """convert value to None according type"""
         EMPTY_STRING = ["", "."]
         if isinstance(value, str):
             if value in EMPTY_STRING:

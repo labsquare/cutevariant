@@ -105,7 +105,7 @@ class MetricsDialog(PluginDialog):
 
         self.tab_widget.addTab(self.meta_view, "Metadata")
         self.tab_widget.addTab(self.stat_view, "Variants")
-        self.tab_widget.addTab(self.ann_view, "Annotations")
+        # self.tab_widget.addTab(self.ann_view, "Annotations")
 
         self.buttons = QDialogButtonBox(QDialogButtonBox.Ok)
 
@@ -168,7 +168,7 @@ class MetricsDialog(PluginDialog):
 
         self.stat_view.set_dict(stats_data)
         self.meta_view.set_dict(meta_data)
-        self.ann_view.set_dict(genes_data)
+        # self.ann_view.set_dict(genes_data)
         self.status_bar.showMessage("")
 
 

@@ -1,6 +1,7 @@
 from tests import utils
 import pytest
 import tempfile
+import os
 
 # Qt imports
 from PySide2 import QtCore, QtWidgets, QtGui
@@ -43,6 +44,34 @@ def test_plugin(conn, qtbot):
     assert len(plugin.widget_fields.views[0]["model"].checked_fields) == 2
     assert len(plugin.widget_fields.views[1]["model"].checked_fields) == 2
     assert len(plugin.widget_fields.views[2]["model"].checked_fields) == 2
+
+
+def test_presets_model(qtmodeltester):
+    filename = tempfile.mktemp()
+    model = widgets.FieldsPresetModel(config_path=filename)
+
+    model.add_preset("preset A", ["chr", "pos", "ref"])
+    model.add_preset("preset B", ["chr", "rs", "ann.gene"])
+    model.add_preset("preset C", ["chr", "rs", "ann.gene", "rsid", "af"])
+
+    assert model.rowCount() == 3
+
+    model.rem_presets([1])
+    assert model.rowCount() == 2
+
+    model.save()
+
+    model.clear()
+
+    assert model.rowCount() == 0
+
+    model.load()
+
+    assert model.rowCount() == 2
+
+    qtmodeltester.check(model)
+
+    os.remove(filename)
 
 
 # def test_model_load(qtmodeltester, conn):

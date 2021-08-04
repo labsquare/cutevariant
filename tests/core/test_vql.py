@@ -68,6 +68,13 @@ VQL_TO_TREE_CASES = {
         "filters": {},
         "source": "variants",
     },
+    # Test 7bis - HAS
+    "SELECT chr, pos  FROM variants WHERE consequence HAS 'exon'": {
+        "cmd": "select_cmd",
+        "fields": ["chr", "pos"],
+        "filters": {"$and": [{"consequence": {"$has": "exon"}}]},
+        "source": "variants",
+    },
     # Test 8
     "SELECT chr FROM variants WHERE some_field IN ('one', 'two')": {
         "cmd": "select_cmd",
