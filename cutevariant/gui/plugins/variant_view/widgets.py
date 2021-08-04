@@ -686,13 +686,8 @@ class VariantDelegate(QStyledItemDelegate):
         painter.setPen(QPen(QColor("blue")))
         painter.drawText(rect, align, value)
 
-    def editorEvent(self, event: QEvent, model, option, index: QModelIndex):
-        if not index.isValid():
-            return False
-
-        # Skip action with First LogicItem root item
-
-        pass
+    # def editorEvent(self, event: QEvent, model, option, index: QModelIndex):
+    #     return
 
 
 class LoadingTableView(QTableView):
