@@ -115,13 +115,13 @@ class MainWindow(QMainWindow):
         self.setWindowIcon(QIcon(DIR_ICONS + "app.png"))
         self.setWindowFlags(Qt.WindowContextHelpButtonHint | self.windowFlags())
 
-        # Setup menu bar
-        self.setup_menubar()
-
         # Setup ToolBar
         self.toolbar = self.addToolBar("maintoolbar")
         self.toolbar.setObjectName("maintoolbar")  # For window saveState
-        self.setup_toolbar()
+        self.toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+
+        # Setup menu bar
+        self.setup_actions()
 
         # Setup Central widget
         self.central_tab = QTabWidget()
@@ -129,6 +129,7 @@ class MainWindow(QMainWindow):
         self.vsplit = QSplitter(Qt.Vertical)
         self.vsplit.addWidget(self.central_tab)
         self.vsplit.addWidget(self.footer_tab)
+        self.vsplit.setHandleWidth(5)
         self.setCentralWidget(self.vsplit)
         self.setTabPosition(Qt.AllDockWidgetAreas, QTabWidget.North)
         # registers plugins
@@ -208,7 +209,7 @@ class MainWindow(QMainWindow):
         action.setText(widget.windowTitle())
         self.view_menu.addAction(action)
 
-        self.toolbar.addAction(action)
+        # self.toolbar.addAction(action)
 
     def register_plugins(self):
         """Load all plugins to the window
@@ -342,11 +343,12 @@ class MainWindow(QMainWindow):
             plugin_obj = self.plugins[plugin_name]
             plugin_obj.on_refresh()
 
-    def setup_menubar(self):
+    def setup_actions(self):
         """Menu bar setup: items and actions
 
         .. note:: Setup tools menu that could be dynamically augmented by plugins.
         """
+
         ## File Menu
         self.file_menu = self.menuBar().addMenu(self.tr("&File"))
         self.new_project_action = self.file_menu.addAction(
@@ -358,6 +360,14 @@ class MainWindow(QMainWindow):
             self.open_project,
             QKeySequence.Open,
         )
+
+        self.toolbar.addAction(self.new_project_action)
+        self.toolbar.addAction(self.open_project_action)
+        self.toolbar.addAction(
+            FIcon(0xF02D7), self.tr("Help"), QWhatsThis.enterWhatsThisMode
+        )
+        self.toolbar.addSeparator()
+
         ### Recent projects
         self.recent_files_menu = self.file_menu.addMenu(self.tr("Open recent"))
 
@@ -419,9 +429,10 @@ class MainWindow(QMainWindow):
         self.view_menu.addAction(self.tr("Reset widgets positions"), self.reset_ui)
         # Set toggle footer visibility action
         show_action = self.view_menu.addAction(
-            FIcon(0xF018D), self.tr("Show bottom toolbar")
+            FIcon(0xF018D), self.tr("Show VQL editor")
         )
         show_action.setCheckable(True)
+        self.toolbar.addAction(show_action)
         show_action.setChecked(True)
         show_action.toggled.connect(self.toggle_footer_visibility)
 
@@ -476,20 +487,6 @@ class MainWindow(QMainWindow):
             self.tr("About Cutevariant..."),
             self.about_cutevariant,
         )
-
-    def setup_toolbar(self):
-        """Top tool bar setup: items and actions
-
-        .. note:: Require selection_widget and some actions of Menubar
-        """
-        # Tool bar
-        self.toolbar.setToolButtonStyle(Qt.ToolButtonIconOnly)
-        self.toolbar.addAction(self.new_project_action)
-        self.toolbar.addAction(self.open_project_action)
-        self.toolbar.addAction(
-            FIcon(0xF02D7), self.tr("Help"), QWhatsThis.enterWhatsThisMode
-        )
-        self.toolbar.addSeparator()
 
     def open(self, filepath):
         """Open the given db/project file
@@ -899,7 +896,11 @@ class MainWindow(QMainWindow):
 
     def toggle_footer_visibility(self, visibility):
         """Toggle visibility of the bottom toolbar and all its plugins"""
-        self.footer_tab.setVisible(visibility)
+        # self.footer_tab.setVisible(visibility)
+        if visibility:
+            self.vsplit.setSizes([100, 0])
+        else:
+            self.vsplit.setSizes([200, 100])
 
     def on_export_pressed(self):
         """
