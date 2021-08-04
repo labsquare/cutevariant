@@ -19,22 +19,27 @@ p a:link {
   color: #6D468B;
 }
 
+.md-typeset ul {
+  list-style-type: symbols(cyclic "‣");
+}
+
 /* visited link */
 p a:visited {
   color: #6D468B;
 }
 
 
-  :root > * {
-  
-    /* Code block color shades */
-    --md-code-bg-color: hsla(0, 0%, 96%, 1);
-    --md-code-fg-color: hsla(200, 18%, 26%, 1);
+:root > * {
 
-    /* Footer */
-    --md-footer-bg-color: #861f41;
-    --md-footer-bg-color--dark: hsla(0, 0%, 0%, 0.32);
-    --md-footer-fg-color: hsla(0, 0%, 100%, 1);
-    --md-footer-fg-color--light: hsla(0, 0%, 100%, 0.7);
-    --md-footer-fg-color--lighter: hsla(0, 0%, 100%, 0.3);
-  }
+  /* Code block color shades */
+  --md-code-bg-color: hsla(0, 0%, 96%, 1);
+  --md-code-fg-color: hsla(200, 18%, 26%, 1);
+
+  /* Footer */
+  --md-footer-bg-color: #861f41;
+  --md-footer-bg-color--dark: hsla(0, 0%, 0%, 0.32);
+  --md-footer-fg-color: hsla(0, 0%, 100%, 1);
+  --md-footer-fg-color--light: hsla(0, 0%, 100%, 0.7);
+  --md-footer-fg-color--lighter: hsla(0, 0%, 100%, 0.3);
+
+}

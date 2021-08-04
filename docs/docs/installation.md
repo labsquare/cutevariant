@@ -19,19 +19,23 @@ You need [:material-language-python: Python 3.8 or newer](https://www.python.org
 python -m pip install cutevariant
 ```
 
-!!! warning
-    If you get the following errors:
+!!! bug "Known bug"
+    If you run Linux and get the following error:
 
-        Could not load the Qt platform plugin "xcb"
+    ``` bash
+    Could not load the Qt platform plugin "xcb"
+    ```
 
-    You can fix it on Linux with the following command:
+    You can fix it with the following command:
     
-        sudo apt-get install libxcb-xinerama0.
+    ``` bash
+    sudo apt-get install libxcb-xinerama0
+    ```
 
 
 ## Install from source code
 
-If you are a developer or need the latest bug fixes, and newest features, you can head over to our github repository and clone the devel branch to get the most recent version.
+If you are a developer, or need the latest bug fixes and newest features, you can head over to our github repository and clone the devel branch to get the most recent (development) version.
 
 ```bash
 

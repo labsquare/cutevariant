@@ -22,6 +22,7 @@ nav:
         - Filters : 'plugins/filters.md'
         - Variant view : 'plugins/variant-view.md'
         - Wordsets : 'plugins/wordset.md'
+        - Harmonizome : 'plugins/harmonizome.md'
 
     - Developer:
       - Setup environment: 'developer/install-for-dev.md'
@@ -82,6 +83,8 @@ theme:
   favicon: 'assets/favicon.png'
   logo: 'assets/icon_white.png'
 markdown_extensions:
+- toc:
+    permalink: "#"
 - footnotes
 - pymdownx.emoji:
     emoji_index: !!python/name:materialx.emoji.twemoji
