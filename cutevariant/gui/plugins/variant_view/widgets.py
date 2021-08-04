@@ -905,7 +905,11 @@ class VariantView(QWidget):
         # External links menu
         self.links_action = QAction(FIcon(0xF0339), self.tr("Link to"))
         self.addAction(self.links_action)
-        self.links_action.setToolTip(self.tr("Open variant info with website"))
+        self.links_action.setToolTip(
+            self.tr(
+                "Open link related to the current variant. You can edit links from the settings"
+            )
+        )
         # self.widgetForAction(self.links_action).setPopupMode(
         #     QToolButton.InstantPopup
         # )
@@ -1563,6 +1567,7 @@ class TagsWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__()
 
+        self._label = QLabel("Tags are editable from the settings")
         self._search_line = QLineEdit()
         self._listview = QListView()
         self._search_line.addAction(QIcon(FIcon(0xF0349)), QLineEdit.LeadingPosition)
@@ -1573,6 +1578,7 @@ class TagsWidget(QWidget):
         self._listview.setModel(self._proxy_model)
 
         vlayout = QVBoxLayout()
+        vlayout.addWidget(self._label)
         vlayout.addWidget(self._search_line)
         vlayout.addWidget(self._listview)
         vlayout.addWidget(self._apply_btn)
@@ -1641,6 +1647,9 @@ class VariantViewWidget(plugin.PluginWidget):
 
         # Tag actions
         self._tag_action = self.top_bar.addAction(FIcon(0xF12F7), "Tags")
+        self._tag_action.setToolTip(
+            "Apply tags to the current variant. You can edit tags from the settings"
+        )
         self.top_bar.widgetForAction(self._tag_action).setPopupMode(
             QToolButton.InstantPopup
         )
@@ -1712,6 +1721,13 @@ class VariantViewWidget(plugin.PluginWidget):
 
     def on_tag_widget_show(self):
         """Triggered when tagDialog is displayed"""
+
+        # Auto show tags fields
+        fields = self.mainwindow.get_state_data("fields")
+        if "tags" not in fields:
+            self.mainwindow.set_state_data("fields", fields + ["tags"])
+            self.on_refresh()
+
         selected_rows = self.main_right_pane.view.selectionModel().selectedRows()
         if len(selected_rows) == 1:
             index = selected_rows[0]
