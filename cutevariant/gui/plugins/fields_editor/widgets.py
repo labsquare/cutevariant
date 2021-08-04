@@ -244,10 +244,12 @@ class FieldsModel(QStandardItemModel):
                     field_name = field
                     if self._category == "annotations":
                         # Remove the ann. prefix (4 characters)
-                        field_name = field_name[4:]
+                        # field_name = field_name[4:]
+                        pass
                     if self._category == "samples":
                         # Remove the samples. prefix (8 characters)
-                        field_name = field_name[8:]
+                        # field_name = field_name[8:]
+                        pass
 
                     field_desc = fields[field]["description"]
 
