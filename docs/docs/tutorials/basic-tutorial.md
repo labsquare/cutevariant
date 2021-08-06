@@ -5,9 +5,9 @@ As mentioned, the aim is to find a pathogenic mutation in a family of 17 individ
 
 ## Download dataset
 
-- [Raw VCF file](https://drive.google.com/file/d/1GtuYPS5b5rNyr39hvtv6Dcbp3wOm9OE2/view?usp=sharing)
-- [SnpEff Annotated VCF file](https://drive.google.com/file/d/1xcLfioJ5hyNJ3bDlyJfuBbDmftDWUFLH/view?usp=sharing)
-- [Ped file](https://drive.google.com/file/d/1lrVwpbDhHwM4fVYgvk73YeyIMFDGWyz-/view?usp=sharing)
+- [Download Raw VCF file](https://drive.google.com/file/d/1GtuYPS5b5rNyr39hvtv6Dcbp3wOm9OE2/view?usp=sharing)
+- [Download SnpEff Annotated VCF file](https://drive.google.com/file/d/1xcLfioJ5hyNJ3bDlyJfuBbDmftDWUFLH/view?usp=sharing)
+- [Download Ped file](https://drive.google.com/file/d/1lrVwpbDhHwM4fVYgvk73YeyIMFDGWyz-/view?usp=sharing)
 
 You can download raw VCF file and annoate yourself using [SnpEff](https://pcingola.github.io/SnpEff/examples/) or [VEP](http://www.ensembl.org/info/docs/tools/vep/index.html).       
 But to make the example  easier, we provide the SnpEff annotated file VCF available [here](https://drive.google.com/file/d/1xcLfioJ5hyNJ3bDlyJfuBbDmftDWUFLH/view). 
