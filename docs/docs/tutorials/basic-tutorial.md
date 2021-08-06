@@ -18,8 +18,9 @@ We provide here the VCF file annotated with SnpEff with the corresponding ped fi
 
 
 ## Create a new project 
-After cutevariant is launched, click on :material-database-plus: new project on the upper toolbar and follow the instructions from the wizard. 
+After cutevariant is launched, click on :material-database-plus: new project on the upper toolbar and follow the instructions from the wizard. You will import the VCF file with the ped file describing affected and non affected samples.
 Depending of the size of the file, it can take several minutes to be imported into sqlite database. But keep in mind, this step is performed only once. After the database creation, you can open the sqlite file directly with the :material-database-import: open project button. 
+
  
 ![Create new project](../../images/wizard.gif)
 
@@ -33,17 +34,19 @@ SELECT chr, pos, ref, alt, ann.gene, ann.impact FROM variants
 ![Create new project](../../images/fields.gif)
 
 ## Filter variant with VQL 
-From the original SnpEff documentation, we have to find all variant with HIGH impact where three cases are homozygous mutated and the controls are not. 
-Cutevariant generates special fields for each variant, telling the count of sample with a specific genotype. For instance, the field "control_count_hom" return the number of case samples that are homozygous. Using those fields, you can then filters variants which are homozygous in the 3 samples from case group but not in the control group using the following VQL query.
+From the original SnpEff documentation, we have to find all variant with HIGH impact where three affected samples are homozygous mutated and the unaffected are not. 
+Cutevariant generates special fields for each variant, telling the count of sample with a specific genotype. For instance, the field "control_count_hom" return the number of affected samples that are homozygous. 
+In brief, the following query ask "Give me all variants with HIGH impact which are muted homozygous in 3 affected samples (case) and wild homozygous in 0 unaffected samples (control)".
 
 ```sql
 SELECT favorite,comment,chr,ref,alt,consequence,impact,gene FROM variants 
 WHERE case_count_hom = 3.0 AND control_count_hom = 0.0 AND impact = 'HIGH'
 ```
 
-We succeeded to identify the variant in no time !
-
 ![Create new project](../../images/filters.gif)
+
+Congratulation, you succeeded to identify the variant in no time !
+
 
 
 
