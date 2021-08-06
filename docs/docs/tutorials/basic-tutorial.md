@@ -8,9 +8,11 @@ As mentioned, the aim is to find a pathogenic mutation in a family of 17 individ
 
 ![](https://pcingola.github.io/SnpEff/images/Cingolani_Figure2.png)  
 
+
 ## Download dataset
 
 We provide here the VCF file annotated with SnpEff with the corresponding ped file.
+
 - [Download SnpEff Annotated VCF file](https://drive.google.com/file/d/1xcLfioJ5hyNJ3bDlyJfuBbDmftDWUFLH/view?usp=sharing)
 - [Download Ped file](https://drive.google.com/file/d/1lrVwpbDhHwM4fVYgvk73YeyIMFDGWyz-/view?usp=sharing)
 
@@ -19,7 +21,7 @@ We provide here the VCF file annotated with SnpEff with the corresponding ped fi
 After cutevariant is launched, click on :material-database-plus: new project on the upper toolbar and follow the instructions from the wizard. 
 Depending of the size of the file, it can take several minutes to be imported into sqlite database. But keep in mind, this step is performed only once. After the database creation, you can open the sqlite file directly with the :material-database-import: open project button. 
  
-![Create new project](https://user-images.githubusercontent.com/1911063/98835839-383e1900-2441-11eb-893f-bd30c5524830.gif)
+![Create new project](../../images/wizard.gif)
 
 ## Select fields to display
 You should now see the following view displaying a table of all variants loaded from the VCF file. Different plugins are available around to control the view and filtering in different way. But you are encouraged to use the VQL which is much faster. For instance, write the following VQL query to select interesting fields: 
@@ -28,8 +30,7 @@ You should now see the following view displaying a table of all variants loaded 
 SELECT chr, pos, ref, alt, ann.gene, ann.impact FROM variants
 ```
 
-
-![image](https://user-images.githubusercontent.com/1911063/98836859-7ee04300-2442-11eb-9f51-0b76a0fbdf64.png)
+![Create new project](../../images/fields.gif)
 
 ## Filter variant with VQL 
 From the original SnpEff documentation, we have to find all variant with HIGH impact where three cases are homozygous mutated and the controls are not. 
@@ -42,7 +43,7 @@ WHERE case_count_hom = 3.0 AND control_count_hom = 0.0 AND impact = 'HIGH'
 
 We succeeded to identify the variant in no time !
 
-![image](https://user-images.githubusercontent.com/1911063/98838794-06c74c80-2445-11eb-9373-d0413fada83e.png)
+![Create new project](../../images/filters.gif)
 
 
 
