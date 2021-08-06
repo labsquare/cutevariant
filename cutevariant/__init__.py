@@ -1,5 +1,5 @@
 __all__ = ["core", "gui"]
-__version__ = "0.3.6"
+__version__ = "0.3.7.dev0"
 
 
 # Configure logger
