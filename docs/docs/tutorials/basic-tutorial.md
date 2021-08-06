@@ -24,7 +24,7 @@ Depending of the size of the file, it can take several minutes to be imported in
 ![Create new project](../../images/wizard.gif)
 
 ## Select fields to display
-You should now see the following view displaying a table of all variants loaded from the VCF file. Different plugins are available around to control the view and filtering in different way. But you are encouraged to use the VQL which is much faster. For instance, write the following VQL query to select interesting fields: 
+You should now see the following view displaying a table of all variants loaded from the VCF file. Different plugins are available around to control the view and filtering in different way. They are available from `view` menu. But you are encouraged to use the VQL which is much faster. For instance, write the following VQL query to select interesting fields: 
 
 ```sql
 SELECT chr, pos, ref, alt, ann.gene, ann.impact FROM variants
