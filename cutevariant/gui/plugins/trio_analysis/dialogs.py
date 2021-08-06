@@ -136,44 +136,44 @@ class TrioAnalysisDialog(PluginDialog):
         if filter_type == self.DE_NOVO:
             filters = {
                 "$and": [
-                    {f"samples".{father}."gt": 0},
-                    {f"samples".{mother}."gt": 0},
-                    {f"samples".{child}."gt": 1},
+                    {f"samples.{father}.gt": 0},
+                    {f"samples.{mother}.gt": 0},
+                    {f"samples.{child}.gt": 1},
                 ]
             }
 
         elif filter_type == self.AUTOSOMAL_RECESSIVE:
             filters = {
                 "$and": [
-                    {f"samples".{father}."gt": 1},
-                    {f"samples".{mother}."gt: 1},
-                    {f"samples".{child}."gt": 2},
+                    {f"samples.{father}.gt": 1},
+                    {f"samples.{mother}.gt": 1},
+                    {f"samples.{child}.gt": 2},
                 ]
             }
 
         elif filter_type == self.AUTOSOMAL_DOMINANT:
             filters = {
                 "$and": [
-                    {f"samples".{child}."gt" : 1.0},
+                    {f"samples.{child}.gt" : 1.0},
                     {
                         "$or": [
                             {
                                 "$and": [
                                     {
-                                       f"samples".{father}."gt": 1.0,
+                                       f"samples.{father}.gt": 1.0,
                                     },
                                     {
-                                       f"samples".{mother}."gt": 0.0,
+                                       f"samples.{mother}.gt": 0.0,
                                     },
                                 ]
                             },
                             {
                                 "$and": [
                                     {
-                                      f"samples".{father}."gt":  0.0,
+                                      f"samples.{father}.gt":  0.0,
                                     },
                                     {
-                                      f"samples".{mother}."gt": 1.0,
+                                      f"samples.{mother}.gt": 1.0,
                                     },
                                 ]
                             },
@@ -186,9 +186,9 @@ class TrioAnalysisDialog(PluginDialog):
             filters = {
                 "$and": [
                     {"chr":"X"},
-                    {f"samples".{father}."gt": 0},
-                    {f"samples".{mother}."gt": 1},
-                    {f"samples".{child}."gt": 0},
+                    {f"samples.{father}.gt": 0},
+                    {f"samples.{mother}.gt": 1},
+                    {f"samples.{child}.gt": 0},
                 ]
             }
 
