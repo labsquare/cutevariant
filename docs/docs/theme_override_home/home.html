@@ -50,15 +50,28 @@
     }
 
     .tx-hero {
-        margin: 32px 2.8rem;
+        margin: 0 32px 2.8rem;
         color: var(--md-primary-bg-color);
         justify-content: center;
     }
 
-    .tx-hero h1 {
-        margin-bottom: 1rem;
+    .tx-hero .tx-hero__title {
+        margin-right: 2rem;
+    }
+
+    .tx-hero .tx-hero__title h1 {
+        margin-bottom: 0;
         color: currentColor;
         font-weight: 700
+    }
+
+    .tx-hero .tx-hero__title p {
+        margin: 0;
+    }
+
+    .tx-hero .tx-hero__actions {
+        display: flex;
+        align-items: flex-start;
     }
 
     .tx-hero__content {
@@ -67,16 +80,14 @@
     }
 
     .tx-hero__image {
-
-        order: 1;
-        padding-right: 2.5rem;
-        width: 900px;
+        width: 100%;
     }
 
     .tx-hero .md-button {
         margin-top: .5rem;
         margin-right: .5rem;
-        color: var(--md-primary-bg-color)
+        color: var(--md-primary-bg-color);
+        text-align: center;
     }
 
     .tx-hero .md-button--primary {
@@ -147,17 +158,19 @@
 
         .tx-hero {
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
         }
 
         .tx-hero__content {
-            max-width: 22rem;
+            display: flex;
+            /* max-width: 22rem;
             margin-top: 3.5rem;
             margin-bottom: 3.5rem;
             margin-left: 1.0rem;
             margin-right: 4.0rem;
-            align-items: center;
+            align-items: center; */
         }
     }
 
@@ -252,20 +265,27 @@
 <section class="tx-container">
     <div class="md-grid md-typeset">
         <div class="tx-hero">
-            <div class="tx-hero__image">
-                <img src="https://raw.githubusercontent.com/labsquare/cutevariant/master/screenshot1.png"
-                    draggable="false">
-            </div>
             <div class="tx-hero__content">
-                <h1> Cutevariant </h1>
-                <p>A standalone and free application to explore genetics variations from VCF file</p>
-                <a href="{{ page.next_page.url | url }}" title="{{ page.next_page.title | striptags }}"
-                    class="md-button md-button--primary">
-                    Get started
-                </a>
-                <a href="installation.html" title="Download" class="md-button">
-                    Download now
-                </a>
+                <div class="tx-hero__title">
+                    <h1> Cutevariant </h1>
+                    <p>A standalone and free application to explore genetics variations from VCF file</p>
+                </div>
+                <div class="tx-hero__actions">
+                    <a href="{{ page.next_page.url | url }}" title="{{ page.next_page.title | striptags }}"
+                        class="md-button md-button--primary">
+                        Get started
+                    </a>
+                    <a href="installation.html" title="Download" class="md-button">
+                        Download now
+                    </a>
+                </div>
+            </div>
+            <div class="tx-hero__image">
+                <video width="100%" height="auto" playsinline loop controls="flase" autoplay="true">
+                    <source src="images/cutevariant.webm" type="video/webm">
+                </video>
+                <!-- <img src="https://raw.githubusercontent.com/labsquare/cutevariant/master/screenshot1.png"
+                    draggable="false"> -->
             </div>
         </div>
     </div>
