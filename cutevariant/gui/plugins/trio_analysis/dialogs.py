@@ -135,53 +135,45 @@ class TrioAnalysisDialog(PluginDialog):
 
         if filter_type == self.DE_NOVO:
             filters = {
-                "AND": [
-                    {"field": ("sample", father, "gt"), "operator": "=", "value": 0},
-                    {"field": ("sample", mother, "gt"), "operator": "=", "value": 0},
-                    {"field": ("sample", child, "gt"), "operator": "=", "value": 1},
+                "$and": [
+                    {f"samples.{father}.gt": 0},
+                    {f"samples.{mother}.gt": 0},
+                    {f"samples.{child}.gt": 1},
                 ]
             }
 
         elif filter_type == self.AUTOSOMAL_RECESSIVE:
             filters = {
-                "AND": [
-                    {"field": ("sample", father, "gt"), "operator": "=", "value": 1},
-                    {"field": ("sample", mother, "gt"), "operator": "=", "value": 1},
-                    {"field": ("sample", child, "gt"), "operator": "=", "value": 2},
+                "$and": [
+                    {f"samples.{father}.gt": 1},
+                    {f"samples.{mother}.gt": 1},
+                    {f"samples.{child}.gt": 2},
                 ]
             }
 
         elif filter_type == self.AUTOSOMAL_DOMINANT:
             filters = {
-                "AND": [
-                    {"field": ("sample", child, "gt"), "operator": "=", "value": 1.0},
+                "$and": [
+                    {f"samples.{child}.gt" : 1.0},
                     {
-                        "OR": [
+                        "$or": [
                             {
-                                "AND": [
+                                "$and": [
                                     {
-                                        "field": ("sample", father, "gt"),
-                                        "operator": "=",
-                                        "value": 1.0,
+                                       f"samples.{father}.gt": 1.0,
                                     },
                                     {
-                                        "field": ("sample", mother, "gt"),
-                                        "operator": "=",
-                                        "value": 0.0,
+                                       f"samples.{mother}.gt": 0.0,
                                     },
                                 ]
                             },
                             {
-                                "AND": [
+                                "$and": [
                                     {
-                                        "field": ("sample", father, "gt"),
-                                        "operator": "=",
-                                        "value": 0.0,
+                                      f"samples.{father}.gt":  0.0,
                                     },
                                     {
-                                        "field": ("sample", mother, "gt"),
-                                        "operator": "=",
-                                        "value": 1.0,
+                                      f"samples.{mother}.gt": 1.0,
                                     },
                                 ]
                             },
@@ -192,11 +184,11 @@ class TrioAnalysisDialog(PluginDialog):
 
         elif filter_type == self.X_LINKED_RECESSIVE:
             filters = {
-                "AND": [
-                    {"field": "chr", "operator": "=", "value": "X"},
-                    {"field": ("sample", father, "gt"), "operator": "=", "value": 0},
-                    {"field": ("sample", mother, "gt"), "operator": "=", "value": 1},
-                    {"field": ("sample", child, "gt"), "operator": ">", "value": 0},
+                "$and": [
+                    {"chr":"X"},
+                    {f"samples.{father}.gt": 0},
+                    {f"samples.{mother}.gt": 1},
+                    {f"samples.{child}.gt": 0},
                 ]
             }
 
