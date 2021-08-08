@@ -30,7 +30,7 @@ From the original SnpEff documentation, we have to find all variant with HIGH im
 Cutevariant generates special fields for each variant, telling the count of sample with a specific genotype. For instance, the field "control_count_hom" return the number of case samples that are homozygous. Using those fields, you can then filters variants which are homozygous in the 3 samples from case group but not in the control group using the following VQL query.
 
 ```sql
-SELECT favorite,comment,chr,ref,alt,consequence,impact,gene FROM variants 
+SELECT favorite,comment,chr,ref,alt,ann.consequence,ann.impact,ann.gene FROM variants 
 WHERE case_count_hom = 3.0 AND control_count_hom = 0.0 AND impact = 'HIGH'
 ```
 
