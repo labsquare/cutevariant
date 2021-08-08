@@ -12,7 +12,7 @@ It has been tested on Windows 7 and Windows 10.
 
 ## Install from Pypi
 
-Cutevariant is available from [pypi](https://pypi.org/project/cutevariant/).     
+For Linux, MacOS and windows, cutevariant is available from [pypi](https://pypi.org/project/cutevariant/).     
 You need [:material-language-python: Python 3.8 or newer](https://www.python.org/). Older version of Python are not supported. 
 
 ```bash
