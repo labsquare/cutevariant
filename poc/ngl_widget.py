@@ -5,6 +5,22 @@ from PySide2.QtGui import *
 from PySide2.QtWebEngineWidgets import *
 import sys
 import os
+import json
+
+
+class JSValue(QEventLoop):
+    def __init__(self, page, parent=None):
+        super().__init__(parent=parent)
+        self.page = page
+        self.value = None
+
+    def parse(self, value):
+        self.value = json.loads(value)
+        self.quit()
+
+    def run(self, expression):
+        self.page.runJavaScript(f"JSON.stringify({expression})", 0, self.parse)
+        self.exec_()
 
 
 class NGLWidget(QWebEngineView):
@@ -100,6 +116,8 @@ class NGLWidget(QWebEngineView):
             ["red", "*"]], "colormol");
         var schemeAA = NGL.ColormakerRegistry.addSelectionScheme([
             ["blue", "*"]], "colorAA");
+        var test = NGL.ColormakerRegistry.addSelectionScheme([
+            ["green", "*"]], "test");
 
         function set_colorscheme (scheme, color){
             scheme = NGL.ColormakerRegistry.addSelectionScheme([
@@ -110,9 +128,9 @@ class NGLWidget(QWebEngineView):
         function create_representation_scheme(component, scale, representation, position, colorScheme, opacity = 1){
             component.addRepresentation(representation, {
                     sele: position,
-                    scale  : scale,
-                    colorScheme: colorScheme,
-                    opacity : opacity
+                    scale : scale,
+                    colorScheme : colorScheme,
+                    opacity : opacity,
                 });
             return component
             }
@@ -124,8 +142,6 @@ class NGLWidget(QWebEngineView):
 
     def load_mol(self) -> None:
         """load molecule"""
-
-        print(self.focus_camera)
 
         self.page().runJavaScript(
             """
@@ -144,15 +160,12 @@ class NGLWidget(QWebEngineView):
             if (component.type !== "structure") return;
                 create_representation_scheme(component, "1", representation, "*", schememol);
                 create_representation_scheme(component, "1", representation, position, schemeAA);
-                create_representation_scheme(component, "10", representation, position, schemeAA, 0.5);
+                create_representation_scheme(component, "2", representation, position, test, 0.5);
                 if (focus_camera)
                     component.autoView(position, 2000);
             };
             stage.removeAllComponents();
-            stage.loadFile(protein).then(structure_representation);
-            stage.handleResize();
-            print(stage.getBox());
-
+            stage.loadFile(protein, {reorderAtoms : true, dontAutoBond : true}).then(structure_representation);
             """
             % (
                 self.position,
@@ -163,8 +176,21 @@ class NGLWidget(QWebEngineView):
                 self.focus_camera,
             )
         )
+        self.handle_resize()
         print("molecule load")
         self.mol_loaded = True
+
+        self.page().runJavaScript(
+            """var a = 5
+            var b = {name: "hello", prenom : "au revoir"}
+            var c = "hello"
+        """
+        )
+
+    def get_js(self, expression):
+        js_value = JSValue(self.page())
+        js_value.run(expression)
+        return js_value.value
 
     def add_component(self, component) -> None:
         """add component to stage
@@ -427,6 +453,7 @@ class NGLWidget(QWebEngineView):
         Args:
             spin (bool) : value to set setSpin"""
         spin = NGLWidget.bool_python_to_js(spin)
+        print(self.get_js("stage.getParameters()"))
         self.page().runJavaScript(
             f"""
             stage.setSpin({spin})
@@ -540,6 +567,7 @@ class MainWindow(QMainWindow):
         self.combocamera.addItems(["global view", "focus view"])
         self.combocamera.textActivated.connect(self.update_view)
 
+        self.buttongroup = QButtonGroup()
         self.spin = QCheckBox("spin")
         self.spin.stateChanged.connect(self.view.set_spin)
         self.spin.stateChanged.connect(self.update_controller)
@@ -547,6 +575,10 @@ class MainWindow(QMainWindow):
         self.rock = QCheckBox("rock")
         self.rock.stateChanged.connect(self.view.set_rock)
         self.rock.stateChanged.connect(self.update_controller)
+        self.buttongroup.addButton(self.spin)
+        self.buttongroup.addButton(self.rock)
+
+        self.buttongroup.setExclusive(True)
 
         self.textpos = QLabel("position")
         self.selectpos = QLineEdit("1")
@@ -579,7 +611,7 @@ class MainWindow(QMainWindow):
         self.view.filename = "rcsb://" + self.selectmol.text()
         if not self.view.mol_loaded:
             self.init()
-        if not (self.view.sized):
+        if not self.view.sized:
             self.resize()
         self.view.load_mol()
 
