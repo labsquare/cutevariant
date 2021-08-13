@@ -4,21 +4,35 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 from PySide2.QtWebEngineWidgets import *
 import sys
-import os
 import json
 
 
 class JSValue(QEventLoop):
-    def __init__(self, page, parent=None):
+    def __init__(self, page: QWebEnginePage, parent=None):
+        """init values
+
+        Args:
+            page (QWebEnginePage): page to run java script
+        """
         super().__init__(parent=parent)
         self.page = page
         self.value = None
 
-    def parse(self, value):
+    def parse(self, value: str):
+        """load a json in a python variable
+
+        Args:
+            value (str): [description]
+        """
         self.value = json.loads(value)
         self.quit()
 
-    def run(self, expression):
+    def run(self, expression: str) -> None:
+        """get the js value throught a JSON method
+
+        Args:
+            expression (str): js value to get in python
+        """
         self.page.runJavaScript(f"JSON.stringify({expression})", 0, self.parse)
         self.exec_()
 
@@ -51,10 +65,13 @@ class NGLWidget(QWebEngineView):
         filename : str file's name
         representation : str type of the geometry to show the prot
         position : int amino acid index to focus on
+        colormol : str color of unselected part of the molecul
+        colorAA : str color of selected part of the molecul
         spin : str if "true" rotate the protein
         rock : str if "true" rock the protein
         mol_loaded : bool is there a mol loaded
         sized : bool True if the window has been resized once
+        focus_camera : bool True if the view is center on the position
         """
 
         super().__init__()
@@ -70,6 +87,7 @@ class NGLWidget(QWebEngineView):
         self.sized = False
         self.focus_camera = False
 
+        # QWebEngineSettings
         self.settings().setAttribute(
             QWebEngineSettings.LocalContentCanAccessRemoteUrls, True
         )
@@ -77,68 +95,27 @@ class NGLWidget(QWebEngineView):
         self.settings().setAttribute(QWebEngineSettings.FullScreenSupportEnabled, True)
 
         self.setHtml(self.TEMPLATE)
+
+        # load function to initialise NGLWidget
         self.loadFinished.connect(self.load_tools)
         self.loadFinished.connect(self.set_window_size)
+
+        # Parameter for QWebEnginePage()
         self.page().setBackgroundColor(QColor("white"))
 
-    def set_window_size(self, width: int = 0, height: int = 0) -> None:
-        """set to the window size
+    # Function
+    def get_js(self, expression: str) -> dict:
+        """get js variable in python
+
         Args:
-            width (int, optional): width in pixel. Defaults to 0.
-            height (int, optional): height in pixel. Defaults to 0.
+            expression (str): variable to get
+
+        Returns:
+            Object: python variable corresponding to the js variable
         """
-
-        self.page().runJavaScript(
-            f"""
-            
-            document.getElementById('viewport').style.width = "{width}px";
-            document.getElementById('viewport').style.height = "{height}px";
-
-            """
-        )
-
-    def set_position(self, value: int) -> None:
-        """set position to the given value
-        Args:
-            value (int): value to set
-        """
-
-        self.position = value
-
-    def load_tools(self) -> None:
-        """load constant for js"""
-
-        self.page().runJavaScript(
-            """
-
-        var stage = new NGL.Stage("viewport", {backgroundColor : "black"});
-        var schememol = NGL.ColormakerRegistry.addSelectionScheme([
-            ["red", "*"]], "colormol");
-        var schemeAA = NGL.ColormakerRegistry.addSelectionScheme([
-            ["blue", "*"]], "colorAA");
-        var test = NGL.ColormakerRegistry.addSelectionScheme([
-            ["green", "*"]], "test");
-
-        function set_colorscheme (scheme, color){
-            scheme = NGL.ColormakerRegistry.addSelectionScheme([
-                [color, "*"]]);
-            return scheme
-        };
-
-        function create_representation_scheme(component, scale, representation, position, colorScheme, opacity = 1){
-            component.addRepresentation(representation, {
-                    sele: position,
-                    scale : scale,
-                    colorScheme : colorScheme,
-                    opacity : opacity,
-                });
-            return component
-            }
-    
-        """
-        )
-        self.focus_camera = self.bool_python_to_js(self.focus_camera)
-        print("loading done")
+        js_value = JSValue(self.page())
+        js_value.run(expression)
+        return js_value.value
 
     def load_mol(self) -> None:
         """load molecule"""
@@ -180,18 +157,77 @@ class NGLWidget(QWebEngineView):
         print("molecule load")
         self.mol_loaded = True
 
+    def load_tools(self) -> None:
+        """load constant and function for js"""
+
         self.page().runJavaScript(
-            """var a = 5
-            var b = {name: "hello", prenom : "au revoir"}
-            var c = "hello"
+            """
+
+        var stage = new NGL.Stage("viewport", {backgroundColor : "black"});
+        var schememol = NGL.ColormakerRegistry.addSelectionScheme([
+            ["red", "*"]], "colormol");
+        var schemeAA = NGL.ColormakerRegistry.addSelectionScheme([
+            ["blue", "*"]], "colorAA");
+        var test = NGL.ColormakerRegistry.addSelectionScheme([
+            ["green", "*"]], "test");
+
+        function set_colorscheme (scheme, color){
+            scheme = NGL.ColormakerRegistry.addSelectionScheme([
+                [color, "*"]]);
+            return scheme
+        };
+
+        function create_representation_scheme(component, scale, representation, position, colorScheme, opacity = 1){
+            component.addRepresentation(representation, {
+                    sele: position,
+                    scale : scale,
+                    colorScheme : colorScheme,
+                    opacity : opacity,
+                });
+            return component
+            }
+
+                var shape = new NGL.Shape( "shape" );
+        var sphereBuffer = new NGL.SphereBuffer( {
+            position: new Float32Array( [ 0, 0, 0, 4, 0, 0 ] ),
+            color: new Float32Array( [ 1, 0, 0, 1, 1, 0 ] ),
+            radius: new Float32Array( [ 1, 1.2 ] )
+        } );
+        shape.addBuffer( sphereBuffer );
+        var shapeComp = stage.addComponentFromObject( shape );
+        shapeComp.addRepresentation( "buffer" );
+        
+    
         """
         )
+        self.focus_camera = self.bool_python_to_js(self.focus_camera)
+        print("loading done")
 
-    def get_js(self, expression):
-        js_value = JSValue(self.page())
-        js_value.run(expression)
-        return js_value.value
+    def set_position(self, value: int) -> None:
+        """set position to the given value
+        Args:
+            value (int): value to set
+        """
 
+        self.position = value
+
+    def set_window_size(self, width: int = 0, height: int = 0) -> None:
+        """set to the window size
+        Args:
+            width (int, optional): width in pixel. Defaults to 0.
+            height (int, optional): height in pixel. Defaults to 0.
+        """
+
+        self.page().runJavaScript(
+            f"""
+            
+            document.getElementById('viewport').style.width = "{width}px";
+            document.getElementById('viewport').style.height = "{height}px";
+
+            """
+        )
+
+    # NGL function for stage variable implemented in python
     def add_component(self, component) -> None:
         """add component to stage
 
@@ -266,6 +302,77 @@ class NGLWidget(QWebEngineView):
             stage.eachRepresentation({callback})"""
         )
 
+    def get_anything_by_name(self, name: str) -> dict:
+        """Returns a Collection with all components that satisfy the name condition
+
+         Args:
+            name (str): component to get by name
+
+        Returns:
+            dict: Collections of components
+        """
+        return self.get_js(f"stage.getAnythingByName({name})")
+
+    def get_box(self) -> None:
+        """get the box from stage variable"""
+        return self.get_js("stage.getBox()")
+
+    def get_center(self) -> None:
+        """get the center from stage variable"""
+        return self.get_js("stage.getCenter()")
+
+    def get_components_by_name(self, name: str, components: str) -> dict:
+        """Returns a ComponentCollection with all components that satisfy the name and componentType condition.
+
+         Args:
+            name (str): component to get by name
+            components (str) : type of components
+
+        Returns:
+            dict: Collections of components
+        """
+        return self.get_js(f"stage.getComponentsByName({name}, {components})")
+
+    def get_components_by_object(self, name: str, components: str) -> dict:
+        """Returns a ComponentCollection with all components that satisfy the name and componentType condition.
+
+         Args:
+            name (str): component to get by name
+            components (str) : object of components
+
+        Returns:
+            dict: Collections of components
+        """
+        return self.get_js(f"stage.getComponentsByObject({name}, {components})")
+
+    def get_parameters(self) -> dict:
+        """get stage parameters
+
+        Returns:
+            dict: parameters from stage
+        """
+        return self.get_js("stage.getParameters()")
+
+    def get_representaion_by_name(self, name: str, components: str) -> dict:
+        """Returns a RepresentationCollection with all representations that satisfy the name and componentType condition.
+
+         Args:
+            name (str): component to get by name
+            components (str) ! type of components
+
+        Returns:
+            dict: Collections of components
+        """
+        return self.get_js(f"stage.getComponentsByName({name}, {components})")
+
+    def get_zoom(self) -> None:
+        """get the zoom of stage"""
+        return self.get_js("stage.getZoom()")
+
+    def get_zoom_for_box(self) -> None:
+        """get the zoom of stage"""
+        return self.get_js("stage.getZoomForBox()")
+
     def handle_resize(self) -> None:
         """Handle any size-changes of the container element"""
         self.page().runJavaScript(
@@ -273,7 +380,7 @@ class NGLWidget(QWebEngineView):
             stage.handleResize()"""
         )
 
-    def laod_file(self, path: str, params: dict = {}) -> any:
+    def load_file(self, path: str, params: dict = {}) -> any:
         """Load a file onto the stage
 
         Args:
@@ -453,7 +560,6 @@ class NGLWidget(QWebEngineView):
         Args:
             spin (bool) : value to set setSpin"""
         spin = NGLWidget.bool_python_to_js(spin)
-        print(self.get_js("stage.getParameters()"))
         self.page().runJavaScript(
             f"""
             stage.setSpin({spin})
@@ -462,18 +568,6 @@ class NGLWidget(QWebEngineView):
         self.spin = True
         if self.rock:
             self.rock = False
-
-    def toggle_full_screen(self, element: str) -> None:
-        """toggle the screen
-
-        Args:
-            element (str): HTMLElement
-        """
-        self.page().runJavaScript(
-            f"""
-        stage.togglFullScreen()
-        """
-        )
 
     def toggle_full_screen(self, element: str) -> None:
         """toggle the screen
@@ -503,6 +597,7 @@ class NGLWidget(QWebEngineView):
         """
         )
 
+    # classmethod
     @classmethod
     def bool_python_to_js(cls, pythonbool: bool) -> bool:
         """translate bool prom python to js
@@ -521,14 +616,48 @@ class NGLWidget(QWebEngineView):
 
 class MainWindow(QMainWindow):
     def __init__(self) -> None:
-        """init MainWindow"""
+        """init MainWindow to use NGLWidget
+        view : NGLWidget to display in the main window
+        toolbar_actions : action's toolbar not movable
+        toolbar_widgets : widget's toolbar movable on left
+        combo_representation : QComboBox choose the NGL predifined molecular representations
+        combo_molcolor : QComborBorx select the color for unselected part of the molecule
+        combo_AAcolor :QComborBorx select the color for unselected part of the molecule
+        camera_type : QComboBox to select camera type in stage parameters
+        combo_camera : QCombobox to select a focus view or not on selected molecule
+        spin : QCheckBox if checked, rotate the molecule
+        rock : QCheckBox if checked, rock the molecule
+        static : QChecbox if checked stop rotate or rock
+        buttongroup : QButtonGroup make spin/rock/static exclusive selection
+        button : QPushButton connected to a test function
+        but_params : QPushButon if clicked open stage parameter that can be modified
+        select_pos : QLineEdit choose the part of the mol to select it can be an int/ an int-int or a type or a property
+        select_mol : QLineEdit name of the mol to load
+        stage_parameter : QGridLayout layout to display widget
+        widget : QWidget that contains stage parameter, shown with but_params clicked
+        """
         super().__init__()
 
         self.view = NGLWidget()
         self.setCentralWidget(self.view)
 
-        self.comborepresentation = QComboBox()
-        self.comborepresentation.addItems(
+        # First toolbar for actions
+        self.toolbar_actions = self.addToolBar("toolbar_actions")
+        self.toolbar_actions.setMovable(False)
+
+        action = self.toolbar_actions.addAction("Load")
+        action.triggered.connect(self.on_charger)
+
+        resize_action = self.toolbar_actions.addAction("resize")
+        resize_action.triggered.connect(self.resize)
+
+        # Second toolbar for Widgets and selection
+        self.toolbar_widgets = self.addToolBar("toolbar_widgets")
+        self.toolbar_widgets.setAllowedAreas(Qt.LeftToolBarArea)
+        self.toolbar_widgets.setFloatable(False)
+
+        self.combo_representation = QComboBox()
+        self.combo_representation.addItems(
             [
                 "licorice",
                 "ball+stick",
@@ -539,106 +668,156 @@ class MainWindow(QMainWindow):
                 "hyperball",
             ]
         )
-        self.comborepresentation.textActivated.connect(self.update_comborepresentation)
+        self.combo_representation.textActivated.connect(
+            self.update_combo_representation
+        )
 
-        self.combomolcolor = QComboBox()
-        self.combomolcolor.addItems(
+        self.combo_molcolor = QComboBox()
+        self.combo_molcolor.addItems(
             ["red", "blue", "green", "pink", "purple", "orange"]
         )
-        self.combomolcolor.textActivated.connect(self.update_combomolcolor)
+        self.combo_molcolor.textActivated.connect(self.update_combo_molcolor)
 
-        self.comboAAcolor = QComboBox()
-        self.comboAAcolor.addItems(["blue", "red", "green", "pink", "purple", "orange"])
-        self.comboAAcolor.textActivated.connect(self.update_comboAAcolor)
+        self.combo_AAcolor = QComboBox()
+        self.combo_AAcolor.addItems(
+            ["blue", "red", "green", "pink", "purple", "orange"]
+        )
+        self.combo_AAcolor.textActivated.connect(self.update_comboAAcolor)
 
-        self.toolbar = self.addToolBar("toolbar")
-        self.toolbar.setMovable(False)
-        self.toolbar2 = self.addToolBar("toolbar2")
-        self.toolbar2.setAllowedAreas(Qt.LeftToolBarArea)
-        self.toolbar2.setFloatable(False)
+        self.camera_type = QComboBox()
+        self.camera_type.addItems(["perspective", "orthographic", "stereo"])
+        self.camera_type.textActivated.connect(self.update_camera_type)
 
-        action = self.toolbar.addAction("Load")
-        action.triggered.connect(self.on_charger)
+        self.combo_camera = QComboBox()
+        self.combo_camera.addItems(["global view", "focus view"])
+        self.combo_camera.textActivated.connect(self.update_view)
 
-        resizeaction = self.toolbar.addAction("resize")
-        resizeaction.triggered.connect(self.resize)
-
-        self.combocamera = QComboBox()
-        self.combocamera.addItems(["global view", "focus view"])
-        self.combocamera.textActivated.connect(self.update_view)
-
-        self.buttongroup = QButtonGroup()
         self.spin = QCheckBox("spin")
         self.spin.stateChanged.connect(self.view.set_spin)
-        self.spin.stateChanged.connect(self.update_controller)
 
         self.rock = QCheckBox("rock")
         self.rock.stateChanged.connect(self.view.set_rock)
-        self.rock.stateChanged.connect(self.update_controller)
+
+        self.static = QCheckBox("static")
+        self.static.setChecked(True)
+
+        self.buttongroup = QButtonGroup()
         self.buttongroup.addButton(self.spin)
         self.buttongroup.addButton(self.rock)
-
+        self.buttongroup.addButton(self.static)
         self.buttongroup.setExclusive(True)
 
-        self.textpos = QLabel("position")
-        self.selectpos = QLineEdit("1")
-        self.selectpos.setFixedSize(80, 15)
-        self.selectpos.editingFinished.connect(self.update_position)
+        self.button = QPushButton("test")
+        self.button.clicked.connect(self.test)
 
-        self.selectmol = QLineEdit("1crn")
-        self.selectmol.setFixedSize(80, 15)
+        self.but_params = QPushButton("open params")
+        self.but_params.clicked.connect(self.open_parameters)
 
-        self.toolbar2.addWidget(self.combocamera)
-        self.toolbar2.addWidget(self.comborepresentation)
-        self.toolbar2.addWidget(self.combomolcolor)
-        self.toolbar2.addWidget(self.comboAAcolor)
-        self.toolbar2.addWidget(self.spin)
-        self.toolbar2.addWidget(self.rock)
-        self.toolbar2.addWidget(self.textpos)
-        self.toolbar2.addWidget(self.selectpos)
-        self.toolbar2.addWidget(self.selectmol)
+        text_pos = QLabel("position")
+        self.select_pos = QLineEdit("1")
+        self.select_pos.setFixedSize(80, 15)
+        self.select_pos.editingFinished.connect(self.update_position)
 
+        text_mol = QLabel("  mol name")
+        self.select_mol = QLineEdit("1crn")
+        self.select_mol.setFixedSize(80, 15)
+
+        self.toolbar_widgets.addWidget(self.combo_camera)
+        self.toolbar_widgets.addWidget(self.combo_representation)
+        self.toolbar_widgets.addWidget(self.combo_molcolor)
+        self.toolbar_widgets.addWidget(self.combo_AAcolor)
+        self.toolbar_widgets.addWidget(self.camera_type)
+        self.toolbar_widgets.addWidget(self.spin)
+        self.toolbar_widgets.addWidget(self.rock)
+        self.toolbar_widgets.addWidget(self.static)
+        self.toolbar_widgets.addWidget(text_pos)
+        self.toolbar_widgets.addWidget(self.select_pos)
+        self.toolbar_widgets.addWidget(text_mol)
+        self.toolbar_widgets.addWidget(self.select_mol)
+        self.toolbar_widgets.addWidget(self.button)
+        self.toolbar_widgets.addWidget(self.but_params)
+
+        # Widget to display stage parameters
+        self.stage_parameters = QGridLayout()
+        self.widget = QWidget()
+        self.widget.setLayout(self.stage_parameters)
+        self.setLayout(self.stage_parameters)
+
+    # init function used to create the QMainWindow
     def init(self) -> None:
         """init the value of ngl_Widget"""
 
-        self.view.position = self.selectpos.text()
-        self.view.representation = self.comborepresentation.currentText()
-        self.view.colormol = self.combomolcolor.currentText()
-        self.view.colorAA = self.comboAAcolor.currentText()
+        self.view.position = self.select_pos.text()
+        self.view.representation = self.combo_representation.currentText()
+        self.view.colormol = self.combo_molcolor.currentText()
+        self.view.colorAA = self.combo_AAcolor.currentText()
+        self.init_stage_parameter()
+
+    def init_stage_parameter(self) -> None:
+        """loads parameters value"""
+
+        self.parameters = {}
+        self.parameters_label = []
+        self.parameters_line = []
+        parameter = self.view.get_parameters()
+
+        for e in parameter:
+            label = QLabel(e)
+            self.stage_parameters.addWidget(label)
+            if type(parameter[e]) == str:
+                line = QLineEdit((parameter[e]))
+                line.setFixedSize(50, 15)
+                line.editingFinished.connect(self.update_stage_parameters)
+                self.stage_parameters.addWidget(line)
+
+            else:
+                line = QLineEdit((str(parameter[e])))
+                line.setFixedSize(50, 15)
+                line.editingFinished.connect(self.update_stage_parameters)
+                self.stage_parameters.addWidget(line)
+
+            self.parameters[e] = parameter[e]
+            self.parameters_label.append(label)
+            self.parameters_line.append(line)
+
+    # connected function
+    def open_parameters(self):
+        """show stage parameter in a new widget"""
+        self.widget.show()
 
     def on_charger(self) -> None:
         """set the correct value and load the molecule"""
-        self.view.filename = "rcsb://" + self.selectmol.text()
+        self.view.filename = "rcsb://" + self.select_mol.text()
         if not self.view.mol_loaded:
             self.init()
         if not self.view.sized:
             self.resize()
         self.view.load_mol()
 
-    def update_comborepresentation(self) -> None:
+    def update_combo_representation(self) -> None:
         """update the spin value and refresh"""
-        self.view.representation = self.comborepresentation.currentText()
+        self.view.representation = self.combo_representation.currentText()
         if self.view.mol_loaded:
             self.on_charger()
 
-    def update_combomolcolor(self) -> None:
+    def update_combo_molcolor(self) -> None:
         """update the color value and refresh"""
-        self.view.colormol = self.combomolcolor.currentText()
+        self.view.colormol = self.combo_molcolor.currentText()
         if self.view.mol_loaded:
             self.on_charger()
 
     def update_comboAAcolor(self) -> None:
         """update the color value and refresh"""
-        self.view.colorAA = self.comboAAcolor.currentText()
+        self.view.colorAA = self.combo_AAcolor.currentText()
         if self.view.mol_loaded:
             self.on_charger()
 
     def update_view(self) -> None:
         """update the view"""
-        if self.combocamera.currentText() == "global view":
+        if self.combo_camera.currentText() == "global view":
             self.view.focus_camera = False
             self.view.auto_view()
-        if self.combocamera.currentText() == "focus view":
+        if self.combo_camera.currentText() == "focus view":
             self.view.focus_camera = True
         self.view.focus_camera = self.view.bool_python_to_js(self.view.focus_camera)
         if self.view.mol_loaded:
@@ -647,13 +826,13 @@ class MainWindow(QMainWindow):
     def update_position(self) -> None:
         """update selected position
         doc : http://nglviewer.org/ngldev/api/manual/selection-language.html"""
-        self.view.position = self.selectpos.text()
+        self.view.position = self.select_pos.text()
         if self.view.mol_loaded:
             self.on_charger()
 
     def update_protein(self) -> None:
         """update selected protein"""
-        self.view.filename = "rcsb://" + self.selectmol.text()
+        self.view.filename = "rcsb://" + self.select_mol.text()
         if self.view.mol_loaded:
             self.on_charger()
 
@@ -667,15 +846,23 @@ class MainWindow(QMainWindow):
         if not (self.view.sized):
             self.view.sized = True
 
-    def update_controller(self) -> None:
-        """update controller"""
-        if not self.view.spin:
-            self.spin.setCheckState(Qt.CheckState(0))
+    def update_camera_type(self) -> None:
+        """update camera type"""
+        self.view.set_parameters({"cameraType": self.camera_type.currentText()})
 
-        if not self.view.rock:
-            self.rock.setCheckState(Qt.CheckState(0))
+    def update_stage_parameters(self) -> None:
+        for i in range(len(self.parameters_label)):
+            self.parameters[self.parameters_label[i].text()] = self.parameters_line[
+                i
+            ].text()
+        self.view.set_parameters(self.parameters)
 
-        print(self.view.spin, self.view.rock)
+    def test(self) -> None:
+        print(self.view.get_center())
+        print(self.view.get_parameters())
+        self.view.set_parameters({"cameraType": "perspective"})
+        self.view.set_parameters({"cameraType": "orthographic"})
+        self.view.set_parameters({"cameraType": "stereo"})
 
 
 if __name__ == "__main__":
