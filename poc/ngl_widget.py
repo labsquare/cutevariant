@@ -129,10 +129,12 @@ class NGLWidget(QWebEngineView):
         colorAA = "%s";
         protein = "%s";
         focus_camera = %s;
+        var component_collection = document.createElement("component");
 
         function structure_representation(component, position = position_prot, representation = representation_prot) {
             schememol = set_colorscheme(schememol, colormol);
             schemeAA = set_colorscheme(schemeAA, colorAA);
+            component_collection.add(component)
                 // bail out if the component does not contain a structure
             if (component.type !== "structure") return;
                 create_representation_scheme(component, "1", representation, "*", schememol);
@@ -156,6 +158,8 @@ class NGLWidget(QWebEngineView):
         self.handle_resize()
         print("molecule load")
         self.mol_loaded = True
+        component_collection = self.get_js("component_collection")
+        print(component_collection)
 
     def load_tools(self) -> None:
         """load constant and function for js"""
@@ -185,19 +189,7 @@ class NGLWidget(QWebEngineView):
                     opacity : opacity,
                 });
             return component
-            }
-
-                var shape = new NGL.Shape( "shape" );
-        var sphereBuffer = new NGL.SphereBuffer( {
-            position: new Float32Array( [ 0, 0, 0, 4, 0, 0 ] ),
-            color: new Float32Array( [ 1, 0, 0, 1, 1, 0 ] ),
-            radius: new Float32Array( [ 1, 1.2 ] )
-        } );
-        shape.addBuffer( sphereBuffer );
-        var shapeComp = stage.addComponentFromObject( shape );
-        shapeComp.addRepresentation( "buffer" );
-        
-    
+            };
         """
         )
         self.focus_camera = self.bool_python_to_js(self.focus_camera)
