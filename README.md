@@ -37,10 +37,19 @@ Cutevariant is avaible from [Pypi](https://pypi.org/project/cutevariant/) :
 ## From source 
 - Python 3.7 or newer is required  
 
-```
+```bash
+# Clone repository
 git clone https://github.com/labsquare/cutevariant.git
-make install_deps 
-make run 
+cd cutevariant
+# Create a virtual environement
+python3 -m virtualenv venv 
+source venv/bin/activate
+# Install cutevariant in local mode
+python -m pip install -e 
+# Run cutevariant as module 
+python -m cutevariant # or `make run`
+# Run test 
+python -m pytest tests
 ```
 
 ## Usages 
