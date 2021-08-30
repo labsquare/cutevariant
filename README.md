@@ -3,6 +3,7 @@
 **A standalone and free application to explore genetics variations from VCF file**
 
 A preprint is [available in bioRxiv](https://www.biorxiv.org/content/10.1101/2021.02.10.430619v1)
+Documentation available on [cutevariant.labsquare.org](cutevariant.labsquare.org/)
 
 [![Test](https://github.com/labsquare/cutevariant/actions/workflows/test.workflows.yml/badge.svg)](https://github.com/labsquare/cutevariant/actions/workflows/test.workflows.yml)
 
@@ -37,10 +38,19 @@ Cutevariant is avaible from [Pypi](https://pypi.org/project/cutevariant/) :
 ## From source 
 - Python 3.7 or newer is required  
 
-```
+```bash
+# Clone repository
 git clone https://github.com/labsquare/cutevariant.git
-make install_deps 
-make run 
+cd cutevariant
+# Create a virtual environement
+python3 -m virtualenv venv 
+source venv/bin/activate
+# Install cutevariant in local mode
+python -m pip install -e 
+# Run cutevariant as module 
+python -m cutevariant # or `make run`
+# Run test 
+python -m pytest tests
 ```
 
 ## Usages 
