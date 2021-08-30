@@ -209,7 +209,7 @@ class MainWindow(QMainWindow):
         action.setText(widget.windowTitle())
         self.view_menu.addAction(action)
 
-        # self.toolbar.addAction(action)
+        return dock
 
     def register_plugins(self):
         """Load all plugins to the window
@@ -279,7 +279,9 @@ class MainWindow(QMainWindow):
 
             # Set position on the GUI
             if plugin_widget_class.LOCATION == plugin.DOCK_LOCATION:
-                self.add_panel(widget)
+                dock = self.add_panel(widget)
+                # hide by default
+                dock.hide()
 
             if plugin_widget_class.LOCATION == plugin.CENTRAL_LOCATION:
                 self.central_tab.addTab(widget, widget.windowTitle())

@@ -14,7 +14,7 @@ cd cutevariant
 python3 -m virtualenv venv 
 source venv/bin/activate
 # Install cutevariant in local mode
-python -m pip install -e 
+python -m pip install -e .
 # Run cutevariant as module 
 python -m cutevariant # or `make run`
 # Run test 
