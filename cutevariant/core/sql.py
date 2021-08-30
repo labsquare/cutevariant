@@ -1289,6 +1289,11 @@ def create_annotations_indexes(conn, indexed_annotation_fields=None):
     if indexed_annotation_fields is None:
         return
     for field in indexed_annotation_fields:
+
+
+
+        LOGGER.debug(f"CREATE INDEX IF NOT EXISTS `idx_annotations_{field}` ON annotations (`{field}`)")
+
         conn.execute(
             f"CREATE INDEX IF NOT EXISTS `idx_annotations_{field}` ON annotations (`{field}`)"
         )

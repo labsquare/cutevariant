@@ -332,8 +332,14 @@ class FieldsModel(QStandardItemModel):
         if self._category == "variants":
             sql.create_variants_indexes(self.conn, {field_name})
         if self._category == "annotations":
+            # replace shortcut 
+            if field_name.startswith("ann."):
+                field_name = field_name.replace("ann.","")
             sql.create_annotations_indexes(self.conn, {field_name})
         if self._category == "samples":
+            # replace shortcut 
+            if field_name.startswith("samples."):
+                field_name = field_name.replace("samples.","")
             sql.create_samples_indexes(self.conn, {field_name})
 
         # Return True on success (i.e. the field is now in the index field)
