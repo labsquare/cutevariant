@@ -126,6 +126,7 @@ class MainWindow(QMainWindow):
         # Setup Central widget
         self.central_tab = QTabWidget()
         self.footer_tab = QTabWidget()
+        self.footer_tab.setTabPosition(QTabWidget.South)
         self.vsplit = QSplitter(Qt.Vertical)
         self.vsplit.addWidget(self.central_tab)
         self.vsplit.addWidget(self.footer_tab)
