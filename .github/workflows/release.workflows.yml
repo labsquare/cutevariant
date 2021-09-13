@@ -2,10 +2,10 @@ name: Release
 
   
 # when it active ? 
-on: 
-  push:
-    tags:
-      - '*'
+on: push 
+  #push:
+    # tags:
+    #   - '*'
 
 jobs:
   # WINDOWS JOB 
