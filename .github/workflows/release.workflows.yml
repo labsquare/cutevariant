@@ -41,13 +41,18 @@ jobs:
           files: dist/
           dest: cutevariant-standalone-${{matrix.architecture}}.zip
 
-      - name: Publish 
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Create installer
+        uses: joncloud/makensis-action@v3.6
         with:
-          files: '*.zip'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          script-file: setup.nsi
+
+      # - name: Publish 
+      #   uses: softprops/action-gh-release@v1
+      #   if: startsWith(github.ref, 'refs/tags/')
+      #   with:
+      #     files: '*.zip'
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 
       # - name: Upload
