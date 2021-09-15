@@ -37,6 +37,39 @@ import cutevariant.commons as cm
 from cutevariant import LOGGER
 
 
+class VariantVerticalHeader(QHeaderView):
+    def __init__(self, parent=None):
+        super().__init__(Qt.Vertical, parent)
+
+    def sizeHint(self):
+        return QSize(30, super().sizeHint().height())
+
+    def paintSection(self, painter: QPainter, rect: QRect, section: int):
+
+        if painter is None:
+            return
+
+        painter.save()
+        super().paintSection(painter, rect, section)
+
+        favorite = self.model().variant(section)["favorite"]
+        classification = self.model().variant(section)["classification"]
+
+        painter.restore()
+        color = style.CLASSIFICATION[classification].get("color")
+
+        pen = QPen(QColor(style.CLASSIFICATION[classification].get("color")))
+        pen.setWidth(6)
+        painter.setPen(pen)
+        painter.setBrush(QBrush(style.CLASSIFICATION[classification].get("color")))
+        painter.drawLine(rect.left(), rect.top() + 1, rect.left(), rect.bottom() - 1)
+
+        pix = FIcon(0xF00C1 if favorite else 0xF00C3, "#3daee9").pixmap(20, 20)
+        target = rect.center() - pix.rect().center() + QPoint(1, 0)
+
+        painter.drawPixmap(target, pix)
+
+
 class VariantModel(QAbstractTableModel):
     """VariantModel is a Qt model class which contains variant data from SQL DB.
 
@@ -289,6 +322,24 @@ class VariantModel(QAbstractTableModel):
 
             if role == Qt.SizeHintRole:
                 return QSize(0, 20)
+
+        # if orientation == Qt.Vertical:
+        #     if role == Qt.DecorationRole:
+
+        #         pix = QPixmap(32, 32)
+        #         pix.fill(QColor("white"))
+        #         # pix.fill(Qt.transparent)
+        #         painter = QPainter()
+        #         painter.begin(pix)
+        #         pen = QPen(QColor("red"))
+        #         pen.setWidth(20)
+        #         painter.setPen(pen)
+        #         painter.drawLine(-2, -10, -2, 30)
+        #         painter.drawPixmap(0, 0, FIcon(0xF0ACD).pixmap(40, 40))
+        #         painter.end()
+        #         fav = self.variants[section]["favorite"]
+        #         return QIcon(pix)
+        #         # return QIcon(FIcon(0xF0ACD)) if fav else QIcon(FIcon(0xF0ACE))
 
     def update_variant(self, row: int, variant: dict):
         """Update a variant at the given row with given content
@@ -764,7 +815,7 @@ class VariantView(QWidget):
         self.view.setAlternatingRowColors(True)
         self.view.horizontalHeader().setStretchLastSection(True)
         self.view.setSelectionMode(QAbstractItemView.SingleSelection)
-        self.view.verticalHeader().hide()
+        self.view.setVerticalHeader(VariantVerticalHeader())
 
         self.view.setSortingEnabled(True)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
