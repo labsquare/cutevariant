@@ -365,6 +365,7 @@ class VariantModel(QAbstractTableModel):
                 sql.update_variant(self.conn, variant)
                 self.variants[row].update(variant)
                 self.dataChanged.emit(left, right)
+                self.headerDataChanged.emit(Qt.Vertical, left, right)
 
     def find_row_id_from_variant_id(self, variant_id: int) -> list:
         """Find the ids of all rows with the same given variant_id
