@@ -123,6 +123,7 @@ class VariantModel(QAbstractTableModel):
         self.fields_descriptions = None
 
         self.fields = ["chr", "pos", "ref", "alt", "ann.gene"]
+        self._extra_fields = ["classification", "favorite"]
 
         self.filters = dict()
         self.source = "variants"
@@ -454,10 +455,12 @@ class VariantModel(QAbstractTableModel):
         self._finished_thread_count = 0
         # LOGGER.debug("Page queried: %s", self.page)
 
+        query_fields = set(self.fields + self._extra_fields)
+
         # Store SQL query for debugging purpose
         self.debug_sql = build_sql_query(
             self.conn,
-            fields=self.fields,
+            fields=query_fields,
             source=self.source,
             filters=self.filters,
             limit=self.limit,
@@ -472,7 +475,7 @@ class VariantModel(QAbstractTableModel):
         # Create load_func to run asynchronously: load variants
         load_func = functools.partial(
             cmd.select_cmd,
-            fields=self.fields,
+            fields=query_fields,
             source=self.source,
             filters=self.filters,
             limit=self.limit,
@@ -486,7 +489,7 @@ class VariantModel(QAbstractTableModel):
         # Create count_func to run asynchronously: count variants
         count_function = functools.partial(
             cmd.count_cmd,
-            fields=self.fields,
+            fields=query_fields,
             source=self.source,
             filters=self.filters,
             group_by=self.group_by,
@@ -546,6 +549,8 @@ class VariantModel(QAbstractTableModel):
         if self.variants:
             # Set headers of the view
             self.headers = list(self.variants[0].keys())
+            # Hide extra fields
+            self.headers = self.fields
 
         # self.total = self._load_count_thread.results["count"]
 
