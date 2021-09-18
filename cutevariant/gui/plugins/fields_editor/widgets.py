@@ -11,17 +11,98 @@ import re
 from PySide2.QtWidgets import *
 from PySide2.QtCore import *
 from PySide2.QtGui import *
-from cutevariant import config
+from cutevariant.config import Config
 
 from cutevariant.gui import plugin, FIcon, style
 from cutevariant.gui.mainwindow import MainWindow
 from cutevariant.core import sql
-from cutevariant.config import Config
 
 
 import cutevariant.commons as cm
 
 from cutevariant import LOGGER
+
+
+
+class FieldsListDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__()
+
+        self.view = QListWidget()
+        self.name_edit = QLineEdit()
+        self.button_box = QDialogButtonBox(QDialogButtonBox.Save|QDialogButtonBox.Cancel)
+        self.add_button = QToolButton()
+        self.rem_button = QToolButton()
+        self.up_button = QToolButton()
+        self.down_button = QToolButton()
+        self.name_edit.setPlaceholderText("Preset name ")
+        self.add_button.setText("+")
+        self.rem_button.setText("-")
+        self.up_button.setText("▲")
+        self.down_button.setText("▼")
+
+        self.add_button.setAutoRaise(True)
+        self.rem_button.setAutoRaise(True)
+        self.up_button.setAutoRaise(True)
+        self.down_button.setAutoRaise(True)
+
+        self.view.setDragDropMode(QAbstractItemView.InternalMove)
+
+        self.up_button.clicked.connect(self.move_up)
+        self.down_button.clicked.connect(self.move_down)
+
+        self.view.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        vLayout = QVBoxLayout()
+
+        tool_layout = QHBoxLayout()
+
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        tool_layout.addWidget(self.add_button)
+        tool_layout.addWidget(self.rem_button)
+        tool_layout.addWidget(spacer)
+        tool_layout.addWidget(self.up_button)
+        tool_layout.addWidget(self.down_button)
+
+        vLayout.addWidget(self.name_edit)
+        vLayout.addWidget(self.view)
+        vLayout.addLayout(tool_layout)
+        vLayout.addWidget(self.button_box)
+        self.load()
+
+        self.setLayout(vLayout)
+
+    def load(self, preset_name = "sacha"):
+        config = Config("fields_editor")
+        presets = config.get("presets")
+        if preset_name in presets:
+            self.fields = presets[preset_name]
+            self.view.addItems(self.fields)
+
+    def move_up(self):
+        row = self.view.currentRow()
+        if row <= 0:
+            return 
+
+        item = self.view.takeItem(row-1) 
+        self.view.insertItem( row, item)
+
+    def move_down(self):
+        row = self.view.currentRow()
+        if row > self.view.count() -1:
+            return
+        item = self.view.takeItem(row+1) 
+        self.view.insertItem( row, item)
+
+
+
+
+    def save(self):
+        pass
+
+
 
 
 def prepare_fields_for_editor(conn):
@@ -906,11 +987,14 @@ if __name__ == "__main__":
     import_reader(conn, FakeReader())
     # import_file(conn, "examples/test.snpeff.vcf")
 
-    widget = FieldsEditorWidget()
-    widget.on_open_project(conn)
+    # widget = FieldsEditorWidget()
+    # widget.on_open_project(conn)
 
-    # view.changed.connect(lambda : print(view.columns))
+    # # view.changed.connect(lambda : print(view.columns))
 
-    widget.show()
+    # widget.show()
+
+    w = FieldsListDialog()
+    w.show()
 
     app.exec_()
