@@ -33,7 +33,7 @@ def test_plugin(conn, qtbot):
         sql.get_field_by_category(conn, "samples")
     ) * len(list(sql.get_samples(conn)))
 
-    checked_fields = [
+    fields = [
         "chr",
         "pos",
         "ann.gene",
@@ -41,10 +41,10 @@ def test_plugin(conn, qtbot):
         "samples.TUMOR.gt",
         "samples.NORMAL.gt",
     ]
-    plugin.widget_fields.checked_fields = checked_fields
-    assert len(plugin.widget_fields.views[0]["model"].checked_fields) == 2
-    assert len(plugin.widget_fields.views[1]["model"].checked_fields) == 2
-    assert len(plugin.widget_fields.views[2]["model"].checked_fields) == 2
+    plugin.widget_fields.fields = fields
+    assert len(plugin.widget_fields.views[0]["model"].fields) == 2
+    assert len(plugin.widget_fields.views[1]["model"].fields) == 2
+    assert len(plugin.widget_fields.views[2]["model"].fields) == 2
 
 
 def test_presets_model(qtmodeltester):
@@ -110,36 +110,69 @@ def test_preset_dialog(conn, qtbot):
     config.save()
 
 
-# def test_model_load(qtmodeltester, conn):
+def test_fields_model(qtmodeltester, conn, qtbot):
 
-#     model = widgets.FieldsModel()
-#     model.conn = conn
-#     model.load()
-#     qtmodeltester.check(model)
+    model = widgets.FieldsModel()
+    model.conn = conn
 
-#     #  check categories
-#     assert model.item(0).text() == "variants"
-#     assert model.item(1).text() == "annotations"
-#     assert model.item(2).text() == "samples"
+    # Load variant categories
+    model.category = "variants"
+    model.load()
+    assert model.rowCount() == len(sql.get_field_by_category(conn, model.category))
 
-#     #  Check first element of the variants ( should be favorite)
-#     assert model.item(0).child(0).text() == "favorite"
+    # Load annotations categories
+    model.category = "annotations"
+    model.load()
+    assert model.rowCount() == len(sql.get_field_by_category(conn, model.category))
 
-#     #  test uncheck
-#     assert model.item(0).child(0).checkState() == QtCore.Qt.Unchecked
-#     assert model.checked_fields == []
+    # Load samples categories ! Not ( you must repeat fields per samples)
+    model.category = "samples"
+    model.load()
+    sample_count = len(list(sql.get_samples(conn)))
+    fields_count = len(sql.get_field_by_category(conn, model.category))
+    assert model.rowCount() == sample_count * fields_count
 
-#     # test check
-#     model.item(0).child(0).setCheckState(QtCore.Qt.Checked)
-#     assert model.checked_fields == ["favorite"]
+    # check fields
+    model.category = "variants"
+    model.load()
 
-#     # Test serialisation
-#     _, file = tempfile.mkstemp(suffix=".cutevariant-filter")
-#     model.to_file(file)
-#     # Reset model and check if it is unchecked
-#     model.load()
-#     assert model.item(0).child(0).checkState() == QtCore.Qt.Unchecked
+    fields = ["chr", "pos", "ref"]
+    model.fields = fields
 
-#     #  Load from serialize
-#     model.from_file(file)
-#     assert model.item(0).child(0).checkState() == QtCore.Qt.Checked
+    for item in model.get_checked_items():
+        assert item.text() in fields
+
+    # check item 20
+    assert len(model.fields) == 3
+
+    with qtbot.waitSignal(model.fields_changed, timeout=10000) as blocker:
+        model.item(1).setCheckState(QtCore.Qt.Checked)
+
+    assert len(model.fields) == 4
+
+    # #  check categories
+    # assert model.item(0).text() == "variants"
+    # assert model.item(1).text() == "annotations"
+    # assert model.item(2).text() == "samples"
+
+    # #  Check first element of the variants ( should be favorite)
+    # assert model.item(0).child(0).text() == "favorite"
+
+    # #  test uncheck
+    # assert model.item(0).child(0).checkState() == QtCore.Qt.Unchecked
+    # assert model.checked_fields == []
+
+    # # test check
+    # model.item(0).child(0).setCheckState(QtCore.Qt.Checked)
+    # assert model.checked_fields == ["favorite"]
+
+    # # Test serialisation
+    # _, file = tempfile.mkstemp(suffix=".cutevariant-filter")
+    # model.to_file(file)
+    # # Reset model and check if it is unchecked
+    # model.load()
+    # assert model.item(0).child(0).checkState() == QtCore.Qt.Unchecked
+
+    # #  Load from serialize
+    # model.from_file(file)
+    # assert model.item(0).child(0).checkState() == QtCore.Qt.Checked
