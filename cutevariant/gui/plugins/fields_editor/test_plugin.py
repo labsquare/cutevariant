@@ -11,6 +11,7 @@ from tests import utils
 
 from cutevariant.gui.plugins.fields_editor import widgets
 from cutevariant.core import sql
+from cutevariant.config import Config
 
 
 @pytest.fixture
@@ -72,6 +73,41 @@ def test_presets_model(qtmodeltester):
     qtmodeltester.check(model)
 
     os.remove(filename)
+
+
+def test_preset_dialog(conn, qtbot):
+
+    w = widgets.PresetsDialog("test_preset")
+
+    qtbot.addWidget(w)
+    config = Config("fields_editor")
+    preset = {"test_preset": ["chr", "pos", "ref", "alt", "ann.gene"]}
+    config["presets"] = preset
+    config.save()
+
+    w.load()
+
+    assert sorted(w.fields) == sorted(preset["test_preset"])
+
+    # Add extra fields and save
+    w.fields += ["ann.impact"]
+    w.save()
+
+    # Load config to see if the saving has occurs
+    config.load()
+    assert config["presets"]["test_preset"] == preset["test_preset"] + ["ann.impact"]
+
+    # Test moving fields ...
+    w.view.setCurrentRow(0)
+    w.move_down()
+    assert w.fields == ["pos", "chr", "ref", "alt", "ann.gene", "ann.impact"]
+
+    w.view.setCurrentRow(5)
+    [w.move_up() for i in range(5)]
+    assert w.fields == ["ann.impact", "pos", "chr", "ref", "alt", "ann.gene"]
+
+    del config["presets"]["test_preset"]
+    config.save()
 
 
 # def test_model_load(qtmodeltester, conn):

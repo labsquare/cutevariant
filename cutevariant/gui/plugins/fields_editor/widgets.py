@@ -23,14 +23,106 @@ import cutevariant.commons as cm
 from cutevariant import LOGGER
 
 
+class FieldsPresetModel(QAbstractListModel):
+    def __init__(self, config_path=None, parent: QObject = None) -> None:
+        super().__init__(parent=parent)
+        self.config_path = config_path
+        self._presets = []
 
-class FieldsListDialog(QDialog):
-    def __init__(self, parent=None):
+    def data(self, index: QModelIndex, role: int) -> typing.Any:
+        if role == Qt.DisplayRole or role == Qt.EditRole:
+            if index.row() >= 0 and index.row() < self.rowCount():
+                return self._presets[index.row()][0]
+        if role == Qt.UserRole:
+            if index.row() >= 0 and index.row() < self.rowCount():
+                return self._presets[index.row()][1]
+
+        return
+
+    def setData(self, index: QModelIndex, value: str, role: int) -> bool:
+        """Renames the preset
+        The content is read-only from the model's point of view
+        Args:
+            index (QModelIndex): [description]
+            value (str): [description]
+            role (int): [description]
+        Returns:
+            bool: True on success
+        """
+        if role == Qt.EditRole:
+            self._presets[index.row()] = (value, self._presets[index.row()][1])
+            return True
+        else:
+            return False
+
+    def flags(self, index: QModelIndex) -> Qt.ItemFlags:
+        if not index.isValid():
+            return Qt.NoItemFlags
+        return super().flags(index) | Qt.ItemIsEditable
+
+    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
+        return len(self._presets)
+
+    def add_preset(self, name: str, fields: list):
+        """Add fields preset
+        Args:
+            name (str): preset name
+            fields (list): list of field names
+        """
+        self.beginInsertRows(QModelIndex(), 0, 0)
+        self._presets.insert(0, (name, fields))
+        self.endInsertRows()
+
+    def rem_presets(self, indexes: List[int]):
+        indexes.sort(reverse=True)
+        self.beginResetModel()
+        for idx in indexes:
+            del self._presets[idx]
+        self.endResetModel()
+
+    def load(self):
+        self.beginResetModel()
+        config = Config("fields_editor")
+        presets = config.get("presets", {})
+        self._presets = [
+            (preset_name, fields) for preset_name, fields in presets.items()
+        ]
+        self.endResetModel()
+
+    def save(self):
+        config = Config("fields_editor", self.config_path)
+        config["presets"] = {
+            preset_name: fields for preset_name, fields in self._presets
+        }
+        config.save()
+
+    def clear(self):
+        self.beginResetModel()
+        self._presets.clear()
+        self.endResetModel()
+
+    def preset_names(self):
+        return [p[0] for p in self._presets]
+
+
+class PresetsDialog(QDialog):
+
+    """A dialog box to dispay and order fields from a preset config
+
+    dialog = PresetsDialog()
+    dialog.load()
+
+    """
+
+    def __init__(self, preset_name="test_preset", parent=None):
         super().__init__()
 
+        self.setWindowTitle(self.tr("Edit Fields preset"))
         self.view = QListWidget()
         self.name_edit = QLineEdit()
-        self.button_box = QDialogButtonBox(QDialogButtonBox.Save|QDialogButtonBox.Cancel)
+        self.button_box = QDialogButtonBox(
+            QDialogButtonBox.Save | QDialogButtonBox.Cancel
+        )
         self.add_button = QToolButton()
         self.rem_button = QToolButton()
         self.up_button = QToolButton()
@@ -70,39 +162,77 @@ class FieldsListDialog(QDialog):
         vLayout.addWidget(self.view)
         vLayout.addLayout(tool_layout)
         vLayout.addWidget(self.button_box)
-        self.load()
 
         self.setLayout(vLayout)
 
-    def load(self, preset_name = "sacha"):
+        self.preset_name = preset_name
+
+        self.button_box.accepted.connect(self._save_and_close)
+        self.button_box.rejected.connect(self.reject)
+
+    @property
+    def preset_name(self):
+        return self.name_edit.text()
+
+    @preset_name.setter
+    def preset_name(self, name):
+        """ Set preset name and load preset """
+        self.name_edit.setText(name)
+        self.load()
+
+    def _save_and_close(self):
+        self.save()
+        self.accept()
+
+    def load(self):
+        """Load preset `preset_name` from config
+
+        Load preset from the config file
+
+        Args:
+            preset_name (str): The preset key name
+        """
         config = Config("fields_editor")
         presets = config.get("presets")
-        if preset_name in presets:
-            self.fields = presets[preset_name]
-            self.view.addItems(self.fields)
+        if self.preset_name in presets:
+            fields = presets[self.preset_name]
+            self.fields = fields
+
+    def save(self):
+        """Save fields in config"""
+        config = Config("fields_editor")
+        presets = config["presets"]
+        presets[self.preset_name] = self.fields
+        config["presets"] = presets
+        config.save()
+
+    @property
+    def fields(self):
+        items = []
+        for row in range(self.view.count()):
+            items.append(self.view.item(row).text())
+
+        return items
+
+    @fields.setter
+    def fields(self, fields):
+        self.view.clear()
+        self.view.addItems(fields)
 
     def move_up(self):
         row = self.view.currentRow()
         if row <= 0:
-            return 
+            return
 
-        item = self.view.takeItem(row-1) 
-        self.view.insertItem( row, item)
+        item = self.view.takeItem(row - 1)
+        self.view.insertItem(row, item)
 
     def move_down(self):
         row = self.view.currentRow()
-        if row > self.view.count() -1:
+        if row > self.view.count() - 1:
             return
-        item = self.view.takeItem(row+1) 
-        self.view.insertItem( row, item)
-
-
-
-
-    def save(self):
-        pass
-
-
+        item = self.view.takeItem(row + 1)
+        self.view.insertItem(row, item)
 
 
 def prepare_fields_for_editor(conn):
@@ -157,91 +287,6 @@ def prepare_fields_for_editor(conn):
                 }
 
     return results
-
-
-class FieldsPresetModel(QAbstractListModel):
-    def __init__(self, config_path=None, parent: QObject = None) -> None:
-        super().__init__(parent=parent)
-        self.config_path = config_path
-        self._presets = []
-
-    def data(self, index: QModelIndex, role: int) -> typing.Any:
-        if role == Qt.DisplayRole or role == Qt.EditRole:
-            if index.row() >= 0 and index.row() < self.rowCount():
-                return self._presets[index.row()][0]
-        if role == Qt.UserRole:
-            if index.row() >= 0 and index.row() < self.rowCount():
-                return self._presets[index.row()][1]
-
-        return
-
-    def setData(self, index: QModelIndex, value: str, role: int) -> bool:
-        """Renames the preset
-        The content is read-only from the model's point of view
-
-        Args:
-            index (QModelIndex): [description]
-            value (str): [description]
-            role (int): [description]
-
-        Returns:
-            bool: True on success
-        """
-        if role == Qt.EditRole:
-            self._presets[index.row()] = (value, self._presets[index.row()][1])
-            return True
-        else:
-            return False
-
-    def flags(self, index: QModelIndex) -> Qt.ItemFlags:
-        if not index.isValid():
-            return Qt.NoItemFlags
-        return super().flags(index) | Qt.ItemIsEditable
-
-    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
-        return len(self._presets)
-
-    def add_preset(self, name: str, fields: list):
-        """Add fields preset
-
-        Args:
-            name (str): preset name
-            fields (list): list of field names
-        """
-        self.beginInsertRows(QModelIndex(), 0, 0)
-        self._presets.insert(0, (name, fields))
-        self.endInsertRows()
-
-    def rem_presets(self, indexes: List[int]):
-        indexes.sort(reverse=True)
-        self.beginResetModel()
-        for idx in indexes:
-            del self._presets[idx]
-        self.endResetModel()
-
-    def load(self):
-        self.beginResetModel()
-        config = Config("fields_editor")
-        presets = config.get("presets", {})
-        self._presets = [
-            (preset_name, fields) for preset_name, fields in presets.items()
-        ]
-        self.endResetModel()
-
-    def save(self):
-        config = Config("fields_editor", self.config_path)
-        config["presets"] = {
-            preset_name: fields for preset_name, fields in self._presets
-        }
-        config.save()
-
-    def clear(self):
-        self.beginResetModel()
-        self._presets.clear()
-        self.endResetModel()
-
-    def preset_names(self):
-        return [p[0] for p in self._presets]
 
 
 class FieldsModel(QStandardItemModel):
@@ -413,14 +458,14 @@ class FieldsModel(QStandardItemModel):
         if self._category == "variants":
             sql.create_variants_indexes(self.conn, {field_name})
         if self._category == "annotations":
-            # replace shortcut 
+            # replace shortcut
             if field_name.startswith("ann."):
-                field_name = field_name.replace("ann.","")
+                field_name = field_name.replace("ann.", "")
             sql.create_annotations_indexes(self.conn, {field_name})
         if self._category == "samples":
-            # replace shortcut 
+            # replace shortcut
             if field_name.startswith("samples."):
-                field_name = field_name.replace("samples.","")
+                field_name = field_name.replace("samples.", "")
             sql.create_samples_indexes(self.conn, {field_name})
 
         # Return True on success (i.e. the field is now in the index field)
@@ -479,6 +524,9 @@ class FieldsWidget(QWidget):
     def __init__(self, conn: sqlite3.Connection = None, parent=None):
         super().__init__(parent)
         self.tab_widget = QTabWidget(self)
+        self.tab_widget.setTabPosition(QTabWidget.South)
+        self.tab_widget.tabBar().setDocumentMode(True)
+        self.tab_widget.tabBar().setExpanding(True)
 
         self.views = []
 
@@ -752,35 +800,6 @@ class FieldsWidget(QWidget):
                 )
 
 
-class PresetButton(QToolButton):
-    """A toolbutton that works with a drop down menu filled with a model"""
-
-    preset_clicked = Signal(QAction)
-
-    def __init__(self, parent: QWidget = None) -> None:
-        super().__init__(parent=parent)
-        self._menu = QMenu(self.tr("Presets"), self)
-        self._menu.triggered.connect(self.preset_clicked)
-        self.setPopupMode(QToolButton.InstantPopup)
-        self._model: QAbstractItemModel = None
-        self.setMenu(self._menu)
-        self.setText(self.tr("Presets"))
-
-    def set_model(self, model: QAbstractItemModel):
-        self._model = model
-
-    def mousePressEvent(self, arg__1: QMouseEvent) -> None:
-        if self._model:
-            self._menu.clear()
-            for i in range(self._model.rowCount()):
-                index = self._model.index(i, 0)
-                preset_name = index.data(Qt.DisplayRole)
-                fields = index.data(Qt.UserRole)
-                act: QAction = self._menu.addAction(preset_name)
-                act.setData(fields)
-        return super().mousePressEvent(arg__1)
-
-
 class FieldsEditorWidget(plugin.PluginWidget):
     """Display all fields according categories
 
@@ -799,93 +818,119 @@ class FieldsEditorWidget(plugin.PluginWidget):
 
     def __init__(self, conn=None, parent=None):
         super().__init__(parent)
+
         self.setWindowIcon(FIcon(0xF08DF))
 
-        self.toolbar = QToolBar(self)
-        self.widget_fields = FieldsWidget(conn, parent)
+        # Create toolbar with search
+        self.tool_layout = QHBoxLayout()
 
         # Setup Toolbar
-        self.toolbar.setIconSize(QSize(16, 16))
-        self.toolbar.setToolButtonStyle(Qt.ToolButtonIconOnly)
+        # self.toolbar.setIconSize(QSize(16, 16))
+        # self.toolbar.setToolButtonStyle(Qt.ToolButtonIconOnly)
+        # self.toolbar.layout().setContentsMargins(0, 0, 0, 0)
+        # Setup preset combo
+        self.presets_combo = QComboBox()
+        self.presets_combo.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        self.presets_combo.currentIndexChanged.connect(self.on_select_preset)
+        self.tool_layout.addWidget(self.presets_combo)
 
-        # Create search bar
+        # Add button
+        add_button = QToolButton()
+        add_button.setIcon(FIcon(0xF0415))
+        add_button.setText("Add")
+        add_button.clicked.connect(self.on_save_preset)
+        self.tool_layout.addWidget(add_button)
+
+        # Edit button
+        edit_button = QToolButton()
+        edit_button.setIcon(FIcon(0xF0900))
+        edit_button.setText("edit")
+        edit_button.clicked.connect(self.on_edit_preset)
+        self.tool_layout.addWidget(edit_button)
+
+        # delete button
+        delete_button = QToolButton()
+        delete_button.setIcon(FIcon(0xF0156, QColor("red")))
+        delete_button.setText("edit")
+        delete_button.clicked.connect(self.on_delete_preset)
+
+        self.tool_layout.addWidget(delete_button)
+        ## Create fields view
+        self.widget_fields = FieldsWidget(conn, parent)
+
+        ## Create search bar
         self.search_edit = QLineEdit()
         self.search_edit.setPlaceholderText(self.tr("Search by keywords... "))
         self.search_edit.textChanged.connect(self.widget_fields.update_filter)
-        self.search_edit.setVisible(False)
+        self.search_edit.setVisible(True)
         clean_action = self.search_edit.addAction(
             FIcon(0xF015A), QLineEdit.TrailingPosition
         )
         clean_action.triggered.connect(self.search_edit.clear)
 
-        # setup button_layout
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(self.toolbar)
-        layout.addWidget(self.widget_fields)
-        layout.addWidget(self.search_edit)
-
-        self.search_action = self.toolbar.addAction(FIcon(0xF0349), "Search")
-        self.search_action.setCheckable(True)
-        self.search_action.setToolTip(self.tr("Search for a fields"))
-        self.search_action.toggled.connect(lambda x: self.toggle_search_bar(x))
-        self.show_check_action = self.toolbar.addAction(
-            FIcon(0xF0C51), "show checked only"
-        )
-        self.show_check_action.setCheckable(True)
-        self.show_check_action.setToolTip(self.tr("Show checked fields only"))
-        self.show_check_action.toggled.connect(lambda x: self.toggle_checked(x))
-        # Create exclusive actions
-        actions = QActionGroup(self)
-        actions.addAction(self.search_action)
-        actions.addAction(self.show_check_action)
-        actions.setExclusionPolicy(QActionGroup.ExclusionPolicy.ExclusiveOptional)
-
-        # Create spacer
-        spacer = QWidget()
-        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.toolbar.addWidget(spacer)
-
-        # Create preset combobox with actions
-        self.toolbar.addSeparator()
-
-        # Presets model
-        self.presets_model = FieldsPresetModel(parent=self)
-
-        self.update_presets()
-
-        # Preset toolbutton
-
-        self.presets_button = PresetButton(self)
-        self.presets_button.set_model(self.presets_model)
-        self.presets_button.preset_clicked.connect(self.on_select_preset)
-
-        self.toolbar.addWidget(self.presets_button)
-
-        # Save button
-        self.save_action = self.toolbar.addAction(self.tr("Save Preset"))
-        self.save_action.setIcon(FIcon(0xF0818))
-        self.save_action.triggered.connect(self.on_save_preset)
-        self.save_action.setToolTip(self.tr("Save as a new Preset"))
-
-        self.toolbar.addSeparator()
-
-        # Create apply action
-        apply_action = self.toolbar.addAction(self.tr("Apply"))
-        self.apply_button = self.toolbar.widgetForAction(apply_action)
+        ## Create apply button
+        self.apply_button = QPushButton(self.tr("Apply"))
         self.apply_button.setIcon(FIcon(0xF0E1E, "white"))
         self.apply_button.setStyleSheet("background-color: #038F6A; color:white")
-        self.apply_button.setAutoRaise(False)
-        self.apply_button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         self.apply_button.pressed.connect(self.on_apply)
+
+        # setup button_layout
+        main_layout = QVBoxLayout(self)
+        # layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.addLayout(self.tool_layout)
+        main_layout.addWidget(self.search_edit)
+        main_layout.addWidget(self.widget_fields)
+        main_layout.addWidget(self.apply_button)
 
         self.setFocusPolicy(Qt.ClickFocus)
 
-    def update_presets(self):
+    def load_presets(self):
         """Refresh self's preset model
         This method should be called by __init__ and on refresh
         """
-        self.presets_model.load()
+
+        self.presets_combo.clear()
+        config = Config("fields_editor")
+        presets = config["presets"]
+        for name, fields in presets.items():
+            LOGGER.error(fields)
+            self.presets_combo.addItem(name, fields)
+
+    def on_delete_preset(self):
+        name = self.presets_combo.currentText()
+
+        ret = QMessageBox.warning(
+            self,
+            self.tr("Remove preset"),
+            self.tr(f"Are you sure you want to delete preset {name}"),
+            QMessageBox.Yes | QMessageBox.No,
+        )
+
+        if ret == QMessageBox.No:
+            return
+
+        config = Config("fields_editor")
+        presets = config["presets"]
+        if name in presets:
+            del presets[name]
+            config.save()
+            self.load_presets()
+
+    def on_save_preset(self):
+
+        w = PresetsDialog()
+        w.preset_name = "No name"
+        w.fields = self.widget_fields.checked_fields
+        if w.exec_():
+            self.load_presets()
+
+    def on_edit_preset(self):
+
+        name = self.presets_combo.currentText()
+        if name:
+            w = PresetsDialog()
+            w.preset_name = name
+            w.exec_()
 
     def toggle_search_bar(self, show=True):
         """Make search bar visible or not
@@ -907,38 +952,15 @@ class FieldsEditorWidget(plugin.PluginWidget):
         """
         self.widget_fields.show_checked_only(show)
 
-    def on_save_preset(self):
-        """Save preset a file into the default directory"""
-
-        # So we don't accidentally save a preset that has not been applied yet...
-        self.on_apply()
-
-        name, ok = QInputDialog.getText(
-            self,
-            self.tr("Input dialog"),
-            self.tr("Preset name:"),
-            QLineEdit.Normal,
-            QDir.home().dirName(),
-        )
-        i = 1
-        while name in self.presets_model.preset_names():
-            name = re.sub(r"\(\d+\)", "", name) + f" ({i})"
-            i += 1
-
-        if ok:
-            self.mainwindow: MainWindow
-            self.presets_model.add_preset(
-                name, self.mainwindow.get_state_data("fields")
-            )
-            self.presets_model.save()
-
-    def on_select_preset(self, action: QAction):
+    def on_select_preset(self):
         """Activate when preset has changed from preset_combobox"""
         # TODO Should be
         # self.mainwindow.set_state_data("fields",action.data())
         # self.mainwindow.refresh_plugins(sender=self)
-        self.widget_fields.checked_fields = action.data()
-        self.on_apply()
+
+        LOGGER.error(self.presets_combo.currentData())
+        self.widget_fields.checked_fields = self.presets_combo.currentData()
+        self.on_apply(self.presets_combo.currentData())
 
     def on_open_project(self, conn):
         """Overrided from PluginWidget"""
@@ -951,9 +973,9 @@ class FieldsEditorWidget(plugin.PluginWidget):
             self._is_refreshing = True
             self.widget_fields.checked_fields = self.mainwindow.get_state_data("fields")
             self._is_refreshing = False
-        self.update_presets()
+        self.load_presets()
 
-    def on_apply(self):
+    def on_apply(self, fields=None):
         if self.mainwindow is None or self._is_refreshing:
             """
             Debugging (no window)
@@ -961,7 +983,9 @@ class FieldsEditorWidget(plugin.PluginWidget):
             LOGGER.debug(self.widget_fields.checked_fields)
             return
 
-        self.mainwindow.set_state_data("fields", self.widget_fields.checked_fields)
+        fields = self.widget_fields.checked_fields if fields is None else fields
+
+        self.mainwindow.set_state_data("fields", fields)
         self.mainwindow.refresh_plugins(sender=self)
 
     def to_json(self):
@@ -994,7 +1018,7 @@ if __name__ == "__main__":
 
     # widget.show()
 
-    w = FieldsListDialog()
+    w = PresetsDialog()
     w.show()
 
     app.exec_()
