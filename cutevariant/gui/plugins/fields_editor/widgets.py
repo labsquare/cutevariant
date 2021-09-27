@@ -296,7 +296,7 @@ class FieldsModel(QStandardItemModel):
     """
 
     fields_loaded = Signal()
-    fields_changed = Signal()
+    field_checked = Signal(str, bool)
 
     def __init__(
         self, conn: sqlite3.Connection = None, category="variants", parent=None
@@ -306,8 +306,7 @@ class FieldsModel(QStandardItemModel):
         self._checkable_items = []
         self.category = category
         self.all_fields = set()
-        self._fields = []
-        self._is_loading = False
+        self._is_loading = False  # don't send signal if loading
         self.setColumnCount(2)
 
         self.itemChanged.connect(self.on_item_changed)
@@ -324,26 +323,31 @@ class FieldsModel(QStandardItemModel):
         else:
             self.clear()
 
-    @property
-    def fields(self) -> List[str]:
-        """Return user fields
+    def checked_fields(self) -> List[str]:
+        """Return checked fields
 
         Returns:
             List[str]: the user selected fields
         """
-        return self._fields
+        return [item.text() for item in self.checked_items()]
 
-    @fields.setter
-    def fields(self, fields: List[str]):
-        """Set user fields
+    def set_checked_fields(self, fields: List[str], checked=Qt.Checked):
+        """Check fields according name
 
-        Args:
-            fields (List[str])
+        Arguments:
+            columns (List[str]):
         """
-        self._fields = [field for field in fields if field in self.all_fields]
-        self.check_items(self._fields)
+        self._is_loading = True
+        for item in self._checkable_items:
 
-    def get_checked_items(self) -> List[QStandardItem]:
+            item.setCheckState(Qt.Unchecked)
+            if item.data()["name"] in fields:
+                item.setCheckState(checked)
+            index = self.indexFromItem(item)
+
+        self._is_loading = False
+
+    def checked_items(self) -> List[QStandardItem]:
         """Return checked fields
 
 
@@ -356,20 +360,6 @@ class FieldsModel(QStandardItemModel):
             if item.checkState() == Qt.Checked:
                 selected_fields.append(item)
         return selected_fields
-
-    def check_items(self, fields: List[str], checked=Qt.Checked):
-        """Check fields according name
-
-
-        Arguments:
-            columns (List[str]):
-        """
-        self.blockSignals(True)
-        for item in self._checkable_items:
-            item.setCheckState(Qt.Unchecked)
-            if item.data()["name"] in fields:
-                item.setCheckState(checked)
-        self.blockSignals(False)
 
     def flags(self, index: QModelIndex) -> Qt.ItemFlags:
         """Override flags
@@ -388,31 +378,37 @@ class FieldsModel(QStandardItemModel):
 
         """
 
+        if self._is_loading:
+            # do not emit signal if model is updating
+            return
+
+        checked = item.checkState() == Qt.Checked
+        self.field_checked.emit(item.text(), checked)
+
         # If checked, add item
 
-        changed = False
+        # changed = False
 
-        if item.checkState() == Qt.Checked:
-            if item.text() not in self._fields:
-                self._fields.append(item.text())
-                changed = True
+        # if item.checkState() == Qt.Checked:
+        #     if item.text() not in self._checked_fields:
+        #         self._checked_fields.append(item.text())
+        #         changed = True
 
-        # If unchecked, remove item
-        if item.checkState() == Qt.Unchecked:
-            if item.text() in self._fields:
-                changed = True
-                self._fields.remove(item.text())
+        # # If unchecked, remove item
+        # if item.checkState() == Qt.Unchecked:
+        #     if item.text() in self._checked_fields:
+        #         changed = True
+        #         self._checked_fields.remove(item.text())
 
-        LOGGER.error(self.fields)
-        self.fields_changed.emit()
+        # if changed:
+        #     self.fields_changed.emit()
 
     def load(self):
-        """Load all fields from the model"""
+        """Load all fields into the model"""
 
         # Don't forget to reset the model
-        self.clear()
-
         self.blockSignals(True)
+        self.clear()
 
         # Clear checkable items as well, the list may contain selected items from another project...
         self._checkable_items.clear()
@@ -467,89 +463,90 @@ class FieldsModel(QStandardItemModel):
                     self.fields_loaded.emit()
 
         self.blockSignals(False)
+
         self.beginResetModel()
         self.endResetModel()
 
-    def remove_field_from_index(self, index: QModelIndex):
-        """Delete SQL index
+    # def remove_field_from_index(self, index: QModelIndex):
+    #     """Delete SQL index
 
-        Args:
-            index (QModelIndex)
+    #     Args:
+    #         index (QModelIndex)
 
-        """
-        items_to_update = [self.itemFromIndex(index.siblingAtColumn(0))]
+    #     """
+    #     items_to_update = [self.itemFromIndex(index.siblingAtColumn(0))]
 
-        field_name = index.siblingAtColumn(0).data()
-        # To have sample field only, without the sample name
-        if self.category == "samples":
-            field_name = field_name.split(".")[-1]
+    #     field_name = index.siblingAtColumn(0).data()
+    #     # To have sample field only, without the sample name
+    #     if self.category == "samples":
+    #         field_name = field_name.split(".")[-1]
 
-            # We want to schedule them all for update, because in the field editor, sample field appears once per sample...
-            items_to_update.clear()
-            for i in range(self.rowCount()):
-                if self.item(i, 0).data(Qt.DisplayRole).split(".")[-1] == field_name:
-                    items_to_update.append(self.item(i, 0))
+    #         # We want to schedule them all for update, because in the field editor, sample field appears once per sample...
+    #         items_to_update.clear()
+    #         for i in range(self.rowCount()):
+    #             if self.item(i, 0).data(Qt.DisplayRole).split(".")[-1] == field_name:
+    #                 items_to_update.append(self.item(i, 0))
 
-        sql.remove_indexed_field(self.conn, self.category, field_name)
+    #     sql.remove_indexed_field(self.conn, self.category, field_name)
 
-        # Return True on success (i.e. the field is not in the indexed fields anymore)
-        success = (self.category, field_name) not in sql.get_indexed_fields(self.conn)
+    #     # Return True on success (i.e. the field is not in the indexed fields anymore)
+    #     success = (self.category, field_name) not in sql.get_indexed_fields(self.conn)
 
-        for item in items_to_update:
-            # Weird, but positive success means UserRole should be False (i.e. the field is not indexed anymore)
-            item.setData(not success, Qt.UserRole)
-            if success:
-                font = item.font()
-                font.setUnderline(False)
-                item.setFont(font)
+    #     for item in items_to_update:
+    #         # Weird, but positive success means UserRole should be False (i.e. the field is not indexed anymore)
+    #         item.setData(not success, Qt.UserRole)
+    #         if success:
+    #             font = item.font()
+    #             font.setUnderline(False)
+    #             item.setFont(font)
 
-        return success
+    #     return success
 
-    def add_field_to_index(self, index: QModelIndex):
-        """Create a SQL index
+    # def add_field_to_index(self, index: QModelIndex):
+    #     """Create a SQL index
 
-        Args:
-            index (QModelIndex)
+    #     Args:
+    #         index (QModelIndex)
 
-        """
-        items_to_update = [self.itemFromIndex(index.siblingAtColumn(0))]
+    #     """
+    #     items_to_update = [self.itemFromIndex(index.siblingAtColumn(0))]
 
-        field_name = index.siblingAtColumn(0).data()
-        # To have sample field only, without the sample name
-        if self.category == "samples":
-            field_name = field_name.split(".")[-1]
+    #     field_name = index.siblingAtColumn(0).data()
+    #     # To have sample field only, without the sample name
+    #     if self.category == "samples":
+    #         field_name = field_name.split(".")[-1]
 
-            # We want to schedule them all for update, because in the field editor, sample field appears once per sample...
-            items_to_update.clear()
-            for i in range(self.rowCount()):
-                if self.item(i, 0).data(Qt.DisplayRole).split(".")[-1] == field_name:
-                    items_to_update.append(self.item(i, 0))
+    #         # We want to schedule them all for update, because in the field editor, sample field appears once per sample...
+    #         items_to_update.clear()
+    #         for i in range(self.rowCount()):
+    #             if self.item(i, 0).data(Qt.DisplayRole).split(".")[-1] == field_name:
+    #                 items_to_update.append(self.item(i, 0))
 
-        if self.category == "variants":
-            sql.create_variants_indexes(self.conn, {field_name})
-        if self.category == "annotations":
-            # replace shortcut
-            if field_name.startswith("ann."):
-                field_name = field_name.replace("ann.", "")
-            sql.create_annotations_indexes(self.conn, {field_name})
-        if self.category == "samples":
-            # replace shortcut
-            if field_name.startswith("samples."):
-                field_name = field_name.replace("samples.", "")
-            sql.create_samples_indexes(self.conn, {field_name})
+    #     if self.category == "variants":
+    #         sql.create_variants_indexes(self.conn, {field_name})
+    #     if self.category == "annotations":
+    #         # replace shortcut
+    #         if field_name.startswith("ann."):
+    #             field_name = field_name.replace("ann.", "")
+    #         sql.create_annotations_indexes(self.conn, {field_name})
+    #     if self.category == "samples":
+    #         # replace shortcut
+    #         if field_name.startswith("samples."):
+    #             field_name = field_name.replace("samples.", "")
+    #         sql.create_samples_indexes(self.conn, {field_name})
 
-        # Return True on success (i.e. the field is now in the index field)
-        success = (self.category, field_name) in sql.get_indexed_fields(self.conn)
+    #     # Return True on success (i.e. the field is now in the index field)
+    #     success = (self.category, field_name) in sql.get_indexed_fields(self.conn)
 
-        for item in items_to_update:
+    #     for item in items_to_update:
 
-            item.setData(success, Qt.UserRole)
-            if success:
-                font = item.font()
-                font.setUnderline(True)
-                item.setFont(font)
+    #         item.setData(success, Qt.UserRole)
+    #         if success:
+    #             font = item.font()
+    #             font.setUnderline(True)
+    #             item.setFont(font)
 
-        return success
+    #     return success
 
     def mimeData(self, indexes: typing.List[QModelIndex]) -> QMimeData:
         """Override
@@ -636,11 +633,12 @@ class FieldsWidget(QWidget):
         self.add_view(conn, "samples")
 
         layout = QVBoxLayout(self)
-        layout.addWidget(self.search_edit)
         layout.addWidget(self.tab_widget)
+        layout.addWidget(self.search_edit)
         layout.setContentsMargins(0, 0, 0, 0)
 
         self.conn = conn
+        self._fields = []
 
     @property
     def fields(self) -> List[str]:
@@ -651,21 +649,7 @@ class FieldsWidget(QWidget):
         """
 
         # We should keep same order ...
-
-        sub_fields = set()
-        for view in self.views:
-            sub_fields.update(view["model"].fields)
-
-        # Remove fields from sorted fields
-        results = set()
-        for field in self._fields:
-            if field in sub_fields:
-                results.add(field)
-
-        # Add new fields into sorted fields
-        results.update(sub_fields)
-
-        return list(results)
+        return self._fields
 
     @fields.setter
     def fields(self, fields: List[str]):
@@ -674,9 +658,11 @@ class FieldsWidget(QWidget):
         Arguments:
             columns (List[str]):
         """
-        self._fields = fields
+        self._fields = fields.copy()
         for view in self.views:
-            view["model"].fields = fields.copy()
+            view["model"].set_checked_fields(fields)
+
+        self.fields_changed.emit()
 
     @property
     def conn(self):
@@ -733,7 +719,8 @@ class FieldsWidget(QWidget):
         proxy.setFilterKeyColumn(-1)
 
         # broadcast the model signal
-        model.fields_changed.connect(lambda: self.fields_changed.emit())
+        model.field_checked.connect(self.on_field_changed)
+        # model.fields_changed.connect(lambda: self.fields_changed.emit())
 
         # Setup actions
 
@@ -893,6 +880,20 @@ class FieldsWidget(QWidget):
     #         mainwindow.set_state_data("filters", filters)
     #         mainwindow.refresh_plugins(sender=self)
 
+    def on_field_changed(self, field: str, checked: bool):
+
+        changed = False
+        if checked and field not in self._fields:
+            self._fields.append(field)
+            changed = True
+
+        if not checked and field in self._fields:
+            self._fields.remove(field)
+            changed = True
+
+        if changed:
+            self.fields_changed.emit()
+
     def update_filter(self, text: str):
         """
         Callback for when the search bar is updated (filter the three models)
@@ -951,42 +952,36 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self.presets_combo.currentIndexChanged.connect(self.on_select_preset)
         self.tool_layout.addWidget(self.presets_combo)
 
+        # delete button
+        delete_button = QToolButton()
+        delete_button.setIcon(FIcon(0xF0156, QColor("red")))
+        delete_button.setText("delete")
+        delete_button.clicked.connect(self.on_delete_preset)
+        self.tool_layout.addWidget(delete_button)
+
         # Add button
         self.fields_button = QPushButton()
         self.fields_button.setIcon(FIcon(0xF0139))
         self.fields_button.clicked.connect(self.on_save_preset)
         self.tool_layout.addWidget(self.fields_button)
 
-        # # Edit button
-        # edit_button = QToolButton()
-        # edit_button.setIcon(FIcon(0xF0900))
-        # edit_button.setText("edit")
-        # edit_button.clicked.connect(self.on_edit_preset)
-        # self.tool_layout.addWidget(edit_button)
-
-        # delete button
-        delete_button = QToolButton()
-        delete_button.setIcon(FIcon(0xF0156, QColor("red")))
-        delete_button.setText("delete")
-        delete_button.clicked.connect(self.on_delete_preset)
-
-        self.tool_layout.addWidget(delete_button)
-        ## Create fields view
-        self.widget_fields = FieldsWidget(conn, parent)
-        self.widget_fields.fields_changed.connect(self.update_fields_button)
-
         ## Create apply button
         self.apply_button = QPushButton(self.tr("Apply"))
         self.apply_button.setIcon(FIcon(0xF0E1E, "white"))
         self.apply_button.setStyleSheet("background-color: #038F6A; color:white")
         self.apply_button.pressed.connect(self.on_apply)
+        self.tool_layout.addWidget(self.apply_button)
+
+        ## Create fields view
+        self.widget_fields = FieldsWidget(conn, parent)
+        self.widget_fields.fields_changed.connect(self.update_fields_button)
 
         # setup button_layout
         main_layout = QVBoxLayout(self)
         # layout.setContentsMargins(0, 0, 0, 0)
         main_layout.addLayout(self.tool_layout)
         main_layout.addWidget(self.widget_fields)
-        main_layout.addWidget(self.apply_button)
+        # main_layout.addWidget(self.apply_button)
 
         self.setFocusPolicy(Qt.ClickFocus)
 

@@ -134,45 +134,32 @@ def test_fields_model(qtmodeltester, conn, qtbot):
 
     # check fields
     model.category = "variants"
-    model.load()
+
+    # check field checked is not emit
+    with qtbot.assertNotEmitted(model.field_checked):
+        model.load()
 
     fields = ["chr", "pos", "ref"]
-    model.fields = fields
 
-    for item in model.get_checked_items():
+    with qtbot.assertNotEmitted(model.field_checked):
+        model.set_checked_fields(fields)
+
+    assert model.checked_fields() == fields
+
+    for item in model.checked_items():
         assert item.text() in fields
 
-    # check item 20
-    assert len(model.fields) == 3
-
-    with qtbot.waitSignal(model.fields_changed, timeout=10000) as blocker:
+    # check comment item
+    with qtbot.waitSignal(model.field_checked, timeout=10000) as blocker:
         model.item(1).setCheckState(QtCore.Qt.Checked)
 
-    assert len(model.fields) == 4
+    assert blocker.args == ["comment", True]
 
-    # #  check categories
-    # assert model.item(0).text() == "variants"
-    # assert model.item(1).text() == "annotations"
-    # assert model.item(2).text() == "samples"
+    assert len(model.checked_fields()) == 4
 
-    # #  Check first element of the variants ( should be favorite)
-    # assert model.item(0).child(0).text() == "favorite"
 
-    # #  test uncheck
-    # assert model.item(0).child(0).checkState() == QtCore.Qt.Unchecked
-    # assert model.checked_fields == []
+def test_fields_widget(conn, qtbot):
+    widget = FieldsWidget()
+    widget.conn = conn
 
-    # # test check
-    # model.item(0).child(0).setCheckState(QtCore.Qt.Checked)
-    # assert model.checked_fields == ["favorite"]
-
-    # # Test serialisation
-    # _, file = tempfile.mkstemp(suffix=".cutevariant-filter")
-    # model.to_file(file)
-    # # Reset model and check if it is unchecked
-    # model.load()
-    # assert model.item(0).child(0).checkState() == QtCore.Qt.Unchecked
-
-    # #  Load from serialize
-    # model.from_file(file)
-    # assert model.item(0).child(0).checkState() == QtCore.Qt.Checked
+    widget.fields = ["chr", "pos"]

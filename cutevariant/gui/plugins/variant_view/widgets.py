@@ -52,22 +52,22 @@ class VariantVerticalHeader(QHeaderView):
         painter.save()
         super().paintSection(painter, rect, section)
 
-        # favorite = self.model().variant(section)["favorite"]
-        # classification = self.model().variant(section)["classification"]
+        favorite = self.model().variant(section)["favorite"]
+        classification = self.model().variant(section)["classification"]
 
-        # painter.restore()
-        # color = style.CLASSIFICATION[classification].get("color")
+        painter.restore()
+        color = style.CLASSIFICATION[classification].get("color")
 
-        # pen = QPen(QColor(style.CLASSIFICATION[classification].get("color")))
-        # pen.setWidth(6)
-        # painter.setPen(pen)
-        # painter.setBrush(QBrush(style.CLASSIFICATION[classification].get("color")))
-        # painter.drawLine(rect.left(), rect.top() + 1, rect.left(), rect.bottom() - 1)
+        pen = QPen(QColor(style.CLASSIFICATION[classification].get("color")))
+        pen.setWidth(6)
+        painter.setPen(pen)
+        painter.setBrush(QBrush(style.CLASSIFICATION[classification].get("color")))
+        painter.drawLine(rect.left(), rect.top() + 1, rect.left(), rect.bottom() - 1)
 
-        # pix = FIcon(0xF00C1 if favorite else 0xF00C3, "#3daee9").pixmap(20, 20)
-        # target = rect.center() - pix.rect().center() + QPoint(1, 0)
+        pix = FIcon(0xF00C1 if favorite else 0xF00C3, color).pixmap(20, 20)
+        target = rect.center() - pix.rect().center() + QPoint(1, 0)
 
-        # painter.drawPixmap(target, pix)
+        painter.drawPixmap(target, pix)
 
 
 class VariantModel(QAbstractTableModel):
