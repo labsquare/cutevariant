@@ -26,27 +26,39 @@ from cutevariant import LOGGER
 
 
 class VariantInfoModel(QJsonModel):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._headers = ["Fields", "Value"]
+
     def data(self, index: QModelIndex, role: Qt.ItemDataRole):
 
         item: QJsonTreeItem = index.internalPointer()
         value = item.value
 
-        if role == Qt.ForegroundRole and index.column() == 1:
+        # if role == Qt.ForegroundRole and index.column() == 1:
 
-            if value == "":
-                return Qt.gray
+        #     if value == "":
+        #         return Qt.gray
 
-            value_type = type(value).__name__
-            if value_type in style.FIELD_TYPE:
-                col = QColor(style.FIELD_TYPE[value_type]["color"])
-                return col
+        #     value_type = type(value).__name__
+        #     if value_type in style.FIELD_TYPE:
+        #         col = QColor(style.FIELD_TYPE[value_type]["color"])
+        #         return col
 
         if role == Qt.SizeHintRole:
             return QSize(30, 30)
 
+        if role == Qt.ToolTipRole:
+            return str(value)
+
         if role == Qt.DisplayRole and index.column() == 1:
             if value == "":
                 return item.childCount()
+
+        if role == Qt.FontRole and index.column() == 0:
+            font = QFont()
+            font.setBold(True)
+            return font
 
         return super().data(index, role)
 
@@ -63,17 +75,33 @@ class VariantInfoWidget(PluginWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.setWindowIcon(FIcon(0xF0B73))
         # Current variant => set by on_refresh and on_open_project
         self.current_variant = None
-        self.view = QTreeView()
+
         self.model = VariantInfoModel()
-        self.view.setModel(self.model)
+
+        self.proxy_model = QSortFilterProxyModel()
+        self.proxy_model.setSourceModel(self.model)
+        self.proxy_model.setRecursiveFilteringEnabled(True)
+
+        self.view = QTreeView()
+        self.view.setModel(self.proxy_model)
         self.view.setAlternatingRowColors(True)
+
+        self.search_bar = QLineEdit()
+        self.search_bar.textChanged.connect(self.proxy_model.setFilterFixedString)
+        self.search_bar.setPlaceholderText(self.tr("Search by keywords... "))
+        self.search_bar.addAction(
+            FIcon(0xF015A), QLineEdit.TrailingPosition
+        ).triggered.connect(self.search_bar.clear)
+
         vlayout = QVBoxLayout()
         vlayout.addWidget(self.view)
+        vlayout.addWidget(self.search_bar)
         vlayout.setContentsMargins(0, 0, 0, 0)
+
         self.setLayout(vlayout)
+        self.setWindowIcon(FIcon(0xF0B73))
 
     #     self.view = QTabWidget()
     #     self.toolbar = QToolBar()
@@ -179,6 +207,9 @@ class VariantInfoWidget(PluginWidget):
         results = sql.get_one_variant(self.conn, self.current_variant["id"], True, True)
 
         self.model.load(results)
+        self.view.expandAll()
+        self.view.header().setSectionResizeMode(0, QHeaderView.Stretch)
+        # self.view.header().setSectionResizeMode(1, QHeaderView.Fixed)
 
     # @Slot()
     # def on_save_clicked(self):
