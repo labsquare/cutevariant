@@ -139,6 +139,7 @@ class IgvWidget(PluginWidget):
 
     ENABLE = True
     REFRESH_STATE_DATA = {"current_variant"}
+    LOCATION = plugin.FOOTER_LOCATION
 
     def __init__(self, parent=None):
         super().__init__(parent)
