@@ -44,6 +44,7 @@ class IGVWebView(QWebEngineView):
 </head>
 
 <body>
+<input type="file" id="input">
 
 <div id="myDiv" style="height: auto">
 </div>
@@ -115,8 +116,15 @@ class IGVWebView(QWebEngineView):
 
         print("set positon")
         self.page().runJavaScript(
-            f"""
-           igv.browser.search('{location}')
+            """
+
+            var fichierSelectionne = document.getElementById('input').files[0];
+            
+            igv.browser.loadTrack({url: fichierSelectionne, label: 'test'});
+
+            igv.browser.search(' """
+            + location
+            + """');
             """
         )
 
