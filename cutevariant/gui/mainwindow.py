@@ -120,6 +120,9 @@ class MainWindow(QMainWindow):
         self.toolbar.setObjectName("maintoolbar")  # For window saveState
         self.toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
 
+        self.plugin_toolbar = QToolBar("plugins")
+        self.addToolBar(Qt.LeftToolBarArea, self.plugin_toolbar)
+
         # Setup menu bar
         self.setup_actions()
 
@@ -203,6 +206,7 @@ class MainWindow(QMainWindow):
         widget.dock = dock
         # Set the objectName for a correct restoration after saveState
         dock.setObjectName(str(widget.__class__))
+        self.plugin_toolbar.addAction(dock.toggleViewAction())
 
         self.addDockWidget(area, dock)
         action = dock.toggleViewAction()
@@ -900,7 +904,7 @@ class MainWindow(QMainWindow):
     def toggle_footer_visibility(self, visibility):
         """Toggle visibility of the bottom toolbar and all its plugins"""
         # self.footer_tab.setVisible(visibility)
-        if visibility:
+        if not visibility:
             self.vsplit.setSizes([100, 0])
         else:
             self.vsplit.setSizes([200, 100])
