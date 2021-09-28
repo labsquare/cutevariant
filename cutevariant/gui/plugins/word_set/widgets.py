@@ -69,17 +69,28 @@ class WordListDialog(QDialog):
         self.setWindowTitle(self.tr("Edit Word set"))
         self.setWindowIcon(QIcon(cm.DIR_ICONS + "app.png"))
 
-        box = QVBoxLayout()
         self.add_button = QPushButton(FIcon(0xF0415), self.tr("Add"))
+        self.add_button.pressed.connect(self.on_add)
+
         self.paste_file_button = QPushButton(FIcon(0xF0192), self.tr("Paste"))
+        self.paste_file_button.pressed.connect(self.on_paste)
+
         self.add_file_button = QPushButton(FIcon(0xF0EED), self.tr("Add from file..."))
+        self.add_file_button.pressed.connect(self.on_load_file)
+
         self.del_button = QPushButton(FIcon(0xF0A7A), self.tr("Remove"))
         self.del_button.setDisabled(True)
+        self.del_button.pressed.connect(self.on_remove)
 
         self.save_button = QPushButton(self.tr("Save"))
         self.save_button.setDisabled(True)
-        self.cancel_button = QPushButton(self.tr("Cancel"))
+        self.save_button.pressed.connect(self.accept)
 
+        self.cancel_button = QPushButton(self.tr("Cancel"))
+        self.cancel_button.pressed.connect(self.reject)
+
+        # Item selected in view
+        box = QVBoxLayout()
         box.addWidget(self.add_button)
         box.addWidget(self.paste_file_button)
         box.addWidget(self.add_file_button)
@@ -88,36 +99,28 @@ class WordListDialog(QDialog):
         box.addWidget(self.save_button)
         box.addWidget(self.cancel_button)
 
-        self.view = QListView()
         self.model = QStringListModel()
-        self.view.setModel(self.model)
-        self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
-
-        vlayout = QVBoxLayout()
-        #  Create title label
-        self.title_label = QLabel()
-        self.title_label.setText(self.tr("Create a set by adding words"))
-        vlayout.addWidget(self.title_label)
-        vlayout.addWidget(self.view)
-
-        hlayout = QHBoxLayout()
-        hlayout.addLayout(vlayout)
-        hlayout.addLayout(box)
-
-        self.setLayout(hlayout)
-
-        self.add_button.pressed.connect(self.on_add)
-        self.del_button.pressed.connect(self.on_remove)
-        self.add_file_button.pressed.connect(self.on_load_file)
-        self.paste_file_button.pressed.connect(self.on_paste)
-        self.cancel_button.pressed.connect(self.reject)
-        self.save_button.pressed.connect(self.accept)
-        # Item selected in view
-        self.view.selectionModel().selectionChanged.connect(self.on_item_selected)
-        # Data changed in model
         self.model.dataChanged.connect(self.on_data_changed)
         self.model.rowsInserted.connect(self.on_data_changed)
         self.model.rowsRemoved.connect(self.on_data_changed)
+        self.model.modelReset.connect(self.on_data_changed)
+
+        self.view = QListView()
+        self.view.setModel(self.model)
+        self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.view.selectionModel().selectionChanged.connect(self.on_item_selected)
+
+        # Create title label
+        self.title_label = QLabel()
+        self.title_label.setText(self.tr("Create a set by adding words"))
+
+        vlayout = QVBoxLayout()
+        vlayout.addWidget(self.title_label)
+        vlayout.addWidget(self.view)
+
+        hlayout = QHBoxLayout(self)
+        hlayout.addLayout(vlayout)
+        hlayout.addLayout(box)
 
     def on_item_selected(self, *args):
         """Enable the remove button when an item is selected"""
@@ -125,7 +128,8 @@ class WordListDialog(QDialog):
 
     def on_data_changed(self, *args):
         """Enable the save button when data in model is changed"""
-        self.save_button.setEnabled(True)
+        enabled = len(self.model.stringList()) > 0
+        self.save_button.setEnabled(enabled)
 
     def on_paste(self):
         text = qApp.clipboard().text()
