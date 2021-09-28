@@ -75,6 +75,7 @@ class IGVWebView(QWebEngineView):
                 })
                 .then(function (browser) {
                     console.log("Browser ready");
+                    igv.browser = browser;
                 })
 
 
@@ -99,37 +100,23 @@ class IGVWebView(QWebEngineView):
 
         self.settings().setAttribute(QWebEngineSettings.LocalStorageEnabled, True)
         self.settings().setAttribute(QWebEngineSettings.FullScreenSupportEnabled, True)
-
-        self.loadFinished.connect(self.create_stage)
+        self.settings().setAttribute(QWebEngineSettings.ErrorPageEnabled, True)
+        self.settings().setAttribute(QWebEngineSettings.JavascriptEnabled, True)
+        # self.loadFinished.connect(self.create_stage)
 
         with open("/tmp/test.html", "w") as file:
             file.write(self.TEMPLATE)
 
         self.load(QUrl.fromLocalFile("/tmp/test.html"))
 
-    def create_stage(self):
+        self.page().setDevToolsPage(self.page())
 
+    def set_position(self, location):
+
+        print("set positon")
         self.page().runJavaScript(
-            """
-            var igvDiv = document.getElementById("igv-div");
-            var options =
-            {
-                genome: "hg38",
-                locus: "chr8:127,736,588-127,739,371",
-                tracks: [
-                    {
-                        "name": "HG00103",
-                        "url": "https://s3.amazonaws.com/1000genomes/data/HG00103/alignment/HG00103.alt_bwamem_GRCh38DH.20150718.GBR.low_coverage.cram",
-                        "indexURL": "https://s3.amazonaws.com/1000genomes/data/HG00103/alignment/HG00103.alt_bwamem_GRCh38DH.20150718.GBR.low_coverage.cram.crai",
-                        "format": "cram"
-                    }
-                ]
-            };
-
-            igv.createBrowser(igvDiv, options)
-                .then(function (browser) {
-                    console.log("Created IGV browser");
-                })
+            f"""
+           igv.browser.search('{location}')
             """
         )
 
@@ -148,6 +135,18 @@ class IgvWidget(PluginWidget):
         self.vlayout = QVBoxLayout()
         self.vlayout.addWidget(self.view)
         self.setLayout(self.vlayout)
+
+    def on_refresh(self):
+
+        variant = self.mainwindow.get_state_data("current_variant")
+        variant = sql.get_one_variant(self.mainwindow.conn, variant["id"])
+
+        chrom = variant["chr"]
+        pos = variant["pos"]
+
+        location = f"{chrom}:{pos}"
+
+        self.view.set_position(location)
 
 
 if __name__ == "__main__":
