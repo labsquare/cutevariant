@@ -71,17 +71,17 @@ class HistoryModel(QAbstractTableModel):
         self.records = []
 
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
-        """ override :  Return Row Count"""
+        """override :  Return Row Count"""
         return len(self.records)
 
     def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
-        """ override : Return Column Count """
+        """override : Return Column Count"""
         if parent == QModelIndex():
             return 5
         return 0
 
     def data(self, index: QModelIndex, role: Qt.DisplayRole):
-        """ override: Return data according index and role """
+        """override: Return data according index and role"""
 
         if not index.isValid():
             return None
@@ -113,7 +113,7 @@ class HistoryModel(QAbstractTableModel):
         return None
 
     def setData(self, index, value, role=Qt.EditRole):
-        """ override : Set model data according index and role """
+        """override : Set model data according index and role"""
         if index.column() == 0:
             self.records[index.row()][0] = value
             return True
@@ -121,7 +121,7 @@ class HistoryModel(QAbstractTableModel):
             return False
 
     def headerData(self, section: int, orientation: Qt.Orientation, role):
-        """ override """
+        """override"""
 
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
             return HistoryModel.HEADERS[section]
@@ -156,7 +156,7 @@ class HistoryModel(QAbstractTableModel):
         self.endInsertRows()
 
     def from_json(self, records: dict):
-        """ Load from a json serialisable object"""
+        """Load from a json serialisable object"""
 
         self.beginResetModel()
         self.records.clear()
@@ -425,7 +425,7 @@ class VqlHistoryWidget(plugin.PluginWidget):
         self.setLayout(main_layout)
 
     def on_register(self, mainwindow: MainWindow):
-        """ override  """
+        """override"""
         # mainwindow.variants_load_finished.connect(self.on_variants_load_finished)
         pass
 
@@ -449,7 +449,7 @@ class VqlHistoryWidget(plugin.PluginWidget):
             self.model.add_record(vql_query, count, elapsed_time)
 
     def on_open_project(self, conn):
-        """ override """
+        """override"""
         self.conn = conn
 
     def on_refresh(self):
@@ -461,11 +461,11 @@ class VqlHistoryWidget(plugin.PluginWidget):
             self.on_variants_load_finished(count, elapsed_time)
 
     def to_json(self):
-        """ override """
+        """override"""
         return self.model.to_json()
 
     def from_json(self, data):
-        """ override """
+        """override"""
         self.model.from_json(data)
 
     def on_double_clicked(self, index: QModelIndex):
@@ -521,7 +521,7 @@ class VqlHistoryWidget(plugin.PluginWidget):
         self.search_edit.setFocus(Qt.MenuBarFocusReason)
 
     def on_clear_logs_pressed(self):
-        """Clear all records with a confirm message """
+        """Clear all records with a confirm message"""
         confirmation = QMessageBox.question(
             self,
             self.tr("Please confirm"),
