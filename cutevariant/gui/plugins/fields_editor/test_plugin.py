@@ -42,9 +42,9 @@ def test_plugin(conn, qtbot):
         "samples.NORMAL.gt",
     ]
     plugin.widget_fields.fields = fields
-    assert len(plugin.widget_fields.views[0]["model"].fields) == 2
-    assert len(plugin.widget_fields.views[1]["model"].fields) == 2
-    assert len(plugin.widget_fields.views[2]["model"].fields) == 2
+    assert len(plugin.widget_fields.views[0]["model"].checked_fields()) == 2
+    assert len(plugin.widget_fields.views[1]["model"].checked_fields()) == 2
+    assert len(plugin.widget_fields.views[2]["model"].checked_fields()) == 2
 
 
 def test_presets_model(qtmodeltester):
@@ -68,6 +68,7 @@ def test_presets_model(qtmodeltester):
 
     model.load()
 
+    print("ICI", model._presets)
     assert model.rowCount() == 2
 
     qtmodeltester.check(model)
@@ -80,34 +81,22 @@ def test_preset_dialog(conn, qtbot):
     w = widgets.PresetsDialog("test_preset")
 
     qtbot.addWidget(w)
-    config = Config("fields_editor")
-    preset = {"test_preset": ["chr", "pos", "ref", "alt", "ann.gene"]}
-    config["presets"] = preset
-    config.save()
 
-    w.load()
-
-    assert sorted(w.fields) == sorted(preset["test_preset"])
-
-    # Add extra fields and save
-    w.fields += ["ann.impact"]
-    w.save()
-
-    # Load config to see if the saving has occurs
-    config.load()
-    assert config["presets"]["test_preset"] == preset["test_preset"] + ["ann.impact"]
+    fields = ["chr", "pos", "ref", "alt", "ann.gene", "ann.impact"]
+    w.fields = fields
 
     # Test moving fields ...
     w.view.setCurrentRow(0)
     w.move_down()
     assert w.fields == ["pos", "chr", "ref", "alt", "ann.gene", "ann.impact"]
 
+    w.view.setCurrentRow(1)
+    w.move_up()
+    assert w.fields == ["chr", "pos", "ref", "alt", "ann.gene", "ann.impact"]
+
     w.view.setCurrentRow(5)
     [w.move_up() for i in range(5)]
-    assert w.fields == ["ann.impact", "pos", "chr", "ref", "alt", "ann.gene"]
-
-    del config["presets"]["test_preset"]
-    config.save()
+    assert w.fields == ["ann.impact", "chr", "pos", "ref", "alt", "ann.gene"]
 
 
 def test_fields_model(qtmodeltester, conn, qtbot):
@@ -159,7 +148,7 @@ def test_fields_model(qtmodeltester, conn, qtbot):
 
 
 def test_fields_widget(conn, qtbot):
-    widget = FieldsWidget()
+    widget = widgets.FieldsWidget()
     widget.conn = conn
-
     widget.fields = ["chr", "pos"]
+    assert widget.fields == ["chr", "pos"]

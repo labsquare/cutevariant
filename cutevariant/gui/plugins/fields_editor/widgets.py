@@ -82,7 +82,7 @@ class FieldsPresetModel(QAbstractListModel):
 
     def load(self):
         self.beginResetModel()
-        config = Config("fields_editor")
+        config = Config("fields_editor", self.config_path)
         presets = config.get("presets", {})
         self._presets = [
             (preset_name, fields) for preset_name, fields in presets.items()
@@ -118,101 +118,46 @@ class PresetsDialog(QDialog):
         super().__init__()
 
         self.setWindowTitle(self.tr("Edit Fields preset"))
+
+        self.header = QLabel(self.tr("You can sort fields by drag and drop"))
         self.view = QListWidget()
-        self.name_edit = QLineEdit()
-        self.button_box = QDialogButtonBox(
-            QDialogButtonBox.Save | QDialogButtonBox.Cancel
-        )
-        self.add_button = QToolButton()
-        self.rem_button = QToolButton()
-        self.up_button = QToolButton()
-        self.down_button = QToolButton()
-        self.name_edit.setPlaceholderText("Preset name ")
-        self.add_button.setText("+")
-        self.rem_button.setText("-")
-        self.up_button.setText("▲")
-        self.down_button.setText("▼")
-
-        self.add_button.setAutoRaise(True)
-        self.rem_button.setAutoRaise(True)
-        self.up_button.setAutoRaise(True)
-        self.down_button.setAutoRaise(True)
-
         self.view.setDragDropMode(QAbstractItemView.InternalMove)
-
-        self.up_button.clicked.connect(self.move_up)
-        self.down_button.clicked.connect(self.move_down)
-
         self.view.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
-        vLayout = QVBoxLayout()
+        self.button_box = QDialogButtonBox(
+            QDialogButtonBox.Cancel | QDialogButtonBox.Ok
+        )
+        self.up_button = QToolButton()
+        self.up_button.setText("▲")
+        self.up_button.setIcon(FIcon(0xF0143))
+        self.up_button.setAutoRaise(True)
+        self.up_button.clicked.connect(self.move_up)
 
+        self.down_button = QToolButton()
+        self.down_button.setText("▼")
+        self.down_button.setIcon(FIcon(0xF0140))
+        self.down_button.setAutoRaise(True)
+        self.down_button.clicked.connect(self.move_down)
+
+        vLayout = QVBoxLayout()
         tool_layout = QHBoxLayout()
 
-        spacer = QWidget()
-        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-
-        tool_layout.addWidget(self.add_button)
-        tool_layout.addWidget(self.rem_button)
-        tool_layout.addWidget(spacer)
+        tool_layout.addStretch()
         tool_layout.addWidget(self.up_button)
         tool_layout.addWidget(self.down_button)
 
-        vLayout.addWidget(self.name_edit)
+        vLayout.addWidget(self.header)
         vLayout.addWidget(self.view)
         vLayout.addLayout(tool_layout)
         vLayout.addWidget(self.button_box)
-
         self.setLayout(vLayout)
 
-        self.preset_name = preset_name
-
-        self.button_box.accepted.connect(self._save_and_close)
+        self.button_box.accepted.connect(self.accept)
         self.button_box.rejected.connect(self.reject)
 
     @property
-    def preset_name(self):
-        return self.name_edit.text()
-
-    @preset_name.setter
-    def preset_name(self, name):
-        """Set preset name and load preset"""
-        self.name_edit.setText(name)
-        self.load()
-
-    def _save_and_close(self):
-        self.save()
-        self.accept()
-
-    def load(self):
-        """Load preset `preset_name` from config
-
-        Load preset from the config file
-
-        Args:
-            preset_name (str): The preset key name
-        """
-        config = Config("fields_editor")
-        presets = config.get("presets")
-        if self.preset_name in presets:
-            fields = presets[self.preset_name]
-            self.fields = fields
-
-    def save(self):
-        """Save fields in config"""
-        config = Config("fields_editor")
-        presets = config["presets"]
-        presets[self.preset_name] = self.fields
-        config["presets"] = presets
-        config.save()
-
-    @property
     def fields(self):
-        items = []
-        for row in range(self.view.count()):
-            items.append(self.view.item(row).text())
-
-        return items
+        return [self.view.item(row).text() for row in range(self.view.count())]
 
     @fields.setter
     def fields(self, fields):
@@ -223,7 +168,6 @@ class PresetsDialog(QDialog):
         row = self.view.currentRow()
         if row <= 0:
             return
-
         item = self.view.takeItem(row - 1)
         self.view.insertItem(row, item)
 
@@ -633,8 +577,8 @@ class FieldsWidget(QWidget):
         self.add_view(conn, "samples")
 
         layout = QVBoxLayout(self)
-        layout.addWidget(self.tab_widget)
         layout.addWidget(self.search_edit)
+        layout.addWidget(self.tab_widget)
         layout.setContentsMargins(0, 0, 0, 0)
 
         self.conn = conn
@@ -942,35 +886,56 @@ class FieldsEditorWidget(plugin.PluginWidget):
         # Create toolbar with search
         self.tool_layout = QHBoxLayout()
 
-        # Setup Toolbar
-        # self.toolbar.setIconSize(QSize(16, 16))
-        # self.toolbar.setToolButtonStyle(Qt.ToolButtonIconOnly)
-        # self.toolbar.layout().setContentsMargins(0, 0, 0, 0)
-        # Setup preset combo
         self.presets_combo = QComboBox()
         self.presets_combo.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         self.presets_combo.currentIndexChanged.connect(self.on_select_preset)
+        self.presets_combo.setToolTip(self.tr("Select a preset "))
+        self.presets_combo.setPlaceholderText("Select a preset ...")
+
+        add_button = QToolButton()
+        add_button.setText("Add")
+        add_button.setToolTip(self.tr("Create a preset "))
+        add_button.setIcon(FIcon(0xF0818))
+        add_button.clicked.connect(self.save_preset)
+
+        rem_button = QToolButton()
+        rem_button.setText("Remove")
+        rem_button.setToolTip(self.tr("Remove a preset "))
+        rem_button.setIcon(FIcon(0xF0A7A, "red"))
+        rem_button.clicked.connect(self.delete_preset)
+
+        self.field_button = QPushButton("Fields")
+        self.field_button.setIcon(FIcon(0xF0139))
+        self.field_button.setToolTip(self.tr("Show selected fields"))
+        self.field_button.clicked.connect(self.show_fields_dialog)
+
+        # setup extra menu
+        extra_menu = QMenu(self)
+
+        show_checked_action = QAction(self)
+        show_checked_action.setCheckable(True)
+        show_checked_action.setText(self.tr("Show checked only"))
+        show_checked_action.triggered.connect(self.toggle_checked)
+
+        extra_menu.addAction(show_checked_action)
+
+        menu_button = QToolButton()
+        menu_button.setPopupMode(QToolButton.InstantPopup)
+        menu_button.setIcon(FIcon(0xF0236))
+        menu_button.setMenu(extra_menu)
+        menu_button.setAutoRaise(True)
+
         self.tool_layout.addWidget(self.presets_combo)
-
-        # delete button
-        delete_button = QToolButton()
-        delete_button.setIcon(FIcon(0xF0156, QColor("red")))
-        delete_button.setText("delete")
-        delete_button.clicked.connect(self.on_delete_preset)
-        self.tool_layout.addWidget(delete_button)
-
-        # Add button
-        self.fields_button = QPushButton()
-        self.fields_button.setIcon(FIcon(0xF0139))
-        self.fields_button.clicked.connect(self.on_save_preset)
-        self.tool_layout.addWidget(self.fields_button)
+        self.tool_layout.addWidget(add_button)
+        self.tool_layout.addWidget(rem_button)
+        self.tool_layout.addWidget(self.field_button)
+        self.tool_layout.addWidget(menu_button)
 
         ## Create apply button
         self.apply_button = QPushButton(self.tr("Apply"))
         self.apply_button.setIcon(FIcon(0xF0E1E, "white"))
         self.apply_button.setStyleSheet("background-color: #038F6A; color:white")
         self.apply_button.pressed.connect(self.on_apply)
-        self.tool_layout.addWidget(self.apply_button)
 
         ## Create fields view
         self.widget_fields = FieldsWidget(conn, parent)
@@ -981,7 +946,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
         # layout.setContentsMargins(0, 0, 0, 0)
         main_layout.addLayout(self.tool_layout)
         main_layout.addWidget(self.widget_fields)
-        # main_layout.addWidget(self.apply_button)
+        main_layout.addWidget(self.apply_button)
 
         self.setFocusPolicy(Qt.ClickFocus)
 
@@ -996,31 +961,43 @@ class FieldsEditorWidget(plugin.PluginWidget):
 
     def update_fields_button(self):
         """Update fields button with the count selected fields"""
-
-        LOGGER.error("UPDATE ")
-        LOGGER.error(self.fields)
         field_count = len(self.fields)
-        self.fields_button.setText(f"Fields ({field_count})")
+        self.field_button.setText(f"{field_count} fields")
 
-    def load_presets(self, current_preset=None):
-        """Refresh self's preset model
-        This method should be called by __init__ and on refresh
-        """
+    def save_preset(self):
+        """Save current fields as new preset"""
 
-        self.presets_combo.blockSignals(True)
-        self.presets_combo.clear()
-        config = Config("fields_editor")
-        presets = config["presets"]
-        for name, fields in presets.items():
-            LOGGER.error(fields)
-            self.presets_combo.addItem(name)
+        name, success = QInputDialog.getText(
+            self, self.tr("Create new preset"), self.tr("Preset name:")
+        )
 
-        # if current_preset:
-        #     self.presets_combo.setCurrentText(current_preset)
+        if success and name:
+            config = Config("fields_editor")
+            presets = config["presets"]
 
-        self.presets_combo.blockSignals(False)
+            # if preset name exists ...
+            if name in presets:
+                ret = QMessageBox.warning(
+                    self,
+                    self.tr("Overwrite preset"),
+                    self.tr(
+                        f"Preset {name} already exists. Do you want to overwrite it ?"
+                    ),
+                    QMessageBox.Yes | QMessageBox.No,
+                )
 
-    def on_delete_preset(self):
+                if ret == QMessageBox.No:
+                    return
+
+            presets[name] = self.fields
+            config["presets"] = presets
+            config.save()
+            self.load_presets()
+            self.presets_combo.setCurrentText(name)
+
+    def delete_preset(self):
+        """Remove selected preset from combobox"""
+
         name = self.presets_combo.currentText()
 
         ret = QMessageBox.warning(
@@ -1040,22 +1017,31 @@ class FieldsEditorWidget(plugin.PluginWidget):
             config.save()
             self.load_presets()
 
-    def on_save_preset(self):
+    def load_presets(self, current_preset=None):
+        """Load preset in the combobox
+        This method should be called by __init__ and on refresh
+        """
+
+        self.presets_combo.blockSignals(True)
+        self.presets_combo.clear()
+        config = Config("fields_editor")
+        presets = config["presets"]
+        for name, fields in presets.items():
+            LOGGER.error(fields)
+            self.presets_combo.addItem(name)
+
+        # if current_preset:
+        #     self.presets_combo.setCurrentText(current_preset)
+
+        self.presets_combo.blockSignals(False)
+
+    def show_fields_dialog(self):
 
         w = PresetsDialog()
-        w.preset_name = "No name"
         w.fields = self.widget_fields.fields
         if w.exec_():
-            self.load_presets(w.preset_name)
-
-    def on_edit_preset(self):
-
-        name = self.presets_combo.currentText()
-        if name:
-            w = PresetsDialog()
-            w.preset_name = name
-            if w.exec_():
-                pass
+            self.fields = w.fields
+            self.on_apply()
 
     # def toggle_search_bar(self, show=True):
     #     """Make search bar visible or not
