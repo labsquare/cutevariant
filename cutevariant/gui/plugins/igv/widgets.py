@@ -105,10 +105,12 @@ class IGVWebView(QWebEngineView):
         self.settings().setAttribute(QWebEngineSettings.JavascriptEnabled, True)
         # self.loadFinished.connect(self.create_stage)
 
-        with open("/tmp/test.html", "w") as file:
+        tempdir = QStandardPaths.writableLocation(QStandardPaths.TempLocation) + "/test.html"
+        print("ICI", tempdir)
+        with open(tempdir, "w") as file:
             file.write(self.TEMPLATE)
 
-        self.load(QUrl.fromLocalFile("/tmp/test.html"))
+        self.load(QUrl.fromLocalFile(tempdir))
 
         self.page().setDevToolsPage(self.page())
 
