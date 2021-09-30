@@ -352,7 +352,21 @@ class VariantModel(QAbstractTableModel):
             variant (dict): Dict of fields to be updated
         """
         # Update in database
+        # if tuple(self.conn.execute("PRAGMA data_version").fetchone())[0] > 1:
+        #     print(tuple(self.conn.execute("PRAGMA data_version").fetchone())[0])
+        #     ret = QMessageBox.warning(None, "Database has been modified", "Do you want to overwrite value?", QMessageBox.Yes | QMessageBox.No)
+        #     if ret == QMessageBox.No:
+        #         return
         variant_id = self.variants[row]["id"]
+
+        sql_variant = {k: v for k,v in sql.get_one_variant(self.conn, variant_id).items() if k in ["classification"]}
+        model_variant = {k: v for k,v in self.variants[row].items() if k in ["classification"]}
+        print(sql_variant)
+        print(model_variant)
+        if sql_variant != model_variant:
+            ret = QMessageBox.warning(None, "Database has been modified", "Do you want to overwrite value?", QMessageBox.Yes | QMessageBox.No)
+            if ret == QMessageBox.No:
+                return
 
         # Update all variant with same variant_id
         # Use case : When several transcript are displayed
