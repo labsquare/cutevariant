@@ -31,6 +31,7 @@ class SamplesModel(QAbstractTableModel):
         self.conn = None
         self.items = []
         self._fields = []
+        self._fields_descriptions = {}
 
     def rowCount(self, parent: QModelIndex = QModelIndex) -> int:
         """override"""
@@ -63,7 +64,13 @@ class SamplesModel(QAbstractTableModel):
                 return QIcon(FIcon(icon))
 
         if role == Qt.ToolTipRole:
-            return f"""{item['name']} (<span style="color:{PHENOTYPE_COLOR.get(item['phenotype'],'lightgray')}";>{PHENOTYPE_STR.get(item['phenotype'],'Unknown phenotype')}</span>)"""
+            if index.column() == 0:
+                return f"""{item['name']} (<span style="color:{PHENOTYPE_COLOR.get(item['phenotype'],'lightgray')}";>{PHENOTYPE_STR.get(item['phenotype'],'Unknown phenotype')}</span>)"""
+
+            else:
+                description = self._fields_descriptions.get(field, "")
+                return f"<b>{field}</b><br/> {description} "
+
 
         # if role == Qt.ForegroundRole and index.column() == 0:
         #     phenotype = self.items[index.row()]["phenotype"]
@@ -85,9 +92,13 @@ class SamplesModel(QAbstractTableModel):
     def load_fields(self):
         self.beginResetModel()
         if self.conn:
-            self._fields = [
-                i["name"] for i in sql.get_field_by_category(self.conn, "samples")
-            ]
+
+            self._fields = []
+            self._fields_descriptions = {}
+            for field in sql.get_field_by_category(self.conn, "samples"):
+                self._fields.append(field["name"])
+                self._fields_descriptions[field["name"]] = field["description"]
+      
         self.endResetModel()
 
     def load(self, variant_id):

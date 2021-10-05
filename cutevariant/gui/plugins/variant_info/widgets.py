@@ -29,6 +29,17 @@ class VariantInfoModel(QJsonModel):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._headers = ["Fields", "Value"]
+        self.fields_descriptions = {}
+
+    @property
+    def  conn(self):
+        return self._conn
+
+    @conn.setter
+    def conn(self, conn):
+        self._conn = conn
+        self.fields_descriptions = {f["name"]:f["description"] for f in sql.get_fields(conn)}
+
 
     def data(self, index: QModelIndex, role: Qt.ItemDataRole):
 
@@ -49,7 +60,17 @@ class VariantInfoModel(QJsonModel):
             return QSize(30, 30)
 
         if role == Qt.ToolTipRole:
-            return str(value)
+            
+            if index.column() == 0:
+                # Return fields description
+                key = super().data(index, Qt.DisplayRole)
+                description = self.fields_descriptions.get(key,"")
+                return f"<b>{key}</b><br/>{description}"
+
+
+            if index.column() == 1:
+                # Return key values 
+                return str(value)
 
         if role == Qt.DisplayRole and index.column() == 1:
             if value == "":
@@ -64,6 +85,9 @@ class VariantInfoModel(QJsonModel):
 
     def flags(self, index):
         return Qt.ItemIsEnabled | Qt.ItemIsSelectable
+
+
+
 
 
 class VariantInfoWidget(PluginWidget):
@@ -199,6 +223,7 @@ class VariantInfoWidget(PluginWidget):
 
     def on_open_project(self, conn):
         self.conn = conn
+        self.model.conn = conn
 
     def on_refresh(self):
         """Set the current variant by the variant displayed in the GUI"""
