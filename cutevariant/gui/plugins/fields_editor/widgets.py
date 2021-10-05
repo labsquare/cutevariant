@@ -1025,10 +1025,11 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self.presets_combo.blockSignals(True)
         self.presets_combo.clear()
         config = Config("fields_editor")
-        presets = config["presets"]
-        for name, fields in presets.items():
-            LOGGER.error(fields)
-            self.presets_combo.addItem(name)
+        if "presets" in config:
+            presets = config["presets"]
+            for name, fields in presets.items():
+                LOGGER.error(fields)
+                self.presets_combo.addItem(name)
 
         # if current_preset:
         #     self.presets_combo.setCurrentText(current_preset)
