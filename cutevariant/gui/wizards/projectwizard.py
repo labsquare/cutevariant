@@ -16,6 +16,7 @@ from PySide2.QtCore import (
     QSettings,
     QFile,
     Slot,
+    QDateTime,
     Qt,
 )
 from PySide2.QtGui import QIcon, QStandardItem, QStandardItemModel, QColor, QFont
@@ -643,7 +644,7 @@ class ImportPage(QWizardPage):
         self.setLayout(m_layout)
 
         # File to open
-        self.log_edit.appendPlainText(self.field("filename"))
+        self.show_log(self.field("filename"))
         # Database filename; see initializePage()
         self.db_filename = None
 
@@ -653,7 +654,7 @@ class ImportPage(QWizardPage):
         self.annotation_parser = None
 
         self.thread.started.connect(
-            lambda: self.log_edit.appendPlainText(self.tr("Started"))
+            lambda: self.show_log(self.tr("Started"))
         )
 
         # Note: self.run is automatically launched when ImportPage is displayed
@@ -662,6 +663,11 @@ class ImportPage(QWizardPage):
         self.thread.progress_changed.connect(self.progress_changed)
         self.thread.finished.connect(self.import_thread_finished)
         self.thread.finished_status.connect(self.import_thread_finished_status)
+
+    def show_log(self, message:str):
+
+        timestamp = QDateTime.currentDateTime().toString("hh:MM:ss")
+        self.log_edit.appendPlainText(f"[{timestamp}] {message}")
 
     def initializePage(self):
         """Overridden: Prepare the page just before it is shown
@@ -695,7 +701,7 @@ class ImportPage(QWizardPage):
         """
         self.progress.setValue(value)
         if message:
-            self.log_edit.appendPlainText(message)
+            self.show_log(message)
 
     @Slot()
     def import_thread_finished(self):
@@ -717,11 +723,11 @@ class ImportPage(QWizardPage):
         if status:
             # Block further import
             self.import_button.setDisabled(True)
-            self.log_edit.appendPlainText(self.tr("Done"))
+            self.show_log(self.tr("Done"))
         else:
             # Display import on the button
             self.import_button.setText(self.text_buttons[0])
-            self.log_edit.appendPlainText(self.tr("Stopped!"))
+            self.show_log(self.tr("Stopped!"))
 
     @Slot()
     def run(self):
@@ -745,15 +751,15 @@ class ImportPage(QWizardPage):
             self.thread.annotation_parser = self.field("annotation_parser")
             self.thread.project_settings = {"name": self.field("project_name")}
 
-            self.log_edit.appendPlainText(
+            self.show_log(
                 "Annotation parser: " + str(self.field("annotation_parser"))
             )
 
-            self.log_edit.appendPlainText(self.tr("Import ") + self.thread.filename)
+            self.show_log(self.tr("Import ") + self.thread.filename)
 
             show_ignored_fields = ",".join([i[0] for i in self.thread.ignored_fields])
 
-            self.log_edit.appendPlainText("Ignored fields: " + show_ignored_fields)
+            self.show_log("Ignored fields: " + show_ignored_fields)
             # display stop on the button
             self.import_button.setText(self.text_buttons[1])
             self.thread.start()
