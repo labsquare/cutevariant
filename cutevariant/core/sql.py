@@ -1782,6 +1782,13 @@ def async_update_many_variants(conn, data, total_variant_count=None, yield_every
     TODO: rebuild them after
     TODO: determine how new samples will be inserted (has to be done before this func)
     """
+    def delete_selection_index(conn):
+        """Ugly bugfix that is needed because everything tries to create a default variant
+        selection and cutevariant crashes if one already exists"""
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM selections WHERE name = '%s'" % (cm.DEFAULT_SELECTION_NAME,))
+        conn.commit()
+
     def remove_nonexisting_columns(conn, data: list):
         """Remove from new data columns that don't exist in variants and annotations tables.
         Alternative: add missing columns and update them to NULL for all previous variants.
@@ -1919,6 +1926,7 @@ def async_update_many_variants(conn, data, total_variant_count=None, yield_every
     update_dict, new_data = identify_existing_variants(existing_var_dict, data_var_dict)
 
     #New variants can be inserted with the usual method
+    delete_selection_index(conn)
     for percent, msg in async_insert_many_variants(conn, 
                                         new_data, 
                                         total_variant_count=len(new_data), 

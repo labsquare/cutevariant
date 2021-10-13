@@ -662,8 +662,7 @@ class MainWindow(QMainWindow):
 
     def update_project(self):
         """Slot to allow update of a project with a Wizard"""
-        wizard = UpdateWizard(self.conn)
-        print("I AM HERE @@@@@@@@@@@@ !!!!!!!")
+        wizard = UpdateWizard()
         if not wizard.exec_():
             return
 

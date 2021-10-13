@@ -794,7 +794,7 @@ class UpdateWizard(QWizard):
         - ImportPage: Creation of the database
     """
 
-    def __init__(self, conn):
+    def __init__(self):
         super().__init__()
         self.setWindowTitle(self.tr("Cutevariant - Project update wizard"))
         self.setWindowIcon(QIcon(cm.DIR_ICONS + "app.png"))
