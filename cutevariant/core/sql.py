@@ -1108,6 +1108,29 @@ def insert_many_fields(conn, data: list):
     )
     conn.commit()
 
+def update_many_fields(conn, data: list):
+    """Insert multiple fields into "fields" table using one commit
+
+    :param conn: sqlite3.connect
+    :param data: list of field dictionnary
+
+    :Examples:
+
+        insert_many_fields(conn, [{name:"sacha", category:"variant", count: 0, description="a description"}])
+        insert_many_fields(conn, reader.get_fields())
+
+    .. seealso:: insert_field, abstractreader
+    """
+    #TODO
+    cursor = conn.cursor()
+    cursor.executemany(
+        """
+        INSERT INTO fields (name,category,type,description)
+        VALUES (:name,:category,:type,:description)
+        """,
+        data,
+    )
+    conn.commit()
 
 @lru_cache()
 def get_fields(conn):
@@ -1916,8 +1939,12 @@ def async_update_many_variants(conn, data, total_variant_count=None, yield_every
         cursor = update_annotation(conn, variant["id"], variant["annotations"], cursor)
         cursor = update_sample_has_variant(conn, variant["id"], variant["samples"], cursor)
         return cursor
-
+    print()
+    print("DATA1:", data)
     data = remove_nonexisting_columns(conn, data)
+    print()
+    print("DATA2:", data)
+    print()
     existing_var = [v for v in get_variants(conn,
                                 ["id", "chr", "pos", "ref", "alt"],
                                 limit = get_variants_count(conn))]
@@ -1934,6 +1961,7 @@ def async_update_many_variants(conn, data, total_variant_count=None, yield_every
         yield percent, msg
 
     #For previously existing variants, update variant, annotation and sample_has_variant tables
+    variant_count = 9001
     cursor = conn.cursor()
     total_update_count = len(data_var_dict)
     for variant_count, k in enumerate(data_var_dict.keys(), 1):
@@ -2065,7 +2093,8 @@ def insert_sample(conn, name="no_name"):
 
 
 def insert_many_samples(conn, samples: list):
-    """Insert many samples at a time in samples table
+    """Insert many samples at a time in samples table.
+    Set genotype to -1 in sample_has_variant for all pre-existing variants.
 
     :param samples: List of samples names
         .. todo:: only names in this list ?
@@ -2089,6 +2118,44 @@ def insert_many_new_samples(conn, samples: list):
     cursor.executemany(
         "INSERT INTO samples (name) VALUES (?)", ((sample,) for sample in samples)
     )
+    conn.commit()
+
+
+def insert_only_new_samples(conn, samples: list):
+    """Insert many samples at a time in samples table, except already inserted samples.
+
+    :param samples: List of samples names
+        .. todo:: only names in this list ?
+    :type samples: <list <str>>
+    """
+    new_samples = [v for v in samples if v not in set([s["name"] for s in get_samples(conn)])]
+    cursor = conn.cursor()
+    cursor.executemany(
+        "INSERT INTO samples (name) VALUES (?)", 
+        ((sample,) for sample in new_samples)
+    )
+
+    #update sample_has_variant with new samples, setting everything to NULL (-1 for genotype)
+    new_ids = [s["id"] for s in get_samples(conn) if s["name"] in new_samples]
+    print()
+    print("printing", [v for v in get_variants(conn, ["id"])])
+    print()
+    if "gt" in get_table_columns(conn, "sample_has_variant"):
+        cursor.executemany(
+            "INSERT INTO sample_has_variant (sample_id, variant_id, gt) VALUES (?,?,?)", 
+            ((int(sample_id), int(var["id"]), "-1") 
+                for sample_id in new_ids 
+                for var in get_variants(conn, ["id"], limit = get_variants_count(conn))
+            )
+        )
+    else:
+        cursor.executemany(
+            "INSERT INTO samples (sample_id, variant_id) VALUES (?,?)", 
+            ((int(sample_id), int(var["id"])) 
+                for sample_id in new_ids 
+                for var in get_variants(conn, ["id"], limit = get_variants_count(conn))
+            )
+        )
     conn.commit()
 
 

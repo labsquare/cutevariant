@@ -15,6 +15,7 @@ from .sql import (
     create_table_selections,
     create_table_wordsets,
     insert_many_samples,
+    insert_only_new_samples,
     get_samples,
     insert_many_fields,
     async_insert_many_variants,
@@ -318,13 +319,14 @@ def async_update_reader(
     # create_table_wordsets(conn)
 
     # Insert samples
-    yield 0, "Inserting samples..."
-    # insert_many_samples(conn, reader.get_samples())
+    yield 0, "Inserting new samples..."
+    insert_only_new_samples(conn, reader.get_samples())
 
     # Import PED file
     if pedfile:
         yield 0, f"Import pedfile {pedfile}"
         import_pedfile(conn, pedfile)
+        #TODO: check proper pedigree update
 
         # Compute control and cases samples
         samples = tuple(get_samples(conn))
