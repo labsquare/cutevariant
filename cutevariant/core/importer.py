@@ -267,7 +267,7 @@ def async_update_reader(
     indexed_sample_fields=None,
     project=None,
 ):
-    """Import data via the given reader into a SQLite database via the given connection
+    """Update data in the given SQLITE database (conn) via the given reader
 
     :param conn: sqlite connection
     :param reader: must be a AbstractReader base class
