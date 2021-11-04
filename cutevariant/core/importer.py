@@ -18,6 +18,7 @@ from .sql import (
     insert_only_new_samples,
     get_samples,
     insert_many_fields,
+    insert_only_new_fields,
     async_insert_many_variants,
     async_update_many_variants,
     create_indexes,
@@ -345,8 +346,8 @@ def async_update_reader(
         case_samples = list()
 
     # Insert fields
-    yield 0, "Inserting fields..."
-    # insert_many_fields(conn, reader.get_extra_fields())
+    yield 0, "Inserting new fields..."
+    insert_only_new_fields(conn, reader.get_fields())
 
     # Insert variants, link them to annotations and samples
     yield 0, "Insertings variants..."

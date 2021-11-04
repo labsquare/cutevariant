@@ -1108,28 +1108,29 @@ def insert_many_fields(conn, data: list):
     )
     conn.commit()
 
-def update_many_fields(conn, data: list):
-    """Insert multiple fields into "fields" table using one commit
+def insert_only_new_fields(conn, data: list):
+    """Insert in "fields" table the fields who did not already exist. 
+    Add those fields as new columns in "variants", "annotations" or "samples" tables.
 
     :param conn: sqlite3.connect
     :param data: list of field dictionnary
-
-    :Examples:
-
-        insert_many_fields(conn, [{name:"sacha", category:"variant", count: 0, description="a description"}])
-        insert_many_fields(conn, reader.get_fields())
-
-    .. seealso:: insert_field, abstractreader
     """
-    #TODO
+    get_fields.cache_clear()
+    existing_fields = [(f["name"], f["category"]) for f in get_fields(conn)]
+    new_data = [f for f in data if (f["name"], f["category"]) not in existing_fields]
     cursor = conn.cursor()
     cursor.executemany(
         """
         INSERT INTO fields (name,category,type,description)
         VALUES (:name,:category,:type,:description)
         """,
-        data,
+        new_data,
     )
+    for field in new_data:
+        print("ALTER TABLE %s ADD COLUMN %s %s" % (field["category"], field["name"], field["type"]))
+        cursor.execute(
+            "ALTER TABLE %s ADD COLUMN %s %s" % (field["category"], field["name"], field["type"])
+        )
     conn.commit()
 
 @lru_cache()
@@ -1814,8 +1815,9 @@ def async_update_many_variants(conn, data, total_variant_count=None, yield_every
 
     def remove_nonexisting_columns(conn, data: list):
         """Remove from new data columns that don't exist in variants and annotations tables.
-        Alternative: add missing columns and update them to NULL for all previous variants.
-        TODO: The alternative will be needed when we inevitably add a caller or a database.
+        Alternative: add missing columns instead.
+        
+        04/11/2021 Update: the alternative was implemented.
         """
         var_cols = get_table_columns(conn, "variants")
         ann_cols = get_table_columns(conn, "annotations")
@@ -1936,15 +1938,14 @@ def async_update_many_variants(conn, data, total_variant_count=None, yield_every
             {k: variant[k] for k in variant if k not in ("samples", "annotations")},
             cursor
         )
-        cursor = update_annotation(conn, variant["id"], variant["annotations"], cursor)
-        cursor = update_sample_has_variant(conn, variant["id"], variant["samples"], cursor)
+        if "annotations" in variant.keys():
+            cursor = update_annotation(conn, variant["id"], variant["annotations"], cursor)
+        if "samples" in variant.keys():
+            cursor = update_sample_has_variant(conn, variant["id"], variant["samples"], cursor)
         return cursor
-    print()
-    print("DATA1:", data)
-    data = remove_nonexisting_columns(conn, data)
-    print()
-    print("DATA2:", data)
-    print()
+
+    # data = remove_nonexisting_columns(conn, data)
+
     existing_var = [v for v in get_variants(conn,
                                 ["id", "chr", "pos", "ref", "alt"],
                                 limit = get_variants_count(conn))]
@@ -1961,7 +1962,7 @@ def async_update_many_variants(conn, data, total_variant_count=None, yield_every
         yield percent, msg
 
     #For previously existing variants, update variant, annotation and sample_has_variant tables
-    variant_count = 9001
+    variant_count = "init"
     cursor = conn.cursor()
     total_update_count = len(data_var_dict)
     for variant_count, k in enumerate(data_var_dict.keys(), 1):
