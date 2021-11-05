@@ -319,6 +319,9 @@ def async_update_reader(
     # Create table sets
     # create_table_wordsets(conn)
 
+    #remember old samples to update them with new variants
+    old_samples = [v for v in get_samples(conn)]
+
     # Insert samples
     yield 0, "Inserting new samples..."
     insert_only_new_samples(conn, reader.get_samples())
@@ -353,7 +356,7 @@ def async_update_reader(
     yield 0, "Insertings variants..."
     variants = reader.get_extra_variants(control=control_samples, case=case_samples)
     yield from async_update_many_variants(
-        conn, variants, total_variant_count=reader.number_lines
+        conn, variants, old_samples, total_variant_count=reader.number_lines
     )
 
     # # Create indexes
