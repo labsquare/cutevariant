@@ -5,6 +5,7 @@ import csv
 import io
 import re
 import time
+import datetime
 import itertools as it
 from collections import defaultdict
 import copy
@@ -14,6 +15,7 @@ import urllib.request  # STRANGE: CANNOT IMPORT URLLIB ALONE
 from logging import DEBUG, Logger
 import typing
 import jinja2
+import getpass
 
 # dependency
 import cachetools
@@ -408,6 +410,18 @@ class VariantModel(QAbstractTableModel):
                 self.variants[row].update(variant)
                 self.dataChanged.emit(left, right)
                 self.headerDataChanged.emit(Qt.Vertical, left, right)
+
+        # Log modification
+
+        with open("user.log", "a") as file:
+
+            username = getpass.getuser()
+            timestamp = str(datetime.datetime.now())
+            del variant["id"]
+
+            file.write(
+                f"{username} update {','.join(variant.keys())} for {variant_id=} at {timestamp} \n"
+            )
 
     def find_row_id_from_variant_id(self, variant_id: int) -> list:
         """Find the ids of all rows with the same given variant_id
