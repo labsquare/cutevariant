@@ -45,3 +45,23 @@ variant_view:
       is_browser: false
       is_default: false
       url: "http://localhost:60151/goto?locus=chr{{chr|replace('chr','')}}:{{pos}}"
+  - name: "UCSC hg38"
+    is_browser: true
+    is_default: false
+    url: "https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position={{chr}}:{{pos}}"
+  - name: "UCSC hg19"
+    is_browser: true
+    is_default: false
+    url: "https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg19&position={{chr}}:{{pos}}"
+  - name: "UCSC hg38"
+    is_browser: true
+    is_default: false
+    url: "https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position={{chr}}:{{pos}}"
+  - name: "Ensembl GRCh38"
+    is_browser: true
+    is_default: false
+    url: "https://www.ensembl.org/Homo_sapiens/Location/View?r={{chr}}:{{pos}}-{{pos}}"
+  - name: "Ensembl GRCh37"
+    is_browser: true
+    is_default: false
+    url: "http://grch37.ensembl.org/Homo_sapiens/Location/View?r={{chr}}:{{pos}}-{{pos}}"

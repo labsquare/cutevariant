@@ -1,0 +1,5 @@
+__title__ = "IGV"
+__description__ = "A plugin to display IGV.js"
+__long_description__ = "test"
+__author__ = "Sacha schutz"
+__version__ = "1.0.0"

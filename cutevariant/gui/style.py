@@ -12,8 +12,8 @@ CLASSIFICATION = {
         "icon": 0xF03AA,
         "color": "#f5a26f",
     },
-    4: {"name": "Likely pathogen", "icon": 0xF03AD, "color": "#ed6d79"},
-    5: {"name": "Pathogen", "icon": 0xF03B1, "color": "#ed6d79"},
+    4: {"name": "Likely pathogenic", "icon": 0xF03AD, "color": "#ed6d79"},
+    5: {"name": "Pathogenic", "icon": 0xF03B1, "color": "#ed6d79"},
 }
 
 

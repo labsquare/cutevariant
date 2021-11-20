@@ -459,7 +459,7 @@ class Completer(QWidget):
 
         self.proxy_model.setFilterRegularExpression(
             QRegularExpression(
-                f"^{ self._completion_prefix}.*",
+                f".*{ self._completion_prefix}.*",
                 QRegularExpression.CaseInsensitiveOption,
             )
         )
@@ -528,7 +528,6 @@ class CodeEdit(QTextEdit):
 
         self.completer = Completer()
         self.completer.set_target(self)
-
         self.syntax = VqlSyntaxHighlighter(self.document())
         self.setAcceptRichText(False)
         font = QFont("monospace")

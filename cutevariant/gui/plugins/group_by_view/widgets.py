@@ -308,69 +308,60 @@ class GroupByViewWidget(PluginWidget):
     def __init__(self, parent=None, conn=None):
         super().__init__()
         self.conn = conn
+        self._order_desc = True
+        self._order_by_count = True
+        self._limit = 50
+        self._offset = 0
+
+        # Create QCombobox
         self.field_select_combo = QComboBox(self)
+        self.field_select_combo.currentTextChanged.connect(self._load_groupby)
+        self.field_select_combo.setSizePolicy(
+            QSizePolicy.Expanding, QSizePolicy.Preferred
+        )
 
-        self.view = GroupbyTable(conn, self)
-        self.view.tableview.doubleClicked.connect(self.on_double_click)
+        # Create actions
+        # self.apply_action = QAction(self)
+        # self.apply_action.setIcon(FIcon(0xF0EF1))
+        # self.apply_action.setText(self.tr("Create filter from selection"))
+        # self.apply_action.setEnabled(False)
 
-        self.setWindowTitle(self.tr("Group By"))
-        self.setWindowIcon(FIcon(0xF126F))
+        self.refresh_action = QAction(self)
+        self.refresh_action.setIcon(FIcon(0xF0450))
+        self.refresh_action.setText(self.tr("Rerfresh"))
+        self.refresh_action.triggered.connect(self.load)
 
+        # Create toolbar
         self.toolbar = QToolBar(self)
         self.toolbar.setIconSize(QSize(16, 16))
-
-        # HIDE wordset button
-        # self.add_selection_to_wordset_act = self.toolbar.addAction(
-        #     FIcon(0xF0415), self.tr("Add selection to wordset")
-        # )
-        # self.add_selection_to_wordset_act.triggered.connect(
-        #     self.add_selection_to_wordset
-        # )
-
-        self.view.tableview.setSelectionMode(QAbstractItemView.ExtendedSelection)
-
-        # Add apply button
-        self.apply_action: QAction = self.toolbar.addAction(
-            FIcon(0xF0EF1), self.tr("Create filter from selection")
-        )
-
-        self.refresh_action: QAction = self.toolbar.addAction(
-            FIcon(0xF0450), self.tr("Rerfresh")
-        )
-        self.refresh_action.triggered.connect(self.load)
         self.toolbar.addWidget(self.field_select_combo)
+        self.toolbar.addAction(self.refresh_action)
+        # self.toolbar.addAction(self.apply_action)
 
-        # spacer = QWidget()
-        # spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        # self.toolbar.addWidget(spacer)
+        # Create view
+        self.view = GroupbyTable(conn, self)
+        self.view.tableview.doubleClicked.connect(self.on_double_click)
+        self.view.tableview.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        # Make sure that the combobox automatically gets enabled/disabled upon loading
+        self.view.groupby_model.groupby_started.connect(
+            lambda: self.field_select_combo.setEnabled(False)
+        )
+        self.view.groupby_model.groubpby_finished.connect(
+            lambda: self.field_select_combo.setEnabled(True)
+        )
+        # self.view.tableview.selectionModel().selectionChanged.connect(
+        #     lambda s, d: self.apply_action.setEnabled(len(s) != 0)
+        # )
 
+        # Create layout
         layout = QVBoxLayout(self)
         layout.addWidget(self.toolbar)
         layout.addWidget(self.view)
         layout.setSpacing(0)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        self.field_select_combo.currentTextChanged.connect(self._load_groupby)
-
-        # Make sure that the combobox automatically gets enabled/disabled upon loading
-        self.view.groupby_model.groupby_started.connect(
-            lambda: self.field_select_combo.setEnabled(False)
-        )
-
-        self.apply_action.setEnabled(False)
-
-        self.view.groupby_model.groubpby_finished.connect(
-            lambda: self.field_select_combo.setEnabled(True)
-        )
-
-        self.view.tableview.selectionModel().selectionChanged.connect(
-            lambda s, d: self.apply_action.setEnabled(len(s) != 0)
-        )
-
-        self._order_desc = True
-        self._order_by_count = True
-        self._limit = 50
-        self._offset = 0
+        self.setWindowTitle(self.tr("Group By"))
+        self.setWindowIcon(FIcon(0xF126F))
 
     def on_open_project(self, conn: sqlite3.Connection):
         """override"""

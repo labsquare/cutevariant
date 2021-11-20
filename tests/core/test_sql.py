@@ -120,6 +120,42 @@ VARIANTS = [
     },
 ]
 
+VARIANTS_FOR_UPDATE = [
+    {
+        "chr": "chr1",
+        "pos": 10,
+        "ref": "G",
+        "alt": "A",
+        "extra1": 9001,
+        "extra2": 9002,
+        "qual": 15,
+        "newCol": "newAnnot",
+        "annotations": [
+            {"gene": "gene1", "transcript": "NEWTRANSCRIPT"},
+            {"gene": "gene1", "transcript": "transcript2"},
+            {"gene": "gene1", "transcript": "transcript2", "cnomen": "cnomen3"},
+        ],
+        "samples": [
+            {"name": "sacha", "gt": 1, "dp": 75},
+            {"name": "boby", "gt": 1, "dp": 15},
+        ],
+    },
+    {
+        "chr": "chr2",
+        "pos": 9000,
+        "ref": "C",
+        "alt": "G",
+        "dp": 100,
+        "extra1": 20,
+        "extra2": 100,
+        "qual": 20,
+        "annotations": [{"gene": "gene1", "transcript": "transcript1"}],
+        "samples": [
+            {"name": "sacha", "gt": 1, "dp": 40},
+            {"name": "boby", "gt": 1, "dp": 35},
+        ],
+    }
+]
 
 FILTERS = {
     "AND": [
@@ -214,7 +250,27 @@ def hasardous_wordset():
     return filepath, data[:2] + ["xyz"]
 
 
+def print_table_for_debug(conn, table):
+    print("\nTABLE:", table)
+    cur = conn.cursor()
+    with conn:
+        cur.execute("SELECT * FROM " + table)
+        for row in cur.fetchall():
+            print(tuple(row))
+
 ################################################################################
+
+def test_update(conn):
+    #TODO: automate table update verification
+    for table in ("variants", "annotations", "samples", "sample_has_variant", "selections"):
+        print_table_for_debug(conn, table)
+    for x, y in sql.async_update_many_variants(conn, 
+                            VARIANTS_FOR_UPDATE, 
+                            total_variant_count=len(VARIANTS_FOR_UPDATE), 
+                            yield_every=1):
+        print(x,y)
+    for table in ("variants", "annotations", "samples", "sample_has_variant", "selections"):
+        print_table_for_debug(conn, table)
 
 
 def test_create_indexes(conn):

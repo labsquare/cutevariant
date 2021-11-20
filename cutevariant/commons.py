@@ -24,8 +24,8 @@ CLASSIFICATION = {
     1: "Benin",
     2: "Likely benin",
     3: "Variant of uncertain significance",
-    4: "Likely pathogen",
-    5: "Pathogen",
+    4: "Likely pathogenic",
+    5: "Pathogenic",
 }
 
 CLASSIFICATION_ICONS = {

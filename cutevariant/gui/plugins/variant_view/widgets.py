@@ -37,6 +37,39 @@ import cutevariant.commons as cm
 from cutevariant import LOGGER
 
 
+class VariantVerticalHeader(QHeaderView):
+    def __init__(self, parent=None):
+        super().__init__(Qt.Vertical, parent)
+
+    def sizeHint(self):
+        return QSize(30, super().sizeHint().height())
+
+    def paintSection(self, painter: QPainter, rect: QRect, section: int):
+
+        if painter is None:
+            return
+
+        painter.save()
+        super().paintSection(painter, rect, section)
+
+        favorite = self.model().variant(section)["favorite"]
+        classification = self.model().variant(section)["classification"]
+
+        painter.restore()
+        color = style.CLASSIFICATION[classification].get("color")
+
+        pen = QPen(QColor(style.CLASSIFICATION[classification].get("color")))
+        pen.setWidth(6)
+        painter.setPen(pen)
+        painter.setBrush(QBrush(style.CLASSIFICATION[classification].get("color")))
+        painter.drawLine(rect.left(), rect.top() + 1, rect.left(), rect.bottom() - 1)
+
+        pix = FIcon(0xF00C1 if favorite else 0xF00C3, color).pixmap(20, 20)
+        target = rect.center() - pix.rect().center() + QPoint(1, 0)
+
+        painter.drawPixmap(target, pix)
+
+
 class VariantModel(QAbstractTableModel):
     """VariantModel is a Qt model class which contains variant data from SQL DB.
 
@@ -90,6 +123,7 @@ class VariantModel(QAbstractTableModel):
         self.fields_descriptions = None
 
         self.fields = ["chr", "pos", "ref", "alt", "ann.gene"]
+        self._extra_fields = ["classification", "favorite"]
 
         self.filters = dict()
         self.source = "variants"
@@ -290,6 +324,24 @@ class VariantModel(QAbstractTableModel):
             if role == Qt.SizeHintRole:
                 return QSize(0, 20)
 
+        # if orientation == Qt.Vertical:
+        #     if role == Qt.DecorationRole:
+
+        #         pix = QPixmap(32, 32)
+        #         pix.fill(QColor("white"))
+        #         # pix.fill(Qt.transparent)
+        #         painter = QPainter()
+        #         painter.begin(pix)
+        #         pen = QPen(QColor("red"))
+        #         pen.setWidth(20)
+        #         painter.setPen(pen)
+        #         painter.drawLine(-2, -10, -2, 30)
+        #         painter.drawPixmap(0, 0, FIcon(0xF0ACD).pixmap(40, 40))
+        #         painter.end()
+        #         fav = self.variants[section]["favorite"]
+        #         return QIcon(pix)
+        #         # return QIcon(FIcon(0xF0ACD)) if fav else QIcon(FIcon(0xF0ACE))
+
     def update_variant(self, row: int, variant: dict):
         """Update a variant at the given row with given content
 
@@ -300,7 +352,21 @@ class VariantModel(QAbstractTableModel):
             variant (dict): Dict of fields to be updated
         """
         # Update in database
+        # if tuple(self.conn.execute("PRAGMA data_version").fetchone())[0] > 1:
+        #     print(tuple(self.conn.execute("PRAGMA data_version").fetchone())[0])
+        #     ret = QMessageBox.warning(None, "Database has been modified", "Do you want to overwrite value?", QMessageBox.Yes | QMessageBox.No)
+        #     if ret == QMessageBox.No:
+        #         return
         variant_id = self.variants[row]["id"]
+
+        sql_variant = {k: v for k,v in sql.get_one_variant(self.conn, variant_id).items() if k in ["classification"]}
+        model_variant = {k: v for k,v in self.variants[row].items() if k in ["classification"]}
+        print(sql_variant)
+        print(model_variant)
+        if sql_variant != model_variant:
+            ret = QMessageBox.warning(None, "Database has been modified", "Do you want to overwrite value?", QMessageBox.Yes | QMessageBox.No)
+            if ret == QMessageBox.No:
+                return
 
         # Update all variant with same variant_id
         # Use case : When several transcript are displayed
@@ -314,6 +380,7 @@ class VariantModel(QAbstractTableModel):
                 sql.update_variant(self.conn, variant)
                 self.variants[row].update(variant)
                 self.dataChanged.emit(left, right)
+                self.headerDataChanged.emit(Qt.Vertical, left, right)
 
     def find_row_id_from_variant_id(self, variant_id: int) -> list:
         """Find the ids of all rows with the same given variant_id
@@ -402,10 +469,12 @@ class VariantModel(QAbstractTableModel):
         self._finished_thread_count = 0
         # LOGGER.debug("Page queried: %s", self.page)
 
+        query_fields = set(self.fields + self._extra_fields)
+
         # Store SQL query for debugging purpose
         self.debug_sql = build_sql_query(
             self.conn,
-            fields=self.fields,
+            fields=query_fields,
             source=self.source,
             filters=self.filters,
             limit=self.limit,
@@ -420,7 +489,7 @@ class VariantModel(QAbstractTableModel):
         # Create load_func to run asynchronously: load variants
         load_func = functools.partial(
             cmd.select_cmd,
-            fields=self.fields,
+            fields=query_fields,
             source=self.source,
             filters=self.filters,
             limit=self.limit,
@@ -434,7 +503,7 @@ class VariantModel(QAbstractTableModel):
         # Create count_func to run asynchronously: count variants
         count_function = functools.partial(
             cmd.count_cmd,
-            fields=self.fields,
+            fields=query_fields,
             source=self.source,
             filters=self.filters,
             group_by=self.group_by,
@@ -494,6 +563,8 @@ class VariantModel(QAbstractTableModel):
         if self.variants:
             # Set headers of the view
             self.headers = list(self.variants[0].keys())
+            # Hide extra fields
+            self.headers = self.fields
 
         # self.total = self._load_count_thread.results["count"]
 
@@ -764,7 +835,7 @@ class VariantView(QWidget):
         self.view.setAlternatingRowColors(True)
         self.view.horizontalHeader().setStretchLastSection(True)
         self.view.setSelectionMode(QAbstractItemView.SingleSelection)
-        self.view.verticalHeader().hide()
+        self.view.setVerticalHeader(VariantVerticalHeader())
 
         self.view.setSortingEnabled(True)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)

@@ -22,7 +22,7 @@ from cutevariant.core import sql
 from cutevariant.core.sql import get_database_file_name
 from cutevariant.core.writer import CsvWriter, PedWriter
 from cutevariant.gui import FIcon
-from cutevariant.gui.wizards import ProjectWizard
+from cutevariant.gui.wizards import ProjectWizard, UpdateWizard
 from cutevariant.gui.settings import SettingsDialog
 from cutevariant.gui.widgets.aboutcutevariant import AboutCutevariant
 from cutevariant import commons as cm
@@ -120,12 +120,16 @@ class MainWindow(QMainWindow):
         self.toolbar.setObjectName("maintoolbar")  # For window saveState
         self.toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
 
+        self.plugin_toolbar = QToolBar("plugins")
+        self.addToolBar(Qt.LeftToolBarArea, self.plugin_toolbar)
+
         # Setup menu bar
         self.setup_actions()
 
         # Setup Central widget
         self.central_tab = QTabWidget()
         self.footer_tab = QTabWidget()
+        self.footer_tab.setTabPosition(QTabWidget.South)
         self.vsplit = QSplitter(Qt.Vertical)
         self.vsplit.addWidget(self.central_tab)
         self.vsplit.addWidget(self.footer_tab)
@@ -202,6 +206,7 @@ class MainWindow(QMainWindow):
         widget.dock = dock
         # Set the objectName for a correct restoration after saveState
         dock.setObjectName(str(widget.__class__))
+        self.plugin_toolbar.addAction(dock.toggleViewAction())
 
         self.addDockWidget(area, dock)
         action = dock.toggleViewAction()
@@ -362,9 +367,13 @@ class MainWindow(QMainWindow):
             self.open_project,
             QKeySequence.Open,
         )
+        self.update_project_action = self.file_menu.addAction(
+            FIcon(0xF0B86), self.tr("&Update project"), self.update_project, QKeySequence.AddTab
+        )
 
         self.toolbar.addAction(self.new_project_action)
         self.toolbar.addAction(self.open_project_action)
+        self.toolbar.addAction(self.update_project_action)
         self.toolbar.addAction(
             FIcon(0xF02D7), self.tr("Help"), QWhatsThis.enterWhatsThisMode
         )
@@ -651,6 +660,24 @@ class MainWindow(QMainWindow):
                 self.status_bar.showMessage(e.__class__.__name__ + ": " + str(e))
                 raise
 
+    def update_project(self):
+        """Slot to allow update of a project with a Wizard"""
+        wizard = UpdateWizard()
+        if not wizard.exec_():
+            return
+
+        db_filename = (
+            wizard.field("project_path")
+            + QDir.separator()
+            + wizard.field("project_name")
+            + ".db"
+        )
+        try:
+            self.open(db_filename)
+        except Exception as e:
+            self.status_bar.showMessage(e.__class__.__name__ + ": " + str(e))
+            raise
+
     def export_as_csv(self):
         """Export variants into CSV file"""
         # Reload last directory used
@@ -899,7 +926,7 @@ class MainWindow(QMainWindow):
     def toggle_footer_visibility(self, visibility):
         """Toggle visibility of the bottom toolbar and all its plugins"""
         # self.footer_tab.setVisible(visibility)
-        if visibility:
+        if not visibility:
             self.vsplit.setSizes([100, 0])
         else:
             self.vsplit.setSizes([200, 100])

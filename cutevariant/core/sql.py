@@ -29,6 +29,7 @@ import sqlite3
 from collections import defaultdict
 import re
 import logging
+from sqlite3.dbapi2 import DatabaseError
 import typing
 from pkg_resources import parse_version
 from functools import partial, lru_cache
@@ -1108,6 +1109,29 @@ def insert_many_fields(conn, data: list):
     )
     conn.commit()
 
+def insert_only_new_fields(conn, data: list):
+    """Insert in "fields" table the fields who did not already exist. 
+    Add those fields as new columns in "variants", "annotations" or "samples" tables.
+
+    :param conn: sqlite3.connect
+    :param data: list of field dictionnary
+    """
+    get_fields.cache_clear()
+    existing_fields = [(f["name"], f["category"]) for f in get_fields(conn)]
+    new_data = [f for f in data if (f["name"], f["category"]) not in existing_fields]
+    cursor = conn.cursor()
+    cursor.executemany(
+        """
+        INSERT INTO fields (name,category,type,description)
+        VALUES (:name,:category,:type,:description)
+        """,
+        new_data,
+    )
+    for field in new_data:
+        cursor.execute(
+            "ALTER TABLE %s ADD COLUMN %s %s" % (field["category"], field["name"], field["type"])
+        )
+    conn.commit()
 
 @lru_cache()
 def get_fields(conn):
@@ -1762,6 +1786,207 @@ def insert_many_variants(conn, data, **kwargs):
         pass
 
 
+def async_update_many_variants(conn, data, old_samples, total_variant_count=None, yield_every=3000):
+    """Insert many variants from data into variants table
+
+    :param conn: sqlite3.connect
+    :param data: list of variant dictionnary which contains same number of key than fields numbers.
+    :param old_samples: already existing samples in "samples" table as a list of dictionaries {id, name}
+    :param total_variant_count: total variant count, to compute progression
+    :return: Yield a tuple with progression and message.
+        Progression is 0 if total_variant_count is not set.
+    :rtype: <generator <tuple <int>, <str>>
+
+    TODO: remove indexes before update
+    TODO: rebuild them after
+    """
+    def delete_selection_index(conn):
+        """Ugly bugfix that is needed because everything tries to create a default variant
+        selection and cutevariant crashes if one already exists"""
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM selections WHERE name = '%s'" % (cm.DEFAULT_SELECTION_NAME,))
+        conn.commit()
+
+    def remove_nonexisting_columns(conn, data: list):
+        """Remove from new data columns that don't exist in variants and annotations tables.
+        Alternative: add missing columns instead.
+        
+        04/11/2021 Update: the alternative was implemented.
+        """
+        var_cols = get_table_columns(conn, "variants")
+        ann_cols = get_table_columns(conn, "annotations")
+        samples_cols = get_table_columns(conn, "sample_has_variant")
+        samples_cols += ["name"] #needed for update_sample_has_variant(args)
+        filtered_data = []
+        for var in data:
+            filtered_var = {k: var[k] for k in var if k in var_cols }
+
+            filtered_ann = []
+            if "annotations" in var.keys():
+                for ann in var["annotations"]:
+                    ann = {k: ann[k] for k in ann if k in ann_cols}
+                    filtered_ann.append(ann)
+                filtered_var["annotations"] = filtered_ann
+
+            filtered_samples = []
+            if "samples" in var.keys():
+                for s in var["samples"]:
+                    s = {k: s[k] for k in s if k in samples_cols}
+                    filtered_samples.append(s)
+                filtered_var["samples"] = filtered_samples
+
+            filtered_data.append(filtered_var)
+        return filtered_data
+
+    def build_unique_keys(data: list):
+        """Associate variant data to a unique key to identify alreaydy inserted variants
+        :param data: [{var1 dict}, {var2 dict}]
+        :return: {chr_pos_ref_alt1 : {var1 dict}, chr_pos_ref_alt2: {var2 dict}}
+        """
+        id_dict = {}
+        for var in data:
+            id = "_".join([str(var[k]) for k in ("chr", "pos", "ref", "alt")])
+            id_dict[id] = var
+        return id_dict
+
+    def identify_existing_variants(existing_var: dict, data_var: dict):
+        """
+        :return: 1) a dict linking new variants chr_pos_ref_alt keys 
+                    to already inserted variants database IDs that will be updated
+                 2) a list of variant data that are new in the database
+                    and can be inserted with the usual function
+        """
+        update_dict = {}
+        new_data = []
+        for k in data_var.keys():
+            if k in existing_var.keys():
+                update_dict[k] = existing_var[k]["id"]
+            else:
+                new_data.append(data_var[k])
+        return update_dict, new_data
+
+    def async_update_variant(conn, variant: dict, cursor):
+        """Adapted from update_variant(args), adding an arg to pass the cursor"""
+        if "id" not in variant:
+            raise KeyError("'id' key is not in the given variant <%s>" % variant)
+        unzip = lambda l: list(zip(*l))
+        # Get fields and values in separated lists
+        placeholders, values = unzip(
+            [(f"`{key}` = ? ", value) for key, value in variant.items() if key != "id"]
+        )
+        query = (
+            "UPDATE variants SET " + ",".join(placeholders) + f" WHERE id = {variant['id']}"
+        )
+        cursor.execute(query, values)
+        return cursor
+
+    def update_annotation(conn, variant_id: int, var_annotations: dict, cursor):
+        """
+        variant_id is not a unique primary key here
+        Chosen solution: remove existing annotations for the variant,
+        then insert the new ones.
+        """
+        conn.execute(
+                f"DELETE FROM annotations WHERE variant_id = {variant_id}"
+            )
+
+        ann_columns = get_table_columns(conn, "annotations")
+        anns = []
+
+        for ann in var_annotations:
+            default_values = defaultdict(lambda: None, ann)
+            ann_value = [variant_id]
+            ann_value += [default_values[i] for i in ann_columns[1:]]
+            anns.append(ann_value)
+
+        placeholders = ",".join(["?"] * len(ann_columns))
+        q = f"INSERT OR REPLACE INTO annotations VALUES ({placeholders})"
+        # cursor = conn.cursor()
+        cursor.executemany(q, anns)
+        # conn.commit()
+        return cursor
+
+    def update_sample_has_variant(conn, variant_id: int, var_samples: dict, cursor):
+        """
+        Adapted from async_insert_many_variants
+        """
+        samples_id_mapping = dict(conn.execute("SELECT name, id FROM samples"))
+        sample_columns = get_table_columns(conn, "sample_has_variant")
+        samples = []
+        for sample in var_samples:
+            sample_id = samples_id_mapping[sample["name"]]
+            default_values = defaultdict(lambda: None, sample)
+            sample_value = [sample_id, variant_id]
+            sample_value += [default_values[i] for i in sample_columns[2:]]
+            samples.append(sample_value)
+
+        placeholders = ",".join(["?"] * len(sample_columns))
+        q = f"INSERT OR REPLACE INTO sample_has_variant VALUES ({placeholders})"
+        # cursor = conn.cursor()
+        cursor.executemany(q, samples)
+        # conn.commit()
+        return cursor
+
+    def fully_update_variant(conn, variant: dict, cursor):
+        cursor = async_update_variant(conn, 
+            {k: variant[k] for k in variant if k not in ("samples", "annotations")},
+            cursor
+        )
+        if "annotations" in variant.keys():
+            cursor = update_annotation(conn, variant["id"], variant["annotations"], cursor)
+        if "samples" in variant.keys():
+            cursor = update_sample_has_variant(conn, variant["id"], variant["samples"], cursor)
+        return cursor
+
+    # data = remove_nonexisting_columns(conn, data)
+
+    existing_var = [v for v in get_variants(conn,
+                                ["id", "chr", "pos", "ref", "alt"],
+                                limit = get_variants_count(conn))]
+    existing_var_dict = build_unique_keys(existing_var)
+    data_var_dict = build_unique_keys(data)
+    update_dict, new_data = identify_existing_variants(existing_var_dict, data_var_dict)
+
+    previous_max_var_id = [dict(res) for res in conn.execute(f"SELECT max(id) FROM variants")][0]["max(id)"]
+
+    #New variants can be inserted with the usual method
+    delete_selection_index(conn)
+    for percent, msg in async_insert_many_variants(conn, 
+                                        new_data, 
+                                        total_variant_count=len(new_data), 
+                                        yield_every=yield_every):
+        yield percent, msg
+    #the usual insertion method does not update old samples with new variants
+    add_new_variants_to_old_samples(conn, old_samples, new_data, previous_max_var_id)
+
+    #For previously existing variants, update variant, annotation and sample_has_variant tables
+    variant_count = 0
+    cursor = conn.cursor()
+    total_update_count = len(update_dict)
+    #using a separate list to iterate because keys will be changed during the loop
+    original_data_keys = data_var_dict.keys()
+    for k in original_data_keys:
+        if k in update_dict.keys():
+            data_var_dict[k]["id"] = update_dict[k]
+            cursor = fully_update_variant(conn, data_var_dict[k], cursor)
+            variant_count += 1
+            if variant_count % yield_every == 0:
+                progress = variant_count / total_update_count * 100
+                yield progress, f"{variant_count} variants updated."
+    yield 97, f"{variant_count} variant(s) has been updated."
+
+    #Correct default selection to account for new number of variants
+    cursor.execute("DELETE FROM selections WHERE name = '%s'" % (cm.DEFAULT_SELECTION_NAME,))
+    conn.commit()
+    insert_selection(
+        conn, "", name=cm.DEFAULT_SELECTION_NAME, count=get_variants_count(conn)
+    )
+
+def update_many_variants(conn, data, **kwargs):
+    """Wrapper for debugging purpose"""
+    for _, _ in async_update_many_variants(conn, data, kwargs):
+        pass
+
 def get_variant_as_group(
     conn,
     groupby: str,
@@ -1869,7 +2094,8 @@ def insert_sample(conn, name="no_name"):
 
 
 def insert_many_samples(conn, samples: list):
-    """Insert many samples at a time in samples table
+    """Insert many samples at a time in samples table.
+    Set genotype to -1 in sample_has_variant for all pre-existing variants.
 
     :param samples: List of samples names
         .. todo:: only names in this list ?
@@ -1880,6 +2106,97 @@ def insert_many_samples(conn, samples: list):
         "INSERT INTO samples (name) VALUES (?)", ((sample,) for sample in samples)
     )
     conn.commit()
+
+
+def insert_many_new_samples(conn, samples: list):
+    """Insert new samples when adding a new vcf to a project
+
+    :param samples: List of samples names
+        .. todo:: only names in this list ?
+    :type samples: <list <str>>
+    """
+    cursor = conn.cursor()
+    cursor.executemany(
+        "INSERT INTO samples (name) VALUES (?)", ((sample,) for sample in samples)
+    )
+    conn.commit()
+
+
+def insert_only_new_samples(conn, samples: list):
+    """Insert many samples at a time in samples table, except already inserted samples.
+
+    :param samples: List of samples names
+        .. todo:: only names in this list ?
+    :type samples: <list <str>>
+    """
+    new_samples = [v for v in samples if v not in set([s["name"] for s in get_samples(conn)])]
+    cursor = conn.cursor()
+    cursor.executemany(
+        "INSERT INTO samples (name) VALUES (?)", 
+        ((sample,) for sample in new_samples)
+    )
+
+    #update sample_has_variant with new samples, setting everything to NULL (-1 for genotype)
+    new_ids = [s["id"] for s in get_samples(conn) if s["name"] in new_samples]
+    if "gt" in get_table_columns(conn, "sample_has_variant"):
+        cursor.executemany(
+            "INSERT INTO sample_has_variant (sample_id, variant_id, gt) VALUES (?,?,?)", 
+            ((int(sample_id), int(var["id"]), "-1") 
+                for sample_id in new_ids 
+                for var in get_variants(conn, ["id"], limit = get_variants_count(conn))
+            )
+        )
+    else:
+        cursor.executemany(
+            "INSERT INTO samples (sample_id, variant_id) VALUES (?,?)", 
+            ((int(sample_id), int(var["id"])) 
+                for sample_id in new_ids 
+                for var in get_variants(conn, ["id"], limit = get_variants_count(conn))
+            )
+        )
+    conn.commit()
+
+def add_new_variants_to_old_samples(conn, old_samples: list, new_data, previous_max_var_id: int):
+    """Update sample_has_variant for previously existing samples with newly inserted variants
+
+    :param conn: sqlite connection
+    :param old_samples: list of sample dict that were already present in "samples" table
+    :param data_dict: dictionary {chr_pos_ref_alt: variant dict} ; variants in vcf used
+                      for the update (may contain previously existing variants)
+    :param previous_max_var_id: variant ids above this int correspond to newly inserted variants
+    """
+    samples_in_new_data = set()
+    for v in new_data:
+        if "samples" in v:
+            for s in v["samples"]:
+                samples_in_new_data.add(s["name"])
+    samples_to_update = [s["id"] for s in old_samples if s["name"] not in samples_in_new_data]
+    new_var_ids = [int(v["id"]) 
+                        for v in get_variants(conn, ["id"], limit = get_variants_count(conn))
+                        if int(v["id"]) > previous_max_var_id
+                    ]
+
+    if len(samples_to_update) > 0 and len(new_var_ids) > 0:
+        cursor = conn.cursor()
+        if "gt" in get_table_columns(conn, "sample_has_variant"):
+            cursor.executemany(
+                "INSERT INTO sample_has_variant (sample_id, variant_id, gt) VALUES (?,?,?)", 
+                ((int(sample_id), int(var), "-1") 
+                    for sample_id in samples_to_update 
+                    for var in new_var_ids
+                )
+            )
+        else:
+            cursor.executemany(
+                "INSERT INTO samples (sample_id, variant_id) VALUES (?,?)", 
+                ((int(sample_id), int(var)) 
+                    for sample_id in samples_to_update 
+                    for var in new_var_ids
+                )
+            )
+        conn.commit()
+
+
 
 
 def get_samples(conn):

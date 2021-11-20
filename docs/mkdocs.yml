@@ -11,8 +11,7 @@ nav:
     - Getting started: 
       - Introduction: 'introduction.md'
       - Installation: 'installation.md'
-      - Quick start: 'quick-start.md'
-      - Examples: 'tutorials/basic-tutorial.md'
+      - Quick start: 'tutorials/basic-tutorial.md'
     
     - Documentation:
       - VQL query: 'vql.md'

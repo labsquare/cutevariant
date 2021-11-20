@@ -11,6 +11,7 @@ from tests import utils
 
 from cutevariant.gui.plugins.fields_editor import widgets
 from cutevariant.core import sql
+from cutevariant.config import Config
 
 
 @pytest.fixture
@@ -32,7 +33,7 @@ def test_plugin(conn, qtbot):
         sql.get_field_by_category(conn, "samples")
     ) * len(list(sql.get_samples(conn)))
 
-    checked_fields = [
+    fields = [
         "chr",
         "pos",
         "ann.gene",
@@ -40,10 +41,10 @@ def test_plugin(conn, qtbot):
         "samples.TUMOR.gt",
         "samples.NORMAL.gt",
     ]
-    plugin.widget_fields.checked_fields = checked_fields
-    assert len(plugin.widget_fields.views[0]["model"].checked_fields) == 2
-    assert len(plugin.widget_fields.views[1]["model"].checked_fields) == 2
-    assert len(plugin.widget_fields.views[2]["model"].checked_fields) == 2
+    plugin.widget_fields.fields = fields
+    assert len(plugin.widget_fields.views[0]["model"].checked_fields()) == 2
+    assert len(plugin.widget_fields.views[1]["model"].checked_fields()) == 2
+    assert len(plugin.widget_fields.views[2]["model"].checked_fields()) == 2
 
 
 def test_presets_model(qtmodeltester):
@@ -67,6 +68,7 @@ def test_presets_model(qtmodeltester):
 
     model.load()
 
+    print("ICI", model._presets)
     assert model.rowCount() == 2
 
     qtmodeltester.check(model)
@@ -74,36 +76,79 @@ def test_presets_model(qtmodeltester):
     os.remove(filename)
 
 
-# def test_model_load(qtmodeltester, conn):
+def test_preset_dialog(conn, qtbot):
 
-#     model = widgets.FieldsModel()
-#     model.conn = conn
-#     model.load()
-#     qtmodeltester.check(model)
+    w = widgets.PresetsDialog("test_preset")
 
-#     #  check categories
-#     assert model.item(0).text() == "variants"
-#     assert model.item(1).text() == "annotations"
-#     assert model.item(2).text() == "samples"
+    qtbot.addWidget(w)
 
-#     #  Check first element of the variants ( should be favorite)
-#     assert model.item(0).child(0).text() == "favorite"
+    fields = ["chr", "pos", "ref", "alt", "ann.gene", "ann.impact"]
+    w.fields = fields
 
-#     #  test uncheck
-#     assert model.item(0).child(0).checkState() == QtCore.Qt.Unchecked
-#     assert model.checked_fields == []
+    # Test moving fields ...
+    w.view.setCurrentRow(0)
+    w.move_down()
+    assert w.fields == ["pos", "chr", "ref", "alt", "ann.gene", "ann.impact"]
 
-#     # test check
-#     model.item(0).child(0).setCheckState(QtCore.Qt.Checked)
-#     assert model.checked_fields == ["favorite"]
+    w.view.setCurrentRow(1)
+    w.move_up()
+    assert w.fields == ["chr", "pos", "ref", "alt", "ann.gene", "ann.impact"]
 
-#     # Test serialisation
-#     _, file = tempfile.mkstemp(suffix=".cutevariant-filter")
-#     model.to_file(file)
-#     # Reset model and check if it is unchecked
-#     model.load()
-#     assert model.item(0).child(0).checkState() == QtCore.Qt.Unchecked
+    w.view.setCurrentRow(5)
+    [w.move_up() for i in range(5)]
+    assert w.fields == ["ann.impact", "chr", "pos", "ref", "alt", "ann.gene"]
 
-#     #  Load from serialize
-#     model.from_file(file)
-#     assert model.item(0).child(0).checkState() == QtCore.Qt.Checked
+
+def test_fields_model(qtmodeltester, conn, qtbot):
+
+    model = widgets.FieldsModel()
+    model.conn = conn
+
+    # Load variant categories
+    model.category = "variants"
+    model.load()
+    assert model.rowCount() == len(sql.get_field_by_category(conn, model.category))
+
+    # Load annotations categories
+    model.category = "annotations"
+    model.load()
+    assert model.rowCount() == len(sql.get_field_by_category(conn, model.category))
+
+    # Load samples categories ! Not ( you must repeat fields per samples)
+    model.category = "samples"
+    model.load()
+    sample_count = len(list(sql.get_samples(conn)))
+    fields_count = len(sql.get_field_by_category(conn, model.category))
+    assert model.rowCount() == sample_count * fields_count
+
+    # check fields
+    model.category = "variants"
+
+    # check field checked is not emit
+    with qtbot.assertNotEmitted(model.field_checked):
+        model.load()
+
+    fields = ["chr", "pos", "ref"]
+
+    with qtbot.assertNotEmitted(model.field_checked):
+        model.set_checked_fields(fields)
+
+    assert model.checked_fields() == fields
+
+    for item in model.checked_items():
+        assert item.text() in fields
+
+    # check comment item
+    with qtbot.waitSignal(model.field_checked, timeout=10000) as blocker:
+        model.item(1).setCheckState(QtCore.Qt.Checked)
+
+    assert blocker.args == ["comment", True]
+
+    assert len(model.checked_fields()) == 4
+
+
+def test_fields_widget(conn, qtbot):
+    widget = widgets.FieldsWidget()
+    widget.conn = conn
+    widget.fields = ["chr", "pos"]
+    assert widget.fields == ["chr", "pos"]
