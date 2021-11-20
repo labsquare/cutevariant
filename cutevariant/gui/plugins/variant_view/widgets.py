@@ -359,12 +359,23 @@ class VariantModel(QAbstractTableModel):
         #         return
         variant_id = self.variants[row]["id"]
 
-        sql_variant = {k: v for k,v in sql.get_one_variant(self.conn, variant_id).items() if k in ["classification"]}
-        model_variant = {k: v for k,v in self.variants[row].items() if k in ["classification"]}
+        sql_variant = {
+            k: v
+            for k, v in sql.get_one_variant(self.conn, variant_id).items()
+            if k in ["classification"]
+        }
+        model_variant = {
+            k: v for k, v in self.variants[row].items() if k in ["classification"]
+        }
         print(sql_variant)
         print(model_variant)
         if sql_variant != model_variant:
-            ret = QMessageBox.warning(None, "Database has been modified", "Do you want to overwrite value?", QMessageBox.Yes | QMessageBox.No)
+            ret = QMessageBox.warning(
+                None,
+                "Database has been modified",
+                "Do you want to overwrite value?",
+                QMessageBox.Yes | QMessageBox.No,
+            )
             if ret == QMessageBox.No:
                 return
 
@@ -638,7 +649,7 @@ class VariantModel(QAbstractTableModel):
 
         """
         if column < self.columnCount():
-            field = self.fields[column - 1]
+            field = self.fields[column]
 
             self.order_by = [field]
             self.order_desc = order == Qt.DescendingOrder
