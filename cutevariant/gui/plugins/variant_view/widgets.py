@@ -359,31 +359,47 @@ class VariantModel(QAbstractTableModel):
         #         return
         variant_id = self.variants[row]["id"]
 
+        # find index
+        left = self.index(row, 0)
+        right = self.index(row, self.columnCount() - 1)
+
+        editable_fields = ["classification", "favorite", "comment", "tags"]
+
+        # Current data
         sql_variant = {
             k: v
             for k, v in sql.get_one_variant(self.conn, variant_id).items()
-            if k in ["classification"]
+            if k in editable_fields
         }
+
+        # SQL data
         model_variant = {
-            k: v for k, v in self.variants[row].items() if k in ["classification"]
+            k: v for k, v in self.variants[row].items() if k in editable_fields
         }
-        print(sql_variant)
-        print(model_variant)
-        if sql_variant != model_variant:
-            ret = QMessageBox.warning(
-                None,
-                "Database has been modified",
-                "Do you want to overwrite value?",
-                QMessageBox.Yes | QMessageBox.No,
+
+        # Is there a difference between model and sql ? Which one ?
+
+        difference = set(model_variant.items()) - set(sql_variant.items())
+
+        if difference:
+
+            diff_fields = ",".join([f"{key}" for key, value in difference])
+
+            box = QMessageBox(None)
+            box.setWindowTitle("Database has been modified from another place")
+            box.setText(
+                f"The fields <b>{diff_fields}</b> have been modified from another place.\nDo you want to overwrite value?"
             )
-            if ret == QMessageBox.No:
+            box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+            box.setDetailedText(f"{variant=}\n{sql_variant=} \n {model_variant}")
+            box.setIcon(QMessageBox.Warning)
+
+            if box.exec_() == QMessageBox.No:
                 return
 
         # Update all variant with same variant_id
         # Use case : When several transcript are displayed
         for row in self.find_row_id_from_variant_id(variant_id):
-            left = self.index(row, 0)
-            right = self.index(row, self.columnCount() - 1)
 
             if left.isValid() and right.isValid():
                 # Get database id of the variant to allow its update operation
