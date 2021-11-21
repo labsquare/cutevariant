@@ -1290,9 +1290,9 @@ def create_annotations_indexes(conn, indexed_annotation_fields=None):
         return
     for field in indexed_annotation_fields:
 
-
-
-        LOGGER.debug(f"CREATE INDEX IF NOT EXISTS `idx_annotations_{field}` ON annotations (`{field}`)")
+        LOGGER.debug(
+            f"CREATE INDEX IF NOT EXISTS `idx_annotations_{field}` ON annotations (`{field}`)"
+        )
 
         conn.execute(
             f"CREATE INDEX IF NOT EXISTS `idx_annotations_{field}` ON annotations (`{field}`)"
@@ -1377,7 +1377,7 @@ def create_variants_indexes(conn, indexed_fields={"pos", "ref", "alt"}):
     """
     # Complementary index of the primary key (sample_id, variant_id)
     conn.execute(
-        "CREATE INDEX IF NOT EXISTS `idx_sample_has_variant` ON sample_has_variant (`variant_id`)"
+        "CREATE INDEX IF NOT EXISTS `idx_sample_has_variant` ON sample_has_variant (`variant_id`, `sample_id`)"
     )
 
     for field in indexed_fields:
