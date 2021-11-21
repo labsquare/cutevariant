@@ -397,6 +397,7 @@ class VariantModel(QAbstractTableModel):
             box.setIcon(QMessageBox.Warning)
 
             if box.exec_() == QMessageBox.No:
+
                 return
 
         # Update all variant with same variant_id

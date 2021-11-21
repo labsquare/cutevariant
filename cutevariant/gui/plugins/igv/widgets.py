@@ -24,10 +24,6 @@ class IgvView(QWebEngineView):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.settings().setAttribute(
-            QWebEngineSettings.LocalContentCanAccessRemoteUrls, True
-        )
-
         self.settings().setAttribute(QWebEngineSettings.LocalStorageEnabled, True)
         self.settings().setAttribute(QWebEngineSettings.FullScreenSupportEnabled, True)
 
@@ -45,30 +41,23 @@ class IgvView(QWebEngineView):
             $(".igv-search-input").val('{location}')
             $(".igv-search-icon-container").trigger("click")
 
-
             """
         )
 
 
 class IgvWidget(plugin.PluginWidget):
-    """Widget displaying the list of avaible selections.
-    User can select one of them to update Query::selection
-    """
+    """Plugin to show all annotations of a selected variant"""
 
     ENABLE = True
     REFRESH_STATE_DATA = {"current_variant"}
 
-    def __init__(self, parent=None, conn=None):
-        """
-        Args:
-            parent (QWidget)
-            conn (sqlite3.connexion): sqlite3 connexion
-        """
+    def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.main_layout = QVBoxLayout(self)
         self.view = IgvView()
-        self.main_layout.addWidget(self.view)
+        self.vlayout = QVBoxLayout()
+        self.vlayout.addWidget(self.view)
+        self.setLayout(self.vlayout)
 
     def on_refresh(self):
 
