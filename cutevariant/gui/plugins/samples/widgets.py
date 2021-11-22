@@ -22,7 +22,7 @@ from cutevariant.commons import DEFAULT_SELECTION_NAME
 from cutevariant import LOGGER
 from cutevariant.gui.sql_thread import SqlThread
 
-PHENOTYPE_STR = {0: "Unknown phenotype", 1: "Unaffected", 2: "Affected"}
+PHENOTYPE_STR = {0: "Unknown", 1: "Unaffected", 2: "Affected"}
 PHENOTYPE_COLOR = {0: "#d3d3d3", 1: "#006400", 2: "#ff0000"}
 SEX_ICON = {0: 0xF0766, 1: 0xF029D, 2: 0xF029C}
 
@@ -74,9 +74,8 @@ class SamplesModel(QAbstractTableModel):
         field = self.headerData(index.column(), Qt.Horizontal, Qt.DisplayRole)
 
         if role == Qt.DisplayRole:
-            if index.column() == 0:
-                return item["name"]
-
+            if field == "phenotype":
+                return PHENOTYPE_STR.get(item[field], "?")
             else:
                 return item.get(field, "error")
 
