@@ -187,15 +187,19 @@ class SamplesModel(QAbstractTableModel):
         )
 
     def sort(self, column: int, order: Qt.SortOrder) -> None:
-        pass
-        # self.beginResetModel()
-        # sorting_key = "phenotype" if column == 1 else "genotype"
-        # self.items = sorted(
-        #     self.items,
-        #     key=lambda i: i[sorting_key],
-        #     reverse=order == Qt.DescendingOrder,
-        # )
-        # self.endResetModel()
+        self.beginResetModel()
+        sorting_key = (
+            "phenotype"
+            if column == 0
+            else self.headerData(column, Qt.Horizontal, Qt.DisplayRole)
+        )
+        print(self.items)
+        self.items = sorted(
+            self.items,
+            key=lambda i: i[sorting_key],
+            reverse=order == Qt.DescendingOrder,
+        )
+        self.endResetModel()
 
     def interrupt(self):
         """Interrupt current query if active
