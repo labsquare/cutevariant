@@ -1,7 +1,7 @@
 """Plugin to Display genotypes variants 
 """
 import typing
-from functools import partial
+from functools import cmp_to_key, partial
 import time
 import copy
 import re
@@ -63,7 +63,7 @@ class SamplesModel(QAbstractTableModel):
 
     def columnCount(self, parent: QModelIndex = QModelIndex) -> int:
         """override"""
-        return len(self._fields) + 1
+        return len(self._fields) + 2
 
     def data(self, index: QModelIndex, role: Qt.ItemDataRole) -> typing.Any:
         """override"""
@@ -106,9 +106,11 @@ class SamplesModel(QAbstractTableModel):
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
 
             if section == 0:
-                return "sample"
+                return "name"
+            elif section == 1:
+                return "phenotype"
             else:
-                return self._fields[section - 1]
+                return self._fields[section - 2]
 
         return None
 
@@ -188,15 +190,27 @@ class SamplesModel(QAbstractTableModel):
 
     def sort(self, column: int, order: Qt.SortOrder) -> None:
         self.beginResetModel()
-        sorting_key = (
-            "phenotype"
-            if column == 0
-            else self.headerData(column, Qt.Horizontal, Qt.DisplayRole)
-        )
-        print(self.items)
+
+        sorting_key = self.headerData(column, Qt.Horizontal, Qt.DisplayRole)
+
+        # Compare items from self.items based on the sorting key given by the header
+        def field_sort(i1, i2):
+            # The one of i1 or i2 that is None should always be considered lower
+            if i1[sorting_key] is None:
+                return -1
+            if i2[sorting_key] is None:
+                return 1
+
+            if i1[sorting_key] < i2[sorting_key]:
+                return -1
+            elif i1[sorting_key] == i2[sorting_key]:
+                return 0
+            else:
+                return 1
+
         self.items = sorted(
             self.items,
-            key=lambda i: i[sorting_key],
+            key=cmp_to_key(field_sort),
             reverse=order == Qt.DescendingOrder,
         )
         self.endResetModel()
@@ -279,7 +293,7 @@ class SamplesWidget(plugin.PluginWidget):
 
         # Obligé de faire un truc degeulasse pour avoir un
 
-        for col in range(1, self.model.columnCount()):
+        for col in range(2, self.model.columnCount()):
             field = self.model.headerData(col, Qt.Horizontal, Qt.DisplayRole)
             action = QAction(field, self)
             self.menu.addAction(action)
