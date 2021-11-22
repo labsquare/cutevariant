@@ -421,7 +421,7 @@ class VariantModel(QAbstractTableModel):
             del variant["id"]
 
             file.write(
-                f"{username} update {','.join(variant.keys())} for {variant_id=} at {timestamp} \n"
+                f"{username} updated {', '.join(variant.keys())} for {variant_id=} with {', '.join(str(v) for v in variant.values())} at {timestamp} \n"
             )
 
     def find_row_id_from_variant_id(self, variant_id: int) -> list:
