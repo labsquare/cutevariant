@@ -1,7 +1,8 @@
 """Plugin to Display genotypes variants 
 """
 import typing
-from functools import partial
+from functools import cmp_to_key, partial
+import time
 import copy
 import re
 
@@ -19,18 +20,42 @@ from cutevariant.commons import DEFAULT_SELECTION_NAME
 
 
 from cutevariant import LOGGER
+from cutevariant.gui.sql_thread import SqlThread
 
-PHENOTYPE_STR = {0: "Unknown phenotype", 1: "Unaffected", 2: "Affected"}
+PHENOTYPE_STR = {0: "Unknown", 1: "Unaffected", 2: "Affected"}
 PHENOTYPE_COLOR = {0: "#d3d3d3", 1: "#006400", 2: "#ff0000"}
 SEX_ICON = {0: 0xF0766, 1: 0xF029D, 2: 0xF029C}
 
 
 class SamplesModel(QAbstractTableModel):
+
+    samples_are_loading = Signal(bool)
+    error_raised = Signal(str)
+    load_started = Signal()
+    load_finished = Signal()
+    interrupted = Signal()
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.conn = None
         self.items = []
         self._fields = []
+        self._fields_descriptions = {}
+
+        # Creates the samples loading thread
+        self._load_samples_thread = SqlThread(self.conn)
+
+        # Connect samples loading thread's signals (started, finished, error, result ready)
+        self._load_samples_thread.started.connect(
+            lambda: self.samples_are_loading.emit(True)
+        )
+        self._load_samples_thread.finished.connect(
+            lambda: self.samples_are_loading.emit(False)
+        )
+        self._load_samples_thread.result_ready.connect(self.on_samples_loaded)
+        self._load_samples_thread.error.connect(self.error_raised)
+
+        self._user_has_interrupt = False
 
     def rowCount(self, parent: QModelIndex = QModelIndex) -> int:
         """override"""
@@ -38,7 +63,7 @@ class SamplesModel(QAbstractTableModel):
 
     def columnCount(self, parent: QModelIndex = QModelIndex) -> int:
         """override"""
-        return len(self._fields) + 1
+        return len(self._fields) + 2
 
     def data(self, index: QModelIndex, role: Qt.ItemDataRole) -> typing.Any:
         """override"""
@@ -49,9 +74,8 @@ class SamplesModel(QAbstractTableModel):
         field = self.headerData(index.column(), Qt.Horizontal, Qt.DisplayRole)
 
         if role == Qt.DisplayRole:
-            if index.column() == 0:
-                return item["name"]
-
+            if field == "phenotype":
+                return PHENOTYPE_STR.get(item[field], "?")
             else:
                 return item.get(field, "error")
 
@@ -63,7 +87,12 @@ class SamplesModel(QAbstractTableModel):
                 return QIcon(FIcon(icon))
 
         if role == Qt.ToolTipRole:
-            return f"""{item['name']} (<span style="color:{PHENOTYPE_COLOR.get(item['phenotype'],'lightgray')}";>{PHENOTYPE_STR.get(item['phenotype'],'Unknown phenotype')}</span>)"""
+            if index.column() == 0:
+                return f"""{item['name']} (<span style="color:{PHENOTYPE_COLOR.get(item['phenotype'],'lightgray')}";>{PHENOTYPE_STR.get(item['phenotype'],'Unknown phenotype')}</span>)"""
+
+            else:
+                description = self._fields_descriptions.get(field, "")
+                return f"<b>{field}</b><br/> {description} "
 
         # if role == Qt.ForegroundRole and index.column() == 0:
         #     phenotype = self.items[index.row()]["phenotype"]
@@ -76,44 +105,143 @@ class SamplesModel(QAbstractTableModel):
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
 
             if section == 0:
-                return "sample"
+                return "name"
+            elif section == 1:
+                return "phenotype"
             else:
-                return self._fields[section - 1]
+                return self._fields[section - 2]
 
         return None
 
     def load_fields(self):
         self.beginResetModel()
         if self.conn:
-            self._fields = [
-                i["name"] for i in sql.get_field_by_category(self.conn, "samples")
-            ]
+
+            self._fields = []
+            self._fields_descriptions = {}
+            for field in sql.get_field_by_category(self.conn, "samples"):
+                self._fields.append(field["name"])
+                self._fields_descriptions[field["name"]] = field["description"]
+
         self.endResetModel()
 
+    def on_samples_loaded(self):
+
+        self.beginResetModel()
+        self.items.clear()
+        if self._fields:
+            self.items = self._load_samples_thread.results
+
+        self.endResetModel()
+
+        # # Save cache
+        # self._load_variant_cache[
+        #     self._sample_hash
+        # ] = self._load_variant_thread.results.copy()
+
+        self._end_timer = time.perf_counter()
+        self.elapsed_time = self._end_timer - self._start_timer
+        self.load_finished.emit()
+
     def load(self, variant_id):
+        """Start async queries to get sample fields for the selected variant
 
-        if self.conn:
-            self.beginResetModel()
-            self.items.clear()
-            if self._fields:
-                self.items = list(
-                    sql.get_sample_annotations_by_variant(
-                        self.conn, variant_id, self._fields
-                    )
-                )
+        Called by:
+            - on_change_query() from the view.
+            - sort() and setPage() by the model.
 
-            self.endResetModel()
+        See Also:
+            :meth:`on_samples_loaded`
+        """
+        if self.conn is None:
+            return
+
+        if self.is_running():
+            LOGGER.debug(
+                "Cannot load data. Thread is not finished. You can call interrupt() "
+            )
+            self.interrupt()
+
+        # Create load_func to run asynchronously: load samples
+        load_samples_func = partial(
+            sql.get_sample_annotations_by_variant,
+            variant_id=variant_id,
+            fields=self._fields,
+        )
+
+        # Start the run
+        self._start_timer = time.perf_counter()
+
+        # # Create function HASH for CACHE
+        # self._sample_hash = hash(load_samples_func.func.__name__ + str(load_samples_func.keywords))
+
+        self.load_started.emit()
+
+        # # Launch the first thread "count" or by pass it using the cache
+        # if self._sample_hash in self._load_count_cache:
+        #     self._load_variant_thread.results = self._load_count_cache[self._count_hash]
+        #     self.on_samples_loaded()
+        # else:
+        self._load_samples_thread.conn = self.conn
+        self._load_samples_thread.start_function(
+            lambda conn: list(load_samples_func(conn))
+        )
 
     def sort(self, column: int, order: Qt.SortOrder) -> None:
-        pass
-        # self.beginResetModel()
-        # sorting_key = "phenotype" if column == 1 else "genotype"
-        # self.items = sorted(
-        #     self.items,
-        #     key=lambda i: i[sorting_key],
-        #     reverse=order == Qt.DescendingOrder,
-        # )
-        # self.endResetModel()
+        self.beginResetModel()
+
+        sorting_key = self.headerData(column, Qt.Horizontal, Qt.DisplayRole)
+
+        # Compare items from self.items based on the sorting key given by the header
+        def field_sort(i1, i2):
+            # The one of i1 or i2 that is None should always be considered lower
+            if i1[sorting_key] is None:
+                return -1
+            if i2[sorting_key] is None:
+                return 1
+
+            if i1[sorting_key] < i2[sorting_key]:
+                return -1
+            elif i1[sorting_key] == i2[sorting_key]:
+                return 0
+            else:
+                return 1
+
+        self.items = sorted(
+            self.items,
+            key=cmp_to_key(field_sort),
+            reverse=order == Qt.DescendingOrder,
+        )
+        self.endResetModel()
+
+    def interrupt(self):
+        """Interrupt current query if active
+
+        This is a blocking function...
+
+        call interrupt and wait for the error_raised signals ...
+        If nothing happen after 1000 ms, by pass and continue
+        If I don't use the dead time, it is waiting for an infinite time
+        at startup ... Because at startup, loading is called 2 times.
+        One time by the register_plugin and a second time by the plugin.show_event
+        """
+
+        interrupted = False
+
+        if self._load_samples_thread:
+            if self._load_samples_thread.isRunning():
+                self._user_has_interrupt = True
+                self._load_samples_thread.interrupt()
+                self._load_samples_thread.wait(1000)
+                interrupted = True
+
+        if interrupted:
+            self.interrupted.emit()
+
+    def is_running(self):
+        if self._load_samples_thread:
+            return self._load_samples_thread.isRunning()
+        return False
 
 
 class SamplesWidget(plugin.PluginWidget):
@@ -164,7 +292,7 @@ class SamplesWidget(plugin.PluginWidget):
 
         # Obligé de faire un truc degeulasse pour avoir un
 
-        for col in range(1, self.model.columnCount()):
+        for col in range(2, self.model.columnCount()):
             field = self.model.headerData(col, Qt.Horizontal, Qt.DisplayRole)
             action = QAction(field, self)
             self.menu.addAction(action)

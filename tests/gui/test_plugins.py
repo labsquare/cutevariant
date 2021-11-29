@@ -59,6 +59,7 @@ def test_find_plugins(qtbot, conn):
             w = plugin_widget_class()
             #  w.on_register(fake_mainwindow) ===> DOESNT WORK ??
             w.mainwindow = fake_mainwindow
+            w.mainwindow.conn = conn
 
             w.conn = conn
 

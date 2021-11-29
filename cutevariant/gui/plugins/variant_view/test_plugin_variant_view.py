@@ -37,7 +37,7 @@ def test_model_load(qtmodeltester, qtbot, conn):
     # Test default variants !
     assert model.total == 11
     assert model.rowCount() == model.total
-    assert model.columnCount() == len(model.fields) + 1
+    assert model.columnCount() == len(model.fields)
     qtmodeltester.check(model)
 
 
@@ -113,11 +113,11 @@ def test_model_data(qtbot, conn):
 
     # Test header data
     assert model.fields[0] == "chr"
-    assert model.headerData(1) == "chr"
+    assert model.headerData(0) == "chr"
 
-    #  Test data first cells ( chromosome 5 )
-    index = model.index(1, 0)
-    assert model.data(index) == "5"
+    #  Test data first cells ( chromosome 11 )
+    index = model.index(0, 0)
+    assert model.data(index) == "11"
 
 
 def test_model_sort(qtbot, conn):

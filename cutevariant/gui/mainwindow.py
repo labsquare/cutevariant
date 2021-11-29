@@ -5,6 +5,7 @@ import sys
 import sqlite3
 import json
 import typing
+import re
 from pkg_resources import parse_version
 from functools import partial
 from logging import DEBUG
@@ -119,6 +120,8 @@ class MainWindow(QMainWindow):
         self.toolbar = self.addToolBar("maintoolbar")
         self.toolbar.setObjectName("maintoolbar")  # For window saveState
         self.toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        self.toolbar.setFloatable(False)
+        self.toolbar.setMovable(False)
 
         self.plugin_toolbar = QToolBar("plugins")
         self.addToolBar(Qt.LeftToolBarArea, self.plugin_toolbar)
@@ -142,6 +145,24 @@ class MainWindow(QMainWindow):
         # Setup status bar
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
+
+        # setup omnibar
+        self.quick_search_edit = QLineEdit()
+        self.quick_search_edit.setPlaceholderText("Type a gene or coordinate ...")
+        self.quick_search_edit.setMaximumWidth(400)
+        self.quick_search_edit.setContentsMargins(0, 0, 5, 0)
+        self.quick_search_edit.addAction(
+            FIcon(0xF0349), QLineEdit.TrailingPosition
+        ).triggered.connect(lambda: self.quick_search(self.quick_search_edit.text()))
+        self.quick_search_edit.returnPressed.connect(
+            lambda: self.quick_search(self.quick_search_edit.text())
+        )
+
+        self.toolbar.addSeparator()
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.toolbar.addWidget(spacer)
+        self.toolbar.addWidget(self.quick_search_edit)
 
         # Window geometry
         self.resize(600, 400)
@@ -1026,6 +1047,43 @@ class MainWindow(QMainWindow):
         self.create_plugin_action.triggered.connect(plugin_form.create_dialog_plugin)
 
         return self.developers_menu
+
+    def quick_search(self, query: str):
+
+        if not query:
+            self.set_state_data("filters", {})
+            self.refresh_plugins(self)
+            return
+
+        # match coordinate
+        match = re.findall(r"(\w+):(\d+)-(\d+)", query)
+
+        if match:
+            chrom, start, end = match[0]
+            start = int(start)
+            end = int(end)
+            self.set_state_data(
+                "filters",
+                {
+                    "$and": [
+                        {"chr": chrom},
+                        {"pos": {"$gte": start}},
+                        {"pos": {"$lte": end}},
+                    ]
+                },
+            )
+            self.refresh_plugins(self)
+            return
+
+        # match gene
+        match = re.findall(r"(\w+)", query)
+
+        if match:
+            gene = match[0]
+
+            self.set_state_data("filters", {"$and": [{"ann.gene": gene}]})
+            self.refresh_plugins(self)
+            return
 
     # @Slot()
     # def on_query_model_changed(self):

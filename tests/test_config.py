@@ -39,4 +39,4 @@ def test_config():
 
     # Test reset path
     config.reset()
-    assert config["style"] == {"theme":"Bright"}
+    assert config["style"] == {"theme": "Bright"}
