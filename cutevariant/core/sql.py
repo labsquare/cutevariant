@@ -1,26 +1,31 @@
 """Module to bring together all the SQL related functions
 
 To read and write the sqlite database with the schema described here.
+
 Each method refers to a CRUD operation using following prefixes:
-``get_``, ``insert_``, ``update_``, ``remove_`` and takes a sqlite connection
-as ``conn`` attribute.
+    ``get_``, ``insert_``, ``update_``, ``remove_`` and takes a sqlite connection
+    as ``conn`` attribute.
 
-The module contains also QueryBuilder class to build complexe variant query based
-on filters, columns and selections.
+    The module contains also QueryBuilder class to build complexe variant query based
+    on filters, columns and selections.
 
-Example::
+    Example::
 
-    # Read sample table information
-    from cutevariant.core import sql
-    conn = sql.get_sql_connection("project.db")
-    sql.get_samples(conn)
+        # Read sample table information
+        from cutevariant.core import sql
+        conn = sql.get_sql_connection("project.db")
+        sql.get_samples(conn)
 
-    # Build a variant query
-    from cutevariant.core import sql
-    conn = sql.get_sql_connection("project.db")
-    builder = QueryBuilder(conn)
-    builder.columns = ["chr","pos","ref","alt"]
-    print(builder.sql())
+        # Build a variant query
+        from cutevariant.core import sql
+        conn = sql.get_sql_connection("project.db")
+        builder = QueryBuilder(conn)
+        builder.columns = ["chr","pos","ref","alt"]
+        print(builder.sql())
+
+Attributes:
+    delete_selection_by_name (TYPE): Description
+    delete_set_by_name (TYPE): Description
 
 """
 
@@ -44,16 +49,14 @@ from cutevariant.core.sql_aggregator import StdevFunc
 from cutevariant import LOGGER
 
 
-# content of mymodule.py
-def something():
-    """a doctest in a docstring
-    >>> something()
-    42
-    """
-    return 42
 
+# ==================================================
+#
+#  SQL HELPER 
+#
+#===================================================
 
-def get_sql_connection(filepath):
+def get_sql_connection(filepath:str) -> sqlite3.Connection:
     """Open a SQLite database and return the connection object
 
     Args:
@@ -90,37 +93,16 @@ def get_sql_connection(filepath):
     return connection
 
 
-def get_database_file_name(conn):
-    return conn.execute("PRAGMA database_list").fetchone()["file"]
-
-
-def remove_indexed_field(conn: sqlite3.Connection, category: str, field_name: str):
-    conn.execute(f"DROP INDEX IF EXISTS idx_{category}_{field_name}")
-    conn.commit()
-
-
-def get_indexed_fields(conn: sqlite3.Connection) -> typing.List[tuple]:
-    """Returns, for this connection, a list of indexed fields
-    Each element of the returned list is a tuple of (category,field_name)
-
+def get_database_file_name(conn:sqlite3.Connection) -> str:
+    """Return sqlite filename name 
+    
     Args:
         conn (sqlite3.Connection): Sqlite3 connection
-
+    
     Returns:
-        typing.List[tuple]: (category, field_name) of all the indexed fields
+        str: Path of the salite database
     """
-    indexed_fields = [
-        dict(res)["name"]
-        for res in conn.execute("SELECT name FROM sqlite_master WHERE type='index'")
-    ]
-    result = []
-    find_indexed = re.compile(r"idx_(variants|annotations|samples)_(.+)")
-    for index in indexed_fields:
-        matches = find_indexed.findall(index)
-        if matches and len(matches[0]) == 2:
-            category, field_name = matches[0]
-            result.append((category, field_name))
-    return result
+    return conn.execute("PRAGMA database_list").fetchone()["file"]
 
 
 def table_exists(conn: sqlite3.Connection, name: str) -> bool:
@@ -138,7 +120,7 @@ def table_exists(conn: sqlite3.Connection, name: str) -> bool:
     return c.fetchone() != None
 
 
-def drop_table(conn, table_name):
+def drop_table(conn, table_name:str):
     """Drop the given table
 
     Args:
@@ -150,7 +132,7 @@ def drop_table(conn, table_name):
     conn.commit()
 
 
-def clear_table(conn: sqlite3.Connection, table_name):
+def clear_table(conn: sqlite3.Connection, table_name:str):
     """Clear content of the given table
 
     Args:
@@ -162,7 +144,7 @@ def clear_table(conn: sqlite3.Connection, table_name):
     conn.commit()
 
 
-def get_table_columns(conn: sqlite3.Connection, table_name):
+def get_table_columns(conn: sqlite3.Connection, table_name:str):
     """Return the list of columns for the given table
 
     Args:
@@ -181,38 +163,16 @@ def get_table_columns(conn: sqlite3.Connection, table_name):
     ]
 
 
-def create_indexes(
-    conn: sqlite3.Connection,
-    indexed_variant_fields=None,
-    indexed_annotation_fields=None,
-    indexed_sample_fields=None,
-):
-    """Create extra indexes on tables
-
+def count_query(conn: sqlite3.Connection, query:str) -> int:
+    """Count elements from the given query or table
+    
     Args:
-        conn (sqlite3.Connection): Sqlite3 Connection
-
-    Note:
-        This function must be called after batch insertions.
-        You should use this function instead of individual functions.
-
+        conn (sqlite3.Connection): Sqlite3.Connection
+        query (str): SQL Query
+    
+    Returns:
+        int: count of records 
     """
-
-    create_selections_indexes(conn)
-
-    create_variants_indexes(conn, indexed_variant_fields)
-
-    create_samples_indexes(conn, indexed_sample_fields)
-
-    try:
-        # Some databases have not annotations table
-        create_annotations_indexes(conn, indexed_annotation_fields)
-    except sqlite3.OperationalError as e:
-        LOGGER.debug("create_indexes:: sqlite3.%s: %s", e.__class__.__name__, str(e))
-
-
-def count_query(conn, query):
-    """Count elements from the given query or table"""
     return conn.execute(f"SELECT COUNT(*) as count FROM ({query})").fetchone()[0]
 
 
@@ -291,8 +251,74 @@ def get_field_info(conn, field, source="variants", filters={}, metrics=["mean", 
     return results
 
 
-## project table ===============================================================
+def get_indexed_fields(conn: sqlite3.Connection) -> typing.List[tuple]:
+    """Returns, for this connection, a list of indexed fields
+    Each element of the returned list is a tuple of (category,field_name)
 
+    Args:
+        conn (sqlite3.Connection): Sqlite3 connection
+
+    Returns:
+        typing.List[tuple]: (category, field_name) of all the indexed fields
+    """
+    indexed_fields = [
+        dict(res)["name"]
+        for res in conn.execute("SELECT name FROM sqlite_master WHERE type='index'")
+    ]
+    result = []
+    find_indexed = re.compile(r"idx_(variants|annotations|samples)_(.+)")
+    for index in indexed_fields:
+        matches = find_indexed.findall(index)
+        if matches and len(matches[0]) == 2:
+            category, field_name = matches[0]
+            result.append((category, field_name))
+    return result
+
+def remove_indexed_field(conn: sqlite3.Connection, category: str, field_name: str):
+    conn.execute(f"DROP INDEX IF EXISTS idx_{category}_{field_name}")
+    conn.commit()
+
+
+
+def create_indexes(
+    conn: sqlite3.Connection,
+    indexed_variant_fields=None,
+    indexed_annotation_fields=None,
+    indexed_sample_fields=None,
+):
+    """Create extra indexes on tables
+
+    Args:
+        conn (sqlite3.Connection): Sqlite3 Connection
+
+    Note:
+        This function must be called after batch insertions.
+        You should use this function instead of individual functions.
+
+    """
+
+    create_selections_indexes(conn)
+
+    create_variants_indexes(conn, indexed_variant_fields)
+
+    create_samples_indexes(conn, indexed_sample_fields)
+
+    try:
+        # Some databases have not annotations table
+        create_annotations_indexes(conn, indexed_annotation_fields)
+    except sqlite3.OperationalError as e:
+        LOGGER.debug("create_indexes:: sqlite3.%s: %s", e.__class__.__name__, str(e))
+
+
+
+
+# ==================================================
+#
+#  CRUD Operation  
+#
+#===================================================
+ 
+## Project table =============================================================
 
 def create_table_project(conn: sqlite3.Connection, name: str, reference: str):
     """Create the table "projects" and insert project name and reference genome
@@ -312,13 +338,27 @@ def create_table_project(conn: sqlite3.Connection, name: str, reference: str):
 
 
 def update_project(conn: sqlite3.Connection, project: dict):
+    """Update project 
+    
+    Args:
+        conn (sqlite3.Connection): Sqlite3 Connection
+        project (dict): Description
+    """
     conn.executemany(
         "INSERT INTO projects (key, value) VALUES (?, ?)", list(project.items())
     )
     conn.commit()
 
 
-def get_project(conn: sqlite3.Connection):
+def get_project(conn: sqlite3.Connection) -> dict:
+    """Get project 
+    
+    Args:
+        conn (sqlite3.Connection): Sqlite3 Connection
+    
+    Returns:
+        dict: Project information as key:value dictionnary
+    """
     g = (dict(data) for data in conn.execute("SELECT key, value FROM projects"))
     return {data["key"]: data["value"] for data in g}
 
@@ -327,24 +367,28 @@ def get_project(conn: sqlite3.Connection):
 
 
 def create_table_metadatas(conn: sqlite3.Connection):
-    """Create table metdata
+    """Create table metdatas
 
     Args:
         conn (sqlite3.Connection): Sqlite3 Connection
     """
+
     conn.execute(
         "CREATE TABLE metadatas (id INTEGER PRIMARY KEY, key TEXT, value TEXT)"
     )
 
 
-def insert_many_metadatas(conn: sqlite3.Connection, metadatas={}):
-    """Insert metadata
-
+def update_metadatas(conn: sqlite3.Connection, metadatas={}):
+    """Populate metadatas with a key/value dictionnaries
+    
     Args:
         conn (sqlite3.Connection): Sqlite3 Connection
+        metadatas (dict, optional)
     """
     if metadatas:
         cursor = conn.cursor()
+
+        clear_table(conn, "metadatas")
         cursor.executemany(
             "INSERT INTO metadatas (key,value) VALUES (?,?)", list(metadatas.items())
         )
@@ -352,7 +396,7 @@ def insert_many_metadatas(conn: sqlite3.Connection, metadatas={}):
         conn.commit()
 
 
-def get_metadatas(conn: sqlite3.Connection):
+def get_metadatas(conn: sqlite3.Connection) -> dict:
     """Return a dictionary of metadatas
 
     Returns:
@@ -364,33 +408,6 @@ def get_metadatas(conn: sqlite3.Connection):
 
 
 ## selections & sets tables ====================================================
-
-
-def delete_by_name(conn: sqlite3.Connection, name: str, table_name: str = None):
-    """Delete data in "selections" or "sets" tables with the given name
-
-    Args:
-        conn (sqlit3.Connection): sqlite3 connection
-        name (str): Selection/set name
-        table_name (str): Name of the table concerned by the deletion
-    Returns:
-        int: Number of rows affected
-    """
-    if table_name is None:
-        raise ValueError("Please specify a table name")
-
-    if table_name == "selections" and name == "variants":
-        LOGGER.error("Cannot remove the default selection 'variants'")
-        return
-
-    cursor = conn.cursor()
-    cursor.execute(f"DELETE FROM `{table_name}` WHERE name = ?", (name,))
-    conn.commit()
-    return cursor.rowcount
-
-
-## selection table =============================================================
-
 
 def create_table_selections(conn: sqlite3.Connection):
     """Create the table "selections" and association table "selection_has_variant"
@@ -457,6 +474,8 @@ def create_selection_has_variant_indexes(conn: sqlite3.Connection):
 def insert_selection(conn, query: str, name="no_name", count=0):
     """Insert one selection record
 
+    Do not use this function. Use insert_selection_from_xxx instead.
+
     Args:
         conn (sqlite3.Connection/sqlite3.Cursor): Sqlite3 Connection.
         It can be a cursor or a connection here...
@@ -487,11 +506,7 @@ def insert_selection(conn, query: str, name="no_name", count=0):
     return cursor.lastrowid
 
 
-# Delete selections by name
-delete_selection_by_name = partial(delete_by_name, table_name="selections")
-
-
-def create_selection(
+def insert_selection_from_source(
     conn: sqlite3.Connection,
     name: str,
     source: str = "variants",
@@ -565,7 +580,7 @@ def create_selection(
     return None
 
 
-def create_selection_from_sql(
+def insert_selection_from_sql(
     conn: sqlite3.Connection, query: str, name: str, count=None, from_selection=False
 ):
     """Create a selection record from sql variant query
@@ -635,7 +650,7 @@ def create_selection_from_sql(
     return None
 
 
-def create_selection_from_bed(
+def insert_selection_from_bed(
     conn: sqlite3.Connection, source: str, target: str, bed_intervals
 ):
     """Create a new selection based on the given intervals taken from a BED file
@@ -692,7 +707,7 @@ def create_selection_from_bed(
         variants.pos <= bed_table.end"""
     )
 
-    return create_selection_from_sql(conn, query, target, from_selection=True)
+    return insert_selection_from_sql(conn, query, target, from_selection=True)
 
 
 def get_selections(conn: sqlite3.Connection):
@@ -737,7 +752,27 @@ def delete_selection(conn: sqlite3.Connection, selection_id: int):
     return cursor.rowcount
 
 
-def edit_selection(conn: sqlite3.Connection, selection: dict):
+def delete_selection_by_name(conn: sqlite3.Connection, name: str):
+    """Delete data in "selections" or "sets" tables with the given name
+
+    Args:
+        conn (sqlit3.Connection): sqlite3 connection
+        name (str): Selection/set name
+    Returns:
+        int: Number of rows affected
+    """
+
+    if name == "variants":
+        LOGGER.error("Cannot remove the default selection 'variants'")
+        return
+
+    cursor = conn.cursor()
+    cursor.execute(f"DELETE FROM selections WHERE name = ?", (name,))
+    conn.commit()
+    return cursor.rowcount
+
+
+def update_selection(conn: sqlite3.Connection, selection: dict):
     """Update the name and count of a selection with the given id
 
     Args:
@@ -786,7 +821,7 @@ def create_table_wordsets(conn: sqlite3.Connection):
     conn.commit()
 
 
-def sanitize_words(words):
+def _sanitize_words(words):
     """Return a set of cleaned words
 
     See Also:
@@ -807,7 +842,7 @@ def sanitize_words(words):
     return data
 
 
-def import_wordset_from_file(conn: sqlite3.Connection, wordset_name, filename):
+def insert_wordset_from_file(conn: sqlite3.Connection, wordset_name, filename):
     r"""Create Word set from the given file
 
     Args:
@@ -831,7 +866,7 @@ def import_wordset_from_file(conn: sqlite3.Connection, wordset_name, filename):
     """
     # Search whitespaces
     with open(filename, "r") as f_h:
-        data = sanitize_words(f_h)
+        data = _sanitize_words(f_h)
 
     if not data:
         return
@@ -846,7 +881,7 @@ def import_wordset_from_file(conn: sqlite3.Connection, wordset_name, filename):
     return cursor.rowcount
 
 
-def import_wordset_from_list(conn: sqlite3.Connection, wordset_name, words: list):
+def insert_wordset_from_list(conn: sqlite3.Connection, wordset_name, words: list):
     r"""Create Word set from the given list
 
     Args:
@@ -870,7 +905,7 @@ def import_wordset_from_list(conn: sqlite3.Connection, wordset_name, words: list
     """
     # Search whitespaces
 
-    data = sanitize_words(words)
+    data = _sanitize_words(words)
 
     if not data:
         return
@@ -885,35 +920,7 @@ def import_wordset_from_list(conn: sqlite3.Connection, wordset_name, words: list
     return cursor.rowcount
 
 
-# Delete set by name
-delete_set_by_name = partial(delete_by_name, table_name="wordsets")
-
-
-def get_wordsets(conn):
-    """Return the number of words per word set stored in DB
-
-    Returns:
-        generator[dict]: Yield dictionaries with `name` and `count` keys.
-    """
-    for row in conn.execute(
-        "SELECT name, COUNT(*) as 'count' FROM wordsets GROUP BY name"
-    ):
-        yield dict(row)
-
-
-def get_words_in_set(conn, wordset_name):
-    """Return generator of words in the given word set
-
-    Returns:
-        generator[str]: Yield words of the word set.
-    """
-    for row in conn.execute(
-        "SELECT DISTINCT value FROM wordsets WHERE name = ?", (wordset_name,)
-    ):
-        yield dict(row)["value"]
-
-
-def intersect_wordset(conn: sqlite3.Connection, name: str, wordsets: list):
+def insert_wordset_from_intersect(conn: sqlite3.Connection, name: str, wordsets: list):
     """Create new `name` wordset from intersection of `wordsets`
 
     Args:
@@ -938,7 +945,7 @@ def intersect_wordset(conn: sqlite3.Connection, name: str, wordsets: list):
     return cursor.rowcount
 
 
-def union_wordset(conn, name: str, wordsets=[]):
+def insert_wordset_from_union(conn, name: str, wordsets=[]):
     """Create new `name` wordset from union of `wordsets`
 
     Args:
@@ -963,7 +970,7 @@ def union_wordset(conn, name: str, wordsets=[]):
     return cursor.rowcount
 
 
-def subtract_wordset(conn, name: str, wordsets=[]):
+def insert_wordset_from_subtract(conn, name: str, wordsets=[]):
     """Create new `name` wordset from subtract of `wordsets`
 
     Args:
@@ -984,6 +991,47 @@ def subtract_wordset(conn, name: str, wordsets=[]):
     )
     cursor = conn.cursor()
     cursor.execute(query)
+    conn.commit()
+    return cursor.rowcount
+
+def get_wordsets(conn:sqlite3.Connection()):
+    """Return the number of words per word set stored in DB
+
+    Returns:
+        generator[dict]: Yield dictionaries with `name` and `count` keys.
+    """
+    for row in conn.execute(
+        "SELECT name, COUNT(*) as 'count' FROM wordsets GROUP BY name"
+    ):
+        yield dict(row)
+
+
+def get_wordset_by_name(conn, wordset_name):
+    """Return generator of words in the given word set
+
+    Returns:
+        generator[str]: Yield words of the word set.
+    """
+    for row in conn.execute(
+        "SELECT DISTINCT value FROM wordsets WHERE name = ?", (wordset_name,)
+    ):
+        yield dict(row)["value"]
+
+
+
+def delete_wordset_by_name(conn: sqlite3.Connection, name: str):
+    """Delete data in "selections" or "sets" tables with the given name
+
+    Args:
+        conn (sqlit3.Connection): sqlite3 connection
+        name (str): Selection/set name
+        table_name (str): Name of the table concerned by the deletion
+    Returns:
+        int: Number of rows affected
+    """
+
+    cursor = conn.cursor()
+    cursor.execute(f"DELETE FROM wordsets WHERE name = ?", (name,))
     conn.commit()
     return cursor.rowcount
 
@@ -1035,7 +1083,7 @@ def subtract_variants(query1, query2, **kwargs):
 ## fields table ================================================================
 
 
-def create_table_fields(conn):
+def create_table_fields(conn: sqlite3.Connection()):
     """Create the table "fields"
 
     This table contain fields. A field is a column with its description and type;

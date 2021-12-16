@@ -7,7 +7,7 @@ from cutevariant.core.reader.pedreader import PedReader
 from .sql import (
     create_table_project,
     create_table_metadatas,
-    insert_many_metadatas,
+    update_metadatas,
     create_table_fields,
     create_table_annotations,
     create_table_variants,
@@ -64,7 +64,7 @@ def async_import_reader(
     metadatas = reader.get_metadatas()
     # Database versioning
     metadatas["cutevariant_version"] = __version__
-    insert_many_metadatas(conn, metadatas)
+    update_metadatas(conn, metadatas)
 
     yield 0, "Creating table shema..."
 
@@ -293,7 +293,7 @@ def async_update_reader(
     metadatas = reader.get_metadatas()
     # Database versioning
     metadatas["cutevariant_version"] = __version__
-    insert_many_metadatas(conn, metadatas)
+    update_metadatas(conn, metadatas)
 
     yield 0, "Creating table shema..."
 

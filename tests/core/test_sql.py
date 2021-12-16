@@ -581,7 +581,7 @@ def test_insert_set_from_file(conn, wordset):
 
     print("Expected data:", expected_data)
 
-    sql.import_wordset_from_file(conn, "test_wordset", wordset_file)
+    sql.insert_wordset_from_file(conn, "test_wordset", wordset_file)
 
     # TODO: for now the one to many relation is not implemented
     # All records have the name of the set... awesome
@@ -597,7 +597,7 @@ def test_insert_set_from_file(conn, wordset):
 def test_insert_set_from_list(conn):
 
     expected = set(["CFTR", "GJB2"])
-    sql.import_wordset_from_list(conn, "name", expected)
+    sql.insert_wordset_from_list(conn, "name", expected)
     observed = set(
         [i["value"] for i in conn.execute("SELECT * FROM wordsets").fetchall()]
     )
@@ -609,7 +609,7 @@ def test_get_sets(conn, kindly_wordset_fixture):
     """Test get_wordsets: Word set group by results"""
     wordset_file, _ = kindly_wordset_fixture
 
-    sql.import_wordset_from_file(conn, "test_wordset", wordset_file)
+    sql.insert_wordset_from_file(conn, "test_wordset", wordset_file)
 
     expected = [{"name": "test_wordset", "count": 4}]
     found = list(sql.get_wordsets(conn))
@@ -633,9 +633,9 @@ def test_get_words_in_set(conn, wordset):
 
     print("Expected data:", expected_data)
 
-    sql.import_wordset_from_file(conn, "test_wordset", wordset_file)
+    sql.insert_wordset_from_file(conn, "test_wordset", wordset_file)
 
-    found = set(sql.get_words_in_set(conn, "test_wordset"))
+    found = set(sql.get_wordset_by_name(conn, "test_wordset"))
 
     assert set(expected_data) == found
 
@@ -647,16 +647,16 @@ def test_wordset_operation(conn):
     set1 = {"CFTR", "GJB2"}
     set2 = {"CFTR", "KRAS", "BRAF"}
 
-    sql.import_wordset_from_list(conn, "A", set1)
-    sql.import_wordset_from_list(conn, "B", set2)
+    sql.insert_wordset_from_list(conn, "A", set1)
+    sql.insert_wordset_from_list(conn, "B", set2)
 
-    sql.intersect_wordset(conn, "C", ["A", "B"])
-    sql.union_wordset(conn, "D", ["A", "B"])
-    sql.subtract_wordset(conn, "E", ["A", "B"])
+    sql.insert_wordset_from_intersect(conn, "C", ["A", "B"])
+    sql.insert_wordset_from_union(conn, "D", ["A", "B"])
+    sql.insert_wordset_from_subtract(conn, "E", ["A", "B"])
 
-    assert set(sql.get_words_in_set(conn, "C")) == set1 & set2
-    assert set(sql.get_words_in_set(conn, "D")) == set1 | set2
-    assert set(sql.get_words_in_set(conn, "E")) == set1 - set2
+    assert set(sql.get_wordset_by_name(conn, "C")) == set1 & set2
+    assert set(sql.get_wordset_by_name(conn, "D")) == set1 | set2
+    assert set(sql.get_wordset_by_name(conn, "E")) == set1 - set2
 
 
 def test_selections(conn):
@@ -673,7 +673,7 @@ def test_selections(conn):
         ON annotations.variant_id = variants.rowid"""
 
     # Create a new selection (a second one, since there is a default one during DB creation)
-    ret = sql.create_selection_from_sql(conn, query, "selection_name", count=None)
+    ret = sql.insert_selection_from_sql(conn, query, "selection_name", count=None)
     assert ret == 2
 
     # Query the association table (variant_id, selection_id)
@@ -854,7 +854,7 @@ def test_selection_from_bedfile(conn):
 
     # Create a new selection (a second one, since there is a default one during DB creation)
     selection_name = "bedname"
-    ret = sql.create_selection_from_bed(conn, "variants", selection_name, bedtool)
+    ret = sql.insert_selection_from_bed(conn, "variants", selection_name, bedtool)
 
     # Test last id of the selection
     assert ret == 2
@@ -898,7 +898,7 @@ def test_selection_from_bedfile_and_subselection(conn):
 
     # Create now a sub selection => 2 variants (pos 10, 45)
     query = "SELECT variants.id,chr,pos,ref,alt FROM variants WHERE ref='G'"
-    set_A_id = sql.create_selection_from_sql(conn, query, "setA", count=None)
+    set_A_id = sql.insert_selection_from_sql(conn, query, "setA", count=None)
     # 2nd selection (1st is the default "variants")
     assert set_A_id == 2
     assert "setA" in list(s["name"] for s in sql.get_selections(conn))
@@ -906,7 +906,7 @@ def test_selection_from_bedfile_and_subselection(conn):
     # 1: chr1, pos 1 to 10 => 1 remaining variant
     # 2: chr1, pos 50 to 60 => 0 variant
     # 3: chr1, pos 51 to 59 => 0 variant
-    ret = sql.create_selection_from_bed(conn, "setA", "sub_bedname", bedtool)
+    ret = sql.insert_selection_from_bed(conn, "setA", "sub_bedname", bedtool)
     # id of selection
     assert ret == 3
 
@@ -937,7 +937,7 @@ def test_sql_selection_operation(conn):
 
     # Create a selection from sql
     query = "SELECT id, chr, pos FROM variants where alt = 'A' "
-    sql.create_selection_from_sql(conn, query, "test")
+    sql.insert_selection_from_sql(conn, query, "test")
 
     # check if selection has been created
     assert "test" in [record["name"] for record in sql.get_selections(conn)]
@@ -962,7 +962,7 @@ def test_sql_selection_operation(conn):
 
     union_query = sql.union_variants(query1, query2)
     print(union_query)
-    selection_id = sql.create_selection_from_sql(conn, union_query, "union_GT")
+    selection_id = sql.insert_selection_from_sql(conn, union_query, "union_GT")
     print("union_GT selection id: ", selection_id)
     assert selection_id is not None
     record = cursor.execute(

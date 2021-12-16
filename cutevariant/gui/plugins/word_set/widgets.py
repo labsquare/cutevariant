@@ -46,11 +46,11 @@ from cutevariant.gui.plugin import PluginWidget
 from cutevariant.core.sql import (
     get_sql_connection,
     get_wordsets,
-    get_words_in_set,
-    sanitize_words,
-    intersect_wordset,
-    union_wordset,
-    subtract_wordset,
+    get_wordset_by_name,
+    _sanitize_words,
+    insert_wordset_from_intersect,
+    insert_wordset_from_union,
+    insert_wordset_from_subtract,
 )
 from cutevariant.core.command import import_cmd, drop_cmd
 from cutevariant import commons as cm
@@ -204,7 +204,7 @@ class WordListDialog(QDialog):
 
         # Sanitize words
         with open(filename, "r") as f_h:
-            data = sanitize_words(f_h)
+            data = _sanitize_words(f_h)
 
         data.update(self.model.stringList())
         self.model.setStringList(list(data))
@@ -569,7 +569,7 @@ class WordSetWidget(PluginWidget):
         dialog = WordListDialog()
 
         # populate dialog
-        dialog.model.setStringList(list(get_words_in_set(self.conn, wordset_name)))
+        dialog.model.setStringList(list(get_wordset_by_name(self.conn, wordset_name)))
 
         if dialog.exec_() == QDialog.Accepted:
             drop_cmd(self.conn, "wordsets", wordset_name)
@@ -605,9 +605,9 @@ class WordSetWidget(PluginWidget):
         The resulting wordset will contain all elements from all selected wordsets, without double.
         """
         operations = {
-            "intersect": (intersect_wordset, self.tr("Intersect")),
-            "union": (union_wordset, self.tr("Union")),
-            "subtract": (subtract_wordset, self.tr("Subtract")),
+            "intersect": (insert_wordset_from_intersect, self.tr("Intersect")),
+            "union": (insert_wordset_from_union, self.tr("Union")),
+            "subtract": (insert_wordset_from_subtract, self.tr("Subtract")),
         }
         selected_wordsets = [
             index.data(Qt.DisplayRole)
@@ -638,7 +638,7 @@ class WordSetWidget(PluginWidget):
                         % wordset_name,
                     )
                     wordset_name = None
-            operator_fn = operations.get(operation, intersect_wordset)[0]
+            operator_fn = operations.get(operation, insert_wordset_from_intersect)[0]
             operator_fn(self.conn, wordset_name, selected_wordsets)
             self.populate()
 
