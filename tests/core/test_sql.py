@@ -186,7 +186,7 @@ def conn():
     sql.create_table_fields(conn)
     assert table_exists(conn, "fields"), "cannot create table fields"
 
-    sql.insert_many_fields(conn, FIELDS)
+    sql.insert_fields(conn, FIELDS)
     assert table_count(conn, "fields") == len(FIELDS), "cannot insert many fields"
 
     sql.create_table_selections(conn)
@@ -197,11 +197,11 @@ def conn():
 
     sql.create_table_samples(conn, sql.get_field_by_category(conn, "samples"))
     assert table_exists(conn, "samples"), "cannot create table samples"
-    sql.insert_many_samples(conn, SAMPLES)
+    sql.insert_samples(conn, SAMPLES)
 
     sql.create_table_variants(conn, sql.get_field_by_category(conn, "variants"))
     assert table_exists(conn, "variants"), "cannot create table variants"
-    sql.insert_many_variants(conn, VARIANTS)
+    sql.insert_variants(conn, VARIANTS)
 
     sql.create_table_wordsets(conn)
     assert table_exists(conn, "wordsets"), "cannot create table sets"
@@ -265,7 +265,7 @@ def test_update(conn):
     #TODO: automate table update verification
     for table in ("variants", "annotations", "samples", "sample_has_variant", "selections"):
         print_table_for_debug(conn, table)
-    for x, y in sql.async_update_many_variants(conn, 
+    for x, y in sql.update_variants_async(conn, 
                             VARIANTS_FOR_UPDATE, 
                             total_variant_count=len(VARIANTS_FOR_UPDATE), 
                             yield_every=1):
@@ -565,7 +565,7 @@ def test_update_variant(conn):
     updated = {"id": 1, "ref": "A", "chr": "chrX"}
     sql.update_variant(conn, updated)
 
-    inserted = sql.get_one_variant(conn, 1)
+    inserted = sql.get_variant(conn, 1)
 
     assert inserted["ref"] == updated["ref"]
     assert inserted["chr"] == updated["chr"]
@@ -802,7 +802,7 @@ def test_get_one_variant(conn):
         => see :meth:`test_advanced_get_one_variant`
     """
     for variant_id, expected_variant in enumerate(VARIANTS, 1):
-        found_variant = sql.get_one_variant(conn, variant_id)
+        found_variant = sql.get_variant(conn, variant_id)
 
         print("found variant", found_variant)
         assert found_variant["id"] == variant_id
@@ -818,7 +818,7 @@ def test_advanced_get_one_variant(conn):
     .. note:: annotations and samples which are optional ARE tested here
     """
     for variant_id, expected_variant in enumerate(VARIANTS, 1):
-        found_variant = sql.get_one_variant(
+        found_variant = sql.get_variant(
             conn, variant_id, with_annotations=True, with_samples=True
         )
 

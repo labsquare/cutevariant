@@ -15,13 +15,13 @@ from .sql import (
     create_table_samples,
     create_table_selections,
     create_table_wordsets,
-    insert_many_samples,
+    insert_samples,
     insert_only_new_samples,
     get_samples,
-    insert_many_fields,
+    insert_fields,
     insert_only_new_fields,
-    async_insert_many_variants,
-    async_update_many_variants,
+    insert_variants_async,
+    update_variants_async,
     create_indexes,
     update_sample,
 )
@@ -95,7 +95,7 @@ def async_import_reader(
 
     # Insert samples
     yield 0, "Inserting samples..."
-    insert_many_samples(conn, reader.get_samples())
+    insert_samples(conn, reader.get_samples())
 
     # Import PED file
     if pedfile:
@@ -120,12 +120,12 @@ def async_import_reader(
 
     # Insert fields
     yield 0, "Inserting fields..."
-    insert_many_fields(conn, reader.get_extra_fields())
+    insert_fields(conn, reader.get_extra_fields())
 
     # Insert variants, link them to annotations and samples
     yield 0, "Insertings variants..."
     variants = reader.get_extra_variants(control=control_samples, case=case_samples)
-    yield from async_insert_many_variants(
+    yield from insert_variants_async(
         conn, variants, total_variant_count=reader.number_lines
     )
 
@@ -358,7 +358,7 @@ def async_update_reader(
     # Insert variants, link them to annotations and samples
     yield 0, "Insertings variants..."
     variants = reader.get_extra_variants(control=control_samples, case=case_samples)
-    yield from async_update_many_variants(
+    yield from update_variants_async(
         conn, variants, old_samples, total_variant_count=reader.number_lines
     )
 

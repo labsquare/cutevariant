@@ -89,6 +89,7 @@ from functools import partial, lru_cache
 import itertools as it
 import numpy as np
 import json
+import typing
 
 # Custom imports
 import cutevariant.commons as cm
@@ -414,11 +415,11 @@ def create_table_metadatas(conn: sqlite3.Connection):
     """
 
     conn.execute(
-        "CREATE TABLE metadatas (id INTEGER PRIMARY KEY, key TEXT, value TEXT)"
+        "CREATE TABLE metadatas (key TEXT PRIMARY KEY, value TEXT)"
     )
 
 
-def update_metadatas(conn: sqlite3.Connection, metadatas={}):
+def update_metadatas(conn: sqlite3.Connection, metadatas:dict):
     """Populate metadatas with a key/value dictionnaries
     
     Args:
@@ -427,10 +428,8 @@ def update_metadatas(conn: sqlite3.Connection, metadatas={}):
     """
     if metadatas:
         cursor = conn.cursor()
-
-        clear_table(conn, "metadatas")
         cursor.executemany(
-            "INSERT INTO metadatas (key,value) VALUES (?,?)", list(metadatas.items())
+            "INSERT OR REPLACE INTO metadatas (key,value) VALUES (?,?)", list(metadatas.items())
         )
 
         conn.commit()
@@ -511,38 +510,40 @@ def create_selection_has_variant_indexes(conn: sqlite3.Connection):
     )
 
 
-def insert_selection(conn, query: str, name="no_name", count=0):
-    """Insert one selection record
+def insert_selection(conn:sqlite3.Connection, query: str, name="no_name", count=0) -> int:
+    """Insert one record in the selection table and return the last insert id. 
+    This function is used by `insert_selection_from_[source|bed|sql]` functions. 
 
-    Do not use this function. Use insert_selection_from_xxx instead.
+    Do not use this function. Use insert_selection_from_[source|bed|sql].
 
     Args:
-        conn (sqlite3.Connection/sqlite3.Cursor): Sqlite3 Connection.
-        It can be a cursor or a connection here...
+        conn (sqlite3.Connection): Sqlite3 Connection.
         query (str): a VQL query
-        name (str, optional): Name of selection
-        count (int, optional): Variant count of selection
+        name (str, optional): Name of the selection
+        count (int, optional): Count of variant in the selection
 
     Returns:
         int: Return last rowid
 
     See Also:
         create_selection_from_sql()
+        create_selection_from_source()
+        create_selection_from_bed()
 
     Warning:
         This function does a commit !
 
 
     """
-    cursor = conn.cursor() if isinstance(conn, sqlite3.Connection) else conn
+    cursor = conn.cursor()
 
     cursor.execute(
         "INSERT INTO selections (name, count, query) VALUES (?,?,?)",
         (name, count, query),
     )
-    if isinstance(conn, sqlite3.Connection):
-        # Commit only if connection is given. => avoid not consistent DB
-        conn.commit()
+    
+    conn.commit()
+
     return cursor.lastrowid
 
 
@@ -552,19 +553,33 @@ def insert_selection_from_source(
     source: str = "variants",
     filters=None,
     count=None,
-):
-    """Create a selection record from sql variant query
+) -> int:
+    """Create a selection from another selection. 
+    This function create a subselection from another selection by applying filters. 
+
+    Examples:
+
+    Create a subselection from "variants" with variant reference equal "A".  
+
+        insert_selection_from_source(
+            conn,
+            "new selection",
+            "variants",
+            {"$and": [{"ref": "A"}]},
+            123
+        )
 
     Args:
         conn (sqlite3.connection): Sqlite3 connection
         name (str): Name of selection
         source (str): Source to select from
-        filters (dict/None, optional): Filters to create selection
-        count (int/None, optional): Variant count
+        filters (dict/None, optional): a filters to create selection
+        count (int/None, optional): Pre-computed variant count. If None, it does the computation
 
     Returns:
         selection_id, if lines have been inserted; None otherwise (rollback).
     """
+
     cursor = conn.cursor()
 
     filters = filters or {}
@@ -580,10 +595,10 @@ def insert_selection_from_source(
     # Compute query count
     # TODO : this can take a while .... need to compute only one from elsewhere
     if count is None:
-        count = count_query(cursor, sql_query)
+        count = count_query(conn, sql_query)
 
     # Create selection
-    selection_id = insert_selection(cursor, vql_query, name=name, count=count)
+    selection_id = insert_selection(conn, vql_query, name=name, count=count)
 
     # DROP indexes
     # For joins between selections and variants tables
@@ -622,14 +637,23 @@ def insert_selection_from_source(
 
 def insert_selection_from_sql(
     conn: sqlite3.Connection, query: str, name: str, count=None, from_selection=False
-):
-    """Create a selection record from sql variant query
+) -> int:
+    """Create a selection from sql variant query.
+
+    The SQL variant query must have all variant.id to import into the selection
+
+    insert_selection_from_sql(
+        conn,
+        "SELECT id FROM variants WHERE ref ='A'",
+        "my selection",
+        324
+    )
 
     Args:
         conn (sqlite3.connection): Sqlite3 connection
         query (str): SQL query that select all variant ids. See `from_selection`
         name (str): Name of selection
-        count (int/None, optional): Variant count
+        count (int/None, optional): Precomputed variant count
         from_selection (bool, optional): Use a different
             field name for variants ids; `variant_id` if `from_selection` is `True`,
             just `id` if `False`.
@@ -642,10 +666,10 @@ def insert_selection_from_sql(
     # Compute query count
     # TODO : this can take a while .... need to compute only one from elsewhere
     if count is None:
-        count = count_query(cursor, query)
+        count = count_query(conn, query)
 
     # Create selection
-    selection_id = insert_selection(cursor, query, name=name, count=count)
+    selection_id = insert_selection(conn, query, name=name, count=count)
 
     # DROP indexes
     # For joins between selections and variants tables
@@ -687,12 +711,13 @@ def insert_selection_from_sql(
         return selection_id
     # Must alert a user because no selection is created here
     conn.rollback()
+    delete_selection(conn, selection_id)
     return None
 
 
 def insert_selection_from_bed(
     conn: sqlite3.Connection, source: str, target: str, bed_intervals
-):
+)->int:
     """Create a new selection based on the given intervals taken from a BED file
 
     Variants whose positions are contained in the intervals specified by the
@@ -750,8 +775,8 @@ def insert_selection_from_bed(
     return insert_selection_from_sql(conn, query, target, from_selection=True)
 
 
-def get_selections(conn: sqlite3.Connection):
-    """Get selections in "selections" table
+def get_selections(conn: sqlite3.Connection)->typing.List[dict]:
+    """Get selections from "selections" table
 
     Args:
         conn (sqlite3.connection): Sqlite3 connection
@@ -769,9 +794,6 @@ def get_selections(conn: sqlite3.Connection):
 
 def delete_selection(conn: sqlite3.Connection, selection_id: int):
     """Delete the selection with the given id in the "selections" table
-
-    :return: Number of rows deleted
-    :rtype: <int>
 
     Args:
         conn (sqlite3.Connection): Sqlite connection
@@ -793,11 +815,11 @@ def delete_selection(conn: sqlite3.Connection, selection_id: int):
 
 
 def delete_selection_by_name(conn: sqlite3.Connection, name: str):
-    """Delete data in "selections" or "sets" tables with the given name
+    """Delete data in "selections" 
 
     Args:
         conn (sqlit3.Connection): sqlite3 connection
-        name (str): Selection/set name
+        name (str): Selection
     Returns:
         int: Number of rows affected
     """
@@ -1078,25 +1100,6 @@ def delete_wordset_by_name(conn: sqlite3.Connection, name: str):
 
 ## Operations on sets of variants ==============================================
 
-
-def get_query_columns(mode="variant"):
-    """(DEPRECATED FOR NOW, NOT USED)
-
-    Handy func to get columns to be queried according to the group by argument
-
-    .. note:: Used by intersect_variants, union_variants, subtract_variants
-        in order to avoid code duplication.
-    """
-    if mode == "site":
-        return "chr,pos"
-
-    if mode == "variant":
-        # Not used
-        return "variant_id"
-
-    raise NotImplementedError
-
-
 def intersect_variants(query1, query2, **kwargs):
     """Get the variants obtained by the intersection of 2 queries
 
@@ -1145,36 +1148,29 @@ def create_table_fields(conn: sqlite3.Connection):
     cursor = conn.cursor()
     cursor.execute(
         """CREATE TABLE fields
-        (id INTEGER PRIMARY KEY, name TEXT, category TEXT, type TEXT, description TEXT)
+        (id INTEGER PRIMARY KEY, name TEXT, category TEXT, type TEXT, description TEXT, UNIQUE(name, category))
         """
     )
     conn.commit()
 
 
 def insert_field(
-    conn, name="no_name", category="variants", type="text", description=str()
+    conn, name="no_name", category="variants", field_type="text", description=""
 ):
-    """Insert one field record (NOT USED)
+    """Insert one fields 
 
-    :param conn: sqlite3.connect
-    :key name: field name
-    :key category: category field name.
-        .. warning:: The default is "variants". Don't use sample as category name
-    :key type: sqlite type which can be: INTEGER, REAL, TEXT
-        .. todo:: Check this argument...
-    :key description: Text that describes the field (showed to the user).
-    :return: Last row id
-    :rtype: <int>
-    """
-    cursor = conn.cursor()
-    cursor.execute(
-        "INSERT INTO fields VALUES (?, ?, ?, ?)", (name, category, type, description)
-    )
-    conn.commit()
-    return cursor.lastrowid
+    This is a shortcut and it calls insert_fields with one element 
 
+    Args:
+        conn (sqlite.Connection): sqlite Connection
+        name (str, optional): fields name. Defaults to "no_name".
+        category (str, optional): fields table. Defaults to "variants".
+        field_type (str, optional): type of field in python (str,int,float,bool). Defaults to "text".
+        description (str, optional): field description   """    
 
-def insert_many_fields(conn, data: list):
+    insert_fields(conn, [{"name":name, "category":category, "type":field_type, "description":description}])
+
+def insert_fields(conn:sqlite3.Connection, data: list):
     """Insert multiple fields into "fields" table using one commit
 
     :param conn: sqlite3.connect
@@ -1190,12 +1186,14 @@ def insert_many_fields(conn, data: list):
     cursor = conn.cursor()
     cursor.executemany(
         """
-        INSERT INTO fields (name,category,type,description)
+        INSERT OR REPLACE INTO fields (name,category,type,description)
         VALUES (:name,:category,:type,:description)
         """,
         data,
     )
     conn.commit()
+
+
 
 def insert_only_new_fields(conn, data: list):
     """Insert in "fields" table the fields who did not already exist. 
@@ -1221,7 +1219,7 @@ def insert_only_new_fields(conn, data: list):
         )
     conn.commit()
 
-@lru_cache()
+#@lru_cache()
 def get_fields(conn):
     """Get fields as list of dictionnary
 
@@ -1236,7 +1234,7 @@ def get_fields(conn):
     return tuple(dict(data) for data in conn.execute("SELECT * FROM fields"))
 
 
-@lru_cache()
+#@lru_cache()
 def get_field_by_category(conn, category):
     """Get fields within a category
 
@@ -1343,7 +1341,7 @@ def get_field_unique_values(conn, field_name: str, like: str = None, limit=None)
 ## annotations table ===========================================================
 
 
-def create_table_annotations(conn, fields):
+def create_table_annotations(conn: sqlite3.Connection, fields:typing.List[dict]):
     """Create "annotations" table which contains dynamics fields
 
     :param fields: Generator of SQL fields. Example of fields:
@@ -1423,7 +1421,7 @@ def get_annotations(conn, variant_id: int):
 ## variants table ==============================================================
 
 
-def create_table_variants(conn, fields):
+def create_table_variants(conn: sqlite3.Connection, fields:typing.List[dict]):
     """Create "variants" and "sample_has_variant" tables which contains dynamics fields
 
     :Example:
@@ -1498,7 +1496,7 @@ def create_variants_indexes(conn, indexed_fields={"pos", "ref", "alt"}):
         )
 
 
-def get_one_variant(
+def get_variant(
     conn: sqlite3.Connection,
     variant_id: int,
     with_annotations=False,
@@ -1561,7 +1559,7 @@ def get_one_variant(
     return variant
 
 
-def update_variant(conn, variant: dict):
+def update_variant(conn: sqlite3.Connection, variant: dict):
     """Update variant data
 
     Used by widgets to save various modifications in a variant.
@@ -1594,7 +1592,7 @@ def update_variant(conn, variant: dict):
     conn.commit()
 
 
-def get_variants_count(conn):
+def get_variants_count(conn: sqlite3.Connection):
     """Get the number of variants in the "variants" table"""
     return count_query(conn, "variants")
 
@@ -1674,7 +1672,7 @@ def get_variants_tree(
     #     yield item
 
 
-def async_insert_many_variants(conn, data, total_variant_count=None, yield_every=3000):
+def insert_variants_async(conn:sqlite3.Connection, data: list, total_variant_count=None, yield_every=3000):
     """Insert many variants from data into variants table
 
     :param conn: sqlite3.connect
@@ -1868,13 +1866,13 @@ def async_insert_many_variants(conn, data, total_variant_count=None, yield_every
     )
 
 
-def insert_many_variants(conn, data, **kwargs):
+def insert_variants(conn, data, **kwargs):
     """Wrapper for debugging purpose"""
-    for _, _ in async_insert_many_variants(conn, data, kwargs):
+    for _, _ in insert_variants_async(conn, data, kwargs):
         pass
 
 
-def async_update_many_variants(conn, data, old_samples, total_variant_count=None, yield_every=3000):
+def update_variants_async(conn, data, old_samples, total_variant_count=None, yield_every=3000):
     """Insert many variants from data into variants table
 
     :param conn: sqlite3.connect
@@ -2039,7 +2037,7 @@ def async_update_many_variants(conn, data, old_samples, total_variant_count=None
 
     #New variants can be inserted with the usual method
     delete_selection_index(conn)
-    for percent, msg in async_insert_many_variants(conn, 
+    for percent, msg in insert_variants_async(conn, 
                                         new_data, 
                                         total_variant_count=len(new_data), 
                                         yield_every=yield_every):
@@ -2070,9 +2068,9 @@ def async_update_many_variants(conn, data, old_samples, total_variant_count=None
         conn, "", name=cm.DEFAULT_SELECTION_NAME, count=get_variants_count(conn)
     )
 
-def update_many_variants(conn, data, **kwargs):
+def update_variants(conn, data, **kwargs):
     """Wrapper for debugging purpose"""
-    for _, _ in async_update_many_variants(conn, data, kwargs):
+    for _, _ in update_variants_async(conn, data, kwargs):
         pass
 
 def get_variant_as_group(
@@ -2123,7 +2121,8 @@ def create_table_samples(conn, fields=[]):
         father_id INTEGER DEFAULT 0,
         mother_id INTEGER DEFAULT 0,
         sex INTEGER DEFAULT 0,
-        phenotype INTEGER DEFAULT 0
+        phenotype INTEGER DEFAULT 0,
+        UNIQUE (name, family_id)
         )"""
     )
     conn.commit()
@@ -2181,7 +2180,7 @@ def insert_sample(conn, name="no_name"):
     return cursor.lastrowid
 
 
-def insert_many_samples(conn, samples: list):
+def insert_samples(conn, samples: list):
     """Insert many samples at a time in samples table.
     Set genotype to -1 in sample_has_variant for all pre-existing variants.
 
@@ -2287,7 +2286,7 @@ def add_new_variants_to_old_samples(conn, old_samples: list, new_data, previous_
 
 
 
-def get_samples(conn):
+def get_samples(conn: sqlite3.Connection):
     """Get samples from sample table
 
     See Also: :meth:`update_sample`
@@ -2322,7 +2321,7 @@ def get_sample_annotations_by_variant(conn, variant_id: int, fields=["gt"]):
     return (dict(data) for data in conn.execute(query))
 
 
-def update_sample(conn, sample: dict):
+def update_sample(conn: sqlite3.Connection, sample: dict):
     """Update sample record
 
     .. code-block:: python

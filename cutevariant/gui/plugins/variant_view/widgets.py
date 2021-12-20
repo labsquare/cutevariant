@@ -370,7 +370,7 @@ class VariantModel(QAbstractTableModel):
         # Current data
         sql_variant = {
             k: v
-            for k, v in sql.get_one_variant(self.conn, variant_id).items()
+            for k, v in sql.get_variant(self.conn, variant_id).items()
             if k in editable_fields
         }
 
@@ -1176,7 +1176,7 @@ class VariantView(QWidget):
 
     def on_variant_clicked(self, index: QModelIndex):
         variant = self.model.variant(index.row())
-        full_variant = sql.get_one_variant(self.conn, variant["id"])
+        full_variant = sql.get_variant(self.conn, variant["id"])
         self.favorite_action.blockSignals(True)
         self.favorite_action.setChecked(bool(full_variant["favorite"]))
         self.favorite_action.blockSignals(False)
@@ -1263,7 +1263,7 @@ class VariantView(QWidget):
             return
 
         current_variant = self.model.variant(current_index.row())
-        full_variant = sql.get_one_variant(self.conn, current_variant["id"])
+        full_variant = sql.get_variant(self.conn, current_variant["id"])
         # Update variant with currently displayed fields (not in variants table)
         full_variant.update(current_variant)
 
@@ -1318,7 +1318,7 @@ class VariantView(QWidget):
 
             variant = self.model.variant(row_index.row())
             variant_id = variant["id"]
-            full_variant = sql.get_one_variant(self.conn, variant_id, True, False)
+            full_variant = sql.get_variant(self.conn, variant_id, True, False)
 
             url = self._create_url(url_template, full_variant)
 
@@ -1446,7 +1446,7 @@ class VariantView(QWidget):
 
             if is_multi_selection:
                 # Keep previous tags
-                current_variant = sql.get_one_variant(self.conn, variant_id)
+                current_variant = sql.get_variant(self.conn, variant_id)
                 current_tag = current_variant.get("tags", "")
 
                 if current_tag:
@@ -1469,7 +1469,7 @@ class VariantView(QWidget):
             return
 
         # Get comment from DB
-        variant_data = sql.get_one_variant(
+        variant_data = sql.get_variant(
             self.model.conn, self.model.variant(index.row())["id"]
         )
         comment = variant_data["comment"] if variant_data["comment"] else ""
@@ -1850,7 +1850,7 @@ class VariantViewWidget(plugin.PluginWidget):
         if len(selected_rows) == 1:
             index = selected_rows[0]
             variant_id = self.main_right_pane.model.variant(index.row())["id"]
-            variant = sql.get_one_variant(self.conn, variant_id)
+            variant = sql.get_variant(self.conn, variant_id)
             if variant["tags"]:
                 self._tag_widget.set_checked(variant["tags"].split("&"))
 

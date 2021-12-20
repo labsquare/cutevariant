@@ -229,7 +229,7 @@ class VariantInfoWidget(PluginWidget):
         """Set the current variant by the variant displayed in the GUI"""
         self.current_variant = self.mainwindow.get_state_data("current_variant")
 
-        results = sql.get_one_variant(self.conn, self.current_variant["id"], True, True)
+        results = sql.get_variant(self.conn, self.current_variant["id"], True, True)
 
         self.model.load(results)
         self.view.expandAll()
@@ -273,7 +273,7 @@ if __name__ == "__main__":
     w = VariantInfoWidget()
     w.conn = conn
 
-    variant = sql.get_one_variant(conn, 1)
+    variant = sql.get_variant(conn, 1)
 
     w.current_variant = variant
 
