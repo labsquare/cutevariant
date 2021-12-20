@@ -1,10 +1,58 @@
 """Module to bring together all the SQL related functions
 
-To read and write the sqlite database with the schema described here.
+    To read and write the sqlite database with the schema described here.
 
-Each method refers to a CRUD operation using following prefixes:
-    ``get_``, ``insert_``, ``update_``, ``remove_`` and takes a sqlite connection
-    as ``conn`` attribute.
+    There are 4 resources in the databases : 
+
+    - variants ( variant table and annotations)
+    - samples 
+    - fields
+    - wordsets 
+    - selections
+
+    Each CRUD operations respect the following naming : 
+
+    - get_fields(conn, ...)
+    - get_field(conn, id)
+    - insert_fields(generator) # Insert new elements 
+    - insert_field(id) # Insert one elements 
+    - delete_fields(generator) # Remove many fields 
+    - delete_field(id) # remove a field 
+    - update_fields(generator) # update fields 
+    - update_field() 
+
+
+    get_variant(id)   #   récupérer un variant
+    get_variants(**option) # récupérer des variants 
+
+    insert_variants({}) # Insert many variants 
+
+    insert_variants([sdf]) # 
+
+
+    insert_variants_async() # async
+
+
+
+
+    update_variant(variant)  # Update un variant
+    update_variants(id, variants) # update des variants 
+
+    delete_selection() ==> 
+
+    delete_selection_by_name()  ==> 
+
+
+    delete_selection({"id": 34})
+
+    delete_selection(id=23)
+
+    delete_selection(name="324")
+    delete_selection({name:"3324"})
+
+
+
+    remove_variant(id)
 
     The module contains also QueryBuilder class to build complexe variant query based
     on filters, columns and selections.
@@ -311,7 +359,6 @@ def create_indexes(
 
 
 
-
 # ==================================================
 #
 #  CRUD Operation  
@@ -320,22 +367,15 @@ def create_indexes(
  
 ## Project table =============================================================
 
-def create_table_project(conn: sqlite3.Connection, name: str, reference: str):
+def create_table_project(conn: sqlite3.Connection):
     """Create the table "projects" and insert project name and reference genome
-
     Args:
         conn (sqlite3.Connection): Sqlite3 Connection
-        name (str): Project name
-        reference (str): Genom project
-
+        project (dict): A key value dict. Should contains project_name and reference. 
     """
-    project_data = {"name": name, "reference": reference}
 
-    conn.execute("CREATE TABLE projects (id INTEGER PRIMARY KEY, key TEXT, value TEXT)")
+    conn.execute("CREATE TABLE projects (key TEXT PRIMARY KEY, value TEXT)")
     conn.commit()
-
-    update_project(conn, project_data)
-
 
 def update_project(conn: sqlite3.Connection, project: dict):
     """Update project 
@@ -345,7 +385,7 @@ def update_project(conn: sqlite3.Connection, project: dict):
         project (dict): Description
     """
     conn.executemany(
-        "INSERT INTO projects (key, value) VALUES (?, ?)", list(project.items())
+        "INSERT OR REPLACE INTO projects (key, value) VALUES (?, ?)", list(project.items())
     )
     conn.commit()
 
@@ -994,7 +1034,7 @@ def insert_wordset_from_subtract(conn, name: str, wordsets=[]):
     conn.commit()
     return cursor.rowcount
 
-def get_wordsets(conn:sqlite3.Connection()):
+def get_wordsets(conn:sqlite3.Connection):
     """Return the number of words per word set stored in DB
 
     Returns:
@@ -1083,7 +1123,7 @@ def subtract_variants(query1, query2, **kwargs):
 ## fields table ================================================================
 
 
-def create_table_fields(conn: sqlite3.Connection()):
+def create_table_fields(conn: sqlite3.Connection):
     """Create the table "fields"
 
     This table contain fields. A field is a column with its description and type;

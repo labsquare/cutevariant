@@ -175,7 +175,8 @@ def conn():
     """Initialize a memory DB with test data and return a connexion on this DB"""
     conn = sql.get_sql_connection(":memory:")
 
-    sql.create_table_project(conn, "test", "hg19")
+    sql.create_table_project(conn)
+    sql.update_project(conn, {"name":"test", "reference":"hg19"})
     assert table_exists(conn, "projects"), "cannot create table projects"
 
     project_data = sql.get_project(conn)
@@ -372,18 +373,21 @@ def test_create_connexion(conn):
 
 def test_update_project(conn):
 
-    sql.update_project(
-        conn,
-        {
-            "latest_vql_query": 'SELECT chr,pos,ref,alt,gene FROM variants WHERE gene != "CFTR"',
-        },
-    )
+ 
     project_data = sql.get_project(conn)
-    assert (
-        project_data["latest_vql_query"]
-        == 'SELECT chr,pos,ref,alt,gene FROM variants WHERE gene != "CFTR"'
-    )
+    
+    assert project_data["name"] == "test"
+    assert project_data["reference"] == "hg19"
 
+    sql.update_project(conn, {"name": "test2", "extra": 324})
+    project_data = sql.get_project(conn)
+    assert project_data["name"] == "test2"
+    assert project_data["reference"] == "hg19"
+    assert project_data["extra"] == "324"
+
+    assert  sql.count_query(conn, "SELECT * FROM projects") == 3
+   
+   
 
 def test_get_database_file_name():
     dbfile_name = tempfile.mkstemp()[1]

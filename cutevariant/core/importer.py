@@ -6,6 +6,7 @@ from .readerfactory import create_reader
 from cutevariant.core.reader.pedreader import PedReader
 from .sql import (
     create_table_project,
+    update_project,
     create_table_metadatas,
     update_metadatas,
     create_table_fields,
@@ -57,7 +58,9 @@ def async_import_reader(
 
     _project = {"name": "Unknown", "reference": "Unknown"}
     _project.update(project)
-    create_table_project(conn, **_project)
+    create_table_project(conn)
+    update_project(conn, _project)
+    
 
     # Create metadatas
     create_table_metadatas(conn)
