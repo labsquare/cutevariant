@@ -98,6 +98,24 @@ from cutevariant.core.sql_aggregator import StdevFunc
 from cutevariant import LOGGER
 
 
+PYTHON_TO_SQLITE = {
+    "None" : "NULL",
+    "int" : "INTEGER",
+    "float": "REAL",
+    "str": "TEXT",
+    "bytes":"BLOB"
+}
+
+SQLITE_TO_PYTHON = {
+    "NULL": "None",
+    "INTEGER": "int",
+    "REAL": "float",
+    "TEXT":"str",
+    "BLOB": "bytes"
+}
+
+
+
 
 # ==================================================
 #
@@ -119,6 +137,11 @@ def get_sql_connection(filepath:str) -> sqlite3.Connection:
             - REGEXP function
             - DESCRIBE_QUANT aggregate
     """
+
+
+    # CUSTOM TYPE 
+
+
     connection = sqlite3.connect(filepath)
     # Activate Foreign keys
     connection.execute("PRAGMA foreign_keys = ON")
@@ -140,6 +163,7 @@ def get_sql_connection(filepath:str) -> sqlite3.Connection:
         sqlite3.enable_callback_tracebacks(True)
 
     return connection
+
 
 
 def get_database_file_name(conn:sqlite3.Connection) -> str:
@@ -211,6 +235,31 @@ def get_table_columns(conn: sqlite3.Connection, table_name:str):
         c[1] for c in conn.execute(f"pragma table_info({table_name})") if c[1] != "id"
     ]
 
+def alter_table(conn:sqlite3.Connection, table_name:str, fields: list):
+    """Add new columns to a table 
+    
+    Args:
+        conn (sqlite3.Connection)
+        table_name (str): sql table name
+        fields (list): list of dict with name and type.
+    """
+    for field in fields:
+
+        name = field["name"]
+        p_type = field["type"]
+        s_type = PYTHON_TO_SQLITE.get(p_type, "TEXT")
+        constraint = field.get("constraint","")
+        sql = f"ALTER TABLE {table_name} ADD COLUMN `{name}` {s_type} {constraint}"
+
+        try:
+            conn.execute(sql)
+
+        except sqlite3.OperationalError as e:
+            LOGGER.error(e)
+
+
+
+    conn.commit()
 
 def count_query(conn: sqlite3.Connection, query:str) -> int:
     """Count elements from the given query or table
@@ -1444,6 +1493,14 @@ def create_table_variants(conn: sqlite3.Connection, fields:typing.List[dict]):
     """
     cursor = conn.cursor()
 
+
+    fields.append({"name":"chr","type":"str"})
+    fields.append({"name":"pos","type":"int"})
+    fields.append({"name":"ref","type":"str"})
+    fields.append({"name":"alt","type":"str"})
+    
+
+
     # Primary key MUST NOT have NULL fields !
     # PRIMARY KEY should always imply NOT NULL.
     # Unfortunately, due to a bug in some early versions, this is not the case in SQLite.
@@ -1451,7 +1508,7 @@ def create_table_variants(conn: sqlite3.Connection, fields:typing.List[dict]):
     # from all other values, including other NULLs.
     schema = ",".join(
         [
-            f'`{field["name"]}` {field["type"]} {field.get("constraint", "")}'
+            f'`{field["name"]}` {PYTHON_TO_SQLITE.get(field["type"],"TEXT")} {field.get("constraint", "")}'
             for field in fields
             if field["name"]
         ]
@@ -2357,3 +2414,53 @@ def update_sample(conn: sqlite3.Connection, sample: dict):
     )
     conn.execute(query, sql_val)
     conn.commit()
+
+
+
+#==================== CREATE DATABASE =====================================
+
+def create_database_schema(conn):
+    create_table_project(conn)
+    # Create metadatas
+    create_table_metadatas(conn)
+    # Create table fields
+    create_table_fields(conn)
+
+    # Create variants tables
+    create_table_variants(conn, [])
+
+
+    # Create annotations tables
+    create_table_annotations(conn,[])
+
+
+    # # Create table samples
+    create_table_samples(conn, [])
+
+    # # Create selection
+    create_table_selections(conn)
+
+    # # Create table sets
+    create_table_wordsets(conn)
+
+
+
+def import_variants(conn, variants):
+
+    
+
+    # Update fields tables 
+
+    # alter tables ... 
+
+    # Update samples tables 
+
+    # insert variants 
+    ## Insert annotations 
+    ## Insert sample_has_variants 
+    pass
+
+
+
+
+

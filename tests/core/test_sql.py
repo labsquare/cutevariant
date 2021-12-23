@@ -170,6 +170,42 @@ FILTERS = {
 }
 
 
+def test_create_database_schema():
+
+    conn = sql.get_sql_connection(":memory:")
+    sql.create_database_schema(conn)
+
+
+    assert sql.table_exists(conn, "variants")
+    assert sql.table_exists(conn, "fields")
+    assert sql.table_exists(conn, "annotations")
+    assert sql.table_exists(conn, "samples")
+    assert sql.table_exists(conn, "sample_has_variant")
+    assert sql.table_exists(conn, "selections")
+    assert sql.table_exists(conn, "wordsets")
+
+
+def test_alter_table():
+    conn = sql.get_sql_connection(":memory:")
+    sql.create_database_schema(conn)
+    columns_before = sql.get_table_columns(conn, "variants")
+    fields = [{"name":"boby", "type":"str"}]
+    sql.alter_table(conn, "variants", fields)
+    columns_after = sql.get_table_columns(conn,"variants")
+    assert columns_after == columns_before + [fields[0]["name"]]
+
+
+def test_import_variants():
+    os.remove("/tmp/cutetest.db")
+    conn = sql.get_sql_connection("/tmp/cutetest.db")
+    sql.create_database_schema(conn)
+    sql.insert_samples(conn, SAMPLES)
+
+
+    sql.insert_variants(conn, VARIANTS)
+    sql.insert_variants(conn, VARIANTS_FOR_UPDATE)
+
+
 @pytest.fixture
 def conn():
     """Initialize a memory DB with test data and return a connexion on this DB"""
@@ -1009,3 +1045,7 @@ def test_variants(conn):
                 del expected_variant[not_wanted_key]
 
         assert tuple(record) == tuple(expected_variant.values())
+
+
+
+
