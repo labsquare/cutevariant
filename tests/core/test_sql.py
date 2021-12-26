@@ -195,18 +195,18 @@ def test_alter_table():
     assert columns_after == columns_before + [fields[0]["name"]]
 
 
-# def test_import_variants():
-#     try:
-#         os.remove("/tmp/cutetest.db")
-#     except:
-#         pass
-#     conn = sql.get_sql_connection("/tmp/cutetest.db")
-#     sql.create_database_schema(conn)
-#     sql.insert_samples(conn, SAMPLES)
+def test_import_variants():
+    try:
+        os.remove("/tmp/cutetest.db")
+    except:
+        pass
+    conn = sql.get_sql_connection("/tmp/cutetest.db")
+    sql.create_database_schema(conn)
+    sql.insert_samples(conn, SAMPLES)
 
 
-#     sql.insert_variants_async(conn, VARIANTS)
-#     # sql.insert_variants(conn, VARIANTS_FOR_UPDATE)
+    sql.insert_variants(conn, VARIANTS)
+    # sql.insert_variants(conn, VARIANTS_FOR_UPDATE)
 
 # def test_insert_variants():
 #     conn = sql.get_sql_connection(":memory:")
@@ -319,6 +319,24 @@ def print_table_for_debug(conn, table):
 #         print(x,y)
 #     for table in ("variants", "annotations", "samples", "sample_has_variant", "selections"):
 #         print_table_for_debug(conn, table)
+
+
+def test_update_variants_counts(conn):
+
+   sql.update_variants_counts(conn)
+
+   samples = VARIANTS[0]["samples"]
+
+   expected = {}
+   expected["count_var"] = sum(sample["gt"] for sample in samples if sample["gt"] > 1)
+   expected["count_het"] = sum(sample["gt"] for sample in samples if sample["gt"] == 1)
+   expected["count_hom"] = sum(sample["gt"] for sample in samples if sample["gt"] == 2)
+   expected["count_ref"] = sum(sample["gt"] for sample in samples if sample["gt"] == 0)
+
+   observed = dict(conn.execute("SELECT count_var, count_het, count_hom, count_ref FROM variants WHERE id = 1").fetchone())
+
+   assert expected == observed
+
 
 
 def test_create_indexes(conn):

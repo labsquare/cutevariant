@@ -125,15 +125,19 @@ VARIANT_MANDATORY_FIELDS = [
     {"name":"comment","type":"str"},
     {"name":"tags","type":"str"},
     {"name":"classification","type":"int"},
-    {"name":"count_hom","type":"int"},
-    {"name":"count_het","type":"int"},
-    {"name":"count_ref","type":"int"},
-    {"name":"control_count_hom","type":"int"},
-    {"name":"control_count_het","type":"int"},
-    {"name":"control_count_ref","type":"int"},
-    {"name":"is_indel","type":"int"},
-    {"name":"is_snp","type":"int"},
-    {"name":"annotation_count","type":"int"}
+    {"name":"count_hom","type":"int", "constraint": "DEFAULT 0"},
+    {"name":"count_het","type":"int", "constraint": "DEFAULT 0"},
+    {"name":"count_ref","type":"int", "constraint": "DEFAULT 0"},
+    {"name":"count_var","type":"int", "constraint": "DEFAULT 0"},
+    {"name":"control_count_hom","type":"int", "constraint": "DEFAULT 0"},
+    {"name":"control_count_het","type":"int", "constraint": "DEFAULT 0"},
+    {"name":"control_count_ref","type":"int", "constraint": "DEFAULT 0"},   
+    {"name":"case_count_hom","type":"int", "constraint": "DEFAULT 0"},
+    {"name":"case_count_het","type":"int", "constraint": "DEFAULT 0"},
+    {"name":"case_count_ref","type":"int", "constraint": "DEFAULT 0"},
+    {"name":"is_indel","type":"int", "constraint": "DEFAULT 0"},
+    {"name":"is_snp","type":"int", "constraint": "DEFAULT 0"},
+    {"name":"annotation_count","type":"int", "constraint": "DEFAULT 0"}
 
 ]
 
@@ -1745,6 +1749,96 @@ def get_variants_tree(
     #         item["samples"] = samples
 
     #     yield item
+
+
+def update_variants_counts(conn:sqlite3.Connection):
+    """Update all variants counts information from sample data. 
+
+    It computes count_var,count_hom, count_het, count_ref for each variants by reading how many samples belong to.
+    This methods can takes a while and should be run everytime new samples are added.
+    
+    Args:
+        conn (sqlite3.Connection)
+    """
+    conn.execute("""
+        UPDATE variants
+        SET count_var = ifnull(
+        (SELECT  COUNT(*) FROM sample_has_variant WHERE gt > 1 AND variant_id = variants.id)
+        , 0)""")
+
+    #Update count_het
+    conn.execute("""
+        UPDATE variants
+        SET count_het = ifnull(
+        (SELECT  COUNT(*) FROM sample_has_variant WHERE gt = 1 AND variant_id = variants.id)
+        , 0)""")
+
+    #Update count_hom
+    conn.execute("""
+        UPDATE variants
+        SET count_var = ifnull(
+        (SELECT  COUNT(*) FROM sample_has_variant WHERE gt = 2 AND variant_id = variants.id)
+        , 0)""")
+
+    #Update count_ref
+    conn.execute("""
+        UPDATE variants
+        SET count_var = ifnull(
+        (SELECT  COUNT(*) FROM sample_has_variant WHERE gt = 0 AND variant_id = variants.id)
+        , 0)""")
+
+
+    # CASE and CONTROL 
+
+    # If no phenotype, do not compute any thing... 
+    pheno_count = conn.execute("SELECT COUNT(phenotype) FROM samples WHERE phenotype = 1").fetchone()[0]
+    if pheno_count == 0:
+        LOGGER.warning("No phenotype. Do not compute case/control count")
+        return 
+
+    # case homo 
+    conn.execute("""
+        UPDATE variants
+        SET case_count_hom = ifnull( (SELECT  COUNT(*) FROM sample_has_variant sv, samples s 
+        WHERE sv.gt = 2 AND sv.variant_id = variants.id AND s.id = sv.sample_id AND s.phenotype=1 ), 0)
+    """)
+
+    # case hetero
+    conn.execute("""
+       UPDATE variants
+       SET case_count_het = ifnull( (SELECT  COUNT(*) FROM sample_has_variant sv, samples s 
+       WHERE sv.gt = 1 AND sv.variant_id = variants.id AND s.id = sv.sample_id AND s.phenotype=1 ), 0)
+   """)
+
+    # case ref 
+    conn.execute("""
+        UPDATE variants
+        SET case_count_ref = ifnull( (SELECT  COUNT(*) FROM sample_has_variant sv, samples s 
+        WHERE sv.gt = 0 AND sv.variant_id = variants.id AND s.id = sv.sample_id AND s.phenotype=1 ), 0)
+    """)
+
+    # control homo
+    conn.execute("""
+        UPDATE variants
+        SET control_count_hom = ifnull( (SELECT  COUNT(*) FROM sample_has_variant sv, samples s 
+        WHERE sv.gt = 2 AND sv.variant_id = variants.id AND s.id = sv.sample_id AND s.phenotype=0 ), 0)
+    """)
+
+    # control hetero
+    conn.execute("""
+        UPDATE variants
+        SET control_count_het = ifnull( (SELECT  COUNT(*) FROM sample_has_variant sv, samples s 
+        WHERE sv.gt = 1 AND sv.variant_id = variants.id AND s.id = sv.sample_id AND s.phenotype=0 ), 0)
+    """)
+
+    # control ref
+    conn.execute("""
+        UPDATE variants
+        SET control_count_ref = ifnull( (SELECT  COUNT(*) FROM sample_has_variant sv, samples s 
+        WHERE sv.gt = 0 AND sv.variant_id = variants.id AND s.id = sv.sample_id AND s.phenotype=0 ), 0)
+    """)
+
+
 
 def insert_variants_async(conn:sqlite3.Connection, variants: typing.List[dict], total_variant_count:int=None, yield_every:int=3000):
     """Insert many variants from data into variants table
