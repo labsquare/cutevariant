@@ -103,7 +103,8 @@ PYTHON_TO_SQLITE = {
     "int" : "INTEGER",
     "float": "REAL",
     "str": "TEXT",
-    "bytes":"BLOB"
+    "bytes":"BLOB",
+    "bool": "INTEGER"
 }
 
 SQLITE_TO_PYTHON = {
@@ -111,28 +112,28 @@ SQLITE_TO_PYTHON = {
     "INTEGER": "int",
     "REAL": "float",
     "TEXT":"str",
-    "BLOB": "bytes"
+    "BLOB": "bytes",
 }
 
 VARIANT_MANDATORY_FIELDS = [
 
-    {"name":"chr","type":str},
-    {"name":"pos","type":int},
-    {"name":"ref","type":str},
-    {"name":"alt","type":str},
-    {"name":"favorite","type":bool},
-    {"name":"comment","type":str},
-    {"name":"tags","type":str},
-    {"name":"classification","type":int},
-    {"name":"count_hom","type":int},
-    {"name":"count_het","type":int},
-    {"name":"count_ref","type":int},
-    {"name":"control_count_hom","type":int},
-    {"name":"control_count_het","type":int},
-    {"name":"control_count_ref","type":int},
-    {"name":"is_indel","type":int},
-    {"name":"is_snp","type":int},
-    {"name":"annotation_count","type":int}
+    {"name":"chr","type":"str"},
+    {"name":"pos","type":"int"},
+    {"name":"ref","type":"str"},
+    {"name":"alt","type":"str"},
+    {"name":"favorite","type":"bool"},
+    {"name":"comment","type":"str"},
+    {"name":"tags","type":"str"},
+    {"name":"classification","type":"int"},
+    {"name":"count_hom","type":"int"},
+    {"name":"count_het","type":"int"},
+    {"name":"count_ref","type":"int"},
+    {"name":"control_count_hom","type":"int"},
+    {"name":"control_count_het","type":"int"},
+    {"name":"control_count_ref","type":"int"},
+    {"name":"is_indel","type":"int"},
+    {"name":"is_snp","type":"int"},
+    {"name":"annotation_count","type":"int"}
 
 ]
 
@@ -1514,6 +1515,7 @@ def create_table_variants(conn: sqlite3.Connection, fields:typing.List[dict]):
     """
     cursor = conn.cursor()
 
+    fields = []
     for field in VARIANT_MANDATORY_FIELDS:
         fields.append(field)
 
@@ -1744,7 +1746,6 @@ def get_variants_tree(
 
     #     yield item
 
-
 def insert_variants_async(conn:sqlite3.Connection, variants: typing.List[dict], total_variant_count:int=None, yield_every:int=3000):
     """Insert many variants from data into variants table
     
@@ -1845,17 +1846,19 @@ def insert_variants_async(conn:sqlite3.Connection, variants: typing.List[dict], 
         # Commit every batch_size
         if variant_count % yield_every == 0:
             if total_variant_count:
-                progress = variant_count / total_variant_count * 100
+                progress = variant_count+1 / total_variant_count * 100
 
-            yield progress, f"{variant_count} variants inserted."
+            yield progress, f"{variant_count+1} variants inserted."
 
 
     conn.commit()
 
-    yield 100, f"{variant_count - errors} variant(s) has been inserted with {errors} error(s)"
+    total = variant_count + 1 - errors
+
+    yield 100, f"{total} variant(s) has been inserted with {errors} error(s)"
 
     # Create default selection (we need the number of variants for this)
-    insert_selection(conn, "", name=cm.DEFAULT_SELECTION_NAME, count=variant_count - errors)
+    insert_selection(conn, "", name=cm.DEFAULT_SELECTION_NAME, count=total)
 
 
     # def build_columns_and_placeholders(table_name):
@@ -2022,7 +2025,7 @@ def insert_variants_async(conn:sqlite3.Connection, variants: typing.List[dict], 
     # )
 
 
-def insert_variants(conn, data, **kwargs):
+def insert_variants(conn:sqlite3.Connection, data: typing.List[dict], **kwargs):
     """Wrapper for debugging purpose"""
     for _, _ in insert_variants_async(conn, data, kwargs):
         pass
