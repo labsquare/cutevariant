@@ -196,14 +196,24 @@ def test_alter_table():
 
 
 def test_import_variants():
-    os.remove("/tmp/cutetest.db")
+    try:
+        os.remove("/tmp/cutetest.db")
+    except:
+        pass
     conn = sql.get_sql_connection("/tmp/cutetest.db")
     sql.create_database_schema(conn)
     sql.insert_samples(conn, SAMPLES)
 
 
-    sql.insert_variants(conn, VARIANTS)
-    sql.insert_variants(conn, VARIANTS_FOR_UPDATE)
+    sql.insert_variants_async(conn, VARIANTS)
+    # sql.insert_variants(conn, VARIANTS_FOR_UPDATE)
+
+def test_insert_variants():
+    conn = sql.get_sql_connection(":memory:")
+    sql.create_database_schema(conn)
+
+    sql.insert_variants_async(conn, VARIANTS)
+
 
 
 @pytest.fixture

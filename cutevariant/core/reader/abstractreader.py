@@ -584,7 +584,7 @@ def sanitize_field_name(field: str):
 
 
 def nullify(variant: dict) -> dict:
-    """Convert empty fields value  to NONE
+    """Convert empty fields value to NONE
     This is used have NULL value inside the SQLITE inside an empty string
 
     """
