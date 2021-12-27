@@ -99,57 +99,55 @@ from cutevariant import LOGGER
 
 
 PYTHON_TO_SQLITE = {
-    "None" : "NULL",
-    "int" : "INTEGER",
+    "None": "NULL",
+    "int": "INTEGER",
     "float": "REAL",
     "str": "TEXT",
-    "bytes":"BLOB",
-    "bool": "INTEGER"
+    "bytes": "BLOB",
+    "bool": "INTEGER",
 }
 
 SQLITE_TO_PYTHON = {
     "NULL": "None",
     "INTEGER": "int",
     "REAL": "float",
-    "TEXT":"str",
+    "TEXT": "str",
     "BLOB": "bytes",
 }
 
 VARIANT_MANDATORY_FIELDS = [
-
-    {"name":"chr","type":"str"},
-    {"name":"pos","type":"int"},
-    {"name":"ref","type":"str"},
-    {"name":"alt","type":"str"},
-    {"name":"favorite","type":"bool"},
-    {"name":"comment","type":"str"},
-    {"name":"tags","type":"str"},
-    {"name":"classification","type":"int"},
-    {"name":"count_hom","type":"int", "constraint": "DEFAULT 0"},
-    {"name":"count_het","type":"int", "constraint": "DEFAULT 0"},
-    {"name":"count_ref","type":"int", "constraint": "DEFAULT 0"},
-    {"name":"count_var","type":"int", "constraint": "DEFAULT 0"},
-    {"name":"control_count_hom","type":"int", "constraint": "DEFAULT 0"},
-    {"name":"control_count_het","type":"int", "constraint": "DEFAULT 0"},
-    {"name":"control_count_ref","type":"int", "constraint": "DEFAULT 0"},   
-    {"name":"case_count_hom","type":"int", "constraint": "DEFAULT 0"},
-    {"name":"case_count_het","type":"int", "constraint": "DEFAULT 0"},
-    {"name":"case_count_ref","type":"int", "constraint": "DEFAULT 0"},
-    {"name":"is_indel","type":"int", "constraint": "DEFAULT 0"},
-    {"name":"is_snp","type":"int", "constraint": "DEFAULT 0"},
-    {"name":"annotation_count","type":"int", "constraint": "DEFAULT 0"}
-
+    {"name": "chr", "type": "str"},
+    {"name": "pos", "type": "int"},
+    {"name": "ref", "type": "str"},
+    {"name": "alt", "type": "str"},
+    {"name": "favorite", "type": "bool"},
+    {"name": "comment", "type": "str"},
+    {"name": "tags", "type": "str"},
+    {"name": "classification", "type": "int"},
+    {"name": "count_hom", "type": "int", "constraint": "DEFAULT 0"},
+    {"name": "count_het", "type": "int", "constraint": "DEFAULT 0"},
+    {"name": "count_ref", "type": "int", "constraint": "DEFAULT 0"},
+    {"name": "count_var", "type": "int", "constraint": "DEFAULT 0"},
+    {"name": "control_count_hom", "type": "int", "constraint": "DEFAULT 0"},
+    {"name": "control_count_het", "type": "int", "constraint": "DEFAULT 0"},
+    {"name": "control_count_ref", "type": "int", "constraint": "DEFAULT 0"},
+    {"name": "case_count_hom", "type": "int", "constraint": "DEFAULT 0"},
+    {"name": "case_count_het", "type": "int", "constraint": "DEFAULT 0"},
+    {"name": "case_count_ref", "type": "int", "constraint": "DEFAULT 0"},
+    {"name": "is_indel", "type": "int", "constraint": "DEFAULT 0"},
+    {"name": "is_snp", "type": "int", "constraint": "DEFAULT 0"},
+    {"name": "annotation_count", "type": "int", "constraint": "DEFAULT 0"},
 ]
-
 
 
 # ==================================================
 #
-#  SQL HELPER 
+#  SQL HELPER
 #
-#===================================================
+# ===================================================
 
-def get_sql_connection(filepath:str) -> sqlite3.Connection:
+
+def get_sql_connection(filepath: str) -> sqlite3.Connection:
     """Open a SQLite database and return the connection object
 
     Args:
@@ -164,9 +162,7 @@ def get_sql_connection(filepath:str) -> sqlite3.Connection:
             - DESCRIBE_QUANT aggregate
     """
 
-
-    # CUSTOM TYPE 
-
+    # CUSTOM TYPE
 
     connection = sqlite3.connect(filepath)
     # Activate Foreign keys
@@ -191,13 +187,12 @@ def get_sql_connection(filepath:str) -> sqlite3.Connection:
     return connection
 
 
+def get_database_file_name(conn: sqlite3.Connection) -> str:
+    """Return sqlite filename name
 
-def get_database_file_name(conn:sqlite3.Connection) -> str:
-    """Return sqlite filename name 
-    
     Args:
         conn (sqlite3.Connection): Sqlite3 connection
-    
+
     Returns:
         str: Path of the salite database
     """
@@ -219,7 +214,7 @@ def table_exists(conn: sqlite3.Connection, name: str) -> bool:
     return c.fetchone() != None
 
 
-def drop_table(conn, table_name:str):
+def drop_table(conn, table_name: str):
     """Drop the given table
 
     Args:
@@ -231,7 +226,7 @@ def drop_table(conn, table_name:str):
     conn.commit()
 
 
-def clear_table(conn: sqlite3.Connection, table_name:str):
+def clear_table(conn: sqlite3.Connection, table_name: str):
     """Clear content of the given table
 
     Args:
@@ -243,7 +238,7 @@ def clear_table(conn: sqlite3.Connection, table_name:str):
     conn.commit()
 
 
-def get_table_columns(conn: sqlite3.Connection, table_name:str):
+def get_table_columns(conn: sqlite3.Connection, table_name: str):
     """Return the list of columns for the given table
 
     Args:
@@ -261,9 +256,10 @@ def get_table_columns(conn: sqlite3.Connection, table_name:str):
         c[1] for c in conn.execute(f"pragma table_info({table_name})") if c[1] != "id"
     ]
 
-def alter_table(conn:sqlite3.Connection, table_name:str, fields: list):
-    """Add new columns to a table 
-    
+
+def alter_table(conn: sqlite3.Connection, table_name: str, fields: list):
+    """Add new columns to a table
+
     Args:
         conn (sqlite3.Connection)
         table_name (str): sql table name
@@ -274,7 +270,7 @@ def alter_table(conn:sqlite3.Connection, table_name:str, fields: list):
         name = field["name"]
         p_type = field["type"]
         s_type = PYTHON_TO_SQLITE.get(p_type, "TEXT")
-        constraint = field.get("constraint","")
+        constraint = field.get("constraint", "")
         sql = f"ALTER TABLE {table_name} ADD COLUMN `{name}` {s_type} {constraint}"
 
         try:
@@ -283,19 +279,18 @@ def alter_table(conn:sqlite3.Connection, table_name:str, fields: list):
         except sqlite3.OperationalError as e:
             LOGGER.error(e)
 
-
-
     conn.commit()
 
-def count_query(conn: sqlite3.Connection, query:str) -> int:
+
+def count_query(conn: sqlite3.Connection, query: str) -> int:
     """Count elements from the given query or table
-    
+
     Args:
         conn (sqlite3.Connection): Sqlite3.Connection
         query (str): SQL Query
-    
+
     Returns:
-        int: count of records 
+        int: count of records
     """
     return conn.execute(f"SELECT COUNT(*) as count FROM ({query})").fetchone()[0]
 
@@ -398,10 +393,10 @@ def get_indexed_fields(conn: sqlite3.Connection) -> typing.List[tuple]:
             result.append((category, field_name))
     return result
 
+
 def remove_indexed_field(conn: sqlite3.Connection, category: str, field_name: str):
     conn.execute(f"DROP INDEX IF EXISTS idx_{category}_{field_name}")
     conn.commit()
-
 
 
 def create_indexes(
@@ -434,44 +429,46 @@ def create_indexes(
         LOGGER.debug("create_indexes:: sqlite3.%s: %s", e.__class__.__name__, str(e))
 
 
-
 # ==================================================
 #
-#  CRUD Operation  
+#  CRUD Operation
 #
-#===================================================
- 
+# ===================================================
+
 ## Project table =============================================================
+
 
 def create_table_project(conn: sqlite3.Connection):
     """Create the table "projects" and insert project name and reference genome
     Args:
         conn (sqlite3.Connection): Sqlite3 Connection
-        project (dict): A key value dict. Should contains project_name and reference. 
+        project (dict): A key value dict. Should contains project_name and reference.
     """
 
     conn.execute("CREATE TABLE projects (key TEXT PRIMARY KEY, value TEXT)")
     conn.commit()
 
+
 def update_project(conn: sqlite3.Connection, project: dict):
-    """Update project 
-    
+    """Update project
+
     Args:
         conn (sqlite3.Connection): Sqlite3 Connection
         project (dict): Description
     """
     conn.executemany(
-        "INSERT OR REPLACE INTO projects (key, value) VALUES (?, ?)", list(project.items())
+        "INSERT OR REPLACE INTO projects (key, value) VALUES (?, ?)",
+        list(project.items()),
     )
     conn.commit()
 
 
 def get_project(conn: sqlite3.Connection) -> dict:
-    """Get project 
-    
+    """Get project
+
     Args:
         conn (sqlite3.Connection): Sqlite3 Connection
-    
+
     Returns:
         dict: Project information as key:value dictionnary
     """
@@ -489,14 +486,12 @@ def create_table_metadatas(conn: sqlite3.Connection):
         conn (sqlite3.Connection): Sqlite3 Connection
     """
 
-    conn.execute(
-        "CREATE TABLE metadatas (key TEXT PRIMARY KEY, value TEXT)"
-    )
+    conn.execute("CREATE TABLE metadatas (key TEXT PRIMARY KEY, value TEXT)")
 
 
-def update_metadatas(conn: sqlite3.Connection, metadatas:dict):
+def update_metadatas(conn: sqlite3.Connection, metadatas: dict):
     """Populate metadatas with a key/value dictionnaries
-    
+
     Args:
         conn (sqlite3.Connection): Sqlite3 Connection
         metadatas (dict, optional)
@@ -504,7 +499,8 @@ def update_metadatas(conn: sqlite3.Connection, metadatas:dict):
     if metadatas:
         cursor = conn.cursor()
         cursor.executemany(
-            "INSERT OR REPLACE INTO metadatas (key,value) VALUES (?,?)", list(metadatas.items())
+            "INSERT OR REPLACE INTO metadatas (key,value) VALUES (?,?)",
+            list(metadatas.items()),
         )
 
         conn.commit()
@@ -522,6 +518,7 @@ def get_metadatas(conn: sqlite3.Connection) -> dict:
 
 
 ## selections & sets tables ====================================================
+
 
 def create_table_selections(conn: sqlite3.Connection):
     """Create the table "selections" and association table "selection_has_variant"
@@ -585,9 +582,11 @@ def create_selection_has_variant_indexes(conn: sqlite3.Connection):
     )
 
 
-def insert_selection(conn:sqlite3.Connection, query: str, name="no_name", count=0) -> int:
-    """Insert one record in the selection table and return the last insert id. 
-    This function is used by `insert_selection_from_[source|bed|sql]` functions. 
+def insert_selection(
+    conn: sqlite3.Connection, query: str, name="no_name", count=0
+) -> int:
+    """Insert one record in the selection table and return the last insert id.
+    This function is used by `insert_selection_from_[source|bed|sql]` functions.
 
     Do not use this function. Use insert_selection_from_[source|bed|sql].
 
@@ -616,7 +615,7 @@ def insert_selection(conn:sqlite3.Connection, query: str, name="no_name", count=
         "INSERT INTO selections (name, count, query) VALUES (?,?,?)",
         (name, count, query),
     )
-    
+
     conn.commit()
 
     return cursor.lastrowid
@@ -629,12 +628,12 @@ def insert_selection_from_source(
     filters=None,
     count=None,
 ) -> int:
-    """Create a selection from another selection. 
-    This function create a subselection from another selection by applying filters. 
+    """Create a selection from another selection.
+    This function create a subselection from another selection by applying filters.
 
     Examples:
 
-    Create a subselection from "variants" with variant reference equal "A".  
+    Create a subselection from "variants" with variant reference equal "A".
 
         insert_selection_from_source(
             conn,
@@ -792,7 +791,7 @@ def insert_selection_from_sql(
 
 def insert_selection_from_bed(
     conn: sqlite3.Connection, source: str, target: str, bed_intervals
-)->int:
+) -> int:
     """Create a new selection based on the given intervals taken from a BED file
 
     Variants whose positions are contained in the intervals specified by the
@@ -850,7 +849,7 @@ def insert_selection_from_bed(
     return insert_selection_from_sql(conn, query, target, from_selection=True)
 
 
-def get_selections(conn: sqlite3.Connection)->typing.List[dict]:
+def get_selections(conn: sqlite3.Connection) -> typing.List[dict]:
     """Get selections from "selections" table
 
     Args:
@@ -890,7 +889,7 @@ def delete_selection(conn: sqlite3.Connection, selection_id: int):
 
 
 def delete_selection_by_name(conn: sqlite3.Connection, name: str):
-    """Delete data in "selections" 
+    """Delete data in "selections"
 
     Args:
         conn (sqlit3.Connection): sqlite3 connection
@@ -1131,7 +1130,8 @@ def insert_wordset_from_subtract(conn, name: str, wordsets=[]):
     conn.commit()
     return cursor.rowcount
 
-def get_wordsets(conn:sqlite3.Connection):
+
+def get_wordsets(conn: sqlite3.Connection):
     """Return the number of words per word set stored in DB
 
     Returns:
@@ -1155,7 +1155,6 @@ def get_wordset_by_name(conn, wordset_name):
         yield dict(row)["value"]
 
 
-
 def delete_wordset_by_name(conn: sqlite3.Connection, name: str):
     """Delete data in "selections" or "sets" tables with the given name
 
@@ -1174,6 +1173,7 @@ def delete_wordset_by_name(conn: sqlite3.Connection, name: str):
 
 
 ## Operations on sets of variants ==============================================
+
 
 def intersect_variants(query1, query2, **kwargs):
     """Get the variants obtained by the intersection of 2 queries
@@ -1232,20 +1232,31 @@ def create_table_fields(conn: sqlite3.Connection):
 def insert_field(
     conn, name="no_name", category="variants", field_type="text", description=""
 ):
-    """Insert one fields 
+    """Insert one fields
 
-    This is a shortcut and it calls insert_fields with one element 
+    This is a shortcut and it calls insert_fields with one element
 
     Args:
         conn (sqlite.Connection): sqlite Connection
         name (str, optional): fields name. Defaults to "no_name".
         category (str, optional): fields table. Defaults to "variants".
         field_type (str, optional): type of field in python (str,int,float,bool). Defaults to "text".
-        description (str, optional): field description   """    
+        description (str, optional): field description"""
 
-    insert_fields(conn, [{"name":name, "category":category, "type":field_type, "description":description}])
+    insert_fields(
+        conn,
+        [
+            {
+                "name": name,
+                "category": category,
+                "type": field_type,
+                "description": description,
+            }
+        ],
+    )
 
-def insert_fields(conn:sqlite3.Connection, data: list):
+
+def insert_fields(conn: sqlite3.Connection, data: list):
     """Insert multiple fields into "fields" table using one commit
 
     :param conn: sqlite3.connect
@@ -1269,9 +1280,8 @@ def insert_fields(conn:sqlite3.Connection, data: list):
     conn.commit()
 
 
-
 def insert_only_new_fields(conn, data: list):
-    """Insert in "fields" table the fields who did not already exist. 
+    """Insert in "fields" table the fields who did not already exist.
     Add those fields as new columns in "variants", "annotations" or "samples" tables.
 
     :param conn: sqlite3.connect
@@ -1290,11 +1300,13 @@ def insert_only_new_fields(conn, data: list):
     )
     for field in new_data:
         cursor.execute(
-            "ALTER TABLE %s ADD COLUMN %s %s" % (field["category"], field["name"], field["type"])
+            "ALTER TABLE %s ADD COLUMN %s %s"
+            % (field["category"], field["name"], field["type"])
         )
     conn.commit()
 
-#@lru_cache()
+
+# @lru_cache()
 def get_fields(conn):
     """Get fields as list of dictionnary
 
@@ -1309,7 +1321,7 @@ def get_fields(conn):
     return tuple(dict(data) for data in conn.execute("SELECT * FROM fields"))
 
 
-#@lru_cache()
+# @lru_cache()
 def get_field_by_category(conn, category):
     """Get fields within a category
 
@@ -1416,7 +1428,7 @@ def get_field_unique_values(conn, field_name: str, like: str = None, limit=None)
 ## annotations table ===========================================================
 
 
-def create_table_annotations(conn: sqlite3.Connection, fields:typing.List[dict]):
+def create_table_annotations(conn: sqlite3.Connection, fields: typing.List[dict]):
     """Create "annotations" table which contains dynamics fields
 
     :param fields: Generator of SQL fields. Example of fields:
@@ -1496,7 +1508,7 @@ def get_annotations(conn, variant_id: int):
 ## variants table ==============================================================
 
 
-def create_table_variants(conn: sqlite3.Connection, fields:typing.List[dict]):
+def create_table_variants(conn: sqlite3.Connection, fields: typing.List[dict]):
     """Create "variants" and "sample_has_variant" tables which contains dynamics fields
 
     :Example:
@@ -1751,98 +1763,124 @@ def get_variants_tree(
     #     yield item
 
 
-def update_variants_counts(conn:sqlite3.Connection):
-    """Update all variants counts information from sample data. 
+def update_variants_counts(conn: sqlite3.Connection):
+    """Update all variants counts information from sample data.
 
     It computes count_var,count_hom, count_het, count_ref for each variants by reading how many samples belong to.
     This methods can takes a while and should be run everytime new samples are added.
-    
+
     Args:
         conn (sqlite3.Connection)
     """
-    conn.execute("""
+    conn.execute(
+        """
         UPDATE variants
         SET count_var = ifnull(
         (SELECT  COUNT(*) FROM sample_has_variant WHERE gt > 1 AND variant_id = variants.id)
-        , 0)""")
+        , 0)"""
+    )
 
-    #Update count_het
-    conn.execute("""
+    # Update count_het
+    conn.execute(
+        """
         UPDATE variants
         SET count_het = ifnull(
         (SELECT  COUNT(*) FROM sample_has_variant WHERE gt = 1 AND variant_id = variants.id)
-        , 0)""")
+        , 0)"""
+    )
 
-    #Update count_hom
-    conn.execute("""
+    # Update count_hom
+    conn.execute(
+        """
         UPDATE variants
         SET count_var = ifnull(
         (SELECT  COUNT(*) FROM sample_has_variant WHERE gt = 2 AND variant_id = variants.id)
-        , 0)""")
+        , 0)"""
+    )
 
-    #Update count_ref
-    conn.execute("""
+    # Update count_ref
+    conn.execute(
+        """
         UPDATE variants
         SET count_var = ifnull(
         (SELECT  COUNT(*) FROM sample_has_variant WHERE gt = 0 AND variant_id = variants.id)
-        , 0)""")
+        , 0)"""
+    )
 
+    # CASE and CONTROL
 
-    # CASE and CONTROL 
-
-    # If no phenotype, do not compute any thing... 
-    pheno_count = conn.execute("SELECT COUNT(phenotype) FROM samples WHERE phenotype = 1").fetchone()[0]
+    # If no phenotype, do not compute any thing...
+    pheno_count = conn.execute(
+        "SELECT COUNT(phenotype) FROM samples WHERE phenotype = 1"
+    ).fetchone()[0]
     if pheno_count == 0:
         LOGGER.warning("No phenotype. Do not compute case/control count")
-        return 
+        return
 
-    # case homo 
-    conn.execute("""
+    # case homo
+    conn.execute(
+        """
         UPDATE variants
         SET case_count_hom = ifnull( (SELECT  COUNT(*) FROM sample_has_variant sv, samples s 
         WHERE sv.gt = 2 AND sv.variant_id = variants.id AND s.id = sv.sample_id AND s.phenotype=1 ), 0)
-    """)
+    """
+    )
 
     # case hetero
-    conn.execute("""
+    conn.execute(
+        """
        UPDATE variants
        SET case_count_het = ifnull( (SELECT  COUNT(*) FROM sample_has_variant sv, samples s 
        WHERE sv.gt = 1 AND sv.variant_id = variants.id AND s.id = sv.sample_id AND s.phenotype=1 ), 0)
-   """)
+   """
+    )
 
-    # case ref 
-    conn.execute("""
+    # case ref
+    conn.execute(
+        """
         UPDATE variants
         SET case_count_ref = ifnull( (SELECT  COUNT(*) FROM sample_has_variant sv, samples s 
         WHERE sv.gt = 0 AND sv.variant_id = variants.id AND s.id = sv.sample_id AND s.phenotype=1 ), 0)
-    """)
+    """
+    )
 
     # control homo
-    conn.execute("""
+    conn.execute(
+        """
         UPDATE variants
         SET control_count_hom = ifnull( (SELECT  COUNT(*) FROM sample_has_variant sv, samples s 
         WHERE sv.gt = 2 AND sv.variant_id = variants.id AND s.id = sv.sample_id AND s.phenotype=0 ), 0)
-    """)
+    """
+    )
 
     # control hetero
-    conn.execute("""
+    conn.execute(
+        """
         UPDATE variants
         SET control_count_het = ifnull( (SELECT  COUNT(*) FROM sample_has_variant sv, samples s 
         WHERE sv.gt = 1 AND sv.variant_id = variants.id AND s.id = sv.sample_id AND s.phenotype=0 ), 0)
-    """)
+    """
+    )
 
     # control ref
-    conn.execute("""
+    conn.execute(
+        """
         UPDATE variants
         SET control_count_ref = ifnull( (SELECT  COUNT(*) FROM sample_has_variant sv, samples s 
         WHERE sv.gt = 0 AND sv.variant_id = variants.id AND s.id = sv.sample_id AND s.phenotype=0 ), 0)
-    """)
+    """
+    )
 
 
-
-def insert_variants_async(conn:sqlite3.Connection, variants: typing.List[dict], total_variant_count:int=None, yield_every:int=3000):
+def insert_variants(
+    conn: sqlite3.Connection,
+    variants: typing.List[dict],
+    total_variant_count: int = None,
+    yield_every: int = 3000,
+    progress_callback: typing.Callable = None,
+):
     """Insert many variants from data into variants table
-    
+
     Args:
         conn (sqlite3.Connection): sqlite3 Connection
         data (list): list of variant dictionnary which contains same number of key than fields numbers.
@@ -1850,20 +1888,20 @@ def insert_variants_async(conn:sqlite3.Connection, variants: typing.List[dict], 
         yield_every (int, optional): Yield a tuple with progression and message.
         Progression is 0 if total_variant_count is not set.
 
-    
+
     Example:
-    
+
         insert_many_variant(conn, [{chr:"chr1", pos:24234, alt:"A","ref":T }])
         insert_many_variant(conn, reader.get_variants())
 
     Note: About using INSERT OR IGNORE: They avoid the following errors:
-    
+
         - Upon insertion of a duplicate key where the column must contain
           a PRIMARY KEY or UNIQUE constraint
         - Upon insertion of NULL value where the column has
           a NOT NULL constraint.
           => This is not recommended
-    
+
 
     """
 
@@ -1874,41 +1912,46 @@ def insert_variants_async(conn:sqlite3.Connection, variants: typing.List[dict], 
     # get samples name / samples id map
     samples_map = {sample["name"]: sample["id"] for sample in get_samples(conn)}
 
-    progress = -1 
+    progress = -1
     errors = 0
     cursor = conn.cursor()
     batches = []
-    for variant_count, variant in enumerate(variants): 
+    for variant_count, variant in enumerate(variants):
 
-        # Preprocess variants 
+        # Preprocess variants
         variant["favorite"] = False
         variant["is_indel"] = len(variant["ref"]) != len(variant["alt"])
         variant["is_snp"] = len(variant["ref"]) == len(variant["alt"])
-        variant["annotation_count"] = len(variant["annotations"]) if "annotations" in variant else  0
+        variant["annotation_count"] = (
+            len(variant["annotations"]) if "annotations" in variant else 0
+        )
 
-        variant_fields = {i for i in variant.keys() if i not in ("samples","annotations")}
+        variant_fields = {
+            i for i in variant.keys() if i not in ("samples", "annotations")
+        }
 
-        common_fields =variant_fields & variants_local_fields
+        common_fields = variant_fields & variants_local_fields
 
         query_fields = ",".join((f"`{i}`" for i in common_fields))
         query_values = ",".join((f"?" for i in common_fields))
         query_datas = [variant[i] for i in common_fields]
 
-
         # INSERT VARIANTS
 
         query = f"INSERT OR IGNORE INTO variants ({query_fields}) VALUES ({query_values}) ON CONFLICT (chr,pos,ref,alt) DO NOTHING"
 
-        # Use execute many and get last rowS inserted ? 
-        cursor.execute(query,query_datas)
+        # Use execute many and get last rowS inserted ?
+        cursor.execute(query, query_datas)
 
         variant_id = cursor.lastrowid
 
         if variant_id == 0:
-            LOGGER.debug(""" The following variant contains erroneous data; most of the time it is a 
+            LOGGER.debug(
+                """ The following variant contains erroneous data; most of the time it is a 
                 duplication of the primary key: (chr,pos,ref,alt).
-                Please check your data; this variant and its attached data will not be inserted!\n%s""")
-            errors +=1
+                Please check your data; this variant and its attached data will not be inserted!\n%s"""
+            )
+            errors += 1
             continue
 
         # INSERT ANNOTATIONS
@@ -1921,9 +1964,9 @@ def insert_variants_async(conn:sqlite3.Connection, variants: typing.List[dict], 
                 query_values = ",".join((f"?" for i in common_fields))
                 query_datas = [ann[i] for i in common_fields]
                 query = f"INSERT OR IGNORE INTO annotations ({query_fields}) VALUES ({query_values})"
-                cursor.execute(query,query_datas)
+                cursor.execute(query, query_datas)
 
-        # INSERT SAMPLES 
+        # INSERT SAMPLES
 
         if "samples" in variant:
             for sample in variant["samples"]:
@@ -1935,25 +1978,23 @@ def insert_variants_async(conn:sqlite3.Connection, variants: typing.List[dict], 
                     query_values = ",".join((f"?" for i in common_fields))
                     query_datas = [sample[i] for i in common_fields]
                     query = f"INSERT INTO sample_has_variant ({query_fields}) VALUES ({query_values})"
-                    cursor.execute(query,query_datas)
+                    cursor.execute(query, query_datas)
 
         # Commit every batch_size
-        if variant_count % yield_every == 0:
-            if total_variant_count:
-                progress = variant_count+1 / total_variant_count * 100
-
-            yield progress, f"{variant_count+1} variants inserted."
-
+        if progress_callback:
+            if variant_count % yield_every == 0 and total_variant_count:
+                progress = variant_count + 1 / total_variant_count * 100
+                progress_callback(progress, f"{variant_count+1} variants inserted.")
 
     conn.commit()
 
     total = variant_count + 1 - errors
-
-    yield 100, f"{total} variant(s) has been inserted with {errors} error(s)"
+    progress_callback(
+        100, f"{total} variant(s) has been inserted with {errors} error(s)"
+    )
 
     # Create default selection (we need the number of variants for this)
     insert_selection(conn, "", name=cm.DEFAULT_SELECTION_NAME, count=total)
-
 
     # def build_columns_and_placeholders(table_name):
     #     """Build a tuple of columns and "?" placeholders for INSERT queries"""
@@ -2119,14 +2160,11 @@ def insert_variants_async(conn:sqlite3.Connection, variants: typing.List[dict], 
     # )
 
 
-def insert_variants(conn:sqlite3.Connection, data: typing.List[dict], **kwargs):
-    """Wrapper for debugging purpose"""
-    for _, _ in insert_variants_async(conn, data, kwargs):
-        pass
+def update_variants_async(
+    conn, data, old_samples, total_variant_count=None, yield_every=3000
+):
 
-
-def update_variants_async(conn, data, old_samples, total_variant_count=None, yield_every=3000):
-    """Insert many variants from data into variants table
+    """DEPRECATED : NEED TO REMOVE Insert many variants from data into variants table
 
     :param conn: sqlite3.connect
     :param data: list of variant dictionnary which contains same number of key than fields numbers.
@@ -2139,26 +2177,29 @@ def update_variants_async(conn, data, old_samples, total_variant_count=None, yie
     TODO: remove indexes before update
     TODO: rebuild them after
     """
+
     def delete_selection_index(conn):
         """Ugly bugfix that is needed because everything tries to create a default variant
         selection and cutevariant crashes if one already exists"""
         cursor = conn.cursor()
-        cursor.execute("DELETE FROM selections WHERE name = '%s'" % (cm.DEFAULT_SELECTION_NAME,))
+        cursor.execute(
+            "DELETE FROM selections WHERE name = '%s'" % (cm.DEFAULT_SELECTION_NAME,)
+        )
         conn.commit()
 
     def remove_nonexisting_columns(conn, data: list):
         """Remove from new data columns that don't exist in variants and annotations tables.
         Alternative: add missing columns instead.
-        
+
         04/11/2021 Update: the alternative was implemented.
         """
         var_cols = get_table_columns(conn, "variants")
         ann_cols = get_table_columns(conn, "annotations")
         samples_cols = get_table_columns(conn, "sample_has_variant")
-        samples_cols += ["name"] #needed for update_sample_has_variant(args)
+        samples_cols += ["name"]  # needed for update_sample_has_variant(args)
         filtered_data = []
         for var in data:
-            filtered_var = {k: var[k] for k in var if k in var_cols }
+            filtered_var = {k: var[k] for k in var if k in var_cols}
 
             filtered_ann = []
             if "annotations" in var.keys():
@@ -2190,7 +2231,7 @@ def update_variants_async(conn, data, old_samples, total_variant_count=None, yie
 
     def identify_existing_variants(existing_var: dict, data_var: dict):
         """
-        :return: 1) a dict linking new variants chr_pos_ref_alt keys 
+        :return: 1) a dict linking new variants chr_pos_ref_alt keys
                     to already inserted variants database IDs that will be updated
                  2) a list of variant data that are new in the database
                     and can be inserted with the usual function
@@ -2214,7 +2255,9 @@ def update_variants_async(conn, data, old_samples, total_variant_count=None, yie
             [(f"`{key}` = ? ", value) for key, value in variant.items() if key != "id"]
         )
         query = (
-            "UPDATE variants SET " + ",".join(placeholders) + f" WHERE id = {variant['id']}"
+            "UPDATE variants SET "
+            + ",".join(placeholders)
+            + f" WHERE id = {variant['id']}"
         )
         cursor.execute(query, values)
         return cursor
@@ -2225,9 +2268,7 @@ def update_variants_async(conn, data, old_samples, total_variant_count=None, yie
         Chosen solution: remove existing annotations for the variant,
         then insert the new ones.
         """
-        conn.execute(
-                f"DELETE FROM annotations WHERE variant_id = {variant_id}"
-            )
+        conn.execute(f"DELETE FROM annotations WHERE variant_id = {variant_id}")
 
         ann_columns = get_table_columns(conn, "annotations")
         anns = []
@@ -2267,42 +2308,51 @@ def update_variants_async(conn, data, old_samples, total_variant_count=None, yie
         return cursor
 
     def fully_update_variant(conn, variant: dict, cursor):
-        cursor = async_update_variant(conn, 
+        cursor = async_update_variant(
+            conn,
             {k: variant[k] for k in variant if k not in ("samples", "annotations")},
-            cursor
+            cursor,
         )
         if "annotations" in variant.keys():
-            cursor = update_annotation(conn, variant["id"], variant["annotations"], cursor)
+            cursor = update_annotation(
+                conn, variant["id"], variant["annotations"], cursor
+            )
         if "samples" in variant.keys():
-            cursor = update_sample_has_variant(conn, variant["id"], variant["samples"], cursor)
+            cursor = update_sample_has_variant(
+                conn, variant["id"], variant["samples"], cursor
+            )
         return cursor
 
     # data = remove_nonexisting_columns(conn, data)
 
-    existing_var = [v for v in get_variants(conn,
-                                ["id", "chr", "pos", "ref", "alt"],
-                                limit = get_variants_count(conn))]
+    existing_var = [
+        v
+        for v in get_variants(
+            conn, ["id", "chr", "pos", "ref", "alt"], limit=get_variants_count(conn)
+        )
+    ]
     existing_var_dict = build_unique_keys(existing_var)
     data_var_dict = build_unique_keys(data)
     update_dict, new_data = identify_existing_variants(existing_var_dict, data_var_dict)
 
-    previous_max_var_id = [dict(res) for res in conn.execute(f"SELECT max(id) FROM variants")][0]["max(id)"]
+    previous_max_var_id = [
+        dict(res) for res in conn.execute(f"SELECT max(id) FROM variants")
+    ][0]["max(id)"]
 
-    #New variants can be inserted with the usual method
+    # New variants can be inserted with the usual method
     delete_selection_index(conn)
-    for percent, msg in insert_variants_async(conn, 
-                                        new_data, 
-                                        total_variant_count=len(new_data), 
-                                        yield_every=yield_every):
+    for percent, msg in insert_variants_async(
+        conn, new_data, total_variant_count=len(new_data), yield_every=yield_every
+    ):
         yield percent, msg
-    #the usual insertion method does not update old samples with new variants
+    # the usual insertion method does not update old samples with new variants
     add_new_variants_to_old_samples(conn, old_samples, new_data, previous_max_var_id)
 
-    #For previously existing variants, update variant, annotation and sample_has_variant tables
+    # For previously existing variants, update variant, annotation and sample_has_variant tables
     variant_count = 0
     cursor = conn.cursor()
     total_update_count = len(update_dict)
-    #using a separate list to iterate because keys will be changed during the loop
+    # using a separate list to iterate because keys will be changed during the loop
     original_data_keys = data_var_dict.keys()
     for k in original_data_keys:
         if k in update_dict.keys():
@@ -2314,17 +2364,21 @@ def update_variants_async(conn, data, old_samples, total_variant_count=None, yie
                 yield progress, f"{variant_count} variants updated."
     yield 97, f"{variant_count} variant(s) has been updated."
 
-    #Correct default selection to account for new number of variants
-    cursor.execute("DELETE FROM selections WHERE name = '%s'" % (cm.DEFAULT_SELECTION_NAME,))
+    # Correct default selection to account for new number of variants
+    cursor.execute(
+        "DELETE FROM selections WHERE name = '%s'" % (cm.DEFAULT_SELECTION_NAME,)
+    )
     conn.commit()
     insert_selection(
         conn, "", name=cm.DEFAULT_SELECTION_NAME, count=get_variants_count(conn)
     )
 
+
 def update_variants(conn, data, **kwargs):
     """Wrapper for debugging purpose"""
     for _, _ in update_variants_async(conn, data, kwargs):
         pass
+
 
 def get_variant_as_group(
     conn,
@@ -2469,34 +2523,40 @@ def insert_only_new_samples(conn, samples: list):
         .. todo:: only names in this list ?
     :type samples: <list <str>>
     """
-    new_samples = [v for v in samples if v not in set([s["name"] for s in get_samples(conn)])]
+    new_samples = [
+        v for v in samples if v not in set([s["name"] for s in get_samples(conn)])
+    ]
     cursor = conn.cursor()
     cursor.executemany(
-        "INSERT INTO samples (name) VALUES (?)", 
-        ((sample,) for sample in new_samples)
+        "INSERT INTO samples (name) VALUES (?)", ((sample,) for sample in new_samples)
     )
 
-    #update sample_has_variant with new samples, setting everything to NULL (-1 for genotype)
+    # update sample_has_variant with new samples, setting everything to NULL (-1 for genotype)
     new_ids = [s["id"] for s in get_samples(conn) if s["name"] in new_samples]
     if "gt" in get_table_columns(conn, "sample_has_variant"):
         cursor.executemany(
-            "INSERT INTO sample_has_variant (sample_id, variant_id, gt) VALUES (?,?,?)", 
-            ((int(sample_id), int(var["id"]), "-1") 
-                for sample_id in new_ids 
-                for var in get_variants(conn, ["id"], limit = get_variants_count(conn))
-            )
+            "INSERT INTO sample_has_variant (sample_id, variant_id, gt) VALUES (?,?,?)",
+            (
+                (int(sample_id), int(var["id"]), "-1")
+                for sample_id in new_ids
+                for var in get_variants(conn, ["id"], limit=get_variants_count(conn))
+            ),
         )
     else:
         cursor.executemany(
-            "INSERT INTO samples (sample_id, variant_id) VALUES (?,?)", 
-            ((int(sample_id), int(var["id"])) 
-                for sample_id in new_ids 
-                for var in get_variants(conn, ["id"], limit = get_variants_count(conn))
-            )
+            "INSERT INTO samples (sample_id, variant_id) VALUES (?,?)",
+            (
+                (int(sample_id), int(var["id"]))
+                for sample_id in new_ids
+                for var in get_variants(conn, ["id"], limit=get_variants_count(conn))
+            ),
         )
     conn.commit()
 
-def add_new_variants_to_old_samples(conn, old_samples: list, new_data, previous_max_var_id: int):
+
+def add_new_variants_to_old_samples(
+    conn, old_samples: list, new_data, previous_max_var_id: int
+):
     """Update sample_has_variant for previously existing samples with newly inserted variants
 
     :param conn: sqlite connection
@@ -2510,33 +2570,36 @@ def add_new_variants_to_old_samples(conn, old_samples: list, new_data, previous_
         if "samples" in v:
             for s in v["samples"]:
                 samples_in_new_data.add(s["name"])
-    samples_to_update = [s["id"] for s in old_samples if s["name"] not in samples_in_new_data]
-    new_var_ids = [int(v["id"]) 
-                        for v in get_variants(conn, ["id"], limit = get_variants_count(conn))
-                        if int(v["id"]) > previous_max_var_id
-                    ]
+    samples_to_update = [
+        s["id"] for s in old_samples if s["name"] not in samples_in_new_data
+    ]
+    new_var_ids = [
+        int(v["id"])
+        for v in get_variants(conn, ["id"], limit=get_variants_count(conn))
+        if int(v["id"]) > previous_max_var_id
+    ]
 
     if len(samples_to_update) > 0 and len(new_var_ids) > 0:
         cursor = conn.cursor()
         if "gt" in get_table_columns(conn, "sample_has_variant"):
             cursor.executemany(
-                "INSERT INTO sample_has_variant (sample_id, variant_id, gt) VALUES (?,?,?)", 
-                ((int(sample_id), int(var), "-1") 
-                    for sample_id in samples_to_update 
+                "INSERT INTO sample_has_variant (sample_id, variant_id, gt) VALUES (?,?,?)",
+                (
+                    (int(sample_id), int(var), "-1")
+                    for sample_id in samples_to_update
                     for var in new_var_ids
-                )
+                ),
             )
         else:
             cursor.executemany(
-                "INSERT INTO samples (sample_id, variant_id) VALUES (?,?)", 
-                ((int(sample_id), int(var)) 
-                    for sample_id in samples_to_update 
+                "INSERT INTO samples (sample_id, variant_id) VALUES (?,?)",
+                (
+                    (int(sample_id), int(var))
+                    for sample_id in samples_to_update
                     for var in new_var_ids
-                )
+                ),
             )
         conn.commit()
-
-
 
 
 def get_samples(conn: sqlite3.Connection):
@@ -2612,8 +2675,8 @@ def update_sample(conn: sqlite3.Connection, sample: dict):
     conn.commit()
 
 
+# ==================== CREATE DATABASE =====================================
 
-#==================== CREATE DATABASE =====================================
 
 def create_database_schema(conn):
     create_table_project(conn)
@@ -2625,10 +2688,8 @@ def create_database_schema(conn):
     # Create variants tables
     create_table_variants(conn, [])
 
-
     # Create annotations tables
-    create_table_annotations(conn,[])
-
+    create_table_annotations(conn, [])
 
     # # Create table samples
     create_table_samples(conn, [])
@@ -2640,26 +2701,13 @@ def create_database_schema(conn):
     create_table_wordsets(conn)
 
 
+# def from_reader(conn, reader: AbstractReader, progress_callback=None):
+#     # si base pas construite : construire
 
-def import_variants(conn, variants):
-
-    # Update fields tables 
-
-    # alter tables ... 
-
-    # Update samples tables 
-
-    # insert variants 
-    ## Insert annotations 
-    ## Insert sample_has_variants 
-    pass
+#     # import samples
+#     # import fields
+#     pass
 
 
-def import_file(conn, reader):
-    pass 
-
-def export_file(conn, writer):
-    pass
-
-
-
+# def to_writer(conn, writer: AbstractWriter):
+#     pass
