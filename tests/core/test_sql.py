@@ -10,6 +10,8 @@ from cutevariant.core import sql
 from cutevariant.core.reader import BedReader
 from tests.utils import table_exists, table_count
 
+from cutevariant.core.reader import FakeReader
+
 
 FIELDS = [
     {
@@ -154,7 +156,7 @@ VARIANTS_FOR_UPDATE = [
             {"name": "sacha", "gt": 1, "dp": 40},
             {"name": "boby", "gt": 1, "dp": 35},
         ],
-    }
+    },
 ]
 
 FILTERS = {
@@ -175,7 +177,6 @@ def test_create_database_schema():
     conn = sql.get_sql_connection(":memory:")
     sql.create_database_schema(conn)
 
-
     assert sql.table_exists(conn, "variants")
     assert sql.table_exists(conn, "fields")
     assert sql.table_exists(conn, "annotations")
@@ -189,24 +190,32 @@ def test_alter_table():
     conn = sql.get_sql_connection(":memory:")
     sql.create_database_schema(conn)
     columns_before = sql.get_table_columns(conn, "variants")
-    fields = [{"name":"boby", "type":"str"}]
+    fields = [{"name": "boby", "type": "str"}]
     sql.alter_table(conn, "variants", fields)
-    columns_after = sql.get_table_columns(conn,"variants")
+    columns_after = sql.get_table_columns(conn, "variants")
     assert columns_after == columns_before + [fields[0]["name"]]
 
 
-def test_import_variants():
-    try:
-        os.remove("/tmp/cutetest.db")
-    except:
-        pass
-    conn = sql.get_sql_connection("/tmp/cutetest.db")
-    sql.create_database_schema(conn)
-    sql.insert_samples(conn, SAMPLES)
+def test_import_reader():
+    conn = sql.get_sql_connection("/tmp/testcute.db")
+
+    reader = FakeReader()
+    sql.import_reader(conn, reader)
+    sql.import_reader(conn, reader)
 
 
-    sql.insert_variants(conn, VARIANTS)
-    # sql.insert_variants(conn, VARIANTS_FOR_UPDATE)
+# def test_import_variants():
+#     try:
+#         os.remove("/tmp/cutetest.db")
+#     except:
+#         pass
+#     conn = sql.get_sql_connection("/tmp/cutetest.db")
+#     sql.create_database_schema(conn)
+#     sql.insert_samples(conn, SAMPLES)
+
+#     sql.insert_variants(conn, VARIANTS)
+# sql.insert_variants(conn, VARIANTS_FOR_UPDATE)
+
 
 # def test_insert_variants():
 #     conn = sql.get_sql_connection(":memory:")
@@ -215,20 +224,32 @@ def test_import_variants():
 #     sql.insert_variants_async(conn, VARIANTS)
 
 
-
 @pytest.fixture
 def conn():
     """Initialize a memory DB with test data and return a connexion on this DB"""
     conn = sql.get_sql_connection(":memory:")
 
+    assert sql.schema_exists(conn) == False
+
     sql.create_database_schema(conn)
 
-    sql.alter_table(conn, "variants", [field for field in FIELDS if field["category"] == "variants"])
-    sql.alter_table(conn, "annotations", [field for field in FIELDS if field["category"] == "annotations"])
-    sql.alter_table(conn, "sample_has_variant", [field for field in FIELDS if field["category"] == "samples"])
+    assert sql.schema_exists(conn) == True
 
-    
-    sql.update_project(conn, {"name":"test", "reference":"hg19"})
+    sql.alter_table(
+        conn, "variants", [field for field in FIELDS if field["category"] == "variants"]
+    )
+    sql.alter_table(
+        conn,
+        "annotations",
+        [field for field in FIELDS if field["category"] == "annotations"],
+    )
+    sql.alter_table(
+        conn,
+        "sample_has_variant",
+        [field for field in FIELDS if field["category"] == "samples"],
+    )
+
+    sql.update_project(conn, {"name": "test", "reference": "hg19"})
     assert table_exists(conn, "projects"), "cannot create table projects"
     project_data = sql.get_project(conn)
     assert project_data["name"] == "test"
@@ -236,8 +257,7 @@ def conn():
 
     assert table_exists(conn, "fields"), "cannot create table fields"
 
-    sql.insert_fields(conn, FIELDS)
-
+    sql.insert_fields(conn, copy.deepcopy(FIELDS))
 
     assert table_count(conn, "fields") == len(FIELDS), "cannot insert many fields"
 
@@ -246,11 +266,10 @@ def conn():
     assert table_exists(conn, "annotations"), "cannot create table annotations"
 
     assert table_exists(conn, "samples"), "cannot create table samples"
-    sql.insert_samples(conn, SAMPLES)
+    sql.insert_samples(conn, copy.deepcopy(SAMPLES))
 
     assert table_exists(conn, "variants"), "cannot create table variants"
     sql.insert_variants(conn, copy.deepcopy(VARIANTS))
-
     assert table_exists(conn, "wordsets"), "cannot create table sets"
 
     return conn
@@ -306,15 +325,16 @@ def print_table_for_debug(conn, table):
         for row in cur.fetchall():
             print(tuple(row))
 
+
 ################################################################################
 
 # def test_update(conn):
 #     #TODO: automate table update verification
 #     for table in ("variants", "annotations", "samples", "sample_has_variant", "selections"):
 #         print_table_for_debug(conn, table)
-#     for x, y in sql.update_variants_async(conn, 
-#                             VARIANTS_FOR_UPDATE, 
-#                             total_variant_count=len(VARIANTS_FOR_UPDATE), 
+#     for x, y in sql.update_variants_async(conn,
+#                             VARIANTS_FOR_UPDATE,
+#                             total_variant_count=len(VARIANTS_FOR_UPDATE),
 #                             yield_every=1):
 #         print(x,y)
 #     for table in ("variants", "annotations", "samples", "sample_has_variant", "selections"):
@@ -323,20 +343,23 @@ def print_table_for_debug(conn, table):
 
 def test_update_variants_counts(conn):
 
-   sql.update_variants_counts(conn)
+    sql.update_variants_counts(conn)
 
-   samples = VARIANTS[0]["samples"]
+    samples = VARIANTS[0]["samples"]
 
-   expected = {}
-   expected["count_var"] = sum(sample["gt"] for sample in samples if sample["gt"] > 1)
-   expected["count_het"] = sum(sample["gt"] for sample in samples if sample["gt"] == 1)
-   expected["count_hom"] = sum(sample["gt"] for sample in samples if sample["gt"] == 2)
-   expected["count_ref"] = sum(sample["gt"] for sample in samples if sample["gt"] == 0)
+    expected = {}
+    expected["count_var"] = sum(sample["gt"] for sample in samples if sample["gt"] > 1)
+    expected["count_het"] = sum(sample["gt"] for sample in samples if sample["gt"] == 1)
+    expected["count_hom"] = sum(sample["gt"] for sample in samples if sample["gt"] == 2)
+    expected["count_ref"] = sum(sample["gt"] for sample in samples if sample["gt"] == 0)
 
-   observed = dict(conn.execute("SELECT count_var, count_het, count_hom, count_ref FROM variants WHERE id = 1").fetchone())
+    observed = dict(
+        conn.execute(
+            "SELECT count_var, count_het, count_hom, count_ref FROM variants WHERE id = 1"
+        ).fetchone()
+    )
 
-   assert expected == observed
-
+    assert expected == observed
 
 
 def test_create_indexes(conn):
@@ -438,9 +461,8 @@ def test_create_connexion(conn):
 
 def test_update_project(conn):
 
- 
     project_data = sql.get_project(conn)
-    
+
     assert project_data["name"] == "test"
     assert project_data["reference"] == "hg19"
 
@@ -450,9 +472,8 @@ def test_update_project(conn):
     assert project_data["reference"] == "hg19"
     assert project_data["extra"] == "324"
 
-    assert  sql.count_query(conn, "SELECT * FROM projects") == 3
-   
-   
+    assert sql.count_query(conn, "SELECT * FROM projects") == 3
+
 
 def test_get_database_file_name():
     dbfile_name = tempfile.mkstemp()[1]
@@ -487,7 +508,7 @@ def test_columns(conn):
 def test_get_columns(conn):
     """Test getting columns of variants and annotations"""
     variant_cols = set(sql.get_table_columns(conn, "variants"))
-    expected_cols = {i["name"] for i in FIELDS if i["category"] == "variants"} 
+    expected_cols = {i["name"] for i in FIELDS if i["category"] == "variants"}
     extra_cols = {i["name"] for i in sql.VARIANT_MANDATORY_FIELDS}
     assert variant_cols == expected_cols.union(extra_cols)
 
@@ -503,10 +524,12 @@ def test_get_annotations(conn):
 
     Interrogation of `annotations` table.
     """
+
     for index, variant in enumerate(VARIANTS):
         read_tx = list(sql.get_annotations(conn, index + 1))[0]
         del read_tx["variant_id"]
         expected_tx = VARIANTS[index]["annotations"][0]
+
         assert read_tx == expected_tx
 
 
@@ -1078,7 +1101,3 @@ def test_sql_selection_operation(conn):
 #                 del expected_variant[not_wanted_key]
 
 #         assert tuple(record) == tuple(expected_variant.values())
-
-
-
-

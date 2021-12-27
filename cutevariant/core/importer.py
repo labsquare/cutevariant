@@ -20,7 +20,7 @@ from .sql import (
     get_samples,
     insert_fields,
     insert_only_new_fields,
-    insert_variants_async,
+    insert_variants,
     update_variants_async,
     create_indexes,
     update_sample,
@@ -60,7 +60,6 @@ def async_import_reader(
     _project.update(project)
     create_table_project(conn)
     update_project(conn, _project)
-    
 
     # Create metadatas
     create_table_metadatas(conn)
@@ -322,7 +321,7 @@ def async_update_reader(
     # Create table sets
     # create_table_wordsets(conn)
 
-    #remember old samples to update them with new variants
+    # remember old samples to update them with new variants
     old_samples = [v for v in get_samples(conn)]
 
     # Insert samples
@@ -333,7 +332,7 @@ def async_update_reader(
     if pedfile:
         yield 0, f"Import pedfile {pedfile}"
         import_pedfile(conn, pedfile)
-        #TODO: check proper pedigree update
+        # TODO: check proper pedigree update
 
         # Compute control and cases samples
         samples = tuple(get_samples(conn))

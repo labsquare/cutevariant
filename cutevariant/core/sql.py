@@ -89,12 +89,16 @@ from functools import partial, lru_cache
 import itertools as it
 import numpy as np
 import json
-import typing
+
+from typing import List, Callable
 
 # Custom imports
 import cutevariant.commons as cm
 import cutevariant.core.querybuilder as qb
 from cutevariant.core.sql_aggregator import StdevFunc
+from cutevariant.core.reader import AbstractReader
+from cutevariant.core.writer import AbstractWriter
+
 from cutevariant import LOGGER
 
 
@@ -197,6 +201,19 @@ def get_database_file_name(conn: sqlite3.Connection) -> str:
         str: Path of the salite database
     """
     return conn.execute("PRAGMA database_list").fetchone()["file"]
+
+
+def schema_exists(conn: sqlite3.Connection) -> bool:
+    """Return if databases schema has been created
+
+    Args:
+        conn (sqlite3.Connection): Description
+
+    Returns:
+        bool
+    """
+    query = "SELECT count(*) FROM sqlite_master WHERE type = 'table'"
+    return conn.execute(query).fetchone()[0] > 0
 
 
 def table_exists(conn: sqlite3.Connection, name: str) -> bool:
@@ -370,7 +387,7 @@ def get_field_info(conn, field, source="variants", filters={}, metrics=["mean", 
     return results
 
 
-def get_indexed_fields(conn: sqlite3.Connection) -> typing.List[tuple]:
+def get_indexed_fields(conn: sqlite3.Connection) -> List[tuple]:
     """Returns, for this connection, a list of indexed fields
     Each element of the returned list is a tuple of (category,field_name)
 
@@ -378,7 +395,7 @@ def get_indexed_fields(conn: sqlite3.Connection) -> typing.List[tuple]:
         conn (sqlite3.Connection): Sqlite3 connection
 
     Returns:
-        typing.List[tuple]: (category, field_name) of all the indexed fields
+        List[tuple]: (category, field_name) of all the indexed fields
     """
     indexed_fields = [
         dict(res)["name"]
@@ -849,7 +866,7 @@ def insert_selection_from_bed(
     return insert_selection_from_sql(conn, query, target, from_selection=True)
 
 
-def get_selections(conn: sqlite3.Connection) -> typing.List[dict]:
+def get_selections(conn: sqlite3.Connection) -> List[dict]:
     """Get selections from "selections" table
 
     Args:
@@ -1272,7 +1289,7 @@ def insert_fields(conn: sqlite3.Connection, data: list):
     cursor = conn.cursor()
     cursor.executemany(
         """
-        INSERT OR REPLACE INTO fields (name,category,type,description)
+        INSERT OR IGNORE INTO fields (name,category,type,description)
         VALUES (:name,:category,:type,:description)
         """,
         data,
@@ -1428,7 +1445,7 @@ def get_field_unique_values(conn, field_name: str, like: str = None, limit=None)
 ## annotations table ===========================================================
 
 
-def create_table_annotations(conn: sqlite3.Connection, fields: typing.List[dict]):
+def create_table_annotations(conn: sqlite3.Connection, fields: List[dict]):
     """Create "annotations" table which contains dynamics fields
 
     :param fields: Generator of SQL fields. Example of fields:
@@ -1508,7 +1525,7 @@ def get_annotations(conn, variant_id: int):
 ## variants table ==============================================================
 
 
-def create_table_variants(conn: sqlite3.Connection, fields: typing.List[dict]):
+def create_table_variants(conn: sqlite3.Connection, fields: List[dict]):
     """Create "variants" and "sample_has_variant" tables which contains dynamics fields
 
     :Example:
@@ -1874,10 +1891,10 @@ def update_variants_counts(conn: sqlite3.Connection):
 
 def insert_variants(
     conn: sqlite3.Connection,
-    variants: typing.List[dict],
+    variants: List[dict],
     total_variant_count: int = None,
     yield_every: int = 3000,
-    progress_callback: typing.Callable = None,
+    progress_callback: Callable = None,
 ):
     """Insert many variants from data into variants table
 
@@ -1938,12 +1955,21 @@ def insert_variants(
 
         # INSERT VARIANTS
 
-        query = f"INSERT OR IGNORE INTO variants ({query_fields}) VALUES ({query_values}) ON CONFLICT (chr,pos,ref,alt) DO NOTHING"
+        query = f"INSERT OR REPLACE INTO variants ({query_fields}) VALUES ({query_values}) ON CONFLICT (chr,pos,ref,alt) DO NOTHING"
 
         # Use execute many and get last rowS inserted ?
         cursor.execute(query, query_datas)
 
-        variant_id = cursor.lastrowid
+        chrom = variant["chr"]
+        pos = variant["pos"]
+        ref = variant["ref"]
+        alt = variant["alt"]
+
+        variant_id = conn.execute(
+            f"SELECT id FROM variants where chr='{chrom}' AND pos = {pos} AND ref='{ref}' AND alt='{alt}'"
+        ).fetchone()[0]
+
+        # variant_id = cursor.lastrowid
 
         if variant_id == 0:
             LOGGER.debug(
@@ -1963,7 +1989,8 @@ def insert_variants(
                 query_fields = ",".join((f"`{i}`" for i in common_fields))
                 query_values = ",".join((f"?" for i in common_fields))
                 query_datas = [ann[i] for i in common_fields]
-                query = f"INSERT OR IGNORE INTO annotations ({query_fields}) VALUES ({query_values})"
+                query = f"INSERT OR REPLACE INTO annotations ({query_fields}) VALUES ({query_values})"
+                print(ann)
                 cursor.execute(query, query_datas)
 
         # INSERT SAMPLES
@@ -1973,11 +2000,12 @@ def insert_variants(
                 if sample["name"] in samples_map:
                     sample["variant_id"] = int(variant_id)
                     sample["sample_id"] = int(samples_map[sample["name"]])
+
                     common_fields = samples_local_fields & sample.keys()
                     query_fields = ",".join((f"`{i}`" for i in common_fields))
                     query_values = ",".join((f"?" for i in common_fields))
                     query_datas = [sample[i] for i in common_fields]
-                    query = f"INSERT INTO sample_has_variant ({query_fields}) VALUES ({query_values})"
+                    query = f"INSERT OR REPLACE INTO sample_has_variant ({query_fields}) VALUES ({query_values})"
                     cursor.execute(query, query_datas)
 
         # Commit every batch_size
@@ -1989,9 +2017,11 @@ def insert_variants(
     conn.commit()
 
     total = variant_count + 1 - errors
-    progress_callback(
-        100, f"{total} variant(s) has been inserted with {errors} error(s)"
-    )
+
+    if progress_callback:
+        progress_callback(
+            100, f"{total} variant(s) has been inserted with {errors} error(s)"
+        )
 
     # Create default selection (we need the number of variants for this)
     insert_selection(conn, "", name=cm.DEFAULT_SELECTION_NAME, count=total)
@@ -2497,7 +2527,8 @@ def insert_samples(conn, samples: list):
     """
     cursor = conn.cursor()
     cursor.executemany(
-        "INSERT INTO samples (name) VALUES (?)", ((sample,) for sample in samples)
+        "INSERT OR IGNORE INTO samples (name) VALUES (?)",
+        ((sample,) for sample in samples),
     )
     conn.commit()
 
@@ -2699,6 +2730,61 @@ def create_database_schema(conn):
 
     # # Create table sets
     create_table_wordsets(conn)
+
+
+def import_reader(
+    conn: sqlite3.Connection,
+    reader: AbstractReader,
+    progress_callback: Callable = None,
+):
+
+    # create shema if database doesn't exists
+    if not schema_exists(conn):
+        create_database_schema(conn)
+
+    else:
+        # Alter tables
+        # Get database fields
+
+        tables = ["variants", "annotations", "samples"]
+        reader_fields = reader.get_fields()
+
+        for table in tables:
+            # get db fields
+            local_names = set(get_table_columns(conn, table))
+            # get reader fields
+            other_names = {i["name"] for i in reader_fields if i["category"] == table}
+            # get field name to add
+            diff_names = other_names - local_names
+
+            new_fields = [
+                i
+                for i in reader_fields
+                if i["name"] in diff_names and i["category"] == table
+            ]
+
+            alter_table(conn, table, new_fields)
+
+    # insert fields
+    insert_fields(conn, reader.get_fields())
+    # insert samples
+    insert_samples(conn, reader.get_samples())
+
+    # insert variants
+    insert_variants(
+        conn,
+        reader.get_variants(),
+        total_variant_count=reader.number_lines,
+        progress_callback=progress_callback,
+    )
+
+
+def export_writer(
+    conn: sqlite3.Connection,
+    writer: AbstractWriter,
+    progress_callback: Callable = None,
+):
+    pass
 
 
 # def from_reader(conn, reader: AbstractReader, progress_callback=None):
