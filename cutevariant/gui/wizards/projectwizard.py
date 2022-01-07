@@ -22,7 +22,7 @@ from PySide2.QtCore import (
 from PySide2.QtGui import QIcon, QStandardItem, QStandardItemModel, QColor, QFont
 
 # Custom imports
-from cutevariant.core.importer import async_import_file
+from cutevariant.core import sql
 from cutevariant.core import get_sql_connection
 import cutevariant.commons as cm
 from cutevariant.core.readerfactory import detect_vcf_annotation, create_reader
@@ -556,6 +556,10 @@ class ImportThread(QThread):
 
         self.project_settings = dict()
 
+    def progress(self, progress: int, message: str):
+        self.progress_changed.emit(progress, message)
+        return self._stop
+
     def run(self):
         """Overrided QThread method
 
@@ -573,23 +577,31 @@ class ImportThread(QThread):
         self.conn = get_sql_connection(self.db_filename)
 
         try:
-            # Import the file
-            for value, message in async_import_file(
+
+            # Import VARIANT FILE
+            self.progress(0, "[Step 1] - Import Variants")
+            with create_reader(self.filename, self.annotation_parser) as reader:
+                sql.import_reader(self.conn, reader, progress_callback=self.progress)
+
+            # IMPORT PED FILE
+            self.progress(0, "[Step 2] - Import Pedfile")
+            print("PEDFILE", self.pedfile)
+            sql.import_pedfile(self.conn, self.pedfile)
+
+            # Update count
+            self.progress(0, "[Step 3] - Compute variant count")
+            sql.update_variants_counts(self.conn)
+
+            # Ignore fields ??
+
+            # Update Index
+            self.progress(0, "[Step 4] - Create indexes")
+            sql.create_indexes(
                 self.conn,
-                self.filename,
-                pedfile=self.pedfile,
-                ignored_fields=self.ignored_fields,
-                indexed_variant_fields=self.indexed_variant_fields,
-                indexed_annotation_fields=self.indexed_annotation_fields,
-                indexed_sample_fields=self.indexed_sample_fields,
-                project=self.project_settings,
-                vcf_annotation_parser=self.annotation_parser,
-            ):
-                if self._stop:
-                    self.conn.close()
-                    break
-                # Send progression
-                self.progress_changed.emit(value, message)
+                self.indexed_variant_fields,
+                self.indexed_annotation_fields,
+                self.indexed_sample_fields,
+            )
 
         except BaseException as e:
             self.progress_changed.emit(0, str(e))
@@ -653,9 +665,7 @@ class ImportPage(QWizardPage):
 
         self.annotation_parser = None
 
-        self.thread.started.connect(
-            lambda: self.show_log(self.tr("Started"))
-        )
+        self.thread.started.connect(lambda: self.show_log(self.tr("Started")))
 
         # Note: self.run is automatically launched when ImportPage is displayed
         # See initializePage()
@@ -664,7 +674,7 @@ class ImportPage(QWizardPage):
         self.thread.finished.connect(self.import_thread_finished)
         self.thread.finished_status.connect(self.import_thread_finished_status)
 
-    def show_log(self, message:str):
+    def show_log(self, message: str):
 
         timestamp = QDateTime.currentDateTime().toString("hh:MM:ss")
         self.log_edit.appendPlainText(f"[{timestamp}] {message}")
@@ -751,9 +761,7 @@ class ImportPage(QWizardPage):
             self.thread.annotation_parser = self.field("annotation_parser")
             self.thread.project_settings = {"name": self.field("project_name")}
 
-            self.show_log(
-                "Annotation parser: " + str(self.field("annotation_parser"))
-            )
+            self.show_log("Annotation parser: " + str(self.field("annotation_parser")))
 
             self.show_log(self.tr("Import ") + self.thread.filename)
 

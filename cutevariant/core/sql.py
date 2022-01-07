@@ -89,6 +89,7 @@ from functools import partial, lru_cache
 import itertools as it
 import numpy as np
 import json
+import os
 
 from typing import List, Callable
 
@@ -188,6 +189,8 @@ def get_sql_connection(filepath: str) -> sqlite3.Connection:
     if LOGGER.getEffectiveLevel() == logging.DEBUG:
         # Enable tracebacks from custom functions in DEBUG mode only
         sqlite3.enable_callback_tracebacks(True)
+
+    connection.set_trace_callback(lambda x: LOGGER.debug("[SQLITE]: " + x))
 
     return connection
 
@@ -317,8 +320,9 @@ def count_query(conn: sqlite3.Connection, query: str) -> int:
 
 
 def clear_lru_cache():
-    get_fields.cache_clear()
-    get_field_by_category.cache_clear()
+    pass
+    # get_fields.cache_clear()
+    # get_field_by_category.cache_clear()
 
 
 # Statistical data
@@ -2015,8 +2019,11 @@ def insert_variants(
         # Commit every batch_size
         if progress_callback:
             if variant_count % yield_every == 0 and total_variant_count:
-                progress = variant_count + 1 / total_variant_count * 100
-                progress_callback(progress, f"{variant_count+1} variants inserted.")
+                progress = round((variant_count + 1) / (total_variant_count) * 100.0, 2)
+                progress_callback(
+                    progress,
+                    f"{variant_count+1}, {total_variant_count} variants inserted {progress}.",
+                )
 
     conn.commit()
 
@@ -2597,22 +2604,28 @@ def import_reader(
         for table in tables:
             # get db fields
             local_names = set(get_table_columns(conn, table))
+
+            category = "samples" if table == "sample_has_variant" else table
             # get reader fields
-            other_names = {i["name"] for i in reader_fields if i["category"] == table}
+            other_names = {
+                i["name"] for i in reader_fields if i["category"] == category
+            }
             # get field name to add
             diff_names = other_names - local_names
 
             new_fields = [
                 i
                 for i in reader_fields
-                if i["name"] in diff_names and i["category"] == table
+                if i["name"] in diff_names and i["category"] == category
             ]
 
             fields += new_fields
 
     # Update table schema
     for table in tables:
-        update_fields = [i for i in fields if i["category"] == table]
+        category = "samples" if table == "sample_has_variant" else table
+
+        update_fields = [i for i in fields if i["category"] == category]
         alter_table(conn, table, update_fields)
 
     # insert fields
@@ -2638,8 +2651,10 @@ def export_writer(
 
 
 def import_pedfile(conn: sqlite3.Connection, filename: str):
-    for sample in PedReader(filename, get_samples(conn), raw_samples=False):
-        update_sample(conn, sample)
+
+    if os.path.isfile(filename):
+        for sample in PedReader(filename, get_samples(conn), raw_samples=False):
+            update_sample(conn, sample)
 
 
 # def from_reader(conn, reader: AbstractReader, progress_callback=None):
