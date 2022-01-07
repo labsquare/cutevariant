@@ -214,5 +214,3 @@ if __name__ == "__main__":
     with open("test_x.vcf", "w+") as device:
         writer = VcfWriter(conn, device)
         writer.save()
-
-    # conn = utils.create_conn("test_x.vcf", "snpeff") At this point, the importer sees that there is a duplicate variant. Because we have the same keys (chr,pos,ref,alt) on two different variants

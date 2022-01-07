@@ -98,6 +98,7 @@ import cutevariant.core.querybuilder as qb
 from cutevariant.core.sql_aggregator import StdevFunc
 from cutevariant.core.reader import AbstractReader
 from cutevariant.core.writer import AbstractWriter
+from cutevariant.core.reader.pedreader import PedReader
 
 from cutevariant import LOGGER
 
@@ -1828,7 +1829,7 @@ def update_variants_counts(conn: sqlite3.Connection):
 
     # If no phenotype, do not compute any thing...
     pheno_count = conn.execute(
-        "SELECT COUNT(phenotype) FROM samples WHERE phenotype = 1"
+        "SELECT COUNT(phenotype) FROM samples WHERE phenotype > 0"
     ).fetchone()[0]
     if pheno_count == 0:
         LOGGER.warning("No phenotype. Do not compute case/control count")
@@ -1839,7 +1840,7 @@ def update_variants_counts(conn: sqlite3.Connection):
         """
         UPDATE variants
         SET case_count_hom = ifnull( (SELECT  COUNT(*) FROM sample_has_variant sv, samples s 
-        WHERE sv.gt = 2 AND sv.variant_id = variants.id AND s.id = sv.sample_id AND s.phenotype=1 ), 0)
+        WHERE sv.gt = 2 AND sv.variant_id = variants.id AND s.id = sv.sample_id AND s.phenotype=2 ), 0)
     """
     )
 
@@ -1848,7 +1849,7 @@ def update_variants_counts(conn: sqlite3.Connection):
         """
        UPDATE variants
        SET case_count_het = ifnull( (SELECT  COUNT(*) FROM sample_has_variant sv, samples s 
-       WHERE sv.gt = 1 AND sv.variant_id = variants.id AND s.id = sv.sample_id AND s.phenotype=1 ), 0)
+       WHERE sv.gt = 1 AND sv.variant_id = variants.id AND s.id = sv.sample_id AND s.phenotype=2 ), 0)
    """
     )
 
@@ -1857,7 +1858,7 @@ def update_variants_counts(conn: sqlite3.Connection):
         """
         UPDATE variants
         SET case_count_ref = ifnull( (SELECT  COUNT(*) FROM sample_has_variant sv, samples s 
-        WHERE sv.gt = 0 AND sv.variant_id = variants.id AND s.id = sv.sample_id AND s.phenotype=1 ), 0)
+        WHERE sv.gt = 0 AND sv.variant_id = variants.id AND s.id = sv.sample_id AND s.phenotype=2 ), 0)
     """
     )
 
@@ -1866,7 +1867,7 @@ def update_variants_counts(conn: sqlite3.Connection):
         """
         UPDATE variants
         SET control_count_hom = ifnull( (SELECT  COUNT(*) FROM sample_has_variant sv, samples s 
-        WHERE sv.gt = 2 AND sv.variant_id = variants.id AND s.id = sv.sample_id AND s.phenotype=0 ), 0)
+        WHERE sv.gt = 2 AND sv.variant_id = variants.id AND s.id = sv.sample_id AND s.phenotype=1 ), 0)
     """
     )
 
@@ -1875,7 +1876,7 @@ def update_variants_counts(conn: sqlite3.Connection):
         """
         UPDATE variants
         SET control_count_het = ifnull( (SELECT  COUNT(*) FROM sample_has_variant sv, samples s 
-        WHERE sv.gt = 1 AND sv.variant_id = variants.id AND s.id = sv.sample_id AND s.phenotype=0 ), 0)
+        WHERE sv.gt = 1 AND sv.variant_id = variants.id AND s.id = sv.sample_id AND s.phenotype=1 ), 0)
     """
     )
 
@@ -1884,7 +1885,7 @@ def update_variants_counts(conn: sqlite3.Connection):
         """
         UPDATE variants
         SET control_count_ref = ifnull( (SELECT  COUNT(*) FROM sample_has_variant sv, samples s 
-        WHERE sv.gt = 0 AND sv.variant_id = variants.id AND s.id = sv.sample_id AND s.phenotype=0 ), 0)
+        WHERE sv.gt = 0 AND sv.variant_id = variants.id AND s.id = sv.sample_id AND s.phenotype=1 ), 0)
     """
     )
 
@@ -1933,6 +1934,7 @@ def insert_variants(
     errors = 0
     cursor = conn.cursor()
     batches = []
+    total = 0
     for variant_count, variant in enumerate(variants):
 
         # Preprocess variants
@@ -1960,6 +1962,8 @@ def insert_variants(
         # Use execute many and get last rowS inserted ?
         cursor.execute(query, query_datas)
 
+        total += 1
+
         chrom = variant["chr"]
         pos = variant["pos"]
         ref = variant["ref"]
@@ -1978,6 +1982,7 @@ def insert_variants(
                 Please check your data; this variant and its attached data will not be inserted!\n%s"""
             )
             errors += 1
+            total -= 1
             continue
 
         # INSERT ANNOTATIONS
@@ -1990,7 +1995,6 @@ def insert_variants(
                 query_values = ",".join((f"?" for i in common_fields))
                 query_datas = [ann[i] for i in common_fields]
                 query = f"INSERT OR REPLACE INTO annotations ({query_fields}) VALUES ({query_values})"
-                print(ann)
                 cursor.execute(query, query_datas)
 
         # INSERT SAMPLES
@@ -2016,8 +2020,6 @@ def insert_variants(
 
     conn.commit()
 
-    total = variant_count + 1 - errors
-
     if progress_callback:
         progress_callback(
             100, f"{total} variant(s) has been inserted with {errors} error(s)"
@@ -2025,169 +2027,6 @@ def insert_variants(
 
     # Create default selection (we need the number of variants for this)
     insert_selection(conn, "", name=cm.DEFAULT_SELECTION_NAME, count=total)
-
-    # def build_columns_and_placeholders(table_name):
-    #     """Build a tuple of columns and "?" placeholders for INSERT queries"""
-    #     # Get columns description from the given table
-    #     cols = get_table_columns(conn, table_name)
-    #     # Build dynamic insert query
-    #     # INSERT INTO variant qcol1, qcol2.... VALUES ?, ?
-    #     tb_cols = ",".join([f"`{col}`" for col in cols])
-    #     tb_places = ",".join(["?" for place in cols])
-    #     return tb_cols, tb_places
-
-    # # TODO: Can we avoid this step ? This function should receive columns names
-    # # because all the tables were created before...
-    # # Build placeholders
-    # var_cols, var_places = build_columns_and_placeholders("variants")
-    # ann_cols, ann_places = build_columns_and_placeholders("annotations")
-
-    # var_columns = get_table_columns(conn, "variants")
-    # ann_columns = get_table_columns(conn, "annotations")
-    # sample_columns = get_table_columns(conn, "sample_has_variant")
-
-    # # Get samples with samples names as keys and sqlite rowid as values
-    # # => used as a mapping for samples ids
-    # samples_id_mapping = dict(conn.execute("SELECT name, id FROM samples"))
-
-    # # Check SQLite version and build insertion queries for variants
-    # # Old version doesn't support ON CONFLICT ..target.. DO ... statements
-    # # to handle violation of unicity constraint.
-    # old_sqlite_version = parse_version(sqlite3.sqlite_version) < parse_version("3.24.0")
-
-    # if old_sqlite_version:
-    #     LOGGER.warning(
-    #         "async_insert_many_variants:: Old SQLite version: %s"
-    #         " - Fallback to ignore errors!",
-    #         sqlite3.sqlite_version,
-    #     )
-    #     # /!\ This syntax is SQLite specific
-    #     # /!\ We mask all errors here !
-    #     variant_insert_query = f"""INSERT OR IGNORE INTO variants ({var_cols})
-    #             VALUES ({var_places})"""
-
-    # else:
-    #     # Handle conflicts on the primary key
-    #     variant_insert_query = f"""INSERT INTO variants ({var_cols})
-    #             VALUES ({var_places})
-    #             ON CONFLICT (chr,pos,ref,alt) DO NOTHING"""
-
-    # # Insertion - Begin transaction
-    # cursor = conn.cursor()
-
-    # # Loop over variants
-    # errors = 0
-    # progress = 0
-    # variant_count = 0
-    # for variant_count, variant in enumerate(data, 1):
-
-    #     # Insert current variant
-    #     # Use default dict to handle missing values
-    #     # LOGGER.debug(
-    #     #    "async_insert_many_variants:: QUERY: %s\nVALUES: %s",
-    #     #    variant_insert_query,
-    #     #    variant,
-    #     # )
-
-    #     # Create list of value to insert
-    #     # ["chr",234234,"A","G"]
-    #     # if field key is missing, set a default value to None !
-    #     default_values = defaultdict(lambda: None, variant)
-    #     values = [default_values[col] for col in var_columns]
-
-    #     cursor.execute(variant_insert_query, values)
-
-    #     # If the row is not inserted we skip this erroneous variant
-    #     # and the data that goes with
-    #     if cursor.rowcount == 0:
-    #         LOGGER.error(
-    #             "async_insert_many_variants:: The following variant "
-    #             "contains erroneous data; most of the time it is a "
-    #             "duplication of the primary key: (chr,pos,ref,alt). "
-    #             "Please check your data; this variant and its attached "
-    #             "data will not be inserted!\n%s",
-    #             variant,
-    #         )
-    #         errors += 1
-    #         continue
-
-    #     # Get variant rowid
-    #     variant_id = cursor.lastrowid
-
-    #     # If variant has annotation data, insert record into "annotations" table
-    #     # One-to-many relationships
-    #     if "annotations" in variant:
-    #         # print("VAR annotations:", variant["annotations"])
-
-    #         # [{'allele': 'T', 'consequence': 'intergenic_region', 'impact': 'MODIFIER', ...}]
-    #         # The aim is to execute all insertions through executemany()
-    #         # We remove the placeholder :variant_id from places,
-    #         # and fix it's value.
-    #         # TODO: handle missing values;
-    #         # Les dict de variant["annotations"] contiennent a priori déjà
-    #         # tous les champs requis (mais vides) car certaines annotations
-    #         # ont des données manquantes.
-    #         # A t'on l'assurance de cela ?
-    #         # Dans ce cas pourquoi doit-on bricoler le variant lui-meme avec un
-    #         # defaultdict(str,variant)) ? Les variants n'ont pas leurs champs par def ?
-
-    #         values = []
-    #         for ann in variant["annotations"]:
-    #             default_values = defaultdict(lambda: None, ann)
-    #             value = [default_values[col] for col in ann_columns[1:]]
-    #             value.insert(0, variant_id)
-    #             values.append(value)
-
-    #         temp_ann_places = ",".join(["?"] * (len(ann_columns)))
-
-    #         q = f"""INSERT INTO annotations ({ann_cols})
-    #             VALUES ({temp_ann_places})"""
-
-    #         cursor.executemany(q, values)
-
-    #     # If variant has sample data, insert record into "sample_has_variant" table
-    #     # Many-to-many relationships
-    #     if "samples" in variant:
-    #         # print("VAR samples:", variant["samples"])
-    #         # [{'name': 'NORMAL', 'gt': 1, 'AD': '64,0', 'AF': 0.0, ...}]
-    #         # Insertion only if the current sample name is in samples_names
-    #         # (authorized sample names already in the database)
-    #         #
-    #         # Is this test usefull since samples that are in the database
-    #         # have been inserted from the same source file (or it is not the case ?) ?
-    #         # => yes, we can use external ped file
-    #         # Retrieve the id of the sample to build the association in
-    #         # "sample_has_variant" table carrying the data "gt" (genotype)
-
-    #         samples = []
-    #         for sample in variant["samples"]:
-    #             sample_id = samples_id_mapping[sample["name"]]
-    #             default_values = defaultdict(lambda: None, sample)
-    #             sample_value = [sample_id, variant_id]
-    #             sample_value += [default_values[i] for i in sample_columns[2:]]
-    #             samples.append(sample_value)
-
-    #         placeholders = ",".join(["?"] * len(sample_columns))
-
-    #         q = f"INSERT INTO sample_has_variant VALUES ({placeholders})"
-    #         cursor.executemany(q, samples)
-
-    #     # Yield progression
-    #     if variant_count % yield_every == 0:
-    #         if total_variant_count:
-    #             progress = variant_count / total_variant_count * 100
-
-    #         yield progress, f"{variant_count} variants inserted."
-
-    # # Commit the transaction
-    # conn.commit()
-
-    # yield 97, f"{variant_count - errors} variant(s) has been inserted."
-
-    # # Create default selection (we need the number of variants for this)
-    # insert_selection(
-    #     conn, "", name=cm.DEFAULT_SELECTION_NAME, count=variant_count - errors
-    # )
 
 
 def update_variants_async(
@@ -2738,16 +2577,22 @@ def import_reader(
     progress_callback: Callable = None,
 ):
 
-    # create shema if database doesn't exists
-    if not schema_exists(conn):
-        create_database_schema(conn)
+    tables = ["variants", "annotations", "sample_has_variant"]
+    fields = []
 
+    reader_fields = reader.get_fields()
+
+    # If shema exists, create database shema
+    if not schema_exists(conn):
+        LOGGER.debug("CREATE TABLE SCHEMA")
+        create_database_schema(conn)
+        fields = reader_fields
+
+    # Otherwise, compute new fields for new schema update
     else:
         # Alter tables
         # Get database fields
-
-        tables = ["variants", "annotations", "samples"]
-        reader_fields = reader.get_fields()
+        LOGGER.debug("TABLE alwready exists. UPDATE SCHEMA ")
 
         for table in tables:
             # get db fields
@@ -2763,7 +2608,12 @@ def import_reader(
                 if i["name"] in diff_names and i["category"] == table
             ]
 
-            alter_table(conn, table, new_fields)
+            fields += new_fields
+
+    # Update table schema
+    for table in tables:
+        update_fields = [i for i in fields if i["category"] == table]
+        alter_table(conn, table, update_fields)
 
     # insert fields
     insert_fields(conn, reader.get_fields())
@@ -2785,6 +2635,11 @@ def export_writer(
     progress_callback: Callable = None,
 ):
     pass
+
+
+def import_pedfile(conn: sqlite3.Connection, filename: str):
+    for sample in PedReader(filename, get_samples(conn), raw_samples=False):
+        update_sample(conn, sample)
 
 
 # def from_reader(conn, reader: AbstractReader, progress_callback=None):

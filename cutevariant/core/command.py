@@ -194,8 +194,6 @@ def drop_cmd(conn: sqlite3.Connection, feature: str, name: str, **kwargs):
     if feature == "wordsets":
         affected_lines = sql.delete_wordset_by_name(conn, name)
 
- 
-
     return {"success": (affected_lines > 0)}
 
 
@@ -238,7 +236,9 @@ def create_cmd(
     )
 
     LOGGER.debug("command:create_cmd:: %s", sql_query)
-    selection_id = sql.insert_selection_from_source(conn, target, source, filters, count)
+    selection_id = sql.insert_selection_from_source(
+        conn, target, source, filters, count
+    )
     return dict() if selection_id is None else {"id": selection_id}
 
 

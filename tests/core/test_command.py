@@ -5,13 +5,12 @@ import csv
 # Custom imports
 from cutevariant.core import command, sql, vql
 from cutevariant.core.reader import VcfReader
-from cutevariant.core.importer import import_reader
 
 
 @pytest.fixture
 def conn():
     conn = sql.get_sql_connection(":memory:")
-    import_reader(conn, VcfReader(open("examples/test.snpeff.vcf"), "snpeff"))
+    sql.import_reader(conn, VcfReader(open("examples/test.snpeff.vcf"), "snpeff"))
     return conn
 
 

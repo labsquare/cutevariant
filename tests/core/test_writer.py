@@ -4,9 +4,9 @@ import tempfile
 import sqlite3
 
 # Custom imports
-from cutevariant.core.importer import import_reader, import_pedfile
 from cutevariant.core.reader import FakeReader, VcfReader
 from cutevariant.core.writer import CsvWriter, PedWriter, VcfWriter, BedWriter
+from cutevariant.core import sql
 from tests import utils
 
 
@@ -97,7 +97,8 @@ def test_ped_writer(conn):
         pedwriter(PedWriter): Instance of writer pointing to a temp file.
     """
     reader = VcfReader(open("examples/test.snpeff.vcf"), "snpeff")
-    import_pedfile(conn, "examples/test.snpeff.pedigree.tfam")
+    sql.import_pedfile(conn, "examples/test.snpeff.pedigree.tfam")
+    sql.update_variants_counts(conn)
 
     filename = tempfile.mkstemp()[1]
 
@@ -123,13 +124,11 @@ def test_vcf_writer(conn):
     filename = tempfile.mkstemp(suffix=".vcf")[1]
 
     conn = utils.create_conn("examples/test.vcf", "snpeff")
+
     with open(filename, "w", encoding="utf8") as device:
         writer = VcfWriter(conn, device)
-        writer.filters = {
-            "$and": [{"annotation_count": 1}]
-        }  # This filter helps passing the test. In fact, when we load again the result, the reader complains about having duplicate variants
-        # TODO: associate the test example file name with the fields it has. This way, testing is fair
+        writer.filters = {"$and": [{"annotation_count": 1}]}
+        # This filter helps passing the test. In fact, when we load again the result, the reader complains about having duplicate variants    # TODO: associate the test example file name with the fields it has. This way, testing is fair
         writer.save()
-
     # If this succeeds, it means that the file was successfully opened. So we generated a valid VCF file
     conn = utils.create_conn(filename)
