@@ -196,6 +196,20 @@ def test_alter_table():
     assert columns_after == columns_before + [fields[0]["name"]]
 
 
+def test_alter_table_by_fields():
+    conn = sql.get_sql_connection(":memory:")
+    sql.create_database_schema(conn)
+    fields = sql.get_table_columns(conn, "variants")
+
+    new_fields = [{"name": "test", "type": "str", "category": "variants"}]
+    sql.alter_table_from_fields(conn, new_fields)
+
+    observed = sql.get_table_columns(conn, "variants")
+    expected = fields + [i["name"] for i in new_fields]
+
+    assert observed == expected
+
+
 def test_import_reader():
     conn = sql.get_sql_connection("/tmp/testcute.db")
 

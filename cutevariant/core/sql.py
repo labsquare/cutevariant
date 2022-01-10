@@ -303,6 +303,40 @@ def alter_table(conn: sqlite3.Connection, table_name: str, fields: list):
     conn.commit()
 
 
+def alter_table_from_fields(conn: sqlite3.Connection, fields: list):
+    """Alter tables from fields description
+
+    Args:
+        conn (sqlite3.Connection): sqlite databases
+        fields (list): list if Fields {"name":"chr","type":"str","category":"variants"}
+    """
+
+    # Tables to alters
+    tables = ["variants", "annotations", "sample_has_variant"]
+
+    # If shema exists, create database shema
+    if not schema_exists(conn):
+        LOGGER.error("CANNOT ALTER TABLE. NO SCHEMA AVAILABLE")
+        return
+
+    for table in tables:
+
+        category = "samples" if table == "sample_has_variant" else table
+
+        # Get local columns names
+        local_col_names = set(get_table_columns(conn, table))
+
+        # get new fields which are not in local
+        new_fields = [
+            i
+            for i in fields
+            if i["category"] == category and i["name"] not in local_col_names
+        ]
+
+        if new_fields:
+            alter_table(conn, table, new_fields)
+
+
 def count_query(conn: sqlite3.Connection, query: str) -> int:
     """Count elements from the given query or table
 
@@ -2582,51 +2616,29 @@ def import_reader(
     conn: sqlite3.Connection,
     reader: AbstractReader,
     progress_callback: Callable = None,
+    ignore_fields: list = [],
 ):
 
     tables = ["variants", "annotations", "sample_has_variant"]
-    fields = []
+    fields = reader.get_fields()
 
-    reader_fields = reader.get_fields()
+    # Remove ignore fields
+    accept_fields = []
+    for field in fields:
+        for i_field in ignore_fields:
+            if (
+                field["category"] != i_field["category"]
+                or field["name"] != i_field["name"]
+            ):
+                accept_fields.append(field)
 
-    # If shema exists, create database shema
+    # If shema exists, create a database schema
     if not schema_exists(conn):
         LOGGER.debug("CREATE TABLE SCHEMA")
         create_database_schema(conn)
-        fields = reader_fields
 
-    # Otherwise, compute new fields for new schema update
-    else:
-        # Alter tables
-        # Get database fields
-        LOGGER.debug("TABLE alwready exists. UPDATE SCHEMA ")
-
-        for table in tables:
-            # get db fields
-            local_names = set(get_table_columns(conn, table))
-
-            category = "samples" if table == "sample_has_variant" else table
-            # get reader fields
-            other_names = {
-                i["name"] for i in reader_fields if i["category"] == category
-            }
-            # get field name to add
-            diff_names = other_names - local_names
-
-            new_fields = [
-                i
-                for i in reader_fields
-                if i["name"] in diff_names and i["category"] == category
-            ]
-
-            fields += new_fields
-
-    # Update table schema
-    for table in tables:
-        category = "samples" if table == "sample_has_variant" else table
-
-        update_fields = [i for i in fields if i["category"] == category]
-        alter_table(conn, table, update_fields)
+    # Change table structure if it is required
+    alter_table_from_fields(conn, fields)
 
     # insert fields
     insert_fields(conn, reader.get_fields())
