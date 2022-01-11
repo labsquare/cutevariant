@@ -16,6 +16,7 @@ from PySide2.QtWidgets import (
     QLineEdit,
     QStyle,
     QFrame,
+    QTabWidget,
     QTableView,
     QPlainTextEdit,
     QDialog,
@@ -44,6 +45,8 @@ from cutevariant.core.reader.vcfreader import VcfReader
 from cutevariant.core.readerfactory import detect_vcf_annotation, create_reader
 from cutevariant.core import sql
 from cutevariant import LOGGER
+
+from cutevariant.gui.model_view import PedView
 
 
 class ReaderModel(QAbstractTableModel):
@@ -199,6 +202,8 @@ class VcfImportWidget(QWidget):
         self.anotation_detect_label = QLabel()
         self.button = QPushButton(self.tr("Browse"))
 
+        self.tabwidget = QTabWidget()
+
         self.check_button = QPushButton(self.tr("Check"))
         self.uncheck_button = QPushButton(self.tr("Uncheck"))
 
@@ -238,6 +243,8 @@ class VcfImportWidget(QWidget):
 
         # Create layout
         main_layout = QVBoxLayout()
+
+        # Files group
         h_layout = QHBoxLayout()
         h_layout.addWidget(self.file_path_edit)
         h_layout.addWidget(self.button)
@@ -246,6 +253,14 @@ class VcfImportWidget(QWidget):
         h2_layout.addWidget(self.annotation_box)
         h2_layout.addWidget(self.lock_button)
 
+        self.file_group = QGroupBox()
+        self.v_layout = QFormLayout(self.file_group)
+        self.v_layout.addRow("Input File", h_layout)
+        self.v_layout.addRow("Annotation", h2_layout)
+
+        # Fields widget
+        self.field_widget = QWidget()
+        self.field_layout = QHBoxLayout(self.field_widget)
         check_layout = QVBoxLayout()
         check_layout.addWidget(self.check_button)
         check_layout.addWidget(self.uncheck_button)
@@ -253,22 +268,18 @@ class VcfImportWidget(QWidget):
         check_layout.addWidget(self.check_index_button)
         check_layout.addWidget(self.uncheck_index_button)
 
-        self.v_layout = QFormLayout()
-        self.v_group = QGroupBox()
-        self.v_group.setTitle("Select file")
-        self.v_layout.addRow("Input File", h_layout)
-        self.v_layout.addRow("Annotation", h2_layout)
-        self.v_group.setLayout(self.v_layout)
+        self.field_layout.addWidget(self.view)
+        self.field_layout.addLayout(check_layout)
 
-        self.central_box = QGroupBox()
-        self.central_box.setTitle(self.tr("Select fields to import"))
-        central_layout = QHBoxLayout()
-        central_layout.addWidget(self.view)
-        central_layout.addLayout(check_layout)
-        self.central_box.setLayout(central_layout)
+        self.tabwidget.addTab(self.field_widget, "Fields")
 
-        main_layout.addWidget(self.v_group)
-        main_layout.addWidget(self.central_box)
+        main_layout.addWidget(self.file_group)
+        main_layout.addWidget(self.tabwidget)
+
+        # Sample widget
+        self.sample_widget = QWidget()
+
+        self.tabwidget.addTab(self.sample_widget, "Samples")
 
         self.setLayout(main_layout)
 
