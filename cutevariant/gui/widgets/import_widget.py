@@ -43,6 +43,7 @@ import time
 import tempfile
 from cutevariant.gui.ficon import FIcon
 from cutevariant.core.reader.vcfreader import VcfReader
+from cutevariant.core.reader import PedReader
 from cutevariant.core.readerfactory import detect_vcf_annotation, create_reader
 from cutevariant.core import sql
 from cutevariant import LOGGER
@@ -284,14 +285,13 @@ class SamplesWidget(QWidget):
         if not filepath:
             return
 
-        LOGGER.info("vcf samples: %s", self.vcf_samples)
-
+        # LOGGER.info("vcf samples: %s", self.vcf_samples)
         # Get samples of individual_ids that are already on the VCF file
         self.view.samples = [
             # samples argument is empty dict since its not
             sample
             for sample in PedReader(filepath, dict())
-            if sample[1] in self.vcf_samples
+            if sample[1] in self.samples
         ]
 
 

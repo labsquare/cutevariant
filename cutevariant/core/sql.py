@@ -122,27 +122,142 @@ SQLITE_TO_PYTHON = {
 }
 
 VARIANT_MANDATORY_FIELDS = [
-    {"name": "chr", "type": "str"},
-    {"name": "pos", "type": "int"},
-    {"name": "ref", "type": "str"},
-    {"name": "alt", "type": "str"},
-    {"name": "favorite", "type": "bool"},
-    {"name": "comment", "type": "str"},
-    {"name": "tags", "type": "str"},
-    {"name": "classification", "type": "int"},
-    {"name": "count_hom", "type": "int", "constraint": "DEFAULT 0"},
-    {"name": "count_het", "type": "int", "constraint": "DEFAULT 0"},
-    {"name": "count_ref", "type": "int", "constraint": "DEFAULT 0"},
-    {"name": "count_var", "type": "int", "constraint": "DEFAULT 0"},
-    {"name": "control_count_hom", "type": "int", "constraint": "DEFAULT 0"},
-    {"name": "control_count_het", "type": "int", "constraint": "DEFAULT 0"},
-    {"name": "control_count_ref", "type": "int", "constraint": "DEFAULT 0"},
-    {"name": "case_count_hom", "type": "int", "constraint": "DEFAULT 0"},
-    {"name": "case_count_het", "type": "int", "constraint": "DEFAULT 0"},
-    {"name": "case_count_ref", "type": "int", "constraint": "DEFAULT 0"},
-    {"name": "is_indel", "type": "int", "constraint": "DEFAULT 0"},
-    {"name": "is_snp", "type": "int", "constraint": "DEFAULT 0"},
-    {"name": "annotation_count", "type": "int", "constraint": "DEFAULT 0"},
+    {
+        "name": "chr",
+        "type": "str",
+        "category": "variants",
+        "description": "chromosom name",
+    },
+    {
+        "name": "pos",
+        "type": "int",
+        "category": "variants",
+        "description": "variant position",
+    },
+    {
+        "name": "ref",
+        "type": "str",
+        "category": "variants",
+        "description": "reference allele",
+    },
+    {
+        "name": "alt",
+        "type": "str",
+        "category": "variants",
+        "description": "alternative allele",
+    },
+    {
+        "name": "favorite",
+        "type": "bool",
+        "category": "variants",
+        "description": "favorite tag",
+    },
+    {
+        "name": "comment",
+        "type": "str",
+        "category": "variants",
+        "description": "comment of variant",
+    },
+    {
+        "name": "classification",
+        "type": "int",
+        "category": "variants",
+        "description": "ACMG score",
+    },
+    {
+        "name": "tags",
+        "type": "str",
+        "category": "variants",
+        "description": "list of  tags ",
+    },
+    {
+        "name": "count_hom",
+        "type": "int",
+        "constraint": "DEFAULT 0",
+        "category": "variants",
+        "description": "Number of homozygous genotypes (1/1)",
+    },
+    {
+        "name": "count_het",
+        "type": "int",
+        "constraint": "DEFAULT 0",
+        "category": "variants",
+        "description": "Number of heterozygous genotypes (0/1)",
+    },
+    {
+        "name": "count_ref",
+        "type": "int",
+        "constraint": "DEFAULT 0",
+        "category": "variants",
+        "description": "Number of homozygous genotypes (0/0)",
+    },
+    {
+        "name": "count_var",
+        "type": "int",
+        "constraint": "DEFAULT 0",
+        "category": "variants",
+        "description": "Number of variants (not 0/0)",
+    },
+    {
+        "name": "control_count_hom",
+        "type": "int",
+        "constraint": "DEFAULT 0",
+        "category": "variants",
+        "description": "Number of homozygous genotypes (0/0) in control",
+    },
+    {
+        "name": "control_count_het",
+        "type": "int",
+        "constraint": "DEFAULT 0",
+        "category": "variants",
+        "description": "Number of homozygous genotypes (1/1) in control",
+    },
+    {
+        "name": "control_count_ref",
+        "type": "int",
+        "constraint": "DEFAULT 0",
+        "category": "variants",
+        "description": "Number of heterozygous genotypes (1/0) in control",
+    },
+    {
+        "name": "case_count_hom",
+        "type": "int",
+        "category": "variants",
+        "description": "Number of homozygous genotypes (1/1) in case",
+    },
+    {
+        "name": "case_count_het",
+        "type": "int",
+        "category": "variants",
+        "description": "Number of heterozygous genotypes (1/0) in case",
+    },
+    {
+        "name": "case_count_ref",
+        "type": "int",
+        "category": "variants",
+        "description": "Number of homozygous genotypes (0/0) in case",
+    },
+    {
+        "name": "is_indel",
+        "type": "int",
+        "constraint": "DEFAULT 0",
+        "category": "variants",
+        "description": "True if variant is an indel",
+    },
+    {
+        "name": "is_snp",
+        "type": "int",
+        "constraint": "DEFAULT 0",
+        "category": "variants",
+        "description": "True if variant is a snp",
+    },
+    {
+        "name": "annotation_count",
+        "type": "int",
+        "constraint": "DEFAULT 0",
+        "category": "variants",
+        "description": "Number of transcript",
+    },
 ]
 
 
@@ -1336,6 +1451,14 @@ def insert_fields(conn: sqlite3.Connection, data: list):
     conn.commit()
 
 
+def insert_extra_fields(conn):
+
+    insert_fields(
+        conn,
+        [],
+    )
+
+
 def insert_only_new_fields(conn, data: list):
     """Insert in "fields" table the fields who did not already exist.
     Add those fields as new columns in "variants", "annotations" or "samples" tables.
@@ -2378,7 +2501,17 @@ def create_triggers(conn):
         """
         CREATE TRIGGER count_homo AFTER INSERT ON sample_has_variant 
         WHEN new.gt = 2 BEGIN 
-        UPDATE variants SET count_hom = count_hom + 1 WHERE variants.id = new.variant_id ; END;"""
+        UPDATE variants SET count_hom = count_hom + 1 WHERE variants.id = new.variant_id ;
+
+        UPDATE variants SET
+        case_count_hom = case_count_hom + (SELECT COUNT(*) FROM samples WHERE phenotype=1 and samples.id = new.sample_id)
+        WHERE variants.id = new.variant_id ; 
+
+        UPDATE variants SET
+        control_count_hom = control_count_hom + (SELECT COUNT(*) FROM samples WHERE phenotype=0 and samples.id = new.sample_id)
+        WHERE variants.id = new.variant_id ;
+
+         END;"""
     )
 
     conn.execute(
@@ -2392,14 +2525,36 @@ def create_triggers(conn):
         """
         CREATE TRIGGER count_het AFTER INSERT ON sample_has_variant 
         WHEN new.gt = 1 BEGIN 
-        UPDATE variants SET count_het = count_het + 1 WHERE variants.id = new.variant_id ; END;"""
+        UPDATE variants SET count_het = count_het + 1 WHERE variants.id = new.variant_id ; 
+
+        UPDATE variants SET
+        case_count_het = case_count_het + (SELECT COUNT(*) FROM samples WHERE phenotype=1 and samples.id = new.sample_id)
+        WHERE variants.id = new.variant_id ; 
+
+        UPDATE variants SET
+        control_count_het = control_count_het + (SELECT COUNT(*) FROM samples WHERE phenotype=0 and samples.id = new.sample_id)
+        WHERE variants.id = new.variant_id ;
+
+        END;"""
     )
 
     conn.execute(
         """
         CREATE TRIGGER count_ref AFTER INSERT ON sample_has_variant 
         WHEN new.gt = 0 BEGIN 
-        UPDATE variants SET count_ref = count_ref + 1 WHERE variants.id = new.variant_id ; END;"""
+        UPDATE variants SET count_ref = count_ref + 1 WHERE variants.id = new.variant_id ;
+        
+        UPDATE variants SET
+        case_count_ref = case_count_ref + (SELECT COUNT(*) FROM samples WHERE phenotype=1 and samples.id = new.sample_id)
+        WHERE variants.id = new.variant_id ; 
+
+        UPDATE variants SET
+        control_count_ref = control_count_ref + (SELECT COUNT(*) FROM samples WHERE phenotype=0 and samples.id = new.sample_id)
+        WHERE variants.id = new.variant_id ; 
+
+
+
+         END;"""
     )
 
 
@@ -2469,6 +2624,7 @@ def import_reader(
     alter_table_from_fields(conn, fields)
 
     # insert fields
+    insert_fields(conn, VARIANT_MANDATORY_FIELDS)
     insert_fields(conn, reader.get_fields())
 
     # insert variants

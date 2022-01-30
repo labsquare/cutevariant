@@ -423,8 +423,8 @@ class AbstractReader(ABC):
 
             yield nullify(variant)
 
-    def progress(self)->float:
-        """ Return progression of read in percentage """
+    def progress(self) -> float:
+        """Return progression of read in percentage"""
 
         return -1
 
