@@ -9,7 +9,7 @@ from PySide2.QtCore import (
     Signal,
     QThread,
     Slot,
-    QDir
+    QDir,
 )
 
 from PySide2.QtGui import QFont, QColor
@@ -192,7 +192,6 @@ class FieldsModel(QAbstractTableModel):
         self.endResetModel()
 
 
-
 class FieldsWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__()
@@ -202,13 +201,13 @@ class FieldsWidget(QWidget):
 
         self.check_button = QPushButton(self.tr("Check"))
         self.check_button.clicked.connect(lambda x: self.check_fields(True))
-        
+
         self.uncheck_button = QPushButton(self.tr("Uncheck"))
         self.uncheck_button.clicked.connect(lambda x: self.check_fields(False))
-        
+
         self.check_index_button = QPushButton(self.tr("Set index"))
         self.check_index_button.clicked.connect(lambda x: self.check_index(True))
-        
+
         self.uncheck_index_button = QPushButton(self.tr("Unset index"))
         self.uncheck_index_button.clicked.connect(lambda x: self.check_index(False))
 
@@ -219,7 +218,6 @@ class FieldsWidget(QWidget):
         self.view.horizontalHeader().setStretchLastSection(True)
         self.view.verticalHeader().hide()
         self.view.setSelectionMode(QAbstractItemView.ContiguousSelection)
-
 
         check_layout = QVBoxLayout()
         check_layout.addWidget(self.check_button)
@@ -264,7 +262,7 @@ class SamplesWidget(QWidget):
 
         self.setLayout(main_layout)
 
-    def set_samples(self, samples:list):
+    def set_samples(self, samples: list):
         self.samples = samples
         self.view.samples = [["fam", i, "0", "0", "0", "0", "0"] for i in samples]
 
@@ -303,7 +301,7 @@ class VcfImportWidget(QWidget):
 
         self.setWindowTitle(self.tr("Select a file"))
 
-        # Create top formular 
+        # Create top formular
         self.anotation_detect_label = QLabel()
         self.annotation_box = QComboBox()
         self.annotation_box.setEnabled(False)
@@ -322,16 +320,15 @@ class VcfImportWidget(QWidget):
         self.button.setIcon(FIcon(0xF0DCF))
         self.button.clicked.connect(self._browse)
 
-        # Create content 
+        # Create content
         self.tabwidget = QTabWidget()
         self.fields_widget = FieldsWidget()
         self.samples_widget = SamplesWidget()
 
-
-        # Create layout 
+        # Create layout
         main_layout = QVBoxLayout()
 
-        # top formular 
+        # top formular
         h_layout = QHBoxLayout()
         h_layout.addWidget(self.file_path_edit)
         h_layout.addWidget(self.button)
@@ -344,16 +341,15 @@ class VcfImportWidget(QWidget):
         self.v_layout.addRow("Input File", h_layout)
         self.v_layout.addRow("Annotation", h2_layout)
 
-        # Create content 
-        self.tabwidget.addTab(self.fields_widget, "Fields")    
+        # Create content
+        self.tabwidget.addTab(self.fields_widget, "Fields")
         self.tabwidget.addTab(self.samples_widget, "Samples")
 
         main_layout.addWidget(self.file_group)
         main_layout.addWidget(self.tabwidget)
         self.setLayout(main_layout)
 
-
-        # Fill available parser 
+        # Fill available parser
         self.annotation_box.addItem(
             FIcon(0xF13CF), "No Annotation detected", userData=None
         )
@@ -381,9 +377,8 @@ class VcfImportWidget(QWidget):
 
         self.set_filename(filepath)
 
-
-    def set_filename(self, filepath:str):
-         if filepath:
+    def set_filename(self, filepath: str):
+        if filepath:
             # Display and save directory
             self.file_path_edit.setText(filepath)
 
@@ -396,9 +391,7 @@ class VcfImportWidget(QWidget):
                     self.annotation_box.setCurrentText(annotation_type)
 
                 self.fields_widget.model.load(filepath)
-                self.samples_widget.set_samples(self.fields_widget.model._samples)       
-
-    
+                self.samples_widget.set_samples(self.fields_widget.model._samples)
 
     def filename(self):
         return self.file_path_edit.text()
@@ -485,7 +478,7 @@ class ImportThread(QThread):
         self.db_filename = None
         # File top open
         self.filename = None
-        # pedfile 
+        # pedfile
         self.pedfile = None
         # Ignored fields
         self.ignored_fields = None
@@ -494,11 +487,22 @@ class ImportThread(QThread):
         # annotation parser
         self.annotation_parser = None
 
+        self._reader = None
 
+    def emit_progress(self, message: str):
 
-    def progress(self, progress: int, message: str):
-        self.progress_changed.emit(progress, message)
+        if self._reader:
+            progress = self._reader.progress()
+            self.progress_changed.emit(progress, message)
+
+        else:
+            self.progress_changed.emit(-1, message)
+
         return self._stop
+
+    def test(self, msg):
+
+        print(self._reader.progress())
 
     def run(self):
         """Overrided QThread method
@@ -522,16 +526,22 @@ class ImportThread(QThread):
         try:
 
             # Import VARIANT FILE
-            self.progress(0, "**Import Variants**")
+            self.emit_progress("**Import Variants**")
             with create_reader(self.filename, self.annotation_parser) as reader:
-                sql.import_reader(self.conn, reader, pedfile = self.pedfile, progress_callback=self.progress)
+                self._reader = reader
+                sql.import_reader(
+                    self.conn,
+                    reader,
+                    pedfile=self.pedfile,
+                    progress_callback=self.emit_progress,
+                )
 
             # Update count
-            self.progress(0, "**Compute variant count**")
+            self.emit_progress("**Compute variant count**")
             sql.update_variants_counts(self.conn)
 
             # Update Index
-            self.progress(0, "**Create indexes**")
+            self.emit_progress("**Create indexes**")
         # sql.create_indexes(
         #     self.conn,
         #     self.indexed_variant_fields,
@@ -565,6 +575,7 @@ class VcfImportDialog(QDialog):
         self.thread.db_filename = db_filename
 
         self.progress_dialog = ProgressDialog()
+        self.progress_dialog.setWindowTitle(db_filename)
 
         self.import_button = QPushButton(self.tr("Import"))
         self.cancel_button = QPushButton(self.tr("Cancel"))
@@ -589,14 +600,14 @@ class VcfImportDialog(QDialog):
         self.progress_dialog.reset()
         self.thread.filename = self.widget.filename()
 
-        # create pedfile 
+        # create pedfile
         self.thread.pedfile = self.widget.pedfile()
 
         self.thread.start()
         self.progress_dialog.exec_()
 
     def db_filename(self):
-        return self.thread.db_filename 
+        return self.thread.db_filename
 
     # def show_progress(self, value: float, message: str):
 

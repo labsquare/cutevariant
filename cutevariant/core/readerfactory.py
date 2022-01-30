@@ -66,25 +66,19 @@ def create_reader(filepath, vcf_annotation_parser=None):
 
         annotation_detected = vcf_annotation_parser or detect_vcf_annotation(filepath)
 
-        device = open(filepath, "rb")
-        reader = VcfReader(device, annotation_parser=annotation_detected)
+        reader = VcfReader(filepath, annotation_parser=annotation_detected)
         yield reader
-        device.close()
         return
 
     if ".vcf" in path.suffixes:
         annotation_detected = detect_vcf_annotation(filepath)
-        device = open(filepath, "r")
-        reader = VcfReader(device, annotation_parser=annotation_detected)
+        reader = VcfReader(filepath, annotation_parser=annotation_detected)
         yield reader
-        device.close()
         return
 
     if {".tsv", ".csv", ".txt"} & set(path.suffixes):
-        device = open(filepath, "r")
-        reader = CsvReader(device)
+        reader = CsvReader(filepath)
         yield reader
-        device.close()
         return
 
     raise Exception("create_reader:: Could not choose parser for this file.")

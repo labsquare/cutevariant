@@ -1932,7 +1932,7 @@ def insert_variants(
     conn: sqlite3.Connection,
     variants: List[dict],
     total_variant_count: int = None,
-    yield_every: int = 3000,
+    progress_every: int = 1000,
     progress_callback: Callable = None,
 ):
     """Insert many variants from data into variants table
@@ -2051,24 +2051,20 @@ def insert_variants(
                     cursor.execute(query, query_datas)
 
         # Commit every batch_size
-        if progress_callback:
-            if variant_count % yield_every == 0 and total_variant_count:
-                progress = round((variant_count + 1) / (total_variant_count) * 100.0, 2)
-                progress_callback(
-                    progress,
-                    f"{variant_count+1}, {total_variant_count} variants inserted {progress}.",
-                )
+        if progress_callback and variant_count % progress_every == 0:
+            progress_callback(
+                f"{variant_count+1}, {total_variant_count} variants inserted {progress}."
+            )
 
     conn.commit()
 
     if progress_callback:
         progress_callback(
-            100, f"{total} variant(s) has been inserted with {errors} error(s)"
+            f"{total} variant(s) has been inserted with {errors} error(s)"
         )
 
     # Create default selection (we need the number of variants for this)
     insert_selection(conn, "", name=cm.DEFAULT_SELECTION_NAME, count=total)
-
 
 
 def update_variants(conn, data, **kwargs):
@@ -2402,7 +2398,7 @@ def create_database_schema(conn):
 def import_reader(
     conn: sqlite3.Connection,
     reader: AbstractReader,
-    pedfile:str = None,
+    pedfile: str = None,
     progress_callback: Callable = None,
     ignore_fields: list = [],
 ):
@@ -2427,12 +2423,12 @@ def import_reader(
 
     # insert samples
     if progress_callback:
-        progress_callback(0, "Insert samples")
+        progress_callback("Insert samples")
     insert_samples(conn, reader.get_samples())
 
     if pedfile:
         if progress_callback:
-            progress_callback(0, "Insert pedfile")
+            progress_callback("Insert pedfile")
         import_pedfile(conn, pedfile)
 
     # Change table structure if it is required
@@ -2441,13 +2437,13 @@ def import_reader(
     # insert fields
     insert_fields(conn, reader.get_fields())
 
-
     # insert variants
     insert_variants(
         conn,
         reader.get_variants(),
         total_variant_count=reader.number_lines,
         progress_callback=progress_callback,
+        progress_every=1000,
     )
 
 

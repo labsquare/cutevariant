@@ -54,22 +54,24 @@ class VcfReader(AbstractReader):
         "snpeff3": SnpEffParser,
     }
 
-    def __init__(self, device, annotation_parser: str = None):
+    def __init__(self, filename, annotation_parser: str = None):
         """Construct a VCF Reader
 
         .. note::
             Number of lines `number_lines` AND `file_size` is computed in
             AbstractReader class.
 
-        :param device: File device handler returned by open.
+        :param filename: File filename handler returned by open.
         :key annotation_parser (str): "vep" or "snpeff"
             This argument forces the reader to use a specific parser for
             the annotations. By default it's None: no parser will be used,
             annotations will not be taken into account.
         """
         # Note: number of lines is computed in parent class
-        super().__init__(device)
-        vcf_reader = vcf.VCFReader(device, strict_whitespace=True, encoding="utf-8")
+        super().__init__(filename)
+        vcf_reader = vcf.VCFReader(
+            filename=filename, strict_whitespace=True, encoding="utf-8"
+        )
         self.samples = vcf_reader.samples
         self.annotation_parser = None
         self.metadata = vcf_reader.metadata
@@ -77,8 +79,14 @@ class VcfReader(AbstractReader):
         # Fields descriptions
         self.fields = None
 
-        self.file_size = get_uncompressed_size(self.device.name)
-        self.compute_number_lines()
+        self.progress_every = 100
+        self.total_bytes = vcf_reader.total_bytes()
+        self.read_bytes = 0
+
+    def progress(self) -> float:
+        """override"""
+        progress = self.read_bytes / self.total_bytes * 100
+        return progress
 
     def get_fields(self):
         """Get full fields descriptions
@@ -163,9 +171,8 @@ class VcfReader(AbstractReader):
         :rtype: <generator <dict>>
         """
         # loop over record
-        self.device.seek(0)
         vcf_reader = vcf.VCFReader(
-            self.device, strict_whitespace=True, encoding="utf-8"
+            filename=self.filename, strict_whitespace=True, encoding="utf-8"
         )  # TODO use class attr
 
         # Genotype format fields
@@ -173,7 +180,9 @@ class VcfReader(AbstractReader):
         # Remove gt field (added manually later)
         format_fields.discard("gt")
 
-        for record in vcf_reader:
+        for i, record in enumerate(vcf_reader):
+
+            self.read_bytes = vcf_reader.read_bytes()
 
             # split row with multiple alt
             for index, alt in enumerate(record.ALT):
@@ -230,6 +239,8 @@ class VcfReader(AbstractReader):
                         variant["samples"].append(sample_data)
 
                 yield variant
+
+        self.read_bytes = self.total_bytes
 
     def parse_fields(self):
         """Extract fields informations from VCF fields
@@ -293,9 +304,8 @@ class VcfReader(AbstractReader):
         }
 
         # Read VCF
-        self.device.seek(0)
         vcf_reader = vcf.VCFReader(
-            self.device, strict_whitespace=True, encoding="utf-8"
+            filename=self.filename, strict_whitespace=True, encoding="utf-8"
         )
 
         # Read VCF INFO fields
@@ -347,7 +357,7 @@ class VcfReader(AbstractReader):
 
     def get_metadatas(self):
         """override from AbstractReader"""
-        output = {"filename": self.device.name}
+        output = {"filename": self.filename}
 
         for key, value in self.metadata.items():
             output[key] = str(value)
