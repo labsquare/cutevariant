@@ -379,7 +379,11 @@ class VcfImportWidget(QWidget):
             self.tr("VCF file (*.vcf *.vcf.gz);; CSV file (*.csv *.tsv *.txt)"),
         )
 
-        if filepath:
+        self.set_filename(filepath)
+
+
+    def set_filename(self, filepath:str):
+         if filepath:
             # Display and save directory
             self.file_path_edit.setText(filepath)
 
@@ -392,8 +396,7 @@ class VcfImportWidget(QWidget):
                     self.annotation_box.setCurrentText(annotation_type)
 
                 self.fields_widget.model.load(filepath)
-                self.samples_widget.set_samples(self.fields_widget.model._samples)
-
+                self.samples_widget.set_samples(self.fields_widget.model._samples)       
 
     
 

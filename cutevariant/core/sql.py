@@ -2426,11 +2426,13 @@ def import_reader(
         create_database_schema(conn)
 
     # insert samples
-    progress_callback(0, "Insert samples")
+    if progress_callback:
+        progress_callback(0, "Insert samples")
     insert_samples(conn, reader.get_samples())
 
     if pedfile:
-        progress_callback(0, "Insert pedfile")
+        if progress_callback:
+            progress_callback(0, "Insert pedfile")
         import_pedfile(conn, pedfile)
 
     # Change table structure if it is required
