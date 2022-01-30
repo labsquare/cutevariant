@@ -19,7 +19,7 @@ def conn():
     # Do not use ":memory:" ! SqlThread open the file
     tempdb = tempfile.mkstemp(suffix=".db")[1]
     conn = sql.get_sql_connection(tempdb)
-    sql.import_reader(conn, VcfReader(open("examples/test.snpeff.vcf"), "snpeff"))
+    sql.import_reader(conn, VcfReader("examples/test.snpeff.vcf", "snpeff"))
     return conn
 
 

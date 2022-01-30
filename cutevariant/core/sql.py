@@ -223,30 +223,33 @@ VARIANT_MANDATORY_FIELDS = [
         "name": "case_count_hom",
         "type": "int",
         "category": "variants",
+        "constraint": "DEFAULT 0",
         "description": "Number of homozygous genotypes (1/1) in case",
     },
     {
         "name": "case_count_het",
         "type": "int",
         "category": "variants",
+        "constraint": "DEFAULT 0",
         "description": "Number of heterozygous genotypes (1/0) in case",
     },
     {
         "name": "case_count_ref",
         "type": "int",
         "category": "variants",
+        "constraint": "DEFAULT 0",
         "description": "Number of homozygous genotypes (0/0) in case",
     },
     {
         "name": "is_indel",
-        "type": "int",
+        "type": "bool",
         "constraint": "DEFAULT 0",
         "category": "variants",
         "description": "True if variant is an indel",
     },
     {
         "name": "is_snp",
-        "type": "int",
+        "type": "bool",
         "constraint": "DEFAULT 0",
         "category": "variants",
         "description": "True if variant is a snp",
@@ -1450,40 +1453,30 @@ def insert_fields(conn: sqlite3.Connection, data: list):
     )
     conn.commit()
 
+# def insert_only_new_fields(conn, data: list):
+#     """Insert in "fields" table the fields who did not already exist.
+#     Add those fields as new columns in "variants", "annotations" or "samples" tables.
 
-def insert_extra_fields(conn):
-
-    insert_fields(
-        conn,
-        [],
-    )
-
-
-def insert_only_new_fields(conn, data: list):
-    """Insert in "fields" table the fields who did not already exist.
-    Add those fields as new columns in "variants", "annotations" or "samples" tables.
-
-    :param conn: sqlite3.connect
-    :param data: list of field dictionnary
-    """
-    get_fields.cache_clear()
-    existing_fields = [(f["name"], f["category"]) for f in get_fields(conn)]
-    new_data = [f for f in data if (f["name"], f["category"]) not in existing_fields]
-    cursor = conn.cursor()
-    cursor.executemany(
-        """
-        INSERT INTO fields (name,category,type,description)
-        VALUES (:name,:category,:type,:description)
-        """,
-        new_data,
-    )
-    for field in new_data:
-        cursor.execute(
-            "ALTER TABLE %s ADD COLUMN %s %s"
-            % (field["category"], field["name"], field["type"])
-        )
-    conn.commit()
-
+#     :param conn: sqlite3.connect
+#     :param data: list of field dictionnary
+#     """
+#     get_fields.cache_clear()
+#     existing_fields = [(f["name"], f["category"]) for f in get_fields(conn)]
+#     new_data = [f for f in data if (f["name"], f["category"]) not in existing_fields]
+#     cursor = conn.cursor()
+#     cursor.executemany(
+#         """
+#         INSERT INTO fields (name,category,type,description)
+#         VALUES (:name,:category,:type,:description)
+#         """,
+#         new_data,
+#     )
+#     for field in new_data:
+#         cursor.execute(
+#             "ALTER TABLE %s ADD COLUMN %s %s"
+#             % (field["category"], field["name"], field["type"])
+#         )
+#     conn.commit()
 
 # @lru_cache()
 def get_fields(conn):
@@ -2332,92 +2325,88 @@ def insert_many_new_samples(conn, samples: list):
     )
     conn.commit()
 
+# def insert_only_new_samples(conn, samples: list):
+#     """Insert many samples at a time in samples table, except already inserted samples.
 
-def insert_only_new_samples(conn, samples: list):
-    """Insert many samples at a time in samples table, except already inserted samples.
+#     :param samples: List of samples names
+#         .. todo:: only names in this list ?
+#     :type samples: <list <str>>
+#     """
+#     new_samples = [
+#         v for v in samples if v not in set([s["name"] for s in get_samples(conn)])
+#     ]
+#     cursor = conn.cursor()
+#     cursor.executemany(
+#         "INSERT INTO samples (name) VALUES (?)", ((sample,) for sample in new_samples)
+#     )
 
-    :param samples: List of samples names
-        .. todo:: only names in this list ?
-    :type samples: <list <str>>
-    """
-    new_samples = [
-        v for v in samples if v not in set([s["name"] for s in get_samples(conn)])
-    ]
-    cursor = conn.cursor()
-    cursor.executemany(
-        "INSERT INTO samples (name) VALUES (?)", ((sample,) for sample in new_samples)
-    )
+#     # update sample_has_variant with new samples, setting everything to NULL (-1 for genotype)
+#     new_ids = [s["id"] for s in get_samples(conn) if s["name"] in new_samples]
+#     if "gt" in get_table_columns(conn, "sample_has_variant"):
+#         cursor.executemany(
+#             "INSERT INTO sample_has_variant (sample_id, variant_id, gt) VALUES (?,?,?)",
+#             (
+#                 (int(sample_id), int(var["id"]), "-1")
+#                 for sample_id in new_ids
+#                 for var in get_variants(conn, ["id"], limit=get_variants_count(conn))
+#             ),
+#         )
+#     else:
+#         cursor.executemany(
+#             "INSERT INTO samples (sample_id, variant_id) VALUES (?,?)",
+#             (
+#                 (int(sample_id), int(var["id"]))
+#                 for sample_id in new_ids
+#                 for var in get_variants(conn, ["id"], limit=get_variants_count(conn))
+#             ),
+#         )
+#     conn.commit()
+# def add_new_variants_to_old_samples(
+#     conn, old_samples: list, new_data, previous_max_var_id: int
+# ):
+#     """Update sample_has_variant for previously existing samples with newly inserted variants
 
-    # update sample_has_variant with new samples, setting everything to NULL (-1 for genotype)
-    new_ids = [s["id"] for s in get_samples(conn) if s["name"] in new_samples]
-    if "gt" in get_table_columns(conn, "sample_has_variant"):
-        cursor.executemany(
-            "INSERT INTO sample_has_variant (sample_id, variant_id, gt) VALUES (?,?,?)",
-            (
-                (int(sample_id), int(var["id"]), "-1")
-                for sample_id in new_ids
-                for var in get_variants(conn, ["id"], limit=get_variants_count(conn))
-            ),
-        )
-    else:
-        cursor.executemany(
-            "INSERT INTO samples (sample_id, variant_id) VALUES (?,?)",
-            (
-                (int(sample_id), int(var["id"]))
-                for sample_id in new_ids
-                for var in get_variants(conn, ["id"], limit=get_variants_count(conn))
-            ),
-        )
-    conn.commit()
+#     :param conn: sqlite connection
+#     :param old_samples: list of sample dict that were already present in "samples" table
+#     :param data_dict: dictionary {chr_pos_ref_alt: variant dict} ; variants in vcf used
+#                       for the update (may contain previously existing variants)
+#     :param previous_max_var_id: variant ids above this int correspond to newly inserted variants
+#     """
+#     samples_in_new_data = set()
+#     for v in new_data:
+#         if "samples" in v:
+#             for s in v["samples"]:
+#                 samples_in_new_data.add(s["name"])
+#     samples_to_update = [
+#         s["id"] for s in old_samples if s["name"] not in samples_in_new_data
+#     ]
+#     new_var_ids = [
+#         int(v["id"])
+#         for v in get_variants(conn, ["id"], limit=get_variants_count(conn))
+#         if int(v["id"]) > previous_max_var_id
+#     ]
 
-
-def add_new_variants_to_old_samples(
-    conn, old_samples: list, new_data, previous_max_var_id: int
-):
-    """Update sample_has_variant for previously existing samples with newly inserted variants
-
-    :param conn: sqlite connection
-    :param old_samples: list of sample dict that were already present in "samples" table
-    :param data_dict: dictionary {chr_pos_ref_alt: variant dict} ; variants in vcf used
-                      for the update (may contain previously existing variants)
-    :param previous_max_var_id: variant ids above this int correspond to newly inserted variants
-    """
-    samples_in_new_data = set()
-    for v in new_data:
-        if "samples" in v:
-            for s in v["samples"]:
-                samples_in_new_data.add(s["name"])
-    samples_to_update = [
-        s["id"] for s in old_samples if s["name"] not in samples_in_new_data
-    ]
-    new_var_ids = [
-        int(v["id"])
-        for v in get_variants(conn, ["id"], limit=get_variants_count(conn))
-        if int(v["id"]) > previous_max_var_id
-    ]
-
-    if len(samples_to_update) > 0 and len(new_var_ids) > 0:
-        cursor = conn.cursor()
-        if "gt" in get_table_columns(conn, "sample_has_variant"):
-            cursor.executemany(
-                "INSERT INTO sample_has_variant (sample_id, variant_id, gt) VALUES (?,?,?)",
-                (
-                    (int(sample_id), int(var), "-1")
-                    for sample_id in samples_to_update
-                    for var in new_var_ids
-                ),
-            )
-        else:
-            cursor.executemany(
-                "INSERT INTO samples (sample_id, variant_id) VALUES (?,?)",
-                (
-                    (int(sample_id), int(var))
-                    for sample_id in samples_to_update
-                    for var in new_var_ids
-                ),
-            )
-        conn.commit()
-
+#     if len(samples_to_update) > 0 and len(new_var_ids) > 0:
+#         cursor = conn.cursor()
+#         if "gt" in get_table_columns(conn, "sample_has_variant"):
+#             cursor.executemany(
+#                 "INSERT INTO sample_has_variant (sample_id, variant_id, gt) VALUES (?,?,?)",
+#                 (
+#                     (int(sample_id), int(var), "-1")
+#                     for sample_id in samples_to_update
+#                     for var in new_var_ids
+#                 ),
+#             )
+#         else:
+#             cursor.executemany(
+#                 "INSERT INTO samples (sample_id, variant_id) VALUES (?,?)",
+#                 (
+#                     (int(sample_id), int(var))
+#                     for sample_id in samples_to_update
+#                     for var in new_var_ids
+#                 ),
+#             )
+#         conn.commit()
 
 def get_samples(conn: sqlite3.Connection):
     """Get samples from sample table

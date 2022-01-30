@@ -9,9 +9,9 @@ from cutevariant.core import sql
 
 READERS = [
     FakeReader(),
-    VcfReader(open("examples/test.vcf")),
-    VcfReader(open("examples/test.snpeff.vcf"), "snpeff"),
-    VcfReader(open("examples/test.vep.vcf"), "vep"),
+    VcfReader("examples/test.vcf"),
+    VcfReader("examples/test.snpeff.vcf", "snpeff"),
+    VcfReader("examples/test.vep.vcf", "vep"),
 ]
 
 
@@ -25,7 +25,7 @@ def test_import(reader):
 
 def test_import_pedfile():
     """Test import of samples from .tfam PED file"""
-    reader = VcfReader(open("examples/test.snpeff.vcf"), "snpeff")
+    reader = VcfReader("examples/test.snpeff.vcf", "snpeff")
     conn = sqlite3.connect(":memory:")
     sql.import_reader(conn, reader)
     sql.import_pedfile(conn, "examples/test.snpeff.pedigree.tfam")
@@ -55,13 +55,12 @@ def test_import_pedfile():
     # Third sample is not conform
     assert len(samples) == 2
 
-
     assert expected_first_sample in samples
     assert expected_second_sample in samples
 
 
 def test_import_and_create_counting():
-    reader = VcfReader(open("examples/test.snpeff.vcf"), "snpeff")
+    reader = VcfReader("examples/test.snpeff.vcf", "snpeff")
     pedfile = "examples/test.snpeff.pedigree.tfam"
 
     conn = sqlite3.connect(":memory:")

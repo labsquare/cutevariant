@@ -20,9 +20,8 @@ def test_bed_writer(conn):
     # Write bed file
 
     filename = tempfile.mkstemp()[1]
-    with open(filename, "w") as file:
-        bedwriter = BedWriter(conn, file)
-        bedwriter.save()
+    bedwriter = BedWriter(conn, filename)
+    bedwriter.save()
 
     # Read bed file
     observed = []
@@ -59,10 +58,9 @@ def test_csv_writer(conn, separator):
     filters = {"$and": [{"alt": {"$eq": "A"}}]}
 
     # Save file
-    with open(filename, "w") as file:
-        csvwriter = CsvWriter(conn, file, fields=fields, filters=filters)
-        csvwriter.separator = separator
-        csvwriter.save()
+    csvwriter = CsvWriter(conn, filename, fields=fields, filters=filters)
+    csvwriter.separator = separator
+    csvwriter.save()
 
     # Read file
     observed = []
@@ -96,17 +94,16 @@ def test_ped_writer(conn):
         conn(sqlite3.Connection): sqlite3 connection
         pedwriter(PedWriter): Instance of writer pointing to a temp file.
     """
-    reader = VcfReader(open("examples/test.snpeff.vcf"), "snpeff")
+    reader = VcfReader("examples/test.snpeff.vcf", "snpeff")
     sql.import_pedfile(conn, "examples/test.snpeff.pedigree.tfam")
     sql.update_variants_counts(conn)
 
     filename = tempfile.mkstemp()[1]
 
     # save database
-    with open(filename, "w") as file:
-        pedwriter = PedWriter(conn, file)
-        # Test save from DB
-        pedwriter.save()
+    pedwriter = PedWriter(conn, filename)
+    # Test save from DB
+    pedwriter.save()
 
     with open(filename, "r") as file:
         # Test save from DB
@@ -125,10 +122,9 @@ def test_vcf_writer(conn):
 
     conn = utils.create_conn("examples/test.vcf", "snpeff")
 
-    with open(filename, "w", encoding="utf8") as device:
-        writer = VcfWriter(conn, device)
-        writer.filters = {"$and": [{"annotation_count": 1}]}
-        # This filter helps passing the test. In fact, when we load again the result, the reader complains about having duplicate variants    # TODO: associate the test example file name with the fields it has. This way, testing is fair
-        writer.save()
+    writer = VcfWriter(conn, filename)
+    writer.filters = {"$and": [{"annotation_count": 1}]}
+    # This filter helps passing the test. In fact, when we load again the result, the reader complains about having duplicate variants    # TODO: associate the test example file name with the fields it has. This way, testing is fair
+    writer.save()
     # If this succeeds, it means that the file was successfully opened. So we generated a valid VCF file
     conn = utils.create_conn(filename)

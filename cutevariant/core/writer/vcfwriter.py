@@ -28,18 +28,19 @@ class VcfWriter(AbstractWriter):
     def __init__(
         self,
         conn,
-        device,
+        filename,
         fields=["chr", "pos", "ref", "alt"],
         source="variants",
         filters={},
     ):
-        super().__init__(conn, device, fields, source, filters)
+        super().__init__(conn, filename, fields, source, filters)
 
-    def write_header(self):
+    def write_header(self, device):
 
         # export header
+
         for key, value in sql.get_metadatas(self.conn).items():
-            self.device.write(f"##{key}={value}\n")
+            device.write(f"##{key}={value}\n")
 
         # save infos
         self.info_fields = [
@@ -71,7 +72,7 @@ class VcfWriter(AbstractWriter):
             descr = field["description"]
             vcf_type = VcfWriter.VCF_TYPE.get(field["type"], "String")
 
-            self.device.write(
+            device.write(
                 f'##INFO=<ID={name}, Number=1, Type={vcf_type}, Description="{descr}">\n',
             )
 
@@ -85,7 +86,7 @@ class VcfWriter(AbstractWriter):
             descr = field["description"]
             vcf_type = VcfWriter.VCF_TYPE.get(field["type"], "String")
 
-            self.device.write(
+            device.write(
                 f'##FORMAT=<ID={name}, Number=1, Type={vcf_type}, Description="{descr}">\n'
             )
 
@@ -138,13 +139,14 @@ class VcfWriter(AbstractWriter):
             )
         )
 
+        device = open(self.filename, "w")
         # Write the header (metadata) of the VCF
-        self.write_header()
+        self.write_header(device)
 
         # Write the header (column labels) of the VCF
         samples = sql.get_samples(self.conn)
         samples_name = "\t".join([item["name"] for item in samples])
-        self.device.write(
+        device.write(
             f"#CHROM  POS     ID      REF     ALT     QUAL    FILTER  INFO    FORMAT  {samples_name}\n"
         )
 
@@ -181,7 +183,7 @@ class VcfWriter(AbstractWriter):
             fformat = self.get_format_column(variant)
             ssample = self.get_samples_column(variant["id"])
 
-            self.device.write(
+            device.write(
                 "\t".join(
                     (
                         str(chrom),
@@ -201,6 +203,8 @@ class VcfWriter(AbstractWriter):
 
             yield index
 
+        device.close()
+
 
 if __name__ == "__main__":
 
@@ -211,6 +215,6 @@ if __name__ == "__main__":
         "/home/charles/Documents/Stage Cutevariant/Exercice 2/chr7_three_variants.vcf",  # Your file name here
         "snpeff",
     )
-    with open("test_x.vcf", "w+") as device:
-        writer = VcfWriter(conn, device)
-        writer.save()
+
+    writer = VcfWriter(conn, "test_x.vcf")
+    writer.save()

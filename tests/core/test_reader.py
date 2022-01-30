@@ -15,15 +15,15 @@ from cutevariant.core import sql
 
 READERS = [
     FakeReader(),
-    VcfReader(open("examples/test.vcf")),
-    VcfReader(open("examples/test.vep.vcf"), "vep"),
-    VcfReader(open("examples/test.snpeff.vcf"), "snpeff"),
-    VcfReader(open("examples/snpeff3.vcf"), "snpeff3"),
+    VcfReader("examples/test.vcf"),
+    VcfReader("examples/test.vep.vcf", "vep"),
+    VcfReader("examples/test.snpeff.vcf", "snpeff"),
+    VcfReader("examples/snpeff3.vcf", "snpeff3"),
 ]
 
 
 def test_snpeff3():
-    reader = VcfReader(open("examples/snpeff3.vcf"))
+    reader = VcfReader("examples/snpeff3.vcf")
     names = [field["name"] for field in reader.get_fields()]
     assert "eff" in names
 

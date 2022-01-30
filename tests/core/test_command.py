@@ -10,7 +10,7 @@ from cutevariant.core.reader import VcfReader
 @pytest.fixture
 def conn():
     conn = sql.get_sql_connection(":memory:")
-    sql.import_reader(conn, VcfReader(open("examples/test.snpeff.vcf"), "snpeff"))
+    sql.import_reader(conn, VcfReader("examples/test.snpeff.vcf", "snpeff"))
     return conn
 
 

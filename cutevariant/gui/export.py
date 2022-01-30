@@ -120,16 +120,15 @@ class BedExportDialog(ExportDialog):
         )
 
     def save(self):
-        with open(self.filename, "w+") as device:
-            writer = BedWriter(
-                self.conn, device, self.fields, self.source, self.filters
-            )
+        writer = BedWriter(
+            self.conn, self.filename, self.fields, self.source, self.filters
+        )
 
-            success = self.save_from_writer(writer, "Saving BED file")
-            if success:
-                self.accept()
-            else:
-                self.reject()
+        success = self.save_from_writer(writer, "Saving BED file")
+        if success:
+            self.accept()
+        else:
+            self.reject()
 
 
 class CsvExportDialog(ExportDialog):
@@ -180,17 +179,15 @@ class CsvExportDialog(ExportDialog):
                 self, self.tr("Error"), self.tr("No file name set. Nothing to save")
             )
 
-        with open(self.filename, "w+") as device:
-
-            writer = CsvWriter(
-                self.conn, device, self.fields, self.source, self.filters
-            )
-            writer.separator = self.combo.currentData()
-            success = self.save_from_writer(writer, "Saving CSV file")
-            if success:
-                self.accept()
-            else:
-                self.reject()
+        writer = CsvWriter(
+            self.conn, self.filename, self.fields, self.source, self.filters
+        )
+        writer.separator = self.combo.currentData()
+        success = self.save_from_writer(writer, "Saving CSV file")
+        if success:
+            self.accept()
+        else:
+            self.reject()
 
 
 class PedExportDialog(ExportDialog):
@@ -200,14 +197,13 @@ class PedExportDialog(ExportDialog):
         super().__init__(conn, filename, fields, source, filters, parent)
 
     def save(self):
-        with open(self.filename, "w+") as device:
-            writer = PedWriter(self.conn, device)
+        writer = PedWriter(self.conn, self.filename)
 
-            success = self.save_from_writer(writer, "Saving PED file")
-            if success:
-                self.accept()
-            else:
-                self.reject()
+        success = self.save_from_writer(writer, "Saving PED file")
+        if success:
+            self.accept()
+        else:
+            self.reject()
 
 
 class VcfExportDialog(ExportDialog):
@@ -244,18 +240,15 @@ class VcfExportDialog(ExportDialog):
         self.set_central_widget(self.group_box)
 
     def save(self):
-        with open(self.filename, "w+") as device:
-            writer = VcfWriter(
-                self.conn, device, self.fields, self.source, self.filters
-            )
-            success = self.save_from_writer(writer, "Exporting to VCF")
+        writer = VcfWriter(
+            self.conn, self.filename, self.fields, self.source, self.filters
+        )
+        success = self.save_from_writer(writer, "Exporting to VCF")
 
-            if success:
-                self.accept()
-            else:
-                self.reject()
-
-        self.close()  # Whatever happens, this dialog is now useless
+        if success:
+            self.accept()
+        else:
+            self.reject()
 
 
 class ExportDialogFactory:
