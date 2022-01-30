@@ -7,7 +7,6 @@ from functools import partial
 # Custom imports
 import progressbar
 from columnar import columnar
-from cutevariant.core.importer import async_import_file
 from cutevariant.core import sql, vql, command
 from cutevariant.core.querybuilder import *
 from cutevariant import LOGGER
@@ -174,10 +173,10 @@ the arguments.""",
         conn = sql.get_sql_connection(args.db)
         if conn:
             # TODO: bug ... max is not 100...
-            for i, message in progressbar.progressbar(
-                async_import_file(conn, args.input), redirect_stdout=True
-            ):
-                print(message)
+
+            with create_reader(args.input) as reader:
+                sql.import_reader(conn, reader)
+
 
         print("The database is successfully created!")
         exit()

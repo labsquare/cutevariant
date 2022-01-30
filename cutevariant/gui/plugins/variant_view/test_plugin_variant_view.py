@@ -7,7 +7,7 @@ from PySide2 import QtCore, QtWidgets
 
 
 from cutevariant.gui.plugins.variant_view import widgets
-from cutevariant.core import sql, importer
+from cutevariant.core import sql
 from cutevariant.core.reader import VcfReader
 
 
@@ -17,7 +17,7 @@ def conn():
     #  Required a real file to make it work !
     tempdb = tempfile.mkstemp(suffix=".db")[1]
     conn = sql.get_sql_connection(tempdb)
-    importer.import_reader(conn, VcfReader(open("examples/test.snpeff.vcf"), "snpeff"))
+    sql.import_reader(conn, VcfReader(open("examples/test.snpeff.vcf"), "snpeff"))
     return conn
 
 
