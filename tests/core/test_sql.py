@@ -211,7 +211,8 @@ def test_alter_table_by_fields():
 
 
 def test_import_reader():
-    conn = sql.get_sql_connection("/tmp/testcute.db")
+    fd, filepath = tempfile.mkstemp()
+    conn = sql.get_sql_connection(filepath)
 
     reader = FakeReader()
     sql.import_reader(conn, reader)
