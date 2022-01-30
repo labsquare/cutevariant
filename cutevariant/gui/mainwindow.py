@@ -683,20 +683,19 @@ class MainWindow(QMainWindow):
 
     def import_file(self):
         """Slot to allow update of a project with a Wizard"""
-        
-        # Todo .. variable of file 
+
+        # Todo .. variable of file
         dialog = VcfImportDialog(sql.get_database_file_name(self.conn))
 
-        if (dialog.exec_() == QDialog.Accepted):
+        if dialog.exec_() == QDialog.Accepted:
 
             db_filename = dialog.db_filename()
+            LOGGER.warning("ICI", db_filename)
+
             try:
                 self.open(db_filename)
             except Exception as e:
                 self.status_bar.showMessage(e.__class__.__name__ + ": " + str(e))
-            raise
-
-
 
     def export_as_csv(self):
         """Export variants into CSV file"""

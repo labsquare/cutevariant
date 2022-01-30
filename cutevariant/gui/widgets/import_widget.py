@@ -409,6 +409,7 @@ class ProgressDialog(QDialog):
         self.label = QLabel("Progression ... ")
         self.progress = QProgressBar()
         self.cancel_button = QPushButton(self.tr("Cancel"))
+        self.ok_button = QPushButton(self.tr("Ok"))
         self.detail_button = QPushButton(self.tr("Show Details ..."))
         self.text = QPlainTextEdit()
         self.line = QFrame()
@@ -426,6 +427,7 @@ class ProgressDialog(QDialog):
         button_layout.addWidget(self.detail_button)
         button_layout.addStretch()
         button_layout.addWidget(self.cancel_button)
+        button_layout.addWidget(self.ok_button)
 
         main_layout = QVBoxLayout(self)
         main_layout.addWidget(self.label)
@@ -438,7 +440,11 @@ class ProgressDialog(QDialog):
         self.detail_button.setChecked(False)
         self.detail_button.clicked.connect(self.toggle_detail)
         self.cancel_button.clicked.connect(self.reject)
+        self.ok_button.clicked.connect(self.accept)
+
         self.setFixedSize(self.sizeHint())
+
+        self.reset()
 
     def toggle_detail(self, show: bool = True):
         self.text.setVisible(show)
@@ -458,6 +464,12 @@ class ProgressDialog(QDialog):
         self.progress.setValue(0)
         self.label.setText("")
         self.text.clear()
+        self.set_complete(False)
+
+    def set_complete(self, complete: bool):
+
+        self.ok_button.setEnabled(complete)
+        self.cancel_button.setEnabled(not complete)
 
 
 class ImportThread(QThread):
@@ -500,10 +512,6 @@ class ImportThread(QThread):
 
         return self._stop
 
-    def test(self, msg):
-
-        print(self._reader.progress())
-
     def run(self):
         """Overrided QThread method
 
@@ -526,6 +534,7 @@ class ImportThread(QThread):
         try:
 
             # Import VARIANT FILE
+            self.finished_status.emit(False)
             self.emit_progress("**Import Variants**")
             with create_reader(self.filename, self.annotation_parser) as reader:
                 self._reader = reader
@@ -538,16 +547,19 @@ class ImportThread(QThread):
 
             # Update count
             self.emit_progress("**Compute variant count**")
-            sql.update_variants_counts(self.conn)
+            # sql.update_variants_counts(self.conn)
 
             # Update Index
             self.emit_progress("**Create indexes**")
-        # sql.create_indexes(
-        #     self.conn,
-        #     self.indexed_variant_fields,
-        #     self.indexed_annotation_fields,
-        #     self.indexed_sample_fields,
-        # )
+            # sql.create_indexes(
+            #     self.conn,
+            #     self.indexed_variant_fields,
+            #     self.indexed_annotation_fields,
+            #     self.indexed_sample_fields,
+            # )
+
+            self.conn.close()
+
         except BaseException as e:
             self.progress_changed.emit(0, str(e))
             self._stop = True
@@ -594,6 +606,7 @@ class VcfImportDialog(QDialog):
         self.resize(700, 500)
 
         self.thread.progress_changed.connect(self.progress_dialog.show_progress)
+        self.thread.finished_status.connect(self.progress_dialog.set_complete)
 
     def start_import(self):
 
@@ -604,7 +617,9 @@ class VcfImportDialog(QDialog):
         self.thread.pedfile = self.widget.pedfile()
 
         self.thread.start()
-        self.progress_dialog.exec_()
+
+        if self.progress_dialog.exec_() == QDialog.Accepted:
+            self.accept()
 
     def db_filename(self):
         return self.thread.db_filename
