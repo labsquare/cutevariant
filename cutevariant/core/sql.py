@@ -2372,6 +2372,37 @@ def update_sample(conn: sqlite3.Connection, sample: dict):
 # ==================== CREATE DATABASE =====================================
 
 
+def create_triggers(conn):
+
+    conn.execute(
+        """
+        CREATE TRIGGER count_homo AFTER INSERT ON sample_has_variant 
+        WHEN new.gt = 2 BEGIN 
+        UPDATE variants SET count_hom = count_hom + 1 WHERE variants.id = new.variant_id ; END;"""
+    )
+
+    conn.execute(
+        """
+        CREATE TRIGGER count_var AFTER INSERT ON sample_has_variant 
+        WHEN new.gt > 0 BEGIN 
+        UPDATE variants SET count_var = count_var + 1 WHERE variants.id = new.variant_id ; END;"""
+    )
+
+    conn.execute(
+        """
+        CREATE TRIGGER count_het AFTER INSERT ON sample_has_variant 
+        WHEN new.gt = 1 BEGIN 
+        UPDATE variants SET count_het = count_het + 1 WHERE variants.id = new.variant_id ; END;"""
+    )
+
+    conn.execute(
+        """
+        CREATE TRIGGER count_ref AFTER INSERT ON sample_has_variant 
+        WHEN new.gt = 0 BEGIN 
+        UPDATE variants SET count_ref = count_ref + 1 WHERE variants.id = new.variant_id ; END;"""
+    )
+
+
 def create_database_schema(conn):
     create_table_project(conn)
     # Create metadatas
@@ -2393,6 +2424,9 @@ def create_database_schema(conn):
 
     # # Create table sets
     create_table_wordsets(conn)
+
+    ## Create triggers
+    create_triggers(conn)
 
 
 def import_reader(
