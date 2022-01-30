@@ -9,6 +9,7 @@ from PySide2.QtCore import (
     Signal,
     QThread,
     Slot,
+    QDir
 )
 
 from PySide2.QtGui import QFont, QColor
@@ -39,7 +40,7 @@ from PySide2.QtWidgets import (
 
 import sqlite3
 import time
-
+import tempfile
 from cutevariant.gui.ficon import FIcon
 from cutevariant.core.reader.vcfreader import VcfReader
 from cutevariant.core.readerfactory import detect_vcf_annotation, create_reader
@@ -49,7 +50,7 @@ from cutevariant import LOGGER
 from cutevariant.gui.model_view import PedView
 
 
-class ReaderModel(QAbstractTableModel):
+class FieldsModel(QAbstractTableModel):
 
     MANDATORY_FIELDS = ["chr", "pos", "ref", "alt", "gt"]
 
@@ -62,6 +63,7 @@ class ReaderModel(QAbstractTableModel):
     def __init__(self, parent=None):
         super().__init__(parent=parent)
         self._items = []
+        self._samples = []
         self._headers = {
             self.NAME_COL: "name",
             self.CATEGORY_COL: "category",
@@ -181,6 +183,7 @@ class ReaderModel(QAbstractTableModel):
         self._items.clear()
 
         with create_reader(filename) as reader:
+            self._samples = reader.get_samples()
             for field in reader.get_fields():
                 field["enabled"] = True
                 field["index"] = True
@@ -189,37 +192,27 @@ class ReaderModel(QAbstractTableModel):
         self.endResetModel()
 
 
-class VcfImportWidget(QWidget):
+
+class FieldsWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__()
 
-        self.setWindowTitle(self.tr("Select a file"))
-
-        # Create widgets
-        self.file_path_edit = QLineEdit()
-        self.annotation_box = QComboBox()
-        self.lock_button = QPushButton(self.tr("Edit"))
-        self.anotation_detect_label = QLabel()
-        self.button = QPushButton(self.tr("Browse"))
-
-        self.tabwidget = QTabWidget()
+        self.model = FieldsModel()
+        self.view = QTableView()
 
         self.check_button = QPushButton(self.tr("Check"))
-        self.uncheck_button = QPushButton(self.tr("Uncheck"))
-
-        self.check_index_button = QPushButton(self.tr("Set index"))
-        self.uncheck_index_button = QPushButton(self.tr("Unset index"))
-
-        self.view = QTableView()
-        self.model = ReaderModel()
-        self.view.setModel(self.model)
-
         self.check_button.clicked.connect(lambda x: self.check_fields(True))
+        
+        self.uncheck_button = QPushButton(self.tr("Uncheck"))
         self.uncheck_button.clicked.connect(lambda x: self.check_fields(False))
-
+        
+        self.check_index_button = QPushButton(self.tr("Set index"))
         self.check_index_button.clicked.connect(lambda x: self.check_index(True))
+        
+        self.uncheck_index_button = QPushButton(self.tr("Unset index"))
         self.uncheck_index_button.clicked.connect(lambda x: self.check_index(False))
 
+        self.view.setModel(self.model)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setSelectionMode(QAbstractItemView.SingleSelection)
         self.view.setAlternatingRowColors(True)
@@ -227,28 +220,121 @@ class VcfImportWidget(QWidget):
         self.view.verticalHeader().hide()
         self.view.setSelectionMode(QAbstractItemView.ContiguousSelection)
 
-        self.button.setIcon(FIcon(0xF0DCF))
-        self.button.clicked.connect(self._browse)
 
+        check_layout = QVBoxLayout()
+        check_layout.addWidget(self.check_button)
+        check_layout.addWidget(self.uncheck_button)
+        check_layout.addStretch()
+        check_layout.addWidget(self.check_index_button)
+        check_layout.addWidget(self.uncheck_index_button)
+
+        main_layout = QHBoxLayout()
+        main_layout.addWidget(self.view)
+        main_layout.addLayout(check_layout)
+
+        self.setLayout(main_layout)
+
+    @Slot()
+    def check_fields(self, toggle=True):
+        for index in self.view.selectionModel().selectedRows(self.model.NAME_COL):
+            self.model.setData(index, toggle, Qt.CheckStateRole)
+
+    @Slot()
+    def check_index(self, toggle=True):
+        for index in self.view.selectionModel().selectedRows(self.model.INDEX_COL):
+            print(index.column())
+            self.model.setData(index, toggle)
+
+
+class SamplesWidget(QWidget):
+    def __init__(self, parent=None):
+        super().__init__()
+
+        self.view = PedView()
+        self.load_button = QPushButton(self.tr("Ped file ..."))
+        self.load_button.clicked.connect(self.on_import_clicked)
+
+        vlayout = QVBoxLayout()
+        vlayout.addWidget(self.load_button)
+        vlayout.addStretch()
+
+        main_layout = QHBoxLayout()
+        main_layout.addWidget(self.view)
+        main_layout.addLayout(vlayout)
+
+        self.setLayout(main_layout)
+
+    def set_samples(self, samples:list):
+        self.samples = samples
+        self.view.samples = [["fam", i, "0", "0", "0", "0", "0"] for i in samples]
+
+    def on_import_clicked(self):
+        """Slot called when import PED file is clicked
+
+        We open PED file (ped, tfam) to get the their samples that will
+        be associated to the current samples of the project.
+        """
+        # Reload last directory used
+
+        filepath, filetype = QFileDialog.getOpenFileName(
+            self,
+            self.tr("Open PED file"),
+            QDir.home().path(),
+            self.tr("PED files (*.ped *.tfam)"),
+        )
+
+        if not filepath:
+            return
+
+        LOGGER.info("vcf samples: %s", self.vcf_samples)
+
+        # Get samples of individual_ids that are already on the VCF file
+        self.view.samples = [
+            # samples argument is empty dict since its not
+            sample
+            for sample in PedReader(filepath, dict())
+            if sample[1] in self.vcf_samples
+        ]
+
+
+class VcfImportWidget(QWidget):
+    def __init__(self, parent=None):
+        super().__init__()
+
+        self.setWindowTitle(self.tr("Select a file"))
+
+        # Create top formular 
+        self.anotation_detect_label = QLabel()
+        self.annotation_box = QComboBox()
+        self.annotation_box.setEnabled(False)
+
+        self.file_path_edit = QLineEdit()
+        self.file_path_edit.setToolTip(
+            self.tr("Path to a supported input file. (e.g: VCF  file ) ")
+        )
+        self.lock_button = QPushButton(self.tr("Edit"))
         self.lock_button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Preferred)
         self.lock_button.setCheckable(True)
         self.lock_button.setIcon(FIcon(0xF08EE))
         self.lock_button.toggled.connect(lambda x: self.annotation_box.setEnabled(x))
 
-        self.annotation_box.setEnabled(False)
+        self.button = QPushButton(self.tr("Browse"))
+        self.button.setIcon(FIcon(0xF0DCF))
+        self.button.clicked.connect(self._browse)
 
-        self.file_path_edit.setToolTip(
-            self.tr("Path to a supported input file. (e.g: VCF  file ) ")
-        )
+        # Create content 
+        self.tabwidget = QTabWidget()
+        self.fields_widget = FieldsWidget()
+        self.samples_widget = SamplesWidget()
 
-        # Create layout
+
+        # Create layout 
         main_layout = QVBoxLayout()
 
-        # Files group
+        # top formular 
         h_layout = QHBoxLayout()
         h_layout.addWidget(self.file_path_edit)
         h_layout.addWidget(self.button)
-
         h2_layout = QHBoxLayout()
         h2_layout.addWidget(self.annotation_box)
         h2_layout.addWidget(self.lock_button)
@@ -258,33 +344,16 @@ class VcfImportWidget(QWidget):
         self.v_layout.addRow("Input File", h_layout)
         self.v_layout.addRow("Annotation", h2_layout)
 
-        # Fields widget
-        self.field_widget = QWidget()
-        self.field_layout = QHBoxLayout(self.field_widget)
-        check_layout = QVBoxLayout()
-        check_layout.addWidget(self.check_button)
-        check_layout.addWidget(self.uncheck_button)
-        check_layout.addStretch()
-        check_layout.addWidget(self.check_index_button)
-        check_layout.addWidget(self.uncheck_index_button)
-
-        self.field_layout.addWidget(self.view)
-        self.field_layout.addLayout(check_layout)
-
-        self.tabwidget.addTab(self.field_widget, "Fields")
+        # Create content 
+        self.tabwidget.addTab(self.fields_widget, "Fields")    
+        self.tabwidget.addTab(self.samples_widget, "Samples")
 
         main_layout.addWidget(self.file_group)
         main_layout.addWidget(self.tabwidget)
-
-        # Sample widget
-        self.sample_widget = QWidget()
-
-        self.tabwidget.addTab(self.sample_widget, "Samples")
-
         self.setLayout(main_layout)
 
-        # self.file_path_edit.textChanged.connect(self.completeChanged)
-        # Fill supported format
+
+        # Fill available parser 
         self.annotation_box.addItem(
             FIcon(0xF13CF), "No Annotation detected", userData=None
         )
@@ -322,21 +391,19 @@ class VcfImportWidget(QWidget):
                 else:
                     self.annotation_box.setCurrentText(annotation_type)
 
-                self.model.load(filepath)
+                self.fields_widget.model.load(filepath)
+                self.samples_widget.set_samples(self.fields_widget.model._samples)
 
-    @Slot()
-    def check_fields(self, toggle=True):
-        for index in self.view.selectionModel().selectedRows(self.model.NAME_COL):
-            self.model.setData(index, toggle, Qt.CheckStateRole)
 
-    @Slot()
-    def check_index(self, toggle=True):
-        for index in self.view.selectionModel().selectedRows(self.model.INDEX_COL):
-            print(index.column())
-            self.model.setData(index, toggle)
+    
 
     def filename(self):
         return self.file_path_edit.text()
+
+    def pedfile(self):
+        _, filename = tempfile.mkstemp()
+        self.samples_widget.view.model.to_pedfile(filename)
+        return filename
 
 
 class ProgressDialog(QDialog):
@@ -412,15 +479,19 @@ class ImportThread(QThread):
         super().__init__()
         self._stop = False
 
-        self.db_filename = ""
+        self.db_filename = None
         # File top open
-        self.filename = ""
+        self.filename = None
+        # pedfile 
+        self.pedfile = None
         # Ignored fields
         self.ignored_fields = None
         # Fields with index
         self.index_fields = None
         # annotation parser
         self.annotation_parser = None
+
+
 
     def progress(self, progress: int, message: str):
         self.progress_changed.emit(progress, message)
@@ -450,7 +521,7 @@ class ImportThread(QThread):
             # Import VARIANT FILE
             self.progress(0, "**Import Variants**")
             with create_reader(self.filename, self.annotation_parser) as reader:
-                sql.import_reader(self.conn, reader, progress_callback=self.progress)
+                sql.import_reader(self.conn, reader, pedfile = self.pedfile, progress_callback=self.progress)
 
             # Update count
             self.progress(0, "**Compute variant count**")
@@ -514,6 +585,9 @@ class VcfImportDialog(QDialog):
 
         self.progress_dialog.reset()
         self.thread.filename = self.widget.filename()
+
+        # create pedfile 
+        self.thread.pedfile = self.widget.pedfile()
 
         self.thread.start()
         self.progress_dialog.exec_()

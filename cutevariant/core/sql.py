@@ -2615,6 +2615,7 @@ def create_database_schema(conn):
 def import_reader(
     conn: sqlite3.Connection,
     reader: AbstractReader,
+    pedfile:str = None,
     progress_callback: Callable = None,
     ignore_fields: list = [],
 ):
@@ -2637,13 +2638,20 @@ def import_reader(
         LOGGER.debug("CREATE TABLE SCHEMA")
         create_database_schema(conn)
 
+    # insert samples
+    progress_callback(0, "Insert samples")
+    insert_samples(conn, reader.get_samples())
+
+    if pedfile:
+        progress_callback(0, "Insert pedfile")
+        import_pedfile(conn, pedfile)
+
     # Change table structure if it is required
     alter_table_from_fields(conn, fields)
 
     # insert fields
     insert_fields(conn, reader.get_fields())
-    # insert samples
-    insert_samples(conn, reader.get_samples())
+
 
     # insert variants
     insert_variants(

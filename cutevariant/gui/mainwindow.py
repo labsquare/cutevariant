@@ -23,7 +23,7 @@ from cutevariant.core import sql
 from cutevariant.core.sql import get_database_file_name
 from cutevariant.core.writer import CsvWriter, PedWriter
 from cutevariant.gui import FIcon
-from cutevariant.gui.wizards import ProjectWizard
+from cutevariant.gui.widgets.project_wizard import ProjectWizard
 from cutevariant.gui.settings import SettingsDialog
 from cutevariant.gui.widgets.aboutcutevariant import AboutCutevariant
 from cutevariant import commons as cm
@@ -654,12 +654,8 @@ class MainWindow(QMainWindow):
         if not wizard.exec_():
             return
 
-        db_filename = (
-            wizard.field("project_path")
-            + QDir.separator()
-            + wizard.field("project_name")
-            + ".db"
-        )
+        db_filename = wizard.db_filename()
+        
         try:
             self.open(db_filename)
         except Exception as e:
