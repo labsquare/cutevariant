@@ -1,10 +1,11 @@
-from PySide2.QtWidgets import * 
-from PySide2.QtCore import * 
-from PySide2.QtGui import * 
+from PySide2.QtWidgets import *
+from PySide2.QtCore import *
+from PySide2.QtGui import *
 import os
 from cutevariant.gui.widgets.import_widget import VcfImportWidget, ImportThread
 
 from cutevariant import LOGGER
+
 
 class ProjectPage(QWizardPage):
     def __init__(self, parent=None):
@@ -18,7 +19,6 @@ class ProjectPage(QWizardPage):
         self.path_edit = QLineEdit()
         self.path_edit.textChanged.connect(self.completeChanged)
 
-
         self.browse_btn = QPushButton(self.tr("Browse..."))
         self.browse_btn.clicked.connect(self._browse)
 
@@ -27,13 +27,11 @@ class ProjectPage(QWizardPage):
         path_layout.addWidget(self.path_edit)
         path_layout.addWidget(self.browse_btn)
 
-
         form_layout = QFormLayout()
-        form_layout.addRow(self.tr("Name:"),self.name_edit)
-        form_layout.addRow(self.tr("Create in:"),path_layout)
+        form_layout.addRow(self.tr("Name:"), self.name_edit)
+        form_layout.addRow(self.tr("Create in:"), path_layout)
 
         self.setLayout(form_layout)
-
 
     def _browse(self):
         path = QFileDialog.getExistingDirectory(
@@ -44,7 +42,6 @@ class ProjectPage(QWizardPage):
 
     def db_filename(self):
         return QDir(self.path_edit.text()).filePath(self.name_edit.text()) + ".db"
-
 
     def validatePage(self):
         name = self.name_edit.text()
@@ -67,7 +64,8 @@ class ProjectPage(QWizardPage):
             else:
                 return False
 
-        return True            
+        return True
+
     def initializePage(self):
         """Overridden: Prepare the page just before it is shown"""
         # Adjust the focus of project name field
@@ -94,7 +92,7 @@ class FilePage(QWizardPage):
 
         self.widget = VcfImportWidget()
         vlayout = QVBoxLayout(self)
-        vlayout.setContentsMargins(0,0,0,0)
+        vlayout.setContentsMargins(0, 0, 0, 0)
         vlayout.addWidget(self.widget)
 
     def filename(self):
@@ -107,7 +105,6 @@ class FilePage(QWizardPage):
 class ImportPage(QWizardPage):
     def __init__(self, parent=None):
         super().__init__()
-
 
         self.setTitle(self.tr("Import file"))
         self.setSubTitle(
@@ -147,11 +144,10 @@ class ImportPage(QWizardPage):
         self.thread.progress_changed.connect(self.show_progress)
         self.thread.finished_status.connect(self.import_thread_finished)
 
-
         # # Note: self.run is automatically launched when ImportPage is displayed
         # # See initializePage()
         # self.stop_button.clicked.connect(self.run)
-        
+
         # self.thread.progress_changed.connect(self.progress_changed)
         # self.thread.finished_status.connect(self.import_thread_finished_status)
 
@@ -179,7 +175,7 @@ class ImportPage(QWizardPage):
         timestamp = QDateTime.currentDateTime().toString("hh:MM:ss")
         self.log_edit.appendPlainText(f"[{timestamp}] {message}")
 
-    def show_progress(self, percent:float, message:str):
+    def show_progress(self, percent: float, message: str):
         self.progress.setValue(percent)
         self.show_log(message)
 
@@ -198,7 +194,6 @@ class ImportPage(QWizardPage):
         self.stop_button.setDisabled(False)
 
 
-
 class ProjectWizard(QWizard):
     def __init__(self, parent=None):
         super().__init__()
@@ -207,16 +202,18 @@ class ProjectWizard(QWizard):
         self.addPage(FilePage())
         self.addPage(ImportPage())
 
+        self.resize(800, 600)
+
     def db_filename(self):
         return self.page(0).db_filename()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import sys
+
     app = QApplication(sys.argv)
 
     prj = ProjectWizard()
     prj.show()
-
 
     app.exec_()

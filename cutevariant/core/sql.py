@@ -162,6 +162,7 @@ VARIANT_MANDATORY_FIELDS = [
         "name": "classification",
         "type": "int",
         "category": "variants",
+        "constraint": "DEFAULT 0",
         "description": "ACMG score",
     },
     {
