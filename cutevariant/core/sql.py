@@ -1453,6 +1453,7 @@ def insert_fields(conn: sqlite3.Connection, data: list):
     )
     conn.commit()
 
+
 # def insert_only_new_fields(conn, data: list):
 #     """Insert in "fields" table the fields who did not already exist.
 #     Add those fields as new columns in "variants", "annotations" or "samples" tables.
@@ -2325,6 +2326,7 @@ def insert_many_new_samples(conn, samples: list):
     )
     conn.commit()
 
+
 # def insert_only_new_samples(conn, samples: list):
 #     """Insert many samples at a time in samples table, except already inserted samples.
 
@@ -2407,6 +2409,7 @@ def insert_many_new_samples(conn, samples: list):
 #                 ),
 #             )
 #         conn.commit()
+
 
 def get_samples(conn: sqlite3.Connection):
     """Get samples from sample table
@@ -2493,11 +2496,11 @@ def create_triggers(conn):
         UPDATE variants SET count_hom = count_hom + 1 WHERE variants.id = new.variant_id ;
 
         UPDATE variants SET
-        case_count_hom = case_count_hom + (SELECT COUNT(*) FROM samples WHERE phenotype=1 and samples.id = new.sample_id)
+        case_count_hom = case_count_hom + (SELECT COUNT(*) FROM samples WHERE phenotype=2 and samples.id = new.sample_id)
         WHERE variants.id = new.variant_id ; 
 
         UPDATE variants SET
-        control_count_hom = control_count_hom + (SELECT COUNT(*) FROM samples WHERE phenotype=0 and samples.id = new.sample_id)
+        control_count_hom = control_count_hom + (SELECT COUNT(*) FROM samples WHERE phenotype=1 and samples.id = new.sample_id)
         WHERE variants.id = new.variant_id ;
 
          END;"""
@@ -2517,11 +2520,11 @@ def create_triggers(conn):
         UPDATE variants SET count_het = count_het + 1 WHERE variants.id = new.variant_id ; 
 
         UPDATE variants SET
-        case_count_het = case_count_het + (SELECT COUNT(*) FROM samples WHERE phenotype=1 and samples.id = new.sample_id)
+        case_count_het = case_count_het + (SELECT COUNT(*) FROM samples WHERE phenotype=2 and samples.id = new.sample_id)
         WHERE variants.id = new.variant_id ; 
 
         UPDATE variants SET
-        control_count_het = control_count_het + (SELECT COUNT(*) FROM samples WHERE phenotype=0 and samples.id = new.sample_id)
+        control_count_het = control_count_het + (SELECT COUNT(*) FROM samples WHERE phenotype=1 and samples.id = new.sample_id)
         WHERE variants.id = new.variant_id ;
 
         END;"""
