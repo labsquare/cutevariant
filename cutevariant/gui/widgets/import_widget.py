@@ -592,6 +592,9 @@ class VcfImportDialog(QDialog):
         self.thread.start()
         self.progress_dialog.exec_()
 
+    def db_filename(self):
+        return self.thread.db_filename 
+
     # def show_progress(self, value: float, message: str):
 
     #     self.progress.setValue(value)

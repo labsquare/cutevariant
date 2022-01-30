@@ -24,6 +24,7 @@ from cutevariant.core.sql import get_database_file_name
 from cutevariant.core.writer import CsvWriter, PedWriter
 from cutevariant.gui import FIcon
 from cutevariant.gui.widgets.project_wizard import ProjectWizard
+from cutevariant.gui.widgets.import_widget import VcfImportDialog
 from cutevariant.gui.settings import SettingsDialog
 from cutevariant.gui.widgets.aboutcutevariant import AboutCutevariant
 from cutevariant import commons as cm
@@ -388,16 +389,16 @@ class MainWindow(QMainWindow):
             self.open_project,
             QKeySequence.Open,
         )
-        self.update_project_action = self.file_menu.addAction(
+        self.import_file_action = self.file_menu.addAction(
             FIcon(0xF0B86),
-            self.tr("&Update project"),
-            self.update_project,
+            self.tr("&Import file"),
+            self.import_file,
             QKeySequence.AddTab,
         )
 
         self.toolbar.addAction(self.new_project_action)
         self.toolbar.addAction(self.open_project_action)
-        self.toolbar.addAction(self.update_project_action)
+        self.toolbar.addAction(self.import_file_action)
         self.toolbar.addAction(
             FIcon(0xF02D7), self.tr("Help"), QWhatsThis.enterWhatsThisMode
         )
@@ -655,7 +656,7 @@ class MainWindow(QMainWindow):
             return
 
         db_filename = wizard.db_filename()
-        
+
         try:
             self.open(db_filename)
         except Exception as e:
@@ -680,24 +681,22 @@ class MainWindow(QMainWindow):
                 self.status_bar.showMessage(e.__class__.__name__ + ": " + str(e))
                 raise
 
-    def update_project(self):
+    def import_file(self):
         """Slot to allow update of a project with a Wizard"""
-        pass
-        # wizard = UpdateWizard()
-        # if not wizard.exec_():
-        #     return
+        
+        # Todo .. variable of file 
+        dialog = VcfImportDialog(sql.get_database_file_name(self.conn))
 
-        # db_filename = (
-        #     wizard.field("project_path")
-        #     + QDir.separator()
-        #     + wizard.field("project_name")
-        #     + ".db"
-        # )
-        # try:
-        #     self.open(db_filename)
-        # except Exception as e:
-        #     self.status_bar.showMessage(e.__class__.__name__ + ": " + str(e))
-        #     raise
+        if (dialog.exec_() == QDialog.Accepted):
+
+            db_filename = dialog.db_filename()
+            try:
+                self.open(db_filename)
+            except Exception as e:
+                self.status_bar.showMessage(e.__class__.__name__ + ": " + str(e))
+            raise
+
+
 
     def export_as_csv(self):
         """Export variants into CSV file"""
