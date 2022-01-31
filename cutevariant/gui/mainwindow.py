@@ -221,9 +221,16 @@ class MainWindow(QMainWindow):
             area: Area location. Defaults to Qt.LeftDockWidgetArea.
         """
         dock = QDockWidget()
-        dock.setWindowTitle(widget.windowTitle())
+        dock.setWindowTitle(widget.windowTitle().upper())
+        dock.setStyleSheet(
+            "QDockWidget::title {text-align:center;} QDockWidget{font-weight:bold;}"
+        )
+        # frame = QLabel()
+        # frame.setAlignment(Qt.AlignCenter)
+        # frame.setText("<b>" + dock.windowTitle() + "</b>")
         dock.setWidget(widget)
-        dock.setStyleSheet("QDockWidget { font: bold }")
+        # noneWidget = QWidget()
+        # dock.setTitleBarWidget(frame)
         # Keep the attached dock to allow further clean deletion
         widget.dock = dock
         # Set the objectName for a correct restoration after saveState

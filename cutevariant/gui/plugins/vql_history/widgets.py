@@ -375,7 +375,7 @@ class VqlHistoryWidget(plugin.PluginWidget):
         #  Create toolbar
         self.toolbar = QToolBar()
         self.toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-
+        self.toolbar.setIconSize(QSize(16, 16))
         self.toolbar.addAction(
             FIcon(0xF0413), self.tr("Clear"), self.on_clear_logs_pressed
         )

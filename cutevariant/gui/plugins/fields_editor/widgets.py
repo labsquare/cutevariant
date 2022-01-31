@@ -886,69 +886,72 @@ class FieldsEditorWidget(plugin.PluginWidget):
         # Create toolbar with search
         self.tool_layout = QHBoxLayout()
 
+        toolbar = QToolBar()
+        toolbar.setIconSize(QSize(16, 16))
+
+        toolbar.addAction(FIcon(0xF040A, "white"), "test")
+        toolbar.addAction(FIcon(0xF0139), "test")
+        toolbar.addAction(FIcon(0xF0B13), "test")
+
+        toolbar.widgetForAction(toolbar.actions()[0]).setStyleSheet(
+            "QToolButton{background: #038F6A}"
+        )
+
+        toolbar.widgetForAction(toolbar.actions()[0]).setAutoRaise(False)
+        #         ## Create apply button
+        # self.apply_button = QToolButton()
+        # self.apply_button.setIcon(FIcon(0xF0E1E, "white"))
+        # self.apply_button.setStyleSheet("background-color: #038F6A; color:white")
+        # self.apply_button.pressed.connect(self.on_apply)
+
+        # self.tool_layout.addButton(self?too)
+
         self.presets_combo = QComboBox()
-        self.presets_combo.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        self.presets_combo.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
         self.presets_combo.currentIndexChanged.connect(self.on_select_preset)
         self.presets_combo.setToolTip(self.tr("Select a preset "))
         self.presets_combo.setPlaceholderText("Select a preset ...")
+        self.presets_combo.setFrame(False)
+        self.presets_combo.setPlaceholderText("Preset")
 
-        add_button = QToolButton()
-        add_button.setText("Add")
-        add_button.setToolTip(self.tr("Create a preset "))
-        add_button.setIcon(FIcon(0xF0818))
-        add_button.clicked.connect(self.save_preset)
+        empty = QWidget()
+        empty.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
-        rem_button = QToolButton()
-        rem_button.setText("Remove")
-        rem_button.setToolTip(self.tr("Remove a preset "))
-        rem_button.setIcon(FIcon(0xF0A7A, "red"))
-        rem_button.clicked.connect(self.delete_preset)
+        toolbar.addWidget(empty)
+        toolbar.addWidget(QLabel("Preset: "))
+        toolbar.addWidget(self.presets_combo)
+        toolbar.addAction(FIcon(0xF035C), "menu")
+        # # setup extra menu
+        # extra_menu = QMenu(self)
 
-        self.field_button = QPushButton("Fields")
-        self.field_button.setIcon(FIcon(0xF0139))
-        self.field_button.setToolTip(self.tr("Show selected fields"))
-        self.field_button.clicked.connect(self.show_fields_dialog)
+        # show_checked_action = QAction(self)
+        # show_checked_action.setCheckable(True)
+        # show_checked_action.setText(self.tr("Show checked only"))
+        # show_checked_action.triggered.connect(self.toggle_checked)
 
-        # setup extra menu
-        extra_menu = QMenu(self)
+        # extra_menu.addAction(show_checked_action)
 
-        show_checked_action = QAction(self)
-        show_checked_action.setCheckable(True)
-        show_checked_action.setText(self.tr("Show checked only"))
-        show_checked_action.triggered.connect(self.toggle_checked)
+        # menu_button = QToolButton()
+        # menu_button.setPopupMode(QToolButton.InstantPopup)
+        # menu_button.setIcon(FIcon(0xF0236))
+        # menu_button.setMenu(extra_menu)
+        # menu_button.setAutoRaise(True)
 
-        extra_menu.addAction(show_checked_action)
+        # self.tool_layout.addWidget(self.presets_combo)
+        # self.tool_layout.addWidget(menu_button)
 
-        menu_button = QToolButton()
-        menu_button.setPopupMode(QToolButton.InstantPopup)
-        menu_button.setIcon(FIcon(0xF0236))
-        menu_button.setMenu(extra_menu)
-        menu_button.setAutoRaise(True)
-
-        self.tool_layout.addWidget(self.presets_combo)
-        self.tool_layout.addWidget(add_button)
-        self.tool_layout.addWidget(rem_button)
-        self.tool_layout.addWidget(self.field_button)
-        self.tool_layout.addWidget(menu_button)
-
-        ## Create apply button
-        self.apply_button = QPushButton(self.tr("Apply"))
-        self.apply_button.setIcon(FIcon(0xF0E1E, "white"))
-        self.apply_button.setStyleSheet("background-color: #038F6A; color:white")
-        self.apply_button.pressed.connect(self.on_apply)
-
-        ## Create fields view
+        # ## Create fields view
         self.widget_fields = FieldsWidget(conn, parent)
         self.widget_fields.fields_changed.connect(self.update_fields_button)
 
-        # setup button_layout
+        # # setup button_layout
         main_layout = QVBoxLayout(self)
         # layout.setContentsMargins(0, 0, 0, 0)
-        main_layout.addLayout(self.tool_layout)
+        # main_layout.addLayout(self.tool_layout)
+        main_layout.addWidget(toolbar)
         main_layout.addWidget(self.widget_fields)
-        main_layout.addWidget(self.apply_button)
 
-        self.setFocusPolicy(Qt.ClickFocus)
+        # self.setFocusPolicy(Qt.ClickFocus)
 
     @property
     def fields(self):
@@ -1117,13 +1120,12 @@ class FieldsEditorWidget(plugin.PluginWidget):
 
 if __name__ == "__main__":
     import sys
-    from cutevariant.core.importer import import_reader
     from cutevariant.core.reader import FakeReader
 
     app = QApplication(sys.argv)
 
     conn = sql.get_sql_connection(":memory:")
-    import_reader(conn, FakeReader())
+    sql.import_reader(conn, FakeReader())
     # import_file(conn, "examples/test.snpeff.vcf")
 
     widget = FieldsEditorWidget()

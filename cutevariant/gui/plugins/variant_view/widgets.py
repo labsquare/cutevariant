@@ -883,7 +883,7 @@ class VariantView(QWidget):
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
         ## self.view.setIndentation(0)
-        self.view.setIconSize(QSize(22, 22))
+        self.view.setIconSize(QSize(16, 16))
         self.view.horizontalHeader().setSectionsMovable(True)
 
         # Setup model
@@ -1756,6 +1756,7 @@ class VariantViewWidget(plugin.PluginWidget):
         self.top_bar = QToolBar()
         # PS: Actions with QAction::LowPriority will not show the text labels
         self.top_bar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        self.top_bar.setIconSize(QSize(16, 16))
 
         # self.save_action.setPriority(QAction.LowPriority)
 
