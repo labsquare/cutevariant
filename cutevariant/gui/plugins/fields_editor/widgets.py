@@ -916,8 +916,8 @@ class FieldsEditorWidget(plugin.PluginWidget):
 
         ## auto action
         auto_icon = QIcon()
-        auto_icon.addPixmap(FIcon(0xF08BB).pixmap(16, 16), QIcon.Normal, QIcon.On)
-        auto_icon.addPixmap(FIcon(0xF13CF).pixmap(16, 16), QIcon.Normal, QIcon.Off)
+        auto_icon.addPixmap(FIcon(0xF04E6).pixmap(16, 16), QIcon.Normal, QIcon.On)
+        auto_icon.addPixmap(FIcon(0xF04E8).pixmap(16, 16), QIcon.Normal, QIcon.Off)
         self.auto_action = self.toolbar.addAction(
             auto_icon, "Automatic Apply selection when checked"
         )
