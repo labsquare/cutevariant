@@ -2072,7 +2072,7 @@ class FilterDelegate(QStyledItemDelegate):
 
         # Draw lines
 
-        painter.setPen(QPen(QColor("lightgray")))
+        painter.setPen(Qt.NoPen)
         if (
             item.type == FilterItem.CONDITION_TYPE
             or index.column() == COLUMN_VALUE
@@ -2346,6 +2346,60 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.toolbar.setIconSize(QSize(16, 16))
         self.toolbar.setToolButtonStyle(Qt.ToolButtonIconOnly)
 
+        self._setup_actions()
+
+        # Save button
+        # self.save_action = self.toolbar.addAction(self.tr("Save Preset"))
+        # self.save_action.setIcon(FIcon(0xF0818))
+        # self.save_action.triggered.connect(self.on_save_preset)
+        # self.save_action.setToolTip(self.tr("Save as a new Preset"))
+
+        # Presets model
+        self.presets_model = FiltersPresetModel(parent=self)
+        self.update_presets()
+
+        # self.presets_button = PresetButton(self)
+        # self.presets_button.set_model(self.presets_model)
+        # self.presets_button.preset_clicked.connect(self.on_select_preset)
+
+        # self.toolbar.addWidget(self.presets_button)
+
+        # Presets toolbutton (with dropdown menu)
+
+        # apply_action = self.toolbar.addAction("Apply")
+        # self.apply_button = self.toolbar.widgetForAction(apply_action)
+        # self.apply_button.setText("Apply")
+        # self.apply_button.setIcon(FIcon(0xF0E1E, "white"))
+        # self.apply_button.setStyleSheet("background-color: #038F6A; color:white")
+        # self.apply_button.setAutoRaise(False)
+        # self.apply_button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        # self.apply_button.triggered.connect(self.on_apply)
+        main_layout = QVBoxLayout()
+
+        main_layout.addWidget(self.toolbar)
+        main_layout.addWidget(self.view)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(1)
+        self.setLayout(main_layout)
+
+        self.current_preset_name = ""
+
+    def _setup_actions(self):
+        apply_action = self.toolbar.addAction(
+            FIcon(0xF040A), "Apply filters", self.on_apply
+        )
+
+        auto_icon = QIcon()
+        auto_icon.addPixmap(FIcon(0xF08BB).pixmap(16, 16), QIcon.Normal, QIcon.On)
+        auto_icon.addPixmap(FIcon(0xF13CF).pixmap(16, 16), QIcon.Normal, QIcon.Off)
+        self.auto_action = self.toolbar.addAction(
+            auto_icon, "Automatic Apply selection when checked"
+        )
+        self.auto_action.setCheckable(True)
+        self.auto_action.toggled.connect(apply_action.setDisabled)
+
+        self.toolbar.addSeparator()
+
         self.add_condition_action = self.toolbar.addAction(
             FIcon(0xF0EF1), "Add condition", self.on_add_condition
         )
@@ -2362,46 +2416,28 @@ class FiltersEditorWidget(plugin.PluginWidget):
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.toolbar.addWidget(spacer)
+
+        preset_action = self.toolbar.addAction(FIcon(0xF1268), self.tr("Presets"))
+        self.preset_menu = QMenu()
+        preset_action.setMenu(self.preset_menu)
+        preset_action.setToolTip(self.tr("A list a predefined fields selections"))
+        self.toolbar.widgetForAction(preset_action).setPopupMode(
+            QToolButton.InstantPopup
+        )
+
         # Create preset combobox with actions
-        self.toolbar.addSeparator()
 
-        # Save button
-        self.save_action = self.toolbar.addAction(self.tr("Save Preset"))
-        self.save_action.setIcon(FIcon(0xF0818))
-        self.save_action.triggered.connect(self.on_save_preset)
-        self.save_action.setToolTip(self.tr("Save as a new Preset"))
+        self.general_menu = QMenu()
+        menu_action = self.toolbar.addAction(FIcon(0xF035C), "menu")
+        menu_action.setMenu(self.general_menu)
 
-        # Presets model
-        self.presets_model = FiltersPresetModel(parent=self)
+        self.toolbar.widgetForAction(menu_action).setPopupMode(QToolButton.InstantPopup)
 
-        self.presets_button = PresetButton(self)
-        self.presets_button.set_model(self.presets_model)
-        self.presets_button.preset_clicked.connect(self.on_select_preset)
+        save_action = self.general_menu.addAction(
+            "Save preset ...", self.on_save_preset
+        )
 
-        self.toolbar.addWidget(self.presets_button)
-
-        # Presets toolbutton (with dropdown menu)
-        self.update_presets()
-
-        self.toolbar.addSeparator()
-
-        apply_action = self.toolbar.addAction("Apply")
-        self.apply_button = self.toolbar.widgetForAction(apply_action)
-        self.apply_button.setText("Apply")
-        self.apply_button.setIcon(FIcon(0xF0E1E, "white"))
-        self.apply_button.setStyleSheet("background-color: #038F6A; color:white")
-        self.apply_button.setAutoRaise(False)
-        self.apply_button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-        self.apply_button.triggered.connect(self.on_apply)
-        main_layout = QVBoxLayout()
-
-        main_layout.addWidget(self.toolbar)
-        main_layout.addWidget(self.view)
-        main_layout.setContentsMargins(0, 0, 0, 0)
-        main_layout.setSpacing(1)
-        self.setLayout(main_layout)
-
-        self.current_preset_name = ""
+        self.model.filtersChanged.connect(self.on_filter_changed)
 
     @property
     def filters(self):
@@ -2411,6 +2447,11 @@ class FiltersEditorWidget(plugin.PluginWidget):
     def filters(self, filters):
         self.model.filters = filters
         self.view.expandAll()
+
+    def on_filter_changed(self):
+
+        if self.auto_action.isChecked():
+            self.on_apply()
 
     def on_open_project(self, conn):
         """Overrided from PluginWidget"""
@@ -2505,6 +2546,15 @@ class FiltersEditorWidget(plugin.PluginWidget):
                 self.add_condition_action.setEnabled(False)
                 self.add_group_action.setEnabled(False)
 
+    def on_preset_changed(self):
+
+        print("HELLLO")
+        self.preset_menu.clear()
+        for name in self.presets_model.preset_names():
+            action = self.preset_menu.addAction(name)
+            action.setData(self.presets_model.item(name))
+            action.triggered.connect(self._on_select_preset)
+
     def on_apply(self):
         """Triggered when filters changed FROM THIS plugin
 
@@ -2557,13 +2607,21 @@ class FiltersEditorWidget(plugin.PluginWidget):
         This method should be called by __init__ and on refresh
         """
         self.presets_model.load()
+        self.preset_menu.clear()
 
-    def on_select_preset(self, action: QAction):
+        for i in range(self.presets_model.rowCount()):
+            index = self.presets_model.index(i, 0)
+            preset_name = index.data(Qt.DisplayRole)
+            fields = index.data(Qt.UserRole)
+            act: QAction = self.preset_menu.addAction(preset_name)
+            act.setData(fields)
+            act.triggered.connect(self.on_select_preset)
+
+    def on_select_preset(self):
         """Activate when preset has changed from preset_combobox"""
-        data = action.data()
-        print("GERONIMOOOOOOO", data)
+        data = self.sender().data()
         if data:
-            self.filters = action.data()
+            self.filters = data
             self.on_apply()
 
     def on_save_preset(self):
@@ -2589,6 +2647,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
                 name, self.mainwindow.get_state_data("filters")
             )
             self.presets_model.save()
+            self.update_presets()
 
     def _update_view_geometry(self):
         """Set column Spanned to True for all Logic Item
@@ -2693,35 +2752,6 @@ class FiltersEditorWidget(plugin.PluginWidget):
                 menu.addAction(self.tr("Duplicate"), self.on_duplicate_filter)
 
             menu.exec_(event.globalPos())
-
-    def on_save_over_preset(self):
-
-        settings = QSettings()
-        preset_path = settings.value(
-            "preset_path",
-            QStandardPaths.writableLocation(QStandardPaths.GenericDataLocation),
-        )
-        preset_name = self.current_preset_name
-        if os.path.isfile(f"{preset_path}/{preset_name}.filters.json"):
-            with open(f"{preset_path}/{preset_name}.filters.json", "w") as file:
-                obj = self.to_json()
-                obj["name"] = preset_name
-                json.dump(obj, file)
-
-    def on_revert_preset(self):
-        """
-        Reverts the selected preset to its last saved version
-        """
-        settings = QSettings()
-        preset_path = settings.value(
-            "preset_path",
-            QStandardPaths.writableLocation(QStandardPaths.GenericDataLocation),
-        )
-        preset_name = self.current_preset_name
-        if os.path.isfile(f"{preset_path}/{preset_name}.filters.json"):
-            with open(f"{preset_path}/{preset_name}.filters.json", "r") as file:
-                obj = json.load(file)
-                self.from_json(obj)
 
 
 if __name__ == "__main__":

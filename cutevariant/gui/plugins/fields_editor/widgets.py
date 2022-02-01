@@ -924,21 +924,13 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self.auto_action.setCheckable(True)
         self.auto_action.toggled.connect(apply_action.setDisabled)
 
-        ## preset action
-        self.preset_menu = QMenu()
-        preset_action = self.toolbar.addAction(FIcon(0xF1268), "preset")
-        preset_action.setMenu(self.preset_menu)
-        preset_action.setToolTip(self.tr("A list a predefined fields selections"))
+        self.toolbar.addSeparator()
 
         ## check only action
         check_action = self.toolbar.addAction(FIcon(0xF0C51), "check only")
         check_action.setCheckable(True)
         check_action.toggled.connect(self.toggle_checked)
         check_action.setToolTip(self.tr("Show only checked fields"))
-
-        spacer = QWidget()
-        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.toolbar.addWidget(spacer)
 
         ## sort button
         self.sort_action = self.toolbar.addAction(
@@ -948,6 +940,16 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self.toolbar.widgetForAction(self.sort_action).setToolButtonStyle(
             Qt.ToolButtonTextBesideIcon
         )
+
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.toolbar.addWidget(spacer)
+
+        ## preset action
+        self.preset_menu = QMenu()
+        preset_action = self.toolbar.addAction(FIcon(0xF1268), "preset")
+        preset_action.setMenu(self.preset_menu)
+        preset_action.setToolTip(self.tr("A list a predefined fields selections"))
 
         ## general menu
         menu_action = self.toolbar.addAction(FIcon(0xF035C), "menu")
