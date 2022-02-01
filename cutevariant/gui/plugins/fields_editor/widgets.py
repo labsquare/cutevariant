@@ -580,6 +580,7 @@ class FieldsWidget(QWidget):
         layout.addWidget(self.search_edit)
         layout.addWidget(self.tab_widget)
         layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
 
         self.conn = conn
         self._fields = []
@@ -886,59 +887,8 @@ class FieldsEditorWidget(plugin.PluginWidget):
         # Create toolbar with search
         self.tool_layout = QHBoxLayout()
 
-        toolbar = QToolBar()
-        toolbar.setIconSize(QSize(16, 16))
-
-        toolbar.addAction(FIcon(0xF040A, "white"), "test")
-        toolbar.addAction(FIcon(0xF0139), "test")
-        toolbar.addAction(FIcon(0xF0B13), "test")
-
-        toolbar.widgetForAction(toolbar.actions()[0]).setStyleSheet(
-            "QToolButton{background: #038F6A}"
-        )
-
-        toolbar.widgetForAction(toolbar.actions()[0]).setAutoRaise(False)
-        #         ## Create apply button
-        # self.apply_button = QToolButton()
-        # self.apply_button.setIcon(FIcon(0xF0E1E, "white"))
-        # self.apply_button.setStyleSheet("background-color: #038F6A; color:white")
-        # self.apply_button.pressed.connect(self.on_apply)
-
-        # self.tool_layout.addButton(self?too)
-
-        self.presets_combo = QComboBox()
-        self.presets_combo.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
-        self.presets_combo.currentIndexChanged.connect(self.on_select_preset)
-        self.presets_combo.setToolTip(self.tr("Select a preset "))
-        self.presets_combo.setPlaceholderText("Select a preset ...")
-        self.presets_combo.setFrame(False)
-        self.presets_combo.setPlaceholderText("Preset")
-
-        empty = QWidget()
-        empty.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-
-        toolbar.addWidget(empty)
-        toolbar.addWidget(QLabel("Preset: "))
-        toolbar.addWidget(self.presets_combo)
-        toolbar.addAction(FIcon(0xF035C), "menu")
-        # # setup extra menu
-        # extra_menu = QMenu(self)
-
-        # show_checked_action = QAction(self)
-        # show_checked_action.setCheckable(True)
-        # show_checked_action.setText(self.tr("Show checked only"))
-        # show_checked_action.triggered.connect(self.toggle_checked)
-
-        # extra_menu.addAction(show_checked_action)
-
-        # menu_button = QToolButton()
-        # menu_button.setPopupMode(QToolButton.InstantPopup)
-        # menu_button.setIcon(FIcon(0xF0236))
-        # menu_button.setMenu(extra_menu)
-        # menu_button.setAutoRaise(True)
-
-        # self.tool_layout.addWidget(self.presets_combo)
-        # self.tool_layout.addWidget(menu_button)
+        self.toolbar = QToolBar()
+        self.toolbar.setIconSize(QSize(16, 16))
 
         # ## Create fields view
         self.widget_fields = FieldsWidget(conn, parent)
@@ -948,10 +898,72 @@ class FieldsEditorWidget(plugin.PluginWidget):
         main_layout = QVBoxLayout(self)
         # layout.setContentsMargins(0, 0, 0, 0)
         # main_layout.addLayout(self.tool_layout)
-        main_layout.addWidget(toolbar)
+        main_layout.addWidget(self.toolbar)
         main_layout.addWidget(self.widget_fields)
+        main_layout.setSpacing(0)
+        main_layout.setContentsMargins(0, 0, 0, 0)
 
         # self.setFocusPolicy(Qt.ClickFocus)
+
+        self._setup_actions()
+
+    def _setup_actions(self):
+
+        ## apply action
+        apply_action = self.toolbar.addAction(FIcon(0xF040A), "apply")
+        apply_action.setToolTip(self.tr("Apply current selection"))
+        apply_action.triggered.connect(self.on_apply)
+
+        ## auto action
+        auto_icon = QIcon()
+        auto_icon.addPixmap(FIcon(0xF08BB).pixmap(16, 16), QIcon.Normal, QIcon.On)
+        auto_icon.addPixmap(FIcon(0xF13CF).pixmap(16, 16), QIcon.Normal, QIcon.Off)
+        self.auto_action = self.toolbar.addAction(
+            auto_icon, "Automatic Apply selection when checked"
+        )
+        self.auto_action.setCheckable(True)
+        self.auto_action.toggled.connect(apply_action.setDisabled)
+
+        ## preset action
+        self.preset_menu = QMenu()
+        preset_action = self.toolbar.addAction(FIcon(0xF1268), "preset")
+        preset_action.setMenu(self.preset_menu)
+        preset_action.setToolTip(self.tr("A list a predefined fields selections"))
+
+        ## check only action
+        check_action = self.toolbar.addAction(FIcon(0xF0C51), "check only")
+        check_action.setCheckable(True)
+        check_action.toggled.connect(self.toggle_checked)
+        check_action.setToolTip(self.tr("Show only checked fields"))
+
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.toolbar.addWidget(spacer)
+
+        ## sort button
+        self.sort_action = self.toolbar.addAction(
+            FIcon(0xF04BA), "54 fields", self.show_fields_dialog
+        )
+        self.sort_action.setToolTip(self.tr("Sort fields manually ..."))
+        self.toolbar.widgetForAction(self.sort_action).setToolButtonStyle(
+            Qt.ToolButtonTextBesideIcon
+        )
+
+        ## general menu
+        menu_action = self.toolbar.addAction(FIcon(0xF035C), "menu")
+        self.general_menu = QMenu()
+        self.general_menu.addAction(preset_action)
+        self.general_menu.addAction(self.tr("Save preset"), self.save_preset)
+        self.general_menu.addAction(self.tr("Edit preset ..."))
+        # self.general_menu.addAction(self.tr("Export as a file ..."))
+        # self.general_menu.addAction(self.tr("Import from a file ..."))
+
+        menu_action.setMenu(self.general_menu)
+
+        self.toolbar.widgetForAction(menu_action).setPopupMode(QToolButton.InstantPopup)
+        self.toolbar.widgetForAction(preset_action).setPopupMode(
+            QToolButton.InstantPopup
+        )
 
     @property
     def fields(self):
@@ -965,7 +977,10 @@ class FieldsEditorWidget(plugin.PluginWidget):
     def update_fields_button(self):
         """Update fields button with the count selected fields"""
         field_count = len(self.fields)
-        self.field_button.setText(f"{field_count} fields")
+        self.sort_action.setText(f"{field_count} fields")
+
+        if self.auto_action.isChecked():
+            self.on_apply()
 
     def save_preset(self):
         """Save current fields as new preset"""
@@ -1024,20 +1039,15 @@ class FieldsEditorWidget(plugin.PluginWidget):
         """Load preset in the combobox
         This method should be called by __init__ and on refresh
         """
-
-        self.presets_combo.blockSignals(True)
-        self.presets_combo.clear()
+        self.preset_menu.clear()
         config = Config("fields_editor")
         if "presets" in config:
             presets = config["presets"]
             for name, fields in presets.items():
                 LOGGER.error(fields)
-                self.presets_combo.addItem(name)
-
-        # if current_preset:
-        #     self.presets_combo.setCurrentText(current_preset)
-
-        self.presets_combo.blockSignals(False)
+                action = self.preset_menu.addAction(name)
+                action.triggered.connect(self._on_select_preset)
+                action.setData(name)
 
     def show_fields_dialog(self):
 
@@ -1067,17 +1077,15 @@ class FieldsEditorWidget(plugin.PluginWidget):
         """
         self.widget_fields.show_checked_only(show)
 
-    def on_select_preset(self):
+    def _on_select_preset(self):
         """Activate when preset has changed from preset_combobox"""
         # TODO Should be
         # self.mainwindow.set_state_data("fields",action.data())
         # self.mainwindow.refresh_plugins(sender=self)
 
-        LOGGER.error(self.presets_combo.currentData())
-
         config = Config("fields_editor")
         presets = config["presets"]
-        key = self.presets_combo.currentText()
+        key = self.sender().data()
         if key in presets:
             self.fields = presets[key]
             self.on_apply()

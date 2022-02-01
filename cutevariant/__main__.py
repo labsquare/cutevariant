@@ -33,10 +33,9 @@ from PySide2.QtCore import (
     QLibraryInfo,
     Qt,
 )
-from PySide2.QtWidgets import QApplication, QSplashScreen
+from PySide2.QtWidgets import QApplication, QSplashScreen, QStyleFactory
 from PySide2.QtGui import QPixmap
 from PySide2.QtNetwork import QNetworkProxy
-
 # Custom imports
 from cutevariant.config import Config
 from cutevariant.gui import MainWindow, network, setFontPath, style
@@ -70,6 +69,7 @@ def main():
 
     # Load app styles
     LOGGER.info("Load style")
+    app.setStyle(QStyleFactory.create("Fusion"))
     load_styles(app)
 
     # # Uncomment those line to clear settings
