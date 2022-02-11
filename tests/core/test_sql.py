@@ -550,7 +550,7 @@ def test_get_annotations(conn):
 
 def test_get_sample_annotations_by_variant(conn):
 
-    expected = [dict(i, phenotype=0, sex=0) for i in VARIANTS[0]["samples"]]
+    expected = [dict(i, valid=0) for i in VARIANTS[0]["samples"]]
     observed = []
     for i in sql.get_sample_annotations_by_variant(conn, 1, fields=["gt", "dp"]):
         observed.append(i)
@@ -569,6 +569,8 @@ def test_get_sample_annotations(conn, variants_data):
                 result = sql.get_sample_annotations(conn, variant_id, sample_id)
                 del result["sample_id"]
                 del result["variant_id"]
+                del result["classification"]
+                del result["comment"]
                 del sample["name"]  # This field is in samples table
                 assert result == sample
 
@@ -940,6 +942,12 @@ def test_advanced_get_one_variant(conn):
 
                 if "sample_id" in item:
                     del item["sample_id"]
+
+                if "classification" in item:
+                    del item["classification"]
+
+                if "comment" in item:
+                    del item["comment"]
 
             if extra_field in found_variant and extra_field in expected_variant:
                 assert found_variant[extra_field] == expected_variant[extra_field]

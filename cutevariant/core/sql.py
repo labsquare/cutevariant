@@ -2240,6 +2240,9 @@ def create_table_samples(conn, fields=[]):
         mother_id INTEGER DEFAULT 0,
         sex INTEGER DEFAULT 0,
         phenotype INTEGER DEFAULT 0,
+        valid INTEGER DEFAULT 0,
+        comment TEXT,
+        tags TEXT,
         UNIQUE (name, family_id)
         )"""
     )
@@ -2436,13 +2439,23 @@ def get_sample_annotations(conn, variant_id: int, sample_id: int):
     )
 
 
-def get_sample_annotations_by_variant(conn, variant_id: int, fields=["gt"]):
+def get_sample_annotations_by_variant(conn, variant_id: int, fields=["gt"], samples=[]):
+
+    if not fields:
+        fields = ["gt"]
 
     sql_fields = ",".join([f"sv.{f}" for f in fields])
 
-    query = f"""SELECT samples.name, samples.phenotype, samples.sex, {sql_fields} FROM samples
+    query = f"""SELECT samples.valid, samples.name, {sql_fields} FROM samples
     LEFT JOIN sample_has_variant sv 
     ON sv.sample_id = samples.id AND sv.variant_id = {variant_id}"""
+
+    if samples:
+        SAMPLE_WHERE_CLAUSE = " WHERE "
+        samples_str = ",".join([f"'{i}'" for i in samples])
+        SAMPLE_WHERE_CLAUSE += f"samples.name in ({samples_str})"
+
+        query += SAMPLE_WHERE_CLAUSE
 
     return (dict(data) for data in conn.execute(query))
 
@@ -2458,7 +2471,7 @@ def update_sample(conn: sqlite3.Connection, sample: dict):
             family_id : "fam", # familly identifier
             father_id : 0, #father id, 0 if not
             mother_id : 0, #mother id, 0 if not
-            sex : 0 #sex code ( 1 = male, 2 = female, 0 = unknown)
+            sex : 0 #sex code ( 1 = gle, 2 = female, 0 = unknown)
             phenotype: 0 #( 1 = control , 2 = case, 0 = unknown)
         }
 
@@ -2521,7 +2534,7 @@ def create_triggers(conn):
         UPDATE variants SET count_het = count_het + 1 WHERE variants.id = new.variant_id ; 
 
         UPDATE variants SET
-        case_count_het = case_count_het + (SELECT COUNT(*) FROM samples WHERE phenotype=2 and samples.id = new.sample_id)
+        case_count_het = case_count_het + (SELECT COUNT(*) FROM b WHERE phenotype=2 and samples.id = new.sample_id)
         WHERE variants.id = new.variant_id ; 
 
         UPDATE variants SET

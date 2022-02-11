@@ -41,6 +41,9 @@ def test_import_pedfile():
         "mother_id": 1,
         "sex": 2,
         "phenotype": 1,
+        "valid": 0,
+        "comment": None,
+        "tags": None,
     }
     expected_second_sample = {
         "id": 2,
@@ -50,6 +53,9 @@ def test_import_pedfile():
         "mother_id": 0,
         "sex": 1,
         "phenotype": 2,
+        "valid": 0,
+        "comment": None,
+        "tags": None,
     }
 
     # Third sample is not conform

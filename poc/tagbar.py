@@ -106,7 +106,7 @@ class TagItem(QWidget):
         self.hover = False
 
     def paintEvent(self, event: QPaintEvent):
-        """ override """
+        """override"""
 
         painter = QPainter(self)
         painter.setFont(self.font)
@@ -129,7 +129,7 @@ class TagItem(QWidget):
         super().paintEvent(event)
 
     def sizeHint(self):
-        """ override """
+        """override"""
         return self.word_size() + QSize(40, 15)
 
     def word_size(self):
@@ -137,19 +137,19 @@ class TagItem(QWidget):
         return QSize(metric.width(self.word), metric.height())
 
     def mouseMoveEvent(self, event: QMouseEvent):
-        """ override """
+        """override"""
         pass
 
     def mousePressEvent(self, event: QMouseEvent):
-        """ override """
+        """override"""
         pass
 
     def enterEvent(self, event: QMouseEvent):
-        """ override """
+        """override"""
         pass
 
     def leaveEvent(self, event: QEvent):
-        """ override """
+        """override"""
         pass
 
 
