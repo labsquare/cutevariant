@@ -2447,7 +2447,7 @@ def get_sample_annotations_by_variant(conn, variant_id: int, fields=["gt"], samp
 
     sql_fields = ",".join([f"sv.{f}" for f in fields])
 
-    query = f"""SELECT samples.name, samples.valid, {sql_fields} FROM samples
+    query = f"""SELECT samples.valid, samples.name , {sql_fields} FROM samples
     LEFT JOIN sample_has_variant sv 
     ON sv.sample_id = samples.id AND sv.variant_id = {variant_id}"""
 

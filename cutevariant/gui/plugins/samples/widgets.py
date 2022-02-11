@@ -108,6 +108,9 @@ class SamplesModel(QAbstractTableModel):
     def headerData(self, section: int, orientation: Qt.Orientation, role: int):
 
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
+            if section == 0:
+                return ""
+
             if section < len(self._headers):
                 return self._headers[section]
 
@@ -321,6 +324,19 @@ class SamplesWidget(plugin.PluginWidget):
         geno_action.setText("Keep only genotyped samples")
         geno_action.setCheckable(True)
 
+        # Menu action
+
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        self.toolbar.addWidget(spacer)
+        menu_action = self.toolbar.addAction(FIcon(0xF035C), "menu")
+        self.toolbar.widgetForAction(menu_action).setPopupMode(QToolButton.InstantPopup)
+        self.general_menu = QMenu()
+        self.general_menu.addAction(self.tr("Save preset"))
+        self.general_menu.addAction(self.tr("Edit preset ..."))
+        menu_action.setMenu(self.general_menu)
+
     def _toggle_column(self, col: int, show: bool):
         """hide/show columns"""
         if show:
@@ -406,6 +422,7 @@ class SamplesWidget(plugin.PluginWidget):
 
     def on_load_finished(self):
         self.show_error("")
+        self.view.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
         self.view.horizontalHeader().setSectionResizeMode(
             0, QHeaderView.ResizeToContents
         )
