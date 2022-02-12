@@ -2430,6 +2430,27 @@ def get_samples(conn: sqlite3.Connection):
     return (dict(data) for data in conn.execute("SELECT * FROM samples"))
 
 
+def get_samples_family(conn: sqlite3.Connection):
+
+    return {
+        data["family_id"]
+        for data in conn.execute("SELECT DISTINCT family_id FROM samples")
+    }
+
+
+def get_sample(conn: sqlite3.Connection, sample_id: int):
+    """Get samples information from a specific id
+
+    Args:
+        conn (sqlite3.Connection): sqlite3.Connextion
+        sample_id (int): sample table id
+    """
+
+    return dict(
+        conn.execute(f"SELECT * FROM samples WHERE id = {sample_id}").fetchone()
+    )
+
+
 def get_sample_annotations(conn, variant_id: int, sample_id: int):
     """Get samples for given sample id and variant id"""
     conn.row_factory = sqlite3.Row

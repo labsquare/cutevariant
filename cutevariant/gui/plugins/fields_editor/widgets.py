@@ -932,6 +932,10 @@ class FieldsEditorWidget(plugin.PluginWidget):
         check_action.toggled.connect(self.toggle_checked)
         check_action.setToolTip(self.tr("Show only checked fields"))
 
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.toolbar.addWidget(spacer)
+
         ## sort button
         self.sort_action = self.toolbar.addAction(
             FIcon(0xF04BA), "54 fields", self.show_fields_dialog
@@ -941,13 +945,9 @@ class FieldsEditorWidget(plugin.PluginWidget):
             Qt.ToolButtonTextBesideIcon
         )
 
-        spacer = QWidget()
-        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.toolbar.addWidget(spacer)
-
         ## preset action
         self.preset_menu = QMenu()
-        preset_action = self.toolbar.addAction(FIcon(0xF1268), "preset")
+        preset_action = QAction(FIcon(0xF1268), "preset", self)
         preset_action.setMenu(self.preset_menu)
         preset_action.setToolTip(self.tr("A list a predefined fields selections"))
 
@@ -963,9 +963,6 @@ class FieldsEditorWidget(plugin.PluginWidget):
         menu_action.setMenu(self.general_menu)
 
         self.toolbar.widgetForAction(menu_action).setPopupMode(QToolButton.InstantPopup)
-        self.toolbar.widgetForAction(preset_action).setPopupMode(
-            QToolButton.InstantPopup
-        )
 
     @property
     def fields(self):

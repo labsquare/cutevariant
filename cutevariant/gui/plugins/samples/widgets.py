@@ -18,7 +18,7 @@ from cutevariant.core.reader import BedReader
 from cutevariant.gui import plugin, FIcon, style
 from cutevariant.commons import DEFAULT_SELECTION_NAME
 
-from cutevariant.gui.widgets import ChoiceWidget, create_widget_action
+from cutevariant.gui.widgets import ChoiceWidget, create_widget_action, SampleDialog
 
 
 from cutevariant import LOGGER
@@ -274,6 +274,8 @@ class SamplesWidget(plugin.PluginWidget):
         self.field_selector.accepted.connect(self.on_refresh)
         self.sample_selector = ChoiceWidget()
         self.sample_selector.accepted.connect(self.on_refresh)
+        self.family_selector = ChoiceWidget()
+        self.family_selector.accepted.connect(self.on_refresh)
         self.tag_selector = ChoiceWidget()
         self.tag_selector.accepted.connect(self.on_refresh)
 
@@ -305,13 +307,19 @@ class SamplesWidget(plugin.PluginWidget):
 
         # sample action
         sample_action = create_widget_action(self.toolbar, self.sample_selector)
-        sample_action.setIcon(FIcon(0xF0009))
+        sample_action.setIcon(FIcon(0xF0013))
         sample_action.setText("Samples ")
         sample_action.setToolTip("Filter by samples")
 
+        # family action
+        fam_action = create_widget_action(self.toolbar, self.family_selector)
+        fam_action.setIcon(FIcon(0xF0B58))
+        fam_action.setText("Family")
+        fam_action.setToolTip("Filter by family")
+
         # tags action
         tag_action = create_widget_action(self.toolbar, self.tag_selector)
-        tag_action.setIcon(FIcon(0xF04F9))
+        tag_action.setIcon(FIcon(0xF04FC))
         tag_action.setText("Tags ")
         tag_action.setToolTip("Filter by tags")
 
@@ -336,6 +344,18 @@ class SamplesWidget(plugin.PluginWidget):
         self.general_menu.addAction(self.tr("Save preset"))
         self.general_menu.addAction(self.tr("Edit preset ..."))
         menu_action.setMenu(self.general_menu)
+
+    def contextMenuEvent(self, event: QContextMenuEvent):
+
+        menu = QMenu(self)
+        menu.addAction(QIcon(), "Edit sample ...", self._show_sample_dialog)
+        menu.exec_(event.globalPos())
+
+    def _show_sample_dialog(self):
+
+        dialog = SampleDialog(self._conn, 1)
+
+        dialog.exec_()
 
     def _toggle_column(self, col: int, show: bool):
         """hide/show columns"""
@@ -373,6 +393,7 @@ class SamplesWidget(plugin.PluginWidget):
         self.load_samples()
         self.load_tags()
         self.load_fields()
+        self.load_family()
 
     def load_samples(self):
 
@@ -392,6 +413,12 @@ class SamplesWidget(plugin.PluginWidget):
             self.field_selector.add_item(
                 FIcon(0xF0835), field["name"], field["description"]
             )
+
+    def load_family(self):
+        self.family_selector.clear()
+        for fam in sql.get_samples_family(self._conn):
+            print(fam)
+            self.family_selector.add_item(FIcon(0xF036E), fam)
 
     def on_refresh(self):
 
