@@ -33,7 +33,7 @@ from cutevariant.core import sql
 from cutevariant.core import command as cmd
 from cutevariant.gui import mainwindow, plugin, FIcon, formatter, style
 from cutevariant.gui.sql_thread import SqlThread
-from cutevariant.gui.widgets import MarkdownEditor
+from cutevariant.gui.widgets import MarkdownDialog
 import cutevariant.commons as cm
 
 from cutevariant import LOGGER
@@ -312,6 +312,7 @@ class VariantModel(QAbstractTableModel):
             and role != Qt.DisplayRole
         """
         # Display columns headers
+
         if orientation == Qt.Horizontal:
             if role == Qt.DisplayRole:
                 return self.headers[section]
@@ -812,6 +813,7 @@ class LoadingTableView(QTableView):
         super().__init__(parent)
 
         self._is_loading = False
+        self.horizontalHeader().setHighlightSections(False)
 
     def paintEvent(self, event: QPainter):
 
@@ -957,6 +959,7 @@ class VariantView(QWidget):
 
         main_layout = QVBoxLayout()
         main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
         main_layout.addWidget(self.view)
         main_layout.addWidget(self.bottom_bar)
         self.setLayout(main_layout)
@@ -1474,10 +1477,13 @@ class VariantView(QWidget):
         )
         comment = variant_data["comment"] if variant_data["comment"] else ""
 
-        editor = MarkdownEditor(default_text=comment)
+        editor = MarkdownDialog()
+        editor.widget.setPlainText(comment)
         if editor.exec_() == QDialog.Accepted:
             # Save in DB
-            self.model.update_variant(index.row(), {"comment": editor.toPlainText()})
+            self.model.update_variant(
+                index.row(), {"comment": editor.widget.toPlainText()}
+            )
 
             # Request a refresh of the variant_edit plugin
             self.parent.mainwindow.refresh_plugin("variant_edit")
