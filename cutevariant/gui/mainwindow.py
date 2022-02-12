@@ -123,7 +123,7 @@ class MainWindow(QMainWindow):
         self.toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         self.toolbar.setFloatable(False)
         self.toolbar.setMovable(False)
-
+        self.toolbar.setIconSize(QSize(20, 20))
         self.plugin_toolbar = QToolBar("plugins")
         self.addToolBar(Qt.LeftToolBarArea, self.plugin_toolbar)
 
@@ -388,16 +388,16 @@ class MainWindow(QMainWindow):
         ## File Menu
         self.file_menu = self.menuBar().addMenu(self.tr("&File"))
         self.new_project_action = self.file_menu.addAction(
-            FIcon(0xF01BA), self.tr("&New project"), self.new_project, QKeySequence.New
+            FIcon(0xF0415), self.tr("&New project"), self.new_project, QKeySequence.New
         )
         self.open_project_action = self.file_menu.addAction(
-            FIcon(0xF095D),
+            FIcon(0xF0DCF),
             self.tr("&Open project..."),
             self.open_project,
             QKeySequence.Open,
         )
         self.import_file_action = self.file_menu.addAction(
-            FIcon(0xF0B86),
+            FIcon(0xF102F),
             self.tr("&Import file"),
             self.import_file,
             QKeySequence.AddTab,
@@ -407,7 +407,7 @@ class MainWindow(QMainWindow):
         self.toolbar.addAction(self.open_project_action)
         self.toolbar.addAction(self.import_file_action)
         self.toolbar.addAction(
-            FIcon(0xF02D7), self.tr("Help"), QWhatsThis.enterWhatsThisMode
+            FIcon(0xF0625), self.tr("Help"), QWhatsThis.enterWhatsThisMode
         )
         self.toolbar.addSeparator()
 
