@@ -712,7 +712,7 @@ def create_table_selections(conn: sqlite3.Connection):
     cursor.execute(
         """CREATE TABLE selections (
         id INTEGER PRIMARY KEY ASC,
-        name TEXT, count INTEGER, query TEXT
+        name TEXT UNIQUE, count INTEGER, query TEXT
         )"""
     )
 
@@ -787,7 +787,7 @@ def insert_selection(
     cursor = conn.cursor()
 
     cursor.execute(
-        "INSERT INTO selections (name, count, query) VALUES (?,?,?)",
+        "INSERT OR REPLACE INTO selections (name, count, query) VALUES (?,?,?)",
         (name, count, query),
     )
 
