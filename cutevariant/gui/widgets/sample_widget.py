@@ -62,7 +62,8 @@ class SampleWidget(QWidget):
         self.sex_combo = QComboBox()
         self.sex_combo.addItems(["Unknown", "Male", "Female"])
         self.phenotype_combo = QComboBox()  # case /control
-        self.phenotype_combo.addItems(["Case", "Control"])
+        self.phenotype_combo.addItems(["Missing", "Unaffected", "Affected"])
+
         self.hpo_widget = HpoWidget()
 
         pheno_widget = QWidget()
