@@ -1510,7 +1510,7 @@ def get_field_by_category(conn, category):
 
 
 def get_field_by_name(conn, field_name: str):
-    """Return field by its name
+    """Return field by its nam
 
     .. seealso:: get_fields
 
@@ -2438,6 +2438,17 @@ def get_samples_family(conn: sqlite3.Connection):
     }
 
 
+def get_samples_by_family(conn: sqlite3.Connection, families=[]):
+
+    placeholder = ",".join((f"'{i}'" for i in families))
+    return (
+        dict(data)
+        for data in conn.execute(
+            f"SELECT * FROM samples WHERE family_id IN ({placeholder})"
+        )
+    )
+
+
 def get_sample(conn: sqlite3.Connection, sample_id: int):
     """Get samples information from a specific id
 
@@ -2461,25 +2472,63 @@ def get_sample_annotations(conn, variant_id: int, sample_id: int):
     )
 
 
-def get_sample_annotations_by_variant(conn, variant_id: int, fields=["gt"], samples=[]):
+def get_sample_annotations_by_variant(
+    conn,
+    variant_id: int,
+    fields: List[str] = None,
+    samples: List[str] = None,
+    families: List[str] = None,
+    tags: List[str] = None,
+    genotypes: List[str] = None,
+):
+    """Get samples annotation for a specific variant using different filters
 
-    if not fields:
-        fields = ["gt"]
+    This function is used by the sample plugins.
+
+    Args:
+        conn (TYPE)
+        variant_id (int): variant id
+        fields (List[str], optional): Fields list from sample_has_variant table
+        samples (List[str], optional): Samples filters
+        family (List[str], optional): Family filters
+        tags (List[str], optional): Tags filters
+        genotype (List[str], optional): genotype filters
+    """
+    fields = fields or ["gt"]
 
     sql_fields = ",".join([f"sv.{f}" for f in fields])
 
-    query = f"""SELECT samples.valid, samples.name , {sql_fields} FROM samples
+    query = f"""SELECT samples.id, samples.valid, samples.name , {sql_fields} FROM samples
     LEFT JOIN sample_has_variant sv 
     ON sv.sample_id = samples.id AND sv.variant_id = {variant_id}"""
 
-    if len(samples) > 0:
-        WHERE = " WHERE samples.name in "
-        WHERE += "(" + ",".join([f"'{s}'" for s in samples]) + " ) "
+    conditions = []
 
-        query += WHERE
+    # Filter on samples
+    if samples:
+        conditions.append(
+            "(samples.name IN " + "(" + ",".join([f"'{s}'" for s in samples]) + "))"
+        )
 
-        print(query)
+    # Filter on family
+    if families:
+        conditions.append(
+            "(samples.family_id IN "
+            + "("
+            + ",".join([f"'{s}'" for s in families])
+            + "))"
+        )
 
+    # Filter on genotypes
+    if genotypes:
+        conditions.append(
+            "(sv.gt IN " + "(" + ",".join([f"'{s}'" for s in genotypes]) + "))"
+        )
+
+    if conditions:
+        query += " WHERE " + " AND ".join(conditions)
+
+    LOGGER.debug(query)
     return (dict(data) for data in conn.execute(query))
 
 

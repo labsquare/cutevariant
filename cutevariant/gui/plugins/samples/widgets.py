@@ -24,6 +24,8 @@ from cutevariant.gui.widgets import ChoiceWidget, create_widget_action, SampleDi
 from cutevariant import LOGGER
 from cutevariant.gui.sql_thread import SqlThread
 
+from cutevariant.gui.style import GENOTYPE
+
 
 from PySide2.QtWidgets import *
 import sys
@@ -43,7 +45,12 @@ class SamplesModel(QAbstractTableModel):
         self.conn = None
         self.items = []
         self.fields = []
-        self.samples = []
+
+        self.selected_samples = []
+        self.selected_families = []
+        self.selected_genotypes = []
+        self.selected_tags = []
+
         self._headers = []
         self.fields_descriptions = {}
 
@@ -69,6 +76,9 @@ class SamplesModel(QAbstractTableModel):
     def columnCount(self, parent: QModelIndex = QModelIndex) -> int:
         """override"""
         return len(self._headers)
+
+    def item(self, row: int):
+        return self.items[row]
 
     def data(self, index: QModelIndex, role: Qt.ItemDataRole) -> typing.Any:
         """override"""
@@ -122,8 +132,9 @@ class SamplesModel(QAbstractTableModel):
         self.items.clear()
 
         self.items = self._load_samples_thread.results
+
         if len(self.items) > 0:
-            self._headers = list(self.items[0].keys())
+            self._headers = [i for i in self.items[0].keys() if i != "id"]
 
         self.endResetModel()
 
@@ -160,7 +171,9 @@ class SamplesModel(QAbstractTableModel):
             sql.get_sample_annotations_by_variant,
             variant_id=variant_id,
             fields=self.fields,
-            samples=self.samples,
+            samples=self.selected_samples,
+            families=self.selected_families,
+            genotypes=self.selected_genotypes,
         )
 
         # Start the run
@@ -260,7 +273,8 @@ class SamplesWidget(plugin.PluginWidget):
         self.view.setShowGrid(False)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setSortingEnabled(True)
-        self.view.setIconSize(QSize(22, 22))
+        self.view.setIconSize(QSize(16, 16))
+        self.view.horizontalHeader().setHighlightSections(False)
         self.model = SamplesModel()
 
         self.error_label = QLabel()
@@ -278,6 +292,8 @@ class SamplesWidget(plugin.PluginWidget):
         self.family_selector.accepted.connect(self.on_refresh)
         self.tag_selector = ChoiceWidget()
         self.tag_selector.accepted.connect(self.on_refresh)
+        self.geno_selector = ChoiceWidget()
+        self.geno_selector.accepted.connect(self.on_refresh)
 
         self.setWindowIcon(FIcon(0xF0A8C))
 
@@ -324,13 +340,12 @@ class SamplesWidget(plugin.PluginWidget):
         tag_action.setToolTip("Filter by tags")
 
         # only genotype action
-        icon = QIcon()
-        icon.addPixmap(FIcon(0xF10D3).pixmap(16, 16), QIcon.Normal, QIcon.Off)
-        icon.addPixmap(FIcon(0xF0AA5).pixmap(16, 16), QIcon.Normal, QIcon.On)
 
-        geno_action = self.toolbar.addAction(icon, "genotyped")
-        geno_action.setText("Keep only genotyped samples")
-        geno_action.setCheckable(True)
+        # geno action
+        geno_action = create_widget_action(self.toolbar, self.geno_selector)
+        geno_action.setIcon(FIcon(0xF0902))
+        geno_action.setText("Genotype")
+        geno_action.setToolTip("Filter by genotype")
 
         # Menu action
 
@@ -341,6 +356,11 @@ class SamplesWidget(plugin.PluginWidget):
         menu_action = self.toolbar.addAction(FIcon(0xF035C), "menu")
         self.toolbar.widgetForAction(menu_action).setPopupMode(QToolButton.InstantPopup)
         self.general_menu = QMenu()
+
+        self.clear_filters = self.general_menu.addAction(
+            FIcon(0xF14F0), self.tr("Clear all filters"), self._on_clear_filters
+        )
+
         self.general_menu.addAction(self.tr("Save preset"))
         self.general_menu.addAction(self.tr("Edit preset ..."))
         menu_action.setMenu(self.general_menu)
@@ -353,9 +373,14 @@ class SamplesWidget(plugin.PluginWidget):
 
     def _show_sample_dialog(self):
 
-        dialog = SampleDialog(self._conn, 1)
+        row = self.view.selectionModel().currentIndex().row()
+        sample = self.model.item(row)
+        if sample:
 
-        dialog.exec_()
+            dialog = SampleDialog(self._conn, sample["id"])
+
+            if dialog.exec_() == QDialog.Accepted:
+                self.on_refresh()
 
     def _toggle_column(self, col: int, show: bool):
         """hide/show columns"""
@@ -363,6 +388,15 @@ class SamplesWidget(plugin.PluginWidget):
             self.view.showColumn(col)
         else:
             self.view.hideColumn(col)
+
+    def _on_clear_filters(self):
+
+        self.sample_selector.uncheck_all()
+        self.family_selector.uncheck_all()
+        self.geno_selector.uncheck_all()
+        self.tag_selector.uncheck_all()
+
+        self.on_refresh()
 
     def _on_double_clicked(self, index: QModelIndex):
 
@@ -394,45 +428,66 @@ class SamplesWidget(plugin.PluginWidget):
         self.load_tags()
         self.load_fields()
         self.load_family()
+        self.load_genotype()
+
+    def _is_selectors_checked(self):
+        """Return False if selectors is not checked"""
+
+        return (
+            self.sample_selector.checked()
+            or self.family_selector.checked()
+            or self.tag_selector.checked()
+        )
 
     def load_samples(self):
 
         self.sample_selector.clear()
         for sample in sql.get_samples(self._conn):
-            self.sample_selector.add_item(FIcon(0xF0B55), sample["name"])
+            self.sample_selector.add_item(
+                FIcon(0xF0B55), sample["name"], data=sample["name"]
+            )
 
     def load_tags(self):
 
         self.tag_selector.clear()
         for tag in ["#hemato", "#cancero", "#exome"]:
-            self.tag_selector.add_item(FIcon(0xF04FD), tag)
+            self.tag_selector.add_item(FIcon(0xF04FD), tag, data=tag)
 
     def load_fields(self):
         self.field_selector.clear()
         for field in sql.get_field_by_category(self._conn, "samples"):
             self.field_selector.add_item(
-                FIcon(0xF0835), field["name"], field["description"]
+                FIcon(0xF0835), field["name"], field["description"], data=field["name"]
             )
 
     def load_family(self):
         self.family_selector.clear()
         for fam in sql.get_samples_family(self._conn):
-            print(fam)
-            self.family_selector.add_item(FIcon(0xF036E), fam)
+            self.family_selector.add_item(FIcon(0xF036E), fam, data=fam)
+
+    def load_genotype(self):
+        self.geno_selector.clear()
+
+        for key, value in GENOTYPE.items():
+            self.geno_selector.add_item(FIcon(value["icon"]), value["name"], data=key)
 
     def on_refresh(self):
 
-        # Get samples filters
-        samples = self.sample_selector.selected_items()
-
         # Get fields
-        fields = self.field_selector.selected_items()
-
         self.current_variant = self.mainwindow.get_state_data("current_variant")
         variant_id = self.current_variant["id"]
 
-        self.model.samples = samples
-        self.model.fields = fields
+        self.model.fields = [i["name"] for i in self.field_selector.selected_items()]
+
+        self.model.selected_samples = [
+            i["name"] for i in self.sample_selector.selected_items()
+        ]
+        self.model.selected_families = [
+            i["name"] for i in self.family_selector.selected_items()
+        ]
+        self.model.selected_genotypes = [
+            i["data"] for i in self.geno_selector.selected_items()
+        ]
 
         self.model.load(variant_id)
 
@@ -449,6 +504,7 @@ class SamplesWidget(plugin.PluginWidget):
 
     def on_load_finished(self):
         self.show_error("")
+
         self.view.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
         self.view.horizontalHeader().setSectionResizeMode(
             0, QHeaderView.ResizeToContents

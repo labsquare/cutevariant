@@ -24,7 +24,7 @@ class ChoiceModel(QAbstractListModel):
             return text
 
         if role == Qt.DecorationRole:
-            return self._data[index.row()]["icon"]
+            return QIcon(self._data[index.row()]["icon"])
 
         if role == Qt.CheckStateRole:
             return Qt.Checked if self._data[index.row()]["checked"] else Qt.Unchecked
@@ -46,16 +46,30 @@ class ChoiceModel(QAbstractListModel):
 
         return False
 
-    def add_item(self, icon: QIcon, name: str, description: str = ""):
+    def add_item(self, icon: QIcon, name: str, description: str = "", data=None):
         self.beginInsertRows(QModelIndex(), 0, 0)
         self._data.append(
-            {"checked": False, "icon": icon, "name": name, "description": description}
+            {
+                "checked": False,
+                "icon": icon,
+                "name": name,
+                "description": description,
+                "data": data,
+            }
         )
         self.endInsertRows()
 
     def clear(self):
         self.beginResetModel()
         self._data.clear()
+        self.endResetModel()
+
+    def uncheck_all(self):
+        self.beginResetModel()
+
+        for i in self._data:
+            i["checked"] = False
+
         self.endResetModel()
 
     def items(self):
@@ -66,6 +80,7 @@ class ChoiceView(QListView):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._check_state = Qt.Checked
+        self.setIconSize(QSize(16, 16))
 
     def keyPressEvent(self, event: QKeyEvent):
 
@@ -123,16 +138,22 @@ class ChoiceWidget(QWidget):
 
         self.accepted.emit()
 
-    def add_item(self, icon: QIcon, name: str, description: str = ""):
-        self._model.add_item(icon, name, description)
+    def add_item(self, icon: QIcon, name: str, description: str = "", data=None):
+        self._model.add_item(icon, name, description, data)
 
     def selected_items(self):
-        result = []
         for i in self._model.items():
             if i["checked"] == True:
-                result.append(i["name"])
+                yield i
 
-        return result
+    def clear(self):
+        self._model.clear()
+
+    def uncheck_all(self):
+        self._model.uncheck_all()
+
+    def checked(self):
+        return any(i["checked"] for i in self._model.items())
 
 
 def create_widget_action(toolbar: QToolBar, widget: QWidget):
