@@ -16,7 +16,7 @@ from PySide2.QtGui import *
 from cutevariant.core import sql, command
 from cutevariant.core.reader import BedReader
 from cutevariant.gui import plugin, FIcon, style
-from cutevariant.commons import DEFAULT_SELECTION_NAME
+from cutevariant.commons import DEFAULT_SELECTION_NAME, SAMPLE_VARIANT_CLASSIFICATION
 
 from cutevariant.gui.widgets import ChoiceWidget, create_widget_action, SampleDialog
 
@@ -251,6 +251,20 @@ class SamplesModel(QAbstractTableModel):
         return False
 
 
+class SamplesView(QTableView):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+    def paintEvent(self, event: QPaintEvent):
+
+        if self.model().rowCount() == 0:
+            painter = QPainter(self.viewport())
+            painter.drawText(self.viewport().rect(), Qt.AlignCenter, "No Sample found")
+
+        else:
+            super().paintEvent(event)
+
+
 class SamplesWidget(plugin.PluginWidget):
     """Widget displaying the list of avaible selections.
     User can select one of them to update Query::selection
@@ -269,7 +283,7 @@ class SamplesWidget(plugin.PluginWidget):
 
         self.toolbar = QToolBar()
         self.toolbar.setIconSize(QSize(16, 16))
-        self.view = QTableView()
+        self.view = SamplesView()
         self.view.setShowGrid(False)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setSortingEnabled(True)
@@ -369,6 +383,17 @@ class SamplesWidget(plugin.PluginWidget):
 
         menu = QMenu(self)
         menu.addAction(QIcon(), "Edit sample ...", self._show_sample_dialog)
+        menu.addAction(QIcon(), "Validate sample")
+
+        menu.addSection("current variant")
+        cat_menu = menu.addMenu("Classification")
+
+        for key, value in SAMPLE_VARIANT_CLASSIFICATION.items():
+            cat_menu.addAction(value)
+
+        menu.addMenu(cat_menu)
+        menu.addAction("Edit comment ...")
+
         menu.exec_(event.globalPos())
 
     def _show_sample_dialog(self):
@@ -380,6 +405,7 @@ class SamplesWidget(plugin.PluginWidget):
             dialog = SampleDialog(self._conn, sample["id"])
 
             if dialog.exec_() == QDialog.Accepted:
+                self.load_all_filters()
                 self.on_refresh()
 
     def _toggle_column(self, col: int, show: bool):
@@ -424,11 +450,7 @@ class SamplesWidget(plugin.PluginWidget):
     def on_open_project(self, conn):
         self._conn = conn
         self.model.conn = conn
-        self.load_samples()
-        self.load_tags()
-        self.load_fields()
-        self.load_family()
-        self.load_genotype()
+        self.load_all_filters()
 
     def _is_selectors_checked(self):
         """Return False if selectors is not checked"""
@@ -438,6 +460,13 @@ class SamplesWidget(plugin.PluginWidget):
             or self.family_selector.checked()
             or self.tag_selector.checked()
         )
+
+    def load_all_filters(self):
+        self.load_samples()
+        self.load_tags()
+        self.load_fields()
+        self.load_family()
+        self.load_genotype()
 
     def load_samples(self):
 
@@ -506,10 +535,10 @@ class SamplesWidget(plugin.PluginWidget):
         self.show_error("")
 
         self.view.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
-        self.view.horizontalHeader().setSectionResizeMode(
-            0, QHeaderView.ResizeToContents
-        )
-        self.view.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+# self.view.horizontalHeader().setSectionResizeMode(
+#     0, QHeaderView.ResizeToContents
+# )
+# self.view.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
 
 
 if __name__ == "__main__":

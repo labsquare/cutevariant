@@ -69,7 +69,7 @@ class SampleWidget(QWidget):
         pheno_widget = QWidget()
         pheno_layout = QFormLayout(pheno_widget)
         pheno_layout.addRow("Sexe", self.sex_combo)
-        pheno_layout.addRow("Case or control", self.phenotype_combo)
+        pheno_layout.addRow("Affected", self.phenotype_combo)
         pheno_layout.addRow("HPO terms", self.hpo_widget)
 
         self.tab_widget.addTab(pheno_widget, "Phenotype")
@@ -143,6 +143,8 @@ class SampleDialog(QDialog):
 
         self.button_box.accepted.connect(self.save)
         self.button_box.rejected.connect(self.reject)
+
+        self.resize(800, 600)
 
     def load(self):
         self.w.load(self.sample_id)

@@ -121,7 +121,7 @@ SQLITE_TO_PYTHON = {
     "BLOB": "bytes",
 }
 
-VARIANT_MANDATORY_FIELDS = [
+MANDATORY_FIELDS = [
     {
         "name": "chr",
         "type": "str",
@@ -261,6 +261,14 @@ VARIANT_MANDATORY_FIELDS = [
         "constraint": "DEFAULT 0",
         "category": "variants",
         "description": "Number of transcript",
+    },
+    ## SAMPLES
+    {
+        "name": "classification",
+        "type": "int",
+        "constraint": "DEFAULT 0",
+        "category": "samples",
+        "description": "classification",
     },
 ]
 
@@ -1706,8 +1714,9 @@ def create_table_variants(conn: sqlite3.Connection, fields: List[dict]):
     cursor = conn.cursor()
 
     fields = []
-    for field in VARIANT_MANDATORY_FIELDS:
-        fields.append(field)
+    for field in MANDATORY_FIELDS:
+        if field["category"] == "variants":
+            fields.append(field)
 
     # Primary key MUST NOT have NULL fields !
     # PRIMARY KEY should always imply NOT NULL.
@@ -2229,6 +2238,7 @@ def create_table_samples(conn, fields=[]):
 
     :param conn: sqlite3.connect
     """
+
     cursor = conn.cursor()
     # sample_id is an alias on internal autoincremented 'rowid'
     cursor.execute(
@@ -2241,6 +2251,7 @@ def create_table_samples(conn, fields=[]):
         sex INTEGER DEFAULT 0,
         phenotype INTEGER DEFAULT 0,
         valid INTEGER DEFAULT 0,
+        tags TEXT,
         comment TEXT,
         UNIQUE (name, family_id)
         )"""
@@ -2248,6 +2259,11 @@ def create_table_samples(conn, fields=[]):
     conn.commit()
 
     fields = list(fields)
+
+    # Create mandatory fields
+    for field in MANDATORY_FIELDS:
+        if field["category"] == "samples":
+            fields.append(field)
 
     schema = ",".join(
         [
@@ -2264,8 +2280,6 @@ def create_table_samples(conn, fields=[]):
         f"""CREATE TABLE sample_has_variant  (
         sample_id INTEGER NOT NULL,
         variant_id INTEGER NOT NULL,
-        classification INTEGER,
-        comment TEXT,
         {schema},
         PRIMARY KEY (sample_id, variant_id),
         FOREIGN KEY (sample_id) REFERENCES samples (id)
@@ -2702,7 +2716,7 @@ def import_reader(
     alter_table_from_fields(conn, fields)
 
     # insert fields
-    insert_fields(conn, VARIANT_MANDATORY_FIELDS)
+    insert_fields(conn, MANDATORY_FIELDS)
     insert_fields(conn, reader.get_fields())
 
     # insert variants

@@ -148,7 +148,6 @@ the arguments.""",
     # before the call of parse_args()
     if "html" in sys.argv:
         return parser
-
     args = parser.parse_args()
 
     if len(sys.argv) == 1:
