@@ -2702,6 +2702,9 @@ def import_reader(
         LOGGER.debug("CREATE TABLE SCHEMA")
         create_database_schema(conn)
 
+    # Update metadatas
+    update_metadatas(conn, reader.get_metadatas())
+
     # insert samples
     if progress_callback:
         progress_callback("Insert samples")

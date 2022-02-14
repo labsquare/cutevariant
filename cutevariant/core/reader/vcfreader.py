@@ -332,7 +332,7 @@ class VcfReader(AbstractReader):
                 description += (
                     " (0: homozygous_ref, 1: heterozygous, 2: homozygous_alt)"
                 )
-                field_type = "Integer"
+                field_type = VCF_TYPE_MAPPING["Integer"]
 
             yield {
                 "name": field_name.lower(),
