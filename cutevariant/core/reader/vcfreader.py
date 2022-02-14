@@ -325,18 +325,20 @@ class VcfReader(AbstractReader):
         # Read VCF FORMAT fields
         for field_name, info in vcf_reader.formats.items():
             description = info.desc
+            field_type = VCF_TYPE_MAPPING[info.type]
 
             if field_name == "GT":
                 # Edit description of Genotype field
                 description += (
                     " (0: homozygous_ref, 1: heterozygous, 2: homozygous_alt)"
                 )
+                field_type = "Integer"
 
             yield {
                 "name": field_name.lower(),
                 "category": "samples",
                 "description": description,
-                "type": VCF_TYPE_MAPPING[info.type],
+                "type": field_type,
             }
 
     def get_samples(self):
