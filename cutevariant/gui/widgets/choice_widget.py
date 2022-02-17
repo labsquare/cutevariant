@@ -170,6 +170,42 @@ def create_widget_action(toolbar: QToolBar, widget: QWidget):
     return action
 
 
+# class ChoiceEdit(QLineEdit):
+#     def __init__(self, parent=None):
+#         super().__init__()
+
+#         self._view = QListView()
+#         self._model = ChoiceModel()
+
+#         self._model.add_item(QIcon(), "sdfsf")
+#         self._model.add_item(QIcon(), "sdfsf")
+#         self._model.add_item(QIcon(), "sdfsf")
+
+#         self._view.setWindowFlags(Qt.Tool | Qt.FramelessWindowHint)
+#         self._view.setModel(self._model)
+
+
+#     def mousePressEvent(self, event):
+
+#         pos = self.mapToGlobal(self.rect().bottomLeft())
+
+#         self._view.setGeometry(pos.x(), pos.y(), self.width(), 100)
+
+#         if self._view.isVisible():
+#             self._view.hide()
+#         else:
+#             self._view.show()
+
+#         super().mousePressEvent(event)
+
+# def focusOutEvent(self, event):
+#     if self._view.isVisible():
+#         self._view.hide()
+
+#     else:
+#         super().focusOutEvent(event)
+
+
 if __name__ == "__main__":
     import sys
 

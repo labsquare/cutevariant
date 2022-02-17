@@ -6,6 +6,11 @@ from PySide2.QtGui import *
 from cutevariant.gui.widgets import MarkdownEditor
 from cutevariant.core import sql
 
+from cutevariant.gui.ficon import FIcon
+
+from cutevariant.gui.widgets import ChoiceWidget
+from cutevariant.gui.widgets.multi_combobox import MultiComboBox
+
 
 class HpoWidget(QWidget):
     def __init__(self, parent=None):
@@ -43,9 +48,16 @@ class SampleWidget(QWidget):
         # Identity
         self.name_edit = QLineEdit()
         self.fam_edit = QLineEdit()
-        self.lock_button = QPushButton("Validé")
-        self.lock_button.setCheckable(True)
         self.tab_widget = QTabWidget()
+        self.valid_check = QCheckBox("Dossier validé ")
+        self.tag_edit = MultiComboBox()
+        self.tag_button = QToolButton()
+        self.tag_button.setAutoRaise(True)
+        self.tag_button.setIcon(FIcon(0xF0349))
+
+        self.tag_layout = QHBoxLayout()
+        self.tag_layout.setContentsMargins(0, 0, 0, 0)
+        self.tag_layout.addWidget(self.tag_edit)
 
         identity_box = QGroupBox()
         identity_layout = QFormLayout(identity_box)
@@ -53,10 +65,28 @@ class SampleWidget(QWidget):
         identity_layout.addRow("Name ID", self.name_edit)
         identity_layout.addRow("Family ID", self.fam_edit)
 
+        identity_layout.addRow("Tags", self.tag_layout)
+        identity_layout.addRow("Statut", self.valid_check)
+
+        self.tag_choice = ChoiceWidget()
+        self.tag_choice.add_item(QIcon(), "boby")
+        self.tag_choice.add_item(QIcon(), "boby")
+        self.tag_choice_action = QWidgetAction(self.tag_choice)
+        self.tag_choice_action.setDefaultWidget(self.tag_choice)
+
+        self.menu = QMenu()
+        self.menu.addAction(self.tag_choice_action)
+
+        self.tag_button.setMenu(self.menu)
+        self.tag_button.setPopupMode(QToolButton.InstantPopup)
+
+        self.tag_edit.addItems(["#hemato", "#cardio", "#pharmaco"])
+
         # validation
-        val_box = QGroupBox()
-        val_layout = QVBoxLayout(val_box)
-        val_layout.addWidget(self.lock_button)
+        val_layout = QFormLayout()
+
+        # val_layout.addWidget(self.lock_button)
+        # val_layout.addWidget(QComboBox())
 
         # phenotype
         self.sex_combo = QComboBox()
@@ -87,7 +117,7 @@ class SampleWidget(QWidget):
 
         header_layout = QHBoxLayout()
         header_layout.addWidget(identity_box)
-        header_layout.addWidget(val_box)
+        header_layout.addLayout(val_layout)
 
         vLayout = QVBoxLayout()
         vLayout.addLayout(header_layout)
