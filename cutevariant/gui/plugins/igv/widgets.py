@@ -62,7 +62,7 @@ class IgvWidget(plugin.PluginWidget):
     def on_refresh(self):
 
         variant = self.mainwindow.get_state_data("current_variant")
-        variant = sql.get_one_variant(self.mainwindow.conn, variant["id"])
+        variant = sql.get_variant(self.mainwindow.conn, variant["id"])
 
         chrom = variant["chr"]
         pos = variant["pos"]

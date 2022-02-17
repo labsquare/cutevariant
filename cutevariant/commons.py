@@ -37,6 +37,13 @@ CLASSIFICATION_ICONS = {
     5: 0xF03B1,
 }
 
+
+SAMPLE_VARIANT_CLASSIFICATION = {
+    0: "Unclassified",
+    1: "Verification required",
+    2: "Validated",
+}
+
 OPERATORS_PY_2_SQL = {
     "$eq": "=",
     "$gt": ">",

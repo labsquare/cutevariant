@@ -187,7 +187,13 @@ def drop_cmd(conn: sqlite3.Connection, feature: str, name: str, **kwargs):
     if feature not in accept_features:
         raise vql.VQLSyntaxError(f"{feature} doesn't exists")
 
-    affected_lines = sql.delete_by_name(conn, name, table_name=feature)
+    affected_lines = 0
+    if feature == "selections":
+        affected_lines = sql.delete_selection_by_name(conn, name)
+
+    if feature == "wordsets":
+        affected_lines = sql.delete_wordset_by_name(conn, name)
+
     return {"success": (affected_lines > 0)}
 
 
@@ -230,7 +236,9 @@ def create_cmd(
     )
 
     LOGGER.debug("command:create_cmd:: %s", sql_query)
-    selection_id = sql.create_selection(conn, target, source, filters, count)
+    selection_id = sql.insert_selection_from_source(
+        conn, target, source, filters, count
+    )
     return dict() if selection_id is None else {"id": selection_id}
 
 
@@ -273,7 +281,7 @@ def set_cmd(
     sql_query = func_query[operator](query_first, query_second)
     LOGGER.debug("command:set_cmd:: %s", sql_query)
 
-    selection_id = sql.create_selection_from_sql(
+    selection_id = sql.insert_selection_from_sql(
         conn, sql_query, target, from_selection=False
     )
     return dict() if selection_id is None else {"id": selection_id}
@@ -305,7 +313,7 @@ def bed_cmd(conn: sqlite3.Connection, path: str, target: str, source: str, **kwa
 
     # bed_intervals: chrom, start, end, name, etc. keys in each interval
     # see also cutevariant/core/reader/bedreader.py
-    selection_id = sql.create_selection_from_bed(conn, source, target, BedReader(path))
+    selection_id = sql.insert_selection_from_bed(conn, source, target, BedReader(path))
     return dict() if selection_id is None else {"id": selection_id}
 
 
@@ -374,7 +382,7 @@ def import_cmd(conn: sqlite3.Connection, feature=str, name=str, path=str, **kwar
     if not os.path.isfile(path):
         raise vql.VQLSyntaxError(f"{path} doesn't exists")
 
-    affected_rows = sql.import_wordset_from_file(conn, name, path)
+    affected_rows = sql.insert_wordset_from_file(conn, name, path)
     return {"success": (affected_rows is not None)}
 
 

@@ -21,7 +21,6 @@ def table_drop(conn, name):
 
 from cutevariant.core import sql
 from cutevariant.core.reader import VcfReader
-from cutevariant.core.importer import import_reader
 
 
 def create_conn(file_name=None, annotation_parser=None):
@@ -29,7 +28,7 @@ def create_conn(file_name=None, annotation_parser=None):
         file_name = "examples/test.snpeff.vcf"
         annotation_parser = "snpeff"
     conn = sql.get_sql_connection(":memory:")
-    import_reader(conn, VcfReader(open(file_name), annotation_parser))
+    sql.import_reader(conn, VcfReader(file_name, annotation_parser))
     return conn
 
 

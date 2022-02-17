@@ -16,15 +16,20 @@ from PySide2.QtGui import *
 from cutevariant.core import sql, command
 from cutevariant.core.reader import BedReader
 from cutevariant.gui import plugin, FIcon, style
-from cutevariant.commons import DEFAULT_SELECTION_NAME
+from cutevariant.commons import DEFAULT_SELECTION_NAME, SAMPLE_VARIANT_CLASSIFICATION
+
+from cutevariant.gui.widgets import ChoiceWidget, create_widget_action, SampleDialog
 
 
 from cutevariant import LOGGER
 from cutevariant.gui.sql_thread import SqlThread
 
-PHENOTYPE_STR = {0: "Unknown", 1: "Unaffected", 2: "Affected"}
-PHENOTYPE_COLOR = {0: "#d3d3d3", 1: "#006400", 2: "#ff0000"}
-SEX_ICON = {0: 0xF0766, 1: 0xF029D, 2: 0xF029C}
+from cutevariant.gui.style import GENOTYPE
+
+
+from PySide2.QtWidgets import *
+import sys
+from functools import partial
 
 
 class SamplesModel(QAbstractTableModel):
@@ -39,8 +44,15 @@ class SamplesModel(QAbstractTableModel):
         super().__init__(parent)
         self.conn = None
         self.items = []
-        self._fields = []
-        self._fields_descriptions = {}
+        self.fields = []
+
+        self.selected_samples = []
+        self.selected_families = []
+        self.selected_genotypes = []
+        self.selected_tags = []
+
+        self._headers = []
+        self.fields_descriptions = {}
 
         # Creates the samples loading thread
         self._load_samples_thread = SqlThread(self.conn)
@@ -63,7 +75,10 @@ class SamplesModel(QAbstractTableModel):
 
     def columnCount(self, parent: QModelIndex = QModelIndex) -> int:
         """override"""
-        return len(self._fields) + 2
+        return len(self._headers)
+
+    def item(self, row: int):
+        return self.items[row]
 
     def data(self, index: QModelIndex, role: Qt.ItemDataRole) -> typing.Any:
         """override"""
@@ -71,66 +86,55 @@ class SamplesModel(QAbstractTableModel):
             return None
 
         item = self.items[index.row()]
-        field = self.headerData(index.column(), Qt.Horizontal, Qt.DisplayRole)
+        key = self._headers[index.column()]
 
-        if role == Qt.DisplayRole:
-            if field == "phenotype":
-                return PHENOTYPE_STR.get(item[field], "?")
-            else:
-                return item.get(field, "error")
+        if role == Qt.DisplayRole and key != "valid":
+            return item[key]
 
         if role == Qt.DecorationRole:
-            if index.column() == 0:
-                return QIcon(FIcon(SEX_ICON.get(item["sex"], 0xF02D6)))
-            if field == "gt":
-                icon = style.GENOTYPE.get(item[field], style.GENOTYPE[-1])["icon"]
-                return QIcon(FIcon(icon))
+            if key == "valid":
+                hex_icon = 0xF139A if item[key] == 1 else 0xF0FC7
+                return QIcon(FIcon(hex_icon))
 
-        if role == Qt.ToolTipRole:
-            if index.column() == 0:
-                return f"""{item['name']} (<span style="color:{PHENOTYPE_COLOR.get(item['phenotype'],'lightgray')}";>{PHENOTYPE_STR.get(item['phenotype'],'Unknown phenotype')}</span>)"""
+        # if role == Qt.DecorationRole:
+        #     if index.column() == 0:
+        #         return QIcon(FIcon(SEX_ICON.get(item["sex"], 0xF02D6)))
+        #     if field == "gt":
+        #         icon = style.GENOTYPE.get(item[field], style.GENOTYPE[-1])["icon"]
+        #         return QIcon(FIcon(icon))
 
-            else:
-                description = self._fields_descriptions.get(field, "")
-                return f"<b>{field}</b><br/> {description} "
+        # if role == Qt.ToolTipRole:
+        #     if index.column() == 0:
+        #         return f"""{item['name']} (<span style="color:{PHENOTYPE_COLOR.get(item['phenotype'],'lightgray')}";>{PHENOTYPE_STR.get(item['phenotype'],'Unknown phenotype')}</span>)"""
+
+        #     else:
+        #         description = self.fields_descriptions.get(field, "")
+        #         return f"<b>{field}</b><br/> {description} "
 
         # if role == Qt.ForegroundRole and index.column() == 0:
         #     phenotype = self.items[index.row()]["phenotype"]
         #     return QColor(PHENOTYPE_COLOR.get(phenotype, "#FF00FF"))
 
-    def headerData(
-        self, section: int, orientation: Qt.Orientation, role: int
-    ) -> typing.Any:
+    def headerData(self, section: int, orientation: Qt.Orientation, role: int):
 
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
-
             if section == 0:
-                return "name"
-            elif section == 1:
-                return "phenotype"
-            else:
-                return self._fields[section - 2]
+                return ""
+
+            if section < len(self._headers):
+                return self._headers[section]
 
         return None
-
-    def load_fields(self):
-        self.beginResetModel()
-        if self.conn:
-
-            self._fields = []
-            self._fields_descriptions = {}
-            for field in sql.get_field_by_category(self.conn, "samples"):
-                self._fields.append(field["name"])
-                self._fields_descriptions[field["name"]] = field["description"]
-
-        self.endResetModel()
 
     def on_samples_loaded(self):
 
         self.beginResetModel()
         self.items.clear()
-        if self._fields:
-            self.items = self._load_samples_thread.results
+
+        self.items = self._load_samples_thread.results
+
+        if len(self.items) > 0:
+            self._headers = [i for i in self.items[0].keys() if i != "id"]
 
         self.endResetModel()
 
@@ -166,7 +170,10 @@ class SamplesModel(QAbstractTableModel):
         load_samples_func = partial(
             sql.get_sample_annotations_by_variant,
             variant_id=variant_id,
-            fields=self._fields,
+            fields=self.fields,
+            samples=self.selected_samples,
+            families=self.selected_families,
+            genotypes=self.selected_genotypes,
         )
 
         # Start the run
@@ -244,6 +251,20 @@ class SamplesModel(QAbstractTableModel):
         return False
 
 
+class SamplesView(QTableView):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+    def paintEvent(self, event: QPaintEvent):
+
+        if self.model().rowCount() == 0:
+            painter = QPainter(self.viewport())
+            painter.drawText(self.viewport().rect(), Qt.AlignCenter, "No Sample found")
+
+        else:
+            super().paintEvent(event)
+
+
 class SamplesWidget(plugin.PluginWidget):
     """Widget displaying the list of avaible selections.
     User can select one of them to update Query::selection
@@ -261,12 +282,32 @@ class SamplesWidget(plugin.PluginWidget):
         super().__init__(parent)
 
         self.toolbar = QToolBar()
-        self.view = QTableView()
+        self.toolbar.setIconSize(QSize(16, 16))
+        self.view = SamplesView()
         self.view.setShowGrid(False)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setSortingEnabled(True)
-        self.view.setIconSize(QSize(22, 22))
+        self.view.setIconSize(QSize(16, 16))
+        self.view.horizontalHeader().setHighlightSections(False)
         self.model = SamplesModel()
+
+        self.error_label = QLabel()
+        self.error_label.setStyleSheet(
+            "QWidget{{background-color:'{}'; color:'{}'}}".format(
+                style.WARNING_BACKGROUND_COLOR, style.WARNING_TEXT_COLOR
+            )
+        )
+
+        self.field_selector = ChoiceWidget()
+        self.field_selector.accepted.connect(self.on_refresh)
+        self.sample_selector = ChoiceWidget()
+        self.sample_selector.accepted.connect(self.on_refresh)
+        self.family_selector = ChoiceWidget()
+        self.family_selector.accepted.connect(self.on_refresh)
+        self.tag_selector = ChoiceWidget()
+        self.tag_selector.accepted.connect(self.on_refresh)
+        self.geno_selector = ChoiceWidget()
+        self.geno_selector.accepted.connect(self.on_refresh)
 
         self.setWindowIcon(FIcon(0xF0A8C))
 
@@ -276,37 +317,96 @@ class SamplesWidget(plugin.PluginWidget):
         vlayout.setContentsMargins(0, 0, 0, 0)
         vlayout.addWidget(self.toolbar)
         vlayout.addWidget(self.view)
+        vlayout.addWidget(self.error_label)
+        vlayout.setSpacing(0)
         self.setLayout(vlayout)
 
         self.view.doubleClicked.connect(self._on_double_clicked)
+        self.model.error_raised.connect(self.show_error)
+        self.model.load_finished.connect(self.on_load_finished)
 
-        self.field_action = self.toolbar.addAction("Field")
-        self.toolbar.widgetForAction(self.field_action).setPopupMode(
-            QToolButton.InstantPopup
+        self.setup_actions()
+
+    def setup_actions(self):
+
+        # Fields action
+        field_action = create_widget_action(self.toolbar, self.field_selector)
+        field_action.setIcon(FIcon(0xF0835))
+        field_action.setText("Fields")
+        field_action.setToolTip("Select fields to display")
+
+        # sample action
+        sample_action = create_widget_action(self.toolbar, self.sample_selector)
+        sample_action.setIcon(FIcon(0xF0013))
+        sample_action.setText("Samples ")
+        sample_action.setToolTip("Filter by samples")
+
+        # family action
+        fam_action = create_widget_action(self.toolbar, self.family_selector)
+        fam_action.setIcon(FIcon(0xF0B58))
+        fam_action.setText("Family")
+        fam_action.setToolTip("Filter by family")
+
+        # tags action
+        tag_action = create_widget_action(self.toolbar, self.tag_selector)
+        tag_action.setIcon(FIcon(0xF04FC))
+        tag_action.setText("Tags ")
+        tag_action.setToolTip("Filter by tags")
+
+        # only genotype action
+
+        # geno action
+        geno_action = create_widget_action(self.toolbar, self.geno_selector)
+        geno_action.setIcon(FIcon(0xF0902))
+        geno_action.setText("Genotype")
+        geno_action.setToolTip("Filter by genotype")
+
+        # Menu action
+
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        self.toolbar.addWidget(spacer)
+        menu_action = self.toolbar.addAction(FIcon(0xF035C), "menu")
+        self.toolbar.widgetForAction(menu_action).setPopupMode(QToolButton.InstantPopup)
+        self.general_menu = QMenu()
+
+        self.clear_filters = self.general_menu.addAction(
+            FIcon(0xF14F0), self.tr("Clear all filters"), self._on_clear_filters
         )
 
-    def _create_field_menu(self):
+        self.general_menu.addAction(self.tr("Save preset"))
+        self.general_menu.addAction(self.tr("Edit preset ..."))
+        menu_action.setMenu(self.general_menu)
 
-        self.menu = QMenu(self)
-        self.field_action.setMenu(self.menu)
+    def contextMenuEvent(self, event: QContextMenuEvent):
 
-        # Obligé de faire un truc degeulasse pour avoir un
+        menu = QMenu(self)
+        menu.addAction(QIcon(), "Edit sample ...", self._show_sample_dialog)
+        menu.addAction(QIcon(), "Validate sample")
 
-        for col in range(2, self.model.columnCount()):
-            field = self.model.headerData(col, Qt.Horizontal, Qt.DisplayRole)
-            action = QAction(field, self)
-            self.menu.addAction(action)
-            action.setCheckable(True)
+        menu.addSection("current variant")
+        cat_menu = menu.addMenu("Classification")
 
-            if field == "gt":
-                action.setChecked(True)
-                self.view.showColumn(col)
-            else:
-                action.setChecked(False)
-                self.view.hideColumn(col)
+        for key, value in SAMPLE_VARIANT_CLASSIFICATION.items():
+            cat_menu.addAction(value)
 
-            fct = partial(self._toggle_column, col)
-            action.toggled.connect(fct)
+        menu.addMenu(cat_menu)
+        menu.addAction("Edit comment ...")
+
+        menu.exec_(event.globalPos())
+
+    def _show_sample_dialog(self):
+
+        row = self.view.selectionModel().currentIndex().row()
+        sample = self.model.item(row)
+        if sample:
+
+            dialog = SampleDialog(self._conn, sample["id"])
+
+            if dialog.exec_() == QDialog.Accepted:
+                self.load_all_filters()
+                self.on_refresh()
 
     def _toggle_column(self, col: int, show: bool):
         """hide/show columns"""
@@ -314,6 +414,15 @@ class SamplesWidget(plugin.PluginWidget):
             self.view.showColumn(col)
         else:
             self.view.hideColumn(col)
+
+    def _on_clear_filters(self):
+
+        self.sample_selector.uncheck_all()
+        self.family_selector.uncheck_all()
+        self.geno_selector.uncheck_all()
+        self.tag_selector.uncheck_all()
+
+        self.on_refresh()
 
     def _on_double_clicked(self, index: QModelIndex):
 
@@ -339,21 +448,97 @@ class SamplesWidget(plugin.PluginWidget):
             self.mainwindow.refresh_plugins(sender=self)
 
     def on_open_project(self, conn):
+        self._conn = conn
         self.model.conn = conn
-        self.model.load_fields()
-        self._create_field_menu()
+        self.load_all_filters()
+
+    def _is_selectors_checked(self):
+        """Return False if selectors is not checked"""
+
+        return (
+            self.sample_selector.checked()
+            or self.family_selector.checked()
+            or self.tag_selector.checked()
+        )
+
+    def load_all_filters(self):
+        self.load_samples()
+        self.load_tags()
+        self.load_fields()
+        self.load_family()
+        self.load_genotype()
+
+    def load_samples(self):
+
+        self.sample_selector.clear()
+        for sample in sql.get_samples(self._conn):
+            self.sample_selector.add_item(
+                FIcon(0xF0B55), sample["name"], data=sample["name"]
+            )
+
+    def load_tags(self):
+
+        self.tag_selector.clear()
+        for tag in ["#hemato", "#cancero", "#exome"]:
+            self.tag_selector.add_item(FIcon(0xF04FD), tag, data=tag)
+
+    def load_fields(self):
+        self.field_selector.clear()
+        for field in sql.get_field_by_category(self._conn, "samples"):
+            self.field_selector.add_item(
+                FIcon(0xF0835), field["name"], field["description"], data=field["name"]
+            )
+
+    def load_family(self):
+        self.family_selector.clear()
+        for fam in sql.get_samples_family(self._conn):
+            self.family_selector.add_item(FIcon(0xF036E), fam, data=fam)
+
+    def load_genotype(self):
+        self.geno_selector.clear()
+
+        for key, value in GENOTYPE.items():
+            self.geno_selector.add_item(FIcon(value["icon"]), value["name"], data=key)
 
     def on_refresh(self):
+
+        # Get fields
         self.current_variant = self.mainwindow.get_state_data("current_variant")
         variant_id = self.current_variant["id"]
 
+        self.model.fields = [i["name"] for i in self.field_selector.selected_items()]
+
+        self.model.selected_samples = [
+            i["name"] for i in self.sample_selector.selected_items()
+        ]
+        self.model.selected_families = [
+            i["name"] for i in self.family_selector.selected_items()
+        ]
+        self.model.selected_genotypes = [
+            i["data"] for i in self.geno_selector.selected_items()
+        ]
+
         self.model.load(variant_id)
 
-        self.view.horizontalHeader().setSectionResizeMode(
-            0, QHeaderView.ResizeToContents
-        )
-        self.view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
-        self.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+        # self.view.horizontalHeader().setSectionResizeMode(
+        #     0, QHeaderView.ResizeToContents
+        # )
+        # self.view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        # self.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Minimum)
+        # self.view.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+
+    def show_error(self, message):
+        self.error_label.setText(message)
+        self.error_label.setVisible(bool(message))
+
+    def on_load_finished(self):
+        self.show_error("")
+
+        self.view.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
+# self.view.horizontalHeader().setSectionResizeMode(
+#     0, QHeaderView.ResizeToContents
+# )
+# self.view.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
 
 
 if __name__ == "__main__":
@@ -364,7 +549,7 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
-    conn = sqlite3.connect("/DATA/dev/cutevariant/corpos2.db")
+    conn = sqlite3.connect("/home/sacha/test3.db")
     conn.row_factory = sqlite3.Row
 
     view = SamplesWidget()

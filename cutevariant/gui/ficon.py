@@ -73,7 +73,9 @@ class FIconEngine(QIconEngine):
                     QPen(self.palette.color(QPalette.Disabled, QPalette.ButtonText))
                 )
             else:
-                painter.setPen(QPen(self.palette.color(QPalette.Active, QPalette.Text)))
+                painter.setPen(
+                    QPen(self.palette.color(QPalette.Active, QPalette.ButtonText))
+                )
 
         font.setPixelSize(rect.size().width())
 

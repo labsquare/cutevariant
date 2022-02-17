@@ -37,8 +37,8 @@ class AbstractReader(ABC):
             reader.get_variants()
     """
 
-    def __init__(self, device):
-        self.device = device
+    def __init__(self, filename):
+        self.filename = filename
         self.number_lines = None
         self.read_bytes = 0
         self.samples = list()
@@ -423,6 +423,11 @@ class AbstractReader(ABC):
 
             yield nullify(variant)
 
+    def progress(self) -> float:
+        """Return progression of read in percentage"""
+
+        return -1
+
     def get_extra_fields_by_category(self, category: str):
         """Syntaxic suggar to get fields according their category
 
@@ -450,59 +455,59 @@ class AbstractReader(ABC):
         """
         return len(tuple(self.get_variants()))
 
-    def compute_number_lines(self):
-        """Get a sample of lines in file if possible and if the end of file is
-        not reached compute an evaluation of the global number of lines.
+    # def compute_number_lines(self):
+    #     """Get a sample of lines in file if possible and if the end of file is
+    #     not reached compute an evaluation of the global number of lines.
 
-        Returns:
-            Nothing but sets `self.number_lines` attribute.
-        """
+    #     Returns:
+    #         Nothing but sets `self.number_lines` attribute.
+    #     """
 
-        def find_lines_in_text_file(text_file_handler):
-            """Get first 15000 lines
+    #     def find_lines_in_text_file(text_file_handler):
+    #         """Get first 15000 lines
 
-            PS: don't care of headers (# lines), the influence is marginal on big
-            files and also on small files (so quick to insert that the wrong number
-            of lines is invisible).
-            """
-            first_lines = []
-            for _ in range(15000):
-                try:
-                    first_lines.append(len(next(text_file_handler)))
-                except StopIteration:
-                    # EOF: exact number of lines is known
-                    self.number_lines = len(first_lines)
-                    break
+    #         PS: don't care of headers (# lines), the influence is marginal on big
+    #         files and also on small files (so quick to insert that the wrong number
+    #         of lines is invisible).
+    #         """
+    #         first_lines = []
+    #         for _ in range(15000):
+    #             try:
+    #                 first_lines.append(len(next(text_file_handler)))
+    #             except StopIteration:
+    #                 # EOF: exact number of lines is known
+    #                 self.number_lines = len(first_lines)
+    #                 break
 
-            if self.number_lines is None:
-                self.number_lines = int(
-                    self.file_size / (sum(first_lines) / len(first_lines))
-                )
+    #         if self.number_lines is None:
+    #             self.number_lines = int(
+    #                 self.file_size / (sum(first_lines) / len(first_lines))
+    #             )
 
-            LOGGER.debug(
-                "nb lines evaluated: %s; size: %s; lines used: %s",
-                self.number_lines,
-                self.file_size,
-                len(first_lines),
-            )
+    #         LOGGER.debug(
+    #             "nb lines evaluated: %s; size: %s; lines used: %s",
+    #             self.number_lines,
+    #             self.file_size,
+    #             len(first_lines),
+    #         )
 
-        # FakeReader is used ?
-        if not self.device:
-            return 0
+    #     # FakeReader is used ?
+    #     if not self.device:
+    #         return 0
 
-        # Detect type of file handler
-        if isinstance(self.device, (io.RawIOBase, io.BufferedIOBase)):
-            # Binary opened file => assert that it is a vcf.gz file
-            with gzip.open(self.device.name, "rb") as file_obj:
-                find_lines_in_text_file(file_obj)
-        elif isinstance(self.device, io.TextIOBase):
-            find_lines_in_text_file(self.device)
-        else:
-            LOGGER.error("Unknown file handler type: %s", type(self.device))
-            raise TypeError("Unknown file handler type: %s" % type(self.device))
+    #     # Detect type of file handler
+    #     if isinstance(self.device, (io.RawIOBase, io.BufferedIOBase)):
+    #         # Binary opened file => assert that it is a vcf.gz file
+    #         with gzip.open(self.device.name, "rb") as file_obj:
+    #             find_lines_in_text_file(file_obj)
+    #     elif isinstance(self.device, io.TextIOBase):
+    #         find_lines_in_text_file(self.device)
+    #     else:
+    #         LOGGER.error("Unknown file handler type: %s", type(self.device))
+    #         raise TypeError("Unknown file handler type: %s" % type(self.device))
 
-        # Rewind the file
-        self.device.seek(0)
+    #     # Rewind the file
+    #     self.device.seek(0)
 
 
 def check_variant_schema(variant: dict):
@@ -584,7 +589,7 @@ def sanitize_field_name(field: str):
 
 
 def nullify(variant: dict) -> dict:
-    """Convert empty fields value  to NONE
+    """Convert empty fields value to NONE
     This is used have NULL value inside the SQLITE inside an empty string
 
     """

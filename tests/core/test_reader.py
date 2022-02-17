@@ -15,15 +15,15 @@ from cutevariant.core import sql
 
 READERS = [
     FakeReader(),
-    VcfReader(open("examples/test.vcf")),
-    VcfReader(open("examples/test.vep.vcf"), "vep"),
-    VcfReader(open("examples/test.snpeff.vcf"), "snpeff"),
-    VcfReader(open("examples/snpeff3.vcf"), "snpeff3"),
+    VcfReader("examples/test.vcf"),
+    VcfReader("examples/test.vep.vcf", "vep"),
+    VcfReader("examples/test.snpeff.vcf", "snpeff"),
+    VcfReader("examples/snpeff3.vcf", "snpeff3"),
 ]
 
 
 def test_snpeff3():
-    reader = VcfReader(open("examples/snpeff3.vcf"))
+    reader = VcfReader("examples/snpeff3.vcf")
     names = [field["name"] for field in reader.get_fields()]
     assert "eff" in names
 
@@ -178,11 +178,11 @@ def test_create_db(reader):
     conn = sqlite3.connect(":memory:")
 
     sql.create_table_fields(conn)
-    sql.insert_many_fields(conn, reader.get_fields())
+    sql.insert_fields(conn, reader.get_fields())
     assert len(list(sql.get_fields(conn))) == len(list(reader.get_fields()))
 
     sql.create_table_samples(conn, reader.get_fields_by_category("samples"))
-    sql.insert_many_samples(conn, reader.get_samples())
+    sql.insert_samples(conn, reader.get_samples())
     assert len(list(sql.get_samples(conn))) == len(list(reader.get_samples()))
 
     sql.create_table_annotations(conn, reader.get_fields_by_category("annotations"))
@@ -190,7 +190,7 @@ def test_create_db(reader):
 
     sql.create_table_selections(conn)
 
-    sql.insert_many_variants(conn, reader.get_variants())
+    sql.insert_variants(conn, reader.get_variants())
 
     # count variant with annotation
     variant_count = len(list(reader.get_variants()))

@@ -22,10 +22,9 @@ class AbstractWriter:
             writer.save(conn)
     """
 
-    def __init__(
-        self,
+    def __init__(self,
         conn,
-        device,
+        filename,
         fields=["chr", "pos", "ref", "alt"],
         source="variants",
         filters={},
@@ -35,7 +34,7 @@ class AbstractWriter:
         self.source = source
         self.filters = filters
         self.conn = conn
-        self.device = device
+        self.filename = filename
 
     def async_save(self, *args, **kwargs):
         """

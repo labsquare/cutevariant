@@ -23,7 +23,8 @@ from cutevariant.core import sql
 from cutevariant.core.sql import get_database_file_name
 from cutevariant.core.writer import CsvWriter, PedWriter
 from cutevariant.gui import FIcon
-from cutevariant.gui.wizards import ProjectWizard, UpdateWizard
+from cutevariant.gui.widgets.project_wizard import ProjectWizard
+from cutevariant.gui.widgets.import_widget import VcfImportDialog
 from cutevariant.gui.settings import SettingsDialog
 from cutevariant.gui.widgets.aboutcutevariant import AboutCutevariant
 from cutevariant import commons as cm
@@ -122,7 +123,7 @@ class MainWindow(QMainWindow):
         self.toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         self.toolbar.setFloatable(False)
         self.toolbar.setMovable(False)
-
+        self.toolbar.setIconSize(QSize(20, 20))
         self.plugin_toolbar = QToolBar("plugins")
         self.addToolBar(Qt.LeftToolBarArea, self.plugin_toolbar)
 
@@ -131,8 +132,10 @@ class MainWindow(QMainWindow):
 
         # Setup Central widget
         self.central_tab = QTabWidget()
+        self.central_tab.setTabBarAutoHide(True)
         self.footer_tab = QTabWidget()
         self.footer_tab.setTabPosition(QTabWidget.South)
+        self.footer_tab.setTabBarAutoHide(True)
         self.vsplit = QSplitter(Qt.Vertical)
         self.vsplit.addWidget(self.central_tab)
         self.vsplit.addWidget(self.footer_tab)
@@ -220,9 +223,16 @@ class MainWindow(QMainWindow):
             area: Area location. Defaults to Qt.LeftDockWidgetArea.
         """
         dock = QDockWidget()
-        dock.setWindowTitle(widget.windowTitle())
+        dock.setWindowTitle(widget.windowTitle().upper())
+        dock.setStyleSheet(
+            "QDockWidget::title {text-align:center;} QDockWidget{font-weight:bold;}"
+        )
+        # frame = QLabel()
+        # frame.setAlignment(Qt.AlignCenter)
+        # frame.setText("<b>" + dock.windowTitle() + "</b>")
         dock.setWidget(widget)
-        dock.setStyleSheet("QDockWidget { font: bold }")
+        # noneWidget = QWidget()
+        # dock.setTitleBarWidget(frame)
         # Keep the attached dock to allow further clean deletion
         widget.dock = dock
         # Set the objectName for a correct restoration after saveState
@@ -380,23 +390,26 @@ class MainWindow(QMainWindow):
         ## File Menu
         self.file_menu = self.menuBar().addMenu(self.tr("&File"))
         self.new_project_action = self.file_menu.addAction(
-            FIcon(0xF01BA), self.tr("&New project"), self.new_project, QKeySequence.New
+            FIcon(0xF0415), self.tr("&New project"), self.new_project, QKeySequence.New
         )
         self.open_project_action = self.file_menu.addAction(
-            FIcon(0xF095D),
+            FIcon(0xF0DCF),
             self.tr("&Open project..."),
             self.open_project,
             QKeySequence.Open,
         )
-        self.update_project_action = self.file_menu.addAction(
-            FIcon(0xF0B86), self.tr("&Update project"), self.update_project, QKeySequence.AddTab
+        self.import_file_action = self.file_menu.addAction(
+            FIcon(0xF102F),
+            self.tr("&Import file"),
+            self.import_file,
+            QKeySequence.AddTab,
         )
 
         self.toolbar.addAction(self.new_project_action)
         self.toolbar.addAction(self.open_project_action)
-        self.toolbar.addAction(self.update_project_action)
+        self.toolbar.addAction(self.import_file_action)
         self.toolbar.addAction(
-            FIcon(0xF02D7), self.tr("Help"), QWhatsThis.enterWhatsThisMode
+            FIcon(0xF0625), self.tr("Help"), QWhatsThis.enterWhatsThisMode
         )
         self.toolbar.addSeparator()
 
@@ -651,12 +664,8 @@ class MainWindow(QMainWindow):
         if not wizard.exec_():
             return
 
-        db_filename = (
-            wizard.field("project_path")
-            + QDir.separator()
-            + wizard.field("project_name")
-            + ".db"
-        )
+        db_filename = wizard.db_filename()
+
         try:
             self.open(db_filename)
         except Exception as e:
@@ -681,23 +690,21 @@ class MainWindow(QMainWindow):
                 self.status_bar.showMessage(e.__class__.__name__ + ": " + str(e))
                 raise
 
-    def update_project(self):
+    def import_file(self):
         """Slot to allow update of a project with a Wizard"""
-        wizard = UpdateWizard()
-        if not wizard.exec_():
-            return
 
-        db_filename = (
-            wizard.field("project_path")
-            + QDir.separator()
-            + wizard.field("project_name")
-            + ".db"
-        )
-        try:
-            self.open(db_filename)
-        except Exception as e:
-            self.status_bar.showMessage(e.__class__.__name__ + ": " + str(e))
-            raise
+        # Todo .. variable of file
+        dialog = VcfImportDialog(sql.get_database_file_name(self.conn))
+
+        if dialog.exec_() == QDialog.Accepted:
+
+            db_filename = dialog.db_filename()
+            LOGGER.warning("ICI", db_filename)
+
+            try:
+                self.open(db_filename)
+            except Exception as e:
+                self.status_bar.showMessage(e.__class__.__name__ + ": " + str(e))
 
     def export_as_csv(self):
         """Export variants into CSV file"""

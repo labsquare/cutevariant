@@ -95,7 +95,7 @@ class FlowLayout(QLayout):
         return y + lineHeight - rect.y()
 
 
-class TagItem(QWidget):
+class TagItem(QLabel):
     def __init__(self, word: str, parent=None):
         super().__init__(parent)
 
@@ -105,8 +105,10 @@ class TagItem(QWidget):
         self.setMouseTracking(True)
         self.hover = False
 
+        self.setTextInteractionFlags(Qt.TextEditable)
+
     def paintEvent(self, event: QPaintEvent):
-        """ override """
+        """override"""
 
         painter = QPainter(self)
         painter.setFont(self.font)
@@ -129,7 +131,7 @@ class TagItem(QWidget):
         super().paintEvent(event)
 
     def sizeHint(self):
-        """ override """
+        """override"""
         return self.word_size() + QSize(40, 15)
 
     def word_size(self):
@@ -137,19 +139,19 @@ class TagItem(QWidget):
         return QSize(metric.width(self.word), metric.height())
 
     def mouseMoveEvent(self, event: QMouseEvent):
-        """ override """
+        """override"""
         pass
 
     def mousePressEvent(self, event: QMouseEvent):
-        """ override """
+        """override"""
         pass
 
     def enterEvent(self, event: QMouseEvent):
-        """ override """
+        """override"""
         pass
 
     def leaveEvent(self, event: QEvent):
-        """ override """
+        """override"""
         pass
 
 

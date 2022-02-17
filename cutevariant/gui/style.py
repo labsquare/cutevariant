@@ -118,11 +118,10 @@ def dark(app):
     with open(DIR_STYLES + "dark.qss", "r") as file:
         app.setStyleSheet(file.read())
 
+# def apply_frameless_style(widget):
+#     """Apply frameless style to the given widget
 
-def apply_frameless_style(widget):
-    """Apply frameless style to the given widget
-
-    TODO: What this style is supposed to do ?
-    """
-    with open(DIR_STYLES + "frameless.qss", "r") as file:
-        widget.setStyleSheet(file.read())
+#     TODO: What this style is supposed to do ?
+#     """
+#     with open(DIR_STYLES + "frameless.qss", "r") as file:
+#         widget.setStyleSheet(file.read())

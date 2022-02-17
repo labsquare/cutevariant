@@ -27,12 +27,12 @@ class CsvWriter(AbstractWriter):
     def __init__(
         self,
         conn,
-        device,
+        filename,
         fields=["chr", "pos", "ref", "alt"],
         source="variants",
         filters={},
     ):
-        super().__init__(conn, device, fields, source, filters)
+        super().__init__(conn, filename, fields, source, filters)
 
         self.separator = "\t"
 
@@ -55,8 +55,11 @@ class CsvWriter(AbstractWriter):
         """
 
         # Use dictionnary to define proper arguments for the writer, beforehand, in one variable
+
+        device = open(self.filename, "w")
+
         dict_writer_options = {
-            "f": self.device,
+            "f": device,
             "delimiter": self.separator,
             "lineterminator": "\n",
         }
@@ -74,3 +77,5 @@ class CsvWriter(AbstractWriter):
             writer.writerow(written_var)
             # time.sleep(0.1) For demo purposes only. If the database is small, the progress bar won't show up !
             yield count
+
+        device.close()

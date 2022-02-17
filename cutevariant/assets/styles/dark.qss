@@ -40,6 +40,8 @@ QTabBar::tab:selected, QTabBar::tab:hover {
   border-bottom: 2px solid palette(highlight);
 }
 
+
+
 QTabBar::tab:selected:disabled {
   border-bottom: 2px solid palette(light);
 }
@@ -146,10 +148,7 @@ QSlider::sub-page:horizontal:disabled {
   background-color: palette(light);
 }
 
-QTreeView::indicator::unchecked {
-border: 1px solid palette(alternate-base);
-    background: none;
-}
+
 
 QDockWidget QTreeView
 {
@@ -167,3 +166,17 @@ QDockWidget QToolBar
 
 QMainWindow::separator {width: 1px; border: none;}
 QTabWidget::pane { border: 0; }
+
+
+
+*::indicator {
+border-color: palette(midlight);
+border-width: 1px;
+border-style: solid;
+border-radius: 2px;
+}
+
+*::indicator:checked {
+background: palette(light);
+
+}

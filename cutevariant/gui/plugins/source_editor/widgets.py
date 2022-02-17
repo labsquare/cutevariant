@@ -15,7 +15,7 @@ from PySide2.QtGui import *
 # Custom imports
 from cutevariant.core import sql, command
 from cutevariant.core.sql import (
-    create_selection,
+    insert_selection_from_source,
     intersect_variants,
     union_variants,
     subtract_variants,
@@ -389,7 +389,7 @@ class SourceEditorWidget(plugin.PluginWidget):
 
         # Open bed intervals & create selection
         intervals = BedReader(filepath)
-        sql.create_selection_from_bed(
+        sql.insert_selection_from_bed(
             self.model.conn, DEFAULT_SELECTION_NAME, selection_name, intervals
         )
         # Refresh UI

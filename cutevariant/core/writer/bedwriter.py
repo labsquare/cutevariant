@@ -24,22 +24,23 @@ class BedWriter(AbstractWriter):
     """
 
     def __init__(
-        self, conn, device, fields=["chr", "pos"], source="variants", filters={}
+        self, conn, filename, fields=["chr", "pos"], source="variants", filters={}
     ):
-        super().__init__(conn, device, fields, source, filters)
+        super().__init__(conn, filename, fields, source, filters)
 
     def async_save(self, *args, **kwargs):
         r""""""
 
-        self.fields = ["chr", "pos"]
-        for count, variant in enumerate(self.get_variants()):
+        with open(self.filename, "w") as device:
+            self.fields = ["chr", "pos"]
+            for count, variant in enumerate(self.get_variants()):
 
-            chrom = str(variant["chr"])
-            start = str(variant["pos"])
-            end = str(variant["pos"] + 1)
+                chrom = str(variant["chr"])
+                start = str(variant["pos"])
+                end = str(variant["pos"] + 1)
 
-            line = "\t".join([chrom, start, end]) + "\n"
+                line = "\t".join([chrom, start, end]) + "\n"
 
-            self.device.write(line)
+                device.write(line)
 
-            yield count + 1
+                yield count + 1

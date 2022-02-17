@@ -10,20 +10,22 @@ from cutevariant.core import sql
 from cutevariant.core.reader import BedReader
 from tests.utils import table_exists, table_count
 
+from cutevariant.core.reader import FakeReader
+
 
 FIELDS = [
     {
         "name": "chr",
         "category": "variants",
-        "type": "text",
+        "type": "str",
         "description": "chromosome",
     },
     {"name": "pos", "category": "variants", "type": "int", "description": "position"},
-    {"name": "ref", "category": "variants", "type": "text", "description": "reference"},
+    {"name": "ref", "category": "variants", "type": "str", "description": "reference"},
     {
         "name": "alt",
         "category": "variants",
-        "type": "text",
+        "type": "str",
         "description": "alternative",
     },
     {
@@ -154,7 +156,7 @@ VARIANTS_FOR_UPDATE = [
             {"name": "sacha", "gt": 1, "dp": 40},
             {"name": "boby", "gt": 1, "dp": 35},
         ],
-    }
+    },
 ]
 
 FILTERS = {
@@ -170,39 +172,119 @@ FILTERS = {
 }
 
 
+def test_create_database_schema():
+
+    conn = sql.get_sql_connection(":memory:")
+    sql.create_database_schema(conn)
+
+    assert sql.table_exists(conn, "variants")
+    assert sql.table_exists(conn, "fields")
+    assert sql.table_exists(conn, "annotations")
+    assert sql.table_exists(conn, "samples")
+    assert sql.table_exists(conn, "sample_has_variant")
+    assert sql.table_exists(conn, "selections")
+    assert sql.table_exists(conn, "wordsets")
+
+
+def test_alter_table():
+    conn = sql.get_sql_connection(":memory:")
+    sql.create_database_schema(conn)
+    columns_before = sql.get_table_columns(conn, "variants")
+    fields = [{"name": "boby", "type": "str"}]
+    sql.alter_table(conn, "variants", fields)
+    columns_after = sql.get_table_columns(conn, "variants")
+    assert columns_after == columns_before + [fields[0]["name"]]
+
+
+def test_alter_table_by_fields():
+    conn = sql.get_sql_connection(":memory:")
+    sql.create_database_schema(conn)
+    fields = sql.get_table_columns(conn, "variants")
+
+    new_fields = [{"name": "test", "type": "str", "category": "variants"}]
+    sql.alter_table_from_fields(conn, new_fields)
+
+    observed = sql.get_table_columns(conn, "variants")
+    expected = fields + [i["name"] for i in new_fields]
+
+    assert observed == expected
+
+
+def test_import_reader():
+    fd, filepath = tempfile.mkstemp()
+    conn = sql.get_sql_connection(filepath)
+
+    reader = FakeReader()
+    sql.import_reader(conn, reader)
+    sql.import_reader(conn, reader)
+
+
+# def test_import_variants():
+#     try:
+#         os.remove("/tmp/cutetest.db")
+#     except:
+#         pass
+#     conn = sql.get_sql_connection("/tmp/cutetest.db")
+#     sql.create_database_schema(conn)
+#     sql.insert_samples(conn, SAMPLES)
+
+#     sql.insert_variants(conn, VARIANTS)
+# sql.insert_variants(conn, VARIANTS_FOR_UPDATE)
+
+
+# def test_insert_variants():
+#     conn = sql.get_sql_connection(":memory:")
+#     sql.create_database_schema(conn)
+
+#     sql.insert_variants_async(conn, VARIANTS)
+
+
 @pytest.fixture
 def conn():
     """Initialize a memory DB with test data and return a connexion on this DB"""
     conn = sql.get_sql_connection(":memory:")
 
-    sql.create_table_project(conn, "test", "hg19")
-    assert table_exists(conn, "projects"), "cannot create table projects"
+    assert sql.schema_exists(conn) == False
 
+    sql.create_database_schema(conn)
+
+    assert sql.schema_exists(conn) == True
+
+    sql.alter_table(
+        conn, "variants", [field for field in FIELDS if field["category"] == "variants"]
+    )
+    sql.alter_table(
+        conn,
+        "annotations",
+        [field for field in FIELDS if field["category"] == "annotations"],
+    )
+    sql.alter_table(
+        conn,
+        "sample_has_variant",
+        [field for field in FIELDS if field["category"] == "samples"],
+    )
+
+    sql.update_project(conn, {"name": "test", "reference": "hg19"})
+    assert table_exists(conn, "projects"), "cannot create table projects"
     project_data = sql.get_project(conn)
     assert project_data["name"] == "test"
     assert project_data["reference"] == "hg19"
 
-    sql.create_table_fields(conn)
     assert table_exists(conn, "fields"), "cannot create table fields"
 
-    sql.insert_many_fields(conn, FIELDS)
+    sql.insert_fields(conn, copy.deepcopy(FIELDS))
+
     assert table_count(conn, "fields") == len(FIELDS), "cannot insert many fields"
 
-    sql.create_table_selections(conn)
     assert table_exists(conn, "selections"), "cannot create table selections"
 
-    sql.create_table_annotations(conn, sql.get_field_by_category(conn, "annotations"))
     assert table_exists(conn, "annotations"), "cannot create table annotations"
 
-    sql.create_table_samples(conn, sql.get_field_by_category(conn, "samples"))
     assert table_exists(conn, "samples"), "cannot create table samples"
-    sql.insert_many_samples(conn, SAMPLES)
+    sql.insert_samples(conn, copy.deepcopy(SAMPLES))
 
-    sql.create_table_variants(conn, sql.get_field_by_category(conn, "variants"))
     assert table_exists(conn, "variants"), "cannot create table variants"
-    sql.insert_many_variants(conn, VARIANTS)
-
-    sql.create_table_wordsets(conn)
+    sql.insert_variants(conn, copy.deepcopy(VARIANTS))
     assert table_exists(conn, "wordsets"), "cannot create table sets"
 
     return conn
@@ -258,19 +340,41 @@ def print_table_for_debug(conn, table):
         for row in cur.fetchall():
             print(tuple(row))
 
+
 ################################################################################
 
-def test_update(conn):
-    #TODO: automate table update verification
-    for table in ("variants", "annotations", "samples", "sample_has_variant", "selections"):
-        print_table_for_debug(conn, table)
-    for x, y in sql.async_update_many_variants(conn, 
-                            VARIANTS_FOR_UPDATE, 
-                            total_variant_count=len(VARIANTS_FOR_UPDATE), 
-                            yield_every=1):
-        print(x,y)
-    for table in ("variants", "annotations", "samples", "sample_has_variant", "selections"):
-        print_table_for_debug(conn, table)
+# def test_update(conn):
+#     #TODO: automate table update verification
+#     for table in ("variants", "annotations", "samples", "sample_has_variant", "selections"):
+#         print_table_for_debug(conn, table)
+#     for x, y in sql.update_variants_async(conn,
+#                             VARIANTS_FOR_UPDATE,
+#                             total_variant_count=len(VARIANTS_FOR_UPDATE),
+#                             yield_every=1):
+#         print(x,y)
+#     for table in ("variants", "annotations", "samples", "sample_has_variant", "selections"):
+#         print_table_for_debug(conn, table)
+
+
+def test_update_variants_counts(conn):
+
+    sql.update_variants_counts(conn)
+
+    samples = VARIANTS[0]["samples"]
+
+    expected = {}
+    expected["count_var"] = sum(sample["gt"] for sample in samples if sample["gt"] > 1)
+    expected["count_het"] = sum(sample["gt"] for sample in samples if sample["gt"] == 1)
+    expected["count_hom"] = sum(sample["gt"] for sample in samples if sample["gt"] == 2)
+    expected["count_ref"] = sum(sample["gt"] for sample in samples if sample["gt"] == 0)
+
+    observed = dict(
+        conn.execute(
+            "SELECT count_var, count_het, count_hom, count_ref FROM variants WHERE id = 1"
+        ).fetchone()
+    )
+
+    assert expected == observed
 
 
 def test_create_indexes(conn):
@@ -372,17 +476,18 @@ def test_create_connexion(conn):
 
 def test_update_project(conn):
 
-    sql.update_project(
-        conn,
-        {
-            "latest_vql_query": 'SELECT chr,pos,ref,alt,gene FROM variants WHERE gene != "CFTR"',
-        },
-    )
     project_data = sql.get_project(conn)
-    assert (
-        project_data["latest_vql_query"]
-        == 'SELECT chr,pos,ref,alt,gene FROM variants WHERE gene != "CFTR"'
-    )
+
+    assert project_data["name"] == "test"
+    assert project_data["reference"] == "hg19"
+
+    sql.update_project(conn, {"name": "test2", "extra": 324})
+    project_data = sql.get_project(conn)
+    assert project_data["name"] == "test2"
+    assert project_data["reference"] == "hg19"
+    assert project_data["extra"] == "324"
+
+    assert sql.count_query(conn, "SELECT * FROM projects") == 3
 
 
 def test_get_database_file_name():
@@ -419,7 +524,8 @@ def test_get_columns(conn):
     """Test getting columns of variants and annotations"""
     variant_cols = set(sql.get_table_columns(conn, "variants"))
     expected_cols = {i["name"] for i in FIELDS if i["category"] == "variants"}
-    assert variant_cols == expected_cols
+    extra_cols = {i["name"] for i in sql.VARIANT_MANDATORY_FIELDS}
+    assert variant_cols == expected_cols.union(extra_cols)
 
     annot_cols = set(sql.get_table_columns(conn, "annotations"))
     expected_cols = {i["name"] for i in FIELDS if i["category"] == "annotations"}
@@ -433,19 +539,21 @@ def test_get_annotations(conn):
 
     Interrogation of `annotations` table.
     """
+
     for index, variant in enumerate(VARIANTS):
         read_tx = list(sql.get_annotations(conn, index + 1))[0]
         del read_tx["variant_id"]
         expected_tx = VARIANTS[index]["annotations"][0]
+
         assert read_tx == expected_tx
 
 
 def test_get_sample_annotations_by_variant(conn):
 
-    expected = [dict(i, phenotype=0, sex=0) for i in VARIANTS[0]["samples"]]
-    observed = [
-        i for i in sql.get_sample_annotations_by_variant(conn, 1, fields=["gt", "dp"])
-    ]
+    expected = [dict(i, valid=0) for i in VARIANTS[0]["samples"]]
+    observed = []
+    for i in sql.get_sample_annotations_by_variant(conn, 1, fields=["gt", "dp"]):
+        observed.append(i)
 
     assert expected == observed
 
@@ -461,6 +569,8 @@ def test_get_sample_annotations(conn, variants_data):
                 result = sql.get_sample_annotations(conn, variant_id, sample_id)
                 del result["sample_id"]
                 del result["variant_id"]
+                del result["classification"]
+                del result["comment"]
                 del sample["name"]  # This field is in samples table
                 assert result == sample
 
@@ -561,7 +671,7 @@ def test_update_variant(conn):
     updated = {"id": 1, "ref": "A", "chr": "chrX"}
     sql.update_variant(conn, updated)
 
-    inserted = sql.get_one_variant(conn, 1)
+    inserted = sql.get_variant(conn, 1)
 
     assert inserted["ref"] == updated["ref"]
     assert inserted["chr"] == updated["chr"]
@@ -581,7 +691,7 @@ def test_insert_set_from_file(conn, wordset):
 
     print("Expected data:", expected_data)
 
-    sql.import_wordset_from_file(conn, "test_wordset", wordset_file)
+    sql.insert_wordset_from_file(conn, "test_wordset", wordset_file)
 
     # TODO: for now the one to many relation is not implemented
     # All records have the name of the set... awesome
@@ -597,7 +707,7 @@ def test_insert_set_from_file(conn, wordset):
 def test_insert_set_from_list(conn):
 
     expected = set(["CFTR", "GJB2"])
-    sql.import_wordset_from_list(conn, "name", expected)
+    sql.insert_wordset_from_list(conn, "name", expected)
     observed = set(
         [i["value"] for i in conn.execute("SELECT * FROM wordsets").fetchall()]
     )
@@ -609,7 +719,7 @@ def test_get_sets(conn, kindly_wordset_fixture):
     """Test get_wordsets: Word set group by results"""
     wordset_file, _ = kindly_wordset_fixture
 
-    sql.import_wordset_from_file(conn, "test_wordset", wordset_file)
+    sql.insert_wordset_from_file(conn, "test_wordset", wordset_file)
 
     expected = [{"name": "test_wordset", "count": 4}]
     found = list(sql.get_wordsets(conn))
@@ -633,9 +743,9 @@ def test_get_words_in_set(conn, wordset):
 
     print("Expected data:", expected_data)
 
-    sql.import_wordset_from_file(conn, "test_wordset", wordset_file)
+    sql.insert_wordset_from_file(conn, "test_wordset", wordset_file)
 
-    found = set(sql.get_words_in_set(conn, "test_wordset"))
+    found = set(sql.get_wordset_by_name(conn, "test_wordset"))
 
     assert set(expected_data) == found
 
@@ -647,16 +757,16 @@ def test_wordset_operation(conn):
     set1 = {"CFTR", "GJB2"}
     set2 = {"CFTR", "KRAS", "BRAF"}
 
-    sql.import_wordset_from_list(conn, "A", set1)
-    sql.import_wordset_from_list(conn, "B", set2)
+    sql.insert_wordset_from_list(conn, "A", set1)
+    sql.insert_wordset_from_list(conn, "B", set2)
 
-    sql.intersect_wordset(conn, "C", ["A", "B"])
-    sql.union_wordset(conn, "D", ["A", "B"])
-    sql.subtract_wordset(conn, "E", ["A", "B"])
+    sql.insert_wordset_from_intersect(conn, "C", ["A", "B"])
+    sql.insert_wordset_from_union(conn, "D", ["A", "B"])
+    sql.insert_wordset_from_subtract(conn, "E", ["A", "B"])
 
-    assert set(sql.get_words_in_set(conn, "C")) == set1 & set2
-    assert set(sql.get_words_in_set(conn, "D")) == set1 | set2
-    assert set(sql.get_words_in_set(conn, "E")) == set1 - set2
+    assert set(sql.get_wordset_by_name(conn, "C")) == set1 & set2
+    assert set(sql.get_wordset_by_name(conn, "D")) == set1 | set2
+    assert set(sql.get_wordset_by_name(conn, "E")) == set1 - set2
 
 
 def test_selections(conn):
@@ -673,7 +783,7 @@ def test_selections(conn):
         ON annotations.variant_id = variants.rowid"""
 
     # Create a new selection (a second one, since there is a default one during DB creation)
-    ret = sql.create_selection_from_sql(conn, query, "selection_name", count=None)
+    ret = sql.insert_selection_from_sql(conn, query, "selection_name", count=None)
     assert ret == 2
 
     # Query the association table (variant_id, selection_id)
@@ -798,13 +908,16 @@ def test_get_one_variant(conn):
         => see :meth:`test_advanced_get_one_variant`
     """
     for variant_id, expected_variant in enumerate(VARIANTS, 1):
-        found_variant = sql.get_one_variant(conn, variant_id)
+        found_variant = sql.get_variant(conn, variant_id)
+
+        print(found_variant)
 
         print("found variant", found_variant)
         assert found_variant["id"] == variant_id
 
         for k, v in expected_variant.items():
             if k not in ("annotations", "samples"):
+                print(k)
                 assert found_variant[k] == expected_variant[k]
 
 
@@ -814,7 +927,7 @@ def test_advanced_get_one_variant(conn):
     .. note:: annotations and samples which are optional ARE tested here
     """
     for variant_id, expected_variant in enumerate(VARIANTS, 1):
-        found_variant = sql.get_one_variant(
+        found_variant = sql.get_variant(
             conn, variant_id, with_annotations=True, with_samples=True
         )
 
@@ -829,6 +942,12 @@ def test_advanced_get_one_variant(conn):
 
                 if "sample_id" in item:
                     del item["sample_id"]
+
+                if "classification" in item:
+                    del item["classification"]
+
+                if "comment" in item:
+                    del item["comment"]
 
             if extra_field in found_variant and extra_field in expected_variant:
                 assert found_variant[extra_field] == expected_variant[extra_field]
@@ -854,7 +973,7 @@ def test_selection_from_bedfile(conn):
 
     # Create a new selection (a second one, since there is a default one during DB creation)
     selection_name = "bedname"
-    ret = sql.create_selection_from_bed(conn, "variants", selection_name, bedtool)
+    ret = sql.insert_selection_from_bed(conn, "variants", selection_name, bedtool)
 
     # Test last id of the selection
     assert ret == 2
@@ -898,7 +1017,7 @@ def test_selection_from_bedfile_and_subselection(conn):
 
     # Create now a sub selection => 2 variants (pos 10, 45)
     query = "SELECT variants.id,chr,pos,ref,alt FROM variants WHERE ref='G'"
-    set_A_id = sql.create_selection_from_sql(conn, query, "setA", count=None)
+    set_A_id = sql.insert_selection_from_sql(conn, query, "setA", count=None)
     # 2nd selection (1st is the default "variants")
     assert set_A_id == 2
     assert "setA" in list(s["name"] for s in sql.get_selections(conn))
@@ -906,7 +1025,7 @@ def test_selection_from_bedfile_and_subselection(conn):
     # 1: chr1, pos 1 to 10 => 1 remaining variant
     # 2: chr1, pos 50 to 60 => 0 variant
     # 3: chr1, pos 51 to 59 => 0 variant
-    ret = sql.create_selection_from_bed(conn, "setA", "sub_bedname", bedtool)
+    ret = sql.insert_selection_from_bed(conn, "setA", "sub_bedname", bedtool)
     # id of selection
     assert ret == 3
 
@@ -937,7 +1056,7 @@ def test_sql_selection_operation(conn):
 
     # Create a selection from sql
     query = "SELECT id, chr, pos FROM variants where alt = 'A' "
-    sql.create_selection_from_sql(conn, query, "test")
+    sql.insert_selection_from_sql(conn, query, "test")
 
     # check if selection has been created
     assert "test" in [record["name"] for record in sql.get_selections(conn)]
@@ -962,7 +1081,7 @@ def test_sql_selection_operation(conn):
 
     union_query = sql.union_variants(query1, query2)
     print(union_query)
-    selection_id = sql.create_selection_from_sql(conn, union_query, "union_GT")
+    selection_id = sql.insert_selection_from_sql(conn, union_query, "union_GT")
     print("union_GT selection id: ", selection_id)
     assert selection_id is not None
     record = cursor.execute(
@@ -992,16 +1111,16 @@ def test_sql_selection_operation(conn):
     assert found_variants == 3
 
 
-def test_variants(conn):
-    """Test that we have all inserted variants in the DB"""
+# def test_variants(conn):
+#     """Test that we have all inserted variants in the DB"""
 
-    for i, record in enumerate(conn.execute("SELECT * FROM variants")):
-        record = list(record)[1:]  # omit id
-        expected_variant = VARIANTS[i]
+#     for i, record in enumerate(conn.execute("SELECT * FROM variants")):
+#         record = list(record)[1:]  # omit id
+#         expected_variant = VARIANTS[i]
 
-        # Check only variants, not annotations or samples
-        for not_wanted_key in ("annotations", "samples"):
-            if not_wanted_key in expected_variant:
-                del expected_variant[not_wanted_key]
+#         # Check only variants, not annotations or samples
+#         for not_wanted_key in ("annotations", "samples"):
+#             if not_wanted_key in expected_variant:
+#                 del expected_variant[not_wanted_key]
 
-        assert tuple(record) == tuple(expected_variant.values())
+#         assert tuple(record) == tuple(expected_variant.values())
