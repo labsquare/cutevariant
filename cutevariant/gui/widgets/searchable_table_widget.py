@@ -71,7 +71,7 @@ class SearchableTableWidget(QWidget):
 
         self.search_edit = QLineEdit(self)
 
-        self.search_edit.textChanged.connect(self.proxy.setFilterRegExp)
+        self.search_edit.textChanged.connect(self.proxy.setFilterRegularExpression)
         self.search_edit.setPlaceholderText(self.tr("Search..."))
 
         layout = QVBoxLayout(self)
