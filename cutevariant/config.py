@@ -3,7 +3,7 @@ from cutevariant import LOGGER
 import os
 import yaml
 import typing
-from PySide2.QtCore import QStandardPaths, QDir, QFile, QFileInfo
+from PySide6.QtCore import QStandardPaths, QDir, QFile, QFileInfo
 
 
 class Config:
