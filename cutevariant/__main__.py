@@ -58,6 +58,7 @@ def main():
     QCoreApplication.setApplicationName("cutevariant")
     QCoreApplication.setApplicationVersion(__version__)
     QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
+    QCoreApplication.setAttribute(Qt.AA_ShareOpenGLContexts, True)
     QCoreApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
 
     # Process command line arguments

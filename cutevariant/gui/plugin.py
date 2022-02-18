@@ -189,11 +189,11 @@ class PluginWidget(QWidget):
         pass
 
     def to_json(self):
-        """ serialize plugin state into dict"""
+        """serialize plugin state into dict"""
         return {}
 
     def from_json(self, json: dict):
-        """ read plugin state from json dict """
+        """read plugin state from json dict"""
         pass
 
     def showEvent(self, event):

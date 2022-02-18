@@ -559,4 +559,4 @@ if __name__ == "__main__":
     view.on_open_project(conn)
     view.show()
 
-    app.exec_()
+    app.exec()
