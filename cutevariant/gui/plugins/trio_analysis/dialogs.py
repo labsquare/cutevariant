@@ -2,7 +2,7 @@
 import sqlite3
 
 # Qt imports
-from PySide2.QtWidgets import (
+from PySide6.QtWidgets import (
     QVBoxLayout,
     QFormLayout,
     QTableView,
@@ -13,7 +13,7 @@ from PySide2.QtWidgets import (
     QSpacerItem,
     QDialogButtonBox,
 )
-from PySide2.QtCore import Qt, QAbstractTableModel, QModelIndex, QThreadPool
+from PySide6.QtCore import Qt, QAbstractTableModel, QModelIndex, QThreadPool
 
 # Custom imports
 from cutevariant.gui.ficon import FIcon
@@ -198,7 +198,7 @@ class TrioAnalysisDialog(PluginDialog):
 
 
 if __name__ == "__main__":
-    from PySide2.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication
     import sys
 
     app = QApplication(sys.argv)

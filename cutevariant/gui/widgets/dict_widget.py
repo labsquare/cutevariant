@@ -1,4 +1,4 @@
-from PySide2.QtWidgets import (
+from PySide6.QtWidgets import (
     QTableView,
     QAbstractItemView,
     QApplication,
@@ -6,14 +6,14 @@ from PySide2.QtWidgets import (
     QVBoxLayout,
     QLineEdit,
     QMenu,
-    QAction,
 )
-from PySide2.QtCore import QAbstractTableModel, QModelIndex, QSortFilterProxyModel, Qt
-from PySide2.QtGui import (
+from PySide6.QtCore import QAbstractTableModel, QModelIndex, QSortFilterProxyModel, Qt
+from PySide6.QtGui import (
     QFont,
     QContextMenuEvent,
     QColor,
     QKeySequence,
+    QAction,
     QPaintEvent,
     QPainter,
 )

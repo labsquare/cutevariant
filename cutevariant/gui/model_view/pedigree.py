@@ -3,7 +3,7 @@ import tempfile
 import csv
 
 # Qt imports
-from PySide2.QtCore import (
+from PySide6.QtCore import (
     QLine,
     Qt,
     QAbstractTableModel,
@@ -13,7 +13,7 @@ from PySide2.QtCore import (
     Signal,
 )
 
-from PySide2.QtWidgets import (
+from PySide6.QtWidgets import (
     QLineEdit,
     QTableView,
     QItemDelegate,

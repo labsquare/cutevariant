@@ -1,6 +1,6 @@
 """A place to store style rules for the GUI"""
 from cutevariant.commons import DIR_STYLES
-from PySide2.QtGui import QPalette, QColor
+from PySide6.QtGui import QPalette, QColor
 
 
 CLASSIFICATION = {

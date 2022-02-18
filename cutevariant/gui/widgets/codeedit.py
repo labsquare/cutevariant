@@ -1,4 +1,4 @@
-from PySide2.QtWidgets import (
+from PySide6.QtWidgets import (
     QWidget,
     QTextEdit,
     QApplication,
@@ -11,7 +11,7 @@ from PySide2.QtWidgets import (
     QFrame,
     QStyle,
 )
-from PySide2.QtGui import (
+from PySide6.QtGui import (
     QPainter,
     QTextCursor,
     QIcon,
@@ -23,7 +23,7 @@ from PySide2.QtGui import (
     QSyntaxHighlighter,
     QTextCharFormat,
 )
-from PySide2.QtCore import (
+from PySide6.QtCore import (
     Qt,
     QSize,
     QStringListModel,

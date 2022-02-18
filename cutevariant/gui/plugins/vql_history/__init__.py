@@ -1,4 +1,4 @@
-from PySide2.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication
 
 __title__ = "VQL history"
 __description__ = "A VQL history to store previous vql query"

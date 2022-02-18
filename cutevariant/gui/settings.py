@@ -59,12 +59,12 @@ import os
 import glob
 from abc import abstractmethod
 from logging import DEBUG
-from PySide2.QtNetwork import QNetworkProxy
+from PySide6.QtNetwork import QNetworkProxy
 
 # Qt imports
-from PySide2.QtWidgets import *
-from PySide2.QtCore import *  # QApplication.instance()
-from PySide2.QtGui import *  # QIcon, QPalette
+from PySide6.QtWidgets import *
+from PySide6.QtCore import *  # QApplication.instance()
+from PySide6.QtGui import *  # QIcon, QPalette
 
 # Custom imports
 import cutevariant.commons as cm

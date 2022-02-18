@@ -7,11 +7,11 @@ import copy
 import re
 
 # Qt imports
-from PySide2.QtWidgets import *
-from PySide2.QtCore import *
-from PySide2.QtGui import *
-from PySide2.QtWebEngineWidgets import *
-
+from PySide6.QtWidgets import *
+from PySide6.QtCore import *
+from PySide6.QtGui import *
+from PySide6.QtWebEngineWidgets import *
+from PySide6.QtWebEngineCore import *
 
 # Custom imports
 from cutevariant.core import sql, command
@@ -54,13 +54,12 @@ class IgvWidget(plugin.PluginWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.view = IgvView()
+        self.view = IgvView(parent)
         self.vlayout = QVBoxLayout()
         self.vlayout.addWidget(self.view)
         self.setLayout(self.vlayout)
 
     def on_refresh(self):
-
         variant = self.mainwindow.get_state_data("current_variant")
         variant = sql.get_variant(self.mainwindow.conn, variant["id"])
 
@@ -76,15 +75,15 @@ if __name__ == "__main__":
 
     import sqlite3
     import sys
-    from PySide2.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication
 
     app = QApplication(sys.argv)
-
-    conn = sqlite3.connect("/DATA/dev/cutevariant/corpos2.db")
+    conn = sqlite3.connect("/home/sacha/test.db")
     conn.row_factory = sqlite3.Row
 
     view = IgvWidget()
     view.on_open_project(conn)
+
     view.show()
 
-    app.exec_()
+    app.exec()

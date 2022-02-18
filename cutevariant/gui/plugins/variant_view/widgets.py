@@ -21,9 +21,9 @@ import getpass
 import cachetools
 
 # Qt imports
-from PySide2.QtWidgets import *
-from PySide2.QtCore import *
-from PySide2.QtGui import *
+from PySide6.QtWidgets import *
+from PySide6.QtCore import *
+from PySide6.QtGui import *
 
 # Custom imports
 from cutevariant.config import Config
@@ -1013,7 +1013,7 @@ class VariantView(QWidget):
                 "Set ACMG classification for current selection. The field `classification` must be selected"
             )
         )
-        self.classification_action.setMenu(self.create_classification_menu())
+        #        self.classification_action.setMenu(self.create_classification_menu())
 
         # Comment action
         self.comment_action = QAction(FIcon(0xF0182), self.tr("Comments"))
@@ -1034,7 +1034,8 @@ class VariantView(QWidget):
         # self.widgetForAction(self.links_action).setPopupMode(
         #     QToolButton.InstantPopup
         # )
-        self.links_action.setMenu(self.create_external_links_menu())
+
+    #        self.links_action.setMenu(self.create_external_links_menu())
 
     def auto_resize(self):
         """Resize columns to content"""
@@ -1780,7 +1781,7 @@ class VariantViewWidget(plugin.PluginWidget):
         )
         self._tag_action_menu = QMenu()
         self._tag_widget = TagsWidget()
-        self._tag_action.setMenu(self._tag_action_menu)
+        #        self._tag_action.setMenu(self._tag_action_menu)
         self.widget_action = QWidgetAction(self)
         self.widget_action.setDefaultWidget(self._tag_widget)
         self._tag_widget.visibility_changed.connect(self.on_tag_widget_show)
@@ -2081,7 +2082,7 @@ class VariantViewWidget(plugin.PluginWidget):
 
 if __name__ == "__main__":
     import sys
-    from PySide2.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication
     from cutevariant.core.importer import import_file, import_reader
     from cutevariant.core.reader import FakeReader, VcfReader
     from cutevariant.core import sql

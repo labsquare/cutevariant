@@ -1,22 +1,25 @@
 from cutevariant.gui.ficon import FIcon
 import typing
 
-from PySide2.QtWidgets import (
-    QAction,
+from PySide6.QtWidgets import (
     QTableView,
     QWidget,
     QAbstractItemView,
     QLineEdit,
     QVBoxLayout,
 )
-from PySide2.QtCore import (
+from PySide6.QtCore import (
     QModelIndex,
     QSortFilterProxyModel,
     QAbstractItemModel,
     Signal,
     Qt,
 )
-from PySide2.QtGui import QPainter
+from PySide6.QtGui import (
+    QPainter,
+    QAction,
+)
+
 
 from cutevariant.commons import GENOTYPE_DESC
 

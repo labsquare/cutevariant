@@ -1,6 +1,6 @@
-from PySide2.QtWidgets import *
-from PySide2.QtCore import *
-from PySide2.QtGui import *
+from PySide6.QtWidgets import *
+from PySide6.QtCore import *
+from PySide6.QtGui import *
 
 from cutevariant.gui.ficon import FIcon
 
@@ -162,12 +162,48 @@ def create_widget_action(toolbar: QToolBar, widget: QWidget):
     widget_action = QWidgetAction(toolbar)
     widget_action.setDefaultWidget(widget)
     menu = QMenu()
-    action.setMenu(menu)
+    # action.setMenu(menu)
     widget.setParent(menu)
     menu.addAction(widget_action)
     toolbar.widgetForAction(action).setPopupMode(QToolButton.InstantPopup)
 
     return action
+
+
+# class ChoiceEdit(QLineEdit):
+#     def __init__(self, parent=None):
+#         super().__init__()
+
+#         self._view = QListView()
+#         self._model = ChoiceModel()
+
+#         self._model.add_item(QIcon(), "sdfsf")
+#         self._model.add_item(QIcon(), "sdfsf")
+#         self._model.add_item(QIcon(), "sdfsf")
+
+#         self._view.setWindowFlags(Qt.Tool | Qt.FramelessWindowHint)
+#         self._view.setModel(self._model)
+
+
+#     def mousePressEvent(self, event):
+
+#         pos = self.mapToGlobal(self.rect().bottomLeft())
+
+#         self._view.setGeometry(pos.x(), pos.y(), self.width(), 100)
+
+#         if self._view.isVisible():
+#             self._view.hide()
+#         else:
+#             self._view.show()
+
+#         super().mousePressEvent(event)
+
+# def focusOutEvent(self, event):
+#     if self._view.isVisible():
+#         self._view.hide()
+
+#     else:
+#         super().focusOutEvent(event)
 
 
 if __name__ == "__main__":

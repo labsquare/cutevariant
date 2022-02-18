@@ -5,7 +5,7 @@ import json
 import os
 
 # Qt imports
-from PySide2.QtCore import (
+from PySide6.QtCore import (
     Qt,
     QAbstractTableModel,
     QDateTime,
@@ -15,14 +15,13 @@ from PySide2.QtCore import (
     QModelIndex,
     QSortFilterProxyModel,
 )
-from PySide2.QtWidgets import (
+from PySide6.QtWidgets import (
     QToolBar,
     QVBoxLayout,
     QApplication,
     QFileDialog,
     QMessageBox,
     QTableView,
-    QAction,
     QHeaderView,
     QAbstractItemView,
     QSpacerItem,
@@ -30,7 +29,12 @@ from PySide2.QtWidgets import (
     QLineEdit,
 )
 
-from PySide2.QtGui import QDesktopServices, QKeySequence
+from PySide6.QtGui import (
+    QDesktopServices,
+    QKeySequence,
+    QAction,
+)
+
 
 # Custom imports
 from cutevariant.gui import style, plugin, FIcon, MainWindow
@@ -410,7 +414,9 @@ class VqlHistoryWidget(plugin.PluginWidget):
 
         self.search_edit.setVisible(False)
         self.search_edit.setPlaceholderText(self.tr("Search query... "))
-        self.search_edit.textChanged.connect(self.proxy_model.setFilterRegExp)
+        self.search_edit.textChanged.connect(
+            self.proxy_model.setFilterRegularExpression
+        )
         self.search_edit.setContentsMargins(10, 10, 10, 10)
 
         # Create layout

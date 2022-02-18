@@ -7,9 +7,9 @@ import copy
 import re
 
 # Qt imports
-from PySide2.QtWidgets import *
-from PySide2.QtCore import *
-from PySide2.QtGui import *
+from PySide6.QtWidgets import *
+from PySide6.QtCore import *
+from PySide6.QtGui import *
 
 
 # Custom imports
@@ -27,7 +27,7 @@ from cutevariant.gui.sql_thread import SqlThread
 from cutevariant.gui.style import GENOTYPE
 
 
-from PySide2.QtWidgets import *
+from PySide6.QtWidgets import *
 import sys
 from functools import partial
 
@@ -377,7 +377,8 @@ class SamplesWidget(plugin.PluginWidget):
 
         self.general_menu.addAction(self.tr("Save preset"))
         self.general_menu.addAction(self.tr("Edit preset ..."))
-        menu_action.setMenu(self.general_menu)
+
+        # menu_action.setMenu(self.general_menu)
 
     def contextMenuEvent(self, event: QContextMenuEvent):
 
@@ -535,6 +536,8 @@ class SamplesWidget(plugin.PluginWidget):
         self.show_error("")
 
         self.view.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
+
+
 # self.view.horizontalHeader().setSectionResizeMode(
 #     0, QHeaderView.ResizeToContents
 # )
@@ -545,7 +548,7 @@ if __name__ == "__main__":
 
     import sqlite3
     import sys
-    from PySide2.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication
 
     app = QApplication(sys.argv)
 
@@ -556,4 +559,4 @@ if __name__ == "__main__":
     view.on_open_project(conn)
     view.show()
 
-    app.exec_()
+    app.exec()

@@ -8,9 +8,9 @@ import typing
 import copy
 import re
 
-from PySide2.QtWidgets import *
-from PySide2.QtCore import *
-from PySide2.QtGui import *
+from PySide6.QtWidgets import *
+from PySide6.QtCore import *
+from PySide6.QtGui import *
 from cutevariant.config import Config
 
 from cutevariant.gui import plugin, FIcon, style
@@ -947,22 +947,22 @@ class FieldsEditorWidget(plugin.PluginWidget):
 
         ## preset action
         self.preset_menu = QMenu()
-        preset_action = QAction(FIcon(0xF1268), "preset", self)
-        preset_action.setMenu(self.preset_menu)
-        preset_action.setToolTip(self.tr("A list a predefined fields selections"))
+        # self.preset_menu.setIcon(FIcon(0xF1268))
+        # self.preset_menu.setTitle("preset")
+        # self.preset_menu.setToolTip(self.tr("A list a predefined fields selections"))
 
         ## general menu
         menu_action = self.toolbar.addAction(FIcon(0xF035C), "menu")
         self.general_menu = QMenu()
-        self.general_menu.addAction(preset_action)
+        # self.general_menu.addMenu(self.preset_menu)
         self.general_menu.addAction(self.tr("Save preset"), self.save_preset)
         self.general_menu.addAction(self.tr("Edit preset ..."))
         # self.general_menu.addAction(self.tr("Export as a file ..."))
         # self.general_menu.addAction(self.tr("Import from a file ..."))
 
-        menu_action.setMenu(self.general_menu)
+        # menu_action.setMenu(self.general_menu)
 
-        self.toolbar.widgetForAction(menu_action).setPopupMode(QToolButton.InstantPopup)
+        # self.toolbar.widgetForAction(menu_action).setPopupMode(QToolButton.InstantPopup)
 
     @property
     def fields(self):

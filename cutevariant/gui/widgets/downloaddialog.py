@@ -1,7 +1,7 @@
 """Summary
 """
-from PySide2.QtCore import QUrl, QDir, Slot, QFile, QIODevice, QTime
-from PySide2.QtWidgets import (
+from PySide6.QtCore import QUrl, QDir, Slot, QFile, QIODevice, QTime
+from PySide6.QtWidgets import (
     QLabel,
     QProgressBar,
     QDialogButtonBox,
@@ -9,8 +9,8 @@ from PySide2.QtWidgets import (
     QApplication,
     QVBoxLayout,
 )
-from PySide2.QtGui import QFont
-from PySide2.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
+from PySide6.QtGui import QFont
+from PySide6.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
 import sys
 
 

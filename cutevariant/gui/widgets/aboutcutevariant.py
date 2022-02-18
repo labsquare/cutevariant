@@ -1,7 +1,7 @@
 """Expose AboutCutevariant class to show information about the project"""
 # Qt imports
-from PySide2.QtCore import Qt, QRect, QUrl
-from PySide2.QtWidgets import (
+from PySide6.QtCore import Qt, QRect, QUrl
+from PySide6.QtWidgets import (
     QDialog,
     QTabWidget,
     QLabel,
@@ -11,7 +11,7 @@ from PySide2.QtWidgets import (
     QFrame,
     QApplication,
 )
-from PySide2.QtGui import (
+from PySide6.QtGui import (
     QIcon,
     QPixmap,
     QPainter,

@@ -4,7 +4,7 @@ import sqlite3
 import copy
 import json
 
-from PySide2.QtCore import (
+from PySide6.QtCore import (
     QAbstractTableModel,
     QItemSelection,
     QModelIndex,
@@ -15,9 +15,8 @@ from PySide2.QtCore import (
     QSize,
     QSortFilterProxyModel,
 )
-from PySide2.QtWidgets import (
+from PySide6.QtWidgets import (
     QAbstractItemView,
-    QAction,
     QComboBox,
     QHBoxLayout,
     QInputDialog,
@@ -31,7 +30,14 @@ from PySide2.QtWidgets import (
     QHeaderView,
     QSizePolicy,
 )
-from PySide2.QtGui import QIcon, QStandardItemModel, QStandardItem, QFont
+from PySide6.QtGui import (
+    QIcon,
+    QStandardItemModel,
+    QStandardItem,
+    QFont,
+    QAction,
+)
+
 
 from cutevariant.gui.plugin import PluginWidget
 from cutevariant.core import sql
@@ -450,7 +456,7 @@ class GroupByViewWidget(PluginWidget):
 
 if __name__ == "__main__":
     import sys
-    from PySide2.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication
 
     app = QApplication(sys.argv)
 

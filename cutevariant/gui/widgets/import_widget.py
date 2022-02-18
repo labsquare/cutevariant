@@ -1,5 +1,5 @@
 # Qt imports
-from PySide2.QtCore import (
+from PySide6.QtCore import (
     QLine,
     Qt,
     QAbstractTableModel,
@@ -12,8 +12,8 @@ from PySide2.QtCore import (
     QDir,
 )
 
-from PySide2.QtGui import QFont, QColor
-from PySide2.QtWidgets import (
+from PySide6.QtGui import QFont, QColor
+from PySide6.QtWidgets import (
     QLineEdit,
     QStyle,
     QFrame,
@@ -635,7 +635,7 @@ class VcfImportDialog(QDialog):
 
 if __name__ == "__main__":
     import sys
-    from PySide2.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication
 
     app = QApplication(sys.argv)
 

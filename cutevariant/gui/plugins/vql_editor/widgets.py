@@ -13,8 +13,8 @@ from textx.exceptions import TextXSyntaxError
 import sqlite3
 
 # Qt imports
-from PySide2.QtCore import Qt, QStringListModel
-from PySide2.QtWidgets import (
+from PySide6.QtCore import Qt, QStringListModel
+from PySide6.QtWidgets import (
     QToolBar,
     QCompleter,
     QVBoxLayout,
@@ -22,7 +22,7 @@ from PySide2.QtWidgets import (
     QFrame,
     QApplication,
 )
-from PySide2.QtGui import QKeySequence
+from PySide6.QtGui import QKeySequence
 
 # Custom imports
 from cutevariant.core import vql, sql

@@ -5,9 +5,9 @@ import os
 import inspect
 
 # Qt imports
-from PySide2.QtCore import Qt, QModelIndex, QRect, QUrl
-from PySide2.QtWidgets import QStyleOptionViewItem
-from PySide2.QtGui import QIcon, QPainter, QFont, QPen, QColor
+from PySide6.QtCore import Qt, QModelIndex, QRect, QUrl
+from PySide6.QtWidgets import QStyleOptionViewItem
+from PySide6.QtGui import QIcon, QPainter, QFont, QPen, QColor
 
 
 class Formatter(object):

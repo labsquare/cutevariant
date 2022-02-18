@@ -1,4 +1,4 @@
-from PySide2.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication
 
 __title__ = "Statistics"
 __description__ = "A plugin to display statistics for the selected "

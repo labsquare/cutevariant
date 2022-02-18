@@ -1,5 +1,5 @@
-from PySide2.QtWidgets import QLineEdit, QPushButton, QFileDialog, QAction, QStyle
-from PySide2.QtGui import QFont
+from PySide6.QtWidgets import QLineEdit, QPushButton, QFileDialog, QStyle
+from PySide6.QtGui import QFont, QAction
 import os
 
 
@@ -49,7 +49,7 @@ class FileEdit(QLineEdit):
 
 
 if __name__ == "__main__":
-    from PySide2.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication
     import sys
 
     app = QApplication(sys.argv)

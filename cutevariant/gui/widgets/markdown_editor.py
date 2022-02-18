@@ -2,10 +2,10 @@
 from pkg_resources import parse_version
 
 # Qt imports
-from PySide2 import __version__ as pyside_version
-from PySide2.QtCore import Qt, QSize
-from PySide2.QtGui import QKeySequence, QIcon
-from PySide2.QtWidgets import (
+from PySide6 import __version__ as pyside_version
+from PySide6.QtCore import Qt, QSize
+from PySide6.QtGui import QKeySequence, QIcon, QActionGroup
+from PySide6.QtWidgets import (
     QTextEdit,
     QDialog,
     QApplication,
@@ -13,7 +13,6 @@ from PySide2.QtWidgets import (
     QStackedWidget,
     QVBoxLayout,
     QHBoxLayout,
-    QActionGroup,
     QSizePolicy,
     QPushButton,
     QToolBar,
@@ -32,7 +31,7 @@ from cutevariant import LOGGER
 class MarkdownEditor(QWidget):
     """Markdown editor used to add comments on variants
 
-    On PySide2 5.14+, comments can be edited in Markdown and previewed.
+    On PySide6 5.14+, comments can be edited in Markdown and previewed.
 
     """
 

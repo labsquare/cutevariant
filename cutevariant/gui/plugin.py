@@ -82,7 +82,7 @@ import importlib
 import pkgutil
 
 # Qt imports
-from PySide2.QtWidgets import QWidget, QDialog
+from PySide6.QtWidgets import QWidget, QDialog
 
 # Cutevariant import
 from cutevariant.config import Config
@@ -189,11 +189,11 @@ class PluginWidget(QWidget):
         pass
 
     def to_json(self):
-        """ serialize plugin state into dict"""
+        """serialize plugin state into dict"""
         return {}
 
     def from_json(self, json: dict):
-        """ read plugin state from json dict """
+        """read plugin state from json dict"""
         pass
 
     def showEvent(self, event):
@@ -206,7 +206,7 @@ class PluginWidget(QWidget):
             avoid surprises due to an early call of `on_refresh`.
 
         Args:
-            event(PySide2.QtGui.QShowEvent):
+            event(PySide6.QtGui.QShowEvent):
         """
 
         if self.conn and not self._STARTUP:

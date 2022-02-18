@@ -3,7 +3,7 @@ import pytest
 import tempfile
 
 # Qt imports
-from PySide2 import QtCore, QtWidgets
+from PySide6 import QtCore, QtWidgets
 
 
 from cutevariant.gui.plugins.variant_view import widgets

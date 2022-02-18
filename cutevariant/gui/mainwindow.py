@@ -11,9 +11,9 @@ from functools import partial
 from logging import DEBUG
 
 # Qt imports
-from PySide2.QtCore import Qt, QSettings, QByteArray, QDir, QUrl, Signal, QSize
-from PySide2.QtWidgets import *
-from PySide2.QtGui import QIcon, QKeySequence, QDesktopServices
+from PySide6.QtCore import Qt, QSettings, QByteArray, QDir, QUrl, Signal, QSize
+from PySide6.QtWidgets import *
+from PySide6.QtGui import QIcon, QKeySequence, QDesktopServices
 
 
 # Custom imports
@@ -169,9 +169,9 @@ class MainWindow(QMainWindow):
 
         # Window geometry
         self.resize(600, 400)
-        self.setGeometry(
-            QApplication.instance().desktop().rect().adjusted(100, 100, -100, -100)
-        )
+ # self.setGeometry(
+#     QApplication.instance().desktop().rect().adjusted(100, 100, -100, -100)
+# )
 
         # If True, the GUI settings are deleted when the app is closed
         self.requested_reset_ui = False

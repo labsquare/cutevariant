@@ -16,7 +16,7 @@ import sqlite3
 import glob
 
 # Qt imports
-from PySide2.QtWidgets import (
+from PySide6.QtWidgets import (
     QInputDialog,
     QWidget,
     QTreeView,
@@ -27,7 +27,6 @@ from PySide2.QtWidgets import (
     QStackedWidget,
     QDialog,
     QLineEdit,
-    QActionGroup,
     QFileDialog,
     QApplication,
     QStyledItemDelegate,
@@ -42,9 +41,8 @@ from PySide2.QtWidgets import (
     QMenu,
     QStyle,
     QAbstractItemDelegate,
-    QAction,
 )
-from PySide2.QtCore import (
+from PySide6.QtCore import (
     QAbstractListModel,
     QUrl,
     Qt,
@@ -64,7 +62,7 @@ from PySide2.QtCore import (
     QSettings,
     QRect,
 )
-from PySide2.QtGui import (
+from PySide6.QtGui import (
     QMouseEvent,
     QPainter,
     QPalette,
@@ -74,6 +72,8 @@ from PySide2.QtGui import (
     QIcon,
     QIntValidator,
     QDoubleValidator,
+    QActionGroup,
+    QAction,
     QKeySequence,
     QContextMenuEvent,
     QStandardItemModel,
@@ -2417,21 +2417,20 @@ class FiltersEditorWidget(plugin.PluginWidget):
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.toolbar.addWidget(spacer)
 
-        preset_action = self.toolbar.addAction(FIcon(0xF1268), self.tr("Presets"))
+        # preset_action = self.toolbar.addAction(FIcon(0xF1268), self.tr("Presets"))
         self.preset_menu = QMenu()
-        preset_action.setMenu(self.preset_menu)
-        preset_action.setToolTip(self.tr("A list a predefined fields selections"))
-        self.toolbar.widgetForAction(preset_action).setPopupMode(
-            QToolButton.InstantPopup
-        )
+        # preset_action.setMenu(self.preset_menu)
+        # preset_action.setToolTip(self.tr("A list a predefined fields selections"))
+        # self.toolbar.widgetForAction(preset_action).setPopupMode(
+        #     QToolButton.InstantPopup
+        # )
 
         # Create preset combobox with actions
 
         self.general_menu = QMenu()
-        menu_action = self.toolbar.addAction(FIcon(0xF035C), "menu")
-        menu_action.setMenu(self.general_menu)
-
-        self.toolbar.widgetForAction(menu_action).setPopupMode(QToolButton.InstantPopup)
+        # menu_action = self.toolbar.addAction(FIcon(0xF035C), "menu")
+        # menu_action.setMenu(self.general_menu)
+        # self.toolbar.widgetForAction(menu_action).setPopupMode(QToolButton.InstantPopup)
 
         save_action = self.general_menu.addAction(
             "Save preset ...", self.on_save_preset

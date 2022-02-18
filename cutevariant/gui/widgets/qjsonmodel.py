@@ -1,6 +1,6 @@
 """Python adaptation of https://github.com/dridk/QJsonModel
 
-Supports Python 2 and 3 with PySide, PySide2, PyQt4 or PyQt5.
+Supports Python 2 and 3 with PySide, PySide6, PyQt4 or PyQt5.
 Requires https://github.com/mottosso/Qt.py
 
 Usage:
@@ -39,7 +39,7 @@ Changes:
 
 import json
 
-from PySide2 import QtWidgets, QtCore
+from PySide6 import QtWidgets, QtCore
 
 
 class QJsonTreeItem(object):

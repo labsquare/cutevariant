@@ -2,9 +2,9 @@
 # Qt imports
 from cutevariant.gui.plugins.harmonizome_wordset import dialogs
 from typing import List
-from PySide2.QtCore import *
-from PySide2.QtGui import QColor, QFont, QIcon, QPixmap
-from PySide2.QtWidgets import *
+from PySide6.QtCore import *
+from PySide6.QtGui import QColor, QFont, QIcon, QPixmap
+from PySide6.QtWidgets import *
 
 # Custom imports
 from cutevariant.gui.plugin import PluginSettingsWidget
