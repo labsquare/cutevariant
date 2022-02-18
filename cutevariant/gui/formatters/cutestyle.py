@@ -2,7 +2,7 @@
 import re
 
 # Qt imports
-from PySide2.QtGui import (
+from PySide6.QtGui import (
     QColor,
     QFont,
     QBrush,
@@ -12,8 +12,8 @@ from PySide2.QtGui import (
     QPalette,
     QPixmap,
 )
-from PySide2.QtCore import Qt, QModelIndex, QRect, QUrl, QPoint
-from PySide2.QtWidgets import QStyleOptionViewItem, QStyle
+from PySide6.QtCore import Qt, QModelIndex, QRect, QUrl, QPoint
+from PySide6.QtWidgets import QStyleOptionViewItem, QStyle
 
 # Custom imports
 from cutevariant.gui.formatter import Formatter

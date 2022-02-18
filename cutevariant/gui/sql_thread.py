@@ -3,7 +3,7 @@ import sqlite3
 from typing import Callable
 
 # Qt imports
-from PySide2.QtCore import QThread, QObject, Signal
+from PySide6.QtCore import QThread, QObject, Signal
 
 # Custom imports
 from cutevariant.core.sql import get_sql_connection
@@ -167,7 +167,7 @@ class SqlThread(QThread):
 
 
 if __name__ == "__main__":
-    from PySide2.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication
     import sys
 
     app = QApplication(sys.argv)

@@ -1,5 +1,5 @@
-from PySide2.QtCore import QSettings
-from PySide2.QtNetwork import QNetworkAccessManager, QNetworkProxy
+from PySide6.QtCore import QSettings
+from PySide6.QtNetwork import QNetworkAccessManager, QNetworkProxy
 
 
 

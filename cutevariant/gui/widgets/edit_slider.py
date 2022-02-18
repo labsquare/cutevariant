@@ -1,4 +1,4 @@
-from PySide2.QtWidgets import (
+from PySide6.QtWidgets import (
     QWidget,
     QSlider,
     QApplication,
@@ -6,7 +6,7 @@ from PySide2.QtWidgets import (
     QAbstractSpinBox,
     QSpinBox,
 )
-from PySide2.QtCore import Qt
+from PySide6.QtCore import Qt
 
 import sys
 

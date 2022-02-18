@@ -82,7 +82,7 @@ import importlib
 import pkgutil
 
 # Qt imports
-from PySide2.QtWidgets import QWidget, QDialog
+from PySide6.QtWidgets import QWidget, QDialog
 
 # Cutevariant import
 from cutevariant.config import Config
@@ -206,7 +206,7 @@ class PluginWidget(QWidget):
             avoid surprises due to an early call of `on_refresh`.
 
         Args:
-            event(PySide2.QtGui.QShowEvent):
+            event(PySide6.QtGui.QShowEvent):
         """
 
         if self.conn and not self._STARTUP:

@@ -2,7 +2,7 @@
 import pytest
 
 # Qt imports
-from PySide2 import QtCore, QtWidgets
+from PySide6 import QtCore, QtWidgets
 
 # Custom imports
 from tests import utils

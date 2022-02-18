@@ -4,9 +4,9 @@ import jinja2
 import os
 import re
 
-from PySide2.QtGui import *
-from PySide2.QtCore import *
-from PySide2.QtWidgets import *
+from PySide6.QtGui import *
+from PySide6.QtCore import *
+from PySide6.QtWidgets import *
 
 from cutevariant.commons import camel_to_snake, snake_to_camel
 from cutevariant import LOGGER

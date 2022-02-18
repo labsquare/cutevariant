@@ -8,7 +8,7 @@ import typing
 
 # Qt imports
 
-from PySide2.QtWidgets import (
+from PySide6.QtWidgets import (
     QLineEdit,
     QTableView,
     QToolBar,
@@ -26,7 +26,7 @@ from PySide2.QtWidgets import (
     QMenu,
 )
 
-from PySide2.QtCore import (
+from PySide6.QtCore import (
     QAbstractTableModel,
     QMimeData,
     QModelIndex,
@@ -39,7 +39,7 @@ from PySide2.QtCore import (
     QUrl,
     Qt,
 )
-from PySide2.QtGui import QIcon, QContextMenuEvent, QKeyEvent, QKeySequence
+from PySide6.QtGui import QIcon, QContextMenuEvent, QKeyEvent, QKeySequence
 
 # Custom imports
 from cutevariant.gui.plugin import PluginWidget
@@ -653,7 +653,7 @@ class WordSetWidget(PluginWidget):
 
 if __name__ == "__main__":
     import sys
-    from PySide2.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication
 
     app = QApplication(sys.argv)
 

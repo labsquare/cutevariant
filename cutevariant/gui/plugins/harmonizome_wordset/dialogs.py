@@ -8,7 +8,7 @@ import sqlite3
 import typing
 
 # Qt imports
-from PySide2.QtWidgets import (
+from PySide6.QtWidgets import (
     QApplication,
     QWidget,
     QAbstractItemView,
@@ -23,7 +23,7 @@ from PySide2.QtWidgets import (
     QInputDialog,
     QSpacerItem,
 )
-from PySide2.QtCore import (
+from PySide6.QtCore import (
     Qt,
     QModelIndex,
     QSortFilterProxyModel,
@@ -34,8 +34,8 @@ from PySide2.QtCore import (
     Signal,
     Slot,
 )
-from PySide2.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
-from PySide2.QtGui import QIcon
+from PySide6.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
+from PySide6.QtGui import QIcon
 
 # Cutevariant imports
 from cutevariant.gui.ficon import FIcon

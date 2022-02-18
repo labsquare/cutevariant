@@ -1,4 +1,4 @@
-from PySide2.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication
 
 __title__ = "Variant info"
 __description__ = "A plugin to display variant info"

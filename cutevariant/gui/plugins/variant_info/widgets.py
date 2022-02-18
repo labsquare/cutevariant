@@ -7,9 +7,9 @@ VariantPopupMenu is also used in viewquerywidget for the same purpose.
 from logging import DEBUG
 
 # Qt imports
-from PySide2.QtCore import QModelIndex, Qt, Slot, QSize
-from PySide2.QtWidgets import *
-from PySide2.QtGui import QFont, QColor
+from PySide6.QtCore import QModelIndex, Qt, Slot, QSize
+from PySide6.QtWidgets import *
+from PySide6.QtGui import QFont, QColor
 
 # Custom imports
 from cutevariant.gui import FIcon, style
@@ -32,14 +32,15 @@ class VariantInfoModel(QJsonModel):
         self.fields_descriptions = {}
 
     @property
-    def  conn(self):
+    def conn(self):
         return self._conn
 
     @conn.setter
     def conn(self, conn):
         self._conn = conn
-        self.fields_descriptions = {f["name"]:f["description"] for f in sql.get_fields(conn)}
-
+        self.fields_descriptions = {
+            f["name"]: f["description"] for f in sql.get_fields(conn)
+        }
 
     def data(self, index: QModelIndex, role: Qt.ItemDataRole):
 
@@ -60,16 +61,15 @@ class VariantInfoModel(QJsonModel):
             return QSize(30, 30)
 
         if role == Qt.ToolTipRole:
-            
+
             if index.column() == 0:
                 # Return fields description
                 key = super().data(index, Qt.DisplayRole)
-                description = self.fields_descriptions.get(key,"")
+                description = self.fields_descriptions.get(key, "")
                 return f"<b>{key}</b><br/>{description}"
 
-
             if index.column() == 1:
-                # Return key values 
+                # Return key values
                 return str(value)
 
         if role == Qt.DisplayRole and index.column() == 1:
@@ -87,13 +87,10 @@ class VariantInfoModel(QJsonModel):
         return Qt.ItemIsEnabled | Qt.ItemIsSelectable
 
 
-
-
-
 class VariantInfoWidget(PluginWidget):
     """Plugin to show all annotations of a selected variant"""
 
-    ENABLE = True
+    ENABLE = False
     REFRESH_STATE_DATA = {"current_variant"}
 
     def __init__(self, parent=None):

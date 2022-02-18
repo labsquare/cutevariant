@@ -3,7 +3,7 @@ from tests import utils
 import pytest
 
 # Qt imports
-from PySide2 import QtCore, QtWidgets, QtGui
+from PySide6 import QtCore, QtWidgets, QtGui
 
 from cutevariant.gui.plugins.harmonizome_wordset import dialogs
 from cutevariant.core import sql

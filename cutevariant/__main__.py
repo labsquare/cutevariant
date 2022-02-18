@@ -24,7 +24,7 @@ from pkg_resources import parse_version
 
 import cachetools  # Force pyinstaller to import cache tools
 
-from PySide2.QtCore import (
+from PySide6.QtCore import (
     QCoreApplication,
     QSettings,
     QTranslator,
@@ -33,9 +33,10 @@ from PySide2.QtCore import (
     QLibraryInfo,
     Qt,
 )
-from PySide2.QtWidgets import QApplication, QSplashScreen, QStyleFactory
-from PySide2.QtGui import QPixmap
-from PySide2.QtNetwork import QNetworkProxy
+from PySide6.QtWidgets import QApplication, QSplashScreen, QStyleFactory
+from PySide6.QtGui import QPixmap
+from PySide6.QtNetwork import QNetworkProxy
+
 # Custom imports
 from cutevariant.config import Config
 from cutevariant.gui import MainWindow, network, setFontPath, style
@@ -178,7 +179,7 @@ def load_translations(app):
     app_settings = QSettings()
     locale_name = app_settings.value("ui/locale", "en")
 
-    # site-packages/PySide2/Qt/translations
+    # site-packages/PySide6/Qt/translations
     lib_info = QLibraryInfo.location(QLibraryInfo.TranslationsPath)
 
     # Qt translations

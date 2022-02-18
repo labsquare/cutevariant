@@ -1,6 +1,6 @@
-from PySide2.QtWidgets import *
-from PySide2.QtCore import *
-from PySide2.QtGui import *
+from PySide6.QtWidgets import *
+from PySide6.QtCore import *
+from PySide6.QtGui import *
 
 from cutevariant.gui.ficon import FIcon
 
@@ -162,7 +162,7 @@ def create_widget_action(toolbar: QToolBar, widget: QWidget):
     widget_action = QWidgetAction(toolbar)
     widget_action.setDefaultWidget(widget)
     menu = QMenu()
-    action.setMenu(menu)
+    # action.setMenu(menu)
     widget.setParent(menu)
     menu.addAction(widget_action)
     toolbar.widgetForAction(action).setPopupMode(QToolButton.InstantPopup)

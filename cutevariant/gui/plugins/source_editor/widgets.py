@@ -8,9 +8,9 @@ from cutevariant.gui.widgets.searchable_table_widget import LoadingTableView
 import typing
 
 # Qt imports
-from PySide2.QtWidgets import *
-from PySide2.QtCore import *
-from PySide2.QtGui import *
+from PySide6.QtWidgets import *
+from PySide6.QtCore import *
+from PySide6.QtGui import *
 
 # Custom imports
 from cutevariant.core import sql, command
@@ -655,7 +655,7 @@ if __name__ == "__main__":
 
     import sqlite3
     import sys
-    from PySide2.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication
 
     app = QApplication(sys.argv)
 
