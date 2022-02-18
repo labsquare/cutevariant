@@ -8,7 +8,7 @@ import os
 ## ================= Settings widgets ===================
 # Qt imports
 from PySide6.QtCore import *
-from PySide6.QtGui import QColor, QFont, QIcon, QKeySequence, QPixmap
+from PySide6.QtGui import QColor, QFont, QIcon, QKeySequence, QPixmap, QAction
 from PySide6.QtWidgets import *
 
 # Custom imports
