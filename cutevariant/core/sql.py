@@ -91,7 +91,7 @@ import numpy as np
 import json
 import os
 
-from typing import List, Callable
+from typing import List, Callable, Iterable
 
 # Custom imports
 import cutevariant.commons as cm
@@ -126,30 +126,35 @@ MANDATORY_FIELDS = [
         "name": "chr",
         "type": "str",
         "category": "variants",
+        "constraint": "DEFAULT 'unknown'",
         "description": "chromosom name",
     },
     {
         "name": "pos",
         "type": "int",
         "category": "variants",
+        "constraint": "DEFAULT -1",
         "description": "variant position",
     },
     {
         "name": "ref",
         "type": "str",
         "category": "variants",
+        "constraint": "DEFAULT 'N'",
         "description": "reference allele",
     },
     {
         "name": "alt",
         "type": "str",
         "category": "variants",
+        "constraint": "DEFAULT 'N'",
         "description": "alternative allele",
     },
     {
         "name": "favorite",
         "type": "bool",
         "category": "variants",
+        "constraint": "DEFAULT 0",
         "description": "favorite tag",
     },
     {
@@ -269,6 +274,13 @@ MANDATORY_FIELDS = [
         "constraint": "DEFAULT 0",
         "category": "samples",
         "description": "classification",
+    },
+    {
+        "name": "gt",
+        "type": "int",
+        "constraint": "DEFAULT -1",
+        "category": "samples",
+        "description": "Genotype",
     },
 ]
 
@@ -610,6 +622,71 @@ def create_indexes(
         create_annotations_indexes(conn, indexed_annotation_fields)
     except sqlite3.OperationalError as e:
         LOGGER.debug("create_indexes:: sqlite3.%s: %s", e.__class__.__name__, str(e))
+
+
+def get_clean_fields(fields: Iterable[dict] = None) -> Iterable[dict]:
+    """Helper function to add missing fields from MANDATORY FIELDS
+
+    if Not fields specified, it will returns only mandatory fields
+
+    Args:
+        fields (Iterable[dict]): list of fields
+
+    Yields:
+        Iterable[dict]: list of fields
+    """
+
+    if fields is None:
+        fields = []
+
+    required_fields = {(f["category"], f["name"]): f for f in MANDATORY_FIELDS}
+    input_fields = {(f["category"], f["name"]): f for f in fields}
+
+    required_fields.update(input_fields)
+
+    for field in required_fields.values():
+        yield field
+
+
+def get_accepted_fields(
+    fields: Iterable[dict], ignored_fields: Iterable[dict]
+) -> Iterable[dict]:
+    """Helper function to get fields without ignored fields
+
+    Args:
+        fields (Iterable[dict])
+        ignored_fields (Iterable[dict])
+    """
+
+    ignored_keys = {(f["category"], f["name"]) for f in ignored_fields}
+    return list(
+        filter(lambda x: (x["category"], x["name"]) not in ignored_keys, fields)
+    )
+
+
+def get_clean_variants(variants: Iterable[dict]) -> Iterable[dict]:
+    """Helper function to get variant without missing fields
+
+    Args:
+        variants (Iterable[dict]): list of variant
+
+    Yields:
+        Iterable[dict]: list of variants
+    """
+
+    # Build default variant with mandatory keys
+    # default_variant = {
+    #     f["name"]: None for f in MANDATORY_FIELDS if f["category"] == "variants"
+    # }
+
+    for variant in variants:
+        variant["is_indel"] = len(variant["ref"]) != len(variant["alt"])
+        variant["is_snp"] = len(variant["ref"]) == len(variant["alt"])
+        variant["annotation_count"] = (
+            len(variant["annotations"]) if "annotations" in variant else 0
+        )
+
+        yield variant
 
 
 # ==================================================
@@ -1713,11 +1790,6 @@ def create_table_variants(conn: sqlite3.Connection, fields: List[dict]):
     """
     cursor = conn.cursor()
 
-    fields = []
-    for field in MANDATORY_FIELDS:
-        if field["category"] == "variants":
-            fields.append(field)
-
     # Primary key MUST NOT have NULL fields !
     # PRIMARY KEY should always imply NOT NULL.
     # Unfortunately, due to a bug in some early versions, this is not the case in SQLite.
@@ -1730,6 +1802,8 @@ def create_table_variants(conn: sqlite3.Connection, fields: List[dict]):
             if field["name"]
         ]
     )
+
+    print("ICI", schema)
 
     LOGGER.debug("create_table_variants:: schema: %s", schema)
     # Unicity constraint or NOT NULL fields (Cf VcfReader, FakeReader, etc.)
@@ -2102,14 +2176,6 @@ def insert_variants(
     total = 0
     for variant_count, variant in enumerate(variants):
 
-        # Preprocess variants
-        variant["favorite"] = False
-        variant["is_indel"] = len(variant["ref"]) != len(variant["alt"])
-        variant["is_snp"] = len(variant["ref"]) == len(variant["alt"])
-        variant["annotation_count"] = (
-            len(variant["annotations"]) if "annotations" in variant else 0
-        )
-
         variant_fields = {
             i for i in variant.keys() if i not in ("samples", "annotations")
         }
@@ -2260,11 +2326,6 @@ def create_table_samples(conn, fields=[]):
 
     fields = list(fields)
 
-    # Create mandatory fields
-    for field in MANDATORY_FIELDS:
-        if field["category"] == "samples":
-            fields.append(field)
-
     schema = ",".join(
         [
             f'`{field["name"]}` {field["type"]} {field.get("constraint", "")}'
@@ -2272,9 +2333,6 @@ def create_table_samples(conn, fields=[]):
             if field["name"]
         ]
     )
-
-    if not fields:
-        schema = "gt INTEGER DEFAULT -1"
 
     cursor.execute(
         f"""CREATE TABLE sample_has_variant  (
@@ -2650,7 +2708,12 @@ def create_triggers(conn):
     )
 
 
-def create_database_schema(conn):
+def create_database_schema(conn: sqlite3.Connection, fields: Iterable[dict] = None):
+
+    if fields is None:
+        # get mandatory fields
+        fields = list(get_clean_fields())
+
     create_table_project(conn)
     # Create metadatas
     create_table_metadatas(conn)
@@ -2658,13 +2721,16 @@ def create_database_schema(conn):
     create_table_fields(conn)
 
     # Create variants tables
-    create_table_variants(conn, [])
+    variant_fields = (i for i in fields if i["category"] == "variants")
+    create_table_variants(conn, variant_fields)
 
     # Create annotations tables
-    create_table_annotations(conn, [])
+    ann_fields = (i for i in fields if i["category"] == "annotations")
+    create_table_annotations(conn, ann_fields)
 
     # # Create table samples
-    create_table_samples(conn, [])
+    sample_fields = (i for i in fields if i["category"] == "samples")
+    create_table_samples(conn, sample_fields)
 
     # # Create selection
     create_table_selections(conn)
@@ -2681,26 +2747,19 @@ def import_reader(
     reader: AbstractReader,
     pedfile: str = None,
     progress_callback: Callable = None,
-    ignore_fields: list = [],
+    ignored_fields: list = [],
 ):
 
     tables = ["variants", "annotations", "sample_has_variant"]
-    fields = reader.get_fields()
-
-    # Remove ignore fields
-    accept_fields = []
-    for field in fields:
-        for i_field in ignore_fields:
-            if (
-                field["category"] != i_field["category"]
-                or field["name"] != i_field["name"]
-            ):
-                accept_fields.append(field)
+    fields = get_clean_fields(reader.get_fields())
+    fields = get_accepted_fields(fields, ignored_fields)
 
     # If shema exists, create a database schema
     if not schema_exists(conn):
         LOGGER.debug("CREATE TABLE SCHEMA")
-        create_database_schema(conn)
+        create_database_schema(conn, fields)
+    else:
+        alter_table_from_fields(conn, fields)
 
     # Update metadatas
     update_metadatas(conn, reader.get_metadatas())
@@ -2715,17 +2774,13 @@ def import_reader(
             progress_callback("Insert pedfile")
         import_pedfile(conn, pedfile)
 
-    # Change table structure if it is required
-    alter_table_from_fields(conn, fields)
-
     # insert fields
-    insert_fields(conn, MANDATORY_FIELDS)
-    insert_fields(conn, reader.get_fields())
+    insert_fields(conn, fields)
 
     # insert variants
     insert_variants(
         conn,
-        reader.get_variants(),
+        get_clean_variants(reader.get_variants()),
         total_variant_count=reader.number_lines,
         progress_callback=progress_callback,
         progress_every=1000,

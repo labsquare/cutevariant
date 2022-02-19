@@ -216,7 +216,7 @@ def test_filters_to_vql():
 def test_sample_any_query():
 
     conn = sql.get_sql_connection(":memory:")
-    sql.create_table_samples(conn)
+    sql.create_database_schema(conn)
     sql.insert_sample(conn, "TUMOR")
     sql.insert_sample(conn, "NORMAL")
 
@@ -505,7 +505,7 @@ def test_build_query(args, expected_sql, expected_vql):
     # Create fake database with samples
     # This is necessary because querybuilder need to extract samples id
     conn = sql.get_sql_connection(":memory:")
-    sql.create_table_samples(conn)
+    sql.create_database_schema(conn)
     sql.insert_sample(conn, "TUMOR")
     sql.insert_sample(conn, "NORMAL")
 
