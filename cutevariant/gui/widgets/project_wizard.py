@@ -202,6 +202,8 @@ class ProjectWizard(QWizard):
         self.addPage(FilePage())
         self.addPage(ImportPage())
 
+        self.setWizardStyle(QWizard.ClassicStyle)
+
         self.resize(800, 600)
 
     def db_filename(self):

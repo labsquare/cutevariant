@@ -894,7 +894,7 @@ class VariantView(QWidget):
 
         # Setup delegate
         self.delegate = VariantDelegate()
-        self.view.setItemDelegate(self.delegate)
+        # self.view.setItemDelegate(self.delegate)
 
         # setup toolbar
         spacer = QWidget()
