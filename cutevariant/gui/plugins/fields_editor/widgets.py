@@ -896,9 +896,6 @@ class FieldsEditorWidget(plugin.PluginWidget):
         if self.auto_action.isChecked():
             self.on_apply()
 
-    def edit_preset(self):
-        pass
-
     def save_preset(self):
         """Save current fields as new preset"""
 
@@ -908,7 +905,8 @@ class FieldsEditorWidget(plugin.PluginWidget):
 
         if success and name:
             config = Config("fields_editor")
-            presets = config["presets"]
+
+            presets = config["presets"] or {}
 
             # if preset name exists ...
             if name in presets:
@@ -928,7 +926,6 @@ class FieldsEditorWidget(plugin.PluginWidget):
             config["presets"] = presets
             config.save()
             self.load_presets()
-            self.presets_combo.setCurrentText(name)
 
     def delete_preset(self):
         """Remove selected preset from combobox"""

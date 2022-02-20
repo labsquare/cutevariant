@@ -9,3 +9,7 @@ QTableView::indicator:checked {
 	background-color:palette(Text)
 }
 
+QToolButton::menu-indicator
+{
+    image:none;
+} 

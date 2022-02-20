@@ -703,7 +703,6 @@ class VariantModel(QAbstractTableModel):
         else:
             return False
 
-
 class VariantDelegate(QStyledItemDelegate):
     """Specify the aesthetic (style and color) of variants displayed on a view"""
 
@@ -802,7 +801,6 @@ class VariantDelegate(QStyledItemDelegate):
 
     # def editorEvent(self, event: QEvent, model, option, index: QModelIndex):
     #     return
-
 
 class LoadingTableView(QTableView):
     """Movie animation displayed on VariantView for long SQL queries executed

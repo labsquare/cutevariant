@@ -18,13 +18,21 @@ from cutevariant.core.reader import BedReader
 from cutevariant.gui import plugin, FIcon, style
 from cutevariant.commons import DEFAULT_SELECTION_NAME, SAMPLE_VARIANT_CLASSIFICATION
 
-from cutevariant.gui.widgets import ChoiceWidget, create_widget_action, SampleDialog
+from cutevariant.gui.widgets import (
+    ChoiceWidget,
+    create_widget_action,
+    SampleDialog,
+    PresetAction,
+)
 
 
 from cutevariant import LOGGER
 from cutevariant.gui.sql_thread import SqlThread
 
 from cutevariant.gui.style import GENOTYPE
+
+from cutevariant.gui import FormatterDelegate
+from cutevariant.gui.formatters.cutestyle import CutestyleFormatter
 
 
 from PySide6.QtWidgets import *
@@ -134,7 +142,9 @@ class SamplesModel(QAbstractTableModel):
         self.items = self._load_samples_thread.results
 
         if len(self.items) > 0:
-            self._headers = [i for i in self.items[0].keys() if i != "id"]
+            self._headers = [
+                i for i in self.items[0].keys() if i not in ("sample_id", "variant_id")
+            ]
 
         self.endResetModel()
 
@@ -250,10 +260,33 @@ class SamplesModel(QAbstractTableModel):
             return self._load_samples_thread.isRunning()
         return False
 
+    def edit(self, row: int, data: dict):
+        """Edit current item
+        Args:
+            row (int): Description
+            data (dict): Description
+        """
+
+        # change from memory
+        self.items[row].update(data)
+
+        print("EDIT", self.items[row])
+
+        # Persist in SQL
+        data["variant_id"] = self.items[row]["variant_id"]
+        data["sample_id"] = self.items[row]["sample_id"]
+        sql.update_sample_has_variant(self.conn, data)
+        self.dataChanged.emit(self.index(row, 0), self.index(row, self.columnCount()))
+
 
 class SamplesView(QTableView):
     def __init__(self, parent=None):
         super().__init__(parent)
+
+        self.delegate = FormatterDelegate()
+        self.delegate.set_formatter(CutestyleFormatter())
+
+        self.setItemDelegate(self.delegate)
 
     def paintEvent(self, event: QPaintEvent):
 
@@ -367,30 +400,110 @@ class SamplesWidget(plugin.PluginWidget):
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
         self.toolbar.addWidget(spacer)
-        menu_action = self.toolbar.addAction(FIcon(0xF035C), "menu")
-        self.toolbar.widgetForAction(menu_action).setPopupMode(QToolButton.InstantPopup)
-        self.general_menu = QMenu()
+        self.toolbar.addAction(
+            FIcon(0xF01FE), self.tr("Clear all filters"), self._on_clear_filters
+        )
+        # menu_action.setMenu(self.general_menu)
 
-        self.clear_filters = self.general_menu.addAction(
-            FIcon(0xF14F0), self.tr("Clear all filters"), self._on_clear_filters
+        self.preset_menu = QMenu()
+        self.preset_button = QPushButton()
+        self.preset_button.setToolTip(self.tr("Presets"))
+        self.preset_button.setIcon(FIcon(0xF035C))
+        self.preset_button.setMenu(self.preset_menu)
+        self.preset_button.setFlat(True)
+        # self.preset_button.setPopupMode(QToolButton.InstantPopup)
+        # self.preset_button.setToolButtonStyle(Qt.ToolButtonIconOnly)
+        self.toolbar.addWidget(self.preset_button)
+
+        self.load_presets()
+
+    def load_presets(self):
+
+        self.preset_menu.clear()
+
+        config = Config("samples")
+        self.preset_menu.addAction("Save preset", self.save_preset)
+        self.preset_menu.addSeparator()
+        if "presets" in config:
+            presets = config["presets"]
+            for name, fields in presets.items():
+                action = PresetAction(name, name, self)
+                action.set_close_icon(FIcon(0xF05E8, "red"))
+                action.triggered.connect(self._on_select_preset)
+                action.removed.connect(self.delete_preset)
+
+                self.preset_menu.addAction(action)
+
+    def delete_preset(self):
+        if not self.sender():
+            return
+
+        name = self.sender().data()
+
+        ret = QMessageBox.warning(
+            self,
+            self.tr("Remove preset"),
+            self.tr(f"Are you sure you want to delete preset {name}"),
+            QMessageBox.Yes | QMessageBox.No,
         )
 
-        self.general_menu.addAction(self.tr("Save preset"))
-        self.general_menu.addAction(self.tr("Edit preset ..."))
+        if ret == QMessageBox.No:
+            return
 
-        # menu_action.setMenu(self.general_menu)
+        config = Config("samples")
+        presets = config["presets"]
+        if name in presets:
+            del presets[name]
+            config.save()
+            self.load_presets()
+
+    def save_preset(self):
+        name, success = QInputDialog.getText(
+            self, self.tr("Create new preset"), self.tr("Preset name:")
+        )
+        if success and name:
+            config = Config("samples")
+            presets = config["presets"] or {}
+            # if preset name exists ...
+            if name in presets:
+                ret = QMessageBox.warning(
+                    self,
+                    self.tr("Overwrite preset"),
+                    self.tr(
+                        f"Preset {name} already exists. Do you want to overwrite it ?"
+                    ),
+                    QMessageBox.Yes | QMessageBox.No,
+                )
+
+                if ret == QMessageBox.No:
+                    return
+
+            presets[name] = self.model.fields
+            config["presets"] = presets
+            config.save()
+            self.load_presets()
+
+    def _on_select_preset(self):
+        config = Config("samples")
+        presets = config["presets"]
+        key = self.sender().data()
+        if key in presets:
+            self.field_selector.set_checked(presets[key])
+
+        self.on_refresh()
 
     def contextMenuEvent(self, event: QContextMenuEvent):
 
         menu = QMenu(self)
         menu.addAction(QIcon(), "Edit sample ...", self._show_sample_dialog)
-        menu.addAction(QIcon(), "Validate sample")
 
         menu.addSection("current variant")
         cat_menu = menu.addMenu("Classification")
 
         for key, value in SAMPLE_VARIANT_CLASSIFICATION.items():
-            cat_menu.addAction(value)
+            action = cat_menu.addAction(value)
+            action.setData(key)
+            action.triggered.connect(self._on_classification_changed)
 
         menu.addMenu(cat_menu)
         menu.addAction("Edit comment ...")
@@ -403,7 +516,7 @@ class SamplesWidget(plugin.PluginWidget):
         sample = self.model.item(row)
         if sample:
 
-            dialog = SampleDialog(self._conn, sample["id"])
+            dialog = SampleDialog(self._conn, sample["sample_id"])
 
             if dialog.exec_() == QDialog.Accepted:
                 self.load_all_filters()
@@ -415,6 +528,17 @@ class SamplesWidget(plugin.PluginWidget):
             self.view.showColumn(col)
         else:
             self.view.hideColumn(col)
+
+    def _on_classification_changed(self):
+        """triggered from menu"""
+        if not self.sender():
+            return
+
+        value = self.sender().data()
+        text = self.sender().text()
+
+        row = self.view.selectionModel().currentIndex().row()
+        self.model.edit(row, {"classification": value})
 
     def _on_clear_filters(self):
 

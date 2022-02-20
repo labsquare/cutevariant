@@ -90,19 +90,18 @@ class CutestyleFormatter(Formatter):
         if field == "ann.gene" and not is_selected:
             return {"color": "#6a9fca"}
 
-        if field == "classification":
-            icon = self.ACMG_ICON.get(str(value), self.ACMG_ICON["0"])
-            return {"icon": icon, "text": "", "icon-align": Qt.AlignCenter}
-
+# if field == "classification":
+#     icon = self.ACMG_ICON.get(str(value), self.ACMG_ICON["0"])
+#     return {"icon": icon, "text": "", "icon-align": Qt.AlignCenter}
         if field == "rsid" and value.startswith("rs"):
             # font.setUnderline(True)
             return {"link": "http://www.google.fr"}
             # pen.setColor("#0068F7")
 
-        if field == "favorite":
-            icon = self.FAV_ICON.get(int(value), self.FAV_ICON[0])
-            return {"icon": icon, "text": "", "icon-align": Qt.AlignCenter}
-            return
+        # if field == "favorite":
+        #     icon = self.FAV_ICON.get(int(value), self.FAV_ICON[0])
+        #     return {"icon": icon, "text": "", "icon-align": Qt.AlignCenter}
+        #     return
 
         if field == "ann.hgvs_c":
             font = QFont()
@@ -120,7 +119,7 @@ class CutestyleFormatter(Formatter):
                 value = m.group(1)
                 return {"text": value}
 
-        if re.match(r"samples\..+\.gt", field):
+        if re.match(r"samples\..+\.gt", field) or field == "gt":
             icon = self.GENOTYPE_ICONS.get(int(value), self.GENOTYPE_ICONS[-1])
             return {"text": "", "icon": icon}
 

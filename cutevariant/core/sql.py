@@ -2570,7 +2570,7 @@ def get_sample_annotations_by_variant(
 
     sql_fields = ",".join([f"sv.{f}" for f in fields])
 
-    query = f"""SELECT samples.id, samples.valid, samples.name , {sql_fields} FROM samples
+    query = f"""SELECT sv.sample_id, sv.variant_id, samples.valid, samples.name , {sql_fields} FROM samples
     LEFT JOIN sample_has_variant sv 
     ON sv.sample_id = samples.id AND sv.variant_id = {variant_id}"""
 
@@ -2638,6 +2638,41 @@ def update_sample(conn: sqlite3.Connection, sample: dict):
     query = (
         "UPDATE samples SET " + ",".join(sql_set) + " WHERE id = " + str(sample["id"])
     )
+    conn.execute(query, sql_val)
+    conn.commit()
+
+
+def update_sample_has_variant(conn: sqlite3.Connection, data: dict):
+    """Summary
+
+    data must contains variant_id and sample_id
+
+    Args:
+        conn (sqlite3.Connection): Description
+        data (dict): Data to update
+
+    """
+    if "variant_id" not in data and "sample_id" not in data:
+        logging.debug("id is required")
+        return
+
+    sql_set = []
+    sql_val = []
+
+    for key, value in data.items():
+        if key not in ("variant_id", "sample_id"):
+            sql_set.append(f"`{key}` = ? ")
+            sql_val.append(value)
+
+    sample_id = data["sample_id"]
+    variant_id = data["variant_id"]
+    query = (
+        "UPDATE sample_has_variant SET "
+        + ",".join(sql_set)
+        + f" WHERE sample_id = {sample_id} AND variant_id = {variant_id}"
+    )
+
+    print("ICCCCCCCCCCCCCCCCC", query)
     conn.execute(query, sql_val)
     conn.commit()
 
