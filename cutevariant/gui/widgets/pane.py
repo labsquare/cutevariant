@@ -16,8 +16,7 @@ class Pane(QFrame):
         self.bar_layout.setContentsMargins(0, 0, 0, 0)
 
         self.bar.setLayout(self.bar_layout)
-        self.bar.setFrameShape(QFrame.NoFrame)
-
+        # self.bar.setFrameStyle(QFrame.Box | QFrame.Plain)
         # self.toolbar.setIconSize(QSize(16,16))
         # self.toolbar.setStyleSheet("background-color:palette(shadow); color: palette(light)")
 
@@ -68,7 +67,8 @@ class Pane(QFrame):
 
 
 class TestPane(Pane):
-    def create_widget(self):
+    def __init__(self, parent=None):
+        super().__init__(parent)
 
         w = QWidget()
         l = QFormLayout()
@@ -76,8 +76,7 @@ class TestPane(Pane):
         l.addRow("input", QSpinBox())
         l.addRow("frequenies", QSlider(Qt.Horizontal))
         w.setLayout(l)
-
-        return w
+        self.setWidget(w)
 
 
 class PanelListWidget(QScrollArea):
@@ -125,10 +124,16 @@ if __name__ == "__main__":
     w.add(TestPane())
     w.add(TestPane())
     w.add(TestPane())
+    w.add(TestPane())
+    w.add(TestPane())
+    w.add(TestPane())
+    w.add(TestPane())
+    w.add(TestPane())
+    w.add(TestPane())
 
     w2 = PanelListWidget()
 
-    w2.add(TestPane())
+    w2.add(QPushButton())
     w2.add(TestPane())
     w2.add(TestPane())
 
@@ -137,4 +142,4 @@ if __name__ == "__main__":
 
     all_w.show()
 
-    app.exec_()
+    app.exec()
