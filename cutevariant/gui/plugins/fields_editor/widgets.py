@@ -558,6 +558,7 @@ class FieldsWidget(QWidget):
         """
         model = FieldsModel(conn, category)
         view = QTableView()
+        view.setItemDelegate(QItemDelegate())
         view.setContextMenuPolicy(Qt.ActionsContextMenu)
 
         proxy = QSortFilterProxyModel()

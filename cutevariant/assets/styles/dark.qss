@@ -1,0 +1,11 @@
+
+QTableView::indicator {
+	
+border: 1px solid palette(Text);
+}
+
+QTableView::indicator:checked {
+	
+	background-color:palette(Text)
+}
+
