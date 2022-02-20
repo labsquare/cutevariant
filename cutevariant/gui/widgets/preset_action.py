@@ -64,5 +64,8 @@ class PresetAction(QWidgetAction):
     def data(self):
         return self.w.data
 
+    def text(self):
+        return self.w.label.text()
+
     def set_close_icon(self, icon: QIcon):
         self.w.button.setIcon(icon)

@@ -89,6 +89,7 @@ from cutevariant.core.querybuilder import (
 )
 import cutevariant.commons as cm
 from cutevariant.gui.sql_thread import SqlThread
+from cutevariant.gui.widgets import PresetAction
 
 from cutevariant import LOGGER
 
@@ -2356,7 +2357,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
         # Presets model
         self.presets_model = FiltersPresetModel(parent=self)
-        self.update_presets()
+        self.load_presets()
 
         # self.presets_button = PresetButton(self)
         # self.presets_button.set_model(self.presets_model)
@@ -2418,7 +2419,16 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.toolbar.addWidget(spacer)
 
         # preset_action = self.toolbar.addAction(FIcon(0xF1268), self.tr("Presets"))
+
         self.preset_menu = QMenu()
+        self.preset_button = QPushButton()
+        self.preset_button.setToolTip(self.tr("Presets"))
+        self.preset_button.setIcon(FIcon(0xF035C))
+        self.preset_button.setMenu(self.preset_menu)
+        self.preset_button.setFlat(True)
+
+        self.toolbar.addWidget(self.preset_button)
+
         # preset_action.setMenu(self.preset_menu)
         # preset_action.setToolTip(self.tr("A list a predefined fields selections"))
         # self.toolbar.widgetForAction(preset_action).setPopupMode(
@@ -2426,15 +2436,6 @@ class FiltersEditorWidget(plugin.PluginWidget):
         # )
 
         # Create preset combobox with actions
-
-        self.general_menu = QMenu()
-        # menu_action = self.toolbar.addAction(FIcon(0xF035C), "menu")
-        # menu_action.setMenu(self.general_menu)
-        # self.toolbar.widgetForAction(menu_action).setPopupMode(QToolButton.InstantPopup)
-
-        save_action = self.general_menu.addAction(
-            "Save preset ...", self.on_save_preset
-        )
 
         self.model.filtersChanged.connect(self.on_filter_changed)
 
@@ -2547,7 +2548,6 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
     def on_preset_changed(self):
 
-        print("HELLLO")
         self.preset_menu.clear()
         for name in self.presets_model.preset_names():
             action = self.preset_menu.addAction(name)
@@ -2601,20 +2601,47 @@ class FiltersEditorWidget(plugin.PluginWidget):
         if "filters" in data:
             self.filters = data["filters"]
 
-    def update_presets(self):
+    def load_presets(self):
         """Refresh self's preset model
         This method should be called by __init__ and on refresh
         """
-        self.presets_model.load()
         self.preset_menu.clear()
+        config = Config("filters_editor")
 
-        for i in range(self.presets_model.rowCount()):
-            index = self.presets_model.index(i, 0)
-            preset_name = index.data(Qt.DisplayRole)
-            fields = index.data(Qt.UserRole)
-            act: QAction = self.preset_menu.addAction(preset_name)
-            act.setData(fields)
-            act.triggered.connect(self.on_select_preset)
+        self.preset_menu.addAction("Save preset", self.on_save_preset)
+        self.preset_menu.addSeparator()
+        if "presets" in config:
+            presets = config["presets"]
+            for name, filters in presets.items():
+                action = PresetAction(name, filters, self)
+                action.set_close_icon(FIcon(0xF05E8, "red"))
+                action.triggered.connect(self.on_select_preset)
+                action.removed.connect(self.on_delete_preset)
+                self.preset_menu.addAction(action)
+
+    def on_delete_preset(self):
+
+        if not self.sender():
+            return
+
+        name = self.sender().text()
+
+        ret = QMessageBox.warning(
+            self,
+            self.tr("Remove preset"),
+            self.tr(f"Are you sure you want to delete preset {name}"),
+            QMessageBox.Yes | QMessageBox.No,
+        )
+
+        if ret == QMessageBox.No:
+            return
+
+        config = Config("filters_editor")
+        presets = config["presets"]
+        if name in presets:
+            del presets[name]
+            config.save()
+            self.load_presets()
 
     def on_select_preset(self):
         """Activate when preset has changed from preset_combobox"""
@@ -2646,7 +2673,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
                 name, self.mainwindow.get_state_data("filters")
             )
             self.presets_model.save()
-            self.update_presets()
+            self.load_presets()
 
     def _update_view_geometry(self):
         """Set column Spanned to True for all Logic Item
