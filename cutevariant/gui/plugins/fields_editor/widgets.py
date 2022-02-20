@@ -762,9 +762,10 @@ class FieldsWidget(QWidget):
         """
         Callback for when the search bar is updated (filter the three models)
         """
+
         for index, view in enumerate(self.views):
             view["proxy"].setFilterRole(Qt.DisplayRole)
-            view["proxy"].setFilterRegExp(text)
+            view["proxy"].setFilterRegularExpression(text)
             count = view["proxy"].rowCount()
             name = view["name"]
             self.tab_widget.setTabText(index, f"{name} ({count})")
