@@ -13,3 +13,23 @@ QToolButton::menu-indicator
 {
     image:none;
 } 
+
+QTabWidget > QWidget {
+	
+}
+
+QDockWidget QToolBar
+{
+  
+  background: palette(alternate-base);
+  border-top: 1px solid palette(midlight);
+
+}
+
+QTabWidget{
+}
+
+
+QMainWindow > QToolBar {
+border:none
+}
