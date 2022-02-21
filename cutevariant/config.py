@@ -29,13 +29,15 @@ class Config:
 
     """
 
+    DEFAULT_CONFIG_PATH = QDir(
+        QStandardPaths.writableLocation(QStandardPaths.ConfigLocation)
+        + QDir.separator()
+        + "cutevariant"
+    ).absoluteFilePath("config.yml")
+
     def __init__(self, section="app", config_path=None):
         self.section = section
-        self.config_path = config_path or QDir(
-            QStandardPaths.writableLocation(QStandardPaths.ConfigLocation)
-            + QDir.separator()
-            + "cutevariant"
-        ).absoluteFilePath("config.yml")
+        self.config_path = config_path or Config.DEFAULT_CONFIG_PATH
 
         self._user_config = dict()
 

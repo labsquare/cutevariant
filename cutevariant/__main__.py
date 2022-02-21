@@ -44,6 +44,7 @@ import cutevariant.commons as cm
 from cutevariant import LOGGER
 from cutevariant import __version__
 import faulthandler
+import os
 
 faulthandler.enable()
 
@@ -217,6 +218,16 @@ def process_arguments(app):
         ),
     )
     parser.addOption(show_version)
+
+    # Config
+    config_option = QCommandLineOption(
+        ["c", "config"],
+        QCoreApplication.translate("config path", "Set the config path"),
+        "config",
+    )
+
+    parser.addOption(config_option)
+
     # -v, --verbose
     modify_verbosity = QCommandLineOption(
         ["v", "verbose"],
@@ -233,6 +244,14 @@ def process_arguments(app):
     if parser.isSet(show_version):
         print("Cutevariant " + __version__)
         exit()
+
+    if parser.isSet(config_option):
+        config_path = parser.value(config_option)
+        if os.path.isfile(config_path):
+            Config.DEFAULT_CONFIG_PATH = config_path
+
+        else:
+            LOGGER.error(f"{config_path} doesn't exists. Ignoring config")
 
     # if parser.isSet(modify_verbosity):
     # Set log level
