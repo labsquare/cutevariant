@@ -59,8 +59,11 @@ class VariantWidget(QWidget):
         self.ann_combo.clear()
 
         if "annotations" in self.data:
-            for i in self.data["annotations"]:
-                self.ann_combo.addItem(i["transcript"])
+            for i, val in enumerate(self.data["annotations"]):
+                if "transcript" in val:
+                    self.ann_combo.addItem(val["transcript"])
+                else:
+                    self.ann_combo.addItem(f"Annotation {i}")
 
         if "samples" in self.data:
             sdata = {i["name"]: i["gt"] for i in self.data["samples"] if i["gt"] > 0}
