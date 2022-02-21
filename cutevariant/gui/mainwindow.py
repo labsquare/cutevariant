@@ -435,14 +435,14 @@ class MainWindow(QMainWindow):
         #     self.tr("Export pedigree PED/PLINK"), self.export_ped
         # )
 
-        self.file_menu.addSeparator()
+# self.file_menu.addSeparator()
 
-        self.file_menu.addAction(
-            FIcon(0xF0193), self.tr("Save session ..."), self.save_session
-        )
-        self.file_menu.addAction(
-            FIcon(0xF0770), self.tr("Restore session ..."), self.load_session
-        )
+# self.file_menu.addAction(
+#     FIcon(0xF0193), self.tr("Save session ..."), self.save_session
+# )
+# self.file_menu.addAction(
+#     FIcon(0xF0770), self.tr("Restore session ..."), self.load_session
+# )
 
         self.file_menu.addSeparator()
         ### Misc

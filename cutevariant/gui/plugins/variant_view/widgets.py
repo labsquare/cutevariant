@@ -32,7 +32,12 @@ from cutevariant.core import command as cmd
 
 from cutevariant.gui import mainwindow, plugin, FIcon, formatter, style
 from cutevariant.gui.sql_thread import SqlThread
-from cutevariant.gui.widgets import MarkdownDialog, ChoiceWidget, create_widget_action
+from cutevariant.gui.widgets import (
+    MarkdownDialog,
+    ChoiceWidget,
+    create_widget_action,
+    VariantDialog,
+)
 
 from cutevariant.config import Config
 from cutevariant import LOGGER
@@ -1177,6 +1182,11 @@ class VariantView(QWidget):
 
         return links
 
+    def _show_variant_dialog(self, variant_id):
+
+        dialog = VariantDialog(self.conn, variant_id)
+        dialog.exec()
+
     def contextMenuEvent(self, event: QContextMenuEvent):
         """Override: Show contextual menu over the current variant"""
 
@@ -1192,6 +1202,13 @@ class VariantView(QWidget):
         # Update variant with currently displayed fields (not in variants table)
         full_variant.update(current_variant)
 
+        menu.addAction(
+            QIcon(),
+            "Edit variant ...",
+            functools.partial(self._show_variant_dialog, current_variant["id"]),
+        )
+
+        menu.addSeparator()
         # Copy action: Copy the variant reference ID in to the clipboard
         formatted_variant = "{chr}:{pos}-{ref}-{alt}".format(**full_variant)
         menu.addAction(

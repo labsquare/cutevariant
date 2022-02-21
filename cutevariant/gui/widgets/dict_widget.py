@@ -56,7 +56,7 @@ class DictModel(QAbstractTableModel):
                 font.setItalic(True)
             return font
 
-        if role == Qt.TextColorRole:
+        if role == Qt.ForegroundRole:
             value = self.value(index)
             if index.column() == 1 and value == "NULL":
                 return QColor("lightgray")
