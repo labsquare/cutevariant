@@ -319,6 +319,7 @@ class SamplesModel(QAbstractTableModel):
         data["sample_id"] = self.items[row]["sample_id"]
         sql.update_sample_has_variant(self.conn, data)
         self.dataChanged.emit(self.index(row, 0), self.index(row, self.columnCount()))
+        self.headerDataChanged.emit(Qt.Vertical, row, row)
 
 
 class SamplesView(QTableView):
