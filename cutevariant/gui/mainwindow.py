@@ -169,9 +169,9 @@ class MainWindow(QMainWindow):
 
         # Window geometry
         self.resize(600, 400)
- # self.setGeometry(
-#     QApplication.instance().desktop().rect().adjusted(100, 100, -100, -100)
-# )
+        # self.setGeometry(
+        #     QApplication.instance().desktop().rect().adjusted(100, 100, -100, -100)
+        # )
 
         # If True, the GUI settings are deleted when the app is closed
         self.requested_reset_ui = False
@@ -464,7 +464,7 @@ class MainWindow(QMainWindow):
         self.edit_menu.addSeparator()
         self.edit_menu.addAction(
             FIcon(0xF0486),
-            self.tr("&Select all variants"),
+            self.tr("&Select all displayed variants"),
             self.select_all_variants,
             QKeySequence.SelectAll,
         )
