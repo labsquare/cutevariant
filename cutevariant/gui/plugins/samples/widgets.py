@@ -29,7 +29,7 @@ from cutevariant.gui.widgets import (
 from cutevariant import LOGGER
 from cutevariant.gui.sql_thread import SqlThread
 
-from cutevariant.gui.style import GENOTYPE
+from cutevariant.gui.style import GENOTYPE, CLASSIFICATION
 
 from cutevariant.gui import FormatterDelegate
 from cutevariant.gui.formatters.cutestyle import CutestyleFormatter
@@ -38,6 +38,42 @@ from cutevariant.gui.formatters.cutestyle import CutestyleFormatter
 from PySide6.QtWidgets import *
 import sys
 from functools import partial
+
+
+class VariantVerticalHeader(QHeaderView):
+
+    COLOR = {0: "red", 1: "orange", 2: "green"}
+
+    def __init__(self, parent=None):
+        super().__init__(Qt.Vertical, parent)
+
+    def sizeHint(self):
+        return QSize(5, super().sizeHint().height())
+
+    def paintSection(self, painter: QPainter, rect: QRect, section: int):
+
+        if painter is None:
+            return
+
+        painter.save()
+        super().paintSection(painter, rect, section)
+
+        classification = self.model().item(section)["classification"]
+
+        painter.restore()
+        color = self.COLOR[classification]
+
+        pen = QPen(color)
+        pen.setWidth(6)
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(QBrush(color))
+        painter.drawRect(rect)
+
+
+# pix = FIcon(0xF00C1 if favorite else 0xF00C3, color).pixmap(20, 20)
+# target = rect.center() - pix.rect().center() + QPoint(1, 0)
+
+# painter.drawPixmap(target, pix)
 
 
 class SamplesModel(QAbstractTableModel):
@@ -146,6 +182,9 @@ class SamplesModel(QAbstractTableModel):
                 i for i in self.items[0].keys() if i not in ("sample_id", "variant_id")
             ]
 
+        if "classification" not in self.fields:
+            self._headers.remove("classification")
+
         self.endResetModel()
 
         # # Save cache
@@ -175,6 +214,9 @@ class SamplesModel(QAbstractTableModel):
                 "Cannot load data. Thread is not finished. You can call interrupt() "
             )
             self.interrupt()
+
+        if "classification" not in self.fields:
+            self.fields.append("classification")
 
         # Create load_func to run asynchronously: load samples
         load_samples_func = partial(
@@ -287,6 +329,8 @@ class SamplesView(QTableView):
         self.delegate.set_formatter(CutestyleFormatter())
 
         self.setItemDelegate(self.delegate)
+
+        self.setVerticalHeader(VariantVerticalHeader())
 
     def paintEvent(self, event: QPaintEvent):
 
