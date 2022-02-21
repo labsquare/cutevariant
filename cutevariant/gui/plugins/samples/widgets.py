@@ -595,7 +595,9 @@ class SamplesWidget(plugin.PluginWidget):
 
     def _on_double_clicked(self, index: QModelIndex):
 
-        sample_name = index.siblingAtColumn(0).data()
+        sample_name = index.siblingAtColumn(1).data()
+
+        print("click", sample_name)
 
         if sample_name:
             filters = copy.deepcopy(self.mainwindow.get_state_data("filters"))
