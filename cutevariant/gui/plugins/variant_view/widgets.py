@@ -148,7 +148,7 @@ class VariantModel(QAbstractTableModel):
         self._load_variant_thread.finished.connect(
             lambda: self.variant_is_loading.emit(False)
         )
-        self._load_variant_thread.result_ready.connect(self._on_variant_loaded)
+        self._load_variant_thread.result_ready.connect(self.on_variant_loaded)
         self._load_variant_thread.error.connect(self.error_raised)
 
         self._load_count_thread.started.connect(
@@ -157,7 +157,7 @@ class VariantModel(QAbstractTableModel):
         self._load_count_thread.finished.connect(
             lambda: self.count_is_loading.emit(False)
         )
-        self._load_count_thread.result_ready.connect(self._on_count_loaded)
+        self._load_count_thread.result_ready.connect(self.on_count_loaded)
 
         self._finished_thread_count = 0
         self._user_has_interrupt = False
@@ -566,7 +566,7 @@ class VariantModel(QAbstractTableModel):
         # Launch the first thread "count" or by pass it using the cache
         if self._count_hash in self._load_count_cache:
             self._load_count_thread.results = self._load_count_cache[self._count_hash]
-            self._on_count_loaded()
+            self.on_count_loaded()
         else:
             self._load_count_thread.start_function(count_function)
 
@@ -575,12 +575,12 @@ class VariantModel(QAbstractTableModel):
             self._load_variant_thread.results = self._load_variant_cache[
                 self._variant_hash
             ]
-            self._on_variant_loaded()
+            self.on_variant_loaded()
 
         else:
             self._load_variant_thread.start_function(lambda conn: list(load_func(conn)))
 
-    def _on_variant_loaded(self):
+    def on_variant_loaded(self):
         """
         Triggered when variant_thread is finished
 
@@ -590,11 +590,6 @@ class VariantModel(QAbstractTableModel):
 
         self.beginResetModel()
         self.variants.clear()
-
-        # Add fields from group by
-        for g in self.group_by:
-            if g not in self.fields:
-                self.fields.append(g)
 
         # Save cache
         self._load_variant_cache[
@@ -621,7 +616,7 @@ class VariantModel(QAbstractTableModel):
             self.elapsed_time = self._end_timer - self._start_timer
             self.load_finished.emit()
 
-    def _on_count_loaded(self):
+    def on_count_loaded(self):
         """
         Triggered when count_threaed is finished
         """
@@ -842,60 +837,62 @@ class LoadingTableView(QTableView):
 class VariantView(QWidget):
     """A Variant view with controller like pagination
 
-    Attributes:
-
-        row_to_be_selected (int/None): (optional) Left groupby pane only:
-            At the end of the :meth:`loaded` method, the first line is selected
-            in order to refresh the current variant in the other pane.
-            TL,DR: Select the first row if in grouped mode => refresh the right pane.
-
     Signals:
         error_raised (str): Emit message when async runnables encounter errors
-        no_variant: Emitted when there is no variant to display.
-            Used by left pane to clear right pane.
+        variant_clicked(QModelIndex): Emit when user clicked on a v ariant
+        load_finished : Emit when data is loaded
     """
 
     error_raised = Signal(str)
-    no_variant = Signal()
+    variant_clicked = Signal(QModelIndex)
+    load_finished = Signal()
 
-    def __init__(self, parent=None, show_popup_menu=True):
+    def __init__(self, parent=None):
         """
         Args:
             parent: parent widget
-            show_popup_menu (boolean, optional: If False, disable the context menu
-                over variants. For example the group pane should be disabled
-                in order to avoid partial/false informations to be displayed
-                in this menu.
-                Hacky Note: also used to rename variants to groups in the page box...
         """
         super().__init__(parent)
 
-        self.parent = parent
-        self.show_popup_menu = show_popup_menu
+        self.parent = parent  # used to access parent.mainwindow
         self.view = LoadingTableView()
-        self.bottom_bar = QToolBar()
 
-        # self.view.setFrameStyle(QFrame.NoFrame)
+        self.bottom_bar = QToolBar()
+        self.top_bar = QToolBar()
+
+        self.formatter_combo = QComboBox()
+        self.formatter_combo.currentTextChanged.connect(self.on_formatter_changed)
+
+        # Log edit
+        self.log_edit = QLabel()
+        self.log_edit.setMaximumHeight(30)
+        self.log_edit.hide()
+        self.log_edit.setFrameStyle(QFrame.StyledPanel | QFrame.Raised)
+        self.log_edit.setStyleSheet(
+            "QWidget{{background-color:'{}'; color:'{}'}}".format(
+                style.WARNING_BACKGROUND_COLOR, style.WARNING_TEXT_COLOR
+            )
+        )
+
+        # Setup model
+        self.model = VariantModel()
+        self.delegate = VariantDelegate()
+
+        # Setup view
         self.view.setAlternatingRowColors(True)
         self.view.horizontalHeader().setStretchLastSection(True)
         self.view.setSelectionMode(QAbstractItemView.SingleSelection)
         self.view.setVerticalHeader(VariantVerticalHeader())
-
         self.view.setSortingEnabled(True)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.view.setIconSize(QSize(16, 16))
         self.view.horizontalHeader().setSectionsMovable(True)
-
-        # Setup model
-        self.model = VariantModel()
         self.view.setModel(self.model)
 
-        # Setup delegate
-        self.delegate = VariantDelegate()
         # self.view.setItemDelegate(self.delegate)
 
-        # setup toolbar
+        # setup bottom bar toolbar
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
 
@@ -912,6 +909,9 @@ class VariantView(QWidget):
         self.loading_label = QLabel()
         self.loading_label.setMovie(QMovie(cm.DIR_ICONS + "loading.gif"))
 
+        self.top_bar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        self.top_bar.setIconSize(QSize(16, 16))
+
         self.bottom_bar.addAction(FIcon(0xF0A30), "sql", self.on_show_sql)
         self.bottom_bar.addWidget(self.time_label)
         self.bottom_bar.addWidget(self.cache_label)
@@ -926,34 +926,29 @@ class VariantView(QWidget):
         main_layout = QVBoxLayout()
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
+        main_layout.addWidget(self.top_bar)
         main_layout.addWidget(self.view)
         main_layout.addWidget(self.bottom_bar)
         self.setLayout(main_layout)
 
-        # Async stuff
-        # broadcast focus signal
-        self.row_to_be_selected = None
-        # Get the status of async load: started/finished
-        # self.model.loading.connect(self._set_loading)
-        # Queries are finished (yes its redundant with loading signal...)
-        self.model.variant_loaded.connect(self._on_variant_loaded)
-        self.model.count_loaded.connect(self._on_count_loaded)
-        self.model.load_finished.connect(self._on_load_finished)
-
+        # Connection
+        self.model.variant_loaded.connect(self.on_variant_loaded)
+        self.model.count_loaded.connect(self.on_count_loaded)
+        self.model.load_finished.connect(self.on_load_finished)
         self.model.count_is_loading.connect(self.set_tool_loading)
         self.model.variant_is_loading.connect(self.set_view_loading)
 
         # Connect errors from async runnables
-        self.model.error_raised.connect(self.error_raised)
-        # connect double clicke
+        self.model.error_raised.connect(self.set_message)
         self.view.doubleClicked.connect(self.on_double_clicked)
         self.view.selectionModel().currentChanged.connect(self.on_variant_clicked)
 
         self._setup_actions()
+        self.add_available_formatters()
 
     def _setup_actions(self):
-
         # ## SETUP TOP BAR
+        # -----------Favorite action ----------
         self.favorite_action = QAction(self.tr("Favorite"))
         favicon = QIcon()
         favicon.addPixmap(FIcon(0xF00C3).pixmap(22, 22), QIcon.Normal, QIcon.Off)
@@ -971,7 +966,7 @@ class VariantView(QWidget):
         )
         self.addAction(self.favorite_action)
 
-        # Comment action
+        # -----------Comment action ----------
         self.comment_action = QAction(FIcon(0xF0182), self.tr("Comments"))
         self.comment_action.setToolTip(self.tr("Edit comment of selected variant ..."))
         self.comment_action.triggered.connect(
@@ -979,19 +974,28 @@ class VariantView(QWidget):
         )
         self.addAction(self.comment_action)
 
-        # # External links menu
-        # self.links_action = QAction(FIcon(0xF0339), self.tr("Link to"))
-        # self.addAction(self.links_action)
-        # self.links_action.setToolTip(
-        #     self.tr(
-        #         "Open link related to the current variant. You can edit links from the settings"
-        #     )
-        # )
-        # # self.widgetForAction(self.links_action).setPopupMode(
-        # #     QToolButton.InstantPopup
-        # # )
+        # -----------Resize action ----------
 
-        # #        self.links_action.setMenu(self.create_external_links_menu())
+        self.resize_action = self.top_bar.addAction(
+            FIcon(0xF142A), self.tr("Auto resize")
+        )
+        self.resize_action.triggered.connect(self.auto_resize)
+
+        # -----------Refresh action ----------
+        self.refresh_action = self.top_bar.addAction(
+            FIcon(0xF0450), self.tr("Refresh"), lambda x: self.load(reset_page=True)
+        )
+        self.refresh_action.setToolTip(self.tr("Refresh the current list of variants"))
+
+        # -----------Interrupt action ----------
+
+        self.interrupt_action = self.top_bar.addAction(
+            FIcon(0xF04DB), self.tr("Stop"), self.model.interrupt()
+        )
+        self.interrupt_action.setToolTip(self.tr("Stop current query"))
+
+        # Formatter
+        self.top_bar.addWidget(self.formatter_combo)
 
         ## SETUP BOTTOM BAR
         # group action to make it easier disabled
@@ -1034,21 +1038,58 @@ class VariantView(QWidget):
         self.view.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
         self.view.horizontalHeader().setStretchLastSection(True)
 
-    def setModel(self, model: VariantModel):
-        self.model = model
-        self.view.setModel(model)
+    def set_message(self, message: str):
+        """Show message error at the bottom of the view
 
-    def load(self, reset_page=False):
+        Args:
+            message (str): Error message
+        """
 
+        if self.log_edit.isHidden():
+            self.log_edit.show()
+
+        icon_64 = FIcon(0xF0027, style.WARNING_TEXT_COLOR).to_base64(18, 18)
+
+        self.log_edit.setText(
+            """<div height=100%>
+            <img src="data:image/png;base64,{}" align="left"/>
+             <span> {} </span>
+            </div>""".format(
+                icon_64, message
+            )
+        )
+
+    def on_formatter_changed(self):
+        """Activate the selected formatter and save it in settings
+
+        Called when the current formatter is modified
+        """
+
+        settings = QSettings()
+        settings.beginGroup("variant_view")
+
+        formatter_class = self.formatter_combo.currentData()
+        self.set_formatter(formatter_class())
+        # Save formatter setting
+        settings.setValue("formatter", formatter_class.__name__)
+
+    def load(self, reset_page: bool = False):
+        """Load the view
+
+        If reset_page is set to True, also reset the page to 1
+
+        Args:
+            reset_page (bool, optional):
+        """
         if reset_page:
             self.model.page = 1
             self.model.order_by = None
 
+        self.log_edit.hide()
         self.model.interrupt()
-
         self.model.load()
 
-    def _on_variant_loaded(self):
+    def on_variant_loaded(self):
         """Slot called when async queries from the model are finished
         (especially count of variants for page box).
 
@@ -1074,7 +1115,7 @@ class VariantView(QWidget):
         if self.model.rowCount():
             self.select_row(0)
 
-    def _on_count_loaded(self):
+    def on_count_loaded(self):
 
         self.page_box.clear()
         if self.model.pageCount() - 1 == 0:
@@ -1092,8 +1133,9 @@ class VariantView(QWidget):
         #  Set focus to view ! Otherwise it stay on page_box
         self.view.setFocus(Qt.ActiveWindowFocusReason)
 
-    def _on_load_finished(self):
+    def on_load_finished(self):
         self.time_label.setText(str(" Executed in %.2gs " % (self.model.elapsed_time)))
+        self.load_finished.emit()
 
     def set_formatter(self, formatter):
         self.delegate.formatter = formatter
@@ -1131,14 +1173,6 @@ class VariantView(QWidget):
     @filters.setter
     def filters(self, _filters):
         self.model.filters = _filters
-
-    @property
-    def group_by(self):
-        return self.model.group_by
-
-    @group_by.setter
-    def group_by(self, _group_by):
-        self.model.group_by = _group_by
 
     def on_page_clicked(self):
 
@@ -1246,8 +1280,6 @@ class VariantView(QWidget):
 
     def contextMenuEvent(self, event: QContextMenuEvent):
         """Override: Show contextual menu over the current variant"""
-        if not self.show_popup_menu:
-            return
 
         menu = QMenu(self)
         pos = self.view.viewport().mapFromGlobal(event.globalPos())
@@ -1584,125 +1616,6 @@ class VariantView(QWidget):
             action.setIcon(FIcon(0xF0866))
         return menu
 
-
-class VariantViewWidget(plugin.PluginWidget):
-    """Contains the view of query with several controller"""
-
-    variant_clicked = Signal(dict)
-    LOCATION = plugin.CENTRAL_LOCATION
-    ENABLE = True
-    REFRESH_STATE_DATA = {"fields", "filters", "source"}
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-        self.view = VariantView(parent=self)
-        # Top toolbar
-
-        self.top_bar = QToolBar()
-        self.top_bar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-        self.top_bar.setIconSize(QSize(16, 16))
-
-        self._setup_actions()
-
-        # Add formatters to combobox
-        self.formatter_combo = QComboBox()
-        self.add_available_formatters()
-
-        # Error handling
-        self.log_edit = QLabel()
-        self.log_edit.setMaximumHeight(30)
-        self.log_edit.setStyleSheet(
-            "QWidget{{background-color:'{}'; color:'{}'}}".format(
-                style.WARNING_BACKGROUND_COLOR, style.WARNING_TEXT_COLOR
-            )
-        )
-        self.log_edit.hide()
-        self.log_edit.setFrameStyle(QFrame.StyledPanel | QFrame.Raised)
-
-        # Setup layout
-        main_layout = QVBoxLayout()
-        main_layout.addWidget(self.top_bar)
-        main_layout.addWidget(self.view)
-        main_layout.addWidget(self.log_edit)
-
-        self.setLayout(main_layout)
-
-        # Make connection
-        self.view.view.selectionModel().currentRowChanged.connect(
-            lambda x, _: self.on_variant_clicked(x)
-        )
-        self.view.error_raised.connect(self.set_message)
-        self.view.model.load_finished.connect(self.on_load_finished)
-
-    def _setup_actions(self):
-        """setup actions"""
-
-        # self.top_bar.addActions(self.view.actions())
-
-        # for action in self.view.actions():
-        #     self.top_bar.widgetForAction(action).setPopupMode(QToolButton.InstantPopup)
-        #     self.top_bar.addAction(action)
-
-        # self.tag_widget = ChoiceWidget()
-
-        # self.tag_action = create_widget_action(self.top_bar, self.tag_widget)
-        # self.tag_action.setText("Tags")
-
-        self.resize_action = self.top_bar.addAction(
-            FIcon(0xF142A), self.tr("Auto resize")
-        )
-        self.resize_action.triggered.connect(self.view.auto_resize)
-
-        # Refresh UI button
-        self.refresh_action = self.top_bar.addAction(
-            FIcon(0xF0450), self.tr("Refresh"), self.on_refresh
-        )
-        self.refresh_action.setToolTip(self.tr("Refresh the current list of variants"))
-        # action.setPriority(QAction.LowPriority)
-
-        # Interrupt current query
-        self.interrupt_action = self.top_bar.addAction(
-            FIcon(0xF04DB), self.tr("Stop"), self.on_interrupt
-        )
-        self.interrupt_action.setToolTip(self.tr("Stop current query"))
-
-        spacer = QWidget()
-        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        self.top_bar.addWidget(spacer)
-
-    def on_tag_widget_show(self):
-        """Triggered when tagDialog is displayed"""
-
-        # Auto show tags fields
-        fields = self.mainwindow.get_state_data("fields")
-        if "tags" not in fields:
-            self.mainwindow.set_state_data("fields", fields + ["tags"])
-            self.on_refresh()
-
-        selected_rows = self.view.view.selectionModel().selectedRows()
-        if len(selected_rows) == 1:
-            index = selected_rows[0]
-            variant_id = self.view.model.variant(index.row())["id"]
-            variant = sql.get_variant(self.conn, variant_id)
-            if variant["tags"]:
-                self._tag_widget.set_checked(variant["tags"].split("&"))
-
-    def on_load_finished(self):
-        """Triggered when variant load is finished
-
-        Notify all plugins registered to "executed_query_data"
-
-        """
-
-        executed_query_data = {
-            "count": self.view.model.total,
-            "elapsed_time": self.view.model.elapsed_time,
-        }
-
-        self.mainwindow.set_state_data("executed_query_data", executed_query_data)
-        self.mainwindow.refresh_plugins()
-
     def add_available_formatters(self):
         """Populate the formatters
 
@@ -1722,38 +1635,63 @@ class VariantViewWidget(plugin.PluginWidget):
             if obj.__name__ == formatter_name:
                 selected_formatter_index = index
 
-        self.top_bar.addWidget(self.formatter_combo)
         self.formatter_combo.currentTextChanged.connect(self.on_formatter_changed)
         self.formatter_combo.setToolTip(self.tr("Change current style"))
 
         # Set the previously used/default formatter
         self.formatter_combo.setCurrentIndex(selected_formatter_index)
 
-    def on_formatter_changed(self):
-        """Activate the selected formatter and save it in settings
 
-        Called when the current formatter is modified
+class VariantViewWidget(plugin.PluginWidget):
+    """
+    A plugin table of all variants
+    """
+
+    # Plugin class parameter
+    LOCATION = plugin.CENTRAL_LOCATION
+    ENABLE = True
+    REFRESH_STATE_DATA = {"fields", "filters", "source"}
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        # Create the variant view
+        self.view = VariantView(parent=self)
+
+        # Setup layout
+        main_layout = QVBoxLayout(self)
+        main_layout.addWidget(self.view)
+
+        # Make connection
+        self.view.view.selectionModel().currentRowChanged.connect(
+            lambda x, _: self.on_variant_clicked(x)
+        )
+
+        self.view.load_finished.connect(self.on_load_finished)
+
+    def on_load_finished(self):
+        """Triggered when variant load is finished
+        Notify all plugins registered to "executed_query_data"
+
         """
 
-        settings = QSettings()
-        settings.beginGroup("variant_view")
+        executed_query_data = {
+            "count": self.view.model.total,
+            "elapsed_time": self.view.model.elapsed_time,
+        }
 
-        formatter_class = self.formatter_combo.currentData()
-        self.view.set_formatter(formatter_class())
-        # Save formatter setting
-        settings.setValue("formatter", formatter_class.__name__)
+        self.mainwindow.set_state_data("executed_query_data", executed_query_data)
+        self.mainwindow.refresh_plugins()
 
     def on_open_project(self, conn):
         """Overrided from PluginWidget"""
         self.conn = conn
-        # Set connections of models
         self.view.conn = self.conn
 
         # Setup config
         config = self.create_config()
         self.view.model.limit = config.get("rows_per_page", 50)
         self.view.model.set_cache(config.get("memory_cache", 32))
-
         self.on_refresh()
 
     def on_refresh(self):
@@ -1769,86 +1707,10 @@ class VariantViewWidget(plugin.PluginWidget):
             self.view.source = self.mainwindow.get_state_data("source")
             self.view.filters = self.mainwindow.get_state_data("filters")
 
-        # Set formatter
-        formatter_class = self.formatter_combo.currentData()
-
-        #        formatter_class = next(formatter.find_formatters())
-        self.view.set_formatter(formatter_class())
-
-        # Clear only the variant cache ! Because user can edit data
-        self.view.model.clear_variant_cache()
-
-        # Load ui
-        self.load(reset_page=True)
-
-    def on_interrupt(self):
-        self.view.model.interrupt()
-
-    # def on_save_selection(self):
-    #     """Triggered on 'save_selection' button
-
-    #     - This slot creates a new selection (aka source) from the current state.
-    #     - `source_editor` plugin will be refreshed.
-    #     """
-
-    #     selection_name, accept = QInputDialog.getText(
-    #         self,
-    #         self.tr("Create a new selection"),
-    #         self.tr("Name of the new selection:"),
-    #     )
-
-    #     if not accept or not selection_name:
-    #         return
-
-    #     try:
-    #         result = cmd.create_cmd(
-    #             self.conn,
-    #             selection_name,
-    #             source=self.mainwindow.get_state_data("source"),
-    #             filters=self.mainwindow.get_state_data("filters"),
-    #             count=self.view.model.total,
-    #         )
-    #         if result:
-    #             self.mainwindow.refresh_plugin("source_editor")
-
-    #     except Exception as e:
-    #         LOGGER.exception(e)
-
-    #         # Name already used
-    #         QMessageBox.critical(
-    #             self,
-    #             self.tr("Error while creating selection"),
-    #             self.tr("Error while creating selection '%s'; Name is already used")
-    #             % selection_name,
-    #         )
-    #         # Retry
-    #         self.on_save_selection()
-
-    def on_no_variant(self):
-        """Slot called when left pane hasn't any variant to display
-
-        Clear right pane (nothing to select in it)
-        """
-        self.view.model.clear()
-
-    def load(self, reset_page=False):
-        """Load all views
-
-        Called by on_refresh, on_group_changed, and _show_group_dialog
-        Display/hide groupby_left_pane on user demand.
-        """
-
-        # Hide potential errors
-        self.log_edit.hide()
-
-        # Grouped => ungrouped
-        # Restore fields
-        self.view.fields = self.save_fields
-        # Restore filters
-        self.view.filters = self.save_filters
-        # Refresh model
-        self.view.load(reset_page)
-        # print("saved right:", self.save_fields)
+            self.view.model.clear_variant_cache()
+            self.view.fields = self.save_fields
+            self.view.filters = self.save_filters
+            self.view.load(reset_page=True)
 
     def on_variant_clicked(self, index: QModelIndex):
         """React on variant clicked
@@ -1869,41 +1731,6 @@ class VariantViewWidget(plugin.PluginWidget):
             self.mainwindow.set_state_data("current_variant", variant)
             # Request a refresh of the variant_info plugin
             self.mainwindow.refresh_plugins(self)
-
-    def copy(self):
-        """Copy the selected variant(s) into the clipboard
-
-        See Also: VariantView.copy_to_clipboard
-        """
-        self.view.copy_to_clipboard()
-
-    def select_all(self):
-        """Select all variants in the view
-
-        See Also: VariantView.select_all
-        """
-        self.view.select_all()
-
-    def set_message(self, message: str):
-        """Show message error at the bottom of the view
-
-        Args:
-            message (str): Error message
-        """
-
-        if self.log_edit.isHidden():
-            self.log_edit.show()
-
-        icon_64 = FIcon(0xF0027, style.WARNING_TEXT_COLOR).to_base64(18, 18)
-
-        self.log_edit.setText(
-            """<div height=100%>
-            <img src="data:image/png;base64,{}" align="left"/>
-             <span> {} </span>
-            </div>""".format(
-                icon_64, message
-            )
-        )
 
 
 if __name__ == "__main__":
