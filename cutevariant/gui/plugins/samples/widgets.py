@@ -536,10 +536,15 @@ class SamplesWidget(plugin.PluginWidget):
 
         self.on_refresh()
 
+    def _on_double_clicked(self):
+        self._show_sample_dialog()
+
     def contextMenuEvent(self, event: QContextMenuEvent):
 
         menu = QMenu(self)
         menu.addAction(QIcon(), "Edit sample ...", self._show_sample_dialog)
+
+        menu.addAction(QIcon(), "Create filter for this sample", self.on_add_filter)
 
         menu.addSection("current variant")
         cat_menu = menu.addMenu("Classification")
@@ -593,11 +598,9 @@ class SamplesWidget(plugin.PluginWidget):
 
         self.on_refresh()
 
-    def _on_double_clicked(self, index: QModelIndex):
+    def on_add_filter(self, index: QModelIndex):
 
         sample_name = index.siblingAtColumn(1).data()
-
-        print("click", sample_name)
 
         if sample_name:
             filters = copy.deepcopy(self.mainwindow.get_state_data("filters"))

@@ -1182,10 +1182,15 @@ class VariantView(QWidget):
 
         return links
 
-    def _show_variant_dialog(self, variant_id):
+    def _show_variant_dialog(self):
 
-        dialog = VariantDialog(self.conn, variant_id)
-        dialog.exec()
+        current_index = self.view.selectionModel().currentIndex()
+
+        if current_index.isValid():
+            current_variant = self.model.variant(current_index.row())
+
+            dialog = VariantDialog(self.conn, current_variant["id"])
+            dialog.exec()
 
     def contextMenuEvent(self, event: QContextMenuEvent):
         """Override: Show contextual menu over the current variant"""
@@ -1205,7 +1210,7 @@ class VariantView(QWidget):
         menu.addAction(
             QIcon(),
             "Edit variant ...",
-            functools.partial(self._show_variant_dialog, current_variant["id"]),
+            self._show_variant_dialog,
         )
 
         menu.addSeparator()
@@ -1505,7 +1510,7 @@ class VariantView(QWidget):
         TODO : duplicate code with ContextMenu Event ! Need to refactor a bit
         """
 
-        self._open_default_link(index)
+        self._show_variant_dialog()
 
     def create_classification_menu(self):
         # Create classication action
