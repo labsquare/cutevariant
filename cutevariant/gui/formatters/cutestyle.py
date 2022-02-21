@@ -81,18 +81,18 @@ class CutestyleFormatter(Formatter):
 
             return {"font": font, "color": color}
 
-        #     # Colour bases (default color is the one of the current theme)
-        if (field == "ref" or field == "alt") and (
-            value in ("A", "C", "G", "T") and not is_selected
-        ):
-            return {"color": self.BASE_COLOR.get(value)}
+        # #     # Colour bases (default color is the one of the current theme)
+        # if (field == "ref" or field == "alt") and (
+        #     value in ("A", "C", "G", "T") and not is_selected
+        # ):
+        #     return {"color": self.BASE_COLOR.get(value)}
 
         if field == "ann.gene" and not is_selected:
             return {"color": "#6a9fca"}
 
-# if field == "classification":
-#     icon = self.ACMG_ICON.get(str(value), self.ACMG_ICON["0"])
-#     return {"icon": icon, "text": "", "icon-align": Qt.AlignCenter}
+        # if field == "classification":
+        #     icon = self.ACMG_ICON.get(str(value), self.ACMG_ICON["0"])
+        #     return {"icon": icon, "text": "", "icon-align": Qt.AlignCenter}
         if field == "rsid" and value.startswith("rs"):
             # font.setUnderline(True)
             return {"link": "http://www.google.fr"}

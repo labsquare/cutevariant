@@ -699,106 +699,6 @@ class VariantModel(QAbstractTableModel):
             return False
 
 
-class VariantDelegate(QStyledItemDelegate):
-    """Specify the aesthetic (style and color) of variants displayed on a view"""
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-        self.formatter = None
-
-    def paint(self, painter, option, index):
-        """Paint with formatter if defined"""
-
-        if self.formatter is None:
-            return super().paint(painter, option, index)
-
-        # Draw selections
-        if option.state & QStyle.State_Enabled:
-            bg = (
-                QPalette.Normal
-                if option.state & QStyle.State_Active
-                or option.state & QStyle.State_Selected
-                else QPalette.Inactive
-            )
-        else:
-            bg = QPalette.Disabled
-
-        if option.state & QStyle.State_Selected:
-            painter.fillRect(option.rect, option.palette.color(bg, QPalette.Highlight))
-
-        # Draw formatters
-        option.rect = option.rect.adjusted(
-            3, 0, 0, 0
-        )  # Don't know why I need to adjust the left margin ..
-
-        field_name = index.model().headerData(index.column(), Qt.Horizontal)
-        field_value = index.data(Qt.DisplayRole)
-        is_selected = option.state & QStyle.State_Selected
-        style = self.formatter.format(field_name, field_value, option, is_selected)
-
-        font = style.get("font", QFont())
-        text = style.get("text", str(field_value))
-        icon = style.get("icon", None)
-        color = style.get(
-            "color",
-            option.palette.color(
-                QPalette.Normal,
-                QPalette.BrightText if is_selected else QPalette.Text,
-            ),
-        )
-        text_align = style.get("text-align", Qt.AlignVCenter | Qt.AlignLeft)
-        icon_align = style.get("icon-align", Qt.AlignCenter)
-
-        pixmap = style.get("pixmap", None)
-        link = style.get("link", None)
-
-        if pixmap:
-            painter.drawPixmap(
-                option.rect.x(),
-                option.rect.y(),
-                pixmap.width(),
-                pixmap.height(),
-                pixmap,
-            )
-            return
-
-        if link:
-            self.draw_url(painter, option.rect, text, text_align)
-            return
-
-        if icon:
-            self.draw_icon(painter, option.rect, icon, icon_align)
-
-        painter.setFont(font)
-        painter.setPen(QPen(color))
-        painter.drawText(option.rect, text_align, text)
-
-    def draw_icon(
-        self, painter: QPainter, rect: QRect, icon: QIcon, alignement=Qt.AlignCenter
-    ):
-        r = QRect(0, 0, rect.height(), rect.height())
-        r.moveCenter(rect.center())
-
-        if alignement & Qt.AlignLeft:
-            r.moveLeft(rect.left())
-
-        if alignement & Qt.AlignRight:
-            r.moveRight(rect.right())
-
-        painter.drawPixmap(r, icon.pixmap(r.width(), r.height()))
-
-    def draw_url(self, painter: QPainter, rect: QRect, value: str, align=Qt.AlignLeft):
-        font = QFont()
-        font.setUnderline(True)
-        painter.setFont(font)
-        painter.setPen(QPen(QColor("blue")))
-        painter.drawText(rect, align, value)
-
-    # def editorEvent(self, event: QEvent, model, option, index: QModelIndex):
-    #     return
-
-
 class LoadingTableView(QTableView):
     """Movie animation displayed on VariantView for long SQL queries executed
     in background.
@@ -876,7 +776,7 @@ class VariantView(QWidget):
 
         # Setup model
         self.model = VariantModel()
-        self.delegate = VariantDelegate()
+        self.delegate = FormatterDelegate()
 
         # Setup view
         self.view.setAlternatingRowColors(True)
@@ -890,8 +790,7 @@ class VariantView(QWidget):
         self.view.horizontalHeader().setSectionsMovable(True)
         self.view.setModel(self.model)
 
-        # self.view.setItemDelegate(self.delegate)
-
+        self.view.setItemDelegate(self.delegate)
         # setup bottom bar toolbar
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
@@ -1137,9 +1036,9 @@ class VariantView(QWidget):
         self.time_label.setText(str(" Executed in %.2gs " % (self.model.elapsed_time)))
         self.load_finished.emit()
 
-    def set_formatter(self, formatter):
-        self.delegate.formatter = formatter
-        self.delegate.formatter.refresh()
+    def set_formatter(self, formatter_class):
+
+        self.delegate.set_formatter(formatter_class)
         self.view.reset()
 
     @property

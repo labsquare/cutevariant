@@ -113,13 +113,13 @@ class FormatterDelegate(QItemDelegate):
         font = style.get("font", QFont())
         text = style.get("text", str(field_value))
         icon = style.get("icon", None)
-        color = style.get(
-            "color",
-            option.palette.color(
-                QPalette.Normal,
-                QPalette.BrightText if is_selected else QPalette.Text,
-            ),
-        )
+        color = style.get("color")
+
+        if color is None:
+            color = option.palette.color(
+                QPalette.BrightText if is_selected else QPalette.Text
+            )
+
         text_align = style.get("text-align", Qt.AlignVCenter | Qt.AlignLeft)
         icon_align = style.get("icon-align", Qt.AlignCenter)
 
