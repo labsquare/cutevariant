@@ -43,6 +43,9 @@ from cutevariant.gui import MainWindow, network, setFontPath, style
 import cutevariant.commons as cm
 from cutevariant import LOGGER
 from cutevariant import __version__
+import faulthandler
+
+faulthandler.enable()
 
 
 def main():
@@ -117,7 +120,7 @@ def main():
 
     w.show()
     splash.finish(w)
-    app.exec_()
+    app.exec()
 
 
 def load_network_settings():
