@@ -80,7 +80,7 @@ class VariantWidget(QWidget):
         if "annotations" in self.data:
 
             adata = self.data["annotations"][current]
-            self.ann_view.set_dict(adata)
+            self.ann_view.set_dict({i: k for i, k in adata.items() if k != ""})
 
 
 class VariantDialog(QDialog):
