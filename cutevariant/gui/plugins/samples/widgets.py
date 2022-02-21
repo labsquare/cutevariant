@@ -598,7 +598,12 @@ class SamplesWidget(plugin.PluginWidget):
 
         self.on_refresh()
 
-    def on_add_filter(self, index: QModelIndex):
+    def on_add_filter(self):
+
+        index = self.view.selectionModel().currentIndex()
+
+        if not index.isValid():
+            return
 
         sample_name = index.siblingAtColumn(1).data()
 

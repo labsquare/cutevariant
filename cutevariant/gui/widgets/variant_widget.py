@@ -2,7 +2,7 @@ from PySide6.QtWidgets import *
 from PySide6.QtCore import *
 from PySide6.QtGui import *
 
-from cutevariant.gui.widgets import DictWidget
+from cutevariant.gui.widgets import DictWidget, MarkdownEditor
 from cutevariant.core import sql
 import sqlite3
 
@@ -28,6 +28,8 @@ class VariantWidget(QWidget):
 
         self.tab_widget = QTabWidget()
 
+        self.comment = MarkdownEditor()
+
         self.ann_combo = QComboBox()
         self.ann_combo.currentIndexChanged.connect(self.load_annotation)
         self.ann_widget = QWidget()
@@ -38,6 +40,7 @@ class VariantWidget(QWidget):
         self.tab_widget.addTab(self.variant_view, "variants")
         self.tab_widget.addTab(self.ann_widget, "Annotations")
         self.tab_widget.addTab(self.sample_view, "Samples")
+        self.tab_widget.addTab(self.comment, "Comments")
 
         main_layout = QVBoxLayout(self)
         main_layout.addWidget(info_box)
