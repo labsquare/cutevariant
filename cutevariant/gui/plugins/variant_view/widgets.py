@@ -26,17 +26,17 @@ from PySide6.QtCore import *
 from PySide6.QtGui import *
 
 # Custom imports
-from cutevariant.config import Config
 from cutevariant.core.querybuilder import build_sql_query
 from cutevariant.core import sql
-
 from cutevariant.core import command as cmd
+
 from cutevariant.gui import mainwindow, plugin, FIcon, formatter, style
 from cutevariant.gui.sql_thread import SqlThread
-from cutevariant.gui.widgets import MarkdownDialog
-import cutevariant.commons as cm
+from cutevariant.gui.widgets import MarkdownDialog, ChoiceWidget, create_widget_action
 
+from cutevariant.config import Config
 from cutevariant import LOGGER
+import cutevariant.commons as cm
 
 
 class VariantVerticalHeader(QHeaderView):
@@ -703,6 +703,7 @@ class VariantModel(QAbstractTableModel):
         else:
             return False
 
+
 class VariantDelegate(QStyledItemDelegate):
     """Specify the aesthetic (style and color) of variants displayed on a view"""
 
@@ -802,6 +803,7 @@ class VariantDelegate(QStyledItemDelegate):
     # def editorEvent(self, event: QEvent, model, option, index: QModelIndex):
     #     return
 
+
 class LoadingTableView(QTableView):
     """Movie animation displayed on VariantView for long SQL queries executed
     in background.
@@ -882,7 +884,6 @@ class VariantView(QWidget):
         self.view.setSortingEnabled(True)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
-        ## self.view.setIndentation(0)
         self.view.setIconSize(QSize(16, 16))
         self.view.horizontalHeader().setSectionsMovable(True)
 
@@ -919,41 +920,8 @@ class VariantView(QWidget):
 
         # Add loading action and store action
         self.bottom_bar.addWidget(self.info_label)
-        self.loading_action = self.bottom_bar.addWidget(self.loading_label)
-
-        # self.bottom_bar.setIconSize(QSize(16, 16))
-        # self.bottom_bar.setMaximumHeight(30)
         self.bottom_bar.setContentsMargins(0, 0, 0, 0)
-
-        self.pagging_actions = []
-
-        action = self.bottom_bar.addAction(FIcon(0xF0600), "<<", self.on_page_clicked)
-        action.setShortcut(Qt.CTRL + Qt.Key_Left)
-        action.setAutoRepeat(False)
-        action.setToolTip(self.tr("First page (%s)" % action.shortcut().toString()))
-
-        self.pagging_actions.append(action)
-
-        action = self.bottom_bar.addAction(FIcon(0xF0141), "<", self.on_page_clicked)
-        action.setShortcut(QKeySequence(Qt.Key_Left))
-        action.setAutoRepeat(False)
-        action.setToolTip(self.tr("Previous page (%s)" % action.shortcut().toString()))
-        self.pagging_actions.append(action)
-
-        self.bottom_bar.addWidget(self.page_box)
-        self.page_box.returnPressed.connect(self.on_page_changed)
-
-        action = self.bottom_bar.addAction(FIcon(0xF0142), ">", self.on_page_clicked)
-        action.setShortcut(QKeySequence(Qt.Key_Right))
-        action.setAutoRepeat(False)
-        action.setToolTip(self.tr("Next page (%s)" % action.shortcut().toString()))
-        self.pagging_actions.append(action)
-
-        action = self.bottom_bar.addAction(FIcon(0xF0601), ">>", self.on_page_clicked)
-        action.setShortcut(Qt.CTRL + Qt.Key_Right)
-        action.setAutoRepeat(False)
-        action.setToolTip(self.tr("Last page (%s)" % action.shortcut().toString()))
-        self.pagging_actions.append(action)
+        self.loading_action = self.bottom_bar.addWidget(self.loading_label)
 
         main_layout = QVBoxLayout()
         main_layout.setContentsMargins(0, 0, 0, 0)
@@ -977,20 +945,20 @@ class VariantView(QWidget):
 
         # Connect errors from async runnables
         self.model.error_raised.connect(self.error_raised)
-        #  connect double clicke
+        # connect double clicke
         self.view.doubleClicked.connect(self.on_double_clicked)
         self.view.selectionModel().currentChanged.connect(self.on_variant_clicked)
 
-        self._create_actions()
+        self._setup_actions()
 
-    def _create_actions(self):
+    def _setup_actions(self):
 
+        # ## SETUP TOP BAR
         self.favorite_action = QAction(self.tr("Favorite"))
         favicon = QIcon()
         favicon.addPixmap(FIcon(0xF00C3).pixmap(22, 22), QIcon.Normal, QIcon.Off)
         favicon.addPixmap(FIcon(0xF00C0).pixmap(22, 22), QIcon.Normal, QIcon.On)
         self.favorite_action.setIcon(favicon)
-        self.addAction(self.favorite_action)
         self.favorite_action.setCheckable(True)
         self.favorite_action.toggled.connect(lambda x: self.update_favorites(x))
         self.favorite_action.setShortcut(QKeySequence(Qt.Key_Space))
@@ -1001,39 +969,64 @@ class VariantView(QWidget):
                 % self.favorite_action.shortcut().toString()
             )
         )
-        self.view.addAction(self.favorite_action)
-
-        # Classification menu
-        self.classification_action = QAction(FIcon(0xF04FD), self.tr("Classification"))
-        self.addAction(self.classification_action)
-        self.classification_action.setToolTip(
-            self.tr(
-                "Set ACMG classification for current selection. The field `classification` must be selected"
-            )
-        )
-        #        self.classification_action.setMenu(self.create_classification_menu())
+        self.addAction(self.favorite_action)
 
         # Comment action
         self.comment_action = QAction(FIcon(0xF0182), self.tr("Comments"))
-        self.addAction(self.comment_action)
         self.comment_action.setToolTip(self.tr("Edit comment of selected variant ..."))
         self.comment_action.triggered.connect(
             lambda x: self.edit_comment(self.view.selectionModel().selectedRows()[0])
         )
+        self.addAction(self.comment_action)
 
-        # External links menu
-        self.links_action = QAction(FIcon(0xF0339), self.tr("Link to"))
-        self.addAction(self.links_action)
-        self.links_action.setToolTip(
-            self.tr(
-                "Open link related to the current variant. You can edit links from the settings"
-            )
-        )
-        # self.widgetForAction(self.links_action).setPopupMode(
-        #     QToolButton.InstantPopup
+        # # External links menu
+        # self.links_action = QAction(FIcon(0xF0339), self.tr("Link to"))
+        # self.addAction(self.links_action)
+        # self.links_action.setToolTip(
+        #     self.tr(
+        #         "Open link related to the current variant. You can edit links from the settings"
+        #     )
         # )
+        # # self.widgetForAction(self.links_action).setPopupMode(
+        # #     QToolButton.InstantPopup
+        # # )
 
-    #        self.links_action.setMenu(self.create_external_links_menu())
+        # #        self.links_action.setMenu(self.create_external_links_menu())
+
+        ## SETUP BOTTOM BAR
+        # group action to make it easier disabled
+        self.pagging_actions = QActionGroup(self)
+        # First page action  <<
+        action = self.bottom_bar.addAction(FIcon(0xF0600), "<<", self.on_page_clicked)
+        action.setShortcut(Qt.CTRL + Qt.Key_Left)
+        action.setAutoRepeat(False)
+        action.setToolTip(self.tr("First page (%s)" % action.shortcut().toString()))
+        self.pagging_actions.addAction(action)
+
+        # Previous page action <
+        action = self.bottom_bar.addAction(FIcon(0xF0141), "<", self.on_page_clicked)
+        action.setShortcut(QKeySequence(Qt.Key_Left))
+        action.setAutoRepeat(False)
+        action.setToolTip(self.tr("Previous page (%s)" % action.shortcut().toString()))
+        self.pagging_actions.addAction(action)
+
+        # Add count widget
+        self.bottom_bar.addWidget(self.page_box)
+        self.page_box.returnPressed.connect(self.on_page_changed)
+
+        # Next page action >
+        action = self.bottom_bar.addAction(FIcon(0xF0142), ">", self.on_page_clicked)
+        action.setShortcut(QKeySequence(Qt.Key_Right))
+        action.setAutoRepeat(False)
+        action.setToolTip(self.tr("Next page (%s)" % action.shortcut().toString()))
+        self.pagging_actions.addAction(action)
+
+        # End page action >>
+        action = self.bottom_bar.addAction(FIcon(0xF0601), ">>", self.on_page_clicked)
+        action.setShortcut(Qt.CTRL + Qt.Key_Right)
+        action.setAutoRepeat(False)
+        action.setToolTip(self.tr("Last page (%s)" % action.shortcut().toString()))
+        self.pagging_actions.addAction(action)
 
     def auto_resize(self):
         """Resize columns to content"""
@@ -1198,8 +1191,7 @@ class VariantView(QWidget):
 
     def set_pagging_enabled(self, active=True):
         self.page_box.setEnabled(active)
-        for action in self.pagging_actions:
-            action.setEnabled(active)
+        self.pagging_actions.setEnabled(active)
 
     def set_view_loading(self, active=True):
         self.view.setDisabled(active)
@@ -1279,7 +1271,15 @@ class VariantView(QWidget):
             ),
         )
 
-        menu.addActions(self.actions())
+        # action menu
+
+        # Classification menu
+
+        menu.addMenu(self.create_classification_menu())
+        menu.addMenu(self.create_external_links_menu())
+
+        menu.addAction(self.favorite_action)
+        menu.addAction(self.comment_action)
 
         # Edit menu
         menu.addSeparator()
@@ -1585,232 +1585,25 @@ class VariantView(QWidget):
         return menu
 
 
-class TagsModel(QAbstractListModel):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.items = []
-
-    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
-        return len(self.items)
-
-    def data(self, index: QModelIndex, role: Qt.ItemDataRole) -> typing.Any:
-
-        if not index.isValid():
-            return None
-
-        if role == Qt.CheckStateRole:
-            return Qt.Checked if self.items[index.row()]["checked"] else Qt.Unchecked
-
-        if role == Qt.DisplayRole:
-            return self.items[index.row()]["name"]
-
-        if role == Qt.ToolTipRole:
-            return self.items[index.row()]["description"]
-
-        if role == Qt.DecorationRole:
-            return QIcon(FIcon(0xF012F, self.items[index.row()]["color"]))
-
-        return None
-
-    def setData(self, index: QModelIndex, value, role: Qt.ItemDataRole):
-        """override"""
-
-        if role == Qt.CheckStateRole:
-            self.items[index.row()]["checked"] = bool(value)
-            return True
-
-        return False
-
-    def flags(self, index: QModelIndex) -> Qt.ItemFlags:
-
-        if index.column() == 0:
-            return Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsUserCheckable
-
-        return Qt.ItemIsEnabled
-
-    def set_checked_tags(self, tags: str, separator="&"):
-
-        tags = tags.split(separator)
-
-        self.beginResetModel()
-        for row in range(self.rowCount()):
-            if self.items[row]["name"] in tags:
-                self.items[row]["checked"] = True
-            else:
-                self.items[row]["checked"] = False
-
-        self.endResetModel()
-
-    def load(self):
-        self.beginResetModel()
-        self.items.clear()
-        config = Config("variant_view")
-
-        tags = config.get("tags", [])
-
-        if all(isinstance(tag, dict) for tag in tags):
-
-            for tag in tags:
-                self.items.append(
-                    {
-                        "name": tag["name"],
-                        "description": tag["description"],
-                        "color": tag["color"],
-                        "checked": False,
-                    }
-                )
-
-        self.endResetModel()
-
-    def set_checked(self, checked_tags: list):
-
-        self.beginResetModel()
-        for tag in self.items:
-            if tag["name"] in checked_tags:
-                tag["checked"] = True
-            else:
-                tag["checked"] = False
-
-        self.endResetModel()
-
-    def clear(self):
-        self.beginResetModel()
-        self.items = []
-        self.endResetModel()
-
-    def checked_tags(self):
-        return [item["name"] for item in self.items if item["checked"]]
-
-
-class TagsWidget(QWidget):
-
-    tags_selected = Signal(list)
-    visibility_changed = Signal()
-
-    def __init__(self, parent=None):
-        super().__init__()
-
-        self._label = QLabel("Tags are editable from the settings")
-        self._search_line = QLineEdit()
-        self._listview = QListView()
-        self._search_line.addAction(QIcon(FIcon(0xF0349)), QLineEdit.LeadingPosition)
-        self._apply_btn = QPushButton("Apply")
-        self._model = TagsModel()
-        self._proxy_model = QSortFilterProxyModel()
-        self._proxy_model.setSourceModel(self._model)
-        self._listview.setModel(self._proxy_model)
-
-        vlayout = QVBoxLayout()
-        vlayout.addWidget(self._label)
-        vlayout.addWidget(self._search_line)
-        vlayout.addWidget(self._listview)
-        vlayout.addWidget(self._apply_btn)
-        self.setLayout(vlayout)
-
-        self._search_line.textChanged.connect(self._proxy_model.setFilterFixedString)
-        self._apply_btn.clicked.connect(self.on_apply)
-
-    def on_apply(self):
-        self.tags_selected.emit(self._model.checked_tags())
-        self.parent().close()
-
-    def set_checked(self, tags):
-        self._model.set_checked(tags)
-
-    def showEvent(self, event):
-        """override"""
-
-        super().showEvent(event)
-        self._model.load()
-        self.visibility_changed.emit()
-
-
 class VariantViewWidget(plugin.PluginWidget):
     """Contains the view of query with several controller"""
 
     variant_clicked = Signal(dict)
     LOCATION = plugin.CENTRAL_LOCATION
-
     ENABLE = True
     REFRESH_STATE_DATA = {"fields", "filters", "source"}
 
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        # Create 2 Panes
-        self.splitter = QSplitter(Qt.Horizontal)
-        self.main_right_pane = VariantView(parent=self)
-
-        self.splitter.addWidget(self.main_right_pane)
-
-        # Make resizable TODO : ugly ... Make it nicer
-        # def _resize1_section(l, o, n):
-        #     self.groupby_left_pane.view.horizontalHeader().resizeSection(l, n)
-
-        # def _resize2_section(l, o, n):
-        #     self.main_right_pane.view.horizontalHeader().resizeSection(l, n)
-
-        # self.main_right_pane.view.horizontalHeader().sectionResized.connect(_resize1_section)
-        # self.groupby_left_pane.view.horizontalHeader().sectionResized.connect(
-        #     _resize2_section
-        # )
-
-        # self.groupby_left_pane.view.setHorizontalHeader(self.main_right_pane.view.horizontalHeader())
-
+        self.view = VariantView(parent=self)
         # Top toolbar
+
         self.top_bar = QToolBar()
-        # PS: Actions with QAction::LowPriority will not show the text labels
         self.top_bar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         self.top_bar.setIconSize(QSize(16, 16))
 
-        # self.save_action.setPriority(QAction.LowPriority)
-
-        self.top_bar.addActions(self.main_right_pane.actions())
-        for action in self.main_right_pane.actions():
-            self.top_bar.widgetForAction(action).setPopupMode(QToolButton.InstantPopup)
-
-        # Tag actions
-        self._tag_action = self.top_bar.addAction(FIcon(0xF12F7), "Tags")
-        self._tag_action.setToolTip(
-            "Apply tags to the current variant. You can edit tags from the settings"
-        )
-        self.top_bar.widgetForAction(self._tag_action).setPopupMode(
-            QToolButton.InstantPopup
-        )
-        self._tag_action_menu = QMenu()
-        self._tag_widget = TagsWidget()
-        #        self._tag_action.setMenu(self._tag_action_menu)
-        self.widget_action = QWidgetAction(self)
-        self.widget_action.setDefaultWidget(self._tag_widget)
-        self._tag_widget.visibility_changed.connect(self.on_tag_widget_show)
-
-        self._tag_action_menu.addAction(self.widget_action)
-        self._tag_widget.tags_selected.connect(self.main_right_pane.update_tags)
-
-        # Formatter tools
-        self.top_bar.addSeparator()
-
-        spacer = QWidget()
-        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        self.top_bar.addWidget(spacer)
-
-        self.resize_action = self.top_bar.addAction(
-            FIcon(0xF142A), self.tr("Auto resize")
-        )
-        self.resize_action.triggered.connect(self.main_right_pane.auto_resize)
-
-        # Refresh UI button
-        self.refresh_action = self.top_bar.addAction(
-            FIcon(0xF0450), self.tr("Refresh"), self.on_refresh
-        )
-        self.refresh_action.setToolTip(self.tr("Refresh the current list of variants"))
-        # action.setPriority(QAction.LowPriority)
-
-        # Interrupt current query
-        self.interrupt_action = self.top_bar.addAction(
-            FIcon(0xF04DB), self.tr("Stop"), self.on_interrupt
-        )
-        self.interrupt_action.setToolTip(self.tr("Stop current query"))
+        self._setup_actions()
 
         # Add formatters to combobox
         self.formatter_combo = QComboBox()
@@ -1830,18 +1623,53 @@ class VariantViewWidget(plugin.PluginWidget):
         # Setup layout
         main_layout = QVBoxLayout()
         main_layout.addWidget(self.top_bar)
-        main_layout.addWidget(self.splitter)
+        main_layout.addWidget(self.view)
         main_layout.addWidget(self.log_edit)
 
         self.setLayout(main_layout)
 
         # Make connection
-        self.main_right_pane.view.selectionModel().currentRowChanged.connect(
+        self.view.view.selectionModel().currentRowChanged.connect(
             lambda x, _: self.on_variant_clicked(x)
         )
+        self.view.error_raised.connect(self.set_message)
+        self.view.model.load_finished.connect(self.on_load_finished)
 
-        self.main_right_pane.error_raised.connect(self.set_message)
-        self.main_right_pane.model.load_finished.connect(self.on_load_finished)
+    def _setup_actions(self):
+        """setup actions"""
+
+        # self.top_bar.addActions(self.view.actions())
+
+        # for action in self.view.actions():
+        #     self.top_bar.widgetForAction(action).setPopupMode(QToolButton.InstantPopup)
+        #     self.top_bar.addAction(action)
+
+        # self.tag_widget = ChoiceWidget()
+
+        # self.tag_action = create_widget_action(self.top_bar, self.tag_widget)
+        # self.tag_action.setText("Tags")
+
+        self.resize_action = self.top_bar.addAction(
+            FIcon(0xF142A), self.tr("Auto resize")
+        )
+        self.resize_action.triggered.connect(self.view.auto_resize)
+
+        # Refresh UI button
+        self.refresh_action = self.top_bar.addAction(
+            FIcon(0xF0450), self.tr("Refresh"), self.on_refresh
+        )
+        self.refresh_action.setToolTip(self.tr("Refresh the current list of variants"))
+        # action.setPriority(QAction.LowPriority)
+
+        # Interrupt current query
+        self.interrupt_action = self.top_bar.addAction(
+            FIcon(0xF04DB), self.tr("Stop"), self.on_interrupt
+        )
+        self.interrupt_action.setToolTip(self.tr("Stop current query"))
+
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        self.top_bar.addWidget(spacer)
 
     def on_tag_widget_show(self):
         """Triggered when tagDialog is displayed"""
@@ -1852,10 +1680,10 @@ class VariantViewWidget(plugin.PluginWidget):
             self.mainwindow.set_state_data("fields", fields + ["tags"])
             self.on_refresh()
 
-        selected_rows = self.main_right_pane.view.selectionModel().selectedRows()
+        selected_rows = self.view.view.selectionModel().selectedRows()
         if len(selected_rows) == 1:
             index = selected_rows[0]
-            variant_id = self.main_right_pane.model.variant(index.row())["id"]
+            variant_id = self.view.model.variant(index.row())["id"]
             variant = sql.get_variant(self.conn, variant_id)
             if variant["tags"]:
                 self._tag_widget.set_checked(variant["tags"].split("&"))
@@ -1868,8 +1696,8 @@ class VariantViewWidget(plugin.PluginWidget):
         """
 
         executed_query_data = {
-            "count": self.main_right_pane.model.total,
-            "elapsed_time": self.main_right_pane.model.elapsed_time,
+            "count": self.view.model.total,
+            "elapsed_time": self.view.model.elapsed_time,
         }
 
         self.mainwindow.set_state_data("executed_query_data", executed_query_data)
@@ -1911,7 +1739,7 @@ class VariantViewWidget(plugin.PluginWidget):
         settings.beginGroup("variant_view")
 
         formatter_class = self.formatter_combo.currentData()
-        self.main_right_pane.set_formatter(formatter_class())
+        self.view.set_formatter(formatter_class())
         # Save formatter setting
         settings.setValue("formatter", formatter_class.__name__)
 
@@ -1919,12 +1747,12 @@ class VariantViewWidget(plugin.PluginWidget):
         """Overrided from PluginWidget"""
         self.conn = conn
         # Set connections of models
-        self.main_right_pane.conn = self.conn
+        self.view.conn = self.conn
 
         # Setup config
         config = self.create_config()
-        self.main_right_pane.model.limit = config.get("rows_per_page", 50)
-        self.main_right_pane.model.set_cache(config.get("memory_cache", 32))
+        self.view.model.limit = config.get("rows_per_page", 50)
+        self.view.model.set_cache(config.get("memory_cache", 32))
 
         self.on_refresh()
 
@@ -1937,24 +1765,24 @@ class VariantViewWidget(plugin.PluginWidget):
             self.save_fields = self.mainwindow.get_state_data("fields")
             self.save_filters = self.mainwindow.get_state_data("filters")
 
-            self.main_right_pane.fields = self.mainwindow.get_state_data("fields")
-            self.main_right_pane.source = self.mainwindow.get_state_data("source")
-            self.main_right_pane.filters = self.mainwindow.get_state_data("filters")
+            self.view.fields = self.mainwindow.get_state_data("fields")
+            self.view.source = self.mainwindow.get_state_data("source")
+            self.view.filters = self.mainwindow.get_state_data("filters")
 
         # Set formatter
         formatter_class = self.formatter_combo.currentData()
 
         #        formatter_class = next(formatter.find_formatters())
-        self.main_right_pane.set_formatter(formatter_class())
+        self.view.set_formatter(formatter_class())
 
         # Clear only the variant cache ! Because user can edit data
-        self.main_right_pane.model.clear_variant_cache()
+        self.view.model.clear_variant_cache()
 
         # Load ui
         self.load(reset_page=True)
 
     def on_interrupt(self):
-        self.main_right_pane.model.interrupt()
+        self.view.model.interrupt()
 
     # def on_save_selection(self):
     #     """Triggered on 'save_selection' button
@@ -1978,7 +1806,7 @@ class VariantViewWidget(plugin.PluginWidget):
     #             selection_name,
     #             source=self.mainwindow.get_state_data("source"),
     #             filters=self.mainwindow.get_state_data("filters"),
-    #             count=self.main_right_pane.model.total,
+    #             count=self.view.model.total,
     #         )
     #         if result:
     #             self.mainwindow.refresh_plugin("source_editor")
@@ -2001,7 +1829,7 @@ class VariantViewWidget(plugin.PluginWidget):
 
         Clear right pane (nothing to select in it)
         """
-        self.main_right_pane.model.clear()
+        self.view.model.clear()
 
     def load(self, reset_page=False):
         """Load all views
@@ -2015,11 +1843,11 @@ class VariantViewWidget(plugin.PluginWidget):
 
         # Grouped => ungrouped
         # Restore fields
-        self.main_right_pane.fields = self.save_fields
+        self.view.fields = self.save_fields
         # Restore filters
-        self.main_right_pane.filters = self.save_filters
+        self.view.filters = self.save_filters
         # Refresh model
-        self.main_right_pane.load(reset_page)
+        self.view.load(reset_page)
         # print("saved right:", self.save_fields)
 
     def on_variant_clicked(self, index: QModelIndex):
@@ -2031,11 +1859,11 @@ class VariantViewWidget(plugin.PluginWidget):
                 selection models to locate an item in the model.
         """
 
-        if index.model() == self.main_right_pane.view.model():
+        if index.model() == self.view.view.model():
             # Variant clicked on right pane
 
             # TODO Make current_variant state data take the value of the whole variant (with annotations and samples!)
-            variant = self.main_right_pane.model.variant(index.row())
+            variant = self.view.model.variant(index.row())
 
         if self.mainwindow:
             self.mainwindow.set_state_data("current_variant", variant)
@@ -2047,14 +1875,14 @@ class VariantViewWidget(plugin.PluginWidget):
 
         See Also: VariantView.copy_to_clipboard
         """
-        self.main_right_pane.copy_to_clipboard()
+        self.view.copy_to_clipboard()
 
     def select_all(self):
         """Select all variants in the view
 
         See Also: VariantView.select_all
         """
-        self.main_right_pane.select_all()
+        self.view.select_all()
 
     def set_message(self, message: str):
         """Show message error at the bottom of the view
@@ -2091,8 +1919,8 @@ if __name__ == "__main__":
 
     w = VariantViewWidget()
     w.conn = conn
-    w.main_right_pane.model.conn = conn
-    w.main_right_pane.load()
+    w.view.model.conn = conn
+    w.view.load()
     # w.main_view.model.group_by = ["chr","pos","ref","alt"]
     # w.on_refresh()
 
