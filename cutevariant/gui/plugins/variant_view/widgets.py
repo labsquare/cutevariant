@@ -833,6 +833,7 @@ class VariantView(QWidget):
         main_layout.addWidget(self.top_bar)
         main_layout.addWidget(self.view)
         main_layout.addWidget(self.bottom_bar)
+        main_layout.addWidget(self.log_edit)
         self.setLayout(main_layout)
 
         # Connection
@@ -887,14 +888,14 @@ class VariantView(QWidget):
 
         # -----------Refresh action ----------
         self.refresh_action = self.top_bar.addAction(
-            FIcon(0xF0450), self.tr("Refresh"), lambda x: self.load(reset_page=True)
+            FIcon(0xF0450), self.tr("Refresh"), lambda: self.load(reset_page=True)
         )
         self.refresh_action.setToolTip(self.tr("Refresh the current list of variants"))
 
         # -----------Interrupt action ----------
 
         self.interrupt_action = self.top_bar.addAction(
-            FIcon(0xF04DB), self.tr("Stop"), self.model.interrupt()
+            FIcon(0xF04DB), self.tr("Stop"), lambda: self.model.interrupt()
         )
         self.interrupt_action.setToolTip(self.tr("Stop current query"))
 
