@@ -3,6 +3,9 @@ from PySide6.QtCore import *
 from PySide6.QtGui import *
 import os
 from cutevariant.gui.widgets.import_widget import VcfImportWidget, ImportThread
+from cutevariant.gui.widgets import DictWidget
+
+from cutevariant.core import sql
 
 from cutevariant import LOGGER
 
@@ -146,7 +149,6 @@ class ImportPage(QWizardPage):
 
         # # Note: self.run is automatically launched when ImportPage is displayed
         # # See initializePage()
-        self.stop_button.clicked.connect(self.stop_thread)
 
         # self.thread.progress_changed.connect(self.progress_changed)
         # self.thread.finished_status.connect(self.import_thread_finished_status)
@@ -159,8 +161,6 @@ class ImportPage(QWizardPage):
         self.thread.pedfile = self.wizard().page(1).pedfile()
         self.thread.ignored_fields = self.wizard().page(1).widget.get_ignored_fields()
         self.thread.indexed_fields = self.wizard().page(1).widget.get_indexed_fields()
-        self.completeChanged.emit()
-
         self.thread.start()
 
     def import_thread_finished(self, status):
@@ -201,13 +201,14 @@ class FinishPage(QWizardPage):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.label = QLabel()
+        self.widget = DictWidget()
         vLayout = QVBoxLayout(self)
-        vLayout.addWidget(self.label)
+        vLayout.addWidget(self.widget)
 
-        self.label.setText(
-            "Congratulation. You can now explore your data with cutevariant"
-        )
+    def initializePage(self):
+        self.db_filename = self.wizard().page(0).db_filename()
+        conn = sql.get_sql_connection(self.db_filename)
+        self.widget.set_dict(sql.get_summary(conn))
 
 
 class ProjectWizard(QWizard):

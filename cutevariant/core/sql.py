@@ -1958,6 +1958,20 @@ def get_variants_count(conn: sqlite3.Connection):
     return count_query(conn, "variants")
 
 
+def get_summary(conn: sqlite3.Connection):
+    """Get summary of database
+
+    Args:
+        conn (sqlite3.Connection)
+    """
+    variant_count = int(
+        conn.execute("SELECT count FROM selections WHERE name = 'variants'").fetchone()
+    )
+    sample_count = int(conn.execute("SELECT COUNT(*) FROM samples").fetchone())
+
+    return {"variant_count": variant_count, "sample_count": sample_count}
+
+
 def get_variants(
     conn: sqlite3.Connection,
     fields,
@@ -2849,12 +2863,7 @@ def import_reader(
         field["name"] for field in indexed_fields if field["category"] == "samples"
     }
 
-    try:
-        create_indexes(
-            conn, vindex, aindex, sindex, progress_callback=progress_callback
-        )
-    except:
-        LOGGER.debug("Index already exists")
+    create_indexes(conn, vindex, aindex, sindex, progress_callback=progress_callback)
 
     progress_callback("Database creation complete")
 

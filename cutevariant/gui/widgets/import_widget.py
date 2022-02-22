@@ -548,8 +548,6 @@ class ImportThread(QThread):
                 )
 
             # Update Index
-            self.emit_progress("**Indexation. This can takes a while **")
-
             # sql.create_indexes(
             #     self.conn,
             #     self.indexed_variant_fields,
