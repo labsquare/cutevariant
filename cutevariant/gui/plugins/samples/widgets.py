@@ -545,7 +545,9 @@ class SamplesWidget(plugin.PluginWidget):
         menu = QMenu(self)
         menu.addAction(QIcon(), "Edit sample ...", self._show_sample_dialog)
 
-        menu.addAction(QIcon(), "Create filter for this sample", self.on_add_filter)
+        menu.addAction(
+            QIcon(), "Create filter for selected samples", self.on_add_filter
+        )
 
         menu.addSection("current variant")
         cat_menu = menu.addMenu("Classification")
@@ -601,31 +603,33 @@ class SamplesWidget(plugin.PluginWidget):
 
     def on_add_filter(self):
 
-        index = self.view.selectionModel().currentIndex()
+        indexes = self.view.selectionModel().selectedRows()
 
-        if not index.isValid():
-            return
+        filters = copy.deepcopy(self.mainwindow.get_state_data("filters"))
 
-        sample_name = index.siblingAtColumn(1).data()
+        if "$and" not in filters:
+            filters["$and"] = []
 
-        if sample_name:
-            filters = copy.deepcopy(self.mainwindow.get_state_data("filters"))
-            key = f"samples.{sample_name}.gt"
-            condition = {key: {"$gte": 1}}
+        for i, s in enumerate(filters["$and"]):
 
-            if "$and" in filters:
-                for index, field in enumerate(filters["$and"]):
-                    if re.match(r"samples\.\w+\.gt", list(field.keys())[0]):
-                        filters["$and"][index] = condition
-                        break
-                else:
-                    filters["$and"].append(condition)
-            else:
-                filters = {"$and": [condition]}
+            if isinstance(s, dict):
+                print(s, s.keys())
+                if list(s.keys())[0].startswith("samples"):
+                    del filters["$and"][i]
 
-            print("FILTERS", filters)
-            self.mainwindow.set_state_data("filters", filters)
-            self.mainwindow.refresh_plugins(sender=self)
+            # if str(s.keys()[0]).startswith("samples."):
+            #     del filters["$and"][i]
+
+        for index in indexes:
+            sample_name = index.siblingAtColumn(1).data()
+
+            if sample_name:
+                key = f"samples.{sample_name}.gt"
+                condition = {key: {"$gte": 1}}
+                filters["$and"].append(condition)
+
+        self.mainwindow.set_state_data("filters", filters)
+        self.mainwindow.refresh_plugins(sender=self)
 
     def on_open_project(self, conn):
         self._conn = conn
