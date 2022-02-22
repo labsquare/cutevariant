@@ -288,9 +288,9 @@ class VariantModel(QAbstractTableModel):
                 else:
                     return str(self.variant(index.row())[column_name])
 
-            if role == Qt.ToolTipRole:
-                value = str(self.variant(index.row())[column_name])
-                return value
+            # if role == Qt.ToolTipRole:
+            #     value = str(self.variant(index.row())[column_name])
+            #     return value
 
             if role == Qt.DecorationRole:
                 if column_name == "tags":

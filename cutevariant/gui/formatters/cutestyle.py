@@ -133,7 +133,7 @@ class CutestyleFormatter(Formatter):
             pix.fill(Qt.transparent)
             painter = QPainter(pix)
             for index, value in enumerate(values):
-                width = metrics.width(value)
+                width = metrics.boundingRect(value).width()
                 height = metrics.height()
                 rect = QRect(x, 2, width + 15, height + 10)
 
@@ -161,7 +161,7 @@ class CutestyleFormatter(Formatter):
             pix.fill(Qt.transparent)
             painter = QPainter(pix)
             for index, value in enumerate(values):
-                width = metrics.width(value)
+                width = metrics.boundingRect(value).width()
                 height = metrics.height()
                 rect = QRect(x, 2, width + 15, height + 10)
 
