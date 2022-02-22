@@ -252,7 +252,6 @@ def test_import_reader():
 
     reader = FakeReader()
     sql.import_reader(conn, reader)
-    sql.import_reader(conn, reader)
 
 
 # def test_import_variants():
@@ -589,7 +588,8 @@ def test_get_annotations(conn):
 def test_get_sample_annotations_by_variant(conn):
 
     expected = [
-        dict(i, valid=0, id=index + 1) for index, i in enumerate(VARIANTS[0]["samples"])
+        dict(i, valid=0, variant_id=1, sample_id=index + 1)
+        for index, i in enumerate(VARIANTS[0]["samples"])
     ]
     observed = []
     for i in sql.get_sample_annotations_by_variant(conn, 1, fields=["gt", "dp"]):

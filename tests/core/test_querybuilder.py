@@ -91,10 +91,16 @@ def test_condition_to_sql():
         == "`variants`.`gene` REGEXP 'CFTR.+'"
     )
 
-    assert (
-        querybuilder.condition_to_sql({"samples.*.gt": 1}, ["boby", "charles"])
-        == "(`sample_boby`.`gt` = 1 AND `sample_charles`.`gt` = 1)"
-    )
+
+assert (
+    querybuilder.condition_to_sql({"samples.$all.gt": 1}, ["boby", "charles"])
+    == "(`sample_boby`.`gt` = 1 AND `sample_charles`.`gt` = 1)"
+)
+
+assert (
+    querybuilder.condition_to_sql({"samples.$any.gt": 1}, ["boby", "charles"])
+    == "(`sample_boby`.`gt` = 1 OR `sample_charles`.`gt` = 1)"
+)
 
 
 def test_fields_to_vql():
@@ -159,35 +165,46 @@ def test_fields_to_sql():
 
 # refactor
 def test_filters_to_sql():
-    filters = {
-        "$and": [
-            {"chr": "chr1"},
-            {"pos": {"$gt": 111}},
-            {
-                "ann.gene": "CFTR",
-            },
-            {"ann.gene": {"$gt": "LOW"}},
-            {"samples.boby.gt": 1},
-            {"$or": [{"pos": {"$gte": 10}}, {"pos": {"$lte": 100}}]},
-        ]
-    }
+    # filters = {
+    #     "$and": [
+    #         {"chr": "chr1"},
+    #         {"pos": {"$gt": 111}},
+    #         {
+    #             "ann.gene": "CFTR",
+    #         },
+    #         {"ann.gene": {"$gt": "LOW"}},
+    #         {"samples.boby.gt": 1},
+    #         {"$or": [{"pos": {"$gte": 10}}, {"pos": {"$lte": 100}}]},
+    #     ]
+    # }
 
-    observed = querybuilder.filters_to_sql(filters)
+    # observed = querybuilder.filters_to_sql(filters)
 
-    expected = "(`variants`.`chr` = 'chr1' AND `variants`.`pos` > 111 AND `annotations`.`gene` = 'CFTR' AND `annotations`.`gene` > 'LOW' AND `sample_boby`.`gt` = 1 AND (`variants`.`pos` >= 10 OR `variants`.`pos` <= 100))"
-    assert observed == expected
-
+    # expected = "(`variants`.`chr` = 'chr1' AND `variants`.`pos` > 111 AND `annotations`.`gene` = 'CFTR' AND `annotations`.`gene` > 'LOW' AND `sample_boby`.`gt` = 1 AND (`variants`.`pos` >= 10 OR `variants`.`pos` <= 100))"
+    # assert observed == expected
     # Test with Any sample special fields
 
     filters = {
         "$and": [
             {"pos": 10},
-            {"samples.*.gt": 1},
+            {"samples.$all.gt": 1},
         ]
     }
 
     observed = querybuilder.filters_to_sql(filters, ["boby", "charles"])
     expected = "(`variants`.`pos` = 10 AND (`sample_boby`.`gt` = 1 AND `sample_charles`.`gt` = 1))"
+
+    assert observed == expected
+
+    filters = {
+        "$and": [
+            {"pos": 10},
+            {"samples.$any.gt": 1},
+        ]
+    }
+
+    observed = querybuilder.filters_to_sql(filters, ["boby", "charles"])
+    expected = "(`variants`.`pos` = 10 AND (`sample_boby`.`gt` = 1 OR `sample_charles`.`gt` = 1))"
 
     assert observed == expected
 
