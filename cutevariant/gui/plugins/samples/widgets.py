@@ -545,8 +545,10 @@ class SamplesWidget(plugin.PluginWidget):
         menu = QMenu(self)
         menu.addAction(QIcon(), "Edit sample ...", self._show_sample_dialog)
 
+        menu.addAction(QIcon(), "Filter from current selection", self.on_add_filter)
+
         menu.addAction(
-            QIcon(), "Create filter for selected samples", self.on_add_filter
+            QIcon(), "Create a source from current selection", self.on_add_source
         )
 
         menu.addSection("current variant")
@@ -601,34 +603,48 @@ class SamplesWidget(plugin.PluginWidget):
 
         self.on_refresh()
 
-    def on_add_filter(self):
+    def _create_filters(self):
 
         indexes = self.view.selectionModel().selectedRows()
-
         filters = copy.deepcopy(self.mainwindow.get_state_data("filters"))
 
-        if "$and" not in filters:
+        if not filters:
+            root = "$and"
             filters["$and"] = []
 
-        for i, s in enumerate(filters["$and"]):
-
-            if isinstance(s, dict):
-                print(s, s.keys())
-                if list(s.keys())[0].startswith("samples"):
-                    del filters["$and"][i]
-
-            # if str(s.keys()[0]).startswith("samples."):
-            #     del filters["$and"][i]
+        else:
+            root = list(filters.keys())[0]
+            filters[root] = [
+                i for i in filters[root] if not list(i.keys())[0].startswith("samples")
+            ]
 
         for index in indexes:
             sample_name = index.siblingAtColumn(1).data()
-
+            print(sample_name)
             if sample_name:
                 key = f"samples.{sample_name}.gt"
                 condition = {key: {"$gte": 1}}
-                filters["$and"].append(condition)
+                filters[root].append(condition)
 
-        self.mainwindow.set_state_data("filters", filters)
+        return filters
+
+    def on_add_source(self):
+
+        name, _ = QInputDialog.getText(self, "Source Name", "Get a source name ")
+
+        if not name:
+            return
+
+        sql.insert_selection_from_source(
+            self._conn, name, "variants", self._create_filters()
+        )
+
+        if "source_editor" in self.mainwindow.plugins:
+            self.mainwindow.refresh_plugin("source_editor")
+
+    def on_add_filter(self):
+
+        self.mainwindow.set_state_data("filters", self._create_filters())
         self.mainwindow.refresh_plugins(sender=self)
 
     def on_open_project(self, conn):
