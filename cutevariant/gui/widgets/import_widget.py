@@ -150,18 +150,14 @@ class FieldsModel(QAbstractTableModel):
 
         return False
 
-    def get_ignore_fields(self) -> set:
+    def get_ignored_fields(self) -> set:
         """Returns a set of ignored fields, as a set of tuples (field_name,field_category)
         Why return tuple instead of dict ? Well, dicts are not hashable because they are mutable. So they cannot be put in a set.
 
         Returns:
             set: A set with every ignored field (i.e. every field that was ticked off in self's model)
         """
-        return {
-            (field["name"], field["category"])
-            for field in self._items
-            if field["enabled"] == False
-        }
+        return [field for field in self._items if field["enabled"] == False]
 
     def get_indexed_fields(self):
         return [field for field in self._items if field["index"] == True]
@@ -401,6 +397,12 @@ class VcfImportWidget(QWidget):
         self.samples_widget.view.model.to_pedfile(filename)
         return filename
 
+    def get_ignored_fields(self):
+        return self.fields_widget.model.get_ignored_fields()
+
+    def get_indexed_fields(self):
+        return self.fields_widget.model.get_indexed_fields()
+
 
 class ProgressDialog(QDialog):
     def __init__(self, parent=None):
@@ -495,7 +497,7 @@ class ImportThread(QThread):
         # Ignored fields
         self.ignored_fields = None
         # Fields with index
-        self.index_fields = None
+        self.indexed_fields = None
         # annotation parser
         self.annotation_parser = None
 
@@ -509,8 +511,6 @@ class ImportThread(QThread):
 
         else:
             self.progress_changed.emit(-1, message)
-
-        return self._stop
 
     def run(self):
         """Overrided QThread method
@@ -542,15 +542,14 @@ class ImportThread(QThread):
                     self.conn,
                     reader,
                     pedfile=self.pedfile,
+                    ignored_fields=self.ignored_fields,
+                    indexed_fields=self.indexed_fields,
                     progress_callback=self.emit_progress,
                 )
 
-            # Update count
-            self.emit_progress("**Compute variant count**")
-            # sql.update_variants_counts(self.conn)
-
             # Update Index
-            self.emit_progress("**Create indexes**")
+            self.emit_progress("**Indexation. This can takes a while **")
+
             # sql.create_indexes(
             #     self.conn,
             #     self.indexed_variant_fields,
@@ -576,6 +575,7 @@ class ImportThread(QThread):
     def stop(self):
         """Stop the import process"""
         self._stop = True
+        self.emit_progress("**Import has been stopped by the user**")
 
 
 class VcfImportDialog(QDialog):
@@ -616,6 +616,9 @@ class VcfImportDialog(QDialog):
         # create pedfile
         self.thread.pedfile = self.widget.pedfile()
 
+        self.thread.ignored_fields = self.widget.get_ignored_fields()
+        self.thread.indexed_fields = self.widget.get_indexed_fields()
+
         self.thread.start()
 
         if self.progress_dialog.exec_() == QDialog.Accepted:
@@ -636,9 +639,18 @@ class VcfImportDialog(QDialog):
 if __name__ == "__main__":
     import sys
     from PySide6.QtWidgets import QApplication
+    import os
 
     app = QApplication(sys.argv)
+
+    try:
+        os.remove("/home/sacha/test.db")
+    except:
+        pass
 
     #    dialog = VcfImportDialog(conn)
     dialog = VcfImportDialog("/home/sacha/test.db")
     dialog.exec_()
+
+    print(dialog.widget.get_ignored_fields())
+    print(dialog.widget.get_indexed_fields())

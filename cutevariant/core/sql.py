@@ -596,9 +596,10 @@ def remove_indexed_field(conn: sqlite3.Connection, category: str, field_name: st
 
 def create_indexes(
     conn: sqlite3.Connection,
-    indexed_variant_fields=None,
-    indexed_annotation_fields=None,
-    indexed_sample_fields=None,
+    indexed_variant_fields: list = None,
+    indexed_annotation_fields: list = None,
+    indexed_sample_fields: list = None,
+    progress_callback: Callable = None,
 ):
     """Create extra indexes on tables
 
@@ -611,15 +612,27 @@ def create_indexes(
 
     """
 
+    if progress_callback:
+        progress_callback("Create selection index ")
+
     create_selections_indexes(conn)
 
+    if progress_callback:
+        progress_callback("Create variants index ")
+
     create_variants_indexes(conn, indexed_variant_fields)
+
+    if progress_callback:
+        progress_callback("Create samples index ")
 
     create_samples_indexes(conn, indexed_sample_fields)
 
     try:
         # Some databases have not annotations table
+        if progress_callback:
+            progress_callback("Create annotation index  ")
         create_annotations_indexes(conn, indexed_annotation_fields)
+
     except sqlite3.OperationalError as e:
         LOGGER.debug("create_indexes:: sqlite3.%s: %s", e.__class__.__name__, str(e))
 
@@ -2244,10 +2257,12 @@ def insert_variants(
                     cursor.execute(query, query_datas)
 
         # Commit every batch_size
-        if progress_callback and variant_count % progress_every == 0:
-            progress_callback(
-                f"{variant_count+1}, {total_variant_count} variants inserted {progress}."
-            )
+        if (
+            progress_callback
+            and variant_count != 0
+            and variant_count % progress_every == 0
+        ):
+            progress_callback(f"{variant_count} variants inserted.")
 
     conn.commit()
 
@@ -2781,8 +2796,9 @@ def import_reader(
     conn: sqlite3.Connection,
     reader: AbstractReader,
     pedfile: str = None,
-    progress_callback: Callable = None,
     ignored_fields: list = [],
+    indexed_fields: list = [],
+    progress_callback: Callable = None,
 ):
 
     tables = ["variants", "annotations", "sample_has_variant"]
@@ -2820,6 +2836,27 @@ def import_reader(
         progress_callback=progress_callback,
         progress_every=1000,
     )
+
+    progress_callback("Indexation. This can take a while")
+
+    vindex = {
+        field["name"] for field in indexed_fields if field["category"] == "variants"
+    }
+    aindex = {
+        field["name"] for field in indexed_fields if field["category"] == "annotations"
+    }
+    sindex = {
+        field["name"] for field in indexed_fields if field["category"] == "samples"
+    }
+
+    try:
+        create_indexes(
+            conn, vindex, aindex, sindex, progress_callback=progress_callback
+        )
+    except:
+        LOGGER.debug("Index already exists")
+
+    progress_callback("Database creation complete")
 
 
 def export_writer(
