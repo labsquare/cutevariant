@@ -2850,8 +2850,8 @@ def import_reader(
         progress_callback=progress_callback,
         progress_every=1000,
     )
-
-    progress_callback("Indexation. This can take a while")
+    if progress_callback:
+        progress_callback("Indexation. This can take a while")
 
     vindex = {
         field["name"] for field in indexed_fields if field["category"] == "variants"
@@ -2865,7 +2865,8 @@ def import_reader(
 
     create_indexes(conn, vindex, aindex, sindex, progress_callback=progress_callback)
 
-    progress_callback("Database creation complete")
+    if progress_callback:
+        progress_callback("Database creation complete")
 
 
 def export_writer(

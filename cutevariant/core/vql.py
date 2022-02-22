@@ -110,7 +110,16 @@ class FilterTerm(metaclass=model_class):
 
         if isinstance(field, tuple):
             if field[0] == "samples":
-                field = f"samples.{field[1]}.{field[2]}"
+
+                name = field[1]
+
+                if field[1] in ("*", "ANY"):
+                    name = "$any"
+
+                if field[1] in ("?", "ALL"):
+                    name = "$all"
+
+                field = f"samples.{name}.{field[2]}"
 
         return {field: {op: val}}
 

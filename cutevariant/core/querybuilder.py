@@ -273,7 +273,8 @@ def condition_to_sql(item: dict, samples=None) -> str:
         condition_to_sql({"chr":3}) ==> `variants`.`chr `= 3
         condition_to_sql({"chr":{"$gte": 30}}) ==> `variants`.`chr `>= 3
         condition_to_sql({"ann.gene":{"$gte": 30}}) ==> `annotation`.`gene` >= 30
-        condition_to_sql({"samples.*.gt": 1 }) ==> (`samples.boby.gt = 1 AND samples.charles.gt = 1)
+        condition_to_sql({"samples.$all.gt": 1 }) ==> (`samples.boby.gt = 1 AND samples.charles.gt = 1)
+        condition_to_sql({"samples.$any.gt": 1 }) ==> (`samples.boby.gt = 1 OR samples.charles.gt = 1)
 
     """
 
@@ -353,12 +354,23 @@ def condition_to_sql(item: dict, samples=None) -> str:
             + ")"
         )
 
+    operator = None
+    condition = ""
+
     if table == "samples":
-        if name == "*" and samples:
+
+        if name == "$any":
+            operator = "OR"
+
+        if name == "$all":
+            operator = "AND"
+
+        print("ICI", item, name, operator, samples)
+        if operator and samples:
 
             condition = (
                 "("
-                + " AND ".join(
+                + f" {operator} ".join(
                     [
                         f"`sample_{sample}`.`{k}` {sql_operator} {value}"
                         for sample in samples
@@ -643,7 +655,9 @@ def build_sql_query(
 
     # Test if sample*
     filters_fields = " ".join([list(i.keys())[0] for i in filters_to_flat(filters)])
-    if "samples.*." in filters_fields:
+
+    # Join all samples if $all or $any keywords are present
+    if "$all" in filters_fields or "$any" in filters_fields:
         join_samples = list(samples_ids.keys())
 
     else:
