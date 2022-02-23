@@ -2286,7 +2286,11 @@ def insert_variants(
         )
 
     # Create default selection (we need the number of variants for this)
-    insert_selection(conn, "", name=cm.DEFAULT_SELECTION_NAME, count=total)
+
+    # Count total variants . I cannot use "total" variable like before for the update features.
+
+    true_total = conn.execute("SELECT COUNT(*) FROM variants").fetchone()[0]
+    insert_selection(conn, "", name=cm.DEFAULT_SELECTION_NAME, count=true_total)
 
 
 def update_variants(conn, data, **kwargs):
@@ -2863,7 +2867,12 @@ def import_reader(
         field["name"] for field in indexed_fields if field["category"] == "samples"
     }
 
-    create_indexes(conn, vindex, aindex, sindex, progress_callback=progress_callback)
+    try:
+        create_indexes(
+            conn, vindex, aindex, sindex, progress_callback=progress_callback
+        )
+    except:
+        LOGGER.info("Index already exists")
 
     if progress_callback:
         progress_callback("Database creation complete")
