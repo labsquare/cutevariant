@@ -382,12 +382,12 @@ QUERY_TESTS = [
             "filters": {
                 "$and": [
                     {"ref": "A"},
-                    {"alt": "C"},
+                    {"favorite": True},
                 ]
             },
         },
-        "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants WHERE (`variants`.`ref` = 'A' AND `variants`.`alt` = 'C') LIMIT 50 OFFSET 0",
-        "SELECT chr,pos FROM variants WHERE ref = 'A' AND alt = 'C'",
+        "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants WHERE (`variants`.`ref` = 'A' AND `variants`.`favorite` = 1) LIMIT 50 OFFSET 0",
+        "SELECT chr,pos FROM variants WHERE ref = 'A' AND favorite = 1",
     ),
     (
         {
@@ -396,7 +396,7 @@ QUERY_TESTS = [
             "filters": {"$and": [{"alt": {"$regex": "C$"}}]},
         },
         "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants WHERE (`variants`.`alt` REGEXP 'C$') LIMIT 50 OFFSET 0",
-        "SELECT chr,pos FROM variants WHERE alt ~ 'C$'",
+        "SELECT chr,pos FROM variants WHERE alt =~ 'C$'",
     ),
     # Test different source
     (
@@ -496,7 +496,19 @@ QUERY_TESTS = [
             },
         },
         "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`variants`.`ref`,`variants`.`alt` FROM variants WHERE (`variants`.`ref` REGEXP '^[AG]$' AND `variants`.`alt` REGEXP '^[CT]$') LIMIT 50 OFFSET 0",
-        "SELECT chr,pos,ref,alt FROM variants WHERE ref ~ '^[AG]$' AND alt ~ '^[CT]$'",
+        "SELECT chr,pos,ref,alt FROM variants WHERE ref =~ '^[AG]$' AND alt =~ '^[CT]$'",
+    ),
+    # Test filters with not regex !
+    (
+        {
+            "fields": ["chr", "pos", "ref", "alt"],
+            "source": "variants",
+            "filters": {
+                "$and": [{"ref": {"$nregex": "^[AG]$"}}, {"alt": {"$nregex": "^[CT]$"}}]
+            },
+        },
+        "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`variants`.`ref`,`variants`.`alt` FROM variants WHERE (`variants`.`ref` NOT REGEXP '^[AG]$' AND `variants`.`alt` NOT REGEXP '^[CT]$') LIMIT 50 OFFSET 0",
+        "SELECT chr,pos,ref,alt FROM variants WHERE ref !~ '^[AG]$' AND alt !~ '^[CT]$'",
     ),
     # TEST HAS
     # Test filters with HAS !
@@ -508,6 +520,16 @@ QUERY_TESTS = [
         },
         "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`variants`.`ref`,`variants`.`alt` FROM variants WHERE ('&' || `variants`.`ref` || '&' LIKE '%&variant&%') LIMIT 50 OFFSET 0",
         "SELECT chr,pos,ref,alt FROM variants WHERE ref HAS 'variant'",
+    ),
+    # TEST NOT HAS
+    (
+        {
+            "fields": ["chr", "pos", "ref", "alt"],
+            "source": "variants",
+            "filters": {"$and": [{"ref": {"$nhas": "variant"}}]},
+        },
+        "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`variants`.`ref`,`variants`.`alt` FROM variants WHERE ('&' || `variants`.`ref` || '&' NOT LIKE '%&variant&%') LIMIT 50 OFFSET 0",
+        "SELECT chr,pos,ref,alt FROM variants WHERE ref !HAS 'variant'",
     ),
 ]
 

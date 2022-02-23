@@ -9,6 +9,8 @@ For instance::
 See test_vql.py for usage and features.
 
 """
+
+
 import textx
 from pkg_resources import resource_string
 
@@ -21,11 +23,15 @@ OPERATORS = {
     "<=": "$lte",
     "IN": "$in",
     "!=": "$ne",
-    "NOT IN": "$nin",
-    "~": "$regex",
+    "!IN": "$nin",
+    "=~": "$regex",
+    "!~": "$nregex",
     "AND": "$and",
     "OR": "$or",
+    "ANY": "$any",
+    "ALL": "$all",
     "HAS": "$has",
+    "!HAS": "$nhas",
 }
 
 
@@ -114,10 +120,10 @@ class FilterTerm(metaclass=model_class):
                 name = field[1]
 
                 if field[1] in ("*", "ANY"):
-                    name = "$any"
+                    name = OPERATORS["ANY"]
 
                 if field[1] in ("?", "ALL"):
-                    name = "$all"
+                    name = OPERATORS["ALL"]
 
                 field = f"samples.{name}.{field[2]}"
 

@@ -38,19 +38,38 @@ from cutevariant import LOGGER
 # WORDSET["truc"]
 WORDSET_FUNC_NAME = "WORDSET"
 
-OPERATORS = {
+PY_TO_SQL_OPERATORS = {
     "$eq": "=",
     "$gt": ">",
     "$gte": ">=",
     "$lt": "<",
     "$lte": "<=",
     "$in": "IN",
-    "$ne": "!=",
     "$nin": "NOT IN",
+    "$ne": "!=",
     "$regex": "REGEXP",
+    "$nregex": "NOT REGEXP",
     "$and": "AND",
     "$or": "OR",
     "$has": "HAS",
+    "$nhas": "NOT HAS",
+}
+
+PY_TO_VQL_OPERATORS = {
+    "$eq": "=",
+    "$gt": ">",
+    "$gte": ">=",
+    "$lt": "<",
+    "$lte": "<=",
+    "$in": "IN",
+    "$nin": "!IN",
+    "$ne": "!=",
+    "$regex": "=~",
+    "$nregex": "!~",
+    "$and": "AND",
+    "$or": "OR",
+    "$has": "HAS",
+    "$nhas": "!HAS",
 }
 
 
@@ -305,20 +324,19 @@ def condition_to_sql(item: dict, samples=None) -> str:
         value = v
 
     # MAP operator
-    sql_operator = OPERATORS[operator]
+    sql_operator = PY_TO_SQL_OPERATORS[operator]
 
     # Optimisation REGEXP
     # use LIKE IF REGEXP HAS NO special caractere
-    if sql_operator == "REGEXP":
+    if "REGEXP" in sql_operator:
         special_caracter = "[]+.?*()^$"
         if not set(str(value)) & set(special_caracter):
-            sql_operator = "LIKE"
+            sql_operator = "LIKE" if sql_operator == "REGEXP" else "NOT LIKE"
             value = f"%{value}%"
 
-    if sql_operator == "HAS":
-
+    if "HAS" in sql_operator:
         field = f"'&' || {field} || '&'"
-        sql_operator = "LIKE"
+        sql_operator = "LIKE" if sql_operator == "HAS" else "NOT LIKE"
         value = f"%&{value}&%"
 
         # WHERE '&' || consequence || '&' LIKE "%&missense_variant&%"
@@ -415,10 +433,13 @@ def condition_to_vql(item: dict) -> str:
         value = v
 
     # MAP operator
-    sql_operator = OPERATORS[operator]
-    # hack .. we want ~ instead of REGEXP
-    if sql_operator == "REGEXP":
-        sql_operator = "~"
+    sql_operator = PY_TO_VQL_OPERATORS[operator]
+# # hack .. we want ~ instead of REGEXP
+# if sql_operator == "REGEXP":
+#     sql_operator = "=~"
+
+# if sql_operator == "NOT REGEXP":
+#     sql_operator = "!~"
 
     # Cast value
     if isinstance(value, str):
@@ -497,7 +518,9 @@ def filters_to_sql(filters: dict, samples=None) -> str:
             if k in ["$and", "$or"]:
                 conditions += (
                     "("
-                    + f" {OPERATORS[k]} ".join([recursive(item) for item in v])
+                    + f" {PY_TO_SQL_OPERATORS[k]} ".join(
+                        [recursive(item) for item in v]
+                    )
                     + ")"
                 )
 
@@ -548,7 +571,9 @@ def filters_to_vql(filters: dict) -> str:
             if k in ["$and", "$or"]:
                 conditions += (
                     "("
-                    + f" {OPERATORS[k]} ".join([recursive(item) for item in v])
+                    + f" {PY_TO_VQL_OPERATORS[k]} ".join(
+                        [recursive(item) for item in v]
+                    )
                     + ")"
                 )
 

@@ -75,6 +75,13 @@ VQL_TO_TREE_CASES = {
         "filters": {"$and": [{"consequence": {"$has": "exon"}}]},
         "source": "variants",
     },
+    # Test 7bis - HAS
+    "SELECT chr, pos  FROM variants WHERE consequence !HAS 'exon'": {
+        "cmd": "select_cmd",
+        "fields": ["chr", "pos"],
+        "filters": {"$and": [{"consequence": {"$nhas": "exon"}}]},
+        "source": "variants",
+    },
     # Test 8
     "SELECT chr FROM variants WHERE some_field IN ('one', 'two')": {
         "cmd": "select_cmd",
@@ -140,11 +147,20 @@ VQL_TO_TREE_CASES = {
         "name": "boby",
     },
     # Test 18 Test regex
-    "SELECT chr,pos,ref,alt FROM variants WHERE ref ~'^[AG]$' AND alt ~'^[CT]$'": {
+    "SELECT chr,pos,ref,alt FROM variants WHERE ref =~'^[AG]$' AND alt =~'^[CT]$'": {
         "cmd": "select_cmd",
         "fields": ["chr", "pos", "ref", "alt"],
         "filters": {
             "$and": [{"ref": {"$regex": "^[AG]$"}}, {"alt": {"$regex": "^[CT]$"}}]
+        },
+        "source": "variants",
+    },
+    # Test not regexp
+    "SELECT chr,pos,ref,alt FROM variants WHERE ref !~'^[AG]$' AND alt !~'^[CT]$'": {
+        "cmd": "select_cmd",
+        "fields": ["chr", "pos", "ref", "alt"],
+        "filters": {
+            "$and": [{"ref": {"$nregex": "^[AG]$"}}, {"alt": {"$nregex": "^[CT]$"}}]
         },
         "source": "variants",
     },
