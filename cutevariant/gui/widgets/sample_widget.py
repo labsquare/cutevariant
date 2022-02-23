@@ -71,7 +71,7 @@ class SampleWidget(QWidget):
         self.tag_choice = ChoiceWidget()
         self.tag_choice.add_item(QIcon(), "boby")
         self.tag_choice.add_item(QIcon(), "boby")
-        self.tag_choice_action = QWidgetAction(self.tag_choice)
+        self.tag_choice_action = QWidgetAction(self)
         self.tag_choice_action.setDefaultWidget(self.tag_choice)
 
         self.menu = QMenu()

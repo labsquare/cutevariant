@@ -1772,11 +1772,23 @@ class FilterModel(QAbstractItemModel):
         if not basic_answer:
             return False
 
-        if data.hasText() and not data.hasUrls():
-            obj = json.loads(data.text())
-            if "type" in obj:
-                if obj["type"] == "internal_move":
-                    return True
+        dest_data = self.mimeData([self.index(row, column, parent)]).data(
+            "cutevariant/typed-json"
+        )
+        source_data = data.data("cutevariant/typed-json")
+        print(source_data, dest_data)
+
+        if dest_data == source_data:
+            return False
+
+        # dest_index = self.index(row, column, parent)
+        # dest_data = self.mimeData([dest_index])
+        obj = json.loads(str(data.data("cutevariant/typed-json").data().decode()))
+
+        if "type" in obj:
+            if obj["type"] == "internal_move":
+                return True
+
             return True
 
         return True

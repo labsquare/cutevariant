@@ -383,7 +383,6 @@ def condition_to_sql(item: dict, samples=None) -> str:
         if name == "$all":
             operator = "AND"
 
-        print("ICI", item, name, operator, samples)
         if operator and samples:
 
             condition = (
@@ -434,12 +433,12 @@ def condition_to_vql(item: dict) -> str:
 
     # MAP operator
     sql_operator = PY_TO_VQL_OPERATORS[operator]
-# # hack .. we want ~ instead of REGEXP
-# if sql_operator == "REGEXP":
-#     sql_operator = "=~"
+    # # hack .. we want ~ instead of REGEXP
+    # if sql_operator == "REGEXP":
+    #     sql_operator = "=~"
 
-# if sql_operator == "NOT REGEXP":
-#     sql_operator = "!~"
+    # if sql_operator == "NOT REGEXP":
+    #     sql_operator = "!~"
 
     # Cast value
     if isinstance(value, str):
@@ -475,9 +474,17 @@ def condition_to_vql(item: dict) -> str:
     if k.startswith("samples."):
         _, *name, k = k.split(".")
         name = ".".join(name)
-        k = f"samples['{name}'].{k}"
 
-        # k = f"sample{name}`.`{k}` {sql_operator} {value}"
+        if name == "$any":
+            name = "ANY"
+
+        elif name == "$all":
+            name = "ALL"
+
+        else:
+            name = f"'{name}'"
+
+        k = f"samples[{name}].{k}"
 
     condition = f"{k} {sql_operator} {value}"
 
