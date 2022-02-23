@@ -22,6 +22,8 @@ import cutevariant.commons as cm
 
 from cutevariant.config import Config
 
+from cutevariant.gui import style
+
 
 class CutestyleFormatter(Formatter):
 
@@ -88,7 +90,7 @@ class CutestyleFormatter(Formatter):
         #     return {"color": self.BASE_COLOR.get(value)}
 
         if field == "ann.gene" and not is_selected:
-            return {"color": "#6a9fca"}
+            return {"color": style.ColorPalette.PRIMARY_COLOR}
 
         # if field == "classification":
         #     icon = self.ACMG_ICON.get(str(value), self.ACMG_ICON["0"])

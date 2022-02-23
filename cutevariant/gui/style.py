@@ -26,10 +26,10 @@ GENOTYPE = {
 
 
 FIELD_TYPE = {
-    "float": {"name": "floating ", "icon": 0xF0B0D, "color": "#2e9599"},
-    "int": {"name": "integer", "icon": 0xF0B10, "color": "#f7dc68"},
-    "str": {"name": "text", "icon": 0xF0B1A, "color": "#f46c3f"},
-    "bool": {"name": "boolean", "icon": 0xF0B09, "color": "#a7226f"},
+    "float": {"name": "floating ", "icon": 0xF0B0D, "color": "#FE604E"},
+    "int": {"name": "integer", "icon": 0xF0B10, "color": "#FDA401"},
+    "str": {"name": "text", "icon": 0xF0B1A, "color": "#31B1E2"},
+    "bool": {"name": "boolean", "icon": 0xF0B09, "color": "#FF618F"},
 }
 
 FIELD_CATEGORY = {
@@ -64,6 +64,24 @@ SO_COLOR = {
 }
 
 
+class ColorPalette:
+    PRIMARY = "red"
+    SECONDARY = "red"
+    SUCCESS = "red"
+    DANGER = "red"
+    WARNING = "red"
+    INFO = "red"
+    LIGHT = "red"
+    DARK = "red"
+
+    RED = "red"
+    ORANGE = "orange"
+    YELLOW = "yellow"
+    GREEN = "green"
+    BLUE = "blue"
+    PURPLE = "purple"
+
+
 def bright(app):
     """Mock function to don't apply any style to the Qt application instance.
 
@@ -73,6 +91,16 @@ def bright(app):
     .. note:: Called my __main__ on startup and not by StyleSettingsWidget for
     the moment (see TODO).
     """
+
+    ColorPalette.PRIMARY_COLOR = "#6200EE"
+    ColorPalette.SECONDARY_COLOR = "#3700B3"
+    ColorPalette.SUCCESS_COLOR = "#03DAC6"
+    ColorPalette.DANGER_COLOR = "red"
+    ColorPalette.WARNING_COLOR = "red"
+    ColorPalette.INFO_COLOR = "red"
+    ColorPalette.LIGHT_COLOR = "red"
+    ColorPalette.DARK_COLOR = "red"
+
     lightPalette = QPalette()
     # base
     lightPalette.setColor(QPalette.WindowText, QColor("#FF1E1E1E"))
@@ -121,28 +149,41 @@ def dark(app):
         app (QApplication): QApplication instance.
     """
 
+    ColorPalette.PRIMARY = "#1E9EFF"
+    ColorPalette.SECONDARY = "#b4b4b4"
+    ColorPalette.TEXT = "#b4b4b4"
+
+    ColorPalette.BASE = "#1F2022"
+    ColorPalette.LIGHT = "#2B2F32"
+    ColorPalette.DARK = "#1A1B1D"
+
+    ColorPalette.SUCCESS = "#03DAC6"
+    ColorPalette.DANGER = "red"
+    ColorPalette.WARNING = "red"
+    ColorPalette.INFO = "red"
+
     darkPalette = QPalette()
 
     # base
-    darkPalette.setColor(QPalette.WindowText, QColor(180, 180, 180))
-    darkPalette.setColor(QPalette.Button, QColor(53, 53, 53))
-    darkPalette.setColor(QPalette.Light, QColor(180, 180, 180))
-    darkPalette.setColor(QPalette.Midlight, QColor(90, 90, 90))
-    darkPalette.setColor(QPalette.Dark, QColor(35, 35, 35))
-    darkPalette.setColor(QPalette.Text, QColor(180, 180, 180))
-    darkPalette.setColor(QPalette.BrightText, QColor(200, 200, 200))
-    darkPalette.setColor(QPalette.ButtonText, QColor(180, 180, 180))
+    darkPalette.setColor(QPalette.WindowText, QColor(ColorPalette.TEXT))
+    darkPalette.setColor(QPalette.Button, QColor(ColorPalette.BASE))
+    darkPalette.setColor(QPalette.Light, QColor(ColorPalette.TEXT))
+    darkPalette.setColor(QPalette.Midlight, QColor(ColorPalette.LIGHT))
+    darkPalette.setColor(QPalette.Dark, QColor(ColorPalette.DARK))
+    darkPalette.setColor(QPalette.Text, QColor(ColorPalette.TEXT))
+    darkPalette.setColor(QPalette.BrightText, QColor(ColorPalette.LIGHT))
+    darkPalette.setColor(QPalette.ButtonText, QColor(ColorPalette.TEXT))
 
-    darkPalette.setColor(QPalette.Base, QColor(42, 42, 42))
-    darkPalette.setColor(QPalette.Window, QColor(53, 53, 53))
+    darkPalette.setColor(QPalette.Base, QColor(ColorPalette.BASE))
+    darkPalette.setColor(QPalette.Window, QColor(ColorPalette.BASE))
 
-    darkPalette.setColor(QPalette.Shadow, QColor(20, 20, 20))
-    darkPalette.setColor(QPalette.Highlight, QColor(42, 130, 218))
-    darkPalette.setColor(QPalette.HighlightedText, QColor(180, 180, 180))
-    darkPalette.setColor(QPalette.Link, QColor(56, 252, 196))
-    darkPalette.setColor(QPalette.AlternateBase, QColor(66, 66, 66))
-    darkPalette.setColor(QPalette.ToolTipBase, QColor(53, 53, 53))
-    darkPalette.setColor(QPalette.ToolTipText, QColor(180, 180, 180))
+    darkPalette.setColor(QPalette.Shadow, QColor(ColorPalette.DARK))
+    darkPalette.setColor(QPalette.Highlight, QColor(ColorPalette.PRIMARY))
+    darkPalette.setColor(QPalette.HighlightedText, QColor(ColorPalette.TEXT))
+    darkPalette.setColor(QPalette.Link, QColor(ColorPalette.SECONDARY))
+    darkPalette.setColor(QPalette.AlternateBase, QColor(ColorPalette.LIGHT))
+    darkPalette.setColor(QPalette.ToolTipBase, QColor(ColorPalette.BASE))
+    darkPalette.setColor(QPalette.ToolTipText, QColor(ColorPalette.TEXT))
 
     darkPalette.setColor(QPalette.PlaceholderText, QColor(127, 127, 127))
 
@@ -160,12 +201,3 @@ def dark(app):
     # _apply_base_theme(app)
     with open(DIR_STYLES + "dark.qss", "r") as file:
         app.setStyleSheet(file.read())
-
-
-# def apply_frameless_style(widget):
-#     """Apply frameless style to the given widget
-
-#     TODO: What this style is supposed to do ?
-#     """
-#     with open(DIR_STYLES + "frameless.qss", "r") as file:
-#         widget.setStyleSheet(file.read())

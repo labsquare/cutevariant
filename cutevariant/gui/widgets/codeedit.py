@@ -87,7 +87,7 @@ class VqlSyntaxHighlighter(QSyntaxHighlighter):
                     )
                 ),
                 "font": QFont.Bold,
-                "color": palette.color(QPalette.Highlight),  # default: Qt.darkBlue
+                "color": QColor("#BB86FC"),  # default: Qt.darkBlue
                 "case_insensitive": True,
             },
             {
