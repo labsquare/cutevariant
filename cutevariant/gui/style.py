@@ -73,7 +73,46 @@ def bright(app):
     .. note:: Called my __main__ on startup and not by StyleSettingsWidget for
     the moment (see TODO).
     """
-    pass
+    lightPalette = QPalette()
+    # base
+    lightPalette.setColor(QPalette.WindowText, QColor("#FF1E1E1E"))
+    lightPalette.setColor(QPalette.Button, QColor("#E9EBEF"))
+    lightPalette.setColor(QPalette.Light, QColor("#FFF5F5F5"))
+    lightPalette.setColor(QPalette.Midlight, QColor("#FFCCCEDB"))
+    lightPalette.setColor(QPalette.Dark, QColor("#FFA2A4A5"))
+
+    lightPalette.setColor(QPalette.Text, QColor("#434343"))
+    lightPalette.setColor(QPalette.BrightText, QColor("#55000000"))
+    lightPalette.setColor(QPalette.ButtonText, QColor("#434343"))
+
+    lightPalette.setColor(QPalette.Base, QColor("#F7F9F9"))
+    lightPalette.setColor(QPalette.Window, QColor("#E9EBEF"))
+
+    # lightPalette.setColor(QPalette.Shadow, QColor("green"))
+    lightPalette.setColor(QPalette.Highlight, QColor("#FF007ACC"))
+    lightPalette.setColor(QPalette.HighlightedText, QColor("#FFF5F5F5"))
+
+    lightPalette.setColor(QPalette.Link, QColor("#FF007ACC"))
+    lightPalette.setColor(QPalette.AlternateBase, QColor("#F0F1F5"))
+    lightPalette.setColor(QPalette.PlaceholderText, QColor("#FFA2A4A5"))
+
+    lightPalette.setColor(QPalette.ToolTipBase, QColor("#FFFDF4BF"))
+    lightPalette.setColor(QPalette.ToolTipText, QColor("#FF252526"))
+
+    # disabled
+    lightPalette.setColor(QPalette.Disabled, QPalette.WindowText, QColor("#FFA2A4A5"))
+    lightPalette.setColor(QPalette.Disabled, QPalette.Text, QColor("#FFA2A4A5"))
+    lightPalette.setColor(QPalette.Disabled, QPalette.ButtonText, QColor("#FFA2A4A5"))
+    lightPalette.setColor(QPalette.Disabled, QPalette.Highlight, QColor("pink"))
+    lightPalette.setColor(
+        QPalette.Disabled, QPalette.HighlightedText, QColor("#FFA2A4A5")
+    )
+
+    app.setPalette(lightPalette)
+
+    # _apply_base_theme(app)
+    with open(DIR_STYLES + "dark.qss", "r") as file:
+        app.setStyleSheet(file.read())
 
 
 def dark(app):
@@ -93,8 +132,10 @@ def dark(app):
     darkPalette.setColor(QPalette.Text, QColor(180, 180, 180))
     darkPalette.setColor(QPalette.BrightText, QColor(200, 200, 200))
     darkPalette.setColor(QPalette.ButtonText, QColor(180, 180, 180))
+
     darkPalette.setColor(QPalette.Base, QColor(42, 42, 42))
     darkPalette.setColor(QPalette.Window, QColor(53, 53, 53))
+
     darkPalette.setColor(QPalette.Shadow, QColor(20, 20, 20))
     darkPalette.setColor(QPalette.Highlight, QColor(42, 130, 218))
     darkPalette.setColor(QPalette.HighlightedText, QColor(180, 180, 180))
@@ -102,6 +143,8 @@ def dark(app):
     darkPalette.setColor(QPalette.AlternateBase, QColor(66, 66, 66))
     darkPalette.setColor(QPalette.ToolTipBase, QColor(53, 53, 53))
     darkPalette.setColor(QPalette.ToolTipText, QColor(180, 180, 180))
+
+    darkPalette.setColor(QPalette.PlaceholderText, QColor(127, 127, 127))
 
     # disabled
     darkPalette.setColor(QPalette.Disabled, QPalette.WindowText, QColor(127, 127, 127))
@@ -117,6 +160,7 @@ def dark(app):
     # _apply_base_theme(app)
     with open(DIR_STYLES + "dark.qss", "r") as file:
         app.setStyleSheet(file.read())
+
 
 # def apply_frameless_style(widget):
 #     """Apply frameless style to the given widget

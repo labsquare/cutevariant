@@ -91,7 +91,7 @@ import numpy as np
 import json
 import os
 
-from typing import List, Callable
+from typing import List, Callable, Iterable
 
 # Custom imports
 import cutevariant.commons as cm
@@ -126,30 +126,35 @@ MANDATORY_FIELDS = [
         "name": "chr",
         "type": "str",
         "category": "variants",
+        "constraint": "DEFAULT 'unknown'",
         "description": "chromosom name",
     },
     {
         "name": "pos",
         "type": "int",
         "category": "variants",
+        "constraint": "DEFAULT -1",
         "description": "variant position",
     },
     {
         "name": "ref",
         "type": "str",
         "category": "variants",
+        "constraint": "DEFAULT 'N'",
         "description": "reference allele",
     },
     {
         "name": "alt",
         "type": "str",
         "category": "variants",
+        "constraint": "DEFAULT 'N'",
         "description": "alternative allele",
     },
     {
         "name": "favorite",
         "type": "bool",
         "category": "variants",
+        "constraint": "DEFAULT 0",
         "description": "favorite tag",
     },
     {
@@ -269,6 +274,13 @@ MANDATORY_FIELDS = [
         "constraint": "DEFAULT 0",
         "category": "samples",
         "description": "classification",
+    },
+    {
+        "name": "gt",
+        "type": "int",
+        "constraint": "DEFAULT -1",
+        "category": "samples",
+        "description": "Genotype",
     },
 ]
 
@@ -584,9 +596,10 @@ def remove_indexed_field(conn: sqlite3.Connection, category: str, field_name: st
 
 def create_indexes(
     conn: sqlite3.Connection,
-    indexed_variant_fields=None,
-    indexed_annotation_fields=None,
-    indexed_sample_fields=None,
+    indexed_variant_fields: list = None,
+    indexed_annotation_fields: list = None,
+    indexed_sample_fields: list = None,
+    progress_callback: Callable = None,
 ):
     """Create extra indexes on tables
 
@@ -599,17 +612,94 @@ def create_indexes(
 
     """
 
+    if progress_callback:
+        progress_callback("Create selection index ")
+
     create_selections_indexes(conn)
 
+    if progress_callback:
+        progress_callback("Create variants index ")
+
     create_variants_indexes(conn, indexed_variant_fields)
+
+    if progress_callback:
+        progress_callback("Create samples index ")
 
     create_samples_indexes(conn, indexed_sample_fields)
 
     try:
         # Some databases have not annotations table
+        if progress_callback:
+            progress_callback("Create annotation index  ")
         create_annotations_indexes(conn, indexed_annotation_fields)
+
     except sqlite3.OperationalError as e:
         LOGGER.debug("create_indexes:: sqlite3.%s: %s", e.__class__.__name__, str(e))
+
+
+def get_clean_fields(fields: Iterable[dict] = None) -> Iterable[dict]:
+    """Helper function to add missing fields from MANDATORY FIELDS
+
+    if Not fields specified, it will returns only mandatory fields
+
+    Args:
+        fields (Iterable[dict]): list of fields
+
+    Yields:
+        Iterable[dict]: list of fields
+    """
+
+    if fields is None:
+        fields = []
+
+    required_fields = {(f["category"], f["name"]): f for f in MANDATORY_FIELDS}
+    input_fields = {(f["category"], f["name"]): f for f in fields}
+
+    required_fields.update(input_fields)
+
+    for field in required_fields.values():
+        yield field
+
+
+def get_accepted_fields(
+    fields: Iterable[dict], ignored_fields: Iterable[dict]
+) -> Iterable[dict]:
+    """Helper function to get fields without ignored fields
+
+    Args:
+        fields (Iterable[dict])
+        ignored_fields (Iterable[dict])
+    """
+
+    ignored_keys = {(f["category"], f["name"]) for f in ignored_fields}
+    return list(
+        filter(lambda x: (x["category"], x["name"]) not in ignored_keys, fields)
+    )
+
+
+def get_clean_variants(variants: Iterable[dict]) -> Iterable[dict]:
+    """Helper function to get variant without missing fields
+
+    Args:
+        variants (Iterable[dict]): list of variant
+
+    Yields:
+        Iterable[dict]: list of variants
+    """
+
+    # Build default variant with mandatory keys
+    # default_variant = {
+    #     f["name"]: None for f in MANDATORY_FIELDS if f["category"] == "variants"
+    # }
+
+    for variant in variants:
+        variant["is_indel"] = len(variant["ref"]) != len(variant["alt"])
+        variant["is_snp"] = len(variant["ref"]) == len(variant["alt"])
+        variant["annotation_count"] = (
+            len(variant["annotations"]) if "annotations" in variant else 0
+        )
+
+        yield variant
 
 
 # ==================================================
@@ -1713,11 +1803,6 @@ def create_table_variants(conn: sqlite3.Connection, fields: List[dict]):
     """
     cursor = conn.cursor()
 
-    fields = []
-    for field in MANDATORY_FIELDS:
-        if field["category"] == "variants":
-            fields.append(field)
-
     # Primary key MUST NOT have NULL fields !
     # PRIMARY KEY should always imply NOT NULL.
     # Unfortunately, due to a bug in some early versions, this is not the case in SQLite.
@@ -1730,6 +1815,8 @@ def create_table_variants(conn: sqlite3.Connection, fields: List[dict]):
             if field["name"]
         ]
     )
+
+    print("ICI", schema)
 
     LOGGER.debug("create_table_variants:: schema: %s", schema)
     # Unicity constraint or NOT NULL fields (Cf VcfReader, FakeReader, etc.)
@@ -1869,6 +1956,20 @@ def update_variant(conn: sqlite3.Connection, variant: dict):
 def get_variants_count(conn: sqlite3.Connection):
     """Get the number of variants in the "variants" table"""
     return count_query(conn, "variants")
+
+
+def get_summary(conn: sqlite3.Connection):
+    """Get summary of database
+
+    Args:
+        conn (sqlite3.Connection)
+    """
+    variant_count = int(
+        conn.execute("SELECT count FROM selections WHERE name = 'variants'").fetchone()
+    )
+    sample_count = int(conn.execute("SELECT COUNT(*) FROM samples").fetchone())
+
+    return {"variant_count": variant_count, "sample_count": sample_count}
 
 
 def get_variants(
@@ -2102,14 +2203,6 @@ def insert_variants(
     total = 0
     for variant_count, variant in enumerate(variants):
 
-        # Preprocess variants
-        variant["favorite"] = False
-        variant["is_indel"] = len(variant["ref"]) != len(variant["alt"])
-        variant["is_snp"] = len(variant["ref"]) == len(variant["alt"])
-        variant["annotation_count"] = (
-            len(variant["annotations"]) if "annotations" in variant else 0
-        )
-
         variant_fields = {
             i for i in variant.keys() if i not in ("samples", "annotations")
         }
@@ -2178,10 +2271,12 @@ def insert_variants(
                     cursor.execute(query, query_datas)
 
         # Commit every batch_size
-        if progress_callback and variant_count % progress_every == 0:
-            progress_callback(
-                f"{variant_count+1}, {total_variant_count} variants inserted {progress}."
-            )
+        if (
+            progress_callback
+            and variant_count != 0
+            and variant_count % progress_every == 0
+        ):
+            progress_callback(f"{variant_count} variants inserted.")
 
     conn.commit()
 
@@ -2191,7 +2286,11 @@ def insert_variants(
         )
 
     # Create default selection (we need the number of variants for this)
-    insert_selection(conn, "", name=cm.DEFAULT_SELECTION_NAME, count=total)
+
+    # Count total variants . I cannot use "total" variable like before for the update features.
+
+    true_total = conn.execute("SELECT COUNT(*) FROM variants").fetchone()[0]
+    insert_selection(conn, "", name=cm.DEFAULT_SELECTION_NAME, count=true_total)
 
 
 def update_variants(conn, data, **kwargs):
@@ -2260,11 +2359,6 @@ def create_table_samples(conn, fields=[]):
 
     fields = list(fields)
 
-    # Create mandatory fields
-    for field in MANDATORY_FIELDS:
-        if field["category"] == "samples":
-            fields.append(field)
-
     schema = ",".join(
         [
             f'`{field["name"]}` {field["type"]} {field.get("constraint", "")}'
@@ -2272,9 +2366,6 @@ def create_table_samples(conn, fields=[]):
             if field["name"]
         ]
     )
-
-    if not fields:
-        schema = "gt INTEGER DEFAULT -1"
 
     cursor.execute(
         f"""CREATE TABLE sample_has_variant  (
@@ -2512,7 +2603,7 @@ def get_sample_annotations_by_variant(
 
     sql_fields = ",".join([f"sv.{f}" for f in fields])
 
-    query = f"""SELECT samples.id, samples.valid, samples.name , {sql_fields} FROM samples
+    query = f"""SELECT sv.sample_id, sv.variant_id, samples.valid, samples.name , {sql_fields} FROM samples
     LEFT JOIN sample_has_variant sv 
     ON sv.sample_id = samples.id AND sv.variant_id = {variant_id}"""
 
@@ -2584,6 +2675,41 @@ def update_sample(conn: sqlite3.Connection, sample: dict):
     conn.commit()
 
 
+def update_sample_has_variant(conn: sqlite3.Connection, data: dict):
+    """Summary
+
+    data must contains variant_id and sample_id
+
+    Args:
+        conn (sqlite3.Connection): Description
+        data (dict): Data to update
+
+    """
+    if "variant_id" not in data and "sample_id" not in data:
+        logging.debug("id is required")
+        return
+
+    sql_set = []
+    sql_val = []
+
+    for key, value in data.items():
+        if key not in ("variant_id", "sample_id"):
+            sql_set.append(f"`{key}` = ? ")
+            sql_val.append(value)
+
+    sample_id = data["sample_id"]
+    variant_id = data["variant_id"]
+    query = (
+        "UPDATE sample_has_variant SET "
+        + ",".join(sql_set)
+        + f" WHERE sample_id = {sample_id} AND variant_id = {variant_id}"
+    )
+
+    print("ICCCCCCCCCCCCCCCCC", query)
+    conn.execute(query, sql_val)
+    conn.commit()
+
+
 # ==================== CREATE DATABASE =====================================
 
 
@@ -2650,7 +2776,12 @@ def create_triggers(conn):
     )
 
 
-def create_database_schema(conn):
+def create_database_schema(conn: sqlite3.Connection, fields: Iterable[dict] = None):
+
+    if fields is None:
+        # get mandatory fields
+        fields = list(get_clean_fields())
+
     create_table_project(conn)
     # Create metadatas
     create_table_metadatas(conn)
@@ -2658,13 +2789,16 @@ def create_database_schema(conn):
     create_table_fields(conn)
 
     # Create variants tables
-    create_table_variants(conn, [])
+    variant_fields = (i for i in fields if i["category"] == "variants")
+    create_table_variants(conn, variant_fields)
 
     # Create annotations tables
-    create_table_annotations(conn, [])
+    ann_fields = (i for i in fields if i["category"] == "annotations")
+    create_table_annotations(conn, ann_fields)
 
     # # Create table samples
-    create_table_samples(conn, [])
+    sample_fields = (i for i in fields if i["category"] == "samples")
+    create_table_samples(conn, sample_fields)
 
     # # Create selection
     create_table_selections(conn)
@@ -2680,27 +2814,21 @@ def import_reader(
     conn: sqlite3.Connection,
     reader: AbstractReader,
     pedfile: str = None,
+    ignored_fields: list = [],
+    indexed_fields: list = [],
     progress_callback: Callable = None,
-    ignore_fields: list = [],
 ):
 
     tables = ["variants", "annotations", "sample_has_variant"]
-    fields = reader.get_fields()
-
-    # Remove ignore fields
-    accept_fields = []
-    for field in fields:
-        for i_field in ignore_fields:
-            if (
-                field["category"] != i_field["category"]
-                or field["name"] != i_field["name"]
-            ):
-                accept_fields.append(field)
+    fields = get_clean_fields(reader.get_fields())
+    fields = get_accepted_fields(fields, ignored_fields)
 
     # If shema exists, create a database schema
     if not schema_exists(conn):
         LOGGER.debug("CREATE TABLE SCHEMA")
-        create_database_schema(conn)
+        create_database_schema(conn, fields)
+    else:
+        alter_table_from_fields(conn, fields)
 
     # Update metadatas
     update_metadatas(conn, reader.get_metadatas())
@@ -2715,21 +2843,39 @@ def import_reader(
             progress_callback("Insert pedfile")
         import_pedfile(conn, pedfile)
 
-    # Change table structure if it is required
-    alter_table_from_fields(conn, fields)
-
     # insert fields
-    insert_fields(conn, MANDATORY_FIELDS)
-    insert_fields(conn, reader.get_fields())
+    insert_fields(conn, fields)
 
     # insert variants
     insert_variants(
         conn,
-        reader.get_variants(),
+        get_clean_variants(reader.get_variants()),
         total_variant_count=reader.number_lines,
         progress_callback=progress_callback,
         progress_every=1000,
     )
+    if progress_callback:
+        progress_callback("Indexation. This can take a while")
+
+    vindex = {
+        field["name"] for field in indexed_fields if field["category"] == "variants"
+    }
+    aindex = {
+        field["name"] for field in indexed_fields if field["category"] == "annotations"
+    }
+    sindex = {
+        field["name"] for field in indexed_fields if field["category"] == "samples"
+    }
+
+    try:
+        create_indexes(
+            conn, vindex, aindex, sindex, progress_callback=progress_callback
+        )
+    except:
+        LOGGER.info("Index already exists")
+
+    if progress_callback:
+        progress_callback("Database creation complete")
 
 
 def export_writer(

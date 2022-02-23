@@ -148,6 +148,20 @@ VQL_TO_TREE_CASES = {
         },
         "source": "variants",
     },
+    # Test 19 Test ANY
+    "SELECT chr,pos,ref,alt FROM variants WHERE samples[ANY].gt > 1": {
+        "cmd": "select_cmd",
+        "fields": ["chr", "pos", "ref", "alt"],
+        "filters": {"$and": [{"samples.$any.gt": {"$gt": 1.0}}]},
+        "source": "variants",
+    },
+    # Test 20 Test ANY
+    "SELECT chr,pos,ref,alt FROM variants WHERE samples[?].gt > 1": {
+        "cmd": "select_cmd",
+        "fields": ["chr", "pos", "ref", "alt"],
+        "filters": {"$and": [{"samples.$all.gt": {"$gt": 1.0}}]},
+        "source": "variants",
+    },
 }
 
 

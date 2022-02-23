@@ -196,6 +196,42 @@ def test_alter_table():
     assert columns_after == columns_before + [fields[0]["name"]]
 
 
+def test_get_clean_fields():
+    """Test if missing fields are added"""
+    fields = [{"name": "boby", "type": "str", "category": "variants"}]
+    fields = [f["name"] for f in sql.get_clean_fields(fields)]
+
+    assert "chr" in fields
+    assert "pos" in fields
+
+
+def test_get_accepted_fields():
+    """Test if missing fields are added"""
+    fields = [
+        {"name": "boby", "type": "str", "category": "variants"},
+        {"name": "charles", "type": "str", "category": "variants"},
+    ]
+
+    ignored_fields = [
+        {"name": "charles", "type": "str", "category": "variants"},
+    ]
+
+    assert len(sql.get_accepted_fields(fields, [])) == 2
+
+    fields = [f["name"] for f in sql.get_accepted_fields(fields, ignored_fields)]
+
+    assert "charles" not in fields
+    assert "boby" in fields
+
+
+def test_get_clean_variants():
+    """Test if missing variant key are added"""
+    variants = [{"chr": "chr3", "pos": 324234, "ref": "A", "alt": "C"}]
+    variant = next(sql.get_clean_variants(variants))
+
+    assert variant["is_snp"] == True
+
+
 def test_alter_table_by_fields():
     conn = sql.get_sql_connection(":memory:")
     sql.create_database_schema(conn)
@@ -215,7 +251,6 @@ def test_import_reader():
     conn = sql.get_sql_connection(filepath)
 
     reader = FakeReader()
-    sql.import_reader(conn, reader)
     sql.import_reader(conn, reader)
 
 
@@ -524,7 +559,9 @@ def test_get_columns(conn):
     """Test getting columns of variants and annotations"""
     variant_cols = set(sql.get_table_columns(conn, "variants"))
     expected_cols = {i["name"] for i in FIELDS if i["category"] == "variants"}
-    extra_cols = {i["name"] for i in sql.VARIANT_MANDATORY_FIELDS}
+    extra_cols = {
+        i["name"] for i in sql.MANDATORY_FIELDS if i["category"] == "variants"
+    }
     assert variant_cols == expected_cols.union(extra_cols)
 
     annot_cols = set(sql.get_table_columns(conn, "annotations"))
@@ -550,7 +587,10 @@ def test_get_annotations(conn):
 
 def test_get_sample_annotations_by_variant(conn):
 
-    expected = [dict(i, valid=0) for i in VARIANTS[0]["samples"]]
+    expected = [
+        dict(i, valid=0, variant_id=1, sample_id=index + 1)
+        for index, i in enumerate(VARIANTS[0]["samples"])
+    ]
     observed = []
     for i in sql.get_sample_annotations_by_variant(conn, 1, fields=["gt", "dp"]):
         observed.append(i)
@@ -570,7 +610,6 @@ def test_get_sample_annotations(conn, variants_data):
                 del result["sample_id"]
                 del result["variant_id"]
                 del result["classification"]
-                del result["comment"]
                 del sample["name"]  # This field is in samples table
                 assert result == sample
 

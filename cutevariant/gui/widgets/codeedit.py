@@ -229,7 +229,7 @@ class CompleterModel(QAbstractListModel):
         if role == Qt.DecorationRole:
             return self._items[index.row()]["icon"]
 
-        if role == Qt.BackgroundColorRole:
+        if role == Qt.BackgroundRole:
             return QColor(self._items[index.row()]["color"])
 
         return None
@@ -261,7 +261,7 @@ class CompleterDelegate(QStyledItemDelegate):
 
         # get icon and color background
         icon = index.data(Qt.DecorationRole)
-        icon_color = index.data(Qt.BackgroundColorRole)
+        icon_color = index.data(Qt.BackgroundRole)
 
         # draw icon background
         area = QRect(

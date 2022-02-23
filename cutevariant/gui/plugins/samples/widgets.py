@@ -18,18 +18,62 @@ from cutevariant.core.reader import BedReader
 from cutevariant.gui import plugin, FIcon, style
 from cutevariant.commons import DEFAULT_SELECTION_NAME, SAMPLE_VARIANT_CLASSIFICATION
 
-from cutevariant.gui.widgets import ChoiceWidget, create_widget_action, SampleDialog
+from cutevariant.gui.widgets import (
+    ChoiceWidget,
+    create_widget_action,
+    SampleDialog,
+    PresetAction,
+)
 
 
 from cutevariant import LOGGER
 from cutevariant.gui.sql_thread import SqlThread
 
-from cutevariant.gui.style import GENOTYPE
+from cutevariant.gui.style import GENOTYPE, CLASSIFICATION
+
+from cutevariant.gui import FormatterDelegate
+from cutevariant.gui.formatters.cutestyle import CutestyleFormatter
 
 
 from PySide6.QtWidgets import *
 import sys
 from functools import partial
+
+
+class VariantVerticalHeader(QHeaderView):
+
+    COLOR = {0: "red", 1: "orange", 2: "green"}
+
+    def __init__(self, parent=None):
+        super().__init__(Qt.Vertical, parent)
+
+    def sizeHint(self):
+        return QSize(5, super().sizeHint().height())
+
+    def paintSection(self, painter: QPainter, rect: QRect, section: int):
+
+        if painter is None:
+            return
+
+        painter.save()
+        super().paintSection(painter, rect, section)
+
+        classification = self.model().item(section)["classification"]
+
+        painter.restore()
+        color = self.COLOR[classification]
+
+        pen = QPen(color)
+        pen.setWidth(6)
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(QBrush(color))
+        painter.drawRect(rect)
+
+
+# pix = FIcon(0xF00C1 if favorite else 0xF00C3, color).pixmap(20, 20)
+# target = rect.center() - pix.rect().center() + QPoint(1, 0)
+
+# painter.drawPixmap(target, pix)
 
 
 class SamplesModel(QAbstractTableModel):
@@ -134,7 +178,12 @@ class SamplesModel(QAbstractTableModel):
         self.items = self._load_samples_thread.results
 
         if len(self.items) > 0:
-            self._headers = [i for i in self.items[0].keys() if i != "id"]
+            self._headers = [
+                i for i in self.items[0].keys() if i not in ("sample_id", "variant_id")
+            ]
+
+        if "classification" not in self.fields:
+            self._headers.remove("classification")
 
         self.endResetModel()
 
@@ -165,6 +214,9 @@ class SamplesModel(QAbstractTableModel):
                 "Cannot load data. Thread is not finished. You can call interrupt() "
             )
             self.interrupt()
+
+        if "classification" not in self.fields:
+            self.fields.append("classification")
 
         # Create load_func to run asynchronously: load samples
         load_samples_func = partial(
@@ -250,10 +302,36 @@ class SamplesModel(QAbstractTableModel):
             return self._load_samples_thread.isRunning()
         return False
 
+    def edit(self, row: int, data: dict):
+        """Edit current item
+        Args:
+            row (int): Description
+            data (dict): Description
+        """
+
+        # change from memory
+        self.items[row].update(data)
+
+        print("EDIT", self.items[row])
+
+        # Persist in SQL
+        data["variant_id"] = self.items[row]["variant_id"]
+        data["sample_id"] = self.items[row]["sample_id"]
+        sql.update_sample_has_variant(self.conn, data)
+        self.dataChanged.emit(self.index(row, 0), self.index(row, self.columnCount()))
+        self.headerDataChanged.emit(Qt.Vertical, row, row)
+
 
 class SamplesView(QTableView):
     def __init__(self, parent=None):
         super().__init__(parent)
+
+        self.delegate = FormatterDelegate()
+        self.delegate.set_formatter(CutestyleFormatter())
+
+        self.setItemDelegate(self.delegate)
+
+        self.setVerticalHeader(VariantVerticalHeader())
 
     def paintEvent(self, event: QPaintEvent):
 
@@ -367,30 +445,119 @@ class SamplesWidget(plugin.PluginWidget):
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
         self.toolbar.addWidget(spacer)
-        menu_action = self.toolbar.addAction(FIcon(0xF035C), "menu")
-        self.toolbar.widgetForAction(menu_action).setPopupMode(QToolButton.InstantPopup)
-        self.general_menu = QMenu()
+        self.toolbar.addAction(
+            FIcon(0xF01FE), self.tr("Clear all filters"), self._on_clear_filters
+        )
+        # menu_action.setMenu(self.general_menu)
 
-        self.clear_filters = self.general_menu.addAction(
-            FIcon(0xF14F0), self.tr("Clear all filters"), self._on_clear_filters
+        self.preset_menu = QMenu()
+        self.preset_button = QPushButton()
+        self.preset_button.setToolTip(self.tr("Presets"))
+        self.preset_button.setIcon(FIcon(0xF035C))
+        self.preset_button.setMenu(self.preset_menu)
+        self.preset_button.setFlat(True)
+        # self.preset_button.setPopupMode(QToolButton.InstantPopup)
+        # self.preset_button.setToolButtonStyle(Qt.ToolButtonIconOnly)
+        self.toolbar.addWidget(self.preset_button)
+
+        self.load_presets()
+
+    def load_presets(self):
+
+        self.preset_menu.clear()
+
+        config = Config("samples")
+        self.preset_menu.addAction("Save preset", self.save_preset)
+        self.preset_menu.addSeparator()
+        if "presets" in config:
+            presets = config["presets"]
+            for name, fields in presets.items():
+                action = PresetAction(name, name, self)
+                action.set_close_icon(FIcon(0xF05E8, "red"))
+                action.triggered.connect(self._on_select_preset)
+                action.removed.connect(self.delete_preset)
+
+                self.preset_menu.addAction(action)
+
+    def delete_preset(self):
+        if not self.sender():
+            return
+
+        name = self.sender().data()
+
+        ret = QMessageBox.warning(
+            self,
+            self.tr("Remove preset"),
+            self.tr(f"Are you sure you want to delete preset {name}"),
+            QMessageBox.Yes | QMessageBox.No,
         )
 
-        self.general_menu.addAction(self.tr("Save preset"))
-        self.general_menu.addAction(self.tr("Edit preset ..."))
+        if ret == QMessageBox.No:
+            return
 
-        # menu_action.setMenu(self.general_menu)
+        config = Config("samples")
+        presets = config["presets"]
+        if name in presets:
+            del presets[name]
+            config.save()
+            self.load_presets()
+
+    def save_preset(self):
+        name, success = QInputDialog.getText(
+            self, self.tr("Create new preset"), self.tr("Preset name:")
+        )
+        if success and name:
+            config = Config("samples")
+            presets = config["presets"] or {}
+            # if preset name exists ...
+            if name in presets:
+                ret = QMessageBox.warning(
+                    self,
+                    self.tr("Overwrite preset"),
+                    self.tr(
+                        f"Preset {name} already exists. Do you want to overwrite it ?"
+                    ),
+                    QMessageBox.Yes | QMessageBox.No,
+                )
+
+                if ret == QMessageBox.No:
+                    return
+
+            presets[name] = self.model.fields
+            config["presets"] = presets
+            config.save()
+            self.load_presets()
+
+    def _on_select_preset(self):
+        config = Config("samples")
+        presets = config["presets"]
+        key = self.sender().data()
+        if key in presets:
+            self.field_selector.set_checked(presets[key])
+
+        self.on_refresh()
+
+    def _on_double_clicked(self):
+        self._show_sample_dialog()
 
     def contextMenuEvent(self, event: QContextMenuEvent):
 
         menu = QMenu(self)
         menu.addAction(QIcon(), "Edit sample ...", self._show_sample_dialog)
-        menu.addAction(QIcon(), "Validate sample")
+
+        menu.addAction(QIcon(), "Filter from current selection", self.on_add_filter)
+
+        menu.addAction(
+            QIcon(), "Create a source from current selection", self.on_add_source
+        )
 
         menu.addSection("current variant")
         cat_menu = menu.addMenu("Classification")
 
         for key, value in SAMPLE_VARIANT_CLASSIFICATION.items():
-            cat_menu.addAction(value)
+            action = cat_menu.addAction(value)
+            action.setData(key)
+            action.triggered.connect(self._on_classification_changed)
 
         menu.addMenu(cat_menu)
         menu.addAction("Edit comment ...")
@@ -403,7 +570,7 @@ class SamplesWidget(plugin.PluginWidget):
         sample = self.model.item(row)
         if sample:
 
-            dialog = SampleDialog(self._conn, sample["id"])
+            dialog = SampleDialog(self._conn, sample["sample_id"])
 
             if dialog.exec_() == QDialog.Accepted:
                 self.load_all_filters()
@@ -416,6 +583,17 @@ class SamplesWidget(plugin.PluginWidget):
         else:
             self.view.hideColumn(col)
 
+    def _on_classification_changed(self):
+        """triggered from menu"""
+        if not self.sender():
+            return
+
+        value = self.sender().data()
+        text = self.sender().text()
+
+        row = self.view.selectionModel().currentIndex().row()
+        self.model.edit(row, {"classification": value})
+
     def _on_clear_filters(self):
 
         self.sample_selector.uncheck_all()
@@ -425,28 +603,49 @@ class SamplesWidget(plugin.PluginWidget):
 
         self.on_refresh()
 
-    def _on_double_clicked(self, index: QModelIndex):
+    def _create_filters(self):
 
-        sample_name = index.siblingAtColumn(0).data()
+        indexes = self.view.selectionModel().selectedRows()
+        filters = copy.deepcopy(self.mainwindow.get_state_data("filters"))
 
-        if sample_name:
-            filters = copy.deepcopy(self.mainwindow.get_state_data("filters"))
-            key = f"samples.{sample_name}.gt"
-            condition = {key: {"$gte": 1}}
+        if not filters:
+            root = "$and"
+            filters["$and"] = []
 
-            if "$and" in filters:
-                for index, field in enumerate(filters["$and"]):
-                    if re.match(r"samples\.\w+\.gt", list(field.keys())[0]):
-                        filters["$and"][index] = condition
-                        break
-                else:
-                    filters["$and"].append(condition)
-            else:
-                filters = {"$and": [condition]}
+        else:
+            root = list(filters.keys())[0]
+            filters[root] = [
+                i for i in filters[root] if not list(i.keys())[0].startswith("samples")
+            ]
 
-            print("FILTERS", filters)
-            self.mainwindow.set_state_data("filters", filters)
-            self.mainwindow.refresh_plugins(sender=self)
+        for index in indexes:
+            sample_name = index.siblingAtColumn(1).data()
+            print(sample_name)
+            if sample_name:
+                key = f"samples.{sample_name}.gt"
+                condition = {key: {"$gte": 1}}
+                filters[root].append(condition)
+
+        return filters
+
+    def on_add_source(self):
+
+        name, _ = QInputDialog.getText(self, "Source Name", "Get a source name ")
+
+        if not name:
+            return
+
+        sql.insert_selection_from_source(
+            self._conn, name, "variants", self._create_filters()
+        )
+
+        if "source_editor" in self.mainwindow.plugins:
+            self.mainwindow.refresh_plugin("source_editor")
+
+    def on_add_filter(self):
+
+        self.mainwindow.set_state_data("filters", self._create_filters())
+        self.mainwindow.refresh_plugins(sender=self)
 
     def on_open_project(self, conn):
         self._conn = conn

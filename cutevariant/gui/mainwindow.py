@@ -125,6 +125,7 @@ class MainWindow(QMainWindow):
         self.toolbar.setMovable(False)
         self.toolbar.setIconSize(QSize(20, 20))
         self.plugin_toolbar = QToolBar("plugins")
+        self.plugin_toolbar.setObjectName("plugins_toolbar")
         self.addToolBar(Qt.LeftToolBarArea, self.plugin_toolbar)
 
         # Setup menu bar
@@ -169,9 +170,9 @@ class MainWindow(QMainWindow):
 
         # Window geometry
         self.resize(600, 400)
- # self.setGeometry(
-#     QApplication.instance().desktop().rect().adjusted(100, 100, -100, -100)
-# )
+        # self.setGeometry(
+        #     QApplication.instance().desktop().rect().adjusted(100, 100, -100, -100)
+        # )
 
         # If True, the GUI settings are deleted when the app is closed
         self.requested_reset_ui = False
@@ -435,14 +436,14 @@ class MainWindow(QMainWindow):
         #     self.tr("Export pedigree PED/PLINK"), self.export_ped
         # )
 
-        self.file_menu.addSeparator()
+        # self.file_menu.addSeparator()
 
-        self.file_menu.addAction(
-            FIcon(0xF0193), self.tr("Save session ..."), self.save_session
-        )
-        self.file_menu.addAction(
-            FIcon(0xF0770), self.tr("Restore session ..."), self.load_session
-        )
+        # self.file_menu.addAction(
+        #     FIcon(0xF0193), self.tr("Save session ..."), self.save_session
+        # )
+        # self.file_menu.addAction(
+        #     FIcon(0xF0770), self.tr("Restore session ..."), self.load_session
+        # )
 
         self.file_menu.addSeparator()
         ### Misc
@@ -464,7 +465,7 @@ class MainWindow(QMainWindow):
         self.edit_menu.addSeparator()
         self.edit_menu.addAction(
             FIcon(0xF0486),
-            self.tr("&Select all variants"),
+            self.tr("&Select all displayed variants"),
             self.select_all_variants,
             QKeySequence.SelectAll,
         )
@@ -850,7 +851,7 @@ class MainWindow(QMainWindow):
     def select_all_variants(self):
         """Select all elements in the current tab's view"""
         if "variant_view" in self.plugins:
-            self.plugins["variant_view"].select_all()
+            self.plugins["variant_view"].view.select_all()
 
     def closeEvent(self, event):
         """Save the current state of this mainwindow's toolbars and dockwidgets

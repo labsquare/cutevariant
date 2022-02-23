@@ -13,3 +13,7 @@ from .searchable_table_widget import LoadingTableView, SearchableTableWidget
 from .choice_widget import ChoiceWidget, create_widget_action
 
 from .sample_widget import SampleWidget, SampleDialog
+
+from .variant_widget import VariantWidget, VariantDialog
+
+from .preset_action import PresetAction

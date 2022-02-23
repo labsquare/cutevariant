@@ -3,7 +3,7 @@ from cutevariant import LOGGER
 import os
 import yaml
 import typing
-from PySide2.QtCore import QStandardPaths, QDir, QFile, QFileInfo
+from PySide6.QtCore import QStandardPaths, QDir, QFile, QFileInfo
 
 
 class Config:
@@ -29,13 +29,15 @@ class Config:
 
     """
 
+    DEFAULT_CONFIG_PATH = QDir(
+        QStandardPaths.writableLocation(QStandardPaths.ConfigLocation)
+        + QDir.separator()
+        + "cutevariant"
+    ).absoluteFilePath("config.yml")
+
     def __init__(self, section="app", config_path=None):
         self.section = section
-        self.config_path = config_path or QDir(
-            QStandardPaths.writableLocation(QStandardPaths.ConfigLocation)
-            + QDir.separator()
-            + "cutevariant"
-        ).absoluteFilePath("config.yml")
+        self.config_path = config_path or Config.DEFAULT_CONFIG_PATH
 
         self._user_config = dict()
 

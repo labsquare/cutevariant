@@ -19,97 +19,16 @@ from cutevariant.core import sql
 
 
 import cutevariant.commons as cm
+from cutevariant.gui.widgets import PresetAction
 
 from cutevariant import LOGGER
 
 
-class FieldsPresetModel(QAbstractListModel):
-    def __init__(self, config_path=None, parent: QObject = None) -> None:
-        super().__init__(parent=parent)
-        self.config_path = config_path
-        self._presets = []
-
-    def data(self, index: QModelIndex, role: int) -> typing.Any:
-        if role == Qt.DisplayRole or role == Qt.EditRole:
-            if index.row() >= 0 and index.row() < self.rowCount():
-                return self._presets[index.row()][0]
-        if role == Qt.UserRole:
-            if index.row() >= 0 and index.row() < self.rowCount():
-                return self._presets[index.row()][1]
-
-        return
-
-    def setData(self, index: QModelIndex, value: str, role: int) -> bool:
-        """Renames the preset
-        The content is read-only from the model's point of view
-        Args:
-            index (QModelIndex): [description]
-            value (str): [description]
-            role (int): [description]
-        Returns:
-            bool: True on success
-        """
-        if role == Qt.EditRole:
-            self._presets[index.row()] = (value, self._presets[index.row()][1])
-            return True
-        else:
-            return False
-
-    def flags(self, index: QModelIndex) -> Qt.ItemFlags:
-        if not index.isValid():
-            return Qt.NoItemFlags
-        return super().flags(index) | Qt.ItemIsEditable
-
-    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
-        return len(self._presets)
-
-    def add_preset(self, name: str, fields: list):
-        """Add fields preset
-        Args:
-            name (str): preset name
-            fields (list): list of field names
-        """
-        self.beginInsertRows(QModelIndex(), 0, 0)
-        self._presets.insert(0, (name, fields))
-        self.endInsertRows()
-
-    def rem_presets(self, indexes: List[int]):
-        indexes.sort(reverse=True)
-        self.beginResetModel()
-        for idx in indexes:
-            del self._presets[idx]
-        self.endResetModel()
-
-    def load(self):
-        self.beginResetModel()
-        config = Config("fields_editor", self.config_path)
-        presets = config.get("presets", {})
-        self._presets = [
-            (preset_name, fields) for preset_name, fields in presets.items()
-        ]
-        self.endResetModel()
-
-    def save(self):
-        config = Config("fields_editor", self.config_path)
-        config["presets"] = {
-            preset_name: fields for preset_name, fields in self._presets
-        }
-        config.save()
-
-    def clear(self):
-        self.beginResetModel()
-        self._presets.clear()
-        self.endResetModel()
-
-    def preset_names(self):
-        return [p[0] for p in self._presets]
-
-
-class PresetsDialog(QDialog):
+class SortFieldDialog(QDialog):
 
     """A dialog box to dispay and order fields from a preset config
 
-    dialog = PresetsDialog()
+    dialog = SortFieldDialog()
     dialog.load()
 
     """
@@ -117,7 +36,7 @@ class PresetsDialog(QDialog):
     def __init__(self, preset_name="test_preset", parent=None):
         super().__init__()
 
-        self.setWindowTitle(self.tr("Edit Fields preset"))
+        self.setWindowTitle(self.tr("Sort fields order"))
 
         self.header = QLabel(self.tr("You can sort fields by drag and drop"))
         self.view = QListWidget()
@@ -639,6 +558,7 @@ class FieldsWidget(QWidget):
         """
         model = FieldsModel(conn, category)
         view = QTableView()
+        view.setItemDelegate(QItemDelegate())
         view.setContextMenuPolicy(Qt.ActionsContextMenu)
 
         proxy = QSortFilterProxyModel()
@@ -843,9 +763,10 @@ class FieldsWidget(QWidget):
         """
         Callback for when the search bar is updated (filter the three models)
         """
+
         for index, view in enumerate(self.views):
             view["proxy"].setFilterRole(Qt.DisplayRole)
-            view["proxy"].setFilterRegExp(text)
+            view["proxy"].setFilterRegularExpression(text)
             count = view["proxy"].rowCount()
             name = view["name"]
             self.tab_widget.setTabText(index, f"{name} ({count})")
@@ -918,10 +839,10 @@ class FieldsEditorWidget(plugin.PluginWidget):
         auto_icon = QIcon()
         auto_icon.addPixmap(FIcon(0xF04E6).pixmap(16, 16), QIcon.Normal, QIcon.On)
         auto_icon.addPixmap(FIcon(0xF04E8).pixmap(16, 16), QIcon.Normal, QIcon.Off)
-        self.auto_action = self.toolbar.addAction(
-            auto_icon, "Automatic Apply selection when checked"
-        )
+        self.auto_action = self.toolbar.addAction("Auto appy")
+        self.auto_action.setIcon(auto_icon)
         self.auto_action.setCheckable(True)
+        self.auto_action.setToolTip(self.tr("Auto Apply when checked"))
         self.auto_action.toggled.connect(apply_action.setDisabled)
 
         self.toolbar.addSeparator()
@@ -929,40 +850,34 @@ class FieldsEditorWidget(plugin.PluginWidget):
         ## check only action
         check_action = self.toolbar.addAction(FIcon(0xF0C51), "check only")
         check_action.setCheckable(True)
-        check_action.toggled.connect(self.toggle_checked)
         check_action.setToolTip(self.tr("Show only checked fields"))
+        check_action.toggled.connect(self.toggle_checked)
 
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.toolbar.addWidget(spacer)
 
         ## sort button
-        self.sort_action = self.toolbar.addAction(
-            FIcon(0xF04BA), "54 fields", self.show_fields_dialog
-        )
-        self.sort_action.setToolTip(self.tr("Sort fields manually ..."))
+        self.sort_action = self.toolbar.addAction(FIcon(0xF04BA), "54 fields")
+        self.sort_action.triggered.connect(self.show_fields_dialog)
+        self.sort_action.setToolTip(self.tr("Sort fields order"))
+
+        ## make sort action with text
         self.toolbar.widgetForAction(self.sort_action).setToolButtonStyle(
             Qt.ToolButtonTextBesideIcon
         )
 
-        ## preset action
-        self.preset_menu = QMenu()
-        # self.preset_menu.setIcon(FIcon(0xF1268))
-        # self.preset_menu.setTitle("preset")
-        # self.preset_menu.setToolTip(self.tr("A list a predefined fields selections"))
-
         ## general menu
-        menu_action = self.toolbar.addAction(FIcon(0xF035C), "menu")
-        self.general_menu = QMenu()
-        # self.general_menu.addMenu(self.preset_menu)
-        self.general_menu.addAction(self.tr("Save preset"), self.save_preset)
-        self.general_menu.addAction(self.tr("Edit preset ..."))
-        # self.general_menu.addAction(self.tr("Export as a file ..."))
-        # self.general_menu.addAction(self.tr("Import from a file ..."))
 
-        # menu_action.setMenu(self.general_menu)
-
-        # self.toolbar.widgetForAction(menu_action).setPopupMode(QToolButton.InstantPopup)
+        self.preset_menu = QMenu()
+        self.preset_button = QPushButton()
+        self.preset_button.setToolTip(self.tr("Presets"))
+        self.preset_button.setIcon(FIcon(0xF035C))
+        self.preset_button.setMenu(self.preset_menu)
+        self.preset_button.setFlat(True)
+        # self.preset_button.setPopupMode(QToolButton.InstantPopup)
+        # self.preset_button.setToolButtonStyle(Qt.ToolButtonIconOnly)
+        self.toolbar.addWidget(self.preset_button)
 
     @property
     def fields(self):
@@ -990,7 +905,8 @@ class FieldsEditorWidget(plugin.PluginWidget):
 
         if success and name:
             config = Config("fields_editor")
-            presets = config["presets"]
+
+            presets = config["presets"] or {}
 
             # if preset name exists ...
             if name in presets:
@@ -1010,12 +926,14 @@ class FieldsEditorWidget(plugin.PluginWidget):
             config["presets"] = presets
             config.save()
             self.load_presets()
-            self.presets_combo.setCurrentText(name)
 
     def delete_preset(self):
         """Remove selected preset from combobox"""
 
-        name = self.presets_combo.currentText()
+        if not self.sender():
+            return
+
+        name = self.sender().data()
 
         ret = QMessageBox.warning(
             self,
@@ -1040,17 +958,22 @@ class FieldsEditorWidget(plugin.PluginWidget):
         """
         self.preset_menu.clear()
         config = Config("fields_editor")
+
+        self.preset_menu.addAction("Save preset", self.save_preset)
+        self.preset_menu.addSeparator()
         if "presets" in config:
             presets = config["presets"]
             for name, fields in presets.items():
-                LOGGER.error(fields)
-                action = self.preset_menu.addAction(name)
+                action = PresetAction(name, name, self)
+                action.set_close_icon(FIcon(0xF05E8, "red"))
                 action.triggered.connect(self._on_select_preset)
-                action.setData(name)
+                action.removed.connect(self.delete_preset)
+
+                self.preset_menu.addAction(action)
 
     def show_fields_dialog(self):
 
-        w = PresetsDialog()
+        w = SortFieldDialog()
         w.fields = self.widget_fields.fields
         if w.exec_():
             self.fields = w.fields
@@ -1142,7 +1065,7 @@ if __name__ == "__main__":
 
     widget.show()
 
-    # w = PresetsDialog()
+    # w = SortFieldDialog()
     # w.show()
 
     app.exec_()

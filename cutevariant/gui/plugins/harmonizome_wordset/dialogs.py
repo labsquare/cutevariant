@@ -429,7 +429,7 @@ class HarmonizomeWidget(QWidget):
 
     def _init_layout(self):
         layout = QHBoxLayout(self)
-        layout.setMargin(0)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.dataset_view)
         layout.addWidget(self.geneset_view)
         layout.addWidget(self.gene_view)

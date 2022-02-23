@@ -75,6 +75,14 @@ class ChoiceModel(QAbstractListModel):
     def items(self):
         return self._data
 
+    def set_checked(self, items: list):
+
+        for i in self._data:
+            if i["name"] in items:
+                i["checked"] = True
+            else:
+                i["checked"] = False
+
 
 class ChoiceView(QListView):
     def __init__(self, parent=None):
@@ -155,17 +163,21 @@ class ChoiceWidget(QWidget):
     def checked(self):
         return any(i["checked"] for i in self._model.items())
 
+    def set_checked(self, items: list):
+        self._model.set_checked(items)
+
 
 def create_widget_action(toolbar: QToolBar, widget: QWidget):
 
     action = toolbar.addAction("menu")
     widget_action = QWidgetAction(toolbar)
     widget_action.setDefaultWidget(widget)
-    menu = QMenu()
-    # action.setMenu(menu)
+    menu = QMenu(toolbar)
     widget.setParent(menu)
     menu.addAction(widget_action)
+    toolbar.widgetForAction(action).setMenu(menu)
     toolbar.widgetForAction(action).setPopupMode(QToolButton.InstantPopup)
+    toolbar.widgetForAction(action).setArrowType(Qt.NoArrow)
 
     return action
 

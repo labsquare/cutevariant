@@ -3,6 +3,9 @@ from PySide6.QtCore import *
 from PySide6.QtGui import *
 import os
 from cutevariant.gui.widgets.import_widget import VcfImportWidget, ImportThread
+from cutevariant.gui.widgets import DictWidget
+
+from cutevariant.core import sql
 
 from cutevariant import LOGGER
 
@@ -146,7 +149,6 @@ class ImportPage(QWizardPage):
 
         # # Note: self.run is automatically launched when ImportPage is displayed
         # # See initializePage()
-        # self.stop_button.clicked.connect(self.run)
 
         # self.thread.progress_changed.connect(self.progress_changed)
         # self.thread.finished_status.connect(self.import_thread_finished_status)
@@ -157,13 +159,15 @@ class ImportPage(QWizardPage):
         self.thread.db_filename = self.wizard().page(0).db_filename()
         self.thread.filename = self.wizard().page(1).filename()
         self.thread.pedfile = self.wizard().page(1).pedfile()
-
+        self.thread.ignored_fields = self.wizard().page(1).widget.get_ignored_fields()
+        self.thread.indexed_fields = self.wizard().page(1).widget.get_indexed_fields()
         self.thread.start()
 
     def import_thread_finished(self, status):
         """Force the activation of the finish button after a successful import"""
         # try:
-        self.thread_finished = True
+
+        self.thread_finished = self.thread.isFinished()
         self.completeChanged.emit()
         # except RuntimeError:
         #     # When closing the wizard, the thread is stopped via cleanupPage()
@@ -182,7 +186,6 @@ class ImportPage(QWizardPage):
     def isComplete(self):
         """Conditions to unlock finish button"""
         LOGGER.debug("Complete ")
-
         return self.thread_finished
 
     def stop_thread(self):
@@ -194,6 +197,20 @@ class ImportPage(QWizardPage):
         self.stop_button.setDisabled(False)
 
 
+class FinishPage(QWizardPage):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.widget = DictWidget()
+        vLayout = QVBoxLayout(self)
+        vLayout.addWidget(self.widget)
+
+    def initializePage(self):
+        self.db_filename = self.wizard().page(0).db_filename()
+        conn = sql.get_sql_connection(self.db_filename)
+        self.widget.set_dict(sql.get_summary(conn))
+
+
 class ProjectWizard(QWizard):
     def __init__(self, parent=None):
         super().__init__()
@@ -201,6 +218,8 @@ class ProjectWizard(QWizard):
         self.addPage(ProjectPage())
         self.addPage(FilePage())
         self.addPage(ImportPage())
+        # self.addPage(FinishPage())
+        self.setWizardStyle(QWizard.ClassicStyle)
 
         self.resize(800, 600)
 
