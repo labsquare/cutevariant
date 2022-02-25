@@ -100,40 +100,30 @@ from cutevariant import LOGGER
 #     "bool": ["$eq"],
 # }
 
+from cutevariant.core.querybuilder import PY_TO_VQL_OPERATORS
 
-OPERATORS = [
-    "$eq",
-    "$ne",
-    "$in",
-    "$nin",
-    "$regex",
-    "$has",
-    "$gte",
-    "$gt",
-    "$lt",
-    "$lte",
-]
+
+OPERATOR_VQL_TO_NAME = {
+    "$eq": "Equal to",
+    "$gt": "Strictly greater than",
+    "$gte": "Greater than ",
+    "$lt": "Strictly less than",
+    "$lte": "Less than",
+    "$in": "In",
+    "$nin": "Not in",
+    "$ne": "Not equal to",
+    "$regex": "Contains",
+    "$nregex": "Does not contain",
+    "$and": "And",
+    "$or": "Or",
+    "$has": "Has",
+    "$nhas": "Has not",
+}
 
 
 DEFAULT_VALUES = {"str": "", "int": 0, "float": 0.0, "list": [], "bool": True}
 
-OPERATORS_PY_VQL = {
-    "$eq": "=",
-    "$gt": ">",
-    "$gte": ">=",
-    "$lt": "<",
-    "$lte": "<=",
-    "$in": "IN",
-    "$ne": "!=",
-    "$nin": "NOT IN",
-    "$regex": "~",
-    "$and": "AND",
-    "$or": "OR",
-    "$has": "HAS",
-}
-
 NULL_REPR = "@NULL"
-
 
 COLUMN_FIELD = 0
 COLUMN_LOGIC = 0
@@ -685,11 +675,12 @@ class OperatorFieldEditor(BaseFieldEditor):
         # Return UserRole
         return self.combo_box.currentData()
 
-    def fill(self, operators=OPERATORS):
-        """Init QComboBox with all supported operators"""
+    def fill(self, operators=PY_TO_VQL_OPERATORS):
+        """Init  with all supported operators"""
         self.combo_box.clear()
         for op in operators:
-            self.combo_box.addItem(OPERATORS_PY_VQL.get(op), op)
+            if op not in ("$and", "$or"):
+                self.combo_box.addItem(OPERATOR_VQL_TO_NAME[op], op)
 
 
 class LogicFieldEditor(BaseFieldEditor):
@@ -700,8 +691,8 @@ class LogicFieldEditor(BaseFieldEditor):
         self.box = QComboBox()
 
         # DisplayRole, UserRole
-        self.box.addItem(OPERATORS_PY_VQL.get("$and"), "$and")
-        self.box.addItem(OPERATORS_PY_VQL.get("$or"), "$or")
+        self.box.addItem(OPERATOR_VQL_TO_NAME.get("$and"), "$and")
+        self.box.addItem(OPERATOR_VQL_TO_NAME.get("$or"), "$or")
 
         self.box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.set_widget(self.box)
@@ -1092,7 +1083,8 @@ class FilterModel(QAbstractItemModel):
                 if item.type == FilterItem.LOGIC_TYPE:
                     val = item.get_value()
                     return (
-                        OPERATORS_PY_VQL.get(val, "$and") + f"  ({len(item.children)})"
+                        PY_TO_VQL_OPERATORS.get(val, "$and")
+                        + f"  ({len(item.children)})"
                     )
 
             if item.type != FilterItem.CONDITION_TYPE:
@@ -1100,7 +1092,7 @@ class FilterModel(QAbstractItemModel):
 
             if index.column() == COLUMN_OPERATOR:
                 operator = item.get_operator()
-                return OPERATORS_PY_VQL.get(operator, "=")
+                return OPERATOR_VQL_TO_NAME.get(operator, "=")
 
             if index.column() == COLUMN_VALUE:
                 val = item.get_value()
@@ -1465,7 +1457,7 @@ class FilterModel(QAbstractItemModel):
         """Overrided Qt methods: return Qt flags to make item editable and selectable"""
 
         if not index.isValid():
-            return 0
+            return Qt.NoItemFlags
 
         item = index.internalPointer()
 
@@ -1780,11 +1772,23 @@ class FilterModel(QAbstractItemModel):
         if not basic_answer:
             return False
 
-        if data.hasText() and not data.hasUrls():
-            obj = json.loads(data.text())
-            if "type" in obj:
-                if obj["type"] == "internal_move":
-                    return True
+        dest_data = self.mimeData([self.index(row, column, parent)]).data(
+            "cutevariant/typed-json"
+        )
+        source_data = data.data("cutevariant/typed-json")
+        print(source_data, dest_data)
+
+        if dest_data == source_data:
+            return False
+
+        # dest_index = self.index(row, column, parent)
+        # dest_data = self.mimeData([dest_index])
+        obj = json.loads(str(data.data("cutevariant/typed-json").data().decode()))
+
+        if "type" in obj:
+            if obj["type"] == "internal_move":
+                return True
+
             return True
 
         return True

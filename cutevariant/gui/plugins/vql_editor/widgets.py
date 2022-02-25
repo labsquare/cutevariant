@@ -162,7 +162,10 @@ class VqlEditorWidget(plugin.PluginWidget):
 
                 # Add AnySamples special keywords
                 # samples["*"].gt
-                name = "samples['*'].{}".format(field["name"])
+                name = "samples[ANY].{}".format(field["name"])
+                self.text_edit.completer.model.add_item(name, description, icon, color)
+
+                name = "samples[ALL].{}".format(field["name"])
                 self.text_edit.completer.model.add_item(name, description, icon, color)
 
                 # Overwrite name

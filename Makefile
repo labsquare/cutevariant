@@ -4,7 +4,8 @@ test:
 
 
 coverage:
-	python setup.py test --addopts "--cov cutevariant tests"
+	coverage run --source=cutevariant -m pytest -v tests/core;coverage html; 
+
 
 run:
 	python -m cutevariant
