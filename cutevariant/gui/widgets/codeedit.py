@@ -603,7 +603,7 @@ class CodeEdit(QTextEdit):
         tc.removeSelectedText()
         # tc.movePosition(QTextCursor.Left)
         # tc.movePosition(QTextCursor.StartOfWord)
-        tc.insertText(completion + " ")
+        tc.insertText(completion)
 
 
 if __name__ == "__main__":
