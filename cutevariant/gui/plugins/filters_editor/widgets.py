@@ -61,6 +61,8 @@ from PySide6.QtCore import (
     QFileInfo,
     QSettings,
     QRect,
+    QLocale,
+    QPoint,
 )
 from PySide6.QtGui import (
     QMouseEvent,
@@ -77,6 +79,7 @@ from PySide6.QtGui import (
     QKeySequence,
     QContextMenuEvent,
     QStandardItemModel,
+    QColor,
 )
 
 # Custom imports
@@ -135,7 +138,6 @@ COLUMN_REMOVE = 4
 
 @lru_cache()
 def get_field_unique_values_cached(conn, field, like, limit):
-    print("cache me ")
     return sql.get_field_unique_values(conn, field, like, limit)
 
 
@@ -238,7 +240,6 @@ class FiltersPresetModel(QAbstractListModel):
 
     def save(self):
         config = Config("filters_editor", self.config_path)
-        print(config._user_config)
         config["presets"] = {
             preset_name: filters for preset_name, filters in self._presets
         }
@@ -1571,6 +1572,7 @@ class FilterModel(QAbstractItemModel):
             )
             self.item(parent).append(item_)
             self.endInsertRows()
+            self.filtersChanged.emit()
             return True
 
         else:
@@ -1598,6 +1600,7 @@ class FilterModel(QAbstractItemModel):
                 ),
                 parent,
             )
+            self.filtersChanged.emit()
             return True
 
         # Second case: row is valid. Only replace operator and value from condition, not
@@ -1607,6 +1610,7 @@ class FilterModel(QAbstractItemModel):
             self.item(index).set_operator(condition.get("operator", "$eq"))
             self.item(index).set_value(condition.get("value", 7))
             self.dataChanged.emit(index, index)
+            self.filtersChanged.emit()
             return True
         return False
 
@@ -1776,7 +1780,6 @@ class FilterModel(QAbstractItemModel):
             "cutevariant/typed-json"
         )
         source_data = data.data("cutevariant/typed-json")
-        print(source_data, dest_data)
 
         if dest_data == source_data:
             return False
@@ -2735,6 +2738,8 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
         if ret == QMessageBox.Yes:
             self.model.clear()
+            if self.auto_action.isChecked():
+                self.on_apply()
 
     def on_open_condition_dialog(self):
         """Open the condition creation dialog
