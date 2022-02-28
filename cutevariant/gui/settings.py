@@ -253,14 +253,14 @@ class ProxySettingsWidget(AbstractSettingsWidget):
         settings.endGroup()
 
     def on_combo_changed(self, index):
-        """ disable formular when No proxy """
+        """disable formular when No proxy"""
         if index == 0:
             self._disable_form(True)
         else:
             self._disable_form(False)
 
     def _disable_form(self, disabled=True):
-        """ Disabled formular """
+        """Disabled formular"""
         self.host_edit.setDisabled(disabled)
         self.port_edit.setDisabled(disabled)
         self.user_edit.setDisabled(disabled)
@@ -435,7 +435,7 @@ class PluginsSettingsWidget(AbstractSettingsWidget):
 
 
 class PathSettingsWidget(AbstractSettingsWidget):
-    """ Path settings where to store shared data """
+    """Path settings where to store shared data"""
 
     def __init__(self):
         super().__init__()
@@ -565,7 +565,7 @@ class SettingsDialog(QDialog):
         [widget.load() for widget in self.widgets]
 
     def load_plugins(self):
-        """ Add plugins settings """
+        """Add plugins settings"""
         from cutevariant.gui import plugin
 
         for extension in plugin.find_plugins():
