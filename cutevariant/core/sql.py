@@ -2329,6 +2329,90 @@ def get_variant_as_group(
         yield res
 
 
+## Tags table ==================================================================
+def create_table_tags(conn):
+
+    conn.execute(
+        """CREATE TABLE tags (
+        id INTEGER PRIMARY KEY ASC,
+        name TEXT,
+        category TEXT DEFAULT 'variants',
+        description TEXT,
+        color TEXT DEFAULT 'red'
+        )"""
+    )
+    conn.commit()
+
+
+def insert_tag(
+    conn: sqlite3.Connection, name: str, category: str, description: str, color: str
+) -> int:
+    """Insert new tags and return id
+
+    Args:
+        conn (sqlite3.Connection)
+        name (str): tags name
+        category (str): variants or samples
+        description (str): a description
+        color (str): color in hexadecimal or color name
+    """
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "INSERT INTO tags (name, category, description, color) VALUES (?,?,?,?)",
+        [name, category, description, color],
+    )
+
+    conn.commit()
+    return cursor.lastrowid
+
+
+def get_tags(conn: sqlite3.Connection) -> List[dict]:
+    """Return all tags
+
+    Args:
+        conn (sqlite3.Connection)
+
+    Returns:
+        List[dict]: List of tags
+    """
+    return [dict(item) for item in conn.execute("SELECT * FROM tags")]
+
+
+def get_tag(conn: sqlite3.Connection, tag_id: int) -> dict:
+    """Return tag id
+
+    Args:
+        conn (sqlite3.Connection):
+        tag_id (int): Sql table id
+
+    Returns:
+        dict: Description
+    """
+    return conn.execute(f"SELECT * FROM tags WHERE id = {tag_id}").fetchone()
+
+
+def update_tag(conn: sqlite3.Connection, tag: dict):
+
+    if "id" not in tag:
+        raise KeyError("'id' key is not in the given tag <%s>" % tag)
+
+    unzip = lambda l: list(zip(*l))
+
+    placeholders, values = unzip(
+        [(f"`{key}` = ? ", value) for key, value in tag.items() if key != "id"]
+    )
+    query = "UPDATE tags SET " + ",".join(placeholders) + f" WHERE id = {tag['id']}"
+
+    conn.execute(query, values)
+    conn.commit()
+
+
+def remove_tag(conn: sqlite3.Connection, tag_id: int):
+    conn.execute(f"DELETE FROM tags WHERE id = {tag_id}")
+    conn.commit()
+
+
 ## samples table ===============================================================
 
 
