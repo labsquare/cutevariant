@@ -2333,12 +2333,14 @@ def get_variant_as_group(
 def create_table_tags(conn):
 
     conn.execute(
-        """CREATE TABLE tags (
+        """CREATE TABLE IF NOT EXISTS tags (
         id INTEGER PRIMARY KEY ASC,
         name TEXT,
         category TEXT DEFAULT 'variants',
         description TEXT,
-        color TEXT DEFAULT 'red'
+        color TEXT DEFAULT 'red',
+        UNIQUE (name, category)
+
         )"""
     )
     conn.commit()
@@ -2376,6 +2378,7 @@ def get_tags(conn: sqlite3.Connection) -> List[dict]:
     Returns:
         List[dict]: List of tags
     """
+
     return [dict(item) for item in conn.execute("SELECT * FROM tags")]
 
 
@@ -2889,6 +2892,9 @@ def create_database_schema(conn: sqlite3.Connection, fields: Iterable[dict] = No
 
     # # Create table sets
     create_table_wordsets(conn)
+
+    ## Create table tags
+    create_table_tags(conn)
 
     ## Create triggers
     create_triggers(conn)

@@ -3,6 +3,8 @@ from PySide6.QtCore import *
 from PySide6.QtGui import *
 
 from cutevariant.gui.widgets import DictWidget, MarkdownEditor
+from cutevariant.gui.widgets.multi_combobox import MultiComboBox  # TODO
+
 from cutevariant.core import sql
 import sqlite3
 
@@ -16,7 +18,6 @@ class VariantWidget(QWidget):
         info_layout = QFormLayout(info_box)
         self.name_edit = QLineEdit()
         self.classification = QComboBox()
-
         self.name_edit.setReadOnly(True)
 
         info_layout.addRow("Name", self.name_edit)
@@ -28,7 +29,17 @@ class VariantWidget(QWidget):
 
         self.tab_widget = QTabWidget()
 
+        # Build comment tab
+        self.tag_edit = MultiComboBox()
+        self.tag_edit.addItems(
+            [i["name"] for i in sql.get_tags(conn) if i["category"] == "variants"]
+        )
         self.comment = MarkdownEditor()
+
+        self.comment_widget = QWidget()
+        self.comment_layout = QVBoxLayout(self.comment_widget)
+        self.comment_layout.addWidget(self.tag_edit)
+        self.comment_layout.addWidget(self.comment)
 
         self.ann_combo = QComboBox()
         self.ann_combo.currentIndexChanged.connect(self.load_annotation)
@@ -40,7 +51,7 @@ class VariantWidget(QWidget):
         self.tab_widget.addTab(self.variant_view, "variants")
         self.tab_widget.addTab(self.ann_widget, "Annotations")
         self.tab_widget.addTab(self.sample_view, "Samples")
-        self.tab_widget.addTab(self.comment, "Comments")
+        self.tab_widget.addTab(self.comment_widget, "Comments")
 
         main_layout = QVBoxLayout(self)
         main_layout.addWidget(info_box)

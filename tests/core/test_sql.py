@@ -1165,7 +1165,7 @@ def test_sql_selection_operation(conn):
 #             if not_wanted_key in expected_variant:
 #                 del expected_variant[not_wanted_key]
 
-       # assert tuple(record) == tuple(expected_variant.values())
+# assert tuple(record) == tuple(expected_variant.values())
 
 
 def test_tags(conn):

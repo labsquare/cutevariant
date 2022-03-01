@@ -65,22 +65,11 @@ class SampleWidget(QWidget):
         identity_layout.addRow("Name ID", self.name_edit)
         identity_layout.addRow("Family ID", self.fam_edit)
 
-        identity_layout.addRow("Tags", self.tag_layout)
         identity_layout.addRow("Statut", self.valid_check)
 
-        self.tag_choice = ChoiceWidget()
-        self.tag_choice.add_item(QIcon(), "boby")
-        self.tag_choice.add_item(QIcon(), "boby")
-        self.tag_choice_action = QWidgetAction(self)
-        self.tag_choice_action.setDefaultWidget(self.tag_choice)
-
-        self.menu = QMenu()
-        self.menu.addAction(self.tag_choice_action)
-
-        self.tag_button.setMenu(self.menu)
-        self.tag_button.setPopupMode(QToolButton.InstantPopup)
-
-        self.tag_edit.addItems(["#hemato", "#cardio", "#pharmaco"])
+        self.tag_edit.addItems(
+            [i["name"] for i in sql.get_tags(conn) if i["category"] == "samples"]
+        )
 
         # validation
         val_layout = QFormLayout()
@@ -105,8 +94,7 @@ class SampleWidget(QWidget):
         self.tab_widget.addTab(pheno_widget, "Phenotype")
 
         # comment
-        self.tag_edit = QLineEdit()
-        self.tag_edit.setPlaceholderText("Tags separated by comma ")
+
         self.comment_edit = MarkdownEditor()
         comm_widget = QWidget()
         comm_layout = QVBoxLayout(comm_widget)
@@ -140,6 +128,8 @@ class SampleWidget(QWidget):
 
         self.comment_edit.setPlainText(data.get("comment", ""))
 
+        self.tag_edit.setCurrentText(data.get("tags", ""))
+
         print(data)
 
     def save(self, sample_id: int):
@@ -151,6 +141,7 @@ class SampleWidget(QWidget):
             "sex": self.sex_combo.currentIndex(),
             "phenotype": self.phenotype_combo.currentIndex(),
             "comment": self.comment_edit.toPlainText(),
+            "tags": self.tag_edit.currentText(),
         }
 
         sql.update_sample(self._conn, data)
