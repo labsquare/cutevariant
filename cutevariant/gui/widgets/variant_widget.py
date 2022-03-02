@@ -37,7 +37,7 @@ class VariantWidget(QWidget):
         ann_layout.addWidget(self.ann_combo)
         ann_layout.addWidget(self.ann_view)
 
-        self.tab_widget.addTab(self.variant_view, "variants")
+        self.tab_widget.addTab(self.variant_view, "Variants")
         self.tab_widget.addTab(self.ann_widget, "Annotations")
         self.tab_widget.addTab(self.sample_view, "Samples")
         self.tab_widget.addTab(self.comment, "Comments")
@@ -73,6 +73,11 @@ class VariantWidget(QWidget):
             self.sample_view.set_dict(sdata)
 
         self.name_edit.setText(name)
+        classif_values = [str(i) for i in range(6)] #TODO: are classifications defined somewhere?
+        self.classification.addItems(classif_values)
+        print("hello:", "{classification}".format(**self.data))
+        print("hello2:", classif_values.index("{classification}".format(**self.data)))
+        self.classification.setCurrentIndex(classif_values.index("{classification}".format(**self.data)))
 
         self.variant_view.set_dict(self.data)
 
