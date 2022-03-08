@@ -22,6 +22,7 @@ from cutevariant.gui.widgets import (
     ChoiceWidget,
     create_widget_action,
     SampleDialog,
+    SampleVariantDialog,
     PresetAction,
 )
 
@@ -538,11 +539,12 @@ class SamplesWidget(plugin.PluginWidget):
         self.on_refresh()
 
     def _on_double_clicked(self):
-        self._show_sample_dialog()
+        self._show_sample_variant_dialog()
 
     def contextMenuEvent(self, event: QContextMenuEvent):
 
         menu = QMenu(self)
+        menu.addSection("Sample")
         menu.addAction(QIcon(), "Edit sample ...", self._show_sample_dialog)
 
         menu.addAction(QIcon(), "Filter from current selection", self.on_add_filter)
@@ -551,8 +553,8 @@ class SamplesWidget(plugin.PluginWidget):
             QIcon(), "Create a source from current selection", self.on_add_source
         )
 
-        menu.addSection("current variant")
-        cat_menu = menu.addMenu("Classification")
+        menu.addSection("Selected variant")
+        cat_menu = menu.addMenu("Validation status")
 
         for key, value in SAMPLE_VARIANT_CLASSIFICATION.items():
             action = cat_menu.addAction(value)
@@ -560,7 +562,7 @@ class SamplesWidget(plugin.PluginWidget):
             action.triggered.connect(self._on_classification_changed)
 
         menu.addMenu(cat_menu)
-        menu.addAction("Edit comment ...")
+        menu.addAction("Edit variant validation ...", self._show_sample_variant_dialog)
 
         menu.exec_(event.globalPos())
 
@@ -571,6 +573,18 @@ class SamplesWidget(plugin.PluginWidget):
         if sample:
 
             dialog = SampleDialog(self._conn, sample["sample_id"])
+
+            if dialog.exec_() == QDialog.Accepted:
+                self.load_all_filters()
+                self.on_refresh()
+
+    def _show_sample_variant_dialog(self):
+
+        row = self.view.selectionModel().currentIndex().row()
+        sample = self.model.item(row)
+        if sample:
+
+            dialog = SampleVariantDialog(self._conn, sample["sample_id"], self.current_variant)
 
             if dialog.exec_() == QDialog.Accepted:
                 self.load_all_filters()
