@@ -1,5 +1,6 @@
 """Plugin to Display genotypes variants 
 """
+from nis import match
 import typing
 from functools import cmp_to_key, partial
 import time
@@ -16,7 +17,7 @@ from PySide6.QtGui import *
 from cutevariant.core import sql, command
 from cutevariant.core.reader import BedReader
 from cutevariant.gui import plugin, FIcon, style
-from cutevariant.commons import DEFAULT_SELECTION_NAME, SAMPLE_VARIANT_CLASSIFICATION
+from cutevariant.commons import DEFAULT_SELECTION_NAME #, SAMPLE_CLASSIFICATION, SAMPLE_VARIANT_CLASSIFICATION
 
 from cutevariant.gui.widgets import (
     ChoiceWidget,
@@ -29,7 +30,7 @@ from cutevariant.gui.widgets import (
 from cutevariant import LOGGER
 from cutevariant.gui.sql_thread import SqlThread
 
-from cutevariant.gui.style import GENOTYPE, CLASSIFICATION
+from cutevariant.gui.style import GENOTYPE, CLASSIFICATION, SAMPLE_CLASSIFICATION, SAMPLE_VARIANT_CLASSIFICATION
 
 from cutevariant.gui import FormatterDelegate
 from cutevariant.gui.formatters.cutestyle import CutestyleFormatter
@@ -42,13 +43,13 @@ from functools import partial
 
 class VariantVerticalHeader(QHeaderView):
 
-    COLOR = {0: "red", 1: "orange", 2: "green"}
+    #COLOR = {0: "gray", 1: "orange", 2: "green"}
 
     def __init__(self, parent=None):
         super().__init__(Qt.Vertical, parent)
 
     def sizeHint(self):
-        return QSize(5, super().sizeHint().height())
+        return QSize(30, super().sizeHint().height())
 
     def paintSection(self, painter: QPainter, rect: QRect, section: int):
 
@@ -58,16 +59,41 @@ class VariantVerticalHeader(QHeaderView):
         painter.save()
         super().paintSection(painter, rect, section)
 
+        # default color
+        default_color="lightgray"
+
+        # sample
+        valid = self.model().item(section)["valid"]
+        sample_color = style.SAMPLE_CLASSIFICATION[valid].get("color")
+        sample_icon = style.SAMPLE_CLASSIFICATION[valid].get("icon")
+        sample_blurred = style.SAMPLE_CLASSIFICATION[valid].get("blurred")
+
+        # sample variant
         classification = self.model().item(section)["classification"]
+        sample_variant_color = style.SAMPLE_VARIANT_CLASSIFICATION[classification].get("color")
+        sample_variant_icon = style.SAMPLE_VARIANT_CLASSIFICATION[classification].get("icon")
+        sample_variant_blurred = style.SAMPLE_VARIANT_CLASSIFICATION[classification].get("blurred")
+
+        if sample_variant_color != "":
+            sample_color=sample_variant_color
+
+        if sample_blurred or sample_variant_blurred:
+            sample_variant_color=style.BLURRED_COLOR
+            sample_color=style.BLURRED_COLOR
 
         painter.restore()
-        color = self.COLOR[classification]
-
-        pen = QPen(color)
+        pen = QPen(QColor(sample_variant_color))
         pen.setWidth(6)
-        painter.setPen(Qt.NoPen)
-        painter.setBrush(QBrush(color))
-        painter.drawRect(rect)
+        painter.setPen(pen)
+        painter.setBrush(QBrush(sample_variant_color))
+        painter.drawLine(rect.left(), rect.top() + 1, rect.left(), rect.bottom() - 1)
+
+        #pix = FIcon(sample_icon, sample_color).pixmap(20, 20)
+        pix = FIcon(sample_icon, sample_color).pixmap(20, 20)
+
+        target = rect.center() - pix.rect().center() + QPoint(1, 0)
+
+        painter.drawPixmap(target, pix)
 
 
 # pix = FIcon(0xF00C1 if favorite else 0xF00C3, color).pixmap(20, 20)
@@ -174,9 +200,9 @@ class SamplesModel(QAbstractTableModel):
 
         self.beginResetModel()
         self.items.clear()
-
+        
         self.items = self._load_samples_thread.results
-
+        
         if len(self.items) > 0:
             self._headers = [
                 i for i in self.items[0].keys() if i not in ("sample_id", "variant_id")
@@ -185,8 +211,17 @@ class SamplesModel(QAbstractTableModel):
         if "classification" not in self.fields:
             self._headers.remove("classification")
 
-        self.endResetModel()
+        if "valid" not in self.fields:
+            self._headers.remove("valid")
 
+        if "valid" in self._headers:
+            self._headers.remove("valid")
+
+        if "classification" in self._headers:
+            self._headers.remove("classification")
+
+        self.endResetModel()
+        
         # # Save cache
         # self._load_variant_cache[
         #     self._sample_hash
@@ -225,7 +260,10 @@ class SamplesModel(QAbstractTableModel):
             fields=self.fields,
             samples=self.selected_samples,
             families=self.selected_families,
+            tags=self.selected_tags,
             genotypes=self.selected_genotypes,
+            valid=self.selected_valid,
+            classification=self.selected_classification
         )
 
         # Start the run
@@ -312,7 +350,7 @@ class SamplesModel(QAbstractTableModel):
         # change from memory
         self.items[row].update(data)
 
-        print("EDIT", self.items[row])
+        #print("EDIT", self.items[row])
 
         # Persist in SQL
         data["variant_id"] = self.items[row]["variant_id"]
@@ -334,7 +372,6 @@ class SamplesView(QTableView):
         self.setVerticalHeader(VariantVerticalHeader())
 
     def paintEvent(self, event: QPaintEvent):
-
         if self.model().rowCount() == 0:
             painter = QPainter(self.viewport())
             painter.drawText(self.viewport().rect(), Qt.AlignCenter, "No Sample found")
@@ -386,6 +423,10 @@ class SamplesWidget(plugin.PluginWidget):
         self.tag_selector.accepted.connect(self.on_refresh)
         self.geno_selector = ChoiceWidget()
         self.geno_selector.accepted.connect(self.on_refresh)
+        self.valid_selector = ChoiceWidget()
+        self.valid_selector.accepted.connect(self.on_refresh)
+        self.classification_selector = ChoiceWidget()
+        self.classification_selector.accepted.connect(self.on_refresh)
 
         self.setWindowIcon(FIcon(0xF0A8C))
 
@@ -407,12 +448,6 @@ class SamplesWidget(plugin.PluginWidget):
 
     def setup_actions(self):
 
-        # Fields action
-        field_action = create_widget_action(self.toolbar, self.field_selector)
-        field_action.setIcon(FIcon(0xF0835))
-        field_action.setText("Fields")
-        field_action.setToolTip("Select fields to display")
-
         # sample action
         sample_action = create_widget_action(self.toolbar, self.sample_selector)
         sample_action.setIcon(FIcon(0xF0013))
@@ -431,33 +466,47 @@ class SamplesWidget(plugin.PluginWidget):
         tag_action.setText("Tags ")
         tag_action.setToolTip("Filter by tags")
 
-        # only genotype action
-
         # geno action
         geno_action = create_widget_action(self.toolbar, self.geno_selector)
         geno_action.setIcon(FIcon(0xF0902))
         geno_action.setText("Genotype")
         geno_action.setToolTip("Filter by genotype")
 
-        # Menu action
+        # valid lock/unlock action
+        valid_action = create_widget_action(self.toolbar, self.valid_selector)
+        valid_action.setIcon(FIcon(0xF139A))
+        valid_action.setText("Validation")
+        valid_action.setToolTip("Filter by sample Validation")
 
-        spacer = QWidget()
-        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        # classification action
+        classification_action = create_widget_action(self.toolbar, self.classification_selector)
+        classification_action.setIcon(FIcon(0xF00C1))
+        classification_action.setText("Classification")
+        classification_action.setToolTip("Filter by variant classification on sample")
 
-        self.toolbar.addWidget(spacer)
+        # Clear filters
         self.toolbar.addAction(
             FIcon(0xF01FE), self.tr("Clear all filters"), self._on_clear_filters
         )
-        # menu_action.setMenu(self.general_menu)
+        
+        # Spacer
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.toolbar.addWidget(spacer)
 
+        # Fields to display
+        field_action = create_widget_action(self.toolbar, self.field_selector)
+        field_action.setIcon(FIcon(0xF0835))
+        field_action.setText("Fields")
+        field_action.setToolTip("Select fields to display")
+
+        # Presets list
         self.preset_menu = QMenu()
         self.preset_button = QPushButton()
         self.preset_button.setToolTip(self.tr("Presets"))
         self.preset_button.setIcon(FIcon(0xF035C))
         self.preset_button.setMenu(self.preset_menu)
         self.preset_button.setFlat(True)
-        # self.preset_button.setPopupMode(QToolButton.InstantPopup)
-        # self.preset_button.setToolButtonStyle(Qt.ToolButtonIconOnly)
         self.toolbar.addWidget(self.preset_button)
 
         self.load_presets()
@@ -467,8 +516,10 @@ class SamplesWidget(plugin.PluginWidget):
         self.preset_menu.clear()
 
         config = Config("samples")
+
         self.preset_menu.addAction("Save preset", self.save_preset)
         self.preset_menu.addSeparator()
+
         if "presets" in config:
             presets = config["presets"]
             for name, fields in presets.items():
@@ -478,6 +529,9 @@ class SamplesWidget(plugin.PluginWidget):
                 action.removed.connect(self.delete_preset)
 
                 self.preset_menu.addAction(action)
+
+        self.preset_menu.addSeparator()
+        self.preset_menu.addAction("Reload presets", self.load_presets)
 
     def delete_preset(self):
         if not self.sender():
@@ -506,6 +560,7 @@ class SamplesWidget(plugin.PluginWidget):
         name, success = QInputDialog.getText(
             self, self.tr("Create new preset"), self.tr("Preset name:")
         )
+        
         if success and name:
             config = Config("samples")
             presets = config["presets"] or {}
@@ -525,8 +580,11 @@ class SamplesWidget(plugin.PluginWidget):
 
             presets[name] = self.model.fields
             config["presets"] = presets
+
             config.save()
-            self.load_presets()
+
+        self.load_presets()
+
 
     def _on_select_preset(self):
         config = Config("samples")
@@ -553,9 +611,10 @@ class SamplesWidget(plugin.PluginWidget):
 
         menu.addSection("current variant")
         cat_menu = menu.addMenu("Classification")
-
+        
         for key, value in SAMPLE_VARIANT_CLASSIFICATION.items():
-            action = cat_menu.addAction(value)
+            #action = cat_menu.addAction(value["name"])
+            action = cat_menu.addAction(FIcon(value["icon"], value["color"]), value["name"])
             action.setData(key)
             action.triggered.connect(self._on_classification_changed)
 
@@ -599,6 +658,8 @@ class SamplesWidget(plugin.PluginWidget):
         self.sample_selector.uncheck_all()
         self.family_selector.uncheck_all()
         self.geno_selector.uncheck_all()
+        self.valid_selector.uncheck_all()
+        self.classification_selector.uncheck_all()
         self.tag_selector.uncheck_all()
 
         self.on_refresh()
@@ -609,8 +670,8 @@ class SamplesWidget(plugin.PluginWidget):
         filters = copy.deepcopy(self.mainwindow.get_state_data("filters"))
 
         if not filters:
-            root = "$and"
-            filters["$and"] = []
+            root = "$or"
+            filters["$or"] = []
 
         else:
             root = list(filters.keys())[0]
@@ -618,9 +679,10 @@ class SamplesWidget(plugin.PluginWidget):
                 i for i in filters[root] if not list(i.keys())[0].startswith("samples")
             ]
 
+        
         for index in indexes:
-            sample_name = index.siblingAtColumn(1).data()
-            print(sample_name)
+            #sample_name = index.siblingAtColumn(1).data()
+            sample_name = index.siblingAtColumn(0).data()
             if sample_name:
                 key = f"samples.{sample_name}.gt"
                 condition = {key: {"$gte": 1}}
@@ -667,6 +729,8 @@ class SamplesWidget(plugin.PluginWidget):
         self.load_fields()
         self.load_family()
         self.load_genotype()
+        self.load_valid()
+        self.load_classification()
 
     def load_samples(self):
 
@@ -685,9 +749,10 @@ class SamplesWidget(plugin.PluginWidget):
     def load_fields(self):
         self.field_selector.clear()
         for field in sql.get_field_by_category(self._conn, "samples"):
-            self.field_selector.add_item(
-                FIcon(0xF0835), field["name"], field["description"], data=field["name"]
-            )
+            if field["name"] != "classification":
+                self.field_selector.add_item(
+                    FIcon(0xF0835), field["name"], field["description"], data=field["name"]
+                )
 
     def load_family(self):
         self.family_selector.clear()
@@ -699,6 +764,18 @@ class SamplesWidget(plugin.PluginWidget):
 
         for key, value in GENOTYPE.items():
             self.geno_selector.add_item(FIcon(value["icon"]), value["name"], data=key)
+
+    def load_valid(self):
+        self.valid_selector.clear()
+
+        for key, value in SAMPLE_CLASSIFICATION.items():
+            self.valid_selector.add_item(FIcon(value["icon"]), value["name"], data=key)
+
+    def load_classification(self):
+        self.classification_selector.clear()
+
+        for key, value in SAMPLE_VARIANT_CLASSIFICATION.items():
+            self.classification_selector.add_item(FIcon(value["icon"]), value["name"], data=key)
 
     def on_refresh(self):
 
@@ -716,6 +793,12 @@ class SamplesWidget(plugin.PluginWidget):
         ]
         self.model.selected_genotypes = [
             i["data"] for i in self.geno_selector.selected_items()
+        ]
+        self.model.selected_valid = [
+            i["data"] for i in self.valid_selector.selected_items()
+        ]
+        self.model.selected_classification = [
+            i["data"] for i in self.classification_selector.selected_items()
         ]
 
         self.model.load(variant_id)
