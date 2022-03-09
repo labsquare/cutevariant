@@ -69,7 +69,7 @@ class VariantVerticalHeader(QHeaderView):
         sample_blurred = style.SAMPLE_CLASSIFICATION[valid].get("blurred")
 
         # sample variant
-        classification = self.model().item(section)["classification"]
+        classification = self.model().item(section)["classification"] or 0
         sample_variant_color = style.SAMPLE_VARIANT_CLASSIFICATION[classification].get("color")
         sample_variant_icon = style.SAMPLE_VARIANT_CLASSIFICATION[classification].get("icon")
         sample_variant_blurred = style.SAMPLE_VARIANT_CLASSIFICATION[classification].get("blurred")

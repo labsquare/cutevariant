@@ -925,7 +925,8 @@ class FieldsEditorWidget(plugin.PluginWidget):
             presets[name] = self.fields
             config["presets"] = presets
             config.save()
-            self.load_presets()
+
+        self.load_presets()
 
     def delete_preset(self):
         """Remove selected preset from combobox"""
@@ -961,6 +962,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
 
         self.preset_menu.addAction("Save preset", self.save_preset)
         self.preset_menu.addSeparator()
+
         if "presets" in config:
             presets = config["presets"]
             for name, fields in presets.items():
@@ -970,6 +972,9 @@ class FieldsEditorWidget(plugin.PluginWidget):
                 action.removed.connect(self.delete_preset)
 
                 self.preset_menu.addAction(action)
+
+        self.preset_menu.addSeparator()
+        self.preset_menu.addAction("Reload presets", self.load_presets)
 
     def show_fields_dialog(self):
 

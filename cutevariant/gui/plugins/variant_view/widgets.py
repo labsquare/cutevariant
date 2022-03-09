@@ -64,6 +64,8 @@ class VariantVerticalHeader(QHeaderView):
 
         painter.restore()
         color = style.CLASSIFICATION[classification].get("color")
+        icon = style.CLASSIFICATION[classification].get("icon")
+        icon_favorite = style.CLASSIFICATION[classification].get("icon_favorite")
 
         pen = QPen(QColor(style.CLASSIFICATION[classification].get("color")))
         pen.setWidth(6)
@@ -71,7 +73,7 @@ class VariantVerticalHeader(QHeaderView):
         painter.setBrush(QBrush(style.CLASSIFICATION[classification].get("color")))
         painter.drawLine(rect.left(), rect.top() + 1, rect.left(), rect.bottom() - 1)
 
-        pix = FIcon(0xF00C1 if favorite else 0xF00C3, color).pixmap(20, 20)
+        pix = FIcon(icon_favorite if favorite else icon, color).pixmap(20, 20)
         target = rect.center() - pix.rect().center() + QPoint(1, 0)
 
         painter.drawPixmap(target, pix)

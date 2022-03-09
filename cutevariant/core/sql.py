@@ -174,7 +174,8 @@ MANDATORY_FIELDS = [
         "name": "tags",
         "type": "str",
         "category": "variants",
-        "description": "list of  tags ",
+        "constraint": "DEFAULT ''",
+        "description": "list of tags ",
     },
     {
         "name": "count_hom",
@@ -203,6 +204,20 @@ MANDATORY_FIELDS = [
         "constraint": "DEFAULT 0",
         "category": "variants",
         "description": "Number of variants (not 0/0)",
+    },
+    {
+        "name": "freq_var",
+        "type": "float",
+        "constraint": "DEFAULT 0",
+        "category": "variants",
+        "description": "Frequency of variants for samples with genotypes (0/1 and 1/1)",
+    },
+    {
+        "name": "freq_var_full",
+        "type": "float",
+        "constraint": "DEFAULT 0",
+        "category": "variants",
+        "description": "Frequency of variants for all samples",
     },
     {
         "name": "control_count_hom",
@@ -1816,7 +1831,7 @@ def create_table_variants(conn: sqlite3.Connection, fields: List[dict]):
         ]
     )
 
-    print("ICI", schema)
+    #print("ICI", schema)
 
     LOGGER.debug("create_table_variants:: schema: %s", schema)
     # Unicity constraint or NOT NULL fields (Cf VcfReader, FakeReader, etc.)
@@ -2672,6 +2687,8 @@ def get_sample_annotations_by_variant(
     families: List[str] = None,
     tags: List[str] = None,
     genotypes: List[str] = None,
+    valid: List[str] = None,
+    classification: List[str] = None,
 ):
     """Get samples annotation for a specific variant using different filters
 
@@ -2715,6 +2732,18 @@ def get_sample_annotations_by_variant(
     if genotypes:
         conditions.append(
             "(sv.gt IN " + "(" + ",".join([f"'{s}'" for s in genotypes]) + "))"
+        )
+
+    # Filter on valid
+    if valid:
+        conditions.append(
+            "(samples.valid IN " + "(" + ",".join([f"'{v}'" for v in valid]) + "))"
+        )
+
+    # Filter on classification
+    if classification:
+        conditions.append(
+            "(sv.classification IN " + "(" + ",".join([f"'{c}'" for c in classification]) + "))"
         )
 
     if conditions:
@@ -2792,7 +2821,7 @@ def update_sample_has_variant(conn: sqlite3.Connection, data: dict):
         + f" WHERE sample_id = {sample_id} AND variant_id = {variant_id}"
     )
 
-    print("ICCCCCCCCCCCCCCCCC", query)
+    #print("ICCCCCCCCCCCCCCCCC", query)
     conn.execute(query, sql_val)
     conn.commit()
 
@@ -2816,14 +2845,16 @@ def create_triggers(conn):
         control_count_hom = control_count_hom + (SELECT COUNT(*) FROM samples WHERE phenotype=1 and samples.id = new.sample_id)
         WHERE variants.id = new.variant_id ;
 
-         END;"""
+        END;"""
     )
 
     conn.execute(
         """
         CREATE TRIGGER count_var AFTER INSERT ON sample_has_variant 
         WHEN new.gt > 0 BEGIN 
-        UPDATE variants SET count_var = count_var + 1 WHERE variants.id = new.variant_id ; END;"""
+        UPDATE variants SET count_var = count_var + 1 WHERE variants.id = new.variant_id ;
+        
+        END;"""
     )
 
     conn.execute(
@@ -2857,10 +2888,46 @@ def create_triggers(conn):
         control_count_ref = control_count_ref + (SELECT COUNT(*) FROM samples WHERE phenotype=0 and samples.id = new.sample_id)
         WHERE variants.id = new.variant_id ; 
 
-
-
-         END;"""
+        END;"""
     )
+
+    # conn.execute(
+    #     """
+    #     CREATE TRIGGER freq_var_insert AFTER INSERT ON variants
+    #     BEGIN
+    #     UPDATE variants SET freq_var = ( (new.count_hom*2 + new.count_het) / (cast(new.count_var as real)*2) ) WHERE variants.id = new.id ;
+        
+    #     END;"""
+    # )
+    
+    conn.execute(
+        """
+        CREATE TRIGGER freq_var_update AFTER UPDATE ON variants 
+        WHEN old.count_hom <> new.count_hom
+              OR old.count_het <> new.count_het
+              OR old.count_var <> new.count_var
+        BEGIN
+        UPDATE variants SET freq_var = ( cast((new.count_hom*2 + new.count_het) as real) / (cast(new.count_var as real)*2) ) WHERE variants.id = new.id ;
+        
+        END;"""
+    )
+
+    conn.execute(
+        """
+        CREATE TRIGGER freq_var_full_update AFTER UPDATE ON variants 
+        WHEN old.count_hom <> new.count_hom
+              OR old.count_het <> new.count_het
+              OR old.count_var <> new.count_var
+        BEGIN
+        UPDATE variants SET freq_var_full = ( cast((new.count_hom*2 + new.count_het) as real) / ((SELECT COUNT(id) FROM samples)*2) ) WHERE variants.id = new.id ;
+        
+        END;"""
+    )
+
+
+
+
+    
 
 
 def create_database_schema(conn: sqlite3.Connection, fields: Iterable[dict] = None):
