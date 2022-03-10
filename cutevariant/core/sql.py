@@ -2914,12 +2914,21 @@ def create_triggers(conn):
 
     conn.execute(
         """
-        CREATE TRIGGER freq_var_full_update AFTER UPDATE ON variants 
+        CREATE TRIGGER freq_var_full_update_on_variants AFTER UPDATE ON variants 
         WHEN old.count_hom <> new.count_hom
               OR old.count_het <> new.count_het
               OR old.count_var <> new.count_var
         BEGIN
         UPDATE variants SET freq_var_full = ( cast((new.count_hom*2 + new.count_het) as real) / ((SELECT COUNT(id) FROM samples)*2) ) WHERE variants.id = new.id ;
+        
+        END;"""
+    )
+
+    conn.execute(
+        """
+        CREATE TRIGGER freq_var_full_insert_on_sample AFTER INSERT ON samples 
+        BEGIN
+        UPDATE variants SET freq_var_full = ( cast((count_hom*2 + count_het) as real) / ((SELECT COUNT(id) FROM samples)*2) ) ;
         
         END;"""
     )
