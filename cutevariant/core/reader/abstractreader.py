@@ -188,6 +188,18 @@ class AbstractReader(ABC):
             "category": "variants",
             "description": "Number of variants (not 0/0)",
         }
+        yield {
+            "name": "freq_var",
+            "type": "float",
+            "category": "variants",
+            "description": "Frequency of variants for samples with genotypes (0/1 and 1/1)",
+        }
+        yield {
+            "name": "freq_var_full",
+            "type": "float",
+            "category": "variants",
+            "description": "Frequency of variants for all samples",
+        }
 
         yield {
             "name": "is_indel",
@@ -351,8 +363,12 @@ class AbstractReader(ABC):
             variant["count_hom"] = genotype_counter[2]
             variant["count_het"] = genotype_counter[1]
             variant["count_ref"] = genotype_counter[0]
+            variant["count_no"] = genotype_counter[-1]
             # Number of variants (not 0/0)
             variant["count_var"] = genotype_counter[1] + genotype_counter[2]
+            variant["count_all"] = genotype_counter[-1] + genotype_counter[0] + genotype_counter[1] + genotype_counter[2]
+            variant["freq_var"] = ( ( variant["count_hom"] * 2 ) + variant["count_het"] ) / ( variant["count_var"] * 2 )
+            variant["freq_var_full"] = ( ( variant["count_hom"] * 2 ) + variant["count_het"] ) / ( variant["count_all"] * 2 )
 
             variant["is_indel"] = len(variant["ref"]) != len(variant["alt"])
             variant["is_snp"] = len(variant["ref"]) == len(variant["alt"])

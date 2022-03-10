@@ -240,9 +240,11 @@ class FiltersPresetModel(QAbstractListModel):
 
     def save(self):
         config = Config("filters_editor", self.config_path)
-        config["presets"] = {
-            preset_name: filters for preset_name, filters in self._presets
-        }
+        # config["presets"] = {
+        #     preset_name: filters for preset_name, filters in self._presets
+        # }
+        for preset_name, filters in self._presets:
+            config["presets"][preset_name]=filters
         config.save()
 
     def clear(self):
@@ -2617,6 +2619,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
         self.preset_menu.addAction("Save preset", self.on_save_preset)
         self.preset_menu.addSeparator()
+
         if "presets" in config:
             presets = config["presets"]
             for name, filters in presets.items():
@@ -2625,6 +2628,9 @@ class FiltersEditorWidget(plugin.PluginWidget):
                 action.triggered.connect(self.on_select_preset)
                 action.removed.connect(self.on_delete_preset)
                 self.preset_menu.addAction(action)
+
+        self.preset_menu.addSeparator()
+        self.preset_menu.addAction("Reload presets", self.load_presets)
 
     def on_delete_preset(self):
 
@@ -2673,14 +2679,28 @@ class FiltersEditorWidget(plugin.PluginWidget):
         while name in self.presets_model.preset_names():
             name = re.sub(r"\(\d+\)", "", name) + f" ({i})"
             i += 1
-
+        
         if ok:
             self.mainwindow: MainWindow
+            config = Config("filters_editor")
+            if name in config["presets"]:
+                ret = QMessageBox.warning(
+                    self,
+                    self.tr("Overwrite preset"),
+                    self.tr(
+                        f"Preset {name} already exists. Do you want to overwrite it ?"
+                    ),
+                    QMessageBox.Yes | QMessageBox.No,
+                )
+
+                if ret == QMessageBox.No:
+                    return
             self.presets_model.add_preset(
                 name, self.mainwindow.get_state_data("filters")
             )
             self.presets_model.save()
-            self.load_presets()
+        
+        self.load_presets()
 
     def _update_view_geometry(self):
         """Set column Spanned to True for all Logic Item

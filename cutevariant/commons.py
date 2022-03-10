@@ -19,30 +19,42 @@ MIN_AUTHORIZED_DB_VERSION = "0.2.0"
 
 
 # ACMG Classification
-CLASSIFICATION = {
-    0: "Unclassified",
-    1: "Benin",
-    2: "Likely benin",
-    3: "Variant of uncertain significance",
-    4: "Likely pathogenic",
-    5: "Pathogenic",
-}
+# CLASSIFICATION = {
+#     0: "Unclassified",
+#     1: "Benin",
+#     2: "Likely benin",
+#     3: "Variant of uncertain significance",
+#     4: "Likely pathogenic",
+#     5: "Pathogenic",
+# }
 
-CLASSIFICATION_ICONS = {
-    0: 0xF03A1,
-    1: 0xF03A4,
-    2: 0xF03A7,
-    3: 0xF03AA,
-    4: 0xF03AD,
-    5: 0xF03B1,
-}
+# CLASSIFICATION_ICONS = {
+#     0: 0xF03A1,
+#     1: 0xF03A4,
+#     2: 0xF03A7,
+#     3: 0xF03AA,
+#     4: 0xF03AD,
+#     5: 0xF03B1,
+# }
 
+# SAMPLE_VARIANT_CLASSIFICATION = {
+#     0: "Unclassified",
+#     1: "Verification required",
+#     2: "Validated",
+#     3: "Rejected",
+# }
 
-SAMPLE_VARIANT_CLASSIFICATION = {
-    0: "Unclassified",
-    1: "Verification required",
-    2: "Validated",
-}
+# SAMPLE_CLASSIFICATION = {
+#     0: "Unlock",
+#     1: "Lock",
+#     2: "Rejected",
+# }
+
+# SAMPLE_VARIANT_CLASSIFICATION_COLOR = {
+#     0: "gray",
+#     1: "orange",
+#     2: "green"
+# }
 
 OPERATORS_PY_2_SQL = {
     "$eq": "=",
