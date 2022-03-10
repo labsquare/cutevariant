@@ -175,6 +175,7 @@ MANDATORY_FIELDS = [
         "type": "str",
         "category": "variants",
         "description": "list of  tags ",
+        "constraint": "DEFAULT ''",
     },
     {
         "name": "count_hom",
