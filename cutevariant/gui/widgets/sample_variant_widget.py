@@ -129,10 +129,13 @@ class SampleVariantWidget(QWidget):
         self.sample_has_var_data = sql.get_sample_annotations(self.conn, var["id"], sample["id"])
         self.initial_db_validation = self.get_validation_from_data(self.sample_has_var_data)
         
-        var_name = "{chr}-{pos}-{ref}-{alt}".format(**var)
+        var_name = "{chr}-{pos}-{ref}-{alt}ATATATATATTTTTTTTTTTAAAAAAAAAAAAAAAAAAAAAAAAAAAATTTTTTTTTGCGCGCGCGCGCGCGC".format(**var)
+        if len(var_name) > 30:
+            var_name = var_name[0:20] + "..." + var_name [-10:]
+
         self.title.setText('<html><head/><body><p align="center">Validation status of variant <span style=" font-weight:700;">' 
                             + html.escape(var_name)
-                            + '</span>in sample <span style=" font-weight:700;">'
+                            + '</span> in sample <span style=" font-weight:700;">'
                             + str(sample["name"])
                             + '</span></p></body></html>'
                         )
@@ -260,7 +263,7 @@ if __name__ == "__main__":
 
     conn = sql.get_sql_connection("C:/Users/Ichtyornis/Projects/cutevariant/test2.db")
 
-    w = SampleVariantDialog(conn, 1, {'id': 1, 'chr': 'chrX', 'pos': 10, 'favorite': 1, 'classification': 2, 'alt': '<CN4>', 'ref': 'NN'})
+    w = SampleVariantDialog(conn, 1, 1)
 
     w.show()
 
