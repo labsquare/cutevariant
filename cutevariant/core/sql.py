@@ -2452,7 +2452,7 @@ def create_table_samples(conn, fields=[]):
         sex INTEGER DEFAULT 0,
         phenotype INTEGER DEFAULT 0,
         valid INTEGER DEFAULT 0,
-        tags TEXT,
+        tags TEXT DEFAULT '',
         comment TEXT,
         UNIQUE (name, family_id)
         )"""
