@@ -256,9 +256,6 @@ class BaseParser:
         for raw_field_name in raw_fields:
             raw_field_name = raw_field_name.strip().lower()
 
-            print("TESTTESTTESTTESTTESTTESTTESTTESTTESTTESTTESTTEST")
-            print(raw_field_name)
-
             # Remap field name if it is in default ones
             if raw_field_name in self.annotation_default_fields:
                 _f = self.annotation_default_fields[raw_field_name]
@@ -274,18 +271,18 @@ class BaseParser:
                     "category": "annotations",
                 }
 
-            if _f["name"] in self.variant_field_names and 0:
-                # This field is already in variants fields
-                # => do not use it!
-                # Append None in place of the name of the field
-                # with the aim to not break handle_annotations() when it splits
-                # the annotation field.
-                self.annotation_field_name.append(None)
-                LOGGER.info(
-                    "handle_descriptions: '%s' field also found in variants; skipped",
-                    _f["name"],
-                )
-                continue
+            # if _f["name"] in self.variant_field_names:
+            #     # This field is already in variants fields
+            #     # => do not use it!
+            #     # Append None in place of the name of the field
+            #     # with the aim to not break handle_annotations() when it splits
+            #     # the annotation field.
+            #     self.annotation_field_name.append(None)
+            #     LOGGER.info(
+            #         "handle_descriptions: '%s' field also found in variants; skipped",
+            #         _f["name"],
+            #     )
+            #     continue
 
             # Append the name of the field
             self.annotation_field_name.append(_f["name"])
