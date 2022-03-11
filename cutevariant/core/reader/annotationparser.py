@@ -256,6 +256,9 @@ class BaseParser:
         for raw_field_name in raw_fields:
             raw_field_name = raw_field_name.strip().lower()
 
+            print("TESTTESTTESTTESTTESTTESTTESTTESTTESTTESTTESTTEST")
+            print(raw_field_name)
+
             # Remap field name if it is in default ones
             if raw_field_name in self.annotation_default_fields:
                 _f = self.annotation_default_fields[raw_field_name]
@@ -271,7 +274,7 @@ class BaseParser:
                     "category": "annotations",
                 }
 
-            if _f["name"] in self.variant_field_names:
+            if _f["name"] in self.variant_field_names and 0:
                 # This field is already in variants fields
                 # => do not use it!
                 # Append None in place of the name of the field
