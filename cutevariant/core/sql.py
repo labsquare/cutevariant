@@ -1972,6 +1972,21 @@ def get_summary(conn: sqlite3.Connection):
     return {"variant_count": variant_count, "sample_count": sample_count}
 
 
+def get_sample_variant_classification_count(
+    conn: sqlite3.Connection,
+    sample_id: int,
+    classification: int
+):
+    """
+    Used for edit boxes
+    Returns total of variants having a given classification (validation status) for a given sample
+    """
+    # r = conn.execute(f"SELECT COUNT(*) FROM variants v LEFT JOIN sample_has_variant sv WHERE sv.sample_id={sample_id} AND sv.variant_id = v.id AND v.classification = {classification}").fetchone()[0]
+    r = conn.execute(f"SELECT COUNT(*) FROM sample_has_variant sv WHERE sv.sample_id={sample_id} AND classification = {classification}").fetchone()[0]
+    return int(r)
+
+
+
 def get_variants(
     conn: sqlite3.Connection,
     fields,

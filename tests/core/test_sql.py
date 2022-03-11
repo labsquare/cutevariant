@@ -1163,3 +1163,10 @@ def test_sql_selection_operation(conn):
 #                 del expected_variant[not_wanted_key]
 
 #         assert tuple(record) == tuple(expected_variant.values())
+
+def test_get_sample_variant_classification_count(conn):
+    value = sql.get_sample_variant_classification_count(conn, 1, 2)
+    assert value == 0
+    sql.update_sample_has_variant(conn, {"variant_id":1, "sample_id": 1, "classification": 2})
+    value = sql.get_sample_variant_classification_count(conn, 1, 2)
+    assert value == 1
