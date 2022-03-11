@@ -29,6 +29,16 @@ class SampleVariantWidget(QWidget):
         #Title
         self.title = QLabel()
         self.title.setTextFormat(Qt.RichText)
+        self.title_variant = QLineEdit()
+        self.title_sample = QLineEdit()
+        self.title_variant.setReadOnly(True)
+        self.title_variant.setText("chr1:AZAZAZZ>1EAAEEE")
+        self.title_sample.setReadOnly(True)
+        self.title_sample.setText("SGT121212")
+        title_layout = QHBoxLayout()
+        title_layout.addWidget(self.title_sample)
+        title_layout.addWidget(QLabel("for"))
+        title_layout.addWidget(self.title_variant)
 
         # Validation
         self.classification = QComboBox()
@@ -69,7 +79,7 @@ class SampleVariantWidget(QWidget):
         validation_box = QGroupBox()
         validation_layout = QFormLayout(validation_box)
 
-        validation_layout.addRow("Classification", self.classification)
+        validation_layout.addRow("Validation", self.classification)
         validation_layout.addRow("Tags", self.tag_layout)
         validation_layout.addRow("Comment", self.comment)
         validation_layout.addRow("", self.info_lock)
@@ -114,7 +124,8 @@ class SampleVariantWidget(QWidget):
         ### </tabs block> ###
 
         vLayout = QVBoxLayout()
-        vLayout.addWidget(self.title)
+        # vLayout.addWidget(self.title)
+        vLayout.addLayout(title_layout)
         vLayout.addWidget(QHLine())
         # vLayout.addWidget(validation_box)
         vLayout.addWidget(self.tab_widget)

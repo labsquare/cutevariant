@@ -190,7 +190,7 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
-    conn = sql.get_sql_connection("/home/sacha/test.db")
+    conn = sql.get_sql_connection("C:/Users/Ichtyornis/Projects/cutevariant/test2.db")
 
     w = SampleDialog(conn, 1)
 
