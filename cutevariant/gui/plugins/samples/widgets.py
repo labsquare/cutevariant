@@ -584,7 +584,7 @@ class SamplesWidget(plugin.PluginWidget):
         sample = self.model.item(row)
         if sample:
 
-            dialog = SampleVariantDialog(self._conn, sample["sample_id"], self.current_variant)
+            dialog = SampleVariantDialog(self._conn, sample["sample_id"], self.current_variant["id"])
 
             if dialog.exec_() == QDialog.Accepted:
                 self.load_all_filters()
