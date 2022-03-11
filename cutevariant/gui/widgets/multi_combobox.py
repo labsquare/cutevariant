@@ -90,8 +90,8 @@ class MultiComboBox(QComboBox):
 
         # Compute elided text (with "...")
         metrics = QFontMetrics(self.lineEdit().font())
-        elidedText = metrics.elidedText(text, Qt.ElideRight, self.lineEdit().width())
-        self.lineEdit().setText(elidedText)
+        # elidedText = metrics.elidedText(text, Qt.ElideRight, self.lineEdit().width())
+        self.lineEdit().setText(text)
 
     def addItem(self, text, data=None):
         item = QStandardItem()
