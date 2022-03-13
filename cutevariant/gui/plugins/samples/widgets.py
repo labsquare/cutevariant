@@ -623,7 +623,18 @@ class SamplesWidget(plugin.PluginWidget):
         )
 
         menu.addSection("current variant")
-        cat_menu = menu.addMenu("Classification")
+
+        # Validation
+        row = self.view.selectionModel().currentIndex().row()
+        sample = self.model.item(row)
+        valid_form = True
+        valid_form_text = "Validation"
+        if sample["valid"] != 0:
+            valid_form = False
+            valid_form_text = "Validation locked"
+
+        cat_menu = menu.addMenu(valid_form_text)
+        cat_menu.setEnabled(valid_form)
 
         for key, value in SAMPLE_VARIANT_CLASSIFICATION.items():
             # action = cat_menu.addAction(value["name"])
@@ -634,6 +645,7 @@ class SamplesWidget(plugin.PluginWidget):
             action.triggered.connect(self._on_classification_changed)
 
         menu.addMenu(cat_menu)
+
         menu.addAction("Edit comment ...")
 
         menu.exec_(event.globalPos())
