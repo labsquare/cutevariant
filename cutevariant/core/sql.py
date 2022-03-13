@@ -161,6 +161,7 @@ MANDATORY_FIELDS = [
         "name": "comment",
         "type": "str",
         "category": "variants",
+        "constraint": "DEFAULT ''",
         "description": "comment of variant",
     },
     {
@@ -289,6 +290,20 @@ MANDATORY_FIELDS = [
         "constraint": "DEFAULT 0",
         "category": "samples",
         "description": "classification",
+    },
+    {
+        "name": "comment",
+        "type": "str",
+        "constraint": "DEFAULT ''",
+        "category": "samples",
+        "description": "comment of variant",
+    },
+    {
+        "name": "tags",
+        "type": "str",
+        "category": "samples",
+        "constraint": "DEFAULT ''",
+        "description": "list of tags ",
     },
     {
         "name": "gt",
@@ -2453,7 +2468,7 @@ def create_table_samples(conn, fields=[]):
         phenotype INTEGER DEFAULT 0,
         valid INTEGER DEFAULT 0,
         tags TEXT DEFAULT '',
-        comment TEXT,
+        comment TEXT DEFAULT '',
         UNIQUE (name, family_id)
         )"""
     )
