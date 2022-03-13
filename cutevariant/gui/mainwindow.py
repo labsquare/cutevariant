@@ -13,7 +13,13 @@ from logging import DEBUG
 # Qt imports
 from PySide6.QtCore import Qt, QSettings, QByteArray, QDir, QUrl, Signal, QSize
 from PySide6.QtWidgets import *
-from PySide6.QtGui import QIcon, QKeySequence, QDesktopServices
+from PySide6.QtGui import (
+    QIcon,
+    QKeySequence,
+    QDesktopServices,
+    QUndoStack,
+    QUndoCommand,
+)
 
 
 # Custom imports
@@ -44,44 +50,23 @@ from cutevariant import LOGGER
 import copy
 
 
-class StateData:
-    """A dictonnary like object which monitor which key changed
+class StateCommand(QUndoCommand):
+    def __init__(self, mainwindow, new_data: dict):
+        super().__init__()
+        self.mainwindow = mainwindow
+        self.new_data = new_data
+        self.old_data = copy.copy(self.mainwindow._state_data)
+        self.mainwindow._state_data = copy.copy(new_data)
 
-    This is used to store application data and refresh plugins if it is required
+        self.setText("Change State")
 
-    """
+    def redo(self):
+        self.mainwindow._state_data = copy.copy(self.new_data)
+        self.mainwindow.refresh_plugins()
 
-    def __init__(self):
-        self._changed = set()
-        self.reset()
-
-    def __setitem__(self, key, value):
-
-        if key in self._data:
-            if self._data[key] == value:
-                return
-
-        self._changed.add(key)
-        self._data[key] = copy.deepcopy(value)
-
-    def __getitem__(self, key):
-        if key in self._data:
-            return self._data[key]
-        return None
-
-    def clear_changed(self):
-        self._changed.clear()
-
-    @property
-    def changed(self):
-        return self._changed
-
-    def reset(self):
-        self._data = {
-            "fields": ["favorite", "classification", "chr", "pos", "ref", "alt"],
-            "source": "variants",
-            "filters": {},
-        }
+    def undo(self):
+        self.mainwindow._state_data = copy.copy(self.old_data)
+        self.mainwindow.refresh_plugins()
 
 
 class MainWindow(QMainWindow):
@@ -109,8 +94,11 @@ class MainWindow(QMainWindow):
         # Settings
         self.app_settings = QSettings()
 
+        self.undo_stack = QUndoStack()
         # State variable of application changed by plugins
-        self._state_data = StateData()
+        self._state_data = dict()
+        self._state_data_old = dict()
+        self.reset_state_data()
 
         ## ===== GUI Setup =====
         self.setWindowTitle("Cutevariant")
@@ -184,6 +172,15 @@ class MainWindow(QMainWindow):
         if recent and os.path.isfile(recent[0]):
             self.open(recent[0])
 
+    def _key_state_changed(self):
+        keys = set()
+        for key in self._state_data_old:
+            if key in self._state_data:
+                if self._state_data[key] != self._state_data_old[key]:
+                    keys.add(key)
+
+        return keys
+
     def set_state_data(self, key: str, value: typing.Any):
         """set state data value from key
 
@@ -194,7 +191,22 @@ class MainWindow(QMainWindow):
             key (str): Name of the state variable ( fields, source, filters )
             value (Any): a value
         """
+
         self._state_data[key] = value
+
+    def set_state(self, data):
+
+        command = StateCommand(self, data)
+        self.undo_stack.push(command)
+
+    def reset_state_data(self):
+
+        self._state_data = {
+            "fields": ["chr", "pos", "ref", "alt"],
+            "filters": {},
+            "source": "variants",
+        }
+        self._state_data_old = copy.copy(self._state_data)
 
     def get_state_data(self, key: str) -> typing.Any:
         """Get state data value from from key
@@ -353,7 +365,7 @@ class MainWindow(QMainWindow):
             need_refresh = (
                 plugin_obj is not sender
                 and (plugin_obj.isVisible() or not plugin_obj.REFRESH_ONLY_VISIBLE)
-                and (set(plugin_obj.REFRESH_STATE_DATA) & self._state_data.changed)
+                and (set(plugin_obj.REFRESH_STATE_DATA) & self._key_state_changed())
             )
 
             if need_refresh:
@@ -366,7 +378,8 @@ class MainWindow(QMainWindow):
                     LOGGER.exception(e)
 
         # Clear state_changed set
-        self._state_data.clear_changed()
+        self._state_data_old = copy.copy(self._state_data)
+
         for plugin in plugin_to_refresh:
             plugin.on_refresh()
 
@@ -463,6 +476,10 @@ class MainWindow(QMainWindow):
             "ctrl+shift+c",
         )
         self.edit_menu.addSeparator()
+
+        self.edit_menu.addAction(self.undo_stack.createUndoAction(self))
+        self.edit_menu.addAction(self.undo_stack.createRedoAction(self))
+
         self.edit_menu.addAction(
             FIcon(0xF0486),
             self.tr("&Select all displayed variants"),
@@ -595,7 +612,7 @@ class MainWindow(QMainWindow):
         """
         self.conn = conn
 
-        self._state_data.reset()
+        self.reset_state_data()
 
         # Clear memoization cache for count_cmd
         sql.clear_lru_cache()
@@ -700,7 +717,7 @@ class MainWindow(QMainWindow):
         if dialog.exec_() == QDialog.Accepted:
 
             db_filename = dialog.db_filename()
-            #LOGGER.warning("ICI", db_filename)
+            # LOGGER.warning("ICI", db_filename)
 
             try:
                 self.open(db_filename)

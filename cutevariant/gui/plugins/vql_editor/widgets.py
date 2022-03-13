@@ -238,10 +238,15 @@ class VqlEditorWidget(plugin.PluginWidget):
                 # => Command will be executed in different widgets (variant_view)
                 # /!\ VQL Editor will not check SQL validity of the command
                 # columns from variant table
-                self.mainwindow.set_state_data("fields", cmd["fields"])
-                # name of the variant selection
-                self.mainwindow.set_state_data("source", cmd["source"])
-                self.mainwindow.set_state_data("filters", cmd["filters"])
+
+                self.mainwindow.set_state(
+                    {
+                        "fields": cmd["fields"],
+                        "source": cmd["source"],
+                        "filters": cmd["filters"],
+                    }
+                )
+
                 # Refresh all plugins
                 self.mainwindow.refresh_plugins(sender=self)
                 continue
