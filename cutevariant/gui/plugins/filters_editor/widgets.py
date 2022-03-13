@@ -145,7 +145,7 @@ def get_field_unique_values_cached(conn, field, like, limit):
 def prepare_fields(conn):
     """Prepares a list of columns on which filters can be applied"""
     results = {}
-    samples = [sample["name"] for sample in sql.get_samples(conn)] + ["*"]
+    samples = [sample["name"] for sample in sql.get_samples(conn)] + ["$any", "$all"]
 
     for field in sql.get_fields(conn):
 
@@ -244,7 +244,7 @@ class FiltersPresetModel(QAbstractListModel):
         #     preset_name: filters for preset_name, filters in self._presets
         # }
         for preset_name, filters in self._presets:
-            config["presets"][preset_name]=filters
+            config["presets"][preset_name] = filters
         config.save()
 
     def clear(self):
@@ -2679,7 +2679,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
         while name in self.presets_model.preset_names():
             name = re.sub(r"\(\d+\)", "", name) + f" ({i})"
             i += 1
-        
+
         if ok:
             self.mainwindow: MainWindow
             config = Config("filters_editor")
@@ -2699,7 +2699,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
                 name, self.mainwindow.get_state_data("filters")
             )
             self.presets_model.save()
-        
+
         self.load_presets()
 
     def _update_view_geometry(self):
