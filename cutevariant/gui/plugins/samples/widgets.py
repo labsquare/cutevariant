@@ -629,7 +629,7 @@ class SamplesWidget(plugin.PluginWidget):
         sample = self.model.item(row)
         valid_form = True
         valid_form_text = "Validation"
-        if sample["valid"] != 0:
+        if style.SAMPLE_CLASSIFICATION[sample["valid"]].get("lock"):
             valid_form = False
             valid_form_text = "Validation locked"
 
