@@ -8,13 +8,21 @@ from cutevariant.gui.style import CLASSIFICATION
 from cutevariant.core import sql
 import sqlite3
 
-from PySide6.QtWidgets import QApplication, QWidget, QTableView, QMainWindow, QVBoxLayout, QLineEdit
+from PySide6.QtWidgets import (
+    QApplication,
+    QWidget,
+    QTableView,
+    QMainWindow,
+    QVBoxLayout,
+    QLineEdit,
+)
 from PySide6.QtCore import Qt, QSortFilterProxyModel, QAbstractTableModel
+
 
 class TableModel(QAbstractTableModel):
     def __init__(self, data=None):
         super().__init__()
-        self._data = data
+        self._data = [[1, 2], [1, 2]]
 
     def data(self, index, role):
         if role == Qt.DisplayRole:
@@ -37,35 +45,30 @@ class TableModel(QAbstractTableModel):
 
 
 class VariantWidget(QWidget):
-
     def __init__(self, conn: sqlite3.Connection, parent=None):
         super().__init__()
         self.TAG_LIST = ["#hemato", "#cardio", "#pharmaco"]
         self.TAG_SEPARATOR = "&"
-        self.REVERSE_CLASSIF = {v["name"]:k for k, v in CLASSIFICATION.items()}
+        self.REVERSE_CLASSIF = {v["name"]: k for k, v in CLASSIFICATION.items()}
         self._conn = conn
 
-        info_box = QGroupBox()
-        info_layout = QHBoxLayout(info_box)
-        self.name_edit = QLabel()
-        self.name_edit.setAlignment(Qt.AlignCenter)
-        self.name_edit.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Maximum)
-        info_layout.addWidget(self.name_edit)
+        # self.name_edit = QLabel()
+        # self.name_edit.setAlignment(Qt.AlignCenter)
+        # self.name_edit.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Maximum)
+        # info_layout.addWidget(self.name_edit)
 
         ### <validation block> ###
-        validation_box = QGroupBox()
-        validation_layout = QFormLayout(validation_box)
+        validation_widget = QWidget()
+        validation_layout = QFormLayout(validation_widget)
+
         self.favorite = QCheckBox()
         self.favorite.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+
         self.classification = QComboBox()
-        # self.line_layout = QHBoxLayout()
-        # self.line_layout.addWidget(self.favorite)
-        # self.line_form = QFormLayout()
-        # self.line_form.addRow("Classification", self.classification)
-        # self.line_form.setContentsMargins(10, 0, 0, 0)
-        # self.line_layout.addLayout(self.line_form)
 
         self.tag_edit = MultiComboBox()
+        self.tag_edit.addItems(self.TAG_LIST)
+
         self.tag_layout = QHBoxLayout()
         self.tag_layout.setContentsMargins(0, 0, 0, 0)
         self.tag_layout.addWidget(self.tag_edit)
@@ -73,27 +76,18 @@ class VariantWidget(QWidget):
         self.tag_choice = ChoiceWidget()
         self.tag_choice_action = QWidgetAction(self)
         self.tag_choice_action.setDefaultWidget(self.tag_choice)
-        self.tag_edit.addItems(self.TAG_LIST)
 
-        # self.comment = QLabel()
-        # self.comment.setTextFormat(Qt.TextFormat(3))
-        # self.comment.setWordWrap(True)
-        #self.comment.acceptRichText()
-        #self.comment.setReadOnly(True)
         self.edit_comment_btn = QPushButton("Edit comment")
         self.edit_comment_btn.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Minimum)
+
         self.comment = MarkdownEditor()
         self.comment.preview_btn.setText("Preview/Edit comment")
 
-        # validation_layout.addRow("Favorite", self.favorite)
-        # validation_layout.addRow("Classification", self.classification)
         validation_layout.addRow("Favorite", self.favorite)
         validation_layout.addRow("Classification", self.classification)
         validation_layout.addRow("Tags", self.tag_layout)
         validation_layout.addRow("Comment", self.comment)
-        ### </validation block> ###
 
-        ### <other tabs block> ###
         self.variant_view = DictWidget()
         self.ann_view = DictWidget()
         self.sample_view = DictWidget()
@@ -103,15 +97,23 @@ class VariantWidget(QWidget):
         self.ann_combo = QComboBox()
         self.ann_combo.currentIndexChanged.connect(self.load_annotation)
         self.ann_widget = QWidget()
+
         ann_layout = QVBoxLayout(self.ann_widget)
         ann_layout.addWidget(self.ann_combo)
         ann_layout.addWidget(self.ann_view)
 
+        self.tab_widget.addTab(validation_widget, "Edit")
         self.tab_widget.addTab(self.variant_view, "Variants")
         self.tab_widget.addTab(self.ann_widget, "Annotations")
         self.tab_widget.addTab(self.sample_view, "Samples")
-        #self.tab_widget.addTab(self.comment, "Comments")
+        # self.tab_widget.addTab(self.comment, "Comments")
         ### </othertabs block> ###
+
+        self.sample_tab_model = TableModel()
+        self.proxy_model = QSortFilterProxyModel()
+        self.proxy_model.setFilterKeyColumn(-1)  # Search all columns.
+        self.proxy_model.setSourceModel(self.sample_tab_model)
+        self.proxy_model.sort(0, Qt.AscendingOrder)
 
         ### <sample tab block> ###
         self.table = QTableView()
@@ -121,15 +123,6 @@ class VariantWidget(QWidget):
         self.table.setSortingEnabled(True)
         self.table.setIconSize(QSize(16, 16))
         self.table.horizontalHeader().setHighlightSections(False)
-        self.sample_tab_data = [[1,2],[1,2]]
-
-        self.sample_tab_model = TableModel(self.sample_tab_data)
-        self.proxy_model = QSortFilterProxyModel()
-        self.proxy_model.setFilterKeyColumn(-1) # Search all columns.
-        self.proxy_model.setSourceModel(self.sample_tab_model)
-
-        self.proxy_model.sort(0, Qt.AscendingOrder)
-
         self.table.setModel(self.proxy_model)
 
         self.searchbar = QLineEdit()
@@ -139,30 +132,26 @@ class VariantWidget(QWidget):
         self.searchbar.textChanged.connect(self.proxy_model.setFilterFixedString)
 
         sample_layout = QVBoxLayout()
-
         sample_layout.addWidget(self.searchbar)
         sample_layout.addWidget(self.table)
         container = QWidget()
         container.setLayout(sample_layout)
-        self.tab_widget.addTab(container, "Samples2")
         ### </sample tab block> ###
 
         main_layout = QVBoxLayout(self)
         # central_layout = QHBoxLayout()
         # splitter = QSplitter(Qt.Horizontal)
-        main_layout.addWidget(self.name_edit)
-        main_layout.addWidget(validation_box)
         main_layout.addWidget(self.tab_widget)
-        
+
         # main_layout.addWidget(splitter)
 
         self.data = None
 
     def save(self, variant_id: int):
         """
-        Two checks to perform: 
+        Two checks to perform:
          - did the user change any value through the interface?
-         - is the database state the same as when the dialog was first opened? 
+         - is the database state the same as when the dialog was first opened?
         If yes and yes, update variant.
         """
         current_state = self.get_gui_state()
@@ -174,10 +163,15 @@ class VariantWidget(QWidget):
         )
         current_db_validation = self.get_validation_from_data(current_db_data)
         if current_db_validation != self.initial_db_validation:
-            ret = QMessageBox.warning(None, "Database has been modified by another user.", "Do you want to overwrite value?", QMessageBox.Yes | QMessageBox.No)
+            ret = QMessageBox.warning(
+                None,
+                "Database has been modified by another user.",
+                "Do you want to overwrite value?",
+                QMessageBox.Yes | QMessageBox.No,
+            )
             if ret == QMessageBox.No:
                 return
-        
+
         update_data = {"id": self.data["id"]}
         if self.favorite.isChecked:
             update_data["favorite"] = 1
@@ -188,15 +182,16 @@ class VariantWidget(QWidget):
         update_data["comment"] = self.comment.toPlainText()
         sql.update_variant(self._conn, update_data)
 
-
     def load(self, variant_id: int):
 
+        # Get variant data
         self.data = sql.get_variant(
             self._conn, variant_id, with_annotations=True, with_samples=True
         )
-        self.initial_db_validation = self.get_validation_from_data(self.data)
 
+        # Set name
         name = "{chr}-{pos}-{ref}-{alt}".format(**self.data)
+        self.setWindowTitle(name)
 
         self.ann_combo.clear()
 
@@ -210,32 +205,40 @@ class VariantWidget(QWidget):
         if "samples" in self.data:
             sdata = {i["name"]: i["gt"] for i in self.data["samples"] if i["gt"] > 0}
             self.sample_view.set_dict(sdata)
-            self.sample_tab_model.update([[i["name"], i["gt"]] for i in self.data["samples"] if i["gt"] > 0])
+            self.sample_tab_model.update(
+                [[i["name"], i["gt"]] for i in self.data["samples"] if i["gt"] > 0]
+            )
 
-        self.name_edit.setText("Variant: " + name)
-        
         if self.data["favorite"] == 1:
             self.favorite.setCheckState(Qt.CheckState(2))
+
         for k, v in CLASSIFICATION.items():
             self.classification.addItem(v["name"])
+
         self.classification.setCurrentIndex(int("{classification}".format(**self.data)))
 
-        if self.data["tags"] is not None:
-            for tag in self.data["tags"].split(self.TAG_SEPARATOR):
-                if tag in self.TAG_LIST:
-                    self.tag_edit.model().item(self.TAG_LIST.index(tag)).setData(Qt.Checked, Qt.CheckStateRole)
+        # if self.data["tags"] is not None:
+        #     for tag in self.data["tags"].split(self.TAG_SEPARATOR):
+        #         if tag in self.TAG_LIST:
+        #             self.tag_edit.model().item(self.TAG_LIST.index(tag)).setData(
+        #                 Qt.Checked, Qt.CheckStateRole
+        #             )
         self.comment.setPlainText(self.data["comment"])
         self.comment.preview_btn.setChecked(True)
         self.variant_view.set_dict(self.data)
 
-        self.initial_state = self.get_gui_state()
+    # self.initial_state = self.get_gui_state()
 
     def get_validation_from_data(self, data):
-        return {"favorite": data["favorite"], 
-                "classif_index": int("{classification}".format(**data)), 
-                "tags": data["tags"], 
-                "comment": data["comment"]
-            }
+
+        pass
+
+    # return {
+    #     "favorite": data["favorite"],
+    #     "classif_index": int("{classification}".format(**data)),
+    #     "tags": data["tags"],
+    #     "comment": data["comment"],
+    # }
 
     def get_gui_state(self):
         """
@@ -274,12 +277,13 @@ class VariantDialog(QDialog):
         vLayout.addWidget(self.w)
         vLayout.addWidget(self.button_box)
 
-        self.load()
-
         self.button_box.accepted.connect(self.save)
         self.button_box.rejected.connect(self.reject)
 
         self.resize(800, 600)
+
+        self.load()
+        self.setWindowTitle(self.w.windowTitle())
 
     def load(self):
         self.w.load(self.variant_id)
@@ -293,7 +297,7 @@ if __name__ == "__main__":
     import sys
 
     app = QApplication(sys.argv)
-    conn = sql.get_sql_connection("C:/Users/Ichtyornis/Projects/cutevariant/test2.db")
+    conn = sql.get_sql_connection("/home/sacha/exome/exome.db")
     w = VariantDialog(conn, 1)
 
     w.show()
