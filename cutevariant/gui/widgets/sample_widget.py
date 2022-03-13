@@ -59,8 +59,8 @@ class SampleWidget(QWidget):
         self.tag_layout.setContentsMargins(0, 0, 0, 0)
         self.tag_layout.addWidget(self.tag_edit)
 
-        identity_box = QGroupBox()
-        identity_layout = QFormLayout(identity_box)
+        identity_widget = QWidget()
+        identity_layout = QFormLayout(identity_widget)
 
         identity_layout.addRow("Name ID", self.name_edit)
         identity_layout.addRow("Family ID", self.fam_edit)
@@ -94,16 +94,6 @@ class SampleWidget(QWidget):
         self.phenotype_combo = QComboBox()  # case /control
         self.phenotype_combo.addItems(["Missing", "Unaffected", "Affected"])
 
-        self.hpo_widget = HpoWidget()
-
-        pheno_widget = QWidget()
-        pheno_layout = QFormLayout(pheno_widget)
-        pheno_layout.addRow("Sexe", self.sex_combo)
-        pheno_layout.addRow("Affected", self.phenotype_combo)
-        pheno_layout.addRow("HPO terms", self.hpo_widget)
-
-        self.tab_widget.addTab(pheno_widget, "Phenotype")
-
         # comment
         self.tag_edit = QLineEdit()
         self.tag_edit.setPlaceholderText("Tags separated by comma ")
@@ -113,10 +103,19 @@ class SampleWidget(QWidget):
         comm_layout.addWidget(self.tag_edit)
         comm_layout.addWidget(self.comment_edit)
 
-        self.tab_widget.addTab(comm_widget, "Comments")
+        identity_layout.addRow("Comment", self.comment_edit)
+
+        self.hpo_widget = HpoWidget()
+
+        pheno_widget = QWidget()
+        pheno_layout = QFormLayout(pheno_widget)
+        pheno_layout.addRow("Sexe", self.sex_combo)
+        pheno_layout.addRow("Affected", self.phenotype_combo)
+        pheno_layout.addRow("HPO", self.hpo_widget)
+        self.tab_widget.addTab(identity_widget, "Edit")
+        self.tab_widget.addTab(pheno_widget, "Phenotype")
 
         header_layout = QHBoxLayout()
-        header_layout.addWidget(identity_box)
         header_layout.addLayout(val_layout)
 
         vLayout = QVBoxLayout()
@@ -140,7 +139,7 @@ class SampleWidget(QWidget):
 
         self.comment_edit.setPlainText(data.get("comment", ""))
 
-        print(data)
+        self.setWindowTitle(data.get("name", "Unknown"))
 
     def save(self, sample_id: int):
 
@@ -178,6 +177,7 @@ class SampleDialog(QDialog):
 
     def load(self):
         self.w.load(self.sample_id)
+        self.setWindowTitle(self.w.windowTitle())
 
     def save(self):
         self.w.save(self.sample_id)
@@ -190,7 +190,7 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
-    conn = sql.get_sql_connection("C:/Users/Ichtyornis/Projects/cutevariant/test2.db")
+    conn = sql.get_sql_connection("/home/sacha/exome/exome.db")
 
     w = SampleDialog(conn, 1)
 
