@@ -17,3 +17,5 @@ from .sample_widget import SampleWidget, SampleDialog
 from .variant_widget import VariantWidget, VariantDialog
 
 from .preset_action import PresetAction
+
+from .tag_editor import TagDialog, TagEditor
