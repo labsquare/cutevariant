@@ -190,6 +190,7 @@ class SampleVariantWidget(QWidget):
         else:
             self.info_lock.setText("Sample status: Locked (variant validation can't be edited)")
             #TODO: lock edition
+        
         self.initial_state = self.get_gui_state()
 
 
