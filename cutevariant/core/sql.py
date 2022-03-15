@@ -2379,6 +2379,21 @@ def create_table_history(conn):
     )
     conn.commit()
 
+def create_history_indexes(conn):
+    """Create indexes on the "history" table"""
+    conn.execute(
+        f"CREATE INDEX IF NOT EXISTS `idx_history_user` ON history (`user`)"
+    )
+    conn.execute(
+        f"CREATE INDEX IF NOT EXISTS `idx_history_table` ON history (`table`)"
+    )
+    conn.execute(
+        f"CREATE INDEX IF NOT EXISTS `idx_history_table_rowid` ON history (`table_rowid`)"
+    )
+    conn.execute(
+        f"CREATE INDEX IF NOT EXISTS `idx_history_field` ON history (`field`)"
+    )
+
 
 ## Tags table ==================================================================
 def create_table_tags(conn):
