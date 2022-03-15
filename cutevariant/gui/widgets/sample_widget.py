@@ -55,6 +55,7 @@ class SampleWidget(QWidget):
 
         # Identity
         self.name_edit = QLineEdit()
+        self.name_edit.setReadOnly(True)
         self.fam_edit = QLineEdit()
         self.tab_widget = QTabWidget()
         self.classification = QComboBox()
@@ -137,7 +138,9 @@ class SampleWidget(QWidget):
 
     def load(self, sample_id: int):
 
+        self.sample_id = sample_id
         data = sql.get_sample(self.conn, sample_id)
+        self.initial_db_validation = self.get_validation_from_data(data)
 
         self.name_edit.setText(data.get("name", "?"))
         self.fam_edit.setText(data.get("family_id", "?"))
@@ -172,8 +175,7 @@ class SampleWidget(QWidget):
         if current_state == self.initial_state:
             return
 
-        current_db_data = sql.get_sample_annotations(self.conn, self.sample_has_var_data["variant_id"], 
-                                                    self.sample_has_var_data["sample_id"])
+        current_db_data = sql.get_sample(self.conn, self.sample_id)
         current_db_validation = self.get_validation_from_data(current_db_data)
         if current_db_validation != self.initial_db_validation:
             ret = QMessageBox.warning(None, "Database has been modified by another user.", "Do you want to overwrite value?", QMessageBox.Yes | QMessageBox.No)
@@ -194,7 +196,7 @@ class SampleWidget(QWidget):
         sql.update_sample(self.conn, data)
 
     def get_validation_from_data(self, data):
-        return {"classif_index": int("{classification}".format(**data)), 
+        return {"classif_index": int("{valid}".format(**data)), 
                 "tags": data["tags"], 
                 "comment": data["comment"]
         }
