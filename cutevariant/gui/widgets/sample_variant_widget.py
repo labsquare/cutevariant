@@ -67,8 +67,8 @@ class SampleVariantWidget(QWidget):
         # val_layout.addWidget(self.lock_button)
         # val_layout.addWidget(QComboBox())
 
-        self.edit_comment_btn = QPushButton("Edit comment")
-        self.edit_comment_btn.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Minimum)
+        # self.edit_comment_btn = QPushButton("Edit comment")
+        # self.edit_comment_btn.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Minimum)
         self.comment = MarkdownEditor()
         self.comment.preview_btn.setText("Preview/Edit comment")
 
@@ -189,7 +189,9 @@ class SampleVariantWidget(QWidget):
             self.info_lock.hide()
         else:
             self.info_lock.setText("Sample status: Locked (variant validation can't be edited)")
-            #TODO: lock edition
+            self.classification.setDisabled(True)
+            self.tag_edit.setDisabled(True)
+            self.comment.preview_btn.setDisabled(True)
         
         self.initial_state = self.get_gui_state()
 
