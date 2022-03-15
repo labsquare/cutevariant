@@ -2370,7 +2370,7 @@ def create_table_history(conn):
         `timestamp` TEXT DEFAULT (DATETIME('now')),
         `user` TEXT DEFAULT 'unknown',
         `table` TEXT DEFAULT '' NOT NULL,
-        `keys` TEST DEFAULT '',
+        `table_rowid` INTEGER NOT NULL,
         `field` TEXT DEFAULT '',
         `before` TEXT DEFAULT '',
         `after` TEXT DEFAULT '',
@@ -2514,9 +2514,11 @@ def create_table_samples(conn, fields=[]):
         FOREIGN KEY (sample_id) REFERENCES samples (id)
           ON DELETE CASCADE
           ON UPDATE NO ACTION
-        ) WITHOUT ROWID
+        ) 
        """
     )
+
+    #WITHOUT ROWID
 
     conn.commit()
 
@@ -2980,7 +2982,7 @@ def create_triggers(conn):
             INSERT INTO history (
                 `user`,
                 `table`,
-                `keys`,
+                `table_rowid`,
                 `field`,
                 `before`,
                 `after`
@@ -2989,7 +2991,7 @@ def create_triggers(conn):
             (
             current_user(),
             "variants",
-            new.id,
+            new.rowid,
             "favorite",
             old.favorite,
             new.favorite
@@ -3007,7 +3009,7 @@ def create_triggers(conn):
             INSERT INTO history (
                 `user`,
                 `table`,
-                `keys`,
+                `table_rowid`,
                 `field`,
                 `before`,
                 `after`
@@ -3016,7 +3018,7 @@ def create_triggers(conn):
             (
             current_user(),
             "variants",
-            new.id,
+            new.rowid,
             "classification",
             old.classification,
             new.classification
@@ -3034,7 +3036,7 @@ def create_triggers(conn):
             INSERT INTO history (
                 `user`,
                 `table`,
-                `keys`,
+                `table_rowid`,
                 `field`,
                 `before`,
                 `after`
@@ -3043,7 +3045,7 @@ def create_triggers(conn):
             (
             current_user(),
             "variants",
-            new.id,
+            new.rowid,
             "tags",
             old.tags,
             new.tags
@@ -3061,7 +3063,7 @@ def create_triggers(conn):
             INSERT INTO history (
                 `user`,
                 `table`,
-                `keys`,
+                `table_rowid`,
                 `field`,
                 `before`,
                 `after`
@@ -3070,7 +3072,7 @@ def create_triggers(conn):
             (
             current_user(),
             "variants",
-            new.id,
+            new.rowid,
             "comment",
             old.comment,
             new.comment
@@ -3090,7 +3092,7 @@ def create_triggers(conn):
             INSERT INTO history (
                 `user`,
                 `table`,
-                `keys`,
+                `table_rowid`,
                 `field`,
                 `before`,
                 `after`
@@ -3099,7 +3101,7 @@ def create_triggers(conn):
             (
             current_user(),
             "samples",
-            new.id,
+            new.rowid,
             "valid",
             old.valid,
             new.valid
@@ -3117,7 +3119,7 @@ def create_triggers(conn):
             INSERT INTO history (
                 `user`,
                 `table`,
-                `keys`,
+                `table_rowid`,
                 `field`,
                 `before`,
                 `after`
@@ -3126,7 +3128,7 @@ def create_triggers(conn):
             (
             current_user(),
             "samples",
-            new.id,
+            new.rowid,
             "tags",
             old.tags,
             new.tags
@@ -3144,7 +3146,7 @@ def create_triggers(conn):
             INSERT INTO history (
                 `user`,
                 `table`,
-                `keys`,
+                `table_rowid`,
                 `field`,
                 `before`,
                 `after`
@@ -3153,7 +3155,7 @@ def create_triggers(conn):
             (
             current_user(),
             "samples",
-            new.id,
+            new.rowid,
             "comment",
             old.comment,
             new.comment
@@ -3173,7 +3175,7 @@ def create_triggers(conn):
             INSERT INTO history (
                 `user`,
                 `table`,
-                `keys`,
+                `table_rowid`,
                 `field`,
                 `before`,
                 `after`
@@ -3182,7 +3184,7 @@ def create_triggers(conn):
             (
             current_user(),
             "sample_has_variant",
-            new.sample_id || "-" || new.variant_id,
+            new.rowid,
             "classification",
             old.classification,
             new.classification
@@ -3200,7 +3202,7 @@ def create_triggers(conn):
             INSERT INTO history (
                 `user`,
                 `table`,
-                `keys`,
+                `table_rowid`,
                 `field`,
                 `before`,
                 `after`
@@ -3209,7 +3211,7 @@ def create_triggers(conn):
             (
             current_user(),
             "sample_has_variant",
-            new.sample_id || "-" || new.variant_id,
+            new.rowid,
             "tags",
             old.tags,
             new.tags
@@ -3227,7 +3229,7 @@ def create_triggers(conn):
             INSERT INTO history (
                 `user`,
                 `table`,
-                `keys`,
+                `table_rowid`,
                 `field`,
                 `before`,
                 `after`
@@ -3236,7 +3238,7 @@ def create_triggers(conn):
             (
             current_user(),
             "sample_has_variant",
-            new.sample_id || "-" || new.variant_id,
+            new.rowid,
             "comment",
             old.comment,
             new.comment
