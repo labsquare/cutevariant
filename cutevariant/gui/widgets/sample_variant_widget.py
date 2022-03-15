@@ -32,9 +32,7 @@ class SampleVariantWidget(QWidget):
         self.title_variant = QLineEdit()
         self.title_sample = QLineEdit()
         self.title_variant.setReadOnly(True)
-        self.title_variant.setText("chr1:AZAZAZZ>1EAAEEE")
         self.title_sample.setReadOnly(True)
-        self.title_sample.setText("SGT121212")
         title_layout = QHBoxLayout()
         title_layout.addWidget(self.title_sample)
         title_layout.addWidget(QLabel("for"))
@@ -140,7 +138,7 @@ class SampleVariantWidget(QWidget):
         self.sample_has_var_data = sql.get_sample_annotations(self.conn, var["id"], sample["id"])
         self.initial_db_validation = self.get_validation_from_data(self.sample_has_var_data)
         
-        var_name = "{chr}-{pos}-{ref}-{alt}ATATATATATTTTTTTTTTTAAAAAAAAAAAAAAAAAAAAAAAAAAAATTTTTTTTTGCGCGCGCGCGCGCGC".format(**var)
+        var_name = "{chr}-{pos}-{ref}-{alt}".format(**var)
         if len(var_name) > 30:
             var_name = var_name[0:20] + "..." + var_name [-10:]
 
@@ -151,9 +149,15 @@ class SampleVariantWidget(QWidget):
                             + '</span></p></body></html>'
                         )
         self.setWindowTitle("edit box")
+        self.title_variant.setText(var_name)
+        self.title_sample.setText(sample["name"])
 
-        self.classification.addItems([v for v in SAMPLE_VARIANT_CLASSIFICATION.values()])
-        self.classification.setCurrentIndex(self.sample_has_var_data["classification"])
+        # self.classification.addItems([v for v in SAMPLE_VARIANT_CLASSIFICATION.values()])
+        # self.classification.setCurrentIndex(self.sample_has_var_data["classification"])
+        for k, v in SAMPLE_VARIANT_CLASSIFICATION.items():
+            self.classification.addItem(v, k)
+        index = self.classification.findData(self.sample_has_var_data["classification"])
+        self.classification.setCurrentIndex(index)
 
         if self.sample_has_var_data["tags"] is not None:
             for tag in self.sample_has_var_data["tags"].split(self.TAG_SEPARATOR):
@@ -162,7 +166,6 @@ class SampleVariantWidget(QWidget):
 
         self.comment.setPlainText(self.sample_has_var_data["comment"])
         self.comment.preview_btn.setChecked(True)
-        self.initial_state = self.get_gui_state()
 
         # self.var_title.setText(var_name)
         #tabs stuff
@@ -187,6 +190,7 @@ class SampleVariantWidget(QWidget):
         else:
             self.info_lock.setText("Sample status: Locked (variant validation can't be edited)")
             #TODO: lock edition
+        self.initial_state = self.get_gui_state()
 
 
     def save(self):

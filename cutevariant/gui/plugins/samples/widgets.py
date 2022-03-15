@@ -17,6 +17,7 @@ from cutevariant.core import sql, command
 from cutevariant.core.reader import BedReader
 from cutevariant.gui import plugin, FIcon, style
 from cutevariant.commons import DEFAULT_SELECTION_NAME, SAMPLE_VARIANT_CLASSIFICATION
+from cutevariant.config import Config
 
 from cutevariant.gui.widgets import (
     ChoiceWidget,
@@ -544,14 +545,6 @@ class SamplesWidget(plugin.PluginWidget):
     def contextMenuEvent(self, event: QContextMenuEvent):
 
         menu = QMenu(self)
-        menu.addSection("Sample")
-        menu.addAction(QIcon(), "Edit sample ...", self._show_sample_dialog)
-
-        menu.addAction(QIcon(), "Filter from current selection", self.on_add_filter)
-
-        menu.addAction(
-            QIcon(), "Create a source from current selection", self.on_add_source
-        )
 
         menu.addSection("Selected variant")
         cat_menu = menu.addMenu("Validation status")
@@ -563,6 +556,15 @@ class SamplesWidget(plugin.PluginWidget):
 
         menu.addMenu(cat_menu)
         menu.addAction("Edit variant validation ...", self._show_sample_variant_dialog)
+
+        menu.addSection("Sample")
+        menu.addAction(QIcon(), "Edit sample ...", self._show_sample_dialog)
+
+        menu.addAction(QIcon(), "Filter from current selection", self.on_add_filter)
+
+        menu.addAction(
+            QIcon(), "Create a source from current selection", self.on_add_source
+        )
 
         menu.exec_(event.globalPos())
 
@@ -765,7 +767,8 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
-    conn = sqlite3.connect("/home/sacha/test3.db")
+    # conn = sqlite3.connect("/home/sacha/test3.db")
+    conn = sqlite3.connect("C:/Users/Ichtyornis/Projects/cutevariant/test2.db")
     conn.row_factory = sqlite3.Row
 
     view = SamplesWidget()

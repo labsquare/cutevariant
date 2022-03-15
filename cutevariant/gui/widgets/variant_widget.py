@@ -5,6 +5,7 @@ from PySide6.QtGui import *
 from cutevariant.gui.widgets import ChoiceWidget, DictWidget, MarkdownEditor
 from cutevariant.gui.widgets.multi_combobox import MultiComboBox
 from cutevariant.gui.style import CLASSIFICATION
+from cutevariant.commons import SAMPLE_VARIANT_CLASSIFICATION
 from cutevariant.core import sql
 import sqlite3
 
@@ -103,7 +104,7 @@ class VariantWidget(QWidget):
         ann_layout.addWidget(self.ann_view)
 
         self.tab_widget.addTab(validation_widget, "Edit")
-        self.tab_widget.addTab(self.variant_view, "Variants")
+        self.tab_widget.addTab(self.variant_view, "Variant")
         self.tab_widget.addTab(self.ann_widget, "Annotations")
         self.tab_widget.addTab(self.sample_view, "Samples")
         # self.tab_widget.addTab(self.comment, "Comments")
@@ -178,7 +179,7 @@ class VariantWidget(QWidget):
         else:
             update_data["favorite"] = 0
         update_data["classification"] = self.classification.currentIndex()
-        update_data["tags"] = "&".join(self.tag_edit.currentData())
+        update_data["tags"] = self.TAG_SEPARATOR.join(self.tag_edit.currentData())
         update_data["comment"] = self.comment.toPlainText()
         sql.update_variant(self._conn, update_data)
 
@@ -188,6 +189,7 @@ class VariantWidget(QWidget):
         self.data = sql.get_variant(
             self._conn, variant_id, with_annotations=True, with_samples=True
         )
+        self.initial_db_validation = self.get_validation_from_data(self.data)
 
         # Set name
         name = "{chr}-{pos}-{ref}-{alt}".format(**self.data)
@@ -202,43 +204,51 @@ class VariantWidget(QWidget):
                 else:
                     self.ann_combo.addItem(f"Annotation {i}")
 
+        # if "samples" in self.data:
+        #     sdata = {i["name"]: i["gt"] for i in self.data["samples"] if i["gt"] > 0}
+        #     self.sample_view.set_dict(sdata)
+        #     self.sample_tab_model.update(
+        #         [[i["name"], i["gt"]] for i in self.data["samples"] if i["gt"] > 0]
+        #     )
+        #replaced by validation status instead of genotype
         if "samples" in self.data:
-            sdata = {i["name"]: i["gt"] for i in self.data["samples"] if i["gt"] > 0}
+            sdata = {i["name"]:  SAMPLE_VARIANT_CLASSIFICATION[i["classification"]] for i in self.data["samples"] if i["classification"] > 0}
             self.sample_view.set_dict(sdata)
             self.sample_tab_model.update(
-                [[i["name"], i["gt"]] for i in self.data["samples"] if i["gt"] > 0]
+                [[i["name"], SAMPLE_VARIANT_CLASSIFICATION[i["classification"]]] for i in self.data["samples"] if i["classification"] > 0]
             )
 
         if self.data["favorite"] == 1:
             self.favorite.setCheckState(Qt.CheckState(2))
 
+        # for k, v in CLASSIFICATION.items():
+        #     self.classification.addItem(v["name"])
+        # self.classification.setCurrentIndex(int("{classification}".format(**self.data)))
+        print(CLASSIFICATION)
         for k, v in CLASSIFICATION.items():
-            self.classification.addItem(v["name"])
+            self.classification.addItem(v["name"], k)
+        index = int(self.classification.findData(self.data["classification"]))
+        self.classification.setCurrentIndex(index)
 
-        self.classification.setCurrentIndex(int("{classification}".format(**self.data)))
-
-        # if self.data["tags"] is not None:
-        #     for tag in self.data["tags"].split(self.TAG_SEPARATOR):
-        #         if tag in self.TAG_LIST:
-        #             self.tag_edit.model().item(self.TAG_LIST.index(tag)).setData(
-        #                 Qt.Checked, Qt.CheckStateRole
-        #             )
+        if self.data["tags"] is not None:
+            for tag in self.data["tags"].split(self.TAG_SEPARATOR):
+                if tag in self.TAG_LIST:
+                    self.tag_edit.model().item(self.TAG_LIST.index(tag)).setData(
+                        Qt.Checked, Qt.CheckStateRole
+                    )
         self.comment.setPlainText(self.data["comment"])
         self.comment.preview_btn.setChecked(True)
         self.variant_view.set_dict(self.data)
 
-    # self.initial_state = self.get_gui_state()
+        self.initial_state = self.get_gui_state()
 
     def get_validation_from_data(self, data):
-
-        pass
-
-    # return {
-    #     "favorite": data["favorite"],
-    #     "classif_index": int("{classification}".format(**data)),
-    #     "tags": data["tags"],
-    #     "comment": data["comment"],
-    # }
+        return {
+            "favorite": data["favorite"],
+            "classif_index": int("{classification}".format(**data)),
+            "tags": data["tags"],
+            "comment": data["comment"]
+        }
 
     def get_gui_state(self):
         """
@@ -280,7 +290,7 @@ class VariantDialog(QDialog):
         self.button_box.accepted.connect(self.save)
         self.button_box.rejected.connect(self.reject)
 
-        self.resize(800, 600)
+        # self.resize(800, 600)
 
         self.load()
         self.setWindowTitle(self.w.windowTitle())
@@ -297,7 +307,8 @@ if __name__ == "__main__":
     import sys
 
     app = QApplication(sys.argv)
-    conn = sql.get_sql_connection("/home/sacha/exome/exome.db")
+    # conn = sql.get_sql_connection("/home/sacha/exome/exome.db")
+    conn = sql.get_sql_connection("C:/Users/Ichtyornis/Projects/cutevariant/test2.db")
     w = VariantDialog(conn, 1)
 
     w.show()
