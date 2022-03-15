@@ -545,8 +545,10 @@ class SamplesWidget(plugin.PluginWidget):
     def contextMenuEvent(self, event: QContextMenuEvent):
 
         menu = QMenu(self)
-
-        menu.addSection("Selected variant")
+        var_name = self.current_variant["chr"]  +":" + self.current_variant["ref"] + ">" + self.current_variant["alt"]
+        if len(var_name) > 25:
+            var_name = var_name[0:15] + " ... " + var_name [-10:]
+        menu.addSection("Variant " + var_name)
         cat_menu = menu.addMenu("Validation status")
 
         for key, value in SAMPLE_VARIANT_CLASSIFICATION.items():
