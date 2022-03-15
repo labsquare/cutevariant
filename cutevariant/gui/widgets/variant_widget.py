@@ -6,6 +6,7 @@ from cutevariant.gui.widgets import ChoiceWidget, DictWidget, MarkdownEditor
 from cutevariant.gui.widgets.multi_combobox import MultiComboBox
 from cutevariant.gui.style import CLASSIFICATION
 from cutevariant.commons import SAMPLE_VARIANT_CLASSIFICATION
+
 from cutevariant.core import sql
 import sqlite3
 
@@ -84,6 +85,7 @@ class VariantWidget(QWidget):
         self.comment = MarkdownEditor()
         self.comment.preview_btn.setText("Preview/Edit comment")
 
+
         validation_layout.addRow("Favorite", self.favorite)
         validation_layout.addRow("Classification", self.classification)
         validation_layout.addRow("Tags", self.tag_layout)
@@ -94,6 +96,7 @@ class VariantWidget(QWidget):
         self.sample_view = DictWidget()
 
         self.tab_widget = QTabWidget()
+
 
         self.ann_combo = QComboBox()
         self.ann_combo.currentIndexChanged.connect(self.load_annotation)
@@ -138,6 +141,7 @@ class VariantWidget(QWidget):
         container = QWidget()
         container.setLayout(sample_layout)
         ### </sample tab block> ###
+
 
         main_layout = QVBoxLayout(self)
         # central_layout = QHBoxLayout()

@@ -61,6 +61,8 @@ from PySide6.QtCore import (
     QFileInfo,
     QSettings,
     QRect,
+    QLocale,
+    QPoint,
 )
 from PySide6.QtGui import (
     QMouseEvent,
@@ -77,6 +79,7 @@ from PySide6.QtGui import (
     QKeySequence,
     QContextMenuEvent,
     QStandardItemModel,
+    QColor,
 )
 
 # Custom imports
@@ -135,7 +138,6 @@ COLUMN_REMOVE = 4
 
 @lru_cache()
 def get_field_unique_values_cached(conn, field, like, limit):
-    print("cache me ")
     return sql.get_field_unique_values(conn, field, like, limit)
 
 
@@ -143,7 +145,7 @@ def get_field_unique_values_cached(conn, field, like, limit):
 def prepare_fields(conn):
     """Prepares a list of columns on which filters can be applied"""
     results = {}
-    samples = [sample["name"] for sample in sql.get_samples(conn)] + ["*"]
+    samples = [sample["name"] for sample in sql.get_samples(conn)] + ["$any", "$all"]
 
     for field in sql.get_fields(conn):
 
@@ -238,10 +240,11 @@ class FiltersPresetModel(QAbstractListModel):
 
     def save(self):
         config = Config("filters_editor", self.config_path)
-        print(config._user_config)
-        config["presets"] = {
-            preset_name: filters for preset_name, filters in self._presets
-        }
+        # config["presets"] = {
+        #     preset_name: filters for preset_name, filters in self._presets
+        # }
+        for preset_name, filters in self._presets:
+            config["presets"][preset_name] = filters
         config.save()
 
     def clear(self):
@@ -1571,6 +1574,7 @@ class FilterModel(QAbstractItemModel):
             )
             self.item(parent).append(item_)
             self.endInsertRows()
+            self.filtersChanged.emit()
             return True
 
         else:
@@ -1598,6 +1602,7 @@ class FilterModel(QAbstractItemModel):
                 ),
                 parent,
             )
+            self.filtersChanged.emit()
             return True
 
         # Second case: row is valid. Only replace operator and value from condition, not
@@ -1607,6 +1612,7 @@ class FilterModel(QAbstractItemModel):
             self.item(index).set_operator(condition.get("operator", "$eq"))
             self.item(index).set_value(condition.get("value", 7))
             self.dataChanged.emit(index, index)
+            self.filtersChanged.emit()
             return True
         return False
 
@@ -1776,7 +1782,6 @@ class FilterModel(QAbstractItemModel):
             "cutevariant/typed-json"
         )
         source_data = data.data("cutevariant/typed-json")
-        print(source_data, dest_data)
 
         if dest_data == source_data:
             return False
@@ -2614,6 +2619,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
         self.preset_menu.addAction("Save preset", self.on_save_preset)
         self.preset_menu.addSeparator()
+
         if "presets" in config:
             presets = config["presets"]
             for name, filters in presets.items():
@@ -2622,6 +2628,9 @@ class FiltersEditorWidget(plugin.PluginWidget):
                 action.triggered.connect(self.on_select_preset)
                 action.removed.connect(self.on_delete_preset)
                 self.preset_menu.addAction(action)
+
+        self.preset_menu.addSeparator()
+        self.preset_menu.addAction("Reload presets", self.load_presets)
 
     def on_delete_preset(self):
 
@@ -2673,11 +2682,25 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
         if ok:
             self.mainwindow: MainWindow
+            config = Config("filters_editor")
+            if name in config["presets"]:
+                ret = QMessageBox.warning(
+                    self,
+                    self.tr("Overwrite preset"),
+                    self.tr(
+                        f"Preset {name} already exists. Do you want to overwrite it ?"
+                    ),
+                    QMessageBox.Yes | QMessageBox.No,
+                )
+
+                if ret == QMessageBox.No:
+                    return
             self.presets_model.add_preset(
                 name, self.mainwindow.get_state_data("filters")
             )
             self.presets_model.save()
-            self.load_presets()
+
+        self.load_presets()
 
     def _update_view_geometry(self):
         """Set column Spanned to True for all Logic Item
@@ -2735,6 +2758,8 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
         if ret == QMessageBox.Yes:
             self.model.clear()
+            if self.auto_action.isChecked():
+                self.on_apply()
 
     def on_open_condition_dialog(self):
         """Open the condition creation dialog

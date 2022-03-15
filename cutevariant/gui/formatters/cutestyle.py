@@ -120,6 +120,8 @@ class CutestyleFormatter(Formatter):
                 return {"text": value}
 
         if re.match(r"samples\..+\.gt", field) or field == "gt":
+            if value == None:
+                value=-1
             icon = self.GENOTYPE_ICONS.get(int(value), self.GENOTYPE_ICONS[-1])
             return {"text": "", "icon": icon}
 

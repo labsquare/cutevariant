@@ -4,7 +4,7 @@ import os
 import yaml
 import typing
 from PySide6.QtCore import QStandardPaths, QDir, QFile, QFileInfo
-
+    
 
 class Config:
 
@@ -75,7 +75,7 @@ class Config:
             except yaml.YAMLError as exc:
                 LOGGER.critical(exc)
             except KeyError as err:
-                print(f"cannot read section {self.section} from config ")
+                print(f"Could not read section {self.section} from config ")
 
     def save(self):
         if not os.path.exists(os.path.dirname(self.config_path)):
@@ -84,9 +84,12 @@ class Config:
             except OSError as exc:  # Guard against race condition
                 if exc.errno != errno.EEXIST:
                     raise
-
-        with open(self.config_path, "w") as stream:
-            yaml.dump(self._user_config, stream)
+                    
+        try:
+            with open(self.config_path, "w") as stream:
+                yaml.dump(self._user_config, stream)
+        except IOError:
+            LOGGER.warning(f"Could not write config file {self.config_path}")
 
     def reset(self):
         defaut_config = Config(config_path=self.default_config_path)

@@ -700,7 +700,7 @@ class MainWindow(QMainWindow):
         if dialog.exec_() == QDialog.Accepted:
 
             db_filename = dialog.db_filename()
-            LOGGER.warning("ICI", db_filename)
+            #LOGGER.warning("ICI", db_filename)
 
             try:
                 self.open(db_filename)

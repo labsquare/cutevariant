@@ -4,18 +4,27 @@ from PySide6.QtGui import QPalette, QColor
 
 
 CLASSIFICATION = {
-    0: {"name": "Unclassified", "icon": 0xF03A1, "color": "lightgray"},
-    1: {"name": "Benin", "icon": 0xF03A4, "color": "#71e096"},
-    2: {"name": "Likely benin", "icon": 0xF03A7, "color": "#71e096"},
-    3: {
-        "name": "Variant of uncertain significance",
-        "icon": 0xF03AA,
-        "color": "#f5a26f",
-    },
-    4: {"name": "Likely pathogenic", "icon": 0xF03AD, "color": "#ed6d79"},
-    5: {"name": "Pathogenic", "icon": 0xF03B1, "color": "#ed6d79"},
+    -1: {"name": "Rejected", "icon": 0xF00C3, "icon_favorite": 0xF00C1, "color": "dimgray", "blurred":1},
+    0: {"name": "Unclassified", "icon": 0xF00C3, "icon_favorite": 0xF00C1, "color": "lightgray", "blurred":0},
+    1: {"name": "Benin", "icon": 0xF00C3, "icon_favorite": 0xF00C1, "color": "#71e096", "blurred":0},
+    2: {"name": "Likely benin", "icon": 0xF00C3, "icon_favorite": 0xF00C1, "color": "#71e096", "blurred":0},
+    3: {"name": "Variant of uncertain significance", "icon": 0xF00C3, "icon_favorite": 0xF00C1, "color": "#f5a26f", "blurred":0},
+    4: {"name": "Likely pathogenic", "icon": 0xF00C3, "icon_favorite": 0xF00C1, "color": "#ed6d79"},
+    5: {"name": "Pathogenic", "icon": 0xF00C3, "icon_favorite": 0xF00C1, "color": "#ed6d79", "blurred":0},
 }
 
+SAMPLE_CLASSIFICATION = {
+    -1: {"name": "Rejected", "icon": 0xF05E8, "color": "dimgray", "blurred":1},
+    0: {"name": "Unlock", "icon": 0xF0FC7, "color": "lightgray", "blurred":0},
+    1: {"name": "Lock", "icon": 0xF139A, "color": "lightgray", "blurred":0},
+}
+
+SAMPLE_VARIANT_CLASSIFICATION = {
+    -1: {"name": "Rejected", "icon": 0xF00C1, "color": "dimgray", "blurred":1},
+    0: {"name": "Unclassified", "icon": 0xF00C1, "color": "lightgray", "blurred":0},
+    1: {"name": "Verification required", "icon": 0xF00C1, "color": "#f5a26f", "blurred":0},
+    2: {"name": "Validated", "icon": 0xF00C1, "color": "#71e096", "blurred":0},
+}
 
 GENOTYPE = {
     -1: {"name": "Unknown genotype", "icon": 0xF10D3},
@@ -42,6 +51,7 @@ FIELD_CATEGORY = {
 GENE_COLOR = "#F5A26F"
 WARNING_BACKGROUND_COLOR = "#FFCCBA"
 WARNING_TEXT_COLOR = "#D73705"
+BLURRED_COLOR="dimgray"
 
 DARK_COLOR = {
     "darkpurple": "#40375C",

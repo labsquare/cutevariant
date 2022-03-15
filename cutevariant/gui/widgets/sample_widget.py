@@ -89,6 +89,7 @@ class SampleWidget(QWidget):
 
         self.tag_edit.addItems(self.TAG_LIST)
 
+
         # validation
         val_layout = QFormLayout()
 
@@ -123,46 +124,24 @@ class SampleWidget(QWidget):
         self.tab_widget.addTab(identity_widget, "Edit")
         self.tab_widget.addTab(pheno_widget, "Phenotype")
 
-        header_layout = QHBoxLayout()
-        header_layout.addLayout(val_layout)
 
-        vLayout = QVBoxLayout()
-        vLayout.addLayout(header_layout)
-        vLayout.addWidget(self.tab_widget)
+        # comment
 
-        button_layout = QHBoxLayout()
-        button_layout.addStretch()
-        vLayout.addLayout(button_layout)
+        self.comment_edit = MarkdownEditor()
+        comm_widget = QWidget()
+        comm_layout = QVBoxLayout(comm_widget)
+        comm_layout.addWidget(self.tag_edit)
+        comm_layout.addWidget(self.comment_edit)
 
-        self.setLayout(vLayout)
+        self.tab_widget.addTab(comm_widget, "Comments")
 
-    def load(self, sample_id: int):
-
-        self.sample_id = sample_id
-        data = sql.get_sample(self.conn, sample_id)
-        self.initial_db_validation = self.get_validation_from_data(data)
-
-        self.name_edit.setText(data.get("name", "?"))
-        self.fam_edit.setText(data.get("family_id", "?"))
-        self.sex_combo.setCurrentIndex(data.get("sex", 0))
-        self.phenotype_combo.setCurrentIndex(data.get("phenotype", 0))
-
-        # self.classification.addItems([v["name"] for v in self.SAMPLE_CLASSIFICATION.values()])
-        for k, v in self.SAMPLE_CLASSIFICATION.items():
-            self.classification.addItem(v["name"], k)
-        index = self.classification.findData(data["valid"])
-        self.classification.setCurrentIndex(index)
-
-        if data["tags"] is not None:
-            for tag in data["tags"].split(self.TAG_SEPARATOR):
-                if tag in self.TAG_LIST:
-                    self.tag_edit.model().item(self.TAG_LIST.index(tag)).setData(Qt.Checked, Qt.CheckStateRole)
 
         self.comment.setPlainText(data.get("comment", ""))
         self.comment.preview_btn.setChecked(True)
 
         self.setWindowTitle(data.get("name", "Unknown"))
         self.initial_state = self.get_gui_state()
+
 
     def save(self, sample_id: int):
         """
@@ -191,6 +170,7 @@ class SampleWidget(QWidget):
             "valid": self.REVERSE_CLASSIF[self.classification.currentText()],
             "tags": self.TAG_SEPARATOR.join(self.tag_edit.currentData()),
             "comment": self.comment.toPlainText(),
+
         }
 
         sql.update_sample(self.conn, data)

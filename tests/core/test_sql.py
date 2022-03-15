@@ -322,6 +322,9 @@ def conn():
     sql.insert_variants(conn, copy.deepcopy(VARIANTS))
     assert table_exists(conn, "wordsets"), "cannot create table sets"
 
+    sql.create_table_tags(conn)
+    assert table_exists(conn, "tags"), "cannot create table tags"
+
     return conn
 
 
@@ -1161,7 +1164,6 @@ def test_sql_selection_operation(conn):
 #         for not_wanted_key in ("annotations", "samples"):
 #             if not_wanted_key in expected_variant:
 #                 del expected_variant[not_wanted_key]
-
 #         assert tuple(record) == tuple(expected_variant.values())
 
 def test_get_sample_variant_classification_count(conn):
@@ -1170,3 +1172,4 @@ def test_get_sample_variant_classification_count(conn):
     sql.update_sample_has_variant(conn, {"variant_id":1, "sample_id": 1, "classification": 2})
     value = sql.get_sample_variant_classification_count(conn, 1, 2)
     assert value == 1
+

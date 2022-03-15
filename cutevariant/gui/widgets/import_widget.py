@@ -167,7 +167,7 @@ class FieldsModel(QAbstractTableModel):
         item = self._items[index.row()]
 
         if item["name"] in self.MANDATORY_FIELDS:
-            return 0
+            return Qt.NoItemFlags
 
         if index.column() == self.NAME_COL or index.column() == self.INDEX_COL:
             return Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsUserCheckable
