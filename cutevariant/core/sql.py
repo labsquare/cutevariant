@@ -90,6 +90,7 @@ import itertools as it
 import numpy as np
 import json
 import os
+import getpass
 
 from typing import List, Callable, Iterable
 
@@ -353,6 +354,7 @@ def get_sql_connection(filepath: str) -> sqlite3.Connection:
         return re.search(expr, str(item)) is not None
 
     connection.create_function("REGEXP", 2, regexp)
+    connection.create_function("current_user", 0, lambda : getpass.getuser() )
     connection.create_aggregate("STD", 1, StdevFunc)
 
     if LOGGER.getEffectiveLevel() == logging.DEBUG:
@@ -2359,6 +2361,25 @@ def get_variant_as_group(
         yield res
 
 
+## History table ==================================================================
+def create_table_history(conn):
+
+    conn.execute(
+        """CREATE TABLE IF NOT EXISTS `history` (
+        `id` INTEGER PRIMARY KEY ASC AUTOINCREMENT,
+        `timestamp` TEXT DEFAULT (DATETIME('now')),
+        `user` TEXT DEFAULT 'unknown',
+        `table` TEXT DEFAULT '' NOT NULL,
+        `keys` TEST DEFAULT '',
+        `field` TEXT DEFAULT '',
+        `before` TEXT DEFAULT '',
+        `after` TEXT DEFAULT '',
+        UNIQUE (id)
+        );"""
+    )
+    conn.commit()
+
+
 ## Tags table ==================================================================
 def create_table_tags(conn):
 
@@ -2945,6 +2966,284 @@ def create_triggers(conn):
         END;"""
     )
 
+    ###### trigers on validation
+
+    ### variants
+
+    # favorite
+    conn.execute(
+        """
+        CREATE TRIGGER history_variants_favorite
+        AFTER UPDATE ON variants
+        WHEN old.favorite !=  new.favorite
+        BEGIN
+            INSERT INTO history (
+                `user`,
+                `table`,
+                `keys`,
+                `field`,
+                `before`,
+                `after`
+            )
+        VALUES
+            (
+            current_user(),
+            "variants",
+            new.id,
+            "favorite",
+            old.favorite,
+            new.favorite
+            ) ;
+        END;"""
+    )
+
+    # classification
+    conn.execute(
+        """
+        CREATE TRIGGER history_variants_classification
+        AFTER UPDATE ON variants
+        WHEN old.classification !=  new.classification
+        BEGIN
+            INSERT INTO history (
+                `user`,
+                `table`,
+                `keys`,
+                `field`,
+                `before`,
+                `after`
+            )
+        VALUES
+            (
+            current_user(),
+            "variants",
+            new.id,
+            "classification",
+            old.classification,
+            new.classification
+            ) ;
+        END;"""
+    )
+
+    # tags
+    conn.execute(
+        """
+        CREATE TRIGGER history_variants_tags
+        AFTER UPDATE ON variants
+        WHEN old.tags !=  new.tags
+        BEGIN
+            INSERT INTO history (
+                `user`,
+                `table`,
+                `keys`,
+                `field`,
+                `before`,
+                `after`
+            )
+        VALUES
+            (
+            current_user(),
+            "variants",
+            new.id,
+            "tags",
+            old.tags,
+            new.tags
+            ) ;
+        END;"""
+    )
+
+    # comment
+    conn.execute(
+        """
+        CREATE TRIGGER history_variants_comment
+        AFTER UPDATE ON variants
+        WHEN old.comment !=  new.comment
+        BEGIN
+            INSERT INTO history (
+                `user`,
+                `table`,
+                `keys`,
+                `field`,
+                `before`,
+                `after`
+            )
+        VALUES
+            (
+            current_user(),
+            "variants",
+            new.id,
+            "comment",
+            old.comment,
+            new.comment
+            ) ;
+        END;"""
+    )
+
+    ### samples
+
+    # valid
+    conn.execute(
+        """
+        CREATE TRIGGER history_samples_valid 
+        AFTER UPDATE ON samples
+        WHEN old.valid !=  new.valid
+        BEGIN
+            INSERT INTO history (
+                `user`,
+                `table`,
+                `keys`,
+                `field`,
+                `before`,
+                `after`
+            )
+        VALUES
+            (
+            current_user(),
+            "samples",
+            new.id,
+            "valid",
+            old.valid,
+            new.valid
+            ) ;
+        END;"""
+    )
+
+    # tags
+    conn.execute(
+        """
+        CREATE TRIGGER history_samples_tags 
+        AFTER UPDATE ON samples
+        WHEN old.tags !=  new.tags
+        BEGIN
+            INSERT INTO history (
+                `user`,
+                `table`,
+                `keys`,
+                `field`,
+                `before`,
+                `after`
+            )
+        VALUES
+            (
+            current_user(),
+            "samples",
+            new.id,
+            "tags",
+            old.tags,
+            new.tags
+            ) ;
+        END;"""
+    )
+
+    # comment
+    conn.execute(
+        """
+        CREATE TRIGGER history_samples_comment
+        AFTER UPDATE ON samples
+        WHEN old.comment !=  new.comment
+        BEGIN
+            INSERT INTO history (
+                `user`,
+                `table`,
+                `keys`,
+                `field`,
+                `before`,
+                `after`
+            )
+        VALUES
+            (
+            current_user(),
+            "samples",
+            new.id,
+            "comment",
+            old.comment,
+            new.comment
+            ) ;
+        END;"""
+    )
+
+    ### sample_has_variant
+
+    # classification
+    conn.execute(
+        """
+        CREATE TRIGGER history_sample_has_variant_classification
+        AFTER UPDATE ON sample_has_variant
+        WHEN old.classification !=  new.classification
+        BEGIN
+            INSERT INTO history (
+                `user`,
+                `table`,
+                `keys`,
+                `field`,
+                `before`,
+                `after`
+            )
+        VALUES
+            (
+            current_user(),
+            "sample_has_variant",
+            new.sample_id || "-" || new.variant_id,
+            "classification",
+            old.classification,
+            new.classification
+            ) ;
+        END;"""
+    )
+
+    # tags
+    conn.execute(
+        """
+        CREATE TRIGGER history_sample_has_variant_tags 
+        AFTER UPDATE ON sample_has_variant
+        WHEN old.tags !=  new.tags
+        BEGIN
+            INSERT INTO history (
+                `user`,
+                `table`,
+                `keys`,
+                `field`,
+                `before`,
+                `after`
+            )
+        VALUES
+            (
+            current_user(),
+            "sample_has_variant",
+            new.sample_id || "-" || new.variant_id,
+            "tags",
+            old.tags,
+            new.tags
+            ) ;
+        END;"""
+    )
+
+    # comment
+    conn.execute(
+        """
+        CREATE TRIGGER history_sample_has_variant_comment
+        AFTER UPDATE ON sample_has_variant
+        WHEN old.comment !=  new.comment
+        BEGIN
+            INSERT INTO history (
+                `user`,
+                `table`,
+                `keys`,
+                `field`,
+                `before`,
+                `after`
+            )
+        VALUES
+            (
+            current_user(),
+            "sample_has_variant",
+            new.sample_id || "-" || new.variant_id,
+            "comment",
+            old.comment,
+            new.comment
+            ) ;
+        END;"""
+    )
+
 
 def create_database_schema(conn: sqlite3.Connection, fields: Iterable[dict] = None):
 
@@ -2975,6 +3274,9 @@ def create_database_schema(conn: sqlite3.Connection, fields: Iterable[dict] = No
 
     # # Create table sets
     create_table_wordsets(conn)
+
+    ## Create table history
+    create_table_history(conn) 
 
     ## Create table tags
     create_table_tags(conn)
