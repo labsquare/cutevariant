@@ -8,9 +8,9 @@ from cutevariant.core import sql
 from cutevariant.core.reader import VcfReader
 
 import os
-from PySide2.QtWidgets import *
-from PySide2.QtCore import *
-from PySide2.QtGui import *
+from PySide6.QtWidgets import *
+from PySide6.QtCore import *
+from PySide6.QtGui import *
 
 
 @pytest.fixture

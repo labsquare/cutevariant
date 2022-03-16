@@ -1,5 +1,5 @@
 import pytest
-from PySide2.QtWidgets import QMainWindow
+from PySide6.QtWidgets import QMainWindow
 from cutevariant.gui import plugin
 from tests import utils
 

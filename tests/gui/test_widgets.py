@@ -1,7 +1,7 @@
 from cutevariant.gui.widgets import DictModel, DictWidget
 
-from PySide2.QtCore import Qt
-from PySide2.QtGui import QKeySequence
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QKeySequence
 
 
 def test_dict_widget(qtbot, qtmodeltester):

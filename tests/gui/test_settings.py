@@ -3,8 +3,8 @@ import pytest
 import tempfile
 
 # Qt imports
-from PySide2.QtWidgets import *
-from PySide2.QtCore import *
+from PySide6.QtWidgets import *
+from PySide6.QtCore import *
 from cutevariant.gui import settings
 from cutevariant.config import Config
 import os
