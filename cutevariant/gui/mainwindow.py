@@ -33,6 +33,7 @@ from cutevariant.commons import (
     DIR_ICONS,
     MIN_AUTHORIZED_DB_VERSION,
 )
+from cutevariant.config import Config
 
 from cutevariant.gui.export import ExportDialogFactory, ExportDialog
 
@@ -405,10 +406,17 @@ class MainWindow(QMainWindow):
             self.import_file,
             QKeySequence.AddTab,
         )
+        self.open_config_action = self.file_menu.addAction(
+            FIcon(0xF102F),
+            self.tr("&Open config..."),
+            self.open_config,
+            QKeySequence.Open,
+        )
 
         self.toolbar.addAction(self.new_project_action)
         self.toolbar.addAction(self.open_project_action)
         self.toolbar.addAction(self.import_file_action)
+        self.toolbar.addAction(self.open_config_action)
         self.toolbar.addAction(
             FIcon(0xF0625), self.tr("Help"), QWhatsThis.enterWhatsThisMode
         )
@@ -706,6 +714,28 @@ class MainWindow(QMainWindow):
                 self.open(db_filename)
             except Exception as e:
                 self.status_bar.showMessage(e.__class__.__name__ + ": " + str(e))
+
+    def open_config(self):
+        """Slot to open an existing config from a QFileDialog"""
+        # Reload last directory used
+        last_directory = self.app_settings.value("last_directory", QDir.homePath())
+
+        config_path, _ = QFileDialog.getOpenFileName(
+            self,
+            self.tr("Open config"),
+            last_directory,
+            self.tr("Cutevariant config (*.yml)"),
+        )
+
+        if os.path.isfile(config_path):
+            Config.DEFAULT_CONFIG_PATH = config_path
+            self.reload_ui()
+
+        else:
+            LOGGER.error(f"{config_path} doesn't exists. Ignoring config")
+
+        # Save directory
+        self.app_settings.setValue("last_directory", os.path.dirname(config_path))
 
     def export_as_csv(self):
         """Export variants into CSV file"""
