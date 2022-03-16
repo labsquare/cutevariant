@@ -31,8 +31,8 @@ jobs:
           python-version: ${{matrix.python_version}}
       - name: install_deps
         run: "make install_deps"
-      - name: install PySide2    # Parce que @ysard veut absolument les version deprecated
-        run : pip install PySide2
+      - name: install PySide6    # Parce que @ysard veut absolument les version deprecated
+        run : pip install PySide6
       - name: test 
         run: python -m pytest tests/core
 
@@ -52,8 +52,8 @@ jobs:
           architecture: ${{matrix.architecture}}
       - name: install_deps
         run: "make install_deps"
-      - name: install PySide2    # Parce que @ysard veut absolument les version deprecated
-        run : pip install PySide2
+      - name: install PySide6    # Parce que @ysard veut absolument les version deprecated
+        run : pip install PySide6
       - name: install windows deps 
         run: |
             pip install pywin32
