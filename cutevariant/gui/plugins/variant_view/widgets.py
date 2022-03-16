@@ -1193,7 +1193,12 @@ class VariantView(QWidget):
             current_variant = self.model.variant(current_index.row())
 
             dialog = VariantDialog(self.conn, current_variant["id"])
-            dialog.exec()
+            if dialog.exec() == QDialog.Accepted:   
+                self.parent.mainwindow.refresh_plugin("variant_view")
+                self.parent.mainwindow.refresh_plugin("sample_view")
+
+
+
 
     def contextMenuEvent(self, event: QContextMenuEvent):
         """Override: Show contextual menu over the current variant"""

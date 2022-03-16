@@ -2,10 +2,10 @@ name: Release
 
   
 # when it active ? 
-on: 
-  push:
-    tags:
-      - '*'
+on: push 
+  #push:
+    # tags:
+    #   - '*'
 
 jobs:
   # WINDOWS JOB 
@@ -14,7 +14,7 @@ jobs:
 
     strategy:
       matrix:
-        architecture: ['x64', 'x86']
+        architecture: ['x64']
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
@@ -41,13 +41,17 @@ jobs:
           files: dist/
           dest: cutevariant-standalone-${{matrix.architecture}}.zip
 
-      - name: Publish 
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          files: '*.zip'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create installer
+        uses: joncloud/makensis-action@v3.6
+        
+
+      # - name: Publish 
+      #   uses: softprops/action-gh-release@v1
+      #   if: startsWith(github.ref, 'refs/tags/')
+      #   with:
+      #     files: '*.zip'
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 
       # - name: Upload

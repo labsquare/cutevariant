@@ -1164,52 +1164,12 @@ def test_sql_selection_operation(conn):
 #         for not_wanted_key in ("annotations", "samples"):
 #             if not_wanted_key in expected_variant:
 #                 del expected_variant[not_wanted_key]
+#         assert tuple(record) == tuple(expected_variant.values())
 
-# assert tuple(record) == tuple(expected_variant.values())
+def test_get_sample_variant_classification_count(conn):
+    value = sql.get_sample_variant_classification_count(conn, 1, 2)
+    assert value == 0
+    sql.update_sample_has_variant(conn, {"variant_id":1, "sample_id": 1, "classification": 2})
+    value = sql.get_sample_variant_classification_count(conn, 1, 2)
+    assert value == 1
 
-
-def test_tags(conn):
-
-    # Create tags
-
-    expected = [
-        {
-            "name": "name",
-            "category": "variants",
-            "description": "a description",
-            "color": "red",
-        },
-        {
-            "name": "name2",
-            "category": "variants",
-            "description": "a description",
-            "color": "red",
-        },
-        {
-            "name": "name3",
-            "category": "samples",
-            "description": "a description",
-            "color": "red",
-        },
-    ]
-
-    for tag in expected:
-        sql.insert_tag(
-            conn,
-            tag["name"],
-            tag["category"],
-            tag["description"],
-            tag["color"],
-        )
-
-    # Get tags without id
-    observed = [
-        {k: v for k, v in tag.items() if k != "id"} for tag in sql.get_tags(conn)
-    ]
-
-    assert observed == expected
-    sql.update_tag(conn, {"id": 1, "name": "newname"})
-    assert sql.get_tag(conn, 1)["name"] == "newname"
-
-    sql.remove_tag(conn, 1)
-    assert len(sql.get_tags(conn)) == 2
