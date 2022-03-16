@@ -26,7 +26,9 @@ class SampleVariantWidget(QWidget):
         self.conn = conn
         self.TAG_LIST = ["#hemato", "#cardio", "#pharmaco"]
         self.TAG_SEPARATOR = "&"
-        self.REVERSE_CLASSIF = {v: k for k, v in SAMPLE_VARIANT_CLASSIFICATION.items()}
+        self.REVERSE_CLASSIF = {
+            v["name"]: k for k, v in SAMPLE_VARIANT_CLASSIFICATION.items()
+        }
 
         # Title
         self.title = QLabel()
@@ -162,18 +164,21 @@ class SampleVariantWidget(QWidget):
         # self.classification.addItems([v for v in SAMPLE_VARIANT_CLASSIFICATION.values()])
         # self.classification.setCurrentIndex(self.sample_has_var_data["classification"])
         for k, v in SAMPLE_VARIANT_CLASSIFICATION.items():
-            self.classification.addItem(v, k)
+            print("k", k, v, self.classification)
+
         index = self.classification.findData(self.sample_has_var_data["classification"])
         self.classification.setCurrentIndex(index)
 
-        if self.sample_has_var_data["tags"] is not None:
-            for tag in self.sample_has_var_data["tags"].split(self.TAG_SEPARATOR):
+        if self.sample_has_var_data.get("tags") is not None:
+            for tag in self.sample_has_var_data.get("tags", "").split(
+                self.TAG_SEPARATOR
+            ):
                 if tag in self.TAG_LIST:
                     self.tag_edit.model().item(self.TAG_LIST.index(tag)).setData(
                         Qt.Checked, Qt.CheckStateRole
                     )
 
-        self.comment.setPlainText(self.sample_has_var_data["comment"])
+        self.comment.setPlainText(self.sample_has_var_data.get("comment", ""))
         self.comment.preview_btn.setChecked(True)
 
         # self.var_title.setText(var_name)
@@ -190,7 +195,7 @@ class SampleVariantWidget(QWidget):
 
         sample_info_dict = {k: v for k, v in sample.items() if k not in ("id")}
         for k, v in SAMPLE_VARIANT_CLASSIFICATION.items():
-            sample_info_dict[v] = sql.get_sample_variant_classification_count(
+            sample_info_dict[v["name"]] = sql.get_sample_variant_classification_count(
                 self.conn, sample["id"], k
             )
         self.sample_info.set_dict(sample_info_dict)
@@ -256,8 +261,8 @@ class SampleVariantWidget(QWidget):
     def get_validation_from_data(self, data):
         return {
             "classif_index": int("{classification}".format(**data)),
-            "tags": data["tags"],
-            "comment": data["comment"],
+            "tags": data.get("tags", ""),
+            "comment": data.get("comment", ""),
         }
 
     def get_gui_state(self):

@@ -626,17 +626,6 @@ class SamplesWidget(plugin.PluginWidget):
         if len(var_name) > 25:
             var_name = var_name[0:15] + " ... " + var_name[-10:]
         menu.addSection("Variant " + var_name)
-        cat_menu = menu.addMenu("Validation status")
-
-        menu.addAction(QIcon(), "Edit sample ...", self._show_sample_dialog)
-
-        menu.addAction(QIcon(), "Filter from current selection", self.on_add_filter)
-
-        menu.addAction(
-            QIcon(), "Create a source from current selection", self.on_add_source
-        )
-
-        menu.addSection("current variant")
 
         # Validation
         row = self.view.selectionModel().currentIndex().row()
@@ -669,8 +658,6 @@ class SamplesWidget(plugin.PluginWidget):
         menu.addAction(
             QIcon(), "Create a source from current selection", self.on_add_source
         )
-
-        menu.addAction("Edit comment ...")
 
         menu.exec_(event.globalPos())
 
