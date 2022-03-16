@@ -151,7 +151,12 @@ class GroupbyModel(QAbstractTableModel):
 
         if role == Qt.ForegroundRole:
             if index.column() == 1:
-                return qApp.style().standardPalette().color(QPalette.Shadow)
+                return (
+                    QApplication.instance()
+                    .style()
+                    .standardPalette()
+                    .color(QPalette.Shadow)
+                )
 
         if role == Qt.TextAlignmentRole:
 
