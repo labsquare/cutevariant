@@ -30,7 +30,7 @@ jobs:
         with:
           python-version: ${{matrix.python_version}}
       - name: Install GL deps 
-        run : sudo apt-get install -y libgl1
+        run : sudo apt install -y libgl1-mesa-glx
       - name: install_deps
         run: "make install_deps"
       - name: install PySide6    # Parce que @ysard veut absolument les version deprecated
