@@ -598,6 +598,7 @@ def test_get_sample_annotations_by_variant(conn):
     for i in sql.get_sample_annotations_by_variant(conn, 1, fields=["gt", "dp"]):
         observed.append(i)
 
+    print("OBS", observed)
     assert expected == observed
 
 
@@ -613,7 +614,11 @@ def test_get_sample_annotations(conn, variants_data):
                 del result["sample_id"]
                 del result["variant_id"]
                 del result["classification"]
-                del sample["name"]  # This field is in samples table
+                del sample["name"]
+
+                sample["comment"] = ""
+                sample["tags"] = ""
+                # This field is in samples table
                 assert result == sample
 
 
@@ -1166,10 +1171,12 @@ def test_sql_selection_operation(conn):
 #                 del expected_variant[not_wanted_key]
 #         assert tuple(record) == tuple(expected_variant.values())
 
+
 def test_get_sample_variant_classification_count(conn):
     value = sql.get_sample_variant_classification_count(conn, 1, 2)
     assert value == 0
-    sql.update_sample_has_variant(conn, {"variant_id":1, "sample_id": 1, "classification": 2})
+    sql.update_sample_has_variant(
+        conn, {"variant_id": 1, "sample_id": 1, "classification": 2}
+    )
     value = sql.get_sample_variant_classification_count(conn, 1, 2)
     assert value == 1
-

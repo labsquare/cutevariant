@@ -354,7 +354,7 @@ def get_sql_connection(filepath: str) -> sqlite3.Connection:
         return re.search(expr, str(item)) is not None
 
     connection.create_function("REGEXP", 2, regexp)
-    connection.create_function("current_user", 0, lambda : getpass.getuser() )
+    connection.create_function("current_user", 0, lambda: getpass.getuser())
     connection.create_aggregate("STD", 1, StdevFunc)
 
     if LOGGER.getEffectiveLevel() == logging.DEBUG:
@@ -2005,18 +2005,17 @@ def get_summary(conn: sqlite3.Connection):
 
 
 def get_sample_variant_classification_count(
-    conn: sqlite3.Connection,
-    sample_id: int,
-    classification: int
+    conn: sqlite3.Connection, sample_id: int, classification: int
 ):
     """
     Used for edit boxes
     Returns total of variants having a given classification (validation status) for a given sample
     """
     # r = conn.execute(f"SELECT COUNT(*) FROM variants v LEFT JOIN sample_has_variant sv WHERE sv.sample_id={sample_id} AND sv.variant_id = v.id AND v.classification = {classification}").fetchone()[0]
-    r = conn.execute(f"SELECT COUNT(*) FROM sample_has_variant sv WHERE sv.sample_id={sample_id} AND classification = {classification}").fetchone()[0]
+    r = conn.execute(
+        f"SELECT COUNT(*) FROM sample_has_variant sv WHERE sv.sample_id={sample_id} AND classification = {classification}"
+    ).fetchone()[0]
     return int(r)
-
 
 
 def get_variants(
@@ -2394,20 +2393,15 @@ def create_table_history(conn):
     )
     conn.commit()
 
+
 def create_history_indexes(conn):
     """Create indexes on the "history" table"""
-    conn.execute(
-        f"CREATE INDEX IF NOT EXISTS `idx_history_user` ON history (`user`)"
-    )
-    conn.execute(
-        f"CREATE INDEX IF NOT EXISTS `idx_history_table` ON history (`table`)"
-    )
+    conn.execute(f"CREATE INDEX IF NOT EXISTS `idx_history_user` ON history (`user`)")
+    conn.execute(f"CREATE INDEX IF NOT EXISTS `idx_history_table` ON history (`table`)")
     conn.execute(
         f"CREATE INDEX IF NOT EXISTS `idx_history_table_rowid` ON history (`table_rowid`)"
     )
-    conn.execute(
-        f"CREATE INDEX IF NOT EXISTS `idx_history_field` ON history (`field`)"
-    )
+    conn.execute(f"CREATE INDEX IF NOT EXISTS `idx_history_field` ON history (`field`)")
 
 
 ## Tags table ==================================================================
@@ -2548,7 +2542,7 @@ def create_table_samples(conn, fields=[]):
        """
     )
 
-    #WITHOUT ROWID
+    # WITHOUT ROWID
 
     conn.commit()
 
@@ -3308,7 +3302,7 @@ def create_database_schema(conn: sqlite3.Connection, fields: Iterable[dict] = No
     create_table_wordsets(conn)
 
     ## Create table history
-    create_table_history(conn) 
+    create_table_history(conn)
 
     ## Create table tags
     create_table_tags(conn)
