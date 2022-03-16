@@ -284,7 +284,7 @@ def test_bedreader_from_empty_string():
 def test_bedreader_from_file():
     """Test bed data in gz and uncompressed files"""
 
-    bedtool = BedReader("examples/test.bed.gz")
+    bedtool = BedReader("examples/test_with_headers.bed")
     intervals = tuple(bedtool)
     expected = (
         OrderedDict(

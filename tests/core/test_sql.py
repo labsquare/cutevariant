@@ -957,8 +957,6 @@ def test_get_one_variant(conn):
     for variant_id, expected_variant in enumerate(VARIANTS, 1):
         found_variant = sql.get_variant(conn, variant_id)
 
-        print(found_variant)
-
         print("found variant", found_variant)
         assert found_variant["id"] == variant_id
 
@@ -989,6 +987,9 @@ def test_advanced_get_one_variant(conn):
 
                 if "sample_id" in item:
                     del item["sample_id"]
+
+                if "tags" in item:
+                    del item["tags"]
 
                 if "classification" in item:
                     del item["classification"]

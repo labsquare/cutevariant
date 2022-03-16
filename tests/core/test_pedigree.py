@@ -19,14 +19,14 @@ READERS = [
     "reader", READERS, ids=[str(i.__class__.__name__) for i in READERS]
 )
 def test_import(reader):
-    conn = sqlite3.connect(":memory:")
+    conn = sql.get_sql_connection(":memory:")
     sql.import_reader(conn, reader)
 
 
 def test_import_pedfile():
     """Test import of samples from .tfam PED file"""
     reader = VcfReader("examples/test.snpeff.vcf", "snpeff")
-    conn = sqlite3.connect(":memory:")
+    conn = sql.get_sql_connection(":memory:")
     sql.import_reader(conn, reader)
     sql.import_pedfile(conn, "examples/test.snpeff.pedigree.tfam")
 
@@ -42,8 +42,8 @@ def test_import_pedfile():
         "sex": 2,
         "phenotype": 1,
         "valid": 0,
-        "comment": None,
-        "tags": None,
+        "comment": "",
+        "tags": "",
     }
     expected_second_sample = {
         "id": 2,
@@ -54,8 +54,8 @@ def test_import_pedfile():
         "sex": 1,
         "phenotype": 2,
         "valid": 0,
-        "comment": None,
-        "tags": None,
+        "comment": "",
+        "tags": "",
     }
 
     # Third sample is not conform
@@ -69,7 +69,7 @@ def test_import_and_create_counting():
     reader = VcfReader("examples/test.snpeff.vcf", "snpeff")
     pedfile = "examples/test.snpeff.pedigree.tfam"
 
-    conn = sqlite3.connect(":memory:")
+    conn = sql.get_sql_connection(":memory:")
 
     sql.import_reader(conn, reader)
     sql.import_pedfile(conn, pedfile)
