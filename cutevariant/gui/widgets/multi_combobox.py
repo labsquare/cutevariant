@@ -19,7 +19,7 @@ class MultiComboBox(QComboBox):
         self.setEditable(True)
         self.lineEdit().setReadOnly(True)
         # Make the lineedit the same color as QPushButton
-        palette = qApp.palette()
+        palette = self.palette()
         palette.setBrush(QPalette.Base, palette.button())
         self.lineEdit().setPalette(palette)
 

@@ -4,8 +4,7 @@ from PySide6.QtGui import *
 
 from cutevariant.gui.widgets import ChoiceWidget, DictWidget, MarkdownEditor
 from cutevariant.gui.widgets.multi_combobox import MultiComboBox
-from cutevariant.gui.style import CLASSIFICATION
-from cutevariant.commons import SAMPLE_VARIANT_CLASSIFICATION
+from cutevariant.gui.style import CLASSIFICATION, SAMPLE_VARIANT_CLASSIFICATION
 
 from cutevariant.core import sql
 import sqlite3
@@ -85,7 +84,6 @@ class VariantWidget(QWidget):
         self.comment = MarkdownEditor()
         self.comment.preview_btn.setText("Preview/Edit comment")
 
-
         validation_layout.addRow("Favorite", self.favorite)
         validation_layout.addRow("Classification", self.classification)
         validation_layout.addRow("Tags", self.tag_layout)
@@ -96,7 +94,6 @@ class VariantWidget(QWidget):
         self.sample_view = DictWidget()
 
         self.tab_widget = QTabWidget()
-
 
         self.ann_combo = QComboBox()
         self.ann_combo.currentIndexChanged.connect(self.load_annotation)
@@ -109,7 +106,7 @@ class VariantWidget(QWidget):
         self.tab_widget.addTab(validation_widget, "Edit")
         self.tab_widget.addTab(self.variant_view, "Variant")
         self.tab_widget.addTab(self.ann_widget, "Annotations")
-        self.tab_widget.addTab(self.sample_view, "Samples")
+        self.tab_widget.addTab(self.sample_view, "Validated samples")
         # self.tab_widget.addTab(self.comment, "Comments")
         ### </othertabs block> ###
 
@@ -141,7 +138,6 @@ class VariantWidget(QWidget):
         container = QWidget()
         container.setLayout(sample_layout)
         ### </sample tab block> ###
-
 
         main_layout = QVBoxLayout(self)
         # central_layout = QHBoxLayout()
@@ -182,7 +178,7 @@ class VariantWidget(QWidget):
             update_data["favorite"] = 1
         else:
             update_data["favorite"] = 0
-        update_data["classification"] = self.classification.currentIndex()
+        update_data["classification"] = self.classification.currentData()
         update_data["tags"] = self.TAG_SEPARATOR.join(self.tag_edit.currentData())
         update_data["comment"] = self.comment.toPlainText()
         sql.update_variant(self._conn, update_data)
@@ -214,12 +210,20 @@ class VariantWidget(QWidget):
         #     self.sample_tab_model.update(
         #         [[i["name"], i["gt"]] for i in self.data["samples"] if i["gt"] > 0]
         #     )
-        #replaced by validation status instead of genotype
+        # replaced by validation status instead of genotype
         if "samples" in self.data:
-            sdata = {i["name"]:  SAMPLE_VARIANT_CLASSIFICATION[i["classification"]] for i in self.data["samples"] if i["classification"] > 0}
+            sdata = {
+                i["name"]: SAMPLE_VARIANT_CLASSIFICATION[i["classification"]]
+                for i in self.data["samples"]
+                if i["classification"] > 0
+            }
             self.sample_view.set_dict(sdata)
             self.sample_tab_model.update(
-                [[i["name"], SAMPLE_VARIANT_CLASSIFICATION[i["classification"]]] for i in self.data["samples"] if i["classification"] > 0]
+                [
+                    [i["name"], SAMPLE_VARIANT_CLASSIFICATION[i["classification"]]]
+                    for i in self.data["samples"]
+                    if i["classification"] > 0
+                ]
             )
 
         if self.data["favorite"] == 1:
@@ -251,7 +255,7 @@ class VariantWidget(QWidget):
             "favorite": data["favorite"],
             "classif_index": int("{classification}".format(**data)),
             "tags": data["tags"],
-            "comment": data["comment"]
+            "comment": data["comment"],
         }
 
     def get_gui_state(self):

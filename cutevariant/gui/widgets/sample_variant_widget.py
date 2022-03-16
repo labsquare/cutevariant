@@ -5,12 +5,13 @@ from PySide6.QtCore import *
 from PySide6.QtGui import *
 
 from cutevariant.core import sql
-from cutevariant.commons import CLASSIFICATION, SAMPLE_VARIANT_CLASSIFICATION
+from cutevariant.gui.style import CLASSIFICATION, SAMPLE_VARIANT_CLASSIFICATION
 from cutevariant.gui.widgets import ChoiceWidget, DictWidget, MarkdownEditor
 
 from cutevariant.gui.ficon import FIcon
 
 from cutevariant.gui.widgets.multi_combobox import MultiComboBox
+
 
 class QHLine(QFrame):
     def __init__(self):
@@ -18,15 +19,16 @@ class QHLine(QFrame):
         self.setFrameShape(QFrame.HLine)
         self.setFrameShadow(QFrame.Sunken)
 
+
 class SampleVariantWidget(QWidget):
     def __init__(self, conn: sqlite3.Connection, parent=None):
         super().__init__()
         self.conn = conn
         self.TAG_LIST = ["#hemato", "#cardio", "#pharmaco"]
         self.TAG_SEPARATOR = "&"
-        self.REVERSE_CLASSIF = {v:k for k, v in SAMPLE_VARIANT_CLASSIFICATION.items()}
+        self.REVERSE_CLASSIF = {v: k for k, v in SAMPLE_VARIANT_CLASSIFICATION.items()}
 
-        #Title
+        # Title
         self.title = QLabel()
         self.title.setTextFormat(Qt.RichText)
         self.title_variant = QLineEdit()
@@ -91,7 +93,7 @@ class SampleVariantWidget(QWidget):
 
         # info_widget = QWidget()
         # info_layout = QVBoxLayout()
-        
+
         # info_widget = QWidget()
         # info_layout = QFormLayout(info_widget)
         # self.info_var = QLabel()
@@ -103,13 +105,13 @@ class SampleVariantWidget(QWidget):
         # self.var_title.setAlignment(Qt.AlignCenter)
         # var_layout.addWidget(self.var_title)
         # var_layout.addWidget(self.var_info)
-        
+
         # sample_layout = QVBoxLayout()
         # self.sample_title = QLabel("Sample")
         # self.sample_title.setAlignment(Qt.AlignCenter)
         # sample_layout.addWidget(self.sample_title)
         # sample_layout.addWidget(self.sample_info)
-        
+
         # info_layout.addLayout(var_layout)
         # info_layout.addLayout(sample_layout)
         # info_widget.setLayout(info_layout)
@@ -135,19 +137,24 @@ class SampleVariantWidget(QWidget):
         self.setLayout(vLayout)
 
     def load(self, var: dict, sample: dict):
-        self.sample_has_var_data = sql.get_sample_annotations(self.conn, var["id"], sample["id"])
-        self.initial_db_validation = self.get_validation_from_data(self.sample_has_var_data)
-        
+        self.sample_has_var_data = sql.get_sample_annotations(
+            self.conn, var["id"], sample["id"]
+        )
+        self.initial_db_validation = self.get_validation_from_data(
+            self.sample_has_var_data
+        )
+
         var_name = "{chr}-{pos}-{ref}-{alt}".format(**var)
         if len(var_name) > 30:
-            var_name = var_name[0:20] + "..." + var_name [-10:]
+            var_name = var_name[0:20] + "..." + var_name[-10:]
 
-        self.title.setText('<html><head/><body><p align="center">Validation status of variant <span style=" font-weight:700;">' 
-                            + html.escape(var_name)
-                            + '</span> in sample <span style=" font-weight:700;">'
-                            + str(sample["name"])
-                            + '</span></p></body></html>'
-                        )
+        self.title.setText(
+            '<html><head/><body><p align="center">Validation status of variant <span style=" font-weight:700;">'
+            + html.escape(var_name)
+            + '</span> in sample <span style=" font-weight:700;">'
+            + str(sample["name"])
+            + "</span></p></body></html>"
+        )
         self.setWindowTitle("edit box")
         self.title_variant.setText(var_name)
         self.title_sample.setText(sample["name"])
@@ -162,21 +169,34 @@ class SampleVariantWidget(QWidget):
         if self.sample_has_var_data["tags"] is not None:
             for tag in self.sample_has_var_data["tags"].split(self.TAG_SEPARATOR):
                 if tag in self.TAG_LIST:
-                    self.tag_edit.model().item(self.TAG_LIST.index(tag)).setData(Qt.Checked, Qt.CheckStateRole)
+                    self.tag_edit.model().item(self.TAG_LIST.index(tag)).setData(
+                        Qt.Checked, Qt.CheckStateRole
+                    )
 
         self.comment.setPlainText(self.sample_has_var_data["comment"])
         self.comment.preview_btn.setChecked(True)
 
         # self.var_title.setText(var_name)
-        #tabs stuff
-        self.sample_has_var_info.set_dict({k: v for k, v in self.sample_has_var_data.items() if k not in ("variant_id", "sample_id", "classification", "tags", "comment")})
+        # tabs stuff
+        self.sample_has_var_info.set_dict(
+            {
+                k: v
+                for k, v in self.sample_has_var_data.items()
+                if k
+                not in ("variant_id", "sample_id", "classification", "tags", "comment")
+            }
+        )
         self.var_info.set_dict({k: v for k, v in var.items() if k not in ("id")})
 
         sample_info_dict = {k: v for k, v in sample.items() if k not in ("id")}
         for k, v in SAMPLE_VARIANT_CLASSIFICATION.items():
-            sample_info_dict[v] = sql.get_sample_variant_classification_count(self.conn, sample["id"], k)
+            sample_info_dict[v] = sql.get_sample_variant_classification_count(
+                self.conn, sample["id"], k
+            )
         self.sample_info.set_dict(sample_info_dict)
-        self.sample_info.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        self.sample_info.view.horizontalHeader().setSectionResizeMode(
+            0, QHeaderView.ResizeToContents
+        )
 
         # req = get_sample_variant_classification_count(self.conn, sample["id"], 2)
         # self.info_var.setText("Total of validated variants for this sample: 0")
@@ -188,46 +208,56 @@ class SampleVariantWidget(QWidget):
         if sample["valid"] in (None, 0):
             self.info_lock.hide()
         else:
-            self.info_lock.setText("Sample status: Locked (variant validation can't be edited)")
+            self.info_lock.setText(
+                "Sample status: Locked (variant validation can't be edited)"
+            )
             self.classification.setDisabled(True)
             self.tag_edit.setDisabled(True)
             self.comment.preview_btn.setDisabled(True)
-        
-        self.initial_state = self.get_gui_state()
 
+        self.initial_state = self.get_gui_state()
 
     def save(self):
         """
-        Two checks to perform: 
+        Two checks to perform:
          - did the user change any value through the interface?
-         - is the database state the same as when the dialog was first opened? 
+         - is the database state the same as when the dialog was first opened?
         If yes and yes, update sample_has_variant
         """
         current_state = self.get_gui_state()
         if current_state == self.initial_state:
             return
 
-        current_db_data = sql.get_sample_annotations(self.conn, self.sample_has_var_data["variant_id"], 
-                                                    self.sample_has_var_data["sample_id"])
+        current_db_data = sql.get_sample_annotations(
+            self.conn,
+            self.sample_has_var_data["variant_id"],
+            self.sample_has_var_data["sample_id"],
+        )
         current_db_validation = self.get_validation_from_data(current_db_data)
         if current_db_validation != self.initial_db_validation:
-            ret = QMessageBox.warning(None, "Database has been modified by another user.", "Do you want to overwrite value?", QMessageBox.Yes | QMessageBox.No)
+            ret = QMessageBox.warning(
+                None,
+                "Database has been modified by another user.",
+                "Do you want to overwrite value?",
+                QMessageBox.Yes | QMessageBox.No,
+            )
             if ret == QMessageBox.No:
                 return
-        
+
         update_data = {
             "variant_id": self.sample_has_var_data["variant_id"],
             "sample_id": self.sample_has_var_data["sample_id"],
             "classification": self.classification.currentIndex(),
             "tags": "&".join(self.tag_edit.currentData()),
-            "comment": self.comment.toPlainText()
+            "comment": self.comment.toPlainText(),
         }
         sql.update_sample_has_variant(self.conn, update_data)
 
     def get_validation_from_data(self, data):
-        return {"classif_index": int("{classification}".format(**data)), 
-                "tags": data["tags"], 
-                "comment": data["comment"]
+        return {
+            "classif_index": int("{classification}".format(**data)),
+            "tags": data["tags"],
+            "comment": data["comment"],
         }
 
     def get_gui_state(self):
@@ -239,6 +269,7 @@ class SampleVariantWidget(QWidget):
         values.append(self.tag_edit.currentData())
         values.append(self.comment.toPlainText())
         return values
+
 
 class SampleVariantDialog(QDialog):
     def __init__(self, conn, sample_id, var_id, parent=None):

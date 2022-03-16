@@ -16,7 +16,8 @@ from PySide6.QtGui import *
 from cutevariant.core import sql, command
 from cutevariant.core.reader import BedReader
 from cutevariant.gui import plugin, FIcon, style
-from cutevariant.commons import DEFAULT_SELECTION_NAME, SAMPLE_VARIANT_CLASSIFICATION
+from cutevariant.gui.style import SAMPLE_VARIANT_CLASSIFICATION
+from cutevariant.commons import DEFAULT_SELECTION_NAME
 from cutevariant.config import Config
 
 
@@ -615,9 +616,15 @@ class SamplesWidget(plugin.PluginWidget):
     def contextMenuEvent(self, event: QContextMenuEvent):
 
         menu = QMenu(self)
-        var_name = self.current_variant["chr"]  +":" + self.current_variant["ref"] + ">" + self.current_variant["alt"]
+        var_name = (
+            self.current_variant["chr"]
+            + ":"
+            + self.current_variant["ref"]
+            + ">"
+            + self.current_variant["alt"]
+        )
         if len(var_name) > 25:
-            var_name = var_name[0:15] + " ... " + var_name [-10:]
+            var_name = var_name[0:15] + " ... " + var_name[-10:]
         menu.addSection("Variant " + var_name)
         cat_menu = menu.addMenu("Validation status")
 
@@ -685,7 +692,9 @@ class SamplesWidget(plugin.PluginWidget):
         sample = self.model.item(row)
         if sample:
 
-            dialog = SampleVariantDialog(self._conn, sample["sample_id"], self.current_variant["id"])
+            dialog = SampleVariantDialog(
+                self._conn, sample["sample_id"], self.current_variant["id"]
+            )
 
             if dialog.exec_() == QDialog.Accepted:
                 self.load_all_filters()
