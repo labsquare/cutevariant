@@ -621,6 +621,28 @@ class SamplesWidget(plugin.PluginWidget):
         menu.addSection("Variant " + var_name)
         cat_menu = menu.addMenu("Validation status")
 
+        menu.addAction(QIcon(), "Edit sample ...", self._show_sample_dialog)
+
+        menu.addAction(QIcon(), "Filter from current selection", self.on_add_filter)
+
+        menu.addAction(
+            QIcon(), "Create a source from current selection", self.on_add_source
+        )
+
+        menu.addSection("current variant")
+
+        # Validation
+        row = self.view.selectionModel().currentIndex().row()
+        sample = self.model.item(row)
+        valid_form = True
+        valid_form_text = "Validation"
+        if style.SAMPLE_CLASSIFICATION[sample["valid"]].get("lock"):
+            valid_form = False
+            valid_form_text = "Validation locked"
+
+        cat_menu = menu.addMenu(valid_form_text)
+        cat_menu.setEnabled(valid_form)
+
         for key, value in SAMPLE_VARIANT_CLASSIFICATION.items():
             # action = cat_menu.addAction(value["name"])
             action = cat_menu.addAction(
@@ -640,6 +662,8 @@ class SamplesWidget(plugin.PluginWidget):
         menu.addAction(
             QIcon(), "Create a source from current selection", self.on_add_source
         )
+
+        menu.addAction("Edit comment ...")
 
         menu.exec_(event.globalPos())
 

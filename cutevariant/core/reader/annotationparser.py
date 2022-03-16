@@ -271,18 +271,18 @@ class BaseParser:
                     "category": "annotations",
                 }
 
-            if _f["name"] in self.variant_field_names:
-                # This field is already in variants fields
-                # => do not use it!
-                # Append None in place of the name of the field
-                # with the aim to not break handle_annotations() when it splits
-                # the annotation field.
-                self.annotation_field_name.append(None)
-                LOGGER.info(
-                    "handle_descriptions: '%s' field also found in variants; skipped",
-                    _f["name"],
-                )
-                continue
+            # if _f["name"] in self.variant_field_names:
+            #     # This field is already in variants fields
+            #     # => do not use it!
+            #     # Append None in place of the name of the field
+            #     # with the aim to not break handle_annotations() when it splits
+            #     # the annotation field.
+            #     self.annotation_field_name.append(None)
+            #     LOGGER.info(
+            #         "handle_descriptions: '%s' field also found in variants; skipped",
+            #         _f["name"],
+            #     )
+            #     continue
 
             # Append the name of the field
             self.annotation_field_name.append(_f["name"])

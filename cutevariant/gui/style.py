@@ -14,9 +14,9 @@ CLASSIFICATION = {
 }
 
 SAMPLE_CLASSIFICATION = {
-    -1: {"name": "Rejected", "icon": 0xF05E8, "color": "dimgray", "blurred":1},
-    0: {"name": "Unlock", "icon": 0xF0FC7, "color": "lightgray", "blurred":0},
-    1: {"name": "Lock", "icon": 0xF139A, "color": "lightgray", "blurred":0},
+    -1: {"name": "Rejected", "icon": 0xF05E8, "color": "dimgray", "blurred":1, "lock":1},
+    0: {"name": "Unlock", "icon": 0xF0FC7, "color": "lightgray", "blurred":0, "lock":0},
+    1: {"name": "Lock", "icon": 0xF139A, "color": "lightgray", "blurred":0, "lock":1},
 }
 
 SAMPLE_VARIANT_CLASSIFICATION = {
