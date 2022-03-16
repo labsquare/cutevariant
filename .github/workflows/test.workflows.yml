@@ -24,11 +24,15 @@ jobs:
     strategy:
       matrix:
         python_version: ['3.9']
+      env:
+           DISPLAY: ':99.0'
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
         with:
           python-version: ${{matrix.python_version}}
+      - name: Install OpenGL and EGL
+        run : sudo apt-get install -y libopengl0 libegl1-mesa
       - name: install_deps
         run: "make install_deps"
       - name: install PySide6    # Parce que @ysard veut absolument les version deprecated
@@ -38,39 +42,39 @@ jobs:
 
   # WINDOWS JOB 
 
-  windows:
-    runs-on: windows-latest
+  # windows:
+  #   runs-on: windows-latest
 
-    strategy:
-      matrix:
-        architecture: ['x64', 'x86']
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
-        with:
-          python-version: '3.9'
-          architecture: ${{matrix.architecture}}
-      - name: install_deps
-        run: "make install_deps"
-      - name: install PySide6    # Parce que @ysard veut absolument les version deprecated
-        run : pip install PySide6
-      - name: install windows deps 
-        run: |
-            pip install pywin32
-            pip install PyInstaller==4.0
-      - name: test
-        run: python -m pytest tests/core
+  #   strategy:
+  #     matrix:
+  #       architecture: ['x64', 'x86']
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - uses: actions/setup-python@v2
+  #       with:
+  #         python-version: '3.9'
+  #         architecture: ${{matrix.architecture}}
+  #     - name: install_deps
+  #       run: "make install_deps"
+  #     - name: install PySide6    # Parce que @ysard veut absolument les version deprecated
+  #       run : pip install PySide6
+  #     - name: install windows deps 
+  #       run: |
+  #           pip install pywin32
+  #           pip install PyInstaller==4.0
+  #     - name: test
+  #       run: python -m pytest tests/core
 
-      - name: create binary 
-        if: contains(github.event.head_commit.message, '[deploy]')  
-        run: pyinstaller -i icon.ico --name="cutevariant_${{matrix.architecture}}" --hidden-import json --add-data "cutevariant;cutevariant" cutevariant\__main__.py
+  #     - name: create binary 
+  #       if: contains(github.event.head_commit.message, '[deploy]')  
+  #       run: pyinstaller -i icon.ico --name="cutevariant_${{matrix.architecture}}" --hidden-import json --add-data "cutevariant;cutevariant" cutevariant\__main__.py
 
-      - name: Upload artifact
-        if: github.ref == 'refs/heads/master' || contains(github.event.head_commit.message, '[deploy]')  
-        uses: actions/upload-artifact@v2
-        with:
-          name: cutevariant-standalone-${{matrix.architecture}}
-          path: dist
+  #     - name: Upload artifact
+  #       if: github.ref == 'refs/heads/master' || contains(github.event.head_commit.message, '[deploy]')  
+  #       uses: actions/upload-artifact@v2
+  #       with:
+  #         name: cutevariant-standalone-${{matrix.architecture}}
+  #         path: dist
 
 
 
