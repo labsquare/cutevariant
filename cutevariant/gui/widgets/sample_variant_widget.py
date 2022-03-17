@@ -167,6 +167,7 @@ class SampleVariantWidget(QWidget):
             self.classification.addItem(v["name"], k)
 
         index = self.classification.findData(self.sample_has_var_data["classification"])
+        print(index)
         self.classification.setCurrentIndex(index)
 
         if self.sample_has_var_data.get("tags") is not None:
@@ -252,7 +253,7 @@ class SampleVariantWidget(QWidget):
         update_data = {
             "variant_id": self.sample_has_var_data["variant_id"],
             "sample_id": self.sample_has_var_data["sample_id"],
-            "classification": self.classification.currentIndex(),
+            "classification": self.classification.currentData(),
             "tags": "&".join(self.tag_edit.currentData()),
             "comment": self.comment.toPlainText(),
         }
