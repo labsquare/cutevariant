@@ -22,9 +22,12 @@ class TagDialog(QDialog):
 
         self.btn_box = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
 
+        edit_layout = QHBoxLayout()
+        edit_layout.addWidget(self.color_edit)
+        edit_layout.addWidget(self.name_edit)
+
         form_layout = QVBoxLayout()
-        form_layout.addWidget(self.name_edit)
-        form_layout.addWidget(self.color_edit)
+        form_layout.addLayout(edit_layout)
         form_layout.addWidget(self.descr_edit)
 
         v_layout = QVBoxLayout(self)
@@ -78,6 +81,7 @@ class TagEditor(QWidget):
 
         self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.view.selectionModel().selectionChanged.connect(self._on_selection_changed)
+        self.view.doubleClicked.connect(self._on_edit_tag)
 
         self.add_button = QPushButton("Add")
         self.add_button.clicked.connect(self._on_add_tag)
@@ -149,6 +153,7 @@ class TagEditor(QWidget):
         item.setText(tag.get("name", "Unknown"))
         item.setData(TagEditor.COLOR_ROLE, tag.get("color", "gray"))
         item.setData(TagEditor.DESCRIPTION_ROLE, tag.get("description", ""))
+        item.setToolTip(item.data(TagEditor.DESCRIPTION_ROLE))
 
         pix = QPixmap(64, 64)
         pix.fill(QColor(item.data(TagEditor.COLOR_ROLE)))
