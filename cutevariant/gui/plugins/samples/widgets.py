@@ -670,7 +670,7 @@ class SamplesWidget(plugin.PluginWidget):
             dialog = SampleDialog(self._conn, sample["sample_id"])
 
             if dialog.exec_() == QDialog.Accepted:
-                self.load_all_filters()
+                # self.load_all_filters()
                 self.on_refresh()
 
     def _show_sample_variant_dialog(self):
@@ -684,9 +684,8 @@ class SamplesWidget(plugin.PluginWidget):
             )
 
             if dialog.exec_() == QDialog.Accepted:
-                self.load_all_filters()
+                # self.load_all_filters()
                 self.on_refresh()
-                print("iamhere")
 
     def _toggle_column(self, col: int, show: bool):
         """hide/show columns"""
