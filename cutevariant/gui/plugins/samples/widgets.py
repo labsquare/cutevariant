@@ -716,10 +716,20 @@ class SamplesWidget(plugin.PluginWidget):
 
         self.on_refresh()
 
-    def _create_filters(self):
+    def _create_filters(self, copy_existing_filters: bool = True):
+        """
+        The function creates a dictionary of filters based on a list of filters and existing filters (or not)
+        
+        :param copy_existing_filters: bool = True, defaults to True 
+        :type copy_existing_filters: bool (optional)
+        :return: A dictionary of filters.
+        """
 
         indexes = self.view.selectionModel().selectedRows()
-        filters = copy.deepcopy(self.mainwindow.get_state_data("filters"))
+        if copy_existing_filters:
+            filters = copy.deepcopy(self.mainwindow.get_state_data("filters"))
+        else:
+            filters = {}
 
         if not filters:
             root = "$or"
@@ -742,20 +752,33 @@ class SamplesWidget(plugin.PluginWidget):
         return filters
 
     def on_add_source(self):
+        """
+        This function is called when the user clicks on the "Add Source" button in the "Source" tab
+        :return: Nothing
+        """
 
-        name, _ = QInputDialog.getText(self, "Source Name", "Get a source name ")
+        name, success = QInputDialog.getText(self, self.tr("Source Name"), self.tr("Get a source name "))
 
-        if not name:
-            return
+        # if not name:
+        #     return
 
-        sql.insert_selection_from_source(
-            self._conn, name, "variants", self._create_filters()
-        )
+        if success and name:
 
-        if "source_editor" in self.mainwindow.plugins:
-            self.mainwindow.refresh_plugin("source_editor")
+            sql.insert_selection_from_source(
+                self._conn, name, "variants", self._create_filters(False)
+            )
+
+            if "source_editor" in self.mainwindow.plugins:
+                self.mainwindow.refresh_plugin("source_editor")
+
+        else:
+
+                return
 
     def on_add_filter(self):
+        """
+        This function is called when the user clicks on the "Add Filter" button
+        """
 
         self.mainwindow.set_state_data("filters", self._create_filters())
         self.mainwindow.refresh_plugins(sender=self)
