@@ -415,7 +415,9 @@ class MainWindow(QMainWindow):
         self.toolbar.addSeparator()
 
         ### Recent projects
+        self.file_menu.addSeparator()
         self.recent_files_menu = self.file_menu.addMenu(self.tr("Open recent"))
+        self.file_menu.addSeparator()
 
         self.setup_recent_menu()
 
@@ -700,7 +702,7 @@ class MainWindow(QMainWindow):
         if dialog.exec_() == QDialog.Accepted:
 
             db_filename = dialog.db_filename()
-            #LOGGER.warning("ICI", db_filename)
+            # LOGGER.warning("ICI", db_filename)
 
             try:
                 self.open(db_filename)

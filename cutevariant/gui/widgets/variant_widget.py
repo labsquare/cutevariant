@@ -64,6 +64,7 @@ class VariantWidget(QWidget):
 
         self.favorite = QCheckBox()
         self.favorite.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        self.favorite.setText(self.tr("Mark variant as favorite"))
 
         self.classification = QComboBox()
 
