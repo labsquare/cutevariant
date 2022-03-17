@@ -686,6 +686,7 @@ class SamplesWidget(plugin.PluginWidget):
             if dialog.exec_() == QDialog.Accepted:
                 self.load_all_filters()
                 self.on_refresh()
+                print("iamhere")
 
     def _toggle_column(self, col: int, show: bool):
         """hide/show columns"""
