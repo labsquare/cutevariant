@@ -157,14 +157,14 @@ class SampleVariantWidget(QWidget):
             + str(sample["name"])
             + "</span></p></body></html>"
         )
-        self.setWindowTitle("edit box")
+        self.setWindowTitle("Variant validation")
         self.title_variant.setText(var_name)
         self.title_sample.setText(sample["name"])
 
         # self.classification.addItems([v for v in SAMPLE_VARIANT_CLASSIFICATION.values()])
         # self.classification.setCurrentIndex(self.sample_has_var_data["classification"])
         for k, v in SAMPLE_VARIANT_CLASSIFICATION.items():
-            print("k", k, v, self.classification)
+            self.classification.addItem(v["name"], k)
 
         index = self.classification.findData(self.sample_has_var_data["classification"])
         self.classification.setCurrentIndex(index)
