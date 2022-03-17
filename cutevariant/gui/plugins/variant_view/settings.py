@@ -12,6 +12,9 @@ from cutevariant.gui import FIcon
 import cutevariant.commons as cm
 from cutevariant.config import Config
 
+from cutevariant.gui.widgets import TagEditor
+
+
 import typing
 import copy
 
@@ -165,203 +168,26 @@ class LinksModel(QAbstractListModel):
             return QIcon(FIcon(0xF0866))
 
 
-class TagModel(QAbstractListModel):
-    def __init__(self, parent: QObject = None) -> None:
-        super().__init__(parent=parent)
-        self.items = []
-
-    def data(self, index: QModelIndex, role: int) -> typing.Any:
-        if role == Qt.DisplayRole:
-            return self.items[index.row()]["name"]
-        if role == Qt.ToolTipRole:
-            return self.items[index.row()]["description"]
-        if role == Qt.DecorationRole:
-            # Color is stored as a string to help with serialization
-            return QColor(self.items[index.row()]["color"])
-
-    def setData(self, index: QModelIndex, value: typing.Any, role: int) -> bool:
-        if role == Qt.DisplayRole:
-            self.items[index.row()]["name"] = value
-        if role == Qt.ToolTipRole:
-            self.items[index.row()]["description"] = value
-        if role == Qt.DecorationRole:
-            # Color is stored as a string to help with serialization
-            self.items[index.row()]["color"] = value
-
-        self.dataChanged.emit(index, index)
-
-    def add_item(self, item: dict):
-        self.beginInsertRows(QModelIndex(), self.rowCount(), self.rowCount() + 1)
-        self.items.append(copy.deepcopy(item))
-        self.endInsertRows()
-
-    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
-        return len(self.items)
-
-    def remove_rows(self, indexes: typing.List[QModelIndex]):
-        self.beginResetModel()
-        indexes = sorted(indexes, reverse=True)
-        for idx in indexes:
-            data = {
-                "name": idx.data(Qt.DisplayRole),
-                "description": idx.data(Qt.ToolTipRole),
-                "color": idx.data(Qt.DecorationRole),
-            }
-            self.items.remove(data)
-        self.endResetModel()
-
-    def clear(self):
-        self.beginResetModel()
-        self.items.clear()
-        self.endResetModel()
-
-
-class TagDialog(QDialog):
-    def __init__(
-        self, name="", description="", color="#FF00FF", parent: QWidget = None
-    ) -> None:
-        super().__init__(parent=parent)
-
-        self.setWindowTitle(self.tr("Edit tag"))
-
-        self._layout = QVBoxLayout(self)
-
-        self._button_box = QDialogButtonBox(
-            QDialogButtonBox.Ok | QDialogButtonBox.Cancel
-        )
-        self._button_box.accepted.connect(self.accept)
-        self._button_box.rejected.connect(self.reject)
-
-        self.form_layout = QFormLayout()
-        self.tag_le = QLineEdit(self)
-        self.descr_le = QLineEdit(self)
-        self.color_pick = QPushButton(self.tr("Pick color..."), self)
-        self.color = QColor("#FF0000")
-
-        self.tag_le.setPlaceholderText(self.tr("Name"))
-        self.descr_le.setPlaceholderText(self.tr("Description"))
-        self.color = QColor("red")
-
-        # When we click, we change tag's color
-        self.color_pick.clicked.connect(self._get_tag_color)
-
-        self.form_layout.addRow(self.tr("Name"), self.tag_le)
-        self.form_layout.addRow(self.tr("Description"), self.descr_le)
-        self.form_layout.addRow(self.tr("Color"), self.color_pick)
-
-        self._layout.addLayout(self.form_layout)
-        self._layout.addWidget(self._button_box)
-
-        self.set_tag(name, description, color)
-
-    def set_tag(self, name: str = "", description: str = "", color: str = "#FF00FF"):
-        """Set tag
-
-        Args:
-            name (str, optional):
-            description (str, optional):
-            color (str, optional):
-        """
-        self.tag_le.setText(name)
-        self.descr_le.setText(description)
-        self.color = color
-        self.color_pick.setIcon(FIcon(0xF0765, QColor(self.color)))
-
-    def get_tag(self) -> dict:
-        """Summary
-
-        Returns:
-            dict: return name, description, color
-        """
-
-        return {
-            "name": self.tag_le.text(),
-            "description": self.descr_le.text(),
-            "color": self.color,
-        }
-
-    def _get_tag_color(self):
-        color = QColorDialog.getColor(QColor(self.color), self.color_pick).name()
-
-        if color:
-            current_tag = self.get_tag()
-            current_tag["color"] = color
-            self.set_tag(**current_tag)
-
-
 class TagsSettings(AbstractSettingsWidget):
     def __init__(self):
         super().__init__()
 
         self.setWindowTitle("Tags")
-        self.label = QLabel(
-            """
-            Set tags available
-            """
-        )
-        self.setWindowIcon(FIcon(0xF12F7))
-        self.view = QListView()
-        self.model = TagModel()
-
-        self.view.setModel(self.model)
-        self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
-
-        self.add_button = QPushButton(self.tr("Add"))
-        self.rem_button = QPushButton(self.tr("Remove"))
-        self.clear_button = QPushButton(self.tr("Clear"))
-        self.edit_button = QPushButton(self.tr("Edit"))
-
-        h_layout = QHBoxLayout(self)
-        h_layout.addWidget(self.view)
-        v_layout = QVBoxLayout()
-        v_layout.addWidget(self.add_button)
-        v_layout.addWidget(self.edit_button)
-        v_layout.addWidget(self.rem_button)
-        v_layout.addStretch()
-        v_layout.addWidget(self.clear_button)
-        h_layout.addLayout(v_layout)
-
-        self.add_button.clicked.connect(self.on_add)
-        self.rem_button.clicked.connect(self.on_rem)
-        self.clear_button.clicked.connect(self.on_clear)
-        self.edit_button.clicked.connect(self.on_edit)
+        v_layout = QVBoxLayout(self)
+        self.w = TagEditor()
+        v_layout.addWidget(self.w)
 
     def save(self):
-
+        """override"""
         config = self.section_widget.create_config()
-        config["tags"] = self.model.items
+        config["tags"] = self.w.get_tags()
         config.save()
 
     def load(self):
-        config: Config = self.section_widget.create_config()
-        tags = config.get("tags", [])
-        if isinstance(tags, list):
-            if all(isinstance(tag, dict) for tag in tags):
-                self.model.items = tags
-
-    def on_add(self):
-        dialog = TagDialog(parent=self)
-        if dialog.exec_() == QDialog.Accepted:
-            self.model.add_item(dialog.get_tag())
-
-    def on_edit(self):
-        index = self.view.currentIndex()
-        name = index.data(Qt.DisplayRole)
-        description = index.data(Qt.ToolTipRole)
-        color = index.data(Qt.DecorationRole).name()
-        dialog = TagDialog(name, description, color)
-
-        if dialog.exec_() == QDialog.Accepted:
-            tag = dialog.get_tag()
-            self.model.setData(index, tag["name"], Qt.DisplayRole)
-            self.model.setData(index, tag["description"], Qt.ToolTipRole)
-            self.model.setData(index, tag["color"], Qt.DecorationRole)
-
-    def on_rem(self):
-        self.model.remove_rows(self.view.selectionModel().selectedRows())
-
-    def on_clear(self):
-        self.model.clear()
+        """override"""
+        config = self.section_widget.create_config()
+        tags = config.get("tags", "")
+        self.w.set_tags(tags)
 
 
 class GeneralSettings(AbstractSettingsWidget):
