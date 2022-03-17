@@ -1,5 +1,0 @@
-__title__ = "Tags"
-__description__ = "Tag editor"
-__long_description__ = """Create, edit and delete tags """
-__author__ = "Sacha"
-__version__ = "1.0.0"
