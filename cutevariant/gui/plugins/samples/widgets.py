@@ -410,13 +410,18 @@ class SamplesWidget(plugin.PluginWidget):
 
         self.toolbar = QToolBar()
         self.toolbar.setIconSize(QSize(16, 16))
+        self.model = SamplesModel()
         self.view = SamplesView()
         self.view.setShowGrid(False)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setSortingEnabled(True)
         self.view.setIconSize(QSize(16, 16))
         self.view.horizontalHeader().setHighlightSections(False)
-        self.model = SamplesModel()
+        self.view.setModel(self.model)
+
+        self.label = QLabel()
+        self.label.setAlignment(Qt.AlignCenter)
+        self.label.setMinimumHeight(20)
 
         self.error_label = QLabel()
         self.error_label.setStyleSheet(
@@ -430,11 +435,10 @@ class SamplesWidget(plugin.PluginWidget):
 
         self.setWindowIcon(FIcon(0xF0A8C))
 
-        self.view.setModel(self.model)
-
         vlayout = QVBoxLayout()
         vlayout.setContentsMargins(0, 0, 0, 0)
         vlayout.addWidget(self.toolbar)
+        vlayout.addWidget(self.label)
         vlayout.addWidget(self.view)
         vlayout.addWidget(self.error_label)
         vlayout.setSpacing(0)
@@ -560,7 +564,6 @@ class SamplesWidget(plugin.PluginWidget):
         dialog = SampleSelectionDialog(self._conn, self)
         if dialog.exec():
             self.model.selected_samples = dialog.get_samples()
-            print("EH HO", self.model.selected_samples)
             self.on_refresh()
 
     def _on_double_clicked(self):
@@ -740,6 +743,10 @@ class SamplesWidget(plugin.PluginWidget):
         self.current_variant = self.mainwindow.get_state_data("current_variant")
         variant_id = self.current_variant["id"]
 
+        variant = sql.get_variant(self._conn, variant_id)
+
+        variant_name = "{chr}:{pos} - {ref} {alt}".format(**variant)
+        self.label.setText(variant_name)
         self.model.fields = [i["name"] for i in self.field_selector.selected_items()]
 
         self.model.load(variant_id)
