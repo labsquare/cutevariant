@@ -27,6 +27,7 @@ from cutevariant.gui.widgets import (
     SampleDialog,
     SampleVariantDialog,
     PresetAction,
+    SampleSelectionWidget,
 )
 
 
@@ -429,18 +430,6 @@ class SamplesWidget(plugin.PluginWidget):
 
         self.field_selector = ChoiceWidget()
         self.field_selector.accepted.connect(self.on_refresh)
-        self.sample_selector = ChoiceWidget()
-        self.sample_selector.accepted.connect(self.on_refresh)
-        self.family_selector = ChoiceWidget()
-        self.family_selector.accepted.connect(self.on_refresh)
-        self.tag_selector = ChoiceWidget()
-        self.tag_selector.accepted.connect(self.on_refresh)
-        self.geno_selector = ChoiceWidget()
-        self.geno_selector.accepted.connect(self.on_refresh)
-        self.valid_selector = ChoiceWidget()
-        self.valid_selector.accepted.connect(self.on_refresh)
-        self.classification_selector = ChoiceWidget()
-        self.classification_selector.accepted.connect(self.on_refresh)
 
         self.setWindowIcon(FIcon(0xF0A8C))
 
@@ -462,48 +451,7 @@ class SamplesWidget(plugin.PluginWidget):
 
     def setup_actions(self):
 
-        # sample action
-        sample_action = create_widget_action(self.toolbar, self.sample_selector)
-        sample_action.setIcon(FIcon(0xF0013))
-        sample_action.setText("Samples ")
-        sample_action.setToolTip("Filter by samples")
-
-        # family action
-        fam_action = create_widget_action(self.toolbar, self.family_selector)
-        fam_action.setIcon(FIcon(0xF0B58))
-        fam_action.setText("Family")
-        fam_action.setToolTip("Filter by family")
-
-        # tags action
-        tag_action = create_widget_action(self.toolbar, self.tag_selector)
-        tag_action.setIcon(FIcon(0xF04FC))
-        tag_action.setText("Tags ")
-        tag_action.setToolTip("Filter by tags")
-
-        # geno action
-        geno_action = create_widget_action(self.toolbar, self.geno_selector)
-        geno_action.setIcon(FIcon(0xF0902))
-        geno_action.setText("Genotype")
-        geno_action.setToolTip("Filter by genotype")
-
-        # valid lock/unlock action
-        valid_action = create_widget_action(self.toolbar, self.valid_selector)
-        valid_action.setIcon(FIcon(0xF139A))
-        valid_action.setText("Validation")
-        valid_action.setToolTip("Filter by sample Validation")
-
-        # classification action
-        classification_action = create_widget_action(
-            self.toolbar, self.classification_selector
-        )
-        classification_action.setIcon(FIcon(0xF00C1))
-        classification_action.setText("Classification")
-        classification_action.setToolTip("Filter by variant classification on sample")
-
-        # Clear filters
-        self.toolbar.addAction(
-            FIcon(0xF01FE), self.tr("Clear all filters"), self._on_clear_filters
-        )
+        add_samples = self.toolbar.addAction("Add samples")
 
         # Spacer
         spacer = QWidget()
@@ -610,6 +558,9 @@ class SamplesWidget(plugin.PluginWidget):
 
         self.on_refresh()
 
+    def _on_add_samples(self):
+        pass
+
     def _on_double_clicked(self):
         self._show_sample_variant_dialog()
 
@@ -707,13 +658,6 @@ class SamplesWidget(plugin.PluginWidget):
 
     def _on_clear_filters(self):
 
-        self.sample_selector.uncheck_all()
-        self.family_selector.uncheck_all()
-        self.geno_selector.uncheck_all()
-        self.valid_selector.uncheck_all()
-        self.classification_selector.uncheck_all()
-        self.tag_selector.uncheck_all()
-
         self.on_refresh()
 
     def _create_filters(self):
@@ -775,27 +719,7 @@ class SamplesWidget(plugin.PluginWidget):
         )
 
     def load_all_filters(self):
-        self.load_samples()
-        self.load_tags()
         self.load_fields()
-        self.load_family()
-        self.load_genotype()
-        self.load_valid()
-        self.load_classification()
-
-    def load_samples(self):
-
-        self.sample_selector.clear()
-        for sample in sql.get_samples(self._conn):
-            self.sample_selector.add_item(
-                FIcon(0xF0B55), sample["name"], data=sample["name"]
-            )
-
-    def load_tags(self):
-
-        self.tag_selector.clear()
-        for tag in ["#hemato", "#cancero", "#exome"]:
-            self.tag_selector.add_item(FIcon(0xF04FD), tag, data=tag)
 
     def load_fields(self):
         self.field_selector.clear()
@@ -808,31 +732,6 @@ class SamplesWidget(plugin.PluginWidget):
                     data=field["name"],
                 )
 
-    def load_family(self):
-        self.family_selector.clear()
-        for fam in sql.get_samples_family(self._conn):
-            self.family_selector.add_item(FIcon(0xF036E), fam, data=fam)
-
-    def load_genotype(self):
-        self.geno_selector.clear()
-
-        for key, value in GENOTYPE.items():
-            self.geno_selector.add_item(FIcon(value["icon"]), value["name"], data=key)
-
-    def load_valid(self):
-        self.valid_selector.clear()
-
-        for key, value in SAMPLE_CLASSIFICATION.items():
-            self.valid_selector.add_item(FIcon(value["icon"]), value["name"], data=key)
-
-    def load_classification(self):
-        self.classification_selector.clear()
-
-        for key, value in SAMPLE_VARIANT_CLASSIFICATION.items():
-            self.classification_selector.add_item(
-                FIcon(value["icon"]), value["name"], data=key
-            )
-
     def on_refresh(self):
 
         # Get fields
@@ -840,22 +739,6 @@ class SamplesWidget(plugin.PluginWidget):
         variant_id = self.current_variant["id"]
 
         self.model.fields = [i["name"] for i in self.field_selector.selected_items()]
-
-        self.model.selected_samples = [
-            i["name"] for i in self.sample_selector.selected_items()
-        ]
-        self.model.selected_families = [
-            i["name"] for i in self.family_selector.selected_items()
-        ]
-        self.model.selected_genotypes = [
-            i["data"] for i in self.geno_selector.selected_items()
-        ]
-        self.model.selected_valid = [
-            i["data"] for i in self.valid_selector.selected_items()
-        ]
-        self.model.selected_classification = [
-            i["data"] for i in self.classification_selector.selected_items()
-        ]
 
         self.model.load(variant_id)
 
@@ -890,8 +773,8 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
-    # conn = sqlite3.connect("/home/sacha/test3.db")
-    conn = sqlite3.connect("C:/Users/Ichtyornis/Projects/cutevariant/test2.db")
+    conn = sqlite3.connect("/home/sacha/test3.db")
+    # conn = sqlite3.connect("C:/Users/Ichtyornis/Projects/cutevariant/test2.db")
     conn.row_factory = sqlite3.Row
 
     view = SamplesWidget()
