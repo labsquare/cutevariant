@@ -10,6 +10,7 @@ class ChoiceModel(QAbstractListModel):
         super().__init__(parent)
 
         self._data = []
+        self.check_count = 0
 
     def rowCount(self, parent=QModelIndex()):
         return len(self._data)
@@ -40,7 +41,10 @@ class ChoiceModel(QAbstractListModel):
         """override"""
 
         if role == Qt.CheckStateRole:
-            self._data[index.row()]["checked"] = True if value == Qt.Checked else False
+
+            checked = True if value == Qt.Checked else False
+            self._data[index.row()]["checked"] = checked
+            self.check_count += 1 if checked else -1
             self.dataChanged.emit(index, index, [Qt.CheckStateRole])
             return True
 
@@ -62,6 +66,7 @@ class ChoiceModel(QAbstractListModel):
     def clear(self):
         self.beginResetModel()
         self._data.clear()
+        self.check_count = 0
         self.endResetModel()
 
     def uncheck_all(self):
@@ -69,6 +74,8 @@ class ChoiceModel(QAbstractListModel):
 
         for i in self._data:
             i["checked"] = False
+
+        self.check_count = 0
 
         self.endResetModel()
 
@@ -80,8 +87,10 @@ class ChoiceModel(QAbstractListModel):
         for i in self._data:
             if i["name"] in items:
                 i["checked"] = True
+                self.check_count += 1
             else:
                 i["checked"] = False
+                self.check_count -= 1
 
 
 class ChoiceView(QListView):
@@ -112,6 +121,7 @@ class ChoiceView(QListView):
 class ChoiceWidget(QWidget):
     visibility_changed = Signal()
     accepted = Signal()
+    check_changed = Signal(int)
 
     def __init__(self, parent=None):
         super().__init__()
@@ -156,15 +166,18 @@ class ChoiceWidget(QWidget):
 
     def clear(self):
         self._model.clear()
+        self.check_changed.emit(self._model.check_count)
 
     def uncheck_all(self):
         self._model.uncheck_all()
+        self.check_changed.emit(self._model.check_count)
 
     def checked(self):
         return any(i["checked"] for i in self._model.items())
 
     def set_checked(self, items: list):
         self._model.set_checked(items)
+        self.check_changed.emit(self._model.check_count)
 
 
 def create_widget_action(toolbar: QToolBar, widget: QWidget):
