@@ -104,7 +104,7 @@ class VariantVerticalHeader(QHeaderView):
         painter.drawLine(rect.left(), rect.top() + 1, rect.left(), rect.bottom() - 1)
 
         # pix = FIcon(sample_icon, sample_color).pixmap(20, 20)
-        pix = FIcon(sample_icon, sample_color).pixmap(20, 20)
+        pix = FIcon(sample_icon, sample_color).pixmap(16, 16)
 
         target = rect.center() - pix.rect().center() + QPoint(1, 0)
 
