@@ -7,6 +7,7 @@ from PySide6.QtGui import *
 from cutevariant.core import sql
 from cutevariant.gui.style import CLASSIFICATION, SAMPLE_VARIANT_CLASSIFICATION
 from cutevariant.gui.widgets import ChoiceWidget, DictWidget, MarkdownEditor
+from cutevariant.config import Config
 
 from cutevariant.gui.ficon import FIcon
 
@@ -24,7 +25,7 @@ class SampleVariantWidget(QWidget):
     def __init__(self, conn: sqlite3.Connection, parent=None):
         super().__init__()
         self.conn = conn
-        self.TAG_LIST = ["#hemato", "#cardio", "#pharmaco"]
+        self.TAG_LIST = [tag["name"] for tag in Config("validation")["validation_tags"]]
         self.TAG_SEPARATOR = "&"
         self.REVERSE_CLASSIF = {
             v["name"]: k for k, v in SAMPLE_VARIANT_CLASSIFICATION.items()
