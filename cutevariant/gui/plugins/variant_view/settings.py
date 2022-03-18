@@ -12,7 +12,7 @@ from cutevariant.gui import FIcon
 import cutevariant.commons as cm
 from cutevariant.config import Config
 
-from cutevariant.gui.widgets import TagEditor
+from cutevariant.gui.widgets import TagEditor, ClassificationEditor
 
 
 import typing
@@ -411,6 +411,29 @@ class MemorySettings(AbstractSettingsWidget):
         pass
 
 
+class ClassificationSettings(AbstractSettingsWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle(self.tr("Classification"))
+        # self.setWindowIcon(FIcon(0xF070F))
+
+        layout = QVBoxLayout(self)
+        self.w = ClassificationEditor()
+        layout.addWidget(self.w)
+
+    def save(self):
+        """override"""
+        config = self.section_widget.create_config()
+        config["classifications"] = self.w.get_classifications()
+        config.save()
+
+    def load(self):
+        """override"""
+        config = self.section_widget.create_config()
+        classifications = config.get("classifications", [])
+        self.w.set_classifications(classifications)
+
+
 class VariantViewSettingsWidget(PluginSettingsWidget):
     """Instantiated plugin in the settings panel of Cutevariant
 
@@ -427,3 +450,4 @@ class VariantViewSettingsWidget(PluginSettingsWidget):
         self.add_page(GeneralSettings())
         self.add_page(LinkSettings())
         self.add_page(TagsSettings())
+        self.add_page(ClassificationSettings())

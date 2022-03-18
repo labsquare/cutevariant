@@ -21,3 +21,4 @@ from .variant_widget import VariantWidget, VariantDialog
 from .preset_action import PresetAction
 
 from .tag_editor import TagDialog, TagEditor
+from .classification_editor import ClassificationEditor

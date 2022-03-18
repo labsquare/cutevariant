@@ -138,6 +138,9 @@ class ClassificationModel(QAbstractTableModel):
     def classification(self, index: QModelIndex):
         return self._data[index.row()]
 
+    def get_classifications(self):
+        return self._data
+
     def add_classification(self, classification: dict):
 
         self.beginInsertRows(QModelIndex(), 0, 0)
@@ -228,6 +231,9 @@ class ClassificationEditor(QWidget):
 
     def set_classifications(self, classifications: typing.List[dict]):
         self.model.set_classifications(classifications)
+
+    def get_classifications(self):
+        return self.model.get_classifications()
 
 
 #     def set_tags(self, tags: typing.List[dict]):
