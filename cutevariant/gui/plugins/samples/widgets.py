@@ -27,7 +27,7 @@ from cutevariant.gui.widgets import (
     SampleDialog,
     SampleVariantDialog,
     PresetAction,
-    SampleSelectionWidget,
+    SampleSelectionDialog,
 )
 
 
@@ -274,11 +274,8 @@ class SamplesModel(QAbstractTableModel):
             variant_id=variant_id,
             fields=self.fields,
             samples=self.selected_samples,
-            families=self.selected_families,
-            tags=self.selected_tags,
             genotypes=self.selected_genotypes,
-            valid=self.selected_valid,
-            classification=self.selected_classification,
+            #            classification=self.selected_classification,
         )
 
         # Start the run
@@ -451,7 +448,7 @@ class SamplesWidget(plugin.PluginWidget):
 
     def setup_actions(self):
 
-        add_samples = self.toolbar.addAction("Add samples")
+        add_samples = self.toolbar.addAction("Add samples", self._on_add_samples)
 
         # Spacer
         spacer = QWidget()
@@ -559,7 +556,12 @@ class SamplesWidget(plugin.PluginWidget):
         self.on_refresh()
 
     def _on_add_samples(self):
-        pass
+
+        dialog = SampleSelectionDialog(self._conn, self)
+        if dialog.exec():
+            self.model.selected_samples = dialog.get_samples()
+            print("EH HO", self.model.selected_samples)
+            self.on_refresh()
 
     def _on_double_clicked(self):
         self._show_sample_variant_dialog()

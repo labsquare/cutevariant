@@ -277,10 +277,10 @@ class SampleSelectionWidget(QWidget):
         self.tab.setTabText(1, name)
 
     def get_samples(self):
-        pass
+        return self.second_widget.get_samples()
 
     def set_samples(self, samples: list):
-        pass
+        self.second_widget.set_samples(samples)
 
     @property
     def conn(self):
@@ -294,16 +294,24 @@ class SampleSelectionWidget(QWidget):
 
 
 class SampleSelectionDialog(QDialog):
-    def __init__(self, parent=None):
-        super().__init__()
+    def __init__(self, conn, parent=None):
+        super().__init__(parent)
 
         self.w = SampleSelectionWidget()
-        self.btn_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialog.Cancel)
+        self.w.conn = conn
+        self.btn_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         self.btn_box.accepted.connect(self.accept)
         self.btn_box.rejected.connect(self.reject)
-        v_layout = QVBoxLayout()
+        v_layout = QVBoxLayout(self)
         v_layout.addWidget(self.w)
         v_layout.addWidget(self.btn_box)
+        self.resize(600, 400)
+
+    def set_samples(self, samples: list):
+        self.w.set_samples(samples)
+
+    def get_samples(self):
+        return self.w.get_samples()
 
 
 if __name__ == "__main__":
@@ -313,8 +321,9 @@ if __name__ == "__main__":
 
     conn = sql.get_sql_connection("/home/sacha/exome/exome_1.db")
 
-    w = SampleSelectionWidget()
-    w.conn = conn
-    w.show()
+    w = SampleSelectionDialog(conn)
+    w.exec()
+
+    print(w.get_samples())
 
     app.exec()
