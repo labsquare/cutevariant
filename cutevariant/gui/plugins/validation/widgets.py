@@ -794,7 +794,7 @@ class ValidationWidget(plugin.PluginWidget):
     def load_tags(self):
 
         self.tag_selector.clear()
-        for tag in ["#hemato", "#cancero", "#exome"]:
+        for tag in [tag["name"] for tag in Config("validation")["sample_tags"]]:
             self.tag_selector.add_item(FIcon(0xF04FD), tag, data=tag)
 
     def load_fields(self):
@@ -847,6 +847,9 @@ class ValidationWidget(plugin.PluginWidget):
         self.model.selected_families = [
             i["name"] for i in self.family_selector.selected_items()
         ]
+        self.model.selected_tags = [
+            i["name"] for i in self.tag_selector.selected_items()
+        ]
         self.model.selected_genotypes = [
             i["data"] for i in self.geno_selector.selected_items()
         ]
@@ -894,7 +897,7 @@ if __name__ == "__main__":
     conn = sqlite3.connect("C:/Users/Ichtyornis/Projects/cutevariant/test2.db")
     conn.row_factory = sqlite3.Row
 
-    view = SamplesWidget()
+    view = ValidationWidget()
     view.on_open_project(conn)
     view.show()
 
