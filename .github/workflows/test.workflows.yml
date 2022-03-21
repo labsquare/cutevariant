@@ -47,9 +47,7 @@ jobs:
               libxcb-xfixes0 \
               libxcb-xinerama0 \
               libxcb-xkb1 \
-              libxcb1 \
-              libopengl0 \
-              libxcb-xinput0 
+              libxcb1 
             #export QT_QPA_PLATFORM=offscreen
             export DISPLAY=:99.0
       - uses: actions/setup-python@v2
