@@ -111,6 +111,7 @@ class SqlThread(QThread):
 
         """
         self.last_error = None
+        self.results = None
 
         if self.function is None:
             LOGGER.exception("no function defined")
