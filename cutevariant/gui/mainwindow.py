@@ -407,10 +407,7 @@ class MainWindow(QMainWindow):
             QKeySequence.AddTab,
         )
         self.open_config_action = self.file_menu.addAction(
-            FIcon(0xF102F),
-            self.tr("&Open config..."),
-            self.open_config,
-            QKeySequence.Open,
+            FIcon(0xF102F), self.tr("&Open config..."), self.open_config
         )
 
         self.toolbar.addAction(self.new_project_action)
@@ -708,7 +705,7 @@ class MainWindow(QMainWindow):
         if dialog.exec_() == QDialog.Accepted:
 
             db_filename = dialog.db_filename()
-            #LOGGER.warning("ICI", db_filename)
+            # LOGGER.warning("ICI", db_filename)
 
             try:
                 self.open(db_filename)
