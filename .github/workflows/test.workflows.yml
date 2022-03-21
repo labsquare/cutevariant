@@ -22,8 +22,13 @@ jobs:
   linux:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        python_version: ['3.9']
+        include:
+          - name-suffix: "Minimum version"
+            python_version: ['3.10.2']
+            QT_BINDING: PySide6
+            XVFB_RUN: xvfb-run -a
     env:
          DISPLAY: ':99.0'
     steps:
@@ -58,7 +63,7 @@ jobs:
       - name: install PySide6    # Parce que @ysard veut absolument les version deprecated
         run : pip install PySide6
       - name: test 
-        run: python -m pytest tests/core
+        run: ${{ matrix.XVFB_RUN }} python -m pytest tests/core
 
   # WINDOWS JOB 
 
