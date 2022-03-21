@@ -61,7 +61,7 @@ class VariantVerticalHeader(QHeaderView):
         classification = self.model().item(section)["classification"]
 
         painter.restore()
-        color = self.COLOR[classification]
+        color = self.COLOR[CLASSIFICATION]
 
         pen = QPen(color)
         pen.setWidth(6)
