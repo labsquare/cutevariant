@@ -9,6 +9,7 @@ from cutevariant.gui.style import (
 )
 
 from cutevariant.config import Config
+from cutevariant.gui.ficon import FIcon
 
 
 class SamplesModel(QAbstractTableModel):
@@ -129,11 +130,9 @@ class AllSamplesWidget(QWidget):
         # separator
         sep = QWidget()
         sep.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-
-        self.add_button = QPushButton("Add To Selection ")
-        self.add_button.clicked.connect(self._on_add_selection)
         self.toolbar.addWidget(sep)
-        self.toolbar.addWidget(self.add_button)
+        self.add_button = self.toolbar.addAction(" Add To Selection > ")
+        self.add_button.triggered.connect(self._on_add_selection)
 
     def _load_filters(self):
         if self.conn:
@@ -220,7 +219,7 @@ class SelectionSamplesWidget(QWidget):
         sep = QWidget()
         sep.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
-        self.toolbar.addAction(QIcon(), "Remove selection(s)", self._on_remove)
+        self.toolbar.addAction(QIcon(), "< Remove selection(s)", self._on_remove)
         self.toolbar.addWidget(sep)
         self.toolbar.addAction(QIcon(), "Clear all", self._on_clear)
 
@@ -261,15 +260,17 @@ class SampleSelectionWidget(QWidget):
 
         self.second_widget.setWindowTitle("Selected sample(s)")
 
-        self.tab.addTab(self.first_widget, "All Samples")
-        self.tab.addTab(self.second_widget, self.second_widget.windowTitle())
+        # self.tab.addTab(self.first_widget, "All Samples")
+        # self.tab.addTab(self.second_widget, self.second_widget.windowTitle())
+
+        splitter = QSplitter(Qt.Horizontal)
+        splitter.addWidget(self.first_widget)
+        splitter.addWidget(self.second_widget)
+
+        v_layout.addWidget(splitter)
 
         self.first_widget.sample_added.connect(self.second_widget.set_samples)
         self.second_widget.selection_changed.connect(self._on_selection_changed)
-
-        v_layout.addWidget(self.tab)
-
-        self.resize(600, 400)
 
     def _on_selection_changed(self, row: int):
         # compute new tab name
@@ -305,7 +306,7 @@ class SampleSelectionDialog(QDialog):
         v_layout = QVBoxLayout(self)
         v_layout.addWidget(self.w)
         v_layout.addWidget(self.btn_box)
-        self.resize(600, 400)
+        self.resize(800, 400)
 
     def set_samples(self, samples: list):
         self.w.set_samples(samples)

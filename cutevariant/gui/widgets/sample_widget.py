@@ -5,6 +5,7 @@ from PySide6.QtGui import *
 
 from cutevariant.gui.widgets import MarkdownEditor
 from cutevariant.core import sql
+from cutevariant.config import Config
 
 from cutevariant.gui.ficon import FIcon
 
@@ -44,7 +45,10 @@ class SampleWidget(QWidget):
     def __init__(self, conn: sqlite3.Connection, parent=None):
         super().__init__()
         self.conn = conn
-        self.TAG_LIST = ["#hemato", "#cardio", "#pharmaco"]
+        if Config("validation")["sample_tags"] != None:
+            self.TAG_LIST = [tag["name"] for tag in Config("validation")["sample_tags"]]
+        else:
+            self.TAG_LIST = []
         self.TAG_SEPARATOR = "&"
         self.SAMPLE_CLASSIFICATION = {
             -1: {"name": "Rejected"},
@@ -119,7 +123,7 @@ class SampleWidget(QWidget):
         pheno_layout = QFormLayout(pheno_widget)
         pheno_layout.addRow("Sexe", self.sex_combo)
         pheno_layout.addRow("Affected", self.phenotype_combo)
-        pheno_layout.addRow("HPO", self.hpo_widget)
+        # pheno_layout.addRow("HPO", self.hpo_widget) #hidden for now
         self.tab_widget.addTab(identity_widget, "Edit")
         self.tab_widget.addTab(pheno_widget, "Phenotype")
 
@@ -141,7 +145,7 @@ class SampleWidget(QWidget):
         self.sample_id = sample_id
         data = sql.get_sample(self.conn, sample_id)
         self.initial_db_validation = self.get_validation_from_data(data)
-
+        print("loaded data:", data)
         self.name_edit.setText(data.get("name", "?"))
         self.fam_edit.setText(data.get("family_id", "?"))
         self.sex_combo.setCurrentIndex(data.get("sex", 0))
@@ -196,9 +200,13 @@ class SampleWidget(QWidget):
         sql.update_sample(self.conn, data)
 
     def get_validation_from_data(self, data):
-        return {"classif_index": int("{valid}".format(**data)), 
+        return {
+                "fam": data["family_id"], 
                 "tags": data["tags"], 
-                "comment": data["comment"]
+                "comment": data["comment"],
+                "valid": int("{valid}".format(**data)),
+                "sex": data["sex"],
+                "phenotype": data["phenotype"]
         }
 
     def get_gui_state(self):
@@ -206,9 +214,12 @@ class SampleWidget(QWidget):
         Used to identify if any writable value was changed by an user when closing the widget
         """
         values = []
+        values.append(self.fam_edit.text())
         values.append(self.classification.currentIndex())
         values.append(self.tag_edit.currentData())
         values.append(self.comment.toPlainText())
+        values.append(self.sex_combo.currentIndex())
+        values.append(self.phenotype_combo.currentIndex())
         return values
 
 class SampleDialog(QDialog):

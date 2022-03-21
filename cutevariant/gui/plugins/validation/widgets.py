@@ -104,7 +104,7 @@ class VariantVerticalHeader(QHeaderView):
         painter.drawLine(rect.left(), rect.top() + 1, rect.left(), rect.bottom() - 1)
 
         # pix = FIcon(sample_icon, sample_color).pixmap(20, 20)
-        pix = FIcon(sample_icon, sample_color).pixmap(16, 16)
+        pix = FIcon(0xF012F, sample_color).pixmap(16, 16)
 
         target = rect.center() - pix.rect().center() + QPoint(1, 0)
 
@@ -165,6 +165,9 @@ class SamplesModel(QAbstractTableModel):
     def item(self, row: int):
         return self.items[row]
 
+    def get_samples(self):
+        return (i["name"] for i in self.items)
+
     def data(self, index: QModelIndex, role: Qt.ItemDataRole) -> typing.Any:
         """override"""
         if not index.isValid():
@@ -177,9 +180,22 @@ class SamplesModel(QAbstractTableModel):
             return item[key]
 
         if role == Qt.DecorationRole:
-            if key == "valid":
-                hex_icon = 0xF139A if item[key] == 1 else 0xF0FC7
-                return QIcon(FIcon(hex_icon))
+            # if key == "valid":
+            #     hex_icon = 0xF139A if item[key] == 1 else 0xF0FC7
+            #     return QIcon(FIcon(hex_icon))
+
+            return QIcon(Ficon(0xF139A)).toPixmap(20, 20)
+
+            # classification = self.model().item(section)["classification"] or 0
+            # sample_variant_color = style.SAMPLE_VARIANT_CLASSIFICATION[classification].get(
+            #     "color"
+            # )
+            # sample_variant_icon = style.SAMPLE_VARIANT_CLASSIFICATION[classification].get(
+            #     "icon"
+            # )
+            # sample_variant_blurred = style.SAMPLE_VARIANT_CLASSIFICATION[
+            #     classification
+            # ].get("blurred")
 
         # if role == Qt.DecorationRole:
         #     if index.column() == 0:
@@ -204,7 +220,7 @@ class SamplesModel(QAbstractTableModel):
 
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
             if section == 0:
-                return ""
+                return "Sample"
 
             if section < len(self._headers):
                 return self._headers[section]
@@ -235,6 +251,8 @@ class SamplesModel(QAbstractTableModel):
         if "classification" in self._headers:
             self._headers.remove("classification")
 
+        print("Loaded", len(self.items), self.rowCount())
+
         self.endResetModel()
 
         # # Save cache
@@ -259,6 +277,11 @@ class SamplesModel(QAbstractTableModel):
         if self.conn is None:
             return
 
+        # Hacky ..
+        if not self.selected_samples:
+            self.clear()
+            return
+
         if self.is_running():
             LOGGER.debug(
                 "Cannot load data. Thread is not finished. You can call interrupt() "
@@ -267,6 +290,8 @@ class SamplesModel(QAbstractTableModel):
 
         if "classification" not in self.fields:
             self.fields.append("classification")
+
+            print("S", self.selected_samples)
 
         # Create load_func to run asynchronously: load samples
         load_samples_func = partial(
@@ -371,6 +396,13 @@ class SamplesModel(QAbstractTableModel):
         self.dataChanged.emit(self.index(row, 0), self.index(row, self.columnCount()))
         self.headerDataChanged.emit(Qt.Vertical, row, row)
 
+    def clear(self):
+
+        self.beginResetModel()
+        self.items.clear()
+        self.endResetModel()
+        self.load_finished.emit()
+
 
 class SamplesView(QTableView):
     def __init__(self, parent=None):
@@ -379,20 +411,12 @@ class SamplesView(QTableView):
         self.delegate = FormatterDelegate()
         self.delegate.set_formatter(CutestyleFormatter())
 
-        self.setItemDelegate(self.delegate)
+        # self.setItemDelegate(self.delegate)
 
         self.setVerticalHeader(VariantVerticalHeader())
 
-    def paintEvent(self, event: QPaintEvent):
-        if self.model().rowCount() == 0:
-            painter = QPainter(self.viewport())
-            painter.drawText(self.viewport().rect(), Qt.AlignCenter, "No Sample found")
 
-        else:
-            super().paintEvent(event)
-
-
-class SamplesWidget(plugin.PluginWidget):
+class ValidationWidget(plugin.PluginWidget):
     """Widget displaying the list of avaible selections.
     User can select one of them to update Query::selection
     """
@@ -415,15 +439,39 @@ class SamplesWidget(plugin.PluginWidget):
         self.view.setShowGrid(False)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setSortingEnabled(True)
+        self.view.horizontalHeader().setStretchLastSection(True)
         self.view.setIconSize(QSize(16, 16))
         self.view.horizontalHeader().setHighlightSections(False)
         self.view.setModel(self.model)
 
+        self.add_sample_button = QPushButton(self.tr("Add samples ..."))
+        self.add_sample_button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.add_sample_button.clicked.connect(self._on_add_samples)
+
+        empty_widget = QFrame()
+        empty_widget.setFrameStyle(QFrame.StyledPanel | QFrame.Plain)
+        empty_widget.setBackgroundRole(QPalette.Base)
+        empty_widget.setAutoFillBackground(True)
+        empty_layout = QVBoxLayout(empty_widget)
+        empty_layout.setAlignment(Qt.AlignCenter)
+
+        empty_layout.addWidget(self.add_sample_button)
+
+        self.stack_layout = QStackedLayout()
+        self.stack_layout.addWidget(empty_widget)
+        self.stack_layout.addWidget(self.view)
+
         self.label = QLabel()
+        self.label.setFrameStyle(QFrame.StyledPanel | QFrame.Raised)
         self.label.setAlignment(Qt.AlignCenter)
-        self.label.setMinimumHeight(20)
+        self.label.setMinimumHeight(30)
+
+        font = QFont()
+        font.setBold(True)
+        self.label.setFont(font)
 
         self.error_label = QLabel()
+        self.error_label.hide()
         self.error_label.setStyleSheet(
             "QWidget{{background-color:'{}'; color:'{}'}}".format(
                 style.WARNING_BACKGROUND_COLOR, style.WARNING_TEXT_COLOR
@@ -439,7 +487,7 @@ class SamplesWidget(plugin.PluginWidget):
         vlayout.setContentsMargins(0, 0, 0, 0)
         vlayout.addWidget(self.toolbar)
         vlayout.addWidget(self.label)
-        vlayout.addWidget(self.view)
+        vlayout.addLayout(self.stack_layout)
         vlayout.addWidget(self.error_label)
         vlayout.setSpacing(0)
         self.setLayout(vlayout)
@@ -452,18 +500,19 @@ class SamplesWidget(plugin.PluginWidget):
 
     def setup_actions(self):
 
-        add_samples = self.toolbar.addAction("Add samples", self._on_add_samples)
+        add_samples = self.toolbar.addAction(
+            FIcon(0xF0415), "Add samples", self._on_add_samples
+        )
 
+        # Fields to display
+        field_action = create_widget_action(self.toolbar, self.field_selector)
+        field_action.setIcon(FIcon(0xF0756))
+        field_action.setText("Fields")
+        field_action.setToolTip("Select fields to display")
         # Spacer
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.toolbar.addWidget(spacer)
-
-        # Fields to display
-        field_action = create_widget_action(self.toolbar, self.field_selector)
-        field_action.setIcon(FIcon(0xF0835))
-        field_action.setText("Fields")
-        field_action.setToolTip("Select fields to display")
 
         # Presets list
         self.preset_menu = QMenu()
@@ -562,6 +611,7 @@ class SamplesWidget(plugin.PluginWidget):
     def _on_add_samples(self):
 
         dialog = SampleSelectionDialog(self._conn, self)
+        dialog.set_samples(self.model.get_samples())
         if dialog.exec():
             self.model.selected_samples = dialog.get_samples()
             self.on_refresh()
@@ -626,7 +676,7 @@ class SamplesWidget(plugin.PluginWidget):
             dialog = SampleDialog(self._conn, sample["sample_id"])
 
             if dialog.exec_() == QDialog.Accepted:
-                self.load_all_filters()
+                # self.load_all_filters()
                 self.on_refresh()
 
     def _show_sample_variant_dialog(self):
@@ -640,7 +690,7 @@ class SamplesWidget(plugin.PluginWidget):
             )
 
             if dialog.exec_() == QDialog.Accepted:
-                self.load_all_filters()
+                # self.load_all_filters()
                 self.on_refresh()
 
     def _toggle_column(self, col: int, show: bool):
@@ -726,6 +776,14 @@ class SamplesWidget(plugin.PluginWidget):
     def load_all_filters(self):
         self.load_fields()
 
+    def load_samples(self):
+
+        self.sample_selector.clear()
+        for sample in sql.get_samples(self._conn):
+            self.sample_selector.add_item(
+                FIcon(0xF0B55), sample["name"], data=sample["name"]
+            )
+
     def load_fields(self):
         self.field_selector.clear()
         for field in sql.get_field_by_category(self._conn, "samples"):
@@ -766,6 +824,7 @@ class SamplesWidget(plugin.PluginWidget):
         self.show_error("")
 
         self.view.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
+        self.stack_layout.setCurrentIndex(1 if self.model.rowCount() else 0)
 
 
 # self.view.horizontalHeader().setSectionResizeMode(
@@ -786,7 +845,7 @@ if __name__ == "__main__":
     # conn = sqlite3.connect("C:/Users/Ichtyornis/Projects/cutevariant/test2.db")
     conn.row_factory = sqlite3.Row
 
-    view = SamplesWidget()
+    view = ValidationWidget()
     view.on_open_project(conn)
     view.show()
 

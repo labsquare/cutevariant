@@ -7,6 +7,7 @@ from PySide6.QtGui import *
 from cutevariant.core import sql
 from cutevariant.gui.style import CLASSIFICATION, SAMPLE_VARIANT_CLASSIFICATION
 from cutevariant.gui.widgets import ChoiceWidget, DictWidget, MarkdownEditor
+from cutevariant.config import Config
 
 from cutevariant.gui.ficon import FIcon
 
@@ -24,7 +25,10 @@ class SampleVariantWidget(QWidget):
     def __init__(self, conn: sqlite3.Connection, parent=None):
         super().__init__()
         self.conn = conn
-        self.TAG_LIST = ["#hemato", "#cardio", "#pharmaco"]
+        if Config("validation")["validation_tags"] != None:
+            self.TAG_LIST = [tag["name"] for tag in Config("validation")["validation_tags"]]
+        else:
+            self.TAG_LIST = []
         self.TAG_SEPARATOR = "&"
         self.REVERSE_CLASSIF = {
             v["name"]: k for k, v in SAMPLE_VARIANT_CLASSIFICATION.items()
@@ -157,16 +161,17 @@ class SampleVariantWidget(QWidget):
             + str(sample["name"])
             + "</span></p></body></html>"
         )
-        self.setWindowTitle("edit box")
+        self.setWindowTitle("Variant validation")
         self.title_variant.setText(var_name)
         self.title_sample.setText(sample["name"])
 
         # self.classification.addItems([v for v in SAMPLE_VARIANT_CLASSIFICATION.values()])
         # self.classification.setCurrentIndex(self.sample_has_var_data["classification"])
         for k, v in SAMPLE_VARIANT_CLASSIFICATION.items():
-            print("k", k, v, self.classification)
+            self.classification.addItem(v["name"], k)
 
         index = self.classification.findData(self.sample_has_var_data["classification"])
+        print(index)
         self.classification.setCurrentIndex(index)
 
         if self.sample_has_var_data.get("tags") is not None:
@@ -252,7 +257,7 @@ class SampleVariantWidget(QWidget):
         update_data = {
             "variant_id": self.sample_has_var_data["variant_id"],
             "sample_id": self.sample_has_var_data["sample_id"],
-            "classification": self.classification.currentIndex(),
+            "classification": self.classification.currentData(),
             "tags": "&".join(self.tag_edit.currentData()),
             "comment": self.comment.toPlainText(),
         }
