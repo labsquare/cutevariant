@@ -24,13 +24,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - name-suffix: "Minimum version"
-            python_version: ['3.10.2']
-            QT_BINDING: PySide6
-            XVFB_RUN: xvfb-run -a
-    env:
-         DISPLAY: ':99.0'
+        python_version: ['3.9']
+        QT_BINDING: PySide6
+        XVFB_RUN: xvfb-run -a
     steps:
       - uses: actions/checkout@v2
       - name: Install OS dependencies
