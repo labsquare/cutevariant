@@ -49,7 +49,6 @@ jobs:
               libxcb-xkb1 \
               libxcb1 \
               libopengl0 \
-              libegl1-mesa \ 
               libxcb-xinput0 
             #export QT_QPA_PLATFORM=offscreen
             export DISPLAY=:99.0
