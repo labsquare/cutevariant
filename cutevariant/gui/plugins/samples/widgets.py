@@ -716,13 +716,15 @@ class SamplesWidget(plugin.PluginWidget):
 
         self.on_refresh()
 
-    def _create_filters(self, copy_existing_filters: bool = True):
+    def _create_filters(self, copy_existing_filters: bool = True) -> dict:
         """
         The function creates a dictionary of filters based on a list of filters and existing filters (or not)
-        
-        :param copy_existing_filters: bool = True, defaults to True 
-        :type copy_existing_filters: bool (optional)
-        :return: A dictionary of filters.
+
+        Args:
+            copy_existing_filters (bool, optional)
+
+        Returns:
+            dict: A dictionary of filters
         """
 
         indexes = self.view.selectionModel().selectedRows()
@@ -754,10 +756,11 @@ class SamplesWidget(plugin.PluginWidget):
     def on_add_source(self):
         """
         This function is called when the user clicks on the "Add Source" button in the "Source" tab
-        :return: Nothing
         """
 
-        name, success = QInputDialog.getText(self, self.tr("Source Name"), self.tr("Get a source name "))
+        name, success = QInputDialog.getText(
+            self, self.tr("Source Name"), self.tr("Get a source name ")
+        )
 
         # if not name:
         #     return
@@ -773,7 +776,7 @@ class SamplesWidget(plugin.PluginWidget):
 
         else:
 
-                return
+            return
 
     def on_add_filter(self):
         """
