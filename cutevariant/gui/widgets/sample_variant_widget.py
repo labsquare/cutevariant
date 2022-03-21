@@ -25,7 +25,10 @@ class SampleVariantWidget(QWidget):
     def __init__(self, conn: sqlite3.Connection, parent=None):
         super().__init__()
         self.conn = conn
-        self.TAG_LIST = [tag["name"] for tag in Config("validation")["validation_tags"]]
+        if Config("validation")["validation_tags"] != None:
+            self.TAG_LIST = [tag["name"] for tag in Config("validation")["validation_tags"]]
+        else:
+            self.TAG_LIST = []
         self.TAG_SEPARATOR = "&"
         self.REVERSE_CLASSIF = {
             v["name"]: k for k, v in SAMPLE_VARIANT_CLASSIFICATION.items()

@@ -45,7 +45,10 @@ class SampleWidget(QWidget):
     def __init__(self, conn: sqlite3.Connection, parent=None):
         super().__init__()
         self.conn = conn
-        self.TAG_LIST = [tag["name"] for tag in Config("validation")["sample_tags"]]
+        if Config("validation")["sample_tags"] != None:
+            self.TAG_LIST = [tag["name"] for tag in Config("validation")["sample_tags"]]
+        else:
+            self.TAG_LIST = []
         self.TAG_SEPARATOR = "&"
         self.SAMPLE_CLASSIFICATION = {
             -1: {"name": "Rejected"},

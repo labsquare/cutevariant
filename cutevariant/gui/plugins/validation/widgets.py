@@ -794,8 +794,9 @@ class ValidationWidget(plugin.PluginWidget):
     def load_tags(self):
 
         self.tag_selector.clear()
-        for tag in [tag["name"] for tag in Config("validation")["sample_tags"]]:
-            self.tag_selector.add_item(FIcon(0xF04FD), tag, data=tag)
+        if Config("validation")["sample_tags"] != None:
+            for tag in [tag["name"] for tag in Config("validation")["sample_tags"]]:
+                self.tag_selector.add_item(FIcon(0xF04FD), tag, data=tag)
 
     def load_fields(self):
         self.field_selector.clear()

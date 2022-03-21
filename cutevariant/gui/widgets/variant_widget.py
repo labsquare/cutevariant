@@ -49,7 +49,10 @@ class TableModel(QAbstractTableModel):
 class VariantWidget(QWidget):
     def __init__(self, conn: sqlite3.Connection, parent=None):
         super().__init__()
-        self.TAG_LIST = [tag["name"] for tag in Config("variant_view")["tags"]]
+        if Config("variant_view")["tags"] != None:
+            self.TAG_LIST = [tag["name"] for tag in Config("variant_view")["tags"]]
+        else:
+            self.TAG_LIST = []
         self.TAG_SEPARATOR = "&"
         self.REVERSE_CLASSIF = {v["name"]: k for k, v in CLASSIFICATION.items()}
         self._conn = conn
