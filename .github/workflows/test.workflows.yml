@@ -25,8 +25,6 @@ jobs:
       fail-fast: false
       matrix:
         python_version: ['3.9']
-        QT_BINDING: PySide6
-        XVFB_RUN: xvfb-run -a
     steps:
       - uses: actions/checkout@v2
       - name: Install OS dependencies
@@ -59,7 +57,7 @@ jobs:
       - name: install PySide6    # Parce que @ysard veut absolument les version deprecated
         run : pip install PySide6
       - name: test 
-        run: ${{ matrix.XVFB_RUN }} python -m pytest tests/core
+        run: xvfb-run -a python -m pytest tests/core
 
   # WINDOWS JOB 
 
