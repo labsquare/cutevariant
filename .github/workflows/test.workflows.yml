@@ -20,7 +20,7 @@ jobs:
   
   # LINUX JOB 
   linux:
-    runs-on: buntu-latest
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         python_version: ['3.9']
