@@ -20,7 +20,7 @@ jobs:
   
   # LINUX JOB 
   linux:
-    runs-on: ubuntu-20.04
+    runs-on: buntu-latest
     strategy:
       matrix:
         python_version: ['3.9']
@@ -28,11 +28,31 @@ jobs:
          DISPLAY: ':99.0'
     steps:
       - uses: actions/checkout@v2
+      - name: Install OS dependencies
+        run: |
+            sudo apt-get update -yy
+            sudo apt-get install -yy \
+              libxkbcommon-x11-0 \
+              libxkbcommon0 \
+              libxkbcommon-dev \
+              libxcb-icccm4 \
+              libxcb-image0 \
+              libxcb-shm0 \
+              libxcb-keysyms1 \
+              libxcb-randr0 \
+              libxcb-render-util0 \
+              libxcb-render0 \
+              libxcb-shape0 \
+              libxcb-sync1 \
+              libxcb-xfixes0 \
+              libxcb-xinerama0 \
+              libxcb-xkb1 \
+              libxcb1
+            #export QT_QPA_PLATFORM=offscreen
+            export DISPLAY=:99.0
       - uses: actions/setup-python@v2
         with:
           python-version: ${{matrix.python_version}}
-      - name: Install OpenGL and EGL
-        run : sudo apt-get install -y libopengl0 libegl1-mesa
       - name: install_deps
         run: "make install_deps"
       - name: install PySide6    # Parce que @ysard veut absolument les version deprecated
