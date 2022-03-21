@@ -49,6 +49,8 @@ jobs:
               libxcb1 
             #export QT_QPA_PLATFORM=offscreen
             export DISPLAY=:99.0
+      - name: Install OpenGL
+        run: sudo apt-get install libgl1
       - uses: actions/setup-python@v2
         with:
           python-version: ${{matrix.python_version}}
