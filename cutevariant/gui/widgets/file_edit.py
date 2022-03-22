@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QLineEdit, QPushButton, QFileDialog, QStyle
+from PySide6.QtWidgets import QLineEdit, QPushButton, QFileDialog, QStyle, QApplication
 from PySide6.QtGui import QFont, QAction
 import os
 
@@ -10,11 +10,11 @@ class FileEdit(QLineEdit):
         self.path_type = "file"  #  or directory
 
         self._open_action = QAction(
-            qApp.style().standardIcon(QStyle.SP_DialogOpenButton), "open"
+            self.style().standardIcon(QStyle.SP_DialogOpenButton), "open"
         )
 
         self._error_action = QAction(
-            qApp.style().standardIcon(QStyle.SP_MessageBoxCritical), "error"
+            self.style().standardIcon(QStyle.SP_MessageBoxCritical), "error"
         )
 
         self.addAction(self._open_action, QLineEdit.TrailingPosition)
