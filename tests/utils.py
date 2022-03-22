@@ -1,5 +1,5 @@
 import sqlite3
-from PySide2.QtWidgets import *
+from PySide6.QtWidgets import *
 
 
 def table_exists(conn: sqlite3.Connection, name):
