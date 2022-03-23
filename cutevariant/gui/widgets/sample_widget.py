@@ -186,6 +186,12 @@ class SampleWidget(QWidget):
             if ret == QMessageBox.No:
                 return
 
+        #avoid losing tags who exist in DB but not in config.yml
+        missing_tags = []
+        for tag in self.initial_db_validation["tags"].split(self.TAG_SEPARATOR):
+            if tag not in self.TAG_LIST:
+                missing_tags.append(tag)
+
         data = {
             "id": sample_id,
             "name": self.name_edit.text(),
@@ -193,7 +199,7 @@ class SampleWidget(QWidget):
             "sex": self.sex_combo.currentIndex(),
             "phenotype": self.phenotype_combo.currentIndex(),
             "valid": self.REVERSE_CLASSIF[self.classification.currentText()],
-            "tags": self.TAG_SEPARATOR.join(self.tag_edit.currentData()),
+            "tags": self.TAG_SEPARATOR.join(self.tag_edit.currentData() + missing_tags),
             "comment": self.comment.toPlainText(),
         }
 

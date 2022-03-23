@@ -254,11 +254,17 @@ class SampleVariantWidget(QWidget):
             if ret == QMessageBox.No:
                 return
 
+        #avoid losing tags who exist in DB but not in config.yml
+        missing_tags = []
+        for tag in self.initial_db_validation["tags"].split(self.TAG_SEPARATOR):
+            if tag not in self.TAG_LIST:
+                missing_tags.append(tag)
+
         update_data = {
             "variant_id": self.sample_has_var_data["variant_id"],
             "sample_id": self.sample_has_var_data["sample_id"],
             "classification": self.classification.currentData(),
-            "tags": "&".join(self.tag_edit.currentData()),
+            "tags": self.TAG_SEPARATOR.join(self.tag_edit.currentData() + missing_tags),
             "comment": self.comment.toPlainText(),
         }
         sql.update_sample_has_variant(self.conn, update_data)

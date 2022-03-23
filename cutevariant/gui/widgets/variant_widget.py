@@ -177,13 +177,22 @@ class VariantWidget(QWidget):
             if ret == QMessageBox.No:
                 return
 
+        #avoid losing tags who exist in DB but not in config.yml
+        missing_tags = []
+        for tag in self.initial_db_validation["tags"].split(self.TAG_SEPARATOR):
+            if tag not in self.TAG_LIST:
+                missing_tags.append(tag)
+
         update_data = {"id": self.data["id"]}
         if self.favorite.isChecked:
             update_data["favorite"] = 1
         else:
             update_data["favorite"] = 0
         update_data["classification"] = self.classification.currentData()
-        update_data["tags"] = self.TAG_SEPARATOR.join(self.tag_edit.currentData())
+        print("self.tag_edit.currentData()", self.tag_edit.currentData())
+        print("missing_tags", missing_tags)
+        print("added", self.tag_edit.currentData() + missing_tags)
+        update_data["tags"] = self.TAG_SEPARATOR.join(self.tag_edit.currentData() + missing_tags)
         update_data["comment"] = self.comment.toPlainText()
         sql.update_variant(self._conn, update_data)
 
