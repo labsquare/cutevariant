@@ -21,6 +21,7 @@ from cutevariant.core.querybuilder import build_vql_query, build_sql_query
 from cutevariant.core import sql
 
 from cutevariant.gui.widgets import VqlSyntaxHighlighter
+from cutevariant.config import Config
 
 
 # def sql_to_vector_converter(data):
@@ -138,6 +139,11 @@ class GeneView(QAbstractScrollArea):
 
         self.selected_exon = None
         self._sample_count = 1
+
+    def set_gene(self, gene: Gene):
+
+        self.gene = gene
+        self.viewport().update()
 
     def get_mouse_mode(self) -> int:
         """Return Mouse mode.
@@ -281,6 +287,7 @@ class GeneView(QAbstractScrollArea):
                 painter.setBrush(self.palette().color(QPalette.Highlight))
 
                 rect.moveCenter(QPoint(pos, y))
+                painter.setBrush(QBrush(col))
                 painter.drawEllipse(rect)
 
             painter.restore()
@@ -797,7 +804,7 @@ class GeneViewerWidget(plugin.PluginWidget):
     """
 
     # LOCATION = plugin.FOOTER_LOCATION
-    ENABLE = False
+    ENABLE = True
     REFRESH_ONLY_VISIBLE = False
     REFRESH_STATE_DATA = {"current_variant"}
 
@@ -807,47 +814,66 @@ class GeneViewerWidget(plugin.PluginWidget):
         self.setWindowTitle(self.tr("Gene Viewer"))
 
         self.view = GeneView()
+        # annconn = sqlite3.connect(
+        #     "/home/sacha/refGene.db", detect_types=sqlite3.PARSE_DECLTYPES
+        # )
+        # annconn.row_factory = sqlite3.Row
 
-        annconn = sqlite3.connect(
-            "/home/sacha/refGene.db", detect_types=sqlite3.PARSE_DECLTYPES
-        )
-        annconn.row_factory = sqlite3.Row
-
-        gene_data = dict(
-            annconn.execute("SELECT * FROM annotations WHERE gene = 'GJB2'").fetchone()
-        )
-
-        # print(gene_data)
-        gene = Gene()
-        gene.load(gene_data)
-
-        self.view.gene = gene
+        # gene_data = dict(
+        #     annconn.execute("SELECT * FROM annotations WHERE gene = 'GJB2'").fetchone()
+        # )
 
         self.gene_name_combo = QComboBox()
+        self.gene_name_combo.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        self.gene_name_combo.setMaximumWidth(400)
         self.gene_name_combo.setEditable(True)
+        self.gene_name_combo.lineEdit().setPlaceholderText("Gene name ...")
 
         self.transcript_name_combo = QComboBox()
+        self.transcript_name_combo.setMaximumWidth(400)
+        self.transcript_name_combo.setSizePolicy(
+            QSizePolicy.Expanding, QSizePolicy.Preferred
+        )
         self.transcript_name_combo.setEditable(True)
+        self.transcript_name_combo.lineEdit().setPlaceholderText("Transcript name ...")
+
+        self.exon_combo = QComboBox()
+        self.exon_combo.setMaximumWidth(400)
 
         self.toolbar = QToolBar()
 
-        self.toolbar.addAction(
-            FIcon(0xF1276), self.tr("Reset zoom"), lambda: self.view.reset_zoom()
-        )
+        self.tool_widget = QWidget()
+        hlayout = QHBoxLayout(self.tool_widget)
+        hlayout.addWidget(self.gene_name_combo)
+        hlayout.addWidget(self.transcript_name_combo)
+        # hlayout.addWidget(self.exon_combo)
+        hlayout.addStretch()
+        self.toolbar.addWidget(self.tool_widget)
 
-        # We need two comboboxes, one for the gene name, and one for one of its transcripts
-        self.toolbar.addWidget(self.gene_name_combo)
-        self.toolbar.addWidget(self.transcript_name_combo)
+        # Empty widget
+        self.empty_widget = QWidget()
+        self.config_button = QPushButton("Set a database ... ")
+        self.config_button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        empty_layout = QVBoxLayout(self.empty_widget)
+        empty_layout.setAlignment(Qt.AlignCenter)
+        empty_layout.addWidget(self.config_button)
 
-        self.vlayout = QVBoxLayout(self)
-        self.vlayout.addWidget(self.toolbar)
-        self.vlayout.addWidget(self.view)
+        self.stack_layout = QStackedLayout()
+        self.stack_layout.addWidget(self.empty_widget)
+        self.stack_layout.addWidget(self.view)
+
+        main_layout = QVBoxLayout(self)
+        main_layout.addWidget(self.toolbar)
+        main_layout.addLayout(self.stack_layout)
 
         # Connect comboboxes to their respective callbacks
-        # self.gene_name_combo.currentTextChanged.connect(self.on_selected_gene_changed)
-        # self.transcript_name_combo.currentTextChanged.connect(
-        #     self.on_selected_transcript_changed
-        # )
+        self.exon_combo.activated.connect(
+            lambda x: self.view.zoom_to_exon(self.exon_combo.currentData())
+        )
+        self.gene_name_combo.currentTextChanged.connect(self.on_selected_gene_changed)
+        self.transcript_name_combo.currentTextChanged.connect(
+            self.on_selected_transcript_changed
+        )
 
         self.current_variant = {}
 
@@ -857,10 +883,11 @@ class GeneViewerWidget(plugin.PluginWidget):
         self.gene_names = []
         self.transcript_names = []
 
-        # self.load_gene_names()
+        self.gene_conn = None
 
     def on_open_project(self, conn):
         self.conn = conn
+        self.load_config()
 
     def on_register(self, mainwindow: MainWindow):
         """ """
@@ -868,151 +895,144 @@ class GeneViewerWidget(plugin.PluginWidget):
 
     def on_refresh(self):
         """Called whenever this plugin needs updating."""
-        self.current_variant = sql.get_one_variant(
+        self.current_variant = sql.get_variant(
             self.conn,
             self.mainwindow.get_state_data("current_variant")["id"],
             with_annotations=True,
         )
 
-        self.selected_gene = self.current_variant["annotations"][0]["gene"]
+        gene = self.current_variant["annotations"][0]["gene"]
 
-        self.gene_name_combo.setCurrentText(self.selected_gene)
+        self.transcript_name_combo.blockSignals(True)
+        self.gene_name_combo.setCurrentText(gene)
+        self.transcript_name_combo.blockSignals(False)
+        self.update_view()
 
-        self.update_shown_variants()
+    def load_config(self):
+        config = Config("gene_viewer")
+        db_path = config.get("db_path", [])
+
+        if not db_path:
+            self.stack_layout.setCurrentIndex(0)
+        else:
+            self.stack_layout.setCurrentIndex(1)
+
+        self.gene_conn = sqlite3.connect(db_path)
+        self.gene_conn.row_factory = sqlite3.Row
+
+        self.load_gene_names()
+        self.load_transcript_names()
+
+    def load_gene_names(self):
+        """Called on startup by __init__, loads whole annotation table to populate gene names combobox"""
+        gene_names = [
+            s["gene"] for s in self.gene_conn.execute("SELECT gene FROM genes")
+        ]
+        self.gene_name_combo.clear()
+        self.gene_name_combo.addItems(gene_names)
+
+    def load_transcript_names(self):
+        """Called whenever the selected gene changes. Allows the user to select the transcript of interest."""
+        transcript_names = (
+            [
+                s["transcript_name"]
+                for s in self.gene_conn.execute(
+                    f"SELECT transcript_name FROM genes WHERE gene = '{self.selected_gene}'"
+                )
+            ]
+            if self.selected_gene is not None
+            else []
+        )
+
+        self.transcript_name_combo.clear()
+        self.transcript_name_combo.addItems(transcript_names)
+        if len(transcript_names) >= 1:
+            # Select first transcript (by default)
+            self.transcript_name_combo.setCurrentIndex(0)
+
+    def load_exons(self):
+
+        self.exon_combo.clear()
+        if self.view.gene:
+            for i in range(self.view.gene.exon_count):
+                self.exon_combo.addItem(f"Exon {i+1}", i)
+
+    # def on_selected_variant_changed(self):
+    #     """Called when another variant is selected in the variant view"""
+    #     self.current_variant = sql.get_one_variant(
+    #         self.conn,
+    #         self.mainwindow.get_state_data("current_variant")["id"],
+    #         with_annotations=True,
+    #     )
+
+    #     self.selected_gene = self.current_variant["annotations"][0]["gene"]
+
+    #     self.gene_name_combo.setCurrentText(self.selected_gene)
+
+    def on_selected_gene_changed(self):
+        """When the selected gene changes, load known transcripts for this gene"""
+        self.selected_gene = self.gene_name_combo.currentText()
+        self.load_transcript_names()
+
+    def on_selected_transcript_changed(self):
+        self.update_view()
+
+    def update_view(self):
+
+        # Udpate gene view
+        gene = self.gene_name_combo.currentText()
+        transcript = self.transcript_name_combo.currentText()
+        query = f"SELECT transcript_name,tx_start,tx_end,cds_start,cds_end,exon_starts,exon_ends,gene FROM genes WHERE gene = '{gene}' AND transcript_name='{transcript}'"
+        result = self.gene_conn.execute(query).fetchone()
+
+        # Get all variants
+
+        fields = ["pos"]
+        filters = {"$and": [{"ann.gene": gene}]}
+        source = self.mainwindow.get_state_data("source")
+
+        variants = []
+
+        for v in sql.get_variants(self.conn, fields, source, filters, limit=None):
+            pos = v["pos"]
+            color = "red" if pos == self.current_variant["pos"] else "blue"
+            variants.append((pos, color, 0.5))
+
+        if result is not None:
+            gene = Gene()
+            self.view.variants = variants
+            gene.load(dict(result))
+            self.view.set_gene(gene)
+
+        # self.load_exons()
 
 
-# def open_annotations_database(self):
-#     """Initialize annotations database, i.e. open ensGene file and setup row factory"""
-#     self.annotations_conn = sqlite3.connect(self.annotations_file_name)
-#     self.annotations_conn.row_factory = sqlite3.Row
+# # TODO: What if the filters have an '$or' operator as a root ?
 
-# def load_gene_names(self):
-#     """Called on startup by __init__, loads whole annotation table to populate gene names combobox"""
-#     self.gene_names = [
-#         s["gene"] for s in self.annotations_conn.execute("SELECT gene FROM refGene")
-#     ]
-#     self.gene_name_combo.clear()
-#     self.gene_name_combo.addItems(self.gene_names)
+# filters = {"$and": ["ann.gene" : gene]}
 
-# def load_transcript_names(self):
-#     """Called whenever the selected gene changes. Allows the user to select the transcript of interest."""
-#     self.transcript_names = (
-#         [
-#             s["transcript_name"]
-#             for s in self.annotations_conn.execute(
-#                 f"SELECT transcript_name FROM refGene WHERE gene = '{self.selected_gene}'"
+# filters["$and"].append({"ann.gene": self.selected_gene})
+
+#         # # With this part, should ensure that the transcript names are from the same annotations database as the one we are using
+#         # if self.selected_transcript:
+#         #     filters["$and"].append({"ann.transcript": self.selected_transcript})
+
+#         # Get variant info
+
+#         # Set limit to None ONLY because we added a filter on selected gene (how bad can it be ?)
+#         # At most, we have
+#         variants = list(
+#             sql.get_variants(
+#                 self.conn,
+#                 fields,
+#                 self.mainwindow.get_state_data("source"),
+#                 filters,
+#                 limit=None,
 #             )
-#         ]
-#         if self.selected_gene is not None
-#         else []
-#     )
+#         )
 
-#     self.transcript_name_combo.clear()
-#     self.transcript_name_combo.addItems(self.transcript_names)
-#     if len(self.transcript_names) >= 1:
-#         # Select first transcript (by default)
-#         self.transcript_name_combo.setCurrentIndex(0)
-
-# def on_selected_variant_changed(self):
-#     """Called when another variant is selected in the variant view"""
-#     self.current_variant = sql.get_one_variant(
-#         self.conn,
-#         self.mainwindow.get_state_data("current_variant")["id"],
-#         with_annotations=True,
-#     )
-
-#     self.selected_gene = self.current_variant["annotations"][0]["gene"]
-
-#     self.gene_name_combo.setCurrentText(self.selected_gene)
-
-# def on_selected_gene_changed(self):
-#     """When the selected gene changes, load known transcripts for this gene"""
-#     self.selected_gene = self.gene_name_combo.currentText()
-#     self.load_transcript_names()
-
-# def on_selected_transcript_changed(self):
-#     self.update_shown_variants()
-
-# def update_shown_variants(self):
-#     if self.selected_gene:
-#         filters = copy.deepcopy(self.mainwindow.get_state_data("filters"))
-#         self.selected_transcript = self.transcript_name_combo.currentText()
-
-#         if self.selected_transcript:
-
-#             fields = [
-#                 "pos",  # So we can place the variant
-#                 "ann.consequence",
-#                 "ann.impact",
-#                 "count_var",  # For the drawn size of this variant
-#             ]
-
-#             # TODO: What if the filters have an '$or' operator as a root ?
-#             if "$and" not in filters:
-#                 filters = {"$and": []}
-
-#             filters["$and"].append({"ann.gene": self.selected_gene})
-
-#             # # With this part, should ensure that the transcript names are from the same annotations database as the one we are using
-#             # if self.selected_transcript:
-#             #     filters["$and"].append({"ann.transcript": self.selected_transcript})
-
-#             # Get variant info
-
-#             # Set limit to None ONLY because we added a filter on selected gene (how bad can it be ?)
-#             # At most, we have
-#             variants = list(
-#                 sql.get_variants(
-#                     self.conn,
-#                     fields,
-#                     self.mainwindow.get_state_data("source"),
-#                     filters,
-#                     limit=None,
-#                 )
-#             )
-
-#             self.view.gene.variants = variants
-#             self.view.set_sample_count(len(list((sql.get_samples(self.conn)))))
-
-#             query = self.annotations_conn.execute(
-#                 f"SELECT transcript_name,tx_start,tx_end,cds_start,cds_end,exon_starts,exon_ends,gene FROM refGene WHERE gene = '{self.selected_gene}' AND transcript_name='{self.selected_transcript}'"
-#             ).fetchone()
-
-#             if query is None:
-#                 print(
-#                     "Cannot find gene",
-#                     self.selected_gene,
-#                     "and transcript",
-#                     self.selected_transcript,
-#                     sep=" ",
-#                 )
-
-#             else:
-#                 gene_data = dict(query)
-#                 self.view.gene.tx_start = gene_data["tx_start"]
-#                 self.view.gene.tx_end = gene_data["tx_end"]
-#                 self.view.gene.cds_start = gene_data["cds_start"]
-#                 self.view.gene.cds_end = gene_data["cds_end"]
-#                 self.view.gene.transcript_name = gene_data["transcript_name"]
-#                 self.view.gene.exon_starts = [
-#                     int(i)
-#                     for i in gene_data["exon_starts"].split(",")
-#                     if i.isnumeric()
-#                 ]
-#                 self.view.gene.exon_ends = [
-#                     int(i)
-#                     for i in gene_data["exon_ends"].split(",")
-#                     if i.isnumeric()
-#                 ]
-
-#                 # # Set all attributes of our gene from the query
-#                 # [
-#                 #     setattr(self.view.gene, attr_name, gene_data[attr_name])
-#                 #     for attr_name in gene_data
-#                 #     if hasattr(self.view.gene, attr_name)
-#                 # ]
-
-#                 self.view.viewport().update()
+#         self.view.gene.variants = variants
+#         self.view.set_sample_count(len(list((sql.get_samples(self.conn)))))
 
 
 if __name__ == "__main__":

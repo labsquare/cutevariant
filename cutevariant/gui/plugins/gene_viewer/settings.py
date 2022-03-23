@@ -40,7 +40,7 @@ def zipped_text_to_sqlite(ref_filename: str, db_filename: str):
 
     conn.execute(
         """
-        CREATE TABLE annotations(  
+        CREATE TABLE genes(  
         id INTEGER PRIMARY KEY,
         transcript_name TEXT, 
         tx_start INTEGER, 
@@ -84,7 +84,7 @@ def zipped_text_to_sqlite(ref_filename: str, db_filename: str):
                     )
                 )
 
-    conn.executemany("INSERT INTO annotations VALUES(?,?,?,?,?,?,?,?,?);", data)
+    conn.executemany("INSERT INTO genes VALUES(?,?,?,?,?,?,?,?,?);", data)
     conn.commit()
 
 
@@ -116,12 +116,44 @@ def open_link(url: typing.Union[QUrl, str]):
         pass
 
 
+class FieldSettings(AbstractSettingsWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Fields")
+        label = QLabel(
+            """
+            Select Fields to use to select corresponding gene of the selected variants 
+            """
+        )
+        label.setTextFormat(Qt.RichText)
+
+        field_layout = QFormLayout(self)
+        self.gene_edit = QLineEdit()
+        self.gene_edit.setPlaceholderText("ann.gene")
+        self.transcript_edit = QLineEdit()
+        self.transcript_edit.setPlaceholderText("ann.transcript")
+        field_layout.addRow("Gene field", self.gene_edit)
+        field_layout.addRow("Transcript field", self.transcript_edit)
+
+    def save(self):
+
+        config = self.section_widget.create_config()
+        config["gene_field"] = self.gene_edit.text()
+        config["transcript_field"] = self.transcript_edit.text()
+        config.save()
+
+    def load(self):
+        config = self.section_widget.create_config()
+        gene = config.get("gene_field", "ann.gene")
+        transcript = config.get("transcript_field", "ann.transcript")
+        self.gene_edit.setText(gene)
+        self.transcript_edit.setText(transcript)
+
+
 class DataBaseSettings(AbstractSettingsWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Transcript Database")
-
-        v_layout = QVBoxLayout(self)
+        self.setWindowTitle("Gene Database")
 
         label = QLabel(
             """
@@ -133,16 +165,17 @@ class DataBaseSettings(AbstractSettingsWidget):
         label.setTextFormat(Qt.RichText)
         label.setOpenExternalLinks(True)
 
-        form_layout = QFormLayout()
+        # DB layout
+        db_layout = QFormLayout()
         self.edit = FileEdit()
         self.button = QPushButton("Create database from Refseq")
         self.button.clicked.connect(self._on_create_db)
+        db_layout.addRow("Database path", self.edit)
+        db_layout.addRow("", self.button)
 
-        form_layout.addRow("Database path", self.edit)
-        form_layout.addRow("", self.button)
-
+        v_layout = QVBoxLayout(self)
         v_layout.addWidget(label)
-        v_layout.addLayout(form_layout)
+        v_layout.addLayout(db_layout)
         v_layout.addStretch()
 
     def _on_create_db(self):
@@ -190,6 +223,7 @@ class GeneViewerSettingsWidget(PluginSettingsWidget):
         self.setWindowIcon(FIcon(0xF11CC))
         self.setWindowTitle("Gene viewer")
         self.add_page(DataBaseSettings())
+        self.add_page(FieldSettings())
 
 
 if __name__ == "__main__":
