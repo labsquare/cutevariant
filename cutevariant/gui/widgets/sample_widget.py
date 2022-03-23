@@ -169,7 +169,7 @@ class SampleWidget(QWidget):
         self.comment.preview_btn.setChecked(True)
         self.history_view.set_dict(self.get_history_samples())
 
-        self.setWindowTitle(data.get("name", "Unknown"))
+        self.setWindowTitle("Sample edition: " + data.get("name", "Unknown"))
         self.initial_state = self.get_gui_state()
 
     def save(self, sample_id: int):

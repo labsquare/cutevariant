@@ -209,7 +209,7 @@ class VariantWidget(QWidget):
 
         # Set name
         name = "{chr}-{pos}-{ref}-{alt}".format(**self.data)
-        self.setWindowTitle(name)
+        self.setWindowTitle("Variant edition: " + name)
 
         self.ann_combo.clear()
 
