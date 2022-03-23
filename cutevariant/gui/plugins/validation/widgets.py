@@ -653,10 +653,10 @@ class ValidationWidget(plugin.PluginWidget):
         menu.addSection("Sample")
         menu.addAction(QIcon(), "Edit sample ...", self._show_sample_dialog)
 
-        menu.addAction(QIcon(), "Filter from current selection", self.on_add_filter)
+        menu.addAction(QIcon(), "Add a filter based on selected sample(s)", self.on_add_filter)
 
         menu.addAction(
-            QIcon(), "Create a source from current selection", self.on_add_source
+            QIcon(), "Create a source from selected sample(s)", self.on_add_source
         )
 
         menu.exec_(event.globalPos())
@@ -741,6 +741,23 @@ class ValidationWidget(plugin.PluginWidget):
 
         return filters
 
+    def _create_sample_filter(self):
+        """
+        returns a filter restraining only to currently selected samples, ignoring any other already applied filters
+        """
+        indexes = self.view.selectionModel().selectedRows()
+        root = "$or"
+        filters = {"$or": []}
+        for index in indexes:
+            # sample_name = index.siblingAtColumn(1).data()
+            sample_name = index.siblingAtColumn(0).data()
+            if sample_name:
+                key = f"samples.{sample_name}.gt"
+                condition = {key: {"$gte": 1}}
+                filters[root].append(condition)
+
+        return filters
+
     def on_add_source(self):
 
         name, _ = QInputDialog.getText(self, "Source Name", "Get a source name ")
@@ -749,7 +766,7 @@ class ValidationWidget(plugin.PluginWidget):
             return
 
         sql.insert_selection_from_source(
-            self._conn, name, "variants", self._create_filters()
+            self._conn, name, "variants", self._create_sample_filter()
         )
 
         if "source_editor" in self.mainwindow.plugins:
