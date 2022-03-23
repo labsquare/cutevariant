@@ -862,7 +862,7 @@ class GeneViewerWidget(plugin.PluginWidget):
 
         # Empty widget
         self.empty_widget = QWidget()
-        self.config_button = QPushButton("Set a database ... ")
+        self.config_button = QLabel("Set a database from settings ... ")
         self.config_button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         empty_layout = QVBoxLayout(self.empty_widget)
         empty_layout.setAlignment(Qt.AlignCenter)
@@ -904,6 +904,10 @@ class GeneViewerWidget(plugin.PluginWidget):
         pass
 
     def on_refresh(self):
+
+        if not self.gene_conn:
+            return
+
         """Called whenever this plugin needs updating."""
         self.current_variant = sql.get_variant(
             self.conn,
@@ -920,45 +924,46 @@ class GeneViewerWidget(plugin.PluginWidget):
 
     def load_config(self):
         config = Config("gene_viewer")
-        db_path = config.get("db_path", [])
+        db_path = config.get("db_path")
 
-        if not db_path:
+        if not os.path.exists(db_path):
             self.stack_layout.setCurrentIndex(0)
         else:
             self.stack_layout.setCurrentIndex(1)
-
-        self.gene_conn = sqlite3.connect(db_path)
-        self.gene_conn.row_factory = sqlite3.Row
-
-        self.load_gene_names()
-        self.load_transcript_names()
+            self.gene_conn = sqlite3.connect(db_path)
+            self.gene_conn.row_factory = sqlite3.Row
+            self.load_gene_names()
+            self.load_transcript_names()
 
     def load_gene_names(self):
         """Called on startup by __init__, loads whole annotation table to populate gene names combobox"""
-        gene_names = [
-            s["gene"] for s in self.gene_conn.execute("SELECT gene FROM genes")
-        ]
-        self.gene_name_combo.clear()
-        self.gene_name_combo.addItems(gene_names)
+
+        if self.gene_conn:
+            gene_names = [
+                s["gene"] for s in self.gene_conn.execute("SELECT gene FROM genes")
+            ]
+            self.gene_name_combo.clear()
+            self.gene_name_combo.addItems(gene_names)
 
     def load_transcript_names(self):
         """Called whenever the selected gene changes. Allows the user to select the transcript of interest."""
-        transcript_names = (
-            [
-                s["transcript_name"]
-                for s in self.gene_conn.execute(
-                    f"SELECT transcript_name FROM genes WHERE gene = '{self.selected_gene}'"
-                )
-            ]
-            if self.selected_gene is not None
-            else []
-        )
+        if self.gene_conn:
+            transcript_names = (
+                [
+                    s["transcript_name"]
+                    for s in self.gene_conn.execute(
+                        f"SELECT transcript_name FROM genes WHERE gene = '{self.selected_gene}'"
+                    )
+                ]
+                if self.selected_gene is not None
+                else []
+            )
 
-        self.transcript_name_combo.clear()
-        self.transcript_name_combo.addItems(transcript_names)
-        if len(transcript_names) >= 1:
-            # Select first transcript (by default)
-            self.transcript_name_combo.setCurrentIndex(0)
+            self.transcript_name_combo.clear()
+            self.transcript_name_combo.addItems(transcript_names)
+            if len(transcript_names) >= 1:
+                # Select first transcript (by default)
+                self.transcript_name_combo.setCurrentIndex(0)
 
     def load_exons(self):
 
