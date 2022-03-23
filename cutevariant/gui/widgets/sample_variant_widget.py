@@ -7,6 +7,7 @@ from PySide6.QtGui import *
 from cutevariant.core import sql
 from cutevariant.gui.style import CLASSIFICATION, SAMPLE_VARIANT_CLASSIFICATION
 from cutevariant.gui.widgets import ChoiceWidget, DictWidget, MarkdownEditor
+from cutevariant.config import Config
 
 from cutevariant.gui.ficon import FIcon
 
@@ -24,7 +25,10 @@ class SampleVariantWidget(QWidget):
     def __init__(self, conn: sqlite3.Connection, parent=None):
         super().__init__()
         self.conn = conn
-        self.TAG_LIST = ["#hemato", "#cardio", "#pharmaco"]
+        if Config("validation")["validation_tags"] != None:
+            self.TAG_LIST = [tag["name"] for tag in Config("validation")["validation_tags"]]
+        else:
+            self.TAG_LIST = []
         self.TAG_SEPARATOR = "&"
         self.REVERSE_CLASSIF = {
             v["name"]: k for k, v in SAMPLE_VARIANT_CLASSIFICATION.items()
@@ -92,6 +96,7 @@ class SampleVariantWidget(QWidget):
         self.var_info = DictWidget()
         self.sample_info = DictWidget()
         self.sample_has_var_info = DictWidget()
+        self.history_view = DictWidget()
 
         # info_widget = QWidget()
         # info_layout = QVBoxLayout()
@@ -123,6 +128,7 @@ class SampleVariantWidget(QWidget):
         self.tab_widget.addTab(self.sample_has_var_info, "Genotyping")
         self.tab_widget.addTab(self.var_info, "Variant")
         self.tab_widget.addTab(self.sample_info, "Sample")
+        self.tab_widget.addTab(self.history_view, "History")
         ### </tabs block> ###
 
         vLayout = QVBoxLayout()
@@ -157,16 +163,17 @@ class SampleVariantWidget(QWidget):
             + str(sample["name"])
             + "</span></p></body></html>"
         )
-        self.setWindowTitle("edit box")
+        self.setWindowTitle("Variant validation")
         self.title_variant.setText(var_name)
         self.title_sample.setText(sample["name"])
 
         # self.classification.addItems([v for v in SAMPLE_VARIANT_CLASSIFICATION.values()])
         # self.classification.setCurrentIndex(self.sample_has_var_data["classification"])
         for k, v in SAMPLE_VARIANT_CLASSIFICATION.items():
-            print("k", k, v, self.classification)
+            self.classification.addItem(v["name"], k)
 
         index = self.classification.findData(self.sample_has_var_data["classification"])
+        print(index)
         self.classification.setCurrentIndex(index)
 
         if self.sample_has_var_data.get("tags") is not None:
@@ -220,6 +227,8 @@ class SampleVariantWidget(QWidget):
             self.tag_edit.setDisabled(True)
             self.comment.preview_btn.setDisabled(True)
 
+        self.history_view.set_dict(self.get_history_sample_has_variant())
+
         self.initial_state = self.get_gui_state()
 
     def save(self):
@@ -249,11 +258,17 @@ class SampleVariantWidget(QWidget):
             if ret == QMessageBox.No:
                 return
 
+        #avoid losing tags who exist in DB but not in config.yml
+        missing_tags = []
+        for tag in self.initial_db_validation["tags"].split(self.TAG_SEPARATOR):
+            if tag not in self.TAG_LIST:
+                missing_tags.append(tag)
+
         update_data = {
             "variant_id": self.sample_has_var_data["variant_id"],
             "sample_id": self.sample_has_var_data["sample_id"],
-            "classification": self.classification.currentIndex(),
-            "tags": "&".join(self.tag_edit.currentData()),
+            "classification": self.classification.currentData(),
+            "tags": self.TAG_SEPARATOR.join(self.tag_edit.currentData() + missing_tags),
             "comment": self.comment.toPlainText(),
         }
         sql.update_sample_has_variant(self.conn, update_data)
@@ -275,6 +290,22 @@ class SampleVariantWidget(QWidget):
         values.append(self.comment.toPlainText())
         return values
 
+    def get_history_sample_has_variant(self):
+        """ Get the history of samples """
+        results = {}
+        for record in self.conn.execute(
+            f"""SELECT  ('[' || `timestamp` || ']') as time,
+                        ('[' || `history`.`id` || ']') as id,
+                        ( '[' || `user` || ']' || ' - ' || '[' || `samples`.`name` || '|' || `variants`.`chr` || '-' || `variants`.`pos` || '-' || `variants`.`ref` || '-' || `variants`.`alt` || '] '  || ' - ' || '"' || `field` || '" from "' || `before` || '" to "' || `after` || '"') as 'change'
+                FROM `history`
+                INNER JOIN `sample_has_variant` ON `history`.`table_rowid`=`sample_has_variant`.`rowid`
+                INNER JOIN `variants` ON `sample_has_variant`.`variant_id`=`variants`.`id`
+                INNER JOIN `samples` ON `sample_has_variant`.`sample_id`=`samples`.`id` 
+                WHERE `table`='sample_has_variant'"""
+        ):
+            results[record["time"] + " " + record["id"]] = record["change"]
+
+        return results
 
 class SampleVariantDialog(QDialog):
     def __init__(self, conn, sample_id, var_id, parent=None):

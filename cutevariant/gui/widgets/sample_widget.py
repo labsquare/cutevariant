@@ -5,10 +5,11 @@ from PySide6.QtGui import *
 
 from cutevariant.gui.widgets import MarkdownEditor
 from cutevariant.core import sql
+from cutevariant.config import Config
 
 from cutevariant.gui.ficon import FIcon
 
-from cutevariant.gui.widgets import ChoiceWidget
+from cutevariant.gui.widgets import ChoiceWidget, DictWidget
 from cutevariant.gui.widgets.multi_combobox import MultiComboBox
 
 
@@ -44,7 +45,10 @@ class SampleWidget(QWidget):
     def __init__(self, conn: sqlite3.Connection, parent=None):
         super().__init__()
         self.conn = conn
-        self.TAG_LIST = ["#hemato", "#cardio", "#pharmaco"]
+        if Config("validation")["sample_tags"] != None:
+            self.TAG_LIST = [tag["name"] for tag in Config("validation")["sample_tags"]]
+        else:
+            self.TAG_LIST = []
         self.TAG_SEPARATOR = "&"
         self.SAMPLE_CLASSIFICATION = {
             -1: {"name": "Rejected"},
@@ -119,9 +123,12 @@ class SampleWidget(QWidget):
         pheno_layout = QFormLayout(pheno_widget)
         pheno_layout.addRow("Sexe", self.sex_combo)
         pheno_layout.addRow("Affected", self.phenotype_combo)
-        pheno_layout.addRow("HPO", self.hpo_widget)
+        # pheno_layout.addRow("HPO", self.hpo_widget) #hidden for now
         self.tab_widget.addTab(identity_widget, "Edit")
         self.tab_widget.addTab(pheno_widget, "Phenotype")
+
+        self.history_view = DictWidget()
+        self.tab_widget.addTab(self.history_view, "History")
 
         header_layout = QHBoxLayout()
         header_layout.addLayout(val_layout)
@@ -141,7 +148,7 @@ class SampleWidget(QWidget):
         self.sample_id = sample_id
         data = sql.get_sample(self.conn, sample_id)
         self.initial_db_validation = self.get_validation_from_data(data)
-
+        print("loaded data:", data)
         self.name_edit.setText(data.get("name", "?"))
         self.fam_edit.setText(data.get("family_id", "?"))
         self.sex_combo.setCurrentIndex(data.get("sex", 0))
@@ -160,8 +167,9 @@ class SampleWidget(QWidget):
 
         self.comment.setPlainText(data.get("comment", ""))
         self.comment.preview_btn.setChecked(True)
+        self.history_view.set_dict(self.get_history_samples())
 
-        self.setWindowTitle(data.get("name", "Unknown"))
+        self.setWindowTitle("Sample edition: " + data.get("name", "Unknown"))
         self.initial_state = self.get_gui_state()
 
     def save(self, sample_id: int):
@@ -182,6 +190,12 @@ class SampleWidget(QWidget):
             if ret == QMessageBox.No:
                 return
 
+        #avoid losing tags who exist in DB but not in config.yml
+        missing_tags = []
+        for tag in self.initial_db_validation["tags"].split(self.TAG_SEPARATOR):
+            if tag not in self.TAG_LIST:
+                missing_tags.append(tag)
+
         data = {
             "id": sample_id,
             "name": self.name_edit.text(),
@@ -189,16 +203,20 @@ class SampleWidget(QWidget):
             "sex": self.sex_combo.currentIndex(),
             "phenotype": self.phenotype_combo.currentIndex(),
             "valid": self.REVERSE_CLASSIF[self.classification.currentText()],
-            "tags": self.TAG_SEPARATOR.join(self.tag_edit.currentData()),
+            "tags": self.TAG_SEPARATOR.join(self.tag_edit.currentData() + missing_tags),
             "comment": self.comment.toPlainText(),
         }
 
         sql.update_sample(self.conn, data)
 
     def get_validation_from_data(self, data):
-        return {"classif_index": int("{valid}".format(**data)), 
+        return {
+                "fam": data["family_id"], 
                 "tags": data["tags"], 
-                "comment": data["comment"]
+                "comment": data["comment"],
+                "valid": int("{valid}".format(**data)),
+                "sex": data["sex"],
+                "phenotype": data["phenotype"]
         }
 
     def get_gui_state(self):
@@ -206,10 +224,28 @@ class SampleWidget(QWidget):
         Used to identify if any writable value was changed by an user when closing the widget
         """
         values = []
+        values.append(self.fam_edit.text())
         values.append(self.classification.currentIndex())
         values.append(self.tag_edit.currentData())
         values.append(self.comment.toPlainText())
+        values.append(self.sex_combo.currentIndex())
+        values.append(self.phenotype_combo.currentIndex())
         return values
+
+    def get_history_samples(self):
+        """ Get the history of samples """
+        results = {}
+        for record in self.conn.execute(
+            f"""SELECT  ('[' || `timestamp` || ']') as time,
+                        ('[' || `history`.`id` || ']') as id,
+                        ( '[' || `user` || ']' || ' - ' || '[' || `samples`.`name` || ']' || ' - ' || '"' || `field` || '" from "' || `before` || '" to "' || `after` || '"') as 'change'
+                FROM `history`
+                INNER JOIN `samples` ON `history`.`table_rowid`=`samples`.`rowid`
+                WHERE `table`='samples'"""
+        ):
+            results[record["time"] + " " + record["id"]] = record["change"]
+
+        return results
 
 class SampleDialog(QDialog):
     def __init__(self, conn, sample_id, parent=None):

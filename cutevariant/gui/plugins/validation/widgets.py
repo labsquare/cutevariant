@@ -394,7 +394,7 @@ class SamplesView(QTableView):
             super().paintEvent(event)
 
 
-class SamplesWidget(plugin.PluginWidget):
+class ValidationWidget(plugin.PluginWidget):
     """Widget displaying the list of avaible selections.
     User can select one of them to update Query::selection
     """
@@ -653,10 +653,10 @@ class SamplesWidget(plugin.PluginWidget):
         menu.addSection("Sample")
         menu.addAction(QIcon(), "Edit sample ...", self._show_sample_dialog)
 
-        menu.addAction(QIcon(), "Filter from current selection", self.on_add_filter)
+        menu.addAction(QIcon(), "Add a filter based on selected sample(s)", self.on_add_filter)
 
         menu.addAction(
-            QIcon(), "Create a source from current selection", self.on_add_source
+            QIcon(), "Create a source from selected sample(s)", self.on_add_source
         )
 
         menu.exec_(event.globalPos())
@@ -670,7 +670,7 @@ class SamplesWidget(plugin.PluginWidget):
             dialog = SampleDialog(self._conn, sample["sample_id"])
 
             if dialog.exec_() == QDialog.Accepted:
-                self.load_all_filters()
+                # self.load_all_filters()
                 self.on_refresh()
 
     def _show_sample_variant_dialog(self):
@@ -684,7 +684,7 @@ class SamplesWidget(plugin.PluginWidget):
             )
 
             if dialog.exec_() == QDialog.Accepted:
-                self.load_all_filters()
+                # self.load_all_filters()
                 self.on_refresh()
 
     def _toggle_column(self, col: int, show: bool):
@@ -820,8 +820,9 @@ class SamplesWidget(plugin.PluginWidget):
     def load_tags(self):
 
         self.tag_selector.clear()
-        for tag in ["#hemato", "#cancero", "#exome"]:
-            self.tag_selector.add_item(FIcon(0xF04FD), tag, data=tag)
+        if Config("validation")["sample_tags"] != None:
+            for tag in [tag["name"] for tag in Config("validation")["sample_tags"]]:
+                self.tag_selector.add_item(FIcon(0xF04FD), tag, data=tag)
 
     def load_fields(self):
         self.field_selector.clear()
@@ -873,6 +874,9 @@ class SamplesWidget(plugin.PluginWidget):
         self.model.selected_families = [
             i["name"] for i in self.family_selector.selected_items()
         ]
+        self.model.selected_tags = [
+            i["name"] for i in self.tag_selector.selected_items()
+        ]
         self.model.selected_genotypes = [
             i["data"] for i in self.geno_selector.selected_items()
         ]
@@ -920,7 +924,7 @@ if __name__ == "__main__":
     conn = sqlite3.connect("C:/Users/Ichtyornis/Projects/cutevariant/test2.db")
     conn.row_factory = sqlite3.Row
 
-    view = SamplesWidget()
+    view = ValidationWidget()
     view.on_open_project(conn)
     view.show()
 

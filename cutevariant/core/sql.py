@@ -2707,6 +2707,13 @@ def get_sample_annotations_by_variant(
             + "))"
         )
 
+    # Filter on tags
+    if tags:
+        tags_conditions = []
+        for t in tags:
+            tags_conditions.append("samples.tags LIKE '%" + t + "%'")
+        conditions.append("(" + " OR ".join(tags_conditions) + ")")
+
     # Filter on genotypes
     if genotypes:
         conditions.append(

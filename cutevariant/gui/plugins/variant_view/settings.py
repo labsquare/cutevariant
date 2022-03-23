@@ -172,7 +172,7 @@ class TagsSettings(AbstractSettingsWidget):
     def __init__(self):
         super().__init__()
 
-        self.setWindowTitle("Tags")
+        self.setWindowTitle("Variant tags")
         v_layout = QVBoxLayout(self)
         self.w = TagEditor()
         v_layout.addWidget(self.w)
