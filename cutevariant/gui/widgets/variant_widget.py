@@ -221,7 +221,6 @@ class VariantWidget(QWidget):
                 for i in self.data["samples"]
                 if i["classification"] > 0
             }
-            print("WTFF", sdata)
             self.sample_view.set_dict(sdata)
             # self.sample_tab_model.update(
             #     [
@@ -234,10 +233,6 @@ class VariantWidget(QWidget):
         if self.data["favorite"] == 1:
             self.favorite.setCheckState(Qt.CheckState(2))
 
-        # for k, v in CLASSIFICATION.items():
-        #     self.classification.addItem(v["name"])
-        # self.classification.setCurrentIndex(int("{classification}".format(**self.data)))
-        print(CLASSIFICATION)
         for k, v in CLASSIFICATION.items():
             self.classification.addItem(v["name"], k)
         index = int(self.classification.findData(self.data["classification"]))
