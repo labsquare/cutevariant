@@ -127,10 +127,10 @@ class GeneView(QAbstractScrollArea):
         # QScroller.grabGesture(self.viewport(), QScroller.LeftMouseButtonGesture)
 
         self.region = None
-
-        self.region_brush = QBrush(QColor("#5094CB80"))
-        # self.region_brush.setStyle(Qt.Dense4Pattern)
-        self.region_pen = QPen(QColor("#1E3252"))
+        color = self.palette().color(QPalette.Highlight)
+        self.region_pen = QPen(color)
+        color.setAlphaF(0.3)
+        self.region_brush = QBrush(color)
 
         self.viewport().setMouseTracking(True)
 
@@ -195,12 +195,12 @@ class GeneView(QAbstractScrollArea):
         """
         painter = QPainter()
         painter.begin(self.viewport())
-        painter.setBrush(QBrush(QColor("white")))
-        painter.drawRect(self.rect())
+        painter.setBrush(QBrush(self.palette().color(QPalette.Base)))
+        # painter.drawRect(self.rect())
 
         # draw guide
         self.area = self.area_rect()
-        painter.drawRect(self.area.adjusted(-2, -2, 2, 2))
+        # painter.drawRect(self.area.adjusted(-2, -2, 2, 2))
         painter.setClipRect(self.area)
 
         if not self.gene:
@@ -254,8 +254,11 @@ class GeneView(QAbstractScrollArea):
         linearGrad = QLinearGradient(
             QPoint(0, intron_rect.top()), QPoint(0, intron_rect.bottom())
         )
-        linearGrad.setColorAt(0, QColor("#FDFD97"))
-        linearGrad.setColorAt(1, QColor("#FDFD97").darker())
+
+        color = self.palette().color(QPalette.Light)
+
+        linearGrad.setColorAt(0, color)
+        linearGrad.setColorAt(1, color.darker())
         brush = QBrush(linearGrad)
         painter.setBrush(brush)
         painter.drawRect(intron_rect)
@@ -271,21 +274,27 @@ class GeneView(QAbstractScrollArea):
             for variant in self.variants:
 
                 pos = variant[0]
-                col = variant[1]
+                selected = variant[1]
                 af = variant[2]
 
                 LOLIPOP_HEIGH = 100
                 y = self.rect().center().y() - LOLIPOP_HEIGH * af - 10
 
                 pos = self._dna_to_scroll(pos)
-
-                painter.setPen(self.palette().color(QPalette.Window))
+                col_line = self.palette().color(QPalette.Text)
+                col_line.setAlphaF(0.6)
+                painter.setPen(col_line)
                 painter.drawLine(pos, self.rect().center().y(), pos, y)
 
                 rect = QRect(0, 0, 10, 10)
                 painter.setPen(self.palette().color(QPalette.Window))
                 painter.setBrush(self.palette().color(QPalette.Highlight))
 
+                col = self.palette().color(QPalette.Text)
+                if selected:
+                    col = QColor("red")
+
+                col.setAlphaF(0.6)
                 rect.moveCenter(QPoint(pos, y))
                 painter.setBrush(QBrush(col))
                 painter.drawEllipse(rect)
@@ -322,12 +331,13 @@ class GeneView(QAbstractScrollArea):
                 )
 
                 painter.drawRect(exon_rect)
+                color = self.palette().color(QPalette.Highlight)
 
                 linearGrad = QLinearGradient(
                     QPoint(0, exon_rect.top()), QPoint(0, exon_rect.bottom())
                 )
-                linearGrad.setColorAt(0, QColor("#789FCC"))
-                linearGrad.setColorAt(1, QColor("#789FCC").darker())
+                linearGrad.setColorAt(0, color)
+                linearGrad.setColorAt(1, color.darker())
                 brush = QBrush(linearGrad)
                 painter.setBrush(brush)
                 painter.drawRect(exon_rect)
@@ -995,8 +1005,8 @@ class GeneViewerWidget(plugin.PluginWidget):
 
         for v in sql.get_variants(self.conn, fields, source, filters, limit=None):
             pos = v["pos"]
-            color = "red" if pos == self.current_variant["pos"] else "blue"
-            variants.append((pos, color, 0.5))
+            selected = pos == self.current_variant["pos"]
+            variants.append((pos, selected, 0.5))
 
         if result is not None:
             gene = Gene()
