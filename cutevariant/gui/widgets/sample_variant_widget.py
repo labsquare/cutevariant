@@ -96,6 +96,7 @@ class SampleVariantWidget(QWidget):
         self.var_info = DictWidget()
         self.sample_info = DictWidget()
         self.sample_has_var_info = DictWidget()
+        self.history_view = DictWidget()
 
         # info_widget = QWidget()
         # info_layout = QVBoxLayout()
@@ -127,6 +128,7 @@ class SampleVariantWidget(QWidget):
         self.tab_widget.addTab(self.sample_has_var_info, "Genotyping")
         self.tab_widget.addTab(self.var_info, "Variant")
         self.tab_widget.addTab(self.sample_info, "Sample")
+        self.tab_widget.addTab(self.history_view, "History")
         ### </tabs block> ###
 
         vLayout = QVBoxLayout()
@@ -225,6 +227,8 @@ class SampleVariantWidget(QWidget):
             self.tag_edit.setDisabled(True)
             self.comment.preview_btn.setDisabled(True)
 
+        self.history_view.set_dict(self.get_history_sample_has_variant())
+
         self.initial_state = self.get_gui_state()
 
     def save(self):
@@ -286,6 +290,22 @@ class SampleVariantWidget(QWidget):
         values.append(self.comment.toPlainText())
         return values
 
+    def get_history_sample_has_variant(self):
+        """ Get the history of samples """
+        results = {}
+        for record in self.conn.execute(
+            f"""SELECT  ('[' || `timestamp` || ']') as time,
+                        ('[' || `history`.`id` || ']') as id,
+                        ( '[' || `user` || ']' || ' - ' || '[' || `samples`.`name` || '|' || `variants`.`chr` || '-' || `variants`.`pos` || '-' || `variants`.`ref` || '-' || `variants`.`alt` || '] '  || ' - ' || '"' || `field` || '" from "' || `before` || '" to "' || `after` || '"') as 'change'
+                FROM `history`
+                INNER JOIN `sample_has_variant` ON `history`.`table_rowid`=`sample_has_variant`.`rowid`
+                INNER JOIN `variants` ON `sample_has_variant`.`variant_id`=`variants`.`id`
+                INNER JOIN `samples` ON `sample_has_variant`.`sample_id`=`samples`.`id` 
+                WHERE `table`='sample_has_variant'"""
+        ):
+            results[record["time"] + " " + record["id"]] = record["change"]
+
+        return results
 
 class SampleVariantDialog(QDialog):
     def __init__(self, conn, sample_id, var_id, parent=None):

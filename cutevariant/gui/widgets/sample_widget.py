@@ -9,7 +9,7 @@ from cutevariant.config import Config
 
 from cutevariant.gui.ficon import FIcon
 
-from cutevariant.gui.widgets import ChoiceWidget
+from cutevariant.gui.widgets import ChoiceWidget, DictWidget
 from cutevariant.gui.widgets.multi_combobox import MultiComboBox
 
 
@@ -127,6 +127,9 @@ class SampleWidget(QWidget):
         self.tab_widget.addTab(identity_widget, "Edit")
         self.tab_widget.addTab(pheno_widget, "Phenotype")
 
+        self.history_view = DictWidget()
+        self.tab_widget.addTab(self.history_view, "History")
+
         header_layout = QHBoxLayout()
         header_layout.addLayout(val_layout)
 
@@ -164,6 +167,7 @@ class SampleWidget(QWidget):
 
         self.comment.setPlainText(data.get("comment", ""))
         self.comment.preview_btn.setChecked(True)
+        self.history_view.set_dict(self.get_history_samples())
 
         self.setWindowTitle(data.get("name", "Unknown"))
         self.initial_state = self.get_gui_state()
@@ -227,6 +231,21 @@ class SampleWidget(QWidget):
         values.append(self.sex_combo.currentIndex())
         values.append(self.phenotype_combo.currentIndex())
         return values
+
+    def get_history_samples(self):
+        """ Get the history of samples """
+        results = {}
+        for record in self.conn.execute(
+            f"""SELECT  ('[' || `timestamp` || ']') as time,
+                        ('[' || `history`.`id` || ']') as id,
+                        ( '[' || `user` || ']' || ' - ' || '[' || `samples`.`name` || ']' || ' - ' || '"' || `field` || '" from "' || `before` || '" to "' || `after` || '"') as 'change'
+                FROM `history`
+                INNER JOIN `samples` ON `history`.`table_rowid`=`samples`.`rowid`
+                WHERE `table`='samples'"""
+        ):
+            results[record["time"] + " " + record["id"]] = record["change"]
+
+        return results
 
 class SampleDialog(QDialog):
     def __init__(self, conn, sample_id, parent=None):

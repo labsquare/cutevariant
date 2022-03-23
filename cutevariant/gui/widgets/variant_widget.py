@@ -96,6 +96,7 @@ class VariantWidget(QWidget):
         self.variant_view = DictWidget()
         self.ann_view = DictWidget()
         self.sample_view = DictWidget()
+        self.history_view = DictWidget()
 
         self.tab_widget = QTabWidget()
 
@@ -110,7 +111,9 @@ class VariantWidget(QWidget):
         self.tab_widget.addTab(validation_widget, "Edit")
         self.tab_widget.addTab(self.variant_view, "Variant")
         self.tab_widget.addTab(self.ann_widget, "Annotations")
+        self.tab_widget.addTab(self.ann_widget, "Annotations")
         self.tab_widget.addTab(self.sample_view, "Validated samples")
+        self.tab_widget.addTab(self.history_view, "History")
         # self.tab_widget.addTab(self.comment, "Comments")
         ### </othertabs block> ###
 
@@ -256,6 +259,7 @@ class VariantWidget(QWidget):
         self.comment.setPlainText(self.data["comment"])
         self.comment.preview_btn.setChecked(True)
         self.variant_view.set_dict(self.data)
+        self.history_view.set_dict(self.get_history_variants())
 
         self.initial_state = self.get_gui_state()
 
@@ -290,6 +294,20 @@ class VariantWidget(QWidget):
             adata = self.data["annotations"][current]
             self.ann_view.set_dict({i: k for i, k in adata.items() if k != ""})
 
+    def get_history_variants(self):
+        """ Get the history of samples """
+        results = {}
+        for record in self._conn.execute(
+        f"""SELECT   ('[' || `timestamp` || ']') as time,
+                     ('[' || `history`.`id` || ']') as id,
+                        ( '[' || `user` || ']' || ' - ' || '[' || `variants`.`chr` || '-' || `variants`.`pos` || '-' || `variants`.`ref` || '-' || `variants`.`alt` || ']' || ' - ' || '"' || `field` || '" from "' || `before` || '" to "' || `after` || '"') as 'change'
+                FROM `history`
+                INNER JOIN `variants` ON `history`.`table_rowid`=`variants`.`rowid`
+                WHERE `table`='variants'"""
+        ):
+            results[record["time"] + " " + record["id"]] = record["change"]
+
+        return results
 
 class VariantDialog(QDialog):
     def __init__(self, conn, variant_id, parent=None):
