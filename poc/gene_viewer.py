@@ -1,13 +1,7 @@
-from PySide2.QtWidgets import (
-    QApplication,
-    QWidget,
-    QAbstractScrollArea,
-    QScroller,
-    QSlider,
-    QVBoxLayout,
-)
-from PySide2.QtCore import QRect, QPoint, Qt, Slot
-from PySide2.QtGui import QPainter, QPen, QBrush, QPaintEvent, QColor, QLinearGradient
+from PySide6.QtWidgets import *
+from PySide6.QtCore import *
+from PySide6.QtGui import *
+
 import sys
 
 
