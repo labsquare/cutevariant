@@ -114,11 +114,11 @@ class VariantWidget(QWidget):
         # self.tab_widget.addTab(self.comment, "Comments")
         ### </othertabs block> ###
 
-        self.sample_tab_model = TableModel()
-        self.proxy_model = QSortFilterProxyModel()
-        self.proxy_model.setFilterKeyColumn(-1)  # Search all columns.
-        self.proxy_model.setSourceModel(self.sample_tab_model)
-        self.proxy_model.sort(0, Qt.AscendingOrder)
+        # self.sample_tab_model = TableModel()
+        # self.proxy_model = QSortFilterProxyModel()
+        # self.proxy_model.setFilterKeyColumn(-1)  # Search all columns.
+        # self.proxy_model.setSourceModel(self.sample_tab_model)
+        # self.proxy_model.sort(0, Qt.AscendingOrder)
 
         ### <sample tab block> ###
         self.table = QTableView()
@@ -128,19 +128,19 @@ class VariantWidget(QWidget):
         self.table.setSortingEnabled(True)
         self.table.setIconSize(QSize(16, 16))
         self.table.horizontalHeader().setHighlightSections(False)
-        self.table.setModel(self.proxy_model)
+        # self.table.setModel(self.proxy_model)
 
-        self.searchbar = QLineEdit()
+        # self.searchbar = QLineEdit()
 
         # You can choose the type of search by connecting to a different slot here.
         # see https://doc.qt.io/qt-5/qsortfilterproxymodel.html#public-slots
-        self.searchbar.textChanged.connect(self.proxy_model.setFilterFixedString)
+        # self.searchbar.textChanged.connect(self.proxy_model.setFilterFixedString)
 
-        sample_layout = QVBoxLayout()
-        sample_layout.addWidget(self.searchbar)
-        sample_layout.addWidget(self.table)
-        container = QWidget()
-        container.setLayout(sample_layout)
+        # sample_layout = QVBoxLayout()
+        # sample_layout.addWidget(self.searchbar)
+        # sample_layout.addWidget(self.table)
+        # container = QWidget()
+        # container.setLayout(sample_layout)
         ### </sample tab block> ###
 
         main_layout = QVBoxLayout(self)
@@ -217,18 +217,19 @@ class VariantWidget(QWidget):
         # replaced by validation status instead of genotype
         if "samples" in self.data:
             sdata = {
-                i["name"]: SAMPLE_VARIANT_CLASSIFICATION[i["classification"]]
+                i["name"]: SAMPLE_VARIANT_CLASSIFICATION[i["classification"]]["name"]
                 for i in self.data["samples"]
                 if i["classification"] > 0
             }
+            print("WTFF", sdata)
             self.sample_view.set_dict(sdata)
-            self.sample_tab_model.update(
-                [
-                    [i["name"], SAMPLE_VARIANT_CLASSIFICATION[i["classification"]]]
-                    for i in self.data["samples"]
-                    if i["classification"] > 0
-                ]
-            )
+            # self.sample_tab_model.update(
+            #     [
+            #         [i["name"], SAMPLE_VARIANT_CLASSIFICATION[i["classification"]]]
+            #         for i in self.data["samples"]
+            #         if i["classification"] > 0
+            #     ]
+            # )
 
         if self.data["favorite"] == 1:
             self.favorite.setCheckState(Qt.CheckState(2))
