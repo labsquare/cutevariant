@@ -38,7 +38,7 @@ from cutevariant.gui.widgets import VqlSyntaxHighlighter
 # Forget about vectors. Converting from/to list in python is really straightforward
 
 
-def overlap(interval1, interval2):
+def overlap(interval1: list, interval2: list) -> typing.Tuple[bool, int, int]:
     """
     Given [0, 4] and [1, 10] returns (True,1, 4)
     Given [0,10] and [15,20] return (False,0,0)
@@ -65,89 +65,6 @@ def overlap(interval1, interval2):
     return (_overlaps, start, end)
 
 
-def annotation_to_sqlite(ref_filename: str, db_filename: str):
-
-    # Create databases
-    conn = sqlite3.connect(db_filename)
-
-    if not os.path.isfile(ref_filename):
-        raise FileNotFoundError("%s : No such file or directory !")
-
-    # Get only the base name (without extension) to give the database a name
-    database_name = os.path.basename(ref_filename).split(".")[0]
-
-    conn.execute(
-        f"""
-        CREATE TABLE {database_name}(  
-        id INTEGER PRIMARY KEY,
-        transcript_name TEXT, 
-        tx_start INTEGER, 
-        tx_end INTEGER,
-        cds_start INTEGER,
-        cds_end INTEGER,
-        exon_starts TEXT,
-        exon_ends TEXT,
-        gene TEXT
-        )
-
-    """
-    )
-
-    data = []
-    with gzip.open(ref_filename, "rb") as file:
-        for index, line in enumerate(file):
-            if line:
-                line = line.decode("utf-8").strip().split("\t")
-
-                transcript = line[1]
-                txStart = line[4]
-                txEnd = line[5]
-                cdsStart = line[6]
-                cdsEnd = line[7]
-                exonStarts = line[9]
-                exonEnds = line[10]
-                gene = line[12]
-
-                data.append(
-                    (
-                        None,
-                        transcript,
-                        txStart,
-                        txEnd,
-                        cdsStart,
-                        cdsEnd,
-                        exonStarts,
-                        exonEnds,
-                        gene,
-                    )
-                )
-
-    conn.executemany(f"INSERT INTO {database_name} VALUES(?,?,?,?,?,?,?,?,?);", data)
-    conn.commit()
-
-
-# Each variant will have a color index to set a representation color
-# Below is the definition of color mapping for these lollipops
-VARIANT_LOLLIPOP_COLOR_MAP = {
-    0: QColor("#FF0000"),
-    1: QColor("#00FF00"),
-    2: QColor("#0000FF"),
-}
-
-# These come from the Cute formatter
-SO_COLOR = {
-    # https://natsukis.livejournal.com/2048.html
-    "missense_variant": "#bb96ff",
-    "synonymous_variant": "#67eebd",
-    "stop_gained": "#ed6d79",
-    "stop_lost": "#ed6d79",
-    "frameshift_variant": "#ff89b5",
-    "upstream_gene_variant": "#ff80bb",
-    "intron_variant": "#ffbb88",
-    "downstream_gene_variant": "#bb55ff",
-}
-
-
 class Gene:
     """Class to hold a representation of a gene, with structural data and variant annotations.
     Structural data include coding sequence (start, end), exon list (starts, ends), exon count and variants found on the gene.
@@ -164,9 +81,8 @@ class Gene:
         self.exon_count = 0
         self.variants = []
 
-    def from_dict(self, data: dict):
+    def load(self, data: dict):
         """From sqlite dict"""
-
         self.cds_start = data["cds_start"]
         self.cds_end = data["cds_end"]
         self.exon_starts = [int(i) for i in data["exon_starts"].split(",")]
@@ -178,82 +94,11 @@ class Gene:
         self.exon_count = len(self.exon_starts) if self.exon_starts else 0
 
 
-class DefaultLollipopDrawer:
-    IMPACT_COLOR = {
-        "HIGH": QColor("#ff4b5c"),
-        "LOW": QColor("#056674"),
-        "MODERATE": QColor("#ecad7d"),
-        "MODIFIER": QColor("#ecad7d"),
-    }
-
-    @staticmethod
-    def draw_variant(
-        variant: dict,
-        painter: QPainter,
-        x: int,
-        y_mark: int,
-        y_base: int,
-        sample_count=1,
-        selected=False,
-    ) -> None:
-
-        color = DefaultLollipopDrawer.IMPACT_COLOR.get(
-            variant.get("ann.impact"), QColor("#000000")
-        )
-
-        # Make the lollipop appear as big as the frequence of the variant in the studied samples
-        # If sample count is wrong... TODO: make sure that the below division is always between 0 and 1...
-        thickness = (
-            (variant["count_var"] / sample_count) * 20 + 10 if sample_count else 10
-        )
-        if selected:
-            thickness += 5
-            y_mark -= 30
-        pen = QPen(color)
-        pen.setCapStyle(Qt.RoundCap)
-        pen.setWidth(thickness)
-        painter.setPen(pen)
-        mark = QPoint(x, y_mark)
-        base = QPoint(x, y_base)
-
-        painter.drawPoint(mark)
-
-        pen.setWidth(1)
-        painter.setPen(pen)
-        painter.drawLine(mark, base)
-
-    @staticmethod
-    def get_caption():
-        """Returns a list of dicts, mapping a color or a size with its actual meaning on the graph
-        Example return value:
-            [
-            {"color": QColor("#ff4b5c"), "text": "HIGH impact"},
-            {"color": QColor("#ecad7d"), "text": "MODERATE impact"},
-            {"color": QColor("#056674"), "text": "LOW impact"},
-            {"color": QColor("#ecad7d"), "text": "MODIFIER impact"},
-            {"size": 10, "text": "Really unfrequent variant"},
-            {"size": 20, "text": "Half frequent variant"},
-            {"size": 30, "text": "Most frequent variant"},
-        ]
-        """
-        return [
-            {"color": QColor("#ff4b5c"), "text": "HIGH impact"},
-            {"color": QColor("#ecad7d"), "text": "MODERATE impact"},
-            {"color": QColor("#056674"), "text": "LOW impact"},
-            {"color": QColor("#ecad7d"), "text": "MODIFIER impact"},
-            {"size": 10, "text": "Really unfrequent variant"},
-            {"size": 20, "text": "Half frequent variant"},
-            {"size": 30, "text": "Most frequent variant"},
-        ]
-
-
-# Defines available mouse modes:
-MOUSE_SELECT_MODE = 0  # Mouse clicking and dragging causes rectangle selection
-MOUSE_PAN_MODE = 1  # Mouse clicking and dragging causes view panning
-
-
 class GeneView(QAbstractScrollArea):
     """A class to visualize variants on a gene diagram, showing introns, exons, and coding sequence."""
+
+    MOUSE_SELECT_MODE = 0  # Mouse clicking and dragging causes rectangle selection
+    MOUSE_PAN_MODE = 1  # Mouse clicking and dragging causes view panning
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -272,11 +117,9 @@ class GeneView(QAbstractScrollArea):
         self.scale_factor = 1
         self.translation = 0
 
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        # self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-
         self.horizontalScrollBar().setRange(0, 0)
-
         self.horizontalScrollBar().valueChanged.connect(self.set_translation)
 
         self.resize(640, 200)
@@ -290,34 +133,41 @@ class GeneView(QAbstractScrollArea):
 
         self.viewport().setMouseTracking(True)
 
-        self.mouse_mode = MOUSE_SELECT_MODE
+        self.set_mouse_mode(GeneView.MOUSE_SELECT_MODE)
         self.cursor_selects = False
 
         self.selected_exon = None
         self._sample_count = 1
 
-        # This class holds only static methods
-        self.lollipop_drawer = DefaultLollipopDrawer
+    def get_mouse_mode(self) -> int:
+        """Return Mouse mode.
 
-    @property
-    def mouse_mode(self) -> int:
+        Returns:
+            int: GeneView.MOUSE_SELECT_MODE or GeneView.MOUSE_PAN_MODE
+        """
         return self._mouse_mode
 
-    @mouse_mode.setter
-    def mouse_mode(self, value: int):
+    def set_mouse_mode(self, mode: int):
+        """Set Mouse mode
 
-        if value == MOUSE_SELECT_MODE:
-            self._mouse_mode = value
+        Args:
+            mode (int): GeneView.MOUSE_SELECT_MODE or GeneView.MOUSE_PAN_MODE
+
+        Raises:
+            ValueError: if wrong mode
+        """
+        if mode == GeneView.MOUSE_SELECT_MODE:
+            self._mouse_mode = mode
             QScroller.ungrabGesture(self.viewport())
             self.setCursor(Qt.ArrowCursor)
-        elif value == MOUSE_PAN_MODE:
-            self._mouse_mode = value
+        elif mode == GeneView.MOUSE_PAN_MODE:
+            self._mouse_mode = mode
             QScroller.grabGesture(self.viewport(), QScroller.LeftMouseButtonGesture)
             self.setCursor(Qt.OpenHandCursor)
         else:
             raise ValueError(
-                "Cannot set mouse mode to %s (accepted values are MOUSE_PAN_MODE,MOUSE_SELECT_MODE",
-                str(value),
+                "Cannot set mouse mode to %s (accepted modes are MOUSE_PAN_MODE,MOUSE_SELECT_MODE",
+                str(mode),
             )
 
     @property
@@ -329,14 +179,21 @@ class GeneView(QAbstractScrollArea):
         self._cursor_selects = value
 
     def paintEvent(self, event: QPaintEvent):
+        """override paintEvent
 
+        Draw all things
+
+        Args:
+            event (QPaintEvent):
+
+        """
         painter = QPainter()
         painter.begin(self.viewport())
         painter.setBrush(QBrush(QColor("white")))
         painter.drawRect(self.rect())
 
         # draw guide
-        self.area = self.draw_area()
+        self.area = self.area_rect()
         painter.drawRect(self.area.adjusted(-2, -2, 2, 2))
         painter.setClipRect(self.area)
 
@@ -380,6 +237,11 @@ class GeneView(QAbstractScrollArea):
         painter.end()
 
     def _draw_introns(self, painter: QPainter):
+        """Draw introns
+
+        Args:
+            painter (QPainter): Description
+        """
         intron_rect = QRect(self.area)
         intron_rect.setHeight(self.intron_height)
         intron_rect.moveCenter(QPoint(self.area.center().x(), self.area.center().y()))
@@ -392,112 +254,12 @@ class GeneView(QAbstractScrollArea):
         painter.setBrush(brush)
         painter.drawRect(intron_rect)
 
-    def _draw_caption_color_block(
-        self, painter: QPainter, color: QColor, text: str, pos: QPoint
-    ) -> typing.Tuple[int, int]:
-        """Draws a caption color block at position pos, using painter.
-
-        Args:
-            painter (QPainter): painter to draw with
-            color (QColor): color of the caption
-            text (str): caption's description
-            pos (QPoint): UpperLeft corner to draw this block at
-
-        Returns:
-            typing.Tuple[int,int]: Returns (width,height) of the block that was drawn
-        """
-        painter.save()
-
-        font_metrics = QFontMetrics(self.font())
-
-        # Draw color rectangle
-        painter.setBrush(QBrush(color))
-        painter.setPen(QPen(Qt.NoPen))
-        color_rect = QRect(pos, QSize(15, 15))
-        painter.drawRect(color_rect)
-
-        # Draw caption text
-        painter.setBrush(self.palette().color(QPalette.Base))
-        painter.setPen(QPen(QColor("grey")))
-        painter.drawText(color_rect.right(), pos.y() + 15, text)
-
-        text_bounding_rect = font_metrics.boundingRect(text)
-
-        w = color_rect.width() + text_bounding_rect.width()
-        h = max(color_rect.height(), text_bounding_rect.height())
-
-        painter.restore()
-
-        return w, h
-
-    def _draw_caption_circle_block(
-        self, painter: QPainter, size: int, text: str, pos: QPoint
-    ) -> typing.Tuple[int, int]:
-        """Draws a caption size hint block at position pos, using painter.
-
-        Args:
-            painter (QPainter): painter to draw with
-            color (QColor): color of the caption
-            text (str): caption's description
-            pos (QPoint): UpperLeft corner to draw this block at
-
-        Returns:
-            typing.Tuple[int,int]: Returns (width,height) of the block that was drawn
-        """
-        painter.save()
-
-        font_metrics = QFontMetrics(self.font())
-
-        # Draw head circle
-        painter.setBrush(QBrush(QColor("grey")))
-        painter.setPen(QPen(Qt.NoPen))
-        size_hint_head = QRect(pos + QPoint(0, 10), QSize(size / 2, size / 2))
-        painter.drawEllipse(size_hint_head)
-
-        # Draw caption
-        painter.setBrush(self.palette().color(QPalette.Base))
-        painter.setPen(QPen(QColor("grey")))
-        painter.drawText(size_hint_head.right() + 10, pos.y() + 15, text)
-
-        text_bounding_rect = font_metrics.boundingRect(text)
-
-        w = size_hint_head.width() + text_bounding_rect.width()
-        h = max(size_hint_head.height(), text_bounding_rect.height())
-
-        painter.restore()
-
-        return w, h
-
-    def _draw_caption(self, painter: QPainter):
-        """Draws caption to explain shape and color of lollipop graph
-
-        Args:
-            painter (QPainter): painter reference to draw on its device
-        """
-        caption = self.lollipop_drawer.get_caption()
-
-        x, y = self.area.topLeft().toTuple()
-        col_width = 0
-        for idx, item in enumerate(caption):
-            if "color" in item:
-                w, h = self._draw_caption_color_block(
-                    painter, item["color"], item["text"], QPoint(x, y)
-                )
-                col_width = max(col_width, w)
-                y += h
-
-        x += col_width + 5
-        y = self.area.top()
-
-        for idx, item in enumerate(caption):
-            if "size" in item:
-                w, h = self._draw_caption_circle_block(
-                    painter, item["size"], item["text"], QPoint(x, y)
-                )
-                col_width = max(col_width, w)
-                y += h
-
     def _draw_variants(self, painter: QPainter):
+        """Draw variants
+
+        Args:
+            painter (QPainter)
+        """
         if self.variants:
             painter.save()
             for variant in self.variants:
@@ -524,7 +286,11 @@ class GeneView(QAbstractScrollArea):
             painter.restore()
 
     def _draw_exons(self, painter: QPainter):
+        """Draw exons
 
+        Args:
+            painter (QPainter)
+        """
         if self.gene.exon_count:
             painter.save()
             painter.setClipRect(self.area)
@@ -561,6 +327,13 @@ class GeneView(QAbstractScrollArea):
             painter.restore()
 
     def _draw_exon_handles(self, painter: QPainter):
+        """deprecated
+
+        draw exon selector
+
+        Args:
+            painter (QPainter): Description
+        """
         if self.gene.exon_count:
             painter.save()
             painter.setClipRect(self.area)
@@ -618,7 +391,7 @@ class GeneView(QAbstractScrollArea):
                 painter.setFont(font)
                 painter.drawLine(
                     QPoint(rect.center().x(), rect.top()),
-                    QPoint(rect.center().x(), self.draw_area().center().y()),
+                    QPoint(rect.center().x(), self.area_rect().center().y()),
                 )
 
                 painter.drawText(rect, Qt.AlignCenter, str(index))
@@ -627,7 +400,7 @@ class GeneView(QAbstractScrollArea):
                 self.setCursor(Qt.PointingHandCursor)
             else:
                 # Wired.. .TODO refactor
-                self.mouse_mode = self.mouse_mode
+                pass
 
             # selected_handle = None
             # for exon_index, handle in rects_to_draw:
@@ -680,6 +453,11 @@ class GeneView(QAbstractScrollArea):
             painter.restore()
 
     def _draw_cds(self, painter: QPainter):
+        """Draw Coding Domain sequence
+
+        Args:
+            painter (QPainter)
+        """
         painter.save()
         if self.gene.cds_start and self.gene.cds_end:
             painter.setClipRect(self.area)
@@ -719,6 +497,11 @@ class GeneView(QAbstractScrollArea):
         painter.restore()
 
     def _draw_region(self, painter: QPainter):
+        """Draw region rect
+
+        Args:
+            painter (QPainter): Description
+        """
         if self.region:
             painter.save()
             painter.setBrush(self.region_brush)
@@ -726,7 +509,12 @@ class GeneView(QAbstractScrollArea):
             painter.drawRect(self.region)
             painter.restore()
 
-    def draw_area(self):
+    def area_rect(self) -> QRect:
+        """Return drawing area rect
+
+        Returns:
+            QRect
+        """
         return self.viewport().rect().adjusted(10, 10, -10, -10)
 
     def _pixel_to_dna(self, pixel: int) -> int:
@@ -755,13 +543,28 @@ class GeneView(QAbstractScrollArea):
         # normalize dna
         dna = dna - self.gene.tx_start
         tx_size = self.gene.tx_end - self.gene.tx_start
-        scale = self.area.width() / tx_size
+        scale = self.area_rect().width() / tx_size
         return dna * scale
 
     def _dna_to_scroll(self, dna: int) -> int:
+        """Return scroll coordinate to dna coordinaite
+        Args:
+            dna (int)
+
+        Returns:
+            int: Coordinate in scroll area
+        """
         return self._pixel_to_scroll(self._dna_to_pixel(dna))
 
     def _scroll_to_dna(self, pixel: int) -> int:
+        """Return DNA coordinate from scroll coordinate
+
+        Args:
+            pixel (int)
+
+        Returns:
+            int:
+        """
         return self._pixel_to_dna(self._scroll_to_pixel(pixel))
 
     def _pixel_to_scroll(self, pixel: int) -> int:
@@ -799,8 +602,8 @@ class GeneView(QAbstractScrollArea):
 
         min_scroll = 0
         max_scroll = (
-            self.draw_area().width() * self.scale_factor
-        ) - self.draw_area().width()
+            self.area_rect().width() * self.scale_factor
+        ) - self.area_rect().width()
 
         previous = self.horizontalScrollBar().value()
         previous_max = self.horizontalScrollBar().maximum()
@@ -826,19 +629,16 @@ class GeneView(QAbstractScrollArea):
         self.translation = x
         self.viewport().update()
 
-    def wheelEvent(self, event):
-        """override
+    def zoom_to_exon(self, exon_id: int):
 
-        Zoom in or zoom out with the mouse wheel
+        if exon_id < self.gene.exon_count:
 
-        """
-        if event.delta() > 0:
-            self.set_scale(self.scale_factor + 0.5)
-        else:
-            if self.scale_factor > 1:
-                self.set_scale(self.scale_factor - 0.5)
+            start = self.gene.exon_starts[exon_id]
+            end = self.gene.exon_ends[exon_id]
 
-    def zoom_to_dna_interval(self, start: int, end: int):
+            self.zoom_to_region(start, end)
+
+    def zoom_to_region(self, start: int, end: int):
         """Sets the current view bounds to a rect around DNA sequence spanning from start to end
 
         Args:
@@ -854,6 +654,11 @@ class GeneView(QAbstractScrollArea):
         self.viewport().update()
 
     def keyPressEvent(self, event: QKeyEvent):
+        """Override
+
+        Args:
+            event (QKeyEvent)
+        """
         # If any key is pressed, switch to mouse pan mode
 
         super().keyPressEvent(event)
@@ -868,8 +673,15 @@ class GeneView(QAbstractScrollArea):
         #     self.cursor_selects = False
         #     self.mouse_mode = MOUSE_PAN_MODE
 
-    def event(self, event):
+    def event(self, event: QEvent) -> bool:
+        """Override
 
+        Args:
+            event (QEvent): Description
+
+        Returns:
+            TYPE: Description
+        """
         # Change cursor when gesture in panning ...
         if event.type() == QEvent.Gesture:
             for g in event.gestures():
@@ -878,7 +690,7 @@ class GeneView(QAbstractScrollArea):
                 else:
                     self.setCursor(Qt.OpenHandCursor)
 
-        super().event(event)
+        return super().event(event)
 
     def keyReleaseEvent(self, event: QKeyEvent):
 
@@ -889,20 +701,24 @@ class GeneView(QAbstractScrollArea):
         # self.cursor_selects = False
 
     def mousePressEvent(self, event: QMouseEvent):
+        """Override
 
+        Args:
+            event (QMouseEvent)
+        """
         if self.selected_exon != None:
-            self.zoom_to_dna_interval(
+            self.zoom_to_region(
                 self.gene.exon_starts[self.selected_exon],
                 self.gene.exon_ends[self.selected_exon],
             )
 
-        if self.mouse_mode == MOUSE_SELECT_MODE:
+        if self.get_mouse_mode() == GeneView.MOUSE_SELECT_MODE:
 
             if event.button() == Qt.LeftButton:
                 self.region = QRect(0, 0, 0, 0)
                 self.region.setHeight(self.viewport().height())
-                self.region.setLeft(event.pos().x())
-                self.region.setRight(event.pos().x())
+                self.region.setLeft(event.position().x())
+                self.region.setRight(event.position().x())
 
             if event.button() == Qt.RightButton:
                 self.reset_zoom()
@@ -910,9 +726,13 @@ class GeneView(QAbstractScrollArea):
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event: QMouseEvent):
+        """Override
 
+        Args:
+            event (QMouseEvent): Description
+        """
         if self.region:
-            self.region.setRight(event.pos().x())
+            self.region.setRight(event.position().x())
 
         # # Check if the mouse hovers an exon and, if so, selects it
         # if self.gene.tx_start and self.gene.tx_end:
@@ -925,7 +745,11 @@ class GeneView(QAbstractScrollArea):
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event: QMouseEvent):
+        """Override
 
+        Args:
+            event (QMouseEvent)
+        """
         if self.region:
             if self.region.normalized().width() < 5:
                 self.region = None
@@ -938,15 +762,15 @@ class GeneView(QAbstractScrollArea):
                 self.reset_zoom()
             else:
                 dna_start = self._scroll_to_dna(
-                    self.region.left() - self.draw_area().left()
+                    self.region.left() - self.area_rect().left()
                 )
 
                 dna_end = self._scroll_to_dna(
-                    self.region.right() - self.draw_area().left()
+                    self.region.right() - self.area_rect().left()
                 )
 
                 print(self.region.width())
-                self.zoom_to_dna_interval(dna_start, dna_end)
+                self.zoom_to_region(dna_start, dna_end)
                 self.region = None
 
         super().mouseReleaseEvent(event)
@@ -954,7 +778,7 @@ class GeneView(QAbstractScrollArea):
     def reset_zoom(self):
         """Resets viewer zoom."""
         if self.gene:
-            self.zoom_to_dna_interval(self.gene.tx_start, self.gene.tx_end)
+            self.zoom_to_region(self.gene.tx_start, self.gene.tx_end)
         else:
             self.set_scale(1)
             self.set_translation(0)
@@ -973,7 +797,7 @@ class GeneViewerWidget(plugin.PluginWidget):
     """
 
     # LOCATION = plugin.FOOTER_LOCATION
-    ENABLE = True
+    ENABLE = False
     REFRESH_ONLY_VISIBLE = False
     REFRESH_STATE_DATA = {"current_variant"}
 
@@ -995,7 +819,7 @@ class GeneViewerWidget(plugin.PluginWidget):
 
         # print(gene_data)
         gene = Gene()
-        gene.from_dict(gene_data)
+        gene.load(gene_data)
 
         self.view.gene = gene
 
@@ -1213,7 +1037,7 @@ if __name__ == "__main__":
 
     # print(gene_data)
     gene = Gene()
-    gene.from_dict(gene_data)
+    gene.load(gene_data)
 
     print(gene.tx_start + 100)
 
