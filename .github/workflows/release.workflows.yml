@@ -1,11 +1,9 @@
 name: Release
 
-  
-# when it active ? 
-on: push 
-  #push:
-    # tags:
-    #   - '*'
+on: 
+  push:
+    branches:
+      - release
 
 jobs:
   # WINDOWS JOB 
