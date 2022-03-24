@@ -72,6 +72,14 @@ class ChoiceModel(QAbstractListModel):
 
         self.endResetModel()
 
+    def check_all(self):
+        self.beginResetModel()
+
+        for i in self._data:
+            i["checked"] = True
+
+        self.endResetModel()
+
     def items(self):
         return self._data
 
@@ -166,6 +174,10 @@ class ChoiceWidget(QWidget):
 
     def uncheck_all(self):
         self._model.uncheck_all()
+
+
+    def check_all(self):
+        self._model.check_all()
 
     def checked(self):
         return any(i["checked"] for i in self._model.items())

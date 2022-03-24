@@ -2646,7 +2646,6 @@ def get_samples_by(conn:sqlite3.Connection, names:list, families:list, tags:list
     characters_to_supp ="[]"
     indice=""
 
-
     # name
     if  isinstance(names[0], dict) == True :
         placenames=[i['name']for i in names]
@@ -2670,6 +2669,8 @@ def get_samples_by(conn:sqlite3.Connection, names:list, families:list, tags:list
         str_famili=str_famili.replace(characters_to_supp[x],"")
 
     #tags
+    """They are a research in the dictionnary dico tag it's the dico with tag brut in keys and list of tags. 
+     He find what is the tag brut equal too one tag and on str request"""
     if  isinstance(tags[0], dict) == True :
         str_tags = ""
         placetag = [i['name'] for i in tags]
