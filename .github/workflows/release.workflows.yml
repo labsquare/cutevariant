@@ -5,16 +5,14 @@ name: Release
 on: 
   push:
     branches:
-      - master 
+      - release 
   #push:
     # tags:
     #   - '*'
 
 jobs:
-  # WINDOWS JOB 
   publish:
     runs-on: windows-latest
-
     strategy:
       matrix:
         architecture: ['x64']
@@ -32,22 +30,15 @@ jobs:
         run: |
             pip install pywin32
             pip install PyInstaller==4.0
-      - name: test
-        run: python -m pytest tests/core
-
+      - name: Install nuitka
+        run: pip install nuitka
       - name: create binary 
-        run: pyinstaller -i icon.ico --name="cutevariant_${{matrix.architecture}}" --hidden-import json --add-data "cutevariant;cutevariant" cutevariant\__main__.py
-
+        run: nuitka --standalone --plugin-enable=pyside6 --plugin-enable=numpy --include-data-dir=cutevariant\cutevariant=cutevariant --include-plugin-dir=cutevariant\cutevariant\core --include-plugin-dir=cutevariant\cutevariant\gui --outputdir=release cutevariant\cutevariant\__main__.py
       - name: Compress zip 
         uses: papeloto/action-zip@v1
         with:
-          files: dist/
+          files: release/
           dest: cutevariant-standalone-${{matrix.architecture}}.zip
-
-      - name: Create installer
-        uses: joncloud/makensis-action@v3.6
-        
-
       # - name: Publish 
       #   uses: softprops/action-gh-release@v1
       #   if: startsWith(github.ref, 'refs/tags/')

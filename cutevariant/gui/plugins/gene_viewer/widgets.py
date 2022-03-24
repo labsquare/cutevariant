@@ -926,7 +926,7 @@ class GeneViewerWidget(plugin.PluginWidget):
 
     def load_config(self):
         config = Config("gene_viewer")
-        db_path = config.get("db_path")
+        db_path = config.get("db_path", "")
 
         if not os.path.exists(db_path):
             self.stack_layout.setCurrentIndex(0)
