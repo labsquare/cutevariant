@@ -6,9 +6,6 @@ on:
   push:
     branches:
       - release 
-  #push:
-    # tags:
-    #   - '*'
 
 jobs:
   publish:
@@ -39,6 +36,15 @@ jobs:
         with:
           files: release/
           dest: cutevariant-standalone-${{matrix.architecture}}.zip
+      - name: Upload
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          asset_path: ./cutevariant-standalone-${{matrix.architecture}}.zip
+          asset_name: cutevariant-standalone-${{matrix.architecture}}.zip
+          asset_content_type: application/zip
       # - name: Publish 
       #   uses: softprops/action-gh-release@v1
       #   if: startsWith(github.ref, 'refs/tags/')
