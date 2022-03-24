@@ -280,7 +280,9 @@ class GeneView(QAbstractScrollArea):
                 LOLIPOP_HEIGH = 100
                 y = self.rect().center().y() - LOLIPOP_HEIGH * af - 10
 
-                pos = self._dna_to_scroll(pos)
+                pos = self._dna_to_pixel(pos)
+                pos = self._pixel_to_scroll(pos)
+
                 col_line = self.palette().color(QPalette.Text)
                 col_line.setAlphaF(0.6)
                 painter.setPen(col_line)
@@ -326,7 +328,7 @@ class GeneView(QAbstractScrollArea):
                 # draw exons
                 exon_rect = QRect(0, 0, end - start, self.exon_height)
                 exon_rect.moveTo(
-                    start + self.area.left(),
+                    start,
                     self.area.center().y() - self.exon_height / 2,
                 )
 
@@ -1066,10 +1068,9 @@ if __name__ == "__main__":
     )
     conn.row_factory = sqlite3.Row
 
-    gene_data = dict(
-        conn.execute("SELECT * FROM annotations WHERE gene = 'GJB2'").fetchone()
-    )
+    gene_data = dict(conn.execute("SELECT * FROM genes WHERE gene = 'GJB2'").fetchone())
 
+    print(gene_data)
     # print(gene_data)
     gene = Gene()
     gene.load(gene_data)
@@ -1077,7 +1078,8 @@ if __name__ == "__main__":
     print(gene.tx_start + 100)
 
     view = GeneView()
-    view.gene = gene
+    view.set_gene(gene)
+    view.variants = [(20766921, True, 0.5)]
     view.show()
     view.resize(600, 500)
 
