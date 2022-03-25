@@ -659,10 +659,10 @@ class ValidationWidget(plugin.PluginWidget):
         menu.addSection("Sample")
         menu.addAction(QIcon(), "Edit sample ...", self._show_sample_dialog)
 
-        menu.addAction(QIcon(), "Filter from current selection", self.on_add_filter)
+        menu.addAction(QIcon(), "Add a filter based on selected sample(s)", self.on_add_filter)
 
         menu.addAction(
-            QIcon(), "Create a source from current selection", self.on_add_source
+            QIcon(), "Create a source from selected sample(s)", self.on_add_source
         )
 
         menu.exec_(event.globalPos())
@@ -715,10 +715,22 @@ class ValidationWidget(plugin.PluginWidget):
 
         self.on_refresh()
 
-    def _create_filters(self):
+    def _create_filters(self, copy_existing_filters: bool = True) -> dict:
+        """
+        The function creates a dictionary of filters based on a list of filters and existing filters (or not)
+
+        Args:
+            copy_existing_filters (bool, optional)
+
+        Returns:
+            dict: A dictionary of filters
+        """
 
         indexes = self.view.selectionModel().selectedRows()
-        filters = copy.deepcopy(self.mainwindow.get_state_data("filters"))
+        if copy_existing_filters:
+            filters = copy.deepcopy(self.mainwindow.get_state_data("filters"))
+        else:
+            filters = {}
 
         if not filters:
             root = "$or"
@@ -741,20 +753,34 @@ class ValidationWidget(plugin.PluginWidget):
         return filters
 
     def on_add_source(self):
+        """
+        This function is called when the user clicks on the "Add Source" button in the "Source" tab
+        """
 
-        name, _ = QInputDialog.getText(self, "Source Name", "Get a source name ")
-
-        if not name:
-            return
-
-        sql.insert_selection_from_source(
-            self._conn, name, "variants", self._create_filters()
+        name, success = QInputDialog.getText(
+            self, self.tr("Source Name"), self.tr("Get a source name ")
         )
 
-        if "source_editor" in self.mainwindow.plugins:
-            self.mainwindow.refresh_plugin("source_editor")
+        # if not name:
+        #     return
+
+        if success and name:
+
+            sql.insert_selection_from_source(
+                self._conn, name, "variants", self._create_filters(False)
+            )
+
+            if "source_editor" in self.mainwindow.plugins:
+                self.mainwindow.refresh_plugin("source_editor")
+
+        else:
+
+            return
 
     def on_add_filter(self):
+        """
+        This function is called when the user clicks on the "Add Filter" button
+        """
 
         self.mainwindow.set_state_data("filters", self._create_filters())
         self.mainwindow.refresh_plugins(sender=self)

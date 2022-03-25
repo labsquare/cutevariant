@@ -78,7 +78,7 @@ def get_indel_count(conn: sqlite3.Connection):
 
 
 def get_gene_counts(conn: sqlite3.Connection):
-    """ Get the number of variant per genes """
+    """Get the number of variant per genes"""
     results = {}
     for record in conn.execute(
         "SELECT gene, COUNT(*) as 'count' FROM annotations GROUP BY gene ORDER by count DESC LIMIT 1,100"
@@ -87,11 +87,12 @@ def get_gene_counts(conn: sqlite3.Connection):
 
     return results
 
+
 def get_history_variants(conn: sqlite3.Connection):
-    """ Get the history of samples """
+    """Get the history of samples"""
     results = {}
     for record in conn.execute(
-       f"""SELECT   ('[' || `timestamp` || ']') as gene,
+        f"""SELECT   ('[' || `timestamp` || ']') as gene,
                     ( '[' || `user` || ']' || ' - ' || '[' || `variants`.`chr` || '-' || `variants`.`pos` || '-' || `variants`.`ref` || '-' || `variants`.`alt` || ']' || ' - ' || '"' || `field` || '" from "' || `before` || '" to "' || `after` || '"') as 'count'
             FROM `history`
             INNER JOIN `variants` ON `history`.`table_rowid`=`variants`.`rowid`
@@ -101,8 +102,9 @@ def get_history_variants(conn: sqlite3.Connection):
 
     return results
 
+
 def get_history_sample_has_variant(conn: sqlite3.Connection):
-    """ Get the history of samples """
+    """Get the history of samples"""
     results = {}
     for record in conn.execute(
         f"""SELECT  ('[' || `timestamp` || ']') as gene,
@@ -117,8 +119,9 @@ def get_history_sample_has_variant(conn: sqlite3.Connection):
 
     return results
 
+
 def get_history_samples(conn: sqlite3.Connection):
-    """ Get the history of samples """
+    """Get the history of samples"""
     results = {}
     for record in conn.execute(
         f"""SELECT  ('[' || `timestamp` || ']') as gene,
@@ -209,10 +212,8 @@ class HistoryDialog(PluginDialog):
                 meta_data = {}
                 stats_data = {}
                 genes_data = {}
-            
-            return meta_data, stats_data, genes_data
 
-            
+            return meta_data, stats_data, genes_data
 
         self.status_bar.showMessage("Loading ...")
         self.metric_thread = SqlThread(self.conn, compute_metrics)
