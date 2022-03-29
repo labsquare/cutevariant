@@ -160,6 +160,8 @@ class Filter_Bar(QToolBar):
 
         super().__init__(parent)
         self.conn=conn
+        self.TAG_SEPARATOR = "&"
+
         self.filter_tag = []
         self.filter_family = []
         self.filter_name = []
@@ -226,8 +228,7 @@ class Filter_Bar(QToolBar):
 
     def get_dico_id_tag_brut(self, valeur:any):
         for i in sql.get_samples(self.conn):
-            sep="&"
-            values = i['tags'].split(sep)
+            values = i['tags'].split(self.TAG_SEPARATOR)
 
             self.dico_tagbrut_idsample = {
                 "id": i['id'],
@@ -238,7 +239,6 @@ class Filter_Bar(QToolBar):
 
     def on_refresh(self):
         """Generate all lists in filters"""
-        sep = "&"
         self.samples_selector.clear()
         self.family_selector.clear()
         self.tag_selector.clear()
@@ -267,7 +267,7 @@ class Filter_Bar(QToolBar):
                 #Samples in DB can have a NULL or empty tag String. Do not put those in the tag selector.
                 pass
             else:
-                self.valeur = x.split(sep)
+                self.valeur = x.split(self.TAG_SEPARATOR)
                 self.get_dico_id_tag_brut(self.valeur)
                 self.dico_tagbrut_tagsplit[x] = self.valeur
                 self.filter_tag = self.filter_tag+self.valeur
@@ -547,6 +547,7 @@ class Group_Manage(QDialog):
 
     def __init__(self, conn=None, parent=None):
         super().__init__(parent)
+        self.TAG_SEPARATOR = "&"
         self.setModal(True)
         self.conn = conn
         self.filter_bar = Filter_Bar(conn)
@@ -563,7 +564,7 @@ class Group_Manage(QDialog):
         self.list_tag = ChoiceWidget()
         self.list_tag._apply_btn.setVisible(False)
 
-        self.load_tags_after_remove(self.list_tag)
+        self._load_tags_after_remove(self.list_tag)
 
         self.current_interface.addWidget(self.title)
         self.current_interface.addWidget(self.list_tag)
@@ -572,29 +573,31 @@ class Group_Manage(QDialog):
         self.setLayout(self.current_interface)
         self.resize(300, 400)
         self.setWindowTitle("Group of tags")
-        self.button_box.button(QDialogButtonBox.Apply).clicked.connect(self.del_group)
+        self.button_box.button(QDialogButtonBox.Apply).clicked.connect(self._del_group)
         self.button_box.rejected.connect(self.reject)
 
-    def load_tags_after_remove(self, select_tag: ChoiceWidget):
+    def _load_tags_after_remove(self, select_tag: ChoiceWidget):
         for i in self.filter_bar.filter_tag:
             select_tag.add_item(QIcon(), i)
 
-    def del_group(self):
-        r=[]
-        for i in self.list_tag.selected_items():
-            for a in self.filter_bar.get_dico_id_tag_brut(self.filter_bar.valeur):
-                if i['name'] in a['tags_sep']:
-                    r=a['tags_sep'].index(i['name'])
-                    del a['tags_sep'][r]
-                    a['tag']="&".join(a['tags_sep'])
-                    dico_update={
-                        "id" : a["id"],
-                        "tags" : a['tag']
+    def _del_group(self):
+        for selected_group in self.list_tag.selected_items():
+            for sample_dic in self.filter_bar.get_dico_id_tag_brut(self.filter_bar.valeur):
+                if selected_group["name"] in sample_dic["tags_sep"]:
+
+                    # r = sample_dic["tags_sep"].index(selected_group['name'])
+                    # del sample_dic['tags_sep'][r]
+                    sample_dic["tags_sep"].remove(selected_group["name"])
+
+                    sample_dic["tag"] = self.TAG_SEPARATOR.join(sample_dic["tags_sep"])
+                    update_dic ={
+                        "id" : sample_dic["id"],
+                        "tags" : sample_dic["tag"]
                     }
 
-                    sql.update_sample(self.conn, dico_update)
+                    sql.update_sample(self.conn, update_dic)
                     self.list_tag.clear()
-                    self.load_tags_after_remove(self.list_tag)
+                    self._load_tags_after_remove(self.list_tag)
 
 
 if __name__ == "__main__":
