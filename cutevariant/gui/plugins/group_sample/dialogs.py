@@ -196,7 +196,7 @@ class Filter_Bar(QToolBar):
 
         self.addWidget(spacer)
         self.addAction(
-            FIcon(0xF01FE), self.tr("Check all samples"), self._on_check_samples
+            FIcon(0xF0C51), self.tr("Check/Uncheck all samples"), self._on_check_samples
         )
 
         self.addAction(
@@ -238,13 +238,13 @@ class Filter_Bar(QToolBar):
         self.filter_name = [i["name"] for i in sql.get_samples(self.conn)]
         self.filter_name.sort()
         for i in self.filter_name:
-            self.samples_selector.add_item(QIcon(),i)
+            self.samples_selector.add_item(FIcon(0xF0B55),i)
 
         # family in db
         self.filter_family = [i["family_id"] for i in sql.get_samples(self.conn)]
         self.filter_family = self.keep_sorted_unique_values(self.filter_family)
         for i in self.filter_family:
-            self.family_selector.add_item(QIcon(),i)
+            self.family_selector.add_item(FIcon(0xF036E),i)
 
         # tags
         self.filter_tag_brut = [i["tags"] for i in sql.get_samples(self.conn)]
@@ -262,7 +262,7 @@ class Filter_Bar(QToolBar):
                 self.filter_tag = self.filter_tag+self.valeur
 
         for i in self.keep_sorted_unique_values(self.filter_tag):
-            self.tag_selector.add_item(QIcon(),i)
+            self.tag_selector.add_item(FIcon(0xF04FD),i)
 
     def keep_sorted_unique_values(self, check_list:list):
         """
@@ -326,10 +326,14 @@ class GroupSampleDialog(PluginDialog):
         self.vlayout_mid_P1.addWidget(self.model.load(conn))
 
         """Butonn in second part"""
-        self.butt_add = QPushButton("add")
+        self.butt_add = QPushButton()
+        # self.tr("Add sample")
         self.butt_add.clicked.connect(self.on_add_to_group)
-        self.butt_remove = QPushButton("remove")
+        self.butt_add.setIcon(FIcon(0xF09C2))
+        self.butt_remove = QPushButton()
+        # self.tr("Remove sample")
         self.butt_remove.clicked.connect(self.on_remove_to_group)
+        self.butt_remove.setIcon((FIcon(0xF09C0)))
 
         self.vlayout_mid_P2.addWidget(self.butt_add)
         self.vlayout_mid_P2.addWidget(self.butt_remove)
@@ -565,7 +569,7 @@ class Group_Manage(QDialog):
         self.filter_bar.on_refresh()
         self.list_tag.clear()
         for i in self.filter_bar.keep_sorted_unique_values(self.filter_bar.filter_tag):
-            self.list_tag.add_item(QIcon(), i)
+            self.list_tag.add_item(FIcon(0xF121F), i)
 
     def mouseDoubleClickEvent(self, event:PySide6.QtGui.QMouseEvent) :
         """
