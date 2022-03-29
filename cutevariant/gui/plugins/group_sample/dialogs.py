@@ -67,28 +67,29 @@ from functools import partial
 from PySide6.QtGui import QIcon
 
 class GroupSampleModel(QAbstractListModel):
-    """ CLass for manage current samples find in DB and put in new group. When they are none filter checked it' load methode and when they are
-    filtrer it's Filter_bar.on refrresh. """
+    """Class to manage current samples found in DB and put them in new groups. 
+    When nothing is checked in filters ; use load method
+    When something is checked in a filter ; use Filter_bar.on refresh
+    """
     def __init__(self, conn= None, parent=None):
         super().__init__(parent)
-        self._data=[]
-        self.conn=conn
-        self.list_samples=ChoiceWidget()
-        self.filter_bar=Filter_Bar(conn)
+        self._data = []
+        self.conn = conn
+        self.list_samples = ChoiceWidget()
+        self.filter_bar = Filter_Bar(conn)
         self.list_samples.setAutoFillBackground(True)
-
 
         self.list_samples._apply_btn.setVisible(False)
         # Creates the samples loading thread
-        self._load_samples_thread = SqlThread(self.conn)
+        # self._load_samples_thread = SqlThread(self.conn)
 
-        # Connect samples loading thread's signals (started, finished, error, result ready)
-        self._load_samples_thread.started.connect(
-            lambda: self.samples_are_loading.emit(True)
-        )
-        self._load_samples_thread.finished.connect(
-            lambda: self.samples_are_loading.emit(False)
-        )
+        # # Connect samples loading thread's signals (started, finished, error, result ready)
+        # self._load_samples_thread.started.connect(
+        #     lambda: self.samples_are_loading.emit(True)
+        # )
+        # self._load_samples_thread.finished.connect(
+        #     lambda: self.samples_are_loading.emit(False)
+        # )
         self.list_samples.set_placeholder(self.tr("Research sample name ..."))
 
     def data(self, index: QModelIndex, role: Qt.ItemDataRole):
@@ -124,7 +125,6 @@ class GroupSampleModel(QAbstractListModel):
         for i in self._data:
             if i['name']==name:
                 return i
-        # return self._data[]
 
     def load(self, conn):
         self._data.clear()
@@ -136,15 +136,14 @@ class GroupSampleModel(QAbstractListModel):
         return self.list_samples
 
     def on_check_all_samples(self):
-        val_false=0
+        at_least_one_not_selected = False
         for i in self.list_samples.get_all_items():
             dico=dict(i)
             if dico['checked'] == False:
-                val_false+=1
+                at_least_one_not_selected = True
 
-        if  val_false >=1 :
+        if at_least_one_not_selected:
             self.list_samples.check_all()
-
         else:
             self.list_samples.uncheck_all()
 
