@@ -74,7 +74,7 @@ class GroupSampleModel(QAbstractListModel):
         self._data=[]
         self.conn=conn
         self.list_samples=ChoiceWidget()
-        self.Filter_Bar=Filter_Bar(conn)
+        self.filter_bar=Filter_Bar(conn)
         self.list_samples.setAutoFillBackground(True)
 
 
@@ -223,7 +223,7 @@ class Filter_Bar(QToolBar):
         self.tag_selector.uncheck_all()
         self.signal_load.emit()
 
-    def get_dico_id_tagbrut(self, valeur:any):
+    def get_dico_id_tag_brut(self, valeur:any):
         for i in sql.get_samples(self.conn):
             sep="&"
             values = i['tags'].split(sep)
@@ -267,7 +267,7 @@ class Filter_Bar(QToolBar):
                 pass
             else:
                 self.valeur = x.split(sep)
-                self.get_dico_id_tagbrut(self.valeur)
+                self.get_dico_id_tag_brut(self.valeur)
                 self.dico_tagbrut_tagsplit[x]=self.valeur
                 self.filter_tag=self.filter_tag+self.valeur
                 self.filter_tag.sort(reverse=False)
@@ -288,9 +288,9 @@ class Filter_Bar(QToolBar):
 
 
 class GroupSampleDialog(PluginDialog):
-    """principal dialog. User choice sample (current sample find in GroupSampleModel). When user apply some filter they use
+    """principal dialog. User choose sample (current sample find in GroupSampleModel). When user apply some filter they use
     on refresh model. He check current samples and switch in the left part with add button. Left part are too ChoiceWidget.
-    You can reemove sample group list. For Create group he need text on name group. Manage group it's only for reemove
+    You can remove sample group list. For Create group he need text on name group. Manage group it's only for remove
     some group in subdialog"""
     ENABLE = True
 
@@ -300,27 +300,27 @@ class GroupSampleDialog(PluginDialog):
         self.conn = conn
         self.setModal(False)
 
-        """skeleton layout dialo principal"""
+        """skeleton layout dialog principal"""
         self.vlayout = QVBoxLayout()
         self.hlayout_P = QHBoxLayout()  # L41
-        self.vlayout_Midd_P1 = QVBoxLayout()  # L42
-        self.vlayout_Midd_P2 = QVBoxLayout()
-        self.vlayout_Midd_P3 = QVBoxLayout()
+        self.vlayout_mid_P1 = QVBoxLayout()  # L42
+        self.vlayout_mid_P2 = QVBoxLayout()
+        self.vlayout_mid_P3 = QVBoxLayout()
         self.hlayout = QHBoxLayout()
         self.flayout_P3 = QFormLayout()
-        self.Group_list=ChoiceWidget()
-        self.Group_list._apply_btn.setVisible(False)
-        self.Group_list.set_placeholder(self.tr("Research sample name ..."))
+        self.group_list = ChoiceWidget()
+        self.group_list._apply_btn.setVisible(False)
+        self.group_list.set_placeholder(self.tr("Research sample name ..."))
         self.dialog2 = Group_Manage(conn)
-        self.Filter_Bar = Filter_Bar(conn)
-        self.model=GroupSampleModel(conn)
+        self.filter_bar = Filter_Bar(conn)
+        self.model = GroupSampleModel(conn)
 
         """Hide part"""
         self.title = QLabel()
         self.title.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.title.setText(
             """<b>Create groups of samples</b> <br/>
-            Check your samples with any filter and add to te right for create your group
+            Select your samples with any filter and add them to the right to create your group
             """
         )
 
@@ -336,31 +336,31 @@ class GroupSampleDialog(PluginDialog):
         """The mid part it's composed to 3 vlayout in hlayout with 2 list, button add, reemove and name group"""
 
         """First part in the mid part"""
-        self.vlayout_Midd_P1.addWidget(self.Filter_Bar)
-        self.vlayout_Midd_P1.addWidget(self.model.load(conn))
+        self.vlayout_mid_P1.addWidget(self.filter_bar)
+        self.vlayout_mid_P1.addWidget(self.model.load(conn))
 
 
         """Butonn in second part"""
         self.butt_add = QPushButton("add")
-        self.butt_add.clicked.connect(self.on_add_toGroup)
+        self.butt_add.clicked.connect(self.on_add_to_group)
         self.butt_remove = QPushButton("remove")
-        self.butt_remove.clicked.connect(self.on_remove_toGroup)
+        self.butt_remove.clicked.connect(self.on_remove_to_group)
 
-        self.vlayout_Midd_P2.addWidget(self.butt_add)
-        self.vlayout_Midd_P2.addWidget(self.butt_remove)
+        self.vlayout_mid_P2.addWidget(self.butt_add)
+        self.vlayout_mid_P2.addWidget(self.butt_remove)
 
 
         """Last part for create the group"""
         self.name_group = QLineEdit()
         self.flayout_P3.addRow(self.tr("Name group :"), self.name_group)
 
-        self.vlayout_Midd_P3.addLayout(self.flayout_P3)
-        self.vlayout_Midd_P3.addWidget(self.Group_list)
+        self.vlayout_mid_P3.addLayout(self.flayout_P3)
+        self.vlayout_mid_P3.addWidget(self.group_list)
 
         """Add mid part on hlayout global"""
-        self.hlayout_P.addLayout(self.vlayout_Midd_P1)
-        self.hlayout_P.addLayout(self.vlayout_Midd_P2)
-        self.hlayout_P.addLayout(self.vlayout_Midd_P3)
+        self.hlayout_P.addLayout(self.vlayout_mid_P1)
+        self.hlayout_P.addLayout(self.vlayout_mid_P2)
+        self.hlayout_P.addLayout(self.vlayout_mid_P3)
 
         """Low part"""
         self.button_box = QDialogButtonBox(
@@ -371,7 +371,7 @@ class GroupSampleDialog(PluginDialog):
             self.create_group
         )
         self.button_box.rejected.connect(self.reject)
-        self.butt_manage_group=QPushButton("Manage group")
+        self.butt_manage_group = QPushButton("Manage group")
         self.butt_manage_group.clicked.connect(self.manage_group)
 
         self.hlayout.addWidget(self.butt_manage_group)
@@ -385,19 +385,22 @@ class GroupSampleDialog(PluginDialog):
 
         self.setLayout(self.vlayout)
         self.resize(700, 400)
-        self.setWindowTitle("Group of tags")
+        self.setWindowTitle("Group of samples")
 
-        self.Filter_Bar.samples_selector.accepted.connect(self.on_refresh_model)
-        self.Filter_Bar.tag_selector.accepted.connect(self.on_refresh_model)
-        self.Filter_Bar.family_selector.accepted.connect(self.on_refresh_model)
-        self.Filter_Bar.signal_load.connect(self.on_load_model_clear)
-        self.Filter_Bar.signal_check.connect(self.model.on_check_all_samples)
+        self.filter_bar.samples_selector.accepted.connect(self.on_refresh_model)
+        self.filter_bar.tag_selector.accepted.connect(self.on_refresh_model)
+        self.filter_bar.family_selector.accepted.connect(self.on_refresh_model)
+        self.filter_bar.signal_load.connect(self.on_load_model_clear)
+        self.filter_bar.signal_check.connect(self.model.on_check_all_samples)
 
     def mouseDoubleClickEvent(self, event:PySide6.QtGui.QMouseEvent) :
+        """
+        For debugging purposes
+        """
         for i in sql.get_samples(self.conn):
             dico=dict(i)
             print(dico)
-        for i in self.Filter_Bar.tag_selector.get_all_items():
+        for i in self.filter_bar.tag_selector.get_all_items():
             dico=dict(i)
             print(dico)
 
@@ -406,45 +409,45 @@ class GroupSampleDialog(PluginDialog):
         self.model.list_samples.clear()
         self.model.load(self.conn)
 
-    def Filtrer_check_list_samples(self):
+    def filter_check_list_samples(self):
         result_liste_samples=[]
 
-        if self.Filter_Bar.samples_selector.checked() == True:
-            my_generator_samples = self.Filter_Bar.samples_selector.selected_items()
+        if self.filter_bar.samples_selector.checked() == True:
+            my_generator_samples = self.filter_bar.samples_selector.selected_items()
             result_liste_samples = list(my_generator_samples)
 
         else:
-            result_liste_samples = self.Filter_Bar.filter_name
+            result_liste_samples = self.filter_bar.filter_name
 
         return result_liste_samples
 
-    def Filtrer_check_list_families(self):
+    def filter_check_list_families(self):
         result_list_families=[]
 
-        if self.Filter_Bar.family_selector.checked() == True:
-            my_generator_families = self.Filter_Bar.family_selector.selected_items()
+        if self.filter_bar.family_selector.checked() == True:
+            my_generator_families = self.filter_bar.family_selector.selected_items()
             result_list_families = list(my_generator_families)
 
         else:
-            result_list_families = self.Filter_Bar.filter_family
+            result_list_families = self.filter_bar.filter_family
 
         return result_list_families
 
-    def Filtrer_check_list_tag(self):
+    def filter_check_list_tags(self):
         result_liste_tags=[]
 
-        if self.Filter_Bar.tag_selector.checked() == True:
-            my_generator_tags = self.Filter_Bar.tag_selector.selected_items()
+        if self.filter_bar.tag_selector.checked() == True:
+            my_generator_tags = self.filter_bar.tag_selector.selected_items()
             result_liste_tags = list(my_generator_tags)
 
         #Le else est utiliser pour récuperer toute la liste lorsque rien n'est séléctionner
         else:
-            result_liste_tags = self.Filter_Bar.filter_tag_brut
+            result_liste_tags = self.filter_bar.filter_tag_brut
 
         return result_liste_tags
 
     def get_all_tag(self):
-        return self.Filter_Bar.tag_selector
+        return self.filter_bar.tag_selector
 
     def on_refresh_model(self):
         """when you clicked on apply in any filtrer you activate sql request and generate nw list samples"""
@@ -452,88 +455,94 @@ class GroupSampleDialog(PluginDialog):
         self.model.list_samples.clear()
 
         self.model._data = [i["name"] for i in sql.get_samples_by(self.conn,
-                                                                  self.Filtrer_check_list_samples(),
-                                                                  self.Filtrer_check_list_families(),
-                                                                  self.Filtrer_check_list_tag(),
-                                                                  self.Filter_Bar.dico_tagbrut_tagsplit
+                                                                  self.filter_check_list_samples(),
+                                                                  self.filter_check_list_families(),
+                                                                  self.filter_check_list_tags(),
+                                                                  self.filter_bar.dico_tagbrut_tagsplit
                                                                   )]
         for i in self.model._data:
             self.model.list_samples.add_item(QIcon(),i)
 
         return self.model.list_samples
 
-    def on_add_toGroup(self):
-        check_name=[]
+    def on_add_to_group(self):
+        """
+        Connected to the main "Add" button, sends selected samples to the list on the right
+        """
+        already_present_items = []
 
-        for i in self.Group_list.get_all_items():
-            dico = dict(i)
-            check_name.append(dico['name'])
+        for i in self.group_list.get_all_items():
+            items_to_add = dict(i)
+            already_present_items.append(items_to_add['name'])
 
         if self.model.list_samples.checked() == True:
-            if not check_name:
+            if not already_present_items:
                 for i in self.model.list_samples.selected_items():
-                    dico = dict(i)
+                    items_to_add = dict(i)
                     i['checked']=False
-                    self.Group_list.add_item(QIcon(), dico['name'])
+                    self.group_list.add_item(QIcon(), items_to_add['name'])
 
             else:
                 for i in self.model.list_samples.selected_items():
-                    dico=dict(i)
+                    items_to_add=dict(i)
                     i['checked']=False
 
-                    if check_name.count(dico['name'])==0:
-                        self.Group_list.add_item(QIcon(), dico['name'])
+                    if already_present_items.count(items_to_add['name'])==0:
+                        self.group_list.add_item(QIcon(), items_to_add['name'])
 
-        return self.Group_list
+        return self.group_list
 
-    def on_remove_toGroup(self):
-        list_unselected=ChoiceWidget()
+    def on_remove_to_group(self):
+        list_unselected = ChoiceWidget()
 
-        for i in self.Group_list.get_all_items():
-            dico = dict(i)
+        for i in self.group_list.get_all_items():
+            item_to_keep = dict(i)
 
-            if dico['checked']==False:
-                list_unselected.add_item(QIcon(), dico['name'])
+            if item_to_keep['checked']==False:
+                list_unselected.add_item(QIcon(), item_to_keep['name'])
 
-        self.Group_list.clear()
+        self.group_list.clear()
 
         for i in list_unselected.get_all_items():
-            dico = dict(i)
-            self.Group_list.add_item(QIcon(), dico['name'])
+            item_to_keep = dict(i)
+            self.group_list.add_item(QIcon(), item_to_keep['name'])
 
-        return self.Group_list
+        return self.group_list
 
     def form_group(self, name_group:QLineEdit, dico_group:dict):
-        if dico_group == None:
+        if dico_group in (None, "", {}):
             return 'group#' + name_group.text()
         else:
             return '&group#' + name_group.text()
 
     def create_group(self):
         if self.check_form()==True:
-            ##faire une forme qui permet de décier d'ajouter un &
-            for i in self.Group_list.get_all_items():
-                dico=dict(i)
-                nw_data=self.model.get_one_data(dico['name'])
+            ##add a & to new tag name if tag list is not empty
+            for i in self.group_list.get_all_items():
+                dic=dict(i)
+                nw_data = self.model.get_one_data(dic['name'])
                 print(nw_data)
-                group_name=self.form_group(self.name_group, nw_data['tags'])
+                group_name = self.form_group(self.name_group, nw_data['tags'])
                 print(group_name)
-                old_tag=(nw_data)['tags']
-                if old_tag ==None:
+                old_tag = nw_data['tags']
+
+                if old_tag == None:
                     nw_data.update({'tags':group_name})
                 else :
                     nw_data.update({'tags': old_tag+group_name})
+
                 sql.update_sample(self.conn,nw_data)
-                self.Filter_Bar.on_refresh()
+                self.filter_bar.on_refresh()
                 print("creation")
 
     def check_form(self):
-        if not self.name_group.text()=='' or self.name_group.text()==' ':
+        if not self.name_group.text()=='' and not self.name_group.text().isspace():
             return True
-    # ajouter un check qui permet de voir si le nom n'a pas était ajouter déja
+    #TODO: ajouter un check qui permet de voir si le nom n'a pas était ajouter déja
+
     def manage_group(self):
         self.dialog2.show()
-        self.dialog2.connect(self.Filter_Bar.on_refresh)
+        self.dialog2.accepted.connect(self.filter_bar.on_refresh)
 
 class Group_Manage(QDialog):
     """The second dialog for reemove some tag """
@@ -542,7 +551,7 @@ class Group_Manage(QDialog):
         super().__init__(parent)
         self.setModal(True)
         self.conn=conn
-        self.Filter_bar=Filter_Bar(conn)
+        self.filter_bar=Filter_Bar(conn)
         self.current_interface=QVBoxLayout()
         self.button_box = QDialogButtonBox(QDialogButtonBox.Apply|QDialogButtonBox.Cancel)
 
@@ -556,7 +565,7 @@ class Group_Manage(QDialog):
         self.list_tag=ChoiceWidget()
         self.list_tag._apply_btn.setVisible(False)
 
-        self.load_tags_reemove(self.list_tag)
+        self.load_tags_remove(self.list_tag)
 
         self.current_interface.addWidget(self.title)
         self.current_interface.addWidget(self.list_tag)
@@ -568,14 +577,14 @@ class Group_Manage(QDialog):
         self.button_box.button(QDialogButtonBox.Apply).clicked.connect(self.del_group)
         self.button_box.rejected.connect(self.reject)
 
-    def load_tags_reemove(self, select_tag: ChoiceWidget):
-        for i in self.Filter_bar.filter_tag:
+    def load_tags_remove(self, select_tag: ChoiceWidget):
+        for i in self.filter_bar.filter_tag:
             select_tag.add_item(QIcon(), i)
 
     def del_group(self):
         r=[]
         for i in self.list_tag.selected_items():
-            for a in self.Filter_bar.get_dico_id_tagbrut(self.Filter_bar.valeur):
+            for a in self.filter_bar.get_dico_id_tag_brut(self.filter_bar.valeur):
                 if i['name'] in a['tags_sep']:
                     r=a['tags_sep'].index(i['name'])
                     del a['tags_sep'][r]
@@ -587,7 +596,7 @@ class Group_Manage(QDialog):
 
                     sql.update_sample(self.conn, dico_update)
                     self.list_tag.clear()
-                    self.load_tags_reemove(self.list_tag)
+                    self.load_tags_remove(self.list_tag)
 
 
 if __name__ == "__main__":
@@ -595,7 +604,8 @@ if __name__ == "__main__":
     import sys
 
     app = QApplication(sys.argv)
-    conn = sql.get_sql_connection("C:/Users/hameauel/Documents/Db cute/test1.db")
+    # conn = sql.get_sql_connection("C:/Users/hameauel/Documents/Db cute/test1.db")
+    conn = sql.get_sql_connection("C:/Users/Ichtyornis/Projects/cutevariant/test_devel_today.db")
     conn.row_factory = sqlite3.Row
 
     dialog = GroupSampleDialog(conn)
