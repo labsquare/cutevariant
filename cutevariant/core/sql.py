@@ -2485,6 +2485,7 @@ def get_tag(conn: sqlite3.Connection, tag_id: int) -> dict:
     return conn.execute(f"SELECT * FROM tags WHERE id = {tag_id}").fetchone()
 
 
+
 def update_tag(conn: sqlite3.Connection, tag: dict):
 
     if "id" not in tag:
@@ -2623,10 +2624,10 @@ def get_samples_family(conn: sqlite3.Connection):
         for data in conn.execute("SELECT DISTINCT family_id FROM samples")
     }
 
-
 def get_samples_by_family(conn: sqlite3.Connection, families=[]):
 
     placeholder = ",".join((f"'{i}'" for i in families))
+
     return (
         dict(data)
         for data in conn.execute(
@@ -2634,6 +2635,59 @@ def get_samples_by_family(conn: sqlite3.Connection, families=[]):
         )
     )
 
+def get_samples_by(conn:sqlite3.Connection, names:list, families:list, tags:list, dico_tag:dict):
+    conn.row_factory = sqlite3.Row
+    characters_to_supp ="[]"
+    indice=""
+
+    # name
+    if  isinstance(names[0], dict) == True :
+        placenames=[i['name']for i in names]
+        str_names=str(placenames)
+
+    elif isinstance(names[0], str) == True:
+        str_names=str(names)
+
+    for x in range(len(characters_to_supp)):
+        str_names=str_names.replace(characters_to_supp[x],"")
+
+    # families
+    if  isinstance(families[0], dict) == True :
+        placefamili=[i['name']for i in families]
+        str_famili=str(placefamili)
+
+    elif isinstance(families[0], str) == True:
+        str_famili=str(families)
+
+    for x in range(len(characters_to_supp)):
+        str_famili=str_famili.replace(characters_to_supp[x],"")
+
+    #tags
+    """They are a research in the dictionnary dico tag it's the dico with tag brut in keys and list of tags. 
+     He find what is the tag brut equal too one tag and on str request"""
+    if  isinstance(tags[0], dict) == True :
+        str_tags = ""
+        placetag = [i['name'] for i in tags]
+        for k in placetag:
+            for cle, i in dico_tag.items():
+                for a in i:
+                    if a == k:
+                        str_tags = str_tags + ",'" + cle + "'"
+
+        str_tags = str_tags.replace(',', '', 1)
+
+    elif isinstance(tags[0], str) == True:
+        str_tags=str(tags)
+
+    for x in range(len(characters_to_supp)):
+        str_tags=str_tags.replace(characters_to_supp[x],"")
+
+    return (
+        dict(data)
+        for data in conn.execute(
+        f"SELECT * from samples where name in ({str_names}) and family_id in ({str_famili}) and tags in ({str_tags})"
+    )
+    )
 
 def get_sample(conn: sqlite3.Connection, sample_id: int):
     """Get samples information from a specific id
@@ -2646,6 +2700,12 @@ def get_sample(conn: sqlite3.Connection, sample_id: int):
     return dict(
         conn.execute(f"SELECT * FROM samples WHERE id = {sample_id}").fetchone()
     )
+
+def get_sample(conn: sqlite3.Connection, name: str):
+    return dict(
+        conn.execute(f"SELECT * FROM samples WHERE id = {sample_id}").fetchone()
+    )
+
 
 
 def get_sample_annotations(conn, variant_id: int, sample_id: int):

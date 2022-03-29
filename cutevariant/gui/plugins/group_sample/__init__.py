@@ -1,0 +1,5 @@
+__title__ = "Group sample"
+__description__ = "A dialog to create filters for a specific trio analysis"
+__long_description__ = ""
+__author__ = "Hameau Elise"
+__version__ = "1.0.0"

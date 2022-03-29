@@ -72,6 +72,14 @@ class ChoiceModel(QAbstractListModel):
 
         self.endResetModel()
 
+    def check_all(self):
+        self.beginResetModel()
+
+        for i in self._data:
+            i["checked"] = True
+
+        self.endResetModel()
+
     def items(self):
         return self._data
 
@@ -82,6 +90,7 @@ class ChoiceModel(QAbstractListModel):
                 i["checked"] = True
             else:
                 i["checked"] = False
+
 
 
 class ChoiceView(QListView):
@@ -137,9 +146,6 @@ class ChoiceWidget(QWidget):
     def set_placeholder(self, message: str):
         self._search_line.setPlaceholderText(message)
 
-    def clear(self):
-        self._model.clear()
-
     def __close_parent(self):
         if self.parent():
             self.parent().close()
@@ -154,11 +160,24 @@ class ChoiceWidget(QWidget):
             if i["checked"] == True:
                 yield i
 
+    def unselected_items(self):
+        for i in self._model.items():
+            if i["checked"] == False:
+                yield i
+
+    def get_all_items(self):
+        for i in self._model.items():
+            yield i
+
     def clear(self):
         self._model.clear()
 
     def uncheck_all(self):
         self._model.uncheck_all()
+
+
+    def check_all(self):
+        self._model.check_all()
 
     def checked(self):
         return any(i["checked"] for i in self._model.items())
