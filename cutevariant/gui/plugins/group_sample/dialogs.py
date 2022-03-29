@@ -2,10 +2,6 @@
 import sqlite3
 
 import PySide6
-from cutevariant.gui import mainwindow
-from collections import OrderedDict
-from cutevariant.core import get_sql_connection, get_metadatas, command
-
 
 # Qt imports
 from PySide6.QtWidgets import (
@@ -19,12 +15,11 @@ from PySide6.QtWidgets import (
     QSpacerItem,
     QDialogButtonBox,
 )
-from PySide6.QtCore import Qt, QAbstractTableModel, QModelIndex, QThreadPool
+from PySide6.QtCore import Qt, QModelIndex
 
 # Custom imports
 from cutevariant.gui.ficon import FIcon
 from cutevariant.gui.plugin import PluginDialog
-from cutevariant.gui.sql_thread import SqlThread
 from cutevariant.core import sql
 
 import typing
@@ -40,22 +35,15 @@ from PySide6.QtGui import *
 
 
 # Custom imports
-from cutevariant.core import sql, command
-from cutevariant.core.reader import BedReader
+from cutevariant.core import sql
 from cutevariant.gui import plugin, FIcon, style
-from cutevariant.commons import DEFAULT_SELECTION_NAME, SAMPLE_VARIANT_CLASSIFICATION
 from cutevariant.gui.widgets import (
     ChoiceWidget,
-    create_widget_action,
-    SampleDialog,
-    PresetAction,
+    create_widget_action
 )
 
 from cutevariant.gui.widgets.choice_widget import ChoiceWidget
 from cutevariant import LOGGER
-from cutevariant.gui.sql_thread import SqlThread
-
-from cutevariant.gui.style import GENOTYPE, CLASSIFICATION
 
 from cutevariant.gui import FormatterDelegate
 from cutevariant.gui.formatters.cutestyle import CutestyleFormatter
