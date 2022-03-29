@@ -150,7 +150,8 @@ class GroupSampleModel(QAbstractListModel):
 
 
 class Filter_Bar(QToolBar):
-    """They are filter samples whit all samples in db, filter if family, filter tag, check all samples on current
+    """To filter samples in database, based on sample name/family/tags
+    Possible to check all samples on current
     samples (use GroupSampleModel) and clear all filtrers"""
     signal_load=Signal()
     signal_check=Signal()
@@ -159,20 +160,20 @@ class Filter_Bar(QToolBar):
 
         super().__init__(parent)
         self.conn=conn
-        self.filter_tag=[]
-        self.filter_family=[]
-        self.filter_name=[]
+        self.filter_tag = []
+        self.filter_family = []
+        self.filter_name = []
         self.setIconSize(QSize(16, 16))
-        self.icon=QIcon()
+        self.icon = QIcon()
         """ dico_tagbrut_idsample are dico with id samples, tag brut (it's tag without split like in DB) and tag split
         it's tag brut with split in list. dico_tagbrut_tagsplit contains tag brut and tag split in list, it's only use for 
         sql get sample by"""
-        self.dico_tagbrut_idsample={}
-        self.dico_tagbrut_tagsplit={}
+        self.dico_tagbrut_idsample = {}
+        self.dico_tagbrut_tagsplit = {}
 
-        self.valeur=None
+        self.valeur = None
 
-        self.icon.addFile("C:/Documents/Check.jpg")
+        # self.icon.addFile("C:/Documents/Check.jpg")
 
         self.samples_selector = ChoiceWidget()
 
@@ -236,7 +237,7 @@ class Filter_Bar(QToolBar):
             yield self.dico_tagbrut_idsample
 
     def on_refresh(self):
-        """Generate all list on filter. Check item repeat it's for reemove repeat items"""
+        """Generate all lists in filters"""
         sep = "&"
         self.samples_selector.clear()
         self.family_selector.clear()
@@ -248,14 +249,13 @@ class Filter_Bar(QToolBar):
 
         # samples names
         self.filter_name = [i["name"] for i in sql.get_samples(self.conn)]
-        self.filter_name.sort(reverse=False)
+        self.filter_name.sort()
         for i in self.filter_name:
             self.samples_selector.add_item(QIcon(),i)
 
         # family in db
         self.filter_family = [i["family_id"] for i in sql.get_samples(self.conn)]
-        self.filter_family.sort(reverse=False)
-        self.filter_family=self.check_item_repeat(self.filter_family)
+        self.filter_family = self.keep_sorted_unique_values(self.filter_family)
         for i in self.filter_family:
             self.family_selector.add_item(QIcon(),i)
 
@@ -263,28 +263,25 @@ class Filter_Bar(QToolBar):
         self.filter_tag_brut = [i["tags"] for i in sql.get_samples(self.conn)]
 
         for x in self.filter_tag_brut:
-            if x == None or x=='' or x==' ':
+            if x == None or x == "" or x.isspace():
+                #Samples in DB can have a NULL or empty tag String. Do not put those in the tag selector.
                 pass
             else:
                 self.valeur = x.split(sep)
                 self.get_dico_id_tag_brut(self.valeur)
-                self.dico_tagbrut_tagsplit[x]=self.valeur
-                self.filter_tag=self.filter_tag+self.valeur
-                self.filter_tag.sort(reverse=False)
+                self.dico_tagbrut_tagsplit[x] = self.valeur
+                self.filter_tag = self.filter_tag+self.valeur
 
-        for i in self.check_item_repeat(self.filter_tag):
+        for i in self.keep_sorted_unique_values(self.filter_tag):
             self.tag_selector.add_item(QIcon(),i)
 
-    def check_item_repeat(self, check_liste:list):
-        for i in check_liste:
-            if check_liste.count(i)>1:
-                print(check_liste.count(i), i, "le nombre de i")
-                check_liste.remove(i)
-            elif i==' ' or i==None or i=='':
-                check_liste.remove(i)
-        check_liste=check_liste
-        return check_liste
-
+    def keep_sorted_unique_values(self, check_list:list):
+        """
+        returns an ordered list keeping only unique values
+        """
+        check_list = list(set(check_list))
+        check_list.sort()
+        return check_list
 
 
 class GroupSampleDialog(PluginDialog):
@@ -410,16 +407,16 @@ class GroupSampleDialog(PluginDialog):
         self.model.load(self.conn)
 
     def filter_check_list_samples(self):
-        result_liste_samples=[]
+        result_list_samples=[]
 
         if self.filter_bar.samples_selector.checked() == True:
             my_generator_samples = self.filter_bar.samples_selector.selected_items()
-            result_liste_samples = list(my_generator_samples)
+            result_list_samples = list(my_generator_samples)
 
         else:
-            result_liste_samples = self.filter_bar.filter_name
+            result_list_samples = self.filter_bar.filter_name
 
-        return result_liste_samples
+        return result_list_samples
 
     def filter_check_list_families(self):
         result_list_families=[]
@@ -434,17 +431,17 @@ class GroupSampleDialog(PluginDialog):
         return result_list_families
 
     def filter_check_list_tags(self):
-        result_liste_tags=[]
+        result_list_tags=[]
 
         if self.filter_bar.tag_selector.checked() == True:
             my_generator_tags = self.filter_bar.tag_selector.selected_items()
-            result_liste_tags = list(my_generator_tags)
+            result_list_tags = list(my_generator_tags)
 
         #Le else est utiliser pour récuperer toute la liste lorsque rien n'est séléctionner
         else:
-            result_liste_tags = self.filter_bar.filter_tag_brut
+            result_list_tags = self.filter_bar.filter_tag_brut
 
-        return result_liste_tags
+        return result_list_tags
 
     def get_all_tag(self):
         return self.filter_bar.tag_selector
@@ -545,27 +542,28 @@ class GroupSampleDialog(PluginDialog):
         self.dialog2.accepted.connect(self.filter_bar.on_refresh)
 
 class Group_Manage(QDialog):
-    """The second dialog for reemove some tag """
+    """The second dialog used to remove tags from the DB"""
     signal_close=Signal()
+
     def __init__(self, conn=None, parent=None):
         super().__init__(parent)
         self.setModal(True)
-        self.conn=conn
-        self.filter_bar=Filter_Bar(conn)
-        self.current_interface=QVBoxLayout()
+        self.conn = conn
+        self.filter_bar = Filter_Bar(conn)
+        self.current_interface = QVBoxLayout()
         self.button_box = QDialogButtonBox(QDialogButtonBox.Apply|QDialogButtonBox.Cancel)
 
         self.title=QLabel()
         self.title.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.title.setText(
-            """<b>Manage your group in your DataBase </b> <br/>
-            Reemove some group
+            """<b>Manage your groups in your current project </b> <br/>
+            Remove selected groups
             """
         )
-        self.list_tag=ChoiceWidget()
+        self.list_tag = ChoiceWidget()
         self.list_tag._apply_btn.setVisible(False)
 
-        self.load_tags_remove(self.list_tag)
+        self.load_tags_after_remove(self.list_tag)
 
         self.current_interface.addWidget(self.title)
         self.current_interface.addWidget(self.list_tag)
@@ -577,7 +575,7 @@ class Group_Manage(QDialog):
         self.button_box.button(QDialogButtonBox.Apply).clicked.connect(self.del_group)
         self.button_box.rejected.connect(self.reject)
 
-    def load_tags_remove(self, select_tag: ChoiceWidget):
+    def load_tags_after_remove(self, select_tag: ChoiceWidget):
         for i in self.filter_bar.filter_tag:
             select_tag.add_item(QIcon(), i)
 
@@ -596,7 +594,7 @@ class Group_Manage(QDialog):
 
                     sql.update_sample(self.conn, dico_update)
                     self.list_tag.clear()
-                    self.load_tags_remove(self.list_tag)
+                    self.load_tags_after_remove(self.list_tag)
 
 
 if __name__ == "__main__":
