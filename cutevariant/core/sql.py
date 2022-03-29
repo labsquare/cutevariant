@@ -2701,12 +2701,6 @@ def get_sample(conn: sqlite3.Connection, sample_id: int):
         conn.execute(f"SELECT * FROM samples WHERE id = {sample_id}").fetchone()
     )
 
-def get_sample(conn: sqlite3.Connection, name: str):
-    return dict(
-        conn.execute(f"SELECT * FROM samples WHERE id = {sample_id}").fetchone()
-    )
-
-
 
 def get_sample_annotations(conn, variant_id: int, sample_id: int):
     """Get samples for given sample id and variant id"""
