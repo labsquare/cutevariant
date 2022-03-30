@@ -359,7 +359,7 @@ class GroupSampleDialog(PluginDialog):
             self.create_group
         )
         self.button_box.rejected.connect(self.reject)
-        self.butt_manage_group = QPushButton("Manage group")
+        self.butt_manage_group = QPushButton("Delete group")
         self.butt_manage_group.clicked.connect(self.manage_group)
 
         self.hlayout.addWidget(self.butt_manage_group)
@@ -519,7 +519,7 @@ class GroupSampleDialog(PluginDialog):
                 sql.update_sample(self.conn,nw_data)
                 self.filter_bar.on_refresh()
                 self.dialog2.reload_tags()
-                self.group_list.clear()
+            self.group_list.clear()
 
     def check_form(self):
         if not self.name_group.text()=='' and not self.name_group.text().isspace():
