@@ -250,13 +250,11 @@ class Filter_Bar(QToolBar):
         self.filter_tag_brut = [i["tags"] for i in sql.get_samples(self.conn)]
 
         for x in self.filter_tag_brut:
-            if x == None or x == '' or x.isspace():
+            if x == None or x == "" or x.isspace():
                 #Samples in DB can have a NULL or empty tag String. Do not put those in the tag selector.
                 pass
             else:
                 self.valeur = x.split(self.TAG_SEPARATOR)
-                if '' in self.valeur :
-                    self.valeur .remove('')
                 self.get_dico_id_tag_brut(self.valeur)
                 self.dico_tagbrut_tagsplit[x] = self.valeur
                 self.filter_tag = self.filter_tag+self.valeur
@@ -325,6 +323,7 @@ class GroupSampleDialog(PluginDialog):
         self.vlayout_mid_P1.addWidget(self.filter_bar)
         self.vlayout_mid_P1.addWidget(self.model.load(conn))
 
+
         """Butonn in second part"""
         self.butt_add = QPushButton("add")
         self.butt_add.clicked.connect(self.on_add_to_group)
@@ -333,6 +332,7 @@ class GroupSampleDialog(PluginDialog):
 
         self.vlayout_mid_P2.addWidget(self.butt_add)
         self.vlayout_mid_P2.addWidget(self.butt_remove)
+
 
         """Last part for create the group"""
         self.name_group = QLineEdit()
@@ -376,7 +376,6 @@ class GroupSampleDialog(PluginDialog):
         self.filter_bar.family_selector.accepted.connect(self.on_refresh_model)
         self.filter_bar.signal_load.connect(self.on_load_model_clear)
         self.filter_bar.signal_check.connect(self.model.on_check_all_samples)
-        self.dialog2.signal_close.connect(self.filter_bar.on_refresh)
 
     def mouseDoubleClickEvent(self, event:PySide6.QtGui.QMouseEvent) :
         """
@@ -384,8 +383,10 @@ class GroupSampleDialog(PluginDialog):
         """
         for i in sql.get_samples(self.conn):
             dico=dict(i)
+            print(dico)
         for i in self.filter_bar.tag_selector.get_all_items():
             dico=dict(i)
+            print(dico)
 
     def on_load_model_clear(self):
         self.model._data.clear()
@@ -504,7 +505,9 @@ class GroupSampleDialog(PluginDialog):
             for i in self.group_list.get_all_items():
                 dic=dict(i)
                 nw_data = self.model.get_one_data(dic['name'])
+                print(nw_data)
                 group_name = self.form_group(self.name_group, nw_data['tags'])
+                print(group_name)
                 old_tag = nw_data['tags']
 
                 if old_tag == None:
@@ -514,12 +517,12 @@ class GroupSampleDialog(PluginDialog):
 
                 sql.update_sample(self.conn,nw_data)
                 self.filter_bar.on_refresh()
-                self.dialog2.reload_tags()
-                self.group_list.clear()
+                print("creation")
 
     def check_form(self):
         if not self.name_group.text()=='' and not self.name_group.text().isspace():
             return True
+    #TODO: ajouter un check qui permet de voir si le nom n'a pas était ajouter déja
 
     def manage_group(self):
         self.dialog2.show()
@@ -548,6 +551,7 @@ class Group_Manage(QDialog):
         self.list_tag = ChoiceWidget()
         self.list_tag._apply_btn.setVisible(False)
 
+        self._load_tags_after_remove(self.list_tag)
 
         self.current_interface.addWidget(self.title)
         self.current_interface.addWidget(self.list_tag)
@@ -558,25 +562,14 @@ class Group_Manage(QDialog):
         self.setWindowTitle("Group of tags")
         self.button_box.button(QDialogButtonBox.Apply).clicked.connect(self._del_group)
         self.button_box.rejected.connect(self.reject)
-        self.filter_bar.on_refresh()
-        self.reload_tags()
 
-    def reload_tags(self):
-        self.filter_bar.on_refresh()
-        self.list_tag.clear()
-        for i in self.filter_bar.keep_sorted_unique_values(self.filter_bar.filter_tag):
-            self.list_tag.add_item(QIcon(), i)
-
-    def mouseDoubleClickEvent(self, event:PySide6.QtGui.QMouseEvent) :
-        """
-        For debugging purposes
-        """
-        print(self.filter_bar.filter_tag_brut)
-        print(self.filter_bar.keep_sorted_unique_values(self.filter_bar.filter_tag))
+    def _load_tags_after_remove(self, select_tag: ChoiceWidget):
+        for i in self.filter_bar.filter_tag:
+            select_tag.add_item(QIcon(), i)
 
     def _del_group(self):
         for selected_group in self.list_tag.selected_items():
-            for sample_dic in self.filter_bar.get_dico_id_tag_brut(self.filter_bar.filter_tag):
+            for sample_dic in self.filter_bar.get_dico_id_tag_brut(self.filter_bar.valeur):
                 if selected_group["name"] in sample_dic["tags_sep"]:
 
                     # r = sample_dic["tags_sep"].index(selected_group['name'])
@@ -591,8 +584,7 @@ class Group_Manage(QDialog):
 
                     sql.update_sample(self.conn, update_dic)
                     self.list_tag.clear()
-                    self.signal_close.emit()
-                    self.reload_tags()
+                    self._load_tags_after_remove(self.list_tag)
 
 
 if __name__ == "__main__":
@@ -601,7 +593,7 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
     # conn = sql.get_sql_connection("C:/Users/hameauel/Documents/Db cute/test1.db")
-    conn = sql.get_sql_connection("C:/Users/HAMEAUEL/Documents/Db cute/Hemato_XTHS.db")
+    conn = sql.get_sql_connection("C:/Users/Ichtyornis/Projects/cutevariant/test_devel_today.db")
     conn.row_factory = sqlite3.Row
 
     dialog = GroupSampleDialog(conn)
