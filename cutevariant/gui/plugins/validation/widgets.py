@@ -15,6 +15,7 @@ from PySide6.QtGui import *
 # Custom imports
 from cutevariant.core import sql, command
 from cutevariant.core.reader import BedReader
+import cutevariant.core.querybuilder as qb
 from cutevariant.gui import plugin, FIcon, style
 from cutevariant.gui.style import SAMPLE_VARIANT_CLASSIFICATION
 from cutevariant.commons import DEFAULT_SELECTION_NAME
@@ -656,7 +657,15 @@ class ValidationWidget(plugin.PluginWidget):
         menu.addAction(QIcon(), "Add a filter based on selected sample(s)", self.on_add_filter)
 
         menu.addAction(
+            QIcon(), "Select a source from selected sample(s)", self.on_select_source
+        )
+
+        menu.addAction(
             QIcon(), "Create a source from selected sample(s)", self.on_add_source
+        )
+
+        menu.addAction(
+            QIcon(), "Create a source from each selected sample", self.on_add_each_source
         )
 
         menu.exec_(event.globalPos())
@@ -716,7 +725,7 @@ class ValidationWidget(plugin.PluginWidget):
 
         self.on_refresh()
 
-    def _create_filters(self, copy_existing_filters: bool = True) -> dict:
+    def _create_filters(self, copy_existing_filters: bool = True, sample_list: list = []) -> dict:
         """
         The function creates a dictionary of filters based on a list of filters and existing filters (or not)
 
@@ -746,37 +755,193 @@ class ValidationWidget(plugin.PluginWidget):
         for index in indexes:
             # sample_name = index.siblingAtColumn(1).data()
             sample_name = index.siblingAtColumn(0).data()
-            if sample_name:
+            # Add sample in filters
+            if sample_name and (sample_name in sample_list or sample_list == []):
                 key = f"samples.{sample_name}.gt"
                 condition = {key: {"$gte": 1}}
                 filters[root].append(condition)
 
         return filters
 
-    def on_add_source(self):
+    def on_add_source(self, input_name=None, select=False, overwrite=None, sample_list=[]):
+        """
+        This function is called when the user clicks on the "Add Source" button in the "Source" tab
+
+        Args:
+            input_name (string, optional): source name
+            select (bool, optional): if source selected after creation
+            overwrite (bool, optional): if source created/overwrite
+            sample_list (list, optional): list of sample to add in the source
+
+        Returns:
+            None
+        """
+
+        # Create filter from selected list or a sample list (if not empty)
+        filters=self._create_filters(False, sample_list=sample_list)
+
+        # Created sources
+        # Get sources
+        sources=sql.get_selections(self._conn)
+        # Create list and dict of source information 
+        sources_name_list=[]
+        sources_query_list=[]
+        sources_query_dict={}
+        for s in sources:
+            sources_name_list.append(s["name"])
+            sources_query_list.append(s["query"])
+            sources_query_dict[s["query"]]=s["name"]
+
+        # Query source
+        source_query = qb.build_vql_query(fields=["id"], source="variants", filters=filters)
+ 
+        # Selected samples
+        indexes = self.view.selectionModel().selectedRows()
+
+        # Input source name if uniq sample and for selection
+        if select and len(indexes)==1: 
+            input_name=indexes[0].siblingAtColumn(0).data()
+
+        # Source name
+        if input_name != None:
+            # source name is in input
+            name=input_name
+            success=True
+        else:
+            # Auto detection of source name
+            if len(indexes)==1:
+                # source name is the name of the uniq sample
+                source_name=indexes[0].siblingAtColumn(0).data()
+            elif source_query in sources_query_list:
+                # source name is found by query
+                source_name=sources_query_dict[source_query]
+            else:
+                # source name is a new source (not detected)
+                source_name="new source name"
+            # Check if source name already created/exists
+            if source_name in sources_name_list:
+                msg=f"""\n(source '{source_name}' already exists)"""
+            else:
+                msg=""
+            # Ask for source name
+            name, success = QInputDialog.getText(
+                self, self.tr("Source Name"), self.tr("Get a source name "+msg),
+                text=source_name
+            )
+            
+        # Success of source name
+        if success and name:
+
+            # Check if need to overwrite source
+            if name in sources_name_list and not select and overwrite == None:
+                # Ask for overwriting
+                ret = QMessageBox.warning(
+                    self,
+                    self.tr("Overwrite source"),
+                    self.tr(
+                        f"Source {name} already exists. Do you want to overwrite it?"
+                    ),
+                    QMessageBox.Yes | QMessageBox.No,
+                )
+                if ret == QMessageBox.No:
+                    # Exit if not overwrite source
+                    overwrite=False
+                else:
+                    # Overwrite source
+                    overwrite=True
+                
+
+            # Check if create/overwrite source 
+            if name not in sources_name_list or (not select and overwrite):
+                # Create/overwrite source 
+                sql.insert_selection_from_source(
+                    self._conn, name, "variants", filters
+                )
+
+            # Check for selecting source
+            if input_name == None and not select:
+                msg = QMessageBox(icon=QMessageBox.Warning)
+                msg.setText(self.tr("Do you want to use this source?"))
+                msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+
+            # Check if select source
+            if select or (input_name == None and msg.exec_() == QMessageBox.Yes):
+                # Select source
+                self.mainwindow.set_state_data("source", name)
+
+            # Check if refresh source editor
+            if "source_editor" in self.mainwindow.plugins:
+                # Refresh source editor
+                self.mainwindow.refresh_plugin("source_editor")
+
+            # Return name
+            return None
+
+        else:
+
+            # Return None
+            return None
+
+    def on_select_source(self):
         """
         This function is called when the user clicks on the "Add Source" button in the "Source" tab
         """
 
-        name, success = QInputDialog.getText(
-            self, self.tr("Source Name"), self.tr("Get a source name ")
-        )
+        # Created sources
+        sources=sql.get_selections(self._conn)
+        sources_name_list=[]
+        sources_query_list=[]
+        sources_query_dict={}
+        for s in sources:
+            sources_name_list.append(s["name"])
+            sources_query_list.append(s["query"])
+            sources_query_dict[s["query"]]=s["name"]
 
-        # if not name:
-        #     return
+        # Query source
+        source_query = qb.build_vql_query(fields=["id"], source="variants", filters=self._create_filters(False))
 
-        if success and name:
+        # Search for existing source name
+        source_name=None
+        if source_query in sources_query_list:
+            source_name=sources_query_dict[source_query]
 
-            sql.insert_selection_from_source(
-                self._conn, name, "variants", self._create_filters(False)
-            )
+        self.on_add_source(select=True, input_name=source_name)
 
-            if "source_editor" in self.mainwindow.plugins:
-                self.mainwindow.refresh_plugin("source_editor")
+    def on_add_each_source(self):
+        """
+        This function is called when the user clicks on the "Add Source" button in the "Source" tab
+        """
 
-        else:
+        # Selected samples
+        indexes = self.view.selectionModel().selectedRows()
 
-            return
+        # Created sources
+        sources=sql.get_selections(self._conn)
+        sources_list=[]
+        for s in sources:
+            sources_list.append(s["name"])
+
+        # Search for existing source name
+        existing_sources=[]
+        for index in indexes:
+            name=index.siblingAtColumn(0).data()
+            if name in sources_list:
+                existing_sources.append(name)
+
+        # Overwrite option
+        overwrite=False
+        if len(existing_sources)>0:
+            msg = QMessageBox(icon=QMessageBox.Warning)
+            msg.setText(self.tr(f"""Do you want to overwrite existing sources?\n{existing_sources}"""))
+            msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+            if msg.exec_() == QMessageBox.Yes:
+                overwrite=True
+
+        # Add each source
+        for index in indexes:
+            name=index.siblingAtColumn(0).data()
+            self.on_add_source(input_name=name, overwrite=overwrite, sample_list=[name])
+            
 
     def on_add_filter(self):
         """
