@@ -131,7 +131,8 @@ class CircosView(QPixmap):
 
 
         raxis_max=900
-        raxis_window=80
+        raxis_window_contig=100
+        raxis_window=150
         raxis_padding=10
         raxis_current=raxis_max
         raxis_previous=raxis_max
@@ -155,9 +156,9 @@ class CircosView(QPixmap):
         arcdata_dict = collections.defaultdict(dict)
 
         raxis_current=raxis_previous
-        raxis_bottom=raxis_current-raxis_window
+        raxis_bottom=raxis_current-raxis_window_contig
         raxis_top=raxis_current
-        raxis_previous=raxis_current-raxis_window-raxis_padding
+        raxis_previous=raxis_current-raxis_window_contig-raxis_padding
 
         #print(contigs)
         #print(contig_list)
@@ -179,7 +180,7 @@ class CircosView(QPixmap):
                     #name   = chr
                     length = int(contigs[chr])
                     arcdata_dict[name]["colors"] = "#BBBBBB"
-                    arc    = Garc(arc_id=name, size=length, interspace=3, raxis_range=(raxis_bottom,raxis_top), labelposition=60, facecolor=arcdata_dict[name]["colors"], label_visible=True)
+                    arc    = Garc(arc_id=name, size=length, interspace=3, raxis_range=(raxis_bottom,raxis_top), labelposition=0, facecolor=arcdata_dict[name]["colors"], label_visible=True)
                     circle.add_garc(arc) 
             
         circle.set_garcs(start=0, end=360) 
@@ -301,7 +302,9 @@ class CircosView(QPixmap):
                                 start = pos+svlen
                                 end = pos
 
+                        #minlength=2000000
                         minlength=2000000
+                        #minlength=0
 
                         svlength1=end-start
                         if svlength1 < minlength:
@@ -381,12 +384,13 @@ class CircosView(QPixmap):
             if len(circles["indel"]):               
                 for key in circles["indel"]:
                     circle.scatterplot(key, data=circles["indel"][key]["values"], positions=circles["indel"][key]["positions"],
-                            rlim=[vmin-0.05*abs(vmin), vmax+0.05*abs(vmax)], raxis_range=(raxis_bottom,raxis_top), facecolor=circles["indel"][key]["colors"], spine=True) 
+                            rlim=[vmin-0.05*abs(vmin), vmax+0.05*abs(vmax)], raxis_range=(raxis_bottom,raxis_top), facecolor=circles["indel"][key]["colors"], spine=True, markersize=20, linewidth=0) 
 
             if len(circles["snv"]):
                 for key in circles["snv"]:
                     circle.scatterplot(key, data=circles["snv"][key]["values"], positions=circles["snv"][key]["positions"],
-                            rlim=[vmin-0.05*abs(vmin), vmax+0.05*abs(vmax)], raxis_range=(raxis_bottom,raxis_top), facecolor=circles["snv"][key]["colors"], spine=True) 
+                            rlim=[vmin-0.05*abs(vmin), vmax+0.05*abs(vmax)], raxis_range=(raxis_bottom,raxis_top), facecolor=circles["snv"][key]["colors"], spine=True, markersize=20, linewidth=0) 
+            #makershape='.'
 
             # sv
             raxis_current=raxis_previous
@@ -402,7 +406,10 @@ class CircosView(QPixmap):
                     vmax=vmin+1
                 for key in circles["sv"]:
                     circle.heatmap(key, data=circles["sv"][key]["values"], positions=circles["sv"][key]["positions"], width=circles["sv"][key]["widths"], 
-                            raxis_range=(raxis_bottom,raxis_top), vmin=vmin, vmax=vmax, cmap=plt.cm.viridis) 
+                    #        raxis_range=(raxis_bottom,raxis_top), vmin=vmin, vmax=vmax, cmap=plt.cm.viridis) 
+                    #        raxis_range=(raxis_bottom,raxis_top), vmin=vmin, vmax=vmax, cmap=plt.cm.rainbow) 
+                            raxis_range=(raxis_bottom,raxis_top), vmin=vmin, vmax=vmax, cmap=plt.cm.Reds) 
+                    #        raxis_range=(raxis_bottom,raxis_top), vmin=vmin, vmax=vmax, cmap=plt.cm.YlOrRd) 
 
             raxis_current=raxis_previous
             raxis_bottom=raxis_current-raxis_window
@@ -415,7 +422,7 @@ class CircosView(QPixmap):
                     source = (circles["bnd"][key]["name1"], circles["bnd"][key]["start1"], circles["bnd"][key]["end1"], raxis_current)
                     destination = (circles["bnd"][key]["name2"], circles["bnd"][key]["start2"], circles["bnd"][key]["end2"], raxis_current)
                     #destination = (name2, start2, end2, 630)
-                    circle.chord_plot(source, destination, facecolor=circles["bnd"][key]["color"])
+                    circle.chord_plot(source, destination, facecolor=circles["bnd"][key]["color"], edgecolor=circles["bnd"][key]["color"], linewidth=0)
 
 
 
@@ -432,7 +439,7 @@ class CircosView(QPixmap):
 class CircosWidget(plugin.PluginWidget):
     """Plugin to show all annotations of a selected variant"""
 
-    ENABLE = True
+    ENABLE = False
     REFRESH_STATE_DATA = {"current_variant","filters","source"}
 
     def __init__(self, conn=None, parent=None):
