@@ -498,9 +498,9 @@ class GroupSampleDialog(PluginDialog):
 
     def form_group(self, name_group:QLineEdit, dico_group:dict):
         if dico_group in (None, "", {}):
-            return 'group#' + name_group.text()
+            return name_group.text()
         else:
-            return '&group#' + name_group.text()
+            return '&' + name_group.text()
 
     def create_group(self):
         if self.check_form()==True:

@@ -2714,12 +2714,11 @@ def get_sample_annotations(conn, variant_id: int, sample_id: int):
 def get_tag_sample(conn, sample_id:list):
     conn.row_factory = sqlite3.Row
     sample_id_str = ",".join((f"'{i}'" for i in sample_id))
-    gt='1','2'
 
     return (
         dict(data)
         for data in conn.execute(
-        f"SELECT * FROM sample_has_variant WHERE sample_id in ({sample_id_str}) and gt in {gt}"
+        f"SELECT * FROM sample_has_variant WHERE sample_id in ({sample_id_str})order by sample_id ASC "
     )
     )
 
