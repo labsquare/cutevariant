@@ -1990,6 +1990,10 @@ class FiltersWidget(QTreeView):
     def get_filters(self) -> dict:
         return self._model.get_filters()
 
+    def clear_cache(self):
+        prepare_fields.cache_clear()
+        get_field_unique_values_cached.cache_clear()
+
 
 if __name__ == "__main__":
     from cutevariant.core import sql
