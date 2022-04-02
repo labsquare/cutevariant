@@ -2616,6 +2616,34 @@ def get_samples(conn: sqlite3.Connection):
     return (dict(data) for data in conn.execute("SELECT * FROM samples"))
 
 
+def search_samples(
+    conn: sqlite3.Connection, name: str, families=[], tags=[], valids=[]
+):
+
+    query = """
+    SELECT * FROM samples
+    """
+
+    clauses = []
+
+    if name:
+        clauses.append(f"name LIKE '{name}%'")
+
+    if families:
+        families_clause = ",".join(f"'{i}'" for i in families)
+        clauses.append(f"family_id IN ({families_clause})")
+
+    if valids:
+        valid_clause = ",".join(f"{i}" for i in valids)
+        clauses.append(f" valid IN ({valid_clause})")
+
+    if clauses:
+        query += " WHERE " + " AND ".join(clauses)
+
+    for sample in conn.execute(query):
+        yield dict(sample)
+
+
 def get_samples_family(conn: sqlite3.Connection):
 
     return {
@@ -2706,6 +2734,13 @@ def get_sample_annotations_by_variant(
             + ",".join([f"'{s}'" for s in families])
             + "))"
         )
+
+    # Filter on tags
+    if tags:
+        tags_conditions = []
+        for t in tags:
+            tags_conditions.append("samples.tags LIKE '%" + t + "%'")
+        conditions.append("(" + " OR ".join(tags_conditions) + ")")
 
     # Filter on genotypes
     if genotypes:

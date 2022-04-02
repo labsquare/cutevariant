@@ -22,3 +22,5 @@ from .preset_action import PresetAction
 
 from .tag_editor import TagDialog, TagEditor
 from .classification_editor import ClassificationEditor
+
+from .samples_selection_widget import SampleSelectionWidget, SampleSelectionDialog
