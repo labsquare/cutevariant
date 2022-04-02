@@ -1,6 +1,19 @@
-from PySide6.QtWidgets import *
-from PySide6.QtCore import *
-from PySide6.QtGui import *
+from PySide6.QtWidgets import (
+    QTabWidget,
+    QTableView,
+    QWidget,
+    QDialog,
+    QApplication,
+    QLineEdit,
+    QAbstractItemView,
+    QSizePolicy,
+    QVBoxLayout,
+    QToolBar,
+    QSplitter,
+    QDialogButtonBox,
+)
+from PySide6.QtCore import QAbstractTableModel, QModelIndex, Signal, Slot, QStringListModel, Qt
+from PySide6.QtGui import QAction, QIcon
 
 from cutevariant.core import sql
 from cutevariant.gui.widgets import ChoiceWidget, create_widget_action
@@ -25,15 +38,17 @@ class SamplesModel(QAbstractTableModel):
         self.conn = None
 
     def rowCount(self, parent=QModelIndex()):
+        """override"""
         return len(self._data)
 
     def columnCount(self, parent=QModelIndex()):
+        """override"""
         return len(self._headers)
 
-    def data(self, index, role):
+    def data(self, index: QModelIndex, role: Qt.ItemDataRole):
+
         if not index.isValid():
             return
-
         if role == Qt.DisplayRole:
             sample = self._data[index.row()]
             if index.column() == 0:
@@ -50,9 +65,8 @@ class SamplesModel(QAbstractTableModel):
 
         return None
 
-    def headerData(self, section, orientation, role):
+    def headerData(self, section: int, orientation: Qt.Orientation, role: Qt.ItemDataRole):
         if role == Qt.DisplayRole and orientation == Qt.Horizontal:
-
             return self._headers[section]
 
     def load(self):
@@ -123,9 +137,7 @@ class AllSamplesWidget(QWidget):
         tag_action = create_widget_action(self.toolbar, self.tag_choice)
         tag_action.setText("Tags")
         self.toolbar.addSeparator()
-        clear_action = self.toolbar.addAction(
-            QIcon(), "Clear filters", self.clear_filters
-        )
+        clear_action = self.toolbar.addAction(QIcon(), "Clear filters", self.clear_filters)
 
         # separator
         sep = QWidget()
@@ -260,14 +272,10 @@ class SampleSelectionWidget(QWidget):
 
         self.second_widget.setWindowTitle("Selected sample(s)")
 
-        # self.tab.addTab(self.first_widget, "All Samples")
-        # self.tab.addTab(self.second_widget, self.second_widget.windowTitle())
+        self.tab.addTab(self.first_widget, "All Samples")
+        self.tab.addTab(self.second_widget, self.second_widget.windowTitle())
 
-        splitter = QSplitter(Qt.Horizontal)
-        splitter.addWidget(self.first_widget)
-        splitter.addWidget(self.second_widget)
-
-        v_layout.addWidget(splitter)
+        v_layout.addWidget(self.tab)
 
         self.first_widget.sample_added.connect(self.second_widget.set_samples)
         self.second_widget.selection_changed.connect(self._on_selection_changed)

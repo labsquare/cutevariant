@@ -53,9 +53,11 @@ class SampleWidget(QWidget):
         self.SAMPLE_CLASSIFICATION = {
             -1: {"name": "Rejected"},
             0: {"name": "Unlocked"},
-            1: {"name": "Locked"}
+            1: {"name": "Locked"},
         }
-        self.REVERSE_CLASSIF = {v["name"]:k for k, v in self.SAMPLE_CLASSIFICATION.items()}
+        self.REVERSE_CLASSIF = {
+            v["name"]: k for k, v in self.SAMPLE_CLASSIFICATION.items()
+        }
 
         # Identity
         self.name_edit = QLineEdit()
@@ -163,7 +165,9 @@ class SampleWidget(QWidget):
         if data["tags"] is not None:
             for tag in data["tags"].split(self.TAG_SEPARATOR):
                 if tag in self.TAG_LIST:
-                    self.tag_edit.model().item(self.TAG_LIST.index(tag)).setData(Qt.Checked, Qt.CheckStateRole)
+                    self.tag_edit.model().item(self.TAG_LIST.index(tag)).setData(
+                        Qt.Checked, Qt.CheckStateRole
+                    )
 
         self.comment.setPlainText(data.get("comment", ""))
         self.comment.preview_btn.setChecked(True)
@@ -174,9 +178,9 @@ class SampleWidget(QWidget):
 
     def save(self, sample_id: int):
         """
-        Two checks to perform: 
+        Two checks to perform:
          - did the user change any value through the interface?
-         - is the database state the same as when the dialog was first opened? 
+         - is the database state the same as when the dialog was first opened?
         If yes and yes, update sample_has_variant
         """
         current_state = self.get_gui_state()
@@ -186,11 +190,16 @@ class SampleWidget(QWidget):
         current_db_data = sql.get_sample(self.conn, self.sample_id)
         current_db_validation = self.get_validation_from_data(current_db_data)
         if current_db_validation != self.initial_db_validation:
-            ret = QMessageBox.warning(None, "Database has been modified by another user.", "Do you want to overwrite value?", QMessageBox.Yes | QMessageBox.No)
+            ret = QMessageBox.warning(
+                None,
+                "Database has been modified by another user.",
+                "Do you want to overwrite value?",
+                QMessageBox.Yes | QMessageBox.No,
+            )
             if ret == QMessageBox.No:
                 return
 
-        #avoid losing tags who exist in DB but not in config.yml
+        # avoid losing tags who exist in DB but not in config.yml
         missing_tags = []
         for tag in self.initial_db_validation["tags"].split(self.TAG_SEPARATOR):
             if tag not in self.TAG_LIST:
@@ -211,12 +220,12 @@ class SampleWidget(QWidget):
 
     def get_validation_from_data(self, data):
         return {
-                "fam": data["family_id"], 
-                "tags": data["tags"], 
-                "comment": data["comment"],
-                "valid": int("{valid}".format(**data)),
-                "sex": data["sex"],
-                "phenotype": data["phenotype"]
+            "fam": data["family_id"],
+            "tags": data["tags"],
+            "comment": data["comment"],
+            "valid": int("{valid}".format(**data)),
+            "sex": data["sex"],
+            "phenotype": data["phenotype"],
         }
 
     def get_gui_state(self):
@@ -233,7 +242,7 @@ class SampleWidget(QWidget):
         return values
 
     def get_history_samples(self):
-        """ Get the history of samples """
+        """Get the history of samples"""
         results = {}
         for record in self.conn.execute(
             f"""SELECT  ('[' || `timestamp` || ']') as time,
@@ -246,6 +255,7 @@ class SampleWidget(QWidget):
             results[record["time"] + " " + record["id"]] = record["change"]
 
         return results
+
 
 class SampleDialog(QDialog):
     def __init__(self, conn, sample_id, parent=None):
