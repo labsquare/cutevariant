@@ -204,7 +204,7 @@ class SourceModel(QAbstractTableModel):
 
     def edit_record(self, index: QModelIndex, record: dict):
         """Edit the given selection in the database and emit `dataChanged` signal"""
-        if sql.edit_selection(self.conn, record):
+        if sql.update_selection(self.conn, record):
             self.dataChanged.emit(index, index)
 
     def load(self):
@@ -245,8 +245,10 @@ class SourceEditorWidget(plugin.PluginWidget):
         self.setWindowIcon(FIcon(0xF10E4))
         # conn is always None here but initialized in on_open_project()
         self.model = SourceModel(conn)
+        self.proxy_model = QSortFilterProxyModel()
+        self.proxy_model.setSourceModel(self.model)
         self.view = LoadingTableView()
-        self.view.setModel(self.model)
+        self.view.setModel(self.proxy_model)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.view.horizontalHeader().setStretchLastSection(False)
@@ -463,7 +465,7 @@ class SourceEditorWidget(plugin.PluginWidget):
         current_index = 0
         if self.source:
             current_index = self.model.find_record(self.source)
-        self.view.setCurrentIndex(current_index)
+        self.view.setCurrentIndex(self.proxy_model.mapToSource(current_index))
 
         self.is_loading = False
 
@@ -521,8 +523,9 @@ class SourceEditorWidget(plugin.PluginWidget):
 
         # This should not even be called, since remove/edit actions are supposed to be disabled by the widget
         if any(
-            self.model.record(row) == DEFAULT_SELECTION_NAME
-            for row in self.view.selectionModel().selectedRows(0)
+            self.model.record(self.proxy_model.mapToSource(index))
+            == DEFAULT_SELECTION_NAME
+            for index in self.view.selectionModel().selectedRows(0)
         ):
             QMessageBox.warning(
                 self,
@@ -536,7 +539,11 @@ class SourceEditorWidget(plugin.PluginWidget):
         msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
 
         if msg.exec_() == QMessageBox.Yes:
-            self.model.remove_records(self.view.selectionModel().selectedRows(0))
+            indexes = [
+                self.proxy_model.mapToSource(i)
+                for i in self.view.selectionModel().selectedRows(0)
+            ]
+            self.model.remove_records(indexes)
 
             self.mainwindow.set_state_data("source", DEFAULT_SELECTION_NAME)
             self.mainwindow.refresh_plugins(sender=None)
@@ -546,6 +553,8 @@ class SourceEditorWidget(plugin.PluginWidget):
         .. note:: We do not reload all the UI for this
         """
         current_index = self.view.selectionModel().currentIndex()
+        current_index = self.proxy_model.mapToSource(current_index)
+
         if not current_index.isValid():
             QMessageBox.information(
                 self, self.tr("Info"), self.tr("No source to edit!")
