@@ -185,10 +185,19 @@ class VariantModel(QAbstractTableModel):
         if conn:
             # Note: model is initialized with None connection during start
             # Cache DB fields descriptions
-            self.fields_descriptions = {
-                field["name"]: field["description"]
-                for field in sql.get_fields(self.conn)
-            }
+            self.fields_descriptions = {}
+            for field in sql.get_fields(self.conn):
+                key = field["name"]
+                desc = field["description"]
+
+                if field["category"] == "annotations":
+                    key = "ann." + key
+
+                if field["category"] == "samples":
+                    key = "samples." + key
+
+                self.fields_descriptions[key] = desc
+
             LOGGER.debug("Init async thread")
 
             # Clear cache with new connection
@@ -327,8 +336,14 @@ class VariantModel(QAbstractTableModel):
             if role == Qt.ToolTipRole:
                 # Field descriptions on headers
                 # Note: fields are set in load()
-                if self.fields_descriptions and section != 0:
-                    field_name = self.fields[section - 1]
+                if self.fields_descriptions:
+                    field_name = self.fields[section]
+
+                    if field_name.startswith("samples."):
+                        # Remove sample name to get descriptionield_name.split(".")
+                        k = field_name.split(".")
+                        field_name = k[0] + "." + k[2]
+
                     return self.fields_descriptions.get(field_name)
 
             if role == Qt.SizeHintRole:
@@ -1193,12 +1208,9 @@ class VariantView(QWidget):
             current_variant = self.model.variant(current_index.row())
 
             dialog = VariantDialog(self.conn, current_variant["id"])
-            if dialog.exec() == QDialog.Accepted:   
+            if dialog.exec() == QDialog.Accepted:
                 self.parent.mainwindow.refresh_plugin("variant_view")
                 self.parent.mainwindow.refresh_plugin("sample_view")
-
-
-
 
     def contextMenuEvent(self, event: QContextMenuEvent):
         """Override: Show contextual menu over the current variant"""
