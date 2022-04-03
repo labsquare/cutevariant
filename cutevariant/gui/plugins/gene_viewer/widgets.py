@@ -19,6 +19,7 @@ from cutevariant.gui import style, plugin, FIcon, MainWindow
 from cutevariant.core.querybuilder import build_vql_query, build_sql_query
 
 from cutevariant.core import sql
+from cutevariant import LOGGER
 
 from cutevariant.gui.widgets import VqlSyntaxHighlighter
 from cutevariant.config import Config
@@ -899,7 +900,10 @@ class GeneViewerWidget(plugin.PluginWidget):
 
     def on_open_project(self, conn):
         self.conn = conn
-        self.load_config()
+        try:
+            self.load_config()
+        except:
+            LOGGER.debug("Cannot init gene viewer")
 
     def on_register(self, mainwindow: MainWindow):
         """ """
