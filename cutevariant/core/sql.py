@@ -2389,8 +2389,14 @@ def get_variant_as_group(
         res["field"] = groupby
         yield res
 
+def get_variants_gnomen(conn, variants=int):
+    query=f"""select distinct gnomen from variants where id ={variants}"""
+    for item in conn.execute(query):
+        return dict(item)
 
-## History table ==================================================================
+
+
+        ## History table ==================================================================
 def create_table_history(conn):
 
     conn.execute(
@@ -2711,15 +2717,20 @@ def get_sample_annotations(conn, variant_id: int, sample_id: int):
         ).fetchone()
     )
 
-def get_tag_sample(conn, sample_id:list):
+def get_tag_sample_has_variant(conn, sample_id:list):
     conn.row_factory = sqlite3.Row
     sample_id_str = ",".join((f"'{i}'" for i in sample_id))
+    query= f"SELECT sample_has_variant.variant_id, variants.gnomen, sample_has_variant.sample_id, " \
+           f"samples.name,sample_has_variant.gt FROM sample_has_variant " \
+           f"INNER join samples on samples.id=sample_has_variant.sample_id " \
+           f"inner join variants on variants.id= sample_has_variant.variant_id where sample_has_variant.sample_id " \
+           f"in ({sample_id_str}) ORDER by variants.gnomen ASC "
+
+    print(query)
 
     return (
         dict(data)
-        for data in conn.execute(
-        f"SELECT * FROM sample_has_variant WHERE sample_id in ({sample_id_str})order by sample_id ASC "
-    )
+        for data in conn.execute(query)
     )
 
 def get_sample_annotations_by_variant(
