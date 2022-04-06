@@ -1,7 +1,11 @@
 # Standard imports
+import os
+
 import sqlite3
 
 import PySide6
+
+import plotly.express as px
 
 # Qt imports
 from PySide6.QtWidgets import (
@@ -59,6 +63,7 @@ import numpy as np
 from pandas import *
 import seaborn as sns
 import matplotlib.pyplot as plt
+import dash_bio
 
 class StatAnalysisDialog(PluginDialog):
     ENABLE = True
@@ -144,7 +149,7 @@ class StatAnalysisDialog(PluginDialog):
 
     def init_matrix(self):
         for i in self.all_gnomen:
-            self.brut_matrix.append([False for i in self.sample_id])
+            self.brut_matrix.append([0 for i in self.sample_id])
 
     def fill_matrix(self):
         self.init_matrix()
@@ -152,7 +157,8 @@ class StatAnalysisDialog(PluginDialog):
             for index2,j in enumerate(self.all_gnomen):
                 gt=self._gt_join_sample_has_variant(i,j)
                 if  gt >= 1:
-                    self.brut_matrix[index2][index] = True
+                    self.brut_matrix[index2][index] = 1
+
                 if any(self.brut_matrix[index2]):
                     self.column_matrix_gnomen.append(j)
                     self.matrix.append(self.brut_matrix[index2])
@@ -223,9 +229,6 @@ class StatAnalysisDialog(PluginDialog):
         # self.all_gnomen
         return self.all_gnomen
 
-
-
-
 if __name__ == "__main__":
     from PySide6.QtWidgets import QApplication
     import sys
@@ -241,13 +244,23 @@ if __name__ == "__main__":
     print(dialog.get_column_matrix())
     print(dialog.get_sample_id())
     print(dialog.get_matrix())
+    print(len(dialog.get_column_matrix()))
     df = pd.DataFrame(dialog.get_matrix(),
                        index=dialog.get_column_matrix(),
                       columns=dialog.get_sample_id())
-    print(df)
+    # print(df.index)
 
-    sns.heatmap(df, annot=True)
-    plt.show()
+    import seaborn as sns;
+
+    sns.set_theme(color_codes=True)
+
+    g = sns.clustermap(df)
+
+    # if os.path.exists("C:/Users/HAMEAUEL/Documents/Db cute/_test.svg"):
+    #     os.remove("C:/Users/HAMEAUEL/Documents/Db cute/_test.svg")
+
+    g.savefig('C:/Users/HAMEAUEL/Documents/Db cute/_count.svg', dpi=300)
+
 
 
 

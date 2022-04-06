@@ -2724,7 +2724,7 @@ def get_tag_sample_has_variant(conn, sample_id:list):
            f"samples.name,sample_has_variant.gt FROM sample_has_variant " \
            f"INNER join samples on samples.id=sample_has_variant.sample_id " \
            f"inner join variants on variants.id= sample_has_variant.variant_id where sample_has_variant.sample_id " \
-           f"in ({sample_id_str}) ORDER by variants.gnomen ASC "
+           f"in ({sample_id_str}) and variants.popfreq <=0.03 ORDER by variants.gnomen ASC "
 
     print(query)
 
