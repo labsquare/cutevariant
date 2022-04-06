@@ -3153,6 +3153,18 @@ def create_triggers(conn):
         """
     )
         
+    # nb_samples phenotype
+    conn.execute(
+        """
+        CREATE TRIGGER nb_samples_on_update_samples_phenotype AFTER UPDATE ON samples 
+        WHEN new.phenotype <> old.phenotype
+        BEGIN
+            UPDATE variants
+            SET control_nb_samples = (SELECT count(id) FROM samples WHERE samples.phenotype=1),
+                case_nb_samples = (SELECT count(id) FROM samples WHERE samples.phenotype=2);
+        END;
+        """
+    )
 
 
     ###### trigers on validation
