@@ -3050,11 +3050,11 @@ def create_triggers(conn):
                 count_ref = count_ref + IIF(old.gt = 0, -1, 0),
                 count_het = count_het + IIF(old.gt = 1, -1, 0),
                 count_hom = count_hom + IIF(old.gt = 2, -1, 0),
-                control_count_none = control_count_none + 1,
+                control_count_none = control_count_none + IIF((SELECT samples.phenotype FROM samples WHERE samples.id=new.sample_id) = 1, -1, 0),
                 control_count_ref = control_count_ref + IIF(old.gt = 0 AND (SELECT samples.phenotype FROM samples WHERE samples.id=new.sample_id) = 1, -1, 0),
                 control_count_het = control_count_het + IIF(old.gt = 1 AND (SELECT samples.phenotype FROM samples WHERE samples.id=new.sample_id) = 1, -1, 0),
                 control_count_hom = control_count_hom + IIF(old.gt = 2 AND (SELECT samples.phenotype FROM samples WHERE samples.id=new.sample_id) = 1, -1, 0),
-                case_count_none = case_count_none + 1,
+                case_count_none = case_count_none + IIF((SELECT samples.phenotype FROM samples WHERE samples.id=new.sample_id) = 2, -1, 0),
                 case_count_ref = case_count_ref + IIF(old.gt = 0 AND (SELECT samples.phenotype FROM samples WHERE samples.id=new.sample_id) = 2, -1, 0),
                 case_count_het = case_count_het + IIF(old.gt = 1 AND (SELECT samples.phenotype FROM samples WHERE samples.id=new.sample_id) = 2, -1, 0),
                 case_count_hom = case_count_hom + IIF(old.gt = 2 AND (SELECT samples.phenotype FROM samples WHERE samples.id=new.sample_id) = 2, -1, 0)
@@ -3076,11 +3076,11 @@ def create_triggers(conn):
                 count_het = count_het + IIF(old.gt = 1, -1, 0),
                 count_hom = count_hom + IIF(old.gt = 2, -1, 0),
                 control_count_none = control_count_none + IIF(old.gt = -1 AND (SELECT samples.phenotype FROM samples WHERE samples.id=new.sample_id) = 1, -1, 0),
-                control_count_ref = control_count_ref + 1,
+                control_count_ref = control_count_ref + IIF((SELECT samples.phenotype FROM samples WHERE samples.id=new.sample_id) = 1, -1, 0),
                 control_count_het = control_count_het + IIF(old.gt = 1 AND (SELECT samples.phenotype FROM samples WHERE samples.id=new.sample_id) = 1, -1, 0),
                 control_count_hom = control_count_hom + IIF(old.gt = 2 AND (SELECT samples.phenotype FROM samples WHERE samples.id=new.sample_id) = 1, -1, 0),
                 case_count_none = case_count_none + IIF(old.gt = -1 AND (SELECT samples.phenotype FROM samples WHERE samples.id=new.sample_id) = 2, -1, 0),
-                case_count_ref = case_count_ref + 1,
+                case_count_ref = case_count_ref + IIF((SELECT samples.phenotype FROM samples WHERE samples.id=new.sample_id) = 2, -1, 0),
                 case_count_het = case_count_het + IIF(old.gt = 1 AND (SELECT samples.phenotype FROM samples WHERE samples.id=new.sample_id) = 2, -1, 0),
                 case_count_hom = case_count_hom + IIF(old.gt = 2 AND (SELECT samples.phenotype FROM samples WHERE samples.id=new.sample_id) = 2, -1, 0)
             WHERE id = new.variant_id;
@@ -3102,11 +3102,11 @@ def create_triggers(conn):
                 count_hom = count_hom + IIF(old.gt = 2, -1, 0),
                 control_count_none = control_count_none + IIF(old.gt = -1 AND (SELECT samples.phenotype FROM samples WHERE samples.id=new.sample_id) = 1, -1, 0),
                 control_count_ref = control_count_ref + IIF(old.gt = 0 AND (SELECT samples.phenotype FROM samples WHERE samples.id=new.sample_id) = 1, -1, 0),
-                control_count_het = control_count_het + 1,
+                control_count_het = control_count_het + IIF((SELECT samples.phenotype FROM samples WHERE samples.id=new.sample_id) = 1, -1, 0),
                 control_count_hom = control_count_hom + IIF(old.gt = 2 AND (SELECT samples.phenotype FROM samples WHERE samples.id=new.sample_id) = 1, -1, 0),
                 case_count_none = case_count_none + IIF(old.gt = -1 AND (SELECT samples.phenotype FROM samples WHERE samples.id=new.sample_id) = 2, -1, 0),
                 case_count_ref = case_count_ref + IIF(old.gt = 0 AND (SELECT samples.phenotype FROM samples WHERE samples.id=new.sample_id) = 2, -1, 0),
-                case_count_het = case_count_het + 1,
+                case_count_het = case_count_het + IIF((SELECT samples.phenotype FROM samples WHERE samples.id=new.sample_id) = 2, -1, 0),
                 case_count_hom = case_count_hom + IIF(old.gt = 2 AND (SELECT samples.phenotype FROM samples WHERE samples.id=new.sample_id) = 2, -1, 0)
             WHERE id = new.variant_id;
         END;
@@ -3128,11 +3128,11 @@ def create_triggers(conn):
                 control_count_none = control_count_none + IIF(old.gt = -1 AND (SELECT samples.phenotype FROM samples WHERE samples.id=new.sample_id) = 1, -1, 0),
                 control_count_ref = control_count_ref + IIF(old.gt = 0 AND (SELECT samples.phenotype FROM samples WHERE samples.id=new.sample_id) = 1, -1, 0),
                 control_count_het = control_count_het + IIF(old.gt = 1 AND (SELECT samples.phenotype FROM samples WHERE samples.id=new.sample_id) = 1, -1, 0),
-                control_count_hom = control_count_hom + 1,
+                control_count_hom = control_count_hom + IIF((SELECT samples.phenotype FROM samples WHERE samples.id=new.sample_id) = 1, -1, 0),
                 case_count_none = case_count_none + IIF(old.gt = -1 AND (SELECT samples.phenotype FROM samples WHERE samples.id=new.sample_id) = 2, -1, 0),
                 case_count_ref = case_count_ref + IIF(old.gt = 0 AND (SELECT samples.phenotype FROM samples WHERE samples.id=new.sample_id) = 2, -1, 0),
                 case_count_het = case_count_het + IIF(old.gt = 1 AND (SELECT samples.phenotype FROM samples WHERE samples.id=new.sample_id) = 2, -1, 0),
-                case_count_hom = case_count_hom + 1
+                case_count_hom = case_count_hom + IIF((SELECT samples.phenotype FROM samples WHERE samples.id=new.sample_id) = 2, -1, 0)
             WHERE id = new.variant_id;
         END;
         """
