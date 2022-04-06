@@ -142,7 +142,7 @@ class StatAnalysisDialog(PluginDialog):
         self.data_dict_df = [i for i in sql.get_tag_sample_has_variant(conn, self.sample_id)]
 
         self.load_gnomen_list()
-        self.fill_matrix_True_or_False_mutate()
+        self.fill_matrix_VAF_variants()
         df=self.create_data_frame()
         self.draw_heatmap(df)
 
@@ -179,12 +179,36 @@ class StatAnalysisDialog(PluginDialog):
                     self.matrix.append(self.brut_matrix[index2])
 
 
+    def fill_matrix_VAF_variants(self):
+        ##On a pas fait le filtre sur les gt -1 ou 0 dans la requette SQL il faut donc gerer le gt-1 ou on a None en vaf ad et dp
+        self.init_matrix()
+        for index,i in enumerate(self.sample_id):
+            for index2,j in enumerate(self.all_gnomen):
+                for item_dico_join in self.data_dict_df:
+                    var_id=str(item_dico_join['variant_id'])
+                    if item_dico_join['gnomen'] == j and item_dico_join['sample_id'] == i:
+                        if item_dico_join['vaf'] == None:
+                            if item_dico_join['ad'] != None and item_dico_join['dp'] != None :
+                                self.brut_matrix[index2][index] = self.get_calcul_VAF(item_dico_join['ad'],item_dico_join['dp'])
+                        elif item_dico_join['vaf'] != None:
+                            self.brut_matrix[index2][index] = item_dico_join['vaf']
+                        # print(str(item_dico_join['variant_id']))
+
+                self.row_matrix_gnomen.append(var_id+"//"+j)
+                self.matrix.append(self.brut_matrix[index2])
 
     def _gt_join_sample_has_variant(self, i:str,j:str) :
         for item_dico_join in self.data_dict_df:
             if item_dico_join['gnomen'] == j and item_dico_join['sample_id'] == i :
                 self.gt=item_dico_join['gt']
         return self.gt
+
+    def get_calcul_VAF(self, ad:any,dp:int):
+        if isinstance(ad,tuple):
+            ad=ad[1]
+
+        return ad/dp
+
 
     def _item_sample_has_variant_join(self, gnomen:str):
         for item_dico_join in self.data_dict_df:
@@ -220,9 +244,9 @@ class StatAnalysisDialog(PluginDialog):
         return self.df
 
     def draw_heatmap(self,df:DataFrame):
-        g = sns.clustermap(df, row_cluster=True, col_cluster=False,cmap="mako_r")
+        g = sns.clustermap(df, row_cluster=False, col_cluster=True,cmap="mako_r")
 
-        g.savefig('C:/Users/HAMEAUEL/Documents/Db cute/row_cluster_true.png', dpi=100)
+        g.savefig('C:/Users/HAMEAUEL/Documents/Db cute/test_VAF.svg', dpi=100)
 
     def get_data_frame(self):
         return self.df
@@ -232,9 +256,6 @@ class StatAnalysisDialog(PluginDialog):
 
     def get_variant_id(self):
         return self.variant_id
-
-    def get_row_matrix(self):
-        return self.row_matrix_gnomen
 
     def get_name_matrix_and_load(self):
         return self.name_matrix
@@ -250,6 +271,9 @@ class StatAnalysisDialog(PluginDialog):
         # self.all_gnomen
         return self.all_gnomen
 
+    def get_row_matrix(self):
+        return self.row_matrix_gnomen
+
     def get_dict_join(self):
         return self.data_dict_df
 
@@ -262,12 +286,14 @@ if __name__ == "__main__":
     import sys
 
     app = QApplication(sys.argv)
-    conn = sql.get_sql_connection("C:/Users/HAMEAUEL/Documents/Db cute/Big_Ech.db")
+    conn = sql.get_sql_connection("C:/Users/HAMEAUEL/Documents/Db cute/petit_ech.db")
     conn.row_factory = sqlite3.Row
 
     dialog = StatAnalysisDialog(conn)
     dialog.show()
     app.exec()
+    print(len(dialog.data_dict_df))
+    print(len(dialog.get_row_matrix()))
 
 
 
