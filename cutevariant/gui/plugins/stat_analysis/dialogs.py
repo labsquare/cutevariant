@@ -74,7 +74,7 @@ class StatAnalysisDialog(PluginDialog):
 
         self.conn = conn
         self.dico_tagbrut_tagsplit = {}
-        self.dict_gnomen_df={}
+        self.dict_matrix_all_mutation={}
         self.TAG_SEPARATOR = "&"
         self.gt=None
         self.hlayout= QHBoxLayout()
@@ -82,7 +82,8 @@ class StatAnalysisDialog(PluginDialog):
         self.brut_matrix=[]
         self.matrix=[]
         self.all_gnomen=[]
-        self.column_matrix_gnomen=[]
+        self.row_matrix_gnomen=[]
+        self.name_matrix=[]
         self.variant_id = []
         self.sample_id = []
         self.data_frame=[]#a enlever
@@ -130,46 +131,65 @@ class StatAnalysisDialog(PluginDialog):
 
     def get_data_between_tag_sample_as_variant(self):
         group_name = self.group_select()
-        # print(group_name)
         _data = [i for i in sql.get_samples(conn)]
-        # print(_data)
         for _data_dico in _data:
-            # print(_data_dico['tags'],"######################")
             for _item_group_name in group_name:
-                # print(_item_group_name['name'])
                 if _data_dico['tags'] == _item_group_name['name']:
                     id=str(_data_dico["id"])
                     self.sample_id.append(_data_dico["id"])
+                    self.name_matrix.append(_data_dico['name']+_data_dico['tags'])
 
         self.data_dict_df = [i for i in sql.get_tag_sample_has_variant(conn, self.sample_id)]
 
         self.load_gnomen_list()
-        self.fill_matrix()
-        # self.create_data_frame()
+        self.fill_matrix_True_or_False_mutate()
+        df=self.create_data_frame()
+        self.draw_heatmap(df)
 
     def init_matrix(self):
         for i in self.all_gnomen:
             self.brut_matrix.append([0 for i in self.sample_id])
 
-    def fill_matrix(self):
+    def fill_matrix_True_or_False_mutate(self):
         self.init_matrix()
         for index,i in enumerate(self.sample_id):
             for index2,j in enumerate(self.all_gnomen):
-                gt=self._gt_join_sample_has_variant(i,j)
-                if  gt >= 1:
-                    self.brut_matrix[index2][index] = 1
+                for item_dico_join in self.data_dict_df:
+                    if item_dico_join['gnomen'] == j and item_dico_join['sample_id'] == i:
+                        if  item_dico_join['gt'] >= 1:
+                            self.brut_matrix[index2][index] =1
+                        # print(self.brut_matrix)
 
                 if any(self.brut_matrix[index2]):
-                    self.column_matrix_gnomen.append(j)
+                    self.row_matrix_gnomen.append(j)
                     self.matrix.append(self.brut_matrix[index2])
+
+    def fill_matrix_count_variants(self):
+        self.init_matrix()
+        for index,i in enumerate(self.sample_id):
+            for index2,j in enumerate(self.all_gnomen):
+                for item_dico_join in self.data_dict_df:
+                    if item_dico_join['gnomen'] == j and item_dico_join['sample_id'] == i:
+                        if  item_dico_join['gt'] >= 1:
+                            self.brut_matrix[index2][index] +=1
+                        # print(self.brut_matrix)
+
+                if any(self.brut_matrix[index2]):
+                    self.row_matrix_gnomen.append(j)
+                    self.matrix.append(self.brut_matrix[index2])
+
 
 
     def _gt_join_sample_has_variant(self, i:str,j:str) :
         for item_dico_join in self.data_dict_df:
             if item_dico_join['gnomen'] == j and item_dico_join['sample_id'] == i :
                 self.gt=item_dico_join['gt']
-
         return self.gt
+
+    def _item_sample_has_variant_join(self, gnomen:str):
+        for item_dico_join in self.data_dict_df:
+            if item_dico_join['gnomen'] == j and item_dico_join['sample_id'] == i :
+                return item_dico_join
 
     def load_gnomen_list(self):
         for item_dico_join in self.data_dict_df:
@@ -186,11 +206,6 @@ class StatAnalysisDialog(PluginDialog):
         check_list.sort()
         return check_list
 
-    def _load_variant_id_mutate(self):
-        for i in sql.get_tag_sample_has_variant(conn, self.sample_id):
-            if i['gt'] >=1:
-                self.variant_id.append(i['variant_id'])
-
     def group_select(self):
         if self.all_tag_split.checked() == True:
             my_generator_tag = self.all_tag_split.selected_items()
@@ -198,11 +213,16 @@ class StatAnalysisDialog(PluginDialog):
             return result_list_tag
 
     def create_data_frame(self):
-        self.df=pd.DataFrame(self.get_matrix(),
-                        index=self.get_sample_id(),
-                        columns=self.get_column_matrix())
+        self.df = pd.DataFrame(self.get_matrix(),
+                          index=self.get_row_matrix(),
+                          columns=self.get_name_matrix_and_load())
 
         return self.df
+
+    def draw_heatmap(self,df:DataFrame):
+        g = sns.clustermap(df, row_cluster=True, col_cluster=False,cmap="mako_r")
+
+        g.savefig('C:/Users/HAMEAUEL/Documents/Db cute/row_cluster_true.png', dpi=100)
 
     def get_data_frame(self):
         return self.df
@@ -213,53 +233,42 @@ class StatAnalysisDialog(PluginDialog):
     def get_variant_id(self):
         return self.variant_id
 
-    def get_column_matrix(self):
-        return self.column_matrix_gnomen
+    def get_row_matrix(self):
+        return self.row_matrix_gnomen
+
+    def get_name_matrix_and_load(self):
+        return self.name_matrix
 
     def get_sample_id(self):
         return self.sample_id
 
-    def data_matrix(self):
-        print("dans la data")
+    def get_all_mutation(self):
+        return self.dict_matrix_all_mutation
 
-    def index_matrix(self):
-        print("dans l'index")
     def get_all_gnomen(self):
         """je vais prendre tout les samples id qui ont le groupe select by user"""
         # self.all_gnomen
         return self.all_gnomen
 
+    def get_dict_join(self):
+        return self.data_dict_df
+
 if __name__ == "__main__":
+
+    if os.path.exists("C:/Users/HAMEAUEL/Documents/Db cute/test_col4.svg"):
+        os.remove("C:/Users/HAMEAUEL/Documents/Db cute/test_col4.svg")
+
     from PySide6.QtWidgets import QApplication
     import sys
 
     app = QApplication(sys.argv)
-    conn = sql.get_sql_connection("C:/Users/HAMEAUEL/Documents/Db cute/petit_ech.db")
+    conn = sql.get_sql_connection("C:/Users/HAMEAUEL/Documents/Db cute/Big_Ech.db")
     conn.row_factory = sqlite3.Row
 
     dialog = StatAnalysisDialog(conn)
     dialog.show()
     app.exec()
-    # print(sql.get_variants_gnomen(conn,1)['gnomen'])
-    print(dialog.get_column_matrix())
-    print(dialog.get_sample_id())
-    print(dialog.get_matrix())
-    print(len(dialog.get_column_matrix()))
-    df = pd.DataFrame(dialog.get_matrix(),
-                       index=dialog.get_column_matrix(),
-                      columns=dialog.get_sample_id())
-    # print(df.index)
 
-    import seaborn as sns;
-
-    sns.set_theme(color_codes=True)
-
-    g = sns.clustermap(df)
-
-    # if os.path.exists("C:/Users/HAMEAUEL/Documents/Db cute/_test.svg"):
-    #     os.remove("C:/Users/HAMEAUEL/Documents/Db cute/_test.svg")
-
-    g.savefig('C:/Users/HAMEAUEL/Documents/Db cute/_count.svg', dpi=300)
 
 
 
