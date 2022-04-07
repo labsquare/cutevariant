@@ -2717,14 +2717,18 @@ def get_sample_annotations(conn, variant_id: int, sample_id: int):
         ).fetchone()
     )
 
-def get_tag_sample_has_variant(conn, sample_id:list):
+def get_tag_sample_has_variant(conn, sample_id:list, genes_spectre:str):
+    if genes_spectre == 'all':
+        gt = -1
+    elif genes_spectre == 'mutant':
+        gt = 1
     conn.row_factory = sqlite3.Row
     sample_id_str = ",".join((f"'{i}'" for i in sample_id))
-    query= f"SELECT sample_has_variant.ad, sample_has_variant.dp,sample_has_variant.vaf,sample_has_variant.vaf,sample_has_variant.vaf, sample_has_variant.variant_id, variants.gnomen, sample_has_variant.sample_id, " \
+    query= f"SELECT samples.tags, sample_has_variant.ad, sample_has_variant.dp,sample_has_variant.vaf,sample_has_variant.vaf,sample_has_variant.vaf, sample_has_variant.variant_id, variants.gnomen, sample_has_variant.sample_id, " \
            f"samples.name,sample_has_variant.gt FROM sample_has_variant " \
            f"INNER join samples on samples.id=sample_has_variant.sample_id " \
            f"inner join variants on variants.id= sample_has_variant.variant_id where sample_has_variant.sample_id " \
-           f"in ({sample_id_str}) and variants.popfreq <=0.03 and sample_has_variant.gt >=1 ORDER by variants.gnomen ASC "
+           f"in ({sample_id_str}) and variants.popfreq <=0.03 and sample_has_variant.gt >={gt} ORDER by variants.gnomen ASC "
 
     print(query)
 
