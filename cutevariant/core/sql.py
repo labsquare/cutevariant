@@ -2724,11 +2724,17 @@ def get_tag_sample_has_variant(conn, sample_id:list, genes_spectre:str):
         gt = 1
     conn.row_factory = sqlite3.Row
     sample_id_str = ",".join((f"'{i}'" for i in sample_id))
-    query= f"SELECT samples.tags, sample_has_variant.ad, sample_has_variant.dp,sample_has_variant.vaf,sample_has_variant.vaf,sample_has_variant.vaf, sample_has_variant.variant_id, variants.gnomen, sample_has_variant.sample_id, " \
-           f"samples.name,sample_has_variant.gt FROM sample_has_variant " \
-           f"INNER join samples on samples.id=sample_has_variant.sample_id " \
-           f"inner join variants on variants.id= sample_has_variant.variant_id where sample_has_variant.sample_id " \
-           f"in ({sample_id_str}) and variants.popfreq <=0.03 and sample_has_variant.gt >={gt} ORDER by variants.gnomen ASC "
+    query=  f"SELECT samples.tags, sample_has_variant.ad, sample_has_variant.dp,sample_has_variant.vaf,sample_has_variant.vaf," \
+            f"sample_has_variant.vaf, sample_has_variant.variant_id, variants.gnomen, sample_has_variant.sample_id, samples.name," \
+            f"sample_has_variant.gt FROM sample_has_variant " \
+            f"INNER join samples on samples.id=sample_has_variant.sample_id  " \
+            f"inner join variants on variants.id= sample_has_variant.variant_id  " \
+            f"where sample_has_variant.sample_id in ({sample_id_str})" \
+            f"and (variants.freq_var_full < 0.05) AND (variants.outcome not IN ('synonymous_SNV') " \
+            f"OR variants.outcome = 'non_coding' OR variants.dbsnpnonflagged = NULL OR variants.cosmic = 'haemato' " \
+            f"OR popfreq = NULL  OR variants.popfreq <= '0,03' OR location =~ 'exonic'  OR variants.location = 'splicing') " \
+            f"and sample_has_variant.gt >={gt} " \
+            f"ORDER by variants.gnomen ASC "
 
     print(query)
 

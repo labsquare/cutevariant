@@ -297,7 +297,8 @@ class GroupSampleDialog(PluginDialog):
         self.group_list = ChoiceWidget()
         self.group_list._apply_btn.setVisible(False)
         self.group_list.set_placeholder(self.tr("Research sample name ..."))
-        self.dialog2 = Group_Manage(conn)
+        self.dialog_manage_group = GroupManage(conn)
+        self.dialog_add_list = AddQuickList(conn)
         self.filter_bar = Filter_Bar(conn)
         self.model = GroupSampleModel(conn)
 
@@ -330,12 +331,17 @@ class GroupSampleDialog(PluginDialog):
         # self.tr("Add sample")
         self.butt_add.clicked.connect(self.on_add_to_group)
         self.butt_add.setIcon(FIcon(0xF09C2))
+
         self.butt_remove = QPushButton()
         # self.tr("Remove sample")
         self.butt_remove.clicked.connect(self.on_remove_to_group)
         self.butt_remove.setIcon((FIcon(0xF09C0)))
 
+        self.quick_add_samples = QPushButton(self.tr("Quick list samples"))
+        self.quick_add_samples.clicked.connect(self.quick_add())
+
         self.vlayout_mid_P2.addWidget(self.butt_add)
+        self.vlayout_mid_P2.addWidget(self.quick_add_samples)
         self.vlayout_mid_P2.addWidget(self.butt_remove)
 
         """Last part for create the group"""
@@ -380,7 +386,7 @@ class GroupSampleDialog(PluginDialog):
         self.filter_bar.family_selector.accepted.connect(self.on_refresh_model)
         self.filter_bar.signal_load.connect(self.on_load_model_clear)
         self.filter_bar.signal_check.connect(self.model.on_check_all_samples)
-        self.dialog2.signal_close.connect(self.filter_bar.on_refresh)
+        self.dialog_manage_group.signal_close.connect(self.filter_bar.on_refresh)
 
     def mouseDoubleClickEvent(self, event:PySide6.QtGui.QMouseEvent) :
         """
@@ -518,7 +524,7 @@ class GroupSampleDialog(PluginDialog):
 
                 sql.update_sample(self.conn,nw_data)
                 self.filter_bar.on_refresh()
-                self.dialog2.reload_tags()
+                self.dialog_manage_group.reload_tags()
             self.group_list.clear()
 
     def check_form(self):
@@ -526,10 +532,83 @@ class GroupSampleDialog(PluginDialog):
             return True
 
     def manage_group(self):
-        self.dialog2.show()
-        self.dialog2.accepted.connect(self.filter_bar.on_refresh)
+        self.dialog_manage_group.show()
+        self.dialog_manage_group.accepted.connect(self.filter_bar.on_refresh)
 
-class Group_Manage(QDialog):
+    def quick_add(self):
+        self.dialog_add_list.show()
+        self.dialog_add_list.accepted.connect(self.filter_bar.on_refresh)
+
+class GroupManage(QDialog):
+    """The second dialog used to remove tags from the DB"""
+    signal_close=Signal()
+
+    def __init__(self, conn=None, parent=None):
+        super().__init__(parent)
+        self.TAG_SEPARATOR = "&"
+        self.setModal(True)
+        self.conn = conn
+        self.filter_bar = Filter_Bar(conn)
+        self.current_interface = QVBoxLayout()
+        self.button_box = QDialogButtonBox(QDialogButtonBox.Apply|QDialogButtonBox.Cancel)
+
+        self.title=QLabel()
+        self.title.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.title.setText(
+            """<b>Manage your groups in your current project </b> <br/>
+            Remove selected groups
+            """
+        )
+        self.list_tag = ChoiceWidget()
+        self.list_tag._apply_btn.setVisible(False)
+
+
+        self.current_interface.addWidget(self.title)
+        self.current_interface.addWidget(self.list_tag)
+        self.current_interface.addWidget(self.button_box)
+
+        self.setLayout(self.current_interface)
+        self.resize(300, 400)
+        self.setWindowTitle("Group of tags")
+        self.button_box.button(QDialogButtonBox.Apply).clicked.connect(self._del_group)
+        self.button_box.rejected.connect(self.reject)
+        self.filter_bar.on_refresh()
+        self.reload_tags()
+
+    def reload_tags(self):
+        self.filter_bar.on_refresh()
+        self.list_tag.clear()
+        for i in self.filter_bar.keep_sorted_unique_values(self.filter_bar.filter_tag):
+            self.list_tag.add_item(FIcon(0xF121F), i)
+
+    def mouseDoubleClickEvent(self, event:PySide6.QtGui.QMouseEvent) :
+        """
+        For debugging purposes
+        """
+        print(self.filter_bar.filter_tag_brut)
+        print(self.filter_bar.keep_sorted_unique_values(self.filter_bar.filter_tag))
+
+    def _del_group(self):
+        for selected_group in self.list_tag.selected_items():
+            for sample_dic in self.filter_bar.get_dico_id_tag_brut(self.filter_bar.filter_tag):
+                if selected_group["name"] in sample_dic["tags_sep"]:
+
+                    # r = sample_dic["tags_sep"].index(selected_group['name'])
+                    # del sample_dic['tags_sep'][r]
+                    sample_dic["tags_sep"].remove(selected_group["name"])
+
+                    sample_dic["tag"] = self.TAG_SEPARATOR.join(sample_dic["tags_sep"])
+                    update_dic ={
+                        "id" : sample_dic["id"],
+                        "tags" : sample_dic["tag"]
+                    }
+
+                    sql.update_sample(self.conn, update_dic)
+                    self.list_tag.clear()
+                    self.signal_close.emit()
+                    self.reload_tags()
+
+class AddQuickList(QDialog):
     """The second dialog used to remove tags from the DB"""
     signal_close=Signal()
 
@@ -605,7 +684,7 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
     # conn = sql.get_sql_connection("C:/Users/hameauel/Documents/Db cute/test1.db")
-    conn = sql.get_sql_connection("C:/Users/HAMEAUEL/Documents/Db cute/Hemato_XTHS.db")
+    conn = sql.get_sql_connection("C:/Users/HAMEAUEL/Documents/Db cute/Big_Ech.db")
     conn.row_factory = sqlite3.Row
 
     dialog = GroupSampleDialog(conn)

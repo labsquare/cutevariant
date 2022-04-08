@@ -64,7 +64,7 @@ from pandas import *
 import seaborn as sns
 import matplotlib.pyplot as plt
 import dash_bio
-
+from scipy.stats import chisquare
 class StatAnalysisDialog(PluginDialog):
     ENABLE = True
 
@@ -74,17 +74,20 @@ class StatAnalysisDialog(PluginDialog):
 
         self.conn = conn
         self.dico_tagbrut_tagsplit = {}
-        self.dict_matrix_all_mutation={}
+        self.dico_p_value_gene_group={}
         self.ki_2_group_gene={}
         self.TAG_SEPARATOR = "&"
         self.gt=None
         self.hlayout= QHBoxLayout()
         self.df=None
+        self.df_group1=None
+        self.df_group2=None
         self.brut_matrix=[]
         self.all_gnomen=[]
         self.matrix=[]
         self.matrix_group1=[]
         self.matrix_group2=[]
+        self.df_ki_2=None
         self.row_matrix_gnomen=[]
         self.row_matrix_group1_gnomen=[]
         self.row_matrix_group2_gnomen=[]
@@ -95,7 +98,6 @@ class StatAnalysisDialog(PluginDialog):
         self.sample_id_group1 = []
         self.sample_id_group2 = []
         self.group_name_select=[]
-        self.data_frame=[]#a enlever
         self.test=QLineEdit()
         self.data_dict_df=None
 
@@ -113,7 +115,6 @@ class StatAnalysisDialog(PluginDialog):
     def _load_tagsplit(self):
         all_value=[]
         self.tag_brut = [i["tags"] for i in sql.get_samples(self.conn)]
-        print(self.tag_brut)
         for x in self.tag_brut:
             if x == None or x == '' or x.isspace():
                 # Samples in DB can have a NULL or empty tag String. Do not put those in the tag selector.
@@ -122,7 +123,6 @@ class StatAnalysisDialog(PluginDialog):
                 self.valeur = x.split(self.TAG_SEPARATOR)
                 if '' in self.valeur:
                     self.valeur.remove('')
-                print(self.valeur)
                 self.dico_tagbrut_tagsplit[x] = self.valeur
                 all_value = all_value+self.valeur
 
@@ -158,8 +158,9 @@ class StatAnalysisDialog(PluginDialog):
                     self.sample_id_group2.append(_data_dico["id"])
                     self.name_matrix_group2.append(_data_dico['name']+_data_dico['tags'])
 
-        self.data_dict_df_group1 = [i for i in sql.get_tag_sample_has_variant(conn, self.sample_id_group1, 'mutant')]
-        self.data_dict_df_group2 = [i for i in sql.get_tag_sample_has_variant(conn, self.sample_id_group2, 'mutant')]
+        #hesitation entre all or mutant
+        self.data_dict_df_group1 = [i for i in sql.get_tag_sample_has_variant(conn, self.sample_id_group1, 'all')]
+        self.data_dict_df_group2 = [i for i in sql.get_tag_sample_has_variant(conn, self.sample_id_group2, 'all')]
         # self.data_dict_df = [i for i in sql.get_tag_sample_has_variant(conn, self.sample_id, 'mutant')]
 
         self.load_gnomen_list(self.data_dict_df_group1)
@@ -170,19 +171,17 @@ class StatAnalysisDialog(PluginDialog):
         self.fill_matrix_True_or_False_mutate(self.data_dict_df_group2,self.sample_id_group2,2)
         self.create_data_frame('1')
         self.create_data_frame('2')
+        self.ki_2_(5)
 
         # self.ki_2_()
         # df=self.create_data_frame()
         # self.draw_heatmap(df)
 
     def init_matrix(self, sample_id:list):
-        print("dans init matrix")
         for i in self.all_gnomen:
             self.brut_matrix.append([0 for i in sample_id])
-        print(self.brut_matrix)
 
     def fill_matrix_True_or_False_mutate(self, data:list, sample_id:list, number_matrix:int):
-        print("dans la fonction")
         self.brut_matrix.clear()
         self.init_matrix(sample_id)
         for index,i in enumerate(sample_id):
@@ -254,46 +253,68 @@ class StatAnalysisDialog(PluginDialog):
     #
     #     return ad/dp
 
-    def ki_2_(self):
-        current_freq=[]
-        sample_group_tag=[]
+    def ki_2_(self, cut_off_pourcentage:int):
+        """Pour normaliser un dataframe pour que la somme de chaque colonne soit identique : df2 = df.mul(df.sum.mean() / df.sum(), axis = 1)"""
+        cut_off_pourcentage=cut_off_pourcentage/100
+        self.df_group1.copy(deep=True)
+        self.df_group2.copy(deep=True)
+        """On peut utiliser le meme row de collone pour ouvrir les donées de la matrices"""
+        """"""
+        for index, gnomen in enumerate(self.get_row_matrix("1")):
+            gene_resul=None
 
-        for item_dico_join in self.data_dict_df:
-            # print("DEbug 4")
-            for _item_group_name in self.group_name_select:
-                # print("DEbug 78")
+            group1=self.df_group1.loc[gnomen]
+            group1=array(group1)
+            group2=self.df_group2.loc[gnomen]
+            group2=array(group2)
 
-                """gestion des noms de gene vis à vis du tag select"""
-                sample_group_tag.clear()
+            # print(group1[])
 
-                """gestion des samples qui sont unique à chaque tag"""
-                if item_dico_join['tags'] == _item_group_name:
-                    # print("DEbug 21")
+            gene_resul=chisquare(group1, group2)
+            if gene_resul[1] <= cut_off_pourcentage:
+                self.dico_p_value_gene_group["gene//"+gnomen]="p-value de "+gene_resul[1]
+                self.df_ki_2 = group1.join(group2)
 
-                    gene_group=item_dico_join['gnomen']+"//"+item_dico_join['tags']
-                    print(gene_group)
+        self.df_ki_2.to_csv("C:/Users/HAMEAUEL/Documents/Db cute/khi_df.txt", sep="\t",
+                       encoding="utf-8", index=True)
 
-                    sample_group_tag.append()
-
-                for index, j in enumerate(self.all_gnomen):
-                    # print("DEbug 22")
-
-                    # print(index,j )
-
-                    current_freq=[0*len(sample_group_tag)]
-                    for index2, i in enumerate(sample_group_tag):
-                        print(current_freq)
-
-                        if item_dico_join['gt'] >= 1:
-                            # print("DEbug 8")
-
-                            self.brut_matrix[index][index2] += 1
-
-                        if index2 == len(sample_group_tag):#tetre probleme au niveau du dernier
-                            print("DEbug 9")
-
-                            self.ki_2_group_gene[gene_group]=current_freq
-                            current_freq.clear()
+        # current_freq=[]
+        # sample_group_tag=[]
+        #
+        # for item_dico_join in self.data_dict_df:
+        #     # print("DEbug 4")
+        #     for _item_group_name in self.group_name_select:
+        #         # print("DEbug 78")
+        #
+        #         """gestion des noms de gene vis à vis du tag select"""
+        #         sample_group_tag.clear()
+        #
+        #         """gestion des samples qui sont unique à chaque tag"""
+        #         if item_dico_join['tags'] == _item_group_name:
+        #             # print("DEbug 21")
+        #
+        #             gene_group=item_dico_join['gnomen']+"//"+item_dico_join['tags']
+        #
+        #             sample_group_tag.append()
+        #
+        #         for index, j in enumerate(self.all_gnomen):
+        #             # print("DEbug 22")
+        #
+        #             # print(index,j )
+        #
+        #             current_freq=[0*len(sample_group_tag)]
+        #             for index2, i in enumerate(sample_group_tag):
+        #
+        #                 if item_dico_join['gt'] >= 1:
+        #                     # print("DEbug 8")
+        #
+        #                     self.brut_matrix[index][index2] += 1
+        #
+        #                 if index2 == len(sample_group_tag):#tetre probleme au niveau du dernier
+        #                     print("DEbug 9")
+        #
+        #                     self.ki_2_group_gene[gene_group]=current_freq
+        #                     current_freq.clear()
 
     def _gt_join_sample_has_variant(self, i:str,j:str) :
         for item_dico_join in self.data_dict_df:
@@ -313,14 +334,6 @@ class StatAnalysisDialog(PluginDialog):
 
         return self.all_gnomen
 
-    def keep_sorted_unique_values(self, check_list:list):
-        """
-        returns an ordered list keeping only unique values
-        """
-        check_list = list(set(check_list))
-        check_list.sort()
-        return check_list
-
     def group_select(self):
         if self.all_tag_split.checked() == True:
             my_generator_tag = self.all_tag_split.selected_items()
@@ -328,21 +341,41 @@ class StatAnalysisDialog(PluginDialog):
             return result_list_tag
 
     def create_data_frame(self, matrix_number:str):
+        if matrix_number == '0':
+            self.df = pd.DataFrame(self.get_matrixs(matrix_number),
+                              index=self.get_row_matrix(matrix_number),
+                              columns=self.get_name_matrix(matrix_number))
+            self.df.to_csv("C:/Users/HAMEAUEL/Documents/Db cute/matrix"+matrix_number+".txt", sep="\t", encoding="utf-8", index=True)
+            return self.df
 
-        self.df = pd.DataFrame(self.get_matrixs(matrix_number),
-                          index=self.get_row_matrix(matrix_number),
-                          columns=self.get_name_matrix(matrix_number))
-        self.df.to_csv("C:/Users/HAMEAUEL/Documents/Db cute/matrix"+matrix_number+".txt", sep="\t", encoding="utf-8", index=True)
+        if matrix_number == '1':
+            self.df_group1 = pd.DataFrame(self.get_matrixs(matrix_number),
+                              index=self.get_row_matrix(matrix_number),
+                              columns=self.get_name_matrix(matrix_number))
+            self.df_group1.to_csv("C:/Users/HAMEAUEL/Documents/Db cute/matrix"+matrix_number+".txt", sep="\t", encoding="utf-8", index=True)
+            return self.df_group1
 
-        return self.df
+        if matrix_number == '2':
+            self.df_group2 = pd.DataFrame(self.get_matrixs(matrix_number),
+                              index=self.get_row_matrix(matrix_number),
+                              columns=self.get_name_matrix(matrix_number))
+            self.df_group2.to_csv("C:/Users/HAMEAUEL/Documents/Db cute/matrix"+matrix_number+".txt", sep="\t", encoding="utf-8", index=True)
+            return self.df_group2
 
     def draw_heatmap(self,df:DataFrame):
         g = sns.clustermap(df, row_cluster=True, col_cluster=True,cmap="mako_r")
 
         g.savefig('C:/Users/HAMEAUEL/Documents/Db cute/test_col4.svg', dpi=100)
 
-    def get_data_frame(self):
-        return self.df
+    def get_data_frames(self, data_frame_number:str):
+        if data_frame_number == '0':
+            return self.df
+
+        if data_frame_number == '1':
+            return self.df_group1
+
+        if data_frame_number == '2':
+            return self.df_group2
 
     def get_row_matrix(self, row_matrix_number:str):
         if row_matrix_number == '0':
@@ -380,9 +413,6 @@ class StatAnalysisDialog(PluginDialog):
         if name_matrix_group == '2':
             return self.name_matrix_group2
 
-    def get_all_mutation(self):
-        return self.dict_matrix_all_mutation
-
     def get_all_gnomen(self):
         """je vais prendre tout les samples id qui ont le groupe select by user"""
         # self.all_gnomen
@@ -391,37 +421,63 @@ class StatAnalysisDialog(PluginDialog):
     def get_dict_join(self):
         return self.data_dict_df
 
-    def get_result_ki_2 (self):
-        return self.ki_2_group_gene
+    def get_df_ki_2 (self):
+        return self.df_ki_2
 
-
+    def get_dico_p_value(self):
+        return self.dico_p_value_gene_group
 
 if __name__ == "__main__":
 
-    if os.path.exists("C:/Users/HAMEAUEL/Documents/Db cute/test_col4.svg"):
-        os.remove("C:/Users/HAMEAUEL/Documents/Db cute/test_col4.svg")
+    # if os.path.exists("C:/Users/HAMEAUEL/Documents/Db cute/test_col4.svg"):
+    #     os.remove("C:/Users/HAMEAUEL/Documents/Db cute/test_col4.svg")
+    #
+    # from PySide6.QtWidgets import QApplication
+    # import sys
+    #
+    # app = QApplication(sys.argv)
+    # conn = sql.get_sql_connection("C:/Users/HAMEAUEL/Documents/Db cute/Nw_tag.db")
+    # conn.row_factory = sqlite3.Row
+    #
+    # dialog = StatAnalysisDialog(conn)
+    # dialog.show()
+    # app.exec()
+    # print(dialog.get_df_ki_2())
+    # print(dialog.get_dico_p_value())
 
-    from PySide6.QtWidgets import QApplication
-    import sys
-
-    app = QApplication(sys.argv)
-    conn = sql.get_sql_connection("C:/Users/HAMEAUEL/Documents/Db cute/Big_Ech.db")
-    conn.row_factory = sqlite3.Row
-
-    dialog = StatAnalysisDialog(conn)
-    dialog.show()
-    app.exec()
-    print(dialog.get_matrixs("1"))
-    print(dialog.get_matrixs("2"))
+    # from scipy.stats import chisquare
+    # import numpy as np
+    #
+    # df1 = pd.DataFrame({'A': [3, 5], 'B': [1, 2]}, index = ['tt', 'mmm'])
+    # df2 = pd.DataFrame({'D': [5, 3, 7], 'E': [9, 2, 0]}, index = ['ggg', 'tt', 'mmm'])
+    # group1 = df1.iloc[[0]]
+    # group2 = df2.iloc[[0]]
+    # nw_data=group1.join(group2)
+    # print(nw_data)
+    # print(nw_data.index,"////////////")
+    #
+    # group1 = df1.iloc[[1]]
+    # group2 = df2.iloc[[1]]
+    # nw_data=group1.join(group2)
+    # print(nw_data)
+    #
+    # print(nw_data.index)
+    #
+    #
+    #
+    # nw_data=df1.join(df2)
+    # print(nw_data)
+    # print(nw_data.index)
+    # print(dialog.get_data_frames("2").loc[dialog.get_data_frames("2")['ATM']])
     # print(dialog.get_group_select())
     # from scipy.stats import chisquare
     # import numpy as np
     #
-    # gene1_group1 = [16, 18, 16, 14, 12, 12]
-    # gene1_group2 = [16, 16, 16, 16, 16, 8]
-    # gene1_result = chisquare(gene1_group1, gene1_group2)
-    # gene1_p_value = gene1_result[1]
-    # print("gene1 p-value: " + str(gene1_p_value))
+    gene1_group1 = [2, 1, 1, 1, 1, 1]
+    gene1_group2 = [1, 1, 1, 1, 1, 2]
+    gene1_result = chisquare(gene1_group1, gene1_group2)
+    gene1_p_value = gene1_result[1]
+    print("gene1 p-value: " + str(gene1_p_value))
 
 
 
