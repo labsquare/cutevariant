@@ -698,7 +698,8 @@ def build_sql_query(
     for sample_name in join_samples:
         if sample_name in samples_ids:
             sample_id = samples_ids[sample_name]
-            sql_query += f""" INNER JOIN sample_has_variant `sample_{sample_name}` ON `sample_{sample_name}`.variant_id = variants.id AND `sample_{sample_name}`.sample_id = {sample_id}"""
+            #sql_query += f""" INNER JOIN sample_has_variant `sample_{sample_name}` ON `sample_{sample_name}`.variant_id = variants.id AND `sample_{sample_name}`.sample_id = {sample_id}"""
+            sql_query += f""" LEFT JOIN sample_has_variant `sample_{sample_name}` ON `sample_{sample_name}`.variant_id = variants.id AND `sample_{sample_name}`.sample_id = {sample_id}"""
 
     # Add Where Clause
     if filters:

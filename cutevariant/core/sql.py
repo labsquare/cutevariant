@@ -2415,24 +2415,35 @@ def insert_variants(
                 if sample["name"] in samples_map:
                     sample["variant_id"] = int(variant_id)
                     sample["sample_id"] = int(samples_map[sample["name"]])
+                    sample["gt"] = int(sample["gt"])
 
-                    common_fields = samples_local_fields & sample.keys()
-                    query_fields = ",".join((f"`{i}`" for i in common_fields))
-                    query_values = ",".join((f"?" for i in common_fields))
-                    query_datas = [sample[i] for i in common_fields]
-                    query_update = ",".join((f"""`{i}` = '{sample[i]}'""" for i in common_fields))
+                    if sample["gt"] == -1:
 
-                    if True:
-                        query = f"INSERT OR IGNORE INTO sample_has_variant ({query_fields}) VALUES ({query_values})"
-                        cursor.execute(query, query_datas)
-                        query_update = f"""UPDATE sample_has_variant SET {query_update} WHERE variant_id={sample["variant_id"]} AND sample_id={sample["sample_id"]}"""
-                        cursor.execute(query_update)
+                        # remove gt if exists
+                        query_remove = f"""DELETE FROM sample_has_variant WHERE variant_id={sample["variant_id"]} AND sample_id={sample["sample_id"]}"""
+                        cursor.execute(query_remove)
 
-                    if False:
-                        #ON CONFLICT (id) DO UPDATE SET
-                        #posX = excluded.posX, posY = excluded.posY
-                        query = f"""INSERT OR IGNORE INTO sample_has_variant ({query_fields}) VALUES ({query_values}) ON CONFLICT (sample_id,variant_id) DO UPDATE SET {query_update} WHERE variant_id={sample["variant_id"]} AND sample_id={sample["sample_id"]}"""
-                        cursor.execute(query, query_datas)
+                    else:
+
+                        common_fields = samples_local_fields & sample.keys()
+                        query_fields = ",".join((f"`{i}`" for i in common_fields))
+                        query_values = ",".join((f"?" for i in common_fields))
+                        query_datas = [sample[i] for i in common_fields]
+                        query_update = ",".join((f"""`{i}` = '{sample[i]}'""" for i in common_fields))
+
+                        if True:
+                            query = f"INSERT OR IGNORE INTO sample_has_variant ({query_fields}) VALUES ({query_values})"
+                            cursor.execute(query, query_datas)
+                            query_update = f"""UPDATE sample_has_variant SET {query_update} WHERE variant_id={sample["variant_id"]} AND sample_id={sample["sample_id"]}"""
+                            cursor.execute(query_update)
+
+                        if False:
+                            #ON CONFLICT (id) DO UPDATE SET
+                            #posX = excluded.posX, posY = excluded.posY
+                            query = f"""INSERT OR IGNORE INTO sample_has_variant ({query_fields}) VALUES ({query_values}) ON CONFLICT (sample_id,variant_id) DO UPDATE SET {query_update} WHERE variant_id={sample["variant_id"]} AND sample_id={sample["sample_id"]}"""
+                            cursor.execute(query, query_datas)
+
+                    
 
 
         # Commit every batch_size
@@ -3535,12 +3546,12 @@ def import_reader(
         get_clean_variants(reader.get_variants()),
         total_variant_count=reader.number_lines,
         progress_callback=progress_callback,
-        progress_every=100,
+        progress_every=1000,
     )
 
     # fill hole
-    progress_callback("Consolidate sample has variant")
-    fill_hole(conn)
+    #progress_callback("Consolidate sample has variant")
+    #fill_hole(conn)
 
     # variants_calculation
     variants_calculation(
@@ -3548,7 +3559,7 @@ def import_reader(
         get_clean_variants(reader.get_variants()),
         total_variant_count=reader.number_lines,
         progress_callback=progress_callback,
-        progress_every=100,
+        progress_every=1000,
         previous_nb_samples=previous_nb_samples,
         recount=recount,
     )
