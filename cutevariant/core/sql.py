@@ -2432,8 +2432,17 @@ def variants_calculation(
     progress_callback(f"""Variant count calculation...""")
 
     # nb samples
+    # all
     nb_samples = conn.execute(
-        f"SELECT count(id) FROM samples"
+        f"SELECT count(`id`) FROM `samples`"
+    ).fetchone()[0]
+    # control
+    control_nb_samples = conn.execute(
+        f"SELECT count(`id`) FROM `samples` WHERE `phenotype`=1"
+    ).fetchone()[0]
+     # case
+    case_nb_samples = conn.execute(
+        f"SELECT count(`id`) FROM `samples` WHERE `phenotype`=2"
     ).fetchone()[0]
 
     # nb variants
@@ -2465,7 +2474,7 @@ def variants_calculation(
         SELECT `v`.`id` as `v_id`, `gt`, count(`shv`.`gt`) as `count_gt`, `s`.`phenotype` as `phenotype`
         FROM `sample_has_variant` as `shv`
         INNER JOIN `variants` as `v` ON `shv`.variant_id=`v`.`id`
-        INNER JOIN `samples` as `s` ON `shv`.`sample_id`=`s`.`id` AND `s`.`phenotype` IN ('1','2')
+        INNER JOIN `samples` as `s` ON `shv`.`sample_id`=`s`.`id` AND `s`.`phenotype` IN (1,2)
         GROUP BY `v`.`id`, `gt`, `s`.`phenotype`
         UNION
         SELECT `v`.`id` as `v_id`, `gt`, count(`shv`.`gt`) as `count_gt`, 0
@@ -2478,6 +2487,7 @@ def variants_calculation(
     # create dict with counts
     variants_gt_count_array={}
     for variants_gt_count_line in variants_gt_count_results:
+        print(variants_gt_count_line)
         # fields
         variant_id=variants_gt_count_line[0]
         variant_gt=variants_gt_count_line[1]
@@ -2497,9 +2507,12 @@ def variants_calculation(
         variant_count+=1
         # add nb_samples
         variants_gt_count_array[variant_id].append(f"""`nb_samples`={nb_samples}""")
+        variants_gt_count_array[variant_id].append(f"""`control_nb_samples`={control_nb_samples}""")
+        variants_gt_count_array[variant_id].append(f"""`case_nb_samples`={case_nb_samples}""")
         # joint set to update
         query_count_update_set=",".join((f"""{i}""" for i in variants_gt_count_array[variant_id]))
         query_count_update=f"""UPDATE `variants` SET {query_count_update_set} WHERE `variants`.`id`={variant_id}"""
+        print(query_count_update)
         cursor.execute(query_count_update)
 
         # progress
