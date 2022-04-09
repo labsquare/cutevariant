@@ -201,20 +201,6 @@ MANDATORY_FIELDS = [
         "description": "Number of homozygous genotypes (0/0)",
     },
     {
-        "name": "count_none",
-        "type": "int",
-        "constraint": "DEFAULT 0",
-        "category": "variants",
-        "description": "Number of none genotypes (./.)",
-    },
-    {
-        "name": "count_tot",
-        "type": "int",
-        "constraint": "DEFAULT 0",
-        "category": "variants",
-        "description": "Number of genotypes (all)",
-    },
-    {
         "name": "count_var",
         "type": "int",
         "constraint": "DEFAULT 0",
@@ -226,14 +212,14 @@ MANDATORY_FIELDS = [
         "type": "float",
         "constraint": "DEFAULT 0",
         "category": "variants",
-        "description": "Frequency of variants for samples with genotypes (0/0, 0/1 and 1/1)",
+        "description": "Frequency of variants for all samples (0/1 and 1/1)",
     },
     {
-        "name": "freq_var_full",
-        "type": "float",
+        "name": "nb_samples",
+        "type": "int",
         "constraint": "DEFAULT 0",
         "category": "variants",
-        "description": "Frequency of variants for samples with genotypes (0/0, 0/1 and 1/1) or without genotypes (./.)",
+        "description": "Number of samples",
     },
     {
         "name": "control_count_hom",
@@ -257,6 +243,27 @@ MANDATORY_FIELDS = [
         "description": "Number of heterozygous genotypes (1/0) in control",
     },
     {
+        "name": "control_count_var",
+        "type": "int",
+        "constraint": "DEFAULT 0",
+        "category": "variants",
+        "description": "Number of variants (0/1 or 1/1) in control",
+    },
+    {
+        "name": "control_freq_var",
+        "type": "int",
+        "constraint": "DEFAULT 0",
+        "category": "variants",
+        "description": "Frequency of variants for all samples (0/1 and 1/1) in control",
+    },
+    {
+        "name": "control_nb_samples",
+        "type": "int",
+        "constraint": "DEFAULT 0",
+        "category": "variants",
+        "description": "Number of nb_samples in control",
+    },
+    {
         "name": "case_count_hom",
         "type": "int",
         "category": "variants",
@@ -276,6 +283,27 @@ MANDATORY_FIELDS = [
         "category": "variants",
         "constraint": "DEFAULT 0",
         "description": "Number of homozygous genotypes (0/0) in case",
+    },
+    {
+        "name": "case_count_var",
+        "type": "int",
+        "category": "variants",
+        "constraint": "DEFAULT 0",
+        "description": "Number of variants (0/1 or 1/1) in case",
+    },
+    {
+        "name": "case_freq_var",
+        "type": "int",
+        "category": "variants",
+        "constraint": "DEFAULT 0",
+        "description": "Number of variants (0/1 or 1/1) in control",
+    },
+    {
+        "name": "case_nb_samples",
+        "type": "int",
+        "category": "variants",
+        "constraint": "DEFAULT 0",
+        "description": "Number of samples in case",
     },
     {
         "name": "is_indel",
@@ -2249,6 +2277,9 @@ def insert_variants(
 
     """
 
+    # progress
+    progress_callback(f"""Variant insertion...""")
+
     variants_local_fields = set(get_table_columns(conn, "variants"))
     annotations_local_fields = set(get_table_columns(conn, "annotations"))
     samples_local_fields = set(get_table_columns(conn, "sample_has_variant"))
@@ -2322,14 +2353,24 @@ def insert_variants(
                 if sample["name"] in samples_map:
                     sample["variant_id"] = int(variant_id)
                     sample["sample_id"] = int(samples_map[sample["name"]])
+                    sample["gt"] = int(sample["gt"])
 
-                    common_fields = samples_local_fields & sample.keys()
-                    query_fields = ",".join((f"`{i}`" for i in common_fields))
-                    query_values = ",".join((f"?" for i in common_fields))
-                    query_datas = [sample[i] for i in common_fields]
-                    #query = f"INSERT OR REPLACE INTO sample_has_variant ({query_fields}) VALUES ({query_values})"
-                    query = f"INSERT OR IGNORE INTO sample_has_variant ({query_fields}) VALUES ({query_values})"
-                    cursor.execute(query, query_datas)
+                    if sample["gt"] == -1:
+
+                        # remove gt if exists
+                        query_remove = f"""DELETE FROM sample_has_variant WHERE variant_id={sample["variant_id"]} AND sample_id={sample["sample_id"]}"""
+                        cursor.execute(query_remove)
+
+                    else:
+
+                        # insert/replace gt if exists
+                        common_fields = samples_local_fields & sample.keys()
+                        query_fields = ",".join((f"`{i}`" for i in common_fields))
+                        query_values = ",".join((f"?" for i in common_fields))
+                        query_datas = [sample[i] for i in common_fields]
+                        query = f"INSERT OR REPLACE INTO sample_has_variant ({query_fields}) VALUES ({query_values})"
+                        #query = f"INSERT OR IGNORE INTO sample_has_variant ({query_fields}) VALUES ({query_values})"
+                        cursor.execute(query, query_datas)
 
         # Commit every batch_size
         if (
@@ -2352,6 +2393,130 @@ def insert_variants(
 
     true_total = conn.execute("SELECT COUNT(*) FROM variants").fetchone()[0]
     insert_selection(conn, "", name=cm.DEFAULT_SELECTION_NAME, count=true_total)
+
+
+def variants_calculation(
+    conn: sqlite3.Connection,
+    variants: List[dict],
+    total_variant_count: int = None,
+    progress_every: int = 1000,
+    progress_callback: Callable = None,
+    samples: dict = None,
+):
+    """Insert many variants from data into variants table
+
+    Args:
+        conn (sqlite3.Connection): sqlite3 Connection
+        data (list): list of variant dictionnary which contains same number of key than fields numbers.
+        total_variant_count (None, optional): total variant count, to compute progression
+        yield_every (int, optional): Yield a tuple with progression and message.
+        Progression is 0 if total_variant_count is not set.
+
+    Example:
+
+        insert_many_variant(conn, [{chr:"chr1", pos:24234, alt:"A","ref":T }])
+        insert_many_variant(conn, reader.get_variants())
+
+    Note: About using INSERT OR IGNORE: They avoid the following errors:
+
+        - Upon insertion of a duplicate key where the column must contain
+          a PRIMARY KEY or UNIQUE constraint
+        - Upon insertion of NULL value where the column has
+          a NOT NULL constraint.
+          => This is not recommended
+
+
+    """
+    
+    # progress
+    progress_callback(f"""Variant count calculation...""")
+
+    # nb samples
+    nb_samples = conn.execute(
+        f"SELECT count(id) FROM samples"
+    ).fetchone()[0]
+
+    # nb variants
+    # nb_variants = conn.execute(
+    #     f"SELECT count(id) FROM variants"
+    # ).fetchone()[0]
+
+    # progress
+    errors = 0
+    cursor = conn.cursor()
+    variant_count = 0
+    total = 0
+
+    # swither for genotype
+    switcher_genotype = {
+        0: "count_ref",
+        1: "count_het",
+        2: "count_hom",
+    }
+     # swither for phenotype
+    switcher_phenotype = {
+        0: "",
+        1: "control_",
+        2: "case_",
+    }
+
+    # find gt for variants by phenotype
+    variants_gt_count_query=f"""
+        SELECT `v`.`id` as `v_id`, `gt`, count(`shv`.`gt`) as `count_gt`, `s`.`phenotype` as `phenotype`
+        FROM `sample_has_variant` as `shv`
+        INNER JOIN `variants` as `v` ON `shv`.variant_id=`v`.`id`
+        INNER JOIN `samples` as `s` ON `shv`.`sample_id`=`s`.`id` AND `s`.`phenotype` IN ('1','2')
+        GROUP BY `v`.`id`, `gt`, `s`.`phenotype`
+        UNION
+        SELECT `v`.`id` as `v_id`, `gt`, count(`shv`.`gt`) as `count_gt`, 0
+        FROM `sample_has_variant` as `shv`
+        INNER JOIN `variants` as `v` ON `shv`.`variant_id`=`v`.`id`
+        GROUP BY `v`.`id`, `gt`
+    """
+    variants_gt_count_results=cursor.execute(variants_gt_count_query)
+
+    # create dict with counts
+    variants_gt_count_array={}
+    for variants_gt_count_line in variants_gt_count_results:
+        # fields
+        variant_id=variants_gt_count_line[0]
+        variant_gt=variants_gt_count_line[1]
+        variant_count_gt=variants_gt_count_line[2]
+        variant_phenotype=variants_gt_count_line[3]
+        # create dict by variant
+        if variant_id not in variants_gt_count_array:
+            variants_gt_count_array[variant_id] = []
+        # create field name
+        variant_gt_count_field=switcher_phenotype.get(variant_phenotype, "nothing")+switcher_genotype.get(variant_gt, "nothing")
+        # add update on field
+        variants_gt_count_array[variant_id].append(f"""`{variant_gt_count_field}`={variant_count_gt}""")
+
+    # create query
+    for variant_id in variants_gt_count_array:
+        # variant count
+        variant_count+=1
+        # add nb_samples
+        variants_gt_count_array[variant_id].append(f"""`nb_samples`={nb_samples}""")
+        # joint set to update
+        query_count_update_set=",".join((f"""{i}""" for i in variants_gt_count_array[variant_id]))
+        query_count_update=f"""UPDATE `variants` SET {query_count_update_set} WHERE `variants`.`id`={variant_id}"""
+        cursor.execute(query_count_update)
+
+        # progress
+        total+=1
+        if (
+            progress_callback
+            and variant_count != 0
+            and variant_count % progress_every == 0
+        ):
+            progress_callback(f"{variant_count} variants calculated.", end='\r')
+
+    # commit
+    conn.commit()
+
+    # progress
+    progress_callback(f"{total} variant(s) has been calculated with {errors} error(s)")
+    
 
 
 def update_variants(conn, data, **kwargs):
@@ -2848,121 +3013,48 @@ def update_sample_has_variant(conn: sqlite3.Connection, data: dict):
 
 def create_triggers(conn):
 
-    ### TRIGGER count_hom
+    # variant freq and var
     conn.execute(
         """
-        CREATE TRIGGER count_hom AFTER INSERT ON sample_has_variant
-        WHEN new.gt = 2 BEGIN
-        UPDATE variants SET count_hom = count_hom + 1 WHERE variants.id = new.variant_id ;
-
-        UPDATE variants SET
-        case_count_hom = case_count_hom + (SELECT COUNT(*) FROM samples WHERE phenotype=2 and samples.id = new.sample_id)
-        WHERE variants.id = new.variant_id ;
-
-        UPDATE variants SET
-        control_count_hom = control_count_hom + (SELECT COUNT(*) FROM samples WHERE phenotype=1 and samples.id = new.sample_id)
-        WHERE variants.id = new.variant_id ;
-
-        END;"""
-    )
-
-
-    ### TRIGGER count_var
-    conn.execute(
-        """
-        CREATE TRIGGER count_var AFTER INSERT ON sample_has_variant
-        WHEN new.gt > 0 BEGIN
-        UPDATE variants SET count_var = count_var + 1 WHERE variants.id = new.variant_id ;
-
-        END;"""
-    )
-
-
-    # TRIGGER count_het
-    conn.execute(
-        """
-        CREATE TRIGGER count_het AFTER INSERT ON sample_has_variant
-        WHEN new.gt = 1 BEGIN
-        UPDATE variants SET count_het = count_het + 1 WHERE variants.id = new.variant_id ;
-
-        UPDATE variants SET
-        case_count_het = case_count_het + (SELECT COUNT(*) FROM samples WHERE phenotype=2 and samples.id = new.sample_id)
-        WHERE variants.id = new.variant_id ;
-
-        UPDATE variants SET
-        control_count_het = control_count_het + (SELECT COUNT(*) FROM samples WHERE phenotype=1 and samples.id = new.sample_id)
-        WHERE variants.id = new.variant_id ;
-
-        END;"""
-    )
-
-
-    ### TRIGGER count_ref
-    conn.execute(
-        """
-        CREATE TRIGGER count_ref AFTER INSERT ON sample_has_variant
-        WHEN new.gt = 0 BEGIN
-        UPDATE variants SET count_ref = count_ref + 1 WHERE variants.id = new.variant_id ;
-
-        UPDATE variants SET
-        case_count_ref = case_count_ref + (SELECT COUNT(*) FROM samples WHERE phenotype=1 and samples.id = new.sample_id)
-        WHERE variants.id = new.variant_id ;
-
-        UPDATE variants SET
-        control_count_ref = control_count_ref + (SELECT COUNT(*) FROM samples WHERE phenotype=0 and samples.id = new.sample_id)
-        WHERE variants.id = new.variant_id ;
-
-        END;"""
-    )
-
-
-    ### TRIGGER count_none
-    conn.execute(
-        """
-        CREATE TRIGGER count_none AFTER INSERT ON sample_has_variant
-        WHEN new.gt = -1 BEGIN
-        UPDATE variants SET count_none = count_none + 1 WHERE variants.id = new.variant_id ;
-
-        END;"""
-    )
-
-    ### TRIGGER count_tot
-    conn.execute(
-        """
-        CREATE TRIGGER count_tot AFTER INSERT ON sample_has_variant
+        CREATE TRIGGER IF NOT EXISTS nb_samples_after_update_on_samples AFTER UPDATE ON samples
+        WHEN new.phenotype <> old.phenotype
         BEGIN
-        UPDATE variants SET count_tot = count_tot + 1 WHERE variants.id = new.variant_id ;
-
-        END;"""
+            UPDATE variants
+            SET case_count_hom = case_count_hom + IIF( new.phenotype = 1, 1, 0 ) + IIF( old.phenotype = 1, -1, 0 ),
+                case_count_het = case_count_het + IIF( new.phenotype = 1, 1, 0 ) + IIF( old.phenotype = 1, -1, 0 ),
+                case_nb_samples = case_nb_samples + IIF( new.phenotype = 1, 1, 0 ) + IIF( old.phenotype = 1, -1, 0 ),
+                control_count_hom = control_count_hom + IIF( new.phenotype = 2, 1, 0 ) + IIF( old.phenotype = 2, -1, 0 ),
+                control_count_het = control_count_het + IIF( new.phenotype = 2, 1, 0 ) + IIF( old.phenotype = 2, -1, 0 ),
+                control_nb_samples = control_nb_samples + IIF( new.phenotype = 2, 1, 0 ) + IIF( old.phenotype = 2, -1, 0 )
+            WHERE variants.id IN (SELECT variant_id FROM sample_has_variant WHERE sample_id=new.id) ;
+        END;
+        """
     )
 
-
-    ### TRIGGER freq_var_update
+    # variant freq and var
     conn.execute(
         """
-        CREATE TRIGGER freq_var_update AFTER UPDATE ON variants 
-        WHEN old.count_hom <> new.count_hom
-              OR old.count_het <> new.count_het
-              OR old.count_ref <> new.count_ref
+        CREATE TRIGGER IF NOT EXISTS count_freq_calculation_after_update_on_variants AFTER UPDATE ON variants
+        WHEN new.count_hom <> old.count_hom
+          OR new.count_het <> old.count_het
+          OR new.nb_samples <> old.nb_samples
+          OR new.case_count_hom <> old.case_count_hom
+          OR new.case_count_het <> old.case_count_het
+          OR new.case_nb_samples <> old.case_nb_samples
+          OR new.control_count_hom <> old.control_count_hom
+          OR new.control_count_het <> old.control_count_het
+          OR new.control_nb_samples <> old.control_nb_samples
         BEGIN
-
-        UPDATE variants SET
-        freq_var = ( cast((new.count_hom*2 + new.count_het) as real) / ( ( cast(new.count_hom as real) + cast(new.count_het as real) + cast(new.count_ref as real) ) *2 ) ) WHERE variants.id = new.id ;
-        
-        END;"""
-    )
-
-    ### TRIGGER freq_var_full_update_on_variants
-    conn.execute(
+            UPDATE variants
+            SET count_var = ( new.count_hom + new.count_het ),
+                freq_var = ( cast((new.count_hom*2 + new.count_het) as real) / (new.nb_samples*2) ),
+                case_count_var = ( new.case_count_hom + new.case_count_het ),
+                case_freq_var = ( cast((new.case_count_hom*2 + new.case_count_het) as real) / (new.case_nb_samples*2) ),
+                control_count_var = ( new.control_count_hom + new.control_count_het ),
+                control_freq_var = ( cast((new.control_count_hom*2 + new.control_count_het) as real) / (new.control_nb_samples*2) )
+            WHERE variants.id = new.id ;
+        END;
         """
-        CREATE TRIGGER freq_var_full_update_on_variants AFTER UPDATE ON variants 
-        WHEN old.count_tot <> new.count_tot
-        BEGIN
-
-        UPDATE variants SET
-        freq_var_full = ( cast((new.count_hom*2 + new.count_het) as real) / (cast(new.count_tot as real)*2) ) WHERE variants.id = new.id ;
-        
-        END;"""
     )
 
 
@@ -3339,6 +3431,17 @@ def import_reader(
         progress_callback=progress_callback,
         progress_every=1000,
     )
+
+    # variants_calculation
+    variants_calculation(
+        conn,
+        get_clean_variants(reader.get_variants()),
+        total_variant_count=reader.number_lines,
+        progress_callback=progress_callback,
+        progress_every=1000,
+        samples=reader.get_samples()
+    )
+
 
     # create index
     if progress_callback:
