@@ -765,7 +765,12 @@ class ValidationWidget(plugin.PluginWidget):
 
     def on_add_source(self, input_name=None, select=False, overwrite=None, sample_list=[]):
         """
-        This function is called when the user clicks on the "Add Source" button in the "Source" tab
+        This function is called when the user clicks on the "Add Source" button in the "Source" tab.
+        Options:
+            - creation of a source if a uniq sample is selected (through "on_select_source")
+            - ask if the user want to autmatically select the created source
+            - check if the source name already exists
+            - check if selected samples are already a source
 
         Args:
             input_name (string, optional): source name
@@ -884,7 +889,8 @@ class ValidationWidget(plugin.PluginWidget):
 
     def on_select_source(self):
         """
-        This function is called when the user clicks on the "Add Source" button in the "Source" tab
+        This function is called when the user clicks on the "On select source" button in the contuxtual menu of a sample or a list of samples.
+        This function select the "source" corresponding to the selected samples. If the source is not created, it will be added by the function "on_add_source".
         """
 
         # Created sources
