@@ -2487,7 +2487,6 @@ def variants_calculation(
     # create dict with counts
     variants_gt_count_array={}
     for variants_gt_count_line in variants_gt_count_results:
-        print(variants_gt_count_line)
         # fields
         variant_id=variants_gt_count_line[0]
         variant_gt=variants_gt_count_line[1]
@@ -2512,7 +2511,6 @@ def variants_calculation(
         # joint set to update
         query_count_update_set=",".join((f"""{i}""" for i in variants_gt_count_array[variant_id]))
         query_count_update=f"""UPDATE `variants` SET {query_count_update_set} WHERE `variants`.`id`={variant_id}"""
-        print(query_count_update)
         cursor.execute(query_count_update)
 
         # progress
@@ -2522,7 +2520,7 @@ def variants_calculation(
             and variant_count != 0
             and variant_count % progress_every == 0
         ):
-            progress_callback(f"{variant_count} variants calculated.", end='\r')
+            progress_callback(f"{variant_count} variants calculated.")
 
     # commit
     conn.commit()
@@ -3027,19 +3025,82 @@ def update_sample_has_variant(conn: sqlite3.Connection, data: dict):
 def create_triggers(conn):
 
     # variant freq and var
+    # conn.execute(
+    #     """
+    #     CREATE TRIGGER IF NOT EXISTS nb_samples_after_update_on_samples AFTER UPDATE ON samples
+    #     WHEN new.phenotype <> old.phenotype
+    #     BEGIN
+    #         UPDATE variants
+    #         SET case_count_hom = case_count_hom + IIF( new.phenotype = 1, 1, 0 ) + IIF( old.phenotype = 1, -1, 0 ),
+    #             case_count_het = case_count_het + IIF( new.phenotype = 1, 1, 0 ) + IIF( old.phenotype = 1, -1, 0 ),
+    #             case_nb_samples = case_nb_samples + IIF( new.phenotype = 1, 1, 0 ) + IIF( old.phenotype = 1, -1, 0 ),
+    #             control_count_hom = control_count_hom + IIF( new.phenotype = 2, 1, 0 ) + IIF( old.phenotype = 2, -1, 0 ),
+    #             control_count_het = control_count_het + IIF( new.phenotype = 2, 1, 0 ) + IIF( old.phenotype = 2, -1, 0 ),
+    #             control_nb_samples = control_nb_samples + IIF( new.phenotype = 2, 1, 0 ) + IIF( old.phenotype = 2, -1, 0 )
+    #         WHERE variants.id IN (SELECT variant_id FROM sample_has_variant WHERE sample_id=new.id) ;
+    #     END;
+    #     """
+    # )
+
+    # conn.execute(
+    #     """
+    #     CREATE TRIGGER IF NOT EXISTS nb_samples_after_update_on_samples AFTER UPDATE ON samples
+    #     WHEN new.phenotype <> old.phenotype
+    #     BEGIN
+    #         UPDATE variants
+    #         SET case_nb_samples = case_nb_samples + IIF( new.phenotype = 2, 1, 0 ) + IIF( old.phenotype = 2, -1, 0 ), 
+
+    #             case_count_ref = case_count_ref + IIF( new.phenotype = 2 AND (SELECT count(shv.variant_id) FROM sample_has_variant as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=0) = 1, 1, 0 ) + IIF( old.phenotype = 2 AND (SELECT count(shv.variant_id) FROM sample_has_variant as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=0) = 1, -1, 0 ),
+                
+    #             case_count_het = case_count_het + IIF( new.phenotype = 2 AND (SELECT count(shv.variant_id) FROM sample_has_variant as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=1) = 1, 1, 0 ) + IIF( old.phenotype = 2 AND (SELECT count(shv.variant_id) FROM sample_has_variant as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=1) = 1, -1, 0 ),
+                
+    #             case_count_hom = case_count_hom + IIF( new.phenotype = 2 AND (SELECT count(shv.variant_id) FROM sample_has_variant as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=2) = 1, 1, 0 ) + IIF( old.phenotype = 2 AND (SELECT count(shv.variant_id) FROM sample_has_variant as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=2) = 1, -1, 0 ),
+
+    #             control_nb_samples = control_nb_samples + IIF( new.phenotype = 1, 1, 0 ) + IIF( old.phenotype = 1, -1, 0 ),
+
+    #             control_count_ref = control_count_ref + IIF( new.phenotype = 1 AND (SELECT count(shv.variant_id) FROM sample_has_variant as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=0) = 1, 1, 0 ) + IIF( old.phenotype = 1 AND (SELECT count(shv.variant_id) FROM sample_has_variant as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=0) = 1, -1, 0 ),
+                
+    #             control_count_het = control_count_het + IIF( new.phenotype = 1 AND (SELECT count(shv.variant_id) FROM sample_has_variant as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=1) = 1, 1, 0 ) + IIF( old.phenotype = 1 AND (SELECT count(shv.variant_id) FROM sample_has_variant as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=1) = 1, -1, 0 ),
+                
+    #             control_count_hom = control_count_hom + IIF( new.phenotype = 1 AND (SELECT count(shv.variant_id) FROM sample_has_variant as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=2) = 1, 1, 0 ) + IIF( old.phenotype = 1 AND (SELECT count(shv.variant_id) FROM sample_has_variant as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=2) = 1, -1, 0 )
+                
+    #         WHERE variants.id IN (SELECT shv2.variant_id FROM sample_has_variant as shv2 WHERE shv2.sample_id=new.id) ;
+    #     END;
+    #     """
+    # )
+
     conn.execute(
         """
         CREATE TRIGGER IF NOT EXISTS nb_samples_after_update_on_samples AFTER UPDATE ON samples
         WHEN new.phenotype <> old.phenotype
         BEGIN
             UPDATE variants
-            SET case_count_hom = case_count_hom + IIF( new.phenotype = 1, 1, 0 ) + IIF( old.phenotype = 1, -1, 0 ),
-                case_count_het = case_count_het + IIF( new.phenotype = 1, 1, 0 ) + IIF( old.phenotype = 1, -1, 0 ),
-                case_nb_samples = case_nb_samples + IIF( new.phenotype = 1, 1, 0 ) + IIF( old.phenotype = 1, -1, 0 ),
-                control_count_hom = control_count_hom + IIF( new.phenotype = 2, 1, 0 ) + IIF( old.phenotype = 2, -1, 0 ),
-                control_count_het = control_count_het + IIF( new.phenotype = 2, 1, 0 ) + IIF( old.phenotype = 2, -1, 0 ),
-                control_nb_samples = control_nb_samples + IIF( new.phenotype = 2, 1, 0 ) + IIF( old.phenotype = 2, -1, 0 )
-            WHERE variants.id IN (SELECT variant_id FROM sample_has_variant WHERE sample_id=new.id) ;
+            SET case_nb_samples = case_nb_samples + IIF( new.phenotype = 2, 1, 0 ) + IIF( old.phenotype = 2, -1, 0 ), 
+                control_nb_samples = control_nb_samples + IIF( new.phenotype = 1, 1, 0 ) + IIF( old.phenotype = 1, -1, 0 );
+        END;
+        """
+    )
+
+    conn.execute(
+        """
+        CREATE TRIGGER IF NOT EXISTS count_after_update_on_samples AFTER UPDATE ON samples
+        WHEN new.phenotype <> old.phenotype
+        BEGIN
+            UPDATE variants
+            SET 
+                case_count_ref = case_count_ref + IIF( new.phenotype = 2 AND (SELECT count(shv.variant_id) FROM sample_has_variant as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=0) = 1, 1, 0 ) + IIF( old.phenotype = 2 AND (SELECT count(shv.variant_id) FROM sample_has_variant as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=0) = 1, -1, 0 ),
+                
+                case_count_het = case_count_het + IIF( new.phenotype = 2 AND (SELECT count(shv.variant_id) FROM sample_has_variant as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=1) = 1, 1, 0 ) + IIF( old.phenotype = 2 AND (SELECT count(shv.variant_id) FROM sample_has_variant as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=1) = 1, -1, 0 ),
+                
+                case_count_hom = case_count_hom + IIF( new.phenotype = 2 AND (SELECT count(shv.variant_id) FROM sample_has_variant as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=2) = 1, 1, 0 ) + IIF( old.phenotype = 2 AND (SELECT count(shv.variant_id) FROM sample_has_variant as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=2) = 1, -1, 0 ),
+
+                control_count_ref = control_count_ref + IIF( new.phenotype = 1 AND (SELECT count(shv.variant_id) FROM sample_has_variant as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=0) = 1, 1, 0 ) + IIF( old.phenotype = 1 AND (SELECT count(shv.variant_id) FROM sample_has_variant as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=0) = 1, -1, 0 ),
+                
+                control_count_het = control_count_het + IIF( new.phenotype = 1 AND (SELECT count(shv.variant_id) FROM sample_has_variant as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=1) = 1, 1, 0 ) + IIF( old.phenotype = 1 AND (SELECT count(shv.variant_id) FROM sample_has_variant as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=1) = 1, -1, 0 ),
+                
+                control_count_hom = control_count_hom + IIF( new.phenotype = 1 AND (SELECT count(shv.variant_id) FROM sample_has_variant as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=2) = 1, 1, 0 ) + IIF( old.phenotype = 1 AND (SELECT count(shv.variant_id) FROM sample_has_variant as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=2) = 1, -1, 0 )
+                
+            WHERE variants.id IN (SELECT shv2.variant_id FROM sample_has_variant as shv2 WHERE shv2.sample_id=new.id) ;
         END;
         """
     )
@@ -3060,11 +3121,11 @@ def create_triggers(conn):
         BEGIN
             UPDATE variants
             SET count_var = ( new.count_hom + new.count_het ),
-                freq_var = ( cast((new.count_hom*2 + new.count_het) as real) / (new.nb_samples*2) ),
                 case_count_var = ( new.case_count_hom + new.case_count_het ),
-                case_freq_var = ( cast((new.case_count_hom*2 + new.case_count_het) as real) / (new.case_nb_samples*2) ),
                 control_count_var = ( new.control_count_hom + new.control_count_het ),
-                control_freq_var = ( cast((new.control_count_hom*2 + new.control_count_het) as real) / (new.control_nb_samples*2) )
+                freq_var = IIF( new.nb_samples = 0, 0, ( cast((new.count_hom*2 + new.count_het) as real) / (new.nb_samples*2) ) ),
+                case_freq_var = IIF( new.case_nb_samples = 0, 0, ( cast((new.case_count_hom*2 + new.case_count_het) as real) / (new.case_nb_samples*2) ) ),
+                control_freq_var = IIF( new.control_nb_samples = 0, 0, ( cast((new.control_count_hom*2 + new.control_count_het) as real) / (new.control_nb_samples*2) ) )
             WHERE variants.id = new.id ;
         END;
         """
