@@ -1177,8 +1177,8 @@ class MainWindow(QMainWindow):
                 op="$regex"
                 value=value.replace('*', '')
             # IN operator
-            match_ope_has = re.findall(r"(.*)IN", ope)
-            if match_ope_has:
+            match_ope_in = re.findall(r"(.*)IN", ope)
+            if match_ope_in:
                 value = value.split(",") 
             # condition
             condition = {
@@ -1200,8 +1200,8 @@ class MainWindow(QMainWindow):
                 op="$regex"
                 value=value.replace('*', '')
             # IN operator
-            match_ope_has = re.findall(r"(.*)IN", ope)
-            if match_ope_has:
+            match_ope_in = re.findall(r"(.*)IN", ope)
+            if match_ope_in:
                 value = value.split(",") 
             # condition
             condition = {
