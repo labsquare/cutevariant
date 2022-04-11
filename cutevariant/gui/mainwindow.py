@@ -44,6 +44,24 @@ from cutevariant import LOGGER
 
 import copy
 
+OPERATORS = {
+    "=": "$eq",
+    ">": "$gt",
+    ">=": "$gte",
+    "<": "$lt",
+    "<=": "$lte",
+    "IN": "$in",
+    "!=": "$ne",
+    "!IN": "$nin",
+    "=~": "$regex",
+    "!~": "$nregex",
+    "AND": "$and",
+    "OR": "$or",
+    "ANY": "$any",
+    "ALL": "$all",
+    "HAS": "$has",
+    "!HAS": "$nhas",
+}
 
 class StateData:
     """A dictonnary like object which monitor which key changed
@@ -1087,40 +1105,133 @@ class MainWindow(QMainWindow):
 
     def quick_search(self, query: str):
 
+        
+        # Quick Search previous query filters
+        quicksearch_filters=self.get_state_data("quicksearch_filters")
+
+        # Copy filters
+        copy_existing_filters=True
+        if copy_existing_filters:
+            filters = copy.deepcopy(self.get_state_data("filters"))
+        else:
+            filters = {}
+
+        if not filters:
+            root = "$and"
+            filters["$and"] = []
+        else:
+            root = list(filters.keys())[0]
+            filters[root] = [
+                i for i in filters[root] if i != quicksearch_filters
+            ]
+
+        condition = {}
+
+        # no query
         if not query:
-            self.set_state_data("filters", {})
-            self.refresh_plugins(self)
-            return
+            # Recreate previous filters
+            filters[root] = [
+                i for i in filters[root] if i != quicksearch_filters
+            ]
 
         # match coordinate
         match = re.findall(r"(\w+):(\d+)-(\d+)", query)
-
-        if match:
+        if match and not condition:
+            # check quick search query
             chrom, start, end = match[0]
             start = int(start)
             end = int(end)
-            self.set_state_data(
-                "filters",
-                {
-                    "$and": [
-                        {"chr": chrom},
-                        {"pos": {"$gte": start}},
-                        {"pos": {"$lte": end}},
-                    ]
-                },
-            )
-            self.refresh_plugins(self)
-            return
+            # condition
+            condition = {
+                "$and": [
+                    {"chr": chrom},
+                    {"pos": {"$gte": start}},
+                    {"pos": {"$lte": end}},
+                ]
+            }
+
+        # match coordinate with one position
+        match = re.findall(r"(\w+):(\d+)", query)
+        if match and not condition:
+            # check quick search query
+            chrom, start = match[0]
+            start = int(start)
+            # condition
+            condition = {
+                "$and": [
+                    {"chr": chrom},
+                    {"pos": {"$eq": start}}
+                ]
+            }
+
+        # match an annotation
+        match = re.findall(r"ann\.(\w+) *(=|>|>=|<|<=|!=|=~|!~|IN|!IN|HAS|!HAS) *([,\*\w]+)", query)
+        if match and not condition:
+            # check quick search query
+            field, ope, value = match[0]
+            # find operator
+            op = OPERATORS.get(ope.upper(), "$eq")
+            # regex
+            match_pattern = re.findall(r"(.*)\*(.*)", value)
+            if match_pattern:
+                op="$regex"
+                value=value.replace('*', '')
+            # IN operator
+            match_ope_has = re.findall(r"(.*)IN", ope)
+            if match_ope_has:
+                value = value.split(",") 
+            # condition
+            condition = {
+                "$and": [
+                    {"ann."+field: {op: value}}
+                ]
+            }
+
+        # match a field
+        match = re.findall(r"(\w+) *(=|>|>=|<|<=|!=|=~|!~|IN|!IN|HAS|!HAS) *([,\*\w]+)", query)
+        if match and not condition:
+            # check quick search query
+            field, ope, value = match[0]
+            # find operator
+            op = OPERATORS.get(ope.upper(), "$eq")
+            # regex
+            match_pattern = re.findall(r"(.*)\*(.*)", value)
+            if match_pattern:
+                op="$regex"
+                value=value.replace('*', '')
+            # IN operator
+            match_ope_has = re.findall(r"(.*)IN", ope)
+            if match_ope_has:
+                value = value.split(",") 
+            # condition
+            condition = {
+                "$and": [
+                    {field: {op: value}}
+                ]
+            }
 
         # match gene
         match = re.findall(r"(\w+)", query)
-
-        if match:
+        if match and not condition:
+            # check quick search query
             gene = match[0]
+            # condition
+            condition = {
+                "$and": [
+                    {"ann.gene": gene}
+                ]
+            }
 
-            self.set_state_data("filters", {"$and": [{"ann.gene": gene}]})
-            self.refresh_plugins(self)
-            return
+        # create filter
+        if condition:
+            filters[root].append(condition)
+        # set quicksearch condition
+        self.set_state_data("quicksearch_filters",condition)
+        # set filters
+        self.set_state_data("filters",filters)
+        # refresh
+        self.refresh_plugins(self)
+        return
 
     # @Slot()
     # def on_query_model_changed(self):
