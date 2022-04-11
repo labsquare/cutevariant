@@ -65,6 +65,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import dash_bio
 from scipy.stats import chisquare
+from scipy.stats import wilcoxon
 class StatAnalysisDialog(PluginDialog):
     ENABLE = True
 
@@ -87,7 +88,7 @@ class StatAnalysisDialog(PluginDialog):
         self.matrix=[]
         self.matrix_group1=[]
         self.matrix_group2=[]
-        self.df_ki_2=None
+        self.df_ki_2=pd.DataFrame()
         self.row_matrix_gnomen=[]
         self.row_matrix_group1_gnomen=[]
         self.row_matrix_group2_gnomen=[]
@@ -159,8 +160,8 @@ class StatAnalysisDialog(PluginDialog):
                     self.name_matrix_group2.append(_data_dico['name']+_data_dico['tags'])
 
         #hesitation entre all or mutant
-        self.data_dict_df_group1 = [i for i in sql.get_tag_sample_has_variant(conn, self.sample_id_group1, 'all')]
-        self.data_dict_df_group2 = [i for i in sql.get_tag_sample_has_variant(conn, self.sample_id_group2, 'all')]
+        self.data_dict_df_group1 = [i for i in sql.get_tag_sample_has_variant(conn, self.sample_id_group1, 'mutant')]
+        self.data_dict_df_group2 = [i for i in sql.get_tag_sample_has_variant(conn, self.sample_id_group2, 'mutant')]
         # self.data_dict_df = [i for i in sql.get_tag_sample_has_variant(conn, self.sample_id, 'mutant')]
 
         self.load_gnomen_list(self.data_dict_df_group1)
@@ -172,10 +173,10 @@ class StatAnalysisDialog(PluginDialog):
         self.create_data_frame('1')
         self.create_data_frame('2')
         self.ki_2_(5)
+        self.draw_heatmap(self.ki_2_(5))
 
         # self.ki_2_()
         # df=self.create_data_frame()
-        # self.draw_heatmap(df)
 
     def init_matrix(self, sample_id:list):
         for i in self.all_gnomen:
@@ -256,65 +257,36 @@ class StatAnalysisDialog(PluginDialog):
     def ki_2_(self, cut_off_pourcentage:int):
         """Pour normaliser un dataframe pour que la somme de chaque colonne soit identique : df2 = df.mul(df.sum.mean() / df.sum(), axis = 1)"""
         cut_off_pourcentage=cut_off_pourcentage/100
-        self.df_group1.copy(deep=True)
-        self.df_group2.copy(deep=True)
+        data_ki_2=[]
+        gnomen_ki_2=[]
         """On peut utiliser le meme row de collone pour ouvrir les donées de la matrices"""
         """"""
         for index, gnomen in enumerate(self.get_row_matrix("1")):
             gene_resul=None
 
-            group1=self.df_group1.loc[gnomen]
-            group1=array(group1)
-            group2=self.df_group2.loc[gnomen]
-            group2=array(group2)
+            group1=self.df_group1.iloc[[index]]
+            group1_for_array=self.df_group1.iloc[index]
+            group1_array=array(group1_for_array)
 
-            # print(group1[])
+            group2=self.df_group2.iloc[[index]]
+            group2_for_array=self.df_group2.iloc[index]
+            group2_array=array(group2_for_array)
+            # print(group1_array.tolist(),"ENFOIRE!!!!!!!!!!!!!!")
+            if group1_array.tolist() == group2_array.tolist() :
+                """tupple pour gerer l'erreur ou les rows sont identifique https://stackoverflow.com/questions/65225316/python-pingouin-valueerror-zero-method-wilcox-and-pratt-do-not-work-if"""
+                gene_resul=(999,1)
 
-            gene_resul=chisquare(group1, group2)
+            else:
+                gene_resul=wilcoxon(group1_array, group2_array)
+            print(gnomen, "///", gene_resul)
             if gene_resul[1] <= cut_off_pourcentage:
-                self.dico_p_value_gene_group["gene//"+gnomen]="p-value de "+gene_resul[1]
-                self.df_ki_2 = group1.join(group2)
+                group_concat_line=pd.concat([group1,group2], axis=1)
+                self.df_ki_2=pd.concat([self.df_ki_2,group_concat_line],axis=0)
+                titre="gene//"+gnomen
+                result="p-value de "+str(gene_resul[1])
+                self.dico_p_value_gene_group[titre]=result
 
-        self.df_ki_2.to_csv("C:/Users/HAMEAUEL/Documents/Db cute/khi_df.txt", sep="\t",
-                       encoding="utf-8", index=True)
-
-        # current_freq=[]
-        # sample_group_tag=[]
-        #
-        # for item_dico_join in self.data_dict_df:
-        #     # print("DEbug 4")
-        #     for _item_group_name in self.group_name_select:
-        #         # print("DEbug 78")
-        #
-        #         """gestion des noms de gene vis à vis du tag select"""
-        #         sample_group_tag.clear()
-        #
-        #         """gestion des samples qui sont unique à chaque tag"""
-        #         if item_dico_join['tags'] == _item_group_name:
-        #             # print("DEbug 21")
-        #
-        #             gene_group=item_dico_join['gnomen']+"//"+item_dico_join['tags']
-        #
-        #             sample_group_tag.append()
-        #
-        #         for index, j in enumerate(self.all_gnomen):
-        #             # print("DEbug 22")
-        #
-        #             # print(index,j )
-        #
-        #             current_freq=[0*len(sample_group_tag)]
-        #             for index2, i in enumerate(sample_group_tag):
-        #
-        #                 if item_dico_join['gt'] >= 1:
-        #                     # print("DEbug 8")
-        #
-        #                     self.brut_matrix[index][index2] += 1
-        #
-        #                 if index2 == len(sample_group_tag):#tetre probleme au niveau du dernier
-        #                     print("DEbug 9")
-        #
-        #                     self.ki_2_group_gene[gene_group]=current_freq
-        #                     current_freq.clear()
+        return self.df_ki_2
 
     def _gt_join_sample_has_variant(self, i:str,j:str) :
         for item_dico_join in self.data_dict_df:
@@ -363,9 +335,10 @@ class StatAnalysisDialog(PluginDialog):
             return self.df_group2
 
     def draw_heatmap(self,df:DataFrame):
-        g = sns.clustermap(df, row_cluster=True, col_cluster=True,cmap="mako_r")
+        df = df.drop_duplicates()
+        g = sns.clustermap(df, row_cluster=False, col_cluster=True,cmap="mako_r")
 
-        g.savefig('C:/Users/HAMEAUEL/Documents/Db cute/test_col4.svg', dpi=100)
+        g.savefig('C:/Users/HAMEAUEL/Documents/Db cute/dkdjfjkzzff.svg', dpi=100)
 
     def get_data_frames(self, data_frame_number:str):
         if data_frame_number == '0':
@@ -429,42 +402,27 @@ class StatAnalysisDialog(PluginDialog):
 
 if __name__ == "__main__":
 
-    # if os.path.exists("C:/Users/HAMEAUEL/Documents/Db cute/test_col4.svg"):
-    #     os.remove("C:/Users/HAMEAUEL/Documents/Db cute/test_col4.svg")
-    #
-    # from PySide6.QtWidgets import QApplication
-    # import sys
-    #
-    # app = QApplication(sys.argv)
-    # conn = sql.get_sql_connection("C:/Users/HAMEAUEL/Documents/Db cute/Nw_tag.db")
-    # conn.row_factory = sqlite3.Row
-    #
-    # dialog = StatAnalysisDialog(conn)
-    # dialog.show()
-    # app.exec()
-    # print(dialog.get_df_ki_2())
-    # print(dialog.get_dico_p_value())
+    if os.path.exists("C:/Users/HAMEAUEL/Documents/Db cute/test_col4.svg"):
+        os.remove("C:/Users/HAMEAUEL/Documents/Db cute/test_col4.svg")
 
-    # from scipy.stats import chisquare
-    # import numpy as np
-    #
-    # df1 = pd.DataFrame({'A': [3, 5], 'B': [1, 2]}, index = ['tt', 'mmm'])
-    # df2 = pd.DataFrame({'D': [5, 3, 7], 'E': [9, 2, 0]}, index = ['ggg', 'tt', 'mmm'])
-    # group1 = df1.iloc[[0]]
-    # group2 = df2.iloc[[0]]
-    # nw_data=group1.join(group2)
-    # print(nw_data)
-    # print(nw_data.index,"////////////")
-    #
-    # group1 = df1.iloc[[1]]
-    # group2 = df2.iloc[[1]]
-    # nw_data=group1.join(group2)
-    # print(nw_data)
-    #
-    # print(nw_data.index)
-    #
-    #
-    #
+    from PySide6.QtWidgets import QApplication
+    import sys
+
+    app = QApplication(sys.argv)
+    conn = sql.get_sql_connection("C:/Users/HAMEAUEL/Documents/Db cute/Nw_tag.db")
+    conn.row_factory = sqlite3.Row
+
+    dialog = StatAnalysisDialog(conn)
+    dialog.show()
+    app.exec()
+    print(dialog.get_df_ki_2())
+    print(dialog.get_dico_p_value())
+
+
+
+
+
+
     # nw_data=df1.join(df2)
     # print(nw_data)
     # print(nw_data.index)
@@ -473,11 +431,11 @@ if __name__ == "__main__":
     # from scipy.stats import chisquare
     # import numpy as np
     #
-    gene1_group1 = [2, 1, 1, 1, 1, 1]
-    gene1_group2 = [1, 1, 1, 1, 1, 2]
-    gene1_result = chisquare(gene1_group1, gene1_group2)
-    gene1_p_value = gene1_result[1]
-    print("gene1 p-value: " + str(gene1_p_value))
+    # gene1_group1 = [2, 1, 1, 1, 1, 1]
+    # gene1_group2 = [1, 1, 1, 1, 1, 2]
+    # gene1_result = wilcoxon(gene1_group1, gene1_group2)
+    # gene1_p_value = gene1_result[1]
+    # print("gene1 p-value: " + str(gene1_p_value))
 
 
 
