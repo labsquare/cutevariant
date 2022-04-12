@@ -622,16 +622,12 @@ class ValidationWidget(plugin.PluginWidget):
     def contextMenuEvent(self, event: QContextMenuEvent):
 
         menu = QMenu(self)
-        var_name = (
-            self.current_variant["chr"]
-            + ":"
-            + self.current_variant["ref"]
-            + ">"
-            + self.current_variant["alt"]
-        )
-        if len(var_name) > 25:
-            var_name = var_name[0:15] + " ... " + var_name[-10:]
-        menu.addSection("Variant " + var_name)
+
+        # variant name
+        variant_name=self.find_variant_name(troncate=True)
+
+        # Add section
+        menu.addSection("Variant " + variant_name)
 
         # Validation
         row = self.view.selectionModel().currentIndex().row()
@@ -821,15 +817,40 @@ class ValidationWidget(plugin.PluginWidget):
                     data=field["name"],
                 )
 
-    def on_refresh(self):
+    def find_variant_name(self, troncate=False):
+        
+        # Get variant_name_pattern
+        variant_name_pattern="{chr}:{pos} - {ref}>{alt}"
+        config = Config("variables") or {}
+        if "variant_name_pattern" in config:
+            variant_name_pattern=config["variant_name_pattern"]
+        else:
+            config["variant_name_pattern"]=variant_name_pattern
+            config.save()
 
         # Get fields
         self.current_variant = self.mainwindow.get_state_data("current_variant")
         variant_id = self.current_variant["id"]
-
         variant = sql.get_variant(self._conn, variant_id)
+        variant_name = variant_name_pattern.format(**variant)
 
-        variant_name = "{chr}:{pos} - {ref} {alt}".format(**variant)
+
+        # Troncate variant name 
+        if troncate and len(variant_name) > 25:
+            variant_name = variant_name[0:15] + " ... " + variant_name[-10:]
+
+        return variant_name
+
+    def on_refresh(self):
+
+        # variant name
+        variant_name=self.find_variant_name(troncate=True)
+
+        # variant id
+        self.current_variant = self.mainwindow.get_state_data("current_variant")
+        variant_id = self.current_variant["id"]
+
+        # Change variant name
         self.label.setText(variant_name)
         self.model.fields = [i["name"] for i in self.field_selector.selected_items()]
 
