@@ -834,7 +834,6 @@ class ValidationWidget(plugin.PluginWidget):
         variant = sql.get_variant(self._conn, variant_id)
         variant_name = variant_name_pattern.format(**variant)
 
-
         # Troncate variant name 
         if troncate and len(variant_name) > 25:
             variant_name = variant_name[0:15] + " ... " + variant_name[-10:]
