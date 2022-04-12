@@ -64,6 +64,7 @@ from pandas import *
 import seaborn as sns
 import matplotlib.pyplot as plt
 import dash_bio
+from scipy.stats import chi2_contingency
 from scipy.stats import chisquare
 from scipy.stats import wilcoxon
 class StatAnalysisDialog(PluginDialog):
@@ -76,7 +77,6 @@ class StatAnalysisDialog(PluginDialog):
         self.conn = conn
         self.dico_tagbrut_tagsplit = {}
         self.dico_p_value_gene_group={}
-        self.ki_2_group_gene={}
         self.TAG_SEPARATOR = "&"
         self.gt=None
         self.hlayout= QHBoxLayout()
@@ -89,6 +89,7 @@ class StatAnalysisDialog(PluginDialog):
         self.matrix_group1=[]
         self.matrix_group2=[]
         self.df_ki_2=pd.DataFrame()
+        self.df_wilcoxon=pd.DataFrame()
         self.row_matrix_gnomen=[]
         self.row_matrix_group1_gnomen=[]
         self.row_matrix_group2_gnomen=[]
@@ -173,6 +174,7 @@ class StatAnalysisDialog(PluginDialog):
         self.create_data_frame('1')
         self.create_data_frame('2')
         self.ki_2_(5)
+
         self.draw_heatmap(self.ki_2_(5))
 
         # self.ki_2_()
@@ -255,10 +257,80 @@ class StatAnalysisDialog(PluginDialog):
     #     return ad/dp
 
     def ki_2_(self, cut_off_pourcentage:int):
+        """ANTHO normaliser un dataframe pour que la somme de chaque colonne soit identique : df2 = df.mul(df.sum.mean() / df.sum(), axis = 1)"""
+        cut_off_pourcentage=cut_off_pourcentage/100
+        data_ki_2=[]
+        gnomen_ki_2=[]
+        """On peut utiliser le meme row de collone pour ouvrir les donées de la matrices"""
+        """"""
+        for index, gnomen in enumerate(self.get_row_matrix("1")):
+            gene_resul=None
+
+            group1=self.df_group1.iloc[[index]]
+            group1_array=array(self.df_group1.iloc[index])
+
+            group2=self.df_group2.iloc[[index]]
+            group2_array=array(self.df_group2.iloc[index])
+            if group1_array.tolist() == group2_array.tolist() :
+                """tupple pour gerer l'erreur ou les rows sont identifique https://stackoverflow.com/questions/65225316/python-pingouin-valueerror-zero-method-wilcox-and-pratt-do-not-work-if"""
+                gene_resul=(999,1)
+
+
+            else:
+                gene_resul=chisquare([group1_array], [group2_array])
+            print(gene_resul)
+            if gene_resul[1] <= cut_off_pourcentage:
+                print(gnomen, "///", gene_resul)
+                group_concat_line=pd.concat([group1,group2], axis=1)
+                self.df_ki_2=pd.concat([self.df_ki_2,group_concat_line],axis=0)
+                titre="gene//"+gnomen
+                result="p-value de "+str(gene_resul[1])
+                self.dico_p_value_gene_group[titre]=result
+
+        return self.df_ki_2
+
+    def ki_2_contigency(self, cut_off_pourcentage:int):
         """Pour normaliser un dataframe pour que la somme de chaque colonne soit identique : df2 = df.mul(df.sum.mean() / df.sum(), axis = 1)"""
         cut_off_pourcentage=cut_off_pourcentage/100
         data_ki_2=[]
         gnomen_ki_2=[]
+        """On peut utiliser le meme row de collone pour ouvrir les donées de la matrices"""
+        """"""
+        for index, gnomen in enumerate(self.get_row_matrix("1")):
+            gene_resul=None
+
+            group1=self.df_group1.iloc[[index]]
+            group1_array=array(self.df_group1.iloc[index])
+
+            group2=self.df_group2.iloc[[index]]
+            group2_array=array(self.df_group2.iloc[index])
+            mutation_name = ['group1' for i in group1_array] + ['group2' for a in group2_array]
+            mutation_data = [i for i in group1_array] + [a for a in group2_array]
+            df = pd.DataFrame({'mutation_name': mutation_name, 'mutation_data': mutation_data})
+            # df=pd.DataFrame([[result_group1[1],result_group2[1]],[result_group1[0],result_group2[0]]],['Mutate','WT'])
+            contigency = pd.crosstab(df['mutation_name'], df['mutation_data'])
+
+            if group1_array.tolist() == group2_array.tolist() :
+                """tupple pour gerer l'erreur ou les rows sont identifique https://stackoverflow.com/questions/65225316/python-pingouin-valueerror-zero-method-wilcox-and-pratt-do-not-work-if"""
+                gene_resul=(999,1)
+
+            else:
+                c, p, dof, expected=chi2_contingency(contigency)
+
+            if p <= cut_off_pourcentage:
+                group_concat_line=pd.concat([group1,group2], axis=1)
+                self.df_ki_2=pd.concat([self.df_ki_2,group_concat_line],axis=0)
+                titre="gene//"+gnomen
+                result=p
+                self.dico_p_value_gene_group[titre]=result
+
+        return self.df_ki_2
+
+    def test_wilcoxon(self, cut_off_pourcentage:int):
+        """Pour normaliser un dataframe pour que la somme de chaque colonne soit identique : df2 = df.mul(df.sum.mean() / df.sum(), axis = 1)"""
+        cut_off_pourcentage=cut_off_pourcentage/100
+        data_wilcoxon=[]
+        gnomen_wilcoxon=[]
         """On peut utiliser le meme row de collone pour ouvrir les donées de la matrices"""
         """"""
         for index, gnomen in enumerate(self.get_row_matrix("1")):
@@ -281,12 +353,12 @@ class StatAnalysisDialog(PluginDialog):
             print(gnomen, "///", gene_resul)
             if gene_resul[1] <= cut_off_pourcentage:
                 group_concat_line=pd.concat([group1,group2], axis=1)
-                self.df_ki_2=pd.concat([self.df_ki_2,group_concat_line],axis=0)
+                self.df_wilcoxon=pd.concat([self.df_wilcoxon,group_concat_line],axis=0)
                 titre="gene//"+gnomen
                 result="p-value de "+str(gene_resul[1])
                 self.dico_p_value_gene_group[titre]=result
 
-        return self.df_ki_2
+        return self.df_wilcoxon
 
     def _gt_join_sample_has_variant(self, i:str,j:str) :
         for item_dico_join in self.data_dict_df:
@@ -338,7 +410,7 @@ class StatAnalysisDialog(PluginDialog):
         df = df.drop_duplicates()
         g = sns.clustermap(df, row_cluster=False, col_cluster=True,cmap="mako_r")
 
-        g.savefig('C:/Users/HAMEAUEL/Documents/Db cute/dkdjfjkzzff.svg', dpi=100)
+        g.savefig('C:/Users/HAMEAUEL/Documents/Db cute/ki-2_jjjjjj.svg', dpi=100)
 
     def get_data_frames(self, data_frame_number:str):
         if data_frame_number == '0':
@@ -397,6 +469,9 @@ class StatAnalysisDialog(PluginDialog):
     def get_df_ki_2 (self):
         return self.df_ki_2
 
+    def get_df_wilcoxon (self):
+        return self.df_wilcoxon
+
     def get_dico_p_value(self):
         return self.dico_p_value_gene_group
 
@@ -409,14 +484,14 @@ if __name__ == "__main__":
     import sys
 
     app = QApplication(sys.argv)
-    conn = sql.get_sql_connection("C:/Users/HAMEAUEL/Documents/Db cute/Nw_tag.db")
+    conn = sql.get_sql_connection("C:/Users/HAMEAUEL/Documents/Db cute/Big_Ech.db")
     conn.row_factory = sqlite3.Row
 
     dialog = StatAnalysisDialog(conn)
     dialog.show()
     app.exec()
-    print(dialog.get_df_ki_2())
-    print(dialog.get_dico_p_value())
+    print(dialog.get_row_matrix("1"))
+    print(dialog.get_name_matrix("2"))
 
 
 
