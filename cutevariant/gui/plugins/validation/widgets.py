@@ -184,7 +184,7 @@ class SamplesModel(QAbstractTableModel):
             #     hex_icon = 0xF139A if item[key] == 1 else 0xF0FC7
             #     return QIcon(FIcon(hex_icon))
 
-            #return QIcon(FIcon(0xF139A)).toPixmap(20, 20)
+            #return QIcon(FIcon(0xF139A)).toPixmap(20, 20) 
             return FIcon(0xF139A)
 
             # classification = self.model().item(section)["classification"] or 0
