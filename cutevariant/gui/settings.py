@@ -338,7 +338,7 @@ class StyleSettingsWidget(AbstractSettingsWidget):
         available_styles = list(available_styles.keys()) + [cm.BASIC_STYLE]
         self.styles_combobox.addItems(available_styles)
 
-        print(available_styles)
+        #print(available_styles)
 
         # Display current style
         # Dark is the default style
@@ -377,6 +377,75 @@ class StyleSettingsWidget(AbstractSettingsWidget):
 #         )
 
 #         self.edit.setText(path)
+
+
+class VariablesSettingsWidget(AbstractSettingsWidget):
+    """Allow to choose variables for the interface"""
+
+    def __init__(self):
+        """Init VariablesSettingsWidget
+
+        Args:
+            mainwindow (QMainWindow): Current main ui of cutevariant;
+                Used to refresh the plugins
+        """
+        super().__init__()
+        self.setWindowTitle(self.tr("Variables"))
+        self.setWindowIcon(FIcon(0xF03D8))
+
+        self.variant_name_pattern_edit = QLineEdit()
+        variant_name_pattern_label = QLabel(
+            """
+            (Examples: '{chr}:{pos} - {ref}>{alt}', '{ann.gene}:{ann.hgvs_c}:{ann.hgvs_p}')
+            """
+        )
+        variant_name_pattern_label.setTextFormat(Qt.RichText)
+
+        self.gene_field_edit = QLineEdit()
+        self.transcript_field_edit = QLineEdit()
+        mainLayout = QFormLayout()
+        mainLayout.addRow(self.tr("Variant name pattern:"), self.variant_name_pattern_edit)
+        mainLayout.addWidget(variant_name_pattern_label)
+        mainLayout.addRow(self.tr("Gene field:"), self.gene_field_edit)
+        mainLayout.addRow(self.tr("Transcript field:"), self.transcript_field_edit)
+
+        self.setLayout(mainLayout)
+
+    def save(self):
+        """Save the selected variables in config"""
+        
+        # Config
+        config = Config("variables") or {}
+
+        # Save variables setting
+        variant_name_pattern = self.variant_name_pattern_edit.text()
+        gene_field = self.gene_field_edit.text()
+        transcript_field = self.transcript_field_edit.text()
+        config["variant_name_pattern"] = variant_name_pattern
+        config["gene_field"] = gene_field
+        config["transcript_field"] = transcript_field
+        config.save()
+
+        # Clear pixmap cache
+        QPixmapCache.clear()
+
+    def load(self):
+        """Setup widgets in VariablesSettingsWidget"""
+        self.variant_name_pattern_edit.clear()
+        self.gene_field_edit.clear()
+        self.transcript_field_edit.clear()
+
+        # Config
+        config = Config("variables") or {}
+        
+        # Set variables
+        variant_name_pattern = config.get("variant_name_pattern", "{chr}:{pos} - {ref}>{alt}")
+        gene_field = config.get("gene_field", "ann.gene")
+        transcript_field = config.get("transcript_field", "ann.transcript")
+        self.variant_name_pattern_edit.setText(variant_name_pattern)
+        self.gene_field_edit.setText(gene_field)
+        self.transcript_field_edit.setText(transcript_field)
+
 
 
 class SettingsDialog(QDialog):
@@ -430,6 +499,8 @@ class SettingsDialog(QDialog):
 
         general_settings.add_page(ProxySettingsWidget())
         general_settings.add_page(StyleSettingsWidget())
+        general_settings.add_page(VariablesSettingsWidget())
+        
 
         # Specialized widgets on panels
         self.add_section(general_settings)

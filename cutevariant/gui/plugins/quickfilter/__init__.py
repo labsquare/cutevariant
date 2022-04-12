@@ -1,0 +1,5 @@
+__title__ = "Quick Filter"
+__description__ = "The groupby view for variant selection view"
+__long_description__ = """This widget displays sources and samples, filters and fields presets."""
+__author__ = "Antony Le Béchec"
+__version__ = "1.0.0"
