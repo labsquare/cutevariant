@@ -37,9 +37,7 @@ class ProjectPage(QWizardPage):
         self.setLayout(form_layout)
 
     def _browse(self):
-        path = QFileDialog.getExistingDirectory(
-            self, self.tr("Select a folder"), QDir.homePath()
-        )
+        path = QFileDialog.getExistingDirectory(self, self.tr("Select a folder"), QDir.homePath())
         if path:
             self.path_edit.setText(path)
 
@@ -106,13 +104,14 @@ class FilePage(QWizardPage):
 
 
 class ImportPage(QWizardPage):
+
+    completeChanged = Signal()
+
     def __init__(self, parent=None):
         super().__init__()
 
         self.setTitle(self.tr("Import file"))
-        self.setSubTitle(
-            self.tr("Please click on Import/Stop to start or stop the process.")
-        )
+        self.setSubTitle(self.tr("Please click on Import/Stop to start or stop the process."))
 
         # Async stuff
         self.thread_finished = False  # True if import process is correctly finished
@@ -168,11 +167,9 @@ class ImportPage(QWizardPage):
         # try:
 
         self.thread_finished = self.thread.isFinished()
-        self.completeChanged.emit()
-        # except RuntimeError:
-        #     # When closing the wizard, the thread is stopped via cleanupPage()
-        #     # and finished signal is emitted after the deletion of the wizard.
-        #     pass
+
+        if status:
+            self.completeChanged.emit()
 
     def show_log(self, message: str):
 

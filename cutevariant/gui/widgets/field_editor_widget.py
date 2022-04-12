@@ -165,9 +165,7 @@ class FieldsWidget(QWidget):
 
         self.table_view.setHorizontalHeader(QHeaderView(Qt.Horizontal, self))
         self.table_view.horizontalHeader().setStretchLastSection(True)
-        self.table_view.horizontalHeader().setSectionResizeMode(
-            QHeaderView.ResizeToContents
-        )
+        self.table_view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
 
         self.table_view.setIconSize(QSize(16, 16))
         self.table_view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -306,10 +304,7 @@ class FieldsEditorWidget(QWidget):
             widget.set_connection(conn)
 
     def get_selected_fields(self):
-        return {
-            category: model.checked_fields
-            for category, model in self.models_all.items()
-        }
+        return {category: model.checked_fields for category, model in self.models_all.items()}
 
 
 class TestWindow(QMainWindow):

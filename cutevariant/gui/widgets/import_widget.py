@@ -346,9 +346,7 @@ class VcfImportWidget(QWidget):
         self.setLayout(main_layout)
 
         # Fill available parser
-        self.annotation_box.addItem(
-            FIcon(0xF13CF), "No Annotation detected", userData=None
-        )
+        self.annotation_box.addItem(FIcon(0xF13CF), "No Annotation detected", userData=None)
 
         for parser in VcfReader.ANNOTATION_PARSERS:
             self.annotation_box.addItem(FIcon(0xF08BB), parser, userData=parser)

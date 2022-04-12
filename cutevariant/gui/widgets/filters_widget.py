@@ -747,13 +747,12 @@ class FilterItem:
 class FiltersModel(QAbstractItemModel):
     """Model to display filter
 
-    The model store Query filter as a nested tree of FilterItem.
-    You can access data from self.item(), edit model using self.set_data()
-    and helper methods like: add_logic_item, add_condition_item and remove_item.
+    The model store filters as a nested tree of FilterItem.
+    You can access set and get filters with self.set_filters() and self.get_filters().
+    add_logic_item and add_condition_item, remove_item is used to edit the tree.
 
     Attributes:
         conn (sqlite3.connection): sqlite3 connection
-        root_item (FilterItem): RootItem (invisible) to store recursive item.
 
     Additional roles:
         TypeRole: Items types (LOGIC_TYPE or CONDITION_TYPE)
@@ -772,7 +771,7 @@ class FiltersModel(QAbstractItemModel):
             ]
         },}}
         model = FilterModel(conn)
-        model.load(data)
+        model.set_filters(data)
         view = QTreeView()
         view.setModel(model)
 
@@ -795,12 +794,9 @@ class FiltersModel(QAbstractItemModel):
 
     def __init__(self, conn: sqlite3.Connection = None, parent: QObject = None):
         super().__init__(parent)
-        self.root_item = FilterItem("$and")
+        self.__root_item = FilterItem("$and")
         self.conn = conn
         self.clear()
-
-        self.disable_font = QFont()
-        self.disable_font.setStrikeOut(True)
 
     def get_filters(self) -> dict:
         """Return filters
@@ -808,7 +804,7 @@ class FiltersModel(QAbstractItemModel):
         Returns:
             dict: filters fict
         """
-        return self.to_dict()
+        return self._to_dict()
 
     def set_filters(self, filters: dict):
         """Set filters and load the models
@@ -816,13 +812,13 @@ class FiltersModel(QAbstractItemModel):
         Args:
             filters (dict)
         """
-        self.load(filters)
+        self._load(filters)
 
     def __del__(self):
         """Model destructor."""
-        del self.root_item
+        del self.__root_item
 
-    def data(self, index: QModelIndex, role=Qt.EditRole):
+    def data(self, index: QModelIndex, role=Qt.EditRole) -> typing.Any:
         """Overrided Qt methods : Return model's data according index and role
 
         Warning:
@@ -924,7 +920,7 @@ class FiltersModel(QAbstractItemModel):
 
         return
 
-    def setData(self, index, value, role=Qt.UserRole):
+    def setData(self, index, value, role=Qt.UserRole) -> bool:
         """Overrided Qt methods: Set value of FilterItem present at the given index.
 
         This method is called from FilterDelegate when edition has been done.
@@ -981,7 +977,7 @@ class FiltersModel(QAbstractItemModel):
 
         return False
 
-    def headerData(self, section, orientation, role=Qt.DisplayRole):
+    def headerData(self, section, orientation, role=Qt.DisplayRole) -> typing.Any:
         """Return header data
 
         Args:
@@ -1026,7 +1022,7 @@ class FiltersModel(QAbstractItemModel):
             return QModelIndex()
 
         if not parent.isValid():  # If no parent, then parent is the root item
-            parent_item = self.root_item
+            parent_item = self.__root_item
 
         else:
             parent_item = parent.internalPointer()
@@ -1046,7 +1042,7 @@ class FiltersModel(QAbstractItemModel):
 
         parent_item = child_item.parent
 
-        if parent_item == self.root_item:
+        if parent_item == self.__root_item:
             return QModelIndex()
 
         return self.createIndex(parent_item.row(), 0, parent_item)
@@ -1054,13 +1050,13 @@ class FiltersModel(QAbstractItemModel):
     def clear(self):
         """Clear Model"""
         self.beginResetModel()
-        self.root_item.children.clear()
+        self.__root_item.children.clear()
         # Load first default item
-        self.root_item.append(FilterItem("$and"))
+        self.__root_item.append(FilterItem("$and"))
 
         self.endResetModel()
 
-    def load(self, data: dict):
+    def _load(self, data: dict):
         """load model from dict
 
         dict should be a nested dictionnary of condition. For example:
@@ -1077,8 +1073,8 @@ class FiltersModel(QAbstractItemModel):
         """
         self.beginResetModel()
         if data:
-            self.root_item.children.clear()
-            self.root_item.append(self.to_item(data))
+            self.__root_item.children.clear()
+            self.__root_item.append(self.to_item(data))
         self.endResetModel()
 
     @classmethod
@@ -1113,7 +1109,7 @@ class FiltersModel(QAbstractItemModel):
 
         return item
 
-    def to_dict(
+    def _to_dict(
         self,
         item: FilterItem = None,
         checked_only: bool = True,
@@ -1131,23 +1127,23 @@ class FiltersModel(QAbstractItemModel):
             We use data from FilterItems; i.e. the equivalent of UserRole data.
         """
 
-        if len(self.root_item.children) == 0:
+        if len(self.__root_item.children) == 0:
             return {}
 
         if item is None:
-            item = self.root_item[0]
+            item = self.__root_item[0]
 
         if checked_only:
             if item.type == FilterItem.LOGIC_TYPE and item.checked is True:
                 # Return dict with operator as key and item as value
                 operator_data = [
-                    self.to_dict(child) for child in item.children if child.checked is True
+                    self._to_dict(child) for child in item.children if child.checked is True
                 ]
                 return {item.get_value(): operator_data}
         else:
             if item.type == FilterItem.LOGIC_TYPE:
                 # Return dict with operator as key and item as value
-                operator_data = [self.to_dict(child) for child in item.children]
+                operator_data = [self._to_dict(child) for child in item.children]
                 return {item.get_value(): operator_data}
 
         if item.type == FilterItem.CONDITION_TYPE:
@@ -1212,7 +1208,7 @@ class FiltersModel(QAbstractItemModel):
             return 0
 
         if not parent.isValid():
-            parent_item = self.root_item
+            parent_item = self.__root_item
         else:
             parent_item = parent.internalPointer()
 
@@ -1263,7 +1259,7 @@ class FiltersModel(QAbstractItemModel):
         if index.isValid():
             return index.internalPointer()
         else:
-            return self.root_item
+            return self.__root_item
 
     def moveRow(
         self,

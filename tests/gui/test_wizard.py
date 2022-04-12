@@ -21,7 +21,7 @@ def test_create_project(qtbot):
 
     qtbot.addWidget(prj)
 
-    prj.show() 
+    prj.show()
     prj.hide()
     folder_path = tempfile.mkdtemp()
     assert type(prj.currentPage()) == wz.ProjectPage
@@ -36,15 +36,15 @@ def test_create_project(qtbot):
     assert os.path.exists(vcf_file)
     prj.currentPage().widget.set_filename("examples/test.snpeff.vcf.gz")
 
-    # #  Third page
+    # # Third page
 
- 
-    # #  last page
+    # # last page
+    print(prj.page(2))
     with qtbot.waitSignal(prj.page(2).completeChanged, timeout=10000):
         prj.next()
 
     prj.close()
 
-    # #  Check if project has been created
+    # # Check if project has been created
 
     assert os.path.exists(f"{folder_path}/test_project.db")

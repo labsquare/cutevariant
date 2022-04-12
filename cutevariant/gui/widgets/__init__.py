@@ -25,4 +25,4 @@ from .classification_editor import ClassificationEditor
 
 from .samples_selection_widget import SampleSelectionWidget, SampleSelectionDialog
 
-from .filters_widget import FiltersWidget, FilterItem
+from .filters_widget import FiltersWidget, FilterItem, FiltersModel
