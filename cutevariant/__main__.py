@@ -48,6 +48,9 @@ import os
 from cutevariant.core import command, sql, vql
 from cutevariant.core.reader import VcfReader
 import csv
+import cutevariant.core.querybuilder as qb
+import json
+
 
 faulthandler.enable()
 
@@ -70,7 +73,8 @@ def main():
 
     # Process command line arguments
     app = QApplication(sys.argv)
-    process_arguments(app)
+    if not process_arguments(app):
+        exit()
 
     # Load app network settings
     LOGGER.info("Load network settings")
@@ -211,8 +215,12 @@ def load_translations(app):
 def process_arguments(app):
     """Arguments parser"""
     parser = QCommandLineParser()
+
+    # Help
     # -h, --help, -? (on windows)
     parser.addHelpOption()
+    
+    # Version
     # --version
     show_version = QCommandLineOption(
         ["version"],
@@ -223,14 +231,15 @@ def process_arguments(app):
     parser.addOption(show_version)
 
     # Config
+    # -c, --config
     config_option = QCommandLineOption(
         ["c", "config"],
         QCoreApplication.translate("config path", "Set the config path"),
         "config",
     )
-
     parser.addOption(config_option)
 
+    # Verbose
     # -v, --verbose
     modify_verbosity = QCommandLineOption(
         ["v", "verbose"],
@@ -240,46 +249,93 @@ def process_arguments(app):
     )
     parser.addOption(modify_verbosity)
 
-    # import_vcf
-    import_vcf_option = QCommandLineOption(
-        ["i", "import_vcf"],
-        QCoreApplication.translate("import VCF", "Import VCF file"),
-        "import_vcf",
-    )
-
-    parser.addOption(import_vcf_option)
-
-    # vcf_annotations
-    vcf_annotations_option = QCommandLineOption(
-        ["a", "vcf_annotations"],
-        QCoreApplication.translate("VCF annotations", "VCF annotations type"),
-        "vcf_annotations",
-    )
-
-    parser.addOption(vcf_annotations_option)
-
-    # project_db
+    # Project DB
+    # -p, --project_db
+    # open a specific project db to query, inport VCF...
     project_db_option = QCommandLineOption(
         ["p", "project_db"],
-        QCoreApplication.translate("Project VCF", "Connexion to a project DB"),
-        "project_db",
+        QCoreApplication.translate("Project VCF", 
+            f"""Connexion to a project DB\n(e.g. import VCF, query in VQL or SQL...)"""
+        ),
+        "project.db",
     )
-
     parser.addOption(project_db_option)
+
+    # Import VCF into project DB
+    # -i, --import_vcf
+    # Import a VCF file into a project DB
+    import_vcf_option = QCommandLineOption(
+        ["i", "import_vcf"],
+        QCoreApplication.translate("import VCF", 
+            f"""Import VCF file\nVCF file will be imported to the project DB (mandatory)\n(NB: Choose annotations type)"""
+        ),
+        "file.vcf",
+    )
+    parser.addOption(import_vcf_option)
+
+    # VCF annotation type
+    # -a, --vcf_annotations
+    # Annotation type for the VCF import
+    vcf_annotations_option = QCommandLineOption(
+        ["a", "vcf_annotations"],
+        QCoreApplication.translate("VCF annotations", 
+            f"""VCF annotations type\nChoose annotation type provided by the VCF file\n(either 'snpeff' or 'vep')\n(default '')"""
+        ),
+        "annotations_type",
+    )
+    parser.addOption(vcf_annotations_option)
+
+    # VQL Query
+    # -q, --query_vql
+    # Query a project DB in VQL format
+    query_vql_option = QCommandLineOption(
+        ["q", "query_vql"],
+        QCoreApplication.translate("Query VQL", 
+            f"""Query in VQL format\nQuery a project DB in VQL format\nMultiple queries allowed\nSee CuteVariant VQL query format\nExamples:\n- 'SELECT favorite, classification, chr, pos, ref, alt FROM variants'- 'SELECT favorite, classification, chr, pos, ref, alt, ann.gene, ann.hgvs_p FROM variants WHERE samples['ANY'].gt>=1'"""
+        ),
+        "vql",
+    )
+    parser.addOption(query_vql_option)
+
+    # SQL Query
+    # -s, --query_sql
+    # Query a project DB in SQL format
+    query_sql_option = QCommandLineOption(
+        ["s", "query_sql"],
+        QCoreApplication.translate("Query SQL", "Query a project DB in SQL format\nSee SQL query format\nExamples:\n- 'SELECT favorite, classification, chr, pos, ref, alt FROM variants'\n- SELECT * FROM samples"),
+        "sql",
+    )
+    parser.addOption(query_sql_option)
+
+    # Query results
+    # -r, --query_results
+    # Query results in JSON format file
+    query_results_option = QCommandLineOption(
+        ["r", "query_results"],
+        QCoreApplication.translate("Query Results", "Query results in JSON format file\nStandard output by default"),
+        "results.json",
+    )
+    parser.addOption(query_results_option)
+
 
     # Process the actual command line arguments given by the user
     parser.process(app)
     # args = parser.positionalArguments()
 
+
+    # Check options
+
+    # Version
     if parser.isSet(show_version):
         print("Cutevariant " + __version__)
-        exit()
+        return False
 
-     # Set log level
+    # Verbose
+    # Set log level
     # if parser.isSet(modify_verbosity):
     LOGGER.setLevel(parser.value(modify_verbosity).upper())
 
-
+    # Config
     if parser.isSet(config_option):
         config_path = parser.value(config_option)
         if os.path.isfile(config_path):
@@ -287,24 +343,128 @@ def process_arguments(app):
         else:
             LOGGER.error(f"{config_path} doesn't exists. Ignoring config")
 
-   
-    # import VCF into DB
-    if parser.isSet(import_vcf_option) and parser.isSet(project_db_option):
-        import_vcf_option_path = parser.value(import_vcf_option)
+    # Project DB
+    # Init 
+    conn=None
+    if parser.isSet(project_db_option):
+        # Option values
         project_db_option_path = parser.value(project_db_option)
-        vcf_annotations_option_value = parser.value(vcf_annotations_option)
+         # Check if project DB file exists
         if os.path.isfile(project_db_option_path):
+            # Create connexion to project DB
             conn = sql.get_sql_connection(project_db_option_path)
+
+    # Import VCF into project DB
+    if parser.isSet(import_vcf_option):
+        # Check if project DB connected
+        if conn:
+            # Option values
+            import_vcf_option_path = parser.value(import_vcf_option)
+            vcf_annotations_option_value = parser.value(vcf_annotations_option)
+            # Check if VCF file exists
             if os.path.isfile(import_vcf_option_path):
+                # Import VCF into project DB
                 sql.import_reader(conn, VcfReader(import_vcf_option_path, vcf_annotations_option_value))
+                # Log success
                 LOGGER.info(f"Import VCF {import_vcf_option_path} in project DB {project_db_option_path}")
             else:
-                LOGGER.error(f"Import VCF {import_vcf_option_path} in project DB {project_db_option_path} FAILED!!!")
+                # Log ierror if VCF file
+                LOGGER.error(f"Import VCF {import_vcf_option_path} in project DB {project_db_option_path} FAILED!!! No Input VCF")
         else:
-            LOGGER.error(f"Import VCF {import_vcf_option_path} in project DB {project_db_option_path} FAILED!!!")
-        exit()
+            # Log error if project DB not connected
+            LOGGER.error(f"Import VCF in project DB FAILED!!! No Connexion to project database")
+        return False
 
 
+    # VQL Query
+    # example: SELECT favorite,classification,chr,pos,ref,alt FROM variants
+    # example: SELECT favorite,classification,chr,pos,ref,alt,ann.gene,ann.hgvs_p FROM variants
+    # example: SELECT favorite,classification,chr,pos,ref,alt,ann.gene,ann.hgvs_p FROM variants WHERE samples['ANY'].gt>=1
+    if parser.isSet(query_vql_option):
+        # Check if project DB connected
+        if conn:
+            # Option values
+            query_vql_option_query = parser.value(query_vql_option)
+            query_results_option_file = parser.value(query_results_option) or None
+            # Check if query not empty
+            if query_vql_option_query != "":
+                # Init
+                results={}  # results in dict format
+                cmd_nb=0    # number of queries
+                # Create VQL command for each each queries
+                for cmd in vql.parse_vql(query_vql_option_query):
+                    # increment number of queries
+                    cmd_nb+=1
+                    # Translate VQL command to SQL query
+                    sql_query = qb.build_sql_query(
+                        conn,
+                        fields=cmd["fields"],
+                        source=cmd["source"],
+                        filters=cmd["filters"],
+                        limit=None,
+                    )
+                    # Create results as a List
+                    data = [dict(i) for i in conn.execute(sql_query)]
+                    # Add results list to final results Dict
+                    results[cmd_nb]=data
+                # Translate final results Dict into JSON format
+                results_json = json.dumps(results, indent = 4)
+                # Check if result file is provided
+                if query_results_option_file:
+                    # Write into result file
+                    with open(query_results_option_file, 'w') as f:
+                        print(results_json, file=f)
+                    # Log success
+                    LOGGER.info(f"Query SQL {query_vql_option_query} in project DB {project_db_option_path} to {query_results_option_file}")
+                else:
+                    # Print results into standard output 
+                    print(results_json)
+            else:
+                # Log error if no VQL query
+                LOGGER.error(f"Query VQL {query_vql_option_query} in project DB {project_db_option_path} FAILED!!! Input VQL not OK")
+        else:
+            # Log error if project DB not connected
+            LOGGER.error(f"Query VQL FAILED!!! No Connexion to project database")
+        return False
+
+    # query in SQL
+    # example: SELECT favorite,classification,chr,pos,ref,alt FROM variants
+    # example: SELECT * FROM samples
+    if parser.isSet(query_sql_option):
+        # Check if project DB connected
+        if conn:
+            # Option values
+            query_sql_option_query = parser.value(query_sql_option)
+            query_results_option_file = parser.value(query_results_option) or None
+            # Check if query not empty
+            if query_sql_option_query != "":
+                # Init
+                results={}
+                # Create results as a List
+                data = [dict(i) for i in conn.execute(query_sql_option_query)]
+                # Add results list to final results Dict
+                results[1]=data
+                # Translate final results Dict into JSON format
+                results_json = json.dumps(results, indent = 4)
+                # Check if result file is provided
+                if query_results_option_file != None:
+                    # Write into result file
+                    with open(query_results_option_file, 'w') as f:
+                        print(results_json, file=f)
+                    # Log success
+                    LOGGER.info(f"Query SQL {query_sql_option_query} in project DB {project_db_option_path} to {query_results_option_file}")
+                else:
+                    # Print results into standard output 
+                    print(results_json)
+            else:
+                # Log error if no SQL query
+                LOGGER.error(f"Query SQL {query_sql_option_query} in project DB {project_db_option_path} FAILED!!! Input SQL not OK")
+        else:
+            # Log error if project DB not connected
+            LOGGER.error(f"Query SQL FAILED!!! No Connexion to project database")
+        return False
+
+    return True
 
 if __name__ == "__main__":
     main()
