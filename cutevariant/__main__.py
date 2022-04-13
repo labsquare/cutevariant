@@ -45,6 +45,9 @@ from cutevariant import LOGGER
 from cutevariant import __version__
 import faulthandler
 import os
+from cutevariant.core import command, sql, vql
+from cutevariant.core.reader import VcfReader
+import csv
 
 faulthandler.enable()
 
@@ -237,6 +240,33 @@ def process_arguments(app):
     )
     parser.addOption(modify_verbosity)
 
+    # import_vcf
+    import_vcf_option = QCommandLineOption(
+        ["i", "import_vcf"],
+        QCoreApplication.translate("import VCF", "Import VCF file"),
+        "import_vcf",
+    )
+
+    parser.addOption(import_vcf_option)
+
+    # vcf_annotations
+    vcf_annotations_option = QCommandLineOption(
+        ["a", "vcf_annotations"],
+        QCoreApplication.translate("VCF annotations", "VCF annotations type"),
+        "vcf_annotations",
+    )
+
+    parser.addOption(vcf_annotations_option)
+
+    # project_db
+    project_db_option = QCommandLineOption(
+        ["p", "project_db"],
+        QCoreApplication.translate("Project VCF", "Connexion to a project DB"),
+        "project_db",
+    )
+
+    parser.addOption(project_db_option)
+
     # Process the actual command line arguments given by the user
     parser.process(app)
     # args = parser.positionalArguments()
@@ -245,17 +275,35 @@ def process_arguments(app):
         print("Cutevariant " + __version__)
         exit()
 
+     # Set log level
+    # if parser.isSet(modify_verbosity):
+    LOGGER.setLevel(parser.value(modify_verbosity).upper())
+
+
     if parser.isSet(config_option):
         config_path = parser.value(config_option)
         if os.path.isfile(config_path):
             Config.DEFAULT_CONFIG_PATH = config_path
-
         else:
             LOGGER.error(f"{config_path} doesn't exists. Ignoring config")
 
-    # if parser.isSet(modify_verbosity):
-    # Set log level
-    LOGGER.setLevel(parser.value(modify_verbosity).upper())
+   
+    # import VCF into DB
+    if parser.isSet(import_vcf_option) and parser.isSet(project_db_option):
+        import_vcf_option_path = parser.value(import_vcf_option)
+        project_db_option_path = parser.value(project_db_option)
+        vcf_annotations_option_value = parser.value(vcf_annotations_option)
+        if os.path.isfile(project_db_option_path):
+            conn = sql.get_sql_connection(project_db_option_path)
+            if os.path.isfile(import_vcf_option_path):
+                sql.import_reader(conn, VcfReader(import_vcf_option_path, vcf_annotations_option_value))
+                LOGGER.info(f"Import VCF {import_vcf_option_path} in project DB {project_db_option_path}")
+            else:
+                LOGGER.error(f"Import VCF {import_vcf_option_path} in project DB {project_db_option_path} FAILED!!!")
+        else:
+            LOGGER.error(f"Import VCF {import_vcf_option_path} in project DB {project_db_option_path} FAILED!!!")
+        exit()
+
 
 
 if __name__ == "__main__":
