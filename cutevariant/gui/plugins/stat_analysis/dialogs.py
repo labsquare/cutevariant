@@ -214,47 +214,45 @@ class StatAnalysisDialog(PluginDialog):
             elif number_matrix != 1 and number_matrix != 2 and number_matrix != 0:
                 print("Erreur du nombre de la matrix")
 
-    # def fill_matrix_count_variants(self):
-    #     self.init_matrix()
-    #     """remplir matrice"""
-    #     for index,i in enumerate(self.sample_id):
-    #         for index2,j in enumerate(self.all_gnomen):
-    #             for item_dico_join in self.data_dict_df:
-    #                 if item_dico_join['gnomen'] == j and item_dico_join['sample_id'] == i:
-    #                     if  item_dico_join['gt'] >= 1:
-    #                         self.brut_matrix[index2][index] +=1
-    #                     # print(self.brut_matrix)
-    #
-    #     for index2,j in enumerate(self.all_gnomen):
-    #         if any(self.brut_matrix[index2]):
-    #             self.row_matrix_gnomen.append(j)
-    #             self.matrix.append(self.brut_matrix[index2])
+    def fill_matrix_count_variants(self):
+        self.init_matrix()
+        """remplir matrice"""
+        for index,i in enumerate(self.sample_id):
+            for index2,j in enumerate(self.all_gnomen):
+                for item_dico_join in self.data_dict_df:
+                    if item_dico_join['gnomen'] == j and item_dico_join['sample_id'] == i:
+                        if  item_dico_join['gt'] >= 1:
+                            self.brut_matrix[index2][index] +=1
+                        # print(self.brut_matrix)
 
-    # def fill_matrix_VAF_variants(self):
-    #     ##On a pas fait le filtre sur les gt -1 ou 0 dans la requette SQL il faut donc gerer le gt-1 ou on a None en vaf ad et dp
-    #     self.init_matrix()
-    #     for index,i in enumerate(self.sample_id):
-    #         for index2,j in enumerate(self.all_gnomen):
-    #             for item_dico_join in self.data_dict_df:
-    #                 var_id=str(item_dico_join['variant_id'])
-    #                 if item_dico_join['gnomen'] == j and item_dico_join['sample_id'] == i:
-    #                     if item_dico_join['vaf'] == None:
-    #                         if item_dico_join['ad'] != None and item_dico_join['dp'] != None :
-    #                             self.brut_matrix[index2][index] = self.get_calcul_VAF(item_dico_join['ad'],item_dico_join['dp'])
-    #                     elif item_dico_join['vaf'] != None:
-    #                         self.brut_matrix[index2][index] = item_dico_join['vaf']
-    #                     # print(str(item_dico_join['variant_id']))
-    #
-    #             self.row_matrix_gnomen.append(var_id+"//"+j)
-    #             self.matrix.append(self.brut_matrix[index2])
+        for index2,j in enumerate(self.all_gnomen):
+            if any(self.brut_matrix[index2]):
+                self.row_matrix_gnomen.append(j)
+                self.matrix.append(self.brut_matrix[index2])
 
-    # def PlotSbHEatMap(self):
+    def fill_matrix_VAF_variants(self):
+        ##On a pas fait le filtre sur les gt -1 ou 0 dans la requette SQL il faut donc gerer le gt-1 ou on a None en vaf ad et dp
+        self.init_matrix()
+        for index,i in enumerate(self.sample_id):
+            for index2,j in enumerate(self.all_gnomen):
+                for item_dico_join in self.data_dict_df:
+                    var_id=str(item_dico_join['variant_id'])
+                    if item_dico_join['gnomen'] == j and item_dico_join['sample_id'] == i:
+                        if item_dico_join['vaf'] == None:
+                            if item_dico_join['ad'] != None and item_dico_join['dp'] != None :
+                                self.brut_matrix[index2][index] = self.get_calcul_VAF(item_dico_join['ad'],item_dico_join['dp'])
+                        elif item_dico_join['vaf'] != None:
+                            self.brut_matrix[index2][index] = item_dico_join['vaf']
+                        # print(str(item_dico_join['variant_id']))
 
-    # def get_calcul_VAF(self, ad:any,dp:int):
-    #     if isinstance(ad,tuple):
-    #         ad=ad[1]
-    #
-    #     return ad/dp
+                self.row_matrix_gnomen.append(var_id+"//"+j)
+                self.matrix.append(self.brut_matrix[index2])
+
+    def get_calcul_VAF(self, ad:any,dp:int):
+        if isinstance(ad,tuple):
+            ad=ad[1]
+
+        return ad/dp
 
     def ki_2_(self, cut_off_pourcentage:int):
         """ANTHO normaliser un dataframe pour que la somme de chaque colonne soit identique : df2 = df.mul(df.sum.mean() / df.sum(), axis = 1)"""
@@ -484,7 +482,7 @@ if __name__ == "__main__":
     import sys
 
     app = QApplication(sys.argv)
-    conn = sql.get_sql_connection("C:/Users/HAMEAUEL/Documents/Db cute/Big_Ech.db")
+    conn = sql.get_sql_connection("C:/Users/elham/Documents/DB_cute/example_db.db")
     conn.row_factory = sqlite3.Row
 
     dialog = StatAnalysisDialog(conn)
