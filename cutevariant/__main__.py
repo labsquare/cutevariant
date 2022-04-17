@@ -404,7 +404,9 @@ def process_arguments(app):
                         limit=None,
                     )
                     # Create results as a List
-                    data = [dict(i) for i in conn.execute(sql_query)]
+                    cursor=conn.cursor()
+                    data = [dict(i) for i in cursor.execute(sql_query)]
+                    conn.commit()
                     # Add results list to final results Dict
                     results[cmd_nb]=data
                 # Translate final results Dict into JSON format
@@ -441,7 +443,9 @@ def process_arguments(app):
                 # Init
                 results={}
                 # Create results as a List
-                data = [dict(i) for i in conn.execute(query_sql_option_query)]
+                cursor=conn.cursor()
+                data = [dict(i) for i in cursor.execute(query_sql_option_query)]
+                conn.commit()
                 # Add results list to final results Dict
                 results[1]=data
                 # Translate final results Dict into JSON format
