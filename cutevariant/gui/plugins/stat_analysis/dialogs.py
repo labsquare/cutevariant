@@ -256,13 +256,12 @@ class StatAnalysisDialog(PluginDialog):
 
         elif self.calculus.currentText() == "Count variant by mutant":
             self.fill_matrix_count_variants(self.data_dict_df_group1, self.sample_id_group1, 1)
-            self.fill_matrix_count_variants(self.data_dict_df_group1, self.sample_id_group1, 1)
+            self.fill_matrix_count_variants(self.data_dict_df_group2, self.sample_id_group1, 2)
 
         self.create_data_frame('1')
         self.create_data_frame('2')
 
         if self.stat.currentText() == "Khi2":
-            self.ki_2_contigency()
             self.draw_heatmap(self.ki_2_contigency())
 
         elif self.stat.currentText() == "Wilcoxon":
@@ -274,6 +273,7 @@ class StatAnalysisDialog(PluginDialog):
             self.brut_matrix.append([0 for i in sample_id])
 
     def fill_matrix_True_or_False_mutate(self, data:list, sample_id:list, number_matrix:int):
+        print("dedans")
         self.brut_matrix.clear()
         self.init_matrix(sample_id)
         for index,i in enumerate(sample_id):
@@ -425,7 +425,6 @@ class StatAnalysisDialog(PluginDialog):
         data_ki_2=[]
         gnomen_ki_2=[]
         """On peut utiliser le meme row de collone pour ouvrir les donées de la matrices"""
-        """"""
         for index, gnomen in enumerate(self.get_row_matrix("1")):
             gene_resul=None
 
@@ -434,8 +433,10 @@ class StatAnalysisDialog(PluginDialog):
 
             group2=self.df_group2.iloc[[index]]
             group2_array=array(self.df_group2.iloc[index])
+
             mutation_name = ['group1' for i in group1_array] + ['group2' for a in group2_array]
             mutation_data = [i for i in group1_array] + [a for a in group2_array]
+
             df = pd.DataFrame({'mutation_name': mutation_name, 'mutation_data': mutation_data})
             # df=pd.DataFrame([[result_group1[1],result_group2[1]],[result_group1[0],result_group2[0]]],['Mutate','WT'])
             contigency = pd.crosstab(df['mutation_name'], df['mutation_data'])
@@ -445,6 +446,7 @@ class StatAnalysisDialog(PluginDialog):
                 gene_resul=(999,1)
 
             else:
+                print(contigency)
                 c, p, dof, expected=chi2_contingency(contigency)
 
             if p <= cut_off_pourcentage:
@@ -453,12 +455,13 @@ class StatAnalysisDialog(PluginDialog):
                 titre="gene//"+gnomen
                 result=p
                 self.dico_p_value_gene_group[titre]=result
+                print("yo")
 
         return self.df_ki_2
 
-    def test_wilcoxon(self, cut_off_pourcentage:int):
+    def test_wilcoxon(self):
         """Pour normaliser un dataframe pour que la somme de chaque colonne soit identique : df2 = df.mul(df.sum.mean() / df.sum(), axis = 1)"""
-        cut_off_pourcentage=cut_off_pourcentage/100
+        cut_off_pourcentage=self.check_cut_off()/100
         data_wilcoxon=[]
         gnomen_wilcoxon=[]
         """On peut utiliser le meme row de collone pour ouvrir les donées de la matrices"""
@@ -531,6 +534,7 @@ class StatAnalysisDialog(PluginDialog):
             return self.df_group2
 
     def draw_heatmap(self, df:DataFrame):
+        print(self.ki_2_contigency())
         df = df.drop_duplicates()
         current_heatmap = sns.clustermap(df, row_cluster=False, col_cluster=True,cmap="mako_r")
         current_heatmap.savefig("current_heatmap.svg", dpi=100)
@@ -629,14 +633,12 @@ if __name__ == "__main__":
     import sys
 
     app = QApplication(sys.argv)
-    conn = sql.get_sql_connection("C:/Users/elham/Documents/DB_cute/example_db.db")
+    conn = sql.get_sql_connection("C:/Users/HAMEAUEL/Documents/Db cute/Nw_tag.db")
     conn.row_factory = sqlite3.Row
 
     dialog = StatAnalysisDialog(conn)
     dialog.show()
     app.exec()
-    print(dialog.get_row_matrix("1"))
-    print(dialog.get_name_matrix("2"))
 
 
 

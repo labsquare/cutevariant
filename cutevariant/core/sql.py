@@ -2718,11 +2718,15 @@ def get_sample_annotations(conn, variant_id: int, sample_id: int):
     )
 
 def get_tag_sample_has_variant(conn, sample_id:list, genes_spectre:str):
+    print(genes_spectre)
     gt=None
-    if genes_spectre == 'all':
+    if genes_spectre == 'All':
         gt = -1
-    elif genes_spectre == 'mutant':
+    elif genes_spectre == 'Mutant':
         gt = 1
+    elif genes_spectre == 'WT' :
+        gt=0
+
     conn.row_factory = sqlite3.Row
     sample_id_str = ",".join((f"'{i}'" for i in sample_id))
     query=  f"SELECT samples.tags, sample_has_variant.ad, sample_has_variant.dp,sample_has_variant.vaf,sample_has_variant.vaf," \
