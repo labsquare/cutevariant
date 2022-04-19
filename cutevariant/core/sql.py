@@ -2718,6 +2718,7 @@ def get_sample_annotations(conn, variant_id: int, sample_id: int):
     )
 
 def get_tag_sample_has_variant(conn, sample_id:list, genes_spectre:str):
+    gt=None
     if genes_spectre == 'all':
         gt = -1
     elif genes_spectre == 'mutant':

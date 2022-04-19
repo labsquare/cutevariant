@@ -135,7 +135,6 @@ class GroupSampleModel(QAbstractListModel):
         else:
             self.list_samples.uncheck_all()
 
-
 class Filter_Bar(QToolBar):
     """To filter samples in database, based on sample name/family/tags
     Possible to check all samples on current
@@ -271,7 +270,6 @@ class Filter_Bar(QToolBar):
         check_list = list(set(check_list))
         check_list.sort()
         return check_list
-
 
 class GroupSampleDialog(PluginDialog):
     """principal dialog. User choose sample (current sample find in GroupSampleModel). When user apply some filter they use
@@ -535,80 +533,8 @@ class GroupSampleDialog(PluginDialog):
         self.dialog_manage_group.show()
         self.dialog_manage_group.accepted.connect(self.filter_bar.on_refresh)
 
-    def quick_add(self):
-        self.dialog_add_list.show()
-        self.dialog_add_list.accepted.connect(self.filter_bar.on_refresh)
 
 class GroupManage(QDialog):
-    """The second dialog used to remove tags from the DB"""
-    signal_close=Signal()
-
-    def __init__(self, conn=None, parent=None):
-        super().__init__(parent)
-        self.TAG_SEPARATOR = "&"
-        self.setModal(True)
-        self.conn = conn
-        self.filter_bar = Filter_Bar(conn)
-        self.current_interface = QVBoxLayout()
-        self.button_box = QDialogButtonBox(QDialogButtonBox.Apply|QDialogButtonBox.Cancel)
-
-        self.title=QLabel()
-        self.title.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        self.title.setText(
-            """<b>Manage your groups in your current project </b> <br/>
-            Remove selected groups
-            """
-        )
-        self.list_tag = ChoiceWidget()
-        self.list_tag._apply_btn.setVisible(False)
-
-
-        self.current_interface.addWidget(self.title)
-        self.current_interface.addWidget(self.list_tag)
-        self.current_interface.addWidget(self.button_box)
-
-        self.setLayout(self.current_interface)
-        self.resize(300, 400)
-        self.setWindowTitle("Group of tags")
-        self.button_box.button(QDialogButtonBox.Apply).clicked.connect(self._del_group)
-        self.button_box.rejected.connect(self.reject)
-        self.filter_bar.on_refresh()
-        self.reload_tags()
-
-    def reload_tags(self):
-        self.filter_bar.on_refresh()
-        self.list_tag.clear()
-        for i in self.filter_bar.keep_sorted_unique_values(self.filter_bar.filter_tag):
-            self.list_tag.add_item(FIcon(0xF121F), i)
-
-    def mouseDoubleClickEvent(self, event:PySide6.QtGui.QMouseEvent) :
-        """
-        For debugging purposes
-        """
-        print(self.filter_bar.filter_tag_brut)
-        print(self.filter_bar.keep_sorted_unique_values(self.filter_bar.filter_tag))
-
-    def _del_group(self):
-        for selected_group in self.list_tag.selected_items():
-            for sample_dic in self.filter_bar.get_dico_id_tag_brut(self.filter_bar.filter_tag):
-                if selected_group["name"] in sample_dic["tags_sep"]:
-
-                    # r = sample_dic["tags_sep"].index(selected_group['name'])
-                    # del sample_dic['tags_sep'][r]
-                    sample_dic["tags_sep"].remove(selected_group["name"])
-
-                    sample_dic["tag"] = self.TAG_SEPARATOR.join(sample_dic["tags_sep"])
-                    update_dic ={
-                        "id" : sample_dic["id"],
-                        "tags" : sample_dic["tag"]
-                    }
-
-                    sql.update_sample(self.conn, update_dic)
-                    self.list_tag.clear()
-                    self.signal_close.emit()
-                    self.reload_tags()
-
-class AddQuickList(QDialog):
     """The second dialog used to remove tags from the DB"""
     signal_close=Signal()
 

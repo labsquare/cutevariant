@@ -63,7 +63,6 @@ import numpy as np
 from pandas import *
 import seaborn as sns
 import matplotlib.pyplot as plt
-import dash_bio
 from scipy.stats import chi2_contingency
 from scipy.stats import chisquare
 from scipy.stats import wilcoxon
@@ -73,13 +72,12 @@ class StatAnalysisDialog(PluginDialog):
     def __init__(self, conn=None, parent=None):
         super().__init__(parent)
         self.setModal(False)
-
         self.conn = conn
         self.dico_tagbrut_tagsplit = {}
         self.dico_p_value_gene_group={}
         self.TAG_SEPARATOR = "&"
         self.gt=None
-        self.hlayout= QHBoxLayout()
+        self.vlayout= QVBoxLayout()
         self.df=None
         self.df_group1=None
         self.df_group2=None
@@ -100,19 +98,98 @@ class StatAnalysisDialog(PluginDialog):
         self.sample_id_group1 = []
         self.sample_id_group2 = []
         self.group_name_select=[]
-        self.test=QLineEdit()
+        self.apply_stat=QPushButton("Apply")
         self.data_dict_df=None
+        self.cut_off_pourcentage=None
 
-        self.all_tag_split=ChoiceWidget()
+        """First part choix both groups"""
+        self.hlayout_first_part=QHBoxLayout()
+        self.spacer=QSpacerItem(80,10)
+        self.all_tag_split_left=QComboBox()
+        self.all_tag_split_right=QComboBox()
 
-        self.hlayout.addWidget(self.all_tag_split)
-        self.hlayout.addWidget(self.test)
+        self.hlayout_first_part.addWidget(self.all_tag_split_left)
+        self.hlayout_first_part.addSpacerItem(self.spacer)
+        self.hlayout_first_part.addWidget(self.all_tag_split_right)
 
-        self.setLayout(self.hlayout)
-        self.setWindowTitle("stat")
+        """Filtrers part"""
+        self.filtrers=QComboBox()
+        self.filtrers.addItem("Basic Filtrer")
+        self.filtrers.addItem("Bio Filtrer")
+        self.filtrers.addItem("Import Filtrer")
+
+        """Field part"""
+        self.fields=QComboBox()
+        self.fields.addItem("Import")
+
+
+        """Calculus part"""
+        self.calculus=QComboBox()
+        self.calculus.addItem("gnomen mutant or not")
+        self.calculus.addItem("Count variant by mutant")
+
+        """Stat analysis part"""
+        self.stat=QComboBox()
+        self.stat.addItem("Khi2")
+        self.stat.addItem("Wilcoxon")
+
+
+        """Cutt-off part"""
+        validator=QIntValidator(0,100)
+        self.cutt_off=QLineEdit()
+        self.cutt_off.setValidator(validator)
+        self.cutt_off.textChanged.connect(self.check_cut_off)
+        self.flayout=QFormLayout()
+        self.flayout.addRow(self.tr("p-value <"), self.cutt_off)
+
+        """Range select"""
+        self.range_sample=QComboBox()
+        self.range_sample.addItem("All")
+        self.range_sample.addItem("Mutant")
+        self.range_sample.addItem("WT")
+        self.flayout.addRow(self.tr("Range analyse"), self.range_sample)
+
+        """Question save heatmap"""
+        self.stockage=QComboBox()
+        self.stockage.addItem("No")
+        self.stockage.addItem("Yes")
+        self.flayout.addRow(self.tr("Do you want save the Heatmap and matrix ?"), self.stockage)
+
+        """Pop or not dialog for whrite name heatmap save"""
+        self.stockage.currentIndexChanged.connect(self.on_curentIndexChanged)
+
+        """Heatmap main"""
+        self.central_widget=QWidget(self)
+        self.central_widget.setVisible(False)
+
+        """Skeleton part"""
+        self.vlayout.addLayout(self.hlayout_first_part)
+        self.vlayout.addWidget(self.filtrers)
+        self.vlayout.addWidget(self.fields)
+        self.vlayout.addWidget(self.calculus)
+        self.vlayout.addWidget(self.stat)
+        self.vlayout.addWidget(self.stat)
+        self.vlayout.addLayout(self.flayout)
+        self.vlayout.addWidget(self.central_widget)
+        self.vlayout.addWidget(self.apply_stat)
+
+        self.setLayout(self.vlayout)
+        self.setWindowTitle("Stat analysis")
 
         self._load_tagsplit()
-        self.all_tag_split.accepted.connect(self.get_data_between_tag_sample_as_variant)
+        self.apply_stat.clicked.connect(self.get_data_between_tag_sample_as_variant)
+
+    def on_curentIndexChanged(self):
+        if self.stockage.currentIndex() == 1:
+            self.stockage_name = QLineEdit()
+            self.flayout.addRow(self.tr("File name"), self.stockage_name)
+
+        elif self.stockage.currentIndex() == 0:
+            if self.flayout.getItemPosition(3) == (1, PySide6.QtWidgets.QFormLayout.ItemRole.FieldRole) :
+                self.flayout.removeRow(3)
+
+            else :
+                pass
 
     def _load_tagsplit(self):
         all_value=[]
@@ -130,7 +207,8 @@ class StatAnalysisDialog(PluginDialog):
 
 
         for i in self.keep_sorted_unique_values(all_value):
-            self.all_tag_split.add_item(FIcon(0xF04FD),i)
+            self.all_tag_split_left.addItem(FIcon(0xF04FD),i)
+            self.all_tag_split_right.addItem(FIcon(0xF04FD),i)
 
     def keep_sorted_unique_values(self, check_list:list):
         """
@@ -140,45 +218,56 @@ class StatAnalysisDialog(PluginDialog):
         check_list.sort()
         return check_list
 
+    def group_select(self):
+        self.group_selected={"tag_group1":self.all_tag_split_left.currentText(),
+                             "tag_group2":self.all_tag_split_right.currentText()
+                             }
+        return self.group_selected
+
     def get_data_between_tag_sample_as_variant(self):
-        self.group_name_select = self.group_select()
         _data = [i for i in sql.get_samples(conn)]
         self.sample_id.clear()
         self.sample_id_group1.clear()
         self.sample_id_group2.clear()
 
-        """Attention pour une matrix globale ça a tait enlevé"""
-        for index, _item_group_name in enumerate(self.group_name_select):
+        """Warning for a global matrix change group1&2 by just group"""
+        for key, value in self.group_select().items():
             for _data_dico in _data:
-            # print(index, "///",_item_group_name)
-                if index == 0 and _item_group_name['name'] == _data_dico['tags']:
-                    # print(_data_dico['tags']+"////"+_item_group_name['name'][0])
+                if value == _data_dico['tags']:
                     self.sample_id_group1.append(_data_dico["id"])
                     self.name_matrix_group1.append(_data_dico['name']+_data_dico['tags'])
 
-                if index == 1 and _item_group_name['name'] == _data_dico['tags']:
+                elif value == _data_dico['tags']:
                     self.sample_id_group2.append(_data_dico["id"])
                     self.name_matrix_group2.append(_data_dico['name']+_data_dico['tags'])
 
-        #hesitation entre all or mutant
-        self.data_dict_df_group1 = [i for i in sql.get_tag_sample_has_variant(conn, self.sample_id_group1, 'mutant')]
-        self.data_dict_df_group2 = [i for i in sql.get_tag_sample_has_variant(conn, self.sample_id_group2, 'mutant')]
+        """Create 2 matrix for comparaison"""
+        self.data_dict_df_group1 = [i for i in sql.get_tag_sample_has_variant(conn, self.sample_id_group1, self.range_sample.currentText())]
+        self.data_dict_df_group2 = [i for i in sql.get_tag_sample_has_variant(conn, self.sample_id_group2, self.range_sample.currentText())]
+
+        """For Test stat with only one matrix"""
         # self.data_dict_df = [i for i in sql.get_tag_sample_has_variant(conn, self.sample_id, 'mutant')]
 
         self.load_gnomen_list(self.data_dict_df_group1)
-        self.load_gnomen_list(self.data_dict_df_group1)
-        # self.load_gnomen_list(self.data_dict_df_group1)
 
-        self.fill_matrix_True_or_False_mutate(self.data_dict_df_group1,self.sample_id_group1,1)
-        self.fill_matrix_True_or_False_mutate(self.data_dict_df_group2,self.sample_id_group2,2)
+        if self.calculus.currentText() == "gnomen mutant or not":
+            self.fill_matrix_True_or_False_mutate(self.data_dict_df_group1, self.sample_id_group1, 1)
+            self.fill_matrix_True_or_False_mutate(self.data_dict_df_group2, self.sample_id_group2, 2)
+
+        elif self.calculus.currentText() == "Count variant by mutant":
+            self.fill_matrix_count_variants(self.data_dict_df_group1, self.sample_id_group1, 1)
+            self.fill_matrix_count_variants(self.data_dict_df_group1, self.sample_id_group1, 1)
+
         self.create_data_frame('1')
         self.create_data_frame('2')
-        self.ki_2_(5)
 
-        self.draw_heatmap(self.ki_2_(5))
+        if self.stat.currentText() == "Khi2":
+            self.ki_2_contigency()
+            self.draw_heatmap(self.ki_2_contigency())
 
-        # self.ki_2_()
-        # df=self.create_data_frame()
+        elif self.stat.currentText() == "Wilcoxon":
+            self.test_wilcoxon()
+            self.draw_heatmap(self.test_wilcoxon())
 
     def init_matrix(self, sample_id:list):
         for i in self.all_gnomen:
@@ -189,7 +278,6 @@ class StatAnalysisDialog(PluginDialog):
         self.init_matrix(sample_id)
         for index,i in enumerate(sample_id):
             for index2,j in enumerate(self.all_gnomen):
-
                 for item_dico_join in data:
                     if item_dico_join['gnomen'] == j and item_dico_join['sample_id'] == i:
                         if  item_dico_join['gt'] >= 1:
@@ -214,82 +302,126 @@ class StatAnalysisDialog(PluginDialog):
             elif number_matrix != 1 and number_matrix != 2 and number_matrix != 0:
                 print("Erreur du nombre de la matrix")
 
-    def fill_matrix_count_variants(self):
-        self.init_matrix()
-        """remplir matrice"""
-        for index,i in enumerate(self.sample_id):
+    def fill_matrix_count_variants(self,data:list, sample_id:list, number_matrix:int):
+
+        self.brut_matrix.clear()
+        self.init_matrix(sample_id)
+        for index,i in enumerate(sample_id):
             for index2,j in enumerate(self.all_gnomen):
-                for item_dico_join in self.data_dict_df:
+                for item_dico_join in data:
                     if item_dico_join['gnomen'] == j and item_dico_join['sample_id'] == i:
                         if  item_dico_join['gt'] >= 1:
                             self.brut_matrix[index2][index] +=1
-                        # print(self.brut_matrix)
 
-        for index2,j in enumerate(self.all_gnomen):
-            if any(self.brut_matrix[index2]):
-                self.row_matrix_gnomen.append(j)
-                self.matrix.append(self.brut_matrix[index2])
+        """Parcour les lignes de la matrice brut et selon si c'est une matrice de comparaison du ki2 ou une globale ,
+        soit on ajoute toute les lignes soit on ajoute seulement celle qui ont une valeur sup à 1 """
+        for index2, j in enumerate(self.all_gnomen):
+            if number_matrix == 0:
+                if any(self.brut_matrix[index2]):
+                    self.row_matrix_gnomen.append(j)
+                    self.matrix.append(self.brut_matrix[index2])
 
-    def fill_matrix_VAF_variants(self):
-        ##On a pas fait le filtre sur les gt -1 ou 0 dans la requette SQL il faut donc gerer le gt-1 ou on a None en vaf ad et dp
-        self.init_matrix()
-        for index,i in enumerate(self.sample_id):
-            for index2,j in enumerate(self.all_gnomen):
-                for item_dico_join in self.data_dict_df:
-                    var_id=str(item_dico_join['variant_id'])
-                    if item_dico_join['gnomen'] == j and item_dico_join['sample_id'] == i:
-                        if item_dico_join['vaf'] == None:
-                            if item_dico_join['ad'] != None and item_dico_join['dp'] != None :
-                                self.brut_matrix[index2][index] = self.get_calcul_VAF(item_dico_join['ad'],item_dico_join['dp'])
-                        elif item_dico_join['vaf'] != None:
-                            self.brut_matrix[index2][index] = item_dico_join['vaf']
-                        # print(str(item_dico_join['variant_id']))
+            elif number_matrix == 1:
+                self.row_matrix_group1_gnomen.append(j)
+                self.matrix_group1.append(self.brut_matrix[index2])
 
-                self.row_matrix_gnomen.append(var_id+"//"+j)
-                self.matrix.append(self.brut_matrix[index2])
+            elif number_matrix == 2:
+                self.row_matrix_group2_gnomen.append(j)
+                self.matrix_group2.append(self.brut_matrix[index2])
 
-    def get_calcul_VAF(self, ad:any,dp:int):
-        if isinstance(ad,tuple):
-            ad=ad[1]
+            elif number_matrix != 1 and number_matrix != 2 and number_matrix != 0:
+                print("Erreur du nombre de la matrix")
 
-        return ad/dp
+        #
+        # self.init_matrix()
+        # """remplir matrice"""
+        # for index,i in enumerate(self.sample_id):
+        #     for index2,j in enumerate(self.all_gnomen):
+        #         for item_dico_join in self.data_dict_df:
+        #             if item_dico_join['gnomen'] == j and item_dico_join['sample_id'] == i:
+        #                 if  item_dico_join['gt'] >= 1:
+        #                     self.brut_matrix[index2][index] +=1
+        #                 # print(self.brut_matrix)
+        #
+        # for index2,j in enumerate(self.all_gnomen):
+        #     if any(self.brut_matrix[index2]):
+        #         self.row_matrix_gnomen.append(j)
+        #         self.matrix.append(self.brut_matrix[index2])
 
-    def ki_2_(self, cut_off_pourcentage:int):
-        """ANTHO normaliser un dataframe pour que la somme de chaque colonne soit identique : df2 = df.mul(df.sum.mean() / df.sum(), axis = 1)"""
-        cut_off_pourcentage=cut_off_pourcentage/100
-        data_ki_2=[]
-        gnomen_ki_2=[]
-        """On peut utiliser le meme row de collone pour ouvrir les donées de la matrices"""
-        """"""
-        for index, gnomen in enumerate(self.get_row_matrix("1")):
-            gene_resul=None
+    def check_cut_off(self):
+        if self.cutt_off.text() == '':
+            self.cut_off_pourcentage=0
+        else:
+            self.cut_off_pourcentage=int(self.cutt_off.text())
 
-            group1=self.df_group1.iloc[[index]]
-            group1_array=array(self.df_group1.iloc[index])
+        if self.cut_off_pourcentage > 100:
+            """Error message"""
+            print("cut_off invalide")
+        elif self.cut_off_pourcentage >= 100 or self.cut_off_pourcentage == '':
+            pass
 
-            group2=self.df_group2.iloc[[index]]
-            group2_array=array(self.df_group2.iloc[index])
-            if group1_array.tolist() == group2_array.tolist() :
-                """tupple pour gerer l'erreur ou les rows sont identifique https://stackoverflow.com/questions/65225316/python-pingouin-valueerror-zero-method-wilcox-and-pratt-do-not-work-if"""
-                gene_resul=(999,1)
+        return self.cut_off_pourcentage
+        # TODO : add error message for globale error
 
+    # def ki_2_(self, cut_off_pourcentage:int):
+    #     """ANTHO normaliser un dataframe pour que la somme de chaque colonne soit identique : df2 = df.mul(df.sum.mean() / df.sum(), axis = 1)"""
+    #     cut_off_pourcentage=cut_off_pourcentage/100
+    #     data_ki_2=[]
+    #     gnomen_ki_2=[]
+    #     """On peut utiliser le meme row de collone pour ouvrir les donées de la matrices"""
+    #     """"""
+    #     for index, gnomen in enumerate(self.get_row_matrix("1")):
+    #         gene_resul=None
+    #
+    #         group1=self.df_group1.iloc[[index]]
+    #         group1_array=array(self.df_group1.iloc[index])
+    #
+    #         group2=self.df_group2.iloc[[index]]
+    #         group2_array=array(self.df_group2.iloc[index])
+    #         if group1_array.tolist() == group2_array.tolist() :
+    #             """tupple pour gerer l'erreur ou les rows sont identifique https://stackoverflow.com/questions/65225316/python-pingouin-valueerror-zero-method-wilcox-and-pratt-do-not-work-if"""
+    #             gene_resul=(999,1)
+    #
+    #
+    #         else:
+    #             gene_resul=chisquare([group1_array], [group2_array])
+    #         print(gene_resul)
+    #         if gene_resul[1] <= cut_off_pourcentage:
+    #             print(gnomen, "///", gene_resul)
+    #             group_concat_line=pd.concat([group1,group2], axis=1)
+    #             self.df_ki_2=pd.concat([self.df_ki_2,group_concat_line],axis=0)
+    #             titre="gene//"+gnomen
+    #             result="p-value de "+str(gene_resul[1])
+    #             self.dico_p_value_gene_group[titre]=result
+    #
+    #     return self.df_ki_2
+    # def fill_matrix_VAF_variants(self):
+    #     ##On a pas fait le filtre sur les gt -1 ou 0 dans la requette SQL il faut donc gerer le gt-1 ou on a None en vaf ad et dp
+    #     self.init_matrix()
+    #     for index,i in enumerate(self.sample_id):
+    #         for index2,j in enumerate(self.all_gnomen):
+    #             for item_dico_join in self.data_dict_df:
+    #                 var_id=str(item_dico_join['variant_id'])
+    #                 if item_dico_join['gnomen'] == j and item_dico_join['sample_id'] == i:
+    #                     if item_dico_join['vaf'] == None:
+    #                         if item_dico_join['ad'] != None and item_dico_join['dp'] != None :
+    #                             self.brut_matrix[index2][index] = self.get_calcul_VAF(item_dico_join['ad'],item_dico_join['dp'])
+    #                     elif item_dico_join['vaf'] != None:
+    #                         self.brut_matrix[index2][index] = item_dico_join['vaf']
+    #                     # print(str(item_dico_join['variant_id']))
+    #
+    #             self.row_matrix_gnomen.append(var_id+"//"+j)
+    #             self.matrix.append(self.brut_matrix[index2])
 
-            else:
-                gene_resul=chisquare([group1_array], [group2_array])
-            print(gene_resul)
-            if gene_resul[1] <= cut_off_pourcentage:
-                print(gnomen, "///", gene_resul)
-                group_concat_line=pd.concat([group1,group2], axis=1)
-                self.df_ki_2=pd.concat([self.df_ki_2,group_concat_line],axis=0)
-                titre="gene//"+gnomen
-                result="p-value de "+str(gene_resul[1])
-                self.dico_p_value_gene_group[titre]=result
+    def mouseDoubleClickEvent(self, event:PySide6.QtGui.QMouseEvent) :
+        """
+        For debugging purposes
+        """
+        print(type(self.check_cut_off()))
 
-        return self.df_ki_2
-
-    def ki_2_contigency(self, cut_off_pourcentage:int):
+    def ki_2_contigency(self):
         """Pour normaliser un dataframe pour que la somme de chaque colonne soit identique : df2 = df.mul(df.sum.mean() / df.sum(), axis = 1)"""
-        cut_off_pourcentage=cut_off_pourcentage/100
+        cut_off_pourcentage=self.check_cut_off()/100
         data_ki_2=[]
         gnomen_ki_2=[]
         """On peut utiliser le meme row de collone pour ouvrir les donées de la matrices"""
@@ -376,12 +508,6 @@ class StatAnalysisDialog(PluginDialog):
 
         return self.all_gnomen
 
-    def group_select(self):
-        if self.all_tag_split.checked() == True:
-            my_generator_tag = self.all_tag_split.selected_items()
-            result_list_tag = list(my_generator_tag)
-            return result_list_tag
-
     def create_data_frame(self, matrix_number:str):
         if matrix_number == '0':
             self.df = pd.DataFrame(self.get_matrixs(matrix_number),
@@ -404,11 +530,27 @@ class StatAnalysisDialog(PluginDialog):
             self.df_group2.to_csv("C:/Users/HAMEAUEL/Documents/Db cute/matrix"+matrix_number+".txt", sep="\t", encoding="utf-8", index=True)
             return self.df_group2
 
-    def draw_heatmap(self,df:DataFrame):
+    def draw_heatmap(self, df:DataFrame):
         df = df.drop_duplicates()
-        g = sns.clustermap(df, row_cluster=False, col_cluster=True,cmap="mako_r")
+        current_heatmap = sns.clustermap(df, row_cluster=False, col_cluster=True,cmap="mako_r")
+        current_heatmap.savefig("current_heatmap.svg", dpi=100)
+        current_picture=QImage()
 
-        g.savefig('C:/Users/HAMEAUEL/Documents/Db cute/ki-2_jjjjjj.svg', dpi=100)
+        if self.stockage.currentText() == "Yes" :
+            if os.path.exists(self.stockage_name.text()+".svg"):
+                os.remove(self.stockage_name.text()+".svg")
+                print("Warning this name exist so the old are delete")
+                # TODO : error message
+            current_heatmap.savefig(self.stockage_name.text()+".svg", dpi=100)
+
+        self.heatmap=QLabel(self.central_widget)
+        self.heatmap.setPixmap(QPixmap("current_heatmap.svg"))
+
+
+    def error_message(self):
+        print("uu")
+
+
 
     def get_data_frames(self, data_frame_number:str):
         if data_frame_number == '0':
@@ -473,10 +615,15 @@ class StatAnalysisDialog(PluginDialog):
     def get_dico_p_value(self):
         return self.dico_p_value_gene_group
 
-if __name__ == "__main__":
+    def get_calcul_VAF(self, ad:any,dp:int):
+        if isinstance(ad,tuple):
+            ad=ad[1]
 
-    if os.path.exists("C:/Users/HAMEAUEL/Documents/Db cute/test_col4.svg"):
-        os.remove("C:/Users/HAMEAUEL/Documents/Db cute/test_col4.svg")
+        return ad/dp
+
+
+
+if __name__ == "__main__":
 
     from PySide6.QtWidgets import QApplication
     import sys
@@ -493,22 +640,6 @@ if __name__ == "__main__":
 
 
 
-
-
-
-    # nw_data=df1.join(df2)
-    # print(nw_data)
-    # print(nw_data.index)
-    # print(dialog.get_data_frames("2").loc[dialog.get_data_frames("2")['ATM']])
-    # print(dialog.get_group_select())
-    # from scipy.stats import chisquare
-    # import numpy as np
-    #
-    # gene1_group1 = [2, 1, 1, 1, 1, 1]
-    # gene1_group2 = [1, 1, 1, 1, 1, 2]
-    # gene1_result = wilcoxon(gene1_group1, gene1_group2)
-    # gene1_p_value = gene1_result[1]
-    # print("gene1 p-value: " + str(gene1_p_value))
 
 
 
