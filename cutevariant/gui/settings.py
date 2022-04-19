@@ -379,6 +379,69 @@ class StyleSettingsWidget(AbstractSettingsWidget):
 #         self.edit.setText(path)
 
 
+class VariablesSettingsWidget(AbstractSettingsWidget):
+    """
+    Allow to configure variables settings for widgets that require common variables configuration (such as variant name pattern, gene field, transcript)
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle(self.tr("Variables"))
+        #self.setWindowIcon(FIcon(0xF0484))
+
+        # Edit variant_name_pattern
+        self.variant_name_pattern_edit = QLineEdit()
+        variant_name_pattern_label = QLabel(
+            self.tr(
+                "Ex: '{chr}:{pos} {ref}>{alt}'"
+            )
+        )
+        # Edit gene_field
+        self.gene_field_edit = QLineEdit()
+        gene_field_label = QLabel(
+            self.tr(
+                "Ex: 'ann.gene'"
+            )
+        )
+        # Edit transcript_field
+        self.transcript_field_edit = QLineEdit()
+        transcript_field_label = QLabel(
+            self.tr(
+                "Ex: 'ann.transcript'"
+            )
+        )
+
+        # Layout
+        f_layout = QFormLayout()
+        f_layout.addRow(self.tr("Variant name pattern host"), self.variant_name_pattern_edit)
+        f_layout.addWidget(variant_name_pattern_label)
+        f_layout.addRow(self.tr("Gene field"), self.gene_field_edit)
+        f_layout.addWidget(gene_field_label)
+        f_layout.addRow(self.tr("Transcript field"), self.transcript_field_edit)
+        f_layout.addWidget(transcript_field_label)
+
+        self.setLayout(f_layout)
+
+    def save(self):
+        """Save settings under "variables" group"""
+       
+        __config = Config("variables")
+        __config["variant_name_pattern"] = self.variant_name_pattern_edit.text()
+        __config["gene_field"] = self.gene_field_edit.text()
+        __config["transcript_field"] = self.transcript_field_edit.text()
+
+        __config.save()
+
+    def load(self):
+        """Load "variables" group settings"""
+
+        __config = Config("variables") or {}
+
+        self.variant_name_pattern_edit.setText(__config.get("variant_name_pattern", "{chr}:{pos} {ref}>{alt}"))
+        self.gene_field_edit.setText(__config.get("gene_field", "ann.gene"))
+        self.transcript_field_edit.setText(__config.get("transcript_field", "ann.transcript"))
+
+
 class SettingsDialog(QDialog):
     """Main widget for settings window
 
@@ -430,6 +493,7 @@ class SettingsDialog(QDialog):
 
         general_settings.add_page(ProxySettingsWidget())
         general_settings.add_page(StyleSettingsWidget())
+        general_settings.add_page(VariablesSettingsWidget())
 
         # Specialized widgets on panels
         self.add_section(general_settings)
