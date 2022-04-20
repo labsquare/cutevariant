@@ -103,18 +103,11 @@ class VariantVerticalHeader(QHeaderView):
         painter.setBrush(QBrush(sample_variant_color))
         painter.drawLine(rect.left(), rect.top() + 1, rect.left(), rect.bottom() - 1)
 
-        # pix = FIcon(sample_icon, sample_color).pixmap(20, 20)
         pix = FIcon(0xF012F, sample_color).pixmap(16, 16)
 
         target = rect.center() - pix.rect().center() + QPoint(1, 0)
 
         painter.drawPixmap(target, pix)
-
-
-# pix = FIcon(0xF00C1 if favorite else 0xF00C3, color).pixmap(20, 20)
-# target = rect.center() - pix.rect().center() + QPoint(1, 0)
-
-# painter.drawPixmap(target, pix)
 
 
 class SamplesModel(QAbstractTableModel):
@@ -184,7 +177,8 @@ class SamplesModel(QAbstractTableModel):
             #     hex_icon = 0xF139A if item[key] == 1 else 0xF0FC7
             #     return QIcon(FIcon(hex_icon))
 
-            return QIcon(Ficon(0xF139A)).toPixmap(20, 20)
+            # return QIcon(FIcon(0xF139A)).toPixmap(20, 20)
+            return FIcon(0xF139A)
 
             # classification = self.model().item(section)["classification"] or 0
             # sample_variant_color = style.SAMPLE_VARIANT_CLASSIFICATION[classification].get(
@@ -659,7 +653,9 @@ class ValidationWidget(plugin.PluginWidget):
         menu.addSection("Sample")
         menu.addAction(QIcon(), "Edit sample ...", self._show_sample_dialog)
 
-        menu.addAction(QIcon(), "Add a filter based on selected sample(s)", self.on_add_filter)
+        menu.addAction(
+            QIcon(), "Add a filter based on selected sample(s)", self.on_add_filter
+        )
 
         menu.addAction(
             QIcon(), "Create a source from selected sample(s)", self.on_add_source
