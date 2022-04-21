@@ -61,12 +61,19 @@ VQL_TO_TREE_CASES = {
         "filters": {},
         "source": "variants",
     },
-    # Test 7 - 4quater GROUP BY on genotypes
-    "SELECT chr, pos, samples['sacha'].gt FROM variants GROUP BY samples['sacha'].gt": {
+    'SELECT chr,pos, samples["sacha"] FROM variants ORDER BY chr': {
         "cmd": "select_cmd",
         "fields": ["chr", "pos", "samples.sacha.gt"],
         "filters": {},
         "source": "variants",
+        "order_by": [("chr", True)],
+    },
+    'SELECT chr,pos, samples["sacha"] FROM variants ORDER BY chr, pos DESC': {
+        "cmd": "select_cmd",
+        "fields": ["chr", "pos", "samples.sacha.gt"],
+        "filters": {},
+        "source": "variants",
+        "order_by": [("chr", True), ("pos", False)],
     },
     # Test 7bis - HAS
     "SELECT chr, pos  FROM variants WHERE consequence HAS 'exon'": {
