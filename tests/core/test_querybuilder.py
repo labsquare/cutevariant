@@ -3,6 +3,15 @@ from cutevariant.core import querybuilder, sql
 from tests.utils import create_conn
 
 
+def test_order_by():
+    conn = create_conn()
+    query = querybuilder.build_sql_query(
+        conn, fields=["chr", "pos"], source="variants", order_by=[("chr", True)]
+    )
+
+    print(query)
+
+
 def test_filter_to_flat():
     filters = {
         "$and": [
@@ -368,11 +377,11 @@ QUERY_TESTS = [
         {
             "fields": ["chr", "pos"],
             "source": "variants",
-            "order_by": ["chr"],
+            "order_by": [("chr", False)],
             "order_desc": True,
         },
         "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants ORDER BY `variants`.`chr` DESC LIMIT 50 OFFSET 0",
-        "SELECT chr,pos FROM variants",
+        "SELECT chr,pos FROM variants ORDER BY chr DESC",
     ),
     # Test filters
     (
@@ -539,6 +548,17 @@ QUERY_TESTS = [
         },
         "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants INNER JOIN sample_has_variant `sample_TUMOR` ON `sample_TUMOR`.variant_id = variants.id AND `sample_TUMOR`.sample_id = 1 INNER JOIN sample_has_variant `sample_NORMAL` ON `sample_NORMAL`.variant_id = variants.id AND `sample_NORMAL`.sample_id = 2 WHERE ((`sample_TUMOR`.`gt` = 1 OR `sample_NORMAL`.`gt` = 1)) LIMIT 50 OFFSET 0",
         "SELECT chr,pos FROM variants WHERE samples[ANY].gt = 1",
+    ),
+    # ORDER BY
+    (
+        {
+            "fields": ["chr", "pos", "ref", "alt"],
+            "source": "variants",
+            "filters": {},
+            "order_by": [("chr", True)],
+        },
+        "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`variants`.`ref`,`variants`.`alt` FROM variants ORDER BY `variants`.`chr` ASC LIMIT 50 OFFSET 0",
+        "SELECT chr,pos,ref,alt FROM variants ORDER BY chr ASC",
     ),
 ]
 

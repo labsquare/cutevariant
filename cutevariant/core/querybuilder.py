@@ -629,12 +629,9 @@ def build_sql_query(
     fields,
     source="variants",
     filters={},
-    order_by=None,
-    order_desc=True,
+    order_by=[],
     limit=50,
     offset=0,
-    group_by={},
-    having={},  # {"op":">", "value": 3  }
     **kwargs,
 ):
     """Build SQL SELECT query
@@ -643,9 +640,8 @@ def build_sql_query(
         fields (list): List of fields
         source (str): source of the virtual table ( see: selection )
         filters (dict): nested condition tree
-        order_by (str/None): Order by field;
+        order_by (list[(str,bool)]): list of tuple (fieldname, is_ascending) ;
             If None, order_desc is not required.
-        order_desc (bool): Descending or Ascending order
         limit (int/None): limit record count;
             If None, offset is not required.
         offset (int): record count per page
@@ -682,9 +678,6 @@ def build_sql_query(
             f"INNER JOIN selections s ON s.id = sv.selection_id AND s.name = '{source}'"
         )
 
-    ## Create Sample Join
-    groupby = None
-
     # Test if sample*
     filters_fields = " ".join([list(i.keys())[0] for i in filters_to_flat(filters)])
 
@@ -706,23 +699,21 @@ def build_sql_query(
         if where_clause and where_clause != "()":
             sql_query += " WHERE " + where_clause
 
-    if groupby:
-        sql_query += groupby
-
-    # # Add Group By
-    # if group_by:
-    #     sql_query += " GROUP BY " + ",".join(fields_to_sql(group_by, use_as=False))
-    #     if having:
-    #         operator = having["op"]
-    #         val = having["value"]
-    #         sql_query += f" HAVING count {operator} {val}"
-
     # Add Order By
     if order_by:
         # TODO : sqlite escape field with quote
-        orientation = "DESC" if order_desc else "ASC"
-        order_by = ",".join(fields_to_sql(order_by))
-        sql_query += f" ORDER BY {order_by} {orientation}"
+        order_by_clause = []
+        for item in order_by:
+            field, direction = item
+
+            field = fields_to_sql([field])[0]
+
+            direction = "ASC" if direction else "DESC"
+            order_by_clause.append(f"{field} {direction}")
+
+        order_by_clause = ",".join(order_by_clause)
+
+        sql_query += f" ORDER BY {order_by_clause}"
 
     if limit:
         sql_query += f" LIMIT {limit} OFFSET {offset}"
@@ -734,6 +725,7 @@ def build_vql_query(
     fields,
     source="variants",
     filters={},
+    order_by=[],
     **kwargs,
 ):
 
@@ -746,4 +738,16 @@ def build_vql_query(
     else:
         where_clause = ""
 
-    return f"SELECT {select_clause} FROM {source}{where_clause}"
+    order_by_clause = ""
+    if order_by:
+        order_by_clause = []
+        for item in order_by:
+            field, direction = item
+            field = fields_to_vql([field])[0]
+            direction = "ASC" if direction else "DESC"
+            order_by_clause.append(f"{field} {direction}")
+
+        order_by_clause = " ORDER BY " + ",".join(order_by_clause)
+        print("YOUPU,", order_by_clause)
+
+    return f"SELECT {select_clause} FROM {source}{where_clause}{order_by_clause}"
