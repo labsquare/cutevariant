@@ -2717,8 +2717,7 @@ def get_sample_annotations(conn, variant_id: int, sample_id: int):
         ).fetchone()
     )
 
-def get_tag_sample_has_variant(conn, sample_id:list, genes_spectre:str):
-    print(genes_spectre)
+def get_tag_sample_has_variant(conn, sample_id:list, genes_spectre:str, filter:str):
     gt=None
     if genes_spectre == 'All':
         gt = -1
@@ -2726,20 +2725,64 @@ def get_tag_sample_has_variant(conn, sample_id:list, genes_spectre:str):
         gt = 1
     elif genes_spectre == 'WT' :
         gt=0
-
     conn.row_factory = sqlite3.Row
     sample_id_str = ",".join((f"'{i}'" for i in sample_id))
-    query=  f"SELECT samples.tags, sample_has_variant.ad, sample_has_variant.dp,sample_has_variant.vaf,sample_has_variant.vaf," \
-            f"sample_has_variant.vaf, sample_has_variant.variant_id, variants.gnomen, sample_has_variant.sample_id, samples.name," \
-            f"sample_has_variant.gt FROM sample_has_variant " \
-            f"INNER join samples on samples.id=sample_has_variant.sample_id  " \
-            f"inner join variants on variants.id= sample_has_variant.variant_id  " \
-            f"where sample_has_variant.sample_id in ({sample_id_str})" \
-            f"and (variants.freq_var_full < 0.05) AND (variants.outcome not IN ('synonymous_SNV') " \
-            f"OR variants.outcome = 'non_coding' OR variants.dbsnpnonflagged = NULL OR variants.cosmic = 'haemato' " \
-            f"OR popfreq = NULL  OR variants.popfreq <= '0,03' OR location =~ 'exonic'  OR variants.location = 'splicing') " \
-            f"and sample_has_variant.gt >={gt} " \
-            f"ORDER by variants.gnomen ASC "
+    if filter == "Basic Filter":
+        query=  f"SELECT samples.tags, sample_has_variant.ad, sample_has_variant.dp,sample_has_variant.vaf,sample_has_variant.vaf," \
+                f"sample_has_variant.vaf, sample_has_variant.variant_id, variants.gnomen, sample_has_variant.sample_id, samples.name," \
+                f"sample_has_variant.gt FROM sample_has_variant " \
+                f"INNER join samples on samples.id=sample_has_variant.sample_id  " \
+                f"inner join variants on variants.id= sample_has_variant.variant_id  " \
+                f"where sample_has_variant.sample_id in ({sample_id_str})" \
+                f"and (variants.freq_var_full < 0.1) AND (variants.location IN ('exonic','splicing'))" \
+                f"AND (variants.dbsnpnonflagged = NULL OR variants.cosmic LIKE'%haemato%') " \
+                f"AND (variants.popfreq = NULL OR variants.popfreq <= 0.05)" \
+                f"and sample_has_variant.gt >={gt} " \
+                f"ORDER by variants.gnomen ASC "
+
+    # print("dedans")
+
+    elif filter == "Bio Filter":
+        query=  f"SELECT samples.tags, sample_has_variant.ad, sample_has_variant.dp,sample_has_variant.vaf," \
+                f"sample_has_variant.variant_id, variants.gnomen, variants.symbol,variants.location," \
+                f"sample_has_variant.sample_id, samples.name,sample_has_variant.gt," \
+                f"sample_has_variant.classification " \
+                f"FROM sample_has_variant " \
+                f"INNER join samples on samples.id=sample_has_variant.sample_id " \
+                f"inner join variants on variants.id= sample_has_variant.variant_id " \
+                f"where sample_has_variant.sample_id in ({sample_id_str}) " \
+                f"and (sample_has_variant.classification = 2 " \
+                f"and sample_has_variant.gt >= {gt}) "
+
+    elif filter == "Bio+basic Filter":
+        query =  f"SELECT samples.tags, sample_has_variant.ad, sample_has_variant.dp,sample_has_variant.vaf,sample_has_variant.vaf," \
+                f"sample_has_variant.vaf, sample_has_variant.variant_id, variants.gnomen, sample_has_variant.sample_id, samples.name," \
+                f"sample_has_variant.gt FROM sample_has_variant " \
+                f"INNER join samples on samples.id=sample_has_variant.sample_id  " \
+                f"inner join variants on variants.id= sample_has_variant.variant_id  " \
+                f"where sample_has_variant.sample_id in ({sample_id_str})" \
+                f"and (variants.freq_var_full < 0.1) AND (variants.location IN ('exonic','splicing'))" \
+                f"AND (variants.dbsnpnonflagged = NULL OR variants.cosmic LIKE'%haemato%') " \
+                f"AND (variants.popfreq = NULL OR variants.popfreq <= 0.05)" \
+                f"and sample_has_variant.gt >={gt} " \
+                f"and (sample_has_variant.classification = 2 " \
+                f"and sample_has_variant.gt >= {gt}) " \
+                f"ORDER by variants.gnomen ASC "
+
+    elif filter == "Import Filter":
+        query = "select * from samples"
+    ###Avec antho
+    # f"SELECT samples.tags, sample_has_variant.ad, sample_has_variant.dp,sample_has_variant.vaf,sample_has_variant.vaf," \
+    # f"sample_has_variant.vaf, sample_has_variant.variant_id, variants.gnomen, sample_has_variant.sample_id, samples.name," \
+    # f"sample_has_variant.gt FROM sample_has_variant " \
+    # f"INNER join samples on samples.id=sample_has_variant.sample_id  " \
+    # f"inner join variants on variants.id= sample_has_variant.variant_id  " \
+    # f"where sample_has_variant.sample_id in ({sample_id_str})" \
+    # f"and (variants.freq_var_full < 0.1) AND (variants.location IN ('exonic','splicing'))" \
+    # f"AND (variants.dbsnpnonflagged = NULL OR variants.cosmic LIKE'%haemato%') " \
+    # f"AND (variants.popfreq = NULL OR variants.popfreq <= 0.05)" \
+    # f"and sample_has_variant.gt >={gt} " \
+    # f"ORDER by variants.gnomen ASC "
 
     print(query)
 
@@ -2747,6 +2790,13 @@ def get_tag_sample_has_variant(conn, sample_id:list, genes_spectre:str):
         dict(data)
         for data in conn.execute(query)
     )
+
+
+
+#ref en int reste en str
+
+
+
 
 def get_sample_annotations_by_variant(
     conn,

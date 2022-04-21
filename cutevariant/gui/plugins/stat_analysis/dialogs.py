@@ -71,6 +71,7 @@ class StatAnalysisDialog(PluginDialog):
 
     def __init__(self, conn=None, parent=None):
         super().__init__(parent)
+        self.conn=conn
         self.setModal(False)
         self.conn = conn
         self.dico_tagbrut_tagsplit = {}
@@ -113,26 +114,26 @@ class StatAnalysisDialog(PluginDialog):
         self.hlayout_first_part.addWidget(self.all_tag_split_right)
 
         """Filtrers part"""
-        self.filtrers=QComboBox()
-        self.filtrers.addItem("Basic Filtrer")
-        self.filtrers.addItem("Bio Filtrer")
-        self.filtrers.addItem("Import Filtrer")
+        self.filters=QComboBox()
+        self.filters.addItem("Basic Filter")
+        self.filters.addItem("Bio Filter")
+        self.filters.addItem("Import Filter")
+        self.filters.addItem("Bio+basic Filter")
 
         """Field part"""
         self.fields=QComboBox()
         self.fields.addItem("Import")
 
-
         """Calculus part"""
         self.calculus=QComboBox()
-        self.calculus.addItem("gnomen mutant or not")
+        self.calculus.addItem("Gene mutant or not")
         self.calculus.addItem("Count variant by mutant")
 
         """Stat analysis part"""
         self.stat=QComboBox()
+        self.stat.addItem("Heatmap")
         self.stat.addItem("Khi2")
         self.stat.addItem("Wilcoxon")
-
 
         """Cutt-off part"""
         validator=QIntValidator(0,100)
@@ -149,6 +150,13 @@ class StatAnalysisDialog(PluginDialog):
         self.range_sample.addItem("WT")
         self.flayout.addRow(self.tr("Range analyse"), self.range_sample)
 
+        """Question cluster"""
+        self.cluster=QComboBox()
+        self.cluster.addItem("No")
+        self.cluster.addItem("Row")
+        self.cluster.addItem("Colone")
+        self.cluster.addItem("Both")
+
         """Question save heatmap"""
         self.stockage=QComboBox()
         self.stockage.addItem("No")
@@ -157,6 +165,8 @@ class StatAnalysisDialog(PluginDialog):
 
         """Pop or not dialog for whrite name heatmap save"""
         self.stockage.currentIndexChanged.connect(self.on_curentIndexChanged)
+        self.flayout.addRow(self.tr("Do you want cluster in your heatmap ?"), self.cluster)
+
 
         """Heatmap main"""
         self.central_widget=QWidget(self)
@@ -164,7 +174,7 @@ class StatAnalysisDialog(PluginDialog):
 
         """Skeleton part"""
         self.vlayout.addLayout(self.hlayout_first_part)
-        self.vlayout.addWidget(self.filtrers)
+        self.vlayout.addWidget(self.filters)
         self.vlayout.addWidget(self.fields)
         self.vlayout.addWidget(self.calculus)
         self.vlayout.addWidget(self.stat)
@@ -205,7 +215,6 @@ class StatAnalysisDialog(PluginDialog):
                 self.dico_tagbrut_tagsplit[x] = self.valeur
                 all_value = all_value+self.valeur
 
-
         for i in self.keep_sorted_unique_values(all_value):
             self.all_tag_split_left.addItem(FIcon(0xF04FD),i)
             self.all_tag_split_right.addItem(FIcon(0xF04FD),i)
@@ -224,33 +233,70 @@ class StatAnalysisDialog(PluginDialog):
                              }
         return self.group_selected
 
+    def del_all(self):
+        self.dico_tagbrut_tagsplit = {}
+        self.dico_p_value_gene_group={}
+        self.TAG_SEPARATOR = "&"
+        self.gt=None
+        self.vlayout= QVBoxLayout()
+        self.df=None
+        self.df_group1=None
+        self.df_group2=None
+        self.brut_matrix=[]
+        self.all_gnomen=[]
+        self.matrix=[]
+        self.matrix_group1=[]
+        self.matrix_group2=[]
+        self.df_ki_2=pd.DataFrame()
+        self.df_wilcoxon=pd.DataFrame()
+        self.row_matrix_gnomen=[]
+        self.row_matrix_group1_gnomen=[]
+        self.row_matrix_group2_gnomen=[]
+        self.name_matrix=[]
+        self.name_matrix_group1=[]
+        self.name_matrix_group2=[]
+        self.sample_id = []
+        self.sample_id_group1 = []
+        self.sample_id_group2 = []
+        self.group_name_select=[]
+        if os.path.exists("current_heatmap.svg"):
+            os.remove( "current_heatmap.svg")
+
+
     def get_data_between_tag_sample_as_variant(self):
-        _data = [i for i in sql.get_samples(conn)]
-        self.sample_id.clear()
-        self.sample_id_group1.clear()
-        self.sample_id_group2.clear()
+        self.del_all()
+        _data = [i for i in sql.get_samples(self.conn)]
 
         """Warning for a global matrix change group1&2 by just group"""
-        for key, value in self.group_select().items():
-            for _data_dico in _data:
-                if value == _data_dico['tags']:
-                    self.sample_id_group1.append(_data_dico["id"])
-                    self.name_matrix_group1.append(_data_dico['name']+_data_dico['tags'])
+        for _data_dico in _data:
+            if self.group_select()['tag_group1'] == _data_dico['tags']:
+                self.sample_id_group1.append(_data_dico["id"])
+                self.name_matrix_group1.append(_data_dico['name']+_data_dico['tags'])
 
-                elif value == _data_dico['tags']:
-                    self.sample_id_group2.append(_data_dico["id"])
-                    self.name_matrix_group2.append(_data_dico['name']+_data_dico['tags'])
+            elif self.group_select()['tag_group2'] == _data_dico['tags']:
+                self.sample_id_group2.append(_data_dico["id"])
+                self.name_matrix_group2.append(_data_dico['name']+_data_dico['tags'])
 
-        """Create 2 matrix for comparaison"""
-        self.data_dict_df_group1 = [i for i in sql.get_tag_sample_has_variant(conn, self.sample_id_group1, self.range_sample.currentText())]
-        self.data_dict_df_group2 = [i for i in sql.get_tag_sample_has_variant(conn, self.sample_id_group2, self.range_sample.currentText())]
+        """Create 2 matrix of comparison"""
+        self.data_dict_df_group1 = [i for i in sql.get_tag_sample_has_variant(self.conn,
+                                                                              self.sample_id_group1,
+                                                                              self.range_sample.currentText(),
+                                                                              self.filters.currentText())]
+
+        self.data_dict_df_group2 = [i for i in sql.get_tag_sample_has_variant(self.conn,
+                                                                              self.sample_id_group2,
+                                                                              self.range_sample.currentText(),
+                                                                              self.filters.currentText())]
 
         """For Test stat with only one matrix"""
+
         # self.data_dict_df = [i for i in sql.get_tag_sample_has_variant(conn, self.sample_id, 'mutant')]
 
-        self.load_gnomen_list(self.data_dict_df_group1)
 
-        if self.calculus.currentText() == "gnomen mutant or not":
+        self.load_gnomen_list(self.data_dict_df_group1,self.data_dict_df_group2)
+
+        if self.calculus.currentText() == "Gene mutant or not":
+            print("dedans")
             self.fill_matrix_True_or_False_mutate(self.data_dict_df_group1, self.sample_id_group1, 1)
             self.fill_matrix_True_or_False_mutate(self.data_dict_df_group2, self.sample_id_group2, 2)
 
@@ -258,8 +304,10 @@ class StatAnalysisDialog(PluginDialog):
             self.fill_matrix_count_variants(self.data_dict_df_group1, self.sample_id_group1, 1)
             self.fill_matrix_count_variants(self.data_dict_df_group2, self.sample_id_group1, 2)
 
+
         self.create_data_frame('1')
         self.create_data_frame('2')
+
 
         if self.stat.currentText() == "Khi2":
             self.draw_heatmap(self.ki_2_contigency())
@@ -268,16 +316,16 @@ class StatAnalysisDialog(PluginDialog):
             self.test_wilcoxon()
             self.draw_heatmap(self.test_wilcoxon())
 
-    def init_matrix(self, sample_id:list):
+    def init_matrix(self, sample_id:list,data:list):
         for i in self.all_gnomen:
             self.brut_matrix.append([0 for i in sample_id])
 
     def fill_matrix_True_or_False_mutate(self, data:list, sample_id:list, number_matrix:int):
-        print("dedans")
         self.brut_matrix.clear()
-        self.init_matrix(sample_id)
+        self.init_matrix(sample_id,data)
         for index,i in enumerate(sample_id):
             for index2,j in enumerate(self.all_gnomen):
+                print(j)
                 for item_dico_join in data:
                     if item_dico_join['gnomen'] == j and item_dico_join['sample_id'] == i:
                         if  item_dico_join['gt'] >= 1:
@@ -349,7 +397,7 @@ class StatAnalysisDialog(PluginDialog):
         #         self.matrix.append(self.brut_matrix[index2])
 
     def check_cut_off(self):
-        if self.cutt_off.text() == '':
+        if self.cutt_off.text() == '' :
             self.cut_off_pourcentage=0
         else:
             self.cut_off_pourcentage=int(self.cutt_off.text())
@@ -424,15 +472,17 @@ class StatAnalysisDialog(PluginDialog):
         cut_off_pourcentage=self.check_cut_off()/100
         data_ki_2=[]
         gnomen_ki_2=[]
+        # print(self.df_group1)
+        # print(self.df_group2)
         """On peut utiliser le meme row de collone pour ouvrir les donées de la matrices"""
-        for index, gnomen in enumerate(self.get_row_matrix("1")):
+        for index, gnomen in enumerate(self.all_gnomen):
             gene_resul=None
 
-            group1=self.df_group1.iloc[[index]]
-            group1_array=array(self.df_group1.iloc[index])
+            group1=self.df_group1.loc[[gnomen]]
+            group1_array=array(self.df_group1.loc[gnomen])
 
-            group2=self.df_group2.iloc[[index]]
-            group2_array=array(self.df_group2.iloc[index])
+            group2=self.df_group2.loc[[gnomen]]
+            group2_array=array(self.df_group2.loc[gnomen])
 
             mutation_name = ['group1' for i in group1_array] + ['group2' for a in group2_array]
             mutation_data = [i for i in group1_array] + [a for a in group2_array]
@@ -446,16 +496,19 @@ class StatAnalysisDialog(PluginDialog):
                 gene_resul=(999,1)
 
             else:
-                print(contigency)
                 c, p, dof, expected=chi2_contingency(contigency)
 
-            if p <= cut_off_pourcentage:
+            self.dico_p_value_gene_group[gnomen]= p
+            if p <= cut_off_pourcentage :
+                print("dedans")
                 group_concat_line=pd.concat([group1,group2], axis=1)
                 self.df_ki_2=pd.concat([self.df_ki_2,group_concat_line],axis=0)
                 titre="gene//"+gnomen
                 result=p
                 self.dico_p_value_gene_group[titre]=result
-                print("yo")
+
+        self.df_ki_2.to_csv("khi_2.txt")
+        print(self.dico_p_value_gene_group)
 
         return self.df_ki_2
 
@@ -504,8 +557,10 @@ class StatAnalysisDialog(PluginDialog):
             if item_dico_join['gnomen'] == j and item_dico_join['sample_id'] == i :
                 return item_dico_join
 
-    def load_gnomen_list(self,data:list):
-        for item_dico_join in data:
+    def load_gnomen_list(self,data1:list,data2:list):
+        for item_dico_join in data1:
+            self.all_gnomen.append(item_dico_join['gnomen'])
+        for item_dico_join in data2:
             self.all_gnomen.append(item_dico_join['gnomen'])
         self.all_gnomen=self.keep_sorted_unique_values(self.all_gnomen)
 
@@ -534,26 +589,40 @@ class StatAnalysisDialog(PluginDialog):
             return self.df_group2
 
     def draw_heatmap(self, df:DataFrame):
-        print(self.ki_2_contigency())
+        bool_row = False
+        bool_col = False
+        if self.cluster.currentText() == "Row":
+            bool_row=True
+        elif self.cluster.currentText() == "Colone":
+            bool_col=True
+        elif self.cluster.currentText() == "Both":
+            bool_col =True
+            bool_row=True
+
         df = df.drop_duplicates()
-        current_heatmap = sns.clustermap(df, row_cluster=False, col_cluster=True,cmap="mako_r")
+        # print(bool_row, "############# COL",bool_col)
+        current_heatmap = sns.clustermap(df, row_cluster=bool_row, col_cluster=bool_col,cmap="mako_r")
+        if os.path.exists("current_heatmap.svg"):
+            os.remove( "current_heatmap.svg")
+
         current_heatmap.savefig("current_heatmap.svg", dpi=100)
         current_picture=QImage()
 
         if self.stockage.currentText() == "Yes" :
+            # print(path)
             if os.path.exists(self.stockage_name.text()+".svg"):
                 os.remove(self.stockage_name.text()+".svg")
                 print("Warning this name exist so the old are delete")
                 # TODO : error message
-            current_heatmap.savefig(self.stockage_name.text()+".svg", dpi=100)
+            current_heatmap.savefig("C:/Users/HAMEAUEL/Documents/Db cute/"+self.stockage_name.text()+".svg", dpi=100)
 
         self.heatmap=QLabel(self.central_widget)
         self.heatmap.setPixmap(QPixmap("current_heatmap.svg"))
-
+        self.ki_2_contigency().to_csv("C:/Users/HAMEAUEL/Documents/Db cute/matrix_heatmap.txt", sep="\t", encoding="utf-8", index=True)
+        print("draw fini")
 
     def error_message(self):
         print("uu")
-
 
 
     def get_data_frames(self, data_frame_number:str):
@@ -633,13 +702,15 @@ if __name__ == "__main__":
     import sys
 
     app = QApplication(sys.argv)
-    conn = sql.get_sql_connection("C:/Users/HAMEAUEL/Documents/Db cute/Nw_tag.db")
+    conn = sql.get_sql_connection("C:/Users/HAMEAUEL/Documents/Db cute/Nw_tag_classification.db")
     conn.row_factory = sqlite3.Row
 
     dialog = StatAnalysisDialog(conn)
     dialog.show()
     app.exec()
 
+##TODO##
+#Faire en sorte de pouvoir recuperer les infos lorsque le sample à plusieurs tag!!
 
 
 

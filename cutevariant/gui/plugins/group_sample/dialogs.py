@@ -296,7 +296,6 @@ class GroupSampleDialog(PluginDialog):
         self.group_list._apply_btn.setVisible(False)
         self.group_list.set_placeholder(self.tr("Research sample name ..."))
         self.dialog_manage_group = GroupManage(conn)
-        self.dialog_add_list = AddQuickList(conn)
         self.filter_bar = Filter_Bar(conn)
         self.model = GroupSampleModel(conn)
 
@@ -335,11 +334,7 @@ class GroupSampleDialog(PluginDialog):
         self.butt_remove.clicked.connect(self.on_remove_to_group)
         self.butt_remove.setIcon((FIcon(0xF09C0)))
 
-        self.quick_add_samples = QPushButton(self.tr("Quick list samples"))
-        self.quick_add_samples.clicked.connect(self.quick_add())
-
         self.vlayout_mid_P2.addWidget(self.butt_add)
-        self.vlayout_mid_P2.addWidget(self.quick_add_samples)
         self.vlayout_mid_P2.addWidget(self.butt_remove)
 
         """Last part for create the group"""
@@ -385,6 +380,7 @@ class GroupSampleDialog(PluginDialog):
         self.filter_bar.signal_load.connect(self.on_load_model_clear)
         self.filter_bar.signal_check.connect(self.model.on_check_all_samples)
         self.dialog_manage_group.signal_close.connect(self.filter_bar.on_refresh)
+
 
     def mouseDoubleClickEvent(self, event:PySide6.QtGui.QMouseEvent) :
         """
@@ -532,7 +528,6 @@ class GroupSampleDialog(PluginDialog):
     def manage_group(self):
         self.dialog_manage_group.show()
         self.dialog_manage_group.accepted.connect(self.filter_bar.on_refresh)
-
 
 class GroupManage(QDialog):
     """The second dialog used to remove tags from the DB"""
