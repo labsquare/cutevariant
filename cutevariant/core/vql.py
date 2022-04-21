@@ -172,6 +172,19 @@ class Tuple(metaclass=model_class):
         return list(self.items)
 
 
+class OrderBy(metaclass=model_class):
+    @property
+    def value(self):
+
+        print("DIRECTION", self.direction)
+        if not self.direction:
+            self.direction = "ASC"
+
+        direction = True if self.direction == "ASC" else False
+
+        return (self.field, direction)
+
+
 class WordSetIdentifier(metaclass=model_class):
     @property
     def value(self):
@@ -184,6 +197,8 @@ class SelectCmd(metaclass=model_class):
 
         filters = {}
         fields = []
+
+        order_by = [i.value for i in self.order_by]
 
         for col in self.fields:
             # Manage function like sample("boby").gt
@@ -207,6 +222,10 @@ class SelectCmd(metaclass=model_class):
             "source": self.source,
             "filters": filters,
         }
+
+        if order_by:
+            output["order_by"] = order_by
+
         return output
 
 

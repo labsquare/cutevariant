@@ -11,7 +11,7 @@ Command:
 
 
 SelectCmd:
-    'SELECT' fields+=FieldIdentifier[","] ('FROM' source=ID ('WHERE' filter=FilterExpression)? ('GROUP BY' group_by+=FieldIdentifier[","] ('HAVING' 'count' having_op=MathOperator having_val=NUMBER )?)?)?
+    'SELECT' fields+=FieldIdentifier[","] ('FROM' source=ID ('WHERE' filter=FilterExpression)? ('ORDER BY' order_by+=OrderBy[","])?)?
 ;
 
 CreateCmd:
@@ -81,7 +81,8 @@ FilterTerm:
 
 //################################## TERMINALS #########################
 Comment: /\#.*$/;
-
+OrderDirection: "ASC"|"DESC";
+OrderBy:field=FieldIdentifier (direction=OrderDirection)?;
 FieldId:/[^\d\W]([\w\.]*\.)?\w*\b/;
 FieldIdentifier: Function|FieldId;
 ValueIdentifier: (NUMBER|STRING|BOOL|Tuple|WordSetIdentifier|"NULL");
@@ -94,5 +95,4 @@ SetOperator: "|"|"-"|"&";
 // WARNING : ORDER IS IMPORTANT ! IS NOT BEFORE IS ..
 MathOperator: />=|<=|=~|!=|=|>|<|!~|has|!has|!in|in/;
 Tuple: '(' items+=ValueIdentifier[','] ')';
-
 
