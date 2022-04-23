@@ -118,6 +118,8 @@ class VariantModel(QAbstractTableModel):
     error_raised = Signal(str)
     interrupted = Signal()
 
+    sort_changed = Signal(str, bool)
+
     def __init__(self, conn=None, parent=None):
         super().__init__()
         self.limit = 50
@@ -138,8 +140,7 @@ class VariantModel(QAbstractTableModel):
         self.source = "variants"
         self.group_by = []
         self.having = {}
-        self.order_by = None
-        self.order_desc = False
+        self.order_by = []
         self.formatter = None
         self.debug_sql = None
         # Keep after all initialization
@@ -544,10 +545,7 @@ class VariantModel(QAbstractTableModel):
             filters=self.filters,
             limit=self.limit,
             offset=offset,
-            order_desc=self.order_desc,
             order_by=self.order_by,
-            group_by=self.group_by,
-            having=self.having,
         )
 
         LOGGER.debug(self.debug_sql)
@@ -559,10 +557,7 @@ class VariantModel(QAbstractTableModel):
             filters=self.filters,
             limit=self.limit,
             offset=offset,
-            order_desc=self.order_desc,
             order_by=self.order_by,
-            group_by=self.group_by,
-            having=self.having,
         )
 
         # Create count_func to run asynchronously: count variants
@@ -571,7 +566,6 @@ class VariantModel(QAbstractTableModel):
             fields=query_fields,
             source=self.source,
             filters=self.filters,
-            group_by=self.group_by,
         )
 
         # Start the run
@@ -697,11 +691,16 @@ class VariantModel(QAbstractTableModel):
         order (Qt.SortOrder): Qt.AscendingOrder or Qt.DescendingOrder
 
         """
+
         if column < self.columnCount():
             field = self.fields[column]
 
-            self.order_by = [field]
-            self.order_desc = order == Qt.DescendingOrder
+            ascending = True if order == Qt.AscendingOrder else False
+
+            # remove if already in
+            new_order_by = [(field, ascending)]
+            self.order_by = new_order_by
+
             self.load()
 
     def variant(self, row: int) -> dict:
@@ -1005,11 +1004,20 @@ class VariantView(QWidget):
         """
         if reset_page:
             self.model.page = 1
-            self.model.order_by = None
+            # self.model.order_by = None
 
         self.log_edit.hide()
         self.model.interrupt()
         self.model.load()
+
+        # display sort indicator
+        order_by = self.model.order_by
+        if order_by:
+            ordered_field = order_by[0][0]
+            order = Qt.AscendingOrder if order_by[0][1] else Qt.DescendingOrder
+            if ordered_field in self.model.fields:
+                index = self.model.fields.index(ordered_field)
+                self.view.horizontalHeader().setSortIndicator(index, order)
 
     def on_variant_loaded(self):
         """Slot called when async queries from the model are finished
@@ -1591,7 +1599,7 @@ class VariantViewWidget(plugin.PluginWidget):
     # Plugin class parameter
     LOCATION = plugin.CENTRAL_LOCATION
     ENABLE = True
-    REFRESH_STATE_DATA = {"fields", "filters", "source"}
+    REFRESH_STATE_DATA = {"fields", "filters", "source", "order_by"}
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -1622,6 +1630,7 @@ class VariantViewWidget(plugin.PluginWidget):
         }
 
         self.mainwindow.set_state_data("executed_query_data", executed_query_data)
+        self.mainwindow.set_state_data("order_by", self.view.model.order_by)
         self.mainwindow.refresh_plugins()
 
     def on_open_project(self, conn):
@@ -1641,16 +1650,12 @@ class VariantViewWidget(plugin.PluginWidget):
         # See load(), we use this attr to restore fields after grouping
 
         if self.mainwindow:
-            self.save_fields = self.mainwindow.get_state_data("fields")
-            self.save_filters = self.mainwindow.get_state_data("filters")
-
-            self.view.fields = self.mainwindow.get_state_data("fields")
-            self.view.source = self.mainwindow.get_state_data("source")
-            self.view.filters = self.mainwindow.get_state_data("filters")
 
             self.view.model.clear_variant_cache()
-            self.view.fields = self.save_fields
-            self.view.filters = self.save_filters
+            self.view.fields = self.mainwindow.get_state_data("fields")
+            self.view.filters = self.mainwindow.get_state_data("filters")
+            self.view.model.order_by = self.mainwindow.get_state_data("order_by")
+
             self.view.load(reset_page=True)
 
     def on_variant_clicked(self, index: QModelIndex):

@@ -82,6 +82,7 @@ class StateData:
             "fields": ["favorite", "classification", "chr", "pos", "ref", "alt"],
             "source": "variants",
             "filters": {},
+            "order_by": [],
         }
 
 
