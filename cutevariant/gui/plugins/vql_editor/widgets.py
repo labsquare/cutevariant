@@ -41,7 +41,7 @@ class VqlEditorWidget(plugin.PluginWidget):
 
     LOCATION = plugin.FOOTER_LOCATION
     ENABLE = True
-    REFRESH_STATE_DATA = {"fields", "filters", "source"}
+    REFRESH_STATE_DATA = {"fields", "filters", "source", "order_by"}
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -98,6 +98,7 @@ class VqlEditorWidget(plugin.PluginWidget):
             self.mainwindow.get_state_data("fields"),
             self.mainwindow.get_state_data("source"),
             self.mainwindow.get_state_data("filters"),
+            self.mainwindow.get_state_data("order_by"),
         )
 
         self.set_vql(vql_query)
@@ -242,6 +243,10 @@ class VqlEditorWidget(plugin.PluginWidget):
                 # name of the variant selection
                 self.mainwindow.set_state_data("source", cmd["source"])
                 self.mainwindow.set_state_data("filters", cmd["filters"])
+
+                if "order_by" in cmd:
+                    self.mainwindow.set_state_data("order_by", cmd["order_by"])
+
                 # Refresh all plugins
                 self.mainwindow.refresh_plugins(sender=self)
                 continue

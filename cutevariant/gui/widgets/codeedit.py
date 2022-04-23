@@ -65,6 +65,7 @@ class VqlSyntaxHighlighter(QSyntaxHighlighter):
         "COUNT",
         "IMPORT",
         "WORDSET",
+        "ORDER BY",
         "INTERSECT",
     )
 
