@@ -18,10 +18,11 @@ from PySide6.QtGui import QIcon, QKeySequence, QDesktopServices
 
 # Custom imports
 from cutevariant import LOGGER
-from cutevariant.core import get_sql_connection, get_metadatas, command
+from cutevariant.core import get_sql_connection, get_metadatas, command, querybuilder
 from cutevariant.core import sql
 from cutevariant.core.sql import get_database_file_name
 from cutevariant.core.writer import CsvWriter, PedWriter
+from cutevariant.core.quicksearch import quicksearch
 from cutevariant.gui import FIcon
 from cutevariant.gui.widgets.project_wizard import ProjectWizard
 from cutevariant.gui.widgets.import_widget import VcfImportDialog
@@ -1088,40 +1089,22 @@ class MainWindow(QMainWindow):
 
     def quick_search(self, query: str):
 
-        if not query:
-            self.set_state_data("filters", {})
-            self.refresh_plugins(self)
-            return
+        additionnal_filter = quicksearch(query)
 
-        # match coordinate
-        match = re.findall(r"(\w+):(\d+)-(\d+)", query)
+        if additionnal_filter:
+            previous_filter = copy.deepcopy(self.get_state_data("filters"))
 
-        if match:
-            chrom, start, end = match[0]
-            start = int(start)
-            end = int(end)
+            # TODO: do we really need to extend filters ?
+            # if "$and" in previous_filter:
+            #     previous_filter["$and"].extend(additionnal_filter["$and"])
+
+            previous_filter = additionnal_filter
+
             self.set_state_data(
                 "filters",
-                {
-                    "$and": [
-                        {"chr": chrom},
-                        {"pos": {"$gte": start}},
-                        {"pos": {"$lte": end}},
-                    ]
-                },
+                previous_filter,
             )
-            self.refresh_plugins(self)
-            return
-
-        # match gene
-        match = re.findall(r"(\w+)", query)
-
-        if match:
-            gene = match[0]
-
-            self.set_state_data("filters", {"$and": [{"ann.gene": gene}]})
-            self.refresh_plugins(self)
-            return
+            self.refresh_plugins()
 
     # @Slot()
     # def on_query_model_changed(self):

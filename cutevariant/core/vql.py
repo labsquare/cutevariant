@@ -13,7 +13,7 @@ See test_vql.py for usage and features.
 
 import textx
 from pkg_resources import resource_string
-
+from typing import Tuple
 
 OPERATORS = {
     "=": "$eq",
@@ -72,7 +72,7 @@ class VQLSyntaxError(ValueError):
 # ============ Error handle ==================================
 def error_message_from_err(
     err: textx.exceptions.TextXSyntaxError, raw_vql: str
-) -> (str, int):
+) -> Tuple[str, int]:
     """Return human-readable information and index in raw_sql query
     about the given exception"""
     # print(err)
