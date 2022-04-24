@@ -15,6 +15,7 @@ EXAMPLE_QUERIES = [
         },
     ),
     ("", dict()),
+    ("chr7:42", {"$and": [{"chr": "chr7"}, {"pos": {"$eq": 42}}]}),
 ]
 
 

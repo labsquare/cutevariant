@@ -23,7 +23,12 @@ def quicksearch(query: str) -> dict:
     Returns:
         dict: appropriate filter corresponding to the query string
     """
-    strategies = [parse_gene_query, parse_coords_query, parse_vql_query]
+    strategies = [
+        parse_gene_query,
+        parse_coords_query,
+        parse_single_coords_query,
+        parse_vql_query,
+    ]
     for strat in strategies:
         parsed = strat(query)
         if parsed:
@@ -80,6 +85,27 @@ def parse_coords_query(query: str) -> bool:
         return {
             "$and": [{"chr": chrom}, {"pos": {"$gte": start}}, {"pos": {"$lte": end}}]
         }
+    else:
+        return dict()
+
+
+def parse_single_coords_query(query: str) -> bool:
+    """Parse quick search text. This function is the genomic location strategy.
+
+    Args:
+        query (str): A quick search query, presumably for a single locus coordinates
+
+    Returns:
+        dict: If the query string is in the form 'chr7:117120017', returns the corresponding filter dict
+    """
+    if not query:
+        return ""
+
+    match = re.findall(r"(\w+):(\d+)", query)
+
+    if match:
+        chrom, pos = match[0]
+        return {"$and": [{"chr": chrom}, {"pos": {"$eq": int(pos)}}]}
     else:
         return dict()
 
