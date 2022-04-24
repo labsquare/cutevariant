@@ -25,23 +25,23 @@ def quicksearch(query: str) -> dict:
     """
     strategies = [parse_gene_query, parse_coords_query, parse_vql_query]
     for strat in strategies:
-        success, parsed = strat(query)
-        if success:
+        parsed = strat(query)
+        if parsed:
             return parsed
     return dict()
 
 
-def parse_gene_query(query: str) -> Tuple[bool, dict]:
+def parse_gene_query(query: str) -> dict:
     """Parse quick search text. This function is the gene strategy.
 
     Args:
         query (str): A quick search query, presumably for a gene
 
     Returns:
-        Tuple[bool,dict]: True if the query string looks like a gene, as well as the corresponding filter dict
+        dict: If the query string looks like a gene, returns the corresponding filter dict
     """
     if not query:
-        return False, ""
+        return dict()
 
     match = re.findall(r"^(\w+)$", query)
 
@@ -50,22 +50,22 @@ def parse_gene_query(query: str) -> Tuple[bool, dict]:
 
         gene_col_name = "gene"
 
-        return True, {"$and": [{f"ann.{gene_col_name}": gene_name}]}
+        return {"$and": [{f"ann.{gene_col_name}": gene_name}]}
     else:
-        return False, dict()
+        return dict()
 
 
-def parse_coords_query(query: str) -> Tuple[bool, dict]:
+def parse_coords_query(query: str) -> bool:
     """Parse quick search text. This function is the genomic location strategy.
 
     Args:
         query (str): A quick search query, presumably for locus coordinates
 
     Returns:
-        Tuple[bool,dict]: True if the query string is in the form 'chr7:117120017-117308718', as well as the corresponding filter dict
+        dict: If the query string is in the form 'chr7:117120017-117308718', returns the corresponding filter dict
     """
     if not query:
-        return False, ""
+        return ""
 
     match = re.findall(r"(\w+):(\d+)-(\d+)", query)
 
@@ -76,25 +76,25 @@ def parse_coords_query(query: str) -> Tuple[bool, dict]:
 
         # Don't create a filter, to avoid confusion
         if end < start:
-            return False, dict()
-        return True, {
+            return dict()
+        return {
             "$and": [{"chr": chrom}, {"pos": {"$gte": start}}, {"pos": {"$lte": end}}]
         }
     else:
-        return False, dict()
+        return dict()
 
 
-def parse_vql_query(query: str) -> Tuple[bool, dict]:
+def parse_vql_query(query: str) -> dict:
     """Parse quick search text. This function is the vql filter strategy, aka the fallback one, if all the others fail
 
     Args:
         query (str): A quick search query, presumably for a gene
 
     Returns:
-        Tuple[bool,dict]: True if the query string looks like a VQL filter statement, as well as the corresponding filter dict
+        dict: If the query string looks like a VQL filter statement, returns the corresponding filter dict
     """
     if not query:
-        return False, ""
+        return dict()
 
     res = None
 
@@ -104,6 +104,6 @@ def parse_vql_query(query: str) -> Tuple[bool, dict]:
         LOGGER.error("Invalid VQL filter", e.args[0])
 
     if res:
-        return True, res["filters"]
+        return res["filters"]
     else:
-        return False, dict()
+        return dict()

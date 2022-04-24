@@ -14,6 +14,7 @@ EXAMPLE_QUERIES = [
             ]
         },
     ),
+    ("", dict()),
 ]
 
 
