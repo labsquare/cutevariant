@@ -130,8 +130,19 @@ class VcfWriter(AbstractWriter):
             self.conn, variant_id, fields=fields
         )
 
-        for ann in sample_annotations:
-            ssample.append(VcfWriter.GENOTYPE_MAP[ann.get("gt", "")])
+        for annotations in sample_annotations:
+            sssample = []
+            for ann in annotations:
+                if ann in fields:
+                    if ann == "gt":
+                        #ssample.append(VcfWriter.GENOTYPE_MAP[ann.get("gt", "")])
+                        sssample.append(self.GENOTYPE_MAP[annotations.get("gt", "./.")])
+                    else:
+                        if annotations[ann] == None:
+                            sssample.append(".")
+                        else:
+                            sssample.append(str(annotations[ann]))
+            ssample.append(":".join(sssample))
 
         return "\t".join(ssample)
 
@@ -172,7 +183,6 @@ class VcfWriter(AbstractWriter):
             )
         )
 
-
         # FORMAT fields
         format_fields=[]
         for format_field in dict(self.conn.execute(
@@ -181,14 +191,13 @@ class VcfWriter(AbstractWriter):
             if format_field not in (
                     "variant_id",
                     "sample_id",
+                    "name",
+                    "valid",
                     "classification",
                     "tags",
                     "comment",
                 ):
                 format_fields.append(format_field)
-        
-        print(format_fields)
-
 
         # Start the actual variant writing loop
         for index, variant in enumerate(
