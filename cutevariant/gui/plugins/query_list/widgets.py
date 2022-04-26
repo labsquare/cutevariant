@@ -273,19 +273,22 @@ class QueryListWidget(plugin.PluginWidget):
         self.setContentsMargins(0, 0, 0, 0)
 
     def _setup_actions(self):
+
+        self.run_action = self.tool_bar.addAction(FIcon(0xF040A), "Run")
+        self.run_action.triggered.connect(self._run_query)
+
+        self.tool_bar.addSeparator()
+
         self.add_action = self.tool_bar.addAction(FIcon(0xF0415), "Add")
         self.add_action.triggered.connect(self._add_query)
 
         self.remove_action = self.tool_bar.addAction(FIcon(0xF0A7A), "Remove")
         self.remove_action.triggered.connect(self._remove_query)
 
-        self.run_action = self.tool_bar.addAction(FIcon(0xF040A), "Run")
-        self.run_action.triggered.connect(self._run_query)
-
         self.edit_action = self.tool_bar.addAction(FIcon(0xF064F), "Edit")
         self.edit_action.triggered.connect(self._edit_query)
 
-        self.view.addActions([self.add_action, self.remove_action, self.run_action])
+        self.view.addActions([self.remove_action, self.edit_action])
 
     def on_register(self, mainwindow: MainWindow):
         """This method is called when the plugin is registered from the mainwindow.
@@ -321,9 +324,10 @@ class QueryListWidget(plugin.PluginWidget):
         query = self.model.data(index, Qt.UserRole)
         query_params = parse_one_vql(query)
 
-        for k in query_params:
-            if k in ("fields", "source", "filters", "order_by"):
-                self.mainwindow.set_state_data(k, query_params[k])
+        self.mainwindow.set_state_data("fields",query_params.get("fields",[]))
+        self.mainwindow.set_state_data("source",query_params.get("source","variants"))
+        self.mainwindow.set_state_data("filters",query_params.get("filters",[]))
+        self.mainwindow.set_state_data("order_by",query_params.get("order_by",[]))
 
         self.mainwindow.refresh_plugins(sender=self)
 
