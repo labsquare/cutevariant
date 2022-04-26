@@ -137,6 +137,8 @@ class QueryListModel(QAbstractListModel):
             return self._presets[row]["description"]
         if role == Qt.UserRole:
             return self._presets[row]["query"]
+        if role == Qt.SizeHintRole:
+            return QSize(30, 30)
 
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
         if parent == QModelIndex():
@@ -172,9 +174,9 @@ class QueryListWidget(plugin.PluginWidget):
         main_layout.addWidget(self.view)
         main_layout.setContentsMargins(0, 0, 0, 0)
 
-        self.view.doubleClicked.connect(self._run_query)
-
         self._setup_actions()
+
+        self.view.doubleClicked.connect(self._run_query)
         self.view.setContextMenuPolicy(Qt.ActionsContextMenu)
 
         self.tool_bar.setIconSize(QSize(16, 16))
