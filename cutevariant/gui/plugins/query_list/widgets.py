@@ -134,9 +134,9 @@ class QueryListModel(QAbstractListModel):
             if col == 0:
                 return self._presets[row]["name"]
         if role == Qt.ToolTipRole:
-            return self._presets[row]["query"]
-        if role == Qt.UserRole:
             return self._presets[row]["description"]
+        if role == Qt.UserRole:
+            return self._presets[row]["query"]
 
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
         if parent == QModelIndex():
@@ -191,6 +191,9 @@ class QueryListWidget(plugin.PluginWidget):
         self.run_action = self.tool_bar.addAction(FIcon(0xF040A), "Run")
         self.run_action.triggered.connect(self._run_query)
 
+        self.edit_action = self.tool_bar.addAction(FIcon(0xF064F), "Edit")
+        self.edit_action.triggered.connect(self._edit_query)
+
         self.view.addActions([self.add_action, self.remove_action, self.run_action])
 
     def on_register(self, mainwindow: MainWindow):
@@ -224,7 +227,7 @@ class QueryListWidget(plugin.PluginWidget):
 
     def _run_query(self):
         index = self.view.currentIndex()
-        query = self.model.data(index, Qt.ToolTipRole)
+        query = self.model.data(index, Qt.UserRole)
         query_params = parse_one_vql(query)
 
         for k in query_params:
@@ -288,6 +291,20 @@ class QueryListWidget(plugin.PluginWidget):
             == QMessageBox.Yes
         ):
             self.model.remove_preset(self.view.currentIndex())
+            self.model.save()
+
+    def _edit_query(self):
+        index = self.view.currentIndex()
+        name = index.data(Qt.DisplayRole)
+        description = index.data(Qt.ToolTipRole)
+        query = index.data(Qt.UserRole)
+
+        dialog = QueryDialog(self)
+
+        dialog.set_item({"name": name, "description": description, "query": query})
+
+        if dialog.exec() == QDialog.Accepted:
+            self.model.edit_preset(**dialog.get_item())
             self.model.save()
 
 
