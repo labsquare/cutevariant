@@ -93,6 +93,7 @@ import os
 import getpass
 
 from typing import List, Callable, Iterable
+from datetime import datetime
 
 # Custom imports
 import cutevariant.commons as cm
@@ -2586,19 +2587,23 @@ def insert_sample(conn, name="no_name"):
     return cursor.lastrowid
 
 
-def insert_samples(conn, samples: list):
+def insert_samples(conn, samples: list, import_id: str = None):
     """Insert many samples at a time in samples table.
     Set genotype to -1 in sample_has_variant for all pre-existing variants.
 
     :param samples: List of samples names
+    :param import_id: importID tag for each samples
         .. todo:: only names in this list ?
     :type samples: <list <str>>
     """
     cursor = conn.cursor()
-    cursor.executemany(
-        "INSERT OR IGNORE INTO samples (name) VALUES (?)",
-        ((sample,) for sample in samples),
-    )
+    if not import_id:
+        import_id=datetime.today().strftime('%Y%m%d-%H%M%S')
+    import_id_tag="importID#"+import_id
+    for sample in samples:
+        cursor.execute(f"INSERT OR IGNORE INTO samples (name) VALUES ('{sample}') ")
+        cursor.execute(f"UPDATE samples SET tags = '{import_id_tag}' WHERE name = '{sample}' AND tags = '' ")
+        cursor.execute(f"UPDATE samples SET tags = tags || ',' || '{import_id_tag}' WHERE name = '{sample}' AND tags != '' AND ',' || tags || ',' NOT LIKE '%,{import_id_tag},%' ")
     conn.commit()
 
 
@@ -3298,6 +3303,7 @@ def import_reader(
     conn: sqlite3.Connection,
     reader: AbstractReader,
     pedfile: str = None,
+    import_id: str = None,
     ignored_fields: list = [],
     indexed_fields: list = [],
     progress_callback: Callable = None,
@@ -3320,7 +3326,7 @@ def import_reader(
     # insert samples
     if progress_callback:
         progress_callback("Insert samples")
-    insert_samples(conn, reader.get_samples())
+    insert_samples(conn, samples=reader.get_samples(), import_id=import_id)
 
     # insert ped
     if pedfile:
