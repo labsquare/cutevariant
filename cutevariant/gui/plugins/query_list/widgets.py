@@ -23,14 +23,16 @@ class QueryWidget(QWidget):
 
         self.tab_widget = QTabWidget()
         self.info_tab = QWidget()
-
-        self.tab_widget.addTab(self.info_tab, "Info")
-        self.tab_widget.addTab(self.code_edit, "VQL")
-
-        form_layout = QFormLayout(self.info_tab)
-
+        form_box = QGroupBox()
+        form_layout = QFormLayout(form_box)
         form_layout.addRow("Title", self.line_edit)
         form_layout.addRow("Description", self.desc_edit)
+
+        self.tab_widget.addTab(form_box, "Information")
+        self.tab_widget.addTab(self.code_edit, "VQL query")
+        self.tab_widget.tabBar().setDocumentMode(True)
+        self.tab_widget.tabBar().setExpanding(True)
+        
 
         main_layout = QVBoxLayout(self)
         main_layout.addWidget(self.tab_widget)
