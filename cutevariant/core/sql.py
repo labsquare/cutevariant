@@ -2597,13 +2597,11 @@ def insert_samples(conn, samples: list, import_id: str = None):
     :type samples: <list <str>>
     """
     cursor = conn.cursor()
-    if not import_id:
-        import_id=datetime.today().strftime('%Y%m%d-%H%M%S')
-    import_id_tag="importID#"+import_id
     for sample in samples:
         cursor.execute(f"INSERT OR IGNORE INTO samples (name) VALUES ('{sample}') ")
-        cursor.execute(f"UPDATE samples SET tags = '{import_id_tag}' WHERE name = '{sample}' AND tags = '' ")
-        cursor.execute(f"UPDATE samples SET tags = tags || ',' || '{import_id_tag}' WHERE name = '{sample}' AND tags != '' AND ',' || tags || ',' NOT LIKE '%,{import_id_tag},%' ")
+        if import_id:
+            cursor.execute(f"UPDATE samples SET tags = 'importID#{import_id}' WHERE name = '{sample}' AND tags = '' ")
+            cursor.execute(f"UPDATE samples SET tags = tags || ',' || 'importID#{import_id}' WHERE name = '{sample}' AND tags != '' AND ',' || tags || ',' NOT LIKE '%,importID#{import_id},%' ")
     conn.commit()
 
 
