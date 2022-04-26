@@ -784,7 +784,9 @@ class ValidationWidget(plugin.PluginWidget):
     def on_open_project(self, conn):
         self._conn = conn
         self.model.conn = conn
+        self.model.clear()
         self.load_all_filters()
+
 
     def _is_selectors_checked(self):
         """Return False if selectors is not checked"""
