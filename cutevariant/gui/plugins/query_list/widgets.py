@@ -1,11 +1,12 @@
 import sqlite3
+from cutevariant.core import sql
 from cutevariant.core.querybuilder import build_vql_query
 from cutevariant.core.vql import parse_one_vql
 from cutevariant.gui import mainwindow, plugin
 from cutevariant.gui import MainWindow
 from cutevariant.gui.widgets import CodeEdit
 from cutevariant.gui.settings import Config
-from cutevariant.gui import FIcon
+from cutevariant.gui import FIcon, style
 
 from PySide6.QtWidgets import *
 from PySide6.QtGui import *
@@ -13,7 +14,7 @@ from PySide6.QtCore import *
 
 
 class QueryWidget(QWidget):
-    def __init__(self, parent: QWidget = None) -> None:
+    def __init__(self, parent: QWidget = None, conn: sqlite3.Connection = None) -> None:
         super().__init__(parent)
 
         self.line_edit = QLineEdit()
@@ -34,6 +35,94 @@ class QueryWidget(QWidget):
         main_layout = QVBoxLayout(self)
         main_layout.addWidget(self.tab_widget)
 
+        self.conn = conn
+
+        self._fill_completer()
+
+    def _fill_completer(self):
+        """Create Completer with his model
+
+        Fill the model with the SQL keywords and database fields
+        """
+        if self.conn:
+            # preload samples , selection and wordset
+            samples = [i["name"] for i in sql.get_samples(self.conn)]
+            selections = [i["name"] for i in sql.get_selections(self.conn)]
+            wordsets = [i["name"] for i in sql.get_wordsets(self.conn)]
+
+            # keywords = []
+            self.code_edit.completer.model.clear()
+            self.code_edit.completer.model.beginResetModel()
+
+            # register keywords
+            for keyword in self.code_edit.syntax.sql_keywords:
+                self.code_edit.completer.model.add_item(
+                    keyword, "VQL keywords", FIcon(0xF0169), "#f6ecf0"
+                )
+
+            for selection in selections:
+                self.code_edit.completer.model.add_item(
+                    selection, "Source table", FIcon(0xF04EB), "#f6ecf0"
+                )
+
+            for wordset in wordsets:
+                self.code_edit.completer.model.add_item(
+                    f"WORDSET['{wordset}']", "WORDSET", FIcon(0xF04EB), "#f6ecf0"
+                )
+
+            for field in sql.get_fields(self.conn):
+                name = field["name"]
+                description = "<b>{}</b> ({}) from {} <br/><br/> {}".format(
+                    field["name"],
+                    field["type"],
+                    field["category"],
+                    field["description"],
+                )
+                color = style.FIELD_TYPE.get(field["type"], "str")["color"]
+                icon = FIcon(
+                    style.FIELD_TYPE.get(field["type"], "str")["icon"], "white"
+                )
+
+                if field["category"] == "variants":
+                    self.code_edit.completer.model.add_item(
+                        name, description, icon, color
+                    )
+
+                if field["category"] == "annotations":
+                    self.code_edit.completer.model.add_item(
+                        f"ann.{name}", description, icon, color
+                    )
+
+                if field["category"] == "samples":
+
+                    # Add AnySamples special keywords
+                    # samples["*"].gt
+                    name = "samples[ANY].{}".format(field["name"])
+                    self.code_edit.completer.model.add_item(
+                        name, description, icon, color
+                    )
+
+                    name = "samples[ALL].{}".format(field["name"])
+                    self.code_edit.completer.model.add_item(
+                        name, description, icon, color
+                    )
+
+                    # Overwrite name
+                    for sample in samples:
+                        name = "samples['{}'].{}".format(sample, field["name"])
+                        description = "<b>{}</b> ({}) from {} {} <br/><br/> {}".format(
+                            field["name"],
+                            field["type"],
+                            field["category"],
+                            sample,
+                            field["description"],
+                        )
+                        self.code_edit.completer.model.add_item(
+                            name, description, icon, color
+                        )
+
+            self.code_edit.completer.model.endResetModel()
+
     def set_item(self, item: dict):
         self.line_edit.setText(item.get("name", ""))
         self.desc_edit.setText(item.get("description", ""))
@@ -48,10 +137,10 @@ class QueryWidget(QWidget):
 
 
 class QueryDialog(QDialog):
-    def __init__(self, parent: QWidget = None):
+    def __init__(self, parent: QWidget = None, conn: sqlite3.Connection = None):
         super().__init__(parent)
 
-        self.widget = QueryWidget(self)
+        self.widget = QueryWidget(parent=self, conn=conn)
         self.button_box = QDialogButtonBox(
             QDialogButtonBox.Save | QDialogButtonBox.Cancel
         )
@@ -217,7 +306,7 @@ class QueryListWidget(plugin.PluginWidget):
         Args:
             conn (sqlite3.connection): A connection to the sqlite project
         """
-        pass
+        self.conn = conn
 
     def on_refresh(self):
         """This method is called from mainwindow.refresh_plugins()
@@ -244,7 +333,7 @@ class QueryListWidget(plugin.PluginWidget):
             for k in ("fields", "source", "filters", "order_by")
         }
         query = build_vql_query(**current_query)
-        dialog = QueryDialog(self)
+        dialog = QueryDialog(self, self.conn)
         dialog.set_item({"query": query})
         if dialog.exec() == QDialog.Accepted:
             new_preset = dialog.get_item()
@@ -301,7 +390,7 @@ class QueryListWidget(plugin.PluginWidget):
         description = index.data(Qt.ToolTipRole)
         query = index.data(Qt.UserRole)
 
-        dialog = QueryDialog(self)
+        dialog = QueryDialog(self, self.conn)
 
         dialog.set_item({"name": name, "description": description, "query": query})
 
