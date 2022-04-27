@@ -527,7 +527,7 @@ QUERY_TESTS = [
             "source": "variants",
             "filters": {"$and": [{"ref": {"$has": "variant"}}]},
         },
-        "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`variants`.`ref`,`variants`.`alt` FROM variants WHERE ('&' || `variants`.`ref` || '&' LIKE '%&variant&%') LIMIT 50 OFFSET 0",
+        "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`variants`.`ref`,`variants`.`alt` FROM variants WHERE (',' || `variants`.`ref` || ',' LIKE '%,variant,%') LIMIT 50 OFFSET 0",
         "SELECT chr,pos,ref,alt FROM variants WHERE ref HAS 'variant'",
     ),
     # TEST NOT HAS
@@ -537,9 +537,40 @@ QUERY_TESTS = [
             "source": "variants",
             "filters": {"$and": [{"ref": {"$nhas": "variant"}}]},
         },
+        "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`variants`.`ref`,`variants`.`alt` FROM variants WHERE (',' || `variants`.`ref` || ',' NOT LIKE '%,variant,%') LIMIT 50 OFFSET 0",
+        "SELECT chr,pos,ref,alt FROM variants WHERE ref !HAS 'variant'",
+    ),
+    (
+        {
+            "fields": ["chr", "pos"],
+            "source": "variants",
+            "filters": {"$and": [{"samples.$any.gt": 1}]},
+        },
+        "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants INNER JOIN sample_has_variant `sample_TUMOR` ON `sample_TUMOR`.variant_id = variants.id AND `sample_TUMOR`.sample_id = 1 INNER JOIN sample_has_variant `sample_NORMAL` ON `sample_NORMAL`.variant_id = variants.id AND `sample_NORMAL`.sample_id = 2 WHERE ((`sample_TUMOR`.`gt` = 1 OR `sample_NORMAL`.`gt` = 1)) LIMIT 50 OFFSET 0",
+        "SELECT chr,pos FROM variants WHERE samples[ANY].gt = 1",
+    ),
+    # TEST HA&
+    # Test filters with HA& !
+    (
+        {
+            "fields": ["chr", "pos", "ref", "alt"],
+            "source": "variants",
+            "filters": {"$and": [{"ref": {"$ha&": "variant"}}]},
+        },
+        "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`variants`.`ref`,`variants`.`alt` FROM variants WHERE ('&' || `variants`.`ref` || '&' LIKE '%&variant&%') LIMIT 50 OFFSET 0",
+        "SELECT chr,pos,ref,alt FROM variants WHERE ref HAS 'variant'",
+    ),
+    # TEST NOT HA&
+    (
+        {
+            "fields": ["chr", "pos", "ref", "alt"],
+            "source": "variants",
+            "filters": {"$and": [{"ref": {"$nha&": "variant"}}]},
+        },
         "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`variants`.`ref`,`variants`.`alt` FROM variants WHERE ('&' || `variants`.`ref` || '&' NOT LIKE '%&variant&%') LIMIT 50 OFFSET 0",
         "SELECT chr,pos,ref,alt FROM variants WHERE ref !HAS 'variant'",
     ),
+    # TEST ANY
     (
         {
             "fields": ["chr", "pos"],
