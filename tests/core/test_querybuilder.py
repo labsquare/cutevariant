@@ -558,7 +558,7 @@ QUERY_TESTS = [
             "filters": {"$and": [{"ref": {"$ha&": "variant"}}]},
         },
         "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`variants`.`ref`,`variants`.`alt` FROM variants WHERE ('&' || `variants`.`ref` || '&' LIKE '%&variant&%') LIMIT 50 OFFSET 0",
-        "SELECT chr,pos,ref,alt FROM variants WHERE ref HAS 'variant'",
+        "SELECT chr,pos,ref,alt FROM variants WHERE ref HA& 'variant'",
     ),
     # TEST NOT HA&
     (
@@ -568,7 +568,7 @@ QUERY_TESTS = [
             "filters": {"$and": [{"ref": {"$nha&": "variant"}}]},
         },
         "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`variants`.`ref`,`variants`.`alt` FROM variants WHERE ('&' || `variants`.`ref` || '&' NOT LIKE '%&variant&%') LIMIT 50 OFFSET 0",
-        "SELECT chr,pos,ref,alt FROM variants WHERE ref !HAS 'variant'",
+        "SELECT chr,pos,ref,alt FROM variants WHERE ref !HA& 'variant'",
     ),
     # TEST ANY
     (
