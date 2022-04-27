@@ -1644,6 +1644,9 @@ class VariantViewWidget(plugin.PluginWidget):
         self.view.model.set_cache(config.get("memory_cache", 32))
         self.on_refresh()
 
+    def on_close_project(self):
+        self.view.model.clear()
+
     def on_refresh(self):
         """Overrided from PluginWidget"""
         # Save default data with current query attributes

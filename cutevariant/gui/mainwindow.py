@@ -185,7 +185,7 @@ class MainWindow(QMainWindow):
         # Auto open recent projects
         recent = self.get_recent_projects()
         if recent and os.path.isfile(recent[0]):
-            self.open(recent[0])
+            self.open_database_from_file(recent[0])
 
     def set_state_data(self, key: str, value: typing.Any):
         """set state data value from key
@@ -408,14 +408,11 @@ class MainWindow(QMainWindow):
             self.import_file,
             QKeySequence.AddTab,
         )
-        self.open_config_action = self.file_menu.addAction(
-            FIcon(0xF102F), self.tr("&Open config..."), self.open_config
-        )
 
         self.toolbar.addAction(self.new_project_action)
         self.toolbar.addAction(self.open_project_action)
         self.toolbar.addAction(self.import_file_action)
-        self.toolbar.addAction(self.open_config_action)
+        #self.toolbar.addAction(self.open_config_action)
         self.toolbar.addAction(
             FIcon(0xF0625), self.tr("Help"), QWhatsThis.enterWhatsThisMode
         )
@@ -456,10 +453,17 @@ class MainWindow(QMainWindow):
 
         self.file_menu.addSeparator()
         ### Misc
+
+        ## TODO ==> Ca devrait allé dans les settings ça. 
+        self.open_config_action = self.file_menu.addAction(
+            FIcon(0xF102F), self.tr("&Set config..."), self.open_config
+        )
         self.file_menu.addAction(
             FIcon(0xF0493), self.tr("Settings..."), self.show_settings
         )
         self.file_menu.addSeparator()
+        self.close_project_action = self.file_menu.addAction(
+            FIcon(0xF0156), self.tr("&Close project"), self.close_database)
         self.file_menu.addAction(self.tr("&Quit"), self.close, QKeySequence.Quit)
 
         ## Edit
@@ -543,7 +547,7 @@ class MainWindow(QMainWindow):
             self.about_cutevariant,
         )
 
-    def open(self, filepath):
+    def open_database_from_file(self, filepath):
         """Open the given db/project file
 
         .. note:: Called at the end of a project creation by the Wizard,
@@ -602,6 +606,8 @@ class MainWindow(QMainWindow):
         Args:
             conn (sqlite3.Connection): Sqlite3 Connection
         """
+
+
         self.conn = conn
 
         self._state_data.reset()
@@ -619,6 +625,16 @@ class MainWindow(QMainWindow):
         for plugin_obj in self.plugins.values():
             plugin_obj.on_open_project(self.conn)
             plugin_obj.setEnabled(True)
+
+    def close_database(self):
+        if self.conn:
+            self.conn.close()
+            self._state_data.reset()
+            self.setWindowTitle("Cutevariant")
+
+            for plugin_obj in self.plugins.values():
+                plugin_obj.on_close_project()
+                plugin_obj.setEnabled(False)
 
     def save_recent_project(self, path):
         """Save current project into QSettings
@@ -666,7 +682,7 @@ class MainWindow(QMainWindow):
     def on_recent_project_clicked(self):
         """Slot to load a recent project"""
         action = self.sender()
-        self.open(action.text())
+        self.open_database_from_file(action.text())
 
     def new_project(self):
         """Slot to allow creation of a project with the Wizard"""
@@ -677,7 +693,7 @@ class MainWindow(QMainWindow):
         db_filename = wizard.db_filename()
 
         try:
-            self.open(db_filename)
+            self.open_database_from_file(db_filename)
         except Exception as e:
             self.status_bar.showMessage(e.__class__.__name__ + ": " + str(e))
             raise
@@ -695,7 +711,7 @@ class MainWindow(QMainWindow):
         )
         if filepath:
             try:
-                self.open(filepath)
+                self.open_database_from_file(filepath)
             except Exception as e:
                 self.status_bar.showMessage(e.__class__.__name__ + ": " + str(e))
                 raise
@@ -712,7 +728,7 @@ class MainWindow(QMainWindow):
             # LOGGER.warning("ICI", db_filename)
 
             try:
-                self.open(db_filename)
+                self.open_database_from_file(db_filename)
             except Exception as e:
                 self.status_bar.showMessage(e.__class__.__name__ + ": " + str(e))
 

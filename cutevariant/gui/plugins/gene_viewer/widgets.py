@@ -905,6 +905,9 @@ class GeneViewerWidget(plugin.PluginWidget):
         except:
             LOGGER.debug("Cannot init gene viewer")
 
+    def on_close_project(self):
+        self.view.set_gene(None)  
+
     def on_register(self, mainwindow: MainWindow):
         """ """
         pass

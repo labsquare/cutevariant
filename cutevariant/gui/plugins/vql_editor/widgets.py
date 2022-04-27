@@ -91,6 +91,9 @@ class VqlEditorWidget(plugin.PluginWidget):
 
         self.on_refresh()
 
+    def on_close_project(self):
+        self.text_edit.clear()
+
     def on_refresh(self):
         """overrided from PluginWidget"""
 

@@ -172,6 +172,11 @@ class QueryListModel(QAbstractListModel):
         self._presets = config["presets"] or []
         self.endResetModel()
 
+    def clear(self):
+        self.beginResetModel()
+        self._presets.clear()
+        self.endResetModel()
+
     def save(self):
         config = Config("vql_editor")
         config["presets"] = self._presets
@@ -312,6 +317,9 @@ class QueryListWidget(plugin.PluginWidget):
             conn (sqlite3.connection): A connection to the sqlite project
         """
         self.conn = conn
+
+    def on_close_project(self):
+        self.model.clear()  
 
     def on_refresh(self):
         """This method is called from mainwindow.refresh_plugins()
