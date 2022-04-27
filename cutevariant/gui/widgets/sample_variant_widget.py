@@ -29,7 +29,7 @@ class SampleVariantWidget(QWidget):
             self.TAG_LIST = [tag["name"] for tag in Config("validation")["validation_tags"]]
         else:
             self.TAG_LIST = []
-        self.TAG_SEPARATOR = "&"
+        self.TAG_SEPARATOR = ","
         self.REVERSE_CLASSIF = {
             v["name"]: k for k, v in SAMPLE_VARIANT_CLASSIFICATION.items()
         }
@@ -261,7 +261,7 @@ class SampleVariantWidget(QWidget):
         #avoid losing tags who exist in DB but not in config.yml
         missing_tags = []
         for tag in self.initial_db_validation["tags"].split(self.TAG_SEPARATOR):
-            if tag not in self.TAG_LIST:
+            if tag not in self.TAG_LIST and tag != '':
                 missing_tags.append(tag)
 
         update_data = {

@@ -49,7 +49,7 @@ class SampleWidget(QWidget):
             self.TAG_LIST = [tag["name"] for tag in Config("validation")["sample_tags"]]
         else:
             self.TAG_LIST = []
-        self.TAG_SEPARATOR = "&"
+        self.TAG_SEPARATOR = ","
         self.SAMPLE_CLASSIFICATION = {
             -1: {"name": "Rejected"},
             0: {"name": "Unlocked"},
@@ -202,7 +202,7 @@ class SampleWidget(QWidget):
         # avoid losing tags who exist in DB but not in config.yml
         missing_tags = []
         for tag in self.initial_db_validation["tags"].split(self.TAG_SEPARATOR):
-            if tag not in self.TAG_LIST:
+            if tag not in self.TAG_LIST and tag != '':
                 missing_tags.append(tag)
 
         data = {

@@ -154,7 +154,7 @@ class CutestyleFormatter(Formatter):
             if value is None or value == "":
                 return {}
 
-            values = str(value).split("&")
+            values = str(value).split(",")
             font = QFont()
             metrics = QFontMetrics(font)
             x = 0
