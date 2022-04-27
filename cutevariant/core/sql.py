@@ -2327,7 +2327,7 @@ def insert_variants(
                     query_fields = ",".join((f"`{i}`" for i in common_fields))
                     query_values = ",".join((f"?" for i in common_fields))
                     query_datas = [sample[i] for i in common_fields]
-                    #query = f"INSERT OR REPLACE INTO sample_has_variant ({query_fields}) VALUES ({query_values})"
+                    # query = f"INSERT OR REPLACE INTO sample_has_variant ({query_fields}) VALUES ({query_values})"
                     query = f"INSERT OR IGNORE INTO sample_has_variant ({query_fields}) VALUES ({query_values})"
                     cursor.execute(query, query_datas)
 
@@ -2627,7 +2627,7 @@ def search_samples(
     clauses = []
 
     if name:
-        clauses.append(f"name LIKE '{name}%'")
+        clauses.append(f"name LIKE '%{name}%'")
 
     if families:
         families_clause = ",".join(f"'{i}'" for i in families)
@@ -2866,7 +2866,6 @@ def create_triggers(conn):
         END;"""
     )
 
-
     ### TRIGGER count_var
     conn.execute(
         """
@@ -2876,7 +2875,6 @@ def create_triggers(conn):
 
         END;"""
     )
-
 
     # TRIGGER count_het
     conn.execute(
@@ -2896,7 +2894,6 @@ def create_triggers(conn):
         END;"""
     )
 
-
     ### TRIGGER count_ref
     conn.execute(
         """
@@ -2914,7 +2911,6 @@ def create_triggers(conn):
 
         END;"""
     )
-
 
     ### TRIGGER count_none
     conn.execute(
@@ -2935,7 +2931,6 @@ def create_triggers(conn):
 
         END;"""
     )
-
 
     ### TRIGGER freq_var_update
     conn.execute(
@@ -2964,7 +2959,6 @@ def create_triggers(conn):
         
         END;"""
     )
-
 
     ###### trigers on validation
 
@@ -2997,7 +2991,6 @@ def create_triggers(conn):
         END;"""
     )
 
-
     ### TRIGGER history_variants_classification
     conn.execute(
         """
@@ -3024,7 +3017,6 @@ def create_triggers(conn):
             ) ;
         END;"""
     )
-
 
     ### TRIGGER history_variants_tags
     conn.execute(
@@ -3053,7 +3045,6 @@ def create_triggers(conn):
         END;"""
     )
 
-
     ### TRIGGER history_variants_comment
     conn.execute(
         """
@@ -3080,7 +3071,6 @@ def create_triggers(conn):
             ) ;
         END;"""
     )
-
 
     ### SAMPLES
 
@@ -3111,7 +3101,6 @@ def create_triggers(conn):
         END;"""
     )
 
-
     ### TRIGGER history_samples_tags
     conn.execute(
         """
@@ -3139,7 +3128,6 @@ def create_triggers(conn):
         END;"""
     )
 
-
     ### TRIGGER history_samples_comment
     conn.execute(
         """
@@ -3166,7 +3154,6 @@ def create_triggers(conn):
             ) ;
         END;"""
     )
-
 
     ### SAMPLE_HAS_VARIANT
 
@@ -3197,7 +3184,6 @@ def create_triggers(conn):
         END;"""
     )
 
-
     ### TRIGGER history_sample_has_variant_tags
     conn.execute(
         """
@@ -3224,7 +3210,6 @@ def create_triggers(conn):
             ) ;
         END;"""
     )
-
 
     ### TRIGGER history_sample_has_variant_comment
     conn.execute(
