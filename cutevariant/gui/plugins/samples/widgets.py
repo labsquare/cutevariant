@@ -1,5 +1,5 @@
 import sqlite3
-from cutevariant.gui import plugin
+from cutevariant.gui import plugin, style
 from cutevariant.gui import MainWindow
 
 from PySide6.QtCore import *
@@ -8,10 +8,16 @@ from PySide6.QtWidgets import *
 
 from cutevariant.core import sql
 
-# from cutevariant.gui.style import
+from cutevariant.gui import FIcon
 
 
-class SampleModel(QAbstractListModel):
+class SampleModel(QAbstractTableModel):
+
+    NAME_COLUMN = 0
+    PHENOTYPE_COLUMN = 1
+    SEX_COLUMN = 2
+    COMMENT_COLUMN = 3
+
     def __init__(self, conn: sqlite3.Connection = None) -> None:
         super().__init__()
         self._samples = []
@@ -29,9 +35,7 @@ class SampleModel(QAbstractListModel):
             self._samples = list(sql.get_samples(self.conn))
             self.endResetModel()
 
-    def headerData(
-        self, section: int, orientation: Qt.Orientation, role: int = Qt.DisplayRole
-    ):
+    def headerData(self, section: int, orientation: Qt.Orientation, role: int = Qt.DisplayRole):
         # Titles
         if orientation == Qt.Horizontal and role == Qt.DisplayRole and section == 0:
             return self.tr("Samples")
@@ -39,16 +43,46 @@ class SampleModel(QAbstractListModel):
             return QColor("red")
 
     def data(self, index: QModelIndex, role: int = Qt.DisplayRole):
-        if role == Qt.DisplayRole:
-            return self._samples[index.row()].get("name")
+        col = index.column()
+        if role == Qt.DisplayRole and col == SampleModel.NAME_COLUMN:
+            sample = self._samples[index.row()]
+            return sample.get("name")
+        if role == Qt.DecorationRole:
+            sample = self._samples[index.row()]
+            color = QApplication.palette().color(QPalette.Text)
+            color_alpha = color
+            color_alpha.setAlpha(50)
+            if col == SampleModel.SEX_COLUMN:
+                sex = sample.get("sex", None)
+                if sex == 1:
+                    return QIcon(FIcon(0xF029D))
+                if sex == 2:
+                    return QIcon(FIcon(0xF029C))
+                if sex == 0:
+                    return QIcon(FIcon(0xF029C, color_alpha))
+            if col == SampleModel.PHENOTYPE_COLUMN:
+                phenotype = sample.get("phenotype")
+                if phenotype == 2:
+                    return QIcon(FIcon(0xF0E95))
+            if col == SampleModel.COMMENT_COLUMN:
+                if sample["comment"]:
+                    return QIcon(FIcon(0xF017A, color))
+                else:
+                    return QIcon(FIcon(0xF017A, color_alpha))
 
     def get_sample(self, index: QModelIndex):
-        if index >= 0 and index < len(self._samples):
+        if index.row() >= 0 and index.row() < len(self._samples):
             return self._samples[index.row()]
 
     def rowCount(self, index: QModelIndex = QModelIndex()):
         if index == QModelIndex():
             return len(self._samples)
+        else:
+            return 0
+
+    def columnCount(self, index: QModelIndex = QModelIndex()):
+        if index == QModelIndex():
+            return 4
         else:
             return 0
 
@@ -78,13 +112,22 @@ class SamplesWidget(plugin.PluginWidget):
         self.setContentsMargins(0, 0, 0, 0)
 
         self._setup_actions()
+
         self.view.setContextMenuPolicy(Qt.ActionsContextMenu)
+        self.view.horizontalHeader().hide()
+        self.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+        self.view.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        self.view.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
+        self.view.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeToContents)
+        self.view.setShowGrid(False)
+        self.view.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
 
         main_layout = QVBoxLayout(self)
 
         main_layout.addWidget(self.tool_bar)
-        main_layout.addWidget(self.view)
         main_layout.addWidget(self.search_bar)
+        main_layout.addWidget(self.view)
 
     def _setup_actions(self):
 
