@@ -905,6 +905,9 @@ class GeneViewerWidget(plugin.PluginWidget):
         except:
             LOGGER.debug("Cannot init gene viewer")
 
+    def on_close_project(self):
+        self.view.set_gene(None)  
+
     def on_register(self, mainwindow: MainWindow):
         """ """
         pass
@@ -921,11 +924,40 @@ class GeneViewerWidget(plugin.PluginWidget):
             with_annotations=True,
         )
 
-        gene = self.current_variant["annotations"][0]["gene"]
+        # Config for gene_viewer
+        config_gene_viewer = Config("gene_viewer")
+        gene_field = config_gene_viewer.get("gene_field", "")
+        transcript_field = config_gene_viewer.get("transcript_field", "")
 
+        # Find gene from current variant, depending on the gene field in config
+        gene=""
+        # gene from annotations
+        if gene_field.split(".")[0] == "ann":
+            if "annotations" in self.current_variant:
+                if gene_field.split(".")[1] in self.current_variant["annotations"][0]:
+                    gene = self.current_variant["annotations"][0][gene_field.split(".")[1]]
+        # gene from common field
+        else:
+            if gene_field in self.current_variant:
+                gene = self.current_variant[gene_field]
+        
+        # find transcript from current variant, depending on the transcript field in config
+        transcript=""
+        # transcript from annotations
+        if transcript_field.split(".")[0] == "ann":
+            if "annotations" in self.current_variant:
+                if transcript_field.split(".")[1] in self.current_variant["annotations"][0]:
+                    transcript = self.current_variant["annotations"][0][transcript_field.split(".")[1]].split(".")[0]
+        # transcript from common field 
+        else:
+            if transcript_field in self.current_variant:
+                transcript = self.current_variant[transcript_field].split(".")[0]
+
+        # set gene and transcript
         self.transcript_name_combo.blockSignals(True)
         self.gene_name_combo.setCurrentText(gene)
         self.transcript_name_combo.blockSignals(False)
+        self.transcript_name_combo.setCurrentText(transcript)
         self.update_view()
 
     def load_config(self):
@@ -1006,10 +1038,33 @@ class GeneViewerWidget(plugin.PluginWidget):
         query = f"SELECT transcript_name,tx_start,tx_end,cds_start,cds_end,exon_starts,exon_ends,gene FROM genes WHERE gene = '{gene}' AND transcript_name='{transcript}'"
         result = self.gene_conn.execute(query).fetchone()
 
-        # Get all variants
+        # Config
+        config_gene_viewer = Config("gene_viewer")
+        gene_field = config_gene_viewer.get("gene_field", "")
 
+        # Existing annotation fields
+        list_of_fields=[]
+        for field in sql.get_fields(self.conn):
+            # list fields from common fields
+            if field["category"] == "variants":
+                name = field["name"]
+                list_of_fields.append(name)
+            # list fields from annotations fields
+            if field["category"] == "annotations":
+                name = field["name"]
+                list_of_fields.append(f"ann.{name}")
+ 
+        # Filters on gene field
+        filters = {}
+        # field exists in project
+        if gene_field in list_of_fields:
+            filters = {"$and": [{f"""{gene_field}""": gene}]}
+        # field DOES NOT exists in project
+        else:
+            LOGGER.warning("Gene fields %s not in project", gene_field)
+
+        # Get all variants
         fields = ["pos"]
-        filters = {"$and": [{"ann.gene": gene}]}
         source = self.mainwindow.get_state_data("source")
 
         variants = []

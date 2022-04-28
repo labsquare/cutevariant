@@ -547,6 +547,10 @@ class FieldsWidget(QWidget):
                     0, QHeaderView.ResizeToContents
                 )
 
+    def clear(self):
+        for view in self.views:
+            view["model"].clear()
+
     def add_view(self, conn: sqlite3.Connection, category: str):
         """Create a view with fields model
 
@@ -1021,6 +1025,10 @@ class FieldsEditorWidget(plugin.PluginWidget):
         """Overrided from PluginWidget"""
         self.widget_fields.conn = conn
         self.on_refresh()
+
+
+    def on_close_project(self):
+            self.widget_fields.clear()  
 
     def on_refresh(self):
         """overrided from PluginWidget"""

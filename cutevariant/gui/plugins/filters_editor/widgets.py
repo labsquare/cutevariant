@@ -2472,6 +2472,9 @@ class FiltersEditorWidget(plugin.PluginWidget):
         get_field_unique_values_cached.cache_clear()
         self.on_refresh()
 
+    def on_close_project(self):
+        self.model.clear()  
+
     def on_duplicate_filter(self):
         """Duplicate filter condition from context menu
 

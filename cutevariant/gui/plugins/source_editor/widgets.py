@@ -222,6 +222,11 @@ class SourceModel(QAbstractTableModel):
     def get_source_names(self):
         return [rec["name"] for rec in self.records]
 
+    def clear(self):
+        self.beginResetModel()
+        self.records.clear()
+        self.endResetModel()
+
 
 # =================== SELECTION VIEW ===========================
 
@@ -402,6 +407,10 @@ class SourceEditorWidget(plugin.PluginWidget):
         self.model.conn = conn
         self.conn = conn
         self.on_refresh()
+
+
+    def on_close_project(self):
+        self.model.clear()
 
     def on_refresh(self):
         """override from PluginWidget"""

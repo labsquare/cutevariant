@@ -380,6 +380,9 @@ class GroupByViewWidget(PluginWidget):
         self.view.conn = conn
         self.on_refresh()
 
+    def on_close_project(self):
+        self.view.groupby_model.clear()
+
     def on_refresh(self):
         """Overrided from PluginWidget"""
         # Save default data with current query attributes

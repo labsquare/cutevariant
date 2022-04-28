@@ -446,8 +446,6 @@ class VariablesSettingsWidget(AbstractSettingsWidget):
         self.gene_field_edit.setText(gene_field)
         self.transcript_field_edit.setText(transcript_field)
 
-
-
 class SettingsDialog(QDialog):
     """Main widget for settings window
 
@@ -500,7 +498,6 @@ class SettingsDialog(QDialog):
         general_settings.add_page(ProxySettingsWidget())
         general_settings.add_page(StyleSettingsWidget())
         general_settings.add_page(VariablesSettingsWidget())
-        
 
         # Specialized widgets on panels
         self.add_section(general_settings)

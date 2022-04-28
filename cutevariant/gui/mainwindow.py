@@ -18,10 +18,11 @@ from PySide6.QtGui import QIcon, QKeySequence, QDesktopServices
 
 # Custom imports
 from cutevariant import LOGGER
-from cutevariant.core import get_sql_connection, get_metadatas, command
+from cutevariant.core import get_sql_connection, get_metadatas, command, querybuilder
 from cutevariant.core import sql
 from cutevariant.core.sql import get_database_file_name
 from cutevariant.core.writer import CsvWriter, PedWriter
+from cutevariant.core.quicksearch import quicksearch
 from cutevariant.gui import FIcon
 from cutevariant.gui.widgets.project_wizard import ProjectWizard
 from cutevariant.gui.widgets.import_widget import VcfImportDialog
@@ -82,6 +83,7 @@ class StateData:
             "fields": ["favorite", "classification", "chr", "pos", "ref", "alt"],
             "source": "variants",
             "filters": {},
+            "order_by": [],
         }
 
 
@@ -183,7 +185,7 @@ class MainWindow(QMainWindow):
         # Auto open recent projects
         recent = self.get_recent_projects()
         if recent and os.path.isfile(recent[0]):
-            self.open(recent[0])
+            self.open_database_from_file(recent[0])
 
     def set_state_data(self, key: str, value: typing.Any):
         """set state data value from key
@@ -406,14 +408,11 @@ class MainWindow(QMainWindow):
             self.import_file,
             QKeySequence.AddTab,
         )
-        self.open_config_action = self.file_menu.addAction(
-            FIcon(0xF102F), self.tr("&Open config..."), self.open_config
-        )
 
         self.toolbar.addAction(self.new_project_action)
         self.toolbar.addAction(self.open_project_action)
         self.toolbar.addAction(self.import_file_action)
-        self.toolbar.addAction(self.open_config_action)
+        #self.toolbar.addAction(self.open_config_action)
         self.toolbar.addAction(
             FIcon(0xF0625), self.tr("Help"), QWhatsThis.enterWhatsThisMode
         )
@@ -454,10 +453,17 @@ class MainWindow(QMainWindow):
 
         self.file_menu.addSeparator()
         ### Misc
+
+        ## TODO ==> Ca devrait allé dans les settings ça. 
+        self.open_config_action = self.file_menu.addAction(
+            FIcon(0xF102F), self.tr("&Set config..."), self.open_config
+        )
         self.file_menu.addAction(
             FIcon(0xF0493), self.tr("Settings..."), self.show_settings
         )
         self.file_menu.addSeparator()
+        self.close_project_action = self.file_menu.addAction(
+            FIcon(0xF0156), self.tr("&Close project"), self.close_database)
         self.file_menu.addAction(self.tr("&Quit"), self.close, QKeySequence.Quit)
 
         ## Edit
@@ -541,7 +547,7 @@ class MainWindow(QMainWindow):
             self.about_cutevariant,
         )
 
-    def open(self, filepath):
+    def open_database_from_file(self, filepath):
         """Open the given db/project file
 
         .. note:: Called at the end of a project creation by the Wizard,
@@ -600,6 +606,8 @@ class MainWindow(QMainWindow):
         Args:
             conn (sqlite3.Connection): Sqlite3 Connection
         """
+
+
         self.conn = conn
 
         self._state_data.reset()
@@ -617,6 +625,16 @@ class MainWindow(QMainWindow):
         for plugin_obj in self.plugins.values():
             plugin_obj.on_open_project(self.conn)
             plugin_obj.setEnabled(True)
+
+    def close_database(self):
+        if self.conn:
+            self.conn.close()
+            self._state_data.reset()
+            self.setWindowTitle("Cutevariant")
+
+            for plugin_obj in self.plugins.values():
+                plugin_obj.on_close_project()
+                plugin_obj.setEnabled(False)
 
     def save_recent_project(self, path):
         """Save current project into QSettings
@@ -664,7 +682,7 @@ class MainWindow(QMainWindow):
     def on_recent_project_clicked(self):
         """Slot to load a recent project"""
         action = self.sender()
-        self.open(action.text())
+        self.open_database_from_file(action.text())
 
     def new_project(self):
         """Slot to allow creation of a project with the Wizard"""
@@ -675,7 +693,7 @@ class MainWindow(QMainWindow):
         db_filename = wizard.db_filename()
 
         try:
-            self.open(db_filename)
+            self.open_database_from_file(db_filename)
         except Exception as e:
             self.status_bar.showMessage(e.__class__.__name__ + ": " + str(e))
             raise
@@ -693,7 +711,7 @@ class MainWindow(QMainWindow):
         )
         if filepath:
             try:
-                self.open(filepath)
+                self.open_database_from_file(filepath)
             except Exception as e:
                 self.status_bar.showMessage(e.__class__.__name__ + ": " + str(e))
                 raise
@@ -710,7 +728,7 @@ class MainWindow(QMainWindow):
             # LOGGER.warning("ICI", db_filename)
 
             try:
-                self.open(db_filename)
+                self.open_database_from_file(db_filename)
             except Exception as e:
                 self.status_bar.showMessage(e.__class__.__name__ + ": " + str(e))
 
@@ -1087,40 +1105,22 @@ class MainWindow(QMainWindow):
 
     def quick_search(self, query: str):
 
-        if not query:
-            self.set_state_data("filters", {})
-            self.refresh_plugins(self)
-            return
+        additionnal_filter = quicksearch(query)
 
-        # match coordinate
-        match = re.findall(r"(\w+):(\d+)-(\d+)", query)
+        if additionnal_filter:
+            previous_filter = copy.deepcopy(self.get_state_data("filters"))
 
-        if match:
-            chrom, start, end = match[0]
-            start = int(start)
-            end = int(end)
+            # TODO: do we really need to extend filters ?
+            # if "$and" in previous_filter:
+            #     previous_filter["$and"].extend(additionnal_filter["$and"])
+
+            previous_filter = additionnal_filter
+
             self.set_state_data(
                 "filters",
-                {
-                    "$and": [
-                        {"chr": chrom},
-                        {"pos": {"$gte": start}},
-                        {"pos": {"$lte": end}},
-                    ]
-                },
+                previous_filter,
             )
-            self.refresh_plugins(self)
-            return
-
-        # match gene
-        match = re.findall(r"(\w+)", query)
-
-        if match:
-            gene = match[0]
-
-            self.set_state_data("filters", {"$and": [{"ann.gene": gene}]})
-            self.refresh_plugins(self)
-            return
+            self.refresh_plugins()
 
     # @Slot()
     # def on_query_model_changed(self):

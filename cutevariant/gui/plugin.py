@@ -161,6 +161,12 @@ class PluginWidget(QWidget):
         """
         pass
 
+    def on_close_project(self):
+        """ This method is callen when a project is closed """
+
+        pass
+
+
     def on_close(self):
         """Called when the mainwindow is closed **or** when the plugin is reset.
 
