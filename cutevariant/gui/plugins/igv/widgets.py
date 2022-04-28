@@ -26,12 +26,11 @@ class IgvView(QWebEngineView):
 
         self.settings().setAttribute(QWebEngineSettings.LocalStorageEnabled, True)
         self.settings().setAttribute(QWebEngineSettings.FullScreenSupportEnabled, True)
-
-        self.settings().setAttribute(
-            QWebEngineSettings.LocalContentCanAccessRemoteUrls, True
-        )
+        self.settings().setAttribute(QWebEngineSettings.LocalContentCanAccessRemoteUrls, True)
+        #self.settings().setAttribute(QWebEngineSettings.Accelerated2dCanvasEnabled, False)
 
         self.load("https://igv.org/app/")
+        #self.setUrl("https://www.google.com")
 
     def set_position(self, location):
 
@@ -55,8 +54,11 @@ class IgvWidget(plugin.PluginWidget):
         super().__init__(parent)
 
         self.view = IgvView(parent)
+        #self.browser = QWebEngineView()
+        #self.browser.setUrl(QUrl("http://www.google.fr/"))
         self.vlayout = QVBoxLayout()
         self.vlayout.addWidget(self.view)
+        #self.vlayout.addWidget(self.browser)
         self.setLayout(self.vlayout)
 
     def on_refresh(self):

@@ -97,7 +97,10 @@ class Config:
 
     def __getitem__(self, key: str):
         if self.section in self._user_config:
-            return self._user_config[self.section][key]
+            if self.section in self._user_config:
+                return self._user_config[self.section][key]
+            else:
+                return None
 
     def __setitem__(self, key: str, value: typing.Any):
         self.set(key, value)
