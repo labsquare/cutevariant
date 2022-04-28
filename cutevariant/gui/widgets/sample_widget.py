@@ -12,6 +12,9 @@ from cutevariant.gui.ficon import FIcon
 from cutevariant.gui.widgets import ChoiceWidget, DictWidget
 from cutevariant.gui.widgets.multi_combobox import MultiComboBox
 
+import cutevariant.commons as cm
+
+from cutevariant.gui.style import CLASSIFICATION, SAMPLE_CLASSIFICATION
 
 class HpoWidget(QWidget):
     def __init__(self, parent=None):
@@ -49,14 +52,14 @@ class SampleWidget(QWidget):
             self.TAG_LIST = [tag["name"] for tag in Config("validation")["sample_tags"]]
         else:
             self.TAG_LIST = []
-        self.TAG_SEPARATOR = ","
-        self.SAMPLE_CLASSIFICATION = {
-            -1: {"name": "Rejected"},
-            0: {"name": "Unlocked"},
-            1: {"name": "Locked"},
-        }
+        self.TAG_SEPARATOR = cm.HAS_OPERATOR
+        # self.SAMPLE_CLASSIFICATION = {
+        #     -1: {"name": "Rejected"},
+        #     0: {"name": "Unlocked"},
+        #     1: {"name": "Locked"},
+        # }
         self.REVERSE_CLASSIF = {
-            v["name"]: k for k, v in self.SAMPLE_CLASSIFICATION.items()
+            v["name"]: k for k, v in SAMPLE_CLASSIFICATION.items()
         }
 
         # Identity
@@ -157,7 +160,7 @@ class SampleWidget(QWidget):
         self.phenotype_combo.setCurrentIndex(data.get("phenotype", 0))
 
         # self.classification.addItems([v["name"] for v in self.SAMPLE_CLASSIFICATION.values()])
-        for k, v in self.SAMPLE_CLASSIFICATION.items():
+        for k, v in SAMPLE_CLASSIFICATION.items():
             self.classification.addItem(v["name"], k)
         index = self.classification.findData(data["valid"])
         self.classification.setCurrentIndex(index)

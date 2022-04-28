@@ -121,6 +121,9 @@ LOG_LEVELS = {
     "notset": logging.NOTSET,
 }
 
+# OPERATOR HAS
+HAS_OPERATOR=","
+
 ################################################################################
 def create_logger():
     logger = logging.getLogger(__name__)

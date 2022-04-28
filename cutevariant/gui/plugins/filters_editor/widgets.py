@@ -121,8 +121,6 @@ OPERATOR_VQL_TO_NAME = {
     "$or": "Or",
     "$has": "Has",
     "$nhas": "Has not",
-    "$ha&": "Has (with '&')",
-    "$nha&": "Has not (with '&')",
 }
 
 

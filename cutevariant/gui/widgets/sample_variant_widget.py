@@ -13,6 +13,7 @@ from cutevariant.gui.ficon import FIcon
 
 from cutevariant.gui.widgets.multi_combobox import MultiComboBox
 
+import cutevariant.commons as cm
 
 class QHLine(QFrame):
     def __init__(self):
@@ -29,7 +30,7 @@ class SampleVariantWidget(QWidget):
             self.TAG_LIST = [tag["name"] for tag in Config("validation")["validation_tags"]]
         else:
             self.TAG_LIST = []
-        self.TAG_SEPARATOR = ","
+        self.TAG_SEPARATOR = cm.HAS_OPERATOR
         self.REVERSE_CLASSIF = {
             v["name"]: k for k, v in SAMPLE_VARIANT_CLASSIFICATION.items()
         }

@@ -28,6 +28,7 @@ from ast import literal_eval
 
 # Custom imports
 from cutevariant.core import sql
+import cutevariant.commons as cm
 
 
 from cutevariant import LOGGER
@@ -53,8 +54,6 @@ PY_TO_SQL_OPERATORS = {
     "$or": "OR",
     "$has": "HAS",
     "$nhas": "NOT HAS",
-    "$ha&": "HA&",
-    "$nha&": "NOT HA&",
 }
 
 PY_TO_VQL_OPERATORS = {
@@ -72,8 +71,6 @@ PY_TO_VQL_OPERATORS = {
     "$or": "OR",
     "$has": "HAS",
     "$nhas": "!HAS",
-    "$ha&": "HA&",
-    "$nha&": "!HA&",
 }
 
 
@@ -339,16 +336,11 @@ def condition_to_sql(item: dict, samples=None) -> str:
             value = f"%{value}%"
 
     if "HAS" in sql_operator:
-        field = f"',' || {field} || ','"
+        field = f"'{cm.HAS_OPERATOR}' || {field} || '{cm.HAS_OPERATOR}'"
         sql_operator = "LIKE" if sql_operator == "HAS" else "NOT LIKE"
-        value = f"%,{value},%"
+        value = f"%{cm.HAS_OPERATOR}{value}{cm.HAS_OPERATOR}%"
 
         # WHERE '&' || consequence || '&' LIKE "%&missense_variant&%"
-
-    if "HA&" in sql_operator:
-        field = f"'&' || {field} || '&'"
-        sql_operator = "LIKE" if sql_operator == "HA&" else "NOT LIKE"
-        value = f"%&{value}&%"
 
 
     # Cast value

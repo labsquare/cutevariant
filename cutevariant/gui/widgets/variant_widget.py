@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, QSortFilterProxyModel, QAbstractTableModel
 
+import cutevariant.commons as cm
 
 class TableModel(QAbstractTableModel):
     def __init__(self, data=None):
@@ -53,7 +54,7 @@ class VariantWidget(QWidget):
             self.TAG_LIST = [tag["name"] for tag in Config("variant_view")["tags"]]
         else:
             self.TAG_LIST = []
-        self.TAG_SEPARATOR = ","
+        self.TAG_SEPARATOR = cm.HAS_OPERATOR
         self.REVERSE_CLASSIF = {v["name"]: k for k, v in CLASSIFICATION.items()}
         self._conn = conn
 
