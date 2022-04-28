@@ -2278,7 +2278,8 @@ def insert_variants(
     """
 
     # progress
-    progress_callback(f"""Variant insertion...""")
+    if progress_callback:
+        progress_callback(f"""Variant insertion...""")
 
     variants_local_fields = set(get_table_columns(conn, "variants"))
     annotations_local_fields = set(get_table_columns(conn, "annotations"))
@@ -2429,7 +2430,8 @@ def variants_calculation(
     """
     
     # progress
-    progress_callback(f"""Variant count calculation...""")
+    if progress_callback:
+        progress_callback(f"""Variant count calculation...""")
 
     # nb samples
     # all
@@ -2526,7 +2528,8 @@ def variants_calculation(
     conn.commit()
 
     # progress
-    progress_callback(f"{total} variant(s) has been calculated with {errors} error(s)")
+    if progress_callback:
+        progress_callback(f"{total} variant(s) has been calculated with {errors} error(s)")
     
 
 
