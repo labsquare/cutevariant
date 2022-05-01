@@ -835,7 +835,7 @@ class VariantView(QWidget):
         self.favorite_action.setCheckable(True)
         self.favorite_action.toggled.connect(lambda x: self.update_favorites(x))
         self.favorite_action.setShortcut(QKeySequence(Qt.Key_Space))
-        self.favorite_action.setShortcutContext(Qt.WidgetShortcut)
+        self.favorite_action.setShortcutContext(Qt.WidgetWithChildrenShortcut)
         self.favorite_action.setToolTip(self.tr("Toggle the selected variant as favorite (%s). The field `favorite` must be selected." % self.favorite_action.shortcut().toString()))
         self.addAction(self.favorite_action)
 
