@@ -2296,6 +2296,9 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.toolbar.setIconSize(QSize(16, 16))
         self.toolbar.setToolButtonStyle(Qt.ToolButtonIconOnly)
 
+        self.preset_combo = QComboBox()
+        self.preset_combo.currentIndexChanged.connect(self.on_select_preset)
+
         self._setup_actions()
 
         # Save button
@@ -2327,9 +2330,10 @@ class FiltersEditorWidget(plugin.PluginWidget):
         main_layout = QVBoxLayout()
 
         main_layout.addWidget(self.toolbar)
+        main_layout.addWidget(self.preset_combo)
         main_layout.addWidget(self.view)
         main_layout.setContentsMargins(0, 0, 0, 0)
-        main_layout.setSpacing(1)
+        main_layout.setSpacing(0)
         self.setLayout(main_layout)
 
         self.current_preset_name = ""
@@ -2546,11 +2550,12 @@ class FiltersEditorWidget(plugin.PluginWidget):
         This method should be called by __init__ and on refresh
         """
         self.preset_menu.clear()
+        self.preset_combo.clear()
+        self.preset_combo.addItem("default", {"$and": []})
         config = Config("filters_editor")
 
         self.preset_menu.addAction("Save preset", self.on_save_preset)
         self.preset_menu.addSeparator()
-
         if "presets" in config:
             presets = config["presets"]
             for name, filters in presets.items():
@@ -2559,6 +2564,8 @@ class FiltersEditorWidget(plugin.PluginWidget):
                 action.triggered.connect(self.on_select_preset)
                 action.removed.connect(self.on_delete_preset)
                 self.preset_menu.addAction(action)
+
+                self.preset_combo.addItem(name, filters)
 
         self.preset_menu.addSeparator()
         self.preset_menu.addAction("Reload presets", self.load_presets)
@@ -2589,7 +2596,12 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
     def on_select_preset(self):
         """Activate when preset has changed from preset_combobox"""
-        data = self.sender().data()
+
+        if type(self.sender()) == QComboBox:
+            data = self.preset_combo.currentData()
+        else:
+            data = self.sender().data()
+
         if data:
             self.filters = data
             self.on_apply()
