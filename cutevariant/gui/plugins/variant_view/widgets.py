@@ -875,6 +875,7 @@ class VariantView(QWidget):
         # Previous page action <
         action = self.bottom_bar.addAction(FIcon(0xF0141), "<", self.on_page_clicked)
         action.setShortcut(QKeySequence(Qt.Key_Left))
+        # action.setShortcutContext(Qt.WindowShortcut)
         action.setAutoRepeat(False)
         action.setToolTip(self.tr("Previous page (%s)" % action.shortcut().toString()))
         self.pagging_actions.addAction(action)
@@ -886,6 +887,7 @@ class VariantView(QWidget):
         # Next page action >
         action = self.bottom_bar.addAction(FIcon(0xF0142), ">", self.on_page_clicked)
         action.setShortcut(QKeySequence(Qt.Key_Right))
+        # action.setShortcutContext(Qt.WindowShortcut)
         action.setAutoRepeat(False)
         action.setToolTip(self.tr("Next page (%s)" % action.shortcut().toString()))
         self.pagging_actions.addAction(action)
@@ -1112,6 +1114,7 @@ class VariantView(QWidget):
             QTimer.singleShot(2000, show_loading_if_loading)
         else:
             self.view.stop_loading()
+            self.view.setFocus(Qt.OtherFocusReason)
 
     def set_tool_loading(self, active=True):
 
