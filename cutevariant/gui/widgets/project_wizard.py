@@ -165,9 +165,7 @@ class ImportPage(QWizardPage):
 
         timestamp = int(self.timer.elapsed() * 0.001)
 
-        time_str = f"{timestamp//3600:02d}:{timestamp//60:02d}:{timestamp:02d}"
-
-        LOGGER.critical(time_str)
+        time_str = f"{timestamp//3600:02d}:{timestamp//60:02d}:{timestamp%60:02d}"
 
         self.log_edit.appendPlainText(f"[{time_str}] {message}")
 
