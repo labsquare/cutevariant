@@ -947,6 +947,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
         """Load preset in the combobox
         This method should be called by __init__ and on refresh
         """
+        self.preset_combobox.blockSignals(True)
         self.preset_menu.clear()
         self.preset_combobox.clear()
 
@@ -968,6 +969,8 @@ class FieldsEditorWidget(plugin.PluginWidget):
 
         self.preset_menu.addSeparator()
         self.preset_menu.addAction("Reload presets", self.load_presets)
+
+        self.preset_combobox.blockSignals(True)
 
     def show_fields_dialog(self):
 

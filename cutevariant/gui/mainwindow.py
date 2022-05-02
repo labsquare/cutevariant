@@ -187,6 +187,9 @@ class MainWindow(QMainWindow):
         if recent and os.path.isfile(recent[0]):
             self.open_database_from_file(recent[0])
 
+        # To avoid refreshing side effects upon project opening
+        self._project_is_opening = False
+
     def set_state_data(self, key: str, value: typing.Any):
         """set state data value from key
 
@@ -357,6 +360,7 @@ class MainWindow(QMainWindow):
                 plugin_obj is not sender
                 and (plugin_obj.isVisible() or not plugin_obj.REFRESH_ONLY_VISIBLE)
                 and (set(plugin_obj.REFRESH_STATE_DATA) & self._state_data.changed)
+                and not self._project_is_opening
             )
 
             if need_refresh:
@@ -622,9 +626,11 @@ class MainWindow(QMainWindow):
 
         # self.state = self.app_settings.value(f"{file_path}/last_state", State())
 
+        self._project_is_opening = True
         for plugin_obj in self.plugins.values():
             plugin_obj.on_open_project(self.conn)
             plugin_obj.setEnabled(True)
+        self._project_is_opening = False
 
     def close_database(self):
         if self.conn:

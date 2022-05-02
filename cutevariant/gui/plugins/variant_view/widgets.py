@@ -495,6 +495,7 @@ class VariantModel(QAbstractTableModel):
 
         if self.is_running():
             LOGGER.debug("Cannot load data. Thread is not finished. You can call interrupt() ")
+            return
 
         LOGGER.debug("Start loading")
 
