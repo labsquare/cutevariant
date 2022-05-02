@@ -375,7 +375,7 @@ def get_sql_connection(filepath: str) -> sqlite3.Connection:
         # Enable tracebacks from custom functions in DEBUG mode only
         sqlite3.enable_callback_tracebacks(True)
 
-    connection.set_trace_callback(lambda x: LOGGER.debug("[SQLITE]: " + x))
+    # connection.set_trace_callback(lambda x: LOGGER.debug("[SQLITE]: " + x))
 
     return connection
 
