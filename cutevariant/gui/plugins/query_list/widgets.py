@@ -7,6 +7,7 @@ from cutevariant.gui import MainWindow
 from cutevariant.gui.widgets import CodeEdit
 from cutevariant.gui.settings import Config
 from cutevariant.gui import FIcon, style
+from cutevariant import LOGGER
 
 from PySide6.QtWidgets import *
 from PySide6.QtGui import *
@@ -335,13 +336,34 @@ class QueryListWidget(plugin.PluginWidget):
         query_params = parse_one_vql(query)
 
         # Config
-        config = Config("samples")
-        additional_genotype_field = ""
-        if "additional_genotype_field" in config:
-            additional_genotype_field=config["additional_genotype_field"]
+        config = Config("variables")
+
+        # additional genotype fields
+        additional_genotype_fields = ""
+        if "additional_genotype_fields" in config:
+            additional_genotype_fields=config["additional_genotype_fields"]
         else:
-            config["additional_genotype_field"]=""
+            config["additional_genotype_fields"]=""
             config.save()
+        genotype_fields_existing=self.conn.execute(f"SELECT * FROM sample_has_variant LIMIT 1").fetchone().keys()
+        additional_genotype_fields_clear=[]
+        for additional_genotype_field in additional_genotype_fields.split(","):
+            if additional_genotype_field in genotype_fields_existing:
+                additional_genotype_fields_clear.append(additional_genotype_field)
+            else:
+                LOGGER.warning(f"field '{additional_genotype_field}' not existing")
+        if additional_genotype_fields_clear != []:
+            additional_genotype_fields=",".join(additional_genotype_fields_clear)
+
+        # genotype position
+        genotype_position = ""
+        if "genotype_position" in config:
+            genotype_position=config["genotype_position"]
+        else:
+            config["genotype_position"]=""
+            config.save()
+        if genotype_position not in ("right", "left"):
+            genotype_position="right"
 
         # fields
         fields = query_params.get("fields",[])
@@ -358,23 +380,31 @@ class QueryListWidget(plugin.PluginWidget):
         # samples selected
         samples_selected=self.mainwindow.get_state_data("samples_selected")
         if samples_selected:
+            samples_selected_fields=[]
             for sample in samples_selected:
                 # fields
-                fields += [f"samples.{sample}.gt"]
-                if additional_genotype_field:
-                    fields += [f"samples.{sample}.{additional_genotype_field}"]
+                samples_selected_fields += [f"samples.{sample}.gt"]
+                if additional_genotype_fields:
+                    for additional_genotype_field in additional_genotype_fields.split(","):
+                        samples_selected_fields += [f"samples.{sample}.{additional_genotype_field}"]
                 # filters
                 key = f"samples.{sample}.gt"
                 condition = {key: {"$gte": 1}}
                 filters[root].append(condition)
 
-        #self.mainwindow.set_state_data("fields",query_params.get("fields",[]))
+            if samples_selected_fields != []:
+                if genotype_position == "right":
+                    fields += samples_selected_fields
+                elif genotype_position == "left":
+                    fields = samples_selected_fields + fields
+
+        # set state
         self.mainwindow.set_state_data("fields",fields)
         self.mainwindow.set_state_data("source",query_params.get("source","variants"))
-        #self.mainwindow.set_state_data("filters",query_params.get("filters",[]))
         self.mainwindow.set_state_data("filters",filters)
         self.mainwindow.set_state_data("order_by",query_params.get("order_by",[]))
 
+        # refresh
         self.mainwindow.refresh_plugins(sender=self)
 
     def _add_query(self):

@@ -12,6 +12,8 @@ from cutevariant.core import sql
 from cutevariant.gui import FIcon
 from cutevariant.gui.widgets import ChoiceWidget, create_widget_action, SampleDialog
 
+from cutevariant import LOGGER
+
 # from gui.style import SAMPLE_CLASSIFICATION
 
 SAMPLE_STYLE = {
@@ -245,6 +247,7 @@ class SamplesWidget(plugin.PluginWidget):
         # self.model.tags_filter = list([i["name"] for i in self.tags_choice.selected_items()])
         self.model.valid_filter = list([i["data"] for i in self.valid_choice.selected_items()])
         self.model.load()
+        self.mainwindow.set_state_data("samples_current",self.model._samples)
 
     def on_edit(self):
         sample = self.model.get_sample(self.view.currentIndex().row())
@@ -255,6 +258,7 @@ class SamplesWidget(plugin.PluginWidget):
             if dialog.exec():
                 # TODO : update only if  necessary
                 self.model.load()
+                self.mainwindow.set_state_data("samples_current",self.model._samples)
 
     def on_run(self):
 
@@ -262,28 +266,60 @@ class SamplesWidget(plugin.PluginWidget):
         fields = [f for f in fields if not f.startswith("samples")]
 
         # Config
-        config = Config("samples")
-        additional_genotype_field = ""
-        if "additional_genotype_field" in config:
-            additional_genotype_field=config["additional_genotype_field"]
+        config = Config("variables")
+
+        # additional genotype fields
+        additional_genotype_fields = ""
+        if "additional_genotype_fields" in config:
+            additional_genotype_fields=config["additional_genotype_fields"]
         else:
-            config["additional_genotype_field"]=""
+            config["additional_genotype_fields"]=""
             config.save()
+        genotype_fields_existing=self.model.conn.execute(f"SELECT * FROM sample_has_variant LIMIT 1").fetchone().keys()
+        additional_genotype_fields_clear=[]
+        for additional_genotype_field in additional_genotype_fields.split(","):
+            if additional_genotype_field in genotype_fields_existing:
+                additional_genotype_fields_clear.append(additional_genotype_field)
+            else:
+                LOGGER.warning(f"field '{additional_genotype_field}' not existing")
+        if additional_genotype_fields_clear != []:
+            additional_genotype_fields=",".join(additional_genotype_fields_clear)
+
+        # genotype position
+        genotype_position = ""
+        if "genotype_position" in config:
+            genotype_position=config["genotype_position"]
+        else:
+            config["genotype_position"]=""
+            config.save()
+        if genotype_position not in ("right", "left"):
+            genotype_position="right"
 
         # hugly : Create genotype fields
         indexes = self.view.selectionModel().selectedRows()
         samples_selected=[]
         if indexes:
-            sample_name = indexes[0].siblingAtColumn(0).data()
-            samples_selected.append(sample_name)
+            samples_selected_fields=[]
+            for i in indexes:
+                sample_name = i.siblingAtColumn(0).data()
+                samples_selected.append(sample_name)
+                samples_selected_fields += [f"samples.{sample_name}.gt"]
+                if additional_genotype_fields:
+                    for additional_genotype_field in additional_genotype_fields.split(","):
+                        samples_selected_fields += [f"samples.{sample_name}.{additional_genotype_field}"]
 
-            fields += [f"samples.{sample_name}.gt"]
-            if additional_genotype_field:
-                fields += [f"samples.{sample_name}.{additional_genotype_field}"]
+            if samples_selected_fields != []:
+                if genotype_position == "right":
+                    fields += samples_selected_fields
+                elif genotype_position == "left":
+                    fields = samples_selected_fields + fields
 
+        # set state
         self.mainwindow.set_state_data("samples_selected", samples_selected)
         self.mainwindow.set_state_data("fields", fields)
         self.mainwindow.set_state_data("filters", self._create_filters())
+
+        # refresh
         self.mainwindow.refresh_plugins(sender=self)
 
     def on_create_source(self):
@@ -323,6 +359,7 @@ class SamplesWidget(plugin.PluginWidget):
         self.model.clear()
         self.model.conn = conn
         self.model.load()
+        self.mainwindow.set_state_data("samples_current",self.model._samples)
 
     def on_refresh(self):
         """This method is called from mainwindow.refresh_plugins()

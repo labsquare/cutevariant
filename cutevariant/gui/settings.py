@@ -402,12 +402,52 @@ class VariablesSettingsWidget(AbstractSettingsWidget):
         variant_name_pattern_label.setTextFormat(Qt.RichText)
 
         self.gene_field_edit = QLineEdit()
+        gene_field_label = QLabel(
+            """
+            (Examples: 'ann.gene', 'gnomen')
+            """
+        )
+        gene_field_label.setTextFormat(Qt.RichText)
+
         self.transcript_field_edit = QLineEdit()
+        transcript_field_label = QLabel(
+            """
+            (Examples: 'ann.transcript', 'tnomen')
+            """
+        )
+        transcript_field_label.setTextFormat(Qt.RichText)
+
+        self.additional_genotype_fields_edit = QLineEdit()
+        additional_genotype_fields_label = QLabel(
+            """
+            (Examples: 'dp', 'vaf', 'dp,vaf')
+            """
+        )
+        additional_genotype_fields_label.setTextFormat(Qt.RichText)
+
+        self.genotype_position_combobox = QComboBox()
+        self.genotype_position_choice=["right","left"]
+        self.genotype_position_combobox.addItems(self.genotype_position_choice)
+        genotype_position_label = QLabel(
+            """
+            ('right'/'left': genotype fields in right/left of variant table)
+            """
+        )
+        genotype_position_label.setTextFormat(Qt.RichText)
+
+
+        self.additional_genotype_fieldss = QLineEdit()
         mainLayout = QFormLayout()
         mainLayout.addRow(self.tr("Variant name pattern:"), self.variant_name_pattern_edit)
         mainLayout.addWidget(variant_name_pattern_label)
         mainLayout.addRow(self.tr("Gene field:"), self.gene_field_edit)
-        mainLayout.addRow(self.tr("Transcript field:"), self.transcript_field_edit)
+        mainLayout.addWidget(gene_field_label)
+        mainLayout.addRow(self.tr("Transcript fields:"), self.transcript_field_edit)
+        mainLayout.addWidget(transcript_field_label)
+        mainLayout.addRow(self.tr("Additional genotype fields:"), self.additional_genotype_fields_edit)
+        mainLayout.addWidget(additional_genotype_fields_label)
+        mainLayout.addRow(self.tr("Genotype position:"), self.genotype_position_combobox)
+        mainLayout.addWidget(genotype_position_label)
 
         self.setLayout(mainLayout)
 
@@ -421,9 +461,13 @@ class VariablesSettingsWidget(AbstractSettingsWidget):
         variant_name_pattern = self.variant_name_pattern_edit.text()
         gene_field = self.gene_field_edit.text()
         transcript_field = self.transcript_field_edit.text()
+        additional_genotype_fields = self.additional_genotype_fields_edit.text()
+        genotype_position = self.genotype_position_combobox.currentText()
         config["variant_name_pattern"] = variant_name_pattern
         config["gene_field"] = gene_field
         config["transcript_field"] = transcript_field
+        config["additional_genotype_fields"] = additional_genotype_fields
+        config["genotype_position"] = genotype_position
         config.save()
 
         # Clear pixmap cache
@@ -442,9 +486,14 @@ class VariablesSettingsWidget(AbstractSettingsWidget):
         variant_name_pattern = config.get("variant_name_pattern", "{chr}:{pos} - {ref}>{alt}")
         gene_field = config.get("gene_field", "ann.gene")
         transcript_field = config.get("transcript_field", "ann.transcript")
+        additional_genotype_fields = config.get("additional_genotype_fields", "")
+        genotype_position = config.get("genotype_position", "right")
         self.variant_name_pattern_edit.setText(variant_name_pattern)
         self.gene_field_edit.setText(gene_field)
         self.transcript_field_edit.setText(transcript_field)
+        self.additional_genotype_fields_edit.setText(additional_genotype_fields)
+        self.genotype_position_combobox.setCurrentIndex(self.genotype_position_choice.index(genotype_position))
+        # self.styles_combobox.setCurrentIndex(available_styles.index(style_name))
 
 class SettingsDialog(QDialog):
     """Main widget for settings window
