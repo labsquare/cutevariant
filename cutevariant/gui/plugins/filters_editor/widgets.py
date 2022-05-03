@@ -11,7 +11,7 @@ import typing
 import uuid
 from ast import literal_eval
 from functools import lru_cache
-from typing import Any, Iterable
+from typing import Any, Iterable, Text
 import sqlite3
 import glob
 
@@ -233,9 +233,7 @@ class FiltersPresetModel(QAbstractListModel):
         self.beginResetModel()
         config = Config("filters_editor")
         presets = config.get("presets", {})
-        self._presets = [
-            (preset_name, filters) for preset_name, filters in presets.items()
-        ]
+        self._presets = [(preset_name, filters) for preset_name, filters in presets.items()]
         self.endResetModel()
 
     def save(self):
@@ -314,9 +312,7 @@ class FieldsCompleter(QCompleter):
         local_completion_prefix = self.local_completion_prefix
 
         like = f"{local_completion_prefix}%"
-        values = get_field_unique_values_cached(
-            self.conn, self.field_name, like, self.limit
-        )
+        values = get_field_unique_values_cached(self.conn, self.field_name, like, self.limit)
         self.source_model.setStringList(values)
 
     def splitPath(self, path: str):
@@ -391,9 +387,7 @@ class IntFieldEditor(BaseFieldEditor):
         self.line_edit.setValidator(self.validator)
         self.set_widget(self.line_edit)
         self.line_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        null_action = self.line_edit.addAction(
-            FIcon(0xF07E2), QLineEdit.TrailingPosition
-        )
+        null_action = self.line_edit.addAction(FIcon(0xF07E2), QLineEdit.TrailingPosition)
         null_action.triggered.connect(lambda: self.line_edit.setText(NULL_REPR))
         null_action.setToolTip(self.tr("Set value as NULL"))
 
@@ -429,9 +423,7 @@ class DoubleFieldEditor(BaseFieldEditor):
         self.validator = QDoubleValidator()
         self.line_edit.setValidator(self.validator)
         self.line_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        null_action = self.line_edit.addAction(
-            FIcon(0xF07E2), QLineEdit.TrailingPosition
-        )
+        null_action = self.line_edit.addAction(FIcon(0xF07E2), QLineEdit.TrailingPosition)
         null_action.triggered.connect(lambda: self.line_edit.setText(NULL_REPR))
 
         self.set_widget(self.line_edit)
@@ -1055,22 +1047,18 @@ class FilterModel(QAbstractItemModel):
                     return QIcon(FIcon(0xF0156, "red"))
 
         # FONT ROLE
-        if role == Qt.FontRole:
-            if index.column() == COLUMN_FIELD:
-                font = QFont()
-                font.setBold(True)
-                return font
+        # if role == Qt.FontRole:
 
-            if index.column() == COLUMN_VALUE and val is None:
-                font = QFont()
-                font.setItalic(True)
-                font.setBold(True)
-                return font
+        #     font = QFont()
+        #     font.setStrikeOut(not item.checked)
+        #     return font
 
         # FORGROUND ROLE
         if role == Qt.ForegroundRole:
             if not item.checked:
-                return QColor("lightgray")
+                col = QApplication.palette().color(QPalette.Text)
+                col.setAlpha(50)
+                return col
 
         # align operator
         if role == Qt.TextAlignmentRole:
@@ -1085,10 +1073,7 @@ class FilterModel(QAbstractItemModel):
 
                 if item.type == FilterItem.LOGIC_TYPE:
                     val = item.get_value()
-                    return (
-                        PY_TO_VQL_OPERATORS.get(val, "$and")
-                        + f"  ({len(item.children)})"
-                    )
+                    return PY_TO_VQL_OPERATORS.get(val, "$and") + f"  ({len(item.children)})"
 
             if item.type != FilterItem.CONDITION_TYPE:
                 return
@@ -1371,11 +1356,7 @@ class FilterModel(QAbstractItemModel):
         if checked_only:
             if item.type == FilterItem.LOGIC_TYPE and item.checked is True:
                 # Return dict with operator as key and item as value
-                operator_data = [
-                    self.to_dict(child)
-                    for child in item.children
-                    if child.checked is True
-                ]
+                operator_data = [self.to_dict(child) for child in item.children if child.checked is True]
                 return {item.get_value(): operator_data}
         else:
             if item.type == FilterItem.LOGIC_TYPE:
@@ -1471,21 +1452,10 @@ class FilterModel(QAbstractItemModel):
             return Qt.ItemIsSelectable | Qt.ItemIsEnabled
 
         if item.type == FilterItem.LOGIC_TYPE and index.column() == COLUMN_FIELD:
-            return (
-                Qt.ItemIsSelectable
-                | Qt.ItemIsEditable
-                | Qt.ItemIsEnabled
-                | Qt.ItemIsDragEnabled
-                | Qt.ItemIsDropEnabled
-            )
+            return Qt.ItemIsSelectable | Qt.ItemIsEditable | Qt.ItemIsEnabled | Qt.ItemIsDragEnabled | Qt.ItemIsDropEnabled
 
         if item.type == FilterItem.CONDITION_TYPE:
-            return (
-                Qt.ItemIsSelectable
-                | Qt.ItemIsEditable
-                | Qt.ItemIsEnabled
-                | Qt.ItemIsDragEnabled
-            )
+            return Qt.ItemIsSelectable | Qt.ItemIsEditable | Qt.ItemIsEnabled | Qt.ItemIsDragEnabled
 
         return Qt.ItemIsSelectable | Qt.ItemIsEditable | Qt.ItemIsEnabled
 
@@ -1534,9 +1504,7 @@ class FilterModel(QAbstractItemModel):
         if sourceParent == destinationParent and sourceRow == destinationChild:
             return False
 
-        self.beginMoveRows(
-            sourceParent, sourceRow, sourceRow, destinationParent, destinationChild
-        )
+        self.beginMoveRows(sourceParent, sourceRow, sourceRow, destinationParent, destinationChild)
         item = parent_source_item.children.pop(sourceRow)
         parent_destination_item.insert(destinationChild, item)
         self.endMoveRows()
@@ -1569,9 +1537,7 @@ class FilterModel(QAbstractItemModel):
             # Invalid item
             return False
         if self.item(parent).type == FilterItem.LOGIC_TYPE:
-            self.beginInsertRows(
-                parent, self.rowCount(parent) - 1, self.rowCount(parent) - 1
-            )
+            self.beginInsertRows(parent, self.rowCount(parent) - 1, self.rowCount(parent) - 1)
             self.item(parent).append(item_)
             self.endInsertRows()
             self.filtersChanged.emit()
@@ -1639,14 +1605,10 @@ class FilterModel(QAbstractItemModel):
         for row in source_coords:
             index = self.index(row, 0, index)
         if index.isValid():
-            return self.moveRow(
-                index.parent(), index.row(), destintation_parent, destination_row
-            )
+            return self.moveRow(index.parent(), index.row(), destintation_parent, destination_row)
         return False
 
-    def dropMimeData(
-        self, data: QMimeData, action, row, column, parent: QModelIndex
-    ) -> bool:
+    def dropMimeData(self, data: QMimeData, action, row, column, parent: QModelIndex) -> bool:
         """Overrided Qt methods: This method is called when item is dropped by drag/drop.
         data is QMimeData and it contains a pickle serialization of current dragging item.
         Get back item by unserialize data.data().
@@ -1682,10 +1644,7 @@ class FilterModel(QAbstractItemModel):
                         if isinstance(fields, list):
                             if row < 0 or row > self.rowCount(parent):
                                 return self._drop_filter(
-                                    {
-                                        field_name: DEFAULT_VALUES.get(field_type, "")
-                                        for field_name, field_type in fields
-                                    },
+                                    {field_name: DEFAULT_VALUES.get(field_type, "") for field_name, field_type in fields},
                                     parent,
                                 )
                 if obj["type"] == "condition":
@@ -1778,9 +1737,7 @@ class FilterModel(QAbstractItemModel):
         if not basic_answer:
             return False
 
-        dest_data = self.mimeData([self.index(row, column, parent)]).data(
-            "cutevariant/typed-json"
-        )
+        dest_data = self.mimeData([self.index(row, column, parent)]).data("cutevariant/typed-json")
         source_data = data.data("cutevariant/typed-json")
 
         if dest_data == source_data:
@@ -2047,12 +2004,7 @@ class FilterDelegate(QStyledItemDelegate):
         is_selected = False
 
         if option.state & QStyle.State_Enabled:
-            bg = (
-                QPalette.Normal
-                if option.state & QStyle.State_Active
-                or option.state & QStyle.State_Selected
-                else QPalette.Inactive
-            )
+            bg = QPalette.Normal if option.state & QStyle.State_Active or option.state & QStyle.State_Selected else QPalette.Inactive
         else:
             bg = QPalette.Disabled
 
@@ -2068,14 +2020,10 @@ class FilterDelegate(QStyledItemDelegate):
             decoration_icon = index.data(Qt.DecorationRole)
 
             if decoration_icon:
-                rect = QRect(
-                    0, 0, option.decorationSize.width(), option.decorationSize.height()
-                )
+                rect = QRect(0, 0, option.decorationSize.width(), option.decorationSize.height())
                 rect.moveCenter(option.rect.center())
                 # rect.setX(4)
-                painter.drawPixmap(
-                    rect.x(), rect.y(), decoration_icon.pixmap(option.decorationSize)
-                )
+                painter.drawPixmap(rect.x(), rect.y(), decoration_icon.pixmap(option.decorationSize))
 
         else:
             super().paint(painter, option, index)
@@ -2083,11 +2031,7 @@ class FilterDelegate(QStyledItemDelegate):
         # Draw lines
 
         painter.setPen(Qt.NoPen)
-        if (
-            item.type == FilterItem.CONDITION_TYPE
-            or index.column() == COLUMN_VALUE
-            or index.column() == COLUMN_CHECKBOX
-        ):
+        if item.type == FilterItem.CONDITION_TYPE or index.column() == COLUMN_VALUE or index.column() == COLUMN_CHECKBOX:
             painter.drawLine(option.rect.topRight(), option.rect.bottomRight())
 
         if index.column() == 0:
@@ -2341,12 +2285,8 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.view.header().setSectionResizeMode(COLUMN_FIELD, QHeaderView.Interactive)
         self.view.header().setSectionResizeMode(COLUMN_OPERATOR, QHeaderView.Fixed)
         self.view.header().setSectionResizeMode(COLUMN_VALUE, QHeaderView.Stretch)
-        self.view.header().setSectionResizeMode(
-            COLUMN_CHECKBOX, QHeaderView.ResizeToContents
-        )
-        self.view.header().setSectionResizeMode(
-            COLUMN_REMOVE, QHeaderView.ResizeToContents
-        )
+        self.view.header().setSectionResizeMode(COLUMN_CHECKBOX, QHeaderView.ResizeToContents)
+        self.view.header().setSectionResizeMode(COLUMN_REMOVE, QHeaderView.ResizeToContents)
         self.view.setEditTriggers(QAbstractItemView.DoubleClicked)
         self.view.selectionModel().selectionChanged.connect(self.on_selection_changed)
         # self.view.header().hide()
@@ -2355,6 +2295,9 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.toolbar = QToolBar()
         self.toolbar.setIconSize(QSize(16, 16))
         self.toolbar.setToolButtonStyle(Qt.ToolButtonIconOnly)
+
+        self.preset_combo = QComboBox()
+        self.preset_combo.currentIndexChanged.connect(self.on_select_preset)
 
         self._setup_actions()
 
@@ -2387,41 +2330,32 @@ class FiltersEditorWidget(plugin.PluginWidget):
         main_layout = QVBoxLayout()
 
         main_layout.addWidget(self.toolbar)
+        main_layout.addWidget(self.preset_combo)
         main_layout.addWidget(self.view)
         main_layout.setContentsMargins(0, 0, 0, 0)
-        main_layout.setSpacing(1)
+        main_layout.setSpacing(0)
         self.setLayout(main_layout)
 
         self.current_preset_name = ""
 
     def _setup_actions(self):
-        apply_action = self.toolbar.addAction(
-            FIcon(0xF040A), "Apply filters", self.on_apply
-        )
+        apply_action = self.toolbar.addAction(FIcon(0xF040A), "Apply filters", self.on_apply)
 
         auto_icon = QIcon()
         auto_icon.addPixmap(FIcon(0xF04E6).pixmap(16, 16), QIcon.Normal, QIcon.On)
         auto_icon.addPixmap(FIcon(0xF04E8).pixmap(16, 16), QIcon.Normal, QIcon.Off)
-        self.auto_action = self.toolbar.addAction(
-            auto_icon, "Automatic Apply selection when checked"
-        )
+        self.auto_action = self.toolbar.addAction(auto_icon, "Automatic Apply selection when checked")
         self.auto_action.setCheckable(True)
         self.auto_action.toggled.connect(apply_action.setDisabled)
 
         self.toolbar.addSeparator()
 
-        self.add_condition_action = self.toolbar.addAction(
-            FIcon(0xF0EF1), "Add condition", self.on_add_condition
-        )
+        self.add_condition_action = self.toolbar.addAction(FIcon(0xF0EF1), "Add condition", self.on_add_condition)
         self.add_condition_action.setToolTip("Add condition")
-        self.add_group_action = self.toolbar.addAction(
-            FIcon(0xF0EF0), "Add group", self.on_add_logic
-        )
+        self.add_group_action = self.toolbar.addAction(FIcon(0xF0EF0), "Add group", self.on_add_logic)
         self.add_group_action.setToolTip("Add Group")
 
-        self.clear_all_action = self.toolbar.addAction(
-            FIcon(0xF0234), self.tr("Clear all"), self.on_clear_all
-        )
+        self.clear_all_action = self.toolbar.addAction(FIcon(0xF0234), self.tr("Clear all"), self.on_clear_all)
 
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -2473,7 +2407,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.on_refresh()
 
     def on_close_project(self):
-        self.model.clear()  
+        self.model.clear()
 
     def on_duplicate_filter(self):
         """Duplicate filter condition from context menu
@@ -2500,9 +2434,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
         confirmation = QMessageBox.question(
             self,
             self.tr("Please confirm"),
-            self.tr(
-                f"Do you really want to remove selected filter ? \nYou cannot undo this operation"
-            ),
+            self.tr(f"Do you really want to remove selected filter ? \nYou cannot undo this operation"),
         )
         if confirmation == QMessageBox.Yes:
             self.model.remove_item(selected_index)
@@ -2618,11 +2550,12 @@ class FiltersEditorWidget(plugin.PluginWidget):
         This method should be called by __init__ and on refresh
         """
         self.preset_menu.clear()
+        self.preset_combo.clear()
+        self.preset_combo.addItem("default", {"$and": []})
         config = Config("filters_editor")
 
         self.preset_menu.addAction("Save preset", self.on_save_preset)
         self.preset_menu.addSeparator()
-
         if "presets" in config:
             presets = config["presets"]
             for name, filters in presets.items():
@@ -2631,6 +2564,8 @@ class FiltersEditorWidget(plugin.PluginWidget):
                 action.triggered.connect(self.on_select_preset)
                 action.removed.connect(self.on_delete_preset)
                 self.preset_menu.addAction(action)
+
+                self.preset_combo.addItem(name, filters)
 
         self.preset_menu.addSeparator()
         self.preset_menu.addAction("Reload presets", self.load_presets)
@@ -2661,7 +2596,12 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
     def on_select_preset(self):
         """Activate when preset has changed from preset_combobox"""
-        data = self.sender().data()
+
+        if type(self.sender()) == QComboBox:
+            data = self.preset_combo.currentData()
+        else:
+            data = self.sender().data()
+
         if data:
             self.filters = data
             self.on_apply()
@@ -2690,17 +2630,13 @@ class FiltersEditorWidget(plugin.PluginWidget):
                 ret = QMessageBox.warning(
                     self,
                     self.tr("Overwrite preset"),
-                    self.tr(
-                        f"Preset {name} already exists. Do you want to overwrite it ?"
-                    ),
+                    self.tr(f"Preset {name} already exists. Do you want to overwrite it ?"),
                     QMessageBox.Yes | QMessageBox.No,
                 )
 
                 if ret == QMessageBox.No:
                     return
-            self.presets_model.add_preset(
-                name, self.mainwindow.get_state_data("filters")
-            )
+            self.presets_model.add_preset(name, self.mainwindow.get_state_data("filters"))
             self.presets_model.save()
 
         self.load_presets()

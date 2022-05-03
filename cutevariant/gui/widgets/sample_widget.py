@@ -55,9 +55,7 @@ class SampleWidget(QWidget):
             0: {"name": "Unlocked"},
             1: {"name": "Locked"},
         }
-        self.REVERSE_CLASSIF = {
-            v["name"]: k for k, v in self.SAMPLE_CLASSIFICATION.items()
-        }
+        self.REVERSE_CLASSIF = {v["name"]: k for k, v in self.SAMPLE_CLASSIFICATION.items()}
 
         # Identity
         self.name_edit = QLineEdit()
@@ -128,6 +126,12 @@ class SampleWidget(QWidget):
         # pheno_layout.addRow("HPO", self.hpo_widget) #hidden for now
         self.tab_widget.addTab(identity_widget, "Edit")
         self.tab_widget.addTab(pheno_widget, "Phenotype")
+        # Validated variant
+
+        self.variant_model = QStringListModel()
+        self.variant_view = QListView()
+        self.variant_view.setModel(self.variant_model)
+        self.tab_widget.addTab(self.variant_view, "Validated variants")
 
         self.history_view = DictWidget()
         self.tab_widget.addTab(self.history_view, "History")
@@ -165,9 +169,7 @@ class SampleWidget(QWidget):
         if data["tags"] is not None:
             for tag in data["tags"].split(self.TAG_SEPARATOR):
                 if tag in self.TAG_LIST:
-                    self.tag_edit.model().item(self.TAG_LIST.index(tag)).setData(
-                        Qt.Checked, Qt.CheckStateRole
-                    )
+                    self.tag_edit.model().item(self.TAG_LIST.index(tag)).setData(Qt.Checked, Qt.CheckStateRole)
 
         self.comment.setPlainText(data.get("comment", ""))
         self.comment.preview_btn.setChecked(True)
@@ -175,6 +177,14 @@ class SampleWidget(QWidget):
 
         self.setWindowTitle("Sample edition: " + data.get("name", "Unknown"))
         self.initial_state = self.get_gui_state()
+
+        # Get validated variants
+        sample_name = sql.get_sample(self.conn, sample_id)["name"]
+        str_lists = []
+        for v in sql.get_variants(self.conn, ["chr", "pos", "ref", "alt"], filters={"$and": [{f"samples.{sample_name}.classification": 2}]}):
+            str_lists.append("{chr}-{pos}-{ref}-{alt}".format(**v))
+
+        self.variant_model.setStringList(str_lists)
 
     def save(self, sample_id: int):
         """
@@ -263,9 +273,7 @@ class SampleDialog(QDialog):
 
         self.sample_id = sample_id
         self.w = SampleWidget(conn)
-        self.button_box = QDialogButtonBox(
-            QDialogButtonBox.Save | QDialogButtonBox.Cancel
-        )
+        self.button_box = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
         vLayout = QVBoxLayout(self)
         vLayout.addWidget(self.w)
         vLayout.addWidget(self.button_box)

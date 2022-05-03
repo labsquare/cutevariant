@@ -252,9 +252,7 @@ class GeneView(QAbstractScrollArea):
         intron_rect = QRect(self.area)
         intron_rect.setHeight(self.intron_height)
         intron_rect.moveCenter(QPoint(self.area.center().x(), self.area.center().y()))
-        linearGrad = QLinearGradient(
-            QPoint(0, intron_rect.top()), QPoint(0, intron_rect.bottom())
-        )
+        linearGrad = QLinearGradient(QPoint(0, intron_rect.top()), QPoint(0, intron_rect.bottom()))
 
         color = self.palette().color(QPalette.Light)
 
@@ -336,9 +334,7 @@ class GeneView(QAbstractScrollArea):
                 painter.drawRect(exon_rect)
                 color = self.palette().color(QPalette.Highlight)
 
-                linearGrad = QLinearGradient(
-                    QPoint(0, exon_rect.top()), QPoint(0, exon_rect.bottom())
-                )
+                linearGrad = QLinearGradient(QPoint(0, exon_rect.top()), QPoint(0, exon_rect.bottom()))
                 linearGrad.setColorAt(0, color)
                 linearGrad.setColorAt(1, color.darker())
                 brush = QBrush(linearGrad)
@@ -501,13 +497,11 @@ class GeneView(QAbstractScrollArea):
 
                 cds_rect = QRect(0, 0, end - start, self.cds_height)
                 cds_rect.moveTo(
-                    start + self.area.left(),
+                    start,
                     self.area.center().y() - self.cds_height / 2,
                 )
 
-                linearGrad = QLinearGradient(
-                    QPoint(0, cds_rect.top()), QPoint(0, cds_rect.bottom())
-                )
+                linearGrad = QLinearGradient(QPoint(0, cds_rect.top()), QPoint(0, cds_rect.bottom()))
                 linearGrad.setColorAt(0, QColor("#194980"))
                 linearGrad.setColorAt(1, QColor("#194980").darker(400))
                 brush = QBrush(linearGrad)
@@ -621,9 +615,7 @@ class GeneView(QAbstractScrollArea):
         self.scale_factor = x
 
         min_scroll = 0
-        max_scroll = (
-            self.area_rect().width() * self.scale_factor
-        ) - self.area_rect().width()
+        max_scroll = (self.area_rect().width() * self.scale_factor) - self.area_rect().width()
 
         previous = self.horizontalScrollBar().value()
         previous_max = self.horizontalScrollBar().maximum()
@@ -781,13 +773,9 @@ class GeneView(QAbstractScrollArea):
                 # There is no selection, dna_start - dna_end is too small, zooming will make no sense
                 self.reset_zoom()
             else:
-                dna_start = self._scroll_to_dna(
-                    self.region.left() - self.area_rect().left()
-                )
+                dna_start = self._scroll_to_dna(self.region.left() - self.area_rect().left())
 
-                dna_end = self._scroll_to_dna(
-                    self.region.right() - self.area_rect().left()
-                )
+                dna_end = self._scroll_to_dna(self.region.right() - self.area_rect().left())
 
                 print(self.region.width())
                 self.zoom_to_region(dna_start, dna_end)
@@ -844,9 +832,7 @@ class GeneViewerWidget(plugin.PluginWidget):
 
         self.transcript_name_combo = QComboBox()
         self.transcript_name_combo.setMaximumWidth(400)
-        self.transcript_name_combo.setSizePolicy(
-            QSizePolicy.Expanding, QSizePolicy.Preferred
-        )
+        self.transcript_name_combo.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         self.transcript_name_combo.setEditable(True)
         self.transcript_name_combo.lineEdit().setPlaceholderText("Transcript name ...")
 
@@ -880,13 +866,9 @@ class GeneViewerWidget(plugin.PluginWidget):
         main_layout.addLayout(self.stack_layout)
 
         # Connect comboboxes to their respective callbacks
-        self.exon_combo.activated.connect(
-            lambda x: self.view.zoom_to_exon(self.exon_combo.currentData())
-        )
+        self.exon_combo.activated.connect(lambda x: self.view.zoom_to_exon(self.exon_combo.currentData()))
         self.gene_name_combo.currentTextChanged.connect(self.on_selected_gene_changed)
-        self.transcript_name_combo.currentTextChanged.connect(
-            self.on_selected_transcript_changed
-        )
+        self.transcript_name_combo.currentTextChanged.connect(self.on_selected_transcript_changed)
 
         self.current_variant = {}
 
@@ -906,7 +888,7 @@ class GeneViewerWidget(plugin.PluginWidget):
             LOGGER.debug("Cannot init gene viewer")
 
     def on_close_project(self):
-        self.view.set_gene(None)  
+        self.view.set_gene(None)
 
     def on_register(self, mainwindow: MainWindow):
         """ """
@@ -930,7 +912,7 @@ class GeneViewerWidget(plugin.PluginWidget):
         transcript_field = config_gene_viewer.get("transcript_field", "")
 
         # Find gene from current variant, depending on the gene field in config
-        gene=""
+        gene = ""
         # gene from annotations
         if gene_field.split(".")[0] == "ann":
             if "annotations" in self.current_variant:
@@ -940,15 +922,15 @@ class GeneViewerWidget(plugin.PluginWidget):
         else:
             if gene_field in self.current_variant:
                 gene = self.current_variant[gene_field]
-        
+
         # find transcript from current variant, depending on the transcript field in config
-        transcript=""
+        transcript = ""
         # transcript from annotations
         if transcript_field.split(".")[0] == "ann":
             if "annotations" in self.current_variant:
                 if transcript_field.split(".")[1] in self.current_variant["annotations"][0]:
                     transcript = self.current_variant["annotations"][0][transcript_field.split(".")[1]].split(".")[0]
-        # transcript from common field 
+        # transcript from common field
         else:
             if transcript_field in self.current_variant:
                 transcript = self.current_variant[transcript_field].split(".")[0]
@@ -977,9 +959,7 @@ class GeneViewerWidget(plugin.PluginWidget):
         """Called on startup by __init__, loads whole annotation table to populate gene names combobox"""
 
         if self.gene_conn:
-            gene_names = [
-                s["gene"] for s in self.gene_conn.execute("SELECT gene FROM genes")
-            ]
+            gene_names = [s["gene"] for s in self.gene_conn.execute("SELECT gene FROM genes")]
             self.gene_name_combo.clear()
             self.gene_name_combo.addItems(gene_names)
 
@@ -987,14 +967,7 @@ class GeneViewerWidget(plugin.PluginWidget):
         """Called whenever the selected gene changes. Allows the user to select the transcript of interest."""
         if self.gene_conn:
             transcript_names = (
-                [
-                    s["transcript_name"]
-                    for s in self.gene_conn.execute(
-                        f"SELECT transcript_name FROM genes WHERE gene = '{self.selected_gene}'"
-                    )
-                ]
-                if self.selected_gene is not None
-                else []
+                [s["transcript_name"] for s in self.gene_conn.execute(f"SELECT transcript_name FROM genes WHERE gene = '{self.selected_gene}'")] if self.selected_gene is not None else []
             )
 
             self.transcript_name_combo.clear()
@@ -1043,7 +1016,7 @@ class GeneViewerWidget(plugin.PluginWidget):
         gene_field = config_gene_viewer.get("gene_field", "")
 
         # Existing annotation fields
-        list_of_fields=[]
+        list_of_fields = []
         for field in sql.get_fields(self.conn):
             # list fields from common fields
             if field["category"] == "variants":
@@ -1053,7 +1026,7 @@ class GeneViewerWidget(plugin.PluginWidget):
             if field["category"] == "annotations":
                 name = field["name"]
                 list_of_fields.append(f"ann.{name}")
- 
+
         # Filters on gene field
         filters = {}
         # field exists in project
@@ -1122,12 +1095,10 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
-    conn = sqlite3.connect(
-        "/home/sacha/refGene.db", detect_types=sqlite3.PARSE_DECLTYPES
-    )
+    conn = sqlite3.connect("/home/sacha/refGene.db", detect_types=sqlite3.PARSE_DECLTYPES)
     conn.row_factory = sqlite3.Row
 
-    gene_data = dict(conn.execute("SELECT * FROM genes WHERE gene = 'GJB2'").fetchone())
+    gene_data = dict(conn.execute("SELECT * FROM genes WHERE gene = 'NOD2'").fetchone())
 
     print(gene_data)
     # print(gene_data)
