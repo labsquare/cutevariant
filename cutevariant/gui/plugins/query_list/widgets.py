@@ -334,9 +334,45 @@ class QueryListWidget(plugin.PluginWidget):
         query = self.model.data(index, Qt.UserRole)
         query_params = parse_one_vql(query)
 
-        self.mainwindow.set_state_data("fields",query_params.get("fields",[]))
+        # Config
+        config = Config("samples")
+        additional_genotype_field = ""
+        if "additional_genotype_field" in config:
+            additional_genotype_field=config["additional_genotype_field"]
+        else:
+            config["additional_genotype_field"]=""
+            config.save()
+
+        # fields
+        fields = query_params.get("fields",[])
+
+        # filters
+        filters = query_params.get("filters",{})
+        if not filters:
+            root = "$or"
+            filters["$or"] = []
+        else:
+            root = list(filters.keys())[0]
+            filters[root] = [i for i in filters[root] if not list(i.keys())[0].startswith("samples")]
+
+        # samples selected
+        samples_selected=self.mainwindow.get_state_data("samples_selected")
+        if samples_selected:
+            for sample in samples_selected:
+                # fields
+                fields += [f"samples.{sample}.gt"]
+                if additional_genotype_field:
+                    fields += [f"samples.{sample}.{additional_genotype_field}"]
+                # filters
+                key = f"samples.{sample}.gt"
+                condition = {key: {"$gte": 1}}
+                filters[root].append(condition)
+
+        #self.mainwindow.set_state_data("fields",query_params.get("fields",[]))
+        self.mainwindow.set_state_data("fields",fields)
         self.mainwindow.set_state_data("source",query_params.get("source","variants"))
-        self.mainwindow.set_state_data("filters",query_params.get("filters",[]))
+        #self.mainwindow.set_state_data("filters",query_params.get("filters",[]))
+        self.mainwindow.set_state_data("filters",filters)
         self.mainwindow.set_state_data("order_by",query_params.get("order_by",[]))
 
         self.mainwindow.refresh_plugins(sender=self)

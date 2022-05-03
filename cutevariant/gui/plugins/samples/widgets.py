@@ -261,13 +261,27 @@ class SamplesWidget(plugin.PluginWidget):
         fields = self.mainwindow.get_state_data("fields")
         fields = [f for f in fields if not f.startswith("samples")]
 
+        # Config
+        config = Config("samples")
+        additional_genotype_field = ""
+        if "additional_genotype_field" in config:
+            additional_genotype_field=config["additional_genotype_field"]
+        else:
+            config["additional_genotype_field"]=""
+            config.save()
+
         # hugly : Create genotype fields
         indexes = self.view.selectionModel().selectedRows()
+        samples_selected=[]
         if indexes:
             sample_name = indexes[0].siblingAtColumn(0).data()
+            samples_selected.append(sample_name)
 
             fields += [f"samples.{sample_name}.gt"]
+            if additional_genotype_field:
+                fields += [f"samples.{sample_name}.{additional_genotype_field}"]
 
+        self.mainwindow.set_state_data("samples_selected", samples_selected)
         self.mainwindow.set_state_data("fields", fields)
         self.mainwindow.set_state_data("filters", self._create_filters())
         self.mainwindow.refresh_plugins(sender=self)
