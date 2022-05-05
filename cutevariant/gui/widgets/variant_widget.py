@@ -6,6 +6,8 @@ from cutevariant.gui.widgets import ChoiceWidget, DictWidget, MarkdownEditor
 from cutevariant.gui.widgets.multi_combobox import MultiComboBox
 from cutevariant.gui.style import CLASSIFICATION, SAMPLE_VARIANT_CLASSIFICATION
 from cutevariant.config import Config
+from cutevariant.gui import FIcon
+
 
 from cutevariant.core import sql
 import sqlite3
@@ -19,6 +21,13 @@ from PySide6.QtWidgets import (
     QLineEdit,
 )
 from PySide6.QtCore import Qt, QSortFilterProxyModel, QAbstractTableModel
+
+
+class QHLine(QFrame):
+    def __init__(self):
+        super(QHLine, self).__init__()
+        self.setFrameShape(QFrame.HLine)
+        self.setFrameShadow(QFrame.Sunken)
 
 
 class TableModel(QAbstractTableModel):
@@ -61,6 +70,16 @@ class VariantWidget(QWidget):
         # self.name_edit.setAlignment(Qt.AlignCenter)
         # self.name_edit.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Maximum)
         # info_layout.addWidget(self.name_edit)
+
+        # Title
+        self.title = QLabel()
+        self.title.setTextFormat(Qt.RichText)
+        self.title_variant = QLineEdit()
+        self.title_variant.setReadOnly(True)
+        title_layout = QHBoxLayout()
+        title_layout.addWidget(QLabel("Variant "))
+        title_layout.addWidget(self.title_variant)
+        # FIcon(0xF014C),
 
         ### <validation block> ###
         validation_widget = QWidget()
@@ -148,6 +167,10 @@ class VariantWidget(QWidget):
         ### </sample tab block> ###
 
         main_layout = QVBoxLayout(self)
+
+        main_layout.addLayout(title_layout)
+        main_layout.addWidget(QHLine())
+
         # central_layout = QHBoxLayout()
         # splitter = QSplitter(Qt.Horizontal)
         main_layout.addWidget(self.tab_widget)
@@ -208,11 +231,44 @@ class VariantWidget(QWidget):
         )
         self.initial_db_validation = self.get_validation_from_data(self.data)
 
-        # Set name
-        name = "{chr}-{pos}-{ref}-{alt}".format(**self.data)
-        self.setWindowTitle("Variant edition: " + name)
+        # Set title
+        self.setWindowTitle("Variant edition")
 
         self.ann_combo.clear()
+
+        # Set name
+        #name = "{chr}-{pos}-{ref}-{alt}".format(**self.data)
+
+        # Config
+        config = Config("variables") or {}
+
+        # Get variant_name_pattern
+        variant_name_pattern="{chr}:{pos} - {ref}>{alt}"
+        if "variant_name_pattern" in config:
+            variant_name_pattern=config["variant_name_pattern"]
+        else:
+            config["variant_name_pattern"]=variant_name_pattern
+            config.save()
+
+        # Get variant_name_pattern_length
+        variant_name_pattern_length=40
+        if "variant_name_pattern_length" in config:
+            variant_name_pattern_length = int(config["variant_name_pattern_length"])
+        else:
+            config["variant_name_pattern_length"]=variant_name_pattern_length
+            config.save()
+
+        #formatted_variant = "{chr}:{pos}-{ref}-{alt}".format(**full_variant)
+        # Get fields
+        #variant_id = self.data["id"]
+        variant = sql.get_variant(self._conn, variant_id, with_annotations=True)
+        if len(variant["annotations"]):
+            for ann in variant["annotations"][0]:
+                variant["annotations___"+str(ann)]=variant["annotations"][0][ann]
+        variant_name_pattern=variant_name_pattern.replace("ann.","annotations___")
+        variant_name = variant_name_pattern.format(**variant)
+        self.title_variant.setText(variant_name)
+       
 
         if "annotations" in self.data:
             for i, val in enumerate(self.data["annotations"]):
@@ -260,7 +316,7 @@ class VariantWidget(QWidget):
         self.comment.setPlainText(self.data["comment"])
         self.comment.preview_btn.setChecked(True)
         self.variant_view.set_dict(self.data)
-        self.history_view.set_dict(self.get_history_variants())
+        self.history_view.set_dict(self.get_history_variants(variant_id=variant_id))
 
         self.initial_state = self.get_gui_state()
 
@@ -295,16 +351,24 @@ class VariantWidget(QWidget):
             adata = self.data["annotations"][current]
             self.ann_view.set_dict({i: k for i, k in adata.items() if k != ""})
 
-    def get_history_variants(self):
+    def get_history_variants(self, variant_id = None):
         """ Get the history of samples """
         results = {}
+        if not variant_id:
+            return results
         for record in self._conn.execute(
+        # f"""SELECT   ('[' || `timestamp` || ']') as time,
+        #              ('[' || `history`.`id` || ']') as id,
+        #                 ( '[' || `user` || ']' || ' - ' || '[' || `variants`.`chr` || '-' || `variants`.`pos` || '-' || `variants`.`ref` || '-' || `variants`.`alt` || ']' || ' - ' || '"' || `field` || '" from "' || `before` || '" to "' || `after` || '"') as 'change'
+        #         FROM `history`
+        #         INNER JOIN `variants` ON `history`.`table_rowid`=`variants`.`rowid`
+        #         WHERE `table`='variants' AND `variants`.`id` = {variant_id}"""
         f"""SELECT   ('[' || `timestamp` || ']') as time,
                      ('[' || `history`.`id` || ']') as id,
-                        ( '[' || `user` || ']' || ' - ' || '[' || `variants`.`chr` || '-' || `variants`.`pos` || '-' || `variants`.`ref` || '-' || `variants`.`alt` || ']' || ' - ' || '"' || `field` || '" from "' || `before` || '" to "' || `after` || '"') as 'change'
+                        ( '[' || `user` || ']' || ' - ' || '"' || `field` || '" from "' || `before` || '" to "' || `after` || '"') as 'change'
                 FROM `history`
                 INNER JOIN `variants` ON `history`.`table_rowid`=`variants`.`rowid`
-                WHERE `table`='variants'"""
+                WHERE `table`='variants' AND `variants`.`id` = {variant_id}"""
         ):
             results[record["time"] + " " + record["id"]] = record["change"]
 

@@ -135,7 +135,7 @@ class DictWidget(QWidget):
         _layout.setContentsMargins(0, 0, 0, 0)
 
         self.setLayout(_layout)
-        print("init")
+        #print("init")
 
     def set_dict(self, data: dict):
 

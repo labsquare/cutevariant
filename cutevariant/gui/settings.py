@@ -401,11 +401,21 @@ class VariablesSettingsWidget(AbstractSettingsWidget):
         )
         variant_name_pattern_label.setTextFormat(Qt.RichText)
 
+        self.variant_name_pattern_length_edit = QLineEdit()
+        variant_name_pattern_length_label = QLabel(
+            """
+            (Examples: '40')
+            """
+        )
+        variant_name_pattern_length_label.setTextFormat(Qt.RichText)
+
+
         self.gene_field_edit = QLineEdit()
         self.transcript_field_edit = QLineEdit()
         mainLayout = QFormLayout()
         mainLayout.addRow(self.tr("Variant name pattern:"), self.variant_name_pattern_edit)
         mainLayout.addWidget(variant_name_pattern_label)
+        mainLayout.addRow(self.tr("Variant name pattern length:"), self.variant_name_pattern_length_edit)
         mainLayout.addRow(self.tr("Gene field:"), self.gene_field_edit)
         mainLayout.addRow(self.tr("Transcript field:"), self.transcript_field_edit)
 
@@ -419,9 +429,11 @@ class VariablesSettingsWidget(AbstractSettingsWidget):
 
         # Save variables setting
         variant_name_pattern = self.variant_name_pattern_edit.text()
+        variant_name_pattern_length = self.variant_name_pattern_length_edit.text()
         gene_field = self.gene_field_edit.text()
         transcript_field = self.transcript_field_edit.text()
         config["variant_name_pattern"] = variant_name_pattern
+        config["variant_name_pattern_length"] = variant_name_pattern_length
         config["gene_field"] = gene_field
         config["transcript_field"] = transcript_field
         config.save()
@@ -432,6 +444,7 @@ class VariablesSettingsWidget(AbstractSettingsWidget):
     def load(self):
         """Setup widgets in VariablesSettingsWidget"""
         self.variant_name_pattern_edit.clear()
+        self.variant_name_pattern_length_edit.clear()
         self.gene_field_edit.clear()
         self.transcript_field_edit.clear()
 
@@ -440,8 +453,10 @@ class VariablesSettingsWidget(AbstractSettingsWidget):
         
         # Set variables
         variant_name_pattern = config.get("variant_name_pattern", "{chr}:{pos} - {ref}>{alt}")
+        variant_name_pattern_length = config.get("variant_name_pattern_length", 40)
         gene_field = config.get("gene_field", "ann.gene")
         transcript_field = config.get("transcript_field", "ann.transcript")
+        self.variant_name_pattern_length_edit.setText(str(variant_name_pattern_length))
         self.variant_name_pattern_edit.setText(variant_name_pattern)
         self.gene_field_edit.setText(gene_field)
         self.transcript_field_edit.setText(transcript_field)

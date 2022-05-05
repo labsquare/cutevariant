@@ -21,6 +21,7 @@ from cutevariant.gui.style import SAMPLE_VARIANT_CLASSIFICATION
 from cutevariant.commons import DEFAULT_SELECTION_NAME
 from cutevariant.config import Config
 
+import math
 
 from cutevariant.gui.widgets import (
     ChoiceWidget,
@@ -622,7 +623,12 @@ class ValidationWidget(plugin.PluginWidget):
         variant_name=self.find_variant_name(troncate=True)
 
         # Add section
-        menu.addSection("Variant " + variant_name)
+        #menu.addSection("Variant " + variant_name)
+        menu.addAction(
+            FIcon(0xF014C),
+            "Variant " + variant_name,
+            #functools.partial(QApplication.instance().clipboard().setText, formatted_variant),
+        )
 
         # Validation
         row = self.view.selectionModel().currentIndex().row()
@@ -647,7 +653,12 @@ class ValidationWidget(plugin.PluginWidget):
         menu.addMenu(cat_menu)
         menu.addAction("Edit variant validation ...", self._show_sample_variant_dialog)
 
-        menu.addSection("Sample")
+        #menu.addSection("Sample")
+        menu.addAction(
+            FIcon(0xF014C),
+            "Sample ",
+            #functools.partial(QApplication.instance().clipboard().setText, formatted_variant),
+        )
         menu.addAction(QIcon(), "Edit sample ...", self._show_sample_dialog)
 
         menu.addAction(
@@ -818,13 +829,23 @@ class ValidationWidget(plugin.PluginWidget):
 
     def find_variant_name(self, troncate=False):
         
+        # Config
+        config = Config("variables") or {}
+
         # Get variant_name_pattern
         variant_name_pattern="{chr}:{pos} - {ref}>{alt}"
-        config = Config("variables") or {}
         if "variant_name_pattern" in config:
             variant_name_pattern=config["variant_name_pattern"]
         else:
             config["variant_name_pattern"]=variant_name_pattern
+            config.save()
+
+        # Get variant_name_pattern_length
+        variant_name_pattern_length=40
+        if "variant_name_pattern_length" in config:
+            variant_name_pattern_length = int(config["variant_name_pattern_length"])
+        else:
+            config["variant_name_pattern_length"]=variant_name_pattern_length
             config.save()
 
         # Get fields
@@ -838,8 +859,10 @@ class ValidationWidget(plugin.PluginWidget):
         variant_name = variant_name_pattern.format(**variant)
 
         # Troncate variant name 
-        if troncate and len(variant_name) > 25:
-            variant_name = variant_name[0:15] + " ... " + variant_name[-10:]
+        if troncate and len(variant_name) > variant_name_pattern_length:
+            variant_name_pattern_length_first_part=int(math.floor(variant_name_pattern_length/2))
+            variant_name_pattern_length_second_part=variant_name_pattern_length-variant_name_pattern_length_first_part
+            variant_name = variant_name[0:variant_name_pattern_length_first_part] + " ... " + variant_name[-variant_name_pattern_length_second_part:]
 
         return variant_name
 

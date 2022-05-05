@@ -35,16 +35,18 @@ class SampleVariantWidget(QWidget):
         }
 
         # Title
-        self.title = QLabel()
-        self.title.setTextFormat(Qt.RichText)
-        self.title_variant = QLineEdit()
+
         self.title_sample = QLineEdit()
-        self.title_variant.setReadOnly(True)
         self.title_sample.setReadOnly(True)
-        title_layout = QHBoxLayout()
-        title_layout.addWidget(self.title_sample)
-        title_layout.addWidget(QLabel("for"))
-        title_layout.addWidget(self.title_variant)
+        title_sample_layout = QHBoxLayout()
+        title_sample_layout.addWidget(QLabel("Sample "))
+        title_sample_layout.addWidget(self.title_sample)
+
+        self.title_variant = QLineEdit()
+        self.title_variant.setReadOnly(True)
+        title_variant_layout = QHBoxLayout()
+        title_variant_layout.addWidget(QLabel("Variant "))
+        title_variant_layout.addWidget(self.title_variant)
 
         # Validation
         self.classification = QComboBox()
@@ -133,7 +135,8 @@ class SampleVariantWidget(QWidget):
 
         vLayout = QVBoxLayout()
         # vLayout.addWidget(self.title)
-        vLayout.addLayout(title_layout)
+        vLayout.addLayout(title_sample_layout)
+        vLayout.addLayout(title_variant_layout)
         vLayout.addWidget(QHLine())
         # vLayout.addWidget(validation_box)
         vLayout.addWidget(self.tab_widget)
@@ -156,16 +159,49 @@ class SampleVariantWidget(QWidget):
         if len(var_name) > 30:
             var_name = var_name[0:20] + "..." + var_name[-10:]
 
-        self.title.setText(
-            '<html><head/><body><p align="center">Validation status of variant <span style=" font-weight:700;">'
-            + html.escape(var_name)
-            + '</span> in sample <span style=" font-weight:700;">'
-            + str(sample["name"])
-            + "</span></p></body></html>"
-        )
+        # Config
+        config = Config("variables") or {}
+
+        # Get variant_name_pattern
+        variant_name_pattern="{chr}:{pos} - {ref}>{alt}"
+        if "variant_name_pattern" in config:
+            variant_name_pattern=config["variant_name_pattern"]
+        else:
+            config["variant_name_pattern"]=variant_name_pattern
+            config.save()
+
+        # Get variant_name_pattern_length
+        variant_name_pattern_length=40
+        if "variant_name_pattern_length" in config:
+            variant_name_pattern_length = int(config["variant_name_pattern_length"])
+        else:
+            config["variant_name_pattern_length"]=variant_name_pattern_length
+            config.save()
+
+        #formatted_variant = "{chr}:{pos}-{ref}-{alt}".format(**full_variant)
+        # Get fields
+        variant_id = var["id"]
+        variant = sql.get_variant(self.conn, variant_id, with_annotations=True)
+        if len(variant["annotations"]):
+            for ann in variant["annotations"][0]:
+                variant["annotations___"+str(ann)]=variant["annotations"][0][ann]
+        variant_name_pattern=variant_name_pattern.replace("ann.","annotations___")
+        variant_name = variant_name_pattern.format(**variant)
+        #self.title_variant.setText(variant_name)
+    
+
+        # self.title.setText(
+        #     '<html><head/><body><p align="center">Validation status of variant <span style=" font-weight:700;">'
+        #     + html.escape(var_name)
+        #     + '</span> in sample <span style=" font-weight:700;">'
+        #     + str(sample["name"])
+        #     + "</span></p></body></html>"
+        # )
         self.setWindowTitle("Variant validation")
-        self.title_variant.setText(var_name)
+
         self.title_sample.setText(sample["name"])
+        self.title_variant.setText(variant_name)
+
 
         # self.classification.addItems([v for v in SAMPLE_VARIANT_CLASSIFICATION.values()])
         # self.classification.setCurrentIndex(self.sample_has_var_data["classification"])
@@ -173,7 +209,7 @@ class SampleVariantWidget(QWidget):
             self.classification.addItem(v["name"], k)
 
         index = self.classification.findData(self.sample_has_var_data["classification"])
-        print(index)
+        #print(index)
         self.classification.setCurrentIndex(index)
 
         if self.sample_has_var_data.get("tags") is not None:
@@ -227,7 +263,7 @@ class SampleVariantWidget(QWidget):
             self.tag_edit.setDisabled(True)
             self.comment.preview_btn.setDisabled(True)
 
-        self.history_view.set_dict(self.get_history_sample_has_variant())
+        self.history_view.set_dict(self.get_history_sample_has_variant(sample_id=sample["id"],variant_id=var["id"]))
 
         self.initial_state = self.get_gui_state()
 
@@ -290,18 +326,28 @@ class SampleVariantWidget(QWidget):
         values.append(self.comment.toPlainText())
         return values
 
-    def get_history_sample_has_variant(self):
+    def get_history_sample_has_variant(self, sample_id = None, variant_id = None):
         """ Get the history of samples """
         results = {}
+        if not variant_id or not sample_id:
+            return results
         for record in self.conn.execute(
+            # f"""SELECT  ('[' || `timestamp` || ']') as time,
+            #             ('[' || `history`.`id` || ']') as id,
+            #             ( '[' || `user` || ']' || ' - ' || '[' || `samples`.`name` || '|' || `variants`.`chr` || '-' || `variants`.`pos` || '-' || `variants`.`ref` || '-' || `variants`.`alt` || '] '  || ' - ' || '"' || `field` || '" from "' || `before` || '" to "' || `after` || '"') as 'change'
+            #     FROM `history`
+            #     INNER JOIN `sample_has_variant` ON `history`.`table_rowid`=`sample_has_variant`.`rowid`
+            #     INNER JOIN `variants` ON `sample_has_variant`.`variant_id`=`variants`.`id`
+            #     INNER JOIN `samples` ON `sample_has_variant`.`sample_id`=`samples`.`id` 
+            #     WHERE `table`='sample_has_variant' AND `variants`.`id` = {variant_id} AND `samples`.`id` = {sample_id}"""
             f"""SELECT  ('[' || `timestamp` || ']') as time,
                         ('[' || `history`.`id` || ']') as id,
-                        ( '[' || `user` || ']' || ' - ' || '[' || `samples`.`name` || '|' || `variants`.`chr` || '-' || `variants`.`pos` || '-' || `variants`.`ref` || '-' || `variants`.`alt` || '] '  || ' - ' || '"' || `field` || '" from "' || `before` || '" to "' || `after` || '"') as 'change'
+                        ( '[' || `user` || ']' || ' - ' || '"' || `field` || '" from "' || `before` || '" to "' || `after` || '"') as 'change'
                 FROM `history`
                 INNER JOIN `sample_has_variant` ON `history`.`table_rowid`=`sample_has_variant`.`rowid`
                 INNER JOIN `variants` ON `sample_has_variant`.`variant_id`=`variants`.`id`
                 INNER JOIN `samples` ON `sample_has_variant`.`sample_id`=`samples`.`id` 
-                WHERE `table`='sample_has_variant'"""
+                WHERE `table`='sample_has_variant' AND `variants`.`id` = {variant_id} AND `samples`.`id` = {sample_id}"""
         ):
             results[record["time"] + " " + record["id"]] = record["change"]
 
