@@ -326,6 +326,34 @@ MANDATORY_FIELDS = [
         "category": "variants",
         "description": "Number of transcript",
     },
+    {
+        "name": "count_validation_positive",
+        "type": "int",
+        "constraint": "DEFAULT 0",
+        "category": "variants",
+        "description": "Number of positive validation (key value >0) for variant",
+    },
+    {
+        "name": "count_validation_negative",
+        "type": "int",
+        "constraint": "DEFAULT 0",
+        "category": "variants",
+        "description": "Number of negative validation (key value <0) for variant",
+    },
+    {
+        "name": "count_validation_positive_sample_lock",
+        "type": "int",
+        "constraint": "DEFAULT 0",
+        "category": "variants",
+        "description": "Number of positive validation (key value >0) for variant, with associated sample locked",
+    },
+    {
+        "name": "count_validation_negative_sample_lock",
+        "type": "int",
+        "constraint": "DEFAULT 0",
+        "category": "variants",
+        "description": "Number of negative validation (key value <0) for variant, with associated sample locked",
+    },
     ## SAMPLES
     {
         "name": "classification",
@@ -3091,6 +3119,35 @@ def create_triggers(conn):
         """
     )
 
+    # variants count validations on sample_has_variant update
+    conn.execute(
+        """
+        CREATE TRIGGER IF NOT EXISTS count_validation_positive_negative_after_update_on_sample_has_variant AFTER UPDATE ON sample_has_variant
+        WHEN new.classification <> old.classification
+        BEGIN
+            UPDATE variants
+            SET count_validation_positive = (SELECT count(shv.sample_id) FROM sample_has_variant as shv WHERE shv.variant_id=new.variant_id AND shv.classification>0), 
+                count_validation_negative = (SELECT count(shv.sample_id) FROM sample_has_variant as shv WHERE shv.variant_id=new.variant_id AND shv.classification<0),
+                count_validation_positive_sample_lock = (SELECT count(shv.sample_id) FROM sample_has_variant as shv INNER JOIN samples as s ON s.id=shv.sample_id WHERE s.valid>0 AND shv.variant_id=new.variant_id AND shv.classification>0), 
+                count_validation_negative_sample_lock = (SELECT count(shv.sample_id) FROM sample_has_variant as shv INNER JOIN samples as s ON s.id=shv.sample_id WHERE s.valid>0 AND shv.variant_id=new.variant_id AND shv.classification<0)
+            WHERE id=new.variant_id;
+        END;
+        """
+    )
+
+    # variants count validations on samples update
+    conn.execute(
+        """
+        CREATE TRIGGER IF NOT EXISTS count_validation_positive_negative_after_update_on_samples AFTER UPDATE ON samples
+        WHEN new.valid <> old.valid
+        BEGIN
+            UPDATE variants
+            SET count_validation_positive_sample_lock = (SELECT count(shv.sample_id) FROM sample_has_variant as shv INNER JOIN samples as s ON s.id=shv.sample_id WHERE s.valid>0 AND shv.variant_id=variants.id AND shv.classification>0), 
+                count_validation_negative_sample_lock = (SELECT count(shv.sample_id) FROM sample_has_variant as shv INNER JOIN samples as s ON s.id=shv.sample_id WHERE s.valid>0 AND shv.variant_id=variants.id AND shv.classification<0)
+            WHERE id IN (SELECT shv2.variant_id FROM sample_has_variant as shv2 WHERE shv2.sample_id=new.id);
+        END;
+        """
+    )
 
     ###### trigers on validation
 
