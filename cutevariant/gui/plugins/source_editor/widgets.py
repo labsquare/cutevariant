@@ -26,6 +26,7 @@ from cutevariant.gui.widgets import SearchableTableWidget
 from cutevariant.commons import DEFAULT_SELECTION_NAME
 
 
+import re
 from cutevariant import LOGGER
 
 # =================== SELECTION MODEL ===========================
@@ -355,6 +356,7 @@ class SourceEditorWidget(plugin.PluginWidget):
     def create_selection_from_current(self):
         name = self.ask_and_check_selection_name()
 
+        name = re.sub(r"\s+", "_", name.strip())
         if name:
 
             executed_query_data = self.mainwindow.get_state_data("executed_query_data")
