@@ -855,6 +855,7 @@ class VariantView(QWidget):
         # -----------Resize action ----------
 
         self.resize_action = self.top_bar.addAction(FIcon(0xF142A), self.tr("Auto resize"))
+        self.resize_action.setToolTip(self.tr("Adjust columns size to content"))
         self.resize_action.triggered.connect(self.auto_resize)
 
         # -----------Refresh action ----------
