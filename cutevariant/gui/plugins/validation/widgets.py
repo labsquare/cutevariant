@@ -28,7 +28,7 @@ from cutevariant.gui.widgets import (
     SampleDialog,
     SampleVariantDialog,
     PresetAction,
-    SampleSelectionDialog,
+    SamplesDialog,
 )
 
 
@@ -605,7 +605,7 @@ class ValidationWidget(plugin.PluginWidget):
 
     def _on_add_samples(self):
 
-        dialog = SampleSelectionDialog(self._conn, self)
+        dialog = SamplesDialog(self._conn, self)
         dialog.set_samples(self.model.get_samples())
         if dialog.exec():
             self.model.selected_samples = dialog.get_samples()
@@ -619,7 +619,7 @@ class ValidationWidget(plugin.PluginWidget):
         menu = QMenu(self)
 
         # variant name
-        variant_name=self.find_variant_name(troncate=True)
+        variant_name = self.find_variant_name(troncate=True)
 
         # Add section
         menu.addSection("Variant " + variant_name)
@@ -784,7 +784,6 @@ class ValidationWidget(plugin.PluginWidget):
         self.model.clear()
         self.load_all_filters()
 
-
     def _is_selectors_checked(self):
         """Return False if selectors is not checked"""
 
@@ -817,14 +816,14 @@ class ValidationWidget(plugin.PluginWidget):
                 )
 
     def find_variant_name(self, troncate=False):
-        
+
         # Get variant_name_pattern
-        variant_name_pattern="{chr}:{pos} - {ref}>{alt}"
+        variant_name_pattern = "{chr}:{pos} - {ref}>{alt}"
         config = Config("variables") or {}
         if "variant_name_pattern" in config:
-            variant_name_pattern=config["variant_name_pattern"]
+            variant_name_pattern = config["variant_name_pattern"]
         else:
-            config["variant_name_pattern"]=variant_name_pattern
+            config["variant_name_pattern"] = variant_name_pattern
             config.save()
 
         # Get fields
@@ -833,11 +832,11 @@ class ValidationWidget(plugin.PluginWidget):
         variant = sql.get_variant(self._conn, variant_id, with_annotations=True)
         if len(variant["annotations"]):
             for ann in variant["annotations"][0]:
-                variant["annotations___"+str(ann)]=variant["annotations"][0][ann]
-        variant_name_pattern=variant_name_pattern.replace("ann.","annotations___")
+                variant["annotations___" + str(ann)] = variant["annotations"][0][ann]
+        variant_name_pattern = variant_name_pattern.replace("ann.", "annotations___")
         variant_name = variant_name_pattern.format(**variant)
 
-        # Troncate variant name 
+        # Troncate variant name
         if troncate and len(variant_name) > 25:
             variant_name = variant_name[0:15] + " ... " + variant_name[-10:]
 
@@ -846,7 +845,7 @@ class ValidationWidget(plugin.PluginWidget):
     def on_refresh(self):
 
         # variant name
-        variant_name=self.find_variant_name(troncate=True)
+        variant_name = self.find_variant_name(troncate=True)
 
         # variant id
         self.current_variant = self.mainwindow.get_state_data("current_variant")

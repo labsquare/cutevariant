@@ -1,3 +1,4 @@
+import sqlite3
 from PySide6.QtWidgets import (
     QTabWidget,
     QTableView,
@@ -12,8 +13,16 @@ from PySide6.QtWidgets import (
     QSplitter,
     QDialogButtonBox,
 )
-from PySide6.QtCore import QAbstractTableModel, QModelIndex, Signal, Slot, QStringListModel, Qt
-from PySide6.QtGui import QAction, QIcon
+from PySide6.QtCore import (
+    QAbstractTableModel,
+    QModelIndex,
+    Signal,
+    Slot,
+    QStringListModel,
+    Qt,
+    QSize,
+)
+from PySide6.QtGui import QAction, QIcon, QFont
 
 from cutevariant.core import sql
 from cutevariant.gui.widgets import ChoiceWidget, create_widget_action
@@ -26,7 +35,7 @@ from cutevariant.gui.ficon import FIcon
 
 
 class SamplesModel(QAbstractTableModel):
-    def __init__(self, parent=None):
+    def __init__(self, conn: sqlite3.Connection, parent=None):
         super().__init__(parent)
         self._data = []
         self._headers = ["name", "family", "Statut", "Tags"]
@@ -35,15 +44,20 @@ class SamplesModel(QAbstractTableModel):
         self.tag_filter = []
         self.valid_filter = []
 
-        self.conn = None
+        self.conn = conn
 
     def rowCount(self, parent=QModelIndex()):
         """override"""
-        return len(self._data)
+        if parent == QModelIndex():
+            return len(self._data)
+        return 0
 
     def columnCount(self, parent=QModelIndex()):
         """override"""
-        return len(self._headers)
+        if parent == QModelIndex():
+            return len(self._headers)
+
+        return 0
 
     def data(self, index: QModelIndex, role: Qt.ItemDataRole):
 
@@ -65,7 +79,9 @@ class SamplesModel(QAbstractTableModel):
 
         return None
 
-    def headerData(self, section: int, orientation: Qt.Orientation, role: Qt.ItemDataRole):
+    def headerData(
+        self, section: int, orientation: Qt.Orientation, role: Qt.ItemDataRole
+    ):
         if role == Qt.DisplayRole and orientation == Qt.Horizontal:
             return self._headers[section]
 
@@ -87,12 +103,66 @@ class SamplesModel(QAbstractTableModel):
         return self._data[row]
 
 
-## First Tab
-class AllSamplesWidget(QWidget):
+## Second Tab
+class SelectionDialog(QDialog):
 
-    sample_added = Signal(list)
+    selection_changed = Signal(int)
 
     def __init__(self, parent=None):
+        super().__init__()
+
+        self.toolbar = QToolBar()
+        self.model = QStringListModel()
+        self.view = QTableView()
+        self.view.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.view.horizontalHeader().hide()
+        self.view.setShowGrid(False)
+        self.view.verticalHeader().hide()
+        self.view.horizontalHeader().setStretchLastSection(True)
+        self.view.setModel(self.model)
+        v_layout = QVBoxLayout(self)
+        v_layout.addWidget(self.toolbar)
+
+        v_layout.addWidget(self.view)
+        self._setup_actions()
+
+        self.setWindowTitle(self.tr("Selected sample(s)"))
+
+    def _setup_actions(self):
+        sep = QWidget()
+        sep.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        self.toolbar.addAction(QIcon(), "Remove selection(s)", self._on_remove)
+        self.toolbar.addWidget(sep)
+        self.toolbar.addAction(QIcon(), "Clear all", self._on_clear)
+
+    def set_samples(self, samples):
+        previous = set(self.model.stringList())
+
+        samples = set(samples).union(previous)
+
+        self.model.setStringList(samples)
+        self.selection_changed.emit(self.model.rowCount())
+
+    def get_samples(self):
+        return self.model.stringList()
+
+    def _on_remove(self):
+        names = self.model.stringList()
+
+        for index in self.view.selectionModel().selectedRows():
+            del names[index.row()]
+
+        self.model.setStringList(names)
+        self.selection_changed.emit(self.model.rowCount())
+
+    def _on_clear(self):
+        self.model.setStringList([])
+        self.selection_changed.emit(self.model.rowCount())
+
+
+class SamplesWidget(QWidget):
+    def __init__(self, conn: sqlite3.Connection, parent=None):
         super().__init__()
 
         self.toolbar = QToolBar()
@@ -100,7 +170,10 @@ class AllSamplesWidget(QWidget):
         self.line.setPlaceholderText("Search sample ...")
         self.line.textChanged.connect(self._on_search)
 
-        self.model = SamplesModel()
+        self.model = SamplesModel(conn)
+
+        self.selection_dialog = SelectionDialog()
+        self.selection_dialog.selection_changed.connect(self._update_count)
 
         self.view = QTableView()
         self.view.verticalHeader().hide()
@@ -128,6 +201,12 @@ class AllSamplesWidget(QWidget):
 
         self.conn = None
 
+    def get_selected_samples(self):
+        return self.selection_dialog.get_samples()
+
+    def set_selected_samples(self, samples: list):
+        self.selection_dialog.set_samples(samples)
+
     def _setup_actions(self):
 
         family_action = create_widget_action(self.toolbar, self.family_choice)
@@ -137,14 +216,26 @@ class AllSamplesWidget(QWidget):
         tag_action = create_widget_action(self.toolbar, self.tag_choice)
         tag_action.setText("Tags")
         self.toolbar.addSeparator()
-        clear_action = self.toolbar.addAction(QIcon(), "Clear filters", self.clear_filters)
+        clear_action = self.toolbar.addAction(
+            QIcon(), "Clear filters", self.clear_filters
+        )
 
         # separator
         sep = QWidget()
         sep.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.toolbar.addWidget(sep)
-        self.add_button = self.toolbar.addAction(" Add To Selection > ")
+        self.add_button = self.toolbar.addAction("Add To Selection")
+        self.add_button.setIcon(FIcon(0xF0415))
+        self.add_button.setToolTip(self.tr("Add selections to basket"))
         self.add_button.triggered.connect(self._on_add_selection)
+        self.basket_button = self.toolbar.addAction("Selected samples")
+        self.basket_button.setToolTip(self.tr("Show selected samples"))
+        self.basket_button.setIcon(FIcon(0xF0076))
+        self.basket_button.triggered.connect(self._on_basket_clicked)
+        # self.toolbar.widgetForAction(self.basket_button).setAutoRaise(False)
+
+        self.toolbar.setIconSize(QSize(16, 16))
+        self.toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
 
     def _load_filters(self):
         if self.conn:
@@ -192,7 +283,14 @@ class AllSamplesWidget(QWidget):
             for i in self.view.selectionModel().selectedRows()
         ]
 
-        self.sample_added.emit(samples)
+        self.selection_dialog.set_samples(samples)
+
+    def _update_count(self):
+        count = len(self.selection_dialog.get_samples())
+        self.basket_button.setText(f"{count} Selected sample(s)")
+        # font = QFont()
+        # font.setBold(count > 0)
+        # self.basket_button.setFont(font)
 
     @property
     def conn(self):
@@ -204,123 +302,36 @@ class AllSamplesWidget(QWidget):
         self.model.load()
         self._load_filters()
 
+    def _on_basket_clicked(self):
 
-## Second Tab
-class SelectionSamplesWidget(QWidget):
-
-    selection_changed = Signal(int)
-
-    def __init__(self, parent=None):
-        super().__init__()
-
-        self.toolbar = QToolBar()
-        self.model = QStringListModel()
-        self.view = QTableView()
-        self.view.horizontalHeader().hide()
-        self.view.setShowGrid(False)
-        self.view.verticalHeader().hide()
-        self.view.horizontalHeader().setStretchLastSection(True)
-        self.view.setModel(self.model)
-        v_layout = QVBoxLayout(self)
-        v_layout.addWidget(self.toolbar)
-
-        v_layout.addWidget(self.view)
-        self._setup_actions()
-
-    def _setup_actions(self):
-        sep = QWidget()
-        sep.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-
-        self.toolbar.addAction(QIcon(), "< Remove selection(s)", self._on_remove)
-        self.toolbar.addWidget(sep)
-        self.toolbar.addAction(QIcon(), "Clear all", self._on_clear)
-
-    def set_samples(self, samples):
-        previous = set(self.model.stringList())
-
-        samples = set(samples).union(previous)
-
-        self.model.setStringList(samples)
-        self.selection_changed.emit(self.model.rowCount())
-
-    def get_samples(self):
-        return self.model.stringList()
-
-    def _on_remove(self):
-        names = self.model.stringList()
-
-        for index in self.view.selectionModel().selectedRows():
-            del names[index.row()]
-
-        self.model.setStringList(names)
-        self.selection_changed.emit(self.model.rowCount())
-
-    def _on_clear(self):
-        self.model.setStringList([])
-        self.selection_changed.emit(self.model.rowCount())
+        self.selection_dialog.exec()
 
 
-class SampleSelectionWidget(QWidget):
-    def __init__(self, parent=None):
-        super().__init__()
-
-        v_layout = QVBoxLayout(self)
-        self.tab = QTabWidget()
-
-        self.first_widget = AllSamplesWidget()
-        self.second_widget = SelectionSamplesWidget()
-
-        self.second_widget.setWindowTitle("Selected sample(s)")
-
-        self.tab.addTab(self.first_widget, "All Samples")
-        self.tab.addTab(self.second_widget, self.second_widget.windowTitle())
-
-        v_layout.addWidget(self.tab)
-
-        self.first_widget.sample_added.connect(self.second_widget.set_samples)
-        self.second_widget.selection_changed.connect(self._on_selection_changed)
-
-    def _on_selection_changed(self, row: int):
-        # compute new tab name
-        name = f"{row} {self.second_widget.windowTitle()}"
-        self.tab.setTabText(1, name)
-
-    def get_samples(self):
-        return self.second_widget.get_samples()
-
-    def set_samples(self, samples: list):
-        self.second_widget.set_samples(samples)
-
-    @property
-    def conn(self):
-        return self._conn
-
-    @conn.setter
-    def conn(self, conn):
-        self._conn = conn
-        self.first_widget.conn = conn
-        self.second_widget.conn = conn
-
-
-class SampleSelectionDialog(QDialog):
+class SamplesDialog(QDialog):
     def __init__(self, conn, parent=None):
         super().__init__(parent)
 
-        self.w = SampleSelectionWidget()
+        self.w = SamplesWidget(conn)
         self.w.conn = conn
+
         self.btn_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         self.btn_box.accepted.connect(self.accept)
         self.btn_box.rejected.connect(self.reject)
+
+        self.btn_box.buttons()[0].setFlat(False)
+
         v_layout = QVBoxLayout(self)
         v_layout.addWidget(self.w)
         v_layout.addWidget(self.btn_box)
         self.resize(800, 400)
 
+        self.setWindowTitle(self.tr("Select sample(s)"))
+
     def set_samples(self, samples: list):
-        self.w.set_samples(samples)
+        self.w.set_selected_samples(samples)
 
     def get_samples(self):
-        return self.w.get_samples()
+        return self.w.get_selected_samples()
 
 
 if __name__ == "__main__":
@@ -328,9 +339,10 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
-    conn = sql.get_sql_connection("/home/sacha/exome/exome_1.db")
+    conn = sql.get_sql_connection("/home/sacha/test.db")
 
-    w = SampleSelectionDialog(conn)
+    w = SamplesDialog(conn)
+    w.set_samples(["Sample1"])
     w.exec()
 
     print(w.get_samples())

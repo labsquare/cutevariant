@@ -84,6 +84,7 @@ class StateData:
             "source": "variants",
             "filters": {},
             "order_by": [],
+            "samples": [],
         }
 
 
@@ -416,7 +417,7 @@ class MainWindow(QMainWindow):
         self.toolbar.addAction(self.new_project_action)
         self.toolbar.addAction(self.open_project_action)
         self.toolbar.addAction(self.import_file_action)
-        #self.toolbar.addAction(self.open_config_action)
+        # self.toolbar.addAction(self.open_config_action)
         self.toolbar.addAction(
             FIcon(0xF0625), self.tr("Help"), QWhatsThis.enterWhatsThisMode
         )
@@ -458,7 +459,7 @@ class MainWindow(QMainWindow):
         self.file_menu.addSeparator()
         ### Misc
 
-        ## TODO ==> Ca devrait allé dans les settings ça. 
+        ## TODO ==> Ca devrait allé dans les settings ça.
         self.open_config_action = self.file_menu.addAction(
             FIcon(0xF102F), self.tr("&Set config..."), self.open_config
         )
@@ -467,7 +468,8 @@ class MainWindow(QMainWindow):
         )
         self.file_menu.addSeparator()
         self.close_project_action = self.file_menu.addAction(
-            FIcon(0xF0156), self.tr("&Close project"), self.close_database)
+            FIcon(0xF0156), self.tr("&Close project"), self.close_database
+        )
         self.file_menu.addAction(self.tr("&Quit"), self.close, QKeySequence.Quit)
 
         ## Edit
@@ -610,7 +612,6 @@ class MainWindow(QMainWindow):
         Args:
             conn (sqlite3.Connection): Sqlite3 Connection
         """
-
 
         self.conn = conn
 

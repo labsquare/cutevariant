@@ -52,10 +52,12 @@ class SampleWidget(QWidget):
         self.TAG_SEPARATOR = "&"
         self.SAMPLE_CLASSIFICATION = {
             -1: {"name": "Rejected"},
-            0: {"name": "Unlocked"},
-            1: {"name": "Locked"},
+            0: {"name": "Pending"},
+            1: {"name": "Valid"},
         }
-        self.REVERSE_CLASSIF = {v["name"]: k for k, v in self.SAMPLE_CLASSIFICATION.items()}
+        self.REVERSE_CLASSIF = {
+            v["name"]: k for k, v in self.SAMPLE_CLASSIFICATION.items()
+        }
 
         # Identity
         self.name_edit = QLineEdit()
@@ -169,7 +171,9 @@ class SampleWidget(QWidget):
         if data["tags"] is not None:
             for tag in data["tags"].split(self.TAG_SEPARATOR):
                 if tag in self.TAG_LIST:
-                    self.tag_edit.model().item(self.TAG_LIST.index(tag)).setData(Qt.Checked, Qt.CheckStateRole)
+                    self.tag_edit.model().item(self.TAG_LIST.index(tag)).setData(
+                        Qt.Checked, Qt.CheckStateRole
+                    )
 
         self.comment.setPlainText(data.get("comment", ""))
         self.comment.preview_btn.setChecked(True)
@@ -181,7 +185,11 @@ class SampleWidget(QWidget):
         # Get validated variants
         sample_name = sql.get_sample(self.conn, sample_id)["name"]
         str_lists = []
-        for v in sql.get_variants(self.conn, ["chr", "pos", "ref", "alt"], filters={"$and": [{f"samples.{sample_name}.classification": 2}]}):
+        for v in sql.get_variants(
+            self.conn,
+            ["chr", "pos", "ref", "alt"],
+            filters={"$and": [{f"samples.{sample_name}.classification": 2}]},
+        ):
             str_lists.append("{chr}-{pos}-{ref}-{alt}".format(**v))
 
         self.variant_model.setStringList(str_lists)
@@ -273,7 +281,9 @@ class SampleDialog(QDialog):
 
         self.sample_id = sample_id
         self.w = SampleWidget(conn)
-        self.button_box = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
+        self.button_box = QDialogButtonBox(
+            QDialogButtonBox.Save | QDialogButtonBox.Cancel
+        )
         vLayout = QVBoxLayout(self)
         vLayout.addWidget(self.w)
         vLayout.addWidget(self.button_box)
