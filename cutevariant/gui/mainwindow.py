@@ -159,12 +159,8 @@ class MainWindow(QMainWindow):
         self.quick_search_edit.setPlaceholderText("Type a gene or coordinate ...")
         self.quick_search_edit.setMaximumWidth(400)
         self.quick_search_edit.setContentsMargins(0, 0, 5, 0)
-        self.quick_search_edit.addAction(
-            FIcon(0xF0349), QLineEdit.TrailingPosition
-        ).triggered.connect(lambda: self.quick_search(self.quick_search_edit.text()))
-        self.quick_search_edit.returnPressed.connect(
-            lambda: self.quick_search(self.quick_search_edit.text())
-        )
+        self.quick_search_edit.addAction(FIcon(0xF0349), QLineEdit.TrailingPosition).triggered.connect(lambda: self.quick_search(self.quick_search_edit.text()))
+        self.quick_search_edit.returnPressed.connect(lambda: self.quick_search(self.quick_search_edit.text()))
 
         self.toolbar.addSeparator()
         spacer = QWidget()
@@ -232,9 +228,7 @@ class MainWindow(QMainWindow):
         """
         dock = QDockWidget()
         dock.setWindowTitle(widget.windowTitle().upper())
-        dock.setStyleSheet(
-            "QDockWidget::title {text-align:center;} QDockWidget{font-weight:bold;}"
-        )
+        dock.setStyleSheet("QDockWidget::title {text-align:center;} QDockWidget{font-weight:bold;}")
         # frame = QLabel()
         # frame.setAlignment(Qt.AlignCenter)
         # frame.setText("<b>" + dock.windowTitle() + "</b>")
@@ -251,6 +245,10 @@ class MainWindow(QMainWindow):
         action = dock.toggleViewAction()
         action.setIcon(widget.windowIcon())
         action.setText(widget.windowTitle())
+        action.setToolTip(widget.toolTip())
+        action.setWhatsThis(widget.whatsThis())
+
+        action.triggered.connect(widget.on_refresh)
         self.view_menu.addAction(action)
 
         return dock
@@ -294,8 +292,7 @@ class MainWindow(QMainWindow):
 
             if not widget.objectName():
                 LOGGER.debug(
-                    "widget '%s' has no objectName attribute; "
-                    "=> fallback to extension name",
+                    "widget '%s' has no objectName attribute; " "=> fallback to extension name",
                     displayed_title,
                 )
                 widget.setObjectName(name)
@@ -304,10 +301,10 @@ class MainWindow(QMainWindow):
             widget.setWindowTitle(displayed_title)
 
             # WhatsThis content
-            long_description = extension.get("long_description")
-            if not long_description:
-                long_description = extension.get("description")
+            long_description = extension.get("long_description", "")
+            short_description = extension.get("description", "")
             widget.setWhatsThis(long_description)
+            widget.setToolTip(short_description)
             # Register (launch first init on some of them)
             widget.mainwindow = self
             widget.on_register(self)
@@ -398,9 +395,7 @@ class MainWindow(QMainWindow):
 
         ## File Menu
         self.file_menu = self.menuBar().addMenu(self.tr("&File"))
-        self.new_project_action = self.file_menu.addAction(
-            FIcon(0xF0415), self.tr("&New project"), self.new_project, QKeySequence.New
-        )
+        self.new_project_action = self.file_menu.addAction(FIcon(0xF0415), self.tr("&New project"), self.new_project, QKeySequence.New)
         self.open_project_action = self.file_menu.addAction(
             FIcon(0xF0DCF),
             self.tr("&Open project..."),
@@ -418,9 +413,7 @@ class MainWindow(QMainWindow):
         self.toolbar.addAction(self.open_project_action)
         self.toolbar.addAction(self.import_file_action)
         # self.toolbar.addAction(self.open_config_action)
-        self.toolbar.addAction(
-            FIcon(0xF0625), self.tr("Help"), QWhatsThis.enterWhatsThisMode
-        )
+        self.toolbar.addAction(FIcon(0xF0625), self.tr("Help"), QWhatsThis.enterWhatsThisMode)
         self.toolbar.addSeparator()
 
         ### Recent projects
@@ -436,9 +429,7 @@ class MainWindow(QMainWindow):
 
         for export_format_name in ExportDialogFactory.get_supported_formats():
 
-            action = self.export_menu.addAction(
-                self.tr(f"Export as {export_format_name}..."), self.on_export_pressed
-            )
+            action = self.export_menu.addAction(self.tr(f"Export as {export_format_name}..."), self.on_export_pressed)
 
             # Since there are several actions connected to the same slot, we need to pass the format to the receiver
             action.setData(export_format_name)
@@ -460,16 +451,10 @@ class MainWindow(QMainWindow):
         ### Misc
 
         ## TODO ==> Ca devrait allé dans les settings ça.
-        self.open_config_action = self.file_menu.addAction(
-            FIcon(0xF102F), self.tr("&Set config..."), self.open_config
-        )
-        self.file_menu.addAction(
-            FIcon(0xF0493), self.tr("Settings..."), self.show_settings
-        )
+        self.open_config_action = self.file_menu.addAction(FIcon(0xF102F), self.tr("&Set config..."), self.open_config)
+        self.file_menu.addAction(FIcon(0xF0493), self.tr("Settings..."), self.show_settings)
         self.file_menu.addSeparator()
-        self.close_project_action = self.file_menu.addAction(
-            FIcon(0xF0156), self.tr("&Close project"), self.close_database
-        )
+        self.close_project_action = self.file_menu.addAction(FIcon(0xF0156), self.tr("&Close project"), self.close_database)
         self.file_menu.addAction(self.tr("&Quit"), self.close, QKeySequence.Quit)
 
         ## Edit
@@ -493,9 +478,7 @@ class MainWindow(QMainWindow):
         self.view_menu = self.menuBar().addMenu(self.tr("&View"))
         self.view_menu.addAction(self.tr("Reset widgets positions"), self.reset_ui)
         # Set toggle footer visibility action
-        show_action = self.view_menu.addAction(
-            FIcon(0xF018D), self.tr("Show VQL editor")
-        )
+        show_action = self.view_menu.addAction(FIcon(0xF018D), self.tr("Show VQL editor"))
         show_action.setCheckable(True)
         self.toolbar.addAction(show_action)
         show_action.setChecked(True)
@@ -507,9 +490,7 @@ class MainWindow(QMainWindow):
 
         fullscreen_action.setShortcut(QKeySequence.FullScreen)
         fullscreen_action.setCheckable(True)
-        fullscreen_action.toggled.connect(
-            lambda x: self.showFullScreen() if x else self.showNormal()
-        )
+        fullscreen_action.toggled.connect(lambda x: self.showFullScreen() if x else self.showNormal())
 
         self.view_menu.addSeparator()
 
@@ -533,9 +514,7 @@ class MainWindow(QMainWindow):
         self.help_menu.addAction(
             FIcon(0xF0A30),
             self.tr("Report a bug..."),
-            partial(
-                QDesktopServices.openUrl, QUrl(cm.REPORT_BUG_URL, QUrl.TolerantMode)
-            ),
+            partial(QDesktopServices.openUrl, QUrl(cm.REPORT_BUG_URL, QUrl.TolerantMode)),
         )
 
         self.help_menu.addSeparator()
@@ -544,9 +523,7 @@ class MainWindow(QMainWindow):
         self.setup_developers_menu()
         self.help_menu.addMenu(self.developers_menu)
 
-        self.help_menu.addAction(
-            self.tr("About Qt..."), QApplication.instance().aboutQt
-        )
+        self.help_menu.addAction(self.tr("About Qt..."), QApplication.instance().aboutQt)
         self.help_menu.addAction(
             QIcon(DIR_ICONS + "app.png"),
             self.tr("About Cutevariant..."),
@@ -574,17 +551,13 @@ class MainWindow(QMainWindow):
         try:
             # DB version filter
             db_version = get_metadatas(self.conn).get("cutevariant_version")
-            if db_version and parse_version(db_version) < parse_version(
-                MIN_AUTHORIZED_DB_VERSION
-            ):
+            if db_version and parse_version(db_version) < parse_version(MIN_AUTHORIZED_DB_VERSION):
                 # Refuse to open blacklisted DB versions
                 # Unversioned files are still accepted
                 QMessageBox.critical(
                     self,
                     self.tr("Error while opening project"),
-                    self.tr("File: {} is too old; please create a new project.").format(
-                        filepath
-                    ),
+                    self.tr("File: {} is too old; please create a new project.").format(filepath),
                 )
                 return
 
@@ -596,9 +569,7 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(
                 self,
                 self.tr("Error while opening project"),
-                self.tr("File: {}\nThe following exception occurred:\n{}").format(
-                    filepath, e
-                ),
+                self.tr("File: {}\nThe following exception occurred:\n{}").format(filepath, e),
             )
             return
 
@@ -766,9 +737,7 @@ class MainWindow(QMainWindow):
         # Reload last directory used
         last_directory = self.app_settings.value("last_directory", QDir.homePath())
 
-        filepath, _ = QFileDialog.getSaveFileName(
-            self, self.tr("Save project"), last_directory, self.tr("(*.csv)")
-        )
+        filepath, _ = QFileDialog.getSaveFileName(self, self.tr("Save project"), last_directory, self.tr("(*.csv)"))
 
         if filepath:
             with open(filepath, "w") as file:
@@ -781,9 +750,7 @@ class MainWindow(QMainWindow):
         last_directory = self.app_settings.value("last_directory", QDir.homePath())
 
         # noinspection PyCallByClass
-        filepath, _ = QFileDialog.getSaveFileName(
-            self, self.tr("Save project"), last_directory, "(*.tfam)"
-        )
+        filepath, _ = QFileDialog.getSaveFileName(self, self.tr("Save project"), last_directory, "(*.tfam)")
 
         if filepath:
             filepath = filepath if filepath.endswith(".tfam") else filepath + ".tfam"
@@ -1060,14 +1027,10 @@ class MainWindow(QMainWindow):
 
         settings.setValue("last_save_file_dir", os.path.dirname(file_name))
 
-        chosen_ext = filters_and_exts[
-            chosen_ext
-        ]  # Hacky, extracts extension from second element from getSaveFileName result
+        chosen_ext = filters_and_exts[chosen_ext]  # Hacky, extracts extension from second element from getSaveFileName result
 
         # Automatic extension of file_name
-        file_name = (
-            file_name if file_name.endswith(chosen_ext) else f"{file_name}.{chosen_ext}"
-        )
+        file_name = file_name if file_name.endswith(chosen_ext) else f"{file_name}.{chosen_ext}"
 
         export_dialog: ExportDialog = ExportDialogFactory.create_dialog(
             self.conn,
@@ -1101,9 +1064,7 @@ class MainWindow(QMainWindow):
 
     def setup_developers_menu(self):
         self.developers_menu.setIcon(FIcon(0xF1064))
-        self.create_plugin_action: QAction = self.developers_menu.addAction(
-            self.tr("Create new plugin")
-        )
+        self.create_plugin_action: QAction = self.developers_menu.addAction(self.tr("Create new plugin"))
         self.create_plugin_action.setIcon(FIcon(0xF14D0))
         # The resulting dialog is created and generates the plugin
         self.create_plugin_action.triggered.connect(plugin_form.create_dialog_plugin)
