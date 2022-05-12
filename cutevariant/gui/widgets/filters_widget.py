@@ -119,7 +119,9 @@ class FieldsCompleter(QCompleter):
         local_completion_prefix = self.local_completion_prefix
 
         like = f"{local_completion_prefix}%"
-        values = get_field_unique_values_cached(self.conn, self.field_name, like, self.limit)
+        values = get_field_unique_values_cached(
+            self.conn, self.field_name, like, self.limit
+        )
         self.source_model.setStringList(values)
 
     def splitPath(self, path: str):
@@ -194,7 +196,9 @@ class IntFieldEditor(BaseFieldEditor):
         self.line_edit.setValidator(self.validator)
         self.set_widget(self.line_edit)
         self.line_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        null_action = self.line_edit.addAction(FIcon(0xF07E2), QLineEdit.TrailingPosition)
+        null_action = self.line_edit.addAction(
+            FIcon(0xF07E2), QLineEdit.TrailingPosition
+        )
         null_action.triggered.connect(lambda: self.line_edit.setText(NULL_REPR))
         null_action.setToolTip(self.tr("Set value as NULL"))
 
@@ -230,7 +234,9 @@ class DoubleFieldEditor(BaseFieldEditor):
         self.validator = QDoubleValidator()
         self.line_edit.setValidator(self.validator)
         self.line_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        null_action = self.line_edit.addAction(FIcon(0xF07E2), QLineEdit.TrailingPosition)
+        null_action = self.line_edit.addAction(
+            FIcon(0xF07E2), QLineEdit.TrailingPosition
+        )
         null_action.triggered.connect(lambda: self.line_edit.setText(NULL_REPR))
 
         self.set_widget(self.line_edit)
@@ -744,6 +750,78 @@ class FilterItem:
         self.data = value
 
 
+class FilterWidget(QWidget):
+    def __init__(self, conn: sqlite3.Connection, parent: QWidget = None):
+        super().__init__(parent)
+
+        self.field_edit = ComboFieldEditor()
+        self.field_edit.set_editable(True)
+        self.field_edit.combo_box.currentTextChanged.connect(self._on_field_changed)
+        self.setWindowTitle("Create filter")
+        self.field_factory = FieldFactory(conn)
+
+        self.operator_box = OperatorFieldEditor()
+        self.operator_box.fill()
+
+        self.field_edit.combo_box.setSizePolicy(
+            QSizePolicy.Minimum, QSizePolicy.Preferred
+        )
+
+        self.operator_box.combo_box.setSizePolicy(
+            QSizePolicy.Minimum, QSizePolicy.Preferred
+        )
+
+        self.form_layout = QFormLayout()
+        self.form_layout.addRow("Field", self.field_edit)
+        self.form_layout.addRow("Operator", self.operator_box)
+        self.setLayout(self.form_layout)
+        self.field_edit.fill(prepare_fields(conn))
+
+    def set_filter(self, data: dict):
+        item = FiltersModel.to_item(data)
+        self.field_edit.set_value(item.get_field())
+        self.operator_box.set_value(item.get_operator())
+        self.value_edit.set_value(item.get_value())
+
+    def get_filter(self) -> dict:
+
+        field = self.field_edit.get_value()
+        operator = self.operator_box.get_value()
+        value = self.value_edit.get_value()
+
+        return {field: {operator: value}}
+
+    def _on_field_changed(self):
+
+        # Remove previous
+        if self.form_layout.rowCount() == 3:
+            self.form_layout.removeRow(2)
+
+        current_field = self.field_edit.get_value()
+        self.value_edit = self.field_factory.create(current_field)
+
+        self.form_layout.addRow("Value", self.value_edit)
+
+
+class FilterDialog(QDialog):
+    def __init__(self, conn: sqlite3.Connection, parent: QWidget = None):
+        super().__init__(parent)
+
+        self.widget = FilterWidget(conn)
+        self.btn_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+
+        self.btn_box.accepted.connect(self.accept)
+        self.btn_box.rejected.connect(self.reject)
+
+        vLayout = QVBoxLayout(self)
+        vLayout.addWidget(self.widget)
+        vLayout.addStretch()
+        vLayout.addWidget(self.btn_box)
+
+        self.setWindowTitle(self.widget.windowTitle())
+        self.setFixedSize(self.sizeHint())
+
+
 class FiltersModel(QAbstractItemModel):
     """Model to display filter
 
@@ -812,7 +890,7 @@ class FiltersModel(QAbstractItemModel):
         Args:
             filters (dict)
         """
-        self._load(filters)
+        self._from_dict(filters)
 
     def __del__(self):
         """Model destructor."""
@@ -888,7 +966,10 @@ class FiltersModel(QAbstractItemModel):
 
                 if item.type == FilterItem.LOGIC_TYPE:
                     val = item.get_value()
-                    return PY_TO_VQL_OPERATORS.get(val, "$and") + f"  ({len(item.children)})"
+                    return (
+                        PY_TO_VQL_OPERATORS.get(val, "$and")
+                        + f"  ({len(item.children)})"
+                    )
 
             if item.type != FilterItem.CONDITION_TYPE:
                 return
@@ -1056,7 +1137,7 @@ class FiltersModel(QAbstractItemModel):
 
         self.endResetModel()
 
-    def _load(self, data: dict):
+    def _from_dict(self, data: dict):
         """load model from dict
 
         dict should be a nested dictionnary of condition. For example:
@@ -1074,26 +1155,27 @@ class FiltersModel(QAbstractItemModel):
         self.beginResetModel()
         if data:
             self.__root_item.children.clear()
-            self.__root_item.append(self.to_item(data))
+            self.__root_item.append(FiltersModel.to_item(data))
         self.endResetModel()
 
     @classmethod
-    def is_logic(cls, item: dict) -> bool:
+    def _is_logic(cls, item: dict) -> bool:
         """
         Returns whether item holds a logic operator
         Example:
-            > is_logic({"$and":[...]})
+            > _is_logic({"$and":[...]})
             > True
         """
         keys = list(item.keys())
         return keys[0] in ("$and", "$or")
 
-    def to_item(self, data: dict) -> FilterItem:
+    @classmethod
+    def to_item(cls, data: dict) -> FilterItem:
         """Recursive function to build a nested FilterItem structure from dict data"""
-        if FiltersModel.is_logic(data):
+        if cls._is_logic(data):
             operator = list(data.keys())[0]
             item = FilterItem(operator)
-            [item.append(self.to_item(k)) for k in data[operator]]
+            [item.append(cls.to_item(k)) for k in data[operator]]
         else:  # condition item
 
             field = list(data.keys())[0]
@@ -1137,7 +1219,9 @@ class FiltersModel(QAbstractItemModel):
             if item.type == FilterItem.LOGIC_TYPE and item.checked is True:
                 # Return dict with operator as key and item as value
                 operator_data = [
-                    self._to_dict(child) for child in item.children if child.checked is True
+                    self._to_dict(child)
+                    for child in item.children
+                    if child.checked is True
                 ]
                 return {item.get_value(): operator_data}
         else:
@@ -1243,7 +1327,12 @@ class FiltersModel(QAbstractItemModel):
             )
 
         if item.type == FilterItem.CONDITION_TYPE:
-            return Qt.ItemIsSelectable | Qt.ItemIsEditable | Qt.ItemIsEnabled | Qt.ItemIsDragEnabled
+            return (
+                Qt.ItemIsSelectable
+                | Qt.ItemIsEditable
+                | Qt.ItemIsEnabled
+                | Qt.ItemIsDragEnabled
+            )
 
         return Qt.ItemIsSelectable | Qt.ItemIsEditable | Qt.ItemIsEnabled
 
@@ -1292,7 +1381,9 @@ class FiltersModel(QAbstractItemModel):
         if sourceParent == destinationParent and sourceRow == destinationChild:
             return False
 
-        self.beginMoveRows(sourceParent, sourceRow, sourceRow, destinationParent, destinationChild)
+        self.beginMoveRows(
+            sourceParent, sourceRow, sourceRow, destinationParent, destinationChild
+        )
         item = parent_source_item.children.pop(sourceRow)
         parent_destination_item.insert(destinationChild, item)
         self.endMoveRows()
@@ -1320,12 +1411,14 @@ class FiltersModel(QAbstractItemModel):
             bool: True if FilterItem was successfully added
         """
         try:
-            item_ = self.to_item(filter_dict)
+            item_ = FiltersModel.to_item(filter_dict)
         except Exception as e:
             # Invalid item
             return False
         if self.item(parent).type == FilterItem.LOGIC_TYPE:
-            self.beginInsertRows(parent, self.rowCount(parent) - 1, self.rowCount(parent) - 1)
+            self.beginInsertRows(
+                parent, self.rowCount(parent) - 1, self.rowCount(parent) - 1
+            )
             self.item(parent).append(item_)
             self.endInsertRows()
             self.filtersChanged.emit()
@@ -1393,10 +1486,14 @@ class FiltersModel(QAbstractItemModel):
         for row in source_coords:
             index = self.index(row, 0, index)
         if index.isValid():
-            return self.moveRow(index.parent(), index.row(), destintation_parent, destination_row)
+            return self.moveRow(
+                index.parent(), index.row(), destintation_parent, destination_row
+            )
         return False
 
-    def dropMimeData(self, data: QMimeData, action, row, column, parent: QModelIndex) -> bool:
+    def dropMimeData(
+        self, data: QMimeData, action, row, column, parent: QModelIndex
+    ) -> bool:
         """Overrided Qt methods: This method is called when item is dropped by drag/drop.
         data is QMimeData and it contains a pickle serialization of current dragging item.
         Get back item by unserialize data.data().
@@ -1528,7 +1625,9 @@ class FiltersModel(QAbstractItemModel):
         if not basic_answer:
             return False
 
-        dest_data = self.mimeData([self.index(row, column, parent)]).data("cutevariant/typed-json")
+        dest_data = self.mimeData([self.index(row, column, parent)]).data(
+            "cutevariant/typed-json"
+        )
         source_data = data.data("cutevariant/typed-json")
 
         if dest_data == source_data:
@@ -1797,7 +1896,8 @@ class FiltersDelegate(QStyledItemDelegate):
         if option.state & QStyle.State_Enabled:
             bg = (
                 QPalette.Normal
-                if option.state & QStyle.State_Active or option.state & QStyle.State_Selected
+                if option.state & QStyle.State_Active
+                or option.state & QStyle.State_Selected
                 else QPalette.Inactive
             )
         else:
@@ -1815,7 +1915,9 @@ class FiltersDelegate(QStyledItemDelegate):
             decoration_icon = index.data(Qt.DecorationRole)
 
             if decoration_icon:
-                rect = QRect(0, 0, option.decorationSize.width(), option.decorationSize.height())
+                rect = QRect(
+                    0, 0, option.decorationSize.width(), option.decorationSize.height()
+                )
                 rect.moveCenter(option.rect.center())
                 # rect.setX(4)
                 painter.drawPixmap(
@@ -1974,7 +2076,9 @@ class FiltersWidget(QTreeView):
         self.header().setSectionResizeMode(COLUMN_FIELD, QHeaderView.Interactive)
         self.header().setSectionResizeMode(COLUMN_OPERATOR, QHeaderView.Fixed)
         self.header().setSectionResizeMode(COLUMN_VALUE, QHeaderView.Stretch)
-        self.header().setSectionResizeMode(COLUMN_CHECKBOX, QHeaderView.ResizeToContents)
+        self.header().setSectionResizeMode(
+            COLUMN_CHECKBOX, QHeaderView.ResizeToContents
+        )
         self.header().setSectionResizeMode(COLUMN_REMOVE, QHeaderView.ResizeToContents)
         self.setEditTriggers(QAbstractItemView.DoubleClicked)
 
@@ -1994,33 +2098,40 @@ class FiltersWidget(QTreeView):
 if __name__ == "__main__":
     from cutevariant.core import sql
 
+    from tests import utils
+
     app = QApplication(sys.argv)
 
-    conn = sql.get_sql_connection("/home/sacha/Dev/cutevariant/examples/strasbouirg.db")
-    data = {
-        "$and": [
-            {"chr": "chr12"},
-            {"ref": "chr12"},
-            {"ann.gene": "chr12"},
-            {"ann.gene": "chr12"},
-            {"pos": 21234},
-            {"favorite": True},
-            {"qual": {"$gte": 40}},
-            {"ann.gene": {"$in": ["CFTR", "GJB2"]}},
-            {"qual": {"$in": {"$wordset": "boby"}}},
-            {"qual": {"$nin": {"$wordset": "boby"}}},
-            {"samples.boby.gt": 1},
-            {
-                "$and": [
-                    {"ann.gene": "chr12"},
-                    {"ann.gene": "chr12"},
-                    {"$or": [{"ann.gene": "chr12"}, {"ann.gene": "chr12"}]},
-                ]
-            },
-        ]
-    }
-    view = FiltersWidget(conn)
-    view.set_filters(data)
+    conn = utils.create_conn("/home/sacha/Dev/cutevariant/examples/test.snpeff.vcf")
+
+    # conn = sql.get_sql_connection("/home/sacha/Dev/cutevariant/examples/strasbouirg.db")
+    # data = {
+    #     "$and": [
+    #         {"chr": "chr12"},
+    #         {"ref": "chr12"},
+    #         {"ann.gene": "chr12"},
+    #         {"ann.gene": "chr12"},
+    #         {"pos": 21234},
+    #         {"favorite": True},
+    #         {"qual": {"$gte": 40}},
+    #         {"ann.gene": {"$in": ["CFTR", "GJB2"]}},
+    #         {"qual": {"$in": {"$wordset": "boby"}}},
+    #         {"qual": {"$nin": {"$wordset": "boby"}}},
+    #         {"samples.boby.gt": 1},
+    #         {
+    #             "$and": [
+    #                 {"ann.gene": "chr12"},
+    #                 {"ann.gene": "chr12"},
+    #                 {"$or": [{"ann.gene": "chr12"}, {"ann.gene": "chr12"}]},
+    #             ]
+    #         },
+    #     ]
+    # }
+    # view = FiltersWidget(conn)
+    # view.set_filters(data)
+
+    view = FilterDialog(conn)
+
     view.show()
 
     app.exec()
