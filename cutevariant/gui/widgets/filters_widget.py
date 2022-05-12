@@ -951,7 +951,8 @@ class FiltersModel(QAbstractItemModel):
         # FORGROUND ROLE
         if role == Qt.ForegroundRole:
             if not item.checked:
-                return QColor("lightgray")
+                color = QApplication.palette().color(QPalette.Disabled, QPalette.Text)
+                return color
 
         # align operator
         if role == Qt.TextAlignmentRole:
