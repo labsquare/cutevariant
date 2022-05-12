@@ -366,11 +366,7 @@ def condition_to_sql(item: dict, samples=None) -> str:
 
     # Convert [1,2,3] =>  "(1,2,3)"
     if isinstance(value, list) or isinstance(value, tuple):
-        value = (
-            "("
-            + ",".join([f"'{i}'" if isinstance(i, str) else f"{i}" for i in value])
-            + ")"
-        )
+        value = "(" + ",".join([f"'{i}'" if isinstance(i, str) else f"{i}" for i in value]) + ")"
 
     operator = None
     condition = ""
@@ -385,16 +381,7 @@ def condition_to_sql(item: dict, samples=None) -> str:
 
         if operator and samples:
 
-            condition = (
-                "("
-                + f" {operator} ".join(
-                    [
-                        f"`sample_{sample}`.`{k}` {sql_operator} {value}"
-                        for sample in samples
-                    ]
-                )
-                + ")"
-            )
+            condition = "(" + f" {operator} ".join([f"`sample_{sample}`.`{k}` {sql_operator} {value}" for sample in samples]) + ")"
 
         else:
             condition = f"`sample_{name}`.`{k}` {sql_operator} {value}"
@@ -465,11 +452,7 @@ def condition_to_vql(item: dict) -> str:
 
     # Convert [1,2,3] =>  "(1,2,3)"
     if isinstance(value, list) or isinstance(value, tuple):
-        value = (
-            "("
-            + ",".join([f"'{i}'" if isinstance(i, str) else f"{i}" for i in value])
-            + ")"
-        )
+        value = "(" + ",".join([f"'{i}'" if isinstance(i, str) else f"{i}" for i in value]) + ")"
 
     if k.startswith("samples."):
         _, *name, k = k.split(".")
@@ -523,13 +506,7 @@ def filters_to_sql(filters: dict, samples=None) -> str:
         conditions = ""
         for k, v in obj.items():
             if k in ["$and", "$or"]:
-                conditions += (
-                    "("
-                    + f" {PY_TO_SQL_OPERATORS[k]} ".join(
-                        [recursive(item) for item in v]
-                    )
-                    + ")"
-                )
+                conditions += "(" + f" {PY_TO_SQL_OPERATORS[k]} ".join([recursive(item) for item in v]) + ")"
 
             else:
                 conditions += condition_to_sql(obj, samples)
@@ -576,13 +553,7 @@ def filters_to_vql(filters: dict) -> str:
         conditions = ""
         for k, v in obj.items():
             if k in ["$and", "$or"]:
-                conditions += (
-                    "("
-                    + f" {PY_TO_VQL_OPERATORS[k]} ".join(
-                        [recursive(item) for item in v]
-                    )
-                    + ")"
-                )
+                conditions += "(" + f" {PY_TO_VQL_OPERATORS[k]} ".join([recursive(item) for item in v]) + ")"
 
             else:
                 conditions += condition_to_vql(obj)
@@ -632,6 +603,7 @@ def build_sql_query(
     order_by=[],
     limit=50,
     offset=0,
+    selected_samples=[],
     **kwargs,
 ):
     """Build SQL SELECT query
@@ -673,10 +645,7 @@ def build_sql_query(
     # Add Join Selection
     # TODO: set variants as global variables
     if source != "variants":
-        sql_query += (
-            " INNER JOIN selection_has_variant sv ON sv.variant_id = variants.id "
-            f"INNER JOIN selections s ON s.id = sv.selection_id AND s.name = '{source}'"
-        )
+        sql_query += " INNER JOIN selection_has_variant sv ON sv.variant_id = variants.id " f"INNER JOIN selections s ON s.id = sv.selection_id AND s.name = '{source}'"
 
     # Test if sample*
     filters_fields = " ".join([list(i.keys())[0] for i in filters_to_flat(filters)])
