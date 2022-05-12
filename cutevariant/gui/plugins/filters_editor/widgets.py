@@ -424,7 +424,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
             return
 
         self.model.clear()
-        self.model.filters = current_filters
+        self.model.set_filters(current_filters)
 
         self.refresh_buttons()
         self._update_view_geometry()
@@ -470,7 +470,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
     def close_current_editor(self):
         row = self.view.currentIndex().row()
-        column = COLUMN_VALUE
+        column = 2
         parent = self.view.currentIndex().parent()
         index = self.model.index(row, column, parent)
 
