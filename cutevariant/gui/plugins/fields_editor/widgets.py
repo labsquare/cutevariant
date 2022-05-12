@@ -43,7 +43,9 @@ class SortFieldDialog(QDialog):
         self.view.setDragDropMode(QAbstractItemView.InternalMove)
         self.view.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
-        self.button_box = QDialogButtonBox(QDialogButtonBox.Cancel | QDialogButtonBox.Ok)
+        self.button_box = QDialogButtonBox(
+            QDialogButtonBox.Cancel | QDialogButtonBox.Ok
+        )
         self.up_button = QToolButton()
         self.up_button.setText("▲")
         self.up_button.setIcon(FIcon(0xF0143))
@@ -159,7 +161,9 @@ class FieldsModel(QStandardItemModel):
     fields_loaded = Signal()
     field_checked = Signal(str, bool)
 
-    def __init__(self, conn: sqlite3.Connection = None, category="variants", parent=None):
+    def __init__(
+        self, conn: sqlite3.Connection = None, category="variants", parent=None
+    ):
         super().__init__(0, 2, parent)
         self.conn = conn
         self._checkable_items = []
@@ -302,7 +306,9 @@ class FieldsModel(QStandardItemModel):
                     font.setBold(True)
                     field_name_item.setFont(font)
                     field_type = style.FIELD_TYPE.get(fields[field]["type"])
-                    field_name_item.setIcon(FIcon(field_type["icon"], field_type["color"]))
+                    field_name_item.setIcon(
+                        FIcon(field_type["icon"], field_type["color"])
+                    )
 
                     self._checkable_items.append(field_name_item)
                     field_name_item.setData(
@@ -474,7 +480,9 @@ class FieldsWidget(QWidget):
         self.search_edit = QLineEdit()
         self.search_edit.textChanged.connect(self.update_filter)
         self.search_edit.setPlaceholderText(self.tr("Search by keywords... "))
-        self.search_edit.addAction(FIcon(0xF015A), QLineEdit.TrailingPosition).triggered.connect(self.search_edit.clear)
+        self.search_edit.addAction(
+            FIcon(0xF015A), QLineEdit.TrailingPosition
+        ).triggered.connect(self.search_edit.clear)
 
         self.views = []
 
@@ -535,7 +543,9 @@ class FieldsWidget(QWidget):
             model.conn = conn
             self.tab_widget.setTabText(index, f"{name} ({model.rowCount()})")
             if conn:
-                view["view"].horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+                view["view"].horizontalHeader().setSectionResizeMode(
+                    0, QHeaderView.ResizeToContents
+                )
 
     def clear(self):
         for view in self.views:
@@ -615,7 +625,9 @@ class FieldsWidget(QWidget):
                 "name": category,
             }
         )
-        self.tab_widget.addTab(view, FIcon(style.FIELD_CATEGORY.get(category, None)["icon"]), category)
+        self.tab_widget.addTab(
+            view, FIcon(style.FIELD_CATEGORY.get(category, None)["icon"]), category
+        )
 
     # def _update_actions(self, current: QModelIndex):
     #     is_indexed = current.siblingAtColumn(0).data(Qt.UserRole)
@@ -803,9 +815,6 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self.toolbar = QToolBar()
         self.toolbar.setIconSize(QSize(16, 16))
 
-        self.preset_combobox = QComboBox()
-        self.preset_combobox.currentIndexChanged.connect(self._on_select_preset)
-
         # ## Create fields view
         self.widget_fields = FieldsWidget(conn, parent)
         self.widget_fields.fields_changed.connect(self.update_fields_button)
@@ -815,7 +824,6 @@ class FieldsEditorWidget(plugin.PluginWidget):
         # layout.setContentsMargins(0, 0, 0, 0)
         # main_layout.addLayout(self.tool_layout)
         main_layout.addWidget(self.toolbar)
-        main_layout.addWidget(self.preset_combobox)
         main_layout.addWidget(self.widget_fields)
         main_layout.setSpacing(0)
         main_layout.setContentsMargins(0, 0, 0, 0)
@@ -859,7 +867,9 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self.sort_action.setToolTip(self.tr("Sort fields order"))
 
         ## make sort action with text
-        self.toolbar.widgetForAction(self.sort_action).setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        self.toolbar.widgetForAction(self.sort_action).setToolButtonStyle(
+            Qt.ToolButtonTextBesideIcon
+        )
 
         ## general menu
 
@@ -893,7 +903,9 @@ class FieldsEditorWidget(plugin.PluginWidget):
     def save_preset(self):
         """Save current fields as new preset"""
 
-        name, success = QInputDialog.getText(self, self.tr("Create new preset"), self.tr("Preset name:"))
+        name, success = QInputDialog.getText(
+            self, self.tr("Create new preset"), self.tr("Preset name:")
+        )
 
         if success and name:
             config = Config("fields_editor")
@@ -905,7 +917,9 @@ class FieldsEditorWidget(plugin.PluginWidget):
                 ret = QMessageBox.warning(
                     self,
                     self.tr("Overwrite preset"),
-                    self.tr(f"Preset {name} already exists. Do you want to overwrite it ?"),
+                    self.tr(
+                        f"Preset {name} already exists. Do you want to overwrite it ?"
+                    ),
                     QMessageBox.Yes | QMessageBox.No,
                 )
 
@@ -947,11 +961,8 @@ class FieldsEditorWidget(plugin.PluginWidget):
         """Load preset in the combobox
         This method should be called by __init__ and on refresh
         """
-        self.preset_combobox.blockSignals(True)
         self.preset_menu.clear()
-        self.preset_combobox.clear()
 
-        self.preset_combobox.addItem("default", ["chr", "pos", "ref", "alt"])
         config = Config("fields_editor")
 
         self.preset_menu.addAction("Save preset", self.save_preset)
@@ -964,13 +975,10 @@ class FieldsEditorWidget(plugin.PluginWidget):
                 action.set_close_icon(FIcon(0xF05E8, "red"))
                 action.triggered.connect(self._on_select_preset)
                 action.removed.connect(self.delete_preset)
-                self.preset_combobox.addItem(name, name)
                 self.preset_menu.addAction(action)
 
         self.preset_menu.addSeparator()
         self.preset_menu.addAction("Reload presets", self.load_presets)
-
-        self.preset_combobox.blockSignals(True)
 
     def show_fields_dialog(self):
 
@@ -1009,10 +1017,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
         config = Config("fields_editor")
         presets = config["presets"]
 
-        if type(self.sender()) == QComboBox:
-            key = self.preset_combobox.currentText()
-        else:
-            key = self.sender().data()
+        key = self.sender().data()
 
         if key in presets:
             self.fields = presets[key]
