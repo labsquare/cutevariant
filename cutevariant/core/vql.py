@@ -70,9 +70,7 @@ class VQLSyntaxError(ValueError):
 
 
 # ============ Error handle ==================================
-def error_message_from_err(
-    err: textx.exceptions.TextXSyntaxError, raw_vql: str
-) -> Tuple[str, int]:
+def error_message_from_err(err: textx.exceptions.TextXSyntaxError, raw_vql: str) -> Tuple[str, int]:
     """Return human-readable information and index in raw_sql query
     about the given exception"""
     # print(err)
@@ -87,11 +85,7 @@ def error_message_from_err(
         return "no SELECT clause", -1
     if err.message.endswith("=> 's,ref FROM*'."):
         return "empty 'FROM' clause", err.col
-    if (
-        ",*," in err.message
-        and len(err.expected_rules) == 1
-        and type(err.expected_rules[0]).__name__ == "RegExMatch"
-    ):
+    if ",*," in err.message and len(err.expected_rules) == 1 and type(err.expected_rules[0]).__name__ == "RegExMatch":
         return "invalid empty identifier in SELECT clause", err.col
     if "Expected INT " in err.message and len(err.expected_rules) == 3:
         return "invalid value in WHERE clause", err.col
