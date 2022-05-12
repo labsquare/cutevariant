@@ -175,9 +175,7 @@ class WordListDialog(QDialog):
         # Reload last directory used
         last_directory = QSettings().value("last_directory", QDir.homePath())
 
-        filepath, _ = QFileDialog.getOpenFileName(
-            self, self.tr("Open Word set"), last_directory, self.tr("Text file (*.txt)")
-        )
+        filepath, _ = QFileDialog.getOpenFileName(self, self.tr("Open Word set"), last_directory, self.tr("Text file (*.txt)"))
 
         if filepath:
             self.load_file(filepath)
@@ -220,11 +218,7 @@ class WordsetCollectionModel(QAbstractTableModel):
 
     def data(self, index: QModelIndex, role: int) -> typing.Any:
 
-        if (
-            index.row() < 0
-            or index.row() >= self.rowCount()
-            or index.column() not in (0, 1)
-        ):
+        if index.row() < 0 or index.row() >= self.rowCount() or index.column() not in (0, 1):
             return
 
         if role == Qt.DecorationRole and index.column() == 0:
@@ -236,14 +230,8 @@ class WordsetCollectionModel(QAbstractTableModel):
         if role == Qt.DisplayRole:
             return self._raw_data[index.row()][index.column()]
 
-    def headerData(
-        self, section: int, orientation: Qt.Orientation, role: int
-    ) -> typing.Any:
-        if (
-            orientation != Qt.Horizontal
-            or section not in (0, 1)
-            or role != Qt.DisplayRole
-        ):
+    def headerData(self, section: int, orientation: Qt.Orientation, role: int) -> typing.Any:
+        if orientation != Qt.Horizontal or section not in (0, 1) or role != Qt.DisplayRole:
             return
 
         if section == 0:
@@ -253,9 +241,7 @@ class WordsetCollectionModel(QAbstractTableModel):
 
     def load(self):
         if self.conn:
-            self._set_dict(
-                {data["name"]: data["count"] for data in get_wordsets(self.conn)}
-            )
+            self._set_dict({data["name"]: data["count"] for data in get_wordsets(self.conn)})
 
     def _set_dict(self, data: dict):
         self.beginResetModel()
@@ -275,9 +261,7 @@ class WordsetCollectionModel(QAbstractTableModel):
         return list(dict(self._raw_data).keys())
 
     def mimeData(self, indexes: typing.List) -> QMimeData:
-        wordset_names = [
-            idx.data(Qt.DisplayRole) for idx in indexes if idx.column() == 0
-        ]
+        wordset_names = [idx.data(Qt.DisplayRole) for idx in indexes if idx.column() == 0]
         if len(wordset_names) != 1:
             # Currently, we don't support dragging more than one wordset
             return None
@@ -346,9 +330,7 @@ class WordsetCollectionModel(QAbstractTableModel):
     ) -> bool:
         if action == Qt.CopyAction:
             if data.hasFormat("text/uri-list"):
-                file_name = QUrl(
-                    str(data.data("text/uri-list"), encoding="utf-8").strip()
-                ).toLocalFile()
+                file_name = QUrl(str(data.data("text/uri-list"), encoding="utf-8").strip()).toLocalFile()
 
                 # The given URL was not a local file or the file does not exist
                 if not file_name or not os.path.isfile(file_name):
@@ -377,7 +359,7 @@ class WordSetWidget(PluginWidget):
         super().__init__(parent)
         self.conn = None
         self.model = WordsetCollectionModel(parent=self)
-        self.setWindowIcon(FIcon(0xF10E3))
+        self.setWindowIcon(FIcon(0xF0B64))
         self.toolbar = QToolBar(self)
         self.view = QTableView(self)
         self.view.setSortingEnabled(True)
@@ -394,15 +376,9 @@ class WordSetWidget(PluginWidget):
 
         # setup tool bar
         self.toolbar.setIconSize(QSize(16, 16))
-        self.toolbar.addAction(
-            FIcon(0xF0415), self.tr("Add Word set"), self.add_wordset
-        )
-        self.edit_action = self.toolbar.addAction(
-            FIcon(0xF0DC9), self.tr("Edit Word set"), self.open_wordset
-        )
-        self.remove_action = self.toolbar.addAction(
-            FIcon(0xF0A7A), self.tr("Remove Word set"), self.remove_wordset
-        )
+        self.toolbar.addAction(FIcon(0xF0415), self.tr("Add Word set"), self.add_wordset)
+        self.edit_action = self.toolbar.addAction(FIcon(0xF0DC9), self.tr("Edit Word set"), self.open_wordset)
+        self.remove_action = self.toolbar.addAction(FIcon(0xF0A7A), self.tr("Remove Word set"), self.remove_wordset)
         self.remove_action.setShortcut(QKeySequence.Delete)
 
         self.intersect_action = self.toolbar.addAction(
@@ -501,9 +477,7 @@ class WordSetWidget(PluginWidget):
 
         wordset_name = None
         while not wordset_name:
-            wordset_name, _ = QInputDialog.getText(
-                self, self.tr("Create a new set"), self.tr("Name of the new set:")
-            )
+            wordset_name, _ = QInputDialog.getText(self, self.tr("Create a new set"), self.tr("Name of the new set:"))
             if not wordset_name:
                 return
 
@@ -512,8 +486,7 @@ class WordSetWidget(PluginWidget):
                 QMessageBox.critical(
                     self,
                     self.tr("Error while creating set"),
-                    self.tr("Error while creating set '%s'; Name is already used")
-                    % wordset_name,
+                    self.tr("Error while creating set '%s'; Name is already used") % wordset_name,
                 )
                 wordset_name = None
 
@@ -538,17 +511,14 @@ class WordSetWidget(PluginWidget):
 
         # Delete all selected sets
         for selected_index in self.view.selectionModel().selectedRows(0):
-            result = drop_cmd(
-                self.conn, "wordsets", selected_index.data(Qt.DisplayRole)
-            )
+            result = drop_cmd(self.conn, "wordsets", selected_index.data(Qt.DisplayRole))
 
             if not result["success"]:
                 LOGGER.error(result)
                 QMessageBox.critical(
                     self,
                     self.tr("Error while deleting set"),
-                    self.tr("Error while deleting set '%s'")
-                    % selected_index.data(Qt.DisplayRole),
+                    self.tr("Error while deleting set '%s'") % selected_index.data(Qt.DisplayRole),
                 )
 
         self.populate()
@@ -558,11 +528,7 @@ class WordSetWidget(PluginWidget):
 
         The previous set is dropped and the new is then imported in database.
         """
-        wordset_index = (
-            self.view.selectionModel().selectedRows(0)[0]
-            if self.view.selectionModel().selectedRows(0)
-            else None
-        )
+        wordset_index = self.view.selectionModel().selectedRows(0)[0] if self.view.selectionModel().selectedRows(0) else None
         if not wordset_index:
             return
         wordset_name = wordset_index.data(Qt.DisplayRole)
@@ -595,9 +561,7 @@ class WordSetWidget(PluginWidget):
         self.model.load()
         self.view.horizontalHeader().setStretchLastSection(False)
         self.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
-        self.view.horizontalHeader().setSectionResizeMode(
-            1, QHeaderView.ResizeToContents
-        )
+        self.view.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
         self.update_action_availabilty()
 
     def on_apply_set_operation(self, operation="intersect"):
@@ -609,10 +573,7 @@ class WordSetWidget(PluginWidget):
             "union": (insert_wordset_from_union, self.tr("Union")),
             "subtract": (insert_wordset_from_subtract, self.tr("Subtract")),
         }
-        selected_wordsets = [
-            index.data(Qt.DisplayRole)
-            for index in self.view.selectionModel().selectedRows(0)
-        ]
+        selected_wordsets = [index.data(Qt.DisplayRole) for index in self.view.selectionModel().selectedRows(0)]
         if not selected_wordsets:
             return
         else:
@@ -634,8 +595,7 @@ class WordSetWidget(PluginWidget):
                     QMessageBox.critical(
                         self,
                         self.tr("Error while creating set"),
-                        self.tr("Error while creating set '%s'; Name is already used")
-                        % wordset_name,
+                        self.tr("Error while creating set '%s'; Name is already used") % wordset_name,
                     )
                     wordset_name = None
             operator_fn = operations.get(operation, insert_wordset_from_intersect)[0]

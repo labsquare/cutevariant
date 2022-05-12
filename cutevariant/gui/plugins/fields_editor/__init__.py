@@ -1,4 +1,4 @@
-__title__ = "Fields editor"
+__title__ = "Fields"
 __description__ = "A plugin to display fields "
 __long_description__ = """
 <p>This plugin is used to manage the fields visible from the main "variant view"

@@ -27,10 +27,10 @@ class IgvView(QWebEngineView):
         self.settings().setAttribute(QWebEngineSettings.LocalStorageEnabled, True)
         self.settings().setAttribute(QWebEngineSettings.FullScreenSupportEnabled, True)
         self.settings().setAttribute(QWebEngineSettings.LocalContentCanAccessRemoteUrls, True)
-        #self.settings().setAttribute(QWebEngineSettings.Accelerated2dCanvasEnabled, False)
+        # self.settings().setAttribute(QWebEngineSettings.Accelerated2dCanvasEnabled, False)
 
         self.load("https://igv.org/app/")
-        #self.setUrl("https://www.google.com")
+        # self.setUrl("https://www.google.com")
 
     def set_position(self, location):
 
@@ -47,18 +47,20 @@ class IgvView(QWebEngineView):
 class IgvWidget(plugin.PluginWidget):
     """Plugin to show all annotations of a selected variant"""
 
-    ENABLE = True
+    ENABLE = False
     REFRESH_STATE_DATA = {"current_variant"}
 
     def __init__(self, parent=None):
         super().__init__(parent)
 
+        self.setWindowIcon(FIcon(0xF070F))
+
         self.view = IgvView(parent)
-        #self.browser = QWebEngineView()
-        #self.browser.setUrl(QUrl("http://www.google.fr/"))
+        # self.browser = QWebEngineView()
+        # self.browser.setUrl(QUrl("http://www.google.fr/"))
         self.vlayout = QVBoxLayout()
         self.vlayout.addWidget(self.view)
-        #self.vlayout.addWidget(self.browser)
+        # self.vlayout.addWidget(self.browser)
         self.setLayout(self.vlayout)
 
     def on_refresh(self):

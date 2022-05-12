@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import QApplication
 
-__title__ = "Wordsets editor"
+__title__ = "Wordsets"
 __description__ = "A plugin to manage word sets"
 __long_description__ = """
 <p>This plugin allows to create sets of words that can be matched with the

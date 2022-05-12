@@ -133,11 +133,7 @@ class GroupbyModel(QAbstractTableModel):
 
         if role == Qt.DisplayRole:
             if self._field_name not in self._raw_data[0]:
-                return (
-                    self.tr(f"Invalid data. Loaded: {self._raw_data[0]['field']}")
-                    if index.column() == 0
-                    else self.tr(f"Current field name: {self._field_name}")
-                )
+                return self.tr(f"Invalid data. Loaded: {self._raw_data[0]['field']}") if index.column() == 0 else self.tr(f"Current field name: {self._field_name}")
             if index.column() == 0:
                 return self._raw_data[index.row()][self._field_name]
             if index.column() == 1:
@@ -151,12 +147,7 @@ class GroupbyModel(QAbstractTableModel):
 
         if role == Qt.ForegroundRole:
             if index.column() == 1:
-                return (
-                    QApplication.instance()
-                    .style()
-                    .standardPalette()
-                    .color(QPalette.Shadow)
-                )
+                return QApplication.instance().style().standardPalette().color(QPalette.Shadow)
 
         if role == Qt.TextAlignmentRole:
 
@@ -227,9 +218,7 @@ class GroupbyModel(QAbstractTableModel):
         QMessageBox.critical(
             None,
             self.tr("Error!"),
-            self.tr(
-                f"Group by thread returned error {self.load_groupby_thread.last_error}"
-            ),
+            self.tr(f"Group by thread returned error {self.load_groupby_thread.last_error}"),
         )
         self.clear()
         self.groupby_error.emit()
@@ -304,9 +293,7 @@ class GroupbyTable(QWidget):
         self.tableview.stop_loading()
         self.tableview.horizontalHeader().setStretchLastSection(False)
         self.tableview.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
-        self.tableview.horizontalHeader().setSectionResizeMode(
-            1, QHeaderView.ResizeToContents
-        )
+        self.tableview.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
 
 
 class GroupByViewWidget(PluginWidget):
@@ -327,9 +314,7 @@ class GroupByViewWidget(PluginWidget):
         # Create QCombobox
         self.field_select_combo = QComboBox(self)
         self.field_select_combo.currentTextChanged.connect(self._load_groupby)
-        self.field_select_combo.setSizePolicy(
-            QSizePolicy.Expanding, QSizePolicy.Preferred
-        )
+        self.field_select_combo.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
 
         # Create actions
         # self.apply_action = QAction(self)
@@ -354,12 +339,8 @@ class GroupByViewWidget(PluginWidget):
         self.view.tableview.doubleClicked.connect(self.on_double_click)
         self.view.tableview.setSelectionMode(QAbstractItemView.ExtendedSelection)
         # Make sure that the combobox automatically gets enabled/disabled upon loading
-        self.view.groupby_model.groupby_started.connect(
-            lambda: self.field_select_combo.setEnabled(False)
-        )
-        self.view.groupby_model.groubpby_finished.connect(
-            lambda: self.field_select_combo.setEnabled(True)
-        )
+        self.view.groupby_model.groupby_started.connect(lambda: self.field_select_combo.setEnabled(False))
+        self.view.groupby_model.groubpby_finished.connect(lambda: self.field_select_combo.setEnabled(True))
         # self.view.tableview.selectionModel().selectionChanged.connect(
         #     lambda s, d: self.apply_action.setEnabled(len(s) != 0)
         # )
@@ -372,7 +353,7 @@ class GroupByViewWidget(PluginWidget):
         layout.setContentsMargins(0, 0, 0, 0)
 
         self.setWindowTitle(self.tr("Group By"))
-        self.setWindowIcon(FIcon(0xF126F))
+        self.setWindowIcon(FIcon(0xF1860))
 
     def on_open_project(self, conn: sqlite3.Connection):
         """override"""
@@ -423,26 +404,14 @@ class GroupByViewWidget(PluginWidget):
             )
 
     def on_double_click(self):
-        selected_value = (
-            self.view.tableview.selectionModel()
-            .currentIndex()
-            .siblingAtColumn(0)
-            .data(Qt.DisplayRole)
-        )
+        selected_value = self.view.tableview.selectionModel().currentIndex().siblingAtColumn(0).data(Qt.DisplayRole)
         if self.mainwindow:
-            self.add_condition_to_filters(
-                {self.view.groupby_model.get_field_name(): selected_value}
-            )
+            self.add_condition_to_filters({self.view.groupby_model.get_field_name(): selected_value})
 
     def on_apply(self):
-        selected_values = [
-            idx.data(Qt.DisplayRole)
-            for idx in self.view.tableview.selectionModel().selectedRows(0)
-        ]
+        selected_values = [idx.data(Qt.DisplayRole) for idx in self.view.tableview.selectionModel().selectedRows(0)]
         if selected_values:
-            self.add_condition_to_filters(
-                {self.view.groupby_model.get_field_name(): {"$in": selected_values}}
-            )
+            self.add_condition_to_filters({self.view.groupby_model.get_field_name(): {"$in": selected_values}})
 
     def add_condition_to_filters(self, condition: dict):
         filters = copy.deepcopy(self.mainwindow.get_state_data("filters"))

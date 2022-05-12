@@ -1,4 +1,4 @@
-__title__ = "Filters editor"
+__title__ = "Filters"
 __description__ = "A plugin to display filters"
 __long_description__ = """
 <p>This plugin is used to filter (show/hide) the variants displayed in the main window.</p>

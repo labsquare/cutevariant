@@ -59,9 +59,7 @@ class SampleModel(QAbstractTableModel):
             )
             self.endResetModel()
 
-    def headerData(
-        self, section: int, orientation: Qt.Orientation, role: int = Qt.DisplayRole
-    ):
+    def headerData(self, section: int, orientation: Qt.Orientation, role: int = Qt.DisplayRole):
         # Titles
         if orientation == Qt.Horizontal and role == Qt.DisplayRole and section == 0:
             return self.tr("Samples")
@@ -182,6 +180,9 @@ class SamplesWidget(plugin.PluginWidget):
         self.search_bar.setPlaceholderText("Search samples ...")
         self.search_bar.textEdited.connect(self.on_search)
 
+        self.setWindowIcon(FIcon(0xF000E))
+        self.setWindowTitle(self.tr("Samples"))
+
         self.model = SampleModel(self.conn)
         self.view.setModel(self.model)
         self.setContentsMargins(0, 0, 0, 0)
@@ -196,15 +197,9 @@ class SamplesWidget(plugin.PluginWidget):
         self.view.setContextMenuPolicy(Qt.ActionsContextMenu)
         self.view.horizontalHeader().hide()
         self.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
-        self.view.horizontalHeader().setSectionResizeMode(
-            1, QHeaderView.ResizeToContents
-        )
-        self.view.horizontalHeader().setSectionResizeMode(
-            2, QHeaderView.ResizeToContents
-        )
-        self.view.horizontalHeader().setSectionResizeMode(
-            3, QHeaderView.ResizeToContents
-        )
+        self.view.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        self.view.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
+        self.view.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeToContents)
         self.view.doubleClicked.connect(self.on_run)
 
         self.view.setShowGrid(False)
@@ -235,9 +230,7 @@ class SamplesWidget(plugin.PluginWidget):
         self.edit_action.triggered.connect(self.on_edit)
         self.run_action = QAction(FIcon(0xF0FFB), "Show variant from selected sample")
         self.run_action.triggered.connect(self.on_run)
-        self.source_action = QAction(
-            FIcon(0xF0FFB), "Create source from selected sample"
-        )
+        self.source_action = QAction(FIcon(0xF0FFB), "Create source from selected sample")
         self.source_action.triggered.connect(self.on_create_source)
 
         self.view.addAction(self.edit_action)
@@ -261,9 +254,7 @@ class SamplesWidget(plugin.PluginWidget):
     def on_search(self):
         self.model.name_filter = self.search_bar.text()
         # self.model.tags_filter = list([i["name"] for i in self.tags_choice.selected_items()])
-        self.model.valid_filter = list(
-            [i["data"] for i in self.valid_choice.selected_items()]
-        )
+        self.model.valid_filter = list([i["data"] for i in self.valid_choice.selected_items()])
         self.model.load()
 
     def on_edit(self):
@@ -293,18 +284,14 @@ class SamplesWidget(plugin.PluginWidget):
         self.mainwindow.refresh_plugins(sender=self)
 
     def on_create_source(self):
-        name, success = QInputDialog.getText(
-            self, self.tr("Source Name"), self.tr("Get a source name ")
-        )
+        name, success = QInputDialog.getText(self, self.tr("Source Name"), self.tr("Get a source name "))
 
         # if not name:
         #     return
 
         if success and name:
 
-            sql.insert_selection_from_source(
-                self.model.conn, name, "variants", self._create_filters(False)
-            )
+            sql.insert_selection_from_source(self.model.conn, name, "variants", self._create_filters(False))
 
             if "source_editor" in self.mainwindow.plugins:
                 self.mainwindow.refresh_plugin("source_editor")
@@ -365,9 +352,7 @@ class SamplesWidget(plugin.PluginWidget):
 
         else:
             root = list(filters.keys())[0]
-            filters[root] = [
-                i for i in filters[root] if not list(i.keys())[0].startswith("samples")
-            ]
+            filters[root] = [i for i in filters[root] if not list(i.keys())[0].startswith("samples")]
 
         for index in indexes:
             # sample_name = index.siblingAtColumn(1).data()

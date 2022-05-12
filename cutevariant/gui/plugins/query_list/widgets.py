@@ -32,7 +32,6 @@ class QueryWidget(QWidget):
         self.tab_widget.addTab(self.code_edit, "VQL query")
         self.tab_widget.tabBar().setDocumentMode(True)
         self.tab_widget.tabBar().setExpanding(True)
-        
 
         main_layout = QVBoxLayout(self)
         main_layout.addWidget(self.tab_widget)
@@ -58,19 +57,13 @@ class QueryWidget(QWidget):
 
             # register keywords
             for keyword in self.code_edit.syntax.sql_keywords:
-                self.code_edit.completer.model.add_item(
-                    keyword, "VQL keywords", FIcon(0xF0169), "#f6ecf0"
-                )
+                self.code_edit.completer.model.add_item(keyword, "VQL keywords", FIcon(0xF0169), "#f6ecf0")
 
             for selection in selections:
-                self.code_edit.completer.model.add_item(
-                    selection, "Source table", FIcon(0xF04EB), "#f6ecf0"
-                )
+                self.code_edit.completer.model.add_item(selection, "Source table", FIcon(0xF04EB), "#f6ecf0")
 
             for wordset in wordsets:
-                self.code_edit.completer.model.add_item(
-                    f"WORDSET['{wordset}']", "WORDSET", FIcon(0xF04EB), "#f6ecf0"
-                )
+                self.code_edit.completer.model.add_item(f"WORDSET['{wordset}']", "WORDSET", FIcon(0xF04EB), "#f6ecf0")
 
             for field in sql.get_fields(self.conn):
                 name = field["name"]
@@ -81,33 +74,23 @@ class QueryWidget(QWidget):
                     field["description"],
                 )
                 color = style.FIELD_TYPE.get(field["type"], "str")["color"]
-                icon = FIcon(
-                    style.FIELD_TYPE.get(field["type"], "str")["icon"], "white"
-                )
+                icon = FIcon(style.FIELD_TYPE.get(field["type"], "str")["icon"], "white")
 
                 if field["category"] == "variants":
-                    self.code_edit.completer.model.add_item(
-                        name, description, icon, color
-                    )
+                    self.code_edit.completer.model.add_item(name, description, icon, color)
 
                 if field["category"] == "annotations":
-                    self.code_edit.completer.model.add_item(
-                        f"ann.{name}", description, icon, color
-                    )
+                    self.code_edit.completer.model.add_item(f"ann.{name}", description, icon, color)
 
                 if field["category"] == "samples":
 
                     # Add AnySamples special keywords
                     # samples["*"].gt
                     name = "samples[ANY].{}".format(field["name"])
-                    self.code_edit.completer.model.add_item(
-                        name, description, icon, color
-                    )
+                    self.code_edit.completer.model.add_item(name, description, icon, color)
 
                     name = "samples[ALL].{}".format(field["name"])
-                    self.code_edit.completer.model.add_item(
-                        name, description, icon, color
-                    )
+                    self.code_edit.completer.model.add_item(name, description, icon, color)
 
                     # Overwrite name
                     for sample in samples:
@@ -119,9 +102,7 @@ class QueryWidget(QWidget):
                             sample,
                             field["description"],
                         )
-                        self.code_edit.completer.model.add_item(
-                            name, description, icon, color
-                        )
+                        self.code_edit.completer.model.add_item(name, description, icon, color)
 
             self.code_edit.completer.model.endResetModel()
 
@@ -143,9 +124,7 @@ class QueryDialog(QDialog):
         super().__init__(parent)
 
         self.widget = QueryWidget(parent=self, conn=conn)
-        self.button_box = QDialogButtonBox(
-            QDialogButtonBox.Save | QDialogButtonBox.Cancel
-        )
+        self.button_box = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
 
         layout = QVBoxLayout(self)
         layout.addWidget(self.widget)
@@ -264,6 +243,7 @@ class QueryListWidget(plugin.PluginWidget):
         self.tool_bar = QToolBar()
         self.view = QListView()
         self.view.setModel(self.model)
+        self.setWindowIcon(FIcon(0xF0A38))
 
         main_layout = QVBoxLayout(self)
         main_layout.addWidget(self.tool_bar)
@@ -319,7 +299,7 @@ class QueryListWidget(plugin.PluginWidget):
         self.conn = conn
 
     def on_close_project(self):
-        self.model.clear()  
+        self.model.clear()
 
     def on_refresh(self):
         """This method is called from mainwindow.refresh_plugins()
@@ -334,18 +314,15 @@ class QueryListWidget(plugin.PluginWidget):
         query = self.model.data(index, Qt.UserRole)
         query_params = parse_one_vql(query)
 
-        self.mainwindow.set_state_data("fields",query_params.get("fields",[]))
-        self.mainwindow.set_state_data("source",query_params.get("source","variants"))
-        self.mainwindow.set_state_data("filters",query_params.get("filters",[]))
-        self.mainwindow.set_state_data("order_by",query_params.get("order_by",[]))
+        self.mainwindow.set_state_data("fields", query_params.get("fields", []))
+        self.mainwindow.set_state_data("source", query_params.get("source", "variants"))
+        self.mainwindow.set_state_data("filters", query_params.get("filters", []))
+        self.mainwindow.set_state_data("order_by", query_params.get("order_by", []))
 
         self.mainwindow.refresh_plugins(sender=self)
 
     def _add_query(self):
-        current_query = {
-            k: self.mainwindow.get_state_data(k)
-            for k in ("fields", "source", "filters", "order_by")
-        }
+        current_query = {k: self.mainwindow.get_state_data(k) for k in ("fields", "source", "filters", "order_by")}
         query = build_vql_query(**current_query)
         dialog = QueryDialog(self, self.conn)
         dialog.set_item({"query": query})
@@ -356,9 +333,7 @@ class QueryListWidget(plugin.PluginWidget):
             try:
                 _ = parse_one_vql(saved_query)
             except:
-                QMessageBox.warning(
-                    self, self.tr("Aborting"), self.tr("Invalid query, won't save!")
-                )
+                QMessageBox.warning(self, self.tr("Aborting"), self.tr("Invalid query, won't save!"))
                 return
 
             if "name" in new_preset and new_preset["name"]:
@@ -367,9 +342,7 @@ class QueryListWidget(plugin.PluginWidget):
                         QMessageBox.question(
                             self,
                             self.tr("Warning"),
-                            self.tr(
-                                f"Preset {new_preset.get('name')} already exists. Overwrite?"
-                            ),
+                            self.tr(f"Preset {new_preset.get('name')} already exists. Overwrite?"),
                             QMessageBox.Yes | QMessageBox.No,
                         )
                         == QMessageBox.No
@@ -379,9 +352,7 @@ class QueryListWidget(plugin.PluginWidget):
                     self.model.add_preset(**new_preset)
                     self.model.save()
             else:
-                QMessageBox.warning(
-                    "Aborting", self.tr("Cannot save preset with no name, won't save!")
-                )
+                QMessageBox.warning("Aborting", self.tr("Cannot save preset with no name, won't save!"))
                 return
 
     def _remove_query(self):
@@ -389,9 +360,7 @@ class QueryListWidget(plugin.PluginWidget):
             QMessageBox.question(
                 self,
                 self.tr("Warning"),
-                self.tr(
-                    "Do you really want to delete this preset?\nYou can't undo this!"
-                ),
+                self.tr("Do you really want to delete this preset?\nYou can't undo this!"),
             )
             == QMessageBox.Yes
         ):
