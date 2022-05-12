@@ -181,7 +181,7 @@ class VariantWidget(QWidget):
             if ret == QMessageBox.No:
                 return
 
-        #avoid losing tags who exist in DB but not in config.yml
+        # avoid losing tags who exist in DB but not in config.yml
         missing_tags = []
         for tag in self.initial_db_validation["tags"].split(self.TAG_SEPARATOR):
             if tag not in self.TAG_LIST:
@@ -196,7 +196,9 @@ class VariantWidget(QWidget):
         print("self.tag_edit.currentData()", self.tag_edit.currentData())
         print("missing_tags", missing_tags)
         print("added", self.tag_edit.currentData() + missing_tags)
-        update_data["tags"] = self.TAG_SEPARATOR.join(self.tag_edit.currentData() + missing_tags)
+        update_data["tags"] = self.TAG_SEPARATOR.join(
+            self.tag_edit.currentData() + missing_tags
+        )
         update_data["comment"] = self.comment.toPlainText()
         sql.update_variant(self._conn, update_data)
 
@@ -296,10 +298,10 @@ class VariantWidget(QWidget):
             self.ann_view.set_dict({i: k for i, k in adata.items() if k != ""})
 
     def get_history_variants(self):
-        """ Get the history of samples """
+        """Get the history of samples"""
         results = {}
         for record in self._conn.execute(
-        f"""SELECT   ('[' || `timestamp` || ']') as time,
+            f"""SELECT   ('[' || `timestamp` || ']') as time,
                      ('[' || `history`.`id` || ']') as id,
                         ( '[' || `user` || ']' || ' - ' || '[' || `variants`.`chr` || '-' || `variants`.`pos` || '-' || `variants`.`ref` || '-' || `variants`.`alt` || ']' || ' - ' || '"' || `field` || '" from "' || `before` || '" to "' || `after` || '"') as 'change'
                 FROM `history`
@@ -309,6 +311,7 @@ class VariantWidget(QWidget):
             results[record["time"] + " " + record["id"]] = record["change"]
 
         return results
+
 
 class VariantDialog(QDialog):
     def __init__(self, conn, variant_id, parent=None):

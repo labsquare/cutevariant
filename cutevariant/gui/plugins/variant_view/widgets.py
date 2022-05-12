@@ -37,6 +37,7 @@ from cutevariant.gui.widgets import (
     ChoiceWidget,
     create_widget_action,
     VariantDialog,
+    FilterDialog,
 )
 
 from cutevariant.config import Config
@@ -150,13 +151,21 @@ class VariantModel(QAbstractTableModel):
         self._load_variant_thread = SqlThread(self.conn)
         self._load_count_thread = SqlThread(self.conn)
 
-        self._load_variant_thread.started.connect(lambda: self.variant_is_loading.emit(True))
-        self._load_variant_thread.finished.connect(lambda: self.variant_is_loading.emit(False))
+        self._load_variant_thread.started.connect(
+            lambda: self.variant_is_loading.emit(True)
+        )
+        self._load_variant_thread.finished.connect(
+            lambda: self.variant_is_loading.emit(False)
+        )
         self._load_variant_thread.result_ready.connect(self.on_variant_loaded)
         self._load_variant_thread.error.connect(self.error_raised)
 
-        self._load_count_thread.started.connect(lambda: self.count_is_loading.emit(True))
-        self._load_count_thread.finished.connect(lambda: self.count_is_loading.emit(False))
+        self._load_count_thread.started.connect(
+            lambda: self.count_is_loading.emit(True)
+        )
+        self._load_count_thread.finished.connect(
+            lambda: self.count_is_loading.emit(False)
+        )
         self._load_count_thread.result_ready.connect(self.on_count_loaded)
 
         self._finished_thread_count = 0
@@ -238,7 +247,9 @@ class VariantModel(QAbstractTableModel):
         if hasattr(self, "_load_count_cache"):
             self._load_count_cache.clear()
 
-        self._load_variant_cache = cachetools.LFUCache(maxsize=cachesize * 1_048_576, getsizeof=sys.getsizeof)
+        self._load_variant_cache = cachetools.LFUCache(
+            maxsize=cachesize * 1_048_576, getsizeof=sys.getsizeof
+        )
         self._load_count_cache = cachetools.LFUCache(maxsize=1000)
 
     def cache_size(self):
@@ -340,6 +351,10 @@ class VariantModel(QAbstractTableModel):
             if role == Qt.SizeHintRole:
                 return QSize(0, 20)
 
+        if orientation == Qt.Horizontal and role == Qt.DecorationRole:
+
+            return QIcon(FIcon(0xF0232))
+
         # if orientation == Qt.Vertical:
         #     if role == Qt.DecorationRole:
 
@@ -382,10 +397,16 @@ class VariantModel(QAbstractTableModel):
         editable_fields = ["classification", "favorite", "comment", "tags"]
 
         # Current data
-        sql_variant = {k: v for k, v in sql.get_variant(self.conn, variant_id).items() if k in editable_fields}
+        sql_variant = {
+            k: v
+            for k, v in sql.get_variant(self.conn, variant_id).items()
+            if k in editable_fields
+        }
 
         # SQL data
-        model_variant = {k: v for k, v in self.variants[row].items() if k in editable_fields}
+        model_variant = {
+            k: v for k, v in self.variants[row].items() if k in editable_fields
+        }
 
         # Is there a difference between model and sql ? Which one ?
 
@@ -397,7 +418,9 @@ class VariantModel(QAbstractTableModel):
 
             box = QMessageBox(None)
             box.setWindowTitle("Database has been modified from another place")
-            box.setText(f"The fields <b>{diff_fields}</b> have been modified from another place.\nDo you want to overwrite value?")
+            box.setText(
+                f"The fields <b>{diff_fields}</b> have been modified from another place.\nDo you want to overwrite value?"
+            )
             box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
             box.setDetailedText(f"{variant=}\n{sql_variant=} \n {model_variant}")
             box.setIcon(QMessageBox.Warning)
@@ -426,7 +449,9 @@ class VariantModel(QAbstractTableModel):
             timestamp = str(datetime.datetime.now())
             del variant["id"]
 
-            file.write(f"{username} updated {', '.join(variant.keys())} for {variant_id=} with {', '.join(str(v) for v in variant.values())} at {timestamp} \n")
+            file.write(
+                f"{username} updated {', '.join(variant.keys())} for {variant_id=} with {', '.join(str(v) for v in variant.values())} at {timestamp} \n"
+            )
 
     def find_row_id_from_variant_id(self, variant_id: int) -> list:
         """Find the ids of all rows with the same given variant_id
@@ -436,7 +461,11 @@ class VariantModel(QAbstractTableModel):
         Returns:
             (list[int]): ids of rows
         """
-        return [row_id for row_id, variant in enumerate(self.variants) if variant["id"] == variant_id]
+        return [
+            row_id
+            for row_id, variant in enumerate(self.variants)
+            if variant["id"] == variant_id
+        ]
 
     def interrupt(self):
         """Interrupt current query if active
@@ -476,7 +505,10 @@ class VariantModel(QAbstractTableModel):
 
     def is_running(self):
         if self._load_variant_thread and self._load_count_thread:
-            return self._load_variant_thread.isRunning() or self._load_count_thread.isRunning()
+            return (
+                self._load_variant_thread.isRunning()
+                or self._load_count_thread.isRunning()
+            )
 
         return False
 
@@ -494,7 +526,9 @@ class VariantModel(QAbstractTableModel):
             return
 
         if self.is_running():
-            LOGGER.debug("Cannot load data. Thread is not finished. You can call interrupt() ")
+            LOGGER.debug(
+                "Cannot load data. Thread is not finished. You can call interrupt() "
+            )
             return
 
         LOGGER.debug("Start loading")
@@ -544,7 +578,9 @@ class VariantModel(QAbstractTableModel):
         self._start_timer = time.perf_counter()
 
         # Create function HASH for CACHE
-        self._count_hash = hash(count_function.func.__name__ + str(count_function.keywords))
+        self._count_hash = hash(
+            count_function.func.__name__ + str(count_function.keywords)
+        )
         self._variant_hash = hash(load_func.func.__name__ + str(load_func.keywords))
 
         self.load_started.emit()
@@ -558,7 +594,9 @@ class VariantModel(QAbstractTableModel):
 
         # Launch the second thread "count" or by pass it using the cache
         if self._variant_hash in self._load_variant_cache:
-            self._load_variant_thread.results = self._load_variant_cache[self._variant_hash]
+            self._load_variant_thread.results = self._load_variant_cache[
+                self._variant_hash
+            ]
             self.on_variant_loaded()
 
         else:
@@ -576,7 +614,9 @@ class VariantModel(QAbstractTableModel):
         self.variants.clear()
 
         # Save cache
-        self._load_variant_cache[self._variant_hash] = self._load_variant_thread.results.copy()
+        self._load_variant_cache[
+            self._variant_hash
+        ] = self._load_variant_thread.results.copy()
 
         # Load variants
         self.variants = self._load_variant_thread.results
@@ -604,7 +644,9 @@ class VariantModel(QAbstractTableModel):
         """
 
         # Save cache
-        self._load_count_cache[self._count_hash] = self._load_count_thread.results.copy()
+        self._load_count_cache[
+            self._count_hash
+        ] = self._load_count_thread.results.copy()
 
         self.total = self._load_count_thread.results["count"]
         self.count_loaded.emit()
@@ -700,7 +742,9 @@ class LoadingTableView(QTableView):
         if self.is_loading():
             painter = QPainter(self.viewport())
 
-            painter.drawText(self.viewport().rect(), Qt.AlignCenter, self.tr("Loading ..."))
+            painter.drawText(
+                self.viewport().rect(), Qt.AlignCenter, self.tr("Loading ...")
+            )
 
         else:
             super().paintEvent(event)
@@ -729,6 +773,7 @@ class VariantView(QWidget):
     error_raised = Signal(str)
     variant_clicked = Signal(QModelIndex)
     load_finished = Signal()
+    filter_required = Signal(str)
 
     def __init__(self, parent=None):
         """
@@ -751,7 +796,11 @@ class VariantView(QWidget):
         self.log_edit.setMaximumHeight(30)
         self.log_edit.hide()
         self.log_edit.setFrameStyle(QFrame.StyledPanel | QFrame.Raised)
-        self.log_edit.setStyleSheet("QWidget{{background-color:'{}'; color:'{}'}}".format(style.WARNING_BACKGROUND_COLOR, style.WARNING_TEXT_COLOR))
+        self.log_edit.setStyleSheet(
+            "QWidget{{background-color:'{}'; color:'{}'}}".format(
+                style.WARNING_BACKGROUND_COLOR, style.WARNING_TEXT_COLOR
+            )
+        )
 
         # Setup model
         self.model = VariantModel()
@@ -837,27 +886,40 @@ class VariantView(QWidget):
         self.favorite_action.toggled.connect(lambda x: self.update_favorites(x))
         self.favorite_action.setShortcut(QKeySequence(Qt.Key_Space))
         self.favorite_action.setShortcutContext(Qt.WidgetWithChildrenShortcut)
-        self.favorite_action.setToolTip(self.tr("Toggle the selected variant as favorite (%s). The field `favorite` must be selected." % self.favorite_action.shortcut().toString()))
+        self.favorite_action.setToolTip(
+            self.tr(
+                "Toggle the selected variant as favorite (%s). The field `favorite` must be selected."
+                % self.favorite_action.shortcut().toString()
+            )
+        )
         self.addAction(self.favorite_action)
 
         # -----------Comment action ----------
         self.comment_action = QAction(FIcon(0xF0182), self.tr("Comments"))
         self.comment_action.setToolTip(self.tr("Edit comment of selected variant ..."))
-        self.comment_action.triggered.connect(lambda x: self.edit_comment(self.view.selectionModel().selectedRows()[0]))
+        self.comment_action.triggered.connect(
+            lambda x: self.edit_comment(self.view.selectionModel().selectedRows()[0])
+        )
         self.addAction(self.comment_action)
 
         # -----------Resize action ----------
 
-        self.resize_action = self.top_bar.addAction(FIcon(0xF142A), self.tr("Auto resize"))
+        self.resize_action = self.top_bar.addAction(
+            FIcon(0xF142A), self.tr("Auto resize")
+        )
         self.resize_action.triggered.connect(self.auto_resize)
 
         # -----------Refresh action ----------
-        self.refresh_action = self.top_bar.addAction(FIcon(0xF0450), self.tr("Refresh"), lambda: self.load(reset_page=True))
+        self.refresh_action = self.top_bar.addAction(
+            FIcon(0xF0450), self.tr("Refresh"), lambda: self.load(reset_page=True)
+        )
         self.refresh_action.setToolTip(self.tr("Refresh the current list of variants"))
 
         # -----------Interrupt action ----------
 
-        self.interrupt_action = self.top_bar.addAction(FIcon(0xF04DB), self.tr("Stop"), lambda: self.model.interrupt())
+        self.interrupt_action = self.top_bar.addAction(
+            FIcon(0xF04DB), self.tr("Stop"), lambda: self.model.interrupt()
+        )
         self.interrupt_action.setToolTip(self.tr("Stop current query"))
 
         # Formatter
@@ -1120,7 +1182,9 @@ class VariantView(QWidget):
     def set_tool_loading(self, active=True):
 
         if active:
-            self.info_label.setText(self.tr("Counting all variants. This can take a while ... "))
+            self.info_label.setText(
+                self.tr("Counting all variants. This can take a while ... ")
+            )
             self.loading_action.setVisible(True)
             self.loading_label.movie().start()
         else:
@@ -1166,22 +1230,25 @@ class VariantView(QWidget):
                 self.parent.mainwindow.refresh_plugin("variant_view")
                 self.parent.mainwindow.refresh_plugin("sample_view")
 
-    def contextMenuEvent(self, event: QContextMenuEvent):
-        """Override: Show contextual menu over the current variant"""
+    def _create_header_menu(self, column: int) -> QMenu:
+        """Create a menu when clicking on a header"""
 
+        menu = QMenu()
+        field = self.model.headerData(column, Qt.Horizontal, Qt.DisplayRole)
+
+        menu.addAction(
+            QIcon(),
+            f"Create Filter {field}",
+            functools.partial(lambda x: self.filter_required.emit(x), field),
+        )
+
+        return menu
+
+    def _create_variant_menu(self, index: QModelIndex) -> QMenu:
+        """Create a menu when clicking on a variant line"""
         menu = QMenu(self)
-        pos = self.view.viewport().mapFromGlobal(event.globalPos())
 
-        if not self.view.viewport().geometry().contains(pos):
-            # mouse outside te view , skip
-            return
-
-        current_index = self.view.indexAt(pos)
-
-        if not current_index.isValid():
-            return
-
-        current_variant = self.model.variant(current_index.row())
+        current_variant = self.model.variant(index.row())
         full_variant = sql.get_variant(self.conn, current_variant["id"])
         # Update variant with currently displayed fields (not in variants table)
         full_variant.update(current_variant)
@@ -1198,7 +1265,9 @@ class VariantView(QWidget):
         menu.addAction(
             FIcon(0xF014C),
             formatted_variant,
-            functools.partial(QApplication.instance().clipboard().setText, formatted_variant),
+            functools.partial(
+                QApplication.instance().clipboard().setText, formatted_variant
+            ),
         )
 
         # action menu
@@ -1213,7 +1282,9 @@ class VariantView(QWidget):
 
         # Edit menu
         menu.addSeparator()
-        menu.addAction(FIcon(0xF018F), self.tr("&Copy"), self.copy_to_clipboard, QKeySequence.Copy)
+        menu.addAction(
+            FIcon(0xF018F), self.tr("&Copy"), self.copy_to_clipboard, QKeySequence.Copy
+        )
         menu.addAction(
             FIcon(0xF018F),
             self.tr("Copy cell value"),
@@ -1226,8 +1297,32 @@ class VariantView(QWidget):
             QKeySequence.SelectAll,
         )
 
-        # Display
-        menu.exec_(event.globalPos())
+        return menu
+
+    def contextMenuEvent(self, event: QContextMenuEvent):
+        """Override: Show contextual menu over the current variant"""
+
+        menu = QMenu(self)
+
+        # Menu header
+        if self.view.horizontalHeader().underMouse():
+            pos = (
+                self.view.horizontalHeader().viewport().mapFromGlobal(event.globalPos())
+            )
+            column = self.view.horizontalHeader().logicalIndexAt(pos)
+
+            menu = self._create_header_menu(column)
+            menu.exec_(event.globalPos())
+
+        # Menu Variant
+        if self.view.viewport().underMouse():
+            pos = self.view.viewport().mapFromGlobal(event.globalPos())
+            current_index = self.view.indexAt(pos)
+            if not current_index.isValid():
+                return
+
+            menu = self._create_variant_menu(current_index)
+            menu.exec_(event.globalPos())
 
     def _open_url(self, url_template: str, in_browser=False):
 
@@ -1260,14 +1355,18 @@ class VariantView(QWidget):
                     urllib.request.urlopen(url.toString(), timeout=10)
                 except Exception as e:
                     LOGGER.error(
-                        "Error while trying to access " + url.toString() + "\n%s" * len(e.args),
+                        "Error while trying to access "
+                        + url.toString()
+                        + "\n%s" * len(e.args),
                         *e.args,
                     )
                     cr = "\n"
                     QMessageBox.critical(
                         self,
                         self.tr("Error !"),
-                        self.tr(f"Error while trying to access {url.toString()}:{cr}{cr.join([str(a) for a in e.args])}"),
+                        self.tr(
+                            f"Error while trying to access {url.toString()}:{cr}{cr.join([str(a) for a in e.args])}"
+                        ),
                     )
 
     def _create_url(self, format_string: str, variant: dict) -> QUrl:
@@ -1395,14 +1494,18 @@ class VariantView(QWidget):
             return
 
         # Get comment from DB
-        variant_data = sql.get_variant(self.model.conn, self.model.variant(index.row())["id"])
+        variant_data = sql.get_variant(
+            self.model.conn, self.model.variant(index.row())["id"]
+        )
         comment = variant_data["comment"] if variant_data["comment"] else ""
 
         editor = MarkdownDialog()
         editor.widget.setPlainText(comment)
         if editor.exec_() == QDialog.Accepted:
             # Save in DB
-            self.model.update_variant(index.row(), {"comment": editor.widget.toPlainText()})
+            self.model.update_variant(
+                index.row(), {"comment": editor.widget.toPlainText()}
+            )
 
             # Request a refresh of the variant_edit plugin
             self.parent.mainwindow.refresh_plugin("variant_edit")
@@ -1417,14 +1520,18 @@ class VariantView(QWidget):
         Called for left pane by :meth:`loaded`.
         """
         index = self.view.model().index(row, 0)
-        self.view.selectionModel().setCurrentIndex(index, QItemSelectionModel.SelectCurrent | QItemSelectionModel.Rows)
+        self.view.selectionModel().setCurrentIndex(
+            index, QItemSelectionModel.SelectCurrent | QItemSelectionModel.Rows
+        )
 
     def keyPressEvent(self, event: QKeyEvent):
         """
         Handles key press events on the VariantView
         Can be used to filter out unexpected behavior with KeySequence conflicts
         """
-        if event.matches(QKeySequence.Copy):  # Default behavior from QTableView only copies the index that the mouse hovers
+        if event.matches(
+            QKeySequence.Copy
+        ):  # Default behavior from QTableView only copies the index that the mouse hovers
             self.copy_to_clipboard()  # So copy to clipboard to get the expected behavior in contextMenuEvent
             event.accept()  # Accept the event before the QTableView handles it in a terrible way
 
@@ -1481,7 +1588,9 @@ class VariantView(QWidget):
 
         for key, item in style.CLASSIFICATION.items():
 
-            action = class_menu.addAction(FIcon(item["icon"], item["color"]), item["name"])
+            action = class_menu.addAction(
+                FIcon(item["icon"], item["color"]), item["name"]
+            )
             action.setData(key)
             on_click = functools.partial(self.update_classification, key)
             action.triggered.connect(on_click)
@@ -1491,7 +1600,9 @@ class VariantView(QWidget):
     def create_external_links_menu(self):
         menu = QMenu(self.tr("Browse to ..."))
         for link in self._get_links():
-            func_slot = functools.partial(self._open_url, link["url"], link["is_browser"])
+            func_slot = functools.partial(
+                self._open_url, link["url"], link["is_browser"]
+            )
             action = menu.addAction(link["name"], func_slot)
             action.setIcon(FIcon(0xF0866))
         return menu
@@ -1543,9 +1654,13 @@ class VariantViewWidget(plugin.PluginWidget):
         main_layout.addWidget(self.view)
 
         # Make connection
-        self.view.view.selectionModel().currentRowChanged.connect(lambda x, _: self.on_variant_clicked(x))
+        self.view.view.selectionModel().currentRowChanged.connect(
+            lambda x, _: self.on_variant_clicked(x)
+        )
 
         self.view.load_finished.connect(self.on_load_finished)
+
+        self.view.filter_required.connect(self.on_create_filter)
 
     def on_load_finished(self):
         """Triggered when variant load is finished
@@ -1561,6 +1676,23 @@ class VariantViewWidget(plugin.PluginWidget):
         self.mainwindow.set_state_data("executed_query_data", executed_query_data)
         self.mainwindow.set_state_data("order_by", self.view.model.order_by)
         self.mainwindow.refresh_plugins()
+
+    def on_create_filter(self, field: str):
+
+        dialog = FilterDialog(self.conn)
+        dialog.set_field(field)
+
+        if dialog.exec():
+
+            one_filter = dialog.get_filter()
+            filters = self.view.model.filters
+
+            filters = {"$and": [one_filter]}
+
+            self.view.model.filters = filters
+            self.view.load()
+            self.mainwindow.set_state_data("filters", filters)
+            self.mainwindow.refresh_plugins(sender=self)
 
     def on_open_project(self, conn):
         """Overrided from PluginWidget"""

@@ -777,6 +777,9 @@ class FilterWidget(QWidget):
         self.setLayout(self.form_layout)
         self.field_edit.fill(prepare_fields(conn))
 
+    def set_field(self, field: str):
+        self.field_edit.set_value(field)
+
     def set_filter(self, data: dict):
         item = FiltersModel.to_item(data)
         self.field_edit.set_value(item.get_field())
@@ -820,6 +823,15 @@ class FilterDialog(QDialog):
 
         self.setWindowTitle(self.widget.windowTitle())
         self.setFixedSize(self.sizeHint())
+
+    def get_filter(self):
+        return self.widget.get_filter()
+
+    def set_filter(self, filter):
+        self.widget.set_filter(filter)
+
+    def set_field(self, field: str):
+        self.widget.set_field(field)
 
 
 class FiltersModel(QAbstractItemModel):

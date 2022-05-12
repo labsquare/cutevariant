@@ -67,3 +67,19 @@ def test_model(qtmodeltester):
     assert model.rowCount(model.index(0, 0)) == 0
 
     qtmodeltester.check(model)
+
+
+def test_filters_widget(qtbot):
+    conn = utils.create_conn()
+    widget = FiltersWidget(conn)
+
+    expected_filters = {"$and": [{"pos": 42}, {"ref": "A"}]}
+    root = widget.model().index(0, 0)
+    assert widget.model().rowCount() == 1
+    assert widget.model().rowCount(root) == 0
+
+    widget.set_filters(expected_filters)
+    root = widget.model().index(0, 0)
+    assert widget.model().rowCount(root) == 2
+
+    qtbot.addWidget(widget)
