@@ -1661,9 +1661,14 @@ class VariantViewWidget(plugin.PluginWidget):
         if dialog.exec():
 
             one_filter = dialog.get_filter()
-            filters = self.view.model.filters
+            filters = copy.deepcopy(self.view.model.filters)
 
-            filters = {"$and": [one_filter]}
+            if not filters:
+                filters = {"$and": [one_filter]}
+            if "$and" in filters:
+                filters["$and"].append(one_filter)
+            if "$or" in filters:
+                filters["$or"].append(one_filter)
 
             self.view.model.filters = filters
             self.view.load()
