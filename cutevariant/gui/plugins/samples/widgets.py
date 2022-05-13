@@ -154,7 +154,7 @@ class SampleVerticalHeader(QHeaderView):
 
         target = QRect(0, 0, 16, 16)
         pix = FIcon(icon, color).pixmap(target.size())
-        target = rect.center() - pix.rect().center() + QPoint(1, 0)
+        target.moveCenter(rect.center() + QPoint(1, 1))
 
         painter.drawPixmap(target, pix)
 
