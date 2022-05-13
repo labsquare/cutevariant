@@ -260,9 +260,6 @@ class SamplesWidget(plugin.PluginWidget):
 
     def on_edit(self):
 
-        d = SamplesDialog(self.model.conn)
-        d.exec()
-
         sample = self.model.get_sample(self.view.currentIndex().row())
         print(sample)
         if sample:
