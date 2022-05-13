@@ -26,7 +26,6 @@ import re
 from functools import lru_cache
 from ast import literal_eval
 
-from black import out
 
 # Custom imports
 from cutevariant.core import sql
