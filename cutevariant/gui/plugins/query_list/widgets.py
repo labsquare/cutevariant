@@ -148,7 +148,9 @@ class QueryListModel(QAbstractListModel):
     def load(self):
         self.beginResetModel()
         config = Config("vql_editor")
-        self._presets = config["presets"] or []
+        _presets = config["presets"] or []
+        _presets.sort(key= lambda x:x['name'].lower())
+        self._presets = _presets
         self.endResetModel()
 
     def clear(self):
@@ -166,9 +168,10 @@ class QueryListModel(QAbstractListModel):
         self._presets.append({"name": name, "description": description, "query": query})
         self.endInsertRows()
 
-    def edit_preset(self, name: str, description: str, query: str):
-        if self.contains_preset(name):
-            index = self.get_preset_index(name)
+    def edit_preset(self, name: str, description: str, query: str, previous_name: str = None):
+        if self.contains_preset(previous_name):
+            print("contain preset")
+            index = self.get_preset_index(previous_name)
             self._presets[index.row()] = {
                 "name": name,
                 "description": description,
@@ -205,13 +208,16 @@ class QueryListModel(QAbstractListModel):
     def data(self, index: QModelIndex, role: int) -> str:
         row = index.row()
         col = index.column()
+        name=self._presets[row]["name"]
+        description=self._presets[row]["description"]
+        query=self._presets[row]["query"]
         if role == Qt.DisplayRole:
             if col == 0:
-                return self._presets[row]["name"]
+                return name
         if role == Qt.ToolTipRole:
-            return self._presets[row]["description"]
+            return description
         if role == Qt.UserRole:
-            return self._presets[row]["query"]
+            return query
         if role == Qt.SizeHintRole:
             return QSize(30, 30)
 
@@ -261,19 +267,23 @@ class QueryListWidget(plugin.PluginWidget):
 
     def _setup_actions(self):
 
-        self.run_action = self.tool_bar.addAction(FIcon(0xF040A), "Run")
+        self.run_action = self.tool_bar.addAction(FIcon(0xF040A), "Apply")
         self.run_action.triggered.connect(self._run_query)
+        self.run_action.setToolTip(self.tr("Apply Query<hr>Apply query to filter variants and show selected fields"))
 
         self.tool_bar.addSeparator()
 
         self.add_action = self.tool_bar.addAction(FIcon(0xF0415), "Add")
         self.add_action.triggered.connect(self._add_query)
+        self.add_action.setToolTip(self.tr("Add Query<hr>Add query to the list.<br>Current query is automatically selected"))
 
         self.remove_action = self.tool_bar.addAction(FIcon(0xF0A7A), "Remove")
         self.remove_action.triggered.connect(self._remove_query)
+        self.remove_action.setToolTip(self.tr("Remove Query<hr>Remove existing query from the list"))
 
         self.edit_action = self.tool_bar.addAction(FIcon(0xF064F), "Edit")
         self.edit_action.triggered.connect(self._edit_query)
+        self.edit_action.setToolTip(self.tr("Edit Query<hr>Edit existing query, by changing name, description or query itself"))
 
         self.view.addActions([self.remove_action, self.edit_action])
 
@@ -375,12 +385,12 @@ class QueryListWidget(plugin.PluginWidget):
 
         dialog = QueryDialog(self, self.conn)
 
-        dialog.set_item({"name": name, "description": description, "query": query})
+        dialog.set_item({"name": name, "description": description, "query": query, "previous_name": name})
 
         if dialog.exec() == QDialog.Accepted:
-            self.model.edit_preset(**dialog.get_item())
+            self.model.edit_preset(**dialog.get_item(), previous_name=name)
             self.model.save()
-
+            self.model.load()
 
 if __name__ == "__main__":
     import sys

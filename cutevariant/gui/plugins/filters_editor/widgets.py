@@ -287,7 +287,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
         apply_action = self.toolbar.addAction(
             FIcon(0xF040A), "Apply filters", self.on_apply
         )
-        apply_action.setToolTip(self.tr("Apply Filters\nApply defined filter conditions to variants"))
+        apply_action.setToolTip(self.tr("Apply Filters<hr>Apply defined filter conditions to variants"))
 
         auto_icon = QIcon()
         auto_icon.addPixmap(FIcon(0xF04E6).pixmap(16, 16), QIcon.Normal, QIcon.On)
@@ -295,7 +295,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.auto_action = self.toolbar.addAction(
             auto_icon, "Automatic Apply selection when checked"
         )
-        self.auto_action.setToolTip(self.tr("Auto Apply\nEnable/Disable Auto Apply when filter conditions are defined"))
+        self.auto_action.setToolTip(self.tr("Auto Apply<hr>Enable/Disable Auto Apply when filter conditions are defined"))
 
         self.auto_action.setCheckable(True)
         self.auto_action.toggled.connect(apply_action.setDisabled)
@@ -305,18 +305,18 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.add_condition_action = self.toolbar.addAction(
             FIcon(0xF0EF1), "Add condition", self.on_add_condition
         )
-        self.add_condition_action.setToolTip(self.tr("Add filter condition\nAdd a filter condition to filter variants on a field, with an operator and a value"))
+        self.add_condition_action.setToolTip(self.tr("Add filter condition<hr>Add a filter condition to filter variants on a field, with an operator and a value"))
 
 
         self.add_group_action = self.toolbar.addAction(
             FIcon(0xF0EF0), "Add group", self.on_add_logic
         )
-        self.add_group_action.setToolTip(self.tr("Add filter condition group\nAdd a group of filter conditions, with operator AND or OR"))
+        self.add_group_action.setToolTip(self.tr("Add filter condition group<hr>Add a group of filter conditions, with operator AND or OR"))
 
         self.clear_all_action = self.toolbar.addAction(
             FIcon(0xF0234), self.tr("Clear all"), self.on_clear_all
         )
-        self.clear_all_action.setToolTip(self.tr("Clear all filter conditions\nRemove all filter conditions and group of filter conditions.\nNo filter conditions will be applied"))
+        self.clear_all_action.setToolTip(self.tr("Clear all filter conditions<hr>Remove all filter conditions and group of filter conditions.<br>No filter conditions will be applied"))
 
 
         spacer = QWidget()
@@ -328,7 +328,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.preset_menu = QMenu()
         self.preset_button = QPushButton()
         #self.preset_button.setToolTip(self.tr("Presets"))
-        self.preset_button.setToolTip(self.tr("Presets\n- Load a existing preset\n- Save the current preset\n- Delete an existing preset\n- Reload configured presets"))
+        self.preset_button.setToolTip(self.tr("Presets<hr>- Load a existing preset<br>- Save the current preset<br>- Delete an existing preset<br>- Reload configured presets"))
         self.preset_button.setIcon(FIcon(0xF035C))
         self.preset_button.setMenu(self.preset_menu)
         self.preset_button.setFlat(True)
