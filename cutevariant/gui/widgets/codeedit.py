@@ -22,6 +22,7 @@ from PySide6.QtGui import (
     QFontMetrics,
     QSyntaxHighlighter,
     QTextCharFormat,
+    QWheelEvent,
 )
 from PySide6.QtCore import (
     Qt,
@@ -83,7 +84,9 @@ class VqlSyntaxHighlighter(QSyntaxHighlighter):
             {
                 # Keywords
                 # \b allows to perform a "whole words only"
-                "pattern": "|".join(("\\b%s\\b" % keyword for keyword in VqlSyntaxHighlighter.sql_keywords)),
+                "pattern": "|".join(
+                    ("\\b%s\\b" % keyword for keyword in VqlSyntaxHighlighter.sql_keywords)
+                ),
                 "font": QFont.Bold,
                 "color": palette.color(QPalette.Highlight),  # default: Qt.darkBlue
                 "case_insensitive": True,
@@ -534,6 +537,17 @@ class CodeEdit(QTextEdit):
             Qt.Key_Up,
             Qt.Key_Down,
         ]
+
+    def wheelEvent(self, e: QWheelEvent) -> None:
+        fontPS = self.fontPointSize()
+        if (e.modifiers() == Qt.ControlModifier) and e.angleDelta().y() > 0:
+            self.setFontPointSize(fontPS + 2)
+        elif e.modifiers() == Qt.ControlModifier and e.angleDelta().y() < 0 and fontPS > 8:
+            self.setFontPointSize(fontPS - 2)
+
+        self.setPlainText(self.toPlainText())
+
+        super().wheelEvent(e)
 
     def keyPressEvent(self, event):
 
