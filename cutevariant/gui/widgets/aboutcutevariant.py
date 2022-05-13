@@ -24,7 +24,7 @@ from PySide6.QtGui import (
 
 # Custom imports
 from cutevariant.gui.ficon import FIcon
-from cutevariant import commons as cm
+from cutevariant import constants as cst
 from cutevariant import __version__
 
 
@@ -38,7 +38,7 @@ class AboutCutevariant(QDialog):
         super().__init__(parent)
 
         self.setWindowTitle(self.tr("About Cutevariant"))
-        self.setWindowIcon(QIcon(cm.DIR_ICONS + "app.png"))
+        self.setWindowIcon(QIcon(cst.DIR_ICONS + "app.png"))
 
         self.tab_widget = QTabWidget()
         self.header_lbl = QLabel()
@@ -90,7 +90,7 @@ class AboutCutevariant(QDialog):
                 "General Public License v3.\n\n"
             )
 
-        with open(cm.DIR_ASSETS + filename, "r") as f_d:
+        with open(cst.DIR_ASSETS + filename, "r") as f_d:
             text_edit.setPlainText(text + f_d.read())
             self.tab_widget.addTab(text_edit, filename)
 
@@ -98,7 +98,7 @@ class AboutCutevariant(QDialog):
         """Draw logo/copyright in the header"""
         pHeight = 90
         pMargin = 15
-        icon_path = cm.DIR_ICONS + "app.png"
+        icon_path = cst.DIR_ICONS + "app.png"
 
         self.header_lbl.setMinimumHeight(pHeight)
         self.header_lbl.setFrameShape(QFrame.StyledPanel)

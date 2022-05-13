@@ -1,7 +1,7 @@
 import os
 import csv
 
-import cutevariant.commons as cm
+import cutevariant.constants as cst
 
 from cutevariant import LOGGER
 
@@ -62,9 +62,7 @@ class PedReader:
         assert os.path.isfile(filepath)
         assert (
             samples and not raw_samples
-        ) or raw_samples, (
-            "If raw_samples are deactivated, database samples must be given"
-        )
+        ) or raw_samples, "If raw_samples are deactivated, database samples must be given"
 
         self.filepath = filepath
         self.samples = samples

@@ -18,7 +18,7 @@ from PySide6.QtWidgets import QStyleOptionViewItem, QStyle
 # Custom imports
 from cutevariant.gui.formatter import Formatter
 from cutevariant.gui import FIcon
-import cutevariant.commons as cm
+import cutevariant.constants as cst
 
 from cutevariant.config import Config
 
@@ -58,7 +58,7 @@ class CutestyleFormatter(Formatter):
 
     # Cache genotype icons
     # Values in gt field as keys (str), FIcon as values
-    GENOTYPE_ICONS = {key: FIcon(val) for key, val in cm.GENOTYPE_ICONS.items()}
+    GENOTYPE_ICONS = {key: FIcon(val) for key, val in cst.GENOTYPE_ICONS.items()}
 
     def __init__(self):
         self.refresh()
@@ -121,7 +121,7 @@ class CutestyleFormatter(Formatter):
 
         if re.match(r"samples\..+\.gt", field) or field == "gt":
             if value == None:
-                value=-1
+                value = -1
             icon = self.GENOTYPE_ICONS.get(int(value), self.GENOTYPE_ICONS[-1])
             return {"text": "", "icon": icon}
 
@@ -169,9 +169,7 @@ class CutestyleFormatter(Formatter):
 
                 painter.setFont(font)
                 # painter.setClipRect(option.rect, Qt.IntersectClip)
-                painter.setBrush(
-                    QBrush(QColor(self.TAGS_COLOR.get(value, "lightgray")))
-                )
+                painter.setBrush(QBrush(QColor(self.TAGS_COLOR.get(value, "lightgray"))))
                 painter.setPen(Qt.NoPen)
                 painter.drawRoundedRect(rect, 3, 3)
                 painter.setPen(QPen(QColor("white")))

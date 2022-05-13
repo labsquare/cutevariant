@@ -67,7 +67,7 @@ from PySide6.QtCore import *  # QApplication.instance()
 from PySide6.QtGui import *  # QIcon, QPalette
 
 # Custom imports
-import cutevariant.commons as cm
+import cutevariant.constants as cst
 from cutevariant.config import Config
 from cutevariant.gui.ficon import FIcon
 from cutevariant.gui import network, style, widgets
@@ -151,7 +151,7 @@ class SectionWidget(QTabWidget):
 #         locale_name = self.locales_combobox.currentText()
 
 #         app_translator = QTranslator(QApplication.instance())
-#         if app_translator.load(locale_name, cm.DIR_TRANSLATIONS):
+#         if app_translator.load(locale_name, cst.DIR_TRANSLATIONS):
 #             QApplication.instance().installTranslator(app_translator)
 
 #     def load(self):
@@ -160,7 +160,7 @@ class SectionWidget(QTabWidget):
 #         # Get names of locales based on available files
 #         available_translations = {
 #             os.path.basename(os.path.splitext(file)[0]): file
-#             for file in glob.glob(cm.DIR_TRANSLATIONS + "*.qm")
+#             for file in glob.glob(cst.DIR_TRANSLATIONS + "*.qm")
 #         }
 #         # English is the default language
 #         available_locales = list(available_translations.keys()) + ["en"]
@@ -223,9 +223,7 @@ class ProxySettingsWidget(AbstractSettingsWidget):
 
         try:
             proxy = QNetworkProxy(
-                network.PROXY_TYPES.get(
-                    self.combo_box.currentText(), QNetworkProxy.NoProxy
-                ),
+                network.PROXY_TYPES.get(self.combo_box.currentText(), QNetworkProxy.NoProxy),
                 self.host_edit.text(),
                 self.port_edit.value(),
                 self.user_edit.text(),
@@ -305,7 +303,7 @@ class StyleSettingsWidget(AbstractSettingsWidget):
         config = Config("app")
         style = config.get("style", {})
 
-        old_style_name = style.get("theme", cm.BASIC_STYLE)
+        old_style_name = style.get("theme", cst.BASIC_STYLE)
 
         # Save style setting
         style_name = self.styles_combobox.currentText()
@@ -331,20 +329,20 @@ class StyleSettingsWidget(AbstractSettingsWidget):
         # Get names of styles based on available files
         available_styles = {
             os.path.basename(os.path.splitext(file)[0]).title(): file
-            for file in glob.glob(cm.DIR_STYLES + "*.qss")
+            for file in glob.glob(cst.DIR_STYLES + "*.qss")
             if "frameless" not in file
         }
         # Display available styles
-        available_styles = list(available_styles.keys()) + [cm.BASIC_STYLE]
+        available_styles = list(available_styles.keys()) + [cst.BASIC_STYLE]
         self.styles_combobox.addItems(available_styles)
 
-        #print(available_styles)
+        # print(available_styles)
 
         # Display current style
         # Dark is the default style
         config = Config("app")
         style = config.get("style", {})
-        style_name = style.get("theme", cm.BASIC_STYLE)
+        style_name = style.get("theme", cst.BASIC_STYLE)
         self.styles_combobox.setCurrentIndex(available_styles.index(style_name))
 
 
@@ -413,7 +411,7 @@ class VariablesSettingsWidget(AbstractSettingsWidget):
 
     def save(self):
         """Save the selected variables in config"""
-        
+
         # Config
         config = Config("variables") or {}
 
@@ -437,7 +435,7 @@ class VariablesSettingsWidget(AbstractSettingsWidget):
 
         # Config
         config = Config("variables") or {}
-        
+
         # Set variables
         variant_name_pattern = config.get("variant_name_pattern", "{chr}:{pos} - {ref}>{alt}")
         gene_field = config.get("gene_field", "ann.gene")
@@ -445,6 +443,7 @@ class VariablesSettingsWidget(AbstractSettingsWidget):
         self.variant_name_pattern_edit.setText(variant_name_pattern)
         self.gene_field_edit.setText(gene_field)
         self.transcript_field_edit.setText(transcript_field)
+
 
 class SettingsDialog(QDialog):
     """Main widget for settings window
@@ -462,7 +461,7 @@ class SettingsDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle(self.tr("Cutevariant - Settings"))
-        self.setWindowIcon(QIcon(cm.DIR_ICONS + "app.png"))
+        self.setWindowIcon(QIcon(cst.DIR_ICONS + "app.png"))
 
         self.widgets = []
 
@@ -523,9 +522,7 @@ class SettingsDialog(QDialog):
         # Used to load/save all widgets on demand
         self.widgets.append(widget)
         # Used for ui positionning and connection events
-        self.list_widget.addItem(
-            QListWidgetItem(widget.windowIcon(), widget.windowTitle())
-        )
+        self.list_widget.addItem(QListWidgetItem(widget.windowIcon(), widget.windowTitle()))
         self.stack_widget.addWidget(widget)
 
     def save_all(self):

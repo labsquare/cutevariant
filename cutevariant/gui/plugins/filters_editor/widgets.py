@@ -90,7 +90,7 @@ from cutevariant.core.querybuilder import (
     build_vql_query,
     fields_to_vql,
 )
-import cutevariant.commons as cm
+import cutevariant.constants as cst
 from cutevariant.gui.sql_thread import SqlThread
 from cutevariant.gui.widgets import FiltersWidget, FilterItem, PresetAction
 
@@ -170,9 +170,7 @@ class FiltersPresetModel(QAbstractListModel):
         self.beginResetModel()
         config = Config("filters_editor")
         presets = config.get("presets", {})
-        self._presets = [
-            (preset_name, filters) for preset_name, filters in presets.items()
-        ]
+        self._presets = [(preset_name, filters) for preset_name, filters in presets.items()]
         self.endResetModel()
 
     def save(self):
@@ -238,7 +236,11 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.view = FiltersWidget()
         self.model = self.view.model()
         self.view.selectionModel().selectionChanged.connect(self.on_selection_changed)
-        self.view.setToolTip(self.tr("Filter conditions creation: Add, remove, hide, group, drag and drop filter conditions to filter variants"))
+        self.view.setToolTip(
+            self.tr(
+                "Filter conditions creation: Add, remove, hide, group, drag and drop filter conditions to filter variants"
+            )
+        )
 
         # Create toolbar
         self.toolbar = QToolBar()
@@ -284,10 +286,10 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.current_preset_name = ""
 
     def _setup_actions(self):
-        apply_action = self.toolbar.addAction(
-            FIcon(0xF040A), "Apply filters", self.on_apply
+        apply_action = self.toolbar.addAction(FIcon(0xF040A), "Apply filters", self.on_apply)
+        apply_action.setToolTip(
+            self.tr("Apply Filters<hr>Apply defined filter conditions to variants")
         )
-        apply_action.setToolTip(self.tr("Apply Filters<hr>Apply defined filter conditions to variants"))
 
         auto_icon = QIcon()
         auto_icon.addPixmap(FIcon(0xF04E6).pixmap(16, 16), QIcon.Normal, QIcon.On)
@@ -295,7 +297,9 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.auto_action = self.toolbar.addAction(
             auto_icon, "Automatic Apply selection when checked"
         )
-        self.auto_action.setToolTip(self.tr("Auto Apply<hr>Enable/Disable Auto Apply when filter conditions are defined"))
+        self.auto_action.setToolTip(
+            self.tr("Auto Apply<hr>Enable/Disable Auto Apply when filter conditions are defined")
+        )
 
         self.auto_action.setCheckable(True)
         self.auto_action.toggled.connect(apply_action.setDisabled)
@@ -305,19 +309,29 @@ class FiltersEditorWidget(plugin.PluginWidget):
         self.add_condition_action = self.toolbar.addAction(
             FIcon(0xF0EF1), "Add condition", self.on_add_condition
         )
-        self.add_condition_action.setToolTip(self.tr("Add filter condition<hr>Add a filter condition to filter variants on a field, with an operator and a value"))
-
+        self.add_condition_action.setToolTip(
+            self.tr(
+                "Add filter condition<hr>Add a filter condition to filter variants on a field, with an operator and a value"
+            )
+        )
 
         self.add_group_action = self.toolbar.addAction(
             FIcon(0xF0EF0), "Add group", self.on_add_logic
         )
-        self.add_group_action.setToolTip(self.tr("Add filter condition group<hr>Add a group of filter conditions, with operator AND or OR"))
+        self.add_group_action.setToolTip(
+            self.tr(
+                "Add filter condition group<hr>Add a group of filter conditions, with operator AND or OR"
+            )
+        )
 
         self.clear_all_action = self.toolbar.addAction(
             FIcon(0xF0234), self.tr("Clear all"), self.on_clear_all
         )
-        self.clear_all_action.setToolTip(self.tr("Clear all filter conditions<hr>Remove all filter conditions and group of filter conditions.<br>No filter conditions will be applied"))
-
+        self.clear_all_action.setToolTip(
+            self.tr(
+                "Clear all filter conditions<hr>Remove all filter conditions and group of filter conditions.<br>No filter conditions will be applied"
+            )
+        )
 
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -327,8 +341,12 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
         self.preset_menu = QMenu()
         self.preset_button = QPushButton()
-        #self.preset_button.setToolTip(self.tr("Presets"))
-        self.preset_button.setToolTip(self.tr("Presets<hr>- Load a existing preset<br>- Save the current preset<br>- Delete an existing preset<br>- Reload configured presets"))
+        # self.preset_button.setToolTip(self.tr("Presets"))
+        self.preset_button.setToolTip(
+            self.tr(
+                "Presets<hr>- Load a existing preset<br>- Save the current preset<br>- Delete an existing preset<br>- Reload configured presets"
+            )
+        )
         self.preset_button.setIcon(FIcon(0xF035C))
         self.preset_button.setMenu(self.preset_menu)
         self.preset_button.setFlat(True)
@@ -587,17 +605,13 @@ class FiltersEditorWidget(plugin.PluginWidget):
                 ret = QMessageBox.warning(
                     self,
                     self.tr("Overwrite preset"),
-                    self.tr(
-                        f"Preset {name} already exists. Do you want to overwrite it ?"
-                    ),
+                    self.tr(f"Preset {name} already exists. Do you want to overwrite it ?"),
                     QMessageBox.Yes | QMessageBox.No,
                 )
 
                 if ret == QMessageBox.No:
                     return
-            self.presets_model.add_preset(
-                name, self.mainwindow.get_state_data("filters")
-            )
+            self.presets_model.add_preset(name, self.mainwindow.get_state_data("filters"))
             self.presets_model.save()
 
         self.load_presets()
@@ -718,10 +732,10 @@ if __name__ == "__main__":
 
     from cutevariant.core.importer import import_reader
     from cutevariant.core.reader import FakeReader
-    import cutevariant.commons as cm
+    import cutevariant.constants as cst
     from cutevariant.gui.ficon import FIcon, setFontPath
 
-    setFontPath(cm.FONT_FILE)
+    setFontPath(cst.FONT_FILE)
 
     conn = sql.get_sql_connection(":memory:")
     import_reader(conn, FakeReader())

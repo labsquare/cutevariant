@@ -43,7 +43,7 @@ from cutevariant.gui.plugin import PluginWidget
 from cutevariant.core import sql
 from cutevariant.gui.sql_thread import SqlThread
 from cutevariant.gui.widgets import LoadingTableView
-import cutevariant.commons as cm
+import cutevariant.constants as cst
 
 from cutevariant.gui import plugin, FIcon, style, MainWindow
 
@@ -64,7 +64,7 @@ class GroupbyModel(QAbstractTableModel):
     groubpby_finished = Signal()
     groupby_error = Signal()
 
-    GENOTYPE_ICONS = {key: FIcon(val) for key, val in cm.GENOTYPE_ICONS.items()}
+    GENOTYPE_ICONS = {key: FIcon(val) for key, val in cst.GENOTYPE_ICONS.items()}
 
     def __init__(self, parent: QObject = None, conn: sqlite3.Connection = None) -> None:
         super().__init__(parent)
@@ -133,7 +133,11 @@ class GroupbyModel(QAbstractTableModel):
 
         if role == Qt.DisplayRole:
             if self._field_name not in self._raw_data[0]:
-                return self.tr(f"Invalid data. Loaded: {self._raw_data[0]['field']}") if index.column() == 0 else self.tr(f"Current field name: {self._field_name}")
+                return (
+                    self.tr(f"Invalid data. Loaded: {self._raw_data[0]['field']}")
+                    if index.column() == 0
+                    else self.tr(f"Current field name: {self._field_name}")
+                )
             if index.column() == 0:
                 return self._raw_data[index.row()][self._field_name]
             if index.column() == 1:
@@ -339,8 +343,12 @@ class GroupByViewWidget(PluginWidget):
         self.view.tableview.doubleClicked.connect(self.on_double_click)
         self.view.tableview.setSelectionMode(QAbstractItemView.ExtendedSelection)
         # Make sure that the combobox automatically gets enabled/disabled upon loading
-        self.view.groupby_model.groupby_started.connect(lambda: self.field_select_combo.setEnabled(False))
-        self.view.groupby_model.groubpby_finished.connect(lambda: self.field_select_combo.setEnabled(True))
+        self.view.groupby_model.groupby_started.connect(
+            lambda: self.field_select_combo.setEnabled(False)
+        )
+        self.view.groupby_model.groubpby_finished.connect(
+            lambda: self.field_select_combo.setEnabled(True)
+        )
         # self.view.tableview.selectionModel().selectionChanged.connect(
         #     lambda s, d: self.apply_action.setEnabled(len(s) != 0)
         # )
@@ -404,14 +412,25 @@ class GroupByViewWidget(PluginWidget):
             )
 
     def on_double_click(self):
-        selected_value = self.view.tableview.selectionModel().currentIndex().siblingAtColumn(0).data(Qt.DisplayRole)
+        selected_value = (
+            self.view.tableview.selectionModel()
+            .currentIndex()
+            .siblingAtColumn(0)
+            .data(Qt.DisplayRole)
+        )
         if self.mainwindow:
-            self.add_condition_to_filters({self.view.groupby_model.get_field_name(): selected_value})
+            self.add_condition_to_filters(
+                {self.view.groupby_model.get_field_name(): selected_value}
+            )
 
     def on_apply(self):
-        selected_values = [idx.data(Qt.DisplayRole) for idx in self.view.tableview.selectionModel().selectedRows(0)]
+        selected_values = [
+            idx.data(Qt.DisplayRole) for idx in self.view.tableview.selectionModel().selectedRows(0)
+        ]
         if selected_values:
-            self.add_condition_to_filters({self.view.groupby_model.get_field_name(): {"$in": selected_values}})
+            self.add_condition_to_filters(
+                {self.view.groupby_model.get_field_name(): {"$in": selected_values}}
+            )
 
     def add_condition_to_filters(self, condition: dict):
         filters = copy.deepcopy(self.mainwindow.get_state_data("filters"))

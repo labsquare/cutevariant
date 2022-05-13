@@ -1,29 +1,65 @@
 """A place to store style rules for the GUI"""
-from cutevariant.commons import DIR_STYLES
+from cutevariant.constants import DIR_STYLES
 from PySide6.QtGui import QPalette, QColor
 
 
 CLASSIFICATION = {
-    -1: {"name": "Rejected", "icon": 0xF00C3, "icon_favorite": 0xF00C1, "color": "dimgray", "blurred":1},
-    0: {"name": "Unclassified", "icon": 0xF00C3, "icon_favorite": 0xF00C1, "color": "lightgray", "blurred":0},
-    1: {"name": "Benin", "icon": 0xF00C3, "icon_favorite": 0xF00C1, "color": "#71e096", "blurred":0},
-    2: {"name": "Likely benin", "icon": 0xF00C3, "icon_favorite": 0xF00C1, "color": "#71e096", "blurred":0},
-    3: {"name": "Variant of uncertain significance", "icon": 0xF00C3, "icon_favorite": 0xF00C1, "color": "#f5a26f", "blurred":0},
+    -1: {
+        "name": "Rejected",
+        "icon": 0xF00C3,
+        "icon_favorite": 0xF00C1,
+        "color": "dimgray",
+        "blurred": 1,
+    },
+    0: {
+        "name": "Unclassified",
+        "icon": 0xF00C3,
+        "icon_favorite": 0xF00C1,
+        "color": "lightgray",
+        "blurred": 0,
+    },
+    1: {
+        "name": "Benin",
+        "icon": 0xF00C3,
+        "icon_favorite": 0xF00C1,
+        "color": "#71e096",
+        "blurred": 0,
+    },
+    2: {
+        "name": "Likely benin",
+        "icon": 0xF00C3,
+        "icon_favorite": 0xF00C1,
+        "color": "#71e096",
+        "blurred": 0,
+    },
+    3: {
+        "name": "Variant of uncertain significance",
+        "icon": 0xF00C3,
+        "icon_favorite": 0xF00C1,
+        "color": "#f5a26f",
+        "blurred": 0,
+    },
     4: {"name": "Likely pathogenic", "icon": 0xF00C3, "icon_favorite": 0xF00C1, "color": "#ed6d79"},
-    5: {"name": "Pathogenic", "icon": 0xF00C3, "icon_favorite": 0xF00C1, "color": "#ed6d79", "blurred":0},
+    5: {
+        "name": "Pathogenic",
+        "icon": 0xF00C3,
+        "icon_favorite": 0xF00C1,
+        "color": "#ed6d79",
+        "blurred": 0,
+    },
 }
 
 SAMPLE_CLASSIFICATION = {
-    -1: {"name": "Rejected", "icon": 0xF012F, "color": "dimgray", "blurred":1, "lock":1},
-    0: {"name": "pending", "icon": 0xF012F, "color": "lightgray", "blurred":0, "lock":0},
-    1: {"name": "valid", "icon": 0xF012F, "color": "lightgray", "blurred":0, "lock":1},
+    -1: {"name": "Rejected", "icon": 0xF012F, "color": "dimgray", "blurred": 1, "lock": 1},
+    0: {"name": "pending", "icon": 0xF012F, "color": "lightgray", "blurred": 0, "lock": 0},
+    1: {"name": "valid", "icon": 0xF012F, "color": "lightgray", "blurred": 0, "lock": 1},
 }
 
 SAMPLE_VARIANT_CLASSIFICATION = {
-    -1: {"name": "Rejected", "icon": 0xF00C1, "color": "dimgray", "blurred":1},
-    0: {"name": "Unclassified", "icon": 0xF00C1, "color": "lightgray", "blurred":0},
-    1: {"name": "Verification required", "icon": 0xF00C1, "color": "#f5a26f", "blurred":0},
-    2: {"name": "Validated", "icon": 0xF00C1, "color": "#71e096", "blurred":0},
+    -1: {"name": "Rejected", "icon": 0xF00C1, "color": "dimgray", "blurred": 1},
+    0: {"name": "Unclassified", "icon": 0xF00C1, "color": "lightgray", "blurred": 0},
+    1: {"name": "Verification required", "icon": 0xF00C1, "color": "#f5a26f", "blurred": 0},
+    2: {"name": "Validated", "icon": 0xF00C1, "color": "#71e096", "blurred": 0},
 }
 
 GENOTYPE = {
@@ -51,7 +87,7 @@ FIELD_CATEGORY = {
 GENE_COLOR = "#F5A26F"
 WARNING_BACKGROUND_COLOR = "#FFCCBA"
 WARNING_TEXT_COLOR = "#D73705"
-BLURRED_COLOR="dimgray"
+BLURRED_COLOR = "dimgray"
 
 DARK_COLOR = {
     "darkpurple": "#40375C",
@@ -59,18 +95,6 @@ DARK_COLOR = {
     "red": "#F14235",
     "yellow": "#F5A623",
     "green": "#7BBB44",
-}
-
-
-# Sequence ontology colors
-SO_COLOR = {
-    "stop": "#808080",
-    "utr": "#911EB4",
-    "splice": "#F58231",
-    "intron": "#0082C8",
-    "intergenic": "#3CB44B",
-    "frameshift": "#E6194B",
-    "missense": "#F032E6",
 }
 
 
@@ -114,9 +138,7 @@ def bright(app):
     lightPalette.setColor(QPalette.Disabled, QPalette.Text, QColor("#FFA2A4A5"))
     lightPalette.setColor(QPalette.Disabled, QPalette.ButtonText, QColor("#FFA2A4A5"))
     lightPalette.setColor(QPalette.Disabled, QPalette.Highlight, QColor("pink"))
-    lightPalette.setColor(
-        QPalette.Disabled, QPalette.HighlightedText, QColor("#FFA2A4A5")
-    )
+    lightPalette.setColor(QPalette.Disabled, QPalette.HighlightedText, QColor("#FFA2A4A5"))
 
     app.setPalette(lightPalette)
 
@@ -161,9 +183,7 @@ def dark(app):
     darkPalette.setColor(QPalette.Disabled, QPalette.Text, QColor(127, 127, 127))
     darkPalette.setColor(QPalette.Disabled, QPalette.ButtonText, QColor(127, 127, 127))
     darkPalette.setColor(QPalette.Disabled, QPalette.Highlight, QColor(80, 80, 80))
-    darkPalette.setColor(
-        QPalette.Disabled, QPalette.HighlightedText, QColor(127, 127, 127)
-    )
+    darkPalette.setColor(QPalette.Disabled, QPalette.HighlightedText, QColor(127, 127, 127))
 
     app.setPalette(darkPalette)
 

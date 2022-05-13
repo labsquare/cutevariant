@@ -15,7 +15,7 @@ from PySide6.QtGui import QFont, QColor
 from cutevariant.gui import FIcon, style
 from cutevariant.core import sql, get_sql_connection
 from cutevariant.gui.plugin import PluginWidget
-from cutevariant import commons as cm
+from cutevariant import constants as cst
 
 from cutevariant.gui.widgets import DictWidget
 
@@ -38,9 +38,7 @@ class VariantInfoModel(QJsonModel):
     @conn.setter
     def conn(self, conn):
         self._conn = conn
-        self.fields_descriptions = {
-            f["name"]: f["description"] for f in sql.get_fields(conn)
-        }
+        self.fields_descriptions = {f["name"]: f["description"] for f in sql.get_fields(conn)}
 
     def data(self, index: QModelIndex, role: Qt.ItemDataRole):
 
@@ -112,9 +110,9 @@ class VariantInfoWidget(PluginWidget):
         self.search_bar = QLineEdit()
         self.search_bar.textChanged.connect(self.proxy_model.setFilterFixedString)
         self.search_bar.setPlaceholderText(self.tr("Search by keywords... "))
-        self.search_bar.addAction(
-            FIcon(0xF015A), QLineEdit.TrailingPosition
-        ).triggered.connect(self.search_bar.clear)
+        self.search_bar.addAction(FIcon(0xF015A), QLineEdit.TrailingPosition).triggered.connect(
+            self.search_bar.clear
+        )
 
         vlayout = QVBoxLayout()
         vlayout.addWidget(self.view)
@@ -189,7 +187,7 @@ class VariantInfoWidget(PluginWidget):
     #     # Cache genotype icons
     #     # Values in gt field as keys (str), FIcon as values
     #     self.genotype_icons = {
-    #         key: FIcon(val) for key, val in cm.GENOTYPE_ICONS.items()
+    #         key: FIcon(val) for key, val in cst.GENOTYPE_ICONS.items()
     #     }
 
     # def clear(self):

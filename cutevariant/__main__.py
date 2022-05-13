@@ -40,7 +40,7 @@ from PySide6.QtNetwork import QNetworkProxy
 # Custom imports
 from cutevariant.config import Config
 from cutevariant.gui import MainWindow, network, setFontPath, style
-import cutevariant.commons as cm
+import cutevariant.constants as cst
 from cutevariant import LOGGER
 from cutevariant import __version__
 import faulthandler
@@ -84,7 +84,7 @@ def main():
 
     # Set icons set
     LOGGER.info("Load font")
-    setFontPath(cm.FONT_FILE)
+    setFontPath(cst.FONT_FILE)
 
     # Translations
     LOGGER.info("Load translation")
@@ -98,7 +98,7 @@ def main():
     LOGGER.info("Starting the GUI...")
     # Splash screen
     splash = QSplashScreen()
-    splash.setPixmap(QPixmap(cm.DIR_ICONS + "splash.png"))
+    splash.setPixmap(QPixmap(cst.DIR_ICONS + "splash.png"))
     splash.showMessage(f"Version {__version__}")
     splash.show()
     app.processEvents()
@@ -106,16 +106,14 @@ def main():
     #  Drop settings if old version
     settings = QSettings()
     settings_version = settings.value("version", None)
-    if settings_version is None or parse_version(settings_version) < parse_version(
-        __version__
-    ):
+    if settings_version is None or parse_version(settings_version) < parse_version(__version__):
         settings.clear()
         settings.setValue("version", __version__)
 
     # Display
     w = MainWindow()
 
-    # STYLES = cm.DIR_STYLES + "frameless.qss"
+    # STYLES = cst.DIR_STYLES + "frameless.qss"
     # with open(STYLES,"r") as file:
     #     w.setStyleSheet(file.read())
 
@@ -128,9 +126,7 @@ def load_network_settings():
     config = Config("app")
     if "network" in config:
         _network = config.get("network", {})
-        proxy_type = network.PROXY_TYPES.get(
-            _network.get("type"), QNetworkProxy.NoProxy
-        )
+        proxy_type = network.PROXY_TYPES.get(_network.get("type"), QNetworkProxy.NoProxy)
         host_name = _network.get("host", "")
         port_number = _network.get("port", "")
         user_name = _network.get("username", "")
@@ -168,7 +164,7 @@ def load_styles(app):
     config = Config("app")
     # Display current style
     style_config = config.get("style", {})
-    theme = style_config.get("theme", cm.BASIC_STYLE)
+    theme = style_config.get("theme", cst.BASIC_STYLE)
     # Apply selected style by calling on the method in style module based on its
     # name; equivalent of style.dark(app)
     getattr(style, theme.lower())(app)
@@ -198,7 +194,7 @@ def load_translations(app):
 
     # App translations
     app_translator = QTranslator(app)
-    if app_translator.load(locale_name, directory=cm.DIR_TRANSLATIONS):
+    if app_translator.load(locale_name, directory=cst.DIR_TRANSLATIONS):
         app.installTranslator(app_translator)
     else:
         # Init setting
@@ -213,9 +209,7 @@ def process_arguments(app):
     # --version
     show_version = QCommandLineOption(
         ["version"],
-        QCoreApplication.translate(
-            "main", "Display the version of Cutevariant and exit."
-        ),
+        QCoreApplication.translate("main", "Display the version of Cutevariant and exit."),
     )
     parser.addOption(show_version)
 

@@ -42,6 +42,7 @@ from cutevariant.gui.widgets import (
 
 from cutevariant.config import Config
 from cutevariant import LOGGER
+import cutevariant.constants as cst
 import cutevariant.commons as cm
 
 
@@ -811,7 +812,7 @@ class VariantView(QWidget):
         self.time_label = QLabel()
         self.cache_label = QLabel()
         self.loading_label = QLabel()
-        self.loading_label.setMovie(QMovie(cm.DIR_ICONS + "loading.gif"))
+        self.loading_label.setMovie(QMovie(cst.DIR_ICONS + "loading.gif"))
 
         self.top_bar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         self.top_bar.setIconSize(QSize(16, 16))

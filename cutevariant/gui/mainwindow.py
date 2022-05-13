@@ -28,8 +28,8 @@ from cutevariant.gui.widgets.project_wizard import ProjectWizard
 from cutevariant.gui.widgets.import_widget import VcfImportDialog
 from cutevariant.gui.settings import SettingsDialog
 from cutevariant.gui.widgets.aboutcutevariant import AboutCutevariant
-from cutevariant import commons as cm
-from cutevariant.commons import (
+from cutevariant import constants as cst
+from cutevariant.constants import (
     MAX_RECENT_PROJECTS,
     DIR_ICONS,
     MIN_AUTHORIZED_DB_VERSION,
@@ -159,8 +159,12 @@ class MainWindow(QMainWindow):
         self.quick_search_edit.setPlaceholderText("Type a gene or coordinate ...")
         self.quick_search_edit.setMaximumWidth(400)
         self.quick_search_edit.setContentsMargins(0, 0, 5, 0)
-        self.quick_search_edit.addAction(FIcon(0xF0349), QLineEdit.TrailingPosition).triggered.connect(lambda: self.quick_search(self.quick_search_edit.text()))
-        self.quick_search_edit.returnPressed.connect(lambda: self.quick_search(self.quick_search_edit.text()))
+        self.quick_search_edit.addAction(
+            FIcon(0xF0349), QLineEdit.TrailingPosition
+        ).triggered.connect(lambda: self.quick_search(self.quick_search_edit.text()))
+        self.quick_search_edit.returnPressed.connect(
+            lambda: self.quick_search(self.quick_search_edit.text())
+        )
 
         self.toolbar.addSeparator()
         spacer = QWidget()
@@ -395,7 +399,9 @@ class MainWindow(QMainWindow):
 
         ## File Menu
         self.file_menu = self.menuBar().addMenu(self.tr("&File"))
-        self.new_project_action = self.file_menu.addAction(FIcon(0xF0415), self.tr("&New project"), self.new_project, QKeySequence.New)
+        self.new_project_action = self.file_menu.addAction(
+            FIcon(0xF0415), self.tr("&New project"), self.new_project, QKeySequence.New
+        )
         self.open_project_action = self.file_menu.addAction(
             FIcon(0xF0DCF),
             self.tr("&Open project..."),
@@ -429,7 +435,9 @@ class MainWindow(QMainWindow):
 
         for export_format_name in ExportDialogFactory.get_supported_formats():
 
-            action = self.export_menu.addAction(self.tr(f"Export as {export_format_name}..."), self.on_export_pressed)
+            action = self.export_menu.addAction(
+                self.tr(f"Export as {export_format_name}..."), self.on_export_pressed
+            )
 
             # Since there are several actions connected to the same slot, we need to pass the format to the receiver
             action.setData(export_format_name)
@@ -451,10 +459,14 @@ class MainWindow(QMainWindow):
         ### Misc
 
         ## TODO ==> Ca devrait allé dans les settings ça.
-        self.open_config_action = self.file_menu.addAction(FIcon(0xF102F), self.tr("&Set config..."), self.open_config)
+        self.open_config_action = self.file_menu.addAction(
+            FIcon(0xF102F), self.tr("&Set config..."), self.open_config
+        )
         self.file_menu.addAction(FIcon(0xF0493), self.tr("Settings..."), self.show_settings)
         self.file_menu.addSeparator()
-        self.close_project_action = self.file_menu.addAction(FIcon(0xF0156), self.tr("&Close project"), self.close_database)
+        self.close_project_action = self.file_menu.addAction(
+            FIcon(0xF0156), self.tr("&Close project"), self.close_database
+        )
         self.file_menu.addAction(self.tr("&Quit"), self.close, QKeySequence.Quit)
 
         ## Edit
@@ -490,7 +502,9 @@ class MainWindow(QMainWindow):
 
         fullscreen_action.setShortcut(QKeySequence.FullScreen)
         fullscreen_action.setCheckable(True)
-        fullscreen_action.toggled.connect(lambda x: self.showFullScreen() if x else self.showNormal())
+        fullscreen_action.toggled.connect(
+            lambda x: self.showFullScreen() if x else self.showNormal()
+        )
 
         self.view_menu.addSeparator()
 
@@ -509,12 +523,12 @@ class MainWindow(QMainWindow):
         self.help_menu.addAction(
             FIcon(0xF059F),
             self.tr("Documentation..."),
-            partial(QDesktopServices.openUrl, QUrl(cm.WIKI_URL, QUrl.TolerantMode)),
+            partial(QDesktopServices.openUrl, QUrl(cst.WIKI_URL, QUrl.TolerantMode)),
         )
         self.help_menu.addAction(
             FIcon(0xF0A30),
             self.tr("Report a bug..."),
-            partial(QDesktopServices.openUrl, QUrl(cm.REPORT_BUG_URL, QUrl.TolerantMode)),
+            partial(QDesktopServices.openUrl, QUrl(cst.REPORT_BUG_URL, QUrl.TolerantMode)),
         )
 
         self.help_menu.addSeparator()
@@ -737,7 +751,9 @@ class MainWindow(QMainWindow):
         # Reload last directory used
         last_directory = self.app_settings.value("last_directory", QDir.homePath())
 
-        filepath, _ = QFileDialog.getSaveFileName(self, self.tr("Save project"), last_directory, self.tr("(*.csv)"))
+        filepath, _ = QFileDialog.getSaveFileName(
+            self, self.tr("Save project"), last_directory, self.tr("(*.csv)")
+        )
 
         if filepath:
             with open(filepath, "w") as file:
@@ -750,7 +766,9 @@ class MainWindow(QMainWindow):
         last_directory = self.app_settings.value("last_directory", QDir.homePath())
 
         # noinspection PyCallByClass
-        filepath, _ = QFileDialog.getSaveFileName(self, self.tr("Save project"), last_directory, "(*.tfam)")
+        filepath, _ = QFileDialog.getSaveFileName(
+            self, self.tr("Save project"), last_directory, "(*.tfam)"
+        )
 
         if filepath:
             filepath = filepath if filepath.endswith(".tfam") else filepath + ".tfam"
@@ -1027,7 +1045,9 @@ class MainWindow(QMainWindow):
 
         settings.setValue("last_save_file_dir", os.path.dirname(file_name))
 
-        chosen_ext = filters_and_exts[chosen_ext]  # Hacky, extracts extension from second element from getSaveFileName result
+        chosen_ext = filters_and_exts[
+            chosen_ext
+        ]  # Hacky, extracts extension from second element from getSaveFileName result
 
         # Automatic extension of file_name
         file_name = file_name if file_name.endswith(chosen_ext) else f"{file_name}.{chosen_ext}"
@@ -1064,7 +1084,9 @@ class MainWindow(QMainWindow):
 
     def setup_developers_menu(self):
         self.developers_menu.setIcon(FIcon(0xF1064))
-        self.create_plugin_action: QAction = self.developers_menu.addAction(self.tr("Create new plugin"))
+        self.create_plugin_action: QAction = self.developers_menu.addAction(
+            self.tr("Create new plugin")
+        )
         self.create_plugin_action.setIcon(FIcon(0xF14D0))
         # The resulting dialog is created and generates the plugin
         self.create_plugin_action.triggered.connect(plugin_form.create_dialog_plugin)

@@ -23,7 +23,7 @@ from cutevariant.core.sql import (
 from cutevariant.core.reader import BedReader
 from cutevariant.gui import plugin, FIcon
 from cutevariant.gui.widgets import SearchableTableWidget
-from cutevariant.commons import DEFAULT_SELECTION_NAME
+from cutevariant.constants import DEFAULT_SELECTION_NAME
 
 
 import re
@@ -142,7 +142,9 @@ class SourceModel(QAbstractTableModel):
                 return "count"
 
         if orientation == Qt.Vertical and role == Qt.DisplayRole and section > 0:
-            return self.records[section].get("id", None)  # For debug purpose . displayed in vertical header
+            return self.records[section].get(
+                "id", None
+            )  # For debug purpose . displayed in vertical header
 
     def record(self, index: QModelIndex()) -> dict:
         """Return source item
@@ -292,14 +294,20 @@ class SourceEditorWidget(plugin.PluginWidget):
             self.tr("Intersect with BED file"),
             self.create_selection_from_bed,
         )
-        self.create_selection_from_bed_action.setToolTip("Create new source from intersection with BED file")
+        self.create_selection_from_bed_action.setToolTip(
+            "Create new source from intersection with BED file"
+        )
 
         # Add action to rename source
-        self.edit_action = self.toolbar.addAction(FIcon(0xF04F0), self.tr("Rename source"), self.edit_selection)
+        self.edit_action = self.toolbar.addAction(
+            FIcon(0xF04F0), self.tr("Rename source"), self.edit_selection
+        )
         self.edit_action.setEnabled(False)
 
         # Add action to delete source
-        self.del_action = self.toolbar.addAction(FIcon(0xF0A76), self.tr("Delete source"), self.remove_selection)
+        self.del_action = self.toolbar.addAction(
+            FIcon(0xF0A76), self.tr("Delete source"), self.remove_selection
+        )
         self.del_action.setEnabled(False)
 
         # Add all three set operations
@@ -386,7 +394,9 @@ class SourceEditorWidget(plugin.PluginWidget):
 
         # Open bed intervals & create selection
         intervals = BedReader(filepath)
-        sql.insert_selection_from_bed(self.model.conn, DEFAULT_SELECTION_NAME, selection_name, intervals)
+        sql.insert_selection_from_bed(
+            self.model.conn, DEFAULT_SELECTION_NAME, selection_name, intervals
+        )
         # Refresh UI
         self.model.load()
 
@@ -417,7 +427,9 @@ class SourceEditorWidget(plugin.PluginWidget):
         """Called when the source selection has changed. The change is already applied when this callback is triggered.
         For this widget, it allows us to check whether the number of selected sources is exactly two, so we can enable/disable the set operations
         """
-        selected_sources = [index.data(Qt.DisplayRole) for index in self.view.selectionModel().selectedRows(0)]
+        selected_sources = [
+            index.data(Qt.DisplayRole) for index in self.view.selectionModel().selectedRows(0)
+        ]
 
         if not selected_sources:
             # No source selected whatsoever, cannot apply any operation. Disable every action (except create selection from source)
@@ -437,7 +449,9 @@ class SourceEditorWidget(plugin.PluginWidget):
 
         current = self.view.selectionModel().currentIndex()
 
-        self.create_selection_from_bed_action.setEnabled(current.data(Qt.DisplayRole) == DEFAULT_SELECTION_NAME)
+        self.create_selection_from_bed_action.setEnabled(
+            current.data(Qt.DisplayRole) == DEFAULT_SELECTION_NAME
+        )
 
         if any(source == DEFAULT_SELECTION_NAME for source in selected_sources):
             self.edit_action.setEnabled(False)
@@ -480,7 +494,9 @@ class SourceEditorWidget(plugin.PluginWidget):
                 "SourceEditorWidget:save_current_query:: '%s' is a reserved name for a selection.",
                 name,
             )
-            self.mainwindow.status_bar.showMessage(self.tr("'%s' is a reserved name for a selection!") % name)
+            self.mainwindow.status_bar.showMessage(
+                self.tr("'%s' is a reserved name for a selection!") % name
+            )
             QMessageBox.critical(
                 self,
                 self.tr("Error while creating the selection"),
@@ -488,7 +504,9 @@ class SourceEditorWidget(plugin.PluginWidget):
             )
         elif name in self.model.get_source_names():
             LOGGER.error("SourceEditorWidget:save_current_query:: '%s' is already used!", name)
-            self.mainwindow.status_bar.showMessage(self.tr("'%s' is already used for a selection!") % name)
+            self.mainwindow.status_bar.showMessage(
+                self.tr("'%s' is already used for a selection!") % name
+            )
             QMessageBox.critical(
                 self,
                 self.tr("Error while creating the selection"),
@@ -505,7 +523,10 @@ class SourceEditorWidget(plugin.PluginWidget):
             return
 
         # This should not even be called, since remove/edit actions are supposed to be disabled by the widget
-        if any(self.model.record(self.proxy_model.mapToSource(index)) == DEFAULT_SELECTION_NAME for index in self.view.selectionModel().selectedRows(0)):
+        if any(
+            self.model.record(self.proxy_model.mapToSource(index)) == DEFAULT_SELECTION_NAME
+            for index in self.view.selectionModel().selectedRows(0)
+        ):
             QMessageBox.warning(
                 self,
                 self.tr("Remove source"),
@@ -518,7 +539,9 @@ class SourceEditorWidget(plugin.PluginWidget):
         msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
 
         if msg.exec_() == QMessageBox.Yes:
-            indexes = [self.proxy_model.mapToSource(i) for i in self.view.selectionModel().selectedRows(0)]
+            indexes = [
+                self.proxy_model.mapToSource(i) for i in self.view.selectionModel().selectedRows(0)
+            ]
             self.model.remove_records(indexes)
 
             self.mainwindow.set_state_data("source", DEFAULT_SELECTION_NAME)
@@ -561,7 +584,9 @@ class SourceEditorWidget(plugin.PluginWidget):
                 self.tr("difference"),
             ),
         }
-        selected_sources = [index.data(Qt.DisplayRole) for index in self.view.selectionModel().selectedRows(0)]
+        selected_sources = [
+            index.data(Qt.DisplayRole) for index in self.view.selectionModel().selectedRows(0)
+        ]
         if not selected_sources:
             return
         else:
@@ -596,7 +621,8 @@ class SourceEditorWidget(plugin.PluginWidget):
                     QMessageBox.critical(
                         self,
                         self.tr("Error while creating set"),
-                        self.tr("Error while creating set '%s'; Name is already used") % selection_name,
+                        self.tr("Error while creating set '%s'; Name is already used")
+                        % selection_name,
                     )
                     selection_name = None
             if operation not in operations:
@@ -614,7 +640,9 @@ class SourceEditorWidget(plugin.PluginWidget):
                 QMessageBox.warning(
                     self,
                     self.tr("Warning!"),
-                    self.tr("No source created! Usually, this is because the resulting selection is empty.\nDid you invert the order of difference operator?"),
+                    self.tr(
+                        "No source created! Usually, this is because the resulting selection is empty.\nDid you invert the order of difference operator?"
+                    ),
                 )
 
 

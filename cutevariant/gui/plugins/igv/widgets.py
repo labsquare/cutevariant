@@ -17,7 +17,7 @@ from PySide6.QtWebEngineCore import *
 from cutevariant.core import sql, command
 from cutevariant.core.reader import BedReader
 from cutevariant.gui import plugin, FIcon, style
-from cutevariant.commons import DEFAULT_SELECTION_NAME
+from cutevariant.constants import DEFAULT_SELECTION_NAME
 
 
 class IgvView(QWebEngineView):

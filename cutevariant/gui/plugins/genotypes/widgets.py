@@ -18,7 +18,7 @@ from cutevariant.core import sql, command
 from cutevariant.core.reader import BedReader
 from cutevariant.gui import plugin, FIcon, style
 from cutevariant.gui.style import SAMPLE_VARIANT_CLASSIFICATION
-from cutevariant.commons import DEFAULT_SELECTION_NAME
+from cutevariant.constants import DEFAULT_SELECTION_NAME
 from cutevariant.config import Config
 
 
@@ -80,15 +80,9 @@ class VariantVerticalHeader(QHeaderView):
 
         # sample variant
         classification = self.model().item(section)["classification"] or 0
-        sample_variant_color = style.SAMPLE_VARIANT_CLASSIFICATION[classification].get(
-            "color"
-        )
-        sample_variant_icon = style.SAMPLE_VARIANT_CLASSIFICATION[classification].get(
-            "icon"
-        )
-        sample_variant_blurred = style.SAMPLE_VARIANT_CLASSIFICATION[
-            classification
-        ].get("blurred")
+        sample_variant_color = style.SAMPLE_VARIANT_CLASSIFICATION[classification].get("color")
+        sample_variant_icon = style.SAMPLE_VARIANT_CLASSIFICATION[classification].get("icon")
+        sample_variant_blurred = style.SAMPLE_VARIANT_CLASSIFICATION[classification].get("blurred")
 
         if sample_variant_color != "":
             sample_color = sample_variant_color
@@ -137,12 +131,8 @@ class SamplesModel(QAbstractTableModel):
         self._load_samples_thread = SqlThread(self.conn)
 
         # Connect samples loading thread's signals (started, finished, error, result ready)
-        self._load_samples_thread.started.connect(
-            lambda: self.samples_are_loading.emit(True)
-        )
-        self._load_samples_thread.finished.connect(
-            lambda: self.samples_are_loading.emit(False)
-        )
+        self._load_samples_thread.started.connect(lambda: self.samples_are_loading.emit(True))
+        self._load_samples_thread.finished.connect(lambda: self.samples_are_loading.emit(False))
         self._load_samples_thread.result_ready.connect(self.on_samples_loaded)
         self._load_samples_thread.error.connect(self.error_raised)
 
@@ -278,9 +268,7 @@ class SamplesModel(QAbstractTableModel):
             return
 
         if self.is_running():
-            LOGGER.debug(
-                "Cannot load data. Thread is not finished. You can call interrupt() "
-            )
+            LOGGER.debug("Cannot load data. Thread is not finished. You can call interrupt() ")
             self.interrupt()
 
         if "classification" not in self.fields:
@@ -312,9 +300,7 @@ class SamplesModel(QAbstractTableModel):
         #     self.on_samples_loaded()
         # else:
         self._load_samples_thread.conn = self.conn
-        self._load_samples_thread.start_function(
-            lambda conn: list(load_samples_func(conn))
-        )
+        self._load_samples_thread.start_function(lambda conn: list(load_samples_func(conn)))
 
     def sort(self, column: int, order: Qt.SortOrder) -> None:
         self.beginResetModel()
@@ -495,9 +481,7 @@ class GenotypesWidget(plugin.PluginWidget):
 
     def setup_actions(self):
 
-        add_samples = self.toolbar.addAction(
-            FIcon(0xF0415), "Add samples", self._on_add_samples
-        )
+        add_samples = self.toolbar.addAction(FIcon(0xF0415), "Add samples", self._on_add_samples)
 
         # Fields to display
         field_action = create_widget_action(self.toolbar, self.field_selector)
@@ -578,9 +562,7 @@ class GenotypesWidget(plugin.PluginWidget):
                 ret = QMessageBox.warning(
                     self,
                     self.tr("Overwrite preset"),
-                    self.tr(
-                        f"Preset {name} already exists. Do you want to overwrite it ?"
-                    ),
+                    self.tr(f"Preset {name} already exists. Do you want to overwrite it ?"),
                     QMessageBox.Yes | QMessageBox.No,
                 )
 
@@ -638,9 +620,7 @@ class GenotypesWidget(plugin.PluginWidget):
 
         for key, value in SAMPLE_VARIANT_CLASSIFICATION.items():
             # action = cat_menu.addAction(value["name"])
-            action = cat_menu.addAction(
-                FIcon(value["icon"], value["color"]), value["name"]
-            )
+            action = cat_menu.addAction(FIcon(value["icon"], value["color"]), value["name"])
             action.setData(key)
             action.triggered.connect(self._on_classification_changed)
 
@@ -650,13 +630,9 @@ class GenotypesWidget(plugin.PluginWidget):
         menu.addSection("Sample")
         menu.addAction(QIcon(), "Edit sample ...", self._show_sample_dialog)
 
-        menu.addAction(
-            QIcon(), "Add a filter based on selected sample(s)", self.on_add_filter
-        )
+        menu.addAction(QIcon(), "Add a filter based on selected sample(s)", self.on_add_filter)
 
-        menu.addAction(
-            QIcon(), "Create a source from selected sample(s)", self.on_add_source
-        )
+        menu.addAction(QIcon(), "Create a source from selected sample(s)", self.on_add_source)
 
         menu.exec_(event.globalPos())
 
@@ -800,9 +776,7 @@ class GenotypesWidget(plugin.PluginWidget):
 
         self.sample_selector.clear()
         for sample in sql.get_samples(self._conn):
-            self.sample_selector.add_item(
-                FIcon(0xF0B55), sample["name"], data=sample["name"]
-            )
+            self.sample_selector.add_item(FIcon(0xF0B55), sample["name"], data=sample["name"])
 
     def load_fields(self):
         self.field_selector.clear()

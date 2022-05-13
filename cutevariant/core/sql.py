@@ -95,7 +95,9 @@ import getpass
 from typing import List, Callable, Iterable
 
 # Custom imports
+import cutevariant.constants as cst
 import cutevariant.commons as cm
+
 import cutevariant.core.querybuilder as qb
 from cutevariant.core.sql_aggregator import StdevFunc
 from cutevariant.core.reader import AbstractReader
@@ -510,7 +512,9 @@ def alter_table_from_fields(conn: sqlite3.Connection, fields: list):
         local_col_names = set(get_table_columns(conn, table))
 
         # get new fields which are not in local
-        new_fields = [i for i in fields if i["category"] == category and i["name"] not in local_col_names]
+        new_fields = [
+            i for i in fields if i["category"] == category and i["name"] not in local_col_names
+        ]
 
         if new_fields:
             alter_table(conn, table, new_fields)
@@ -615,7 +619,10 @@ def get_indexed_fields(conn: sqlite3.Connection) -> List[tuple]:
     Returns:
         List[tuple]: (category, field_name) of all the indexed fields
     """
-    indexed_fields = [dict(res)["name"] for res in conn.execute("SELECT name FROM sqlite_master WHERE type='index'")]
+    indexed_fields = [
+        dict(res)["name"]
+        for res in conn.execute("SELECT name FROM sqlite_master WHERE type='index'")
+    ]
     result = []
     find_indexed = re.compile(r"idx_(variants|annotations|samples)_(.+)")
     for index in indexed_fields:
@@ -881,7 +888,9 @@ def create_selection_has_variant_indexes(conn: sqlite3.Connection):
     Args:
         conn (sqlite3.Connection/sqlite3.Cursor): Sqlite3 connection
     """
-    conn.execute("CREATE INDEX `idx_selection_has_variant` ON selection_has_variant (`selection_id`)")
+    conn.execute(
+        "CREATE INDEX `idx_selection_has_variant` ON selection_has_variant (`selection_id`)"
+    )
 
 
 def insert_selection(conn: sqlite3.Connection, query: str, name="no_name", count=0) -> int:
@@ -1009,7 +1018,9 @@ def insert_selection_from_source(
     return None
 
 
-def insert_selection_from_sql(conn: sqlite3.Connection, query: str, name: str, count=None, from_selection=False) -> int:
+def insert_selection_from_sql(
+    conn: sqlite3.Connection, query: str, name: str, count=None, from_selection=False
+) -> int:
     """Create a selection from sql variant query.
 
     The SQL variant query must have all variant.id to import into the selection
@@ -1087,7 +1098,9 @@ def insert_selection_from_sql(conn: sqlite3.Connection, query: str, name: str, c
     return None
 
 
-def insert_selection_from_bed(conn: sqlite3.Connection, source: str, target: str, bed_intervals) -> int:
+def insert_selection_from_bed(
+    conn: sqlite3.Connection, source: str, target: str, bed_intervals
+) -> int:
     """Create a new selection based on the given intervals taken from a BED file
 
     Variants whose positions are contained in the intervals specified by the
@@ -1362,7 +1375,11 @@ def insert_wordset_from_intersect(conn: sqlite3.Connection, name: str, wordsets:
     query = f"""INSERT INTO wordsets (name, value) 
             SELECT '{name}' as name,  value FROM """
 
-    query += "(" + " INTERSECT ".join([f"SELECT value FROM wordsets WHERE name = '{w}'" for w in wordsets]) + ")"
+    query += (
+        "("
+        + " INTERSECT ".join([f"SELECT value FROM wordsets WHERE name = '{w}'" for w in wordsets])
+        + ")"
+    )
     cursor = conn.cursor()
     cursor.execute(query)
     conn.commit()
@@ -1381,7 +1398,11 @@ def insert_wordset_from_union(conn, name: str, wordsets=[]):
     query = f"""INSERT INTO wordsets (name, value) 
             SELECT '{name}' as name,  value FROM """
 
-    query += "(" + " UNION ".join([f"SELECT value FROM wordsets WHERE name = '{w}'" for w in wordsets]) + ")"
+    query += (
+        "("
+        + " UNION ".join([f"SELECT value FROM wordsets WHERE name = '{w}'" for w in wordsets])
+        + ")"
+    )
     cursor = conn.cursor()
     cursor.execute(query)
     conn.commit()
@@ -1400,7 +1421,11 @@ def insert_wordset_from_subtract(conn, name: str, wordsets=[]):
     query = f"""INSERT INTO wordsets (name, value) 
             SELECT '{name}' as name,  value FROM """
 
-    query += "(" + " EXCEPT ".join([f"SELECT value FROM wordsets WHERE name = '{w}'" for w in wordsets]) + ")"
+    query += (
+        "("
+        + " EXCEPT ".join([f"SELECT value FROM wordsets WHERE name = '{w}'" for w in wordsets])
+        + ")"
+    )
     cursor = conn.cursor()
     cursor.execute(query)
     conn.commit()
@@ -1750,9 +1775,13 @@ def create_annotations_indexes(conn, indexed_annotation_fields=None):
         return
     for field in indexed_annotation_fields:
 
-        LOGGER.debug(f"CREATE INDEX IF NOT EXISTS `idx_annotations_{field}` ON annotations (`{field}`)")
+        LOGGER.debug(
+            f"CREATE INDEX IF NOT EXISTS `idx_annotations_{field}` ON annotations (`{field}`)"
+        )
 
-        conn.execute(f"CREATE INDEX IF NOT EXISTS `idx_annotations_{field}` ON annotations (`{field}`)")
+        conn.execute(
+            f"CREATE INDEX IF NOT EXISTS `idx_annotations_{field}` ON annotations (`{field}`)"
+        )
 
 
 def get_annotations(conn, variant_id: int):
@@ -1793,7 +1822,13 @@ def create_table_variants(conn: sqlite3.Connection, fields: List[dict]):
     # Unfortunately, due to a bug in some early versions, this is not the case in SQLite.
     # For the purposes of UNIQUE constraints, NULL values are considered distinct
     # from all other values, including other NULLs.
-    schema = ",".join([f'`{field["name"]}` {PYTHON_TO_SQLITE.get(field["type"],"TEXT")} {field.get("constraint", "")}' for field in fields if field["name"]])
+    schema = ",".join(
+        [
+            f'`{field["name"]}` {PYTHON_TO_SQLITE.get(field["type"],"TEXT")} {field.get("constraint", "")}'
+            for field in fields
+            if field["name"]
+        ]
+    )
 
     # print("ICI", schema)
 
@@ -1826,7 +1861,9 @@ def create_variants_indexes(conn, indexed_fields={"pos", "ref", "alt"}):
         LIMIT 100
     """
     # Complementary index of the primary key (sample_id, variant_id)
-    conn.execute("CREATE INDEX IF NOT EXISTS `idx_sample_has_variant` ON sample_has_variant (`variant_id`, `sample_id`)")
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS `idx_sample_has_variant` ON sample_has_variant (`variant_id`, `sample_id`)"
+    )
 
     for field in indexed_fields:
         conn.execute(f"CREATE INDEX IF NOT EXISTS `idx_variants_{field}` ON variants (`{field}`)")
@@ -1866,11 +1903,18 @@ def get_variant(
     """
     conn.row_factory = sqlite3.Row
     # Cast sqlite3.Row object to dict because later, we use items() method.
-    variant = dict(conn.execute(f"SELECT * FROM variants WHERE variants.id = {variant_id}").fetchone())
+    variant = dict(
+        conn.execute(f"SELECT * FROM variants WHERE variants.id = {variant_id}").fetchone()
+    )
 
     variant["annotations"] = []
     if with_annotations:
-        variant["annotations"] = [dict(annotation) for annotation in conn.execute(f"SELECT * FROM annotations WHERE variant_id = {variant_id}")]
+        variant["annotations"] = [
+            dict(annotation)
+            for annotation in conn.execute(
+                f"SELECT * FROM annotations WHERE variant_id = {variant_id}"
+            )
+        ]
 
     variant["samples"] = []
     if with_samples:
@@ -1904,7 +1948,9 @@ def update_variant(conn: sqlite3.Connection, variant: dict):
     unzip = lambda l: list(zip(*l))
 
     # Get fields and values in separated lists
-    placeholders, values = unzip([(f"`{key}` = ? ", value) for key, value in variant.items() if key != "id"])
+    placeholders, values = unzip(
+        [(f"`{key}` = ? ", value) for key, value in variant.items() if key != "id"]
+    )
     query = "UPDATE variants SET " + ",".join(placeholders) + f" WHERE id = {variant['id']}"
     # LOGGER.info(
     #     "Update variant %s: placeholders: %s; values %s",
@@ -1926,19 +1972,25 @@ def get_summary(conn: sqlite3.Connection):
     Args:
         conn (sqlite3.Connection)
     """
-    variant_count = int(conn.execute("SELECT count FROM selections WHERE name = 'variants'").fetchone())
+    variant_count = int(
+        conn.execute("SELECT count FROM selections WHERE name = 'variants'").fetchone()
+    )
     sample_count = int(conn.execute("SELECT COUNT(*) FROM samples").fetchone())
 
     return {"variant_count": variant_count, "sample_count": sample_count}
 
 
-def get_sample_variant_classification_count(conn: sqlite3.Connection, sample_id: int, classification: int):
+def get_sample_variant_classification_count(
+    conn: sqlite3.Connection, sample_id: int, classification: int
+):
     """
     Used for edit boxes
     Returns total of variants having a given classification (validation status) for a given sample
     """
     # r = conn.execute(f"SELECT COUNT(*) FROM variants v LEFT JOIN sample_has_variant sv WHERE sv.sample_id={sample_id} AND sv.variant_id = v.id AND v.classification = {classification}").fetchone()[0]
-    r = conn.execute(f"SELECT COUNT(*) FROM sample_has_variant sv WHERE sv.sample_id={sample_id} AND classification = {classification}").fetchone()[0]
+    r = conn.execute(
+        f"SELECT COUNT(*) FROM sample_has_variant sv WHERE sv.sample_id={sample_id} AND classification = {classification}"
+    ).fetchone()[0]
     return int(r)
 
 
@@ -2064,7 +2116,9 @@ def update_variants_counts(conn: sqlite3.Connection):
     # CASE and CONTROL
 
     # If no phenotype, do not compute any thing...
-    pheno_count = conn.execute("SELECT COUNT(phenotype) FROM samples WHERE phenotype > 0").fetchone()[0]
+    pheno_count = conn.execute(
+        "SELECT COUNT(phenotype) FROM samples WHERE phenotype > 0"
+    ).fetchone()[0]
     if pheno_count == 0:
         LOGGER.warning("No phenotype. Do not compute case/control count")
         return
@@ -2193,7 +2247,9 @@ def insert_variants(
         ref = variant["ref"]
         alt = variant["alt"]
 
-        variant_id = conn.execute(f"SELECT id FROM variants where chr='{chrom}' AND pos = {pos} AND ref='{ref}' AND alt='{alt}'").fetchone()[0]
+        variant_id = conn.execute(
+            f"SELECT id FROM variants where chr='{chrom}' AND pos = {pos} AND ref='{ref}' AND alt='{alt}'"
+        ).fetchone()[0]
 
         # variant_id = cursor.lastrowid
 
@@ -2216,7 +2272,9 @@ def insert_variants(
                 query_fields = ",".join((f"`{i}`" for i in common_fields))
                 query_values = ",".join((f"?" for i in common_fields))
                 query_datas = [ann[i] for i in common_fields]
-                query = f"INSERT OR REPLACE INTO annotations ({query_fields}) VALUES ({query_values})"
+                query = (
+                    f"INSERT OR REPLACE INTO annotations ({query_fields}) VALUES ({query_values})"
+                )
                 cursor.execute(query, query_datas)
 
         # INSERT SAMPLES
@@ -2249,7 +2307,7 @@ def insert_variants(
     # Count total variants . I cannot use "total" variable like before for the update features.
 
     true_total = conn.execute("SELECT COUNT(*) FROM variants").fetchone()[0]
-    insert_selection(conn, "", name=cm.DEFAULT_SELECTION_NAME, count=true_total)
+    insert_selection(conn, "", name=cst.DEFAULT_SELECTION_NAME, count=true_total)
 
 
 def update_variants(conn, data, **kwargs):
@@ -2332,7 +2390,9 @@ def create_table_tags(conn):
     conn.commit()
 
 
-def insert_tag(conn: sqlite3.Connection, name: str, category: str, description: str, color: str) -> int:
+def insert_tag(
+    conn: sqlite3.Connection, name: str, category: str, description: str, color: str
+) -> int:
     """Insert new tags and return id
 
     Args:
@@ -2386,7 +2446,9 @@ def update_tag(conn: sqlite3.Connection, tag: dict):
 
     unzip = lambda l: list(zip(*l))
 
-    placeholders, values = unzip([(f"`{key}` = ? ", value) for key, value in tag.items() if key != "id"])
+    placeholders, values = unzip(
+        [(f"`{key}` = ? ", value) for key, value in tag.items() if key != "id"]
+    )
     query = "UPDATE tags SET " + ",".join(placeholders) + f" WHERE id = {tag['id']}"
 
     conn.execute(query, values)
@@ -2428,7 +2490,13 @@ def create_table_samples(conn, fields=[]):
 
     fields = list(fields)
 
-    schema = ",".join([f'`{field["name"]}` {field["type"]} {field.get("constraint", "")}' for field in fields if field["name"]])
+    schema = ",".join(
+        [
+            f'`{field["name"]}` {field["type"]} {field.get("constraint", "")}'
+            for field in fields
+            if field["name"]
+        ]
+    )
 
     cursor.execute(
         f"""CREATE TABLE sample_has_variant  (
@@ -2454,7 +2522,9 @@ def create_samples_indexes(conn, indexed_samples_fields=None):
         return
 
     for field in indexed_samples_fields:
-        conn.execute(f"CREATE INDEX IF NOT EXISTS `idx_samples_{field}` ON sample_has_variant (`{field}`)")
+        conn.execute(
+            f"CREATE INDEX IF NOT EXISTS `idx_samples_{field}` ON sample_has_variant (`{field}`)"
+        )
 
 
 def insert_sample(conn, name="no_name"):
@@ -2539,7 +2609,10 @@ def get_samples_family(conn: sqlite3.Connection):
 def get_samples_by_family(conn: sqlite3.Connection, families=[]):
 
     placeholder = ",".join((f"'{i}'" for i in families))
-    return (dict(data) for data in conn.execute(f"SELECT * FROM samples WHERE family_id IN ({placeholder})"))
+    return (
+        dict(data)
+        for data in conn.execute(f"SELECT * FROM samples WHERE family_id IN ({placeholder})")
+    )
 
 
 def get_sample(conn: sqlite3.Connection, sample_id: int):
@@ -2556,7 +2629,11 @@ def get_sample(conn: sqlite3.Connection, sample_id: int):
 def get_sample_annotations(conn, variant_id: int, sample_id: int):
     """Get samples for given sample id and variant id"""
     conn.row_factory = sqlite3.Row
-    return dict(conn.execute(f"SELECT * FROM sample_has_variant WHERE variant_id = {variant_id} and sample_id = {sample_id}").fetchone())
+    return dict(
+        conn.execute(
+            f"SELECT * FROM sample_has_variant WHERE variant_id = {variant_id} and sample_id = {sample_id}"
+        ).fetchone()
+    )
 
 
 def get_sample_annotations_by_variant(
@@ -2599,7 +2676,9 @@ def get_sample_annotations_by_variant(
 
     # Filter on family
     if families:
-        conditions.append("(samples.family_id IN " + "(" + ",".join([f"'{s}'" for s in families]) + "))")
+        conditions.append(
+            "(samples.family_id IN " + "(" + ",".join([f"'{s}'" for s in families]) + "))"
+        )
 
     # Filter on tags
     if tags:
@@ -2618,7 +2697,9 @@ def get_sample_annotations_by_variant(
 
     # Filter on classification
     if classification:
-        conditions.append("(sv.classification IN " + "(" + ",".join([f"'{c}'" for c in classification]) + "))")
+        conditions.append(
+            "(sv.classification IN " + "(" + ",".join([f"'{c}'" for c in classification]) + "))"
+        )
 
     if conditions:
         query += " WHERE " + " AND ".join(conditions)
@@ -2687,7 +2768,11 @@ def update_sample_has_variant(conn: sqlite3.Connection, data: dict):
 
     sample_id = data["sample_id"]
     variant_id = data["variant_id"]
-    query = "UPDATE sample_has_variant SET " + ",".join(sql_set) + f" WHERE sample_id = {sample_id} AND variant_id = {variant_id}"
+    query = (
+        "UPDATE sample_has_variant SET "
+        + ",".join(sql_set)
+        + f" WHERE sample_id = {sample_id} AND variant_id = {variant_id}"
+    )
 
     # print("ICCCCCCCCCCCCCCCCC", query)
     conn.execute(query, sql_val)
