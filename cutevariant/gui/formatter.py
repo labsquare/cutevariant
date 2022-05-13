@@ -96,10 +96,12 @@ class FormatterDelegate(QItemDelegate):
         else:
             bg = QPalette.Disabled
 
+        classification = index.model().variant(index.row())["classification"]
         if option.state & QStyle.State_Selected:
-            classification = index.model().variant(index.row())["classification"]
-            color = CLASSIFICATION[classification].get("color")
-            # painter.fillRect(option.rect, option.palette.color(bg, QPalette.Highlight))
+            painter.fillRect(option.rect, option.palette.color(bg, QPalette.Highlight))
+        elif classification > 0:
+            color: QColor = QColor(CLASSIFICATION[classification].get("color"))
+            color.setAlpha(100)
             painter.fillRect(option.rect, color)
 
         # Draw formatters
