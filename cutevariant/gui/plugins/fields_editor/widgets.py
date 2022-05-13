@@ -285,8 +285,9 @@ class FieldsModel(QStandardItemModel):
 
                 for field in fields:
                     field_name = field
-
                     field_desc = fields[field]["description"]
+                    field_type = fields[field]["type"]
+                    field_type_style = style.FIELD_TYPE.get(field_type)
 
                     field_name_item = QStandardItem(field_name)
 
@@ -296,25 +297,22 @@ class FieldsModel(QStandardItemModel):
                     field_name_item.setData(False, Qt.UserRole)
                     self.all_fields.add(field_name)
 
-                    # if (self.category, field_name.split(".")[-1]) in indexed_fields:
-                    #     font.setUnderline(True)
-                    #     field_name_item.setData(True, Qt.UserRole)
                     font.setBold(True)
                     field_name_item.setFont(font)
-                    field_type = style.FIELD_TYPE.get(fields[field]["type"])
-                    field_name_item.setIcon(FIcon(field_type["icon"], field_type["color"]))
+                    field_name_item.setIcon(FIcon(field_type_style["icon"], field_type_style["color"]))
+                    field_name_item.setToolTip(self.tr(f"Check to add field '{field}'\nDescription: {field_desc}"))
 
                     self._checkable_items.append(field_name_item)
                     field_name_item.setData(
                         {
                             "name": field,
-                            "type": fields[field]["type"],
-                            "description": fields[field]["description"],
+                            "type": field_type,
+                            "description": field_desc,
                         }
                     )
 
                     descr_item = QStandardItem(field_desc)
-                    descr_item.setToolTip(fields[field]["description"])
+                    descr_item.setToolTip(field_desc)
 
                     self.appendRow([field_name_item, descr_item])
                     self.fields_loaded.emit()
@@ -458,6 +456,12 @@ class FieldsModel(QStandardItemModel):
             self.fields = obj.get("fields", [])
 
 
+FIELDS_CATEGORY_DESCRIPTION={
+    "variants": "Fields associated to variants\nTheses fields are provided by the INFO column of VCF",
+    "annotations": "Fields associated to variants\nTheses fields are provided by the INFO column of VCF related to the specific annotation tool (e.g. snpEff, VEP)",
+    "samples": "Fields associated to sample genotype\nTheses fields are provided by the FORMAT column of VCF, for each samples (e.g. GT, DP, AD)",
+}
+
 class FieldsWidget(QWidget):
 
     """A fields widget with 3 tabwidget show all 3 models"""
@@ -471,10 +475,14 @@ class FieldsWidget(QWidget):
         self.tab_widget.setTabPosition(QTabWidget.South)
         self.tab_widget.tabBar().setDocumentMode(True)
         self.tab_widget.tabBar().setExpanding(True)
+        self.tab_widget.setToolTip(self.tr("Fields categories"))
+
         self.search_edit = QLineEdit()
         self.search_edit.textChanged.connect(self.update_filter)
-        self.search_edit.setPlaceholderText(self.tr("Search by keywords... "))
+        self.search_edit.setPlaceholderText(self.tr("Search fields by keywords... "))
         self.search_edit.addAction(FIcon(0xF015A), QLineEdit.TrailingPosition).triggered.connect(self.search_edit.clear)
+        self.search_edit.setToolTip(self.tr("Search fields by keywords\nUse keywords to show only fields that contain the keyword on its name or description"))
+
 
         self.views = []
 
@@ -534,6 +542,8 @@ class FieldsWidget(QWidget):
             name = view["name"]
             model.conn = conn
             self.tab_widget.setTabText(index, f"{name} ({model.rowCount()})")
+            fields_category_description=FIELDS_CATEGORY_DESCRIPTION.get(name, "")
+            self.tab_widget.setTabToolTip(index, f"{model.rowCount()} fields in category '{name}'\n{fields_category_description}")
             if conn:
                 view["view"].horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
 
@@ -762,6 +772,9 @@ class FieldsWidget(QWidget):
             count = view["proxy"].rowCount()
             name = view["name"]
             self.tab_widget.setTabText(index, f"{name} ({count})")
+            #self.tab_widget.setTabToolTip(index, f"{name} ({count})")
+            fields_category_description=FIELDS_CATEGORY_DESCRIPTION.get(name, name)
+            self.tab_widget.setTabToolTip(index, f"{count} fields in category '{name}'\n{fields_category_description}")
 
     def show_checked_only(self, active=False):
 
@@ -774,6 +787,9 @@ class FieldsWidget(QWidget):
             count = view["proxy"].rowCount()
             name = view["name"]
             self.tab_widget.setTabText(index, f"{name} ({count})")
+            #self.tab_widget.setTabToolTip(index, f"{name} ({count})")
+            fields_category_description=FIELDS_CATEGORY_DESCRIPTION.get(name, name)
+            self.tab_widget.setTabToolTip(index, f"{count} fields in category '{name}'\n{fields_category_description}")
 
 
 class FieldsEditorWidget(plugin.PluginWidget):
@@ -825,17 +841,17 @@ class FieldsEditorWidget(plugin.PluginWidget):
 
         ## apply action
         apply_action = self.toolbar.addAction(FIcon(0xF040A), "apply")
-        apply_action.setToolTip(self.tr("Apply current selection"))
+        apply_action.setToolTip(self.tr("Apply\nApply current checked fields to the variant table"))
         apply_action.triggered.connect(self.on_apply)
 
         ## auto action
         auto_icon = QIcon()
         auto_icon.addPixmap(FIcon(0xF04E6).pixmap(16, 16), QIcon.Normal, QIcon.On)
         auto_icon.addPixmap(FIcon(0xF04E8).pixmap(16, 16), QIcon.Normal, QIcon.Off)
-        self.auto_action = self.toolbar.addAction("Auto appy")
+        self.auto_action = self.toolbar.addAction("Auto apply")
         self.auto_action.setIcon(auto_icon)
         self.auto_action.setCheckable(True)
-        self.auto_action.setToolTip(self.tr("Auto Apply when checked"))
+        self.auto_action.setToolTip(self.tr("Auto Apply\nEnable/Disable Auto Apply when fields are checked"))
         self.auto_action.toggled.connect(apply_action.setDisabled)
 
         self.toolbar.addSeparator()
@@ -853,7 +869,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
         ## sort button
         self.sort_action = self.toolbar.addAction(FIcon(0xF04BA), "54 fields")
         self.sort_action.triggered.connect(self.show_fields_dialog)
-        self.sort_action.setToolTip(self.tr("Sort fields order"))
+        self.sort_action.setToolTip(self.tr("Fields order\nDrag and drop checked fields to order them in the variant table"))
 
         ## make sort action with text
         self.toolbar.widgetForAction(self.sort_action).setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
@@ -862,7 +878,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
 
         self.preset_menu = QMenu()
         self.preset_button = QPushButton()
-        self.preset_button.setToolTip(self.tr("Presets"))
+        self.preset_button.setToolTip(self.tr("Presets\n- Load a existing preset\n- Save the current preset\n- Delete an existing preset\n- Reload configured presets"))
         self.preset_button.setIcon(FIcon(0xF035C))
         self.preset_button.setMenu(self.preset_menu)
         self.preset_button.setFlat(True)
