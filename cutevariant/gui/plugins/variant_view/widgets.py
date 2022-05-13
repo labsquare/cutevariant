@@ -1307,35 +1307,30 @@ class VariantView(QWidget):
 
             # find sample lock/unlock
             validation_menu_lock = False
-            validation_menu_text = f"Sample {sample_name}"
+            validation_menu_text = f"Sample {sample_name}..."
             if style.SAMPLE_CLASSIFICATION[sample_valid].get("lock"):
                 validation_menu_lock = True
-                validation_menu_text += " locked"
+                validation_menu_text = "Sample {sample_name} locked"
 
             menu.addSeparator()
 
-            menu.addAction(
-                FIcon(0xF014C),
-                validation_menu_text,
-                functools.partial(QApplication.instance().clipboard().setText, sample_name),
-            )
-
-            # Menu if lock
+            sample_validation_menu = QMenu(self.tr(f"{validation_menu_text}"))
+            
+            menu.addMenu(sample_validation_menu)
+        
             if validation_menu_lock:
 
                 # Validation for sample locked
-                validation_menu = menu.addMenu(f"Validation for sample locked")
-                validation_menu.setEnabled(False)
-                menu.addMenu(validation_menu)
-
-            # menu if unlock
+                sample_validation_menu.setIcon(FIcon(0xF12DF))
+                sample_validation_menu.setEnabled(False)
+                
             else:
 
-                # Validation for sample
-                menu.addMenu(self.create_validation_menu())
-
-                # Validation Edit for sample
-                menu.addAction(f"Edit Validation for sample...", self._show_sample_variant_dialog)
+                # Validation for sample Unlocked
+                sample_validation_menu.setIcon(FIcon(0xF0004))
+                sample_validation_menu.addMenu(self.create_validation_menu())
+                sample_validation_menu.addAction(f"Edit Validation for sample...", self._show_sample_variant_dialog)
+                menu.addMenu(sample_validation_menu)
 
         # Edit menu
         menu.addSeparator()
