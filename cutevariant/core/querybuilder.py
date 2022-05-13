@@ -510,13 +510,21 @@ def remove_field_in_filter(filters: dict, field: str = None) -> dict:
         output = {}
         for k, v in obj.items():
             if k in ["$and", "$or"]:
-                output[k] = [recursive(item) for item in v if field not in item]
+                temp = []
+                for item in v:
+                    rec = recursive(item)
+                    if field not in item and rec:
+                        temp.append(rec)
+                if temp:
+                    output[k] = temp
+                    return output
+                # if not output[k]:
+                #     del output[k]
             else:
                 output[k] = v
+                return output
 
-        return output
-
-    return recursive(filters)
+    return recursive(filters) or {}
 
 
 def filters_to_sql(filters: dict, samples=None) -> str:

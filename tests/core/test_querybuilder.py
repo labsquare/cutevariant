@@ -46,6 +46,39 @@ def test_remove_field_in_filter():
     observed = querybuilder.remove_field_in_filter(filter, field)
     assert observed == expected
 
+    # ----------------------
+    filter = {
+        "$and": [
+            {"chr": "chr1"},
+            {"pos": {"$gt": 111}},
+            {"$or": [{"chr": "chr7"}, {"chr": "chr6"}]},
+        ]
+    }
+
+    field = "chr"
+    expected = {"$and": [{"pos": {"$gt": 111}}]}
+    observed = querybuilder.remove_field_in_filter(filter, field)
+    assert observed == expected
+
+    # ----------------------
+    filter = {
+        "$and": [
+            {"chr": "chr1"},
+            {"pos": {"$gt": 111}},
+            {"$or": [{"$and": [{"pos": 10}, {"chr": "40"}]}]},
+        ]
+    }
+
+    field = "chr"
+    expected = {
+        "$and": [
+            {"pos": {"$gt": 111}},
+            {"$or": [{"$and": [{"pos": 10}]}]},
+        ]
+    }
+    observed = querybuilder.remove_field_in_filter(filter, field)
+    assert observed == expected
+
 
 def test_is_annotation_join_required():
 
