@@ -10,7 +10,7 @@ from PySide6.QtWidgets import *
 from cutevariant.core import sql
 
 from cutevariant.gui import FIcon
-from cutevariant.gui.widgets import ChoiceWidget, create_widget_action, SampleDialog
+from cutevariant.gui.widgets import ChoiceWidget, create_widget_action, SampleDialog, SamplesDialog
 
 # from gui.style import SAMPLE_CLASSIFICATION
 
@@ -152,7 +152,8 @@ class SampleVerticalHeader(QHeaderView):
         painter.setBrush(QBrush(color))
         painter.drawLine(rect.left(), rect.top() + 1, rect.left(), rect.bottom() - 1)
 
-        pix = FIcon(icon, color).pixmap(16, 16)
+        target = QRect(0, 0, 16, 16)
+        pix = FIcon(icon, color).pixmap(target.size())
         target = rect.center() - pix.rect().center() + QPoint(1, 0)
 
         painter.drawPixmap(target, pix)
@@ -258,6 +259,10 @@ class SamplesWidget(plugin.PluginWidget):
         self.model.load()
 
     def on_edit(self):
+
+        d = SamplesDialog(self.model.conn)
+        d.exec()
+
         sample = self.model.get_sample(self.view.currentIndex().row())
         print(sample)
         if sample:
