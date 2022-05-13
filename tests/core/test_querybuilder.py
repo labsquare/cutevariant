@@ -28,6 +28,25 @@ def test_filter_to_flat():
     ]
 
 
+def test_remove_field_in_filter():
+    filter = {
+        "$and": [
+            {"chr": "chr1"},
+            {"pos": {"$gt": 111}},
+            {"$or": [{"chr": "chr7"}, {"chr": "chr6"}, {"pos": 10}]},
+        ]
+    }
+    field = "chr"
+    expected = {
+        "$and": [
+            {"pos": {"$gt": 111}},
+            {"$or": [{"pos": 10}]},
+        ]
+    }
+    observed = querybuilder.remove_field_in_filter(filter, field)
+    assert observed == expected
+
+
 def test_is_annotation_join_required():
 
     fields = ["chr"]
@@ -62,9 +81,7 @@ def test_samples_join_required():
 def test_condition_to_sql():
 
     assert querybuilder.condition_to_sql({"chr": "chr3"}) == "`variants`.`chr` = 'chr3'"
-    assert (
-        querybuilder.condition_to_sql({"qual": {"$gte": 4}}) == "`variants`.`qual` >= 4"
-    )
+    assert querybuilder.condition_to_sql({"qual": {"$gte": 4}}) == "`variants`.`qual` >= 4"
     assert (
         querybuilder.condition_to_sql({"qual": {"$in": [1, 2, 3]}})
         == "`variants`.`qual` IN (1,2,3)"
@@ -79,15 +96,9 @@ def test_condition_to_sql():
         == "`annotations`.`gene` NOT IN ('CFTR','GJB2')"
     )
 
-    assert (
-        querybuilder.condition_to_sql({"ann.gene": "CFTR"})
-        == "`annotations`.`gene` = 'CFTR'"
-    )
+    assert querybuilder.condition_to_sql({"ann.gene": "CFTR"}) == "`annotations`.`gene` = 'CFTR'"
 
-    assert (
-        querybuilder.condition_to_sql({"samples.boby.dp": 42})
-        == "`sample_boby`.`dp` = 42"
-    )
+    assert querybuilder.condition_to_sql({"samples.boby.dp": 42}) == "`sample_boby`.`dp` = 42"
 
     # Test LIKE optimisation with REGEXP
     assert (
@@ -500,9 +511,7 @@ QUERY_TESTS = [
         {
             "fields": ["chr", "pos", "ref", "alt"],
             "source": "variants",
-            "filters": {
-                "$and": [{"ref": {"$regex": "^[AG]$"}}, {"alt": {"$regex": "^[CT]$"}}]
-            },
+            "filters": {"$and": [{"ref": {"$regex": "^[AG]$"}}, {"alt": {"$regex": "^[CT]$"}}]},
         },
         "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`variants`.`ref`,`variants`.`alt` FROM variants WHERE (`variants`.`ref` REGEXP '^[AG]$' AND `variants`.`alt` REGEXP '^[CT]$') LIMIT 50 OFFSET 0",
         "SELECT chr,pos,ref,alt FROM variants WHERE ref =~ '^[AG]$' AND alt =~ '^[CT]$'",
@@ -512,9 +521,7 @@ QUERY_TESTS = [
         {
             "fields": ["chr", "pos", "ref", "alt"],
             "source": "variants",
-            "filters": {
-                "$and": [{"ref": {"$nregex": "^[AG]$"}}, {"alt": {"$nregex": "^[CT]$"}}]
-            },
+            "filters": {"$and": [{"ref": {"$nregex": "^[AG]$"}}, {"alt": {"$nregex": "^[CT]$"}}]},
         },
         "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`variants`.`ref`,`variants`.`alt` FROM variants WHERE (`variants`.`ref` NOT REGEXP '^[AG]$' AND `variants`.`alt` NOT REGEXP '^[CT]$') LIMIT 50 OFFSET 0",
         "SELECT chr,pos,ref,alt FROM variants WHERE ref !~ '^[AG]$' AND alt !~ '^[CT]$'",

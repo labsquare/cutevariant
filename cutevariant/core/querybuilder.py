@@ -26,6 +26,8 @@ import re
 from functools import lru_cache
 from ast import literal_eval
 
+from black import out
+
 # Custom imports
 from cutevariant.core import sql
 
@@ -381,7 +383,13 @@ def condition_to_sql(item: dict, samples=None) -> str:
 
         if operator and samples:
 
-            condition = "(" + f" {operator} ".join([f"`sample_{sample}`.`{k}` {sql_operator} {value}" for sample in samples]) + ")"
+            condition = (
+                "("
+                + f" {operator} ".join(
+                    [f"`sample_{sample}`.`{k}` {sql_operator} {value}" for sample in samples]
+                )
+                + ")"
+            )
 
         else:
             condition = f"`sample_{name}`.`{k}` {sql_operator} {value}"
@@ -474,6 +482,43 @@ def condition_to_vql(item: dict) -> str:
     return condition
 
 
+def remove_field_in_filter(filters: dict, field: str = None) -> dict:
+    """Remove field from filter
+
+    Examples:
+
+        filters = {
+            "$and": [
+                {"chr": "chr1"},
+                {"pos": {"$gt": 111}},
+                {"$or":[
+                    {"chr": "chr7"},
+                    {"chr": "chr6"}
+                    ]
+                 }
+            ]}
+    Args:
+        filters (dict): A nested set of conditions
+        field (str): A field to remove from filter
+
+    Returns:
+        dict: New filters dict with field removed
+    """
+    # ---------------------------------
+    def recursive(obj):
+
+        output = {}
+        for k, v in obj.items():
+            if k in ["$and", "$or"]:
+                output[k] = [recursive(item) for item in v if field not in item]
+            else:
+                output[k] = v
+
+        return output
+
+    return recursive(filters)
+
+
 def filters_to_sql(filters: dict, samples=None) -> str:
     """Build a the SQL where clause from the nested set defined in filters
 
@@ -506,7 +551,9 @@ def filters_to_sql(filters: dict, samples=None) -> str:
         conditions = ""
         for k, v in obj.items():
             if k in ["$and", "$or"]:
-                conditions += "(" + f" {PY_TO_SQL_OPERATORS[k]} ".join([recursive(item) for item in v]) + ")"
+                conditions += (
+                    "(" + f" {PY_TO_SQL_OPERATORS[k]} ".join([recursive(item) for item in v]) + ")"
+                )
 
             else:
                 conditions += condition_to_sql(obj, samples)
@@ -553,7 +600,9 @@ def filters_to_vql(filters: dict) -> str:
         conditions = ""
         for k, v in obj.items():
             if k in ["$and", "$or"]:
-                conditions += "(" + f" {PY_TO_VQL_OPERATORS[k]} ".join([recursive(item) for item in v]) + ")"
+                conditions += (
+                    "(" + f" {PY_TO_VQL_OPERATORS[k]} ".join([recursive(item) for item in v]) + ")"
+                )
 
             else:
                 conditions += condition_to_vql(obj)
@@ -645,7 +694,10 @@ def build_sql_query(
     # Add Join Selection
     # TODO: set variants as global variables
     if source != "variants":
-        sql_query += " INNER JOIN selection_has_variant sv ON sv.variant_id = variants.id " f"INNER JOIN selections s ON s.id = sv.selection_id AND s.name = '{source}'"
+        sql_query += (
+            " INNER JOIN selection_has_variant sv ON sv.variant_id = variants.id "
+            f"INNER JOIN selections s ON s.id = sv.selection_id AND s.name = '{source}'"
+        )
 
     # Test if sample*
     filters_fields = " ".join([list(i.keys())[0] for i in filters_to_flat(filters)])

@@ -24,6 +24,7 @@ import cachetools
 from PySide6.QtWidgets import *
 from PySide6.QtCore import *
 from PySide6.QtGui import *
+from cutevariant.core import querybuilder
 
 # Custom imports
 from cutevariant.core.querybuilder import build_sql_query
@@ -44,6 +45,7 @@ from cutevariant.config import Config
 from cutevariant import LOGGER
 import cutevariant.constants as cst
 import cutevariant.commons as cm
+from cutevariant.core.querybuilder import filters_to_flat
 
 
 class VariantVerticalHeader(QHeaderView):
@@ -350,9 +352,16 @@ class VariantModel(QAbstractTableModel):
             if role == Qt.SizeHintRole:
                 return QSize(0, 20)
 
-        if orientation == Qt.Horizontal and role == Qt.DecorationRole:
-
-            return QIcon(FIcon(0xF0232))
+        if orientation == Qt.Horizontal:
+            field_name = self.fields[section]
+            flattened_filters = filters_to_flat(self.filters)
+            col_filtered = any(field_name in f for f in flattened_filters)
+            if role == Qt.DecorationRole:
+                return QIcon(FIcon(0xF0232)) if col_filtered else QIcon(FIcon(0xF0233))
+            if role == Qt.FontRole:
+                font = QFont()
+                font.setBold(col_filtered)
+                return font
 
         # if orientation == Qt.Vertical:
         #     if role == Qt.DecorationRole:
@@ -751,7 +760,8 @@ class VariantView(QWidget):
     error_raised = Signal(str)
     variant_clicked = Signal(QModelIndex)
     load_finished = Signal()
-    filter_required = Signal(str)
+    filter_add = Signal(str)
+    filter_remove = Signal(str)
 
     def __init__(self, parent=None):
         """
@@ -1212,9 +1222,15 @@ class VariantView(QWidget):
         field = self.model.headerData(column, Qt.Horizontal, Qt.DisplayRole)
 
         menu.addAction(
-            QIcon(),
-            f"Create Filter {field}",
-            functools.partial(lambda x: self.filter_required.emit(x), field),
+            QIcon(FIcon(0xF0EF1)),
+            f"Create Filter for {field}",
+            functools.partial(lambda x: self.filter_add.emit(x), field),
+        )
+
+        menu.addAction(
+            QIcon(FIcon(0xF0235)),
+            f"Clear all filters for {field}",
+            functools.partial(lambda x: self.filter_remove.emit(x), field),
         )
 
         return menu
@@ -1619,7 +1635,8 @@ class VariantViewWidget(plugin.PluginWidget):
 
         self.view.load_finished.connect(self.on_load_finished)
 
-        self.view.filter_required.connect(self.on_create_filter)
+        self.view.filter_add.connect(self.on_filter_added)
+        self.view.filter_remove.connect(self.on_filter_removed)
 
     def on_load_finished(self):
         """Triggered when variant load is finished
@@ -1636,7 +1653,7 @@ class VariantViewWidget(plugin.PluginWidget):
         self.mainwindow.set_state_data("order_by", self.view.model.order_by)
         self.mainwindow.refresh_plugins()
 
-    def on_create_filter(self, field: str):
+    def on_filter_added(self, field: str):
 
         dialog = FilterDialog(self.conn)
         dialog.set_field(field)
@@ -1652,6 +1669,16 @@ class VariantViewWidget(plugin.PluginWidget):
             self.view.load()
             self.mainwindow.set_state_data("filters", filters)
             self.mainwindow.refresh_plugins(sender=self)
+
+    def on_filter_removed(self, field: str):
+        filters = self.view.model.filters
+        new_filters = querybuilder.remove_field_in_filter(filters, field)
+
+        self.view.model.filters = new_filters
+        self.view.load()
+
+        self.mainwindow.set_state_data("filters", new_filters)
+        self.mainwindow.refresh_plugins(sender=self)
 
     def on_open_project(self, conn):
         """Overrided from PluginWidget"""
