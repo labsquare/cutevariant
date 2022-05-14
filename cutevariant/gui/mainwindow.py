@@ -458,10 +458,6 @@ class MainWindow(QMainWindow):
         self.file_menu.addSeparator()
         ### Misc
 
-        ## TODO ==> Ca devrait allé dans les settings ça.
-        self.open_config_action = self.file_menu.addAction(
-            FIcon(0xF102F), self.tr("&Set config..."), self.open_config
-        )
         self.file_menu.addAction(FIcon(0xF0493), self.tr("Settings..."), self.show_settings)
         self.file_menu.addSeparator()
         self.close_project_action = self.file_menu.addAction(
@@ -723,28 +719,6 @@ class MainWindow(QMainWindow):
                 self.open_database_from_file(db_filename)
             except Exception as e:
                 self.status_bar.showMessage(e.__class__.__name__ + ": " + str(e))
-
-    def open_config(self):
-        """Slot to open an existing config from a QFileDialog"""
-        # Reload last directory used
-        last_directory = self.app_settings.value("last_directory", QDir.homePath())
-
-        config_path, _ = QFileDialog.getOpenFileName(
-            self,
-            self.tr("Open config"),
-            last_directory,
-            self.tr("Cutevariant config (*.yml)"),
-        )
-
-        if os.path.isfile(config_path):
-            Config.DEFAULT_CONFIG_PATH = config_path
-            self.reload_ui()
-
-        else:
-            LOGGER.error(f"{config_path} doesn't exists. Ignoring config")
-
-        # Save directory
-        self.app_settings.setValue("last_directory", os.path.dirname(config_path))
 
     def export_as_csv(self):
         """Export variants into CSV file"""
