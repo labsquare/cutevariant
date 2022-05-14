@@ -59,18 +59,21 @@ import os
 import glob
 from abc import abstractmethod
 from logging import DEBUG
+import shutil
 from PySide6.QtNetwork import QNetworkProxy
 
 # Qt imports
 from PySide6.QtWidgets import *
 from PySide6.QtCore import *  # QApplication.instance()
-from PySide6.QtGui import *  # QIcon, QPalette
+from PySide6.QtGui import *
+import cutevariant  # QIcon, QPalette
 
 # Custom imports
 import cutevariant.constants as cst
 from cutevariant.config import Config
 from cutevariant.gui.ficon import FIcon
 from cutevariant.gui import network, style, widgets
+import cutevariant.gui.mainwindow as mw
 
 from cutevariant import LOGGER
 
@@ -463,13 +466,31 @@ class SettingsDialog(QDialog):
         self.setWindowTitle(self.tr("Cutevariant - Settings"))
         self.setWindowIcon(QIcon(cst.DIR_ICONS + "app.png"))
 
+        self.mainwindow: mw.MainWindow = parent
+
         self.widgets = []
 
         self.list_widget = QListWidget()
         self.stack_widget = QStackedWidget()
-        self.button_box = QDialogButtonBox(
-            QDialogButtonBox.SaveAll | QDialogButtonBox.Cancel | QDialogButtonBox.Reset
+        self.button_box_laytout = QHBoxLayout()
+
+        self.reset_button = QPushButton(self.tr("Reset"))
+        self.import_config_button = QPushButton(self.tr("Import"))
+        self.export_config_button = QPushButton(self.tr("Export"))
+
+        self.save_all_button = QPushButton(self.tr("Save All"))
+        self.cancel_button = QPushButton(self.tr("Cancel"))
+
+        self.button_box_laytout.addWidget(self.reset_button)
+        self.button_box_laytout.addWidget(self.import_config_button)
+        self.button_box_laytout.addWidget(self.export_config_button)
+
+        self.button_box_laytout.addSpacerItem(
+            QSpacerItem(30, 5, QSizePolicy.MinimumExpanding, QSizePolicy.Preferred)
         )
+
+        self.button_box_laytout.addWidget(self.save_all_button)
+        self.button_box_laytout.addWidget(self.cancel_button)
 
         self.list_widget.setFixedWidth(200)
         self.list_widget.setIconSize(QSize(32, 32))
@@ -478,10 +499,9 @@ class SettingsDialog(QDialog):
         h_layout.addWidget(self.list_widget)
         h_layout.addWidget(self.stack_widget)
 
-        v_layout = QVBoxLayout()
+        v_layout = QVBoxLayout(self)
         v_layout.addLayout(h_layout)
-        v_layout.addWidget(self.button_box)
-        self.setLayout(v_layout)
+        v_layout.addLayout(self.button_box_laytout)
 
         # Instantiate subwidgets on panels
         # Similar widgets for general configuration
@@ -504,9 +524,12 @@ class SettingsDialog(QDialog):
 
         self.resize(800, 400)
 
-        self.button_box.button(QDialogButtonBox.SaveAll).clicked.connect(self.save_all)
-        self.button_box.button(QDialogButtonBox.Reset).clicked.connect(self.load_all)
-        self.button_box.button(QDialogButtonBox.Cancel).clicked.connect(self.close)
+        self.import_config_button.clicked.connect(self.open_config)
+        self.export_config_button.clicked.connect(self.save_config)
+
+        self.save_all_button.clicked.connect(self.save_all)
+        self.reset_button.clicked.connect(self.load_all)
+        self.cancel_button.clicked.connect(self.close)
 
         # Connection events
         self.list_widget.currentRowChanged.connect(self.stack_widget.setCurrentIndex)
@@ -559,6 +582,47 @@ class SettingsDialog(QDialog):
                     widget.setWindowIcon(FIcon(0xF0431))
 
                 self.add_section(widget)
+
+    def open_config(self):
+        """Slot to open an existing config from a QFileDialog"""
+        # Reload last directory used
+        last_directory = self.mainwindow.app_settings.value("last_directory", QDir.homePath())
+
+        config_path, _ = QFileDialog.getOpenFileName(
+            self,
+            self.tr("Open config"),
+            last_directory,
+            self.tr("Cutevariant config (*.yml)"),
+        )
+
+        if os.path.isfile(config_path):
+            # Config.DEFAULT_CONFIG_PATH = config_path ----> Surtout pas
+
+            # Load config with new config path
+            config = Config(config_path=config_path)
+            config.config_path = Config.DEFAULT_CONFIG_PATH
+            config.save()  # Save newly opened config file to the DEFAULT_CONFIG_PATH that always has to be
+            self.load_all()
+
+            self.mainwindow.refresh_plugins()
+            # Save directory
+            self.mainwindow.app_settings.setValue("last_directory", os.path.dirname(config_path))
+
+        else:
+            LOGGER.error(f"{config_path} doesn't exists. Ignoring config")
+
+    def save_config(self):
+        """Slot to save current config to a new file"""
+        last_directory = self.mainwindow.app_settings.value("last_directory", QDir.homePath())
+        save_config_path, _ = QFileDialog.getSaveFileName(
+            self,
+            self.tr("Save config"),
+            last_directory,
+            self.tr("Cutevariant config (*.yml)"),
+        )
+        shutil.copy(Config.DEFAULT_CONFIG_PATH, save_config_path)
+
+        self.mainwindow.app_settings.setValue("last_directory", os.path.dirname(save_config_path))
 
 
 if __name__ == "__main__":
