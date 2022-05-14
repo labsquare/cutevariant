@@ -318,9 +318,7 @@ class StyleSettingsWidget(AbstractSettingsWidget):
         config["style"] = style
         config.save()
 
-        QMessageBox.information(
-            self, "restart", self.tr("Please restart application to apply theme")
-        )
+        QMessageBox.information(self, "restart", self.tr("Please restart application to apply theme"))
 
         # Clear pixmap cache
         QPixmapCache.clear()
@@ -330,11 +328,7 @@ class StyleSettingsWidget(AbstractSettingsWidget):
         self.styles_combobox.clear()
 
         # Get names of styles based on available files
-        available_styles = {
-            os.path.basename(os.path.splitext(file)[0]).title(): file
-            for file in glob.glob(cst.DIR_STYLES + "*.qss")
-            if "frameless" not in file
-        }
+        available_styles = {os.path.basename(os.path.splitext(file)[0]).title(): file for file in glob.glob(cst.DIR_STYLES + "*.qss") if "frameless" not in file}
         # Display available styles
         available_styles = list(available_styles.keys()) + [cst.BASIC_STYLE]
         self.styles_combobox.addItems(available_styles)
@@ -475,8 +469,10 @@ class SettingsDialog(QDialog):
         self.button_box_laytout = QHBoxLayout()
 
         self.reset_button = QPushButton(self.tr("Reset"))
-        self.import_config_button = QPushButton(self.tr("Import"))
-        self.export_config_button = QPushButton(self.tr("Export"))
+        self.import_config_button = QPushButton(self.tr("Import ..."))
+        self.import_config_button.setToolTip(self.tr("Import settings from a yaml file"))
+        self.export_config_button = QPushButton(self.tr("Export ..."))
+        self.export_config_button.setToolTip(self.tr("Export settings to a yaml file"))
 
         self.save_all_button = QPushButton(self.tr("Save All"))
         self.cancel_button = QPushButton(self.tr("Cancel"))
@@ -485,9 +481,7 @@ class SettingsDialog(QDialog):
         self.button_box_laytout.addWidget(self.import_config_button)
         self.button_box_laytout.addWidget(self.export_config_button)
 
-        self.button_box_laytout.addSpacerItem(
-            QSpacerItem(30, 5, QSizePolicy.MinimumExpanding, QSizePolicy.Preferred)
-        )
+        self.button_box_laytout.addSpacerItem(QSpacerItem(30, 5, QSizePolicy.MinimumExpanding, QSizePolicy.Preferred))
 
         self.button_box_laytout.addWidget(self.save_all_button)
         self.button_box_laytout.addWidget(self.cancel_button)
