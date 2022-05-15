@@ -2587,7 +2587,7 @@ def insert_sample(conn, name="no_name"):
     return cursor.lastrowid
 
 
-def insert_samples(conn, samples: list, import_id: str = None):
+def insert_samples(conn, samples: list, import_id: str = None, import_vcf: str = None):
     """Insert many samples at a time in samples table.
     Set genotype to -1 in sample_has_variant for all pre-existing variants.
 
@@ -2602,6 +2602,9 @@ def insert_samples(conn, samples: list, import_id: str = None):
         if import_id:
             cursor.execute(f"UPDATE samples SET tags = 'importID#{import_id}' WHERE name = '{sample}' AND tags = '' ")
             cursor.execute(f"UPDATE samples SET tags = tags || ',' || 'importID#{import_id}' WHERE name = '{sample}' AND tags != '' AND ',' || tags || ',' NOT LIKE '%,importID#{import_id},%' ")
+        if import_vcf:
+            cursor.execute(f"UPDATE samples SET tags = 'importVCF#{import_vcf}' WHERE name = '{sample}' AND tags = '' ")
+            cursor.execute(f"UPDATE samples SET tags = tags || ',' || 'importVCF#{import_vcf}' WHERE name = '{sample}' AND tags != '' AND ',' || tags || ',' NOT LIKE '%,importVCF#{import_vcf},%' ")
     conn.commit()
 
 
@@ -3324,7 +3327,7 @@ def import_reader(
     # insert samples
     if progress_callback:
         progress_callback("Insert samples")
-    insert_samples(conn, samples=reader.get_samples(), import_id=import_id)
+    insert_samples(conn, samples=reader.get_samples(), import_id=import_id, import_vcf=os.path.basename(reader.filename))
 
     # insert ped
     if pedfile:
