@@ -4,7 +4,7 @@ test:
 
 
 coverage:
-	coverage run --source=cutevariant -m pytest -v tests/core;coverage html; 
+	coverage run --source=cutevariant -m pytest;coverage html; 
 
 
 run:
