@@ -30,7 +30,7 @@ def test_import_pedfile():
     sql.import_reader(conn, reader)
     sql.import_pedfile(conn, "examples/test.snpeff.pedigree.tfam")
 
-    samples = [dict(row) for row in conn.execute("SELECT * FROM samples")]
+    samples = [dict(row) for row in conn.execute("SELECT id, name, family_id, father_id, mother_id, sex, phenotype, valid, comment, tags FROM samples")]
     print("Found samples:", samples)
 
     expected_first_sample = {

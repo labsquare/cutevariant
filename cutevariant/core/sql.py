@@ -126,13 +126,6 @@ SQLITE_TO_PYTHON = {
 
 MANDATORY_FIELDS = [
     {
-        "name": "chr",
-        "type": "str",
-        "category": "variants",
-        "constraint": "DEFAULT 'unknown'",
-        "description": "chromosom name",
-    },
-    {
         "name": "created",
         "type": "str",
         "category": "variants",
@@ -145,6 +138,13 @@ MANDATORY_FIELDS = [
         "category": "variants",
         "constraint": "DEFAULT ''",
         "description": "modification date",
+    },
+    {
+        "name": "chr",
+        "type": "str",
+        "category": "variants",
+        "constraint": "DEFAULT 'unknown'",
+        "description": "chromosom name",
     },
     {
         "name": "pos",
@@ -2260,10 +2260,15 @@ def insert_variants(
         query_update_set_clause=",".join(query_update_set)
         query_update_where_clause=" AND ".join(query_update_where)
 
+        if query_update_where_clause and query_update_set_clause:
+            on_conflict=f" ON CONFLICT (chr,pos,ref,alt) DO UPDATE SET {query_update_set_clause} WHERE {query_update_where_clause}"
+        else:
+            on_conflict=f" ON CONFLICT (chr,pos,ref,alt) DO NOTHING "
+
         # INSERT VARIANTS
 
         #query = f"INSERT OR REPLACE INTO variants ({query_fields}) VALUES ({query_values}) ON CONFLICT (chr,pos,ref,alt) DO NOTHING" # conflict between "OR REPLACE" and "ON CONFLICT"
-        query = f"INSERT INTO variants ({query_fields}) VALUES ({query_values}) ON CONFLICT (chr,pos,ref,alt) DO UPDATE SET {query_update_set_clause} WHERE {query_update_where_clause} "
+        query = f"INSERT INTO variants ({query_fields}) VALUES ({query_values}) {on_conflict}"
 
         # Use execute many and get last rowS inserted ?
         #cursor.execute(query, query_datas)
@@ -2957,12 +2962,12 @@ def create_triggers(conn):
         BEGIN
 
         UPDATE samples SET
-        created = IIF(created='',(DATETIME('now')),created),
         modified = (DATETIME('now'))
         WHERE id=new.id ;
         
         END;"""
     )
+    # created = IIF(created='',(DATETIME('now')),created),
 
     ### TRIGGER modified update samples
     # When a sample is updated (sex, phenotype, family...)
@@ -2972,12 +2977,13 @@ def create_triggers(conn):
         BEGIN
 
         UPDATE samples SET
-        created = IIF(created='',(DATETIME('now')),old.created),
         modified = (DATETIME('now'))
         WHERE id=new.id ;
 
         END;"""
     )
+    #         created = IIF(created='',(DATETIME('now')),old.created),
+
 
     ### TRIGGER modified insert variants
     # When a variant is inserted or replace
@@ -2987,7 +2993,6 @@ def create_triggers(conn):
         BEGIN
 
         UPDATE variants SET
-        created = IIF(created='',(DATETIME('now')),created),
         modified = (DATETIME('now'))
         WHERE id=new.id ;
         
@@ -3002,7 +3007,6 @@ def create_triggers(conn):
         BEGIN
 
         UPDATE variants SET
-        created = IIF(created='',(DATETIME('now')),old.created),
         modified = (DATETIME('now'))
         WHERE id=new.id ;
         
