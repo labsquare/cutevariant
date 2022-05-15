@@ -43,7 +43,7 @@ jobs:
       - name: install PySide6    # Parce que @ysard veut absolument les version deprecated
         run : pip install PySide6
       - name: test 
-        run: xvfb-run -a python -m pytest tests/core
+        run: xvfb-run -a python -m pytest
 
   # WINDOWS JOB 
 
