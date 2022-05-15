@@ -2313,14 +2313,31 @@ def insert_variants(
                 if sample["name"] in samples_map:
                     sample["variant_id"] = int(variant_id)
                     sample["sample_id"] = int(samples_map[sample["name"]])
+                    sample_id=samples_map[sample["name"]]
 
                     common_fields = samples_local_fields & sample.keys()
                     query_fields = ",".join((f"`{i}`" for i in common_fields))
                     query_values = ",".join((f"?" for i in common_fields))
                     query_datas = [sample[i] for i in common_fields]
+
+                    query_update_set=[]
+                    query_update_set_values=[]
+                    query_update_where=[]
+                    for i in common_fields:
+                        query_update_field_value=sample[i]
+                        if i in ["variant_id,sample_id"]:
+                            query_update_where.append(f"`{i}`='{query_update_field_value}'")
+                        else:
+                            query_update_set.append(f"`{i}`=?")
+                            query_update_set_values.append(query_update_field_value)
+                    query_update_set_clause=",".join(query_update_set)
+                    query_update_where_clause=" AND ".join(query_update_where)
+
                     # query = f"INSERT OR REPLACE INTO sample_has_variant ({query_fields}) VALUES ({query_values})"
-                    query = f"INSERT OR IGNORE INTO sample_has_variant ({query_fields}) VALUES ({query_values})"
-                    cursor.execute(query, query_datas)
+                    # query = f"INSERT OR IGNORE INTO sample_has_variant ({query_fields}) VALUES ({query_values})"
+                    query = f"INSERT INTO sample_has_variant ({query_fields}) VALUES ({query_values}) ON CONFLICT (variant_id,sample_id) DO UPDATE SET {query_update_set_clause} WHERE `variant_id`={variant_id} AND `sample_id`={sample_id}"
+                    # cursor.execute(query, query_datas)
+                    cursor.execute(query, query_datas+query_update_set_values)
 
         # Commit every batch_size
         if progress_callback and variant_count != 0 and variant_count % progress_every == 0:
@@ -2571,7 +2588,7 @@ def insert_sample(conn, name="no_name"):
     :rtype: <int>
     """
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO samples (name) VALUES (?)", [name])
+    cursor.execute("INSERT OR IGNORE INTO samples (name) VALUES (?)", [name])
     conn.commit()
     return cursor.lastrowid
 
