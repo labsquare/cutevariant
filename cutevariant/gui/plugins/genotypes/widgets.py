@@ -587,7 +587,7 @@ class GenotypesWidget(plugin.PluginWidget):
 
     def _on_add_samples(self):
 
-        dialog = SamplesDialog(self._conn, self)
+        dialog = SamplesDialog(self.conn, self)
         dialog.set_samples(self.model.get_samples())
         if dialog.exec():
             self.model.selected_samples = dialog.get_samples()
@@ -642,7 +642,7 @@ class GenotypesWidget(plugin.PluginWidget):
         sample = self.model.item(row)
         if sample:
 
-            dialog = SampleDialog(self._conn, sample["sample_id"])
+            dialog = SampleDialog(self.conn, sample["sample_id"])
 
             if dialog.exec_() == QDialog.Accepted:
                 # self.load_all_filters()
@@ -654,9 +654,7 @@ class GenotypesWidget(plugin.PluginWidget):
         sample = self.model.item(row)
         if sample:
 
-            dialog = SampleVariantDialog(
-                self._conn, sample["sample_id"], self.current_variant["id"]
-            )
+            dialog = SampleVariantDialog(self.conn, sample["sample_id"], self.current_variant["id"])
 
             if dialog.exec_() == QDialog.Accepted:
                 # self.load_all_filters()
@@ -736,7 +734,7 @@ class GenotypesWidget(plugin.PluginWidget):
         if success and name:
 
             sql.insert_selection_from_source(
-                self._conn, name, "variants", self._create_filters(False)
+                self.conn, name, "variants", self._create_filters(False)
             )
 
             if "source_editor" in self.mainwindow.plugins:
@@ -755,7 +753,7 @@ class GenotypesWidget(plugin.PluginWidget):
         self.mainwindow.refresh_plugins(sender=self)
 
     def on_open_project(self, conn):
-        self._conn = conn
+        self.conn = conn
         self.model.conn = conn
         self.model.clear()
         self.load_all_filters()
@@ -775,12 +773,12 @@ class GenotypesWidget(plugin.PluginWidget):
     def load_samples(self):
 
         self.sample_selector.clear()
-        for sample in sql.get_samples(self._conn):
+        for sample in sql.get_samples(self.conn):
             self.sample_selector.add_item(FIcon(0xF0B55), sample["name"], data=sample["name"])
 
     def load_fields(self):
         self.field_selector.clear()
-        for field in sql.get_field_by_category(self._conn, "samples"):
+        for field in sql.get_field_by_category(self.conn, "samples"):
             if field["name"] != "classification":
                 self.field_selector.add_item(
                     FIcon(0xF0835),
@@ -790,6 +788,9 @@ class GenotypesWidget(plugin.PluginWidget):
                 )
 
     def find_variant_name(self, troncate=False):
+
+        if not self.conn:
+            return
 
         # Get variant_name_pattern
         variant_name_pattern = "{chr}:{pos} - {ref}>{alt}"
@@ -803,7 +804,7 @@ class GenotypesWidget(plugin.PluginWidget):
         # Get fields
         self.current_variant = self.mainwindow.get_state_data("current_variant")
         variant_id = self.current_variant["id"]
-        variant = sql.get_variant(self._conn, variant_id, with_annotations=True)
+        variant = sql.get_variant(self.conn, variant_id, with_annotations=True)
         if len(variant["annotations"]):
             for ann in variant["annotations"][0]:
                 variant["annotations___" + str(ann)] = variant["annotations"][0][ann]

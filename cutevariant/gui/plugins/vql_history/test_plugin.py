@@ -58,7 +58,10 @@ def test_model(conn, qtmodeltester):
 def test_plugin(conn, qtbot):
 
     widget = w.VqlHistoryWidget()
+    widget.mainwindow = utils.create_mainwindow()
     widget.show()
+
+    qtbot.addWidget(widget)
 
 
 # def test_plugin(conn, qtbot):
