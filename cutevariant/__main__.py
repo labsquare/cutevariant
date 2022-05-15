@@ -242,7 +242,7 @@ def process_arguments(app):
     if parser.isSet(config_option):
         config_path = parser.value(config_option)
         if os.path.isfile(config_path):
-            Config.DEFAULT_CONFIG_PATH = config_path
+            Config.USER_CONFIG_PATH = config_path
 
         else:
             LOGGER.error(f"{config_path} doesn't exists. Ignoring config")
