@@ -133,6 +133,20 @@ MANDATORY_FIELDS = [
         "description": "chromosom name",
     },
     {
+        "name": "created",
+        "type": "str",
+        "category": "variants",
+        "constraint": "DEFAULT ''",
+        "description": "creation date",
+    },
+    {
+        "name": "modified",
+        "type": "str",
+        "category": "variants",
+        "constraint": "DEFAULT ''",
+        "description": "modification date",
+    },
+    {
         "name": "pos",
         "type": "int",
         "category": "variants",
@@ -2233,12 +2247,27 @@ def insert_variants(
         query_values = ",".join((f"?" for i in common_fields))
         query_datas = [variant[i] for i in common_fields]
 
+        query_update_set=[]
+        query_update_set_values=[]
+        query_update_where=[]
+        for i in common_fields:
+            query_update_field_value=variant[i]
+            if i in ["chr","pos","ref","alt"]:
+                query_update_where.append(f"`{i}`='{query_update_field_value}'")
+            else:
+                query_update_set.append(f"`{i}`=?")
+                query_update_set_values.append(query_update_field_value)
+        query_update_set_clause=",".join(query_update_set)
+        query_update_where_clause=" AND ".join(query_update_where)
+
         # INSERT VARIANTS
 
-        query = f"INSERT OR REPLACE INTO variants ({query_fields}) VALUES ({query_values}) ON CONFLICT (chr,pos,ref,alt) DO NOTHING"
+        #query = f"INSERT OR REPLACE INTO variants ({query_fields}) VALUES ({query_values}) ON CONFLICT (chr,pos,ref,alt) DO NOTHING" # conflict between "OR REPLACE" and "ON CONFLICT"
+        query = f"INSERT INTO variants ({query_fields}) VALUES ({query_values}) ON CONFLICT (chr,pos,ref,alt) DO UPDATE SET {query_update_set_clause} WHERE {query_update_where_clause} "
 
         # Use execute many and get last rowS inserted ?
-        cursor.execute(query, query_datas)
+        #cursor.execute(query, query_datas)
+        cursor.execute(query, query_datas+query_update_set_values)
 
         total += 1
 
@@ -2473,20 +2502,24 @@ def create_table_samples(conn, fields=[]):
     # sample_id is an alias on internal autoincremented 'rowid'
     cursor.execute(
         """CREATE TABLE samples (
-        id INTEGER PRIMARY KEY ASC,
-        name TEXT,
-        family_id TEXT DEFAULT 'fam',
-        father_id INTEGER DEFAULT 0,
-        mother_id INTEGER DEFAULT 0,
-        sex INTEGER DEFAULT 0,
-        phenotype INTEGER DEFAULT 0,
-        valid INTEGER DEFAULT 0,
-        tags TEXT DEFAULT '',
-        comment TEXT DEFAULT '',
-        UNIQUE (name, family_id)
+        `id` INTEGER PRIMARY KEY ASC,
+        `created` TEXT DEFAULT '',
+        `modified` TEXT DEFAULT '',
+        `name` TEXT,
+        `family_id` TEXT DEFAULT 'fam',
+        `father_id` INTEGER DEFAULT 0,
+        `mother_id` INTEGER DEFAULT 0,
+        `sex` INTEGER DEFAULT 0,
+        `phenotype` INTEGER DEFAULT 0,
+        `valid` INTEGER DEFAULT 0,
+        `tags` TEXT DEFAULT '',
+        `comment` TEXT DEFAULT '',
+        UNIQUE (`name`)
         )"""
     )
     conn.commit()
+        #     `created` TEXT DEFAULT (DATETIME('now')),
+        # `modified` TEXT DEFAULT (DATETIME('now')),
 
     fields = list(fields)
 
@@ -2505,6 +2538,9 @@ def create_table_samples(conn, fields=[]):
         {schema},
         PRIMARY KEY (sample_id, variant_id),
         FOREIGN KEY (sample_id) REFERENCES samples (id)
+          ON DELETE CASCADE
+          ON UPDATE NO ACTION,
+        FOREIGN KEY (variant_id) REFERENCES variants (id)
           ON DELETE CASCADE
           ON UPDATE NO ACTION
         ) 
@@ -2892,6 +2928,66 @@ def create_triggers(conn):
 
         UPDATE variants SET
         freq_var_full = ( cast((new.count_hom*2 + new.count_het) as real) / (cast(new.count_tot as real)*2) ) WHERE variants.id = new.id ;
+        
+        END;"""
+    )
+
+    ### TRIGGER modified insert samples
+    # When a sample is inserted or replace
+    conn.execute(
+        """
+        CREATE TRIGGER modified_insert_on_samples AFTER INSERT ON samples 
+        BEGIN
+
+        UPDATE samples SET
+        created = IIF(created='',(DATETIME('now')),created),
+        modified = (DATETIME('now'))
+        WHERE id=new.id ;
+        
+        END;"""
+    )
+
+    ### TRIGGER modified update samples
+    # When a sample is updated (sex, phenotype, family...)
+    conn.execute(
+        """
+        CREATE TRIGGER modified_update_on_samples AFTER UPDATE ON samples 
+        BEGIN
+
+        UPDATE samples SET
+        created = IIF(created='',(DATETIME('now')),old.created),
+        modified = (DATETIME('now'))
+        WHERE id=new.id ;
+
+        END;"""
+    )
+
+    ### TRIGGER modified insert variants
+    # When a variant is inserted or replace
+    conn.execute(
+        """
+        CREATE TRIGGER modified_insert_on_variants AFTER INSERT ON variants 
+        BEGIN
+
+        UPDATE variants SET
+        created = IIF(created='',(DATETIME('now')),created),
+        modified = (DATETIME('now'))
+        WHERE id=new.id ;
+        
+        END;"""
+    )
+
+    ### TRIGGER modified update variants
+    # When a variant is updated or replace
+    conn.execute(
+        """
+        CREATE TRIGGER modified_update_on_variants AFTER UPDATE ON variants 
+        BEGIN
+
+        UPDATE variants SET
+        created = IIF(created='',(DATETIME('now')),old.created),
+        modified = (DATETIME('now'))
+        WHERE id=new.id ;
         
         END;"""
     )
