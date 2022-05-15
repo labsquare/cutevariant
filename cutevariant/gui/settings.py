@@ -518,11 +518,11 @@ class SettingsDialog(QDialog):
 
         self.resize(800, 400)
 
-        self.import_config_button.clicked.connect(self.open_config)
-        self.export_config_button.clicked.connect(self.save_config)
+        self.import_config_button.clicked.connect(self.import_config)
+        self.export_config_button.clicked.connect(self.export_config)
 
         self.save_all_button.clicked.connect(self.save_all)
-        self.reset_button.clicked.connect(self.load_all)
+        self.reset_button.clicked.connect(self.reset_config)
         self.cancel_button.clicked.connect(self.close)
 
         # Connection events
@@ -551,6 +551,24 @@ class SettingsDialog(QDialog):
         """Call load() method of all widgets"""
         [widget.load() for widget in self.widgets]
 
+    def reset_config(self):
+        if (
+            QMessageBox.question(
+                self,
+                self.tr("Reset config"),
+                self.tr(
+                    "Are you sure you want to reset cutevariant to factory settings ?\nThis cannot be undone!"
+                ),
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No,
+            )
+            == QMessageBox.Yes
+        ):
+            config = Config()
+            # Resets back to github's cutevariant config file
+            config.reset()
+            self.load_all()
+
     def load_plugins(self):
         """Add plugins settings"""
         from cutevariant.gui import plugin
@@ -577,15 +595,13 @@ class SettingsDialog(QDialog):
 
                 self.add_section(widget)
 
-    def open_config(self):
+    def import_config(self):
         """Slot to open an existing config from a QFileDialog"""
-        # Reload last directory used
-        last_directory = self.mainwindow.app_settings.value("last_directory", QDir.homePath())
 
         config_path, _ = QFileDialog.getOpenFileName(
             self,
             self.tr("Open config"),
-            last_directory,
+            QDir.homePath(),
             self.tr("Cutevariant config (*.yml)"),
         )
 
@@ -593,30 +609,27 @@ class SettingsDialog(QDialog):
             # Config.DEFAULT_CONFIG_PATH = config_path ----> Surtout pas
 
             # Load config with new config path
-            config = Config(config_path=config_path)
-            config.config_path = Config.DEFAULT_CONFIG_PATH
-            config.save()  # Save newly opened config file to the DEFAULT_CONFIG_PATH that always has to be
+            config = Config()
+            config.load_from_path(config_path)
+            config.save()
             self.load_all()
 
             self.mainwindow.refresh_plugins()
-            # Save directory
-            self.mainwindow.app_settings.setValue("last_directory", os.path.dirname(config_path))
 
         else:
             LOGGER.error(f"{config_path} doesn't exists. Ignoring config")
 
-    def save_config(self):
+    def export_config(self):
         """Slot to save current config to a new file"""
-        last_directory = self.mainwindow.app_settings.value("last_directory", QDir.homePath())
+
         save_config_path, _ = QFileDialog.getSaveFileName(
             self,
             self.tr("Save config"),
-            last_directory,
+            QDir.homePath(),
             self.tr("Cutevariant config (*.yml)"),
         )
-        shutil.copy(Config.DEFAULT_CONFIG_PATH, save_config_path)
-
-        self.mainwindow.app_settings.setValue("last_directory", os.path.dirname(save_config_path))
+        if save_config_path:
+            shutil.copy(Config.user_config_path(), save_config_path)
 
 
 if __name__ == "__main__":
