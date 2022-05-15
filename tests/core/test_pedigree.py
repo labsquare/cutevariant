@@ -43,7 +43,7 @@ def test_import_pedfile():
         "phenotype": 1,
         "valid": 0,
         "comment": "",
-        "tags": "",
+        "tags": "importVCF#test.snpeff.vcf",
     }
     expected_second_sample = {
         "id": 2,
@@ -55,7 +55,7 @@ def test_import_pedfile():
         "phenotype": 2,
         "valid": 0,
         "comment": "",
-        "tags": "",
+        "tags": "importVCF#test.snpeff.vcf",
     }
 
     # Third sample is not conform

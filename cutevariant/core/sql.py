@@ -3327,7 +3327,11 @@ def import_reader(
     # insert samples
     if progress_callback:
         progress_callback("Insert samples")
-    insert_samples(conn, samples=reader.get_samples(), import_id=import_id, import_vcf=os.path.basename(reader.filename))
+    if reader.filename:
+        import_vcf=os.path.basename(reader.filename)
+    else:
+        import_vcf=None
+    insert_samples(conn, samples=reader.get_samples(), import_id=import_id, import_vcf=import_vcf)
 
     # insert ped
     if pedfile:
