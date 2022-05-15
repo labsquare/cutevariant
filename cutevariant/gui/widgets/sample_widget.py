@@ -45,19 +45,13 @@ class SampleWidget(QWidget):
     def __init__(self, conn: sqlite3.Connection, parent=None):
         super().__init__()
         self.conn = conn
-        if Config("validation")["sample_tags"] != None:
-            self.TAG_LIST = [tag["name"] for tag in Config("validation")["sample_tags"]]
-        else:
-            self.TAG_LIST = []
         self.TAG_SEPARATOR = "&"
         self.SAMPLE_CLASSIFICATION = {
             -1: {"name": "Rejected"},
             0: {"name": "Pending"},
             1: {"name": "Valid"},
         }
-        self.REVERSE_CLASSIF = {
-            v["name"]: k for k, v in self.SAMPLE_CLASSIFICATION.items()
-        }
+        self.REVERSE_CLASSIF = {v["name"]: k for k, v in self.SAMPLE_CLASSIFICATION.items()}
 
         # Identity
         self.name_edit = QLineEdit()
@@ -65,7 +59,7 @@ class SampleWidget(QWidget):
         self.fam_edit = QLineEdit()
         self.tab_widget = QTabWidget()
         self.classification = QComboBox()
-        self.tag_edit = MultiComboBox()
+        self.tag_edit = QLineEdit()
         self.tag_button = QToolButton()
         self.tag_button.setAutoRaise(True)
         self.tag_button.setIcon(FIcon(0xF0349))
@@ -92,8 +86,6 @@ class SampleWidget(QWidget):
 
         self.tag_button.setMenu(self.menu)
         self.tag_button.setPopupMode(QToolButton.InstantPopup)
-
-        self.tag_edit.addItems(self.TAG_LIST)
 
         # validation
         val_layout = QFormLayout()
@@ -168,12 +160,7 @@ class SampleWidget(QWidget):
         index = self.classification.findData(data["valid"])
         self.classification.setCurrentIndex(index)
 
-        if data["tags"] is not None:
-            for tag in data["tags"].split(self.TAG_SEPARATOR):
-                if tag in self.TAG_LIST:
-                    self.tag_edit.model().item(self.TAG_LIST.index(tag)).setData(
-                        Qt.Checked, Qt.CheckStateRole
-                    )
+        # self.tag_edit.setText(self.TAG_LIST.index(tag)).setData(Qt.Checked, Qt.CheckStateRole)
 
         self.comment.setPlainText(data.get("comment", ""))
         self.comment.preview_btn.setChecked(True)
@@ -218,10 +205,6 @@ class SampleWidget(QWidget):
                 return
 
         # avoid losing tags who exist in DB but not in config.yml
-        missing_tags = []
-        for tag in self.initial_db_validation["tags"].split(self.TAG_SEPARATOR):
-            if tag not in self.TAG_LIST:
-                missing_tags.append(tag)
 
         data = {
             "id": sample_id,
@@ -230,7 +213,7 @@ class SampleWidget(QWidget):
             "sex": self.sex_combo.currentIndex(),
             "phenotype": self.phenotype_combo.currentIndex(),
             "valid": self.REVERSE_CLASSIF[self.classification.currentText()],
-            "tags": self.TAG_SEPARATOR.join(self.tag_edit.currentData() + missing_tags),
+            "tags": self.TAG_SEPARATOR.join(self.tag_edit.text().split(",")),
             "comment": self.comment.toPlainText(),
         }
 
@@ -253,7 +236,7 @@ class SampleWidget(QWidget):
         values = []
         values.append(self.fam_edit.text())
         values.append(self.classification.currentIndex())
-        values.append(self.tag_edit.currentData())
+        values.append(self.tag_edit.text())
         values.append(self.comment.toPlainText())
         values.append(self.sex_combo.currentIndex())
         values.append(self.phenotype_combo.currentIndex())
@@ -281,9 +264,7 @@ class SampleDialog(QDialog):
 
         self.sample_id = sample_id
         self.w = SampleWidget(conn)
-        self.button_box = QDialogButtonBox(
-            QDialogButtonBox.Save | QDialogButtonBox.Cancel
-        )
+        self.button_box = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
         vLayout = QVBoxLayout(self)
         vLayout.addWidget(self.w)
         vLayout.addWidget(self.button_box)
