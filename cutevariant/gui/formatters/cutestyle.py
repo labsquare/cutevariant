@@ -19,7 +19,7 @@ from PySide6.QtWidgets import QStyleOptionViewItem, QStyle
 from cutevariant.gui.formatter import Formatter
 from cutevariant.gui import FIcon
 import cutevariant.constants as cst
-
+import cutevariant.commons as cm
 from cutevariant.config import Config
 
 
@@ -165,16 +165,18 @@ class CutestyleFormatter(Formatter):
             for index, value in enumerate(values):
                 width = metrics.boundingRect(value).width()
                 height = metrics.height()
-                rect = QRect(x, 2, width + 15, height + 10)
+
+                rect = QRect(x, (option.rect.height() - height) * 0.5, width + 10, height)
 
                 painter.setFont(font)
                 # painter.setClipRect(option.rect, Qt.IntersectClip)
-                painter.setBrush(QBrush(QColor(self.TAGS_COLOR.get(value, "lightgray"))))
+                col = QColor("#D5E9F5")
+                painter.setBrush(QBrush(col))
                 painter.setPen(Qt.NoPen)
                 painter.drawRoundedRect(rect, 3, 3)
-                painter.setPen(QPen(QColor("white")))
+                painter.setPen(QPen(cm.contrast_color(col)))
                 painter.drawText(rect, Qt.AlignCenter | Qt.AlignVCenter, value)
-                x += width + 20
+                x += width + 15
 
             return {"pixmap": pix}
 

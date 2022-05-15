@@ -12,7 +12,7 @@ from cutevariant.gui import FIcon
 import cutevariant.constants as cst
 from cutevariant.config import Config
 
-from cutevariant.gui.widgets import TagEditor, ClassificationEditor
+from cutevariant.gui.widgets import ClassificationEditor
 
 
 import typing
@@ -166,28 +166,6 @@ class LinksModel(QAbstractListModel):
 
         if role == Qt.DecorationRole:
             return QIcon(FIcon(0xF0866))
-
-
-class TagsSettings(AbstractSettingsWidget):
-    def __init__(self):
-        super().__init__()
-
-        self.setWindowTitle("Variant tags")
-        v_layout = QVBoxLayout(self)
-        self.w = TagEditor()
-        v_layout.addWidget(self.w)
-
-    def save(self):
-        """override"""
-        config = self.section_widget.create_config()
-        config["tags"] = self.w.get_tags()
-        config.save()
-
-    def load(self):
-        """override"""
-        config = self.section_widget.create_config()
-        tags = config.get("tags", "")
-        self.w.set_tags(tags)
 
 
 class GeneralSettings(AbstractSettingsWidget):
@@ -348,9 +326,7 @@ class LinkSettings(AbstractSettingsWidget):
 
             if index:
                 # Edit the current item in the list
-                self.link_model.edit_link(
-                    index, name.text(), url.text(), bool(browser.checkState()), False
-                )
+                self.link_model.edit_link(index, name.text(), url.text(), bool(browser.checkState()), False)
             else:
                 # Add the item to the list
                 self.link_model.add_link(name.text(), url.text(), bool(browser.checkState()), False)
@@ -443,5 +419,4 @@ class VariantViewSettingsWidget(PluginSettingsWidget):
         self.setWindowTitle("Variant view")
         self.add_page(GeneralSettings())
         self.add_page(LinkSettings())
-        self.add_page(TagsSettings())
         self.add_page(ClassificationSettings())

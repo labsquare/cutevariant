@@ -3,6 +3,8 @@ from PySide6.QtCore import *
 from PySide6.QtGui import *
 import typing
 
+from cutevariant.commons import contrast_color
+
 # Tags {
 #     "name":"tags name",
 #     "color":"color",
@@ -69,6 +71,67 @@ class TagDialog(QDialog):
         self.color_edit.setText(QColor(color).name())
 
 
+class TagDelegate(QItemDelegate):
+    def __init__(self, parent=None) -> None:
+        super().__init__()
+
+    def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex) -> None:
+
+        text = index.data(Qt.DisplayRole)
+        painter.setRenderHint(QPainter.Antialiasing, True)
+
+        if option.state & QStyle.State_Enabled:
+            bg = QPalette.Normal if option.state & QStyle.State_Active or option.state & QStyle.State_Selected else QPalette.Inactive
+        else:
+            bg = QPalette.Disabled
+
+        if option.state & QStyle.State_Selected:
+            painter.fillRect(option.rect, option.palette.color(bg, QPalette.Highlight))
+
+        metric = QFontMetrics(painter.font())
+        margin = 4
+
+        color = QColor(index.data(Qt.ForegroundRole))
+        contrast = contrast_color(color)
+
+        target = metric.boundingRect(text).adjusted(-margin * 2, -margin, margin * 2, margin)
+        target.moveCenter(option.rect.center())
+        target.moveLeft(option.rect.left() + 10)
+        painter.setBrush(QBrush(color))
+        painter.setPen(Qt.NoPen)
+        painter.drawRoundedRect(target, 10, 10)
+        painter.setPen(QPen(contrast))
+        painter.drawText(target, Qt.AlignCenter, text)
+
+        # return super().paint(painter, option, index)
+
+    def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex) -> QSize:
+        size = super().sizeHint(option, index)
+        size.setHeight(30)
+        return size
+
+
+class TagModel(QAbstractTableModel):
+    def __init__(self, parent: None) -> None:
+        super().__init__(parent)
+        self.tags = []
+
+    def rowCount(self, parent: QModelIndex = None):
+        pass
+
+    def columnCount(self, parent: QModelIndex = None):
+        pass
+
+    def data(self, index: QModelIndex, role):
+        pass
+
+    def add_tags(self, tags: dict):
+        self.beginInsertRows(0, 0, QModelIndex())
+        self.tags.insert(0, tags)
+        self.endInsertColumns()
+
+
+# 301A16#7E2416
 class TagEditor(QWidget):
 
     COLOR_ROLE = Qt.UserRole
@@ -77,8 +140,10 @@ class TagEditor(QWidget):
     def __init__(self, parent=None):
         super().__init__()
 
-        self.view = QListWidget()
+        self.delegate = TagDelegate()
 
+        self.view = QListWidget()
+        self.view.setItemDelegate(self.delegate)
         self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.view.selectionModel().selectionChanged.connect(self._on_selection_changed)
         self.view.doubleClicked.connect(self._on_edit_tag)
@@ -152,7 +217,9 @@ class TagEditor(QWidget):
         item = QListWidgetItem()
         item.setText(tag.get("name", "Unknown"))
         item.setData(TagEditor.COLOR_ROLE, tag.get("color", "gray"))
+        item.setData(Qt.ForegroundRole, tag.get("color", "gray"))
         item.setData(TagEditor.DESCRIPTION_ROLE, tag.get("description", ""))
+
         item.setToolTip(item.data(TagEditor.DESCRIPTION_ROLE))
 
         pix = QPixmap(64, 64)
@@ -220,8 +287,8 @@ if __name__ == "__main__":
 
     w.set_tags(
         [
-            {"name": "boby", "color": "red", "description": "test"},
-            {"name": "sacha", "color": "red", "description": "test"},
+            {"name": "boby", "color": "#ce4412", "description": "test"},
+            {"name": "sacha", "color": "blue", "description": "test"},
         ]
     )
 

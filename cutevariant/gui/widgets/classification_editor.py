@@ -108,7 +108,7 @@ class ClassificationModel(QAbstractTableModel):
 
     def columnCount(self, parent=QModelIndex()):
         if parent == QModelIndex():
-            return 1
+            return 2
         return 0
 
     def data(self, index: QModelIndex, role: Qt.ItemDataRole):
@@ -117,8 +117,11 @@ class ClassificationModel(QAbstractTableModel):
             return None
 
         if role == Qt.DisplayRole:
-            if index.column() == 0:
+            if index.column() == 1:
                 return self._data[index.row()]["name"]
+
+            if index.column() == 0:
+                return self._data[index.row()]["number"]
 
         return None
 
@@ -126,12 +129,6 @@ class ClassificationModel(QAbstractTableModel):
 
         if role == Qt.DisplayRole and orientation == Qt.Horizontal:
             return self._headers[section]
-
-        if role == Qt.DisplayRole and orientation == Qt.Vertical:
-            return self._data[section]["number"]
-
-        if role == Qt.TextAlignmentRole and orientation == Qt.Vertical:
-            return Qt.AlignVCenter + Qt.AlignHCenter
 
     def set_classifications(self, classifications: list):
 
@@ -184,8 +181,11 @@ class ClassificationEditor(QWidget):
         self.view.setItemDelegate(self.delegate)
         self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.view.setShowGrid(False)
         self.view.horizontalHeader().setStretchLastSection(True)
         self.view.horizontalHeader().hide()
+        self.view.setAlternatingRowColors(True)
+        self.view.verticalHeader().hide()
         # self.view.selectionModel().selectionChanged.connect(self._on_selection_changed)
 
         self.add_button = QPushButton("Add")
@@ -235,6 +235,7 @@ class ClassificationEditor(QWidget):
 
     def set_classifications(self, classifications: typing.List[dict]):
         self.model.set_classifications(classifications)
+        self.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
 
     def get_classifications(self):
         return self.model.get_classifications()

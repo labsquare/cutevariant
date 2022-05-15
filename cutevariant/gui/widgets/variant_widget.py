@@ -49,10 +49,7 @@ class TableModel(QAbstractTableModel):
 class VariantWidget(QWidget):
     def __init__(self, conn: sqlite3.Connection, parent=None):
         super().__init__()
-        if Config("variant_view")["tags"] != None:
-            self.TAG_LIST = [tag["name"] for tag in Config("variant_view")["tags"]]
-        else:
-            self.TAG_LIST = []
+
         self.TAG_SEPARATOR = "&"
         self.REVERSE_CLASSIF = {v["name"]: k for k, v in CLASSIFICATION.items()}
         self._conn = conn
@@ -72,8 +69,12 @@ class VariantWidget(QWidget):
 
         self.classification = QComboBox()
 
-        self.tag_edit = MultiComboBox()
-        self.tag_edit.addItems(self.TAG_LIST)
+        self.tag_model = QStringListModel(["arefaire", "refactoring des tags", "attention"])
+        self.tag_completer = QCompleter()
+        self.tag_completer.setModel(self.tag_model)
+        self.tag_edit = QLineEdit()
+        self.tag_edit.setPlaceholderText(self.tr("Tag separated by comma ..."))
+        self.tag_edit.setCompleter(self.tag_completer)
 
         self.tag_layout = QHBoxLayout()
         self.tag_layout.setContentsMargins(0, 0, 0, 0)
@@ -167,9 +168,7 @@ class VariantWidget(QWidget):
         if current_state == self.initial_state:
             return
 
-        current_db_data = sql.get_variant(
-            self._conn, variant_id, with_annotations=True, with_samples=True
-        )
+        current_db_data = sql.get_variant(self._conn, variant_id, with_annotations=True, with_samples=True)
         current_db_validation = self.get_validation_from_data(current_db_data)
         if current_db_validation != self.initial_db_validation:
             ret = QMessageBox.warning(
@@ -182,32 +181,20 @@ class VariantWidget(QWidget):
                 return
 
         # avoid losing tags who exist in DB but not in config.yml
-        missing_tags = []
-        for tag in self.initial_db_validation["tags"].split(self.TAG_SEPARATOR):
-            if tag not in self.TAG_LIST:
-                missing_tags.append(tag)
-
         update_data = {"id": self.data["id"]}
         if self.favorite.isChecked:
             update_data["favorite"] = 1
         else:
             update_data["favorite"] = 0
         update_data["classification"] = self.classification.currentData()
-        print("self.tag_edit.currentData()", self.tag_edit.currentData())
-        print("missing_tags", missing_tags)
-        print("added", self.tag_edit.currentData() + missing_tags)
-        update_data["tags"] = self.TAG_SEPARATOR.join(
-            self.tag_edit.currentData() + missing_tags
-        )
+        update_data["tags"] = self.TAG_SEPARATOR.join(self.tag_edit.text().split(","))
         update_data["comment"] = self.comment.toPlainText()
         sql.update_variant(self._conn, update_data)
 
     def load(self, variant_id: int):
 
         # Get variant data
-        self.data = sql.get_variant(
-            self._conn, variant_id, with_annotations=True, with_samples=True
-        )
+        self.data = sql.get_variant(self._conn, variant_id, with_annotations=True, with_samples=True)
         self.initial_db_validation = self.get_validation_from_data(self.data)
 
         # Set name
@@ -231,11 +218,7 @@ class VariantWidget(QWidget):
         #     )
         # replaced by validation status instead of genotype
         if "samples" in self.data:
-            sdata = {
-                i["name"]: SAMPLE_VARIANT_CLASSIFICATION[i["classification"]]["name"]
-                for i in self.data["samples"]
-                if i["classification"] > 0
-            }
+            sdata = {i["name"]: SAMPLE_VARIANT_CLASSIFICATION[i["classification"]]["name"] for i in self.data["samples"] if i["classification"] > 0}
             self.sample_view.set_dict(sdata)
             # self.sample_tab_model.update(
             #     [
@@ -254,11 +237,8 @@ class VariantWidget(QWidget):
         self.classification.setCurrentIndex(index)
 
         if self.data["tags"] is not None:
-            for tag in self.data["tags"].split(self.TAG_SEPARATOR):
-                if tag in self.TAG_LIST:
-                    self.tag_edit.model().item(self.TAG_LIST.index(tag)).setData(
-                        Qt.Checked, Qt.CheckStateRole
-                    )
+            self.tag_edit.setText(",".join(self.data["tags"].split(self.TAG_SEPARATOR)))
+
         self.comment.setPlainText(self.data["comment"])
         self.comment.preview_btn.setChecked(True)
         self.variant_view.set_dict(self.data)
@@ -281,7 +261,7 @@ class VariantWidget(QWidget):
         values = []
         values.append(self.favorite.isChecked())
         values.append(self.classification.currentIndex())
-        values.append(self.tag_edit.currentData())
+        values.append(self.tag_edit.text())
         values.append(self.comment.toPlainText())
         return values
 
@@ -319,9 +299,7 @@ class VariantDialog(QDialog):
 
         self.variant_id = variant_id
         self.w = VariantWidget(conn)
-        self.button_box = QDialogButtonBox(
-            QDialogButtonBox.Save | QDialogButtonBox.Cancel
-        )
+        self.button_box = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
         vLayout = QVBoxLayout(self)
         vLayout.addWidget(self.w)
         vLayout.addWidget(self.button_box)

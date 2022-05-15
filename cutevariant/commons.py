@@ -6,12 +6,12 @@ import os
 
 from .bgzf import BgzfBlocks
 
+from PySide6.QtGui import QColor
+
 ################################################################################
 def create_logger():
     logger = logging.getLogger(__name__)
-    formatter = logging.Formatter(
-        "%(levelname)s:[%(dirname)s/%(filename)s:%(lineno)s:%(funcName)s()] %(message)s"
-    )
+    formatter = logging.Formatter("%(levelname)s:[%(dirname)s/%(filename)s:%(lineno)s:%(funcName)s()] %(message)s")
 
     stdout_handler = logging.StreamHandler()
     stdout_handler.setFormatter(formatter)
@@ -115,3 +115,15 @@ def is_json_file(filename):
             return False
 
     return True
+
+
+def contrast_color(color: QColor, factor=200):
+
+    luminance = (0.299 * color.red() + 0.587 * color.green() + 0.114 * color.blue()) / 255
+
+    if luminance > 0.5:
+        new_color = color.darker(factor)
+    else:
+        new_color = color.lighter(factor)
+
+    return new_color
