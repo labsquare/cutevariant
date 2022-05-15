@@ -105,7 +105,7 @@ class VariantVerticalHeader(QHeaderView):
         painter.drawPixmap(target, pix)
 
 
-class SamplesModel(QAbstractTableModel):
+class GenotypeModel(QAbstractTableModel):
 
     samples_are_loading = Signal(bool)
     error_raised = Signal(str)
@@ -120,10 +120,6 @@ class SamplesModel(QAbstractTableModel):
         self.fields = []
 
         self.selected_samples = []
-        self.selected_families = []
-        self.selected_genotypes = []
-        self.selected_tags = []
-
         self._headers = []
         self.fields_descriptions = {}
 
@@ -220,9 +216,7 @@ class SamplesModel(QAbstractTableModel):
         self.items = self._load_samples_thread.results
 
         if len(self.items) > 0:
-            self._headers = [
-                i for i in self.items[0].keys() if i not in ("sample_id", "variant_id")
-            ]
+            self._headers = [i for i in self.items[0].keys() if i not in ("sample_id", "variant_id")]
 
         if "classification" not in self.fields:
             self._headers.remove("classification")
@@ -274,17 +268,8 @@ class SamplesModel(QAbstractTableModel):
         if "classification" not in self.fields:
             self.fields.append("classification")
 
-            print("S", self.selected_samples)
-
         # Create load_func to run asynchronously: load samples
-        load_samples_func = partial(
-            sql.get_sample_annotations_by_variant,
-            variant_id=variant_id,
-            fields=self.fields,
-            samples=self.selected_samples,
-            genotypes=self.selected_genotypes,
-            #            classification=self.selected_classification,
-        )
+        load_samples_func = partial(sql.get_sample_annotations_by_variant, variant_id=variant_id, samples=self.selected_samples)
 
         # Start the run
         self._start_timer = time.perf_counter()
@@ -403,7 +388,7 @@ class GenotypesWidget(plugin.PluginWidget):
     """
 
     ENABLE = True
-    REFRESH_STATE_DATA = {"current_variant"}
+    REFRESH_STATE_DATA = {"current_variant", "samples"}
 
     def __init__(self, parent=None, conn=None):
         """
@@ -415,7 +400,7 @@ class GenotypesWidget(plugin.PluginWidget):
 
         self.toolbar = QToolBar()
         self.toolbar.setIconSize(QSize(16, 16))
-        self.model = SamplesModel()
+        self.model = GenotypeModel()
         self.view = SamplesView()
         self.view.setShowGrid(False)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
@@ -427,7 +412,6 @@ class GenotypesWidget(plugin.PluginWidget):
 
         self.add_sample_button = QPushButton(self.tr("Add samples ..."))
         self.add_sample_button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        self.add_sample_button.clicked.connect(self._on_add_samples)
 
         empty_widget = QFrame()
         empty_widget.setFrameStyle(QFrame.StyledPanel | QFrame.Plain)
@@ -437,10 +421,6 @@ class GenotypesWidget(plugin.PluginWidget):
         empty_layout.setAlignment(Qt.AlignCenter)
 
         empty_layout.addWidget(self.add_sample_button)
-
-        self.stack_layout = QStackedLayout()
-        self.stack_layout.addWidget(empty_widget)
-        self.stack_layout.addWidget(self.view)
 
         self.label = QLabel()
         self.label.setFrameStyle(QFrame.StyledPanel | QFrame.Raised)
@@ -453,11 +433,7 @@ class GenotypesWidget(plugin.PluginWidget):
 
         self.error_label = QLabel()
         self.error_label.hide()
-        self.error_label.setStyleSheet(
-            "QWidget{{background-color:'{}'; color:'{}'}}".format(
-                style.WARNING_BACKGROUND_COLOR, style.WARNING_TEXT_COLOR
-            )
-        )
+        self.error_label.setStyleSheet("QWidget{{background-color:'{}'; color:'{}'}}".format(style.WARNING_BACKGROUND_COLOR, style.WARNING_TEXT_COLOR))
 
         self.field_selector = ChoiceWidget()
         self.field_selector.accepted.connect(self.on_refresh)
@@ -468,7 +444,7 @@ class GenotypesWidget(plugin.PluginWidget):
         vlayout.setContentsMargins(0, 0, 0, 0)
         vlayout.addWidget(self.toolbar)
         vlayout.addWidget(self.label)
-        vlayout.addLayout(self.stack_layout)
+        vlayout.addWidget(self.view)
         vlayout.addWidget(self.error_label)
         vlayout.setSpacing(0)
         self.setLayout(vlayout)
@@ -480,8 +456,6 @@ class GenotypesWidget(plugin.PluginWidget):
         self.setup_actions()
 
     def setup_actions(self):
-
-        add_samples = self.toolbar.addAction(FIcon(0xF0415), "Add samples", self._on_add_samples)
 
         # Fields to display
         field_action = create_widget_action(self.toolbar, self.field_selector)
@@ -550,9 +524,7 @@ class GenotypesWidget(plugin.PluginWidget):
             self.load_presets()
 
     def save_preset(self):
-        name, success = QInputDialog.getText(
-            self, self.tr("Create new preset"), self.tr("Preset name:")
-        )
+        name, success = QInputDialog.getText(self, self.tr("Create new preset"), self.tr("Preset name:"))
 
         if success and name:
             config = Config("samples")
@@ -584,14 +556,6 @@ class GenotypesWidget(plugin.PluginWidget):
             self.field_selector.set_checked(presets[key])
 
         self.on_refresh()
-
-    def _on_add_samples(self):
-
-        dialog = SamplesDialog(self._conn, self)
-        dialog.set_samples(self.model.get_samples())
-        if dialog.exec():
-            self.model.selected_samples = dialog.get_samples()
-            self.on_refresh()
 
     def _on_double_clicked(self):
         self._show_sample_variant_dialog()
@@ -654,9 +618,7 @@ class GenotypesWidget(plugin.PluginWidget):
         sample = self.model.item(row)
         if sample:
 
-            dialog = SampleVariantDialog(
-                self._conn, sample["sample_id"], self.current_variant["id"]
-            )
+            dialog = SampleVariantDialog(self._conn, sample["sample_id"], self.current_variant["id"])
 
             if dialog.exec_() == QDialog.Accepted:
                 # self.load_all_filters()
@@ -707,9 +669,7 @@ class GenotypesWidget(plugin.PluginWidget):
 
         else:
             root = list(filters.keys())[0]
-            filters[root] = [
-                i for i in filters[root] if not list(i.keys())[0].startswith("samples")
-            ]
+            filters[root] = [i for i in filters[root] if not list(i.keys())[0].startswith("samples")]
 
         for index in indexes:
             # sample_name = index.siblingAtColumn(1).data()
@@ -726,18 +686,14 @@ class GenotypesWidget(plugin.PluginWidget):
         This function is called when the user clicks on the "Add Source" button in the "Source" tab
         """
 
-        name, success = QInputDialog.getText(
-            self, self.tr("Source Name"), self.tr("Get a source name ")
-        )
+        name, success = QInputDialog.getText(self, self.tr("Source Name"), self.tr("Get a source name "))
 
         # if not name:
         #     return
 
         if success and name:
 
-            sql.insert_selection_from_source(
-                self._conn, name, "variants", self._create_filters(False)
-            )
+            sql.insert_selection_from_source(self._conn, name, "variants", self._create_filters(False))
 
             if "source_editor" in self.mainwindow.plugins:
                 self.mainwindow.refresh_plugin("source_editor")
@@ -763,11 +719,7 @@ class GenotypesWidget(plugin.PluginWidget):
     def _is_selectors_checked(self):
         """Return False if selectors is not checked"""
 
-        return (
-            self.sample_selector.checked()
-            or self.family_selector.checked()
-            or self.tag_selector.checked()
-        )
+        return self.sample_selector.checked() or self.family_selector.checked() or self.tag_selector.checked()
 
     def load_all_filters(self):
         self.load_fields()
@@ -823,10 +775,13 @@ class GenotypesWidget(plugin.PluginWidget):
 
         # variant id
         self.current_variant = self.mainwindow.get_state_data("current_variant")
+        self.model.selected_samples = self.mainwindow.get_state_data("samples")
+
         variant_id = self.current_variant["id"]
 
         # Change variant name
         self.label.setText(variant_name)
+
         self.model.fields = [i["name"] for i in self.field_selector.selected_items()]
 
         self.model.load(variant_id)
@@ -846,7 +801,6 @@ class GenotypesWidget(plugin.PluginWidget):
         self.show_error("")
 
         self.view.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
-        self.stack_layout.setCurrentIndex(1 if self.model.rowCount() else 0)
 
 
 # self.view.horizontalHeader().setSectionResizeMode(
@@ -867,7 +821,7 @@ if __name__ == "__main__":
     # conn = sqlite3.connect("C:/Users/Ichtyornis/Projects/cutevariant/test2.db")
     conn.row_factory = sqlite3.Row
 
-    view = ValidationWidget()
+    view = GenotypesWidget()
     view.on_open_project(conn)
     view.show()
 

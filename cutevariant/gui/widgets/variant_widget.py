@@ -3,7 +3,7 @@ from PySide6.QtCore import *
 from PySide6.QtGui import *
 
 from cutevariant.gui.widgets import ChoiceWidget, DictWidget, MarkdownEditor
-from cutevariant.gui.widgets.multi_combobox import MultiComboBox
+from cutevariant.gui.widgets import TagEdit
 from cutevariant.gui.style import CLASSIFICATION, SAMPLE_VARIANT_CLASSIFICATION
 from cutevariant.config import Config
 
@@ -69,12 +69,12 @@ class VariantWidget(QWidget):
 
         self.classification = QComboBox()
 
-        self.tag_model = QStringListModel(["arefaire", "refactoring des tags", "attention"])
-        self.tag_completer = QCompleter()
-        self.tag_completer.setModel(self.tag_model)
-        self.tag_edit = QLineEdit()
+        # self.tag_model = QStringListModel(["arefaire", "refactoring des tags", "attention"])
+        # self.tag_completer = QCompleter()
+        # self.tag_completer.setModel(self.tag_model)
+        self.tag_edit = TagEdit()
         self.tag_edit.setPlaceholderText(self.tr("Tag separated by comma ..."))
-        self.tag_edit.setCompleter(self.tag_completer)
+        # self.tag_edit.setCompleter(self.tag_completer)
 
         self.tag_layout = QHBoxLayout()
         self.tag_layout.setContentsMargins(0, 0, 0, 0)

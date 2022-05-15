@@ -6,6 +6,8 @@ from .codeedit import CodeEdit, VqlSyntaxHighlighter
 
 from .file_edit import FileEdit
 
+from .tagedit import TagEdit
+
 from .field_editor_widget import FieldsEditorWidget
 
 from .searchable_table_widget import LoadingTableView, SearchableTableWidget
@@ -20,7 +22,6 @@ from .variant_widget import VariantWidget, VariantDialog
 
 from .preset_action import PresetAction
 
-from .tag_editor import TagDialog, TagEditor
 from .classification_editor import ClassificationEditor, ClassificationDialog, ClassificationModel
 
 from .samples_widget import (
