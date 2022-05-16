@@ -2480,7 +2480,7 @@ def create_table_samples(conn, fields=[]):
         mother_id INTEGER DEFAULT 0,
         sex INTEGER DEFAULT 0,
         phenotype INTEGER DEFAULT 0,
-        valid INTEGER DEFAULT 0,
+        classification INTEGER DEFAULT 0,
         tags TEXT DEFAULT '',
         comment TEXT DEFAULT '',
         UNIQUE (name, family_id)
@@ -2570,7 +2570,7 @@ def get_samples(conn: sqlite3.Connection):
     return (dict(data) for data in conn.execute("SELECT * FROM samples"))
 
 
-def search_samples(conn: sqlite3.Connection, name: str, families=[], tags=[], valids=[]):
+def search_samples(conn: sqlite3.Connection, name: str, families=[], tags=[], classifications=[]):
 
     query = """
     SELECT * FROM samples
@@ -2585,9 +2585,9 @@ def search_samples(conn: sqlite3.Connection, name: str, families=[], tags=[], va
         families_clause = ",".join(f"'{i}'" for i in families)
         clauses.append(f"family_id IN ({families_clause})")
 
-    if valids:
-        valid_clause = ",".join(f"{i}" for i in valids)
-        clauses.append(f" valid IN ({valid_clause})")
+    if classifications:
+        classification_clause = ",".join(f"{i}" for i in classifications)
+        clauses.append(f" classification IN ({classification_clause})")
 
     # if tags:
     #     tag_clause = ",".join(f"'{i}'" for i in tags)
@@ -2644,8 +2644,8 @@ def get_sample_annotations_by_variant(
     families: List[str] = None,
     tags: List[str] = None,
     genotypes: List[str] = None,
-    valid: List[str] = None,
-    classification: List[str] = None,
+    sample_classification: List[str] = None,
+    genotype_classification: List[str] = None,
 ):
     """Get samples annotation for a specific variant using different filters
 
@@ -2664,7 +2664,7 @@ def get_sample_annotations_by_variant(
 
     sql_fields = ",".join([f"sv.{f}" for f in fields])
 
-    query = f"""SELECT sv.sample_id, sv.variant_id, samples.valid, samples.name , {sql_fields} FROM samples
+    query = f"""SELECT sv.sample_id, sv.variant_id, samples.classification, samples.name , {sql_fields} FROM samples
     LEFT JOIN sample_has_variant sv 
     ON sv.sample_id = samples.id AND sv.variant_id = {variant_id}"""
 
@@ -2692,13 +2692,21 @@ def get_sample_annotations_by_variant(
         conditions.append("(sv.gt IN " + "(" + ",".join([f"'{s}'" for s in genotypes]) + "))")
 
     # Filter on valid
-    if valid:
-        conditions.append("(samples.valid IN " + "(" + ",".join([f"'{v}'" for v in valid]) + "))")
+    if sample_classification:
+        conditions.append(
+            "(samples.classification IN "
+            + "("
+            + ",".join([f"'{v}'" for v in sample_classification])
+            + "))"
+        )
 
     # Filter on classification
-    if classification:
+    if genotype_classification:
         conditions.append(
-            "(sv.classification IN " + "(" + ",".join([f"'{c}'" for c in classification]) + "))"
+            "(sv.classification IN "
+            + "("
+            + ",".join([f"'{c}'" for c in genotype_classification])
+            + "))"
         )
 
     if conditions:
@@ -3010,12 +3018,12 @@ def create_triggers(conn):
 
     ### SAMPLES
 
-    ### TRIGGER history_samples_valid
+    ### TRIGGER history_samples_classification
     conn.execute(
         """
-        CREATE TRIGGER history_samples_valid 
+        CREATE TRIGGER history_samples_classification 
         AFTER UPDATE ON samples
-        WHEN old.valid !=  new.valid
+        WHEN old.classification !=  new.classification
         BEGIN
             INSERT INTO history (
                 `user`,
@@ -3030,9 +3038,9 @@ def create_triggers(conn):
             current_user(),
             "samples",
             new.rowid,
-            "valid",
-            old.valid,
-            new.valid
+            "classification",
+            old.classification,
+            new.classification
             ) ;
         END;"""
     )

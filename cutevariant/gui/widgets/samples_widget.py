@@ -72,16 +72,14 @@ class SamplesModel(QAbstractTableModel):
                 return sample["family_id"]
 
             if index.column() == 2:
-                return SAMPLE_CLASSIFICATION.get(sample["valid"])["name"]
+                return SAMPLE_CLASSIFICATION.get(sample["classification"])["name"]
 
             if index.column() == 3:
                 return sample["tags"]
 
         return None
 
-    def headerData(
-        self, section: int, orientation: Qt.Orientation, role: Qt.ItemDataRole
-    ):
+    def headerData(self, section: int, orientation: Qt.Orientation, role: Qt.ItemDataRole):
         if role == Qt.DisplayRole and orientation == Qt.Horizontal:
             return self._headers[section]
 
@@ -94,7 +92,7 @@ class SamplesModel(QAbstractTableModel):
                     self.name_filter,
                     families=self.fam_filter,
                     tags=self.tag_filter,
-                    valids=self.valid_filter,
+                    classifications=self.valid_filter,
                 )
             )
             self.endResetModel()
@@ -216,9 +214,7 @@ class SamplesWidget(QWidget):
         tag_action = create_widget_action(self.toolbar, self.tag_choice)
         tag_action.setText("Tags")
         self.toolbar.addSeparator()
-        clear_action = self.toolbar.addAction(
-            QIcon(), "Clear filters", self.clear_filters
-        )
+        clear_action = self.toolbar.addAction(QIcon(), "Clear filters", self.clear_filters)
 
         # separator
         sep = QWidget()

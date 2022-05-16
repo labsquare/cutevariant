@@ -15,9 +15,7 @@ READERS = [
 ]
 
 
-@pytest.mark.parametrize(
-    "reader", READERS, ids=[str(i.__class__.__name__) for i in READERS]
-)
+@pytest.mark.parametrize("reader", READERS, ids=[str(i.__class__.__name__) for i in READERS])
 def test_import(reader):
     conn = sql.get_sql_connection(":memory:")
     sql.import_reader(conn, reader)
@@ -41,7 +39,7 @@ def test_import_pedfile():
         "mother_id": 1,
         "sex": 2,
         "phenotype": 1,
-        "valid": 0,
+        "classification": 0,
         "comment": "",
         "tags": "",
     }
@@ -53,7 +51,7 @@ def test_import_pedfile():
         "mother_id": 0,
         "sex": 1,
         "phenotype": 2,
-        "valid": 0,
+        "classification": 0,
         "comment": "",
         "tags": "",
     }

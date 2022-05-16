@@ -562,9 +562,7 @@ def test_get_columns(conn):
     """Test getting columns of variants and annotations"""
     variant_cols = set(sql.get_table_columns(conn, "variants"))
     expected_cols = {i["name"] for i in FIELDS if i["category"] == "variants"}
-    extra_cols = {
-        i["name"] for i in sql.MANDATORY_FIELDS if i["category"] == "variants"
-    }
+    extra_cols = {i["name"] for i in sql.MANDATORY_FIELDS if i["category"] == "variants"}
     assert variant_cols == expected_cols.union(extra_cols)
 
     annot_cols = set(sql.get_table_columns(conn, "annotations"))
@@ -591,7 +589,7 @@ def test_get_annotations(conn):
 def test_get_sample_annotations_by_variant(conn):
 
     expected = [
-        dict(i, valid=0, variant_id=1, sample_id=index + 1)
+        dict(i, classification=0, variant_id=1, sample_id=index + 1)
         for index, i in enumerate(VARIANTS[0]["samples"])
     ]
     observed = []
@@ -663,9 +661,7 @@ def test_get_variant_as_group(conn):
     observed_genes = dict(
         [
             (i["ann." + group_by], i["count"])
-            for i in sql.get_variant_as_group(
-                conn, "ann." + group_by, fields, "variants", {}
-            )
+            for i in sql.get_variant_as_group(conn, "ann." + group_by, fields, "variants", {})
         ]
     )
 
@@ -755,9 +751,7 @@ def test_insert_set_from_list(conn):
 
     expected = set(["CFTR", "GJB2"])
     sql.insert_wordset_from_list(conn, "name", expected)
-    observed = set(
-        [i["value"] for i in conn.execute("SELECT * FROM wordsets").fetchall()]
-    )
+    observed = set([i["value"] for i in conn.execute("SELECT * FROM wordsets").fetchall()])
 
     assert expected == observed
 
@@ -972,9 +966,7 @@ def test_advanced_get_one_variant(conn):
     .. note:: annotations and samples which are optional ARE tested here
     """
     for variant_id, expected_variant in enumerate(VARIANTS, 1):
-        found_variant = sql.get_variant(
-            conn, variant_id, with_annotations=True, with_samples=True
-        )
+        found_variant = sql.get_variant(conn, variant_id, with_annotations=True, with_samples=True)
 
         for extra_field in ("annotations", "samples"):
 
@@ -1027,9 +1019,7 @@ def test_selection_from_bedfile(conn):
     assert ret == 2
 
     # Query the association table (variant_id, selection_id)
-    data = conn.execute(
-        "SELECT * FROM selection_has_variant WHERE selection_id = ?", (ret,)
-    )
+    data = conn.execute("SELECT * FROM selection_has_variant WHERE selection_id = ?", (ret,))
     # 2 variants (see above)
     # format: [(id variant, id selection),]
     expected = ((1, ret), (2, ret))
@@ -1039,9 +1029,7 @@ def test_selection_from_bedfile(conn):
     print("record:", record)
     assert record == expected
 
-    bed_selection = [
-        s for s in sql.get_selections(conn) if s["name"] == selection_name
-    ][0]
+    bed_selection = [s for s in sql.get_selections(conn) if s["name"] == selection_name][0]
     print("selection content", bed_selection)
     assert bed_selection["name"] == selection_name
     assert bed_selection["count"] == 2  # 2 variants retrieved
@@ -1077,9 +1065,7 @@ def test_selection_from_bedfile_and_subselection(conn):
     # id of selection
     assert ret == 3
 
-    data = conn.execute(
-        "SELECT * FROM selection_has_variant WHERE selection_id = ?", (ret,)
-    )
+    data = conn.execute("SELECT * FROM selection_has_variant WHERE selection_id = ?", (ret,))
     expected = ((1, ret),)
     record = tuple([tuple(i) for i in data])
     assert record == expected
@@ -1132,9 +1118,7 @@ def test_sql_selection_operation(conn):
     selection_id = sql.insert_selection_from_sql(conn, union_query, "union_GT")
     print("union_GT selection id: ", selection_id)
     assert selection_id is not None
-    record = cursor.execute(
-        f"SELECT id, name FROM selections WHERE name = 'union_GT'"
-    ).fetchone()
+    record = cursor.execute(f"SELECT id, name FROM selections WHERE name = 'union_GT'").fetchone()
     print("Found record:", dict(record))
     selection_id = record[0]
     selection_name = record[1]
@@ -1176,8 +1160,6 @@ def test_sql_selection_operation(conn):
 def test_get_sample_variant_classification_count(conn):
     value = sql.get_sample_variant_classification_count(conn, 1, 2)
     assert value == 0
-    sql.update_sample_has_variant(
-        conn, {"variant_id": 1, "sample_id": 1, "classification": 2}
-    )
+    sql.update_sample_has_variant(conn, {"variant_id": 1, "sample_id": 1, "classification": 2})
     value = sql.get_sample_variant_classification_count(conn, 1, 2)
     assert value == 1
