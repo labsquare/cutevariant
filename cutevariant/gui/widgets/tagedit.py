@@ -28,6 +28,7 @@ class TagEdit(QTextEdit):
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setLineWrapMode(QTextEdit.NoWrap)
+        self.setPlaceholderText("Tags separated by comma ... ")
 
         self.syntax = TagEditSyntaxHighlighter(self.document())
 

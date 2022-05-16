@@ -1,4 +1,8 @@
+from logging import Logger
 import sqlite3
+import functools
+
+from cutevariant import LOGGER
 from cutevariant.config import Config
 from cutevariant.gui import plugin, style
 from cutevariant.gui import MainWindow
@@ -8,6 +12,7 @@ from PySide6.QtGui import *
 from PySide6.QtWidgets import *
 
 from cutevariant.core import sql
+from cutevariant import constants as cst
 
 from cutevariant.gui import FIcon
 from cutevariant.gui.widgets import ChoiceWidget, create_widget_action, SampleDialog, SamplesDialog
@@ -22,13 +27,12 @@ class SampleModel(QAbstractTableModel):
     SEX_COLUMN = 2
     COMMENT_COLUMN = 3
 
-    CLASSIFICATIONS = []
-
     def __init__(self, conn: sqlite3.Connection = None) -> None:
         super().__init__()
         self._samples = []
         self._selected_samples = []
         self.conn = conn
+        self.classifications = []
 
     def clear(self):
         self.beginResetModel()
@@ -64,8 +68,8 @@ class SampleModel(QAbstractTableModel):
         if role == Qt.DecorationRole:
             sample = self._samples[index.row()]
             color = QApplication.palette().color(QPalette.Text)
-            color_alpha = QColor(color)
-            color_alpha.setAlpha(100)
+            color_alpha = QColor(QApplication.palette().color(QPalette.Text))
+            color_alpha.setAlpha(50)
             if col == SampleModel.SEX_COLUMN:
                 sex = sample.get("sex", None)
                 if sex == 1:
@@ -77,7 +81,10 @@ class SampleModel(QAbstractTableModel):
             if col == SampleModel.PHENOTYPE_COLUMN:
                 phenotype = sample.get("phenotype")
                 if phenotype == 2:
-                    return QIcon(FIcon(0xF0E95))
+                    return QIcon(FIcon(0xF05DD, color))
+                else:
+                    return QIcon(FIcon(0xF05DD, color_alpha))
+
             if col == SampleModel.COMMENT_COLUMN:
                 if sample["comment"]:
                     return QIcon(FIcon(0xF017A, color))
@@ -86,15 +93,13 @@ class SampleModel(QAbstractTableModel):
 
         if role == Qt.ToolTipRole:
             sample = self._samples[index.row()]
+            if col == SampleModel.COMMENT_COLUMN:
+                comment = sample["comment"]
+                if comment:
+                    return comment
+
             if col == SampleModel.PHENOTYPE_COLUMN:
-                if sample["phenotype"] == 2:
-                    return "Affected"
-            if col == SampleModel.SEX_COLUMN:
-                sex = sample["sex"]
-                if sex == 1:
-                    return "Male"
-                if sex == 2:
-                    return "Female"
+                return cst.PHENOTYPE_DESC.get(int(sample["phenotype"]), "Unknown")
 
     def get_sample(self, row: int):
         if row >= 0 and row < len(self._samples):
@@ -112,6 +117,35 @@ class SampleModel(QAbstractTableModel):
             return len(self._samples)
         else:
             return 0
+
+    def update_sample(self, row: int, update_data: dict):
+        """Update sample
+
+        Args:
+            row (int):
+            update_data (dict):
+        """
+        self._samples[row].update(update_data)
+        data = self.get_sample(row)
+        sql.update_sample(self.conn, data)
+
+        # find index
+        left = self.index(row, 0)
+        right = self.index(row, self.columnCount() - 1)
+        if left.isValid() and right.isValid():
+            LOGGER.debug("UPDATE INDEX " + str(left) + " " + str(right))
+            self.dataChanged.emit(left, right)
+            self.headerDataChanged.emit(Qt.Horizontal, left, right)
+
+    def remove_samples(self, rows: list):
+
+        rows = sorted(rows, reverse=True)
+        self.beginResetModel()
+        for row in rows:
+            print(len(self._samples), row, rows)
+            del self._samples[row]
+
+        self.endResetModel()
 
     def columnCount(self, index: QModelIndex = QModelIndex()):
         if index == QModelIndex():
@@ -134,26 +168,29 @@ class SampleVerticalHeader(QHeaderView):
 
         painter.save()
         super().paintSection(painter, rect, section)
+        try:
 
-        valid = self.model().get_sample(section).get("valid", -1)
+            classification = self.model().get_sample(section).get("classification", 0)
 
-        painter.restore()
+            painter.restore()
 
-        style = SampleModel.CLASSIFICATIONS[section]
-        color = style.get("color", "white")
-        icon = style.get("icon", 0xF0EC8)
+            style = next(i for i in self.model().classifications if i["number"] == classification)
+            color = style.get("color", "white")
+            icon = 0xF012F
 
-        pen = QPen(QColor(color))
-        pen.setWidth(6)
-        painter.setPen(pen)
-        painter.setBrush(QBrush(color))
-        painter.drawLine(rect.left(), rect.top() + 1, rect.left(), rect.bottom() - 1)
+            pen = QPen(QColor(color))
+            pen.setWidth(6)
+            painter.setPen(pen)
+            painter.setBrush(QBrush(color))
+            painter.drawLine(rect.left(), rect.top() + 1, rect.left(), rect.bottom() - 1)
 
-        target = QRect(0, 0, 16, 16)
-        pix = FIcon(icon, color).pixmap(target.size())
-        target.moveCenter(rect.center() + QPoint(1, 1))
+            target = QRect(0, 0, 16, 16)
+            pix = FIcon(icon, color).pixmap(target.size())
+            target.moveCenter(rect.center() + QPoint(1, 1))
 
-        painter.drawPixmap(target, pix)
+            painter.drawPixmap(target, pix)
+        except Exception as e:
+            LOGGER.debug("Cannot paint classification " + str(e))
 
 
 class SamplesWidget(plugin.PluginWidget):
@@ -194,13 +231,12 @@ class SamplesWidget(plugin.PluginWidget):
 
         self._setup_actions()
 
-        self.view.setContextMenuPolicy(Qt.ActionsContextMenu)
         self.view.horizontalHeader().hide()
         self.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         self.view.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
         self.view.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
         self.view.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeToContents)
-        self.view.doubleClicked.connect(self.on_run)
+        self.view.doubleClicked.connect(self.on_edit)
 
         self.view.setShowGrid(False)
         self.view.setSelectionMode(QAbstractItemView.SingleSelection)
@@ -228,27 +264,58 @@ class SamplesWidget(plugin.PluginWidget):
         self.mainwindow.set_state_data("samples", copy.deepcopy(self.model.get_samples()))
         self.mainwindow.refresh_plugins(sender=self)
 
+    def _create_classification_menu(self):
+
+        menu = QMenu(self)
+
+        for i in self.model.classifications:
+            action = menu.addAction(FIcon(0xF012F, i["color"]), i["name"])
+            action.setData(i["number"])
+            on_click = functools.partial(self.update_classification, i["number"])
+            action.triggered.connect(on_click)
+
+        return menu
+
     def _setup_actions(self):
 
         # self.action_prev = self.tool_bar.addAction(FIcon(0xF0141), "Prev")
         # self.action_next = self.tool_bar.addAction(FIcon(0xF0142), "Next")
 
         self.add_action = self.tool_bar.addAction(
-            FIcon(0xF0415), "Add Sample(s)", self.on_add_samples
+            FIcon(0xF0010), "Add Sample(s)", self.on_add_samples
         )
+
+        self.rem_action = self.tool_bar.addAction(
+            FIcon(0xF0BE5), "Remove selection", self.on_remove
+        )
+
         self.clear_action = self.tool_bar.addAction(
-            FIcon(0xF0413), "Clear sample(s)", self.on_clear_samples
+            FIcon(0xF120A), "Clear sample(s)", self.on_clear_samples
         )
         self.edit_action = self.tool_bar.addAction(FIcon(0xF0FFB), "Edit  sample", self.on_edit)
 
-        self.run_action = QAction(FIcon(0xF0FFB), "Show variant from selected sample")
+        self.classification_action = QAction(QIcon(), "classification")
+        self.classification_action.setMenu(self._create_classification_menu())
+
+        self.run_action = QAction(FIcon(0xF0FFB), "Filter variant from selected sample")
         self.run_action.triggered.connect(self.on_run)
         self.source_action = QAction(FIcon(0xF0FFB), "Create source from selected sample")
         self.source_action.triggered.connect(self.on_create_source)
 
-        self.view.addAction(self.edit_action)
-        self.view.addAction(self.run_action)
-        self.view.addAction(self.source_action)
+    def contextMenuEvent(self, event: QContextMenuEvent) -> None:
+
+        menu = QMenu(self)
+
+        menu.addAction(self.edit_action)
+
+        class_action = menu.addAction(QIcon(), "classification")
+        class_action.setMenu(self._create_classification_menu())
+        menu.addAction(class_action)
+        menu.addSeparator()
+        menu.addAction(self.run_action)
+        menu.addAction(self.source_action)
+
+        menu.exec(event.globalPos())
 
     def on_edit(self):
 
@@ -261,8 +328,35 @@ class SamplesWidget(plugin.PluginWidget):
                 # TODO : update only if  necessary
                 self.model.load()
 
+    def on_remove(self):
+
+        rows = []
+        for index in self.view.selectionModel().selectedRows():
+            rows.append(index.row())
+
+        self.model.remove_samples(rows)
+
     def on_clear_samples(self):
         self.model.clear()
+
+    def update_classification(self, value: int = 0):
+
+        unique_ids = set()
+        for index in self.view.selectionModel().selectedRows():
+            if not index.isValid():
+                continue
+
+            sample = self.model.get_sample(index.row())
+            sample_id = sample["id"]
+
+            if sample_id in unique_ids:
+                continue
+
+            unique_ids.add(sample_id)
+            update_data = {"classification": int(value)}
+            self.model.update_sample(index.row(), update_data)
+
+            LOGGER.debug(sample)
 
     def on_run(self):
 
@@ -321,8 +415,8 @@ class SamplesWidget(plugin.PluginWidget):
 
         # Chargement des classification
 
-        config = self.create_config()
-        SampleModel.CLASSIFICATIONS = config.get("classifications", [])
+        config = Config("classifications")
+        self.model.classifications = config.get("samples", [])
         self.model.load()
 
     def on_refresh(self):

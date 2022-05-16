@@ -828,6 +828,27 @@ def get_metadatas(conn: sqlite3.Connection) -> dict:
     return {data["key"]: data["value"] for data in g}
 
 
+## History
+
+
+def get_histories(conn: sqlite3.Connection, table: str, table_id: int) -> dict:
+    """Return histories items
+
+    Args:
+        conn (sqlite3.Connection): Description
+        table (str): table name (variants, samples, sample_has_variant)
+        table_id (int): record id
+
+    Todo: test function
+    """
+    conn.row_factory = sqlite3.Row
+
+    for rec in conn.execute(
+        f"SELECT * FROM `history` WHERE `table`=? AND `table_rowid` = ? ", (table, table_id)
+    ):
+        yield (dict(rec))
+
+
 ## selections & sets tables ====================================================
 
 
@@ -2348,14 +2369,14 @@ def get_variant_as_group(
 
 ## History table ==================================================================
 def create_table_history(conn):
-
+    # TODO : rename to table_id
     conn.execute(
         """CREATE TABLE IF NOT EXISTS `history` (
         `id` INTEGER PRIMARY KEY ASC AUTOINCREMENT,
         `timestamp` TEXT DEFAULT (DATETIME('now')),
         `user` TEXT DEFAULT 'unknown',
         `table` TEXT DEFAULT '' NOT NULL,
-        `table_rowid` INTEGER NOT NULL,
+        `table_rowid` INTEGER NOT NULL, 
         `field` TEXT DEFAULT '',
         `before` TEXT DEFAULT '',
         `after` TEXT DEFAULT '',

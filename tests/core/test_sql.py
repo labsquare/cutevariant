@@ -600,6 +600,19 @@ def test_get_sample_annotations_by_variant(conn):
     assert expected == observed
 
 
+def test_get_histories(conn):
+
+    new_classification = 10
+    sql.update_variant(conn, {"id": 1, "classification": new_classification})
+    sql.update_sample(conn, {"id": 1, "classification": new_classification})
+
+    for table in ("variants", "samples"):
+        record = next(sql.get_histories(conn, table, 1))
+        assert record["field"] == "classification"
+        assert record["before"] == "0"
+        assert record["after"] == str(new_classification)
+
+
 def test_get_sample_annotations(conn, variants_data):
     """Compare sample annotations from DB with expected samples annotations
 

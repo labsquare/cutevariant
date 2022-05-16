@@ -72,7 +72,7 @@ class SamplesModel(QAbstractTableModel):
                 return sample["family_id"]
 
             if index.column() == 2:
-                return SAMPLE_CLASSIFICATION.get(sample["classification"])["name"]
+                return sample["classification"]
 
             if index.column() == 3:
                 return sample["tags"]

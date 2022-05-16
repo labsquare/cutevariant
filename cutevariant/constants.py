@@ -15,6 +15,7 @@ LOG_LEVELS = {
     "notset": logging.NOTSET,
 }
 
+
 MAX_RECENT_PROJECTS = 5
 MIN_COMPLETION_LETTERS = 1
 DEFAULT_SELECTION_NAME = "variants"
@@ -49,6 +50,11 @@ OPERATORS_SQL_2_PY = {
     "AND": "$and",
     "OR": "$or",
 }
+
+
+# Phenotype
+
+PHENOTYPE_DESC = {2: "Affected", 1: "Unaffected"}
 
 # Genotypes
 GENOTYPE_ICONS = {-1: 0xF10D3, 0: 0xF0766, 1: 0xF0AA1, 2: 0xF0AA5}

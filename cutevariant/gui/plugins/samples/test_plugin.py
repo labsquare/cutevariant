@@ -23,7 +23,7 @@ def test_model(qtmodeltester):
         "mother_id": 0,
         "sex": 0,
         "phenotype": 0,
-        "valid": 0,
+        "classification": 0,
         "tags": "",
         "comment": "",
     }

@@ -9,7 +9,7 @@ from cutevariant.config import Config
 
 from cutevariant.gui.ficon import FIcon
 
-from cutevariant.gui.widgets import ChoiceWidget, DictWidget
+from cutevariant.gui.widgets import ChoiceWidget, DictWidget, TagEdit
 from cutevariant.gui.widgets.multi_combobox import MultiComboBox
 
 
@@ -46,12 +46,8 @@ class SampleWidget(QWidget):
         super().__init__()
         self.conn = conn
         self.TAG_SEPARATOR = "&"
-        self.SAMPLE_CLASSIFICATION = {
-            -1: {"name": "Rejected"},
-            0: {"name": "Pending"},
-            1: {"name": "Valid"},
-        }
-        self.REVERSE_CLASSIF = {v["name"]: k for k, v in self.SAMPLE_CLASSIFICATION.items()}
+
+        # self.REVERSE_CLASSIF = {v["name"]: k for k, v in self.SAMPLE_CLASSIFICATION.items()}
 
         # Identity
         self.name_edit = QLineEdit()
@@ -59,7 +55,7 @@ class SampleWidget(QWidget):
         self.fam_edit = QLineEdit()
         self.tab_widget = QTabWidget()
         self.classification = QComboBox()
-        self.tag_edit = QLineEdit()
+        self.tag_edit = TagEdit()
         self.tag_button = QToolButton()
         self.tag_button.setAutoRaise(True)
         self.tag_button.setIcon(FIcon(0xF0349))
@@ -125,9 +121,14 @@ class SampleWidget(QWidget):
         self.variant_model = QStringListModel()
         self.variant_view = QListView()
         self.variant_view.setModel(self.variant_model)
-        self.tab_widget.addTab(self.variant_view, "Validated variants")
+
+        # self.tab_widget.addTab(self.variant_view, "Validated variants")
 
         self.history_view = DictWidget()
+        self.history_view.view.horizontalHeader().setSectionResizeMode(
+            0, QHeaderView.ResizeToContents
+        )
+        self.history_view.set_headers(["Date", "Modifications"])
         self.tab_widget.addTab(self.history_view, "History")
 
         header_layout = QHBoxLayout()
@@ -154,10 +155,13 @@ class SampleWidget(QWidget):
         self.sex_combo.setCurrentIndex(data.get("sex", 0))
         self.phenotype_combo.setCurrentIndex(data.get("phenotype", 0))
 
-        # self.classification.addItems([v["name"] for v in self.SAMPLE_CLASSIFICATION.values()])
-        for k, v in self.SAMPLE_CLASSIFICATION.items():
-            self.classification.addItem(v["name"], k)
-        index = self.classification.findData(data["valid"])
+        config = Config("classifications")
+        self.CLASSIFICATIONS = config.get("samples", [])
+
+        for item in self.CLASSIFICATIONS:
+            self.classification.addItem(FIcon(0xF012F, item["color"]), item["name"], item["number"])
+
+        index = self.classification.findData(data["classification"])
         self.classification.setCurrentIndex(index)
 
         # self.tag_edit.setText(self.TAG_LIST.index(tag)).setData(Qt.Checked, Qt.CheckStateRole)
@@ -212,7 +216,7 @@ class SampleWidget(QWidget):
             "family_id": self.fam_edit.text(),
             "sex": self.sex_combo.currentIndex(),
             "phenotype": self.phenotype_combo.currentIndex(),
-            "valid": self.REVERSE_CLASSIF[self.classification.currentText()],
+            "classification": self.classification.currentData(),
             "tags": self.TAG_SEPARATOR.join(self.tag_edit.text().split(",")),
             "comment": self.comment.toPlainText(),
         }
@@ -224,7 +228,7 @@ class SampleWidget(QWidget):
             "fam": data["family_id"],
             "tags": data["tags"],
             "comment": data["comment"],
-            "valid": int("{valid}".format(**data)),
+            "classification": int("{classification}".format(**data)),
             "sex": data["sex"],
             "phenotype": data["phenotype"],
         }
@@ -245,15 +249,10 @@ class SampleWidget(QWidget):
     def get_history_samples(self):
         """Get the history of samples"""
         results = {}
-        for record in self.conn.execute(
-            f"""SELECT  ('[' || `timestamp` || ']') as time,
-                        ('[' || `history`.`id` || ']') as id,
-                        ( '[' || `user` || ']' || ' - ' || '[' || `samples`.`name` || ']' || ' - ' || '"' || `field` || '" from "' || `before` || '" to "' || `after` || '"') as 'change'
-                FROM `history`
-                INNER JOIN `samples` ON `history`.`table_rowid`=`samples`.`rowid`
-                WHERE `table`='samples'"""
-        ):
-            results[record["time"] + " " + record["id"]] = record["change"]
+        for record in sql.get_histories(self.conn, "samples", self.sample_id):
+
+            message = "{user} changed {field} from {before} to {after}".format(**record)
+            results[record["timestamp"]] = message
 
         return results
 
