@@ -64,24 +64,32 @@ class VariantVerticalHeader(QHeaderView):
         super().paintSection(painter, rect, section)
 
         favorite = self.model().variant(section)["favorite"]
-        classification = self.model().variant(section)["classification"]
+        number = self.model().variant(section)["classification"]
 
         painter.restore()
-        color = style.CLASSIFICATION[classification].get("color")
-        icon = style.CLASSIFICATION[classification].get("icon")
-        icon_favorite = style.CLASSIFICATION[classification].get("icon_favorite")
 
-        pen = QPen(QColor(style.CLASSIFICATION[classification].get("color")))
-        pen.setWidth(6)
-        painter.setPen(pen)
-        painter.setBrush(QBrush(style.CLASSIFICATION[classification].get("color")))
-        painter.drawLine(rect.left(), rect.top() + 1, rect.left(), rect.bottom() - 1)
+        try:
+            classification = next(i for i in self.model().classifications if i["number"] == number)
 
-        target = QRect(0, 0, 20, 20)
-        pix = FIcon(icon_favorite if favorite else icon, color).pixmap(target.size())
-        target.moveCenter(rect.center() + QPoint(1, 1))
+            color = classification.get("color")
+            icon = 0xF0130
 
-        painter.drawPixmap(target, pix)
+            icon_favorite = 0xF0133
+
+            pen = QPen(QColor(classification.get("color")))
+            pen.setWidth(6)
+            painter.setPen(pen)
+            painter.setBrush(QBrush(classification.get("color")))
+            painter.drawLine(rect.left(), rect.top() + 1, rect.left(), rect.bottom() - 1)
+
+            target = QRect(0, 0, 20, 20)
+            pix = FIcon(icon_favorite if favorite else icon, color).pixmap(target.size())
+            target.moveCenter(rect.center() + QPoint(1, 1))
+
+            painter.drawPixmap(target, pix)
+
+        except Exception as e:
+            LOGGER.debug("Cannot draw classification: " + str(e))
 
 
 class VariantModel(QAbstractTableModel):
@@ -133,6 +141,8 @@ class VariantModel(QAbstractTableModel):
         self.total = 0
         self.variants = []
         self.headers = []
+
+        self.classifications = []
 
         # Cache all database fields and their descriptions for tooltips
         # Field names as keys, descriptions as values
@@ -1568,11 +1578,11 @@ class VariantView(QWidget):
         # Create classication action
         class_menu = QMenu(self.tr("Classification"))
 
-        for key, item in style.CLASSIFICATION.items():
+        for item in self.model.classifications:
 
-            action = class_menu.addAction(FIcon(item["icon"], item["color"]), item["name"])
-            action.setData(key)
-            on_click = functools.partial(self.update_classification, key)
+            action = class_menu.addAction(FIcon(0xF012F, item["color"]), item["name"])
+            action.setData(item["number"])
+            on_click = functools.partial(self.update_classification, item["number"])
             action.triggered.connect(on_click)
 
         return class_menu
@@ -1697,6 +1707,10 @@ class VariantViewWidget(plugin.PluginWidget):
         config = self.create_config()
         self.view.model.limit = config.get("rows_per_page", 50)
         self.view.model.set_cache(config.get("memory_cache", 32))
+
+        config = Config("classifications")
+        self.view.model.classifications = list(config.get("variants", []))
+
         self.on_refresh()
 
     def on_close_project(self):

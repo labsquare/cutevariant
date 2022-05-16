@@ -3,6 +3,8 @@ from PySide6.QtCore import *
 from PySide6.QtGui import *
 import typing
 
+from cutevariant.gui.ficon import FIcon
+
 # Tags {
 #     "name":"tags name",
 #     "color":"color",
@@ -122,6 +124,9 @@ class ClassificationModel(QAbstractTableModel):
 
             if index.column() == 0:
                 return self._data[index.row()]["number"]
+
+        if role == Qt.DecorationRole and index.column() == 0:
+            return QIcon(FIcon(0xF012F, self._data[index.row()]["color"]))
 
         return None
 
