@@ -284,6 +284,9 @@ class SamplesWidget(QWidget):
     def _update_count(self):
         count = len(self.selection_dialog.get_samples())
         self.basket_button.setText(f"{count} Selected sample(s)")
+        font = self.basket_button.font()
+        font.setBold(count > 0)
+        self.basket_button.setFont(font)
         # font = QFont()
         # font.setBold(count > 0)
         # self.basket_button.setFont(font)
