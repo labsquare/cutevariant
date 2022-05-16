@@ -14,12 +14,6 @@ from cutevariant.gui.widgets import ChoiceWidget, create_widget_action, SampleDi
 
 # from gui.style import SAMPLE_CLASSIFICATION
 
-SAMPLE_STYLE = {
-    -1: {"name": "Rejected", "icon": 0xF012F, "color": "#ED6D79"},
-    0: {"name": "Pending", "icon": 0xF012F, "color": "#F5A26F"},
-    1: {"name": "Valided", "icon": 0xF012F, "color": "#71E096"},
-}
-
 
 class SampleModel(QAbstractTableModel):
 
@@ -27,6 +21,8 @@ class SampleModel(QAbstractTableModel):
     PHENOTYPE_COLUMN = 1
     SEX_COLUMN = 2
     COMMENT_COLUMN = 3
+
+    CLASSIFICATIONS = []
 
     def __init__(self, conn: sqlite3.Connection = None) -> None:
         super().__init__()
@@ -143,7 +139,7 @@ class SampleVerticalHeader(QHeaderView):
 
         painter.restore()
 
-        style = SAMPLE_STYLE.get(valid)
+        style = SampleModel.CLASSIFICATIONS[section]
         color = style.get("color", "white")
         icon = style.get("icon", 0xF0EC8)
 
@@ -237,8 +233,12 @@ class SamplesWidget(plugin.PluginWidget):
         # self.action_prev = self.tool_bar.addAction(FIcon(0xF0141), "Prev")
         # self.action_next = self.tool_bar.addAction(FIcon(0xF0142), "Next")
 
-        self.add_action = self.tool_bar.addAction(FIcon(0xF0415), "Add Sample(s)", self.on_add_samples)
-        self.clear_action = self.tool_bar.addAction(FIcon(0xF0413), "Clear sample(s)", self.on_clear_samples)
+        self.add_action = self.tool_bar.addAction(
+            FIcon(0xF0415), "Add Sample(s)", self.on_add_samples
+        )
+        self.clear_action = self.tool_bar.addAction(
+            FIcon(0xF0413), "Clear sample(s)", self.on_clear_samples
+        )
         self.edit_action = self.tool_bar.addAction(FIcon(0xF0FFB), "Edit  sample", self.on_edit)
 
         self.run_action = QAction(FIcon(0xF0FFB), "Show variant from selected sample")
@@ -281,14 +281,18 @@ class SamplesWidget(plugin.PluginWidget):
         self.mainwindow.refresh_plugins(sender=self)
 
     def on_create_source(self):
-        name, success = QInputDialog.getText(self, self.tr("Source Name"), self.tr("Get a source name "))
+        name, success = QInputDialog.getText(
+            self, self.tr("Source Name"), self.tr("Get a source name ")
+        )
 
         # if not name:
         #     return
 
         if success and name:
 
-            sql.insert_selection_from_source(self.model.conn, name, "variants", self._create_filters(False))
+            sql.insert_selection_from_source(
+                self.model.conn, name, "variants", self._create_filters(False)
+            )
 
             if "source_editor" in self.mainwindow.plugins:
                 self.mainwindow.refresh_plugin("source_editor")
@@ -314,6 +318,11 @@ class SamplesWidget(plugin.PluginWidget):
         """
         self.model.clear()
         self.model.conn = conn
+
+        # Chargement des classification
+
+        config = self.create_config()
+        SampleModel.CLASSIFICATIONS = config.get("classifications", [])
         self.model.load()
 
     def on_refresh(self):
@@ -354,7 +363,9 @@ class SamplesWidget(plugin.PluginWidget):
 
         else:
             root = list(filters.keys())[0]
-            filters[root] = [i for i in filters[root] if not list(i.keys())[0].startswith("samples")]
+            filters[root] = [
+                i for i in filters[root] if not list(i.keys())[0].startswith("samples")
+            ]
 
         for index in indexes:
             # sample_name = index.siblingAtColumn(1).data()
