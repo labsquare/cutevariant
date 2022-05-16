@@ -52,6 +52,7 @@ def test_settings_dialog(qtbot):
 
     #  Test Saving
     # qtbot.mouseClick(dialog.import_config_button, Qt.LeftButton)
+    # qtbot.mouseClick(dialog.button_box.button(QDialogButtonBox.SaveAll), Qt.LeftButton)
 
     ## is close ?
     # assert not dialog.isVisible()
@@ -65,4 +66,5 @@ def test_settings_dialog(qtbot):
     page.value = None
     dialog.show()
     # qtbot.mouseClick(dialog.export_config_button, Qt.LeftButton)
+    # qtbot.mouseClick(dialog.button_box.button(QDialogButtonBox.Reset), Qt.LeftButton)
     # assert page.value == 32

@@ -603,6 +603,7 @@ class FieldsWidget(QWidget):
 
         # broadcast the model signal
         model.field_checked.connect(self.on_field_changed)
+        model.field_checked.connect(lambda x: print(f"yofff {x}"))
         # model.fields_changed.connect(lambda: self.fields_changed.emit())
 
         # Setup actions

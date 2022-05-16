@@ -86,6 +86,12 @@ def snake_to_camel(name: str) -> str:
 
     Returns:
         str: a camel string like: QueryView
+
+
+    >>> snake_to_camel("query_view")
+    'QueryView'
+
+
     """
     return "".join([i.capitalize() for i in name.split("_")])
 

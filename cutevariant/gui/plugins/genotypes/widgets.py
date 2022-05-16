@@ -216,7 +216,9 @@ class GenotypeModel(QAbstractTableModel):
         self.items = self._load_samples_thread.results
 
         if len(self.items) > 0:
-            self._headers = [i for i in self.items[0].keys() if i not in ("sample_id", "variant_id")]
+            self._headers = [
+                i for i in self.items[0].keys() if i not in ("sample_id", "variant_id")
+            ]
 
         if "classification" not in self.fields:
             self._headers.remove("classification")
@@ -269,7 +271,11 @@ class GenotypeModel(QAbstractTableModel):
             self.fields.append("classification")
 
         # Create load_func to run asynchronously: load samples
-        load_samples_func = partial(sql.get_sample_annotations_by_variant, variant_id=variant_id, samples=self.selected_samples)
+        load_samples_func = partial(
+            sql.get_sample_annotations_by_variant,
+            variant_id=variant_id,
+            samples=self.selected_samples,
+        )
 
         # Start the run
         self._start_timer = time.perf_counter()
@@ -433,7 +439,11 @@ class GenotypesWidget(plugin.PluginWidget):
 
         self.error_label = QLabel()
         self.error_label.hide()
-        self.error_label.setStyleSheet("QWidget{{background-color:'{}'; color:'{}'}}".format(style.WARNING_BACKGROUND_COLOR, style.WARNING_TEXT_COLOR))
+        self.error_label.setStyleSheet(
+            "QWidget{{background-color:'{}'; color:'{}'}}".format(
+                style.WARNING_BACKGROUND_COLOR, style.WARNING_TEXT_COLOR
+            )
+        )
 
         self.field_selector = ChoiceWidget()
         self.field_selector.accepted.connect(self.on_refresh)
@@ -524,7 +534,9 @@ class GenotypesWidget(plugin.PluginWidget):
             self.load_presets()
 
     def save_preset(self):
-        name, success = QInputDialog.getText(self, self.tr("Create new preset"), self.tr("Preset name:"))
+        name, success = QInputDialog.getText(
+            self, self.tr("Create new preset"), self.tr("Preset name:")
+        )
 
         if success and name:
             config = Config("samples")
@@ -606,7 +618,7 @@ class GenotypesWidget(plugin.PluginWidget):
         sample = self.model.item(row)
         if sample:
 
-            dialog = SampleDialog(self._conn, sample["sample_id"])
+            dialog = SampleDialog(self.conn, sample["sample_id"])
 
             if dialog.exec_() == QDialog.Accepted:
                 # self.load_all_filters()
@@ -618,7 +630,7 @@ class GenotypesWidget(plugin.PluginWidget):
         sample = self.model.item(row)
         if sample:
 
-            dialog = SampleVariantDialog(self._conn, sample["sample_id"], self.current_variant["id"])
+            dialog = SampleVariantDialog(self.conn, sample["sample_id"], self.current_variant["id"])
 
             if dialog.exec_() == QDialog.Accepted:
                 # self.load_all_filters()
@@ -669,7 +681,9 @@ class GenotypesWidget(plugin.PluginWidget):
 
         else:
             root = list(filters.keys())[0]
-            filters[root] = [i for i in filters[root] if not list(i.keys())[0].startswith("samples")]
+            filters[root] = [
+                i for i in filters[root] if not list(i.keys())[0].startswith("samples")
+            ]
 
         for index in indexes:
             # sample_name = index.siblingAtColumn(1).data()
@@ -686,14 +700,18 @@ class GenotypesWidget(plugin.PluginWidget):
         This function is called when the user clicks on the "Add Source" button in the "Source" tab
         """
 
-        name, success = QInputDialog.getText(self, self.tr("Source Name"), self.tr("Get a source name "))
+        name, success = QInputDialog.getText(
+            self, self.tr("Source Name"), self.tr("Get a source name ")
+        )
 
         # if not name:
         #     return
 
         if success and name:
 
-            sql.insert_selection_from_source(self._conn, name, "variants", self._create_filters(False))
+            sql.insert_selection_from_source(
+                self.conn, name, "variants", self._create_filters(False)
+            )
 
             if "source_editor" in self.mainwindow.plugins:
                 self.mainwindow.refresh_plugin("source_editor")
@@ -711,7 +729,7 @@ class GenotypesWidget(plugin.PluginWidget):
         self.mainwindow.refresh_plugins(sender=self)
 
     def on_open_project(self, conn):
-        self._conn = conn
+        self.conn = conn
         self.model.conn = conn
         self.model.clear()
         self.load_all_filters()
@@ -719,7 +737,11 @@ class GenotypesWidget(plugin.PluginWidget):
     def _is_selectors_checked(self):
         """Return False if selectors is not checked"""
 
-        return self.sample_selector.checked() or self.family_selector.checked() or self.tag_selector.checked()
+        return (
+            self.sample_selector.checked()
+            or self.family_selector.checked()
+            or self.tag_selector.checked()
+        )
 
     def load_all_filters(self):
         self.load_fields()
@@ -727,12 +749,12 @@ class GenotypesWidget(plugin.PluginWidget):
     def load_samples(self):
 
         self.sample_selector.clear()
-        for sample in sql.get_samples(self._conn):
+        for sample in sql.get_samples(self.conn):
             self.sample_selector.add_item(FIcon(0xF0B55), sample["name"], data=sample["name"])
 
     def load_fields(self):
         self.field_selector.clear()
-        for field in sql.get_field_by_category(self._conn, "samples"):
+        for field in sql.get_field_by_category(self.conn, "samples"):
             if field["name"] != "classification":
                 self.field_selector.add_item(
                     FIcon(0xF0835),
@@ -742,6 +764,9 @@ class GenotypesWidget(plugin.PluginWidget):
                 )
 
     def find_variant_name(self, troncate=False):
+
+        if not self.conn:
+            return  # TODO ..
 
         # Get variant_name_pattern
         variant_name_pattern = "{chr}:{pos} - {ref}>{alt}"
@@ -755,7 +780,7 @@ class GenotypesWidget(plugin.PluginWidget):
         # Get fields
         self.current_variant = self.mainwindow.get_state_data("current_variant")
         variant_id = self.current_variant["id"]
-        variant = sql.get_variant(self._conn, variant_id, with_annotations=True)
+        variant = sql.get_variant(self.conn, variant_id, with_annotations=True)
         if len(variant["annotations"]):
             for ann in variant["annotations"][0]:
                 variant["annotations___" + str(ann)] = variant["annotations"][0][ann]
