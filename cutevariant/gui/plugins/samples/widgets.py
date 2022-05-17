@@ -233,11 +233,11 @@ class SampleVerticalHeader(QHeaderView):
 
             style = next(i for i in self.model().classifications if i["number"] == classification)
             color = style.get("color", "white")
-            selected_samples = self.mainwindow.get_state_data("selected_samples") or []
-            if name in selected_samples:
-                icon = 0xF0133
-            else:
-                icon = 0xF0130
+            # selected_samples = self.mainwindow.get_state_data("selected_samples") or []
+            # if name in selected_samples:
+            #     icon = 0xF0133
+            # else:
+            icon = 0xF012F
 
             pen = QPen(QColor(color))
             pen.setWidth(6)
@@ -438,7 +438,6 @@ class SamplesWidget(plugin.PluginWidget):
         self.mainwindow.set_state_data("fields", fields)
         self.mainwindow.set_state_data("filters", self._create_filters())
         self.mainwindow.refresh_plugins(sender=self)
-        self.mainwindow.refresh_plugins()
         # self.mainwindow.refresh_plugins("samples")
         self.on_model_reset()
         # print("selected_samples:")
