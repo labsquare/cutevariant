@@ -157,7 +157,7 @@ class SamplesWidget(QWidget):
         self.toolbar = QToolBar()
         self.line = QLineEdit()
         self.line.setPlaceholderText("Search sample ...")
-        # self.line.textChanged.connect(self._on_search)
+        self.line.textChanged.connect(self._on_search)
 
         self.model = SamplesModel(conn)
 
@@ -196,13 +196,13 @@ class SamplesWidget(QWidget):
 
         # Filters
         self.family_choice = ChoiceButton()
-        self.family_choice.item_changed.connect(self._on_search)
+        self.family_choice.item_changed.connect(self._on_filter_changed)
         self.family_choice.prefix = self.tr("Familly")
         self.statut_choice = ChoiceButton()
-        self.statut_choice.item_changed.connect(self._on_search)
+        self.statut_choice.item_changed.connect(self._on_filter_changed)
         self.statut_choice.prefix = self.tr("Status")
         self.tag_choice = ChoiceButton()
-        self.tag_choice.item_changed.connect(self._on_search)
+        self.tag_choice.item_changed.connect(self._on_filter_changed)
         self.tag_choice.prefix = self.tr("Tag")
 
         self.toolbar.addWidget(self.family_choice)
@@ -253,9 +253,7 @@ class SamplesWidget(QWidget):
         self.statut_choice.uncheck_all()
         self._on_search()
 
-    def _on_search(self):
-        """Start a search query"""
-
+    def _on_filter_changed(self):
         tag_list = self.tag_choice._model.get_checked()
         fam_list = self.family_choice._model.get_checked()
         class_list = [str(i["data"]) for i in self.statut_choice._model.items() if i["checked"]]
@@ -271,9 +269,11 @@ class SamplesWidget(QWidget):
             query += ["classification:" + ",".join(class_list)]
 
         query = " ".join(query)
-
         self.line.setText(query)
-        self.model.query = self.line.text()
+
+    def _on_search(self):
+        """Start a search query"""
+        self.model.query += " " + self.line.text()
         self.model.load()
 
     def _on_add_selection(self):
