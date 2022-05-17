@@ -269,11 +269,15 @@ class SamplesWidget(QWidget):
             query += ["classification:" + ",".join(class_list)]
 
         query = " ".join(query)
-        self.line.setText(query)
+
+        if not self.line.text():
+            self.line.setText(query)
+        else:
+            self.line.setText(self.line.text() + " " + query)
 
     def _on_search(self):
         """Start a search query"""
-        self.model.query += " " + self.line.text()
+        self.model.query = self.line.text()
         self.model.load()
 
     def _on_add_selection(self):
