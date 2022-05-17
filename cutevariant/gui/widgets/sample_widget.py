@@ -12,6 +12,8 @@ from cutevariant.gui.ficon import FIcon
 from cutevariant.gui.widgets import DictWidget, TagEdit
 from cutevariant.gui.widgets.multi_combobox import MultiComboBox
 
+from cutevariant.gui.widgets import ChoiceButton
+
 
 class HpoWidget(QWidget):
     def __init__(self, parent=None):
@@ -73,12 +75,12 @@ class SampleWidget(QWidget):
         identity_layout.addRow("Tags", self.tag_layout)
         identity_layout.addRow("Statut", self.classification)
 
-        self.tag_choice = ChoiceWidget()
-        self.tag_choice_action = QWidgetAction(self)
-        self.tag_choice_action.setDefaultWidget(self.tag_choice)
+        self.tag_choice = ChoiceButton()
+        # self.tag_choice_action = QWidgetAction(self)
+        # self.tag_choice_action.setDefaultWidget(self.tag_choice)
 
         self.menu = QMenu()
-        self.menu.addAction(self.tag_choice_action)
+        # self.menu.addAction(self.tag_choice_action)
 
         self.tag_button.setMenu(self.menu)
         self.tag_button.setPopupMode(QToolButton.InstantPopup)
