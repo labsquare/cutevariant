@@ -239,10 +239,8 @@ class SampleVerticalHeader(QHeaderView):
             )
             color = style.get("color", "white")
             selected_samples=self.mainwindow.get_state_data("selected_samples") or []
-            #print("selected_samples")
-            #print(selected_samples)
             if name in selected_samples:
-                icon = 0xF012F
+                icon = 0xF0133
             else:
                 icon = 0xF0130
 
@@ -254,7 +252,7 @@ class SampleVerticalHeader(QHeaderView):
                 rect.left(), rect.top() + 1, rect.left(), rect.bottom() - 1
             )
 
-            target = QRect(0, 0, 16, 16)
+            target = QRect(0, 0, 20, 20)
             pix = FIcon(icon, color).pixmap(target.size())
             target.moveCenter(rect.center() + QPoint(1, 1))
 
