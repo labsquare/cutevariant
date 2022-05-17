@@ -35,8 +35,6 @@ from cutevariant.gui import mainwindow, plugin, FIcon, formatter, style
 from cutevariant.gui.sql_thread import SqlThread
 from cutevariant.gui.widgets import (
     MarkdownDialog,
-    ChoiceWidget,
-    create_widget_action,
     VariantDialog,
     FilterDialog,
 )

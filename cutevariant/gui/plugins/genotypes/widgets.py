@@ -23,8 +23,7 @@ from cutevariant.config import Config
 
 
 from cutevariant.gui.widgets import (
-    ChoiceWidget,
-    create_widget_action,
+    ChoiceButton,
     SampleDialog,
     SampleVariantDialog,
     PresetAction,
@@ -445,8 +444,8 @@ class GenotypesWidget(plugin.PluginWidget):
             )
         )
 
-        self.field_selector = ChoiceWidget()
-        self.field_selector.accepted.connect(self.on_refresh)
+        self.field_selector = ChoiceButton()
+        # self.field_selector.accepted.connect(self.on_refresh)
 
         self.setWindowIcon(FIcon(0xF0A8C))
 
@@ -468,10 +467,10 @@ class GenotypesWidget(plugin.PluginWidget):
     def setup_actions(self):
 
         # Fields to display
-        field_action = create_widget_action(self.toolbar, self.field_selector)
-        field_action.setIcon(FIcon(0xF0756))
-        field_action.setText("Fields")
-        field_action.setToolTip("Select fields to display")
+        # field_action = create_widget_action(self.toolbar, self.field_selector)
+        # field_action.setIcon(FIcon(0xF0756))
+        # field_action.setText("Fields")
+        # field_action.setToolTip("Select fields to display")
         # Spacer
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -807,7 +806,7 @@ class GenotypesWidget(plugin.PluginWidget):
         # Change variant name
         self.label.setText(variant_name)
 
-        self.model.fields = [i["name"] for i in self.field_selector.selected_items()]
+        # self.model.fields = [i["name"] for i in self.field_selector.items()]
 
         self.model.load(variant_id)
 

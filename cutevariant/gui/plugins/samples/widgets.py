@@ -16,8 +16,6 @@ from cutevariant import constants as cst
 
 from cutevariant.gui import FIcon
 from cutevariant.gui.widgets import (
-    ChoiceWidget,
-    create_widget_action,
     SampleDialog,
     SamplesDialog,
 )
@@ -58,9 +56,7 @@ class SampleModel(QAbstractTableModel):
 
             self.endResetModel()
 
-    def headerData(
-        self, section: int, orientation: Qt.Orientation, role: int = Qt.DisplayRole
-    ):
+    def headerData(self, section: int, orientation: Qt.Orientation, role: int = Qt.DisplayRole):
         # Titles
         if orientation == Qt.Horizontal and role == Qt.DisplayRole and section == 0:
             return self.tr("Samples")
@@ -181,9 +177,7 @@ class SampleVerticalHeader(QHeaderView):
 
             painter.restore()
 
-            style = next(
-                i for i in self.model().classifications if i["number"] == classification
-            )
+            style = next(i for i in self.model().classifications if i["number"] == classification)
             color = style.get("color", "white")
             icon = 0xF012F
 
@@ -191,9 +185,7 @@ class SampleVerticalHeader(QHeaderView):
             pen.setWidth(6)
             painter.setPen(pen)
             painter.setBrush(QBrush(color))
-            painter.drawLine(
-                rect.left(), rect.top() + 1, rect.left(), rect.bottom() - 1
-            )
+            painter.drawLine(rect.left(), rect.top() + 1, rect.left(), rect.bottom() - 1)
 
             target = QRect(0, 0, 16, 16)
             pix = FIcon(icon, color).pixmap(target.size())
@@ -244,15 +236,9 @@ class SamplesWidget(plugin.PluginWidget):
 
         self.view.horizontalHeader().hide()
         self.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
-        self.view.horizontalHeader().setSectionResizeMode(
-            1, QHeaderView.ResizeToContents
-        )
-        self.view.horizontalHeader().setSectionResizeMode(
-            2, QHeaderView.ResizeToContents
-        )
-        self.view.horizontalHeader().setSectionResizeMode(
-            3, QHeaderView.ResizeToContents
-        )
+        self.view.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        self.view.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
+        self.view.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeToContents)
         self.view.doubleClicked.connect(self.on_edit)
 
         self.view.setShowGrid(False)
@@ -278,9 +264,7 @@ class SamplesWidget(plugin.PluginWidget):
         else:
             self.stack_layout.setCurrentIndex(0)
 
-        self.mainwindow.set_state_data(
-            "samples", copy.deepcopy(self.model.get_samples())
-        )
+        self.mainwindow.set_state_data("samples", copy.deepcopy(self.model.get_samples()))
         self.mainwindow.refresh_plugins(sender=self)
 
     def _create_classification_menu(self):
@@ -311,15 +295,11 @@ class SamplesWidget(plugin.PluginWidget):
         self.clear_action = self.tool_bar.addAction(
             FIcon(0xF120A), "Clear sample(s)", self.on_clear_samples
         )
-        self.edit_action = self.tool_bar.addAction(
-            FIcon(0xF0FFB), "Edit  sample", self.on_edit
-        )
+        self.edit_action = self.tool_bar.addAction(FIcon(0xF0FFB), "Edit  sample", self.on_edit)
 
         self.run_action = QAction(FIcon(0xF0FFB), "Filter variant from selected sample")
         self.run_action.triggered.connect(self.on_run)
-        self.source_action = QAction(
-            FIcon(0xF0FFB), "Create source from selected sample"
-        )
+        self.source_action = QAction(FIcon(0xF0FFB), "Create source from selected sample")
         self.source_action.triggered.connect(self.on_create_source)
 
     def contextMenuEvent(self, event: QContextMenuEvent) -> None:

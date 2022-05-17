@@ -6,12 +6,14 @@ from PySide6.QtGui import *
 
 from cutevariant.core import sql
 from cutevariant.gui.style import CLASSIFICATION, SAMPLE_VARIANT_CLASSIFICATION
-from cutevariant.gui.widgets import ChoiceWidget, DictWidget, MarkdownEditor
+from cutevariant.gui.widgets import DictWidget, MarkdownEditor
 from cutevariant.config import Config
 
 from cutevariant.gui.ficon import FIcon
 
 from cutevariant.gui.widgets.multi_combobox import MultiComboBox
+
+from cutevariant.gui.widgets import TagEdit
 
 
 class QHLine(QFrame):
@@ -30,9 +32,7 @@ class SampleVariantWidget(QWidget):
         else:
             self.TAG_LIST = []
         self.TAG_SEPARATOR = "&"
-        self.REVERSE_CLASSIF = {
-            v["name"]: k for k, v in SAMPLE_VARIANT_CLASSIFICATION.items()
-        }
+        self.REVERSE_CLASSIF = {v["name"]: k for k, v in SAMPLE_VARIANT_CLASSIFICATION.items()}
 
         # Title
         self.title = QLabel()
@@ -58,7 +58,7 @@ class SampleVariantWidget(QWidget):
         self.tag_layout.setContentsMargins(0, 0, 0, 0)
         self.tag_layout.addWidget(self.tag_edit)
 
-        self.tag_choice = ChoiceWidget()
+        self.tag_choice = TagEdit()
         self.tag_choice_action = QWidgetAction(self)
         self.tag_choice_action.setDefaultWidget(self.tag_choice)
 
@@ -145,12 +145,8 @@ class SampleVariantWidget(QWidget):
         self.setLayout(vLayout)
 
     def load(self, var: dict, sample: dict):
-        self.sample_has_var_data = sql.get_sample_annotations(
-            self.conn, var["id"], sample["id"]
-        )
-        self.initial_db_validation = self.get_validation_from_data(
-            self.sample_has_var_data
-        )
+        self.sample_has_var_data = sql.get_sample_annotations(self.conn, var["id"], sample["id"])
+        self.initial_db_validation = self.get_validation_from_data(self.sample_has_var_data)
 
         var_name = "{chr}-{pos}-{ref}-{alt}".format(**var)
         if len(var_name) > 30:
@@ -177,9 +173,7 @@ class SampleVariantWidget(QWidget):
         self.classification.setCurrentIndex(index)
 
         if self.sample_has_var_data.get("tags") is not None:
-            for tag in self.sample_has_var_data.get("tags", "").split(
-                self.TAG_SEPARATOR
-            ):
+            for tag in self.sample_has_var_data.get("tags", "").split(self.TAG_SEPARATOR):
                 if tag in self.TAG_LIST:
                     self.tag_edit.model().item(self.TAG_LIST.index(tag)).setData(
                         Qt.Checked, Qt.CheckStateRole
@@ -194,8 +188,7 @@ class SampleVariantWidget(QWidget):
             {
                 k: v
                 for k, v in self.sample_has_var_data.items()
-                if k
-                not in ("variant_id", "sample_id", "classification", "tags", "comment")
+                if k not in ("variant_id", "sample_id", "classification", "tags", "comment")
             }
         )
         self.var_info.set_dict({k: v for k, v in var.items() if k not in ("id")})
@@ -220,9 +213,7 @@ class SampleVariantWidget(QWidget):
         if sample["valid"] in (None, 0):
             self.info_lock.hide()
         else:
-            self.info_lock.setText(
-                "Sample status: Locked (variant validation can't be edited)"
-            )
+            self.info_lock.setText("Sample status: Locked (variant validation can't be edited)")
             self.classification.setDisabled(True)
             self.tag_edit.setDisabled(True)
             self.comment.preview_btn.setDisabled(True)
@@ -258,7 +249,7 @@ class SampleVariantWidget(QWidget):
             if ret == QMessageBox.No:
                 return
 
-        #avoid losing tags who exist in DB but not in config.yml
+        # avoid losing tags who exist in DB but not in config.yml
         missing_tags = []
         for tag in self.initial_db_validation["tags"].split(self.TAG_SEPARATOR):
             if tag not in self.TAG_LIST:
@@ -291,7 +282,7 @@ class SampleVariantWidget(QWidget):
         return values
 
     def get_history_sample_has_variant(self):
-        """ Get the history of samples """
+        """Get the history of samples"""
         results = {}
         for record in self.conn.execute(
             f"""SELECT  ('[' || `timestamp` || ']') as time,
@@ -307,6 +298,7 @@ class SampleVariantWidget(QWidget):
 
         return results
 
+
 class SampleVariantDialog(QDialog):
     def __init__(self, conn, sample_id, var_id, parent=None):
         super().__init__()
@@ -317,9 +309,7 @@ class SampleVariantDialog(QDialog):
         self.variant_data = sql.get_variant(conn, var_id)
 
         self.w = SampleVariantWidget(conn)
-        self.button_box = QDialogButtonBox(
-            QDialogButtonBox.Save | QDialogButtonBox.Cancel
-        )
+        self.button_box = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
         vLayout = QVBoxLayout(self)
         vLayout.addWidget(self.w)
         vLayout.addWidget(self.button_box)

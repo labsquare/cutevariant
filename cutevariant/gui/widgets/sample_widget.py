@@ -9,7 +9,7 @@ from cutevariant.config import Config
 
 from cutevariant.gui.ficon import FIcon
 
-from cutevariant.gui.widgets import ChoiceWidget, DictWidget, TagEdit
+from cutevariant.gui.widgets import DictWidget, TagEdit
 from cutevariant.gui.widgets.multi_combobox import MultiComboBox
 
 
